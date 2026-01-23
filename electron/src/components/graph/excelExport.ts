@@ -13,7 +13,7 @@ export type GraphExportData = {
   renderValue?: (value: number) => string;
 };
 
-// Type for combined sheet data used in Auswertung
+// Type for combined sheet data used in Analysis
 type CombinedSheetData = {
   sheetName: string;
   timestamps: number[];
@@ -22,7 +22,20 @@ type CombinedSheetData = {
   seriesTitle: string;
   graphTitle: string;
   targetLines: GraphLine[];
+  color?: string;
 };
+
+// Utility function to format date/time in German locale
+function formatDateTime(date: Date): string {
+  return date.toLocaleString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
 
 export async function exportGraphsToExcel(
   graphDataMap: Map<string, () => GraphExportData | null>,
@@ -46,7 +59,7 @@ export async function exportGraphsToExcel(
     const usedSheetNames = new Set<string>(); // Track unique sheet names
     let processedCount = 0;
 
-    // Collect all sheet data for Auswertung sheet
+    // Collect all sheet data for Analysis sheet
     const allSheetData: CombinedSheetData[] = [];
 
     // Process each valid series
@@ -93,7 +106,7 @@ export async function exportGraphsToExcel(
       const combinedWorksheet = createCombinedSheet(graphLineData, sheetName);
       XLSX.utils.book_append_sheet(workbook, combinedWorksheet, sheetName);
 
-      // Collect data for Auswertung sheet
+      // Collect data for Analysis sheet
       const [timestamps, values] = seriesToUPlotData(series.newData.long);
       allSheetData.push({
         sheetName,
@@ -103,6 +116,7 @@ export async function exportGraphsToExcel(
         seriesTitle,
         graphTitle: exportData.config.title,
         targetLines,
+        color: series.color,
       });
 
       processedCount++;
@@ -113,12 +127,12 @@ export async function exportGraphsToExcel(
       return;
     }
 
-    // Create Auswertung (Analysis) sheet with combined data and chart
-    const auswertungSheet = await createAuswertungSheet(
+    // Create Analysis sheet with combined data and chart
+    const analysisSheet = await createAnalysisSheet(
       allSheetData,
       groupId
     );
-    XLSX.utils.book_append_sheet(workbook, auswertungSheet, "Auswertung");
+    XLSX.utils.book_append_sheet(workbook, analysisSheet, "Analysis");
 
     // Write XLSX to buffer first
     const xlsxBuffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
@@ -127,10 +141,10 @@ export async function exportGraphsToExcel(
     const excelJSWorkbook = new ExcelJS.Workbook();
     await excelJSWorkbook.xlsx.load(xlsxBuffer);
 
-    // Find the Auswertung sheet
-    const auswertungWorksheet = excelJSWorkbook.getWorksheet("Auswertung");
+    // Find the Analysis sheet
+    const analysisWorksheet = excelJSWorkbook.getWorksheet("Analysis");
 
-    if (auswertungWorksheet) {
+    if (analysisWorksheet) {
       // Generate chart image
       const sortedTimestamps = Array.from(
         new Set(allSheetData.flatMap((d) => d.timestamps))
@@ -139,16 +153,6 @@ export async function exportGraphsToExcel(
       const startTime = sortedTimestamps[0];
       const startDate = new Date(startTime);
       const endDate = new Date(sortedTimestamps[sortedTimestamps.length - 1]);
-
-      const formatDateTime = (date: Date) =>
-        date.toLocaleString("de-DE", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        });
 
       const timeRangeTitle = `${formatDateTime(startDate)} bis ${formatDateTime(endDate)}`;
 
@@ -168,9 +172,9 @@ export async function exportGraphsToExcel(
         });
 
         // Find a good position for the image (after the data and metadata)
-        const lastRow = auswertungWorksheet.rowCount;
+        const lastRow = analysisWorksheet.rowCount;
 
-        auswertungWorksheet.addImage(chartImageId, {
+        analysisWorksheet.addImage(chartImageId, {
           tl: { col: 0, row: lastRow + 2 }, // top-left
           ext: { width: 1200, height: 600 }, // chart size
         });
@@ -184,7 +188,7 @@ export async function exportGraphsToExcel(
           });
 
           // Position legend below the chart (approximately 32 rows for 600px chart at ~19px per row)
-          auswertungWorksheet.addImage(legendImageId, {
+          analysisWorksheet.addImage(legendImageId, {
             tl: { col: 0, row: lastRow + 2 + 32 }, // below chart
             ext: { width: 1200, height: 50 }, // legend size
           });
@@ -213,27 +217,14 @@ export async function exportGraphsToExcel(
   }
 }
 
-// Color mapping based on data type to match reference chart
-function getSeriesColor(name: string): string {
-  const lowerName = name.toLowerCase();
-
-  // Temperatures - different shades matching the reference image
-  if (lowerName.includes("front") && lowerName.includes("temp")) return "#e74c3c"; // Red
-  if (lowerName.includes("middle") && lowerName.includes("temp")) return "#c0392b"; // Dark red
-  if (lowerName.includes("back") && lowerName.includes("temp")) return "#16a085"; // Teal/green
-  if (lowerName.includes("nozzle") && lowerName.includes("temp")) return "#95a5a6"; // Gray
-
-  // Power - various shades matching reference
-  if (lowerName.includes("total") && lowerName.includes("watt")) return "#2c3e50"; // Dark blue/black
-  if (lowerName.includes("front") && lowerName.includes("watt")) return "#e67e22"; // Orange
-  if (lowerName.includes("middle") && lowerName.includes("watt")) return "#d35400"; // Dark orange
-  if (lowerName.includes("back") && lowerName.includes("watt")) return "#f39c12"; // Yellow-orange
-  if (lowerName.includes("nozzle") && lowerName.includes("watt")) return "#27ae60"; // Green
-
-  // Pressure and RPM - blue shades from reference
-  if (lowerName === "bar") return "#2980b9"; // Blue
-  if (lowerName === "rpm" || lowerName.includes("rpm")) return "#16a085"; // Teal
-
+// Get series color from machine data or fallback to default
+function getSeriesColor(color?: string): string {
+  // Use the color from the machine data if available
+  if (color) {
+    return color;
+  }
+  
+  // Fallback to default color
   return "#9b59b6"; // Purple fallback
 }
 
@@ -260,7 +251,7 @@ function generateLegendImage(allSheetData: CombinedSheetData[]): string | null {
     const itemSpacing = 15;
 
     allSheetData.forEach((sheetData, index) => {
-      const color = getSeriesColor(sheetData.sheetName);
+      const color = getSeriesColor(sheetData.color);
       const label = sheetData.sheetName;
 
       // Draw color indicator (small rectangle)
@@ -332,7 +323,7 @@ async function generateChartImage(
 
       chartData.push(values);
 
-      const color = getSeriesColor(sheetData.sheetName);
+      const color = getSeriesColor(sheetData.color);
 
       series.push({
         label: sheetData.sheetName,
@@ -404,8 +395,8 @@ async function generateChartImage(
   }
 }
 
-// Create Auswertung (Analysis) sheet with combined data from all sheets
-async function createAuswertungSheet(
+// Create Analysis sheet with combined data from all sheets
+async function createAnalysisSheet(
   allSheetData: CombinedSheetData[],
   groupId: string,
 ): Promise<XLSX.WorkSheet> {
@@ -424,16 +415,6 @@ async function createAuswertungSheet(
   const endDate = new Date(endTime);
 
   // Format time range for title
-  const formatDateTime = (date: Date) =>
-    date.toLocaleString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-
   const timeRangeTitle = `${formatDateTime(startDate)} bis ${formatDateTime(endDate)}`;
 
   // Get user comments/logs from store
@@ -1024,167 +1005,6 @@ function createCombinedSheet(
   ];
 
   return worksheet;
-}
-
-// Generate statistics sheet for a graph line (kept for reference but not used)
-function createGraphLineStatsSheet(graphLine: {
-  graphTitle: string;
-  lineTitle: string;
-  series: TimeSeries;
-  color?: string;
-  unit?: Unit;
-  renderValue?: (value: number) => string;
-  config: GraphConfig;
-  targetLines: GraphLine[];
-}): any[][] {
-  const [timestamps, values] = seriesToUPlotData(graphLine.series.long);
-  const unitSymbol = renderUnitSymbol(graphLine.unit) || "";
-
-  const statsData = [
-    [`Graph Line Statistics: ${graphLine.lineTitle}`, ""],
-    ["Graph", graphLine.graphTitle],
-    ["Line Name", graphLine.lineTitle],
-    ["Line Color", graphLine.color || "Default"],
-    ["Generated", new Date()],
-    ["", ""],
-    ["Data Points Information", ""],
-    ["Total Data Points", timestamps.length.toString()],
-  ];
-
-  if (timestamps.length > 0) {
-    statsData.push(["Time Range Start", new Date(timestamps[0])]);
-    statsData.push([
-      "Time Range End",
-      new Date(timestamps[timestamps.length - 1]),
-    ]);
-
-    const duration = timestamps[timestamps.length - 1] - timestamps[0];
-    const durationHours = (duration / (1000 * 60 * 60)).toFixed(2);
-    statsData.push(["Duration (hours)", durationHours]);
-
-    if (values.length > 0) {
-      const minValue = Math.min(...values);
-      const maxValue = Math.max(...values);
-      const avgValue = values.reduce((a, b) => a + b, 0) / values.length;
-      const stdDev = Math.sqrt(
-        values.reduce((sum, val) => sum + Math.pow(val - avgValue, 2), 0) /
-          values.length,
-      );
-
-      statsData.push(["", ""], ["Value Statistics", ""]);
-      statsData.push([
-        `Minimum Value (${unitSymbol})`,
-        graphLine.renderValue
-          ? graphLine.renderValue(minValue)
-          : minValue.toFixed(3),
-      ]);
-      statsData.push([
-        `Maximum Value (${unitSymbol})`,
-        graphLine.renderValue
-          ? graphLine.renderValue(maxValue)
-          : maxValue.toFixed(3),
-      ]);
-      statsData.push([
-        `Average Value (${unitSymbol})`,
-        graphLine.renderValue
-          ? graphLine.renderValue(avgValue)
-          : avgValue.toFixed(3),
-      ]);
-      statsData.push([
-        `Standard Deviation (${unitSymbol})`,
-        graphLine.renderValue
-          ? graphLine.renderValue(stdDev)
-          : stdDev.toFixed(3),
-      ]);
-      statsData.push([
-        `Range (${unitSymbol})`,
-        graphLine.renderValue
-          ? graphLine.renderValue(maxValue - minValue)
-          : (maxValue - minValue).toFixed(3),
-      ]);
-
-      // Percentiles
-      const sortedValues = [...values].sort((a, b) => a - b);
-      const p25 = sortedValues[Math.floor(sortedValues.length * 0.25)];
-      const p50 = sortedValues[Math.floor(sortedValues.length * 0.5)];
-      const p75 = sortedValues[Math.floor(sortedValues.length * 0.75)];
-
-      statsData.push(["", ""], ["Percentiles", ""]);
-      statsData.push([
-        `25th Percentile (${unitSymbol})`,
-        graphLine.renderValue ? graphLine.renderValue(p25) : p25.toFixed(3),
-      ]);
-      statsData.push([
-        `50th Percentile/Median (${unitSymbol})`,
-        graphLine.renderValue ? graphLine.renderValue(p50) : p50.toFixed(3),
-      ]);
-      statsData.push([
-        `75th Percentile (${unitSymbol})`,
-        graphLine.renderValue ? graphLine.renderValue(p75) : p75.toFixed(3),
-      ]);
-    }
-  }
-
-  // Add target line information
-  if (graphLine.targetLines.length > 0) {
-    statsData.push(["", ""], ["Target Lines", ""]);
-    graphLine.targetLines.forEach((line, index) => {
-      statsData.push([
-        `Target Line ${index + 1}`,
-        line.label || `Line ${line.value}`,
-      ]);
-      statsData.push([
-        `  Value (${unitSymbol})`,
-        graphLine.renderValue
-          ? graphLine.renderValue(line.value)
-          : line.value.toFixed(3),
-      ]);
-      statsData.push([`  Type`, line.type || "reference"]);
-      statsData.push([`  Color`, line.color || "default"]);
-      statsData.push([`  Show`, line.show !== false ? "Yes" : "No"]);
-
-      if (line.type === "threshold" && values.length > 0) {
-        const withinThreshold = values.filter(
-          (val) => Math.abs(val - line.value) <= line.value * 0.05,
-        ).length;
-        const percentageWithin = (
-          (withinThreshold / values.length) *
-          100
-        ).toFixed(1);
-
-        statsData.push([
-          `  Points Within Threshold (5%)`,
-          `${withinThreshold} (${percentageWithin}%)`,
-        ]);
-
-        const differences = values.map((val) => Math.abs(val - line.value));
-        const minDifference = Math.min(...differences);
-        const maxDifference = Math.max(...differences);
-
-        statsData.push([
-          `  Closest Approach (${unitSymbol})`,
-          graphLine.renderValue
-            ? graphLine.renderValue(minDifference)
-            : minDifference.toFixed(3),
-        ]);
-        statsData.push([
-          `  Furthest Distance (${unitSymbol})`,
-          graphLine.renderValue
-            ? graphLine.renderValue(maxDifference)
-            : maxDifference.toFixed(3),
-        ]);
-      }
-
-      if (index < graphLine.targetLines.length - 1) {
-        statsData.push([""]);
-      }
-    });
-  } else {
-    statsData.push(["", ""], ["Target Lines", ""]);
-    statsData.push(["No target lines defined", ""]);
-  }
-
-  return statsData;
 }
 
 // Generate data sheet for a graph line
