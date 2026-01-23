@@ -577,10 +577,28 @@ async function createAnalysisSheet(
   sheetData.push(Array(columns.length).fill("")); // Empty row
   sheetData.push(Array(columns.length).fill("")); // Empty row
 
+  // Get environment info for version details
+  let versionInfo = "";
+  let commitInfo = "";
+  try {
+    const envInfo = await window.environment.getInfo();
+    if (envInfo.qitechOsGitAbbreviation) {
+      versionInfo = envInfo.qitechOsGitAbbreviation;
+    }
+    if (envInfo.qitechOsGitCommit) {
+      commitInfo = envInfo.qitechOsGitCommit.substring(0, 8); // First 8 chars of commit hash
+    }
+  } catch (error) {
+    console.warn("Failed to fetch environment info", error);
+  }
+
   // Software information
   sheetData.push(["Software Information", "", "", "", "", "", ""]);
   sheetData.push(["Software", "QiTech Control", "", "", "", "", ""]);
-  sheetData.push(["Version", "1.0.0", "", "", "", "", ""]);
+  sheetData.push(["Version", versionInfo || "Unknown", "", "", "", "", ""]);
+  if (commitInfo) {
+    sheetData.push(["Git Commit", commitInfo, "", "", "", "", ""]);
+  }
   sheetData.push([
     "Export Date",
     new Date().toLocaleString("de-DE"),
