@@ -91,3 +91,83 @@ To get started with actual hardware, check out these step-by-step tutorials:
 - **[Analog Input with EL3021](./minimal-example-el3021.md)** - Reading analog current measurements
 
 These examples provide complete hardware wiring diagrams and software setup instructions.
+
+
+# More Docs 
+
+- [x] [Architecture & Data Flow](./docs/architecture-overview.md)
+
+  - [x] Example Winder V2
+
+- [ ] Electron
+
+  - Folder Structure
+  - Routing with TanStack Router
+  - Design with Tailwind & Shadcn
+  - ...
+
+- [ ] Interfacing with Electron/Server
+
+  - [ ] SocketIO
+    - Machine Namespace
+    - Main Namespace
+  - [ ] REST
+    - Machine Mutations
+    - Write Device Identification
+
+- Server
+
+  - [x] [Threading](./docs/control-loop.md)
+  - [x] [Logging](./docs/logging.md)
+  - [ ] Control Loop Setup
+    - Control Loop Thread
+      - [ ] realtime
+    - Maindevice
+    - Group
+    - Extracting Device Identifications
+    - Identifying Groups
+    - Validating Machines
+    - Run Control Loop
+  - [x] [Control Loop](./docs/control-loop.md)
+  - [x] [Machine/Device Identification](./docs/identification.md)
+  - [ ] Machines
+    - When to create a new Machine?
+      - Versioning
+      - Code sharing
+    - Creating/Validating a Machine
+      - Validation
+      - Configuration
+  - [ ] Machine Implementation Guide
+    - Link: How to create a Device
+    - Link: How to create an Actor
+    - Link: How to create a Machine
+      - API (SocketIO + REST)
+      - Creation/Validation Logic
+        - Optional/Mandatory Devices
+        - Validate Devices
+      - Business Logic
+    - Link: How to create Machine Abstraction (Like Traverse/Puller/...)
+    - Forward `act` in winder.
+
+- [ ] Control Core
+
+  - [x] [Actors](./docs/actors.md)
+  - [ ] SocketIO
+    - Namespaces & Caching
+    - Joining leaving namespaces
+    - NamespaceId
+    - Caching
+      - Serverside Caching
+      - Clientside Caching
+  - [ ] REST
+
+- [x] Ethercat HAL
+
+  - [x] [Devices](./docs/devices.md)
+  - [x] [Configuration (CoE)](./docs/coe.md)
+  - [x] [IO](./docs/io.md)
+  - [x] [PDO](./docs/pdo.md)
+
+- [x] [Ethercat Basics](./docs/ethercat-basics.md)
+
+- [x] [NixOS Operating System](./docs/nixos/README.md)
