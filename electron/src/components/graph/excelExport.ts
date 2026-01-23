@@ -328,9 +328,12 @@ async function generateChartImage(
   sortedTimestamps: number[],
   startTime: number,
 ): Promise<string | null> {
+  let container: HTMLDivElement | null = null;
+  let plot: uPlot | null = null;
+
   try {
     // Create an off-screen div for the chart
-    const container = document.createElement("div");
+    container = document.createElement("div");
     container.style.width = "1200px";
     container.style.height = "600px";
     container.style.position = "absolute";
@@ -407,7 +410,7 @@ async function generateChartImage(
       },
     };
 
-    const plot = new uPlot(opts, chartData as uPlot.AlignedData, container);
+    plot = new uPlot(opts, chartData as uPlot.AlignedData, container);
 
     // Wait for render
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -415,22 +418,25 @@ async function generateChartImage(
     // Get the canvas element
     const canvas = container.querySelector("canvas");
     if (!canvas) {
-      document.body.removeChild(container);
       return null;
     }
 
     // Get the image data directly from uPlot's canvas
     const imageData = canvas.toDataURL("image/png");
 
-    // Clean up
-    plot.destroy();
-    document.body.removeChild(container);
-
     // Return base64 data (remove the data:image/png;base64, prefix)
     return imageData.split(",")[1];
   } catch (error) {
     console.error("Error generating chart image:", error);
     return null;
+  } finally {
+    // Ensure cleanup happens regardless of success or failure
+    if (plot) {
+      plot.destroy();
+    }
+    if (container && document.body.contains(container)) {
+      document.body.removeChild(container);
+    }
   }
 }
 
