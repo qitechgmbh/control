@@ -16,7 +16,6 @@ use machines::{
 };
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
-use utils::start_dnsmasq;
 
 use app_state::{HotThreadMessage, SharedState};
 use ethercat::ethercat_discovery_info::send_ethercat_discovering;
@@ -154,7 +153,7 @@ pub async fn start_interface_discovery(
                 e
             );
             // if this doesnt work, unlucky
-            let _ = start_dnsmasq();
+            // let _ = start_dnsmasq();
         }
     }
     send_ethercat_found(app_state.clone(), &interface).await;

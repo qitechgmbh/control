@@ -49,7 +49,7 @@ pub const IP20_TEST_MACHINE: u16 = 0x0034;
 pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
 pub const WAGO_AI_TEST_MACHINE: u16 = 0x0036;
 pub const DIGITAL_INPUT_TEST_MACHINE: u16 = 0x0040;
-
+pub const SENSOR_MACHINE: u16 = 0x0044; 
 use serde_json::Value;
 use smol::lock::RwLock;
 
