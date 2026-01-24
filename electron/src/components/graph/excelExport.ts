@@ -431,8 +431,26 @@ async function generateChartImage(
 
     plot = new uPlot(opts, chartData as uPlot.AlignedData, container);
 
-    // Wait for render
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // Wait for chart to render using requestAnimationFrame for more reliable timing
+    await new Promise<void>((resolve) => {
+      const checkCanvas = () => {
+        if (!container) {
+          resolve();
+          return;
+        }
+        const canvas = container.querySelector("canvas");
+        if (canvas && canvas.width > 0 && canvas.height > 0) {
+          // Use another frame to ensure rendering is complete
+          requestAnimationFrame(() => resolve());
+        } else {
+          requestAnimationFrame(checkCanvas);
+        }
+      };
+      checkCanvas();
+      
+      // Fallback timeout to prevent infinite waiting
+      setTimeout(() => resolve(), 500);
+    });
 
     // Get the canvas element
     const canvas = container.querySelector("canvas");
