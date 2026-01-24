@@ -16,7 +16,7 @@ use crate::{
 use crate::extruder1::ExtruderV2;
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
-    aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, laser::LaserMachine,
+    aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, laser::LaserMachine, pelletizer::Pelletizer,
     winder2::Winder2,
 };
 
@@ -117,6 +117,9 @@ lazy_static! {
 
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<LaserMachine>(LaserMachine::MACHINE_IDENTIFICATION);
+
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<Pelletizer>(Pelletizer::MACHINE_IDENTIFICATION);
 
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<BufferV1>(BufferV1::MACHINE_IDENTIFICATION);

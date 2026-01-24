@@ -302,6 +302,18 @@ export const laser1: MachineProperties = {
   device_roles: [],
 };
 
+export const pelletizer: MachineProperties = {
+  name: "Pelletizer Machine",
+  version: "V1",
+  slug: "pelletizer1",
+  icon: "lu:CircleDotDashed",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x000b,
+  },
+  device_roles: [],
+};
+
 export const mock1: MachineProperties = {
   name: "Mock",
   version: "V1",
