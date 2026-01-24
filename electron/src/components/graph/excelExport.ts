@@ -4,7 +4,7 @@ import uPlot from "uplot";
 import { TimeSeries, seriesToUPlotData } from "@/lib/timeseries";
 import { renderUnitSymbol, Unit } from "@/control/units";
 import { GraphConfig, SeriesData, GraphLine } from "./types";
-import { useLogsStore } from "@/stores/logsStore";
+import { LogEntry } from "@/stores/logsStore";
 
 export type GraphExportData = {
   config: GraphConfig;
@@ -40,6 +40,7 @@ function formatDateTime(date: Date): string {
 export async function exportGraphsToExcel(
   graphDataMap: Map<string, () => GraphExportData | null>,
   groupId: string,
+  logs: LogEntry[] = [],
 ): Promise<void> {
   try {
     // Filter out invalid series IDs (those without "-series-")
@@ -131,7 +132,8 @@ export async function exportGraphsToExcel(
     // Create Analysis sheet with combined data and chart
     const analysisSheet = await createAnalysisSheet(
       allSheetData,
-      groupId
+      groupId,
+      logs
     );
     XLSX.utils.book_append_sheet(workbook, analysisSheet, "Analysis");
 
@@ -481,6 +483,7 @@ async function generateChartImage(
 async function createAnalysisSheet(
   allSheetData: CombinedSheetData[],
   groupId: string,
+  logs: LogEntry[] = [],
 ): Promise<XLSX.WorkSheet> {
   // Find all unique timestamps across all series
   const allTimestamps = new Set<number>();
@@ -499,12 +502,10 @@ async function createAnalysisSheet(
   // Format time range for title
   const timeRangeTitle = `${formatDateTime(startDate)} bis ${formatDateTime(endDate)}`;
 
-  // Get user comments/logs from store
   // Filter for logs that are explicitly marked as user comments:
   // - Must be within the time range
   // - Must have level "info" (user annotations are logged as info)
   // - Must explicitly contain the word "comment" to distinguish from other info logs
-  const logs = useLogsStore.getState().entries;
   const relevantComments = logs.filter(
     (log) =>
       log.timestamp.getTime() >= startTime &&
