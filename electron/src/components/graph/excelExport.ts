@@ -674,77 +674,34 @@ async function createAnalysisSheet(
   // Add chart creation instructions (kept as fallback)
   sheetData.push(Array(columns.length).fill("")); // Empty row
   sheetData.push(Array(columns.length).fill("")); // Empty row
-  sheetData.push([
-    "Chart Instructions",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-  ]);
+  sheetData.push(["Chart Instructions", ...Array(columns.length - 1).fill("")]);
   sheetData.push([
     "1. Select all data from row " + dataStartRow + " to the last data row",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
+    ...Array(columns.length - 1).fill(""),
   ]);
   sheetData.push([
     "2. Insert > Chart > Scatter Chart with Straight Lines and Markers",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
+    ...Array(columns.length - 1).fill(""),
   ]);
   sheetData.push([
     "3. X-axis: Time (seconds), Y-axis: All measurement columns",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
+    ...Array(columns.length - 1).fill(""),
   ]);
   sheetData.push([
     "4. Set X-axis range: 0 to " + maxSeconds,
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
+    ...Array(columns.length - 1).fill(""),
   ]);
   sheetData.push([
     "5. Set Y-axis range: 0 to 1000",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
+    ...Array(columns.length - 1).fill(""),
   ]);
   sheetData.push([
     "6. Position legend at bottom",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
+    ...Array(columns.length - 1).fill(""),
   ]);
   sheetData.push([
     "7. Chart Title: " + groupId + " - " + timeRangeTitle,
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
+    ...Array(columns.length - 1).fill(""),
   ]);
 
   return worksheet;
