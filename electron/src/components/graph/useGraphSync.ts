@@ -126,7 +126,10 @@ export function useGraphSync(exportGroupId?: string) {
       console.warn("No graphs registered for export");
       return;
     }
-    exportGraphsToExcel(graphDataRef.current, exportGroupId || "synced-graphs");
+    exportGraphsToExcel(graphDataRef.current, exportGroupId || "synced-graphs")
+      .catch((error) => {
+        console.error("Failed to export graphs:", error);
+      });
   }, [exportGroupId]);
 
   const handleTimeWindowChange = useCallback(
