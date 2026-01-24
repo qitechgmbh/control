@@ -99,7 +99,7 @@ impl MachineApi for Pelletizer {
             }
             Mutation::SetFrequencyTarget(frequency) => 
             {
-                self.set_frequency(frequency);
+                self.set_frequency(frequency as u16 * 10);
             }
             Mutation::SetAccelerationLevel(speed) => 
             {

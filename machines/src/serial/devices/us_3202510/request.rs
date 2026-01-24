@@ -20,7 +20,7 @@ pub enum RequestType
 pub enum Request
 {
     RefreshStatus,
-    SetFrequency(u8),
+    SetFrequency(u16),
 }
 
 #[derive(Debug)]

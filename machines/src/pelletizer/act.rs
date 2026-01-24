@@ -1,5 +1,6 @@
 use std::time::{Duration, Instant};
 
+use serde::de::VariantAccess;
 use units::frequency::hertz;
 
 use crate::MachineAct;
@@ -19,7 +20,7 @@ impl MachineAct for Pelletizer
 
         let should_emit =
             now.duration_since(self.last_measurement_emit)
-                > Duration::from_secs_f64(1.0 / 1.0);
+                > Duration::from_secs_f64(1.0 / 30.0);
 
         {
             let mut inverter = smol::block_on(async {
@@ -28,12 +29,14 @@ impl MachineAct for Pelletizer
 
             if let Some(value) = self.mutation_request.frequency 
             {
+                tracing::warn!("Setting to: {}", value);
+
                 inverter.set_frequency_target(units::Frequency::new::<hertz>(value as f64));
                 self.mutation_request.frequency = None;
             }
 
             if should_emit {
-                inverter.refresh_status();
+                // inverter.refresh_status();
             }
 
             inverter.update();

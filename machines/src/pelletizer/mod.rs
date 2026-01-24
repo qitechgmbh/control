@@ -50,7 +50,7 @@ pub struct Pelletizer
 pub struct MutationRequests
 {
     run_mode:          Option<u8>,
-    frequency:         Option<u8>,
+    frequency:         Option<u16>,
     accleration_level: Option<u8>,
     decleration_level: Option<u8>,
 }
@@ -106,9 +106,9 @@ impl Pelletizer
         machine: MACHINE_PELLETIZER,
     };
 
-    pub fn set_frequency(&mut self, frequency: u8)
+    pub fn set_frequency(&mut self, frequency: u16)
     {
-        self.mutation_request.frequency = Some(frequency.clamp(0, 99));
+        self.mutation_request.frequency = Some(frequency);
     }
     
     pub fn set_direction(&mut self, forward: bool)

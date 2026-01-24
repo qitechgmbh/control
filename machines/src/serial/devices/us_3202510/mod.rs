@@ -151,10 +151,10 @@ impl US3202510
     pub fn set_frequency_target(&mut self, frequency: units::Frequency)
     {
 
-        tracing::error!("Set frequency");
+        tracing::error!("Set frequency; {:?}", frequency);
 
         self.config.frequency = frequency;
-        let as_hertz_u8 = frequency.get::<hertz>().round().clamp(0.0, 99.0) as u8;
+        let as_hertz_u8 = frequency.get::<hertz>().round().clamp(0.0, 500.0) as u16;
         self.queue_request(Request::SetFrequency(as_hertz_u8));
     }
 
