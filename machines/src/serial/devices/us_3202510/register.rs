@@ -1,22 +1,22 @@
-use proc_macros::EnumCount;
+use strum_macros::{EnumCount};
 
 #[derive(Debug, Clone, Copy, EnumCount)]
 pub enum HoldingRegister
 {
     /// Register 0x0002
-    SetFrequency,
+    SetFrequency = 0x2,
 
     /// Register 0x0003
     #[allow(dead_code)]
-    RunCommand,
+    RunCommand = 0x3,
 
     /// Register 0x0004
     #[allow(dead_code)]
-    AccelerationTime,
+    AccelerationTime = 0x4,
 
     /// Register 0x0005
     #[allow(dead_code)]
-    DecelerationTime,
+    DecelerationTime = 0x5,
 }
 
 #[derive(Debug, Clone, Copy, EnumCount)]

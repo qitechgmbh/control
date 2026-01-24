@@ -70,7 +70,7 @@ pub struct PelletMachineNamespace {
     pub namespace: Option<Namespace>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 /// Mutation for controlling the Pellet machine
 enum Mutation 
 {
@@ -88,6 +88,8 @@ impl MachineApi for Pelletizer {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> 
     {
         let mutation: Mutation = serde_json::from_value(request_body)?;
+
+        tracing::error!("Received: {:?}", &mutation);
 
         match mutation 
         {

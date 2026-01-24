@@ -501,6 +501,13 @@ export const rootTree = RootRoute.addChildren([
         laser1GraphsRoute,
         laser1PresetsRoute,
       ]),
+
+      pelletizer1SerialRoute.addChildren([
+        pelletizer1ControlRoute,
+        pelletizer1GraphsRoute,
+        pelletizer1PresetsRoute,
+      ]),
+
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
 
       analogInputTestMachineSerialRoute.addChildren([

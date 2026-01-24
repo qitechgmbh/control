@@ -1599,6 +1599,8 @@ dependencies = [
  "serialport",
  "smol",
  "socketioxide",
+ "strum",
+ "strum_macros 0.26.4",
  "textplots",
  "tonic",
  "tracing",
@@ -1689,12 +1691,12 @@ dependencies = [
 [[package]]
 name = "modbus"
 version = "0.1.0"
-source = "git+https://github.com/just-some-entity/modbus-rs.git#06f1ea83bd44097fa0f9f7abe54d51ace7ef8d4e"
+source = "git+https://github.com/just-some-entity/modbus-rs.git#ae86c91cfeda90d4f713e925a0d430c74cd3e2a7"
 dependencies = [
  "crc",
  "heapless 0.9.2",
  "libc",
- "strum_macros",
+ "strum_macros 0.27.2",
 ]
 
 [[package]]
@@ -2587,6 +2589,25 @@ name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
+
+[[package]]
+name = "strum"
+version = "0.26.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fec0f0aef304996cf250b31b5a10dee7980c85da9d759361292b8bca5a18f06"
+
+[[package]]
+name = "strum_macros"
+version = "0.26.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c6bee85a5a24955dc440386795aa378cd9cf82acd5f764469152d2270e581be"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn 2.0.111",
+]
 
 [[package]]
 name = "strum_macros"

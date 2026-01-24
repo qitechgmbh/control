@@ -1,4 +1,6 @@
 
+use anyhow::anyhow;
+use modbus::{Request, request::ReadRegisters, rtu::backends::LinuxTransport};
 use smol::lock::RwLock;
 
 use control_core::{
@@ -6,19 +8,17 @@ use control_core::{
 };
 use units::{ConstZero, Frequency};
 
-use anyhow::anyhow;
-
 use super::US3202510;
 
 use crate::{
-    MACHINE_PELLET, 
+    MACHINE_PELLETIZER, 
     SerialDevice, 
     SerialDeviceNew, 
     SerialDeviceNewParams, 
     VENDOR_QITECH, 
     machine_identification::{
         DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification, DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique
-    }, serial::{devices::us_3202510::{Config, ModbusInterface, RotationState, request}, interfaces::modbus_rtu}
+    }, serial::devices::us_3202510::{Config, ModbusInterface, RotationState, request, transport::CustomTransport}
 };
 
 use serialport::{DataBits, FlowControl, Parity, StopBits};
@@ -43,7 +43,7 @@ impl SerialDeviceNew for US3202510
                 machine_identification_unique: MachineIdentificationUnique {
                     machine_identification: MachineIdentification {
                         vendor: VENDOR_QITECH,
-                        machine: MACHINE_PELLET,
+                        machine: MACHINE_PELLETIZER,
                     },
                     serial,
                 },
@@ -56,19 +56,33 @@ impl SerialDeviceNew for US3202510
             ),
         };
         
-        let interface_config = modbus_rtu::Config {
-            slave_id:       1,
-            path:           params.path.clone(),
-            data_bits:      DataBits::Eight,
-            parity:         Parity::None,
-            stop_bits:      StopBits::One,
-            flow_control:   FlowControl::None,
-            timeout:        Duration::from_millis(1000),
-            baudrate:       9600,
-            machine_operation_delay: Duration::from_millis(100),
-        };
+        // let interface_config = modbus_rtu::Config {
+        //     slave_id:       1,
+        //     path:           params.path.clone(),
+        //     data_bits:      DataBits::Eight,
+        //     parity:         Parity::None,
+        //     stop_bits:      StopBits::One,
+        //     flow_control:   FlowControl::None,
+        //     timeout:        Duration::from_millis(1000),
+        //     baudrate:       9600,
+        //     machine_operation_delay: Duration::from_millis(100),
+        // };
         
-        let interface = ModbusInterface::new(interface_config, &request::REGISTRY)?;
+       let mut port = serialport::new(params.path.clone(), 9600).data_bits(DataBits::Eight).parity(Parity::None).open().expect("");
+
+
+        let transport = CustomTransport::new(port, 1);
+        
+        let mut interface = ModbusInterface::new(transport);
+        
+        // let request: [u8; 8] = [
+        //     0x01, // slave id
+        //     0x04, // Read Input Registers
+        //     0x00, 0x08, // start address
+        //     0x00, 0x06, // quantity
+        //     0xB1, 0xCA, // CRC (lo, hi)
+        // ];
+
 
         let _self = Arc::new(RwLock::new(Self {
             path: params.path.clone(),

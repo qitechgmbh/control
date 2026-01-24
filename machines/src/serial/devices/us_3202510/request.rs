@@ -1,9 +1,13 @@
+use modbus::request::WriteRegister;
+use strum::EnumCount;
+use strum_macros::{EnumCount};
+
 use crate::serial::devices::us_3202510::register::HoldingRegister;
 use crate::serial::devices::us_3202510::register::InputRegister;
 
-use modbus::Request as ModbusRequest;
+use modbus::Request as InterfaceRequest;
 
-use proc_macros::{self, EnumCount};
+use modbus::request::ReadRegisters;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, EnumCount)]
 pub enum RequestType
@@ -19,6 +23,13 @@ pub enum Request
     SetFrequency(u8),
 }
 
+#[derive(Debug)]
+pub struct RequestData
+{
+    pub priority: u32,
+    pub payload:  InterfaceRequest,
+}
+
 impl Request
 {
     pub fn tag(&self) -> RequestType
@@ -30,53 +41,43 @@ impl Request
         }
     }
     
-    pub fn to_interface_request(&self) -> InterfaceRequest
+    pub fn to_interface_request(&self) -> RequestData
     {
         match self
         {
             Request::RefreshStatus =>
             {
-                InterfaceRequest {
-                    type_id: self.tag() as usize,
-                    payload: RequestPayload::ReadInputRegisters(ReadRegisters {
-                        start_address: InputRegister::OFFSET,
-                        quantity:      InputRegister::COUNT as u16,
-                    }),
+                let payload = 
+                    InterfaceRequest::ReadInputRegisters(
+                        ReadRegisters 
+                        { 
+                            start_address: InputRegister::OFFSET, 
+                            quantity:      InputRegister::COUNT as u16,
+                        }
+                    );
+
+                RequestData {
+                    priority: 10,
+                    payload,
                 }
-            },
+            }
+
             Request::SetFrequency(value) =>
             {
-                InterfaceRequest {
-                    type_id: self.tag() as usize,
-                    payload: RequestPayload::PresetHoldingRegister(WriteRegister {
-                        address:  HoldingRegister::SetFrequency.address(),
-                        value:    *value as u16,
-                    }),
+                let payload = 
+                    InterfaceRequest::PresetHoldingRegister(
+                        WriteRegister 
+                        { 
+                            address: HoldingRegister::SetFrequency as u16, 
+                            value:   *value as u16,
+                        }
+                    );
+
+                RequestData {
+                    priority: 10,
+                    payload,
                 }
-            },
+            }
         }
     }
 }
-
-impl RequestType
-{
-    const fn registry_entry(&self) -> RequestRegistryEntry
-    {
-        match self
-        {
-            Self::RefreshStatus => RequestRegistryEntry { 
-                priority:    0,
-                extra_delay: 0,
-            },
-            Self::SetFrequency => RequestRegistryEntry { 
-                priority:    1,
-                extra_delay: 0,
-            },
-        }
-    }
-}
-
-pub(crate) const REGISTRY: [RequestRegistryEntry; RequestType::COUNT] = [
-    RequestType::RefreshStatus.registry_entry(),
-    RequestType::SetFrequency.registry_entry(),
-];

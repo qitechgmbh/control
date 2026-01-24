@@ -17,7 +17,7 @@ pub async fn find_ethercat_interface() -> String {
                 return interface;
             }
             Err(e) => {
-                tracing::warn!("No working interface found: {}. Retrying...", e);
+                // tracing::warn!("No working interface found: {}. Retrying...", e);
                 Timer::after(Duration::from_secs(1)).await;
             }
         }

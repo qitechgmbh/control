@@ -303,7 +303,7 @@ export const laser1: MachineProperties = {
 };
 
 export const pelletizer: MachineProperties = {
-  name: "Pelletizer Machine",
+  name: "Pelletizer",
   version: "V1",
   slug: "pelletizer1",
   icon: "lu:CircleDotDashed",
@@ -585,6 +585,7 @@ export const machineProperties: MachineProperties[] = [
   extruder3,
   extruder2,
   laser1,
+  pelletizer,
   mock1,
   buffer1,
   wagoPower1,

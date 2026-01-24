@@ -52,7 +52,7 @@ fn is_ethernet(interface: &str) -> std::io::Result<bool> {
 }
 
 pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
-    tracing::info!("Discovering EtherCAT interface...");
+    //tracing::info!("Discovering EtherCAT interface...");
 
     // Set up a custom panic hook that suppresses panic output
     let default_hook = std::panic::take_hook();

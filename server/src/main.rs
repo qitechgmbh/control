@@ -3,16 +3,9 @@ use crate::{
     socketio::main_namespace::machines_event::MachineObj,
 };
 use machines::{
-    AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
-    MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
-    SerialDeviceNewParams,
-    laser::LaserMachine,
-    machine_identification::{
+    AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial, MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew, SerialDeviceNewParams, laser::LaserMachine, machine_identification::{
         DeviceIdentification, DeviceIdentificationIdentified, MachineIdentificationUnique,
-    },
-    registry::{MACHINE_REGISTRY, MachineRegistry},
-    serial::{devices::laser::Laser, init::SerialDetection},
-    winder2::api::GenericEvent,
+    }, pelletizer::Pelletizer, registry::{MACHINE_REGISTRY, MachineRegistry}, serial::{devices::{laser::Laser, us_3202510::US3202510}, init::SerialDetection}, winder2::api::GenericEvent
 };
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -190,6 +183,7 @@ pub async fn handle_serial_device_hotplug(
         let serial_params = SerialDeviceNewParams {
             path: path.unwrap(),
         };
+
         match US3202510::new_serial(&serial_params) {
             Ok((device_identification, serial_device)) => {
                 add_serial_device(

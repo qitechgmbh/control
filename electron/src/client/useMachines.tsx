@@ -30,6 +30,9 @@ export function useMachines(): UseMachine[] {
           const machinePreset = getMachineProperties(
             machine.machine_identification_unique.machine_identification,
           );
+
+          console.log("Machine!: {}", machine);
+
           const vendorPreset = getVendorProperties(
             machinePreset!.machine_identification.vendor,
           );

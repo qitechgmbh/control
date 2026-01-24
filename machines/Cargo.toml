@@ -34,6 +34,10 @@ tonic = { version = "0.13.1", optional = true }
 # modbus interfaces
 modbus = { git = "https://github.com/just-some-entity/modbus-rs.git", features = ["linux-rtu-transport"] }
 
+# enum stuff
+strum = "0.26"
+strum_macros = "0.26"
+
 [dev-dependencies]
 approx = "0.5.1"
 textplots = "0.8.7"

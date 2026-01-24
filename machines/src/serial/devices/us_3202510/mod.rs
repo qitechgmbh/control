@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 // use modbus::ExceptionCode
 
-type ModbusInterface = modbus::rtu::Interface<LinuxTransport, (), 25>;
+type ModbusInterface = modbus::rtu::Interface<CustomTransport, (), 25>;
 
 // internal deps
 pub use request::Request;
@@ -17,7 +17,9 @@ mod register;
 mod request;
 mod serial_device;
 
-use crate::serial::{devices::us_3202510::register::InputRegister};
+mod transport;
+
+use crate::serial::devices::us_3202510::{register::InputRegister, transport::CustomTransport};
 
 #[derive(Debug)]
 pub struct US3202510
@@ -71,18 +73,25 @@ impl US3202510
 {
     pub fn update(&mut self)
     {
-        match self.interface.poll_result()
+        match self.interface.await_result()
         {
-            Ok(maybe_result) => 
+            Ok(result) => 
             {
-                if let Some(result) = maybe_result
-                {
-                    self.handle_result(result);
-                }
+                tracing::error!("has result: {:?}", &result);
+
+                self.handle_result(result);
             },
             Err(e) => 
             {
-                tracing::error!("Error reciving result: {:?}", e);
+                match e 
+                {
+                    modbus::rtu::ReceiveError::NoPendingRequest => {},
+
+                    e => 
+                    {
+                        //tracing::error!("Error reciving result: {:?}", e);
+                    }
+                }
             },
         }
         
@@ -93,7 +102,10 @@ impl US3202510
         {
             match self.interface.dispatch_next_request()
             {
-                Ok(_) => {  },
+                Ok(_) => 
+                {  
+                    // tracing::error!("Success sending request: {:?}", self.interface);
+                },
                 Err(e) => 
                 { 
                     match e
@@ -116,7 +128,19 @@ impl US3202510
     
     fn queue_request(&mut self, request: Request)
     {
-        self.interface.queue_request(request.to_interface_request());
+        let data = request.to_interface_request();
+        match self.interface.queue_request((), data.payload, data.priority)
+        {
+            Ok(_) => {},
+            Err(x) => 
+            {
+                match x
+                {
+                    modbus::QueueItemError::QueueFull     => { tracing::error!("Failed to put item into queue!"); },
+                    modbus::QueueItemError::DuplicateItem => { tracing::error!("Failed to put item into queue!"); },
+                }
+            },
+        }
     }
     
     pub fn refresh_status(&mut self)
