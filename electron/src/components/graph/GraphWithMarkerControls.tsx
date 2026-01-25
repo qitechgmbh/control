@@ -26,32 +26,51 @@ type GraphWithMarkerControlsProps = {
 
 function createMarkerElement(
   timestamp: number,
-  value: number,
   name: string,
+  value: number,
+  graphMin: number,
+  graphMax: number,
   startTime: number,
   endTime: number,
   graphWidth: number,
   graphHeight: number,
 ) {
-  // Calculate the position of the timestamp
+  // Calculate the X position of the timestamp
   const ratio = (timestamp - startTime) / (endTime - startTime);
   const xPos = Math.min(Math.max(ratio, 0), 1) * graphWidth;
-  const yPos = graphHeight - value;
 
+  // Calculate the Y position of the value (from bottom of graph)
+  const normalizedValue = (value - graphMin) / (graphMax - graphMin);
+  const valueY = graphHeight - normalizedValue * graphHeight;
+
+  // Create vertical line that spans full height (shows time position)
   const line = document.createElement("div");
   line.style.position = "absolute";
   line.style.left = `${xPos}px`;
-  line.style.top = `${yPos}px`;
-  line.style.height = `${value}px`;
+  line.style.top = "0px";
+  line.style.height = `${graphHeight}px`;
   line.style.width = "2px";
   line.style.background = "rgba(0, 0, 0, 0.5)";
   line.className = "vertical-marker";
+
+  // Create a point at the actual data value position
+  const point = document.createElement("div");
+  point.style.position = "absolute";
+  point.style.left = `${xPos}px`;
+  point.style.top = `${valueY}px`;
+  point.style.width = "8px";
+  point.style.height = "8px";
+  point.style.borderRadius = "50%";
+  point.style.background = "rgba(0, 0, 0, 0.8)";
+  point.style.transform = "translate(-50%, -50%)";
+  point.style.border = "2px solid white";
+  point.className = "marker-point";
 
   const label = document.createElement("div");
   label.textContent = name;
   label.style.position = "absolute";
   label.style.left = `${xPos}px`;
-  label.style.top = `${yPos - 20}px`;
+  label.style.top = `${graphHeight + 5}px`;
   label.style.transform = "translateX(-50%)";
   label.style.color = "black";
   label.style.padding = "2px 4px";
@@ -59,7 +78,7 @@ function createMarkerElement(
   label.style.whiteSpace = "nowrap";
   label.className = "marker-label";
 
-  return { line, label };
+  return { line, point, label };
 }
 
 export function GraphWithMarkerControls({
@@ -73,20 +92,71 @@ export function GraphWithMarkerControls({
 }: GraphWithMarkerControlsProps) {
   const graphWrapperRef = useRef<HTMLDivElement | null>(null);
   const [markerName, setMarkerName] = useState("");
+  
+  // Load markers from localStorage on mount and clean up old ones
+  const loadMarkersFromStorage = useCallback((): {
+    timestamp: number;
+    name: string;
+    value: number;
+  }[] => {
+    try {
+      const storageKey = `graph-markers-${graphId}`;
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const allMarkers: {
+          timestamp: number;
+          name: string;
+          value: number;
+        }[] = JSON.parse(stored);
+        
+        // Remove markers older than 7 days to save storage space
+        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const recentMarkers = allMarkers.filter(
+          (marker) => marker.timestamp >= sevenDaysAgo,
+        );
+        
+        // Limit to max 100 markers per graph to prevent storage bloat
+        const maxMarkers = 100;
+        const limitedMarkers =
+          recentMarkers.length > maxMarkers
+            ? recentMarkers.slice(-maxMarkers)
+            : recentMarkers;
+        
+        // Save cleaned markers back if we removed any
+        if (limitedMarkers.length !== allMarkers.length) {
+          localStorage.setItem(storageKey, JSON.stringify(limitedMarkers));
+        }
+        
+        return limitedMarkers;
+      }
+    } catch (error) {
+      console.warn("Failed to load markers from localStorage:", error);
+    }
+    return [];
+  }, [graphId]);
+
   const [markers, setMarkers] = useState<
     { timestamp: number; name: string; value: number }[]
-  >([]);
+  >(loadMarkersFromStorage);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const dynamicMarkerLines = markers.map((marker, index) => ({
-    type: "user_marker" as const,
-    value: marker.value,
-    label: marker.name,
-    color: "#ff0000",
-    width: 2,
-    show: true,
-    markerTimestamp: marker.timestamp,
-  }));
+  // Save markers to localStorage whenever they change, with limits
+  useEffect(() => {
+    try {
+      const storageKey = `graph-markers-${graphId}`;
+      
+      // Limit to max 100 markers per graph
+      const maxMarkers = 100;
+      const markersToSave =
+        markers.length > maxMarkers ? markers.slice(-maxMarkers) : markers;
+      
+      localStorage.setItem(storageKey, JSON.stringify(markersToSave));
+    } catch (error) {
+      console.warn("Failed to save markers to localStorage:", error);
+    }
+  }, [markers, graphId]);
+
+  // Markers are rendered as overlay elements, not as graph lines
 
   // Time Tick for forcing marker redraw
   const [timeTick, setTimeTick] = useState(0);
@@ -127,9 +197,9 @@ export function GraphWithMarkerControls({
     const overlayContainer = chartContainer.parentElement;
     if (!overlayContainer) return;
 
-    // Remove previous markers and labels from the overlay container
+    // Remove previous markers, points and labels from the overlay container
     overlayContainer
-      .querySelectorAll(".vertical-marker, .marker-label")
+      .querySelectorAll(".vertical-marker, .marker-point, .marker-label")
       .forEach((el) => el.remove());
 
     // Get the visible time window
@@ -176,30 +246,15 @@ export function GraphWithMarkerControls({
       graphMax = 1;
     }
 
-    markers.forEach(({ timestamp, name }) => {
+    markers.forEach(({ timestamp, name, value }) => {
       if (timestamp >= startTime && timestamp <= endTime) {
-        // Find the data point closest to the marker timestamp to get the correct Y-value
-        const validValues = currentTimeSeries.long.values.filter(
-          (v): v is TimeSeriesValue => v !== null,
-        );
-        if (validValues.length === 0) return;
-
-        const closest = validValues.reduce((prev, curr) =>
-          Math.abs(curr.timestamp - timestamp) <
-          Math.abs(prev.timestamp - timestamp)
-            ? curr
-            : prev,
-        );
-
-        // Calculate the Y-position in pixels from the bottom of the chart area
-        const normalizedValue =
-          (closest.value - graphMin) / (graphMax - graphMin);
-        const valueY = normalizedValue * graphHeight;
-
-        const { line, label } = createMarkerElement(
+        // Create marker element (full height line + point at data value)
+        const { line, point, label } = createMarkerElement(
           timestamp,
-          valueY,
           name,
+          value,
+          graphMin,
+          graphMax,
           startTime,
           endTime,
           graphWidth,
@@ -207,6 +262,7 @@ export function GraphWithMarkerControls({
         );
 
         overlayContainer.appendChild(line);
+        overlayContainer.appendChild(point);
         overlayContainer.appendChild(label);
       }
     });
@@ -218,10 +274,8 @@ export function GraphWithMarkerControls({
     syncHook.controlProps.timeWindow,
   ]);
 
-  const finalConfig = {
-    ...config,
-    lines: [...(config.lines || []), ...dynamicMarkerLines],
-  };
+  // Use original config without adding marker lines (markers are overlay elements)
+  const finalConfig = config;
 
   return (
     <div className="flex flex-col gap-2">
