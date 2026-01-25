@@ -4,6 +4,7 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { Terminal } from "@/components/Terminal";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { UpdateProgressBar } from "@/components/UpdateProgressBar";
+import { Icon } from "@/components/Icon";
 import { updateExecute, updateCancelWithStore } from "@/helpers/update_helpers";
 import { useUpdateStore } from "@/stores/updateStore";
 import { useSearch } from "@tanstack/react-router";
@@ -54,9 +55,6 @@ export function UpdateExecutePage() {
       commit: search.commit,
     };
 
-    // Show confirmation that update has started
-    toast.info("Update started. This may take approximately 5 minutes.");
-
     initializeSteps();
     startUpdate();
     // Perhaps we just need to clear the logs ?
@@ -91,26 +89,40 @@ export function UpdateExecutePage() {
     <Page>
       <SectionTitle title="Apply Update" />
 
-      <div className="flex flex-row gap-4">
-        <TouchButton
-          className="w-max"
-          icon="lu:CircleFadingArrowUp"
-          onClick={handleClick}
-          disabled={isUpdating}
-          isLoading={isUpdating}
-        >
-          Apply Update
-        </TouchButton>
-        {isUpdating && (
-          <TouchButton
-            className="w-max"
-            icon="lu:X"
-            onClick={handleCancel}
-            variant="destructive"
-          >
-            Cancel Update
-          </TouchButton>
-        )}
+      <div className="flex flex-col gap-4">
+        {/* Buttons and Time Estimate - same row */}
+        <div className="flex flex-row items-center gap-4">
+          <div className="flex flex-row gap-4">
+            <TouchButton
+              className="w-max"
+              icon="lu:CircleFadingArrowUp"
+              onClick={handleClick}
+              disabled={isUpdating}
+              isLoading={isUpdating}
+            >
+              Apply Update
+            </TouchButton>
+            {isUpdating && (
+              <TouchButton
+                className="w-max"
+                icon="lu:X"
+                onClick={handleCancel}
+                variant="destructive"
+              >
+                Cancel Update
+              </TouchButton>
+            )}
+          </div>
+          {/* Time Estimate - shown during update, at same height as buttons */}
+          {isUpdating && (
+            <div className="ml-auto flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 dark:border-blue-800 dark:bg-blue-950/30">
+              <Icon name="lu:Clock" className="size-4 text-blue-800 dark:text-blue-200" />
+              <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                This may take approximately 5 minutes
+              </span>
+            </div>
+          )}
+        </div>
       </div>
       {currentUpdateInfo && (
         <Alert title="Update Information" variant="info">
