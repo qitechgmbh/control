@@ -1,5 +1,4 @@
 import * as XLSX from "xlsx";
-// @ts-expect-error - ExcelJS types not installed
 import ExcelJS from "exceljs";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { renderUnitSymbol } from "@/control/units";
