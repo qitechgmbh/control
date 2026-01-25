@@ -1,8 +1,10 @@
 import React, { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useExtruder3Namespace } from "./extruder3Namespace";
+import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import type { MachineIdentificationUnique } from "@/machines/types";
 import { Icon } from "@/components/Icon";
+import { z } from "zod";
 
 /**
  * Global manager that toasts heating fault events.
@@ -28,9 +30,13 @@ function HeatingFaultToastWatcher({
   machineIdentification: MachineIdentificationUnique;
 }) {
   const { state } = useExtruder3Namespace(machineIdentification);
+  const { request: requestAcknowledgeHeatingFault } = useMachineMutation(
+    z.object({ AcknowledgeHeatingFault: z.literal(true) }),
+  );
 
   // Deduplicate toasts by event timestamp
   const lastToastTs = useRef<number | string | null>(null);
+  const currentToastId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!state) return;
@@ -40,7 +46,6 @@ function HeatingFaultToastWatcher({
     const faultAcknowledged =
       (state as any)?.data?.heating_fault_state?.fault_acknowledged;
     const isDefault = !!(state as any)?.data?.is_default_state;
-    const toastId = `heating-fault-${faultZone}-${eventTs?.toString() ?? Date.now()}`;
 
     if (isDefault) return;
 
@@ -62,6 +67,9 @@ function HeatingFaultToastWatcher({
       lastToastTs.current !== eventTs
     ) {
       lastToastTs.current = eventTs;
+      // Compute and store toastId for consistent dismissal
+      const toastId = `heating-fault-${faultZone}-${eventTs?.toString() ?? Date.now()}`;
+      currentToastId.current = toastId;
       // Sonner toast call
       toast(
         <div className="flex w-100 flex-col gap-3 rounded-xl border border-red-400 bg-red-600 p-4 text-white shadow-xl backdrop-blur-sm transition-all duration-300">
@@ -78,6 +86,10 @@ function HeatingFaultToastWatcher({
             <button
               className="rounded-md p-1 text-2xl font-bold text-white/80 hover:bg-red-500 hover:text-white focus:ring-2 focus:ring-white/30 focus:outline-none"
               onClick={() => {
+                requestAcknowledgeHeatingFault({
+                  machine_identification_unique: machineIdentification,
+                  data: { AcknowledgeHeatingFault: true },
+                });
                 toast.dismiss(toastId);
                 lastToastTs.current = null;
               }}
@@ -108,7 +120,10 @@ function HeatingFaultToastWatcher({
     }
     // Dismiss toast if fault is acknowledged or cleared
     if (faultAcknowledged || !faultZone) {
-      toast.dismiss(toastId);
+      if (currentToastId.current) {
+        toast.dismiss(currentToastId.current);
+        currentToastId.current = null;
+      }
       lastToastTs.current = null;
     }
   }, [state]);
