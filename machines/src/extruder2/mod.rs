@@ -53,6 +53,7 @@ pub enum HeatingType {
 }
 
 /// Watchdog state for monitoring heating progress
+#[cfg(not(feature = "mock-machine"))]
 #[derive(Debug, Clone)]
 pub struct HeatingWatchdogZone {
     /// Temperature when heating started for this zone
@@ -61,19 +62,24 @@ pub struct HeatingWatchdogZone {
     heating_start_time: Option<Instant>,
     /// Whether a fault has been detected
     fault_detected: bool,
+    /// Last second that was logged
+    last_logged_second: Option<u64>,
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl Default for HeatingWatchdogZone {
     fn default() -> Self {
         Self {
             start_temperature: None,
             heating_start_time: None,
             fault_detected: false,
+            last_logged_second: None,
         }
     }
 }
 
 /// Watchdog state for all heating zones
+#[cfg(not(feature = "mock-machine"))]
 #[derive(Debug, Clone)]
 pub struct HeatingWatchdog {
     pub front: HeatingWatchdogZone,
@@ -82,6 +88,7 @@ pub struct HeatingWatchdog {
     pub nozzle: HeatingWatchdogZone,
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl Default for HeatingWatchdog {
     fn default() -> Self {
         Self {
@@ -347,14 +354,23 @@ impl ExtruderV3 {
                     return true; // Fault detected
                 }
 
-                // Log progress periodically
-                if elapsed.as_secs() % 10 == 0 && elapsed.as_secs() > 0 {
-                    tracing::debug!(
-                        "Heating watchdog progress for {}: elapsed={:.1}s, temp_increase={:.2}°C",
-                        zone_name,
-                        elapsed.as_secs_f64(),
-                        temp_increase
-                    );
+                // Log progress periodically 
+                let current_second = elapsed.as_secs();
+                if current_second > 0 && current_second % 10 == 0 {
+                    let should_log = match watchdog_zone.last_logged_second {
+                        Some(last) => current_second > last,
+                        None => true,
+                    };
+                    
+                    if should_log {
+                        tracing::debug!(
+                            "Heating watchdog progress for {}: elapsed={:.1}s, temp_increase={:.2}°C",
+                            zone_name,
+                            elapsed.as_secs_f64(),
+                            temp_increase
+                        );
+                        watchdog_zone.last_logged_second = Some(current_second);
+                    }
                 }
             }
 

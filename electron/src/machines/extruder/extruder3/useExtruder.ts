@@ -463,6 +463,17 @@ export function useExtruder3() {
     });
   };
 
+  const { request: requestAcknowledgeHeatingFault } = useMachineMutation(
+    z.object({ AcknowledgeHeatingFault: z.literal(true) }),
+  );
+
+  const acknowledgeHeatingFault = () => {
+    requestAcknowledgeHeatingFault({
+      machine_identification_unique: machineIdentification,
+      data: { AcknowledgeHeatingFault: true },
+    });
+  };
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -520,5 +531,6 @@ export function useExtruder3() {
     setTemperaturePidValue,
     resetInverter,
     retryHeating,
+    acknowledgeHeatingFault,
   };
 }
