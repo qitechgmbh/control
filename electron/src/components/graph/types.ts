@@ -86,6 +86,7 @@ export type ControlProps = {
   onSwitchToLive: () => void;
   onSwitchToHistorical: () => void;
   onExport?: () => void;
+  onAddMarker?: () => void;
   timeWindowOptions?: TimeWindowOption[];
   showFromTimestamp?: number | null;
   onShowFromChange?: (timestamp: number | null) => void;
