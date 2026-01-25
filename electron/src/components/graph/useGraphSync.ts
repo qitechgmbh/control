@@ -128,10 +128,13 @@ export function useGraphSync(exportGroupId?: string) {
       return;
     }
     const logs = useLogsStore.getState().entries;
-    exportGraphsToExcel(graphDataRef.current, exportGroupId || "synced-graphs", logs)
-      .catch((error) => {
-        console.error("Failed to export graphs:", error);
-      });
+    exportGraphsToExcel(
+      graphDataRef.current,
+      exportGroupId || "synced-graphs",
+      logs,
+    ).catch((error) => {
+      console.error("Failed to export graphs:", error);
+    });
   }, [exportGroupId]);
 
   const handleTimeWindowChange = useCallback(
