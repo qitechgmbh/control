@@ -116,7 +116,10 @@ export function UpdateExecutePage() {
           {/* Time Estimate - shown during update, at same height as buttons */}
           {isUpdating && (
             <div className="ml-auto flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 dark:border-blue-800 dark:bg-blue-950/30">
-              <Icon name="lu:Clock" className="size-4 text-blue-800 dark:text-blue-200" />
+              <Icon
+                name="lu:Clock"
+                className="size-4 text-blue-800 dark:text-blue-200"
+              />
               <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
                 This may take approximately 5 minutes
               </span>
