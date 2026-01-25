@@ -16,6 +16,7 @@ use machines::{
 };
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
+use utils::start_dnsmasq;
 
 use app_state::{HotThreadMessage, SharedState};
 use ethercat::ethercat_discovery_info::send_ethercat_discovering;
@@ -57,6 +58,7 @@ pub mod panic;
 pub mod performance_metrics;
 pub mod rest;
 pub mod socketio;
+pub mod utils;
 
 pub async fn send_empty_machines_event(shared_state: Arc<SharedState>) {
     shared_state.current_machines_meta.lock().await.clear();
@@ -137,7 +139,6 @@ pub async fn start_interface_discovery(
     let interface = find_ethercat_interface().await;
     tracing::info!("Inferface found {}, setting up EtherCAT loop", interface);
     set_ethercat_iface(interface.clone());
-
     let res = setup_loop(&interface, app_state.clone()).await;
 
     match res {
@@ -152,9 +153,10 @@ pub async fn start_interface_discovery(
                 module_path!(),
                 e
             );
+            // if this doesnt work, unlucky
+            let _ = start_dnsmasq();
         }
     }
-
     send_ethercat_found(app_state.clone(), &interface).await;
 }
 
@@ -338,6 +340,7 @@ fn main() {
     let app_state = Arc::new(shared_state);
     let _loop_thread = start_loop_thread(receiver, CYCLE_TARGET_TIME);
     let _ = start_api_thread(app_state.clone());
+
     spawn_runtime_metrics_sampler(RuntimeMetricsConfig {
         csv_path: "runtime_metrics.csv".to_string(),
         interval: Duration::from_secs(1),

@@ -1,6 +1,8 @@
+use api::{ToleranceState, ToleranceStates};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
+use units::angular_velocity::revolution_per_minute;
 use units::f64::*;
 use units::{thermodynamic_temperature::degree_celsius, volume_rate::liter_per_minute};
 
@@ -9,8 +11,8 @@ use crate::{
     MACHINE_AQUAPATH_V1, VENDOR_QITECH,
     aquapath1::{
         api::{
-            AquaPathV1Events, AquaPathV1Namespace, FlowState, FlowStates, LiveValuesEvent,
-            ModeState, StateEvent, TempState, TempStates,
+            AquaPathV1Events, AquaPathV1Namespace, FanState, FanStates, FlowState, FlowStates,
+            LiveValuesEvent, ModeState, StateEvent, TempState, TempStates,
         },
         controller::Controller,
     },
@@ -123,6 +125,18 @@ impl AquaPathV1 {
             back_flow: self.back_controller.current_flow.get::<liter_per_minute>(),
             front_temp_reservoir: self.front_controller.temp_reservoir.get::<degree_celsius>(),
             back_temp_reservoir: self.back_controller.temp_reservoir.get::<degree_celsius>(),
+            front_revolutions: self
+                .front_controller
+                .current_revolutions
+                .get::<revolution_per_minute>(),
+            back_revolutions: self
+                .back_controller
+                .current_revolutions
+                .get::<revolution_per_minute>(),
+            front_power: self.front_controller.get_current_power(),
+            back_power: self.back_controller.get_current_power(),
+            front_total_energy: self.front_controller.get_total_energy(),
+            back_total_energy: self.back_controller.get_total_energy(),
         }
     }
 
@@ -168,6 +182,50 @@ impl AquaPathV1 {
                 back: FlowState {
                     flow: self.back_controller.current_flow.get::<liter_per_minute>(),
                     should_flow: self.back_controller.should_pump,
+                },
+            },
+            fan_states: FanStates {
+                front: FanState {
+                    revolutions: self
+                        .front_controller
+                        .max_revolutions
+                        .get::<revolution_per_minute>(),
+                    max_revolutions: self
+                        .front_controller
+                        .max_revolutions
+                        .get::<revolution_per_minute>(),
+                },
+                back: FanState {
+                    revolutions: self
+                        .back_controller
+                        .max_revolutions
+                        .get::<revolution_per_minute>(),
+                    max_revolutions: self
+                        .back_controller
+                        .max_revolutions
+                        .get::<revolution_per_minute>(),
+                },
+            },
+            tolerance_states: ToleranceStates {
+                front: ToleranceState {
+                    heating: self
+                        .front_controller
+                        .heating_tolerance
+                        .get::<degree_celsius>(),
+                    cooling: self
+                        .front_controller
+                        .cooling_tolerance
+                        .get::<degree_celsius>(),
+                },
+                back: ToleranceState {
+                    heating: self
+                        .back_controller
+                        .heating_tolerance
+                        .get::<degree_celsius>(),
+                    cooling: self
+                        .back_controller
+                        .cooling_tolerance
+                        .get::<degree_celsius>(),
                 },
             },
         }
@@ -271,6 +329,48 @@ impl AquaPathV1 {
             AquaPathSideType::Back => self.back_controller.set_should_pump(should_pump),
             AquaPathSideType::Front => self.front_controller.set_should_pump(should_pump),
         }
+        self.emit_state();
+    }
+}
+
+impl AquaPathV1 {
+    fn set_max_revolutions(&mut self, revolutions: f64, fan_type: AquaPathSideType) {
+        match fan_type {
+            AquaPathSideType::Back => self
+                .back_controller
+                .set_max_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
+            AquaPathSideType::Front => self
+                .front_controller
+                .set_max_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
+        }
+        self.emit_state();
+    }
+}
+
+impl AquaPathV1 {
+    fn set_heating_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
+        match tolerance_type {
+            AquaPathSideType::Back => self
+                .back_controller
+                .set_heating_tolerance(ThermodynamicTemperature::new::<degree_celsius>(tolerance)),
+            AquaPathSideType::Front => self
+                .front_controller
+                .set_heating_tolerance(ThermodynamicTemperature::new::<degree_celsius>(tolerance)),
+        }
+
+        self.emit_state();
+    }
+
+    fn set_cooling_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
+        match tolerance_type {
+            AquaPathSideType::Back => self
+                .back_controller
+                .set_cooling_tolerance(ThermodynamicTemperature::new::<degree_celsius>(tolerance)),
+            AquaPathSideType::Front => self
+                .front_controller
+                .set_cooling_tolerance(ThermodynamicTemperature::new::<degree_celsius>(tolerance)),
+        }
+
         self.emit_state();
     }
 }

@@ -163,6 +163,7 @@ export const handleEventValidationError = (
   error: z.ZodError,
   eventName: string,
 ) => {
+  console.log(error);
   toastZodError(error, `Event Validation Error for ${eventName}`);
   throw new Error(`Event validation failed for ${eventName}`);
 };

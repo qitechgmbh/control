@@ -10,9 +10,15 @@ The Qitech Control Panel exposes a small HTTP interface for discovering machines
 
 ## Authentication
 
-The panel does **not** perform HTTP authentication. The expected security model is **network-level isolation**: anything that can send packets to the panel’s Ethernet interface is treated as trusted. This matches common security assumptions in EtherCAT-style control networks.
+The panel does **not** perform HTTP authentication. The expected security model is **network-level isolation**: anything that can send packets to the panel’s Ethernet interface is treated as trusted. This matches common security assumptions in EtherCAT-style control networks. It is therefore suggested to run the entire production line in isolated operation.
 
-The panel is configured to administer its own subnet `10.10.10.0/24` via DHCP, while Wi-Fi can be used for upstream internet connectivity (if configured). If you need authentication or access from outside the isolated subnet, place a router/device in **client/bridge mode** on the panel network and expose the panel through a **reverse proxy** where you can add authentication, logging, rate limiting, etc.
+The panel is configured to administer its own subnet `10.10.10.0/24` via DHCP, while Wi-Fi can be used for upstream internet connectivity. To let the outside world communicate with the production line, a router should be placed at the network bondary bridging the production line's subnet and the rest of the network. The router can run in **client/bridge mode** on the line's subnet and expose the panel's API via **port forwading** or through a **reverse proxy** where one can add authentication, logging, rate limiting, etc.
+
+The following graphic depicts the suggested network topology for a single production line. Many lines could potentially share the same router.
+
+<p align="center">
+  <img width="769" height="528" alt="Suggested network topology" src="./assets/subnet.png" />
+</p>
 
 If DNS is available on the subnet, you may be able to resolve `qitech.control`; otherwise use the static address `10.10.10.1`.
 

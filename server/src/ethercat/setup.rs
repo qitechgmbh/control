@@ -19,6 +19,7 @@ use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::{
     IP20_EC_DI8_DO8_PRODUCT_ID, IP20_EC_DI8_DO8_VENDOR_ID, IP20EcDi8Do8,
 };
 
+use crate::utils::{start_dnsmasq, stop_dnsmasq};
 use ethercrab::std::ethercat_now;
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use machines::machine_identification::{
@@ -171,6 +172,14 @@ pub async fn setup_loop(
     app_state: Arc<SharedState>,
 ) -> Result<EthercatSetup, anyhow::Error> {
     tracing::info!("Starting Ethercat PDU loop");
+
+    let res = stop_dnsmasq();
+    match res {
+        Ok(_) => (),
+        Err(e) => tracing::error!("Failed to stop dnsmasq: {:?}", e),
+    };
+    // Small Timeout to ensure interfaces get released
+    smol::Timer::after(Duration::from_millis(1500)).await;
 
     // Setup ethercrab tx/rx task
     let pdu_storage = Box::leak(Box::new(PduStorage::<MAX_FRAMES, MAX_PDU_DATA>::new()));
@@ -480,6 +489,12 @@ pub async fn setup_loop(
             .await;
         main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
     }
+
+    let res = start_dnsmasq();
+    match res {
+        Ok(o) => o,
+        Err(e) => tracing::error!("Failed to start dnsmasq: {:?}", e),
+    };
 
     Ok(EthercatSetup {
         devices,

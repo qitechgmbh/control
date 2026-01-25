@@ -7,13 +7,6 @@ in {
   options.services.qitech = {
     enable = mkEnableOption "QiTech Control";
 
-    openFirewall = mkOption {
-      type = types.bool;
-      default = false;
-      description =
-        "Whether to open ports in the firewall for the QiTech server";
-    };
-
     user = mkOption {
       type = types.str;
       default = "qitech-service";
@@ -133,9 +126,16 @@ in {
         value = "-20";
       }
     ];
-
-    # Open firewall if requested
-    networking.firewall = mkIf cfg.openFirewall { allowedTCPPorts = [ 3001 ]; };
+    # needed so dnsmasq can get managed by server
+    security.polkit.extraConfig = ''
+      polkit.addRule(function(action, subject) {
+        if (action.id == "org.freedesktop.systemd1.manage-units" &&
+            action.lookup("unit") == "dnsmasq.service" &&
+            subject.user == "${cfg.user}") {
+          return polkit.Result.YES;
+        }
+      });
+    '';
 
     # Desktop integration
     xdg.mime.enable = true;

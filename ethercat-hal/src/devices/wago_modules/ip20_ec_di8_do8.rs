@@ -430,6 +430,9 @@ impl IP20EcDi8Do8 {
                             wago_750_652::WAGO_750_652_MODULE_IDENT => {
                                 Arc::new(RwLock::new(wago_750_652::Wago750_652::new()))
                             }
+                            wago_750_402::WAGO_750_402_MODULE_IDENT => {
+                                Arc::new(RwLock::new(wago_750_402::Wago750_402::new()))
+                            }
                             _ => {
                                 return;
                             }

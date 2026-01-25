@@ -15,25 +15,31 @@ import {
   machineIdentificationUnique,
 } from "@/machines/types";
 import { useRef } from "react";
-import { rustEnumSchema } from "@/lib/types";
+import { rustEnum } from "@/lib/types";
+
+export type EthercatDevices = z.infer<typeof ethercatDevicesSchema>;
+
+export const ethercatDevicesSchema = z.object({
+  devices: z.array(
+    z.object({
+      configured_address: z.number().int(),
+      name: z.string(),
+      vendor_id: z.number().int(),
+      product_id: z.number().int(),
+      revision: z.number().int(),
+      device_identification: deviceIdentification,
+    }),
+  ),
+});
 
 // Update the EthercatDevicesEventData schema
-export const ethercatDevicesEventDataSchema = rustEnumSchema({
-  Initializing: z.boolean(),
-  Done: z.object({
-    devices: z.array(
-      z.object({
-        configured_address: z.number().int(),
-        name: z.string(),
-        vendor_id: z.number().int(),
-        product_id: z.number().int(),
-        revision: z.number().int(),
-        device_identification: deviceIdentification,
-      }),
-    ),
-  }),
-  Error: z.string(),
-});
+export const ethercatDevicesEventDataSchema = z
+  .object({
+    Initializing: z.boolean(),
+    Done: ethercatDevicesSchema,
+    Error: z.string(),
+  })
+  .check(rustEnum);
 
 export type EthercatDevicesEventData = z.infer<
   typeof ethercatDevicesEventDataSchema
@@ -62,10 +68,12 @@ export const machinesEventSchema = eventSchema(machinesEventDataSchema);
 export type MachinesEvent = z.infer<typeof machinesEventSchema>;
 
 // Keep the EthercatInterfaceDiscovery event
-export const ethercatInterfaceDiscoveryEventDataSchema = rustEnumSchema({
-  Discovering: z.boolean(),
-  Done: z.string(),
-});
+export const ethercatInterfaceDiscoveryEventDataSchema = z
+  .object({
+    Discovering: z.boolean(),
+    Done: z.string(),
+  })
+  .check(rustEnum);
 
 export type EthercatInterfaceDiscoveryEventData = z.infer<
   typeof ethercatInterfaceDiscoveryEventDataSchema
@@ -110,23 +118,19 @@ export function mainMessageHandler(
     try {
       // Apply appropriate caching strategy based on event type
       if (eventName === "EthercatDevicesEvent") {
-        const validatedEvent = ethercatDevicesEventSchema.parse(event);
-        console.log("EthercatDevicesEvent", validatedEvent);
+        const validatedEvent = event;
         store.setState((state) => ({
           ...state,
           ethercatDevices: validatedEvent,
         }));
       } else if (eventName === "MachinesEvent") {
         const validatedEvent = machinesEventSchema.parse(event);
-        console.log("MachinesEvent", validatedEvent);
         store.setState((state) => ({
           ...state,
           machines: validatedEvent,
         }));
       } else if (eventName === "EthercatInterfaceDiscoveryEvent") {
-        const validatedEvent =
-          ethercatInterfaceDiscoveryEventSchema.parse(event);
-        console.log("EthercatInterfaceDiscoveryEvent", validatedEvent);
+        const validatedEvent = event;
         store.setState((state) => ({
           ...state,
           ethercatInterfaceDiscovery: validatedEvent,
