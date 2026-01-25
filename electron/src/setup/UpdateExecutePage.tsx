@@ -89,43 +89,34 @@ export function UpdateExecutePage() {
     <Page>
       <SectionTitle title="Apply Update" />
 
-      <div className="flex flex-col gap-4">
-        {/* Buttons and Time Estimate - same row */}
-        <div className="flex flex-row items-center gap-4">
-          <div className="flex flex-row gap-4">
-            <TouchButton
-              className="w-max"
-              icon="lu:CircleFadingArrowUp"
-              onClick={handleClick}
-              disabled={isUpdating}
-              isLoading={isUpdating}
-            >
-              Apply Update
-            </TouchButton>
-            {isUpdating && (
-              <TouchButton
-                className="w-max"
-                icon="lu:X"
-                onClick={handleCancel}
-                variant="destructive"
-              >
-                Cancel Update
-              </TouchButton>
-            )}
+      <div className="flex flex-row items-center gap-4">
+        <TouchButton
+          className="w-max"
+          icon="lu:CircleFadingArrowUp"
+          onClick={handleClick}
+          disabled={isUpdating}
+          isLoading={isUpdating}
+        >
+          Apply Update
+        </TouchButton>
+        {isUpdating && (
+          <TouchButton
+            className="w-max"
+            icon="lu:X"
+            onClick={handleCancel}
+            variant="destructive"
+          >
+            Cancel Update
+          </TouchButton>
+        )}
+        {isUpdating && (
+          <div className="ml-auto flex items-center gap-2 rounded-xl border border-blue-400 bg-blue-600 px-4 py-2.5 text-white shadow-xl backdrop-blur-sm transition-all duration-300">
+            <Icon name="lu:Info" className="h-5 w-5 text-blue-100" />
+            <span className="text-base leading-snug text-blue-50">
+              Approximately <strong>5 minutes</strong> remaining
+            </span>
           </div>
-          {/* Time Estimate - shown during update, at same height as buttons */}
-          {isUpdating && (
-            <div className="ml-auto flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 dark:border-blue-800 dark:bg-blue-950/30">
-              <Icon
-                name="lu:Clock"
-                className="size-4 text-blue-800 dark:text-blue-200"
-              />
-              <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                This may take approximately 5 minutes
-              </span>
-            </div>
-          )}
-        </div>
+        )}
       </div>
       {currentUpdateInfo && (
         <Alert title="Update Information" variant="info">
