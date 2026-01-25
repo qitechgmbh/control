@@ -1,4 +1,5 @@
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
+use crate::ethercat::setup::Groups;
 use crate::rest::handlers::write_machine_device_identification::MachineDeviceInfoRequest;
 use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::socketio::main_namespace::machines_event::{MachineObj, MachinesEventBuilder};
@@ -102,7 +103,7 @@ pub struct EthercatSetup {
     /// All Ethercat devices
     /// Generic interface for all devices
     /// Needed to interface with the devices on an Ethercat level
-    pub group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
+    pub groups: Groups<Op>,
     /// The Ethercat main device
     /// Needed to interface with the devices
     pub maindevice: MainDevice<'static>,
@@ -111,12 +112,12 @@ pub struct EthercatSetup {
 impl EthercatSetup {
     pub fn new(
         devices: Vec<(DeviceIdentification, Arc<RwLock<dyn EthercatDevice>>)>,
-        group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
+        groups: Groups<Op>,
         maindevice: MainDevice<'static>,
     ) -> Self {
         Self {
             devices,
-            group,
+            groups,
             maindevice,
         }
     }

@@ -11,23 +11,24 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 #[cfg(all(target_os = "linux", not(feature = "development-build")))]
 use control_core::{irq_handling::set_irq_affinity, realtime::set_realtime_priority};
 use ethercat_hal::debugging::diagnosis_history::get_most_recent_diagnosis_message;
-use ethercat_hal::devices::devices_from_subdevices;
+use ethercat_hal::devices::{EthercatDevice, devices_from_subdevices};
 use ethercat_hal::devices::wago_750_354::{
     WAGO_750_354_PRODUCT_ID, WAGO_750_354_VENDOR_ID, Wago750_354,
 };
 use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::{
     IP20_EC_DI8_DO8_PRODUCT_ID, IP20_EC_DI8_DO8_VENDOR_ID, IP20EcDi8Do8,
 };
+use ethercrab::subdevice_group::{Op, PreOp, SafeOp};
+use smol::lock::RwLock;
 
 use crate::utils::{start_dnsmasq, stop_dnsmasq};
 use ethercrab::std::ethercat_now;
-use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
+use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, SubDevice, SubDeviceGroup, SubDevicePdi, SubDeviceRef, Timeouts};
 use machines::machine_identification::{
-    DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
-    DeviceIdentificationIdentified, MachineIdentificationUnique, read_device_identifications,
+    DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification, DeviceIdentificationIdentified, MachineIdentificationUnique, machine_device_identification, read_device_identifications
 };
 use machines::registry::{MACHINE_REGISTRY, MachineRegistry};
-use machines::{Machine, MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams};
+use machines::{MACHINE_AQUAPATH_V1, Machine, MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams};
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use std::{sync::Arc, time::Duration};
@@ -167,6 +168,73 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
     Ok(())
 }
 
+pub struct Groups<S = PreOp> {
+    aquapath: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, S>,
+    rest: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, S>,
+}
+
+impl Default for Groups<PreOp> {
+
+    fn default() -> Self {
+        Self {
+            aquapath: SubDeviceGroup::default(),
+            rest: SubDeviceGroup::default(),
+        }
+    }
+}
+
+impl Groups<PreOp> {
+
+    pub fn get_devices(&mut self, maindevice: &MainDevice) -> Result<Vec<Arc<RwLock<dyn EthercatDevice>>>, anyhow::Error> {
+        let mut devices = devices_from_subdevices::<MAX_SUBDEVICES, PDI_LEN>(&mut self.rest, maindevice)?;
+        devices.extend(devices_from_subdevices::<MAX_SUBDEVICES, PDI_LEN>(&mut self.aquapath, maindevice)?);
+        Ok(devices)
+    }
+
+    pub async fn into_safe_op(self, maindevice: &MainDevice<'_>) -> Result<Groups<SafeOp>, ethercrab::error::Error> {
+        Ok(Groups {
+            rest: self.rest.into_safe_op(maindevice).await?,
+            aquapath: self.aquapath.into_safe_op(maindevice).await?,
+        })
+    }
+
+    pub fn iter<'groups, 'maindevice>(&'groups self, maindevice: &'maindevice MainDevice<'groups>) -> Vec<SubDeviceRef<'maindevice, &'groups SubDevice>> {
+        self.rest.iter(&maindevice)
+            .chain(self.aquapath.iter(&maindevice))
+            .collect::<Vec<_>>()
+    }
+}
+
+impl Groups<SafeOp> {
+
+    pub async fn tx_rx_sync_system_time<'maindevice>(&self, maindevice: &'maindevice MainDevice<'maindevice>) -> Result<(), ethercrab::error::Error> {
+        self.rest.tx_rx_sync_system_time(maindevice).await?;
+        self.aquapath.tx_rx_sync_system_time(maindevice).await?;
+        Ok(())
+    }
+
+    pub async fn into_op<'maindevice>(self, maindevice: &'maindevice MainDevice<'maindevice>) -> Result<Groups<Op>, ethercrab::error::Error> {
+        Ok(Groups {
+            aquapath: self.aquapath.into_op(maindevice).await?,
+            rest: self.rest.into_op(maindevice).await?,
+        })
+    }
+}
+
+impl Groups<Op> {
+
+    pub fn iter<'groups, 'maindevice>(&'groups self, maindevice: &'maindevice MainDevice<'groups>) -> impl Iterator<Item = SubDeviceRef<'maindevice, SubDevicePdi<'maindevice, PDI_LEN>>> {
+        self.rest.iter(&maindevice)
+            .chain(self.aquapath.iter(&maindevice))
+    }
+
+    pub async fn tx_rx<'maindevice>(&self, maindevice: &'maindevice MainDevice<'maindevice>) -> Result<(), ethercrab::error::Error> {
+        self.rest.tx_rx(maindevice).await?;
+        self.aquapath.tx_rx(maindevice).await?;
+        Ok(())
+    }
+}
+
 pub async fn setup_loop(
     interface: &str,
     app_state: Arc<SharedState>,
@@ -263,12 +331,21 @@ pub async fn setup_loop(
 
     // Initalize subdevices
     // Fails if DC setup detects a mispatching working copunter, then just try again in loop
-    let mut group_preop = match maindevice
-        .init_single_group::<MAX_SUBDEVICES, PDI_LEN>(ethercat_now)
+    let mut groups_preop = match maindevice
+        .init::<MAX_SUBDEVICES, _>(ethercat_now, |groups: &Groups, subdevice| {
+            let identification = smol::block_on(machine_device_identification(subdevice, &maindevice))?;
+            let machine = identification.machine_identification_unique.machine_identification.machine;
+
+            if machine == MACHINE_AQUAPATH_V1 {
+                return Ok(&groups.aquapath);
+            }
+
+            Ok(&groups.rest)
+        })
         .await
     {
         Ok(group) => {
-            tracing::info!("Initialized {} subdevices", &group.len());
+            tracing::info!("Initialized {} subdevices", &maindevice.num_subdevices());
             group
         }
         Err(err) => Err(anyhow::anyhow!(
@@ -279,9 +356,8 @@ pub async fn setup_loop(
     };
 
     // create devices
-    let devices =
-        devices_from_subdevices::<MAX_SUBDEVICES, PDI_LEN>(&mut group_preop, &maindevice)?;
-    let subdevices = group_preop.iter(&maindevice).collect::<Vec<_>>();
+    let devices = groups_preop.get_devices(&maindevice)?;
+    let subdevices = groups_preop.iter(&maindevice);
 
     // extract device identifications
     let device_identifications = read_device_identifications(&subdevices, &maindevice)
@@ -310,7 +386,7 @@ pub async fn setup_loop(
 
     // filter devices and if Option<DeviceMachineIdentification> is Some
     // return identified_devices, identified_device_identifications, identified_subdevices
-    let (identified_device_identifications,identified_devices, identified_subdevices): (
+    let (identified_device_identifications, identified_devices, identified_subdevices): (
         Vec<_>,
         Vec<_>,
         Vec<_>,
@@ -433,10 +509,10 @@ pub async fn setup_loop(
     )
     .await?;
 
-    let group_safe = match group_preop.into_safe_op(&maindevice).await {
-        Ok(group_op) => {
+    let groups_safe = match groups_preop.into_safe_op(&maindevice).await {
+        Ok(groups) => {
             tracing::info!("Group in Safe-OP state");
-            group_op
+            groups
         }
         Err(err) => Err(anyhow::anyhow!(
             "[{}::setup_loop] Failed to put group in Safe-OP state: {:?}",
@@ -450,7 +526,7 @@ pub async fn setup_loop(
     // For now we just check if we use wago coupler or IP20
     if has_dc {
         for _ in 1..1000 {
-            let res = group_safe.tx_rx_sync_system_time(&maindevice).await;
+            let res = groups_safe.tx_rx_sync_system_time(&maindevice).await;
             match res {
                 Ok(_) => (),
                 Err(e) => tracing::error!(
@@ -463,7 +539,7 @@ pub async fn setup_loop(
     }
 
     // Put group in operational state
-    let group_op = match group_safe.into_op(&maindevice).await {
+    let groups_op = match groups_safe.into_op(&maindevice).await {
         Ok(group_op) => {
             tracing::info!("Group in OP state");
             group_op
@@ -498,7 +574,7 @@ pub async fn setup_loop(
 
     Ok(EthercatSetup {
         devices,
-        group: group_op,
+        groups: groups_op,
         maindevice,
     })
 }

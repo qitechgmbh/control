@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use ethercat_hal::devices::wago_750_354::WAGO_750_354_IDENTITY_A;
 use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTITY;
+use ethercrab::SubDevice;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -233,61 +234,40 @@ pub async fn read_device_identifications<'maindevice>(
     let mut result = Vec::new();
     for subdevice in subdevices.iter() {
         let identification = machine_device_identification(subdevice, maindevice).await;
-        result.push(identification);
+        result.push(identification.map_err(|e| anyhow!(
+            "[{}::machine_device_identification] Failed to read role from EEPROM for device {}: {}",
+            module_path!(),
+            subdevice.name(),
+            e
+        )));
     }
     result
 }
 
 /// Reads the machine device identification from the EEPROM
-pub async fn machine_device_identification<'maindevice>(
-    subdevice: &'maindevice EthercrabSubDevicePreoperational<'maindevice>,
+pub async fn machine_device_identification(
+    subdevice: &SubDevice,
     maindevice: &MainDevice<'_>,
-) -> Result<DeviceMachineIdentification, Error> {
-    let addresses = match get_identification_addresses(&subdevice.identity(), subdevice.name()) {
-        Ok(x) => x,
-        Err(e) => {
-            // u16dump(subdevice, maindevice, 0, 128).await?;
-            return Err(e);
-        }
-    };
+) -> Result<DeviceMachineIdentification, ethercrab::error::Error> {
+    let addresses = get_identification_addresses(&subdevice.identity(), subdevice.name())?;
 
     let mdi = DeviceMachineIdentification {
         machine_identification_unique: MachineIdentificationUnique {
             machine_identification: MachineIdentification {
                 vendor: subdevice
                 .eeprom_read::<u16>(maindevice, addresses.vendor_word)
-                .await
-                .or(Err(anyhow!(
-                    "[{}::machine_device_identification] Failed to read vendor from EEPROM for device {}",
-                    module_path!(),
-                    subdevice.name()
-                )))?,
+                .await?,
                 machine: subdevice
                 .eeprom_read::<u16>(maindevice, addresses.machine_word)
-                .await
-                .or(Err(anyhow!(
-                    "[{}::machine_device_identification] Failed to read machine from EEPROM for device {}",
-                    module_path!(),
-                    subdevice.name()
-                )))?,
+                .await?,
             },
             serial: subdevice
                 .eeprom_read::<u16>(maindevice, addresses.serial_word)
-                .await
-                .or(Err(anyhow!(
-                    "[{}::machine_device_identification] Failed to read serial from EEPROM for device {}",
-                    module_path!(),
-                    subdevice.name()
-                )))?,
+                .await?,
         },
         role: subdevice
             .eeprom_read::<u16>(maindevice, addresses.role_word)
-            .await
-            .or(Err(anyhow!(
-                "[{}::machine_device_identification] Failed to read role from EEPROM for device {}",
-                module_path!(),
-                subdevice.name()
-            )))?,
+            .await?,
     };
 
     tracing::debug!(
@@ -382,7 +362,7 @@ pub async fn write_machine_device_identification<'maindevice, const MAX_PDI: usi
 pub fn get_identification_addresses(
     subdevice_identity: &SubDeviceIdentity,
     subdevice_name: &str,
-) -> Result<MachineIdentificationAddresses, Error> {
+) -> Result<MachineIdentificationAddresses, ethercrab::error::Error> {
     let identity_tuple = subdevice_identity_to_tuple(subdevice_identity);
 
     Ok(match identity_tuple {
@@ -414,14 +394,14 @@ pub fn get_identification_addresses(
 
         _ => {
             // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
-            Err(anyhow!(
-                "[{}::get_identification_addresses] Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
+            tracing::error!("[{}::get_identification_addresses] Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
                 module_path!(),
                 subdevice_name,
                 subdevice_identity.vendor_id,
                 subdevice_identity.product_id,
                 subdevice_identity.revision
-            ))?
+            );
+            return Err(ethercrab::error::Error::UnknownSubDevice);
         }
     })
 }

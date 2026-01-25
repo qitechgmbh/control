@@ -1,6 +1,5 @@
 use ethercrab::{
-    MainDevice, MainDeviceConfig, PduStorage, Timeouts,
-    std::{ethercat_now, tx_rx_task},
+    MainDevice, MainDeviceConfig, PduStorage, SubDeviceGroup, Timeouts, std::{ethercat_now, tx_rx_task}
 };
 use interfaces::Interface;
 use std::{process::Command, sync::Arc, time::Duration};
@@ -10,6 +9,13 @@ const IFACE_DISCOVERY_MAX_SUBDEVICES: usize = 16; // Must be power of 2 > 1
 const IFACE_DISCOVERY_MAX_PDU_DATA: usize = PduStorage::element_size(1100);
 const IFACE_DISCOVERY_MAX_FRAMES: usize = 16;
 const IFACE_DISCOVERY_MAX_PDI_LEN: usize = 128;
+
+#[derive(Default)]
+pub struct Groups {
+    aquapath: SubDeviceGroup<IFACE_DISCOVERY_MAX_SUBDEVICES, IFACE_DISCOVERY_MAX_PDI_LEN>,
+    rest: SubDeviceGroup<IFACE_DISCOVERY_MAX_SUBDEVICES, IFACE_DISCOVERY_MAX_PDI_LEN>,
+}
+
 
 /// Sets a network interface to unmanaged by NetworkManager.
 /// Returns true if the command succeeded.
@@ -97,7 +103,7 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
                 interface = Some(&interfaces[i].name);
                 break;
             }
-            Err(_) => (),
+            Err(e) => tracing::warn!("Error initializing interface {}: {}", interfaces[i].name, e),
         }
     }
 
@@ -119,7 +125,7 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
 }
 
 fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
-    tracing::info!("Testing interface: {}", interface);
+    tracing::info!("Testing interface by OSH: {}", interface);
 
     let pdu_storage = Box::leak(Box::new(PduStorage::<
         IFACE_DISCOVERY_MAX_FRAMES,
@@ -136,6 +142,8 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
             tx_rx_task(interface, tx, rx)
                 .map_err(|e| anyhow::anyhow!("Failed to spawn TX/RX task: {}", e))?,
         );
+
+        println!("CREATING MAIN DEVICE");
 
         let maindevice = Arc::new(MainDevice::new(
             pdu_loop,
@@ -161,10 +169,29 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
             },
         ));
 
+        println!("MAIN DEVICE CREATED");
+
         let result = maindevice
-            .init_single_group::<IFACE_DISCOVERY_MAX_SUBDEVICES, IFACE_DISCOVERY_MAX_PDI_LEN>(
-                ethercat_now,
-            )
+            .init::<IFACE_DISCOVERY_MAX_SUBDEVICES, _>(ethercat_now, |groups: &Groups, subdevice| {
+                panic!("GOT HERE");
+                println!("SUBDEVICE NAME {} ID {}", subdevice.name(), subdevice.identity());
+                if subdevice.name() == "EL5152" {
+                    println!("USING AQUAPATH GROUP DUING INIT");
+                    println!("USING AQUAPATH GROUP DUING INIT");
+                    println!("USING AQUAPATH GROUP DUING INIT");
+                    println!("USING AQUAPATH GROUP DUING INIT");
+                    println!("USING AQUAPATH GROUP DUING INIT");
+                    println!("USING AQUAPATH GROUP DUING INIT");
+                    println!("USING AQUAPATH GROUP DUING INIT");
+                    println!("USING AQUAPATH GROUP DUING INIT");
+                    println!("USING AQUAPATH GROUP DUING INIT");
+                    println!("USING AQUAPATH GROUP DUING INIT");
+                    println!("USING AQUAPATH GROUP DUING INIT");
+                    return Ok(&groups.aquapath);
+                }
+
+                Ok(&groups.rest)
+            })
             .await
             .map(|_| ())
             .map_err(|e| anyhow::anyhow!("Failed to initialize group: {}", e));

@@ -93,18 +93,23 @@ pub fn start_loop_thread(
                     }
                     HotThreadMessage::WriteMachineDeviceInfo(info_request) => {
                         if let Some(ethercat_setup) = &rt_loop_inputs.ethercat_setup {
-                            if let Ok(subdevice) = ethercat_setup.group.subdevice(
-                                &ethercat_setup.maindevice,
-                                info_request
-                                    .hardware_identification_ethercat
-                                    .subdevice_index,
-                            ) {
-                                let _res = smol::block_on(write_machine_device_identification(
-                                    &subdevice,
-                                    &ethercat_setup.maindevice,
-                                    &info_request.device_machine_identification,
-                                ));
-                            }
+                            // TODO: this will target the wrong subdevice. Whereever we assign the
+                            // subdevie indecies, we have to account for the groups being slip and
+                            // add an offset accordingly. For now, this is just disabled to test
+                            // stuff.
+                            //
+                            // if let Ok(subdevice) = ethercat_setup.group.subdevice(
+                            //     &ethercat_setup.maindevice,
+                            //     info_request
+                            //         .hardware_identification_ethercat
+                            //         .subdevice_index,
+                            // ) {
+                            //     let _res = smol::block_on(write_machine_device_identification(
+                            //         &subdevice,
+                            //         &ethercat_setup.maindevice,
+                            //         &info_request.device_machine_identification,
+                            //     ));
+                            // }
                         }
                     }
                     HotThreadMessage::DeleteMachine(unique_id) => {
@@ -166,13 +171,13 @@ pub async fn copy_ethercat_inputs(
     // - copy inputs to devices
     if let Some(ethercat_setup) = ethercat_setup {
         ethercat_setup
-            .group
+            .groups
             .tx_rx(&ethercat_setup.maindevice)
             .await?;
 
         // copy inputs to devices
         for (i, subdevice) in ethercat_setup
-            .group
+            .groups
             .iter(&ethercat_setup.maindevice)
             .enumerate()
         {
@@ -219,7 +224,7 @@ pub async fn copy_ethercat_outputs(
     if let Some(ethercat_setup) = ethercat_setup {
         // copy outputs from devices
         for (i, subdevice) in ethercat_setup
-            .group
+            .groups
             .iter(&ethercat_setup.maindevice)
             .enumerate()
         {
