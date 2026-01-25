@@ -6,6 +6,8 @@ import {
 } from "@/components/graph";
 import { TimeSeries, TimeSeriesValue } from "@/lib/timeseries";
 import { Unit } from "@/control/units";
+import { useMarkerManager } from "./useMarkerManager";
+import { MarkerProvider, useMarkerContext } from "./MarkerContext";
 
 type TimeSeriesData = {
   newData: TimeSeries | null;
@@ -22,6 +24,13 @@ type GraphWithMarkerControlsProps = {
   renderValue?: (value: number) => string;
   graphId: string;
   currentTimeSeries: TimeSeries | null;
+  machineId?: string;
+  markers?: Array<{
+    timestamp: number;
+    name: string;
+    value?: number;
+    color?: string;
+  }>;
 };
 
 function createMarkerElement(
@@ -34,6 +43,7 @@ function createMarkerElement(
   endTime: number,
   graphWidth: number,
   graphHeight: number,
+  color?: string,
 ) {
   // Calculate the X position of the timestamp
   const ratio = (timestamp - startTime) / (endTime - startTime);
@@ -50,7 +60,9 @@ function createMarkerElement(
   line.style.top = "0px";
   line.style.height = `${graphHeight}px`;
   line.style.width = "2px";
-  line.style.background = "rgba(0, 0, 0, 0.5)";
+  // Use custom color if provided, otherwise default gray
+  const lineColor = color || "rgba(0, 0, 0, 0.5)";
+  line.style.background = lineColor;
   line.className = "vertical-marker";
 
   // Create a point at the actual data value position
@@ -61,7 +73,9 @@ function createMarkerElement(
   point.style.width = "8px";
   point.style.height = "8px";
   point.style.borderRadius = "50%";
-  point.style.background = "rgba(0, 0, 0, 0.8)";
+  // Use custom color if provided, otherwise default black
+  const pointColor = color || "rgba(0, 0, 0, 0.8)";
+  point.style.background = pointColor;
   point.style.transform = "translate(-50%, -50%)";
   point.style.border = "2px solid white";
   point.className = "marker-point";
@@ -81,7 +95,7 @@ function createMarkerElement(
   return { line, point, label };
 }
 
-export function GraphWithMarkerControls({
+function GraphWithMarkerControlsContent({
   syncHook,
   newData,
   config,
@@ -89,74 +103,32 @@ export function GraphWithMarkerControls({
   renderValue,
   graphId,
   currentTimeSeries,
-}: GraphWithMarkerControlsProps) {
-  const graphWrapperRef = useRef<HTMLDivElement | null>(null);
-  const [markerName, setMarkerName] = useState("");
-  
-  // Load markers from localStorage on mount and clean up old ones
-  const loadMarkersFromStorage = useCallback((): {
-    timestamp: number;
-    name: string;
-    value: number;
-  }[] => {
-    try {
-      const storageKey = `graph-markers-${graphId}`;
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        const allMarkers: {
-          timestamp: number;
-          name: string;
-          value: number;
-        }[] = JSON.parse(stored);
-        
-        // Remove markers older than 7 days to save storage space
-        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-        const recentMarkers = allMarkers.filter(
-          (marker) => marker.timestamp >= sevenDaysAgo,
-        );
-        
-        // Limit to max 100 markers per graph to prevent storage bloat
-        const maxMarkers = 100;
-        const limitedMarkers =
-          recentMarkers.length > maxMarkers
-            ? recentMarkers.slice(-maxMarkers)
-            : recentMarkers;
-        
-        // Save cleaned markers back if we removed any
-        if (limitedMarkers.length !== allMarkers.length) {
-          localStorage.setItem(storageKey, JSON.stringify(limitedMarkers));
-        }
-        
-        return limitedMarkers;
-      }
-    } catch (error) {
-      console.warn("Failed to load markers from localStorage:", error);
-    }
-    return [];
-  }, [graphId]);
+  machineId: providedMachineId,
+  markers: providedMarkers,
+  graphWrapperRef,
+}: GraphWithMarkerControlsProps & {
+  graphWrapperRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const { setMachineId, setCurrentTimestamp } = useMarkerContext();
 
-  const [markers, setMarkers] = useState<
-    { timestamp: number; name: string; value: number }[]
-  >(loadMarkersFromStorage);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  // Auto-detect machineId from graphId if not provided (extract base name)
+  // e.g., "pressure-graph" -> "pressure", "extruder-graphs" -> "extruder-graphs"
+  const machineId = providedMachineId || graphId.split("-")[0] || "default";
 
-  // Save markers to localStorage whenever they change, with limits
+  // Update context with machineId and current timestamp
   useEffect(() => {
-    try {
-      const storageKey = `graph-markers-${graphId}`;
-      
-      // Limit to max 100 markers per graph
-      const maxMarkers = 100;
-      const markersToSave =
-        markers.length > maxMarkers ? markers.slice(-maxMarkers) : markers;
-      
-      localStorage.setItem(storageKey, JSON.stringify(markersToSave));
-    } catch (error) {
-      console.warn("Failed to save markers to localStorage:", error);
-    }
-  }, [markers, graphId]);
+    setMachineId(machineId);
+  }, [machineId, setMachineId]);
 
-  // Markers are rendered as overlay elements, not as graph lines
+  useEffect(() => {
+    if (currentTimeSeries?.current?.timestamp) {
+      setCurrentTimestamp(currentTimeSeries.current.timestamp);
+    }
+  }, [currentTimeSeries?.current?.timestamp, setCurrentTimestamp]);
+
+  // Use provided markers or load from marker manager
+  const markerManager = useMarkerManager(machineId);
+  const markers = providedMarkers || markerManager.markers;
 
   // Time Tick for forcing marker redraw
   const [timeTick, setTimeTick] = useState(0);
@@ -169,16 +141,6 @@ export function GraphWithMarkerControls({
     }, 50);
     return () => clearInterval(intervalId);
   }, [currentTimeSeries?.current]);
-
-  const handleAddMarker = useCallback(() => {
-    if (currentTimeSeries?.current && markerName.trim()) {
-      const ts = currentTimeSeries.current.timestamp;
-      const val = currentTimeSeries.current.value;
-      const name = markerName.trim();
-
-      setMarkers((prev) => [...prev, { timestamp: ts, name, value: val }]);
-    }
-  }, [currentTimeSeries, markerName]);
 
   // Marker Drawing Effect
   useEffect(() => {
@@ -246,19 +208,43 @@ export function GraphWithMarkerControls({
       graphMax = 1;
     }
 
-    markers.forEach(({ timestamp, name, value }) => {
+    markers.forEach(({ timestamp, name, value, color }) => {
       if (timestamp >= startTime && timestamp <= endTime) {
+        // Find the data point closest to the marker timestamp to get the correct Y-value
+        // If value is not provided, use the closest data point
+        let markerValue = value;
+        if (markerValue === undefined && currentTimeSeries) {
+          const validValues = currentTimeSeries.long.values.filter(
+            (v): v is TimeSeriesValue => v !== null,
+          );
+          if (validValues.length > 0) {
+            const closest = validValues.reduce((prev, curr) =>
+              Math.abs(curr.timestamp - timestamp) <
+              Math.abs(prev.timestamp - timestamp)
+                ? curr
+                : prev,
+            );
+            markerValue = closest.value;
+          }
+        }
+
+        // Use a default value if still undefined
+        if (markerValue === undefined) {
+          markerValue = (graphMin + graphMax) / 2;
+        }
+
         // Create marker element (full height line + point at data value)
         const { line, point, label } = createMarkerElement(
           timestamp,
           name,
-          value,
+          markerValue,
           graphMin,
           graphMax,
           startTime,
           endTime,
           graphWidth,
           graphHeight,
+          color,
         );
 
         overlayContainer.appendChild(line);
@@ -290,26 +276,18 @@ export function GraphWithMarkerControls({
           graphId={graphId}
         />
       </div>
-
-      {/* Marker Input and Button */}
-      <div className="flex items-center gap-2">
-        <span className="font-medium">Add Marker:</span>
-        <input
-          type="text"
-          placeholder={`Marker for ${config.title}`}
-          value={markerName}
-          onChange={(e) => setMarkerName(e.target.value)}
-          className="rounded border px-2 py-1"
-        />
-        <button
-          onClick={handleAddMarker}
-          className="rounded bg-gray-200 px-3 py-1 hover:bg-gray-300"
-          disabled={!currentTimeSeries?.current}
-        >
-          Add
-        </button>
-        <p className="ml-4 text-sm text-gray-600">{statusMessage ?? ""}</p>
-      </div>
     </div>
+  );
+}
+
+export function GraphWithMarkerControls(props: GraphWithMarkerControlsProps) {
+  const graphWrapperRef = useRef<HTMLDivElement | null>(null);
+
+  // Use context if available (from SyncedFloatingControlPanel), otherwise work without it
+  return (
+    <GraphWithMarkerControlsContent
+      {...props}
+      graphWrapperRef={graphWrapperRef}
+    />
   );
 }
