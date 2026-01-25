@@ -54,7 +54,26 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
 [Developer Documentation](./docs/developer-docs/)
 
-[API Documentation](https://github.com/qitechgmbh/control/blob/master/docs/rest-api.md)
+[API Documentation](./docs/rest-api.md)
+
+## Additional Documentation
+
+- [Architecture Overview](./docs/architecture-overview.md)
+- [Control Loop](./docs/control-loop.md)
+- [EtherCAT Basics](./docs/ethercat-basics.md)
+- [PDO (Process Data Objects)](./docs/pdo.md)
+- [IO Layer](./docs/io.md)
+- [Devices](./docs/devices.md)
+- [Identification](./docs/identification.md)
+- [Threading](./docs/threading.md)
+- [Logging](./docs/logging.md)
+- [Troubleshooting](./docs/troubleshooting.md)
+- [COE (CANopen over EtherCAT)](./docs/coe.md)
+- [Actors](./docs/actors.md)
+- [Mitsubishi Inverter](./docs/mitsubishi_inverter.md)
+- [Wiring Mitsubishi](./docs/wiring_mitsubishi.md)
+- [NixOS Documentation](./docs/nixos/README.md)
+- [Electrical Diagrams](./docs/electrical-diagrams/README.md)
 
 -> Backend
 - Rust stable 1.86^ toolchain (install via [rustup](https://rustup.rs/))
@@ -72,17 +91,17 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
 For complete step-by-step tutorials on setting up your first hardware, including wiring diagrams and software configuration, see the [Getting Started Guide](./docs/developer-docs/getting-started.md#minimal-hardware-examples).
 
-| Example            | Vendor   | Hardware      | Description                             | How-To Video | Docs                          |
-| :----------------- | :------- | :------------ | :-------------------------------------- | :----------- | :---------------------------- |
-| **Digital Input** | WAGO     | 750-402       | 4-Channel Digital Input                 | [ ]          | -                             |
-| **Digital Output** | WAGO     | 750-753       | 8-Channel Digital Output                | [ ]          | -                             |
-| **Analog Input** | WAGO     | 750-455       | 4-Channel Analog Input                  | [ ]          | -                             |
-| **Analog Output** | WAGO     | 750-553       | 4-Channel Analog Output                 | [ ]          | -                             |
-| **Serial Comms** | WAGO     | 750-652       | RS-485 Modbus Module                    | [ ]          | -                             |
-| **Stepper Drive** | WAGO     | 750-67x       | Stepper Controller                      | [ ]          | -                             |
-| **Power Supply** | WAGO     | 2787-214      | Power Supply Unit                       | [ ]          | -                             |
-| **LED Control** | Beckhoff | EL2004        | Digital output control (simplest setup) | [ ]          | [](./docs/hardware/el2004.md) |
-| **Analog Input** | Beckhoff | EL3021        | Reading analog current measurements     | [ ]          | [](./docs/hardware/el3021.md) |
+| Example            | Vendor   | Hardware      | Description                             | How-To Video | Docs                                                                                    |
+| :----------------- | :------- | :------------ | :-------------------------------------- | :----------- | :-------------------------------------------------------------------------------------- |
+| **Digital Input** | WAGO     | 750-402       | 4-Channel Digital Input                 | [ ]          | [](./docs/developer-docs/minimal-example-wago750-402.md)                                |
+| **Digital Output** | WAGO     | 750-753       | 8-Channel Digital Output                | [ ]          | -                                                                                       |
+| **Analog Input** | WAGO     | 750-455       | 4-Channel Analog Input                  | [ ]          | [](./docs/developer-docs/minimal-example-wago-750-455.md)                               |
+| **Analog Output** | WAGO     | 750-553       | 4-Channel Analog Output                 | [ ]          | -                                                                                       |
+| **Serial Comms** | WAGO     | 750-652       | RS-485 Modbus Module                    | [ ]          | -                                                                                       |
+| **Stepper Drive** | WAGO     | 750-67x       | Stepper Controller                      | [ ]          | -                                                                                       |
+| **Power Supply** | WAGO     | 2787-214      | Power Supply Unit                       | [ ]          | -                                                                                       |
+| **LED Control** | Beckhoff | EL2004        | Digital output control (simplest setup) | [ ]          | [](./docs/developer-docs/minimal-example-el2004.md)                                     |
+| **Analog Input** | Beckhoff | EL3021        | Reading analog current measurements     | [ ]          | [](./docs/developer-docs/minimal-example-el3021.md)                                     |
 
 # QiTech Machines
 
@@ -95,7 +114,7 @@ For complete step-by-step tutorials on setting up your first hardware, including
 | Extruder V1       | Single Screw Extruder       | 5          | Legacy      | [Video](https://youtu.be/gchoG-yGczI?si=bEM4daf5eOVaU5_2)       | -                               |
 | Extruder V2       | Single Screw Extruder       | 6          | Yes         | [Video](https://youtu.be/mexRYGDNWa4?si=h7JBz_XKMwKLPenG)       |                                 |
 | Waterway V1       | Filament Water Cooling      | 7          | In Progress | [Video](https://youtu.be/_T5z1J8bl_k?si=uOC1hIQ1EAP0cHIF)       |                                 |
-| Laser V1          | Diameter Measuring Laser    | 8          | Yes         | [Video](https://youtu.be/WDM34lj4afM?si=MZzUKkHCrzH4P0aA)       |                                 |
+| Laser V1          | Diameter Measuring Laser    | 8          | Yes         | [Video](https://youtu.be/WDM34lj4afM?si=MZzUKkHCrzH4P0aA)       | [](./docs/machines/laser-DRE.md)                                 |
 | 2-Axis-Laser V1   | Dual Axis Laser             | 9          | Yes         | [Video](https://youtu.be/WDM34lj4afM?si=MZzUKkHCrzH4P0aA)       | -                               |
 | Mock              | Mock Machine for Testing    | 10         | Yes         |                                                                 | -                               |
 | Extruder V3       | Single Screw Extruder       | 11         | Yes         | [Video](https://youtu.be/ipHHuPzCvn4?si=hkZ1b93rVuwDxhFD)       |                                 |
