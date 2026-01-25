@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+// @ts-ignore - ExcelJS types not installed
 import ExcelJS from "exceljs";
 import uPlot from "uplot";
 import { TimeSeries, seriesToUPlotData } from "@/lib/timeseries";
@@ -6,14 +7,28 @@ import { renderUnitSymbol, Unit } from "@/control/units";
 import { GraphConfig, SeriesData, GraphLine } from "./types";
 import { LogEntry } from "@/stores/logsStore";
 
+/**
+ * Type definitions for export data structures
+ */
 export type GraphExportData = {
   config: GraphConfig;
-  data: SeriesData; // Always a single series
+  data: SeriesData;
   unit?: Unit;
   renderValue?: (value: number) => string;
 };
 
-// Type for combined sheet data used in Analysis
+export type PidSettings = {
+  kp: number;
+  ki: number;
+  kd: number;
+  zone?: string; // For temperature zones (front, middle, back, nozzle)
+};
+
+export type PidData = {
+  temperature?: Record<string, PidSettings>; // keyed by zone
+  pressure?: PidSettings;
+};
+
 type CombinedSheetData = {
   sheetName: string;
   timestamps: number[];
@@ -25,358 +40,763 @@ type CombinedSheetData = {
   color?: string;
 };
 
-// Utility function to format date/time in German locale
-function formatDateTime(date: Date): string {
-  return date.toLocaleString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-export async function exportGraphsToExcel(
-  graphDataMap: Map<string, () => GraphExportData | null>,
-  groupId: string,
-  logs: LogEntry[] = [],
-): Promise<void> {
-  try {
-    // Filter out invalid series IDs (those without "-series-")
-    const filteredMap = new Map<string, () => GraphExportData | null>();
-    graphDataMap.forEach((getDataFn, seriesId) => {
-      if (seriesId.includes("-series-")) {
-        filteredMap.set(seriesId, getDataFn);
-      }
+/**
+ * Utility class for date/time formatting and manipulation
+ */
+class DateFormatter {
+  static readonly GERMAN_LOCALE = "de-DE";
+  
+  static format(date: Date): string {
+    return date.toLocaleString(this.GERMAN_LOCALE, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
+  }
 
-    const workbook = XLSX.utils.book_new();
-    const exportTimestamp = new Date()
+  static getExportTimestamp(): string {
+    return new Date()
       .toISOString()
       .replace(/[:.]/g, "-")
       .slice(0, 19);
+  }
 
-    const usedSheetNames = new Set<string>(); // Track unique sheet names
-    let processedCount = 0;
+  static formatTimeRange(startTime: number, endTime: number): string {
+    const startDate = new Date(startTime);
+    const endDate = new Date(endTime);
+    return `${this.format(startDate)} bis ${this.format(endDate)}`;
+  }
+}
 
-    // Collect all sheet data for Analysis sheet
-    const allSheetData: CombinedSheetData[] = [];
+/**
+ * Manages unique sheet name generation for Excel workbooks
+ */
+class SheetNameManager {
+  private usedNames = new Set<string>();
+  
+  private readonly UNIT_FRIENDLY_NAMES: Record<string, string> = {
+    "°C": "Temp",
+    "W": "Watt",
+    "A": "Ampere",
+    "bar": "Bar",
+    "rpm": "Rpm",
+    "1/min": "Rpm",
+    "mm": "mm",
+    "%": "Percent",
+  };
 
-    // Process each valid series
-    filteredMap.forEach((getDataFn, seriesId) => {
-      const exportData = getDataFn();
-      if (!exportData?.data?.newData) {
-        console.warn(`No data for series: ${seriesId}`);
-        return;
+  generate(
+    graphTitle: string,
+    seriesTitle: string,
+    unit: Unit | undefined
+  ): string {
+    const unitSymbol = renderUnitSymbol(unit) || "";
+    let sheetName = "";
+
+    // Use unit-based name for generic series, otherwise use series title
+    if (/^Series \d+$/i.test(seriesTitle)) {
+      const friendlyUnitName = this.UNIT_FRIENDLY_NAMES[unitSymbol];
+      sheetName = friendlyUnitName || seriesTitle;
+    } else {
+      const friendlyUnitName = this.UNIT_FRIENDLY_NAMES[unitSymbol];
+      if (
+        friendlyUnitName &&
+        !seriesTitle.toLowerCase().includes(friendlyUnitName.toLowerCase())
+      ) {
+        sheetName = `${seriesTitle} ${friendlyUnitName}`;
+      } else {
+        sheetName = seriesTitle;
       }
+    }
 
-      const series = exportData.data;
-      const seriesTitle = series.title || `Series ${processedCount + 1}`;
+    return this.makeUnique(this.sanitize(sheetName));
+  }
 
-      if (!series.newData) {
-        console.warn(`Series ${seriesTitle} has null data`);
-        return;
+  private sanitize(name: string): string {
+    return name
+      .replace(/[\\/?*$:[\]]/g, "_")
+      .substring(0, 31)
+      .trim() || "Sheet";
+  }
+
+  private makeUnique(name: string): string {
+    let finalName = name;
+    let counter = 1;
+
+    while (this.usedNames.has(finalName)) {
+      const suffix = `_${counter}`;
+      const maxBaseLength = 31 - suffix.length;
+      finalName = `${name.substring(0, maxBaseLength)}${suffix}`;
+      counter++;
+    }
+
+    this.usedNames.add(finalName);
+    return finalName;
+  }
+}
+
+/**
+ * Handles statistical calculations for time series data
+ */
+class StatisticsCalculator {
+  static calculate(values: number[]): {
+    min: number;
+    max: number;
+    avg: number;
+    stdDev: number;
+    range: number;
+    p25: number;
+    p50: number;
+    p75: number;
+  } {
+    if (values.length === 0) {
+      throw new Error("Cannot calculate statistics for empty array");
+    }
+
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    const stdDev = Math.sqrt(
+      values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) /
+        values.length
+    );
+    const range = max - min;
+
+    const sortedValues = [...values].sort((a, b) => a - b);
+    const p25 = sortedValues[Math.floor(sortedValues.length * 0.25)];
+    const p50 = sortedValues[Math.floor(sortedValues.length * 0.5)];
+    const p75 = sortedValues[Math.floor(sortedValues.length * 0.75)];
+
+    return { min, max, avg, stdDev, range, p25, p50, p75 };
+  }
+}
+
+/**
+ * Filters and manages log comments for export
+ */
+class CommentManager {
+  static filterRelevant(
+    logs: LogEntry[],
+    startTime: number,
+    endTime: number
+  ): LogEntry[] {
+    return logs.filter(
+      (log) =>
+        log.timestamp.getTime() >= startTime &&
+        log.timestamp.getTime() <= endTime &&
+        log.level === "info" &&
+        log.message.toLowerCase().includes("comment")
+    );
+  }
+
+  static findAtTimestamp(
+    comments: LogEntry[],
+    timestamp: number,
+    tolerance: number = 1000
+  ): LogEntry | undefined {
+    return comments.find(
+      (log) => Math.abs(log.timestamp.getTime() - timestamp) < tolerance
+    );
+  }
+}
+
+/**
+ * Builds metadata sections for Excel sheets
+ */
+class MetadataBuilder {
+  private rows: string[][] = [];
+
+  addSection(title: string, columnCount: number): this {
+    this.rows.push([title, ...Array(columnCount - 1).fill("")]);
+    return this;
+  }
+
+  addRow(key: string, value: string, columnCount: number): this {
+    this.rows.push([key, value, ...Array(columnCount - 2).fill("")]);
+    return this;
+  }
+
+  addEmptyRow(columnCount: number): this {
+    this.rows.push(Array(columnCount).fill(""));
+    return this;
+  }
+
+  async addSoftwareInfo(columnCount: number): Promise<this> {
+    let versionInfo = "";
+    let commitInfo = "";
+
+    try {
+      const envInfo = await window.environment.getInfo();
+      if (envInfo.qitechOsGitAbbreviation) {
+        versionInfo = envInfo.qitechOsGitAbbreviation;
       }
+      if (envInfo.qitechOsGitCommit) {
+        commitInfo = envInfo.qitechOsGitCommit.substring(0, 8);
+      }
+    } catch (error) {
+      console.warn("Failed to fetch environment info", error);
+    }
 
-      const targetLines: GraphLine[] = [
-        ...(exportData.config.lines || []),
-        ...(series.lines || []),
-      ];
+    this.addSection("Software Information", columnCount);
+    this.addRow("Software", "QiTech Control", columnCount);
+    this.addRow("Version", versionInfo || "Unknown", columnCount);
+    if (commitInfo) {
+      this.addRow("Git Commit", commitInfo, columnCount);
+    }
+    this.addRow(
+      "Export Date",
+      DateFormatter.format(new Date()),
+      columnCount
+    );
 
-      const graphLineData = {
-        graphTitle: exportData.config.title,
-        lineTitle: seriesTitle,
-        series: series.newData,
-        color: series.color,
-        unit: exportData.unit,
-        renderValue: exportData.renderValue,
-        config: exportData.config,
-        targetLines: targetLines,
-      };
+    return this;
+  }
 
-      // Generate better sheet name based on graph title, series title, and unit
-      const sheetName = generateSheetName(
-        exportData.config.title,
-        seriesTitle,
-        exportData.unit,
-        usedSheetNames,
-      );
+  addPidSettings(pidData: PidData | undefined, columnCount: number): this {
+    if (!pidData) return this;
 
-      // Create combined sheet with data and stats
-      // Pass seriesTitle and unit to avoid fragile reverse-engineering from sheet name
-      const combinedWorksheet = createCombinedSheet(graphLineData, sheetName, seriesTitle, exportData.unit);
-      XLSX.utils.book_append_sheet(workbook, combinedWorksheet, sheetName);
+    this.addEmptyRow(columnCount);
+    this.addSection("PID Controller Settings", columnCount);
 
-      // Collect data for Analysis sheet
-      const [timestamps, values] = seriesToUPlotData(series.newData.long);
-      allSheetData.push({
-        sheetName,
+    // Temperature PID settings
+    if (pidData.temperature) {
+      this.addEmptyRow(columnCount);
+      this.addRow("Temperature Controllers", "", columnCount);
+      
+      Object.entries(pidData.temperature).forEach(([zone, settings]) => {
+        this.addRow(`  ${zone} - Kp`, settings.kp.toFixed(3), columnCount);
+        this.addRow(`  ${zone} - Ki`, settings.ki.toFixed(3), columnCount);
+        this.addRow(`  ${zone} - Kd`, settings.kd.toFixed(3), columnCount);
+      });
+    }
+
+    // Pressure PID settings
+    if (pidData.pressure) {
+      this.addEmptyRow(columnCount);
+      this.addRow("Pressure Controller", "", columnCount);
+      this.addRow("  Kp", pidData.pressure.kp.toFixed(3), columnCount);
+      this.addRow("  Ki", pidData.pressure.ki.toFixed(3), columnCount);
+      this.addRow("  Kd", pidData.pressure.kd.toFixed(3), columnCount);
+    }
+
+    return this;
+  }
+
+  getRows(): string[][] {
+    return this.rows;
+  }
+}
+
+/**
+ * Creates individual data sheets for each series
+ */
+class DataSheetBuilder {
+  constructor(
+    private graphLine: {
+      graphTitle: string;
+      lineTitle: string;
+      series: TimeSeries;
+      color?: string;
+      unit?: Unit;
+      renderValue?: (value: number) => string;
+      config: GraphConfig;
+      targetLines: GraphLine[];
+    },
+    private seriesTitle: string,
+    private unit: Unit | undefined
+  ) {}
+
+  build(): XLSX.WorkSheet {
+    const [timestamps, values] = seriesToUPlotData(this.graphLine.series.long);
+    const unitSymbol = renderUnitSymbol(this.unit) || "";
+
+    const sheetData: any[][] = [];
+
+    // Build header
+    const col1Header = unitSymbol
+      ? `${unitSymbol} ${this.seriesTitle}`
+      : this.seriesTitle;
+
+    sheetData.push([
+      "Timestamp",
+      col1Header,
+      "",
+      "",
+      "Statistic",
+      "Value",
+    ]);
+
+    // Build stats section
+    const statsRows = this.buildStatsRows(
+      timestamps,
+      values,
+      unitSymbol
+    );
+
+    // Combine data and stats rows
+    const maxRows = Math.max(timestamps.length, statsRows.length);
+    for (let i = 0; i < maxRows; i++) {
+      const row = this.buildDataRow(
+        i,
         timestamps,
         values,
-        unit: renderUnitSymbol(exportData.unit) || "",
-        seriesTitle,
-        graphTitle: exportData.config.title,
-        targetLines,
-        color: series.color,
-      });
+        statsRows
+      );
+      sheetData.push(row);
+    }
 
-      processedCount++;
+    // Convert to worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+    worksheet["!cols"] = [
+      { wch: 20 }, // Timestamp
+      { wch: 15 }, // Value
+      { wch: 5 }, // Empty
+      { wch: 5 }, // Empty
+      { wch: 30 }, // Statistic name
+      { wch: 20 }, // Statistic value
+    ];
+
+    return worksheet;
+  }
+
+  private buildStatsRows(
+    timestamps: number[],
+    values: number[],
+    unitSymbol: string
+  ): string[][] {
+    const statsRows: string[][] = [];
+
+    statsRows.push(["Graph", this.graphLine.graphTitle]);
+    statsRows.push(["Line Name", this.graphLine.lineTitle]);
+    statsRows.push(["Line Color", this.graphLine.color || "Default"]);
+    statsRows.push(["Generated", DateFormatter.format(new Date())]);
+    statsRows.push(["", ""]);
+    statsRows.push(["Total Data Points", timestamps.length.toString()]);
+
+    if (timestamps.length > 0) {
+      const firstDate = new Date(timestamps[0]);
+      const lastDate = new Date(timestamps[timestamps.length - 1]);
+
+      statsRows.push(["Time Range Start", DateFormatter.format(firstDate)]);
+      statsRows.push(["Time Range End", DateFormatter.format(lastDate)]);
+
+      const duration = timestamps[timestamps.length - 1] - timestamps[0];
+      const durationHours = (duration / (1000 * 60 * 60)).toFixed(2);
+      statsRows.push(["Duration (hours)", durationHours]);
+
+      if (values.length > 0) {
+        const stats = StatisticsCalculator.calculate(values);
+
+        statsRows.push(["", ""]);
+        statsRows.push([
+          `Minimum Value (${unitSymbol})`,
+          this.formatValue(stats.min),
+        ]);
+        statsRows.push([
+          `Maximum Value (${unitSymbol})`,
+          this.formatValue(stats.max),
+        ]);
+        statsRows.push([
+          `Average Value (${unitSymbol})`,
+          this.formatValue(stats.avg),
+        ]);
+        statsRows.push([
+          `Standard Deviation (${unitSymbol})`,
+          this.formatValue(stats.stdDev),
+        ]);
+        statsRows.push([
+          `Range (${unitSymbol})`,
+          this.formatValue(stats.range),
+        ]);
+
+        statsRows.push(["", ""]);
+        statsRows.push([
+          `25th Percentile (${unitSymbol})`,
+          this.formatValue(stats.p25),
+        ]);
+        statsRows.push([
+          `50th Percentile (${unitSymbol})`,
+          this.formatValue(stats.p50),
+        ]);
+        statsRows.push([
+          `75th Percentile (${unitSymbol})`,
+          this.formatValue(stats.p75),
+        ]);
+      }
+    }
+
+    return statsRows;
+  }
+
+  private buildDataRow(
+    index: number,
+    timestamps: number[],
+    values: number[],
+    statsRows: string[][]
+  ): any[] {
+    const row: any[] = ["", "", "", ""];
+
+    // Add timestamp and value data
+    if (index < timestamps.length) {
+      const date = new Date(timestamps[index]);
+      row[0] = DateFormatter.format(date);
+      row[1] = this.formatValue(values[index]);
+    }
+
+    // Add stats
+    if (index < statsRows.length) {
+      row[4] = statsRows[index][0];
+      row[5] = statsRows[index][1];
+    } else {
+      row[4] = "";
+      row[5] = "";
+    }
+
+    return row;
+  }
+
+  private formatValue(value: number): string {
+    return this.graphLine.renderValue
+      ? this.graphLine.renderValue(value)
+      : value?.toFixed(3) || "";
+  }
+}
+
+/**
+ * Creates the combined analysis sheet with all series data
+ */
+class AnalysisSheetBuilder {
+  constructor(
+    private allSheetData: CombinedSheetData[],
+    private groupId: string,
+    private logs: LogEntry[],
+    private pidData?: PidData
+  ) {}
+
+  async build(): Promise<XLSX.WorkSheet> {
+    // Get sorted timestamps
+    const sortedTimestamps = this.getSortedTimestamps();
+    const startTime = sortedTimestamps[0];
+    const endTime = sortedTimestamps[sortedTimestamps.length - 1];
+
+    // Filter relevant comments
+    const relevantComments = CommentManager.filterRelevant(
+      this.logs,
+      startTime,
+      endTime
+    );
+
+    // Build data by timestamp map
+    const dataByTimestamp = this.buildDataByTimestampMap();
+
+    // Build columns
+    const columns = this.buildColumns();
+
+    // Create sheet data array
+    const sheetData: any[][] = [];
+
+    // Add title row
+    const timeRangeTitle = DateFormatter.formatTimeRange(startTime, endTime);
+    sheetData.push([
+      `${this.groupId} - ${timeRangeTitle}`,
+      ...Array(columns.length - 1).fill(""),
+    ]);
+    sheetData.push(Array(columns.length).fill(""));
+
+    // Add target values row if applicable
+    this.addTargetValuesRow(sheetData, columns.length);
+
+    // Add header row
+    sheetData.push(columns);
+
+    // Add data rows
+    const dataStartRow = sheetData.length;
+    let maxSeconds = 0;
+
+    sortedTimestamps.forEach((timestamp) => {
+      const row = this.buildDataRow(
+        timestamp,
+        startTime,
+        dataByTimestamp,
+        relevantComments
+      );
+      
+      const secondsFromStart = Math.floor((timestamp - startTime) / 1000);
+      maxSeconds = Math.max(maxSeconds, secondsFromStart);
+      
+      sheetData.push(row);
     });
 
-    if (processedCount === 0) {
-      alert("No data available to export from any graphs in this group");
-      return;
-    }
+    // Add metadata
+    await this.addMetadata(sheetData, columns.length, relevantComments);
 
-    // Create Analysis sheet with combined data and chart
-    const analysisSheet = await createAnalysisSheet(
-      allSheetData,
-      groupId,
-      logs
+    // Add chart instructions
+    this.addChartInstructions(
+      sheetData,
+      columns.length,
+      dataStartRow,
+      maxSeconds,
+      timeRangeTitle
     );
-    XLSX.utils.book_append_sheet(workbook, analysisSheet, "Analysis");
 
-    // Write XLSX to buffer first
-    const xlsxBuffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    // Convert to worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
 
-    // Convert to ExcelJS workbook to add chart image
-    let excelJSWorkbook: ExcelJS.Workbook;
-    try {
-      excelJSWorkbook = new ExcelJS.Workbook();
-      await excelJSWorkbook.xlsx.load(xlsxBuffer);
-    } catch (error) {
-      console.error(
-        "Failed to load generated XLSX buffer into ExcelJS workbook",
-        error
-      );
-      alert(
-        "Export failed while preparing the Excel file. The generated workbook data was invalid or could not be processed."
-      );
-      return;
+    // Configure worksheet
+    this.configureWorksheet(worksheet, columns.length);
+
+    return worksheet;
+  }
+
+  private getSortedTimestamps(): number[] {
+    const allTimestamps = new Set<number>();
+    this.allSheetData.forEach((data) => {
+      data.timestamps.forEach((ts) => allTimestamps.add(ts));
+    });
+    return Array.from(allTimestamps).sort((a, b) => a - b);
+  }
+
+  private buildDataByTimestampMap(): Map<number, Map<string, number>> {
+    const dataByTimestamp = new Map<number, Map<string, number>>();
+
+    this.allSheetData.forEach((sheetData) => {
+      sheetData.timestamps.forEach((ts, idx) => {
+        if (!dataByTimestamp.has(ts)) {
+          dataByTimestamp.set(ts, new Map());
+        }
+        dataByTimestamp
+          .get(ts)!
+          .set(sheetData.sheetName, sheetData.values[idx]);
+      });
+    });
+
+    return dataByTimestamp;
+  }
+
+  private buildColumns(): string[] {
+    const columns: string[] = ["Timestamp"];
+    const availableColumns = this.allSheetData.map((d) => d.sheetName);
+    columns.push(...availableColumns);
+    columns.push("User Comments");
+    return columns;
+  }
+
+  private addTargetValuesRow(sheetData: any[][], columnCount: number): void {
+    const targetValues: any[] = ["Target Values"];
+    let hasTargets = false;
+
+    this.allSheetData.forEach((sheetDataEntry) => {
+      if (sheetDataEntry.targetLines.length > 0) {
+        const targetLine = sheetDataEntry.targetLines.find(
+          (line) => line.type === "target"
+        );
+        if (targetLine) {
+          targetValues.push(targetLine.value.toFixed(2));
+          hasTargets = true;
+        } else {
+          targetValues.push("");
+        }
+      } else {
+        targetValues.push("");
+      }
+    });
+
+    targetValues.push(""); // Empty for comments column
+
+    if (hasTargets) {
+      sheetData.push(targetValues);
+      sheetData.push(Array(columnCount).fill(""));
     }
+  }
 
-    // Find the Analysis sheet
-    const analysisWorksheet = excelJSWorkbook.getWorksheet("Analysis");
+  private buildDataRow(
+    timestamp: number,
+    startTime: number,
+    dataByTimestamp: Map<number, Map<string, number>>,
+    relevantComments: LogEntry[]
+  ): any[] {
+    const row: any[] = [];
 
-    if (analysisWorksheet) {
-      // Generate chart image
-      const sortedTimestamps = Array.from(
-        new Set(allSheetData.flatMap((d) => d.timestamps))
-      ).sort((a, b) => a - b);
+    // Calculate seconds from start
+    const secondsFromStart = Math.floor((timestamp - startTime) / 1000);
+    row.push(secondsFromStart);
 
-      const startTime = sortedTimestamps[0];
-      const startDate = new Date(startTime);
-      const endDate = new Date(sortedTimestamps[sortedTimestamps.length - 1]);
+    // Add data for each column
+    this.allSheetData.forEach((sheetDataEntry) => {
+      const tsData = dataByTimestamp.get(timestamp);
+      if (tsData && tsData.has(sheetDataEntry.sheetName)) {
+        row.push(Number(tsData.get(sheetDataEntry.sheetName)!.toFixed(2)));
+      } else {
+        row.push("");
+      }
+    });
 
-      const timeRangeTitle = `${formatDateTime(startDate)} bis ${formatDateTime(endDate)}`;
+    // Check for comments at this timestamp
+    const comment = CommentManager.findAtTimestamp(relevantComments, timestamp);
+    row.push(comment ? comment.message : "");
 
-      const chartImage = await generateChartImage(
+    return row;
+  }
+
+  private async addMetadata(
+    sheetData: any[][],
+    columnCount: number,
+    relevantComments: LogEntry[]
+  ): Promise<void> {
+    sheetData.push(Array(columnCount).fill(""));
+    sheetData.push(Array(columnCount).fill(""));
+
+    const metadataBuilder = new MetadataBuilder();
+    await metadataBuilder.addSoftwareInfo(columnCount);
+
+    // Add PID settings if available
+    metadataBuilder.addPidSettings(this.pidData, columnCount);
+
+    // Add comment statistics
+    metadataBuilder.addEmptyRow(columnCount);
+    metadataBuilder.addSection("Comment Statistics", columnCount);
+    metadataBuilder.addRow(
+      "Total Comments",
+      relevantComments.length.toString(),
+      columnCount
+    );
+
+    sheetData.push(...metadataBuilder.getRows());
+  }
+
+  private addChartInstructions(
+    sheetData: any[][],
+    columnCount: number,
+    dataStartRow: number,
+    maxSeconds: number,
+    timeRangeTitle: string
+  ): void {
+    sheetData.push(Array(columnCount).fill(""));
+    sheetData.push(Array(columnCount).fill(""));
+    sheetData.push(["Chart Instructions", ...Array(columnCount - 1).fill("")]);
+    sheetData.push([
+      `1. Select all data from row ${dataStartRow} to the last data row`,
+      ...Array(columnCount - 1).fill(""),
+    ]);
+    sheetData.push([
+      "2. Insert > Chart > Scatter Chart with Straight Lines and Markers",
+      ...Array(columnCount - 1).fill(""),
+    ]);
+    sheetData.push([
+      "3. X-axis: Time (seconds), Y-axis: All measurement columns",
+      ...Array(columnCount - 1).fill(""),
+    ]);
+    sheetData.push([
+      `4. Set X-axis range: 0 to ${maxSeconds}`,
+      ...Array(columnCount - 1).fill(""),
+    ]);
+    sheetData.push([
+      "5. Set Y-axis range: 0 to 1000",
+      ...Array(columnCount - 1).fill(""),
+    ]);
+    sheetData.push([
+      "6. Position legend at bottom",
+      ...Array(columnCount - 1).fill(""),
+    ]);
+    sheetData.push([
+      `7. Chart Title: ${this.groupId} - ${timeRangeTitle}`,
+      ...Array(columnCount - 1).fill(""),
+    ]);
+  }
+
+  private configureWorksheet(worksheet: XLSX.WorkSheet, columnCount: number): void {
+    // Merge title cells
+    if (!worksheet["!merges"]) worksheet["!merges"] = [];
+    worksheet["!merges"].push({
+      s: { r: 0, c: 0 },
+      e: { r: 0, c: columnCount - 1 },
+    });
+
+    // Set column widths
+    const colWidths = [
+      { wch: 12 }, // Timestamp
+      ...this.allSheetData.map(() => ({ wch: 12 })),
+      { wch: 40 }, // Comments
+    ];
+    worksheet["!cols"] = colWidths;
+  }
+}
+
+/**
+ * Generates chart images using uPlot
+ */
+class ChartImageGenerator {
+  static async generate(
+    allSheetData: CombinedSheetData[],
+    groupId: string,
+    timeRangeTitle: string,
+    sortedTimestamps: number[],
+    startTime: number
+  ): Promise<string | null> {
+    let container: HTMLDivElement | null = null;
+    let plot: uPlot | null = null;
+
+    try {
+      container = this.createOffScreenContainer();
+      document.body.appendChild(container);
+
+      const chartData = this.prepareChartData(
         allSheetData,
-        groupId,
-        timeRangeTitle,
         sortedTimestamps,
         startTime
       );
+      const series = this.buildSeriesConfig(allSheetData);
+      const opts = this.buildPlotOptions(groupId, timeRangeTitle, series);
 
-      if (chartImage) {
-        // Add chart image to worksheet
-        const chartImageId = excelJSWorkbook.addImage({
-          base64: chartImage,
-          extension: "png",
-        });
+      plot = new uPlot(opts, chartData as uPlot.AlignedData, container);
 
-        // Find a good position for the image (after the data and metadata)
-        const lastRow = analysisWorksheet.rowCount;
+      await this.waitForRender(container);
 
-        analysisWorksheet.addImage(chartImageId, {
-          tl: { col: 0, row: lastRow + 2 }, // top-left
-          ext: { width: 1200, height: 600 }, // chart size
-        });
+      const canvas = container.querySelector("canvas");
+      if (!canvas) return null;
 
-        // Generate and add legend image below the chart
-        const legendImage = generateLegendImage(allSheetData);
-        if (legendImage) {
-          const legendImageId = excelJSWorkbook.addImage({
-            base64: legendImage,
-            extension: "png",
-          });
-
-          // Position legend below the chart (approximately 32 rows for 600px chart at ~19px per row)
-          analysisWorksheet.addImage(legendImageId, {
-            tl: { col: 0, row: lastRow + 2 + 32 }, // below chart
-            ext: { width: 1200, height: 50 }, // legend size
-          });
-        }
+      const imageData = canvas.toDataURL("image/png");
+      return imageData.split(",")[1];
+    } catch (error) {
+      console.error("Error generating chart image:", error);
+      return null;
+    } finally {
+      if (plot) plot.destroy();
+      if (container && document.body.contains(container)) {
+        document.body.removeChild(container);
       }
     }
-
-    // Write final file with ExcelJS
-    const filename = `${groupId.toLowerCase().replace(/\s+/g, "_")}_export_${exportTimestamp}.xlsx`;
-    const buffer = await excelJSWorkbook.xlsx.writeBuffer();
-
-    // Create blob and download
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.click();
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    alert(
-      `Error exporting data to Excel: ${error instanceof Error ? error.message : "Unknown error"}. Please try again.`,
-    );
   }
-}
 
-// Get series color from machine data or fallback to default
-function getSeriesColor(color?: string): string {
-  // Use the color from the machine data if available
-  if (color) {
-    return color;
-  }
-  
-  // Fallback to default color
-  return "#9b59b6"; // Purple fallback
-}
-
-// Generate a separate legend image
-function generateLegendImage(allSheetData: CombinedSheetData[]): string | null {
-  try {
-    const canvasWidth = 1200;
-    const itemSpacing = 15;
-    const rowHeight = 20;
-    const topPadding = 5;
-    const bottomPadding = 5;
-    const maxItemWidth = 1100; // Maximum X position before wrapping
-    const itemStartX = 20;
-
-    // Create a temporary canvas to measure text
-    const tempCanvas = document.createElement("canvas");
-    const tempCtx = tempCanvas.getContext("2d");
-    if (!tempCtx) return null;
-
-    tempCtx.font = "12px sans-serif";
-
-    // First pass: Calculate required height based on layout
-    let legendX = itemStartX;
-    let rowCount = 1;
-
-    allSheetData.forEach((sheetData, index) => {
-      const label = sheetData.sheetName;
-      const textWidth = tempCtx.measureText(label).width;
-      const itemWidth = 16 + textWidth + itemSpacing; // color box (16px) + spacing
-
-      // Check if item fits in current row
-      if (legendX + itemWidth > maxItemWidth && index < allSheetData.length - 1) {
-        // Wrap to next line
-        legendX = itemStartX;
-        rowCount++;
-      }
-
-      legendX += itemWidth;
-    });
-
-    // Calculate required canvas height
-    const requiredHeight = topPadding + rowHeight + (rowCount - 1) * rowHeight + bottomPadding;
-
-    // Create canvas with calculated height
-    const legendCanvas = document.createElement("canvas");
-    legendCanvas.width = canvasWidth;
-    legendCanvas.height = requiredHeight;
-    const ctx = legendCanvas.getContext("2d");
-
-    if (!ctx) return null;
-
-    // Draw white background
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvasWidth, requiredHeight);
-
-    // Draw legend items
-    ctx.font = "12px sans-serif";
-    ctx.textAlign = "left";
-
-    let currentX = itemStartX;
-    let currentY = topPadding + 15; // Vertical center of first row
-
-    allSheetData.forEach((sheetData, index) => {
-      const color = getSeriesColor(sheetData.color);
-      const label = sheetData.sheetName;
-      const textWidth = ctx.measureText(label).width;
-      const itemWidth = 16 + textWidth + itemSpacing;
-
-      // Check if item fits in current row
-      if (currentX + itemWidth > maxItemWidth && index < allSheetData.length - 1) {
-        // Wrap to next line
-        currentX = itemStartX;
-        currentY += rowHeight;
-      }
-
-      // Draw color indicator (small rectangle)
-      ctx.fillStyle = color;
-      ctx.fillRect(currentX, currentY - 6, 12, 12);
-
-      // Draw label text
-      ctx.fillStyle = "#333";
-      ctx.fillText(label, currentX + 16, currentY + 4);
-
-      // Move to next position
-      currentX += itemWidth;
-    });
-
-    const imageData = legendCanvas.toDataURL("image/png");
-    return imageData.split(",")[1];
-  } catch (error) {
-    console.error("Error generating legend image:", error);
-    return null;
-  }
-}
-
-// Generate chart image from data using uPlot
-async function generateChartImage(
-  allSheetData: CombinedSheetData[],
-  groupId: string,
-  timeRangeTitle: string,
-  sortedTimestamps: number[],
-  startTime: number,
-): Promise<string | null> {
-  let container: HTMLDivElement | null = null;
-  let plot: uPlot | null = null;
-
-  try {
-    // Create an off-screen div for the chart
-    container = document.createElement("div");
+  private static createOffScreenContainer(): HTMLDivElement {
+    const container = document.createElement("div");
     container.style.width = "1200px";
     container.style.height = "600px";
     container.style.position = "absolute";
     container.style.left = "-9999px";
-    document.body.appendChild(container);
+    return container;
+  }
 
-    // Prepare data for uPlot: [timestamps in seconds, ...value arrays]
+  private static prepareChartData(
+    allSheetData: CombinedSheetData[],
+    sortedTimestamps: number[],
+    startTime: number
+  ): number[][] {
     const chartData: number[][] = [
-      sortedTimestamps.map((ts) => (ts - startTime) / 1000), // X-axis: seconds from start
+      sortedTimestamps.map((ts) => (ts - startTime) / 1000),
     ];
 
-    const series: uPlot.Series[] = [
-      {
-        label: "Time (s)",
-      },
-    ];
-
-    // Create timestamp index map for O(1) lookup performance
     const timestampIndexMap = new Map<number, number>();
     sortedTimestamps.forEach((ts, idx) => {
       timestampIndexMap.set(ts, idx);
     });
 
-    // Add each data series
     allSheetData.forEach((sheetData) => {
       const values = new Array(sortedTimestamps.length).fill(null);
 
-      // Map values to corresponding timestamps using O(1) lookup
       sheetData.timestamps.forEach((ts, idx) => {
         const timeIndex = timestampIndexMap.get(ts);
         if (timeIndex !== undefined) {
@@ -385,9 +805,18 @@ async function generateChartImage(
       });
 
       chartData.push(values);
+    });
 
-      const color = getSeriesColor(sheetData.color);
+    return chartData;
+  }
 
+  private static buildSeriesConfig(
+    allSheetData: CombinedSheetData[]
+  ): uPlot.Series[] {
+    const series: uPlot.Series[] = [{ label: "Time (s)" }];
+
+    allSheetData.forEach((sheetData) => {
+      const color = sheetData.color || "#9b59b6";
       series.push({
         label: sheetData.sheetName,
         stroke: color,
@@ -400,16 +829,21 @@ async function generateChartImage(
       });
     });
 
-    // Create uPlot instance
-    const opts: uPlot.Options = {
+    return series;
+  }
+
+  private static buildPlotOptions(
+    groupId: string,
+    timeRangeTitle: string,
+    series: uPlot.Series[]
+  ): uPlot.Options {
+    return {
       title: `${groupId} - ${timeRangeTitle}`,
       width: 1200,
       height: 600,
       series,
       scales: {
-        x: {
-          time: false,
-        },
+        x: { time: false },
       },
       axes: [
         {
@@ -423,590 +857,369 @@ async function generateChartImage(
           grid: { stroke: "#e0e0e0", width: 1 },
         },
       ],
-      legend: {
-        show: false, // Legend is a separate image
-      },
-      cursor: {
-        show: false,
-      },
+      legend: { show: false },
+      cursor: { show: false },
     };
+  }
 
-    plot = new uPlot(opts, chartData as uPlot.AlignedData, container);
-
-    // Wait for chart to render using requestAnimationFrame for more reliable timing
-    await new Promise<void>((resolve) => {
+  private static async waitForRender(container: HTMLDivElement): Promise<void> {
+    return new Promise<void>((resolve) => {
       const checkCanvas = () => {
-        if (!container) {
-          resolve();
-          return;
-        }
         const canvas = container.querySelector("canvas");
         if (canvas && canvas.width > 0 && canvas.height > 0) {
-          // Use another frame to ensure rendering is complete
           requestAnimationFrame(() => resolve());
         } else {
           requestAnimationFrame(checkCanvas);
         }
       };
       checkCanvas();
-      
-      // Fallback timeout to prevent infinite waiting
+
+      // Fallback timeout
       setTimeout(() => resolve(), 500);
     });
+  }
+}
 
-    // Get the canvas element
-    const canvas = container.querySelector("canvas");
-    if (!canvas) {
+/**
+ * Generates legend images for charts
+ */
+class LegendImageGenerator {
+  static generate(allSheetData: CombinedSheetData[]): string | null {
+    try {
+      const dimensions = this.calculateDimensions(allSheetData);
+      const canvas = this.createCanvas(dimensions.width, dimensions.height);
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) return null;
+
+      this.drawBackground(ctx, dimensions.width, dimensions.height);
+      this.drawLegendItems(ctx, allSheetData, dimensions);
+
+      const imageData = canvas.toDataURL("image/png");
+      return imageData.split(",")[1];
+    } catch (error) {
+      console.error("Error generating legend image:", error);
       return null;
     }
+  }
 
-    // Get the image data directly from uPlot's canvas
-    const imageData = canvas.toDataURL("image/png");
+  private static calculateDimensions(allSheetData: CombinedSheetData[]): {
+    width: number;
+    height: number;
+    rows: number;
+  } {
+    const canvasWidth = 1200;
+    const itemSpacing = 15;
+    const rowHeight = 20;
+    const topPadding = 5;
+    const bottomPadding = 5;
+    const maxItemWidth = 1100;
+    const itemStartX = 20;
 
-    // Return base64 data (remove the data:image/png;base64, prefix)
-    return imageData.split(",")[1];
-  } catch (error) {
-    console.error("Error generating chart image:", error);
-    return null;
-  } finally {
-    // Ensure cleanup happens regardless of success or failure
-    if (plot) {
-      plot.destroy();
-    }
-    if (container && document.body.contains(container)) {
-      document.body.removeChild(container);
-    }
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+    if (!tempCtx) return { width: canvasWidth, height: 50, rows: 1 };
+
+    tempCtx.font = "12px sans-serif";
+
+    let legendX = itemStartX;
+    let rowCount = 1;
+
+    allSheetData.forEach((sheetData, index) => {
+      const textWidth = tempCtx.measureText(sheetData.sheetName).width;
+      const itemWidth = 16 + textWidth + itemSpacing;
+
+      if (
+        legendX + itemWidth > maxItemWidth &&
+        index < allSheetData.length - 1
+      ) {
+        legendX = itemStartX;
+        rowCount++;
+      }
+
+      legendX += itemWidth;
+    });
+
+    const height =
+      topPadding + rowHeight + (rowCount - 1) * rowHeight + bottomPadding;
+
+    return { width: canvasWidth, height, rows: rowCount };
+  }
+
+  private static createCanvas(width: number, height: number): HTMLCanvasElement {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    return canvas;
+  }
+
+  private static drawBackground(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number
+  ): void {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  private static drawLegendItems(
+    ctx: CanvasRenderingContext2D,
+    allSheetData: CombinedSheetData[],
+    dimensions: { width: number; height: number; rows: number }
+  ): void {
+    const itemSpacing = 15;
+    const rowHeight = 20;
+    const topPadding = 5;
+    const maxItemWidth = 1100;
+    const itemStartX = 20;
+
+    ctx.font = "12px sans-serif";
+    ctx.textAlign = "left";
+
+    let currentX = itemStartX;
+    let currentY = topPadding + 15;
+
+    allSheetData.forEach((sheetData, index) => {
+      const color = sheetData.color || "#9b59b6";
+      const label = sheetData.sheetName;
+      const textWidth = ctx.measureText(label).width;
+      const itemWidth = 16 + textWidth + itemSpacing;
+
+      if (
+        currentX + itemWidth > maxItemWidth &&
+        index < allSheetData.length - 1
+      ) {
+        currentX = itemStartX;
+        currentY += rowHeight;
+      }
+
+      // Draw color indicator
+      ctx.fillStyle = color;
+      ctx.fillRect(currentX, currentY - 6, 12, 12);
+
+      // Draw label text
+      ctx.fillStyle = "#333";
+      ctx.fillText(label, currentX + 16, currentY + 4);
+
+      currentX += itemWidth;
+    });
   }
 }
 
-// Create Analysis sheet with combined data from all sheets
-async function createAnalysisSheet(
-  allSheetData: CombinedSheetData[],
+/**
+ * Main orchestrator for Excel export functionality
+ */
+export class ExcelExporter {
+  private sheetNameManager = new SheetNameManager();
+
+  async export(
+    graphDataMap: Map<string, () => GraphExportData | null>,
+    groupId: string,
+    logs: LogEntry[] = [],
+    pidData?: PidData
+  ): Promise<void> {
+    try {
+      const filteredMap = this.filterValidSeries(graphDataMap);
+      const workbook = XLSX.utils.book_new();
+      const exportTimestamp = DateFormatter.getExportTimestamp();
+
+      const allSheetData: CombinedSheetData[] = [];
+
+      // Process each series
+      filteredMap.forEach((getDataFn) => {
+        const exportData = getDataFn();
+        if (!exportData?.data?.newData) return;
+
+        const series = exportData.data;
+        const seriesTitle = series.title || "Series";
+        
+        // Ensure newData is not null before proceeding
+        if (!series.newData) return;
+
+        const sheetName = this.sheetNameManager.generate(
+          exportData.config.title,
+          seriesTitle,
+          exportData.unit
+        );
+
+        const targetLines: GraphLine[] = [
+          ...(exportData.config.lines || []),
+          ...(series.lines || []),
+        ];
+
+        // Create data sheet
+        const dataSheetBuilder = new DataSheetBuilder(
+          {
+            graphTitle: exportData.config.title,
+            lineTitle: seriesTitle,
+            series: series.newData,
+            color: series.color,
+            unit: exportData.unit,
+            renderValue: exportData.renderValue,
+            config: exportData.config,
+            targetLines,
+          },
+          seriesTitle,
+          exportData.unit
+        );
+
+        const worksheet = dataSheetBuilder.build();
+        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+        // Collect data for analysis sheet
+        const [timestamps, values] = seriesToUPlotData(series.newData.long);
+        allSheetData.push({
+          sheetName,
+          timestamps,
+          values,
+          unit: renderUnitSymbol(exportData.unit) || "",
+          seriesTitle,
+          graphTitle: exportData.config.title,
+          targetLines,
+          color: series.color,
+        });
+      });
+
+      if (allSheetData.length === 0) {
+        alert("No data available to export from any graphs in this group");
+        return;
+      }
+
+      // Create analysis sheet
+      const analysisSheetBuilder = new AnalysisSheetBuilder(
+        allSheetData,
+        groupId,
+        logs,
+        pidData
+      );
+      const analysisSheet = await analysisSheetBuilder.build();
+      XLSX.utils.book_append_sheet(workbook, analysisSheet, "Analysis");
+
+      // Convert to ExcelJS for image support
+      await this.addChartImages(workbook, allSheetData, groupId);
+    } catch (error) {
+      alert(
+        `Error exporting data to Excel: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }. Please try again.`
+      );
+    }
+  }
+
+  private filterValidSeries(
+    graphDataMap: Map<string, () => GraphExportData | null>
+  ): Map<string, () => GraphExportData | null> {
+    const filteredMap = new Map<string, () => GraphExportData | null>();
+    graphDataMap.forEach((getDataFn, seriesId) => {
+      if (seriesId.includes("-series-")) {
+        filteredMap.set(seriesId, getDataFn);
+      }
+    });
+    return filteredMap;
+  }
+
+  private async addChartImages(
+    workbook: XLSX.WorkBook,
+    allSheetData: CombinedSheetData[],
+    groupId: string
+  ): Promise<void> {
+    const xlsxBuffer = XLSX.write(workbook, {
+      type: "buffer",
+      bookType: "xlsx",
+    });
+
+    let excelJSWorkbook: ExcelJS.Workbook;
+    try {
+      excelJSWorkbook = new ExcelJS.Workbook();
+      await excelJSWorkbook.xlsx.load(xlsxBuffer);
+    } catch (error) {
+      console.error("Failed to load XLSX buffer into ExcelJS", error);
+      alert(
+        "Export failed while preparing the Excel file. The generated workbook data was invalid or could not be processed."
+      );
+      return;
+    }
+
+    const analysisWorksheet = excelJSWorkbook.getWorksheet("Analysis");
+    if (!analysisWorksheet) return;
+
+    const sortedTimestamps = Array.from(
+      new Set(allSheetData.flatMap((d) => d.timestamps))
+    ).sort((a, b) => a - b);
+
+    const startTime = sortedTimestamps[0];
+    const endTime = sortedTimestamps[sortedTimestamps.length - 1];
+    const timeRangeTitle = DateFormatter.formatTimeRange(startTime, endTime);
+
+    const chartImage = await ChartImageGenerator.generate(
+      allSheetData,
+      groupId,
+      timeRangeTitle,
+      sortedTimestamps,
+      startTime
+    );
+
+    if (chartImage) {
+      const chartImageId = excelJSWorkbook.addImage({
+        base64: chartImage,
+        extension: "png",
+      });
+
+      const lastRow = analysisWorksheet.rowCount;
+      analysisWorksheet.addImage(chartImageId, {
+        tl: { col: 0, row: lastRow + 2 },
+        ext: { width: 1200, height: 600 },
+      });
+
+      const legendImage = LegendImageGenerator.generate(allSheetData);
+      if (legendImage) {
+        const legendImageId = excelJSWorkbook.addImage({
+          base64: legendImage,
+          extension: "png",
+        });
+
+        analysisWorksheet.addImage(legendImageId, {
+          tl: { col: 0, row: lastRow + 2 + 32 },
+          ext: { width: 1200, height: 50 },
+        });
+      }
+    }
+
+    // Write final file with ExcelJS
+    const buffer = await excelJSWorkbook.xlsx.writeBuffer();
+    this.triggerDownload(buffer, groupId, DateFormatter.getExportTimestamp());
+  }
+
+  private triggerDownload(
+    buffer: ArrayBuffer,
+    groupId: string,
+    exportTimestamp: string
+  ): void {
+    const filename = `${groupId
+      .toLowerCase()
+      .replace(/\s+/g, "_")}_export_${exportTimestamp}.xlsx`;
+
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  }
+}
+
+/**
+ * Convenience function to maintain backward compatibility with existing code
+ */
+export async function exportGraphsToExcel(
+  graphDataMap: Map<string, () => GraphExportData | null>,
   groupId: string,
   logs: LogEntry[] = [],
-): Promise<XLSX.WorkSheet> {
-  // Find all unique timestamps across all series
-  const allTimestamps = new Set<number>();
-  allSheetData.forEach((data) => {
-    data.timestamps.forEach((ts) => allTimestamps.add(ts));
-  });
-
-  const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b);
-
-  // Calculate time range
-  const startTime = sortedTimestamps[0];
-  const endTime = sortedTimestamps[sortedTimestamps.length - 1];
-  const startDate = new Date(startTime);
-  const endDate = new Date(endTime);
-
-  // Format time range for title
-  const timeRangeTitle = `${formatDateTime(startDate)} bis ${formatDateTime(endDate)}`;
-
-  // Filter for logs that are explicitly marked as user comments:
-  // - Must be within the time range
-  // - Must have level "info" (user annotations are logged as info)
-  // - Must explicitly contain the word "comment" to distinguish from other info logs
-  const relevantComments = logs.filter(
-    (log) =>
-      log.timestamp.getTime() >= startTime &&
-      log.timestamp.getTime() <= endTime &&
-      log.level === "info" &&
-      log.message.toLowerCase().includes("comment")
-  );
-
-  // Map data by timestamp for efficient lookup
-  const dataByTimestamp = new Map<
-    number,
-    Map<string, number>
-  >();
-
-  allSheetData.forEach((sheetData) => {
-    sheetData.timestamps.forEach((ts, idx) => {
-      if (!dataByTimestamp.has(ts)) {
-        dataByTimestamp.set(ts, new Map());
-      }
-      dataByTimestamp.get(ts)!.set(sheetData.sheetName, sheetData.values[idx]);
-    });
-  });
-
-  // Build column headers based on available data
-  const columns: string[] = ["Timestamp"];
-
-  // Simply use sheet names from the data
-  const availableColumns = allSheetData.map(d => d.sheetName);
-  columns.push(...availableColumns);
-
-  // Add comments column
-  columns.push("User Comments");
-
-  // Create sheet data array
-  const sheetData: any[][] = [];
-
-  // Title row
-  const titleRow = [
-    `${groupId} - ${timeRangeTitle}`,
-    ...Array(columns.length - 1).fill(""),
-  ];
-  sheetData.push(titleRow);
-
-  // Empty row
-  sheetData.push(Array(columns.length).fill(""));
-
-  // Target values row (if any target lines exist)
-  const targetValues: any[] = ["Target Values"];
-  let hasTargets = false;
-
-  allSheetData.forEach((sheetDataEntry) => {
-    if (sheetDataEntry.targetLines.length > 0) {
-      const targetLine = sheetDataEntry.targetLines.find(
-        (line) => line.type === "target"
-      );
-      if (targetLine) {
-        targetValues.push(targetLine.value.toFixed(2));
-        hasTargets = true;
-      } else {
-        targetValues.push("");
-      }
-    } else {
-      targetValues.push("");
-    }
-  });
-
-  targetValues.push(""); // Empty for comments column
-
-  if (hasTargets) {
-    sheetData.push(targetValues);
-    sheetData.push(Array(columns.length).fill("")); // Empty row after targets
-  }
-
-  // Header row
-  sheetData.push(columns);
-
-  // Data rows with time in seconds from start
-  const dataStartRow = sheetData.length;
-  let maxSeconds = 0;
-
-  sortedTimestamps.forEach((timestamp) => {
-    const row: any[] = [];
-
-    // Calculate seconds from start
-    const secondsFromStart = Math.floor((timestamp - startTime) / 1000);
-    maxSeconds = Math.max(maxSeconds, secondsFromStart);
-    row.push(secondsFromStart);
-
-    // Add data for each column
-    allSheetData.forEach((sheetDataEntry) => {
-      const tsData = dataByTimestamp.get(timestamp);
-      if (tsData && tsData.has(sheetDataEntry.sheetName)) {
-        row.push(Number(tsData.get(sheetDataEntry.sheetName)!.toFixed(2)));
-      } else {
-        row.push("");
-      }
-    });
-
-    // Check for comments at this timestamp (within 1 second tolerance)
-    const comment = relevantComments.find(
-      (log) => Math.abs(log.timestamp.getTime() - timestamp) < 1000
-    );
-    row.push(comment ? comment.message : "");
-
-    sheetData.push(row);
-  });
-
-  // Add metadata section after data
-  sheetData.push(Array(columns.length).fill("")); // Empty row
-  sheetData.push(Array(columns.length).fill("")); // Empty row
-
-  // Get environment info for version details
-  let versionInfo = "";
-  let commitInfo = "";
-  try {
-    const envInfo = await window.environment.getInfo();
-    if (envInfo.qitechOsGitAbbreviation) {
-      versionInfo = envInfo.qitechOsGitAbbreviation;
-    }
-    if (envInfo.qitechOsGitCommit) {
-      commitInfo = envInfo.qitechOsGitCommit.substring(0, 8); // First 8 chars of commit hash
-    }
-  } catch (error) {
-    console.warn("Failed to fetch environment info", error);
-  }
-
-  // Software information
-  sheetData.push(["Software Information", ...Array(columns.length - 1).fill("")]);
-  sheetData.push(["Software", "QiTech Control", ...Array(columns.length - 2).fill("")]);
-  sheetData.push(["Version", versionInfo || "Unknown", ...Array(columns.length - 2).fill("")]);
-  if (commitInfo) {
-    sheetData.push(["Git Commit", commitInfo, ...Array(columns.length - 2).fill("")]);
-  }
-  sheetData.push([
-    "Export Date",
-    new Date().toLocaleString("de-DE"),
-    ...Array(columns.length - 2).fill(""),
-  ]);
-
-  // Comment statistics
-  sheetData.push(Array(columns.length).fill("")); // Empty row
-  sheetData.push(["Comment Statistics", ...Array(columns.length - 1).fill("")]);
-  sheetData.push([
-    "Total Comments",
-    relevantComments.length.toString(),
-    ...Array(columns.length - 2).fill(""),
-  ]);
-
-  // Convert to worksheet
-  const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
-
-  // Merge title cells
-  if (!worksheet["!merges"]) worksheet["!merges"] = [];
-  worksheet["!merges"].push({
-    s: { r: 0, c: 0 },
-    e: { r: 0, c: columns.length - 1 },
-  });
-
-  // Set column widths
-  const colWidths = [
-    { wch: 12 }, // Timestamp (seconds)
-    ...availableColumns.map(() => ({ wch: 12 })),
-    { wch: 40 }, // Comments column
-  ];
-  worksheet["!cols"] = colWidths;
-
-  // Add chart creation instructions (kept as fallback)
-  sheetData.push(Array(columns.length).fill("")); // Empty row
-  sheetData.push(Array(columns.length).fill("")); // Empty row
-  sheetData.push(["Chart Instructions", ...Array(columns.length - 1).fill("")]);
-  sheetData.push([
-    "1. Select all data from row " + dataStartRow + " to the last data row",
-    ...Array(columns.length - 1).fill(""),
-  ]);
-  sheetData.push([
-    "2. Insert > Chart > Scatter Chart with Straight Lines and Markers",
-    ...Array(columns.length - 1).fill(""),
-  ]);
-  sheetData.push([
-    "3. X-axis: Time (seconds), Y-axis: All measurement columns",
-    ...Array(columns.length - 1).fill(""),
-  ]);
-  sheetData.push([
-    "4. Set X-axis range: 0 to " + maxSeconds,
-    ...Array(columns.length - 1).fill(""),
-  ]);
-  sheetData.push([
-    "5. Set Y-axis range: 0 to 1000",
-    ...Array(columns.length - 1).fill(""),
-  ]);
-  sheetData.push([
-    "6. Position legend at bottom",
-    ...Array(columns.length - 1).fill(""),
-  ]);
-  sheetData.push([
-    "7. Chart Title: " + groupId + " - " + timeRangeTitle,
-    ...Array(columns.length - 1).fill(""),
-  ]);
-
-  return worksheet;
-}
-
-// Generate better sheet names based on graph title, series title, and unit
-function generateSheetName(
-  graphTitle: string,
-  seriesTitle: string,
-  unit: Unit | undefined,
-  usedSheetNames: Set<string>,
-): string {
-  // Determine the type of data based on unit
-  const unitSymbol = renderUnitSymbol(unit) || "";
-
-  // Map unit symbols to friendly names for sheet naming
-  const unitFriendlyNames: Record<string, string> = {
-    "°C": "Temp",
-    "W": "Watt",
-    "A": "Ampere",
-    "bar": "Bar",
-    "rpm": "Rpm",
-    "1/min": "Rpm",
-    "mm": "mm",
-    "%": "Percent",
-  };
-
-  // Create descriptive sheet name
-  let sheetName = "";
-
-  // If the series title is generic (e.g., "Series 1", "Series 2"), use unit name
-  if (/^Series \d+$/i.test(seriesTitle)) {
-    // For generic series names, prefer the unit-based name if available
-    const friendlyUnitName = unitFriendlyNames[unitSymbol];
-    sheetName = friendlyUnitName || seriesTitle;
-  } else {
-    // For specific series names (e.g., "Nozzle", "Front", "Diameter")
-    // Combine the series title with the unit if it adds clarity
-    const friendlyUnitName = unitFriendlyNames[unitSymbol];
-    
-    // Only append unit name if it provides additional context
-    // Don't append for standalone measurements like "Diameter" or "Roundness"
-    if (friendlyUnitName && !seriesTitle.toLowerCase().includes(friendlyUnitName.toLowerCase())) {
-      sheetName = `${seriesTitle} ${friendlyUnitName}`;
-    } else {
-      sheetName = seriesTitle;
-    }
-  }
-
-  // Sanitize and limit length
-  sheetName = sheetName
-    .replace(/[\\/?*$:[\]]/g, "_")
-    .substring(0, 31);
-
-  if (!sheetName || sheetName.trim().length === 0) {
-    sheetName = "Sheet";
-  }
-
-  // Make unique if needed
-  let finalName = sheetName;
-  let counter = 1;
-
-  while (usedSheetNames.has(finalName)) {
-    const suffix = `_${counter}`;
-    const maxBaseLength = 31 - suffix.length;
-    finalName = `${sheetName.substring(0, maxBaseLength)}${suffix}`;
-    counter++;
-  }
-
-  usedSheetNames.add(finalName);
-  return finalName;
-}
-
-// Create combined sheet with data (columns A-C) and stats (columns E-F)
-function createCombinedSheet(
-  graphLine: {
-    graphTitle: string;
-    lineTitle: string;
-    series: TimeSeries;
-    color?: string;
-    unit?: Unit;
-    renderValue?: (value: number) => string;
-    config: GraphConfig;
-    targetLines: GraphLine[];
-  },
-  sheetName: string,
-  seriesTitle: string,
-  unit: Unit | undefined,
-): XLSX.WorkSheet {
-  const [timestamps, values] = seriesToUPlotData(graphLine.series.long);
-  const unitSymbol = renderUnitSymbol(unit) || "";
-
-  // Create a 2D array for the combined sheet
-  const sheetData: any[][] = [];
-
-  // Create column header using the original series title and unit passed as parameters.
-  // This approach is more robust than reverse-engineering from the sheet name,
-  // which may not follow predictable naming patterns depending on the generateSheetName logic.
-  // Format: "unit seriesTitle" (e.g., "°C Nozzle", "W Ampere") or just "seriesTitle" if no unit
-  const col1Header = unitSymbol ? `${unitSymbol} ${seriesTitle}` : seriesTitle;
-
-  // Add header row - Column A: Timestamp, Column B: Value, Column C: (empty), Column D: (empty), Column E-F: Stats
-  sheetData.push([
-    "Timestamp",
-    col1Header,
-    "",
-    "",
-    "Statistic",
-    "Value",
-  ]);
-
-  // Prepare stats data
-  const statsRows: string[][] = [];
-
-  statsRows.push(["Graph", graphLine.graphTitle]);
-  statsRows.push(["Line Name", graphLine.lineTitle]);
-  statsRows.push(["Line Color", graphLine.color || "Default"]);
-  statsRows.push([
-    "Generated",
-    formatDateTime(new Date()),
-  ]);
-  statsRows.push(["", ""]);
-  statsRows.push(["Total Data Points", timestamps.length.toString()]);
-
-  if (timestamps.length > 0) {
-    const firstDate = new Date(timestamps[0]);
-    const lastDate = new Date(timestamps[timestamps.length - 1]);
-
-    statsRows.push([
-      "Time Range Start",
-      formatDateTime(firstDate),
-    ]);
-    statsRows.push([
-      "Time Range End",
-      formatDateTime(lastDate),
-    ]);
-
-    const duration = timestamps[timestamps.length - 1] - timestamps[0];
-    const durationHours = (duration / (1000 * 60 * 60)).toFixed(2);
-    statsRows.push(["Duration (hours)", durationHours]);
-
-    if (values.length > 0) {
-      const minValue = Math.min(...values);
-      const maxValue = Math.max(...values);
-      const avgValue = values.reduce((a, b) => a + b, 0) / values.length;
-      const stdDev = Math.sqrt(
-        values.reduce((sum, val) => sum + Math.pow(val - avgValue, 2), 0) /
-          values.length,
-      );
-
-      statsRows.push(["", ""]);
-      statsRows.push([
-        `Minimum Value (${unitSymbol})`,
-        graphLine.renderValue
-          ? graphLine.renderValue(minValue)
-          : minValue.toFixed(3),
-      ]);
-      statsRows.push([
-        `Maximum Value (${unitSymbol})`,
-        graphLine.renderValue
-          ? graphLine.renderValue(maxValue)
-          : maxValue.toFixed(3),
-      ]);
-      statsRows.push([
-        `Average Value (${unitSymbol})`,
-        graphLine.renderValue
-          ? graphLine.renderValue(avgValue)
-          : avgValue.toFixed(3),
-      ]);
-      statsRows.push([
-        `Standard Deviation (${unitSymbol})`,
-        graphLine.renderValue
-          ? graphLine.renderValue(stdDev)
-          : stdDev.toFixed(3),
-      ]);
-      statsRows.push([
-        `Range (${unitSymbol})`,
-        graphLine.renderValue
-          ? graphLine.renderValue(maxValue - minValue)
-          : (maxValue - minValue).toFixed(3),
-      ]);
-
-      // Percentiles
-      const sortedValues = [...values].sort((a, b) => a - b);
-      const p25 = sortedValues[Math.floor(sortedValues.length * 0.25)];
-      const p50 = sortedValues[Math.floor(sortedValues.length * 0.5)];
-      const p75 = sortedValues[Math.floor(sortedValues.length * 0.75)];
-
-      statsRows.push(["", ""]);
-      statsRows.push([
-        `25th Percentile (${unitSymbol})`,
-        graphLine.renderValue ? graphLine.renderValue(p25) : p25.toFixed(3),
-      ]);
-      statsRows.push([
-        `50th Percentile (${unitSymbol})`,
-        graphLine.renderValue ? graphLine.renderValue(p50) : p50.toFixed(3),
-      ]);
-      statsRows.push([
-        `75th Percentile (${unitSymbol})`,
-        graphLine.renderValue ? graphLine.renderValue(p75) : p75.toFixed(3),
-      ]);
-    }
-  }
-
-  // Add data rows with stats in columns E-F
-  const maxRows = Math.max(timestamps.length, statsRows.length);
-
-  for (let i = 0; i < maxRows; i++) {
-    const row: any[] = ["", "", "", ""];
-
-    // Add timestamp and value data (columns A-B)
-    if (i < timestamps.length) {
-      const timestamp = timestamps[i];
-      const value = values[i];
-
-      // Format timestamp as dd.mm.yyyy hh:mm:ss
-      const date = new Date(timestamp);
-      const formattedDate = formatDateTime(date);
-
-      row[0] = formattedDate;
-      row[1] = graphLine.renderValue
-        ? graphLine.renderValue(value)
-        : value?.toFixed(3) || "";
-    }
-
-    // Add stats (columns E-F)
-    if (i < statsRows.length) {
-      row[4] = statsRows[i][0];
-      row[5] = statsRows[i][1];
-    } else {
-      row[4] = "";
-      row[5] = "";
-    }
-
-    sheetData.push(row);
-  }
-
-  // Convert to worksheet
-  const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
-
-  // Set column widths for better readability
-  worksheet["!cols"] = [
-    { wch: 20 }, // Timestamp
-    { wch: 15 }, // Value
-    { wch: 5 },  // Empty column C
-    { wch: 5 },  // Empty column D
-    { wch: 30 }, // Statistic name
-    { wch: 20 }, // Statistic value
-  ];
-
-  return worksheet;
-}
-
-// Generate data sheet for a graph line
-function createGraphLineDataSheet(graphLine: {
-  graphTitle: string;
-  lineTitle: string;
-  series: TimeSeries;
-  color?: string;
-  unit?: Unit;
-  renderValue?: (value: number) => string;
-  config: GraphConfig;
-  targetLines: GraphLine[];
-}): any[] {
-  const [timestamps, values] = seriesToUPlotData(graphLine.series.long);
-
-  if (timestamps.length === 0) return [];
-
-  const unitSymbol = renderUnitSymbol(graphLine.unit) || "";
-
-  return timestamps.map((timestamp, index) => {
-    const value = values[index];
-    return {
-      Timestamp: new Date(timestamp),
-      [`Value (${unitSymbol})`]: graphLine.renderValue
-        ? graphLine.renderValue(value)
-        : value?.toFixed(3) || "",
-    };
-  });
-}
-
-// Ensure sheet names are unique and valid for Excel
-function generateUniqueSheetName(
-  name: string,
-  usedSheetNames: Set<string>,
-): string {
-  let baseSheetName = name
-    .replace(/[\\/?*$:[\]]/g, "_") // Remove invalid characters
-    .substring(0, 31); // Excel sheet name limit
-
-  if (!baseSheetName || baseSheetName.trim().length === 0) {
-    baseSheetName = "Sheet";
-  }
-
-  let sheetName = baseSheetName;
-  let counter = 1;
-
-  while (usedSheetNames.has(sheetName)) {
-    const suffix = `_${counter}`;
-    const maxBaseLength = 31 - suffix.length;
-    sheetName = `${baseSheetName.substring(0, maxBaseLength)}${suffix}`;
-    counter++;
-  }
-
-  usedSheetNames.add(sheetName);
-  return sheetName;
+  pidData?: PidData
+): Promise<void> {
+  const exporter = new ExcelExporter();
+  await exporter.export(graphDataMap, groupId, logs, pidData);
 }
