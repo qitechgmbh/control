@@ -224,28 +224,9 @@ class MetadataBuilder {
     return this;
   }
 
-  async addSoftwareInfo(columnCount: number): Promise<this> {
-    let versionInfo = "";
-    let commitInfo = "";
-
-    try {
-      const envInfo = await window.environment.getInfo();
-      if (envInfo.qitechOsGitAbbreviation) {
-        versionInfo = envInfo.qitechOsGitAbbreviation;
-      }
-      if (envInfo.qitechOsGitCommit) {
-        commitInfo = envInfo.qitechOsGitCommit.substring(0, 8);
-      }
-    } catch (error) {
-      console.warn("Failed to fetch environment info", error);
-    }
-
-    this.addSection("Software Information", columnCount);
+  addExportInfo(columnCount: number): this {
+    this.addSection("Export Information", columnCount);
     this.addRow("Software", "QiTech Control", columnCount);
-    this.addRow("Version", versionInfo || "Unknown", columnCount);
-    if (commitInfo) {
-      this.addRow("Git Commit", commitInfo, columnCount);
-    }
     this.addRow(
       "Export Date",
       DateFormatter.format(new Date()),
@@ -650,7 +631,7 @@ class AnalysisSheetBuilder {
     sheetData.push(Array(columnCount).fill(""));
 
     const metadataBuilder = new MetadataBuilder();
-    await metadataBuilder.addSoftwareInfo(columnCount);
+    metadataBuilder.addExportInfo(columnCount);
 
     // Add PID settings if available
     metadataBuilder.addPidSettings(this.pidData, columnCount);
@@ -726,6 +707,61 @@ class AnalysisSheetBuilder {
 }
 
 /**
+ * Handles version information retrieval and rendering
+ * Follows Single Responsibility Principle - only manages version info
+ */
+class VersionInfoRenderer {
+  private versionInfo: string = "";
+  private commitInfo: string = "";
+
+  async fetchVersionInfo(): Promise<void> {
+    try {
+      const envInfo = await window.environment.getInfo();
+      if (envInfo.qitechOsGitAbbreviation) {
+        this.versionInfo = envInfo.qitechOsGitAbbreviation;
+      }
+      if (envInfo.qitechOsGitCommit) {
+        this.commitInfo = envInfo.qitechOsGitCommit.substring(0, 8);
+      }
+    } catch (error) {
+      console.warn("Failed to fetch environment info", error);
+    }
+  }
+
+  renderOnCanvas(ctx: CanvasRenderingContext2D, canvasWidth: number): void {
+    if (!this.versionInfo && !this.commitInfo) return;
+
+    const versionText = this.formatVersionText();
+    
+    ctx.save();
+    ctx.font = "12px sans-serif";
+    ctx.fillStyle = "#666";
+    ctx.textAlign = "center";
+    ctx.fillText(versionText, canvasWidth / 2, 20);
+    ctx.restore();
+  }
+
+  private formatVersionText(): string {
+    const parts: string[] = [];
+    if (this.versionInfo) {
+      parts.push(`Version: ${this.versionInfo}`);
+    }
+    if (this.commitInfo) {
+      parts.push(`Commit: ${this.commitInfo}`);
+    }
+    return parts.join(" | ");
+  }
+
+  getVersionInfo(): string {
+    return this.versionInfo;
+  }
+
+  getCommitInfo(): string {
+    return this.commitInfo;
+  }
+}
+
+/**
  * Generates chart images using uPlot
  */
 class ChartImageGenerator {
@@ -734,7 +770,8 @@ class ChartImageGenerator {
     groupId: string,
     timeRangeTitle: string,
     sortedTimestamps: number[],
-    startTime: number
+    startTime: number,
+    versionRenderer?: VersionInfoRenderer
   ): Promise<string | null> {
     let container: HTMLDivElement | null = null;
     let plot: uPlot | null = null;
@@ -757,6 +794,14 @@ class ChartImageGenerator {
 
       const canvas = container.querySelector("canvas");
       if (!canvas) return null;
+
+      // Render version info centered at top of chart
+      if (versionRenderer) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          versionRenderer.renderOnCanvas(ctx, canvas.width);
+        }
+      }
 
       const imageData = canvas.toDataURL("image/png");
       return imageData.split(",")[1];
@@ -1151,12 +1196,17 @@ export class ExcelExporter {
     const endTime = sortedTimestamps[sortedTimestamps.length - 1];
     const timeRangeTitle = DateFormatter.formatTimeRange(startTime, endTime);
 
+    // Fetch version info for chart rendering
+    const versionRenderer = new VersionInfoRenderer();
+    await versionRenderer.fetchVersionInfo();
+
     const chartImage = await ChartImageGenerator.generate(
       allSheetData,
       groupId,
       timeRangeTitle,
       sortedTimestamps,
-      startTime
+      startTime,
+      versionRenderer
     );
 
     if (chartImage) {
