@@ -12,6 +12,7 @@ use std::sync::Arc;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
+    pub target_speed: i16,
 }
 
 impl StateEvent {
@@ -27,6 +28,7 @@ pub enum TestMachineStepperEvents {
 #[derive(Deserialize)]
 #[serde(tag = "action", content = "value")]
 pub enum Mutation {
+    SetTargetSpeed { target: i16 },
 }
 
 #[derive(Debug, Clone)]
@@ -64,6 +66,7 @@ impl MachineApi for TestMachineStepper {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
+            Mutation::SetTargetSpeed { target } => self.set_target_speed(target),
         }
 
         Ok(())
