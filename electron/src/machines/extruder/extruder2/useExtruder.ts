@@ -55,6 +55,10 @@ export function useExtruder2() {
     frontPower,
     middlePower,
     backPower,
+    nozzleHeatingOn,
+    frontHeatingOn,
+    middleHeatingOn,
+    backHeatingOn,
     combinedPower,
     totalEnergyKWh,
   } = useExtruder2Namespace(machineIdentification);
@@ -402,6 +406,9 @@ export function useExtruder2() {
     // Consolidated state
     state: stateOptimistic.value?.data,
 
+    // Machine UI metadata
+    machineUi: extruder2.ui,
+
     // Default state for initial values
     defaultState: defaultState?.data,
 
@@ -420,6 +427,10 @@ export function useExtruder2() {
     frontPower,
     middlePower,
     backPower,
+    nozzleHeatingOn,
+    frontHeatingOn,
+    middleHeatingOn,
+    backHeatingOn,
     combinedPower,
     totalEnergyKWh,
 

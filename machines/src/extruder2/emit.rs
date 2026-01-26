@@ -222,6 +222,10 @@ impl ExtruderV3 {
                 .get_heating_element_wattage(),
             combined_power,
             total_energy_kwh: self.total_energy_kwh,
+            nozzle_heating_on: self.temperature_controller_nozzle.heating.heating,
+            front_heating_on: self.temperature_controller_front.heating.heating,
+            back_heating_on: self.temperature_controller_back.heating.heating,
+            middle_heating_on: self.temperature_controller_middle.heating.heating,
         }
     }
 

@@ -111,6 +111,15 @@ pub struct ExtruderV2 {
     /// combined power consumption in watts
     pub combined_power: f64,
 
+    /// nozzle SSR state (true = on)
+    pub nozzle_heating_on: bool,
+    /// front SSR state (true = on)
+    pub front_heating_on: bool,
+    /// back SSR state (true = on)
+    pub back_heating_on: bool,
+    /// middle SSR state (true = on)
+    pub middle_heating_on: bool,
+
     pub nozzle_heating_allowed: bool,
 
     pub front_heating_allowed: bool,

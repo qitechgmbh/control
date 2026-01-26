@@ -112,6 +112,26 @@ export const extruder3: MachineProperties = {
     vendor: VENDOR_QITECH,
     machine: 0x0016,
   },
+  ui: {
+    graphColors: {
+      primary: "#0f172a",
+      grid: "#e2e8f0",
+      axis: "#64748b",
+      background: "#ffffff",
+    },
+    heatingZoneColors: {
+      nozzle: "#ef4444",
+      front: "#f59e0b",
+      middle: "#8b5cf6",
+      back: "#3b82f6",
+    },
+    heatingZoneLabels: {
+      nozzle: "Nozzle",
+      front: "Front",
+      middle: "Middle",
+      back: "Back",
+    },
+  },
   device_roles: [
     {
       role: 0,
@@ -199,6 +219,26 @@ export const extruder2: MachineProperties = {
   machine_identification: {
     vendor: VENDOR_QITECH,
     machine: 0x0004,
+  },
+  ui: {
+    graphColors: {
+      primary: "#0f172a",
+      grid: "#e2e8f0",
+      axis: "#64748b",
+      background: "#ffffff",
+    },
+    heatingZoneColors: {
+      nozzle: "#ef4444",
+      front: "#f59e0b",
+      middle: "#8b5cf6",
+      back: "#3b82f6",
+    },
+    heatingZoneLabels: {
+      nozzle: "Nozzle",
+      front: "Front",
+      middle: "Middle",
+      back: "Back",
+    },
   },
   device_roles: [
     {

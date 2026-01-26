@@ -77,6 +77,14 @@ pub struct LiveValuesEvent {
     pub combined_power: f64,
     /// total energy consumption in kWh
     pub total_energy_kwh: f64,
+    /// nozzle SSR state (true = on)
+    pub nozzle_heating_on: bool,
+    /// front SSR state (true = on)
+    pub front_heating_on: bool,
+    /// back SSR state (true = on)
+    pub back_heating_on: bool,
+    /// middle SSR state (true = on)
+    pub middle_heating_on: bool,
 }
 
 impl LiveValuesEvent {
