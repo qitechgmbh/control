@@ -1,15 +1,15 @@
 import { toastError } from "@/components/Toast";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { testMachineSerialRoute } from "@/routes/routes";
+import { testMachineStepperSerialRoute } from "@/routes/routes";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { useTestMachineStepperNamespace, StateEvent } from "./testMachineStepperNamespace";
 import { useMachineMutate } from "@/client/useClient";
 import { produce } from "immer";
 import { useEffect, useMemo } from "react";
-import { testmachine } from "@/machines/properties";
+import { testmachinestepper } from "@/machines/properties";
 import { z } from "zod";
 export function useTestMachineStepper() {
-  const { serial: serialString } = testMachineSerialRoute.useParams();
+  const { serial: serialString } = testMachineStepperSerialRoute.useParams();
 
   // Memoize machine identification
   const machineIdentification: MachineIdentificationUnique = useMemo(() => {
@@ -28,7 +28,7 @@ export function useTestMachineStepper() {
     }
 
     return {
-      machine_identification: testmachine.machine_identification,
+      machine_identification: testmachinestepper.machine_identification,
       serial,
     };
   }, [serialString]);
@@ -61,7 +61,21 @@ export function useTestMachineStepper() {
     serverRequest?.();
   };
 
+  const setTargetSpeed = (target: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.target_speed = target;
+      },
+      () =>
+        sendMutation({
+          machine_identification_unique: machineIdentification,
+          data: { action: "SetTargetSpeed", value: { target } },
+        }),
+    );
+  };
+
   return {
     state: stateOptimistic.value,
+    setTargetSpeed,
   };
 }
