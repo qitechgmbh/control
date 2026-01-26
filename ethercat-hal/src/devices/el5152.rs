@@ -113,25 +113,7 @@ impl EncoderInputDevice<EL5152Port> for EL5152 {
         &self,
         port: EL5152Port,
     ) -> Result<Option<EncoderInputFrequency>, anyhow::Error> {
-        let frequency = match port {
-            EL5152Port::ENC1 => {
-                self.txpdo
-                    .frequency_channel1
-                    .as_ref()
-                    .map(|f| EncoderInputFrequency {
-                        value: f.frequency_value,
-                    })
-            }
-            EL5152Port::ENC2 => {
-                self.txpdo
-                    .frequency_channel2
-                    .as_ref()
-                    .map(|f| EncoderInputFrequency {
-                        value: f.frequency_value,
-                    })
-            }
-        };
-        Ok(frequency)
+       Ok(None)
     }
 
     fn get_period(&self, port: EL5152Port) -> Result<Option<EncoderInputPeriod>, anyhow::Error> {
@@ -179,10 +161,10 @@ impl Configuration for EL5152Configuration {
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
         // Configure channel 1
-        self.channel1.write_channel_config(device, 0x8000).await?;
+        //self.channel1.write_channel_config(device, 0x8000).await?;
 
         // Configure channel 2
-        self.channel2.write_channel_config(device, 0x8010).await?;
+        //self.channel2.write_channel_config(device, 0x8010).await?;
         // Write PDO assignments
         self.pdo_assignment
             .txpdo_assignment()
@@ -211,15 +193,15 @@ pub struct EL5152TxPdo {
     pub status_channel1: Option<El5152EncoderStatus>,
     #[pdo_object_index(0x1A02)]
     pub period_channel1: Option<El5152EncoderPeriod>,
-    #[pdo_object_index(0x1A03)]
-    pub frequency_channel1: Option<El5152EncoderFrequency>,
+    /*#[pdo_object_index(0x1A03)]
+    pub frequency_channel1: Option<El5152EncoderFrequency>,*/
 
     #[pdo_object_index(0x1A04)]
     pub status_channel2: Option<El5152EncoderStatus>,
     #[pdo_object_index(0x1A06)]
     pub period_channel2: Option<El5152EncoderPeriod>,
-    #[pdo_object_index(0x1A07)]
-    pub frequency_channel2: Option<El5152EncoderFrequency>,
+/*    #[pdo_object_index(0x1A07)]
+    pub frequency_channel2: Option<El5152EncoderFrequency>,*/
 }
 
 impl PredefinedPdoAssignment<EL5152TxPdo, EL5152RxPdo> for EL5152PredefinedPdoAssignment {
@@ -235,20 +217,20 @@ impl PredefinedPdoAssignment<EL5152TxPdo, EL5152RxPdo> for EL5152PredefinedPdoAs
             Self::Period => EL5152TxPdo {
                 status_channel1: Some(El5152EncoderStatus::default()),
                 period_channel1: Some(El5152EncoderPeriod::default()),
-                frequency_channel1: None,
+               // frequency_channel1: None,
 
                 status_channel2: Some(El5152EncoderStatus::default()),
                 period_channel2: Some(El5152EncoderPeriod::default()),
-                frequency_channel2: None,
+             //   frequency_channel2: None,
             },
             Self::Frequency => EL5152TxPdo {
                 status_channel1: Some(El5152EncoderStatus::default()),
                 period_channel1: None,
-                frequency_channel1: Some(El5152EncoderFrequency::default()),
+          //      frequency_channel1: Some(El5152EncoderFrequency::default()),
 
                 status_channel2: Some(El5152EncoderStatus::default()),
                 period_channel2: None,
-                frequency_channel2: Some(El5152EncoderFrequency::default()),
+             //   frequency_channel2: Some(El5152EncoderFrequency::default()),
             },
         }
     }
