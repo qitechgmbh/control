@@ -229,17 +229,17 @@ pub async fn setup_loop(
         pdu,
         Timeouts {
             // Default 5000ms
-            state_transition: Duration::from_millis(5000),
+            state_transition: Duration::from_millis(50000),
             // Default 30_000us
-            pdu: Duration::from_micros(30_000),
+            pdu: Duration::from_micros(30_0000),
             // Default 10ms
-            eeprom: Duration::from_millis(10),
+            eeprom: Duration::from_millis(100),
             // Default 0ms
             wait_loop_delay: Duration::from_millis(0),
             // Default 100ms
-            mailbox_echo: Duration::from_millis(100),
+            mailbox_echo: Duration::from_millis(1000),
             // Default 1000ms
-            mailbox_response: Duration::from_millis(1000),
+            mailbox_response: Duration::from_millis(10000),
         },
         MainDeviceConfig {
             // Default RetryBehaviour::None
