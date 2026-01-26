@@ -39,9 +39,19 @@ impl TestMachineStepper {
 }
 
 impl TestMachineStepper {
+    pub fn get_state(&self) -> StateEvent {
+        StateEvent {
+            target_speed: self.stepper.target_velocity as i16,
+        }
+    }
+
     pub fn emit_state(&mut self) {
-        let event = StateEvent {}.build();
+        let event = self.get_state().build();
 
         self.namespace.emit(TestMachineStepperEvents::State(event));
+    }
+
+    pub fn set_target_speed(&mut self, speed: i16) {
+        self.stepper.target_velocity = speed;
     }
 }
