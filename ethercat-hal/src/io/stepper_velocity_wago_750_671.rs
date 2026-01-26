@@ -22,8 +22,8 @@ impl StepperVelocityWago750671 {
         Self {
             device,
             state: SpeedControlState::Init,
-            target_velocity: 0,
-            target_acceleration: 10,
+            target_velocity: 1000,
+            target_acceleration: 10000,
             enabled: false,
         }
     }
