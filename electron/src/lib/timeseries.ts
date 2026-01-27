@@ -304,3 +304,56 @@ export function resetSeries(series: Series): void {
   series.lastTimestamp = 0;
   series.validCount = 0;
 }
+
+/**
+ * Aligns target series values with a given set of timestamps.
+ * For each timestamp in dataTimestamps, finds the most recent target value
+ * that was set before or at that timestamp (step function interpolation).
+ *
+ * @param targetSeries - The TimeSeries containing historical target values
+ * @param dataTimestamps - Array of timestamps to align the target values to
+ * @param fallbackValue - Value to use when no target was set before a timestamp
+ * @returns Array of values aligned with dataTimestamps
+ */
+export function alignTargetSeriesToTimestamps(
+  targetSeries: TimeSeries,
+  dataTimestamps: number[],
+  fallbackValue: number,
+): number[] {
+  if (dataTimestamps.length === 0) {
+    return [];
+  }
+
+  // Extract target series data in chronological order
+  const [targetTimestamps, targetValues] = extractDataFromSeries(
+    targetSeries.long,
+  );
+
+  if (targetTimestamps.length === 0) {
+    // No target history, use fallback for all timestamps
+    return new Array(dataTimestamps.length).fill(fallbackValue);
+  }
+
+  const result: number[] = [];
+  let targetIndex = 0;
+
+  for (const dataTs of dataTimestamps) {
+    // Find the most recent target value at or before this timestamp
+    // Advance targetIndex while the next target timestamp is still <= dataTs
+    while (
+      targetIndex < targetTimestamps.length - 1 &&
+      targetTimestamps[targetIndex + 1] <= dataTs
+    ) {
+      targetIndex++;
+    }
+
+    // If the current target timestamp is > dataTs, we haven't reached the first target yet
+    if (targetTimestamps[targetIndex] > dataTs) {
+      result.push(fallbackValue);
+    } else {
+      result.push(targetValues[targetIndex]);
+    }
+  }
+
+  return result;
+}

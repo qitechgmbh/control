@@ -1,5 +1,9 @@
 import uPlot from "uplot";
-import { seriesToUPlotData, TimeSeries } from "@/lib/timeseries";
+import {
+  seriesToUPlotData,
+  TimeSeries,
+  alignTargetSeriesToTimestamps,
+} from "@/lib/timeseries";
 import {
   createEventHandlers,
   attachEventHandlers,
@@ -59,7 +63,18 @@ export function createChart({
   // Add config lines data
   config.lines?.forEach((line) => {
     if (line.show !== false) {
-      const lineData = new Array(timestamps.length).fill(line.value);
+      let lineData: number[];
+      if (line.targetSeries) {
+        // Use historical target values aligned with data timestamps
+        lineData = alignTargetSeriesToTimestamps(
+          line.targetSeries,
+          timestamps,
+          line.value,
+        );
+      } else {
+        // Use constant value (original behavior)
+        lineData = new Array(timestamps.length).fill(line.value);
+      }
       uPlotData.push(lineData as any);
     }
   });
