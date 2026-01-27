@@ -42,6 +42,8 @@ pub struct Pelletizer
 
     // machine specific
     inverter: Arc<RwLock<US3202510>>,
+    
+    inverter_snapshot_id: u64,
 
     mutation_request: MutationRequests
 }
@@ -49,10 +51,11 @@ pub struct Pelletizer
 #[derive(Debug)]
 pub struct MutationRequests
 {
-    run_mode:          Option<u8>,
-    frequency:         Option<u16>,
-    accleration_level: Option<u8>,
-    decleration_level: Option<u8>,
+    running:           Option<bool>,
+    direction:         Option<bool>,
+    frequency:         Option<f64>,
+    accleration_level: Option<u16>,
+    decleration_level: Option<u16>,
 }
 
 impl Machine for Pelletizer
@@ -106,31 +109,6 @@ impl Pelletizer
         machine: MACHINE_PELLETIZER,
     };
 
-    pub fn set_frequency(&mut self, frequency: u16)
-    {
-        self.mutation_request.frequency = Some(frequency);
-    }
-    
-    pub fn set_direction(&mut self, forward: bool)
-    {
-        //self.mutation_request.run_mode = Some(frequency.clamp(0, 99));
-    }
-
-    pub fn set_run_mode(&mut self, run_mode: u8)
-    {
-        //self.mutation_request.frequency = Some(frequency.clamp(0, 99));
-    }
-    
-    pub fn set_acceleration_level(&mut self, acceleration_level: u8)
-    {
-        //self.mutation_request.accleration_level = Some(frequency.clamp(0, 99));
-    }
-    
-    pub fn set_deceleration_level(&mut self, deceleration_level: u8)
-    {
-        //self.mutation_request.decleration_level = Some(frequency.clamp(0, 99));
-    }
-    
     pub fn update(&mut self)
     {
         //let laser_data = smol::block_on(async { self.inverter.read().await.get_data().await });

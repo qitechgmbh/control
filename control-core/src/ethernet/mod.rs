@@ -52,11 +52,11 @@ pub fn set_interface_managed(interface: &str, managed: bool) -> bool {
         true => "yes",
         false => "no",
     };
-    tracing::info!(
-        "set_interface_managed for {} managed was set to: {}",
-        interface,
-        managed_str
-    );
+    // tracing::info!(
+    //     "set_interface_managed for {} managed was set to: {}",
+    //     interface,
+    //     managed_str
+    // );
     let status = Command::new("nmcli")
         .args(["dev", "set", interface, "managed", managed_str])
         .status();

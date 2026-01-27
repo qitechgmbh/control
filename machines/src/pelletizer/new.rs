@@ -44,9 +44,12 @@ impl MachineNewTrait for Pelletizer
             last_measurement_emit: Instant::now(),
             
             inverter,
+            
+            inverter_snapshot_id: 0,
 
             mutation_request: MutationRequests {
-                run_mode: None,
+                running: None,
+                direction: None,
                 frequency: None,
                 accleration_level: None,
                 decleration_level: None,

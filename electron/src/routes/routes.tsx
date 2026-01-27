@@ -46,6 +46,7 @@ import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 import { Pellet1Page        } from "@/machines/pelletizer/pelletizer1/Page";
 import { Pellet1ControlPage } from "@/machines/pelletizer/pelletizer1/ControlPage";
 import { Pellet1GraphsPage  } from "@/machines/pelletizer/pelletizer1/Graph";
+import { Pellet1ConfigPage } from "@/machines/pelletizer/pelletizer1/ConfigPage";
 import { Pellet1PresetsPage } from "@/machines/pelletizer/pelletizer1/PresetsPage";
 
 import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
@@ -303,6 +304,12 @@ export const pelletizer1ControlRoute = createRoute({
   component: () => <Pellet1ControlPage />,
 });
 
+export const pelletizer1ConfigRoute = createRoute({
+  getParentRoute: () => pelletizer1SerialRoute,
+  path: "config",
+  component: () => <Pellet1ConfigPage />,
+});
+
 export const pelletizer1GraphsRoute = createRoute({
   getParentRoute: () => pelletizer1SerialRoute,
   path: "graphs",
@@ -505,6 +512,7 @@ export const rootTree = RootRoute.addChildren([
       pelletizer1SerialRoute.addChildren([
         pelletizer1ControlRoute,
         pelletizer1GraphsRoute,
+        pelletizer1ConfigRoute,
         pelletizer1PresetsRoute,
       ]),
 

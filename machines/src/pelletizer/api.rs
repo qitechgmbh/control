@@ -42,16 +42,20 @@ pub struct StateEvent {
     pub inverter_state: InverterState,
 }
 
+impl StateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("StateEvent", self.clone())
+    }
+}
+
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct InverterState 
 {
-    pub running_state:      u8,
-    pub frequency_target:   u16,
-    pub acceleration_level: u8,
-    pub deceleration_level: u8,
-    pub error_code:         u16,
-    
-    pub system_status:      u16,
+    pub running:            bool,
+    pub direction:          bool,
+    pub frequency_target:   f64,
+    pub acceleration_level: u16,
+    pub deceleration_level: u16,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
@@ -74,10 +78,11 @@ pub struct PelletMachineNamespace {
 /// Mutation for controlling the Pellet machine
 enum Mutation 
 {
-    SetRunState(u8),
-    SetFrequencyTarget(u8),
-    SetAccelerationLevel(u8),
-    SetDecelerationLevel(u8),
+    SetRunning(bool),
+    SetDirection(bool),
+    SetFrequencyTarget(f64),
+    SetAccelerationLevel(u16),
+    SetDecelerationLevel(u16),
 }
 
 impl MachineApi for Pelletizer {
@@ -87,27 +92,31 @@ impl MachineApi for Pelletizer {
 
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> 
     {
+        tracing::error!("Received: {:?}", &request_body);
+        
         let mutation: Mutation = serde_json::from_value(request_body)?;
-
-        tracing::error!("Received: {:?}", &mutation);
 
         match mutation 
         {
-            Mutation::SetRunState(state) => 
+            Mutation::SetRunning(running) => 
             {
-                // self.set_run_state(state);
+                self.mutation_request.running = Some(running);
+            }
+            Mutation::SetDirection(forward) => 
+            {
+                self.mutation_request.direction = Some(forward);
             }
             Mutation::SetFrequencyTarget(frequency) => 
             {
-                self.set_frequency(frequency as u16 * 10);
+                self.mutation_request.frequency = Some(frequency);
             }
-            Mutation::SetAccelerationLevel(speed) => 
+            Mutation::SetAccelerationLevel(level) => 
             {
-                // self.set_speed(speed);
+                self.mutation_request.accleration_level = Some(level);
             }
-            Mutation::SetDecelerationLevel(speed) => 
+            Mutation::SetDecelerationLevel(level) => 
             {
-                // self.set_speed(speed);
+                self.mutation_request.decleration_level = Some(level);
             }
         }
         

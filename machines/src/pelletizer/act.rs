@@ -20,32 +20,77 @@ impl MachineAct for Pelletizer
 
         let should_emit =
             now.duration_since(self.last_measurement_emit)
-                > Duration::from_secs_f64(1.0 / 30.0);
+                > Duration::from_secs_f64(1.0 / 12.0);
+
+        let mut mutated: bool = false;
+        let mut inverter_snapshot_id: u64 = 0;
 
         {
             let mut inverter = smol::block_on(async {
                 self.inverter.write().await
             });
 
-            if let Some(value) = self.mutation_request.frequency 
+            if let Some(value) = self.mutation_request.running.take()
+            {
+                tracing::warn!("Setting running to: {}", value);
+
+                inverter.set_running(value);
+                mutated = true;
+            }
+
+            if let Some(value) = self.mutation_request.direction.take()
+            {
+                tracing::warn!("Setting direction to: {}", value);
+
+                inverter.set_direction(value);
+                mutated = true;
+            }
+
+            if let Some(value) = self.mutation_request.frequency.take() 
             {
                 tracing::warn!("Setting to: {}", value);
 
-                inverter.set_frequency_target(units::Frequency::new::<hertz>(value as f64));
-                self.mutation_request.frequency = None;
+                inverter.set_frequency_target((value * 10.0) as u16);
+                mutated = true;
+            }
+
+            if let Some(value) = self.mutation_request.accleration_level.take() 
+            {
+                tracing::warn!("Setting to: {}", value);
+
+                inverter.set_acceleration_level(value);
+                
+                mutated = true;
+            }
+            
+            if let Some(value) = self.mutation_request.decleration_level.take() 
+            {
+                tracing::warn!("Setting to: {}", value);
+
+                inverter.set_deceleration_level(value);
+                
+                mutated = true;
             }
 
             if should_emit {
-                // inverter.refresh_status();
+                inverter.refresh_status();
             }
+            
+            if mutated {  }
 
             inverter.update();
-
-            // tracing::warn!("UPÜDATE");
+            
+            inverter_snapshot_id = inverter.config.snapshot_id;
         } // drop lock
 
         if should_emit 
         {
+            if self.inverter_snapshot_id != inverter_snapshot_id
+            {
+                self.emit_state();
+                self.inverter_snapshot_id = inverter_snapshot_id;
+            }
+            
             self.emit_live_values();
             self.last_measurement_emit = now;
         }

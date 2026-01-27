@@ -41,14 +41,12 @@ export const liveValuesEventDataSchema = z.object({
 export const stateEventDataSchema = z.object({
   is_default_state: z.boolean(),
 
-    inverter_state: z.object({
-    running_state: z.number(),
+  inverter_state: z.object({
+    running: z.boolean(),
+    direction: z.boolean(),
     frequency_target: z.number(),
     acceleration_level: z.number(),
     deceleration_level: z.number(),
-
-    error_code: z.number().nullable(),
-    system_status: z.number(),
   }),
 });
 
@@ -130,6 +128,9 @@ export function pellet1MessageHandler(
             if (eventName === "StateEvent") 
             {
                 const stateEvent = stateEventSchema.parse(event);
+                
+                console.log(stateEvent);
+                
                 updateStore((state) => ({
                     ...state,
                     state: stateEvent,
@@ -143,8 +144,6 @@ export function pellet1MessageHandler(
             else if (eventName === "LiveValuesEvent") 
             {
                 const liveValuesEvent = liveValuesEventSchema.parse(event);
-
-                console.log(liveValuesEvent)
 
                 const frequencyValue: TimeSeriesValue = {
                   value: liveValuesEvent.data.inverter_values.frequency,

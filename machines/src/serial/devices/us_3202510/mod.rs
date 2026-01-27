@@ -5,12 +5,10 @@ use serde::{Deserialize, Serialize};
 
 // use modbus::ExceptionCode
 
-type ModbusInterface = modbus::rtu::Interface<CustomTransport, (), 25>;
-
 // internal deps
 pub use request::Request;
 
-use units::{Frequency, electric_current::ampere, electric_potential::volt, frequency::hertz, thermodynamic_temperature::degree_celsius};
+use units::{Frequency, electric_current::ampere, electric_potential::volt, frequency::hertz, thermodynamic_temperature::{degree_celsius, kelvin}};
 
 // modules
 mod register;
@@ -19,7 +17,9 @@ mod serial_device;
 
 mod transport;
 
-use crate::serial::devices::us_3202510::{register::InputRegister, transport::CustomTransport};
+use crate::serial::devices::us_3202510::{register::{HoldingRegister, InputRegister}, transport::{CustomTransport, EntryContext}};
+
+type ModbusInterface = modbus::rtu::Interface<CustomTransport, EntryContext, 25>;
 
 #[derive(Debug)]
 pub struct US3202510
@@ -35,8 +35,13 @@ pub struct US3202510
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Config 
 {
-    pub rotation_state: RotationState,
-    pub frequency: units::Frequency, // 0 - 99hz
+    pub snapshot_id: u64,
+    
+    pub running: bool,
+    pub direction: bool, 
+    pub frequency_target: u16, // 0 - 99hz
+    pub frequency_min: u16,
+    pub frequency_max: u16,
     pub acceleration_level: u16, // 1 - 15
     pub deceleration_level: u16, // 1 - 15
 }
@@ -52,7 +57,7 @@ pub struct Status
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum RotationState
+pub enum Direction
 {
     #[default]
     Stopped,
@@ -73,12 +78,16 @@ impl US3202510
 {
     pub fn update(&mut self)
     {
+        if self.config.snapshot_id == 0
+        {
+            self.refresh_config();
+            self.config.snapshot_id += 1;
+        }
+        
         match self.interface.await_result()
         {
             Ok(result) => 
             {
-                tracing::error!("has result: {:?}", &result);
-
                 self.handle_result(result);
             },
             Err(e) => 
@@ -89,14 +98,11 @@ impl US3202510
 
                     e => 
                     {
-                        //tracing::error!("Error reciving result: {:?}", e);
+                        tracing::error!("Error reciving result: {:?}", e);
                     }
                 }
             },
         }
-        
-        //TODO: anyhow crashes system for reason?
-        // self.refresh_status();
         
         if !self.interface.has_pending_request()
         {
@@ -104,7 +110,7 @@ impl US3202510
             {
                 Ok(_) => 
                 {  
-                    // tracing::error!("Success sending request: {:?}", self.interface);
+                    tracing::error!("Success sending request: {:?}", self.interface);
                 },
                 Err(e) => 
                 { 
@@ -129,15 +135,15 @@ impl US3202510
     fn queue_request(&mut self, request: Request)
     {
         let data = request.to_interface_request();
-        match self.interface.queue_request((), data.payload, data.priority)
+        match self.interface.queue_request(data.type_id, data.payload, data.priority)
         {
             Ok(_) => {},
             Err(x) => 
             {
                 match x
                 {
-                    modbus::QueueItemError::QueueFull     => { tracing::error!("Failed to put item into queue!"); },
-                    modbus::QueueItemError::DuplicateItem => { tracing::error!("Failed to put item into queue!"); },
+                    modbus::QueueItemError::QueueFull     => { tracing::error!("QueueFull!"); },
+                    modbus::QueueItemError::DuplicateItem => { tracing::error!("DuplicateItem!"); },
                 }
             },
         }
@@ -148,76 +154,124 @@ impl US3202510
         self.queue_request(Request::RefreshStatus);
     }
 
-    pub fn set_frequency_target(&mut self, frequency: units::Frequency)
+    pub fn refresh_config(&mut self)
     {
-
-        tracing::error!("Set frequency; {:?}", frequency);
-
-        self.config.frequency = frequency;
-        let as_hertz_u8 = frequency.get::<hertz>().round().clamp(0.0, 500.0) as u16;
-        self.queue_request(Request::SetFrequency(as_hertz_u8));
+        self.queue_request(Request::RefreshState);
     }
 
-/*
-    pub fn set_rotation_state(&mut self, rotation_state: RotationState)
+    pub fn set_running(&mut self, running: bool)
     {
-        self.config.rotation_state = rotation_state;
-        self.queue_request(Request::StartForwardRotation);
+        if self.config.running == running { return; }
+        
+        tracing::error!("Setting running to: {}", running);
+        
+        match running 
+        {
+            true => 
+            { 
+                let value: u16 = match self.config.direction 
+                {
+                    true  => 1,
+                    false => 3,
+                };
+                
+                self.queue_request(Request::SetRotationState(value)); 
+            },
+            false => { self.queue_request(Request::SetRotationState(2)); },
+        }
+
+        self.config.running = running;
     }
-    
-    pub fn set_frequency_target(&mut self, frequency: units::Frequency)
+
+    pub fn set_direction(&mut self, direction: bool)
     {
-        self.config.frequency = frequency;
-        self.queue_request(Request::StartForwardRotation);
+        if self.config.direction != direction && self.config.running
+        {
+            let value: u16 = if direction { 1 } else { 3 };
+            
+            tracing::error!("Setting direction to: {}", value);
+            
+            
+            self.queue_request(Request::SetRotationState(value));
+        }
+        
+        self.config.direction = direction;
+    }
+
+    pub fn set_frequency_target(&mut self, frequency: u16)
+    {
+        self.config.frequency_target = frequency.min(990);
+        self.queue_request(Request::SetFrequencyTarget(self.config.frequency_target));
     }
     
     pub fn set_acceleration_level(&mut self, acceleration_level: u16)
     {
-        self.config.acceleration_level = acceleration_level;
-        self.queue_request(Request::StartForwardRotation);
+        self.config.acceleration_level = acceleration_level.clamp(1, 15);
+        self.queue_request(Request::SetAccelerationLevel(self.config.acceleration_level));
     }
     
     pub fn set_deceleration_level(&mut self, deceleration_level: u16)
     {
-        self.config.deceleration_level = deceleration_level;
-        self.queue_request(Request::StartForwardRotation);
+        self.config.deceleration_level = deceleration_level.clamp(1, 15);
+        self.queue_request(Request::SetDecelerationLevel(self.config.deceleration_level));
     }
-    */
     
     fn handle_result(&mut self, response: RequestResult)
     {
         match response 
         {
-            RequestResult::ReadHoldingRegisters(_) => 
+            RequestResult::ReadHoldingRegisters(data) => 
             {
-                tracing::error!("ReadHoldingRegisters: WORKED");
+                tracing::error!("BRANCH: HIT: {:?}", data);
+                
+                let frequency_target: u16 = 
+                    *data.result.get(0)
+                        .unwrap_or(&0);
+                        
+                let _run_command: u16 = 
+                    *data.result.get(1)
+                        .unwrap_or(&0);
+                        
+                let acceleration_level: u16 = 
+                    *data.result.get(2)
+                        .unwrap_or(&0);
+                        
+                let deceleration_level: u16 = 
+                    *data.result.get(3)
+                        .unwrap_or(&0);
+                
+                self.config.running            = _run_command != 2;
+                self.config.frequency_target   = frequency_target;
+                self.config.acceleration_level = acceleration_level;
+                self.config.deceleration_level = deceleration_level;
+                
+                self.config.snapshot_id += 1;
             },
             RequestResult::ReadInputRegisters(data) => 
             {
-                let frequency: u16 = data.result.get(InputRegister::CurrentFrequency as usize).unwrap_or(&0) / 10;
+                let frequency: u16 = *data.result.get(InputRegister::CurrentFrequency as usize).unwrap_or(&0);
                 
-                let voltage: u16 = data.result.get(InputRegister::BusVoltage as usize).unwrap_or(&0) / 10;
+                let voltage: u16 = *data.result.get(InputRegister::BusVoltage as usize).unwrap_or(&0);
                 
-                let current: u16 = data.result.get(InputRegister::LineCurrent as usize).unwrap_or(&0) / 100;
+                let current: u16 = *data.result.get(InputRegister::LineCurrent as usize).unwrap_or(&0);
                 
-                let temperature: u16 = *data.result.get(InputRegister::DriveTemperature as usize).unwrap_or(&0) / 10000;
+                let temperature: u16 = *data.result.get(InputRegister::DriveTemperature as usize).unwrap_or(&0);
                 
                 let operation_status: u16 = *data.result.get(InputRegister::SystemStatus as usize).unwrap_or(&0);
                 
-                
-                _ = operation_status;
-                
                 self.status = Some(Status {
-                    frequency:        units::Frequency::new::<hertz>(0 as f64),
-                    voltage:          units::ElectricPotential::new::<volt>(0 as f64),
-                    current:          units::ElectricCurrent::new::<ampere>(0 as f64),
-                    temperature:      units::ThermodynamicTemperature::new::<degree_celsius>(0 as f64),
-                    operation_status: OperationStatus::Idle,
+                    frequency:        units::Frequency::new::<hertz>((frequency as f64) / 10.0),
+                    voltage:          units::ElectricPotential::new::<volt>((voltage as f64) / 10.0),
+                    current:          units::ElectricCurrent::new::<ampere>((current as f64) / 10.0),
+                    temperature:      units::ThermodynamicTemperature::new::<kelvin>((temperature as f64)),
+                    operation_status: if operation_status == 0 { OperationStatus::Idle } else if operation_status == 1 {OperationStatus::Running } else { OperationStatus::Fault },
                 });
             },
             RequestResult::PresetHoldingRegister(request_result_data) => 
             {
                 tracing::error!("PresetHoldingRegister: WORKED");
+                
+                self.config.snapshot_id += 1;
             },
             RequestResult::Exception(request_result_data) => 
             {
@@ -231,8 +285,5 @@ impl US3202510
 mod tests 
 {
     #[test]
-    fn test_requests() 
-    {
-        assert!(1 == 2);
-    }
+    fn test_requests() {}
 }

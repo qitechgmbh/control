@@ -13,6 +13,14 @@ pub struct CustomTransport
     slave_id: u8,
 }
 
+// #[derive(Debug, Clone, PartialEq)]
+// pub struct EntryContext
+// {
+//     type_id: u32
+// }
+
+pub type EntryContext = u32;
+
 impl CustomTransport
 {
     pub fn new(port: Box<dyn serialport::SerialPort>, slave_id: u8) -> Self
@@ -24,7 +32,7 @@ impl CustomTransport
 }
 
 // implement InterfaceTransport for your RTU frames
-impl TransportTrait<()> for CustomTransport 
+impl TransportTrait<EntryContext> for CustomTransport 
 {
     type Error = io::Error;
 
@@ -32,7 +40,7 @@ impl TransportTrait<()> for CustomTransport
 
     fn try_send(
         &mut self,
-        item: WithContext<Frame, ()>
+        item: WithContext<Frame, EntryContext>
     ) -> Result<(), DispatchError<Self::Error>> 
     {
         let mut port = self.port.lock().unwrap();
@@ -90,7 +98,7 @@ impl TransportTrait<()> for CustomTransport
 
     fn send(
         &mut self,
-        item: WithContext<Frame, ()>
+        item: WithContext<Frame, EntryContext>
     ) -> Result<(), DispatchError<Self::Error>> 
     {
         let mut port = self.port.lock().unwrap();

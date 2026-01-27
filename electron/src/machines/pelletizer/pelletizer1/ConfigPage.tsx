@@ -15,7 +15,7 @@ import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 import { roundToDecimals } from "@/lib/decimal";
 import { Badge } from "@/components/ui/badge";
 
-export function Pellet1ControlPage() {
+export function Pellet1ConfigPage() {
     const {
         //state
         state,
@@ -48,7 +48,7 @@ export function Pellet1ControlPage() {
     return (
         <Page>
             <ControlGrid columns={2}>
-                <ControlCard title="Motor Configuration">
+                <ControlCard title="Advanced Inverter Configuration">
                     <SelectionGroupBoolean
                         value={running}
                         optionTrue={{ children: "On" }}
@@ -57,10 +57,21 @@ export function Pellet1ControlPage() {
                             SetRunning(v)
                         }}
                     />
+                    
+                    <Label label="Rotation Direction">
+                        <SelectionGroupBoolean
+                            value={direction}
+                            optionTrue={{ children:  "Forward"  }}
+                            optionFalse={{ children: "Backward" }}
+                            onChange={(v) => {
+                                SetDirection(v)
+                            }}
+                        />
+                    </Label>
 
-                    <Label label="Speed">
+                    <Label label="Set Target Frequency">
                         <EditValue
-                            title="Speed"
+                            title="Set Target Frequency"
                             value={frequency_target}
                             unit="Hz"
                             step={0.1}
@@ -73,49 +84,32 @@ export function Pellet1ControlPage() {
                             defaultValue={5}
                         />
                     </Label>
-                </ControlCard>
-
-                <ControlCard title="Inverter Status">
-                    
-                    {
-                    /* 
-                    
-                    <Badge
-                        className={`text-md ${true ? "bg-white-600 border-green-600 text-green-600" : "bg-red-600 font-bold text-white"} mx-auto h-12 w-[100%] border-3 text-lg`}
-                    >
-                        { true ? "Running" : "PULSE OVERCURRENT"}
-                    </Badge>
-                    */
-                    }
-                    
-
-                    <TimeSeriesValueNumeric
-                        label="Frequency"
-                        unit="Hz"
-                        renderValue={(value) => roundToDecimals(value, 1)}
-                        timeseries={ frequency }
-                    />
-
-                    <TimeSeriesValueNumeric
-                        label="Temperature"
-                        unit="C"
-                        renderValue={(value) => roundToDecimals(value, 1)}
-                        timeseries={ temperature }
-                    />
-
-                    <TimeSeriesValueNumeric
-                        label="Voltage"
-                        unit="V"
-                        renderValue={(value) => roundToDecimals(value, 1)}
-                        timeseries={ voltage }
-                    />
-
-                    <TimeSeriesValueNumeric
-                        label="Current"
-                        unit="A"
-                        renderValue={(value) => roundToDecimals(value, 1)}
-                        timeseries={ current }
-                    />
+                    <Label label="Set Acceleration Level">
+                        <EditValue
+                            title="Set Acceleration Level"
+                            value={acceleration_level}
+                            unit={undefined}
+                            step={1}
+                            min={1}
+                            max={15}
+                            renderValue={(value) => value.toFixed(0)}
+                            onChange={(val) => SetAccelerationLevel(val)}
+                            defaultValue={7}
+                        />
+                    </Label>
+                    <Label label="Set Deceleration Level">
+                        <EditValue
+                            title="Set Deceleration Level"
+                            value={deceleration_level}
+                            unit={undefined}
+                            step={1}
+                            min={1}
+                            max={15}
+                            renderValue={(value) => value.toFixed(0)}
+                            onChange={(val) => SetDecelerationLevel(val)}
+                            defaultValue={7}
+                        />
+                    </Label>
                 </ControlCard>
             </ControlGrid>
         </Page>

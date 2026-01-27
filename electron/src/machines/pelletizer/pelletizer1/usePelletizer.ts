@@ -32,8 +32,11 @@ function usePellet(machine_identification_unique: MachineIdentificationUnique) {
     };
 
     // Mutation schemas
-    const schemaRunMode = z.object({ SetRunMode: z.number() });
-    const { request: requestRunMode } = useMachineMutation(schemaRunMode);
+    const schemaRunning = z.object({ SetRunning: z.boolean() });
+    const { request: requestRunning } = useMachineMutation(schemaRunning);
+  
+    const schemaDirection = z.object({ SetDirection: z.boolean() });
+    const { request: requestDirection } = useMachineMutation(schemaDirection);
     
     const schemaFrequencyTarget = z.object({ SetFrequencyTarget: z.number() });
     const { request: requestFrequencyTarget } = useMachineMutation(schemaFrequencyTarget);
@@ -44,16 +47,31 @@ function usePellet(machine_identification_unique: MachineIdentificationUnique) {
     const schemaDecelerationLevel = z.object({ SetDecelerationLevel: z.number() });
     const { request: requestDecelerationLevel } = useMachineMutation(schemaDecelerationLevel);
 
-    const SetRunMode = (run_mode: number) => {
+    const SetRunning = (running: boolean) => {
       updateStateOptimistically(
         (current) => {
-          current.data.inverter_state.running_state = run_mode;
+          current.data.inverter_state.running = running;
         },
         () =>
-          requestRunMode({
+          requestRunning({
             machine_identification_unique,
             data: {
-              SetRunMode: run_mode,
+              SetRunning: running,
+            },
+          }),
+      );
+    };
+
+    const SetDirection = (forward: boolean) => {
+      updateStateOptimistically(
+        (current) => {
+          current.data.inverter_state.direction = forward;
+        },
+        () =>
+          requestDirection({
+            machine_identification_unique,
+            data: {
+              SetDirection: forward,
             },
           }),
       );
@@ -123,7 +141,8 @@ function usePellet(machine_identification_unique: MachineIdentificationUnique) {
       isDisabled: !stateOptimistic.isInitialized,
 
       // Action functions
-      SetRunMode,
+      SetRunning,
+      SetDirection,
       SetFrequencyTarget,
       SetAccelerationLevel,
       SetDecelerationLevel,
@@ -162,7 +181,5 @@ export function usePellet1()
 
     const pellet = usePellet(machineIdentification);
 
-    return {
-        ...pellet,
-    };
+    return { ...pellet };
 }

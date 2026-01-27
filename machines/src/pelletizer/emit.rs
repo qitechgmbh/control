@@ -24,16 +24,21 @@ impl Pelletizer
 
     pub fn create_state_event(&self) -> StateEvent 
     {
+        let inverter = smol::block_on(async {
+            self.inverter.read().await
+        });
+        
+        tracing::error!("EMIT STATE: {:?}", inverter.config);
+        
         StateEvent 
         {
             is_default_state: !self.emitted_default_state,
             inverter_state: InverterState {
-                running_state:      0,
-                error_code:         0,
-                system_status:      0,
-                frequency_target:   50,
-                acceleration_level: 7,
-                deceleration_level: 7,
+                running:            inverter.config.running,
+                direction:          inverter.config.direction,
+                frequency_target:   (inverter.config.frequency_target as f64) / 10.0,
+                acceleration_level: inverter.config.acceleration_level,
+                deceleration_level: inverter.config.deceleration_level,
             },
         }
     }

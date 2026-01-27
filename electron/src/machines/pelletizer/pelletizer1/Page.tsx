@@ -14,6 +14,12 @@ export function Pellet1Page() {
                     title: "Control",
                     icon: "lu:CirclePlay",
                 },
+                {
+                    link: "config",
+                    activeLink: "config",
+                    title: "Config",
+                    icon: "lu:ChartSpline",
+                },
                 // {
                 //     link: "graphs",
                 //     activeLink: "graphs",
@@ -24,7 +30,7 @@ export function Pellet1Page() {
                 //   link: "settings",
                 //   activeLink: "settings",
                 //   title: "Config",
-                //   icon: "lu:Settings",
+                //   icon: "lu:ChartSpline",
                 // },
                 // {
                 //     link: "manual",

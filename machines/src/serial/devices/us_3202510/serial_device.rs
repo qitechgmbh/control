@@ -18,7 +18,7 @@ use crate::{
     VENDOR_QITECH, 
     machine_identification::{
         DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification, DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique
-    }, serial::devices::us_3202510::{Config, ModbusInterface, RotationState, request, transport::CustomTransport}
+    }, serial::devices::us_3202510::{Config, ModbusInterface, request, transport::CustomTransport}
 };
 
 use serialport::{DataBits, FlowControl, Parity, StopBits};
@@ -68,12 +68,20 @@ impl SerialDeviceNew for US3202510
         //     machine_operation_delay: Duration::from_millis(100),
         // };
         
-       let mut port = serialport::new(params.path.clone(), 9600).data_bits(DataBits::Eight).parity(Parity::None).open().expect("");
-
+        let port = 
+            serialport::new(params.path.clone(), 9600)
+            .data_bits(DataBits::Eight)
+            .parity(Parity::None)
+            .flow_control(FlowControl::None)
+            .baud_rate(9600)
+            .stop_bits(StopBits::One)
+            .timeout(Duration::from_millis(500))
+            .open()
+            .expect("");
 
         let transport = CustomTransport::new(port, 1);
         
-        let mut interface = ModbusInterface::new(transport);
+        let interface = ModbusInterface::new(transport);
         
         // let request: [u8; 8] = [
         //     0x01, // slave id
@@ -87,10 +95,14 @@ impl SerialDeviceNew for US3202510
         let _self = Arc::new(RwLock::new(Self {
             path: params.path.clone(),
             config: Config {
-                rotation_state: RotationState::Stopped,
-                frequency: Frequency::ZERO,
+                running: false,
+                direction: true,
+                frequency_target: 0,
+                frequency_max: 50,
+                frequency_min: 0,
                 acceleration_level: 7,
                 deceleration_level: 7,
+                snapshot_id: 0,
             },
             status: None,
             failed_attempts: 0,
