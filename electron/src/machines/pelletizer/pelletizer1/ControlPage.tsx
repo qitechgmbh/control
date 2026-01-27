@@ -61,14 +61,14 @@ export function Pellet1ControlPage() {
                     <Label label="Speed">
                         <EditValue
                             title="Speed"
-                            value={frequency_target}
-                            unit="Hz"
-                            step={0.1}
+                            value={frequency_target * 2}
+                            unit="%"
+                            step={0.5}
                             min={0}
-                            max={50}
+                            max={100}
                             renderValue={(value) => value.toFixed(1)}
                             onChange={(val) => {
-                                SetFrequencyTarget(val);
+                                SetFrequencyTarget(val / 2);
                             }}
                             defaultValue={5}
                         />
