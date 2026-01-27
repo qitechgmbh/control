@@ -3,16 +3,9 @@ use crate::{
     socketio::main_namespace::machines_event::MachineObj,
 };
 use machines::{
-    AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
-    MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
-    SerialDeviceNewParams,
-    laser::LaserMachine,
-    machine_identification::{
+    AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial, MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew, SerialDeviceNewParams, laser::LaserMachine, machine_identification::{
         DeviceIdentification, DeviceIdentificationIdentified, MachineIdentificationUnique,
-    },
-    registry::{MACHINE_REGISTRY, MachineRegistry},
-    serial::{devices::laser::Laser, init::SerialDetection},
-    winder2::api::GenericEvent,
+    }, pelletizer::Pelletizer, registry::{MACHINE_REGISTRY, MachineRegistry}, serial::{devices::{laser::Laser, us_3202510::US3202510}, init::SerialDetection}, winder2::api::GenericEvent
 };
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -164,19 +157,20 @@ pub async fn handle_serial_device_hotplug(
     app_state: Arc<SharedState>,
     map: HashMap<String, UsbPortInfo>,
 ) {
-    let laser_ident = SerialDeviceIdentification {
+    // IDENTIFIER OF THE USB DEVICE, NOT THE ACTUAL DEVICE
+    let usb_interface_id = SerialDeviceIdentification {
         vendor_id: 0x0403,
         product_id: 0x6001,
     };
 
-    let laser = SerialDetection::get_path_by_id(laser_ident, map);
+    let path = SerialDetection::get_path_by_id(usb_interface_id, map);
     let mut unique_ident: Option<MachineIdentificationUnique> = None;
 
     {
         let machines = app_state.current_machines_meta.lock().await;
-        for machine in machines.iter() {
-            if machine.machine_identification_unique.machine_identification
-                == LaserMachine::MACHINE_IDENTIFICATION
+        for machine in machines.iter() 
+        {
+            if machine.machine_identification_unique.machine_identification == Pelletizer::MACHINE_IDENTIFICATION
             {
                 unique_ident = Some(machine.machine_identification_unique.clone());
                 break;
@@ -185,11 +179,12 @@ pub async fn handle_serial_device_hotplug(
     }
 
     // Machine isnt connected, so add it back
-    if laser.is_some() && unique_ident.is_none() {
+    if path.is_some() && unique_ident.is_none() {
         let serial_params = SerialDeviceNewParams {
-            path: laser.unwrap(),
+            path: path.unwrap(),
         };
-        match Laser::new_serial(&serial_params) {
+
+        match US3202510::new_serial(&serial_params) {
             Ok((device_identification, serial_device)) => {
                 add_serial_device(
                     app_state.clone(),
@@ -202,7 +197,7 @@ pub async fn handle_serial_device_hotplug(
             }
             _ => (),
         };
-    } else if laser.is_none() && unique_ident.is_some() {
+    } else if path.is_none() && unique_ident.is_some() {
         let unique_ident = unique_ident.unwrap();
         app_state
             .clone()

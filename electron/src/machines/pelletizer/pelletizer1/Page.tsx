@@ -1,0 +1,50 @@
+import { Topbar } from "@/components/Topbar";
+import { pelletizer1SerialRoute } from "@/routes/routes";
+import React from "react";
+
+export function Pellet1Page() {
+    const { serial } = pelletizer1SerialRoute.useParams();
+    return (
+        <Topbar
+            pathname={`/_sidebar/machines/pelletizer1/${serial}`}
+            items={[
+                {
+                    link: "control",
+                    activeLink: "control",
+                    title: "Control",
+                    icon: "lu:CirclePlay",
+                },
+                {
+                    link: "config",
+                    activeLink: "config",
+                    title: "Config",
+                    icon: "lu:ChartSpline",
+                },
+                // {
+                //     link: "graphs",
+                //     activeLink: "graphs",
+                //     title: "Graphs",
+                //     icon: "lu:ChartSpline",
+                // },
+                // {
+                //   link: "settings",
+                //   activeLink: "settings",
+                //   title: "Config",
+                //   icon: "lu:ChartSpline",
+                // },
+                // {
+                //     link: "manual",
+                //     activeLink: "manual",
+                //     title: "Manual",
+                //     icon: "lu:BookOpen",
+                // },
+                // {
+                //     link: "presets",
+                //     activeLink: "presets",
+                //     title: "Presets",
+                //     icon: "lu:Save",
+                // },
+            ]}
+        />
+    );
+}
