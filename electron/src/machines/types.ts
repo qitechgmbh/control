@@ -84,6 +84,35 @@ export type MachineProperties = {
   machine_identification: MachineIdentification;
   // roles and thair allowed devices
   device_roles: DeviceRole[];
+  // optional UI metadata (colors, labels, etc.)
+  ui?: MachineUi;
+};
+
+export type HeatingZoneColors = {
+  nozzle?: string;
+  front?: string;
+  middle?: string;
+  back?: string;
+};
+
+export type HeatingZoneLabels = {
+  nozzle?: string;
+  front?: string;
+  middle?: string;
+  back?: string;
+};
+
+export type GraphColors = {
+  primary?: string;
+  grid?: string;
+  axis?: string;
+  background?: string;
+};
+
+export type MachineUi = {
+  graphColors?: GraphColors;
+  heatingZoneColors?: HeatingZoneColors;
+  heatingZoneLabels?: HeatingZoneLabels;
 };
 
 export const deviceIdentification = z.object({

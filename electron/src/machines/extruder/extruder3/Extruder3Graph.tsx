@@ -7,10 +7,12 @@ import {
 } from "@/components/graph";
 import React from "react";
 import { useExtruder3 } from "./useExtruder";
+import { HeatingSsrGraph } from "../HeatingSsrGraph";
 
 export function Extruder3GraphsPage() {
   const {
     state,
+    machineUi,
     nozzleTemperature,
     nozzlePower,
     frontTemperature,
@@ -19,6 +21,10 @@ export function Extruder3GraphsPage() {
     backPower,
     middleTemperature,
     middlePower,
+    nozzleHeatingOn,
+    frontHeatingOn,
+    middleHeatingOn,
+    backHeatingOn,
     pressure,
     motorScrewRpm,
     motorCurrent,
@@ -281,6 +287,19 @@ export function Extruder3GraphsPage() {
           unit="W"
           renderValue={(value) => value.toFixed(1)}
           graphId="combined-power"
+        />
+
+        <HeatingSsrGraph
+          syncHook={syncHook}
+          baseConfig={baseConfig}
+          nozzle={nozzleHeatingOn}
+          front={frontHeatingOn}
+          middle={middleHeatingOn}
+          back={backHeatingOn}
+          zoneColors={machineUi?.heatingZoneColors}
+          zoneLabels={machineUi?.heatingZoneLabels}
+          graphColors={machineUi?.graphColors}
+          graphId="heating-ssr"
         />
 
         <AutoSyncedBigGraph

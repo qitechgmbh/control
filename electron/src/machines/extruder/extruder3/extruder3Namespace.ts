@@ -45,6 +45,10 @@ export const liveValuesEventDataSchema = z.object({
   middle_power: z.number(),
   combined_power: z.number(),
   total_energy_kwh: z.number(),
+  nozzle_heating_on: z.boolean(),
+  front_heating_on: z.boolean(),
+  back_heating_on: z.boolean(),
+  middle_heating_on: z.boolean(),
 });
 
 /**
@@ -217,6 +221,10 @@ export type Extruder3NamespaceStore = {
   frontPower: TimeSeries;
   middlePower: TimeSeries;
   backPower: TimeSeries;
+  nozzleHeatingOn: TimeSeries;
+  frontHeatingOn: TimeSeries;
+  middleHeatingOn: TimeSeries;
+  backHeatingOn: TimeSeries;
 
   // Combined power consumption and energy
   combinedPower: TimeSeries;
@@ -239,6 +247,14 @@ const { initialTimeSeries: frontPower, insert: addFrontPower } =
 const { initialTimeSeries: middlePower, insert: addMiddlePower } =
   createTimeSeries();
 const { initialTimeSeries: backPower, insert: addBackPower } =
+  createTimeSeries();
+const { initialTimeSeries: nozzleHeatingOn, insert: addNozzleHeatingOn } =
+  createTimeSeries();
+const { initialTimeSeries: frontHeatingOn, insert: addFrontHeatingOn } =
+  createTimeSeries();
+const { initialTimeSeries: middleHeatingOn, insert: addMiddleHeatingOn } =
+  createTimeSeries();
+const { initialTimeSeries: backHeatingOn, insert: addBackHeatingOn } =
   createTimeSeries();
 const { initialTimeSeries: combinedPower, insert: addCombinedPower } =
   createTimeSeries();
@@ -336,6 +352,22 @@ export function extruder3MessageHandler(
             value: liveValuesEvent.data.back_power,
             timestamp,
           }),
+          nozzleHeatingOn: addNozzleHeatingOn(state.nozzleHeatingOn, {
+            value: liveValuesEvent.data.nozzle_heating_on ? 1 : 0,
+            timestamp,
+          }),
+          frontHeatingOn: addFrontHeatingOn(state.frontHeatingOn, {
+            value: liveValuesEvent.data.front_heating_on ? 1 : 0,
+            timestamp,
+          }),
+          middleHeatingOn: addMiddleHeatingOn(state.middleHeatingOn, {
+            value: liveValuesEvent.data.middle_heating_on ? 1 : 0,
+            timestamp,
+          }),
+          backHeatingOn: addBackHeatingOn(state.backHeatingOn, {
+            value: liveValuesEvent.data.back_heating_on ? 1 : 0,
+            timestamp,
+          }),
           combinedPower: addCombinedPower(state.combinedPower, {
             value: liveValuesEvent.data.combined_power,
             timestamp,
@@ -376,6 +408,10 @@ export const createExtruder3NamespaceStore =
         frontPower,
         backPower,
         middlePower,
+        nozzleHeatingOn,
+        frontHeatingOn,
+        middleHeatingOn,
+        backHeatingOn,
         combinedPower,
         totalEnergyKWh,
       };
