@@ -1,0 +1,7 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/venator/control/server/Cargo.toml
+workspace: /home/venator/control/Cargo.toml
+error: failed to open: /home/venator/control/target/release/.cargo-lock
+
+Caused by:
+  Permission denied (os error 13)

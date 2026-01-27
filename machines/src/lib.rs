@@ -27,6 +27,7 @@ pub mod ip20_test_machine;
 pub mod laser;
 pub mod machine_identification;
 pub mod mock;
+pub mod sensor_machine;
 pub mod registry;
 pub mod serial;
 pub mod test_machine;

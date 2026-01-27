@@ -1,0 +1,406 @@
+[2m2026-01-26T16:14:06.491703099+00:00[0m [32m INFO[0m main [2mserver[0m[2m:[0m [2m324:[0m Tracing initialized successfully
+[2m2026-01-26T16:14:06.491870083+00:00[0m [34mDEBUG[0m loop [2mcontrol_core::realtime[0m[2m:[0m [2m168:[0m Set core affinity of thread ""loop"" to core CoreId { id: 2 }
+[2m2026-01-26T16:14:06.491885492+00:00[0m [34mDEBUG[0m loop [2mcontrol_core::realtime[0m[2m:[0m [2m78:[0m Successfully set real-time priority for the thread ""loop""
+[2m2026-01-26T16:14:06.491887767+00:00[0m [32m INFO[0m loop [2mserver::r#loop[0m[2m:[0m [2m65:[0m [server::r#loop::init_loop] Real-time priority set successfully for current thread
+[2m2026-01-26T16:14:06.492010718+00:00[0m [32m INFO[0m smol-1 [2mserver::socketio::queue[0m[2m:[0m [2m62:[0m SocketIO global queue listener started
+[2m2026-01-26T16:14:06.492141163+00:00[0m [32m INFO[0m ThreadId(03) [2mserver::rest::init[0m[2m:[0m [2m43:[0m HTTP server running on 0.0.0.0:3001
+[2m2026-01-26T16:14:06.506968037+00:00[0m [32m INFO[0m smol-1 [2mcontrol_core::ethercat::interface_discovery[0m[2m:[0m [2m55:[0m Discovering EtherCAT interface...
+[2m2026-01-26T16:14:06.507227355+00:00[0m [32m INFO[0m smol-1 [2mcontrol_core::ethercat::interface_discovery[0m[2m:[0m [2m122:[0m Testing interface: eno1
+[2m2026-01-26T16:14:06.534185320+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::std::unix[0m[2m:[0m [2m137:[0m Opening eno1 with MTU 1500
+[2m2026-01-26T16:14:06.534828841+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::maindevice[0m[2m:[0m [2m229:[0m Discovered 2 SubDevices
+[2m2026-01-26T16:14:06.534835624+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::maindevice[0m[2m:[0m [2m84:[0m Beginning reset
+[2m2026-01-26T16:14:06.536684552+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::maindevice[0m[2m:[0m [2m142:[0m --> Reset complete
+[2m2026-01-26T16:14:06.536718045+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice[0m[2m:[0m [2m152:[0m Waiting for SubDevice 0x1000 to enter Init
+[2m2026-01-26T16:14:06.545343612+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice[0m[2m:[0m [2m185:[0m --> Support flags SupportFlags { fmmu_supports_bit_ops: false, reserved_register_support: false, dc_supported: true, has_64bit_dc: true, low_jitter: true, ebus_enhanced_link_detection: true, mii_enhanced_link_detection: true, separate_fcs_error_handling: true, enhanced_dc_sync: false, lrw_not_supported: false, brw_aprw_fprw_not_supported: false, special_fmmu: false }
+[2m2026-01-26T16:14:06.545402924+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice[0m[2m:[0m [2m207:[0m SubDevice 0x1000 name EK1100 vendor: 0x00000002, product 0x044c2c52, rev 1179648, serial 0, DC: yes (64 bit), ports [ closed closed open open ], alias address 0x0000
+[2m2026-01-26T16:14:06.545433792+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice[0m[2m:[0m [2m152:[0m Waiting for SubDevice 0x1001 to enter Init
+[2m2026-01-26T16:14:06.556330862+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice[0m[2m:[0m [2m185:[0m --> Support flags SupportFlags { fmmu_supports_bit_ops: false, reserved_register_support: false, dc_supported: true, has_64bit_dc: true, low_jitter: true, ebus_enhanced_link_detection: true, mii_enhanced_link_detection: true, separate_fcs_error_handling: true, enhanced_dc_sync: true, lrw_not_supported: false, brw_aprw_fprw_not_supported: false, special_fmmu: false }
+[2m2026-01-26T16:14:06.556387559+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice[0m[2m:[0m [2m207:[0m SubDevice 0x1001 name EL3062-0030 vendor: 0x00000002, product 0x0bf63052, rev 1507358, serial 0, DC: yes (64 bit), enhanced sync, ports [ open closed closed closed ], alias address 0x0000
+[2m2026-01-26T16:14:06.556390725+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::maindevice[0m[2m:[0m [2m263:[0m Configuring topology/distributed clocks
+[2m2026-01-26T16:14:06.556528995+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::dc[0m[2m:[0m [2m318:[0m SubDevice 0x1000 EK1100 DC support RefOnly
+[2m2026-01-26T16:14:06.556531369+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::dc[0m[2m:[0m [2m215:[0m --> Topology Passthrough, ports [ closed closed open open ]
+[2m2026-01-26T16:14:06.556533353+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::dc[0m[2m:[0m [2m220:[0m --> Receive times 1801676098 ns (0 ns) 1819436374 (0 ns) 1400154944 (0 ns) 1400154634 (total 310)
+[2m2026-01-26T16:14:06.556535157+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::dc[0m[2m:[0m [2m318:[0m SubDevice 0x1001 EL3062-0030 DC support Bits64
+[2m2026-01-26T16:14:06.556536760+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::dc[0m[2m:[0m [2m215:[0m --> Topology LineEnd, ports [ open closed closed closed ]
+[2m2026-01-26T16:14:06.556538172+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::dc[0m[2m:[0m [2m220:[0m --> Receive times 1405267098 ns (0 ns) 1819436374 (0 ns) 1717989224 (0 ns) 0 (total 0)
+[2m2026-01-26T16:14:06.556539845+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::dc[0m[2m:[0m [2m249:[0m --> Parent (Passthrough) EK1100 port 1 assigned to EL3062-0030 port 0 (SubDevice is child of parent: false)
+[2m2026-01-26T16:14:06.556541639+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::dc[0m[2m:[0m [2m262:[0m --> Parent propagation time 310, my prop. time 0 delta 310
+[2m2026-01-26T16:14:06.556543182+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::dc[0m[2m:[0m [2m298:[0m --> Propagation delay 155 (delta 155) ns
+[2m2026-01-26T16:14:06.557083598+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::dc[0m[2m:[0m [2m448:[0m Distributed clock config complete
+[2m2026-01-26T16:14:06.557087556+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::dc[0m[2m:[0m [2m460:[0m Performing static drift compensation using SubDevice 0x1000 EK1100 as reference. This can take some time...
+[2m2026-01-26T16:14:06.884898330+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::dc[0m[2m:[0m [2m477:[0m Static drift compensation complete
+[2m2026-01-26T16:14:06.884917065+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice_group::handle[0m[2m:[0m [2m81:[0m Going to configure group with 2 SubDevice(s), starting PDI offset 0x000000
+[2m2026-01-26T16:14:06.887835034+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m265:[0m Discovered sync managers:
+[]
+[2m2026-01-26T16:14:06.893226888+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m43:[0m SubDevice 0x1000 mailbox SMs configured. Transitioning to PRE-OP
+[2m2026-01-26T16:14:06.893232338+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice[0m[2m:[0m [2m1207:[0m Set state Pre-Operational for SubDevice address 0x1000
+[2m2026-01-26T16:14:06.900687794+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m265:[0m Discovered sync managers:
+[
+    SyncManager {
+        start_addr: 0x1000,
+        length: 0x0080,
+        control: Control {
+            operation_mode: Mailbox,
+            direction: MasterWrite,
+            ecat_event_enable: false,
+            dls_user_event_enable: true,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            ENABLE,
+        ),
+        usage_type: MailboxWrite,
+    },
+    SyncManager {
+        start_addr: 0x1080,
+        length: 0x0080,
+        control: Control {
+            operation_mode: Mailbox,
+            direction: MasterRead,
+            ecat_event_enable: false,
+            dls_user_event_enable: true,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            ENABLE,
+        ),
+        usage_type: MailboxRead,
+    },
+    SyncManager {
+        start_addr: 0x1100,
+        length: 0x0000,
+        control: Control {
+            operation_mode: Normal,
+            direction: MasterWrite,
+            ecat_event_enable: false,
+            dls_user_event_enable: false,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            0x0,
+        ),
+        usage_type: ProcessDataWrite,
+    },
+    SyncManager {
+        start_addr: 0x1180,
+        length: 0x0008,
+        control: Control {
+            operation_mode: Normal,
+            direction: MasterRead,
+            ecat_event_enable: false,
+            dls_user_event_enable: true,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            ENABLE,
+        ),
+        usage_type: ProcessDataRead,
+    },
+]
+[2m2026-01-26T16:14:06.906832674+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m200:[0m SubDevice 0x1001 SM0: start 0x1000, size 0x0080 (128), direction MasterWrite, mode Mailbox, enabled
+[2m2026-01-26T16:14:06.907291668+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m200:[0m SubDevice 0x1001 SM1: start 0x1080, size 0x0080 (128), direction MasterRead, mode Mailbox, enabled
+[2m2026-01-26T16:14:06.907351300+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m43:[0m SubDevice 0x1001 mailbox SMs configured. Transitioning to PRE-OP
+[2m2026-01-26T16:14:06.907353775+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice[0m[2m:[0m [2m1207:[0m Set state Pre-Operational for SubDevice address 0x1001
+[2m2026-01-26T16:14:06.912528720+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m88:[0m SubDevice 0x1001 found sync managers [MailboxWrite, MailboxRead, ProcessDataWrite, ProcessDataRead]
+[2m2026-01-26T16:14:06.912599523+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::maindevice[0m[2m:[0m [2m302:[0m After group ID 0 offset: PdiOffset { start_address: 128 }
+[2m2026-01-26T16:14:06.912603891+00:00[0m [34mDEBUG[0m smol-1 [2methercrab::maindevice[0m[2m:[0m [2m305:[0m Total PDI 128 bytes
+[2m2026-01-26T16:14:06.924106471+00:00[0m [32m INFO[0m smol-1 [2mcontrol_core::ethercat::interface_discovery[0m[2m:[0m [2m21:[0m set_interface_managed for eno1 managed was set to: no
+[2m2026-01-26T16:14:06.938032730+00:00[0m [32m INFO[0m smol-1 [2mserver::ethercat::init[0m[2m:[0m [2m15:[0m Found EtherCAT Interface at: eno1
+[2m2026-01-26T16:14:06.938052808+00:00[0m [32m INFO[0m smol-1 [2mserver[0m[2m:[0m [2m139:[0m Inferface found eno1, setting up EtherCAT loop
+[2m2026-01-26T16:14:06.938063759+00:00[0m [32m INFO[0m smol-1 [2mserver::ethercat::setup[0m[2m:[0m [2m174:[0m Starting Ethercat PDU loop
+[2m2026-01-26T16:14:08.438577531+00:00[0m [32m INFO[0m EthercatTxRxThread [2mserver::ethercat::setup[0m[2m:[0m [2m195:[0m ethernet interrupt handler now runs on cpu:3
+[2m2026-01-26T16:14:08.438614891+00:00[0m [34mDEBUG[0m EthercatTxRxThread [2mcontrol_core::realtime[0m[2m:[0m [2m168:[0m Set core affinity of thread ""EthercatTxRxThread"" to core CoreId { id: 3 }
+[2m2026-01-26T16:14:08.438632925+00:00[0m [34mDEBUG[0m EthercatTxRxThread [2mcontrol_core::realtime[0m[2m:[0m [2m78:[0m Successfully set real-time priority for the thread ""EthercatTxRxThread""
+[2m2026-01-26T16:14:08.444083639+00:00[0m [34mDEBUG[0m EthercatTxRxThread [2methercrab::std::unix[0m[2m:[0m [2m137:[0m Opening eno1 with MTU 1500
+[2m2026-01-26T16:14:08.444720578+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::maindevice[0m[2m:[0m [2m229:[0m Discovered 2 SubDevices
+[2m2026-01-26T16:14:08.444728703+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::maindevice[0m[2m:[0m [2m84:[0m Beginning reset
+[2m2026-01-26T16:14:08.447113279+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::maindevice[0m[2m:[0m [2m142:[0m --> Reset complete
+[2m2026-01-26T16:14:08.447149507+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice[0m[2m:[0m [2m152:[0m Waiting for SubDevice 0x1000 to enter Init
+[2m2026-01-26T16:14:08.455827412+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice[0m[2m:[0m [2m185:[0m --> Support flags SupportFlags { fmmu_supports_bit_ops: false, reserved_register_support: false, dc_supported: true, has_64bit_dc: true, low_jitter: true, ebus_enhanced_link_detection: true, mii_enhanced_link_detection: true, separate_fcs_error_handling: true, enhanced_dc_sync: false, lrw_not_supported: false, brw_aprw_fprw_not_supported: false, special_fmmu: false }
+[2m2026-01-26T16:14:08.456324147+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice[0m[2m:[0m [2m207:[0m SubDevice 0x1000 name EK1100 vendor: 0x00000002, product 0x044c2c52, rev 1179648, serial 0, DC: yes (64 bit), ports [ closed closed open open ], alias address 0x0000
+[2m2026-01-26T16:14:08.456370133+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice[0m[2m:[0m [2m152:[0m Waiting for SubDevice 0x1001 to enter Init
+[2m2026-01-26T16:14:08.468669221+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice[0m[2m:[0m [2m185:[0m --> Support flags SupportFlags { fmmu_supports_bit_ops: false, reserved_register_support: false, dc_supported: true, has_64bit_dc: true, low_jitter: true, ebus_enhanced_link_detection: true, mii_enhanced_link_detection: true, separate_fcs_error_handling: true, enhanced_dc_sync: true, lrw_not_supported: false, brw_aprw_fprw_not_supported: false, special_fmmu: false }
+[2m2026-01-26T16:14:08.469164954+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice[0m[2m:[0m [2m207:[0m SubDevice 0x1001 name EL3062-0030 vendor: 0x00000002, product 0x0bf63052, rev 1507358, serial 0, DC: yes (64 bit), enhanced sync, ports [ open closed closed closed ], alias address 0x0000
+[2m2026-01-26T16:14:08.469172929+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::maindevice[0m[2m:[0m [2m263:[0m Configuring topology/distributed clocks
+[2m2026-01-26T16:14:08.469339432+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::dc[0m[2m:[0m [2m318:[0m SubDevice 0x1000 EK1100 DC support RefOnly
+[2m2026-01-26T16:14:08.469345083+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::dc[0m[2m:[0m [2m215:[0m --> Topology Passthrough, ports [ closed closed open open ]
+[2m2026-01-26T16:14:08.469348419+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::dc[0m[2m:[0m [2m220:[0m --> Receive times 1801676098 ns (0 ns) 1819436374 (1493510850 ns) 3312947224 (0 ns) 3312946914 (total 310)
+[2m2026-01-26T16:14:08.469351244+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::dc[0m[2m:[0m [2m318:[0m SubDevice 0x1001 EL3062-0030 DC support Bits64
+[2m2026-01-26T16:14:08.469353769+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::dc[0m[2m:[0m [2m215:[0m --> Topology LineEnd, ports [ open closed closed closed ]
+[2m2026-01-26T16:14:08.469356003+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::dc[0m[2m:[0m [2m220:[0m --> Receive times 3318058922 ns (0 ns) 1819436374 (0 ns) 1717989224 (0 ns) 0 (total 0)
+[2m2026-01-26T16:14:08.469358578+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::dc[0m[2m:[0m [2m249:[0m --> Parent (Passthrough) EK1100 port 1 assigned to EL3062-0030 port 0 (SubDevice is child of parent: false)
+[2m2026-01-26T16:14:08.469361654+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::dc[0m[2m:[0m [2m262:[0m --> Parent propagation time 310, my prop. time 0 delta 310
+[2m2026-01-26T16:14:08.469364269+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::dc[0m[2m:[0m [2m298:[0m --> Propagation delay 155 (delta 155) ns
+[2m2026-01-26T16:14:08.470046543+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::dc[0m[2m:[0m [2m448:[0m Distributed clock config complete
+[2m2026-01-26T16:14:08.470050650+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::dc[0m[2m:[0m [2m460:[0m Performing static drift compensation using SubDevice 0x1000 EK1100 as reference. This can take some time...
+[2m2026-01-26T16:14:08.810461012+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::dc[0m[2m:[0m [2m477:[0m Static drift compensation complete
+[2m2026-01-26T16:14:08.810472634+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice_group::handle[0m[2m:[0m [2m81:[0m Going to configure group with 2 SubDevice(s), starting PDI offset 0x000000
+[2m2026-01-26T16:14:08.814803812+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m265:[0m Discovered sync managers:
+[]
+[2m2026-01-26T16:14:08.821386095+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m43:[0m SubDevice 0x1000 mailbox SMs configured. Transitioning to PRE-OP
+[2m2026-01-26T16:14:08.821394471+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice[0m[2m:[0m [2m1207:[0m Set state Pre-Operational for SubDevice address 0x1000
+[2m2026-01-26T16:14:08.828597141+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m265:[0m Discovered sync managers:
+[
+    SyncManager {
+        start_addr: 0x1000,
+        length: 0x0080,
+        control: Control {
+            operation_mode: Mailbox,
+            direction: MasterWrite,
+            ecat_event_enable: false,
+            dls_user_event_enable: true,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            ENABLE,
+        ),
+        usage_type: MailboxWrite,
+    },
+    SyncManager {
+        start_addr: 0x1080,
+        length: 0x0080,
+        control: Control {
+            operation_mode: Mailbox,
+            direction: MasterRead,
+            ecat_event_enable: false,
+            dls_user_event_enable: true,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            ENABLE,
+        ),
+        usage_type: MailboxRead,
+    },
+    SyncManager {
+        start_addr: 0x1100,
+        length: 0x0000,
+        control: Control {
+            operation_mode: Normal,
+            direction: MasterWrite,
+            ecat_event_enable: false,
+            dls_user_event_enable: false,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            0x0,
+        ),
+        usage_type: ProcessDataWrite,
+    },
+    SyncManager {
+        start_addr: 0x1180,
+        length: 0x0008,
+        control: Control {
+            operation_mode: Normal,
+            direction: MasterRead,
+            ecat_event_enable: false,
+            dls_user_event_enable: true,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            ENABLE,
+        ),
+        usage_type: ProcessDataRead,
+    },
+]
+[2m2026-01-26T16:14:08.835805702+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m200:[0m SubDevice 0x1001 SM0: start 0x1000, size 0x0080 (128), direction MasterWrite, mode Mailbox, enabled
+[2m2026-01-26T16:14:08.835846359+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m200:[0m SubDevice 0x1001 SM1: start 0x1080, size 0x0080 (128), direction MasterRead, mode Mailbox, enabled
+[2m2026-01-26T16:14:08.835909538+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m43:[0m SubDevice 0x1001 mailbox SMs configured. Transitioning to PRE-OP
+[2m2026-01-26T16:14:08.835913375+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice[0m[2m:[0m [2m1207:[0m Set state Pre-Operational for SubDevice address 0x1001
+[2m2026-01-26T16:14:08.842517890+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m88:[0m SubDevice 0x1001 found sync managers [MailboxWrite, MailboxRead, ProcessDataWrite, ProcessDataRead]
+[2m2026-01-26T16:14:08.843176459+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::maindevice[0m[2m:[0m [2m302:[0m After group ID 1 offset: PdiOffset { start_address: 512 }
+[2m2026-01-26T16:14:08.843180817+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::maindevice[0m[2m:[0m [2m305:[0m Total PDI 512 bytes
+[2m2026-01-26T16:14:08.843645922+00:00[0m [32m INFO[0m             smol-1 [2mserver::ethercat::setup[0m[2m:[0m [2m271:[0m Initialized 2 subdevices
+[2m2026-01-26T16:14:08.848759262+00:00[0m [34mDEBUG[0m             smol-1 [2mmachines::machine_identification[0m[2m:[0m [2m293:[0m Read MDI from EEPROM for device EK1100
+Vendor:  0x00000000 at 0x0028-0x0029
+Serial:  0x00000000 at 0x002a-0x002b
+Machine: 0x00000000 at 0x0029-0x002a
+Role:    0x00000000 at 0x002b-0x002c
+[2m2026-01-26T16:14:08.852528082+00:00[0m [34mDEBUG[0m             smol-1 [2mmachines::machine_identification[0m[2m:[0m [2m293:[0m Read MDI from EEPROM for device EL3062-0030
+Vendor:  0x00000001 at 0x0028-0x0029
+Serial:  0x00000003 at 0x002a-0x002b
+Machine: 0x0000000a at 0x0029-0x002a
+Role:    0x0000000c at 0x002b-0x002c
+[2m2026-01-26T16:14:08.852537990+00:00[0m [31mERROR[0m             smol-1 [2methercrab::subdevice[0m[2m:[0m [2m550:[0m No write (SubDevice IN) mailbox found but one is required
+[2m2026-01-26T16:14:08.852542158+00:00[0m [31mERROR[0m             smol-1 [2methercat_hal::debugging::diagnosis_history[0m[2m:[0m [2m170:[0m get_most_recent_diagnosis_message: Failed to read new_message_available Mailbox(NoMailbox)
+[2m2026-01-26T16:14:08.852707539+00:00[0m [32m INFO[0m             smol-1 [2mserver::app_state[0m[2m:[0m [2m168:[0m add_machines_if_not_exists: []
+[2m2026-01-26T16:14:08.852724331+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice_group[0m[2m:[0m [2m198:[0m Going to configure group with 2 SubDevice(s), starting PDI offset 0x00000000
+[2m2026-01-26T16:14:08.852990802+00:00[0m [32m INFO[0m               loop [2mserver::r#loop[0m[2m:[0m [2m116:[0m received machines[]
+[2m2026-01-26T16:14:08.855542663+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m265:[0m Discovered sync managers:
+[]
+[2m2026-01-26T16:14:08.858247011+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m299:[0m Discovered FMMUs:
+[]
+[2m2026-01-26T16:14:08.858294240+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m135:[0m SubDevice 0x1000 has CoE: false
+[2m2026-01-26T16:14:08.862890817+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m317:[0m FMMU mappings: []
+[2m2026-01-26T16:14:08.862896197+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m166:[0m SubDevice 0x1000 PDI inputs: PdiSegment { bytes: 0..0 } (0 bytes), outputs: PdiSegment { bytes: 0..0 } (0 bytes)
+[2m2026-01-26T16:14:08.870887471+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m265:[0m Discovered sync managers:
+[
+    SyncManager {
+        start_addr: 0x1000,
+        length: 0x0080,
+        control: Control {
+            operation_mode: Mailbox,
+            direction: MasterWrite,
+            ecat_event_enable: false,
+            dls_user_event_enable: true,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            ENABLE,
+        ),
+        usage_type: MailboxWrite,
+    },
+    SyncManager {
+        start_addr: 0x1080,
+        length: 0x0080,
+        control: Control {
+            operation_mode: Mailbox,
+            direction: MasterRead,
+            ecat_event_enable: false,
+            dls_user_event_enable: true,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            ENABLE,
+        ),
+        usage_type: MailboxRead,
+    },
+    SyncManager {
+        start_addr: 0x1100,
+        length: 0x0000,
+        control: Control {
+            operation_mode: Normal,
+            direction: MasterWrite,
+            ecat_event_enable: false,
+            dls_user_event_enable: false,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            0x0,
+        ),
+        usage_type: ProcessDataWrite,
+    },
+    SyncManager {
+        start_addr: 0x1180,
+        length: 0x0008,
+        control: Control {
+            operation_mode: Normal,
+            direction: MasterRead,
+            ecat_event_enable: false,
+            dls_user_event_enable: true,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            ENABLE,
+        ),
+        usage_type: ProcessDataRead,
+    },
+]
+[2m2026-01-26T16:14:08.875590248+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m299:[0m Discovered FMMUs:
+[
+    Inputs,
+    SyncManagerStatus,
+]
+[2m2026-01-26T16:14:08.875627658+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m135:[0m SubDevice 0x1001 has CoE: true
+[2m2026-01-26T16:14:08.909661385+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m200:[0m SubDevice 0x1001 SM3: start 0x1180, size 0x0008 (8), direction MasterRead, mode Normal, enabled
+[2m2026-01-26T16:14:08.910295147+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m509:[0m SubDevice 0x1001 FMMU0: logical start 0x00000000:0, size 8, logical end bit 7, physical start 0x1180:0, RO, enabled
+[2m2026-01-26T16:14:08.910300557+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m166:[0m SubDevice 0x1001 PDI inputs: PdiSegment { bytes: 0..8 } (8 bytes), outputs: PdiSegment { bytes: 0..0 } (0 bytes)
+[2m2026-01-26T16:14:08.910306398+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice_group[0m[2m:[0m [2m218:[0m SubDevice mailboxes configured and init hooks called
+[2m2026-01-26T16:14:08.913151981+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m265:[0m Discovered sync managers:
+[]
+[2m2026-01-26T16:14:08.916052097+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m299:[0m Discovered FMMUs:
+[]
+[2m2026-01-26T16:14:08.916655112+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m135:[0m SubDevice 0x1000 has CoE: false
+[2m2026-01-26T16:14:08.923229610+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m317:[0m FMMU mappings: []
+[2m2026-01-26T16:14:08.923239479+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m166:[0m SubDevice 0x1000 PDI inputs: PdiSegment { bytes: 0..0 } (0 bytes), outputs: PdiSegment { bytes: 8..8 } (0 bytes)
+[2m2026-01-26T16:14:08.930794642+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m265:[0m Discovered sync managers:
+[
+    SyncManager {
+        start_addr: 0x1000,
+        length: 0x0080,
+        control: Control {
+            operation_mode: Mailbox,
+            direction: MasterWrite,
+            ecat_event_enable: false,
+            dls_user_event_enable: true,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            ENABLE,
+        ),
+        usage_type: MailboxWrite,
+    },
+    SyncManager {
+        start_addr: 0x1080,
+        length: 0x0080,
+        control: Control {
+            operation_mode: Mailbox,
+            direction: MasterRead,
+            ecat_event_enable: false,
+            dls_user_event_enable: true,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            ENABLE,
+        ),
+        usage_type: MailboxRead,
+    },
+    SyncManager {
+        start_addr: 0x1100,
+        length: 0x0000,
+        control: Control {
+            operation_mode: Normal,
+            direction: MasterWrite,
+            ecat_event_enable: false,
+            dls_user_event_enable: false,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            0x0,
+        ),
+        usage_type: ProcessDataWrite,
+    },
+    SyncManager {
+        start_addr: 0x1180,
+        length: 0x0008,
+        control: Control {
+            operation_mode: Normal,
+            direction: MasterRead,
+            ecat_event_enable: false,
+            dls_user_event_enable: true,
+            watchdog_enable: false,
+        },
+        enable: SyncManagerEnable(
+            ENABLE,
+        ),
+        usage_type: ProcessDataRead,
+    },
+]
+[2m2026-01-26T16:14:08.935239474+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::eeprom[0m[2m:[0m [2m299:[0m Discovered FMMUs:
+[
+    Inputs,
+    SyncManagerStatus,
+]
+[2m2026-01-26T16:14:08.935842689+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m135:[0m SubDevice 0x1001 has CoE: true
+[2m2026-01-26T16:14:08.939167433+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m200:[0m SubDevice 0x1001 SM2: start 0x1100, size 0x0000 (0), direction MasterWrite, mode Normal, disabled
+[2m2026-01-26T16:14:08.939178524+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice::configuration[0m[2m:[0m [2m166:[0m SubDevice 0x1001 PDI inputs: PdiSegment { bytes: 0..8 } (8 bytes), outputs: PdiSegment { bytes: 8..8 } (0 bytes)
+[2m2026-01-26T16:14:08.939182802+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice_group[0m[2m:[0m [2m238:[0m SubDevice FMMUs configured for group. Able to move to SAFE-OP
+[2m2026-01-26T16:14:08.939185257+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice_group[0m[2m:[0m [2m242:[0m Group PDI length: start 0x00000000, 8 total bytes (8 input bytes)
+[2m2026-01-26T16:14:08.939189605+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice[0m[2m:[0m [2m1207:[0m Set state Safe-Operational for SubDevice address 0x1000
+[2m2026-01-26T16:14:08.939778874+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice[0m[2m:[0m [2m1207:[0m Set state Safe-Operational for SubDevice address 0x1001
+[2m2026-01-26T16:14:08.939817146+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::subdevice_group[0m[2m:[0m [2m723:[0m Waiting for group state Safe-Operational
+[2m2026-01-26T16:14:58.939838416+00:00[0m [34mDEBUG[0m             smol-1 [2methercrab::pdu_loop::frame_element::receiving_frame[0m[2m:[0m [2m203:[0m Dropping in-flight future, possibly caused by timeout
+[2m2026-01-26T16:14:58.939897898+00:00[0m [31mERROR[0m             smol-1 [2mserver[0m[2m:[0m [2m150:[0m [server::main] Failed to initialize EtherCAT network 
+[server::ethercat::setup::setup_loop] Failed to put group in Safe-OP state: Timeout
+
+Stack backtrace:
+   0: anyhow::error::<impl anyhow::Error>::msg
+   1: server::ethercat::setup::setup_loop::{{closure}}
+   2: <async_executor::AsyncCallOnDrop<Fut,Cleanup> as core::future::future::Future>::poll
+   3: async_task::raw::RawTask<F,T,S,M>::run
+   4: <futures_lite::future::Or<F1,F2> as core::future::future::Future>::poll
+   5: std::thread::local::LocalKey<T>::with
+   6: std::sys::backtrace::__rust_begin_short_backtrace
+   7: core::ops::function::FnOnce::call_once{{vtable.shim}}
+   8: std::sys::thread::unix::Thread::new::thread_start
+   9: start_thread
+  10: __GI___clone3

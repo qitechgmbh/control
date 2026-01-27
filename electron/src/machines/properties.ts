@@ -502,7 +502,7 @@ export const analogInputTestMachine: MachineProperties = {
         {
           vendor_id: 2,
           product_id: 0xbcd3052,
-          revision: 0x140000,
+          revision: 0x160000,
         },
       ],
     },
@@ -557,6 +557,41 @@ export const wagoAiTestMachine: MachineProperties = {
   ],
 };
 
+export const sensorMachine: MachineProperties = {
+  name: "Sensor",
+  version: "V1",
+  slug: "sensor_machine",
+  icon: "lu:Gauge",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0044,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x44c2c52,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "1x Analog Input (±10V)",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x0bb93052,
+          revision: 0x120000,
+        },
+      ],
+    },
+  ],
+};
+
 export const machineProperties: MachineProperties[] = [
   winder2,
   extruder3,
@@ -570,6 +605,7 @@ export const machineProperties: MachineProperties[] = [
   analogInputTestMachine,
   wagoAiTestMachine,
   ip20TestMachine,
+  sensorMachine,
 ];
 
 export const getMachineProperties = (

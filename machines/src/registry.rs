@@ -1,5 +1,6 @@
 use crate::analog_input_test_machine::AnalogInputTestMachine;
 use crate::ip20_test_machine::IP20TestMachine;
+use crate::sensor_machine::SensorMachine;
 use crate::wago_ai_test_machine::WagoAiTestMachine;
 #[cfg(feature = "mock-machine")]
 use crate::{
@@ -130,6 +131,8 @@ lazy_static! {
         mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<WagoAiTestMachine>(WagoAiTestMachine::MACHINE_IDENTIFICATION);
+        
+        mc.register::<SensorMachine>(SensorMachine::MACHINE_IDENTIFICATION);
 
         mc
     };
