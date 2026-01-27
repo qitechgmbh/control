@@ -43,6 +43,12 @@ import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
 import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 
+import { Pellet1Page        } from "@/machines/pelletizer/pelletizer1/Page";
+import { Pellet1ControlPage } from "@/machines/pelletizer/pelletizer1/ControlPage";
+import { Pellet1GraphsPage  } from "@/machines/pelletizer/pelletizer1/Graph";
+import { Pellet1ConfigPage } from "@/machines/pelletizer/pelletizer1/ConfigPage";
+import { Pellet1PresetsPage } from "@/machines/pelletizer/pelletizer1/PresetsPage";
+
 import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
 import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
 import { Mock1ManualPage } from "@/machines/mock/mock1/Mock1Manual";
@@ -285,6 +291,38 @@ export const laser1PresetsRoute = createRoute({
   component: () => <Laser1PresetsPage />,
 });
 
+// --- pelletizer
+export const pelletizer1SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "pelletizer1/$serial",
+  component: () => <Pellet1Page />,
+});
+
+export const pelletizer1ControlRoute = createRoute({
+  getParentRoute: () => pelletizer1SerialRoute,
+  path: "control",
+  component: () => <Pellet1ControlPage />,
+});
+
+export const pelletizer1ConfigRoute = createRoute({
+  getParentRoute: () => pelletizer1SerialRoute,
+  path: "config",
+  component: () => <Pellet1ConfigPage />,
+});
+
+export const pelletizer1GraphsRoute = createRoute({
+  getParentRoute: () => pelletizer1SerialRoute,
+  path: "graphs",
+  component: () => <Pellet1GraphsPage />,
+});
+
+export const pelletizer1PresetsRoute = createRoute({
+  getParentRoute: () => pelletizer1SerialRoute,
+  path: "presets",
+  component: () => <Pellet1PresetsPage />,
+});
+
+// --- mock
 export const mock1SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "mock1/$serial",
@@ -470,6 +508,14 @@ export const rootTree = RootRoute.addChildren([
         laser1GraphsRoute,
         laser1PresetsRoute,
       ]),
+
+      pelletizer1SerialRoute.addChildren([
+        pelletizer1ControlRoute,
+        pelletizer1GraphsRoute,
+        pelletizer1ConfigRoute,
+        pelletizer1PresetsRoute,
+      ]),
+
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
 
       analogInputTestMachineSerialRoute.addChildren([
