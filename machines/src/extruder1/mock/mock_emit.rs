@@ -67,8 +67,8 @@ impl ExtruderV2 {
             total_energy_kwh: self.total_energy_kwh,
             nozzle_heating_on: self.nozzle_heating_on,
             front_heating_on: self.front_heating_on,
-            back_heating_on: self.back_heating_on,
             middle_heating_on: self.middle_heating_on,
+            back_heating_on: self.back_heating_on,
         }
     }
 

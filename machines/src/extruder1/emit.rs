@@ -206,8 +206,8 @@ impl ExtruderV2 {
             total_energy_kwh: self.total_energy_kwh,
             nozzle_heating_on: self.temperature_controller_nozzle.heating.heating,
             front_heating_on: self.temperature_controller_front.heating.heating,
-            back_heating_on: self.temperature_controller_back.heating.heating,
             middle_heating_on: self.temperature_controller_middle.heating.heating,
+            back_heating_on: self.temperature_controller_back.heating.heating,
         }
     }
 
