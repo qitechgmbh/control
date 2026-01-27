@@ -17,22 +17,22 @@ QiTech Control combines the modularity and reliability of standard EtherCAT term
 
 # Repo Structure
 
-Frontend
+**Frontend**
 
 - `/electron`: Frontend code for the control software built with React and Electron.
 
-Backend
+**Backend**
 
 - `/server`: Glue between Beckhoff and Electron. Implements machine logic.
 - `/ethercat-hal`: Hardware abstraction layer for Beckhoff (and possibly other EtherCat) devices and protocols.
 - `/ethercat-hal-derive`: Macros for `ethercat-hal`
 - `/control-core`: Core control logic for the server.
 
-Operating System
+**Operating System**
 
 - `/nixos`: Custom Linux with realtime kernel & preconfigured for touchscreens.
 
-Other
+**Other**
 
 - `/docs`: Documentation for the project.
 
@@ -54,115 +54,57 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
 [Developer Documentation](./docs/developer-docs/)
 
-## Backend
+[API Documentation](https://github.com/qitechgmbh/control/blob/master/docs/rest-api.md)
 
+-> Backend
 - Rust stable 1.86^ toolchain (install via [rustup](https://rustup.rs/))
 - `rust-analyzer` extension for VSCode
 - Set your interface in `server/src/ethercat/init.rs` like `en10`
 - Connect a Beckhoff EK1100 to your interface
 - run `cd server && cargo run` to start the server (localhost:3001)
 
-## Frontend
-
+-> Frontend
 - nodejs and npm installed
 - run `cd electron && npm i && npm run start` to start the frontend
 
-# Machines
 
-| Machine Type | Version | Release Date | Description                 | Change to Previous Version                             | Vendor ID                  | Machine ID | Implemented | Docs                            |
-| ------------ | ------- | ------------ | --------------------------- | ------------------------------------------------------ | -------------------------- | ---------- | ----------- | ------------------------------- |
-| Winder       | V1      | ???          | Winding Filaments & Similar | -                                                      | 1 (Qitech Industries GmbH) | 1          | Reserved    | -                               |
-| Winder       | V2      | 2025         | Winding Filaments & Similar | Reengineered Traverse                                  | 1 (Qitech Industries GmbH) | 2          | Yes         | [](./docs/machines/winder-1.md) |
-| Extruder     | V1      | ???          | Single Screw Extruder       | -                                                      | 1 (Qitech Industries GmbH) | 3          | Reserved    | -                               |
-| Extruder     | V2      | 2025         | Single Screw Extruder       | PT100 Thermometers, Optional Additional Heating Zone 4 | 1 (Qitech Industries GmbH) | 4          | Yes         |                                 |
-| Waterway     | V1      | 2025         | Filament Water Cooling      | -                                                      | 1 (Qitech Industries GmbH) | 5          | In Progress     |                                 |
-| Laser        | V1      | ???          | Diameter Measuring Laser    | -                                                      | 1 (Qitech Industries GmbH) | 6          | Yes         |                                 |
-| Mock         | -       | ???          | Mock Machine for Testing    | -                                                      | 1 (Qitech Industries GmbH) | 7          | Yes         | -                               |
-
-# Minimal Hardware Examples
+## Minimal Hardware Examples
 
 For complete step-by-step tutorials on setting up your first hardware, including wiring diagrams and software configuration, see the [Getting Started Guide](./docs/developer-docs/getting-started.md#minimal-hardware-examples).
 
-Available examples:
-- **LED Control with EL2004** - Digital output control (simplest setup)
-- **Analog Input with EL3021** - Reading analog current measurements
+| Example            | Vendor   | Hardware      | Description                             | How-To Video | Docs                          |
+| :----------------- | :------- | :------------ | :-------------------------------------- | :----------- | :---------------------------- |
+| **Digital Input** | WAGO     | 750-402       | 4-Channel Digital Input                 | [ ]          | -                             |
+| **Digital Output** | WAGO     | 750-753       | 8-Channel Digital Output                | [ ]          | -                             |
+| **Analog Input** | WAGO     | 750-455       | 4-Channel Analog Input                  | [ ]          | -                             |
+| **Analog Output** | WAGO     | 750-553       | 4-Channel Analog Output                 | [ ]          | -                             |
+| **Serial Comms** | WAGO     | 750-652       | RS-485 Modbus Module                    | [ ]          | -                             |
+| **Stepper Drive** | WAGO     | 750-67x       | Stepper Controller                      | [ ]          | -                             |
+| **Power Supply** | WAGO     | 2787-214      | Power Supply Unit                       | [ ]          | -                             |
+| **LED Control** | Beckhoff | EL2004        | Digital output control (simplest setup) | [ ]          | [](./docs/hardware/el2004.md) |
+| **Analog Input** | Beckhoff | EL3021        | Reading analog current measurements     | [ ]          | [](./docs/hardware/el3021.md) |
 
+# QiTech Machines
 
-# More Docs
+| Machine Name      | Description                 | Machine ID | Implemented | Video                                                           | Docs                            |
+| :---------------- | :-------------------------- | :--------- | :---------- | :-------------------------------------------------------------- | :------------------------------ |
+| Winder V1         | Winding Filaments & Similar | 1          | Legacy      | [Video](https://youtu.be/4aE4cFhioKA?si=Xdj_LVnFrAYWnLm6)       | -                               |
+| Winder V2         | Winding Filaments & Similar | 2          | Yes         | [Video](https://youtu.be/f2kzh6kpQWE?si=HEYcLOaC9gWSp2Wo)       | [](./docs/machines/winder-1.md) |
+| XL Winder V1      | Large Scale Winder          | 3          | Yes         | [Video](https://youtu.be/ynI6ioWIQQY?si=4EDVKXbgIqrvGGtY)       | -                               |
+| Buffer V1         | Filament buffering system   | 4          | In Progress | [Video](https://youtu.be/VR5mEdZDPA0?si=eip7dQXU4zaXK7Ev)       | -                               |
+| Extruder V1       | Single Screw Extruder       | 5          | Legacy      | [Video](https://youtu.be/gchoG-yGczI?si=bEM4daf5eOVaU5_2)       | -                               |
+| Extruder V2       | Single Screw Extruder       | 6          | Yes         | [Video](https://youtu.be/mexRYGDNWa4?si=h7JBz_XKMwKLPenG)       |                                 |
+| Waterway V1       | Filament Water Cooling      | 7          | In Progress | [Video](https://youtu.be/_T5z1J8bl_k?si=uOC1hIQ1EAP0cHIF)       |                                 |
+| Laser V1          | Diameter Measuring Laser    | 8          | Yes         | [Video](https://youtu.be/WDM34lj4afM?si=MZzUKkHCrzH4P0aA)       |                                 |
+| 2-Axis-Laser V1   | Dual Axis Laser             | 9          | Yes         | [Video](https://youtu.be/WDM34lj4afM?si=MZzUKkHCrzH4P0aA)       | -                               |
+| Mock              | Mock Machine for Testing    | 10         | Yes         |                                                                 | -                               |
+| Extruder V3       | Single Screw Extruder       | 11         | Yes         | [Video](https://youtu.be/ipHHuPzCvn4?si=hkZ1b93rVuwDxhFD)       |                                 |
+| Mini Schredder V1 | mini plastic crusher        | 12         | Legacy      | [Video](https://youtu.be/m8NplNqdu2Q?si=x6zjDktJtpbSMSmu)       | -                               |
+| Pro Schredder V1  | large plastic crusher       | 13         | Legacy      | [Video](https://youtu.be/pSaVMqp06pU?si=y61enutRpxKscBm4)       | -                               |
+| Dryer V1          | polymer dryer               | 14         | Reserved    | [Video](https://youtu.be/6hdmUUAdZp0?si=eKOW1WlgkqTpnfdS)       | -                               |
+| Pelletizier V1    | Filament chopper            | 15         | Reserved    |                                                                 | -                               |
 
-- [x] [Architecture & Data Flow](./docs/architecture-overview.md)
+# Current Restructuring Efforts
 
-  - [x] Example Winder V2
-
-- [ ] Electron
-
-  - Folder Structure
-  - Routing with TanStack Router
-  - Design with Tailwind & Shadcn
-  - ...
-
-- [ ] Interfacing with Electron/Server
-
-  - [ ] SocketIO
-    - Machine Namespace
-    - Main Namespace
-  - [ ] REST
-    - Machine Mutations
-    - Write Device Identification
-
-- Server
-
-  - [x] [Threading](./docs/control-loop.md)
-  - [x] [Logging](./docs/logging.md)
-  - [ ] Control Loop Setup
-    - Control Loop Thread
-      - [ ] realtime
-    - Maindevice
-    - Group
-    - Extracting Device Identifications
-    - Identifying Groups
-    - Validating Machines
-    - Run Control Loop
-  - [x] [Control Loop](./docs/control-loop.md)
-  - [x] [Machine/Device Identification](./docs/identification.md)
-  - [ ] Machines
-    - When to create a new Machine?
-      - Versioning
-      - Code sharing
-    - Creating/Validating a Machine
-      - Validation
-      - Configuration
-  - [ ] Machine Implementation Guide
-    - Link: How to create a Device
-    - Link: How to create an Actor
-    - Link: How to create a Machine
-      - API (SocketIO + REST)
-      - Creation/Validation Logic
-        - Optional/Mandatory Devices
-        - Validate Devices
-      - Business Logic
-    - Link: How to create Machine Abstraction (Like Traverse/Puller/...)
-    - Forward `act` in winder.
-
-- [ ] Control Core
-
-  - [x] [Actors](./docs/actors.md)
-  - [ ] SocketIO
-    - Namespaces & Caching
-    - Joining leaving namespaces
-    - NamespaceId
-    - Caching
-      - Serverside Caching
-      - Clientside Caching
-  - [ ] REST
-
-- [x] Ethercat HAL
-
-  - [x] [Devices](./docs/devices.md)
-  - [x] [Configuration (CoE)](./docs/coe.md)
-  - [x] [IO](./docs/io.md)
-  - [x] [PDO](./docs/pdo.md)
-
-- [x] [Ethercat Basics](./docs/ethercat-basics.md)
-
-- [x] [NixOS Operating System](./docs/nixos/README.md)
+[![](https://img.youtube.com/vi/UlbnSVIhfLI/maxresdefault.jpg)](https://www.youtube.com/live/UlbnSVIhfLI?si=ZTotC5B7gd87tUim)
+*Video: Live stream of software dev meeting*

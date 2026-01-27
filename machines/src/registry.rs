@@ -1,4 +1,5 @@
 use crate::analog_input_test_machine::AnalogInputTestMachine;
+use crate::digital_input_test_machine::DigitalInputTestMachine;
 use crate::ip20_test_machine::IP20TestMachine;
 use crate::sensor_machine::SensorMachine;
 use crate::wago_ai_test_machine::WagoAiTestMachine;
@@ -133,6 +134,8 @@ lazy_static! {
         mc.register::<WagoAiTestMachine>(WagoAiTestMachine::MACHINE_IDENTIFICATION);
         
         mc.register::<SensorMachine>(SensorMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc
     };

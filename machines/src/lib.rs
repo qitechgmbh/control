@@ -21,6 +21,7 @@ pub mod analog_input_test_machine;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
+pub mod digital_input_test_machine;
 pub mod extruder1;
 pub mod extruder2;
 pub mod ip20_test_machine;
@@ -48,7 +49,8 @@ pub const TEST_MACHINE: u16 = 0x0033;
 pub const IP20_TEST_MACHINE: u16 = 0x0034;
 pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
 pub const WAGO_AI_TEST_MACHINE: u16 = 0x0036;
-pub const SENSOR_MACHINE: u16 = 0x0044; 
+pub const DIGITAL_INPUT_TEST_MACHINE: u16 = 0x0040;
+pub const SENSOR_MACHINE: u16 = 0x0044; pub const SENSOR_MACHINE: u16 = 0x0044; 
 use serde_json::Value;
 use smol::lock::RwLock;
 
