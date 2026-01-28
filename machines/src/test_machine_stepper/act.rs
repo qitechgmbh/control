@@ -14,12 +14,6 @@ impl MachineAct for TestMachineStepper {
             self.emit_state();
             self.last_state_emit = now;
         }
-
-        block_on(async {
-            self.stepper.tick();
-            let mut stm = self.stepper.device.write().await;
-            self.stepper.target_acceleration = 10000;
-        })
     }
 
     fn act_machine_message(&mut self, msg: MachineMessage) {
