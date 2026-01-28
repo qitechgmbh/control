@@ -10,7 +10,7 @@ use crate::{
         DynamicEthercatDevice, EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed,
         EthercatDynamicPDO, Module, NewEthercatDevice, SubDeviceProductTuple,
     },
-    helpers::counter_wrapper_u16_i128::CounterWrapperU16U128,
+    helpers::counter_wrapper_u16_i128::CounterWrapperU16U128, io::stepper_velocity_wago_750_671::{ControlByteC1, ControlByteC2, ControlByteC3, StatusByteS1, StatusByteS2, StatusByteS3},
 };
 
 #[derive(Clone)]
@@ -78,88 +78,6 @@ impl EthercatDynamicPDO for Wago750_671 {
     fn set_rx_offset(&mut self, offset: usize) {
         self.rx_bit_offset = offset
     }
-}
-
-pub struct ControlByteC1;
-impl ControlByteC1 {
-    pub const ENABLE: u8 = 0x01; // Bit 0
-    pub const STOP2_N: u8 = 0x02; // Bit 1
-    pub const START: u8 = 0x04; // Bit 2
-    pub const M_SPEED_CONTROL: u8 = 0x08; // Bit 3
-    pub const M_PROGRAM: u8 = 0x10; // Bit 4
-    pub const M_REFERENCE: u8 = 0x20; // Bit 5
-    pub const M_JOG: u8 = 0x40; // Bit 6
-    pub const M_DRIVE_BYMBX: u8 = 0x80; // Bit 7
-}
-
-pub struct ControlByteC2;
-impl ControlByteC2 {
-    pub const FREQ_RANGE_SEL_LSB: u8 = 0x01; // Bit 0
-    pub const FREQ_RANGE_SEL_MSB: u8 = 0x02; // Bit 1
-    pub const ACCELERATION_RANGE_SEL_LSB: u8 = 0x04; // Bit 2
-    pub const ACCELERATION_RANGE_SEL_MSB: u8 = 0x08; // Bit 3
-    // RESERVED                                     // Bit 4
-    // RESERVED                                     // Bit 5
-    pub const PRE_CALC: u8 = 0x40; // Bit 6
-    pub const ERROR_QUIT: u8 = 0x80; // Bit 7
-}
-
-pub struct ControlByteC3;
-impl ControlByteC3 {
-    // RESERVED                             // Bit 0
-    // RESERVED                             // Bit 1
-    // RESERVED                             // Bit 2
-    // RESERVED                             // Bit 3
-    pub const LIMIT_SWITCH_POS: u8 = 0x10; // Bit 4
-    pub const LIMIT_SWITCH_NEG: u8 = 0x20; // Bit 5
-    pub const SETUP_SPEED_ACTIVE: u8 = 0x40; // Bit 6
-    pub const RESET_QUIT: u8 = 0x80; // Bit 7
-}
-
-pub struct StatusByteS1;
-impl StatusByteS1 {
-    pub const READY: u8 = 0x01; // Bit 0
-    pub const STOP_N_ACK: u8 = 0x02; // Bit 1
-    pub const START_ACK: u8 = 0x04; // Bit 2
-    pub const M_SPEED_CONTROL_ACK: u8 = 0x08; // Bit 3
-    pub const M_PROGRAM_ACK: u8 = 0x10; // Bit 4
-    pub const M_REFERENCE_ACK: u8 = 0x20; // Bit 5
-    pub const M_JOG_ACK: u8 = 0x40; // Bit 6
-    pub const M_DRIVE_BYMBX_ACK: u8 = 0x80; // Bit 7
-}
-
-pub struct StatusByteS2;
-impl StatusByteS2 {
-    // RESERVED                     // Bit 0
-    const BUSY: u8 = 0x02; // Bit 1
-    const STAND_STILL: u8 = 0x04; // Bit 2
-    const ON_SPEED: u8 = 0x08; // Bit 3
-    const DIRECTION: u8 = 0x10; // Bit 4
-    // RESERVED                     // Bit 5
-    const PRE_CALC_ACK: u8 = 0x40; // Bit 6
-    const ERROR: u8 = 0x80; // Bit 7
-}
-
-pub struct StatusByteS3;
-impl StatusByteS3 {
-    pub const INPUT1: u8 = 0x01; // Bit 0
-    // RESERVED                                 // Bit 1
-    // RESERVED                                 // Bit 2
-    // RESERVED                                 // Bit 3
-    // RESERVED                                 // Bit 4
-    // RESERVED                                 // Bit 5
-    pub const SETUP_SPEED_ACTIVE_ACK: u8 = 0x40; // Bit 6
-    pub const RESET: u8 = 0x80; // Bit 7
-}
-
-#[derive(Debug, Clone, Copy)]
-enum SpeedControlState {
-    Init,
-    WaitReady,
-    SelectMode,
-    StartPulse,
-    Running,
-    ErrorAck,
 }
 
 impl Wago750_671 {
