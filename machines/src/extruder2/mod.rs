@@ -279,8 +279,11 @@ impl ExtruderV3 {
         use units::thermodynamic_temperature::degree_celsius;
 
         // Watchdog parameters
+        // These defaults are intentionally conservative to avoid false positives
+        // on older machines or in cold environments. If we do not see at least
+        // ~5°C increase within one minute, we treat this as a fault.
         const MIN_TEMPERATURE_DELTA_C: f64 = 5.0; // Minimum temperature increase in °C
-        const WATCHDOG_TIMEOUT_SECS: u64 = 30; // Timeout in seconds
+        const WATCHDOG_TIMEOUT_SECS: u64 = 60; // Timeout in seconds
 
         // Only monitor when in Heat or Extrude mode
         if self.mode == ExtruderV3Mode::Standby {
@@ -421,6 +424,20 @@ impl ExtruderV3 {
             .filter_map(|(has_fault, zone)| if *has_fault { Some(*zone) } else { None })
             .collect();
 
+            // In theory fault_detected guarantees at least one zone here, but use a
+            // defensive default to avoid panicking on an empty list in case the logic
+            // above is changed in the future.
+            let first_fault_zone = fault_zones
+                .first()
+                .copied()
+                .unwrap_or("unknown");
+
+            if first_fault_zone == "unknown" {
+                tracing::error!(
+                    "Heating watchdog reported fault_detected=true but no individual zone was marked as faulty"
+                );
+            }
+
             let fault_zone_str = fault_zones.join(", ");
             tracing::error!(
                 "Heating fault detected in zone(s): {} - automatically setting extruder to standby",
@@ -428,7 +445,7 @@ impl ExtruderV3 {
             );
 
             // Set fault state
-            self.heating_fault_state.fault_zone = Some(fault_zones[0].to_string()); // Use first fault zone
+            self.heating_fault_state.fault_zone = Some(first_fault_zone.to_string()); // Use first fault zone
             self.heating_fault_state.fault_acknowledged = false;
 
             self.switch_to_standby();
