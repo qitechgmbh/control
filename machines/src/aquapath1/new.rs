@@ -11,18 +11,13 @@ use anyhow::Error;
 use ethercat_hal::{
     coe::ConfigurableDevice,
     devices::{
-        ek1100::{EK1100, EK1100_IDENTITY_A},
-        el2008::{EL2008, EL2008_IDENTITY_A, EL2008_IDENTITY_B, EL2008Port},
-        el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port},
-        el4002::{EL4002, EL4002_IDENTITY_A, EL4002Port},
-        el5152::{
+        ek1100::{EK1100, EK1100_IDENTITY_A}, el1002::{EL1002, EL1002_IDENTITY_A}, el2008::{EL2008, EL2008_IDENTITY_A, EL2008_IDENTITY_B, EL2008Port}, el3062_0030::{EL3062_0030, EL3062_0030_IDENTITY_A, EL3062_0030Configuration}, el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port}, el4002::{EL4002, EL4002_IDENTITY_A, EL4002Port}, el5152::{
             EL5152, EL5152_IDENTITY_A, EL5152Configuration, EL5152Port,
             EL5152PredefinedPdoAssignment,
-        },
+        }
     },
     io::{
-        analog_output::AnalogOutput, digital_output::DigitalOutput, encoder_input::EncoderInput,
-        temperature_input::TemperatureInput,
+        analog_input::AnalogInput, analog_output::AnalogOutput, digital_input::DigitalInput, digital_output::DigitalOutput, encoder_input::EncoderInput, temperature_input::TemperatureInput
     },
 };
 use std::time::Instant;
@@ -83,49 +78,32 @@ impl MachineNewTrait for AquaPathV1 {
             .await?
             .0;
 
-            let el5152 =
-                get_ethercat_device::<EL5152>(hardware, params, 4, [EL5152_IDENTITY_A].to_vec())
+            let el3062_0030 =
+                get_ethercat_device::<EL3062_0030>(hardware, params, 4, [EL3062_0030_IDENTITY_A].to_vec())
                     .await?
                     .0;
 
-            let config = EL5152Configuration {
-                pdo_assignment: EL5152PredefinedPdoAssignment::Frequency,
-                ..Default::default()
-            };
-            let subdevice = get_subdevice_by_index(hardware.subdevices, 4)?;
-            el5152
-                .write()
-                .await
-                .write_config(&subdevice, &config)
-                .await?;
+            let el3062_0030_subdevice = get_subdevice_by_index(hardware.subdevices, 4)?;
+            let mut guard = el3062_0030.write().await;
+            let config = EL3062_0030Configuration::default();
+            guard.write_config(el3062_0030_subdevice,&config).await;
+            drop(guard);
 
-            let enc1 = EncoderInput::new(el5152.clone(), EL5152Port::ENC1);
+            let ai1 = AnalogInput::new(el3062_0030.clone(),ethercat_hal::devices::el3062_0030::EL3062_0030Port::AI1);            
+            let ai2 = AnalogInput::new(el3062_0030.clone(), ethercat_hal::devices::el3062_0030::EL3062_0030Port::AI2);            
 
-            let enc2 = EncoderInput::new(el5152.clone(), EL5152Port::ENC2);
             //after heating
-            let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1);
-            //in reservoir
-            let t2 = TemperatureInput::new(el3204.clone(), EL3204Port::T2);
-            //after heating
-            let t3 = TemperatureInput::new(el3204.clone(), EL3204Port::T3);
-            //in reservoir
+            let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1);            
+            let t2 = TemperatureInput::new(el3204.clone(), EL3204Port::T2);            
+            let t3 = TemperatureInput::new(el3204.clone(), EL3204Port::T3);            
             let t4 = TemperatureInput::new(el3204.clone(), EL3204Port::T4);
-            //pump flow control
-            //phys 1
-            let do1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
-            //phys 5
-            let do2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
-            //heating
-
-            //phys 6
-            let do4 = DigitalOutput::new(el2008.clone(), EL2008Port::DO4);
-            //phys 3
-            let do5 = DigitalOutput::new(el2008.clone(), EL2008Port::DO5);
-            //phys 7
-            let do6 = DigitalOutput::new(el2008.clone(), EL2008Port::DO6);
-            //cooling power cut
-
-            //phys 8
+            
+            //pump flow control            
+            let do1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);            
+            let do2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);                        
+            let do4 = DigitalOutput::new(el2008.clone(), EL2008Port::DO4);            
+            let do5 = DigitalOutput::new(el2008.clone(), EL2008Port::DO5);            
+            let do6 = DigitalOutput::new(el2008.clone(), EL2008Port::DO6);            
             let do8 = DigitalOutput::new(el2008.clone(), EL2008Port::DO8);
 
             let ao1 = AnalogOutput::new(el4002.clone(), EL4002Port::AO1);
@@ -145,7 +123,7 @@ impl MachineNewTrait for AquaPathV1 {
                 AngularVelocity::new::<revolution_per_minute>(100.0),
                 Flow::default(),
                 do1,
-                enc1,
+                ai1,
             );
 
             let back_controller = Controller::new(
@@ -162,7 +140,7 @@ impl MachineNewTrait for AquaPathV1 {
                 AngularVelocity::new::<revolution_per_minute>(100.0),
                 Flow::default(),
                 do5,
-                enc2,
+                ai2,
             );
             let (sender, receiver) = smol::channel::unbounded();
             let mut water_cooling = Self {

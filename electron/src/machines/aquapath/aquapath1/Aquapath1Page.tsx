@@ -14,12 +14,12 @@ export function Aquapath1Page() {
           title: "Control",
           icon: "lu:CirclePlay",
         },
-        {
-          link: "graph",
-          title: "Graph",
-          icon: "lu:ChartSpline",
-          activeLink: "graphs",
-        },
+        //{
+//          link: "graph",
+          //title: "Graph",
+          //icon: "lu:ChartSpline",
+          //activeLink: "graphs",
+        //},
         {
           link: "settings",
           title: "Config",

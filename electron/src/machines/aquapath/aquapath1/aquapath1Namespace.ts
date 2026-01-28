@@ -72,8 +72,6 @@ export const toleranceStatesSchema = z.object({
  * Live values event schema (time-series data)
  */
 export const liveValuesEventDataSchema = z.object({
-  front_flow: z.number(),
-  back_flow: z.number(),
   front_temperature: z.number(),
   back_temperature: z.number(),
   front_temp_reservoir: z.number(),
@@ -96,6 +94,8 @@ export const stateEventDataSchema = z.object({
   temperature_states: tempStatesSchema,
   fan_states: fanStatesSchema,
   tolerance_states: toleranceStatesSchema,
+  front_flow: z.boolean(),
+  back_flow: z.boolean(),
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -112,9 +112,6 @@ export type Aquapath1NamespaceStore = {
   // Single state event from server
   state: StateEvent | null;
   defaultState: StateEvent | null;
-
-  front_flow: TimeSeries;
-  back_flow: TimeSeries;
 
   front_temperature: TimeSeries;
   back_temperature: TimeSeries;
@@ -217,7 +214,7 @@ export function aquapath1MessageHandler(
       // Live values events (time-series data)
       else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
-
+        console.log(liveValuesEvent);
         updateStore((state) => ({
           ...state,
           front_temperature: addTemperature1(state.front_temperature, {

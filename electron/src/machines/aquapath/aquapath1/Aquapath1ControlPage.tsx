@@ -9,6 +9,7 @@ import { EditValue } from "@/control/EditValue";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/control/Label";
 import { HeatingZone } from "../../extruder/HeatingZone";
+import { StatusBadge } from "@/control/StatusBadge";
 
 export function Aquapath1ControlPage() {
   const {
@@ -51,21 +52,19 @@ export function Aquapath1ControlPage() {
 
   const frontTargetFlow = state?.flow_states.front.should_flow ?? false;
   const backTargetFlow = state?.flow_states.back.should_flow ?? false;
-
+  console.log(state);
   return (
     <Page>
       <ControlGrid columns={2}>
         <ControlCard title="Reservoir 1">
           <div className="grid grid-rows-5 gap-4">
             <div className="flex flex-row">
-              <TimeSeriesValueNumeric
-                label="Flow"
-                unit="l/min"
-                timeseries={front_flow}
-                renderValue={(value) => value.toFixed(1)}
-              />
+              { state?.front_flow === true ? (
+            <StatusBadge variant="success">Flow: active</StatusBadge>
+            ) : (
+            <StatusBadge variant="error">Flow: inactive</StatusBadge>
+            )}
             </div>
-
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Temperature"
@@ -149,13 +148,13 @@ export function Aquapath1ControlPage() {
         <ControlCard title="Reservoir 2">
           <div className="grid grid-rows-4 gap-4">
             <div className="flex flex-row">
-              <TimeSeriesValueNumeric
-                label="Flow"
-                unit="l/min"
-                timeseries={back_flow}
-                renderValue={(value) => value.toFixed(1)}
-              />
-            </div>
+                <div className="flex flex-row">
+                  { state?.back_flow === true ? (
+                  <StatusBadge variant="success">Flow: active</StatusBadge>
+                  ) : (
+                  <StatusBadge variant="error">Flow: inactive</StatusBadge>
+                  )}
+              </div></div>
 
             <div className="flex flex-row">
               <TimeSeriesValueNumeric

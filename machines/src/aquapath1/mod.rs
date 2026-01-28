@@ -121,8 +121,6 @@ impl AquaPathV1 {
                 .back_controller
                 .current_temperature
                 .get::<degree_celsius>(),
-            front_flow: self.front_controller.current_flow.get::<liter_per_minute>(),
-            back_flow: self.back_controller.current_flow.get::<liter_per_minute>(),
             front_temp_reservoir: self.front_controller.temp_reservoir.get::<degree_celsius>(),
             back_temp_reservoir: self.back_controller.temp_reservoir.get::<degree_celsius>(),
             front_revolutions: self
@@ -228,6 +226,8 @@ impl AquaPathV1 {
                         .get::<degree_celsius>(),
                 },
             },
+            front_flow: self.front_controller.is_flowing,
+            back_flow: self.back_controller.is_flowing,
         }
     }
 

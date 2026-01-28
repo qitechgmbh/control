@@ -14,8 +14,6 @@ use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct LiveValuesEvent {
-    pub front_flow: f64,
-    pub back_flow: f64,
     pub front_temperature: f64,
     pub back_temperature: f64,
     pub front_temp_reservoir: f64,
@@ -43,6 +41,8 @@ pub struct StateEvent {
     pub temperature_states: TempStates,
     pub fan_states: FanStates,
     pub tolerance_states: ToleranceStates,
+    pub front_flow: bool,
+    pub back_flow: bool,
 }
 
 impl StateEvent {

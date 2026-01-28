@@ -1,7 +1,8 @@
 use crate::aquapath1::VolumeRate;
 use crate::aquapath1::{Flow, Temperature};
 use control_core::controllers::pid::PidController;
-use ethercat_hal::io::encoder_input::EncoderInput;
+use ethercat_hal::io::analog_input::AnalogInput;
+use ethercat_hal::io::digital_input::DigitalInput;
 use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
@@ -44,9 +45,10 @@ pub struct Controller {
     pub heating_allowed: bool,
 
     pub flow: Flow,
+    pub is_flowing : bool,
     pump_relais: DigitalOutput,
     pub should_pump: bool,
-    pub flow_sensor: EncoderInput,
+    pub flow_sensor: AnalogInput,
     pub pump_allowed: bool,
     pub current_flow: VolumeRate,
     pub max_flow: VolumeRate,
@@ -68,7 +70,7 @@ impl Controller {
 
         flow: Flow,
         pump_relais: DigitalOutput,
-        flow_sensor: EncoderInput,
+        flow_sensor: AnalogInput,
     ) -> Self {
         Self {
             pid: PidController::new(kp, ki, kd),
@@ -93,6 +95,7 @@ impl Controller {
 
             cooling_allowed: false,
             heating_allowed: false,
+            is_flowing : false,
             temperature_sensor_in: temp_sensor_in,
             temperature_sensor_out: temp_sensor_out,
 
@@ -220,27 +223,15 @@ impl Controller {
         self.should_pump
     }
 
-    pub fn get_flow(&mut self) -> VolumeRate {
-        let value = match self.flow_sensor.get_frequency_value() {
+    pub fn get_flow(&mut self) -> bool {
+    /*    let value = match self.flow_sensor.get_value() {
             Ok(val) => val,
             Err(_e) => {
-                return VolumeRate::new::<liter_per_minute>(0.0);
+                false
             }
-        };
+        };*/
 
-        match value {
-            Some(val) => {
-                if val == 0 {
-                    return VolumeRate::new::<liter_per_minute>(0.0);
-                }
-                // Formula: f = 8.1*q - 3, so q = (f + 3) / 8.1
-                let actual_flow = ((val / 100) as f32 + 3.0) / 8.1;
-                VolumeRate::new::<liter_per_minute>(actual_flow.into())
-            }
-            None => {
-                return VolumeRate::new::<liter_per_minute>(0.0);
-            }
-        }
+        false
     }
 
     pub fn get_current_revolutions(&self) -> AngularVelocity {
@@ -272,10 +263,10 @@ impl Controller {
         self.total_energy
     }
 
-    pub fn update(&mut self, now: Instant) -> () {
+    pub fn update(&mut self, now: Instant) -> bool {
         let current_flow = self.get_flow();
-        self.current_flow = current_flow;
-        self.flow.flow = current_flow;
+        let flow_changed = current_flow == self.is_flowing;
+        self.is_flowing = current_flow;
 
         let should_flow = self.get_should_pump();
         self.flow.should_pump = should_flow;
@@ -308,7 +299,7 @@ impl Controller {
             if self.temperature.cooling {
                 self.turn_cooling_off();
             }
-            if self.heating_allowed && current_flow > VolumeRate::new::<liter_per_minute>(0.0) {
+            if self.heating_allowed && self.is_flowing {
                 self.turn_heating_on();
 
                 self.total_energy += self.get_current_power() * elapsed.as_secs_f64() / 3600.0;
@@ -323,7 +314,7 @@ impl Controller {
             if self.temperature.heating {
                 self.turn_heating_off();
             }
-            if self.cooling_allowed && current_flow > VolumeRate::new::<liter_per_minute>(0.0) {
+            if self.cooling_allowed && self.is_flowing {
                 if !self.temperature.cooling {
                     self.turn_cooling_on();
                 }
@@ -344,5 +335,6 @@ impl Controller {
                 }
             }
         }
+        flow_changed
     }
 }
