@@ -433,6 +433,8 @@ pub async fn setup_loop(
     )
     .await?;
 
+    smol::Timer::after(Duration::from_millis(3000)).await;
+
     let group_safe = match group_preop.into_safe_op(&maindevice).await {
         Ok(group_op) => {
             tracing::info!("Group in Safe-OP state");
