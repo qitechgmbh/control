@@ -27,57 +27,20 @@ impl StepperVelocityWago750671 {
             enabled: false,
         }
     }
-    pub fn tick(&mut self) {
+
+    pub fn set_enabled(&self, enabled: bool)
+    {
         let mut dev = block_on(self.device.write());
 
-        match self.state {
-            SpeedControlState::Init => {
-                dev.write_control_bits(
-                    ControlByteC1::ENABLE | ControlByteC1::STOP2_N,
-                    ControlByteC2::ERROR_QUIT,
-                    ControlByteC3::RESET_QUIT,
-                );
-                self.state = SpeedControlState::WaitReady;
-            }
-            SpeedControlState::WaitReady => {
-                dev.write_control_bits(ControlByteC1::ENABLE | ControlByteC1::STOP2_N, 0, 0);
-                if dev.ready() && dev.stop_n_ack() {
-                    self.state = SpeedControlState::SelectMode;
-                }
-            }
-            SpeedControlState::SelectMode => {
-                dev.write_control_bits(
-                    ControlByteC1::ENABLE | ControlByteC1::M_SPEED_CONTROL | ControlByteC1::STOP2_N,
-                    0,
-                    0,
-                );
-                if dev.speed_mode_ack() {
-                    self.state = SpeedControlState::StartPulse;
-                }
-            }
-            SpeedControlState::StartPulse => {
-                dev.write_control_bits(
-                    ControlByteC1::ENABLE
-                        | ControlByteC1::M_SPEED_CONTROL
-                        | ControlByteC1::STOP2_N
-                        | ControlByteC1::START,
-                    0,
-                    0,
-                );
-                self.state = SpeedControlState::Running;
-            }
-            SpeedControlState::Running => {
-                dev.write_control_bits(
-                    ControlByteC1::ENABLE | ControlByteC1::M_SPEED_CONTROL | ControlByteC1::STOP2_N,
-                    0,
-                    0,
-                );
-                dev.set_speed_setpoint(self.target_velocity, self.target_acceleration);
-            }
-            SpeedControlState::ErrorAck => {
-                dev.write_control_bits(ControlByteC1::ENABLE, ControlByteC2::ERROR_QUIT, 0);
-            }
-        }
+        tracing::error!("Enabled: {}", enabled);
+
+        dev.state = 0;
+
+        // match enabled 
+        // {
+        //     true => dev.write_control_bits(1 + 2 + 8, 128, 0),
+        //     _    => dev.write_control_bits(0, 0, 0), 
+        // }
     }
 }
 
