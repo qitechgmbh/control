@@ -161,18 +161,12 @@ impl crate::coe::Configuration for EL3062_0030TxPdo {
             len += 1;
             device.sdo_write(0x1C13, len, 0x1A00u16).await?;
         }
-        if let Some(_) = &self.ai_compact_channel1 {
-            len += 1;
-            device.sdo_write(0x1C13, len, 0x1A01u16).await?;
-        }
+
         if let Some(_) = &self.ai_standard_channel2 {
             len += 1;
             device.sdo_write(0x1C13, len, 0x1A02u16).await?;
         }
-        if let Some(_) = &self.ai_compact_channel2 {
-            len += 1;
-            device.sdo_write(0x1C13, len, 0x1A03u16).await?;
-        }
+
         device.sdo_write(0x1C13, 0, len).await?;
         Ok(())
     }
