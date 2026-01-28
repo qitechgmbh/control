@@ -3,6 +3,7 @@
  * 24 VDC / 1.5 A
  */
 
+use anyhow::Ok;
 use bitvec::field::BitField;
 
 use crate::{
@@ -21,6 +22,8 @@ pub struct Wago750_671 {
     pub rxpdo: Wago750_671RxPdo,
     pub txpdo: Wago750_671TxPdo,
     module: Option<Module>,
+
+    pub state: u32,
 }
 
 /*
@@ -195,6 +198,7 @@ impl EthercatDevice for Wago750_671 {
         &mut self,
         input: &bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
+
         let base = self.tx_bit_offset;
 
         let mut b = [0u8; 12];
@@ -213,10 +217,30 @@ impl EthercatDevice for Wago750_671 {
             s1: b[11],
         };
 
-        println!(
-            "750-671 IN  | S1={:08b} S2={:08b} S3={:08b} | v_act={}",
-            self.txpdo.s1, self.txpdo.s2, self.txpdo.s3, self.txpdo.actual_velocity,
-        );
+        if (self.state == 0 && (self.s1() & 0x8) != 0)
+        {
+            self.write_control_bits(1 + 2 + 4 + 8 , 0, 0);
+
+            tracing::error!("Acknowledged Mode! {:08b}", self.s1());
+
+            self.set_speed_setpoint(10_000, 10_000);
+
+            self.state = 1;
+        }
+
+        else if(self.state == 1)
+        {
+            self.write_control_bits(1 + 2 + 8, 0, 0);
+
+            if (self.s1() & 0x4) != 0
+            {
+                tracing::error!("Acknowledged Start!: {:08b}", self.s1());
+            }
+        }
+
+        // tracing::error!("Cycle: {:08b}", self.s1());
+
+        // tracing::error!("Cycle");
 
         Ok(())
     }
@@ -229,6 +253,14 @@ impl EthercatDevice for Wago750_671 {
         &self,
         output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
+
+        // tracing::error!("Thing: {:08b}", self.s1());
+
+        if (self.rxpdo.c1 & 0x4) != 0
+        {
+            tracing::error!("Thing: {:08b}", self.rxpdo.c1);
+        }
+
         let base = self.rx_bit_offset;
 
        let b = [
@@ -249,15 +281,6 @@ impl EthercatDevice for Wago750_671 {
         for i in 0..12 {
             output[base + i * 8..base + (i + 1) * 8].store_le(b[i]);
         }
-
-        println!(
-            "750-671 OUT | C1={:08b} C2={:08b} C3={:08b} | vel={} acc={}",
-            self.rxpdo.c1,
-            self.rxpdo.c2,
-            self.rxpdo.c3,
-            self.rxpdo.velocity,
-            self.rxpdo.acceleration,
-        );
 
         Ok(())
     }
@@ -336,6 +359,7 @@ impl NewEthercatDevice for Wago750_671 {
             module: None,
             rxpdo: Wago750_671RxPdo::default(),
             txpdo: Wago750_671TxPdo::default(),
+            state: 0,
         }
     }
 }

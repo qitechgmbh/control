@@ -52,6 +52,9 @@ impl TestMachineStepper {
     }
 
     pub fn set_target_speed(&mut self, speed: i16) {
+
         self.stepper.target_velocity = speed;
+
+        self.stepper.set_enabled(speed != 0);
     }
 }
