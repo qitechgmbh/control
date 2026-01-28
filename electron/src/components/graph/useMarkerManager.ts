@@ -1,0 +1,139 @@
+import { useState, useCallback, useEffect } from "react";
+
+export type Marker = {
+  timestamp: number;
+  name: string;
+  value?: number; // Optional: value at that timestamp
+  color?: string; // Optional: color for the marker
+};
+
+// Custom event for marker updates to ensure immediate propagation
+const MARKER_UPDATE_EVENT = "marker-update";
+
+/**
+ * Centralized marker management for all graphs of a machine
+ * Markers are stored per machine (machineId) and appear on all graphs
+ */
+export function useMarkerManager(machineId: string) {
+  const storageKey = `machine-markers-${machineId}`;
+
+  // Load markers from localStorage
+  const loadMarkers = useCallback((): Marker[] => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const allMarkers: Marker[] = JSON.parse(stored);
+
+        // Remove markers older than 7 days to save storage space
+        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const recentMarkers = allMarkers.filter(
+          (marker) => marker.timestamp >= sevenDaysAgo,
+        );
+
+        // Limit to max 200 markers per machine to prevent storage bloat
+        const maxMarkers = 200;
+        const limitedMarkers =
+          recentMarkers.length > maxMarkers
+            ? recentMarkers.slice(-maxMarkers)
+            : recentMarkers;
+
+        // Save cleaned markers back if we removed any
+        if (limitedMarkers.length !== allMarkers.length) {
+          localStorage.setItem(storageKey, JSON.stringify(limitedMarkers));
+        }
+
+        return limitedMarkers;
+      }
+    } catch (error) {
+      console.warn("Failed to load markers from localStorage:", error);
+    }
+    return [];
+  }, [storageKey]);
+
+  const [markers, setMarkers] = useState<Marker[]>(loadMarkers);
+
+  // Listen for marker updates from other components
+  useEffect(() => {
+    const handleMarkerUpdate = (event: CustomEvent) => {
+      if (event.detail?.machineId === machineId) {
+        // Reload markers immediately when updated
+        setMarkers(loadMarkers());
+      }
+    };
+
+    window.addEventListener(
+      MARKER_UPDATE_EVENT,
+      handleMarkerUpdate as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        MARKER_UPDATE_EVENT,
+        handleMarkerUpdate as EventListener,
+      );
+    };
+  }, [machineId, loadMarkers]);
+
+  // Save markers to localStorage whenever they change
+  useEffect(() => {
+    try {
+      // Limit to max 200 markers per machine
+      const maxMarkers = 200;
+      const markersToSave =
+        markers.length > maxMarkers ? markers.slice(-maxMarkers) : markers;
+
+      localStorage.setItem(storageKey, JSON.stringify(markersToSave));
+    } catch (error) {
+      console.warn("Failed to save markers to localStorage:", error);
+    }
+  }, [markers, storageKey]);
+
+  const addMarker = useCallback(
+    (name: string, timestamp: number, color?: string, value?: number) => {
+      const newMarker: Marker = {
+        timestamp,
+        name,
+        color,
+        value,
+      };
+      setMarkers((prev) => {
+        const updated = [...prev, newMarker];
+        // Save immediately to localStorage
+        try {
+          const maxMarkers = 200;
+          const markersToSave =
+            updated.length > maxMarkers ? updated.slice(-maxMarkers) : updated;
+          localStorage.setItem(storageKey, JSON.stringify(markersToSave));
+        } catch (error) {
+          console.warn("Failed to save marker to localStorage:", error);
+        }
+        // Dispatch event to notify other components immediately
+        window.dispatchEvent(
+          new CustomEvent(MARKER_UPDATE_EVENT, {
+            detail: { machineId, markers: updated },
+          }),
+        );
+        return updated;
+      });
+      return newMarker;
+    },
+    [storageKey, machineId],
+  );
+
+  const removeMarker = useCallback((timestamp: number) => {
+    setMarkers((prev) =>
+      prev.filter((marker) => marker.timestamp !== timestamp),
+    );
+  }, []);
+
+  const clearMarkers = useCallback(() => {
+    setMarkers([]);
+  }, []);
+
+  return {
+    markers,
+    addMarker,
+    removeMarker,
+    clearMarkers,
+  };
+}
