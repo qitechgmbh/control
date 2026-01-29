@@ -667,7 +667,7 @@ export const gluetex: MachineProperties = {
   icon: "lu:Disc3",
   machine_identification: {
     vendor: VENDOR_QITECH,
-    machine: 0x000a,
+    machine: 0x000b,
   },
   device_roles: [
     {
