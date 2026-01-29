@@ -67,7 +67,7 @@ impl Default for AutoTuneConfig {
             approach_output: 1.0,
             min_oscillations: 5, // 5 complete cycles for accurate tuning
             min_cycle_secs: 4.0,
-            max_duration_secs: 1200.0, // 20 minutes
+            max_duration_secs: 2400.0, // 40 minutes
         }
     }
 }
