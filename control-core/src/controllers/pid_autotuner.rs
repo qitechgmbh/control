@@ -277,11 +277,12 @@ impl PidAutoTuner {
         let relay_amplitude = self.config.relay_amplitude.max(0.01);
         let ultimate_gain = (4.0 * relay_amplitude) / (std::f64::consts::PI * amplitude);
 
-        // Apply Ziegler-Nichols PID tuning rules
-        // Classic Ziegler-Nichols (can be aggressive, but good starting point)
-        let kp = 0.6 * ultimate_gain;
-        let ki = 2.0 * kp / ultimate_period;
-        let kd = kp * ultimate_period / 8.0;
+        // Apply Tyreus-Luyben tuning rules - designed for processes with lag/delay like temperature control
+        // Very conservative, minimizes overshoot, ideal for thermal systems with high inertia
+        // Tyreus-Luyben: Kp = Ku/3.2, Ti = 2.2*Tu, Td = Tu/6.3
+        let kp = ultimate_gain / 3.2;
+        let ki = kp / (2.2 * ultimate_period);  // Ki = Kp/Ti
+        let kd = kp * ultimate_period / 6.3;     // Kd = Kp*Td - very gentle derivative action
 
         Some(AutoTuneResult {
             kp,
