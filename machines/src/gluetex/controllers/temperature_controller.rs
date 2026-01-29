@@ -91,10 +91,9 @@ impl TemperatureController {
     pub fn start_autotuning(&mut self, target_temp: ThermodynamicTemperature) {
         let config = AutoTuneConfig {
             target: target_temp.get::<degree_celsius>(),
-            relay_amplitude: 0.4, // 40% output swing
+            hysteresis: 5.0,          // ±5°C oscillation around target
             min_oscillations: 3,
             max_duration_secs: 600.0, // 10 minutes
-            settle_time_secs: 15.0,   // 15 seconds to settle
         };
         
         let mut tuner = PidAutoTuner::new(config);
