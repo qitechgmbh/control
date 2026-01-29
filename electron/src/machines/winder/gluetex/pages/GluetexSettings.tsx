@@ -52,6 +52,8 @@ export function GluetexSettingPage() {
     setSlavePullerMaxSpeedFactor,
     zeroSlaveTensionArm,
     setHeatingPid,
+    startHeatingAutoTune,
+    stopHeatingAutoTune,
     setTensionArmMonitorEnabled,
     setTensionArmMonitorMinAngle,
     setTensionArmMonitorMaxAngle,
@@ -481,7 +483,28 @@ export function GluetexSettingPage() {
         </ControlCard>
 
         <ControlCard title="Heating Zone 1">
-          <div className="flex flex-row flex-wrap gap-4">
+          <div className="flex flex-col gap-4">
+            {state?.heating_states?.zone_1?.autotuning_active && (
+              <div className="bg-blue-100 dark:bg-blue-900 p-4 rounded">
+                <p className="text-sm font-semibold">Auto-tuning in progress...</p>
+                <p className="text-sm">Progress: {state?.heating_states?.zone_1?.autotuning_progress.toFixed(0)}%</p>
+                <button
+                  onClick={() => stopHeatingAutoTune(1)}
+                  className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  Stop Auto-Tuning
+                </button>
+              </div>
+            )}
+            {!state?.heating_states?.zone_1?.autotuning_active && (
+              <button
+                onClick={() => startHeatingAutoTune(1, 150)}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              >
+                Start Auto-Tuning (150°C)
+              </button>
+            )}
+            <div className="flex flex-row flex-wrap gap-4">
             <Label label="Proportional Gain (Kp)">
               <EditValue
                 value={state?.heating_pid_settings?.zone_1?.kp}
@@ -544,11 +567,23 @@ export function GluetexSettingPage() {
                 }
               />
             </Label>
+            </div>
           </div>
         </ControlCard>
 
         <ControlCard title="Heating Zone 2">
-          <div className="flex flex-row flex-wrap gap-4">
+          <div className="flex flex-col gap-4">
+            {state?.heating_states?.zone_2?.autotuning_active && (
+              <div className="bg-blue-100 dark:bg-blue-900 p-4 rounded">
+                <p className="text-sm font-semibold">Auto-tuning in progress...</p>
+                <p className="text-sm">Progress: {state?.heating_states?.zone_2?.autotuning_progress.toFixed(0)}%</p>
+                <button onClick={() => stopHeatingAutoTune(2)} className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Stop Auto-Tuning</button>
+              </div>
+            )}
+            {!state?.heating_states?.zone_2?.autotuning_active && (
+              <button onClick={() => startHeatingAutoTune(2, 150)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Start Auto-Tuning (150°C)</button>
+            )}
+            <div className="flex flex-row flex-wrap gap-4">
             <Label label="Proportional Gain (Kp)">
               <EditValue
                 value={state?.heating_pid_settings?.zone_2?.kp}
@@ -611,11 +646,23 @@ export function GluetexSettingPage() {
                 }
               />
             </Label>
+            </div>
           </div>
         </ControlCard>
 
         <ControlCard title="Heating Zone 3">
-          <div className="flex flex-row flex-wrap gap-4">
+          <div className="flex flex-col gap-4">
+            {state?.heating_states?.zone_3?.autotuning_active && (
+              <div className="bg-blue-100 dark:bg-blue-900 p-4 rounded">
+                <p className="text-sm font-semibold">Auto-tuning in progress...</p>
+                <p className="text-sm">Progress: {state?.heating_states?.zone_3?.autotuning_progress.toFixed(0)}%</p>
+                <button onClick={() => stopHeatingAutoTune(3)} className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Stop Auto-Tuning</button>
+              </div>
+            )}
+            {!state?.heating_states?.zone_3?.autotuning_active && (
+              <button onClick={() => startHeatingAutoTune(3, 150)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Start Auto-Tuning (150°C)</button>
+            )}
+            <div className="flex flex-row flex-wrap gap-4">
             <Label label="Proportional Gain (Kp)">
               <EditValue
                 value={state?.heating_pid_settings?.zone_3?.kp}
@@ -678,11 +725,23 @@ export function GluetexSettingPage() {
                 }
               />
             </Label>
+            </div>
           </div>
         </ControlCard>
 
         <ControlCard title="Heating Zone 4">
-          <div className="flex flex-row flex-wrap gap-4">
+          <div className="flex flex-col gap-4">
+            {state?.heating_states?.zone_4?.autotuning_active && (
+              <div className="bg-blue-100 dark:bg-blue-900 p-4 rounded">
+                <p className="text-sm font-semibold">Auto-tuning in progress...</p>
+                <p className="text-sm">Progress: {state?.heating_states?.zone_4?.autotuning_progress.toFixed(0)}%</p>
+                <button onClick={() => stopHeatingAutoTune(4)} className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Stop Auto-Tuning</button>
+              </div>
+            )}
+            {!state?.heating_states?.zone_4?.autotuning_active && (
+              <button onClick={() => startHeatingAutoTune(4, 150)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Start Auto-Tuning (150°C)</button>
+            )}
+            <div className="flex flex-row flex-wrap gap-4">
             <Label label="Proportional Gain (Kp)">
               <EditValue
                 value={state?.heating_pid_settings?.zone_4?.kp}
@@ -745,11 +804,23 @@ export function GluetexSettingPage() {
                 }
               />
             </Label>
+            </div>
           </div>
         </ControlCard>
 
         <ControlCard title="Heating Zone 5">
-          <div className="flex flex-row flex-wrap gap-4">
+          <div className="flex flex-col gap-4">
+            {state?.heating_states?.zone_5?.autotuning_active && (
+              <div className="bg-blue-100 dark:bg-blue-900 p-4 rounded">
+                <p className="text-sm font-semibold">Auto-tuning in progress...</p>
+                <p className="text-sm">Progress: {state?.heating_states?.zone_5?.autotuning_progress.toFixed(0)}%</p>
+                <button onClick={() => stopHeatingAutoTune(5)} className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Stop Auto-Tuning</button>
+              </div>
+            )}
+            {!state?.heating_states?.zone_5?.autotuning_active && (
+              <button onClick={() => startHeatingAutoTune(5, 150)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Start Auto-Tuning (150°C)</button>
+            )}
+            <div className="flex flex-row flex-wrap gap-4">
             <Label label="Proportional Gain (Kp)">
               <EditValue
                 value={state?.heating_pid_settings?.zone_5?.kp}
@@ -812,11 +883,23 @@ export function GluetexSettingPage() {
                 }
               />
             </Label>
+            </div>
           </div>
         </ControlCard>
 
         <ControlCard title="Heating Zone 6">
-          <div className="flex flex-row flex-wrap gap-4">
+          <div className="flex flex-col gap-4">
+            {state?.heating_states?.zone_6?.autotuning_active && (
+              <div className="bg-blue-100 dark:bg-blue-900 p-4 rounded">
+                <p className="text-sm font-semibold">Auto-tuning in progress...</p>
+                <p className="text-sm">Progress: {state?.heating_states?.zone_6?.autotuning_progress.toFixed(0)}%</p>
+                <button onClick={() => stopHeatingAutoTune(6)} className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Stop Auto-Tuning</button>
+              </div>
+            )}
+            {!state?.heating_states?.zone_6?.autotuning_active && (
+              <button onClick={() => startHeatingAutoTune(6, 150)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Start Auto-Tuning (150°C)</button>
+            )}
+            <div className="flex flex-row flex-wrap gap-4">
             <Label label="Proportional Gain (Kp)">
               <EditValue
                 value={state?.heating_pid_settings?.zone_6?.kp}
@@ -879,6 +962,7 @@ export function GluetexSettingPage() {
                 }
               />
             </Label>
+            </div>
           </div>
         </ControlCard>
 
