@@ -13,6 +13,20 @@ pub struct PidAutoTuner {
     
     // Relay state tracking
     last_relay_high: bool,
+    target_reached_once: bool,
+    initial_error: Option<f64>,
+    
+    // Oscillation cycle counting
+    completed_cycles: usize,
+    last_peak_time: Option<f64>,
+    prev_peak_time: Option<f64>,
+    last_peak_value: Option<f64>,
+    last_valley_time: Option<f64>,
+    last_valley_value: Option<f64>,
+    cycle_samples: Vec<CycleSample>,
+
+    // Progress tracking
+    progress_percent: f64,
     
     // Results
     pub result: Option<AutoTuneResult>,
@@ -32,8 +46,14 @@ pub struct AutoTuneConfig {
     pub target: f64,
     /// Hysteresis for relay switching (oscillation will be ±hysteresis around target)
     pub hysteresis: f64,
+    /// Relay output amplitude (0.0 - 1.0)
+    pub relay_amplitude: f64,
+    /// Output used for the initial approach to target
+    pub approach_output: f64,
     /// Minimum number of oscillations to observe
     pub min_oscillations: usize,
+    /// Minimum time between peaks (seconds) to filter noise
+    pub min_cycle_secs: f64,
     /// Maximum time to run auto-tuning before giving up
     pub max_duration_secs: f64,
 }
@@ -43,8 +63,11 @@ impl Default for AutoTuneConfig {
         Self {
             target: 150.0,
             hysteresis: 5.0, // ±5°C oscillation around target
-            min_oscillations: 3,
-            max_duration_secs: 600.0, // 10 minutes
+            relay_amplitude: 1.0,
+            approach_output: 1.0,
+            min_oscillations: 5, // 5 complete cycles for accurate tuning
+            min_cycle_secs: 4.0,
+            max_duration_secs: 1200.0, // 20 minutes
         }
     }
 }
@@ -65,6 +88,12 @@ pub struct AutoTuneResult {
     pub ultimate_period: f64,
 }
 
+#[derive(Debug, Clone)]
+struct CycleSample {
+    period: f64,
+    amplitude: f64,
+}
+
 impl PidAutoTuner {
     pub fn new(config: AutoTuneConfig) -> Self {
         Self {
@@ -73,6 +102,16 @@ impl PidAutoTuner {
             oscillation_data: Vec::new(),
             start_time: None,
             last_relay_high: false,
+            target_reached_once: false,
+            initial_error: None,
+            completed_cycles: 0,
+            last_peak_time: None,
+            prev_peak_time: None,
+            last_peak_value: None,
+            last_valley_time: None,
+            last_valley_value: None,
+            cycle_samples: Vec::new(),
+            progress_percent: 0.0,
             result: None,
         }
     }
@@ -82,6 +121,16 @@ impl PidAutoTuner {
         self.oscillation_data.clear();
         self.start_time = Some(now);
         self.last_relay_high = true; // Start with heating ON
+        self.target_reached_once = false;
+        self.initial_error = None;
+        self.completed_cycles = 0;
+        self.last_peak_time = None;
+        self.prev_peak_time = None;
+        self.last_peak_value = None;
+        self.last_valley_time = None;
+        self.last_valley_value = None;
+        self.cycle_samples.clear();
+        self.progress_percent = 0.0;
         self.result = None;
     }
 
@@ -106,6 +155,16 @@ impl PidAutoTuner {
         &self.state
     }
 
+    /// Get the number of completed oscillation cycles
+    pub fn get_completed_cycles(&self) -> usize {
+        self.completed_cycles
+    }
+
+    /// Get the required number of cycles
+    pub fn get_required_cycles(&self) -> usize {
+        self.config.min_oscillations
+    }
+
     /// Update the auto-tuner with current process value and get control output
     /// Returns: (control_output, is_complete)
     pub fn update(&mut self, current_value: f64, now: Instant) -> (f64, bool) {
@@ -123,6 +182,11 @@ impl PidAutoTuner {
 
         match self.state {
             AutoTuneState::MeasuringOscillations => {
+                if self.initial_error.is_none() {
+                    let initial_error = (self.config.target - current_value).abs().max(1.0);
+                    self.initial_error = Some(initial_error);
+                }
+
                 // Record measurement
                 self.oscillation_data.push(OscillationPoint {
                     time: elapsed,
@@ -133,21 +197,50 @@ impl PidAutoTuner {
                 // Simple bang-bang relay control (like Arduino implementation)
                 // Output is ON and input has risen to target -> turn OFF
                 // Output is OFF and input has dropped to target -> turn ON
-                let output = if self.last_relay_high && current_value > self.config.target {
-                    // Heating was ON, now above target: turn OFF
+                let high_threshold = self.config.target + self.config.hysteresis;
+                let low_threshold = self.config.target - self.config.hysteresis;
+
+                let output = if self.last_relay_high && current_value > high_threshold {
+                    // Heating was ON, now above target: turn OFF and mark target reached
+                    // This is a PEAK - count it as half a cycle
                     self.last_relay_high = false;
+                    self.record_peak(elapsed, current_value);
+                    
+                    if !self.target_reached_once {
+                        self.target_reached_once = true;
+                    } else {
+                        self.update_cycle_count();
+                    }
                     0.0
-                } else if !self.last_relay_high && current_value < self.config.target {
+                } else if !self.last_relay_high && current_value < low_threshold {
                     // Heating was OFF, now below target: turn ON
                     self.last_relay_high = true;
-                    1.0
+                    self.record_valley(elapsed, current_value);
+                    
+                    // Use limited power until target reached once, then full relay amplitude
+                    if self.target_reached_once {
+                        self.config.relay_amplitude
+                    } else {
+                        self.config.approach_output
+                    }
                 } else {
                     // Maintain current state
-                    if self.last_relay_high { 1.0 } else { 0.0 }
+                    if self.last_relay_high {
+                        // Keep same power level based on whether target was reached
+                        if self.target_reached_once {
+                            self.config.relay_amplitude
+                        } else {
+                            self.config.approach_output
+                        }
+                    } else {
+                        0.0
+                    }
                 };
 
-                // Check if we have enough data to analyze
-                if self.oscillation_data.len() > 40 {
+                self.update_progress(current_value);
+
+                // Check if we have enough cycles
+                if self.should_finish() {
                     if let Some(result) = self.analyze_oscillations() {
                         self.result = Some(result);
                         self.state = AutoTuneState::Completed;
@@ -162,53 +255,18 @@ impl PidAutoTuner {
     }
 
     fn analyze_oscillations(&self) -> Option<AutoTuneResult> {
-        if self.oscillation_data.len() < 20 {
+        if self.cycle_samples.len() < 2 {
             return None;
         }
 
-        // Find peaks and valleys using simple derivative method
-        let mut peaks = Vec::new();
-        let mut valleys = Vec::new();
+        let sample_count = self.cycle_samples.len();
+        let window = sample_count.min(5);
+        let window_samples = &self.cycle_samples[sample_count - window..];
 
-        for i in 1..self.oscillation_data.len() - 1 {
-            let prev = self.oscillation_data[i - 1].value;
-            let curr = self.oscillation_data[i].value;
-            let next = self.oscillation_data[i + 1].value;
+        let ultimate_period = window_samples.iter().map(|s| s.period).sum::<f64>() / window as f64;
+        let amplitude = window_samples.iter().map(|s| s.amplitude).sum::<f64>() / window as f64;
 
-            // Peak: higher than both neighbors
-            if curr > prev && curr > next {
-                peaks.push((self.oscillation_data[i].time, curr));
-            }
-            // Valley: lower than both neighbors
-            else if curr < prev && curr < next {
-                valleys.push((self.oscillation_data[i].time, curr));
-            }
-        }
-
-        // Need at least the minimum number of oscillations
-        let num_oscillations = peaks.len().min(valleys.len());
-        if num_oscillations < self.config.min_oscillations {
-            return None;
-        }
-
-        // Calculate ultimate period (average time between peaks)
-        let mut periods = Vec::new();
-        for i in 1..peaks.len() {
-            periods.push(peaks[i].0 - peaks[i - 1].0);
-        }
-
-        if periods.is_empty() {
-            return None;
-        }
-
-        let ultimate_period = periods.iter().sum::<f64>() / periods.len() as f64;
-
-        // Calculate amplitude of oscillations
-        let peak_avg = peaks.iter().map(|(_, v)| v).sum::<f64>() / peaks.len() as f64;
-        let valley_avg = valleys.iter().map(|(_, v)| v).sum::<f64>() / valleys.len() as f64;
-        let amplitude = (peak_avg - valley_avg) / 2.0;
-
-        if amplitude < 0.1 {
+        if amplitude < 0.1 || ultimate_period <= 0.0 {
             // Oscillations too small
             return None;
         }
@@ -216,7 +274,7 @@ impl PidAutoTuner {
         // Calculate ultimate gain using relay method formula
         // Ku = 4d / (π * a)
         // where d is relay amplitude (0 to 1 in our case = 1.0) and a is process oscillation amplitude
-        let relay_amplitude = 1.0; // Full on/off relay
+        let relay_amplitude = self.config.relay_amplitude.max(0.01);
         let ultimate_gain = (4.0 * relay_amplitude) / (std::f64::consts::PI * amplitude);
 
         // Apply Ziegler-Nichols PID tuning rules
@@ -234,12 +292,93 @@ impl PidAutoTuner {
         })
     }
 
+    fn record_peak(&mut self, time: f64, value: f64) {
+        self.prev_peak_time = self.last_peak_time;
+        self.last_peak_time = Some(time);
+        self.last_peak_value = Some(value);
+    }
+
+    fn record_valley(&mut self, time: f64, value: f64) {
+        self.last_valley_time = Some(time);
+        self.last_valley_value = Some(value);
+    }
+
+    fn update_cycle_count(&mut self) {
+        let (Some(peak_time), Some(peak_value)) = (self.last_peak_time, self.last_peak_value) else {
+            return;
+        };
+        let (Some(prev_peak_time), Some(valley_time), Some(valley_value)) =
+            (self.prev_peak_time, self.last_valley_time, self.last_valley_value)
+        else {
+            return;
+        };
+
+        if valley_time <= prev_peak_time || valley_time >= peak_time {
+            // Valley must be between peaks
+            return;
+        }
+
+        let period = peak_time - prev_peak_time;
+        if period < self.config.min_cycle_secs {
+            return;
+        }
+
+        let amplitude = (peak_value - valley_value).abs() / 2.0;
+        if amplitude > 0.0 {
+            self.cycle_samples.push(CycleSample { period, amplitude });
+            self.completed_cycles = self.cycle_samples.len();
+        }
+    }
+
+    fn update_progress(&mut self, current_value: f64) {
+        if !self.target_reached_once {
+            let Some(initial_error) = self.initial_error else {
+                self.progress_percent = 0.0;
+                return;
+            };
+            let error = (self.config.target - current_value).abs();
+            let approach_progress = (1.0 - (error / initial_error).min(1.0)) * 20.0;
+            self.progress_percent = approach_progress.clamp(0.0, 20.0);
+        } else {
+            let cycle_progress = self.completed_cycles as f64 / self.config.min_oscillations as f64;
+            self.progress_percent = 20.0 + (cycle_progress * 80.0).min(80.0);
+        }
+    }
+
+    fn should_finish(&self) -> bool {
+        if self.completed_cycles >= self.config.min_oscillations {
+            return true;
+        }
+
+        if self.cycle_samples.len() < 3 {
+            return false;
+        }
+
+        let window = &self.cycle_samples[self.cycle_samples.len() - 3..];
+        let mean_period = window.iter().map(|s| s.period).sum::<f64>() / 3.0;
+        let mean_amp = window.iter().map(|s| s.amplitude).sum::<f64>() / 3.0;
+
+        if mean_period <= 0.0 || mean_amp <= 0.0 {
+            return false;
+        }
+
+        let max_period_dev = window
+            .iter()
+            .map(|s| ((s.period - mean_period).abs() / mean_period))
+            .fold(0.0, f64::max);
+        let max_amp_dev = window
+            .iter()
+            .map(|s| ((s.amplitude - mean_amp).abs() / mean_amp))
+            .fold(0.0, f64::max);
+
+        max_period_dev < 0.2 && max_amp_dev < 0.2
+    }
+
     pub fn get_progress_percent(&self) -> f64 {
         match self.state {
             AutoTuneState::Idle => 0.0,
             AutoTuneState::MeasuringOscillations => {
-                // Progress based on data collected (need ~100+ points for good analysis)
-                (self.oscillation_data.len() as f64 / 150.0 * 100.0).min(99.0)
+                self.progress_percent
             }
             AutoTuneState::Completed => 100.0,
             AutoTuneState::Failed(_) => 0.0,
@@ -265,15 +404,16 @@ mod tests {
         let config = AutoTuneConfig::default();
         let mut tuner = PidAutoTuner::new(config);
         tuner.start(Instant::now());
-        assert_eq!(tuner.state, AutoTuneState::WaitingForSettle);
+        assert_eq!(tuner.state, AutoTuneState::MeasuringOscillations);
         assert!(tuner.is_active());
     }
 
     #[test]
     fn test_autotuner_relay_output() {
         let config = AutoTuneConfig {
-            relay_amplitude: 0.4,
-            settle_time_secs: 0.0,
+            relay_amplitude: 0.6,
+            approach_output: 0.6,
+            hysteresis: 0.0,
             ..Default::default()
         };
         let mut tuner = PidAutoTuner::new(config);
@@ -288,7 +428,7 @@ mod tests {
         assert!(output > 0.5);
 
         // When above target, output should be low
-        let (output, _) = tuner.update(200.0, later);
-        assert!(output < 0.5);
+        let (output, _) = tuner.update(200.0, later + Duration::from_secs(1));
+        assert!(output < 0.1);
     }
 }

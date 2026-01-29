@@ -164,6 +164,7 @@ pub struct Gluetex {
     // socketio
     namespace: GluetexNamespace,
     last_measurement_emit: Instant,
+    last_state_emit: Instant,
     pub machine_identification_unique: MachineIdentificationUnique,
 
     // mode

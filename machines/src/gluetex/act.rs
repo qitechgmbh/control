@@ -45,6 +45,21 @@ impl MachineAct for Gluetex {
 
         if self.traverse_controller.did_change_state() {
             self.emit_state();
+            self.last_state_emit = now;
+        }
+
+        let autotuning_active = self.temperature_controller_1.is_autotuning()
+            || self.temperature_controller_2.is_autotuning()
+            || self.temperature_controller_3.is_autotuning()
+            || self.temperature_controller_4.is_autotuning()
+            || self.temperature_controller_5.is_autotuning()
+            || self.temperature_controller_6.is_autotuning();
+
+        if autotuning_active
+            && now.duration_since(self.last_state_emit) > Duration::from_millis(500)
+        {
+            self.emit_state();
+            self.last_state_emit = now;
         }
 
         // more than 33ms have passed since last emit (30 "fps" target)

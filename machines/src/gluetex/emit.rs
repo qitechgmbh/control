@@ -832,30 +832,41 @@ impl Gluetex {
 
     /// Check for completed auto-tuning and emit results
     pub fn check_autotuning_results(&mut self) {
+        let mut did_complete = false;
         // Check each zone for completed auto-tuning
         if let Some((kp, ki, kd)) = self.temperature_controller_1.get_autotuning_result() {
             tracing::info!("Auto-tuning completed for zone 1: kp={}, ki={}, kd={}", kp, ki, kd);
             self.emit_autotuning_complete("zone_1", kp, ki, kd);
+            did_complete = true;
         }
         if let Some((kp, ki, kd)) = self.temperature_controller_2.get_autotuning_result() {
             tracing::info!("Auto-tuning completed for zone 2: kp={}, ki={}, kd={}", kp, ki, kd);
             self.emit_autotuning_complete("zone_2", kp, ki, kd);
+            did_complete = true;
         }
         if let Some((kp, ki, kd)) = self.temperature_controller_3.get_autotuning_result() {
             tracing::info!("Auto-tuning completed for zone 3: kp={}, ki={}, kd={}", kp, ki, kd);
             self.emit_autotuning_complete("zone_3", kp, ki, kd);
+            did_complete = true;
         }
         if let Some((kp, ki, kd)) = self.temperature_controller_4.get_autotuning_result() {
             tracing::info!("Auto-tuning completed for zone 4: kp={}, ki={}, kd={}", kp, ki, kd);
             self.emit_autotuning_complete("zone_4", kp, ki, kd);
+            did_complete = true;
         }
         if let Some((kp, ki, kd)) = self.temperature_controller_5.get_autotuning_result() {
             tracing::info!("Auto-tuning completed for zone 5: kp={}, ki={}, kd={}", kp, ki, kd);
             self.emit_autotuning_complete("zone_5", kp, ki, kd);
+            did_complete = true;
         }
         if let Some((kp, ki, kd)) = self.temperature_controller_6.get_autotuning_result() {
             tracing::info!("Auto-tuning completed for zone 6: kp={}, ki={}, kd={}", kp, ki, kd);
             self.emit_autotuning_complete("zone_6", kp, ki, kd);
+            did_complete = true;
+        }
+
+        if did_complete {
+            self.emit_state();
         }
     }
 
