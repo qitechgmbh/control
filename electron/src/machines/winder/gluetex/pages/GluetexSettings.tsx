@@ -535,7 +535,7 @@ export function GluetexSettingPage() {
                 unit={undefined}
                 step={0.01}
                 min={0}
-                max={10}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_1?.kp}
                 renderValue={(value) => roundToDecimals(value, 3)}
                 onChange={(value) =>
@@ -554,9 +554,9 @@ export function GluetexSettingPage() {
                 value={state?.heating_pid_settings?.zone_1?.ki}
                 title={"Ki"}
                 unit={undefined}
-                step={0.001}
+                step={0.0001}
                 min={0}
-                max={1}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_1?.ki}
                 renderValue={(value) => roundToDecimals(value, 4)}
                 onChange={(value) =>
@@ -577,7 +577,7 @@ export function GluetexSettingPage() {
                 unit={undefined}
                 step={0.001}
                 min={0}
-                max={1}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_1?.kd}
                 renderValue={(value) => roundToDecimals(value, 4)}
                 onChange={(value) =>
@@ -634,7 +634,7 @@ export function GluetexSettingPage() {
                 unit={undefined}
                 step={0.01}
                 min={0}
-                max={10}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_2?.kp}
                 renderValue={(value) => roundToDecimals(value, 3)}
                 onChange={(value) =>
@@ -653,9 +653,9 @@ export function GluetexSettingPage() {
                 value={state?.heating_pid_settings?.zone_2?.ki}
                 title={"Ki"}
                 unit={undefined}
-                step={0.001}
+                step={0.0001}
                 min={0}
-                max={1}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_2?.ki}
                 renderValue={(value) => roundToDecimals(value, 4)}
                 onChange={(value) =>
@@ -676,7 +676,7 @@ export function GluetexSettingPage() {
                 unit={undefined}
                 step={0.001}
                 min={0}
-                max={1}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_2?.kd}
                 renderValue={(value) => roundToDecimals(value, 4)}
                 onChange={(value) =>
@@ -733,7 +733,7 @@ export function GluetexSettingPage() {
                 unit={undefined}
                 step={0.01}
                 min={0}
-                max={10}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_3?.kp}
                 renderValue={(value) => roundToDecimals(value, 3)}
                 onChange={(value) =>
@@ -752,9 +752,9 @@ export function GluetexSettingPage() {
                 value={state?.heating_pid_settings?.zone_3?.ki}
                 title={"Ki"}
                 unit={undefined}
-                step={0.001}
+                step={0.0001}
                 min={0}
-                max={1}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_3?.ki}
                 renderValue={(value) => roundToDecimals(value, 4)}
                 onChange={(value) =>
@@ -775,7 +775,7 @@ export function GluetexSettingPage() {
                 unit={undefined}
                 step={0.001}
                 min={0}
-                max={1}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_3?.kd}
                 renderValue={(value) => roundToDecimals(value, 4)}
                 onChange={(value) =>
@@ -832,7 +832,7 @@ export function GluetexSettingPage() {
                 unit={undefined}
                 step={0.01}
                 min={0}
-                max={10}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_4?.kp}
                 renderValue={(value) => roundToDecimals(value, 3)}
                 onChange={(value) =>
@@ -851,9 +851,9 @@ export function GluetexSettingPage() {
                 value={state?.heating_pid_settings?.zone_4?.ki}
                 title={"Ki"}
                 unit={undefined}
-                step={0.001}
+                step={0.0001}
                 min={0}
-                max={1}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_4?.ki}
                 renderValue={(value) => roundToDecimals(value, 4)}
                 onChange={(value) =>
@@ -874,7 +874,7 @@ export function GluetexSettingPage() {
                 unit={undefined}
                 step={0.001}
                 min={0}
-                max={1}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_4?.kd}
                 renderValue={(value) => roundToDecimals(value, 4)}
                 onChange={(value) =>
@@ -931,7 +931,7 @@ export function GluetexSettingPage() {
                 unit={undefined}
                 step={0.01}
                 min={0}
-                max={10}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_5?.kp}
                 renderValue={(value) => roundToDecimals(value, 3)}
                 onChange={(value) =>
@@ -950,9 +950,9 @@ export function GluetexSettingPage() {
                 value={state?.heating_pid_settings?.zone_5?.ki}
                 title={"Ki"}
                 unit={undefined}
-                step={0.001}
+                step={0.0001}
                 min={0}
-                max={1}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_5?.ki}
                 renderValue={(value) => roundToDecimals(value, 4)}
                 onChange={(value) =>
@@ -973,7 +973,7 @@ export function GluetexSettingPage() {
                 unit={undefined}
                 step={0.001}
                 min={0}
-                max={1}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_5?.kd}
                 renderValue={(value) => roundToDecimals(value, 4)}
                 onChange={(value) =>
@@ -1030,7 +1030,7 @@ export function GluetexSettingPage() {
                 unit={undefined}
                 step={0.01}
                 min={0}
-                max={10}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_6?.kp}
                 renderValue={(value) => roundToDecimals(value, 3)}
                 onChange={(value) =>
@@ -1049,9 +1049,9 @@ export function GluetexSettingPage() {
                 value={state?.heating_pid_settings?.zone_6?.ki}
                 title={"Ki"}
                 unit={undefined}
-                step={0.001}
+                step={0.0001}
                 min={0}
-                max={1}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_6?.ki}
                 renderValue={(value) => roundToDecimals(value, 4)}
                 onChange={(value) =>
@@ -1072,7 +1072,7 @@ export function GluetexSettingPage() {
                 unit={undefined}
                 step={0.001}
                 min={0}
-                max={1}
+                max={15}
                 defaultValue={defaultState?.heating_pid_settings?.zone_6?.kd}
                 renderValue={(value) => roundToDecimals(value, 4)}
                 onChange={(value) =>
