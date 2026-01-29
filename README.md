@@ -74,9 +74,9 @@ For complete step-by-step tutorials on setting up your first hardware, including
 
 | Example            | Vendor   | Hardware      | Description                             | How-To Video | Docs                                                          |
 | :----------------- | :------- | :------------ | :-------------------------------------- | :----------- | :------------------------------------------------------------ |
-| **Digital Input** | WAGO     | 750-402       | 4-Channel Digital Input                 | [ ]          | [Link](./docs/developer-docs/minimal-example-wago750-402.md) |
+| **Digital Input** | WAGO     | 750-402       | 4-Channel Digital Input                 | [ ]          | [Docs](./docs/developer-docs/minimal-example-wago750-402.md) |
 | **Digital Output** | WAGO     | 750-753       | 8-Channel Digital Output                | [ ]          | -                                                             |
-| **Analog Input** | WAGO     | 750-455       | 4-Channel Analog Input                  | [ ]          | [Link](./docs/developer-docs/minimal-example-wago-750-455.md)|
+| **Analog Input** | WAGO     | 750-455       | 4-Channel Analog Input                  | [ ]          | [Docs](./docs/developer-docs/minimal-example-wago-750-455.md)|
 | **Analog Output** | WAGO     | 750-553       | 4-Channel Analog Output                 | [ ]          | -                                                             |
 | **Serial Comms** | WAGO     | 750-652       | RS-485 Modbus Module                    | [ ]          | -                                                             |
 | **Stepper Drive** | WAGO     | 750-67x       | Stepper Controller                      | [ ]          | -                                                             |
