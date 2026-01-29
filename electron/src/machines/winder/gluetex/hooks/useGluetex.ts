@@ -1222,7 +1222,7 @@ export function useGluetex() {
           m.machine_identification_unique.machine_identification.vendor ===
             VENDOR_QITECH &&
           m.machine_identification_unique.machine_identification.machine ===
-            0x0008,
+            0x000b,
       ),
     [machines],
   );
