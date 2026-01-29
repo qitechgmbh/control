@@ -194,10 +194,6 @@ pub struct Gluetex {
     // addon tension arm (independent tension arm on Role 9)
     pub addon_tension_arm: TensionArm,
 
-    // addon voltage inputs (EL3062 analog inputs)
-    pub addon_voltage_input_1: AnalogInput,
-    pub addon_voltage_input_2: AnalogInput,
-
     // tension arm monitoring
     pub tension_arm_monitor_config: TensionArmMonitorConfig,
     pub tension_arm_monitor_triggered: bool,
