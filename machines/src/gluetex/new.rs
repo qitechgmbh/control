@@ -379,11 +379,11 @@ impl MachineNewTrait for Gluetex {
             let max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
 
             // PID-controlled temperature controllers (60W heaters via SSR)
-            // PID tuning: kp=0.10, ki=0.0, kd=0.015 (same as aquapath)
+            // PID tuning: kp=0.361, ki=0.0043, kd=7.59 (gluetex default)
             let temperature_controller_1 = TemperatureController::new(
-                0.10,
-                0.0,
-                0.015,
+                0.361,
+                0.0043,
+                7.59,
                 ThermodynamicTemperature::new::<degree_celsius>(150.0),
                 max_temperature,
                 temperature_1,
@@ -395,9 +395,9 @@ impl MachineNewTrait for Gluetex {
             );
 
             let temperature_controller_2 = TemperatureController::new(
-                0.10,
-                0.0,
-                0.015,
+                0.361,
+                0.0043,
+                7.59,
                 ThermodynamicTemperature::new::<degree_celsius>(150.0),
                 max_temperature,
                 temperature_2,
@@ -409,9 +409,9 @@ impl MachineNewTrait for Gluetex {
             );
 
             let temperature_controller_3 = TemperatureController::new(
-                0.10,
-                0.0,
-                0.015,
+                0.361,
+                0.0043,
+                7.59,
                 ThermodynamicTemperature::new::<degree_celsius>(150.0),
                 max_temperature,
                 temperature_3,
@@ -423,9 +423,9 @@ impl MachineNewTrait for Gluetex {
             );
 
             let temperature_controller_4 = TemperatureController::new(
-                0.10,
-                0.0,
-                0.015,
+                0.361,
+                0.0043,
+                7.59,
                 ThermodynamicTemperature::new::<degree_celsius>(150.0),
                 max_temperature,
                 temperature_4,
@@ -437,9 +437,9 @@ impl MachineNewTrait for Gluetex {
             );
 
             let temperature_controller_5 = TemperatureController::new(
-                0.10,
-                0.0,
-                0.015,
+                0.361,
+                0.0043,
+                7.59,
                 ThermodynamicTemperature::new::<degree_celsius>(150.0),
                 max_temperature,
                 temperature_5,
@@ -451,9 +451,9 @@ impl MachineNewTrait for Gluetex {
             );
 
             let temperature_controller_6 = TemperatureController::new(
-                0.10,
-                0.0,
-                0.015,
+                0.361,
+                0.0043,
+                7.59,
                 ThermodynamicTemperature::new::<degree_celsius>(150.0),
                 max_temperature,
                 temperature_6,
