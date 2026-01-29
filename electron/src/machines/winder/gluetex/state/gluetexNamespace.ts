@@ -215,6 +215,8 @@ export const spoolSpeedControllerStateSchema = z.object({
 export const heatingStateSchema = z.object({
   target_temperature: z.number(),
   wiring_error: z.boolean(),
+  autotuning_active: z.boolean(),
+  autotuning_progress: z.number(),
 });
 
 /**
@@ -330,8 +332,22 @@ export const stateEventDataSchema = z.object({
 export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
 export const stateEventSchema = eventSchema(stateEventDataSchema);
 
+export const heatingAutoTuneCompleteEventDataSchema = z.object({
+  zone: z.string(),
+  kp: z.number(),
+  ki: z.number(),
+  kd: z.number(),
+});
+
+export const heatingAutoTuneCompleteEventSchema = eventSchema(
+  heatingAutoTuneCompleteEventDataSchema,
+);
+
 export type StateEvent = z.infer<typeof stateEventSchema>;
 export type StateEventData = z.infer<typeof stateEventDataSchema>;
+export type HeatingAutoTuneCompleteEvent = z.infer<
+  typeof heatingAutoTuneCompleteEventSchema
+>;
 
 // ========== Addon Types (Local State Only) ==========
 
@@ -936,6 +952,19 @@ export function gluetexMessageHandler(
           );
 
           return newState;
+        });
+      } else if (eventName === "HeatingAutoTuneComplete") {
+        // Parse auto-tuning complete event
+        const autoTuneEvent =
+          heatingAutoTuneCompleteEventSchema.parse(event);
+        console.log("Auto-tuning complete:", autoTuneEvent.data);
+        
+        // Show success notification
+        import("@/components/Toast").then(({ toastSuccess }) => {
+          toastSuccess(
+            "PID Auto-Tuning Complete",
+            `Zone ${autoTuneEvent.data.zone}: Kp=${autoTuneEvent.data.kp.toFixed(3)}, Ki=${autoTuneEvent.data.ki.toFixed(4)}, Kd=${autoTuneEvent.data.kd.toFixed(4)}`,
+          );
         });
       } else {
         handleUnhandledEventError(eventName);

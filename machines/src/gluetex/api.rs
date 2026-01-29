@@ -45,6 +45,14 @@ pub struct HeatingPidSettings {
     pub zone: String,
 }
 
+#[derive(Serialize, Debug, Clone, BuildEvent)]
+pub struct HeatingAutoTuneCompleteEvent {
+    pub zone: String,
+    pub kp: f64,
+    pub ki: f64,
+    pub kd: f64,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum Mode {
     #[default]
@@ -126,6 +134,8 @@ pub enum Mutation {
     SetHeatingEnabled(bool),
     SetHeatingTargetTemperature(HeatingZone, f64),
     ConfigureHeatingPid(HeatingPidSettings),
+    StartHeatingAutoTune(HeatingZone, f64), // zone, target_temp
+    StopHeatingAutoTune(HeatingZone),
 
     // Mode
     SetMode(Mode),
@@ -419,6 +429,10 @@ pub struct HeatingState {
     pub target_temperature: f64,
     /// wiring error detected
     pub wiring_error: bool,
+    /// auto-tuning is active
+    pub autotuning_active: bool,
+    /// auto-tuning progress (0-100%)
+    pub autotuning_progress: f64,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -446,6 +460,7 @@ pub struct TensionArmMonitorState {
 pub enum GluetexEvents {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
+    HeatingAutoTuneComplete(Event<HeatingAutoTuneCompleteEvent>),
 }
 
 #[derive(Debug)]
@@ -470,6 +485,7 @@ impl CacheableEvents<Self> for GluetexEvents {
         match self {
             Self::LiveValues(event) => event.into(),
             Self::State(event) => event.into(),
+            Self::HeatingAutoTuneComplete(event) => event.into(),
         }
     }
 
@@ -478,6 +494,7 @@ impl CacheableEvents<Self> for GluetexEvents {
         match self {
             Self::LiveValues(_) => cache_first_and_last,
             Self::State(_) => cache_first_and_last,
+            Self::HeatingAutoTuneComplete(_) => cache_first_and_last,
         }
     }
 }
@@ -539,6 +556,10 @@ impl MachineApi for Gluetex {
                 self.set_target_temperature(temperature, zone)
             }
             Mutation::ConfigureHeatingPid(settings) => self.configure_heating_pid(settings),
+            Mutation::StartHeatingAutoTune(zone, target_temp) => {
+                self.start_heating_autotune(zone, target_temp)
+            }
+            Mutation::StopHeatingAutoTune(zone) => self.stop_heating_autotune(zone),
             Mutation::SetConnectedMachine(machine_identification_unique) => {
                 let main_sender = match &self.main_sender {
                     Some(sender) => sender,
