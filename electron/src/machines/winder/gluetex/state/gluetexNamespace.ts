@@ -924,13 +924,18 @@ export function gluetexMessageHandler(
 
           return newState;
         });
-      } else if (eventName === "HeatingAutoTuneComplete") {
+      } else if (
+        eventName === "HeatingAutoTuneComplete" ||
+        eventName === "HeatingAutoTuneCompleteEvent"
+      ) {
         // Parse auto-tuning complete event
         const autoTuneEvent =
           heatingAutoTuneCompleteEventSchema.parse(event);
         console.log("Auto-tuning complete:", autoTuneEvent.data);
         
-        // Show success notification
+        // Show success notification - force synchronous update for immediate visibility
+        store.setState((state) => state); // Trigger immediate render
+        
         import("@/components/Toast").then(({ toastSuccess }) => {
           toastSuccess(
             "PID Auto-Tuning Complete",
