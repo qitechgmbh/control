@@ -389,6 +389,8 @@ impl Gluetex {
                         .target_temperature
                         .get::<units::thermodynamic_temperature::degree_celsius>(),
                     wiring_error: self.temperature_controller_1.heating.wiring_error,
+                    autotuning_active: self.temperature_controller_1.is_autotuning(),
+                    autotuning_progress: self.temperature_controller_1.get_autotuning_progress(),
                 },
                 zone_2: api::HeatingState {
                     target_temperature: self
@@ -397,6 +399,8 @@ impl Gluetex {
                         .target_temperature
                         .get::<units::thermodynamic_temperature::degree_celsius>(),
                     wiring_error: self.temperature_controller_2.heating.wiring_error,
+                    autotuning_active: self.temperature_controller_2.is_autotuning(),
+                    autotuning_progress: self.temperature_controller_2.get_autotuning_progress(),
                 },
                 zone_3: api::HeatingState {
                     target_temperature: self
@@ -405,6 +409,8 @@ impl Gluetex {
                         .target_temperature
                         .get::<units::thermodynamic_temperature::degree_celsius>(),
                     wiring_error: self.temperature_controller_3.heating.wiring_error,
+                    autotuning_active: self.temperature_controller_3.is_autotuning(),
+                    autotuning_progress: self.temperature_controller_3.get_autotuning_progress(),
                 },
                 zone_4: api::HeatingState {
                     target_temperature: self
@@ -413,6 +419,8 @@ impl Gluetex {
                         .target_temperature
                         .get::<units::thermodynamic_temperature::degree_celsius>(),
                     wiring_error: self.temperature_controller_4.heating.wiring_error,
+                    autotuning_active: self.temperature_controller_4.is_autotuning(),
+                    autotuning_progress: self.temperature_controller_4.get_autotuning_progress(),
                 },
                 zone_5: api::HeatingState {
                     target_temperature: self
@@ -421,6 +429,8 @@ impl Gluetex {
                         .target_temperature
                         .get::<units::thermodynamic_temperature::degree_celsius>(),
                     wiring_error: self.temperature_controller_5.heating.wiring_error,
+                    autotuning_active: self.temperature_controller_5.is_autotuning(),
+                    autotuning_progress: self.temperature_controller_5.get_autotuning_progress(),
                 },
                 zone_6: api::HeatingState {
                     target_temperature: self
@@ -429,6 +439,8 @@ impl Gluetex {
                         .target_temperature
                         .get::<units::thermodynamic_temperature::degree_celsius>(),
                     wiring_error: self.temperature_controller_6.heating.wiring_error,
+                    autotuning_active: self.temperature_controller_6.is_autotuning(),
+                    autotuning_progress: self.temperature_controller_6.get_autotuning_progress(),
                 },
             },
             heating_pid_settings: api::HeatingPidStates {
@@ -767,6 +779,113 @@ impl Gluetex {
             _ => tracing::warn!("Unknown heating zone: {}", settings.zone),
         }
         self.emit_state();
+    }
+
+    /// Start PID auto-tuning for a heating zone
+    pub fn start_heating_autotune(&mut self, zone: api::HeatingZone, target_temp: f64) {
+        use units::thermodynamic_temperature::degree_celsius;
+        let target = ThermodynamicTemperature::new::<degree_celsius>(target_temp);
+        
+        match zone {
+            api::HeatingZone::Zone1 => {
+                self.temperature_controller_1.start_autotuning(target);
+                tracing::info!("Started auto-tuning for zone 1 with target {}°C", target_temp);
+            }
+            api::HeatingZone::Zone2 => {
+                self.temperature_controller_2.start_autotuning(target);
+                tracing::info!("Started auto-tuning for zone 2 with target {}°C", target_temp);
+            }
+            api::HeatingZone::Zone3 => {
+                self.temperature_controller_3.start_autotuning(target);
+                tracing::info!("Started auto-tuning for zone 3 with target {}°C", target_temp);
+            }
+            api::HeatingZone::Zone4 => {
+                self.temperature_controller_4.start_autotuning(target);
+                tracing::info!("Started auto-tuning for zone 4 with target {}°C", target_temp);
+            }
+            api::HeatingZone::Zone5 => {
+                self.temperature_controller_5.start_autotuning(target);
+                tracing::info!("Started auto-tuning for zone 5 with target {}°C", target_temp);
+            }
+            api::HeatingZone::Zone6 => {
+                self.temperature_controller_6.start_autotuning(target);
+                tracing::info!("Started auto-tuning for zone 6 with target {}°C", target_temp);
+            }
+        }
+        self.emit_state();
+    }
+
+    /// Stop PID auto-tuning for a heating zone
+    pub fn stop_heating_autotune(&mut self, zone: api::HeatingZone) {
+        match zone {
+            api::HeatingZone::Zone1 => {
+                self.temperature_controller_1.stop_autotuning();
+                tracing::info!("Stopped auto-tuning for zone 1");
+            }
+            api::HeatingZone::Zone2 => {
+                self.temperature_controller_2.stop_autotuning();
+                tracing::info!("Stopped auto-tuning for zone 2");
+            }
+            api::HeatingZone::Zone3 => {
+                self.temperature_controller_3.stop_autotuning();
+                tracing::info!("Stopped auto-tuning for zone 3");
+            }
+            api::HeatingZone::Zone4 => {
+                self.temperature_controller_4.stop_autotuning();
+                tracing::info!("Stopped auto-tuning for zone 4");
+            }
+            api::HeatingZone::Zone5 => {
+                self.temperature_controller_5.stop_autotuning();
+                tracing::info!("Stopped auto-tuning for zone 5");
+            }
+            api::HeatingZone::Zone6 => {
+                self.temperature_controller_6.stop_autotuning();
+                tracing::info!("Stopped auto-tuning for zone 6");
+            }
+        }
+        self.emit_state();
+    }
+
+    /// Check for completed auto-tuning and emit results
+    pub fn check_autotuning_results(&mut self) {
+        // Check each zone for completed auto-tuning
+        if let Some((kp, ki, kd)) = self.temperature_controller_1.get_autotuning_result() {
+            tracing::info!("Auto-tuning completed for zone 1: kp={}, ki={}, kd={}", kp, ki, kd);
+            self.emit_autotuning_complete("zone_1", kp, ki, kd);
+        }
+        if let Some((kp, ki, kd)) = self.temperature_controller_2.get_autotuning_result() {
+            tracing::info!("Auto-tuning completed for zone 2: kp={}, ki={}, kd={}", kp, ki, kd);
+            self.emit_autotuning_complete("zone_2", kp, ki, kd);
+        }
+        if let Some((kp, ki, kd)) = self.temperature_controller_3.get_autotuning_result() {
+            tracing::info!("Auto-tuning completed for zone 3: kp={}, ki={}, kd={}", kp, ki, kd);
+            self.emit_autotuning_complete("zone_3", kp, ki, kd);
+        }
+        if let Some((kp, ki, kd)) = self.temperature_controller_4.get_autotuning_result() {
+            tracing::info!("Auto-tuning completed for zone 4: kp={}, ki={}, kd={}", kp, ki, kd);
+            self.emit_autotuning_complete("zone_4", kp, ki, kd);
+        }
+        if let Some((kp, ki, kd)) = self.temperature_controller_5.get_autotuning_result() {
+            tracing::info!("Auto-tuning completed for zone 5: kp={}, ki={}, kd={}", kp, ki, kd);
+            self.emit_autotuning_complete("zone_5", kp, ki, kd);
+        }
+        if let Some((kp, ki, kd)) = self.temperature_controller_6.get_autotuning_result() {
+            tracing::info!("Auto-tuning completed for zone 6: kp={}, ki={}, kd={}", kp, ki, kd);
+            self.emit_autotuning_complete("zone_6", kp, ki, kd);
+        }
+    }
+
+    /// Emit auto-tuning completion event
+    fn emit_autotuning_complete(&mut self, zone: &str, kp: f64, ki: f64, kd: f64) {
+        let event = api::HeatingAutoTuneCompleteEvent {
+            zone: zone.to_string(),
+            kp,
+            ki,
+            kd,
+        }
+        .build();
+        
+        self.namespace.emit(api::GluetexEvents::HeatingAutoTuneComplete(event));
     }
 
     /// Set radius learning rate for adaptive mode

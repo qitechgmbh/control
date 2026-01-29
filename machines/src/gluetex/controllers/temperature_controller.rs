@@ -1,5 +1,6 @@
 use crate::gluetex::Heating;
 use control_core::controllers::pid::PidController;
+use control_core::controllers::pid_autotuner::{AutoTuneConfig, PidAutoTuner};
 use ethercat_hal::io::{digital_output::DigitalOutput, temperature_input::TemperatureInput};
 use std::time::{Duration, Instant};
 use units::f64::*;
@@ -19,6 +20,10 @@ pub struct TemperatureController {
     temperature_pid_output: f64,
     heating_element_wattage: f64,
     max_clamp: f64,
+    
+    // Auto-tuning support
+    pub autotuner: Option<PidAutoTuner>,
+    autotuning_active: bool,
 }
 
 impl TemperatureController {
@@ -55,6 +60,8 @@ impl TemperatureController {
             temperature_pid_output: 0.0,
             heating_element_wattage,
             max_clamp,
+            autotuner: None,
+            autotuning_active: false,
         }
     }
 
@@ -80,6 +87,69 @@ impl TemperatureController {
         self.temperature_sensor.get_temperature()
     }
 
+    /// Start PID auto-tuning for this heater
+    pub fn start_autotuning(&mut self, target_temp: ThermodynamicTemperature) {
+        let config = AutoTuneConfig {
+            target: target_temp.get::<degree_celsius>(),
+            relay_amplitude: 0.4, // 40% output swing
+            min_oscillations: 3,
+            max_duration_secs: 600.0, // 10 minutes
+            settle_time_secs: 15.0,   // 15 seconds to settle
+        };
+        
+        let mut tuner = PidAutoTuner::new(config);
+        tuner.start(Instant::now());
+        
+        self.autotuner = Some(tuner);
+        self.autotuning_active = true;
+        self.set_target_temperature(target_temp);
+        self.allow_heating();
+    }
+
+    /// Stop auto-tuning
+    pub fn stop_autotuning(&mut self) {
+        if let Some(tuner) = &mut self.autotuner {
+            tuner.stop();
+        }
+        self.autotuning_active = false;
+    }
+
+    /// Check if auto-tuning is active
+    pub fn is_autotuning(&self) -> bool {
+        self.autotuning_active
+    }
+
+    /// Get auto-tuning progress (0-100%)
+    pub fn get_autotuning_progress(&self) -> f64 {
+        if let Some(tuner) = &self.autotuner {
+            tuner.get_progress_percent()
+        } else {
+            0.0
+        }
+    }
+
+    /// Check if auto-tuning completed successfully and get results
+    pub fn get_autotuning_result(&mut self) -> Option<(f64, f64, f64)> {
+        if let Some(tuner) = &mut self.autotuner {
+            if tuner.is_completed() {
+                if let Some(result) = &tuner.result {
+                    let kp = result.kp;
+                    let ki = result.ki;
+                    let kd = result.kd;
+                    
+                    // Apply the tuned parameters
+                    self.pid.configure(ki, kp, kd);
+                    self.autotuning_active = false;
+                    
+                    return Some((kp, ki, kd));
+                }
+            } else if tuner.is_failed() {
+                self.autotuning_active = false;
+            }
+        }
+        None
+    }
+
     pub fn update(&mut self, now: Instant) {
         self.temperature_pid_output = 0.0;
 
@@ -98,6 +168,40 @@ impl TemperatureController {
             return;
         }
 
+        // Check if auto-tuning is active
+        if self.autotuning_active {
+            if let Some(tuner) = &mut self.autotuner {
+                let current_temp = temperature_celsius.get::<degree_celsius>();
+                let (duty_cycle, completed) = tuner.update(current_temp, now);
+                
+                if completed {
+                    // Auto-tuning finished (either success or failure)
+                    // The result will be checked by get_autotuning_result()
+                    self.autotuning_active = false;
+                }
+                
+                // Use the auto-tuner's output
+                self.temperature_pid_output = duty_cycle.clamp(0.0, self.max_clamp);
+                
+                // PWM logic
+                let elapsed = now.duration_since(self.window_start);
+                if elapsed >= self.pwm_period {
+                    self.window_start = now;
+                }
+
+                let on_time = self.pwm_period.mul_f64(self.temperature_pid_output);
+                if elapsed < on_time {
+                    self.ssr_output.set(true);
+                    self.heating.heating = true;
+                } else {
+                    self.ssr_output.set(false);
+                    self.heating.heating = false;
+                }
+                return;
+            }
+        }
+
+        // Normal PID control
         if self.heating_allowed {
             let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
                 - self.heating.temperature.get::<degree_celsius>();

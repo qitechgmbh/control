@@ -285,6 +285,28 @@ export function useGluetex() {
     }),
   );
 
+  const { request: requestStartHeatingAutoTune } = useMachineMutation(
+    z.object({
+      StartHeatingAutoTune: z.tuple([
+        z.enum(["Zone1", "Zone2", "Zone3", "Zone4", "Zone5", "Zone6"]),
+        z.number(),
+      ]),
+    }),
+  );
+
+  const { request: requestStopHeatingAutoTune } = useMachineMutation(
+    z.object({
+      StopHeatingAutoTune: z.enum([
+        "Zone1",
+        "Zone2",
+        "Zone3",
+        "Zone4",
+        "Zone5",
+        "Zone6",
+      ]),
+    }),
+  );
+
   const { request: requestSetHeatingEnabled } = useMachineMutation(
     z.object({ SetHeatingEnabled: z.boolean() }),
   );
@@ -1065,6 +1087,53 @@ export function useGluetex() {
     );
   };
 
+  const startHeatingAutoTune = (
+    zoneNumber: number,
+    targetTemperature: number,
+  ) => {
+    const zoneMap = {
+      1: "Zone1",
+      2: "Zone2",
+      3: "Zone3",
+      4: "Zone4",
+      5: "Zone5",
+      6: "Zone6",
+    } as const;
+    const zone = zoneMap[zoneNumber as keyof typeof zoneMap];
+
+    if (!zone) {
+      toastError("Invalid Zone", `Zone number ${zoneNumber} is invalid`);
+      return;
+    }
+
+    requestStartHeatingAutoTune({
+      machine_identification_unique: machineIdentification,
+      data: { StartHeatingAutoTune: [zone, targetTemperature] },
+    });
+  };
+
+  const stopHeatingAutoTune = (zoneNumber: number) => {
+    const zoneMap = {
+      1: "Zone1",
+      2: "Zone2",
+      3: "Zone3",
+      4: "Zone4",
+      5: "Zone5",
+      6: "Zone6",
+    } as const;
+    const zone = zoneMap[zoneNumber as keyof typeof zoneMap];
+
+    if (!zone) {
+      toastError("Invalid Zone", `Zone number ${zoneNumber} is invalid`);
+      return;
+    }
+
+    requestStopHeatingAutoTune({
+      machine_identification_unique: machineIdentification,
+      data: { StopHeatingAutoTune: zone },
+    });
+  };
+
   const setHeatingZone1Temperature = (temperature: number) => {
     updateStateOptimistically(
       (current) => {
@@ -1262,6 +1331,8 @@ export function useGluetex() {
 
     // Heating action functions
     setHeatingPid,
+    startHeatingAutoTune,
+    stopHeatingAutoTune,
     setHeatingZone1Temperature,
     setHeatingZone2Temperature,
     setHeatingZone3Temperature,

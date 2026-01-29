@@ -40,6 +40,9 @@ impl MachineAct for Gluetex {
         self.temperature_controller_5.update(now);
         self.temperature_controller_6.update(now);
 
+        // Check for completed auto-tuning and emit results
+        self.check_autotuning_results();
+
         if self.traverse_controller.did_change_state() {
             self.emit_state();
         }
