@@ -89,7 +89,7 @@ For complete step-by-step tutorials on setting up your first hardware, including
 | Machine Name      | Description                 | Machine ID | Implemented | Video                                                           | Docs                            |
 | :---------------- | :-------------------------- | :--------- | :---------- | :-------------------------------------------------------------- | :------------------------------ |
 | Winder V1         | Winding Filaments & Similar | 1          | Legacy      | [Video](https://youtu.be/4aE4cFhioKA?si=Xdj_LVnFrAYWnLm6)       | -                               |
-| Winder V2         | Winding Filaments & Similar | 2          | Yes         | [Video](https://youtu.be/f2kzh6kpQWE?si=HEYcLOaC9gWSp2Wo)       | [Docs](./docs/machines/winder-1.md)                              |
+| Winder V2         | Winding Filaments & Similar | 2          | Yes         | [Video](https://youtu.be/f2kzh6kpQWE?si=HEYcLOaC9gWSp2Wo)       | -                               |
 | XL Winder V1      | Large Scale Winder          | 3          | Yes         | [Video](https://youtu.be/ynI6ioWIQQY?si=4EDVKXbgIqrvGGtY)       | -                               |
 | Buffer V1         | Filament buffering system   | 4          | In Progress | [Video](https://youtu.be/VR5mEdZDPA0?si=eip7dQXU4zaXK7Ev)       | -                               |
 | Extruder V1       | Single Screw Extruder       | 5          | Legacy      | [Video](https://youtu.be/gchoG-yGczI?si=bEM4daf5eOVaU5_2)       | -                               |
