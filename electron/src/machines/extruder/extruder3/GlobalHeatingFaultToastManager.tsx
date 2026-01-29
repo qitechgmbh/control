@@ -101,7 +101,7 @@ function HeatingFaultToastWatcher({
 
           <p className="text-base leading-snug text-red-50">
             The <strong>{zoneName}</strong> heating zone did not increase in
-            temperature by at least 5°C within 30 seconds. The extruder has been
+            temperature by at least 5°C within 60 seconds. The extruder has been
             automatically set to standby mode.
           </p>
         </div>,

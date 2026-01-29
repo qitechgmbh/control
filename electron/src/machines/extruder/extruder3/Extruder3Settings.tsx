@@ -78,7 +78,7 @@ export function Extruder3SettingsPage() {
           />
           <p className="text-sm text-muted-foreground mt-1">
             When enabled, monitors heating progress and automatically sets to standby if
-            temperature doesn't increase by at least 5°C within 30 seconds.
+            temperature doesn't increase by at least 5°C within 60 seconds.
           </p>
         </Label>
         <Label label="Show Advanced PID Settings">
