@@ -50,8 +50,6 @@ export const liveValuesEventDataSchema = z.object({
   slave_puller_speed: z.number(),
   slave_tension_arm_angle: z.number(),
   addon_tension_arm_angle: z.number(),
-  addon_voltage_1: z.number(),
-  addon_voltage_2: z.number(),
 });
 
 /**
@@ -491,8 +489,6 @@ export type GluetexNamespaceStore = {
   slavePullerSpeed: TimeSeries;
   slaveTensionArmAngle: TimeSeries;
   addonTensionArmAngle: TimeSeries;
-  addonVoltage1: TimeSeries;
-  addonVoltage2: TimeSeries;
 };
 
 // Constants for time durations
@@ -550,10 +546,6 @@ const {
   initialTimeSeries: addonTensionArmAngle,
   insert: addAddonTensionArmAngle,
 } = createTimeSeries();
-const { initialTimeSeries: addonVoltage1, insert: addAddonVoltage1 } =
-  createTimeSeries();
-const { initialTimeSeries: addonVoltage2, insert: addAddonVoltage2 } =
-  createTimeSeries();
 
 // Default addon state (local-only fields)
 // Note: slave_puller_state is no longer needed here as it comes from backend
@@ -619,8 +611,6 @@ export const createGluetexNamespaceStore =
         heater5Power,
         heater6Power,
 
-        addonVoltage1,
-        addonVoltage2,
         // Time series data for addons
         slavePullerSpeed,
         slaveTensionArmAngle,
@@ -930,25 +920,6 @@ export function gluetexMessageHandler(
           newState.addonTensionArmAngle = addAddonTensionArmAngle(
             state.addonTensionArmAngle,
             addonTensionArmValue,
-          );
-
-          // Add voltage readings
-          const addonVoltage1Value: TimeSeriesValue = {
-            value: liveValuesEvent.data.addon_voltage_1,
-            timestamp,
-          };
-          newState.addonVoltage1 = addAddonVoltage1(
-            state.addonVoltage1,
-            addonVoltage1Value,
-          );
-
-          const addonVoltage2Value: TimeSeriesValue = {
-            value: liveValuesEvent.data.addon_voltage_2,
-            timestamp,
-          };
-          newState.addonVoltage2 = addAddonVoltage2(
-            state.addonVoltage2,
-            addonVoltage2Value,
           );
 
           return newState;

@@ -21,11 +21,6 @@ mod gluetex_imports {
     pub use ethercat_hal::devices::el2008::{
         EL2008, EL2008_IDENTITY_A, EL2008_IDENTITY_B, EL2008Port,
     };
-    pub use ethercat_hal::devices::el3062_0030::EL3062_0030Configuration;
-    pub use ethercat_hal::devices::el3062_0030::EL3062_0030PredefinedPdoAssignment;
-    pub use ethercat_hal::devices::el3062_0030::{
-        EL3062_0030, EL3062_0030_IDENTITY_A, EL3062_0030Port,
-    };
     pub use ethercat_hal::devices::el3204::{
         EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port,
     };
@@ -372,31 +367,6 @@ impl MachineNewTrait for Gluetex {
                 device.0
             };
 
-            // Role 12: Analog Input EL3062
-            let el3062 = {
-                let device = get_ethercat_device::<EL3062_0030>(
-                    hardware,
-                    params,
-                    12,
-                    vec![EL3062_0030_IDENTITY_A],
-                )
-                .await?;
-
-                let el3062_config = EL3062_0030Configuration {
-                    pdo_assignment: EL3062_0030PredefinedPdoAssignment::Standard,
-                    ..Default::default()
-                };
-
-                device
-                    .0
-                    .write()
-                    .await
-                    .write_config(&device.1, &el3062_config)
-                    .await?;
-
-                device.0
-            };
-
             // Digital outputs for SSR control (24V to external SSRs for 60W heaters)
             let heater_ssr_1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
             let heater_ssr_2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
@@ -555,8 +525,6 @@ impl MachineNewTrait for Gluetex {
                     EL7031_0030AnalogInputPort::AI1,
                 )),
                 laser: DigitalOutput::new(el2002, EL2002Port::DO1),
-                addon_voltage_input_1: AnalogInput::new(el3062.clone(), EL3062_0030Port::AI1),
-                addon_voltage_input_2: AnalogInput::new(el3062, EL3062_0030Port::AI2),
                 namespace: GluetexNamespace {
                     namespace: params.namespace.clone(),
                 },
