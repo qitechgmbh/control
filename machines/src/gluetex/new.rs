@@ -532,6 +532,7 @@ impl MachineNewTrait for Gluetex {
                 spool_step_converter: AngularStepConverter::new(200),
                 spool_speed_controller: SpoolSpeedController::new(),
                 last_measurement_emit: Instant::now(),
+                last_state_emit: Instant::now(),
                 spool_mode: mode.clone().into(),
                 traverse_mode: mode.clone().into(),
                 puller_mode: mode.clone().into(),
