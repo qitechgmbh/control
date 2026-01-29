@@ -18,6 +18,14 @@ import {
 
 export function GluetexSettingPage() {
   const [xlMode, setXlMode] = useState(getGluetexXLMode());
+  const [autoTuneTargetTemps, setAutoTuneTargetTemps] = useState({
+    zone_1: 150,
+    zone_2: 150,
+    zone_3: 150,
+    zone_4: 150,
+    zone_5: 150,
+    zone_6: 150,
+  });
 
   const {
     state,
@@ -497,12 +505,27 @@ export function GluetexSettingPage() {
               </div>
             )}
             {!state?.heating_states?.zone_1?.autotuning_active && (
-              <button
-                onClick={() => startHeatingAutoTune(1, 150)}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-              >
-                Start Auto-Tuning (150°C)
-              </button>
+              <div className="flex flex-row gap-2 items-center">
+                <Label label="Target Temperature (°C)">
+                  <EditValue
+                    value={autoTuneTargetTemps.zone_1}
+                    title="Target"
+                    unit="°C"
+                    step={5}
+                    min={50}
+                    max={250}
+                    defaultValue={150}
+                    renderValue={(value) => value.toFixed(0)}
+                    onChange={(value) => setAutoTuneTargetTemps({...autoTuneTargetTemps, zone_1: value})}
+                  />
+                </Label>
+                <button
+                  onClick={() => startHeatingAutoTune(1, autoTuneTargetTemps.zone_1)}
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
+                >
+                  Start PID Tuning
+                </button>
+              </div>
             )}
             <div className="flex flex-row flex-wrap gap-4">
             <Label label="Proportional Gain (Kp)">
@@ -581,7 +604,27 @@ export function GluetexSettingPage() {
               </div>
             )}
             {!state?.heating_states?.zone_2?.autotuning_active && (
-              <button onClick={() => startHeatingAutoTune(2, 150)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Start Auto-Tuning (150°C)</button>
+              <div className="flex flex-row gap-2 items-center">
+                <Label label="Target Temperature (°C)">
+                  <EditValue
+                    value={autoTuneTargetTemps.zone_2}
+                    title="Target"
+                    unit="°C"
+                    step={5}
+                    min={50}
+                    max={250}
+                    defaultValue={150}
+                    renderValue={(value) => value.toFixed(0)}
+                    onChange={(value) => setAutoTuneTargetTemps({...autoTuneTargetTemps, zone_2: value})}
+                  />
+                </Label>
+                <button
+                  onClick={() => startHeatingAutoTune(2, autoTuneTargetTemps.zone_2)}
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
+                >
+                  Start PID Tuning
+                </button>
+              </div>
             )}
             <div className="flex flex-row flex-wrap gap-4">
             <Label label="Proportional Gain (Kp)">
@@ -660,7 +703,27 @@ export function GluetexSettingPage() {
               </div>
             )}
             {!state?.heating_states?.zone_3?.autotuning_active && (
-              <button onClick={() => startHeatingAutoTune(3, 150)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Start Auto-Tuning (150°C)</button>
+              <div className="flex flex-row gap-2 items-center">
+                <Label label="Target Temperature (°C)">
+                  <EditValue
+                    value={autoTuneTargetTemps.zone_3}
+                    title="Target"
+                    unit="°C"
+                    step={5}
+                    min={50}
+                    max={250}
+                    defaultValue={150}
+                    renderValue={(value) => value.toFixed(0)}
+                    onChange={(value) => setAutoTuneTargetTemps({...autoTuneTargetTemps, zone_3: value})}
+                  />
+                </Label>
+                <button
+                  onClick={() => startHeatingAutoTune(3, autoTuneTargetTemps.zone_3)}
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
+                >
+                  Start PID Tuning
+                </button>
+              </div>
             )}
             <div className="flex flex-row flex-wrap gap-4">
             <Label label="Proportional Gain (Kp)">
@@ -739,7 +802,27 @@ export function GluetexSettingPage() {
               </div>
             )}
             {!state?.heating_states?.zone_4?.autotuning_active && (
-              <button onClick={() => startHeatingAutoTune(4, 150)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Start Auto-Tuning (150°C)</button>
+              <div className="flex flex-row gap-2 items-center">
+                <Label label="Target Temperature (°C)">
+                  <EditValue
+                    value={autoTuneTargetTemps.zone_4}
+                    title="Target"
+                    unit="°C"
+                    step={5}
+                    min={50}
+                    max={250}
+                    defaultValue={150}
+                    renderValue={(value) => value.toFixed(0)}
+                    onChange={(value) => setAutoTuneTargetTemps({...autoTuneTargetTemps, zone_4: value})}
+                  />
+                </Label>
+                <button
+                  onClick={() => startHeatingAutoTune(4, autoTuneTargetTemps.zone_4)}
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
+                >
+                  Start PID Tuning
+                </button>
+              </div>
             )}
             <div className="flex flex-row flex-wrap gap-4">
             <Label label="Proportional Gain (Kp)">
@@ -818,7 +901,27 @@ export function GluetexSettingPage() {
               </div>
             )}
             {!state?.heating_states?.zone_5?.autotuning_active && (
-              <button onClick={() => startHeatingAutoTune(5, 150)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Start Auto-Tuning (150°C)</button>
+              <div className="flex flex-row gap-2 items-center">
+                <Label label="Target Temperature (°C)">
+                  <EditValue
+                    value={autoTuneTargetTemps.zone_5}
+                    title="Target"
+                    unit="°C"
+                    step={5}
+                    min={50}
+                    max={250}
+                    defaultValue={150}
+                    renderValue={(value) => value.toFixed(0)}
+                    onChange={(value) => setAutoTuneTargetTemps({...autoTuneTargetTemps, zone_5: value})}
+                  />
+                </Label>
+                <button
+                  onClick={() => startHeatingAutoTune(5, autoTuneTargetTemps.zone_5)}
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
+                >
+                  Start PID Tuning
+                </button>
+              </div>
             )}
             <div className="flex flex-row flex-wrap gap-4">
             <Label label="Proportional Gain (Kp)">
@@ -897,7 +1000,27 @@ export function GluetexSettingPage() {
               </div>
             )}
             {!state?.heating_states?.zone_6?.autotuning_active && (
-              <button onClick={() => startHeatingAutoTune(6, 150)} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Start Auto-Tuning (150°C)</button>
+              <div className="flex flex-row gap-2 items-center">
+                <Label label="Target Temperature (°C)">
+                  <EditValue
+                    value={autoTuneTargetTemps.zone_6}
+                    title="Target"
+                    unit="°C"
+                    step={5}
+                    min={50}
+                    max={250}
+                    defaultValue={150}
+                    renderValue={(value) => value.toFixed(0)}
+                    onChange={(value) => setAutoTuneTargetTemps({...autoTuneTargetTemps, zone_6: value})}
+                  />
+                </Label>
+                <button
+                  onClick={() => startHeatingAutoTune(6, autoTuneTargetTemps.zone_6)}
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
+                >
+                  Start PID Tuning
+                </button>
+              </div>
             )}
             <div className="flex flex-row flex-wrap gap-4">
             <Label label="Proportional Gain (Kp)">

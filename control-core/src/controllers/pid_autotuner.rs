@@ -11,9 +11,8 @@ pub struct PidAutoTuner {
     oscillation_data: Vec<OscillationPoint>,
     start_time: Option<Instant>,
     
-    // Relay parameters
-    relay_output_low: f64,
-    relay_output_high: f64,
+    // Relay state tracking
+    last_relay_high: bool,
     
     // Results
     pub result: Option<AutoTuneResult>,
@@ -22,7 +21,6 @@ pub struct PidAutoTuner {
 #[derive(Debug, Clone, PartialEq)]
 pub enum AutoTuneState {
     Idle,
-    WaitingForSettle,
     MeasuringOscillations,
     Completed,
     Failed(String),
@@ -32,24 +30,21 @@ pub enum AutoTuneState {
 pub struct AutoTuneConfig {
     /// Target temperature/setpoint for the process
     pub target: f64,
-    /// Relay amplitude (output swing around midpoint)
-    pub relay_amplitude: f64,
+    /// Hysteresis for relay switching (oscillation will be ±hysteresis around target)
+    pub hysteresis: f64,
     /// Minimum number of oscillations to observe
     pub min_oscillations: usize,
     /// Maximum time to run auto-tuning before giving up
     pub max_duration_secs: f64,
-    /// Initial settle time before starting measurements (seconds)
-    pub settle_time_secs: f64,
 }
 
 impl Default for AutoTuneConfig {
     fn default() -> Self {
         Self {
             target: 150.0,
-            relay_amplitude: 0.5,
+            hysteresis: 5.0, // ±5°C oscillation around target
             min_oscillations: 3,
             max_duration_secs: 600.0, // 10 minutes
-            settle_time_secs: 10.0,
         }
     }
 }
@@ -72,25 +67,21 @@ pub struct AutoTuneResult {
 
 impl PidAutoTuner {
     pub fn new(config: AutoTuneConfig) -> Self {
-        let relay_mid = 0.5;
-        let relay_output_low = relay_mid - config.relay_amplitude / 2.0;
-        let relay_output_high = relay_mid + config.relay_amplitude / 2.0;
-        
         Self {
             state: AutoTuneState::Idle,
             config,
             oscillation_data: Vec::new(),
             start_time: None,
-            relay_output_low,
-            relay_output_high,
+            last_relay_high: false,
             result: None,
         }
     }
 
     pub fn start(&mut self, now: Instant) {
-        self.state = AutoTuneState::WaitingForSettle;
+        self.state = AutoTuneState::MeasuringOscillations;
         self.oscillation_data.clear();
         self.start_time = Some(now);
+        self.last_relay_high = true; // Start with heating ON
         self.result = None;
     }
 
@@ -100,10 +91,7 @@ impl PidAutoTuner {
     }
 
     pub fn is_active(&self) -> bool {
-        matches!(
-            self.state,
-            AutoTuneState::WaitingForSettle | AutoTuneState::MeasuringOscillations
-        )
+        matches!(self.state, AutoTuneState::MeasuringOscillations)
     }
 
     pub fn is_completed(&self) -> bool {
@@ -134,34 +122,32 @@ impl PidAutoTuner {
         }
 
         match self.state {
-            AutoTuneState::WaitingForSettle => {
-                // Wait for initial settle period
-                if elapsed > self.config.settle_time_secs {
-                    self.state = AutoTuneState::MeasuringOscillations;
-                    self.oscillation_data.clear();
-                }
-                // During settle, use midpoint output
-                (0.5, false)
-            }
             AutoTuneState::MeasuringOscillations => {
                 // Record measurement
-                let time_since_start = elapsed - self.config.settle_time_secs;
                 self.oscillation_data.push(OscillationPoint {
-                    time: time_since_start,
+                    time: elapsed,
                     value: current_value,
                     is_peak: false,
                 });
 
-                // Relay control: switch based on error
-                let error = self.config.target - current_value;
-                let output = if error > 0.0 {
-                    self.relay_output_high
+                // Simple bang-bang relay control (like Arduino implementation)
+                // Output is ON and input has risen to target -> turn OFF
+                // Output is OFF and input has dropped to target -> turn ON
+                let output = if self.last_relay_high && current_value > self.config.target {
+                    // Heating was ON, now above target: turn OFF
+                    self.last_relay_high = false;
+                    0.0
+                } else if !self.last_relay_high && current_value < self.config.target {
+                    // Heating was OFF, now below target: turn ON
+                    self.last_relay_high = true;
+                    1.0
                 } else {
-                    self.relay_output_low
+                    // Maintain current state
+                    if self.last_relay_high { 1.0 } else { 0.0 }
                 };
 
                 // Check if we have enough data to analyze
-                if self.oscillation_data.len() > 20 {
+                if self.oscillation_data.len() > 40 {
                     if let Some(result) = self.analyze_oscillations() {
                         self.result = Some(result);
                         self.state = AutoTuneState::Completed;
@@ -229,9 +215,9 @@ impl PidAutoTuner {
 
         // Calculate ultimate gain using relay method formula
         // Ku = 4d / (π * a)
-        // where d is relay amplitude and a is process oscillation amplitude
-        let relay_amp = self.relay_output_high - self.relay_output_low;
-        let ultimate_gain = (4.0 * relay_amp) / (std::f64::consts::PI * amplitude);
+        // where d is relay amplitude (0 to 1 in our case = 1.0) and a is process oscillation amplitude
+        let relay_amplitude = 1.0; // Full on/off relay
+        let ultimate_gain = (4.0 * relay_amplitude) / (std::f64::consts::PI * amplitude);
 
         // Apply Ziegler-Nichols PID tuning rules
         // Classic Ziegler-Nichols (can be aggressive, but good starting point)
@@ -251,16 +237,9 @@ impl PidAutoTuner {
     pub fn get_progress_percent(&self) -> f64 {
         match self.state {
             AutoTuneState::Idle => 0.0,
-            AutoTuneState::WaitingForSettle => {
-                if let Some(start_time) = self.start_time {
-                    let elapsed = Instant::now().duration_since(start_time).as_secs_f64();
-                    (elapsed / self.config.settle_time_secs * 30.0).min(30.0)
-                } else {
-                    0.0
-                }
-            }
             AutoTuneState::MeasuringOscillations => {
-                30.0 + (self.oscillation_data.len() as f64 / 100.0 * 70.0).min(70.0)
+                // Progress based on data collected (need ~100+ points for good analysis)
+                (self.oscillation_data.len() as f64 / 150.0 * 100.0).min(99.0)
             }
             AutoTuneState::Completed => 100.0,
             AutoTuneState::Failed(_) => 0.0,
