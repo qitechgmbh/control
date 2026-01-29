@@ -92,8 +92,6 @@ impl MachineApi for Pelletizer {
 
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> 
     {
-        tracing::error!("Received: {:?}", &request_body);
-        
         let mutation: Mutation = serde_json::from_value(request_body)?;
 
         match mutation 

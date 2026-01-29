@@ -10,7 +10,7 @@ import { Label } from "@/control/Label";
 
 import { usePellet1 as usePellet1 } from "./usePelletizer";
 
-import { SelectionGroupBoolean } from "@/control/SelectionGroup";
+import { SelectionGroup, SelectionGroupBoolean } from "@/control/SelectionGroup";
 import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 import { roundToDecimals } from "@/lib/decimal";
 import { Badge } from "@/components/ui/badge";
@@ -48,31 +48,62 @@ export function Pellet1ControlPage() {
     return (
         <Page>
             <ControlGrid columns={2}>
-                <ControlCard title="Motor Configuration">
-                    <SelectionGroupBoolean
-                        value={running}
-                        optionTrue={{ children: "On" }}
-                        optionFalse={{ children: "Off" }}
-                        onChange={(v) => {
-                            SetRunning(v)
+                <ControlCard title="Motor">
+                    <SelectionGroup<"Off" | "On">
+                        value={running ? "On" : "Off"}
+                        orientation="vertical"
+                        className="grid grid-cols-2 gap-2"
+                        options={{
+                        Off: {
+                            children: "Off",
+                            icon: "lu:CirclePause",
+                            isActiveClassName: "bg-red-600",
+                            className: "h-full",
+                        },
+                        On: {
+                            children: "On",
+                            icon: "lu:CirclePlay",
+                            isActiveClassName: "bg-green-600",
+                            className: "h-full",
+                        },
                         }}
+                        onChange={(v) => SetRunning(v == "On")}
                     />
 
                     <Label label="Speed">
-                        <EditValue
-                            title="Speed"
-                            value={frequency_target * 2}
-                            unit="%"
-                            step={0.5}
-                            min={0}
-                            max={100}
-                            renderValue={(value) => value.toFixed(1)}
-                            onChange={(val) => {
-                                SetFrequencyTarget(val / 2);
-                            }}
-                            defaultValue={5}
-                        />
+                        <div className="flex flex-row flex-wrap gap-4">
+                            <EditValue
+                                title="Speed"
+                                value={frequency_target / 14.3}
+                                unit="rpm"
+                                step={0.1}
+                                min={0}
+                                max={3.5}
+                                renderValue={(value) => value.toFixed(1)}
+                                onChange={(val) => {
+                                    SetFrequencyTarget(val * 14.3);
+                                }}
+                                defaultValue={2}
+                                
+                            />
+                        
+                            <EditValue
+                                h-full v-full
+                                title="Speed"
+                                value={frequency_target * 2}
+                                unit="%"
+                                step={0.5}
+                                min={0}
+                                max={100}
+                                renderValue={(value) => value.toFixed(1)}
+                                onChange={(val) => {
+                                    SetFrequencyTarget(val / 2);
+                                }}
+                                defaultValue={5}
+                            />
+                        </div>
                     </Label>
+                    
                 </ControlCard>
 
                 <ControlCard title="Inverter Status">

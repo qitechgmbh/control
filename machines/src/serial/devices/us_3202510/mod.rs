@@ -108,10 +108,7 @@ impl US3202510
         {
             match self.interface.dispatch_next_request()
             {
-                Ok(_) => 
-                {  
-                    tracing::error!("Success sending request: {:?}", self.interface);
-                },
+                Ok(_) => {},
                 Err(e) => 
                 { 
                     match e
@@ -163,8 +160,6 @@ impl US3202510
     {
         if self.config.running == running { return; }
         
-        tracing::error!("Setting running to: {}", running);
-        
         match running 
         {
             true => 
@@ -188,9 +183,6 @@ impl US3202510
         if self.config.direction != direction && self.config.running
         {
             let value: u16 = if direction { 1 } else { 3 };
-            
-            tracing::error!("Setting direction to: {}", value);
-            
             
             self.queue_request(Request::SetRotationState(value));
         }
@@ -222,8 +214,6 @@ impl US3202510
         {
             RequestResult::ReadHoldingRegisters(data) => 
             {
-                tracing::error!("BRANCH: HIT: {:?}", data);
-                
                 let frequency_target: u16 = 
                     *data.result.get(0)
                         .unwrap_or(&0);

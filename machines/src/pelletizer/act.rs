@@ -32,49 +32,35 @@ impl MachineAct for Pelletizer
 
             if let Some(value) = self.mutation_request.running.take()
             {
-                tracing::warn!("Setting running to: {}", value);
-
                 inverter.set_running(value);
                 mutated = true;
             }
 
             if let Some(value) = self.mutation_request.direction.take()
             {
-                tracing::warn!("Setting direction to: {}", value);
-
                 inverter.set_direction(value);
                 mutated = true;
             }
 
             if let Some(value) = self.mutation_request.frequency.take() 
             {
-                tracing::warn!("Setting to: {}", value);
-
                 inverter.set_frequency_target((value * 10.0) as u16);
                 mutated = true;
             }
 
             if let Some(value) = self.mutation_request.accleration_level.take() 
             {
-                tracing::warn!("Setting to: {}", value);
-
                 inverter.set_acceleration_level(value);
-                
                 mutated = true;
             }
             
             if let Some(value) = self.mutation_request.decleration_level.take() 
             {
-                tracing::warn!("Setting to: {}", value);
-
                 inverter.set_deceleration_level(value);
-                
                 mutated = true;
             }
 
-            if should_emit {
-                inverter.refresh_status();
-            }
+            if should_emit { inverter.refresh_status(); }
             
             if mutated {  }
 

@@ -27,9 +27,7 @@ impl Pelletizer
         let inverter = smol::block_on(async {
             self.inverter.read().await
         });
-        
-        tracing::error!("EMIT STATE: {:?}", inverter.config);
-        
+
         StateEvent 
         {
             is_default_state: !self.emitted_default_state,
