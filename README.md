@@ -89,16 +89,16 @@ For complete step-by-step tutorials on setting up your first hardware, including
 | Machine Name      | Description                 | Machine ID | Implemented | Video                                                           | Docs                            |
 | :---------------- | :-------------------------- | :--------- | :---------- | :-------------------------------------------------------------- | :------------------------------ |
 | Winder V1         | Winding Filaments & Similar | 1          | Legacy      | [Video](https://youtu.be/4aE4cFhioKA?si=Xdj_LVnFrAYWnLm6)       | -                               |
-| Winder V2         | Winding Filaments & Similar | 2          | Yes         | [Video](https://youtu.be/f2kzh6kpQWE?si=HEYcLOaC9gWSp2Wo)       | -                               |
+| Winder V2         | Winding Filaments & Similar | 2          | Yes         | [Video](https://youtu.be/f2kzh6kpQWE?si=HEYcLOaC9gWSp2Wo)       | [Docs](./docs/machines/winder-1.md)                              |
 | XL Winder V1      | Large Scale Winder          | 3          | Yes         | [Video](https://youtu.be/ynI6ioWIQQY?si=4EDVKXbgIqrvGGtY)       | -                               |
 | Buffer V1         | Filament buffering system   | 4          | In Progress | [Video](https://youtu.be/VR5mEdZDPA0?si=eip7dQXU4zaXK7Ev)       | -                               |
 | Extruder V1       | Single Screw Extruder       | 5          | Legacy      | [Video](https://youtu.be/gchoG-yGczI?si=bEM4daf5eOVaU5_2)       | -                               |
-| Extruder V2       | Single Screw Extruder       | 6          | Yes         | [Video](https://youtu.be/mexRYGDNWa4?si=h7JBz_XKMwKLPenG)       |                                 |
-| Waterway V1       | Filament Water Cooling      | 7          | In Progress | [Video](https://youtu.be/_T5z1J8bl_k?si=uOC1hIQ1EAP0cHIF)       |                                 |
+| Extruder V2       | Single Screw Extruder       | 6          | Yes         | [Video](https://youtu.be/mexRYGDNWa4?si=h7JBz_XKMwKLPenG)       | -                               |
+| Waterway V1       | Filament Water Cooling      | 7          | In Progress | [Video](https://youtu.be/_T5z1J8bl_k?si=uOC1hIQ1EAP0cHIF)       | -                               |
 | Laser V1          | Diameter Measuring Laser    | 8          | Yes         | [Video](https://youtu.be/WDM34lj4afM?si=MZzUKkHCrzH4P0aA)       | [Docs](./docs/machines/laser-DRE.md)                             |
 | 2-Axis-Laser V1   | Dual Axis Laser             | 9          | Yes         | [Video](https://youtu.be/WDM34lj4afM?si=MZzUKkHCrzH4P0aA)       | -                               |
 | Mock              | Mock Machine for Testing    | 10         | Yes         |                                                                 | -                               |
-| Extruder V3       | Single Screw Extruder       | 11         | Yes         | [Video](https://youtu.be/ipHHuPzCvn4?si=hkZ1b93rVuwDxhFD)       |                                 |
+| Extruder V3       | Single Screw Extruder       | 11         | Yes         | [Video](https://youtu.be/ipHHuPzCvn4?si=hkZ1b93rVuwDxhFD)       | -                               |
 | Mini Schredder V1 | mini plastic crusher        | 12         | Legacy      | [Video](https://youtu.be/m8NplNqdu2Q?si=x6zjDktJtpbSMSmu)       | -                               |
 | Pro Schredder V1  | large plastic crusher       | 13         | Legacy      | [Video](https://youtu.be/pSaVMqp06pU?si=y61enutRpxKscBm4)       | -                               |
 | Dryer V1          | polymer dryer               | 14         | Reserved    | [Video](https://youtu.be/6hdmUUAdZp0?si=eKOW1WlgkqTpnfdS)       | -                               |
