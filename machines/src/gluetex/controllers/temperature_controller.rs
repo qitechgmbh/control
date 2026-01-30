@@ -92,7 +92,7 @@ impl TemperatureController {
         let config = AutoTuneConfig {
             tune_delta: 5.0,          // ±5°C oscillation around target (like Klipper)
             max_power: 1.0,           // Full power heating
-            max_duration_secs: 600.0, // 10 minutes timeout
+            max_duration_secs: 3600.0, // 1 hour timeout
         };
         
         let target_celsius = target_temp.get::<degree_celsius>();
