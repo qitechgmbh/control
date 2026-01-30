@@ -20,6 +20,12 @@ export function GluetexGraphsPage() {
     tensionArmAngle,
     pullerSpeed,
     spoolProgress,
+    temperature1,
+    temperature2,
+    temperature3,
+    temperature4,
+    temperature5,
+    temperature6,
   } = useGluetex();
 
   const syncHook = useGraphSync("gluetex-group");
@@ -64,6 +70,54 @@ export function GluetexGraphsPage() {
             newData={spoolProgress}
             unit="m"
             renderValue={(value) => roundToDecimals(value, 2)}
+          />
+
+          <TemperatureZone1Graph
+            syncHook={syncHook}
+            newData={temperature1}
+            targetTemperature={state?.heating_states?.zone_1?.target_temperature}
+            unit="C"
+            renderValue={(value) => roundToDecimals(value, 1)}
+          />
+
+          <TemperatureZone2Graph
+            syncHook={syncHook}
+            newData={temperature2}
+            targetTemperature={state?.heating_states?.zone_2?.target_temperature}
+            unit="C"
+            renderValue={(value) => roundToDecimals(value, 1)}
+          />
+
+          <TemperatureZone3Graph
+            syncHook={syncHook}
+            newData={temperature3}
+            targetTemperature={state?.heating_states?.zone_3?.target_temperature}
+            unit="C"
+            renderValue={(value) => roundToDecimals(value, 1)}
+          />
+
+          <TemperatureZone4Graph
+            syncHook={syncHook}
+            newData={temperature4}
+            targetTemperature={state?.heating_states?.zone_4?.target_temperature}
+            unit="C"
+            renderValue={(value) => roundToDecimals(value, 1)}
+          />
+
+          <TemperatureZone5Graph
+            syncHook={syncHook}
+            newData={temperature5}
+            targetTemperature={state?.heating_states?.zone_5?.target_temperature}
+            unit="C"
+            renderValue={(value) => roundToDecimals(value, 1)}
+          />
+
+          <TemperatureZone6Graph
+            syncHook={syncHook}
+            newData={temperature6}
+            targetTemperature={state?.heating_states?.zone_6?.target_temperature}
+            unit="C"
+            renderValue={(value) => roundToDecimals(value, 1)}
           />
         </div>
       </div>
@@ -288,3 +342,298 @@ export function PullerSpeedGraph({
     />
   );
 }
+
+export function TemperatureZone1Graph({
+  syncHook,
+  newData,
+  targetTemperature,
+  unit,
+  renderValue,
+}: {
+  syncHook: ReturnType<typeof useGraphSync>;
+  newData: TimeSeries | null;
+  targetTemperature?: number;
+  unit?: Unit;
+  renderValue?: (value: number) => string;
+}) {
+  const lines: GraphLine[] = [];
+
+  if (targetTemperature !== undefined) {
+    lines.push({
+      type: "target",
+      value: targetTemperature,
+      label: "Target Temperature",
+      color: "#ef4444",
+    });
+  }
+
+  const config: GraphConfig = {
+    title: "Temperature Zone 1",
+    icon: "lu:Thermometer",
+    colors: {
+      primary: "#ef4444",
+    },
+    exportFilename: "temperature_zone_1_data",
+  };
+
+  return (
+    <AutoSyncedBigGraph
+      syncHook={syncHook}
+      newData={{
+        newData,
+        color: "#ef4444",
+        lines,
+      }}
+      unit={unit}
+      renderValue={renderValue}
+      config={config}
+      graphId="temperature-zone-1"
+    />
+  );
+}
+
+export function TemperatureZone2Graph({
+  syncHook,
+  newData,
+  targetTemperature,
+  unit,
+  renderValue,
+}: {
+  syncHook: ReturnType<typeof useGraphSync>;
+  newData: TimeSeries | null;
+  targetTemperature?: number;
+  unit?: Unit;
+  renderValue?: (value: number) => string;
+}) {
+  const lines: GraphLine[] = [];
+
+  if (targetTemperature !== undefined) {
+    lines.push({
+      type: "target",
+      value: targetTemperature,
+      label: "Target Temperature",
+      color: "#f97316",
+    });
+  }
+
+  const config: GraphConfig = {
+    title: "Temperature Zone 2",
+    icon: "lu:Thermometer",
+    colors: {
+      primary: "#f97316",
+    },
+    exportFilename: "temperature_zone_2_data",
+  };
+
+  return (
+    <AutoSyncedBigGraph
+      syncHook={syncHook}
+      newData={{
+        newData,
+        color: "#f97316",
+        lines,
+      }}
+      unit={unit}
+      renderValue={renderValue}
+      config={config}
+      graphId="temperature-zone-2"
+    />
+  );
+}
+
+export function TemperatureZone3Graph({
+  syncHook,
+  newData,
+  targetTemperature,
+  unit,
+  renderValue,
+}: {
+  syncHook: ReturnType<typeof useGraphSync>;
+  newData: TimeSeries | null;
+  targetTemperature?: number;
+  unit?: Unit;
+  renderValue?: (value: number) => string;
+}) {
+  const lines: GraphLine[] = [];
+
+  if (targetTemperature !== undefined) {
+    lines.push({
+      type: "target",
+      value: targetTemperature,
+      label: "Target Temperature",
+      color: "#f59e0b",
+    });
+  }
+
+  const config: GraphConfig = {
+    title: "Temperature Zone 3",
+    icon: "lu:Thermometer",
+    colors: {
+      primary: "#f59e0b",
+    },
+    exportFilename: "temperature_zone_3_data",
+  };
+
+  return (
+    <AutoSyncedBigGraph
+      syncHook={syncHook}
+      newData={{
+        newData,
+        color: "#f59e0b",
+        lines,
+      }}
+      unit={unit}
+      renderValue={renderValue}
+      config={config}
+      graphId="temperature-zone-3"
+    />
+  );
+}
+
+export function TemperatureZone4Graph({
+  syncHook,
+  newData,
+  targetTemperature,
+  unit,
+  renderValue,
+}: {
+  syncHook: ReturnType<typeof useGraphSync>;
+  newData: TimeSeries | null;
+  targetTemperature?: number;
+  unit?: Unit;
+  renderValue?: (value: number) => string;
+}) {
+  const lines: GraphLine[] = [];
+
+  if (targetTemperature !== undefined) {
+    lines.push({
+      type: "target",
+      value: targetTemperature,
+      label: "Target Temperature",
+      color: "#84cc16",
+    });
+  }
+
+  const config: GraphConfig = {
+    title: "Temperature Zone 4",
+    icon: "lu:Thermometer",
+    colors: {
+      primary: "#84cc16",
+    },
+    exportFilename: "temperature_zone_4_data",
+  };
+
+  return (
+    <AutoSyncedBigGraph
+      syncHook={syncHook}
+      newData={{
+        newData,
+        color: "#84cc16",
+        lines,
+      }}
+      unit={unit}
+      renderValue={renderValue}
+      config={config}
+      graphId="temperature-zone-4"
+    />
+  );
+}
+
+export function TemperatureZone5Graph({
+  syncHook,
+  newData,
+  targetTemperature,
+  unit,
+  renderValue,
+}: {
+  syncHook: ReturnType<typeof useGraphSync>;
+  newData: TimeSeries | null;
+  targetTemperature?: number;
+  unit?: Unit;
+  renderValue?: (value: number) => string;
+}) {
+  const lines: GraphLine[] = [];
+
+  if (targetTemperature !== undefined) {
+    lines.push({
+      type: "target",
+      value: targetTemperature,
+      label: "Target Temperature",
+      color: "#22c55e",
+    });
+  }
+
+  const config: GraphConfig = {
+    title: "Temperature Zone 5",
+    icon: "lu:Thermometer",
+    colors: {
+      primary: "#22c55e",
+    },
+    exportFilename: "temperature_zone_5_data",
+  };
+
+  return (
+    <AutoSyncedBigGraph
+      syncHook={syncHook}
+      newData={{
+        newData,
+        color: "#22c55e",
+        lines,
+      }}
+      unit={unit}
+      renderValue={renderValue}
+      config={config}
+      graphId="temperature-zone-5"
+    />
+  );
+}
+
+export function TemperatureZone6Graph({
+  syncHook,
+  newData,
+  targetTemperature,
+  unit,
+  renderValue,
+}: {
+  syncHook: ReturnType<typeof useGraphSync>;
+  newData: TimeSeries | null;
+  targetTemperature?: number;
+  unit?: Unit;
+  renderValue?: (value: number) => string;
+}) {
+  const lines: GraphLine[] = [];
+
+  if (targetTemperature !== undefined) {
+    lines.push({
+      type: "target",
+      value: targetTemperature,
+      label: "Target Temperature",
+      color: "#14b8a6",
+    });
+  }
+
+  const config: GraphConfig = {
+    title: "Temperature Zone 6",
+    icon: "lu:Thermometer",
+    colors: {
+      primary: "#14b8a6",
+    },
+    exportFilename: "temperature_zone_6_data",
+  };
+
+  return (
+    <AutoSyncedBigGraph
+      syncHook={syncHook}
+      newData={{
+        newData,
+        color: "#14b8a6",
+        lines,
+      }}
+      unit={unit}
+      renderValue={renderValue}
+      config={config}
+      graphId="temperature-zone-6"
+    />
+  );
+}
+
