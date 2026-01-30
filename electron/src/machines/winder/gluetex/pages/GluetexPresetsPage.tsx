@@ -185,19 +185,19 @@ const previewEntries: PresetPreviewEntries<GluetexPreset> = [
   },
   {
     name: "Zone 1 Target Temp",
-    unit: "°C",
+    unit: "C",
     renderValue: (data: GluetexPreset) =>
       data.heating_states?.zone_1?.target_temperature?.toFixed(1) ?? "N/A",
   },
   {
     name: "Zone 2 Target Temp",
-    unit: "°C",
+    unit: "C",
     renderValue: (data: GluetexPreset) =>
       data.heating_states?.zone_2?.target_temperature?.toFixed(1) ?? "N/A",
   },
   {
     name: "Zone 3 Target Temp",
-    unit: "°C",
+    unit: "C",
     renderValue: (data: GluetexPreset) =>
       data.heating_states?.zone_3?.target_temperature?.toFixed(1) ?? "N/A",
   },
@@ -248,13 +248,13 @@ const previewEntries: PresetPreviewEntries<GluetexPreset> = [
   },
   {
     name: "Slave Puller Min Angle",
-    unit: "°",
+    unit: "deg",
     renderValue: (data: GluetexPreset) =>
       data.slave_puller_state?.min_angle?.toFixed(1) ?? "N/A",
   },
   {
     name: "Slave Puller Max Angle",
-    unit: "°",
+    unit: "deg",
     renderValue: (data: GluetexPreset) =>
       data.slave_puller_state?.max_angle?.toFixed(1) ?? "N/A",
   },
