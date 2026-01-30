@@ -200,6 +200,9 @@ export function useGluetex() {
   const { request: requestAddonMotor3SetEnabled } = useMachineMutation(
     z.object({ SetAddonMotor3Enabled: z.boolean() }),
   );
+  const { request: requestAddonMotor3SetForward } = useMachineMutation(
+    z.object({ SetAddonMotor3Forward: z.boolean() }),
+  );
   const { request: requestAddonMotor3SetMasterRatio } = useMachineMutation(
     z.object({ SetAddonMotor3MasterRatio: z.number() }),
   );
@@ -211,6 +214,9 @@ export function useGluetex() {
   const { request: requestAddonMotor4SetEnabled } = useMachineMutation(
     z.object({ SetAddonMotor4Enabled: z.boolean() }),
   );
+  const { request: requestAddonMotor4SetForward } = useMachineMutation(
+    z.object({ SetAddonMotor4Forward: z.boolean() }),
+  );
   const { request: requestAddonMotor4SetMasterRatio } = useMachineMutation(
     z.object({ SetAddonMotor4MasterRatio: z.number() }),
   );
@@ -221,6 +227,9 @@ export function useGluetex() {
   // Addon Motor 5 mutations
   const { request: requestAddonMotor5SetEnabled } = useMachineMutation(
     z.object({ SetAddonMotor5Enabled: z.boolean() }),
+  );
+  const { request: requestAddonMotor5SetForward } = useMachineMutation(
+    z.object({ SetAddonMotor5Forward: z.boolean() }),
   );
   const { request: requestAddonMotor5SetMasterRatio } = useMachineMutation(
     z.object({ SetAddonMotor5MasterRatio: z.number() }),
@@ -914,6 +923,46 @@ export function useGluetex() {
     });
   };
 
+  // Addon Motor Forward direction setters
+  const setStepper3Forward = (forward: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.addon_motor_3_state.forward = forward;
+      },
+      () =>
+        requestAddonMotor3SetForward({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor3Forward: forward },
+        }),
+    );
+  };
+
+  const setStepper4Forward = (forward: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.addon_motor_4_state.forward = forward;
+      },
+      () =>
+        requestAddonMotor4SetForward({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor4Forward: forward },
+        }),
+    );
+  };
+
+  const setStepper5Forward = (forward: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.addon_motor_5_state.forward = forward;
+      },
+      () =>
+        requestAddonMotor5SetForward({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor5Forward: forward },
+        }),
+    );
+  };
+
   // ========== Slave Puller Functions ==========
 
   const setSlavePullerEnabled = (enabled: boolean) => {
@@ -1347,10 +1396,13 @@ export function useGluetex() {
     setTemperature2Max,
     setStepper3Master,
     setStepper3Slave,
+    setStepper3Forward,
     setStepper4Master,
     setStepper4Slave,
+    setStepper4Forward,
     setStepper5Master,
     setStepper5Slave,
+    setStepper5Forward,
     setStepper5Konturlaenge,
     setStepper5Pause,
   };
