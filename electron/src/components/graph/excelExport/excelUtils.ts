@@ -4,24 +4,6 @@
  */
 
 /**
- * Utility for creating offscreen canvas containers
- * Eliminates duplicate container creation code
- */
-export class CanvasUtils {
-  static createOffscreenContainer(
-    width: number,
-    height: number,
-  ): HTMLDivElement {
-    const container = document.createElement("div");
-    container.style.width = `${width}px`;
-    container.style.height = `${height}px`;
-    container.style.position = "absolute";
-    container.style.left = "-9999px";
-    return container;
-  }
-}
-
-/**
  * Utility for calculating optimal Y-axis range based on data
  * Can be extended for more sophisticated scaling algorithms
  */
@@ -55,6 +37,59 @@ export class ChartAxisCalculator {
    */
   static formatRangeInstruction(min: number, max: number): string {
     return `5. Set Y-axis range: ${min} to ${max}`;
+  }
+}
+
+import * as XLSX from "xlsx";
+
+/**
+ * Sanitizes cell values to avoid invalid XML in XLSX exports.
+ */
+export class ExcelCellSanitizer {
+  private static invalidXmlChars = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\uD800-\uDFFF\uFFFE\uFFFF]/g;
+
+  static sanitizeCell(value: unknown): string | number {
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? value : "";
+    }
+
+    if (typeof value === "boolean") {
+      return value ? 1 : 0;
+    }
+
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+
+    if (typeof value === "string") {
+      return value.replace(this.invalidXmlChars, "");
+    }
+
+    if (value === null || value === undefined) {
+      return "";
+    }
+
+    return String(value).replace(this.invalidXmlChars, "");
+  }
+
+  static sanitizeRow(row: unknown[]): Array<string | number> {
+    return row.map((value) => this.sanitizeCell(value));
+  }
+
+  static sanitizeWorksheet(worksheet: XLSX.WorkSheet): void {
+    Object.keys(worksheet).forEach((key) => {
+      if (key.startsWith("!")) return;
+      const cell = worksheet[key] as XLSX.CellObject | undefined;
+      if (!cell) return;
+
+      const sanitized = this.sanitizeCell(cell.v);
+      if (sanitized === "") {
+        delete worksheet[key];
+        return;
+      }
+
+      cell.v = sanitized as any;
+    });
   }
 }
 

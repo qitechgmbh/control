@@ -81,7 +81,6 @@
     "clsx": "^2.1.1",
     "electron-devtools-installer": "^4.0.0",
     "electron-squirrel-startup": "^1.0.1",
-    "exceljs": "^4.4.0",
     "i18next": "^25.0.2",
     "immer": "^10.1.1",
     "lucide-react": "^0.511.0",

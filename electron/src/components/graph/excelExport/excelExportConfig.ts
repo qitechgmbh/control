@@ -9,8 +9,6 @@ export interface IExportConfig {
   getDefaultPrecision(): number;
   getUnitFriendlyName(unit: string): string | undefined;
   getDefaultChartColor(): string;
-  getChartDimensions(): { width: number; height: number };
-  getLegendDimensions(): { baseHeight: number; itemSpacing: number };
   getDateLocale(): string;
   getYAxisRange(): { min: number; max: number } | null; // null means auto-scale
 }
@@ -33,8 +31,6 @@ export class ExportConfig implements IExportConfig {
       "%": "Percent",
     } as Record<string, string>,
     defaultChartColor: "#9b59b6",
-    chartDimensions: { width: 1200, height: 600 },
-    legendDimensions: { baseHeight: 50, itemSpacing: 15 },
     dateLocale: "de-DE",
     // null means auto-scale based on data
     yAxisRange: null as { min: number; max: number } | null,
@@ -54,14 +50,6 @@ export class ExportConfig implements IExportConfig {
 
   getDefaultChartColor(): string {
     return this.config.defaultChartColor;
-  }
-
-  getChartDimensions(): { width: number; height: number } {
-    return this.config.chartDimensions;
-  }
-
-  getLegendDimensions(): { baseHeight: number; itemSpacing: number } {
-    return this.config.legendDimensions;
   }
 
   getDateLocale(): string {
@@ -115,57 +103,5 @@ export class ExportConfigFactory {
       return new MachineAwareExportConfig(machineContext);
     }
     return new ExportConfig();
-  }
-}
-
-/**
- * Environment information provider interface
- * Abstracts away the window.environment dependency
- */
-export interface IEnvironmentInfoProvider {
-  getVersionInfo(): Promise<{
-    version?: string;
-    commit?: string;
-  }>;
-}
-
-/**
- * Default implementation using window.environment
- */
-export class WindowEnvironmentProvider implements IEnvironmentInfoProvider {
-  async getVersionInfo(): Promise<{
-    version?: string;
-    commit?: string;
-  }> {
-    try {
-      const envInfo = await window.environment.getInfo();
-      return {
-        version: envInfo.qitechOsGitAbbreviation,
-        commit: envInfo.qitechOsGitCommit?.substring(0, 8),
-      };
-    } catch (error) {
-      console.warn("Failed to fetch environment info", error);
-      return {};
-    }
-  }
-}
-
-/**
- * Mock implementation for testing
- */
-export class MockEnvironmentProvider implements IEnvironmentInfoProvider {
-  constructor(
-    private mockVersion?: string,
-    private mockCommit?: string,
-  ) {}
-
-  async getVersionInfo(): Promise<{
-    version?: string;
-    commit?: string;
-  }> {
-    return {
-      version: this.mockVersion,
-      commit: this.mockCommit,
-    };
   }
 }

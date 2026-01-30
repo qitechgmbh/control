@@ -1,16 +1,11 @@
 import * as XLSX from "xlsx";
-import ExcelJS from "exceljs";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { renderUnitSymbol } from "@/control/units";
 import { GraphLine } from "../types";
 import { LogEntry } from "@/stores/logsStore";
-import {
-  ExportConfig,
-  IExportConfig,
-  WindowEnvironmentProvider,
-} from "./excelExportConfig";
+import { ExportConfig, IExportConfig } from "./excelExportConfig";
 import { IValueFormatter, ValueFormatter } from "./excelFormatters";
-import { IPidDataProvider } from "./excelUtils";
+import { ExcelCellSanitizer, IPidDataProvider } from "./excelUtils";
 import {
   CombinedSheetData,
   GraphExportData,
@@ -20,9 +15,6 @@ import { DateFormatter } from "./excelDateFormatter";
 import { SheetNameManager } from "./excelSheetNameManager";
 import { DataSheetBuilder } from "./excelDataSheetBuilder";
 import { AnalysisSheetBuilder } from "./excelAnalysisSheetBuilder";
-import { VersionInfoRenderer } from "./excelVersionInfoRenderer";
-import { ChartImageGenerator } from "./excelChartImageGenerator";
-import { LegendImageGenerator } from "./excelLegendImageGenerator";
 
 export type { GraphExportData, PidSettings, PidData } from "./excelExportTypes";
 
@@ -104,6 +96,7 @@ export class ExcelExporter {
         );
 
         const worksheet = dataSheetBuilder.build();
+        ExcelCellSanitizer.sanitizeWorksheet(worksheet);
         XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
         // Collect data for analysis sheet
@@ -135,10 +128,15 @@ export class ExcelExporter {
         this.formatter,
       );
       const analysisSheet = await analysisSheetBuilder.build();
+      ExcelCellSanitizer.sanitizeWorksheet(analysisSheet);
       XLSX.utils.book_append_sheet(workbook, analysisSheet, "Analysis");
 
-      // Convert to ExcelJS for image support
-      await this.addChartImages(workbook, allSheetData, groupId);
+      const xlsxBuffer = XLSX.write(workbook, {
+        type: "buffer",
+        bookType: "xlsx",
+      });
+
+      this.triggerDownload(xlsxBuffer, groupId, DateFormatter.getExportTimestamp());
     } catch (error) {
       alert(
         `Error exporting data to Excel: ${
@@ -158,90 +156,6 @@ export class ExcelExporter {
       }
     });
     return filteredMap;
-  }
-
-  private async addChartImages(
-    workbook: XLSX.WorkBook,
-    allSheetData: CombinedSheetData[],
-    groupId: string,
-  ): Promise<void> {
-    const xlsxBuffer = XLSX.write(workbook, {
-      type: "buffer",
-      bookType: "xlsx",
-    });
-
-    let excelJSWorkbook: ExcelJS.Workbook;
-    try {
-      excelJSWorkbook = new ExcelJS.Workbook();
-      await excelJSWorkbook.xlsx.load(xlsxBuffer);
-    } catch (error) {
-      console.error("Failed to load XLSX buffer into ExcelJS", error);
-      alert(
-        "Export failed while preparing the Excel file. The generated workbook data was invalid or could not be processed.",
-      );
-      return;
-    }
-
-    const analysisWorksheet = excelJSWorkbook.getWorksheet("Analysis");
-    if (!analysisWorksheet) return;
-
-    const sortedTimestamps = Array.from(
-      new Set(allSheetData.flatMap((d) => d.timestamps)),
-    ).sort((a, b) => a - b);
-
-    const startTime = sortedTimestamps[0];
-    const endTime = sortedTimestamps[sortedTimestamps.length - 1];
-    const timeRangeTitle = this.formatter.formatTimeRange(startTime, endTime);
-
-    // Fetch version info for chart rendering
-    const envProvider = new WindowEnvironmentProvider();
-    const versionRenderer = new VersionInfoRenderer(envProvider);
-    await versionRenderer.fetchVersionInfo();
-
-    const chartImage = await ChartImageGenerator.generate(
-      allSheetData,
-      groupId,
-      timeRangeTitle,
-      sortedTimestamps,
-      startTime,
-      versionRenderer,
-      this.config,
-    );
-
-    if (chartImage) {
-      const dimensions = this.config.getChartDimensions();
-
-      const chartImageId = excelJSWorkbook.addImage({
-        base64: chartImage,
-        extension: "png",
-      });
-
-      const lastRow = analysisWorksheet.rowCount;
-      analysisWorksheet.addImage(chartImageId, {
-        tl: { col: 0, row: lastRow + 2 },
-        ext: { width: dimensions.width, height: dimensions.height },
-      });
-
-      const legendImage = LegendImageGenerator.generate(
-        allSheetData,
-        this.config,
-      );
-      if (legendImage) {
-        const legendImageId = excelJSWorkbook.addImage({
-          base64: legendImage,
-          extension: "png",
-        });
-
-        analysisWorksheet.addImage(legendImageId, {
-          tl: { col: 0, row: lastRow + 2 + 32 },
-          ext: { width: dimensions.width, height: 50 },
-        });
-      }
-    }
-
-    // Write final file with ExcelJS
-    const buffer = await excelJSWorkbook.xlsx.writeBuffer();
-    this.triggerDownload(buffer, groupId, DateFormatter.getExportTimestamp());
   }
 
   private triggerDownload(

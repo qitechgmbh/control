@@ -8,7 +8,7 @@ import {
   ArrayUtils,
 } from "./excelFormatters";
 import { MetadataProviderFactory } from "./excelMetadata";
-import { ChartAxisCalculator } from "./excelUtils";
+import { ChartAxisCalculator, ExcelCellSanitizer } from "./excelUtils";
 import { CommentManager } from "./excelCommentManager";
 import { CombinedSheetData, PidData } from "./excelExportTypes";
 
@@ -102,8 +102,12 @@ export class AnalysisSheetBuilder {
       timeRangeTitle,
     );
 
+    const sanitizedSheetData = sheetData.map((row) =>
+      ExcelCellSanitizer.sanitizeRow(row),
+    );
+
     // Convert to worksheet
-    const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+    const worksheet = XLSX.utils.aoa_to_sheet(sanitizedSheetData);
 
     // Configure worksheet
     this.configureWorksheet(worksheet, columns.length);
@@ -192,9 +196,7 @@ export class AnalysisSheetBuilder {
       const tsData = dataByTimestamp.get(timestamp);
       if (tsData && tsData.has(sheetDataEntry.sheetName)) {
         row.push(
-          Number(
-            this.formatter.formatNumber(tsData.get(sheetDataEntry.sheetName)!),
-          ),
+          this.sanitizeNumber(tsData.get(sheetDataEntry.sheetName) ?? NaN),
         );
       } else {
         row.push("");
@@ -207,6 +209,11 @@ export class AnalysisSheetBuilder {
 
     return row;
   }
+
+  private sanitizeNumber(value: number): number | "" {
+    return Number.isFinite(value) ? value : "";
+  }
+
 
   private async addMetadata(
     sheetData: any[][],

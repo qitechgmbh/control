@@ -4,6 +4,7 @@ import { renderUnitSymbol, Unit } from "@/control/units";
 import { GraphConfig, GraphLine } from "../types";
 import { IValueFormatter, ValueFormatter } from "./excelFormatters";
 import { StatisticsCalculator } from "./excelStatisticsCalculator";
+import { ExcelCellSanitizer } from "./excelUtils";
 
 /**
  * Creates individual data sheets for each series
@@ -52,8 +53,12 @@ export class DataSheetBuilder {
       sheetData.push(row);
     }
 
+    const sanitizedSheetData = sheetData.map((row) =>
+      ExcelCellSanitizer.sanitizeRow(row),
+    );
+
     // Convert to worksheet
-    const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+    const worksheet = XLSX.utils.aoa_to_sheet(sanitizedSheetData);
     worksheet["!cols"] = [
       { wch: 20 }, // Timestamp
       { wch: 15 }, // Value
@@ -170,4 +175,5 @@ export class DataSheetBuilder {
       ? this.graphLine.renderValue(value)
       : this.formatter.formatNumber(value);
   }
+
 }
