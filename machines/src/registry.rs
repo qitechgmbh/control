@@ -20,6 +20,7 @@ use crate::{
     winder2::Winder2,
 };
 
+use crate::vacuum::VacuumMachine;
 use crate::test_machine::TestMachine;
 
 use lazy_static::lazy_static;
@@ -136,6 +137,11 @@ lazy_static! {
         mc.register::<MotorTestMachine>(MotorTestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
+
+
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<VacuumMachine>(VacuumMachine::MACHINE_IDENTIFICATION);
+
 
         mc
     };

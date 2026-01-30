@@ -63,6 +63,7 @@ impl MachineIdentification {
             x if x == IP20_TEST_MACHINE => "ip20_test_machine".to_string(),
             x if x == ANALOG_INPUT_TEST_MACHINE => "analog_input_test_machine".to_string(),
             x if x == WAGO_AI_TEST_MACHINE => "wago_ai_test_machine".to_string(),
+            x if x == MACHINE_VACUUM => "vacuum".to_string(),
             _ => unreachable!("Unknown machine id"),
         }
     }
@@ -182,6 +183,7 @@ use crate::MACHINE_EXTRUDER_V1;
 use crate::MACHINE_EXTRUDER_V2;
 use crate::MACHINE_LASER_V1;
 use crate::MACHINE_MOCK;
+use crate::MACHINE_VACUUM;
 use crate::MACHINE_WAGO_POWER_V1;
 use crate::MACHINE_WINDER_V1;
 use crate::TEST_MACHINE;

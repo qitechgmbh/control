@@ -70,6 +70,12 @@ import { IP20TestMachineControlPage } from "@/machines/ip20testmachine/IP20TestM
 import { TestMotorPage } from "@/machines/motor_test_machine/TestMotorPage";
 import { TestMotorControlPage } from "@/machines/motor_test_machine/TestMotorControlPage";
 
+// vacuum
+import { VacuumPage        } from "@/machines/vacuum/Page";
+import { VacuumControlPage } from "@/machines/vacuum/ControlPage";
+
+
+// ---
 import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
 import { MetricsControlPage } from "@/metrics/MetricsControlPage";
 
@@ -144,6 +150,26 @@ export const ip20TestMachineControlRoute = createRoute({
   component: () => <IP20TestMachineControlPage />,
 });
 
+// vacuum
+export const vacuumSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "vacuum/$serial",
+  component: () => <VacuumPage />,
+});
+
+export const vacuumControlRoute = createRoute({
+  getParentRoute: () => vacuumSerialRoute,
+  path: "control",
+  component: () => <VacuumControlPage />,
+});
+
+export const vacuumConfigRoute = createRoute({
+  getParentRoute: () => vacuumSerialRoute,
+  path: "config",
+  component: () => <VacuumControlPage />,
+});
+
+// ---
 export const testMotorSerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "testmotor/$serial",
@@ -498,6 +524,11 @@ export const rootTree = RootRoute.addChildren([
       ]),
 
       ip20TestMachineSerialRoute.addChildren([ip20TestMachineControlRoute]),
+
+      vacuumSerialRoute.addChildren([
+        vacuumControlRoute,
+        vacuumConfigRoute,
+      ]),
 
       testMotorSerialRoute.addChildren([testMotorControlRoute]),
 
