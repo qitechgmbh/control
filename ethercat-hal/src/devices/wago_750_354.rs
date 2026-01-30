@@ -171,7 +171,8 @@ impl Wago750_354 {
     ) -> Result<(), Error> {
         let mut vec: Vec<ModulePdoMapping> = vec![];
         let mut bit_offset = 0;
-        let mut module_i = 0;
+
+        let mut module_i;
         let start_subindex = 0x2;
 
         let index = match get_tx {
@@ -199,7 +200,6 @@ impl Wago750_354 {
             }
         }
         mappings_without_coupler.sort();
-        println!("{:?}", mappings_without_coupler);
 
         for pdo_mapping in mappings_without_coupler {
             module_i = Wago750_354::calculate_module_index(pdo_mapping, get_tx);

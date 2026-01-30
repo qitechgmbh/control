@@ -120,18 +120,26 @@ impl EthercatDynamicPDO for Wago750_430 {
 impl EthercatDevice for Wago750_430 {
     fn input(
         &mut self,
-        _input: &bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
+        input: &bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
+        self.txpdo.port1 = input[0];
+        self.txpdo.port2 = input[1];
+        self.txpdo.port3 = input[2];
+        self.txpdo.port4 = input[3];
+        self.txpdo.port5 = input[4];
+        self.txpdo.port6 = input[5];
+        self.txpdo.port7 = input[6];
+        self.txpdo.port8 = input[7];
         Ok(())
     }
 
     fn input_len(&self) -> usize {
-        0
+        8
     }
 
     fn output(
         &self,
-        output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
+        _output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
         Ok(())
     }
