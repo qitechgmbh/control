@@ -131,7 +131,7 @@ impl TemperatureController {
     pub fn get_autotuning_result(&mut self) -> Option<(f64, f64, f64)> {
         if let Some(tuner) = &mut self.autotuner {
             if tuner.is_completed() {
-                if let Some(result) = &tuner.result {
+                if let Some(result) = tuner.result.take() {
                     let kp = result.kp;
                     let ki = result.ki;
                     let kd = result.kd;
@@ -139,11 +139,13 @@ impl TemperatureController {
                     // Apply the tuned parameters
                     self.pid.configure(ki, kp, kd);
                     self.autotuning_active = false;
+                    self.autotuner = None;
 
                     return Some((kp, ki, kd));
                 }
             } else if tuner.is_failed() {
                 self.autotuning_active = false;
+                self.autotuner = None;
             }
         }
         None
