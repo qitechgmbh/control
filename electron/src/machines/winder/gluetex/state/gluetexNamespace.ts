@@ -257,6 +257,7 @@ export const heatingStatesSchema = z.object({
  */
 export const addonMotorStateSchema = z.object({
   enabled: z.boolean(),
+  forward: z.boolean(),
   master_ratio: z.number(),
   slave_ratio: z.number(),
 });
@@ -266,6 +267,7 @@ export const addonMotorStateSchema = z.object({
  */
 export const addonMotor5StateSchema = z.object({
   enabled: z.boolean(),
+  forward: z.boolean(),
   master_ratio: z.number(),
   slave_ratio: z.number(),
   konturlaenge_mm: z.number(),

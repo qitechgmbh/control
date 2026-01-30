@@ -213,6 +213,15 @@ const previewEntries: PresetPreviewEntries<GluetexPreset> = [
         : "N/A",
   },
   {
+    name: "Motor 3 Direction",
+    renderValue: (data: GluetexPreset) =>
+      data.addon_motor_3_state?.forward !== undefined
+        ? data.addon_motor_3_state.forward
+          ? "Forward"
+          : "Reverse"
+        : "N/A",
+  },
+  {
     name: "Motor 3 Master Ratio",
     renderValue: (data: GluetexPreset) =>
       data.addon_motor_3_state?.master_ratio?.toFixed(2) ?? "N/A",
@@ -227,12 +236,30 @@ const previewEntries: PresetPreviewEntries<GluetexPreset> = [
         : "N/A",
   },
   {
+    name: "Motor 4 Direction",
+    renderValue: (data: GluetexPreset) =>
+      data.addon_motor_4_state?.forward !== undefined
+        ? data.addon_motor_4_state.forward
+          ? "Forward"
+          : "Reverse"
+        : "N/A",
+  },
+  {
     name: "Motor 5 Enabled",
     renderValue: (data: GluetexPreset) =>
       data.addon_motor_5_state?.enabled !== undefined
         ? data.addon_motor_5_state.enabled
           ? "Yes"
           : "No"
+        : "N/A",
+  },
+  {
+    name: "Motor 5 Direction",
+    renderValue: (data: GluetexPreset) =>
+      data.addon_motor_5_state?.forward !== undefined
+        ? data.addon_motor_5_state.forward
+          ? "Forward"
+          : "Reverse"
         : "N/A",
   },
   previewSeparator,
@@ -304,12 +331,15 @@ export function GluetexPresetsPage() {
     setStepper3Mode,
     setStepper3Master,
     setStepper3Slave,
+    setStepper3Forward,
     setStepper4Mode,
     setStepper4Master,
     setStepper4Slave,
+    setStepper4Forward,
     setStepper5Mode,
     setStepper5Master,
     setStepper5Slave,
+    setStepper5Forward,
     setStepper5Konturlaenge,
     setStepper5Pause,
 
@@ -516,6 +546,9 @@ export function GluetexPresetsPage() {
         preset.data.addon_motor_3_state.enabled ? "Run" : "Standby",
       );
     }
+    if (preset.data?.addon_motor_3_state?.forward !== undefined) {
+      setStepper3Forward(preset.data.addon_motor_3_state.forward);
+    }
     if (preset.data?.addon_motor_3_state?.master_ratio !== undefined) {
       setStepper3Master(preset.data.addon_motor_3_state.master_ratio);
     }
@@ -529,6 +562,9 @@ export function GluetexPresetsPage() {
         preset.data.addon_motor_4_state.enabled ? "Run" : "Standby",
       );
     }
+    if (preset.data?.addon_motor_4_state?.forward !== undefined) {
+      setStepper4Forward(preset.data.addon_motor_4_state.forward);
+    }
     if (preset.data?.addon_motor_4_state?.master_ratio !== undefined) {
       setStepper4Master(preset.data.addon_motor_4_state.master_ratio);
     }
@@ -541,6 +577,9 @@ export function GluetexPresetsPage() {
       setStepper5Mode(
         preset.data.addon_motor_5_state.enabled ? "Run" : "Standby",
       );
+    }
+    if (preset.data?.addon_motor_5_state?.forward !== undefined) {
+      setStepper5Forward(preset.data.addon_motor_5_state.forward);
     }
     if (preset.data?.addon_motor_5_state?.master_ratio !== undefined) {
       setStepper5Master(preset.data.addon_motor_5_state.master_ratio);

@@ -150,6 +150,9 @@ pub enum Mutation {
     SetAddonMotor3Enabled(bool),
     SetAddonMotor4Enabled(bool),
     SetAddonMotor5Enabled(bool),
+    SetAddonMotor3Forward(bool),
+    SetAddonMotor4Forward(bool),
+    SetAddonMotor5Forward(bool),
     SetAddonMotor3MasterRatio(f64),
     SetAddonMotor3SlaveRatio(f64),
     SetAddonMotor4MasterRatio(f64),
@@ -362,6 +365,8 @@ pub struct SpoolSpeedControllerState {
 pub struct AddonMotorState {
     /// is motor enabled (running)
     pub enabled: bool,
+    /// forward rotation direction
+    pub forward: bool,
     /// master ratio value (e.g., 2 in "2:1")
     pub master_ratio: f64,
     /// slave ratio value (e.g., 1 in "2:1")
@@ -372,6 +377,8 @@ pub struct AddonMotorState {
 pub struct AddonMotor5State {
     /// is motor enabled (running)
     pub enabled: bool,
+    /// forward rotation direction
+    pub forward: bool,
     /// master ratio value (e.g., 2 in "2:1")
     pub master_ratio: f64,
     /// slave ratio value (e.g., 1 in "2:1")
@@ -587,8 +594,16 @@ impl MachineApi for Gluetex {
                 self.addon_motor_3_controller.set_enabled(enabled);
                 self.emit_state();
             }
+            Mutation::SetAddonMotor3Forward(forward) => {
+                self.addon_motor_3_controller.set_forward(forward);
+                self.emit_state();
+            }
             Mutation::SetAddonMotor4Enabled(enabled) => {
                 self.addon_motor_4_controller.set_enabled(enabled);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor4Forward(forward) => {
+                self.addon_motor_4_controller.set_forward(forward);
                 self.emit_state();
             }
             Mutation::SetAddonMotor3MasterRatio(ratio) => {
@@ -609,6 +624,10 @@ impl MachineApi for Gluetex {
             }
             Mutation::SetAddonMotor5Enabled(enabled) => {
                 self.addon_motor_5_controller.set_enabled(enabled);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor5Forward(forward) => {
+                self.addon_motor_5_controller.set_forward(forward);
                 self.emit_state();
             }
             Mutation::SetAddonMotor5MasterRatio(ratio) => {

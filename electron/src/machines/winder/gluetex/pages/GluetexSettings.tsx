@@ -65,6 +65,9 @@ export function GluetexSettingPage() {
     setTensionArmMonitorEnabled,
     setTensionArmMonitorMinAngle,
     setTensionArmMonitorMaxAngle,
+    setStepper3Forward,
+    setStepper4Forward,
+    setStepper5Forward,
   } = useGluetex();
 
   const handleXlModeChange = (enabled: boolean) => {
@@ -102,7 +105,8 @@ export function GluetexSettingPage() {
   return (
     <Page>
       <ControlGrid>
-        <ControlCard title="Traverse">
+        {/* ========== WINDER SETTINGS ========== */}
+        <ControlCard title="Winder: Traverse">
           <Label label="Traverse Size">
             <SelectionGroupBoolean
               value={xlMode}
@@ -147,7 +151,7 @@ export function GluetexSettingPage() {
           </Label>
         </ControlCard>
 
-        <ControlCard title="Spool">
+        <ControlCard title="Winder: Spool">
           <Label label="Speed Algorithm">
             <SelectionGroup
               value={state?.spool_speed_controller_state?.regulation_mode}
@@ -331,7 +335,7 @@ export function GluetexSettingPage() {
           )}
         </ControlCard>
 
-        <ControlCard title="Puller">
+        <ControlCard title="Winder: Puller">
           <Label label="Rotation Direction">
             <SelectionGroupBoolean
               value={state?.puller_state?.forward}
@@ -376,7 +380,8 @@ export function GluetexSettingPage() {
           </Label>
         </ControlCard>
 
-        <ControlCard title="Slave Puller">
+        {/* ========== ADDON SETTINGS ========== */}
+        <ControlCard title="Addons: Slave Puller">
           <Label label="Enable Slave Puller">
             <SelectionGroupBoolean
               value={state?.slave_puller_state?.enabled}
@@ -490,6 +495,60 @@ export function GluetexSettingPage() {
           </div>
         </ControlCard>
 
+        <ControlCard title="Addons: Motors">
+          <Label label="Motor 3 Direction">
+            <SelectionGroupBoolean
+              value={state?.addon_motor_3_state?.forward}
+              disabled={isDisabled}
+              loading={isLoading}
+              optionFalse={{
+                children: "Reverse",
+                icon: "lu:RotateCcw",
+              }}
+              optionTrue={{
+                children: "Forward",
+                icon: "lu:RotateCw",
+              }}
+              onChange={(value) => setStepper3Forward(value)}
+            />
+          </Label>
+
+          <Label label="Motor 4 Direction">
+            <SelectionGroupBoolean
+              value={state?.addon_motor_4_state?.forward}
+              disabled={isDisabled}
+              loading={isLoading}
+              optionFalse={{
+                children: "Reverse",
+                icon: "lu:RotateCcw",
+              }}
+              optionTrue={{
+                children: "Forward",
+                icon: "lu:RotateCw",
+              }}
+              onChange={(value) => setStepper4Forward(value)}
+            />
+          </Label>
+
+          <Label label="Motor 5 Direction">
+            <SelectionGroupBoolean
+              value={state?.addon_motor_5_state?.forward}
+              disabled={isDisabled}
+              loading={isLoading}
+              optionFalse={{
+                children: "Reverse",
+                icon: "lu:RotateCcw",
+              }}
+              optionTrue={{
+                children: "Forward",
+                icon: "lu:RotateCw",
+              }}
+              onChange={(value) => setStepper5Forward(value)}
+            />
+          </Label>
+        </ControlCard>
+
+        {/* ========== HEATING SETTINGS ========== */}
         <ControlCard title="Heating Zone 1">
           <div className="flex flex-col gap-4">
             {state?.heating_states?.zone_1?.autotuning_active && (
@@ -1204,6 +1263,7 @@ export function GluetexSettingPage() {
           </div>
         </ControlCard>
 
+        {/* ========== OTHER SETTINGS ========== */}
         <MachineSelector
           machines={filteredMachines}
           selectedMachine={selectedMachine}
