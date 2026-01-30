@@ -28,6 +28,7 @@ pub mod ip20_test_machine;
 pub mod laser;
 pub mod machine_identification;
 pub mod mock;
+pub mod motor_test_machine;
 pub mod registry;
 pub mod serial;
 pub mod test_machine;
@@ -49,6 +50,8 @@ pub const IP20_TEST_MACHINE: u16 = 0x0034;
 pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
 pub const WAGO_AI_TEST_MACHINE: u16 = 0x0036;
 pub const DIGITAL_INPUT_TEST_MACHINE: u16 = 0x0040;
+
+pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 
 use serde_json::Value;
 use smol::lock::RwLock;
