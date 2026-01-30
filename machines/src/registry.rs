@@ -134,6 +134,7 @@ lazy_static! {
 
         mc.register::<BottleSorter>(BottleSorter::MACHINE_IDENTIFICATION);
 
+        //#[cfg(feature = "mock-machine")]
         mc.register::<VacuumMachine>(VacuumMachine::MACHINE_IDENTIFICATION);
 
         mc

@@ -11,13 +11,15 @@ import {
   ThrottledStoreUpdater,
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { createTimeSeries, TimeSeries, TimeSeriesValue } from "@/lib/timeseries";
+import { randomBytes } from "crypto";
 
 // ========== Event Schema ==========
 
 /**
  * Machine operation mode enum
  */
-export const modeSchema = z.enum(["Standby", "On", "Auto", "Interval"]);
+export const modeSchema = z.enum(["Idle", "On", "Auto", "Interval"]);
 export type Mode = z.infer<typeof modeSchema>;
 
 export const stateEventDataSchema = z.object({
@@ -25,9 +27,13 @@ export const stateEventDataSchema = z.object({
 
   interval_time_off: z.number(),
   interval_time_on: z.number(),
+
+  running: z.boolean(),
 });
 
-export const liveValuesEventDataSchema = z.object({});
+export const liveValuesEventDataSchema = z.object({
+  remaining_time: z.number(),
+});
 
 export const stateEventSchema = eventSchema(stateEventDataSchema);
 export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
@@ -39,13 +45,26 @@ export type LiveValuesEvent = z.infer<typeof liveValuesEventDataSchema>;
 export type VacuumNamespaceStore = {
   state: StateEvent | null;
   liveValues: LiveValuesEvent | null;
+
+  // Timer series data for live values
+  remaining_time: TimeSeries,
+
+  spin_shitter: TimeSeries,
 };
+
+const { initialTimeSeries: remaining_time, insert: addRemainingTime } =
+  createTimeSeries({ sampleIntervalLong: 1000 });
+
+const { initialTimeSeries: spin_shitter, insert: addSpinShitter } =
+  createTimeSeries({ sampleIntervalLong: 1000 });
 
 export const createVacuumNamespaceStore =
   (): StoreApi<VacuumNamespaceStore> =>
     create<VacuumNamespaceStore>(() => ({
       state: null,
       liveValues: null,
+      remaining_time,
+      spin_shitter,
     }));
 
 // ========== Message Handler ==========
@@ -61,13 +80,67 @@ export function vacuumTestMachineMessageHandler(
     ) => throttledUpdater.updateWith(updater);
 
     try {
-      if (event.name === "StateEvent") {
-        const parsed = stateEventSchema.parse(event);
-        updateStore((current) => ({ ...current, state: parsed.data }));
-      } else if (event.name === "LiveValuesEvent") {
+      if (event.name === "StateEvent") 
+      {
+        console.log("STATE EVENT");
+
+        const stateEvent = stateEventSchema.parse(event);
+
+        const rpm = Math.floor(Math.random() * (125 - 115 + 1)) + 115;
+
+          const value: TimeSeriesValue = {
+            value: stateEvent.data.running ? rpm : 0,
+            timestamp: event.ts,
+          };
+
+        updateStore((state) => ({ 
+          ...state, 
+          state: stateEvent.data,
+          spin_shitter: addSpinShitter(state.spin_shitter, value)
+        }));
+      } 
+      
+      else if (event.name === "LiveValuesEvent") 
+      {
+        console.log("LIVE VALUES EVENT");
+
+        const rpm = Math.floor(Math.random() * (125 - 115 + 1)) + 115;
+
         const parsed = liveValuesEventSchema.parse(event);
-        updateStore((current) => ({ ...current, liveValues: parsed.data }));
-      } else {
+
+
+          const rpm_value: TimeSeriesValue = {
+            value: rpm,
+            timestamp: event.ts,
+          };
+
+
+          const rpm_value_0: TimeSeriesValue = {
+            value: 0,
+            timestamp: event.ts,
+          };
+
+        updateStore((liveValuesEvent) => ({ 
+          ...liveValuesEvent, 
+          liveValues: parsed.data,          
+          spin_shitter: addSpinShitter(liveValuesEvent.spin_shitter, liveValuesEvent.state?.running ? rpm_value : rpm_value_0),
+        }));
+
+        if (parsed.data.remaining_time !== null) 
+        {
+          const value: TimeSeriesValue = {
+            value: parsed.data.remaining_time,
+            timestamp: event.ts,
+          };
+          updateStore((state) => ({
+            ...state,
+            remaining_time: addRemainingTime(state.remaining_time, value),
+            
+          }));
+        }
+      } 
+      
+      else {
         handleUnhandledEventError(event.name);
       }
     } catch (error) {

@@ -12,6 +12,7 @@ use machines::laser::LaserMachine;
 use machines::machine_identification::{MachineIdentification, MachineIdentificationUnique};
 use machines::mock::MockMachine;
 use machines::test_machine::TestMachine;
+use machines::vacuum::VacuumMachine;
 use machines::wago_power::WagoPower;
 use machines::winder2::Winder2;
 use serde::Serialize;
@@ -159,6 +160,7 @@ pub fn rest_api_router() -> Router<Arc<SharedState>> {
         .merge(make_machine_router(AquaPathV1::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(TestMachine::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(WagoPower::MACHINE_IDENTIFICATION))
+        .merge(make_machine_router(VacuumMachine::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(IP20TestMachine::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(
             AnalogInputTestMachine::MACHINE_IDENTIFICATION,

@@ -66,7 +66,7 @@ import { BottleSorterControlPage } from "@/machines/bottlesorter/BottleSorterCon
 // vacuum
 import { VacuumPage        } from "@/machines/vacuum/Page";
 import { VacuumControlPage } from "@/machines/vacuum/ControlPage";
-
+import { VacuumConfigPage } from "@/machines/vacuum/ConfigPage";
 
 // ---
 import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
@@ -132,6 +132,11 @@ export const vacuumControlRoute = createRoute({
   component: () => <VacuumControlPage />,
 });
 
+export const vacuumConfigRoute = createRoute({
+  getParentRoute: () => vacuumSerialRoute,
+  path: "config",
+  component: () => <VacuumConfigPage />,
+});
 
 // ---
 export const bottleSorterSerialRoute = createRoute({
@@ -489,6 +494,11 @@ export const rootTree = RootRoute.addChildren([
         winder2SettingsRoute,
         winder2GraphsRoute,
         winder2PresetsRoute,
+      ]),
+
+      vacuumSerialRoute.addChildren([
+        vacuumControlRoute,
+        vacuumConfigRoute,
       ]),
 
       extruder2Route.addChildren([

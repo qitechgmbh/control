@@ -15,6 +15,12 @@ export function VacuumPage(): React.JSX.Element {
           title: "Control",
           icon: "lu:ToggleLeft",
         },
+        {
+          link: "config",
+          activeLink: "config",
+          title: "Config",
+          icon: "lu:Settings2",
+        },
       ]}
     />
   );

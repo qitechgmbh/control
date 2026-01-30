@@ -617,6 +617,7 @@ export const machineProperties: MachineProperties[] = [
   analogInputTestMachine,
   ip20TestMachine,
   bottleSorter,
+  vacuum,
 ];
 
 export const getMachineProperties = (

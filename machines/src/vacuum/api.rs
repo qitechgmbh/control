@@ -14,9 +14,11 @@ use std::sync::Arc;
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent 
 {
-    pub mode: u8,
+    pub mode: Mode,
     pub interval_time_off: f64,
     pub interval_time_on:  f64,
+
+    pub running: bool,
 }
 
 impl StateEvent 
@@ -30,7 +32,7 @@ impl StateEvent
 #[derive(Serialize, Debug, Clone)]
 pub struct LiveValuesEvent 
 {
-    
+    pub remaining_time: f64,
 }
 
 impl LiveValuesEvent 
@@ -47,7 +49,8 @@ pub enum VacuumMachineEvents
     LiveValues(Event<LiveValuesEvent>),
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Debug)]
+#[serde(tag = "action", content = "value")]
 pub enum Mutation 
 {
     SetMode(Mode),
@@ -101,8 +104,8 @@ impl MachineApi for VacuumMachine
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> 
     {
         let mutation: Mutation = serde_json::from_value(request_body)?;
-        
-        match mutation 
+
+        match mutation
         {
             Mutation::SetMode(value)           => self.set_mode(value),
             Mutation::SetIntervalTimeOff(value) => self.set_interval_time_off(value),

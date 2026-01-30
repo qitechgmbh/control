@@ -6,7 +6,8 @@ use ethercat_hal::io::digital_input::DigitalInput;
 use ethercat_hal::io::digital_output::DigitalOutput;
 use serde::{Deserialize, Serialize};
 use smol::channel::{Receiver, Sender};
-use std::time::Instant;
+use std::ops::Add;
+use std::time::{Duration, Instant};
 pub mod act;
 pub mod api;
 pub mod new;
@@ -34,7 +35,7 @@ pub struct VacuumMachine
     
     // machine state:
     pub interval_state: bool,
-    pub interval_remaining_time: f64,
+    pub interval_expiry: Instant,
     
     pub running: bool,
 }
@@ -94,9 +95,10 @@ impl VacuumMachine
     pub fn get_state(&self) -> StateEvent 
     {
         StateEvent {
-            mode: self.mode.clone() as u8,
+            mode: self.mode.clone(),
             interval_time_off: self.interval_time_off,
-            interval_time_on: self.interval_time_on
+            interval_time_on: self.interval_time_on,
+            running: self.running,
         }
     }
 
@@ -108,7 +110,16 @@ impl VacuumMachine
 
     pub fn get_live_values(&self) -> LiveValuesEvent 
     {
-        LiveValuesEvent {}
+        LiveValuesEvent 
+        {
+            remaining_time: match self.mode 
+            {
+                Mode::Idle => 0.0,
+                Mode::On => 0.0,
+                Mode::Auto => 999.0,
+                Mode::Interval => (self.interval_expiry - Instant::now()).as_secs_f64(),
+            }
+        }
     }
 
     pub fn emit_live_values(&mut self) 
@@ -116,6 +127,15 @@ impl VacuumMachine
         let event = self.get_live_values().build();
         self.namespace
             .emit(VacuumMachineEvents::LiveValues(event));
+    }
+
+    fn set_running(&mut self, value: bool)
+    {
+        if self.running == value { return; }
+        self.douts[0].set(value);
+        self.running = value;
+
+        tracing::warn!("set running: {}", value);
     }
 
     // getter/setter for api
@@ -129,21 +149,22 @@ impl VacuumMachine
         {
             Mode::Idle => 
             {
-                if self.running { self.douts[0].set(false); }
+                self.set_running(false);
             },
             Mode::On => 
             {
-                if !self.running { self.douts[0].set(true); }
+                self.set_running(true);
             },
             Mode::Auto => 
             {
                 //TODO: implement auto mode
-                if self.running { self.douts[0].set(false); }
+                // if self.running { self.douts[0].set(false); }
             },
             Mode::Interval => 
             {
                 self.interval_state = true;
-                self.interval_remaining_time = self.interval_time_on;
+                self.interval_expiry = Instant::now().add(Duration::from_secs_f64(self.interval_time_on));
+                self.set_running(true);
             },
         }
         
@@ -154,13 +175,15 @@ impl VacuumMachine
     {
         if self.interval_time_off == value { return; }
         
-        self.interval_time_off = value;
+        self.interval_time_off = value.clamp(1.0, 120.0);
         
+        let new_expiry = Instant::now().add(Duration::from_secs_f64(value));
+
         if self.mode == Mode::Interval && 
            !self.interval_state && 
-           value < self.interval_remaining_time
+           new_expiry < self.interval_expiry
         {
-            self.interval_remaining_time = value;
+            self.interval_expiry = new_expiry;
         }
         
         self.emit_state();
@@ -170,13 +193,15 @@ impl VacuumMachine
     {
         if self.interval_time_on == value { return; }
         
-        self.interval_time_on = value;
+        self.interval_time_on = value.clamp(1.0, 120.0);
         
+        let new_expiry = Instant::now().add(Duration::from_secs_f64(value));
+
         if self.mode == Mode::Interval && 
            self.interval_state && 
-           value < self.interval_remaining_time
+           new_expiry < self.interval_expiry
         {
-            self.interval_remaining_time = value;
+            self.interval_expiry = new_expiry;
         }
         
         self.emit_state();

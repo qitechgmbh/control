@@ -86,10 +86,10 @@ impl MachineNewTrait for VacuumMachine {
                 running: false,
                 
                 mode: Mode::Idle,
-                interval_time_off: 0.0,
-                interval_time_on:  0.0,
+                interval_time_off: 10.0,
+                interval_time_on:  10.0,
                 interval_state: false,
-                interval_remaining_time: 0.0,
+                interval_expiry: Instant::now(),
             };
 
             machine.emit_state();

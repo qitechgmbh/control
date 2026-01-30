@@ -40,7 +40,7 @@ export function useVacuum() {
   }, [serialString]);
 
   // Namespace state from backend
-  const { state, liveValues } = useVacuumNamespace(
+  const { state, liveValues, remaining_time, spin_shitter } = useVacuumNamespace(
     machineIdentification,
   );
 
@@ -82,9 +82,39 @@ export function useVacuum() {
     );
   };
 
+  const setIntervalTimeOff = (value: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.interval_time_off = value;
+      },
+      () =>
+        sendMutation({
+          machine_identification_unique: machineIdentification,
+          data: { action: "SetIntervalTimeOff", value: value },
+        }),
+    );
+  };
+
+  const setIntervalTimeOn = (value: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.interval_time_on = value;
+      },
+      () =>
+        sendMutation({
+          machine_identification_unique: machineIdentification,
+          data: { action: "SetIntervalTimeOn", value: value },
+        }),
+    );
+  };
+
   return {
     state: stateOptimistic.value,
     liveValues,
+    remaining_time,
+    spin_shitter,
     setMode,
+    setIntervalTimeOff,
+    setIntervalTimeOn
   };
 }

@@ -1,6 +1,6 @@
 use super::VacuumMachine;
 use crate::{MachineAct, MachineMessage, MachineValues};
-use std::time::{Duration, Instant};
+use std::{ops::Add, time::{Duration, Instant}};
 
 impl MachineAct for VacuumMachine 
 {
@@ -14,6 +14,40 @@ impl MachineAct for VacuumMachine
         // Emit state at 30 Hz
         if now.duration_since(self.last_state_emit) > Duration::from_secs_f64(1.0 / 30.0) 
         {
+
+            match self.mode 
+            {
+                super::Mode::Idle => {},
+                super::Mode::On => {},
+                super::Mode::Auto => {},
+                super::Mode::Interval => 
+                {
+
+
+                    match self.interval_state
+                    {
+                        true =>
+                        {
+                            if Instant::now() >= self.interval_expiry 
+                            {
+                                self.interval_expiry = Instant::now().add(Duration::from_secs_f64(self.interval_time_off));
+                                self.interval_state = false;
+                                self.set_running(false);
+                            }
+                        },
+                        false => 
+                        {
+                            if Instant::now() >= self.interval_expiry 
+                            {
+                                self.interval_expiry = Instant::now().add(Duration::from_secs_f64(self.interval_time_on));
+                                self.interval_state = true;
+                                self.set_running(true);
+                            }
+                        },
+                    }
+                },
+            }
+
             self.emit_state();
             self.last_state_emit = now;
         }
