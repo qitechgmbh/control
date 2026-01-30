@@ -41,7 +41,7 @@ impl TestMachineStepper {
 impl TestMachineStepper {
     pub fn get_state(&self) -> StateEvent {
         StateEvent {
-            target_speed: self.stepper.target_velocity as i16,
+            target_speed: self.stepper.target_velocity,
         }
     }
 

@@ -24,6 +24,16 @@ pub struct Wago750_671 {
     module: Option<Module>,
 
     pub state: u32,
+    
+    pub s0_cached: u8,
+    pub s1_cached: u8,
+    pub s2_cached: u8,
+    pub s3_cached: u8,
+    
+    pub c0_cached: u8,
+    pub c1_cached: u8,
+    pub c2_cached: u8,
+    pub c3_cached: u8,
 }
 
 /*
@@ -193,6 +203,8 @@ impl EthercatDeviceProcessing for Wago750_671 {
     }
 }
 
+
+
 impl EthercatDevice for Wago750_671 {
     fn input(
         &mut self,
@@ -217,30 +229,114 @@ impl EthercatDevice for Wago750_671 {
             s1: b[11],
         };
 
-        if (self.state == 0 && (self.s1() & 0x8) != 0)
+        if self.txpdo.s0 != self.s0_cached
         {
-            self.write_control_bits(1 + 2 + 4 + 8 , 0, 0);
+            tracing::warn!("S0 Changed: {:08b}", self.txpdo.s0);
+            self.s0_cached = self.txpdo.s0;
+        }
 
-            tracing::error!("Acknowledged Mode! {:08b}", self.s1());
+        if self.s1() != self.s1_cached
+        {
+            tracing::warn!("S1 Changed: {:08b}", self.s1());
+            self.s1_cached = self.s1();
+        }
+        
+        if self.s2() != self.s2_cached
+        {
+            tracing::warn!("S2 Changed: {:08b}", self.s2());
+            self.s2_cached = self.s2();
+        }
 
-            self.set_speed_setpoint(10_000, 10_000);
+        if self.s3() != self.s3_cached
+        {
+            tracing::warn!("S3 Changed: {:08b}", self.s3());
+            self.s3_cached = self.s3();
+        }
 
+        // states
+
+        if self.state == 0 
+        {
+            tracing::warn!("State 0: Reset All");
+            
+            // enable "Enable"
+            self.write_control_bits(0, 128, 128);
             self.state = 1;
         }
 
-        else if(self.state == 1)
+        else if self.state == 1 
         {
+            tracing::warn!("State 1: Enable");
+            
+            // enable "Enable"
+            self.write_control_bits(1, 0, 0);
+            self.set_speed_setpoint(10_000, 10_000);
+            self.state = 2;
+        }
+        
+        // await ack
+        else if self.state == 2 && (self.s1() & 0x1) != 0
+        {
+            tracing::warn!("State 2: Stop2_N");
+            // enable "Stop2_N"
+            self.write_control_bits(1 + 2, 0, 0);
+            self.state = 3;
+        }
+        
+        // await ack 
+        else if self.state == 3 && (self.s1() & 0x2) != 0
+        {
+            tracing::warn!("State 3: Set M_SpeedControl");
+            // set M_SpeedControl
             self.write_control_bits(1 + 2 + 8, 0, 0);
-
+            self.state = 4;
+        }
+        
+        // await ack    
+        else if self.state == 4 && (self.s1() & 0x8) != 0
+        {
+            tracing::warn!("State 4: Set Start");
+            // send start signal
+            self.write_control_bits(1 + 2 + 4 + 8, 0, 0);
+            self.state = 5;
+        }
+        
+        else if self.state == 5
+        {
             if (self.s1() & 0x4) != 0
             {
-                tracing::error!("Acknowledged Start!: {:08b}", self.s1());
+                tracing::warn!("State 5: Operational");
             }
+            
+            // should be running now
+            self.write_control_bits(1 + 2 + 8, 0, 0);
+        }
+        
+        // check if outputs changed
+        
+        if self.rxpdo.c0 != self.c0_cached
+        {
+            tracing::warn!("C0 Changed: {:08b}", self.rxpdo.c0);
+            self.c0_cached = self.rxpdo.c0;
+        }
+        
+        if self.rxpdo.c1 != self.c1_cached
+        {
+            tracing::warn!("C1 Changed: {:08b}", self.rxpdo.c1);
+            self.c1_cached = self.rxpdo.c1;
+        }
+        
+        if self.rxpdo.c2 != self.c2_cached
+        {
+            tracing::warn!("C2 Changed: {:08b}", self.rxpdo.c2);
+            self.c2_cached = self.rxpdo.c2;
         }
 
-        // tracing::error!("Cycle: {:08b}", self.s1());
-
-        // tracing::error!("Cycle");
+        if self.rxpdo.c3 != self.c3_cached
+        {
+            tracing::warn!("C3 Changed: {:08b}", self.rxpdo.c3);
+            self.c3_cached = self.rxpdo.c3;
+        }
 
         Ok(())
     }
@@ -254,16 +350,9 @@ impl EthercatDevice for Wago750_671 {
         output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
 
-        // tracing::error!("Thing: {:08b}", self.s1());
-
-        if (self.rxpdo.c1 & 0x4) != 0
-        {
-            tracing::error!("Thing: {:08b}", self.rxpdo.c1);
-        }
-
         let base = self.rx_bit_offset;
 
-       let b = [
+        let b = [
             self.rxpdo.c0,
             0,
             self.rxpdo.velocity.to_le_bytes()[0],
@@ -359,7 +448,17 @@ impl NewEthercatDevice for Wago750_671 {
             module: None,
             rxpdo: Wago750_671RxPdo::default(),
             txpdo: Wago750_671TxPdo::default(),
-            state: 0,
+            state: 99,
+            
+            c0_cached: 0,
+            c1_cached: 0,
+            c2_cached: 0,
+            c3_cached: 0,
+            
+            s0_cached: 0,
+            s1_cached: 0,
+            s2_cached: 0,
+            s3_cached: 0,
         }
     }
 }
