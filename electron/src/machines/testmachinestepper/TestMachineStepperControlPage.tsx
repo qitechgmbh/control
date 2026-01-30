@@ -6,9 +6,11 @@ import { useTestMachineStepper } from "./useTestMachineStepper";
 import { Label } from "@/control/Label";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
+import { TouchButton } from "@/components/touch/TouchButton";
+import { fa } from "zod/v4/locales";
 
 export function TestMachineStepperControlPage() {
-  const { state, setTargetSpeed } = useTestMachineStepper();
+  const { state, setTargetSpeed, setEnabled, clearErrors, stopClearErrors } = useTestMachineStepper();
 
   return (
     <Page>
@@ -27,6 +29,42 @@ export function TestMachineStepperControlPage() {
               onChange={setTargetSpeed}
             />
           </Label>
+          <TouchButton
+            variant="outline"
+            icon="lu:CirclePower"
+            onClick={() => setEnabled(true)}
+            disabled={false}
+            isLoading={false}
+          >
+            Enable
+          </TouchButton>
+          <TouchButton
+            variant="outline"
+            icon="lu:CirclePower"
+            onClick={() => setEnabled(false)}
+            disabled={false}
+            isLoading={false}
+          >
+            Disable
+          </TouchButton>
+          <TouchButton
+            variant="outline"
+            icon="lu:CirclePower"
+            onClick={() => clearErrors()}
+            disabled={false}
+            isLoading={false}
+          >
+            Clear Errors
+          </TouchButton>
+          <TouchButton
+            variant="outline"
+            icon="lu:CirclePower"
+            onClick={() => stopClearErrors()}
+            disabled={false}
+            isLoading={false}
+          >
+            Stop clearing Errors
+          </TouchButton>
         </ControlCard>
       </ControlGrid>
     </Page>

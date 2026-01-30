@@ -36,11 +36,11 @@ impl StepperVelocityWago750671 {
 
         dev.state = 0;
 
-        match enabled 
-        {
-            true => dev.write_control_bits(1 + 2 + 8, 128, 0),
-            _    => dev.write_control_bits(0, 0, 0), 
-        }
+        // match enabled 
+        // {
+        //     true => dev.write_control_bits(1 + 2 + 8, 128, 0),
+        //     _    => dev.write_control_bits(0, 0, 0), 
+        // }
     }
 }
 

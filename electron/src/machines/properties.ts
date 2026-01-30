@@ -670,8 +670,8 @@ export const testmachinestepper: MachineProperties = {
       role_label: "Bus Coupler",
       allowed_devices: [
         {
-          vendor_id: 0x21,
-          product_id: 0x07500354,
+          vendor_id: 0x00000021,
+          product_id: 0x67214e8,
           revision: 0x2,
         },
       ],

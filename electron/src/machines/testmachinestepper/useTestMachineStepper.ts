@@ -2,9 +2,12 @@ import { toastError } from "@/components/Toast";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { testMachineStepperSerialRoute } from "@/routes/routes";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { useTestMachineStepperNamespace, StateEvent } from "./testMachineStepperNamespace";
+import {
+  useTestMachineStepperNamespace,
+  StateEvent,
+} from "./testMachineStepperNamespace";
 import { useMachineMutate } from "@/client/useClient";
-import { produce } from "immer";
+import { current, produce } from "immer";
 import { useEffect, useMemo } from "react";
 import { testmachinestepper } from "@/machines/properties";
 import { z } from "zod";
@@ -74,8 +77,50 @@ export function useTestMachineStepper() {
     );
   };
 
+  const setEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.enabled = enabled;
+      },
+      () =>
+        sendMutation({
+          machine_identification_unique: machineIdentification,
+          data: { action: "SetEnabled", value: { enabled } },
+        }),
+    );
+  };
+
+  const clearErrors = () => {
+    updateStateOptimistically(
+      (current) => {
+        current.clear = true;
+      },
+      () =>
+        sendMutation({
+          machine_identification_unique: machineIdentification,
+          data: { action: "ClearErrors", value: { clear: true } },
+        }),
+    );
+  };
+
+  const stopClearErrors = () => {
+    updateStateOptimistically(
+      (current) => {
+        current.clear = true
+      },
+      () =>
+        sendMutation({
+          machine_identification_unique: machineIdentification,
+          data: { action: "StopClearErrors", value: { clear: true } },
+        }),
+    );
+  };
+
   return {
     state: stateOptimistic.value,
     setTargetSpeed,
+    setEnabled,
+    clearErrors,
+    stopClearErrors,
   };
 }
