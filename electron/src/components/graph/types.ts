@@ -25,13 +25,14 @@ export type PropGraphSync = {
 
 // Configuration types for additional lines
 export type GraphLine = {
-  type: "threshold" | "target";
+  type: "threshold" | "target" | "user_marker"; // TODO: redundant or not?
   value: number;
   color: string;
   label?: string;
   width?: number;
   dash?: number[];
   show?: boolean;
+  markerTimestamp?: number;
 };
 
 export type GraphConfig = {
@@ -85,6 +86,7 @@ export type ControlProps = {
   onSwitchToLive: () => void;
   onSwitchToHistorical: () => void;
   onExport?: () => void;
+  onAddMarker?: () => void;
   timeWindowOptions?: TimeWindowOption[];
   showFromTimestamp?: number | null;
   onShowFromChange?: (timestamp: number | null) => void;
