@@ -364,7 +364,7 @@ pub async fn setup_loop(
                         Some(meta) => {
                             let meta_data = EtherCatDeviceMetaData {
                                 configured_address: module.slot,
-                                name: "wago module".to_owned(),
+                                name:module.name,
                                 vendor_id:module.vendor_id,
                                 product_id: module.product_id,
                                 revision: 0x2,
@@ -388,7 +388,7 @@ pub async fn setup_loop(
                         Some(meta) => {
                             let meta_data = EtherCatDeviceMetaData {
                                 configured_address: module.slot,
-                                name: "IP20 EC DI8 DO8 module".to_owned(),
+                                name:module.name,
                                 vendor_id:module.vendor_id,
                                 product_id: module.product_id,
                                 revision: 0x1,
