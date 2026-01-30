@@ -20,7 +20,7 @@ pub struct TemperatureController {
     temperature_pid_output: f64,
     heating_element_wattage: f64,
     max_clamp: f64,
-    
+
     // Auto-tuning support
     pub autotuner: Option<PidAutoTuner>,
     autotuning_active: bool,
@@ -90,15 +90,15 @@ impl TemperatureController {
     /// Start PID auto-tuning for this heater
     pub fn start_autotuning(&mut self, target_temp: ThermodynamicTemperature) {
         let config = AutoTuneConfig {
-            tune_delta: 5.0,          // ±5°C oscillation around target (like Klipper)
-            max_power: 1.0,           // Full power heating
+            tune_delta: 5.0,           // ±5°C oscillation around target (like Klipper)
+            max_power: 1.0,            // Full power heating
             max_duration_secs: 3600.0, // 1 hour timeout
         };
-        
+
         let target_celsius = target_temp.get::<degree_celsius>();
         let mut tuner = PidAutoTuner::new(config);
         tuner.start(Instant::now(), target_celsius);
-        
+
         self.autotuner = Some(tuner);
         self.autotuning_active = true;
         self.set_target_temperature(target_temp);
@@ -135,11 +135,11 @@ impl TemperatureController {
                     let kp = result.kp;
                     let ki = result.ki;
                     let kd = result.kd;
-                    
+
                     // Apply the tuned parameters
                     self.pid.configure(ki, kp, kd);
                     self.autotuning_active = false;
-                    
+
                     return Some((kp, ki, kd));
                 }
             } else if tuner.is_failed() {
@@ -172,16 +172,16 @@ impl TemperatureController {
             if let Some(tuner) = &mut self.autotuner {
                 let current_temp = temperature_celsius.get::<degree_celsius>();
                 let (duty_cycle, completed) = tuner.update(current_temp, now);
-                
+
                 if completed {
                     // Auto-tuning finished (either success or failure)
                     // The result will be checked by get_autotuning_result()
                     self.autotuning_active = false;
                 }
-                
+
                 // Use the auto-tuner's output
                 self.temperature_pid_output = duty_cycle.clamp(0.0, self.max_clamp);
-                
+
                 // PWM logic
                 let elapsed = now.duration_since(self.window_start);
                 if elapsed >= self.pwm_period {
