@@ -46,7 +46,8 @@ import * as XLSX from "xlsx";
  * Sanitizes cell values to avoid invalid XML in XLSX exports.
  */
 export class ExcelCellSanitizer {
-  private static invalidXmlChars = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\uD800-\uDFFF\uFFFE\uFFFF]/g;
+  private static invalidXmlChars =
+    /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\uD800-\uDFFF\uFFFE\uFFFF]/g;
 
   static sanitizeCell(value: unknown): string | number {
     if (typeof value === "number") {

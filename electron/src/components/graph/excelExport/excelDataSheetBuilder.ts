@@ -175,5 +175,4 @@ export class DataSheetBuilder {
       ? this.graphLine.renderValue(value)
       : this.formatter.formatNumber(value);
   }
-
 }

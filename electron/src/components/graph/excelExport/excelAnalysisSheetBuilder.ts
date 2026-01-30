@@ -214,7 +214,6 @@ export class AnalysisSheetBuilder {
     return Number.isFinite(value) ? value : "";
   }
 
-
   private async addMetadata(
     sheetData: any[][],
     columnCount: number,

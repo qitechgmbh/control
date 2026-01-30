@@ -136,7 +136,11 @@ export class ExcelExporter {
         bookType: "xlsx",
       });
 
-      this.triggerDownload(xlsxBuffer, groupId, DateFormatter.getExportTimestamp());
+      this.triggerDownload(
+        xlsxBuffer,
+        groupId,
+        DateFormatter.getExportTimestamp(),
+      );
     } catch (error) {
       alert(
         `Error exporting data to Excel: ${
