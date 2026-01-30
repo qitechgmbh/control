@@ -28,7 +28,7 @@ impl Default for AutoTuneConfig {
         Self {
             tune_delta: 5.0,
             max_power: 1.0,
-            max_duration_secs: 600.0,
+            max_duration_secs: 3600.0, // 60 minutes
         }
     }
 }
@@ -99,7 +99,7 @@ impl PidAutoTuner {
         self.state = AutoTuneState::Running;
         self.target_temp = target_temp;
         self.heating = true;
-        self.peak_value = -999999.0;
+        self.peak_value = 9999999.0; // When heating, track minimum (valley)
         self.peak_time = now;
         self.peaks.clear();
         self.start_time = Some(now);
@@ -133,16 +133,7 @@ impl PidAutoTuner {
         let upper_target = self.target_temp + self.config.tune_delta;
         let lower_target = self.target_temp - self.config.tune_delta;
         
-        // Check if we've crossed the target and need to switch heating/cooling
-        if self.heating && current_temp >= upper_target {
-            self.heating = false;
-            self.record_peak();
-        } else if !self.heating && current_temp <= lower_target {
-            self.heating = true;
-            self.record_peak();
-        }
-        
-        // Track peak values
+        // Track peak values BEFORE checking for crossing
         if self.heating {
             // When heating, track minimum (valley)
             if current_temp < self.peak_value {
@@ -155,6 +146,15 @@ impl PidAutoTuner {
                 self.peak_value = current_temp;
                 self.peak_time = now;
             }
+        }
+        
+        // Check if we've crossed the target and need to switch heating/cooling
+        if self.heating && current_temp >= upper_target {
+            self.heating = false;
+            self.record_peak();
+        } else if !self.heating && current_temp <= lower_target {
+            self.heating = true;
+            self.record_peak();
         }
         
         // Check if we have enough peaks to calculate PID
@@ -178,11 +178,11 @@ impl PidAutoTuner {
     fn record_peak(&mut self) {
         self.peaks.push((self.peak_value, self.peak_time));
         
-        // Reset peak tracking for next cycle
+        // Reset peak tracking for next cycle (following Klipper's logic)
         if self.heating {
-            self.peak_value = -999999.0; // Will track minimum
+            self.peak_value = 9999999.0; // When heating, we want to find the minimum (valley)
         } else {
-            self.peak_value = 999999.0;  // Will track maximum
+            self.peak_value = -9999999.0;  // When cooling, we want to find the maximum (peak)
         }
     }
     
@@ -297,6 +297,7 @@ impl PidAutoTuner {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
     
     #[test]
     fn test_autotuner_creation() {
@@ -327,5 +328,109 @@ mod tests {
         tuner.start(now, 150.0);
         tuner.stop();
         assert!(tuner.is_failed());
+    }
+    
+    #[test]
+    fn test_autotuner_oscillation() {
+        let config = AutoTuneConfig {
+            tune_delta: 5.0,
+            max_power: 1.0,
+            max_duration_secs: 3600.0, // 1 hour
+        };
+        let mut tuner = PidAutoTuner::new(config);
+        let mut now = Instant::now();
+        
+        tuner.start(now, 150.0);
+        
+        // Simulate temperature oscillations
+        // Should heat to 155, then cool to 145, repeatedly
+        let mut temp = 140.0;
+        let mut completed = false;
+        let mut iterations = 0;
+        
+        for cycle in 0..20 {
+            // Heating phase
+            while temp < 155.0 && !completed && iterations < 1000 {
+                temp += 0.5; // Simulate temperature rise
+                now += Duration::from_millis(100);
+                let (duty_cycle, done) = tuner.update(temp, now);
+                completed = done;
+                iterations += 1;
+                
+                if !completed && !tuner.heating {
+                    // We switched to cooling during heating phase - this is expected near the boundary
+                    println!("Switched to cooling at temp={}", temp);
+                    break;
+                }
+                if completed || temp >= 155.0 {
+                    break;
+                }
+            }
+            
+            if completed {
+                break;
+            }
+            
+            // Cooling phase
+            while temp > 145.0 && !completed && iterations < 1000 {
+                temp -= 0.3; // Simulate temperature drop
+                now += Duration::from_millis(100);
+                let (duty_cycle, done) = tuner.update(temp, now);
+                completed = done;
+                iterations += 1;
+                
+                if !completed && tuner.heating {
+                    // We switched to heating during cooling phase - this is expected near the boundary
+                    println!("Switched to heating at temp={}", temp);
+                    break;
+                }
+                if completed || temp <= 145.0 {
+                    break;
+                }
+            }
+            
+            if completed {
+                break;
+            }
+            
+            // Check progress
+            if cycle % 3 == 0 {
+                let progress = tuner.get_progress_percent();
+                println!("Cycle {}: Progress {}%", cycle, progress);
+            }
+        }
+        
+        assert!(completed, "Auto-tuning should complete after sufficient oscillations");
+        assert!(tuner.is_completed(), "Should be in completed state");
+        assert!(tuner.result.is_some(), "Should have a result");
+        
+        let result = tuner.result.as_ref().unwrap();
+        println!("Auto-tune result: Kp={:.3}, Ki={:.3}, Kd={:.3}", result.kp, result.ki, result.kd);
+        println!("Ku={:.3}, Tu={:.3}", result.ku, result.tu);
+        
+        // Basic sanity checks
+        assert!(result.kp > 0.0, "Kp should be positive");
+        assert!(result.ki > 0.0, "Ki should be positive");
+        assert!(result.kd > 0.0, "Kd should be positive");
+    }
+    
+    #[test]
+    fn test_autotuner_timeout() {
+        let config = AutoTuneConfig {
+            tune_delta: 5.0,
+            max_power: 1.0,
+            max_duration_secs: 1.0, // Very short timeout
+        };
+        let mut tuner = PidAutoTuner::new(config);
+        let mut now = Instant::now();
+        
+        tuner.start(now, 150.0);
+        
+        // Wait for timeout
+        now += Duration::from_secs(2);
+        let (_, completed) = tuner.update(150.0, now);
+        
+        assert!(completed, "Should timeout");
+        assert!(tuner.is_failed(), "Should fail on timeout");
     }
 }
