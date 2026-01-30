@@ -628,6 +628,9 @@ export function gluetexMessageHandler(
   store: StoreApi<GluetexNamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<GluetexNamespaceStore>,
 ): EventHandler {
+  // Track already shown autotune completion toasts to prevent duplicates on event replay
+  const shownAutotuneToasts = new Set<string>();
+  
   return (event: Event<any>) => {
     const eventName = event.name;
 
@@ -933,15 +936,21 @@ export function gluetexMessageHandler(
           heatingAutoTuneCompleteEventSchema.parse(event);
         console.log("Auto-tuning complete:", autoTuneEvent.data);
         
-        // Show success notification - force synchronous update for immediate visibility
-        store.setState((state) => state); // Trigger immediate render
+        // Create a unique key for this autotune completion event to prevent duplicate toasts
+        const toastKey = `${autoTuneEvent.ts}-${autoTuneEvent.data.zone}`;
         
-        import("@/components/Toast").then(({ toastSuccess }) => {
-          toastSuccess(
-            "PID Auto-Tuning Complete",
-            `Zone ${autoTuneEvent.data.zone}: Kp=${autoTuneEvent.data.kp.toFixed(3)}, Ki=${autoTuneEvent.data.ki.toFixed(4)}, Kd=${autoTuneEvent.data.kd.toFixed(4)}`,
-          );
-        });
+        // Only show toast if we haven't already shown it for this specific completion
+        if (!shownAutotuneToasts.has(toastKey)) {
+          shownAutotuneToasts.add(toastKey);
+          
+          // Show success notification
+          import("@/components/Toast").then(({ toastSuccess }) => {
+            toastSuccess(
+              "PID Auto-Tuning Complete",
+              `Zone ${autoTuneEvent.data.zone}: Kp=${autoTuneEvent.data.kp.toFixed(3)}, Ki=${autoTuneEvent.data.ki.toFixed(4)}, Kd=${autoTuneEvent.data.kd.toFixed(4)}`,
+            );
+          });
+        }
       } else {
         handleUnhandledEventError(eventName);
       }
