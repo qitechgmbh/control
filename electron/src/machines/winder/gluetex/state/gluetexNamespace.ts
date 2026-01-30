@@ -630,7 +630,7 @@ export function gluetexMessageHandler(
 ): EventHandler {
   // Track already shown autotune completion toasts to prevent duplicates on event replay
   const shownAutotuneToasts = new Set<string>();
-  
+
   return (event: Event<any>) => {
     const eventName = event.name;
 
@@ -932,17 +932,16 @@ export function gluetexMessageHandler(
         eventName === "HeatingAutoTuneCompleteEvent"
       ) {
         // Parse auto-tuning complete event
-        const autoTuneEvent =
-          heatingAutoTuneCompleteEventSchema.parse(event);
+        const autoTuneEvent = heatingAutoTuneCompleteEventSchema.parse(event);
         console.log("Auto-tuning complete:", autoTuneEvent.data);
-        
+
         // Create a unique key for this autotune completion event to prevent duplicate toasts
         const toastKey = `${autoTuneEvent.ts}-${autoTuneEvent.data.zone}`;
-        
+
         // Only show toast if we haven't already shown it for this specific completion
         if (!shownAutotuneToasts.has(toastKey)) {
           shownAutotuneToasts.add(toastKey);
-          
+
           // Show success notification
           import("@/components/Toast").then(({ toastSuccess }) => {
             toastSuccess(

@@ -493,19 +493,27 @@ export function GluetexSettingPage() {
         <ControlCard title="Heating Zone 1">
           <div className="flex flex-col gap-4">
             {state?.heating_states?.zone_1?.autotuning_active && (
-              <div className="bg-blue-100 dark:bg-blue-900 p-4 rounded">
-                <p className="text-sm font-semibold">Auto-tuning in progress...</p>
-                <p className="text-sm">Progress: {state?.heating_states?.zone_1?.autotuning_progress.toFixed(0)}%</p>
+              <div className="rounded bg-blue-100 p-4 dark:bg-blue-900">
+                <p className="text-sm font-semibold">
+                  Auto-tuning in progress...
+                </p>
+                <p className="text-sm">
+                  Progress:{" "}
+                  {state?.heating_states?.zone_1?.autotuning_progress.toFixed(
+                    0,
+                  )}
+                  %
+                </p>
                 <button
                   onClick={() => stopHeatingAutoTune(1)}
-                  className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                  className="mt-2 rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
                 >
                   Stop Auto-Tuning
                 </button>
               </div>
             )}
             {!state?.heating_states?.zone_1?.autotuning_active && (
-              <div className="flex flex-row gap-2 items-center">
+              <div className="flex flex-row items-center gap-2">
                 <Label label="Target Temperature (°C)">
                   <EditValue
                     value={autoTuneTargetTemps.zone_1}
@@ -516,80 +524,87 @@ export function GluetexSettingPage() {
                     max={250}
                     defaultValue={150}
                     renderValue={(value) => value.toFixed(0)}
-                    onChange={(value) => setAutoTuneTargetTemps({...autoTuneTargetTemps, zone_1: value})}
+                    onChange={(value) =>
+                      setAutoTuneTargetTemps({
+                        ...autoTuneTargetTemps,
+                        zone_1: value,
+                      })
+                    }
                   />
                 </Label>
                 <button
-                  onClick={() => startHeatingAutoTune(1, autoTuneTargetTemps.zone_1)}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
+                  onClick={() =>
+                    startHeatingAutoTune(1, autoTuneTargetTemps.zone_1)
+                  }
+                  className="rounded bg-green-500 px-4 py-2 whitespace-nowrap text-white hover:bg-green-600"
                 >
                   Start PID Tuning
                 </button>
               </div>
             )}
             <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Proportional Gain (Kp)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_1?.kp}
-                title={"Kp"}
-                unit={undefined}
-                step={0.01}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_1?.kp}
-                renderValue={(value) => roundToDecimals(value, 3)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_1",
-                    value,
-                    state?.heating_pid_settings?.zone_1?.ki ?? 0,
-                    state?.heating_pid_settings?.zone_1?.kd ?? 0,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Proportional Gain (Kp)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_1?.kp}
+                  title={"Kp"}
+                  unit={undefined}
+                  step={0.01}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_1?.kp}
+                  renderValue={(value) => roundToDecimals(value, 3)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_1",
+                      value,
+                      state?.heating_pid_settings?.zone_1?.ki ?? 0,
+                      state?.heating_pid_settings?.zone_1?.kd ?? 0,
+                    )
+                  }
+                />
+              </Label>
 
-            <Label label="Integral Gain (Ki)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_1?.ki}
-                title={"Ki"}
-                unit={undefined}
-                step={0.0001}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_1?.ki}
-                renderValue={(value) => roundToDecimals(value, 4)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_1",
-                    state?.heating_pid_settings?.zone_1?.kp ?? 0,
-                    value,
-                    state?.heating_pid_settings?.zone_1?.kd ?? 0,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Integral Gain (Ki)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_1?.ki}
+                  title={"Ki"}
+                  unit={undefined}
+                  step={0.0001}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_1?.ki}
+                  renderValue={(value) => roundToDecimals(value, 4)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_1",
+                      state?.heating_pid_settings?.zone_1?.kp ?? 0,
+                      value,
+                      state?.heating_pid_settings?.zone_1?.kd ?? 0,
+                    )
+                  }
+                />
+              </Label>
 
-            <Label label="Derivative Gain (Kd)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_1?.kd}
-                title={"Kd"}
-                unit={undefined}
-                step={0.001}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_1?.kd}
-                renderValue={(value) => roundToDecimals(value, 4)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_1",
-                    state?.heating_pid_settings?.zone_1?.kp ?? 0,
-                    state?.heating_pid_settings?.zone_1?.ki ?? 0,
-                    value,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Derivative Gain (Kd)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_1?.kd}
+                  title={"Kd"}
+                  unit={undefined}
+                  step={0.001}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_1?.kd}
+                  renderValue={(value) => roundToDecimals(value, 4)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_1",
+                      state?.heating_pid_settings?.zone_1?.kp ?? 0,
+                      state?.heating_pid_settings?.zone_1?.ki ?? 0,
+                      value,
+                    )
+                  }
+                />
+              </Label>
             </div>
           </div>
         </ControlCard>
@@ -597,14 +612,27 @@ export function GluetexSettingPage() {
         <ControlCard title="Heating Zone 2">
           <div className="flex flex-col gap-4">
             {state?.heating_states?.zone_2?.autotuning_active && (
-              <div className="bg-blue-100 dark:bg-blue-900 p-4 rounded">
-                <p className="text-sm font-semibold">Auto-tuning in progress...</p>
-                <p className="text-sm">Progress: {state?.heating_states?.zone_2?.autotuning_progress.toFixed(0)}%</p>
-                <button onClick={() => stopHeatingAutoTune(2)} className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Stop Auto-Tuning</button>
+              <div className="rounded bg-blue-100 p-4 dark:bg-blue-900">
+                <p className="text-sm font-semibold">
+                  Auto-tuning in progress...
+                </p>
+                <p className="text-sm">
+                  Progress:{" "}
+                  {state?.heating_states?.zone_2?.autotuning_progress.toFixed(
+                    0,
+                  )}
+                  %
+                </p>
+                <button
+                  onClick={() => stopHeatingAutoTune(2)}
+                  className="mt-2 rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+                >
+                  Stop Auto-Tuning
+                </button>
               </div>
             )}
             {!state?.heating_states?.zone_2?.autotuning_active && (
-              <div className="flex flex-row gap-2 items-center">
+              <div className="flex flex-row items-center gap-2">
                 <Label label="Target Temperature (°C)">
                   <EditValue
                     value={autoTuneTargetTemps.zone_2}
@@ -615,80 +643,87 @@ export function GluetexSettingPage() {
                     max={250}
                     defaultValue={150}
                     renderValue={(value) => value.toFixed(0)}
-                    onChange={(value) => setAutoTuneTargetTemps({...autoTuneTargetTemps, zone_2: value})}
+                    onChange={(value) =>
+                      setAutoTuneTargetTemps({
+                        ...autoTuneTargetTemps,
+                        zone_2: value,
+                      })
+                    }
                   />
                 </Label>
                 <button
-                  onClick={() => startHeatingAutoTune(2, autoTuneTargetTemps.zone_2)}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
+                  onClick={() =>
+                    startHeatingAutoTune(2, autoTuneTargetTemps.zone_2)
+                  }
+                  className="rounded bg-green-500 px-4 py-2 whitespace-nowrap text-white hover:bg-green-600"
                 >
                   Start PID Tuning
                 </button>
               </div>
             )}
             <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Proportional Gain (Kp)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_2?.kp}
-                title={"Kp"}
-                unit={undefined}
-                step={0.01}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_2?.kp}
-                renderValue={(value) => roundToDecimals(value, 3)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_2",
-                    value,
-                    state?.heating_pid_settings?.zone_2?.ki ?? 0,
-                    state?.heating_pid_settings?.zone_2?.kd ?? 0,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Proportional Gain (Kp)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_2?.kp}
+                  title={"Kp"}
+                  unit={undefined}
+                  step={0.01}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_2?.kp}
+                  renderValue={(value) => roundToDecimals(value, 3)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_2",
+                      value,
+                      state?.heating_pid_settings?.zone_2?.ki ?? 0,
+                      state?.heating_pid_settings?.zone_2?.kd ?? 0,
+                    )
+                  }
+                />
+              </Label>
 
-            <Label label="Integral Gain (Ki)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_2?.ki}
-                title={"Ki"}
-                unit={undefined}
-                step={0.0001}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_2?.ki}
-                renderValue={(value) => roundToDecimals(value, 4)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_2",
-                    state?.heating_pid_settings?.zone_2?.kp ?? 0,
-                    value,
-                    state?.heating_pid_settings?.zone_2?.kd ?? 0,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Integral Gain (Ki)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_2?.ki}
+                  title={"Ki"}
+                  unit={undefined}
+                  step={0.0001}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_2?.ki}
+                  renderValue={(value) => roundToDecimals(value, 4)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_2",
+                      state?.heating_pid_settings?.zone_2?.kp ?? 0,
+                      value,
+                      state?.heating_pid_settings?.zone_2?.kd ?? 0,
+                    )
+                  }
+                />
+              </Label>
 
-            <Label label="Derivative Gain (Kd)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_2?.kd}
-                title={"Kd"}
-                unit={undefined}
-                step={0.001}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_2?.kd}
-                renderValue={(value) => roundToDecimals(value, 4)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_2",
-                    state?.heating_pid_settings?.zone_2?.kp ?? 0,
-                    state?.heating_pid_settings?.zone_2?.ki ?? 0,
-                    value,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Derivative Gain (Kd)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_2?.kd}
+                  title={"Kd"}
+                  unit={undefined}
+                  step={0.001}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_2?.kd}
+                  renderValue={(value) => roundToDecimals(value, 4)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_2",
+                      state?.heating_pid_settings?.zone_2?.kp ?? 0,
+                      state?.heating_pid_settings?.zone_2?.ki ?? 0,
+                      value,
+                    )
+                  }
+                />
+              </Label>
             </div>
           </div>
         </ControlCard>
@@ -696,14 +731,27 @@ export function GluetexSettingPage() {
         <ControlCard title="Heating Zone 3">
           <div className="flex flex-col gap-4">
             {state?.heating_states?.zone_3?.autotuning_active && (
-              <div className="bg-blue-100 dark:bg-blue-900 p-4 rounded">
-                <p className="text-sm font-semibold">Auto-tuning in progress...</p>
-                <p className="text-sm">Progress: {state?.heating_states?.zone_3?.autotuning_progress.toFixed(0)}%</p>
-                <button onClick={() => stopHeatingAutoTune(3)} className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Stop Auto-Tuning</button>
+              <div className="rounded bg-blue-100 p-4 dark:bg-blue-900">
+                <p className="text-sm font-semibold">
+                  Auto-tuning in progress...
+                </p>
+                <p className="text-sm">
+                  Progress:{" "}
+                  {state?.heating_states?.zone_3?.autotuning_progress.toFixed(
+                    0,
+                  )}
+                  %
+                </p>
+                <button
+                  onClick={() => stopHeatingAutoTune(3)}
+                  className="mt-2 rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+                >
+                  Stop Auto-Tuning
+                </button>
               </div>
             )}
             {!state?.heating_states?.zone_3?.autotuning_active && (
-              <div className="flex flex-row gap-2 items-center">
+              <div className="flex flex-row items-center gap-2">
                 <Label label="Target Temperature (°C)">
                   <EditValue
                     value={autoTuneTargetTemps.zone_3}
@@ -714,80 +762,87 @@ export function GluetexSettingPage() {
                     max={250}
                     defaultValue={150}
                     renderValue={(value) => value.toFixed(0)}
-                    onChange={(value) => setAutoTuneTargetTemps({...autoTuneTargetTemps, zone_3: value})}
+                    onChange={(value) =>
+                      setAutoTuneTargetTemps({
+                        ...autoTuneTargetTemps,
+                        zone_3: value,
+                      })
+                    }
                   />
                 </Label>
                 <button
-                  onClick={() => startHeatingAutoTune(3, autoTuneTargetTemps.zone_3)}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
+                  onClick={() =>
+                    startHeatingAutoTune(3, autoTuneTargetTemps.zone_3)
+                  }
+                  className="rounded bg-green-500 px-4 py-2 whitespace-nowrap text-white hover:bg-green-600"
                 >
                   Start PID Tuning
                 </button>
               </div>
             )}
             <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Proportional Gain (Kp)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_3?.kp}
-                title={"Kp"}
-                unit={undefined}
-                step={0.01}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_3?.kp}
-                renderValue={(value) => roundToDecimals(value, 3)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_3",
-                    value,
-                    state?.heating_pid_settings?.zone_3?.ki ?? 0,
-                    state?.heating_pid_settings?.zone_3?.kd ?? 0,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Proportional Gain (Kp)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_3?.kp}
+                  title={"Kp"}
+                  unit={undefined}
+                  step={0.01}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_3?.kp}
+                  renderValue={(value) => roundToDecimals(value, 3)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_3",
+                      value,
+                      state?.heating_pid_settings?.zone_3?.ki ?? 0,
+                      state?.heating_pid_settings?.zone_3?.kd ?? 0,
+                    )
+                  }
+                />
+              </Label>
 
-            <Label label="Integral Gain (Ki)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_3?.ki}
-                title={"Ki"}
-                unit={undefined}
-                step={0.0001}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_3?.ki}
-                renderValue={(value) => roundToDecimals(value, 4)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_3",
-                    state?.heating_pid_settings?.zone_3?.kp ?? 0,
-                    value,
-                    state?.heating_pid_settings?.zone_3?.kd ?? 0,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Integral Gain (Ki)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_3?.ki}
+                  title={"Ki"}
+                  unit={undefined}
+                  step={0.0001}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_3?.ki}
+                  renderValue={(value) => roundToDecimals(value, 4)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_3",
+                      state?.heating_pid_settings?.zone_3?.kp ?? 0,
+                      value,
+                      state?.heating_pid_settings?.zone_3?.kd ?? 0,
+                    )
+                  }
+                />
+              </Label>
 
-            <Label label="Derivative Gain (Kd)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_3?.kd}
-                title={"Kd"}
-                unit={undefined}
-                step={0.001}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_3?.kd}
-                renderValue={(value) => roundToDecimals(value, 4)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_3",
-                    state?.heating_pid_settings?.zone_3?.kp ?? 0,
-                    state?.heating_pid_settings?.zone_3?.ki ?? 0,
-                    value,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Derivative Gain (Kd)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_3?.kd}
+                  title={"Kd"}
+                  unit={undefined}
+                  step={0.001}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_3?.kd}
+                  renderValue={(value) => roundToDecimals(value, 4)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_3",
+                      state?.heating_pid_settings?.zone_3?.kp ?? 0,
+                      state?.heating_pid_settings?.zone_3?.ki ?? 0,
+                      value,
+                    )
+                  }
+                />
+              </Label>
             </div>
           </div>
         </ControlCard>
@@ -795,14 +850,27 @@ export function GluetexSettingPage() {
         <ControlCard title="Heating Zone 4">
           <div className="flex flex-col gap-4">
             {state?.heating_states?.zone_4?.autotuning_active && (
-              <div className="bg-blue-100 dark:bg-blue-900 p-4 rounded">
-                <p className="text-sm font-semibold">Auto-tuning in progress...</p>
-                <p className="text-sm">Progress: {state?.heating_states?.zone_4?.autotuning_progress.toFixed(0)}%</p>
-                <button onClick={() => stopHeatingAutoTune(4)} className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Stop Auto-Tuning</button>
+              <div className="rounded bg-blue-100 p-4 dark:bg-blue-900">
+                <p className="text-sm font-semibold">
+                  Auto-tuning in progress...
+                </p>
+                <p className="text-sm">
+                  Progress:{" "}
+                  {state?.heating_states?.zone_4?.autotuning_progress.toFixed(
+                    0,
+                  )}
+                  %
+                </p>
+                <button
+                  onClick={() => stopHeatingAutoTune(4)}
+                  className="mt-2 rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+                >
+                  Stop Auto-Tuning
+                </button>
               </div>
             )}
             {!state?.heating_states?.zone_4?.autotuning_active && (
-              <div className="flex flex-row gap-2 items-center">
+              <div className="flex flex-row items-center gap-2">
                 <Label label="Target Temperature (°C)">
                   <EditValue
                     value={autoTuneTargetTemps.zone_4}
@@ -813,80 +881,87 @@ export function GluetexSettingPage() {
                     max={250}
                     defaultValue={150}
                     renderValue={(value) => value.toFixed(0)}
-                    onChange={(value) => setAutoTuneTargetTemps({...autoTuneTargetTemps, zone_4: value})}
+                    onChange={(value) =>
+                      setAutoTuneTargetTemps({
+                        ...autoTuneTargetTemps,
+                        zone_4: value,
+                      })
+                    }
                   />
                 </Label>
                 <button
-                  onClick={() => startHeatingAutoTune(4, autoTuneTargetTemps.zone_4)}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
+                  onClick={() =>
+                    startHeatingAutoTune(4, autoTuneTargetTemps.zone_4)
+                  }
+                  className="rounded bg-green-500 px-4 py-2 whitespace-nowrap text-white hover:bg-green-600"
                 >
                   Start PID Tuning
                 </button>
               </div>
             )}
             <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Proportional Gain (Kp)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_4?.kp}
-                title={"Kp"}
-                unit={undefined}
-                step={0.01}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_4?.kp}
-                renderValue={(value) => roundToDecimals(value, 3)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_4",
-                    value,
-                    state?.heating_pid_settings?.zone_4?.ki ?? 0,
-                    state?.heating_pid_settings?.zone_4?.kd ?? 0,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Proportional Gain (Kp)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_4?.kp}
+                  title={"Kp"}
+                  unit={undefined}
+                  step={0.01}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_4?.kp}
+                  renderValue={(value) => roundToDecimals(value, 3)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_4",
+                      value,
+                      state?.heating_pid_settings?.zone_4?.ki ?? 0,
+                      state?.heating_pid_settings?.zone_4?.kd ?? 0,
+                    )
+                  }
+                />
+              </Label>
 
-            <Label label="Integral Gain (Ki)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_4?.ki}
-                title={"Ki"}
-                unit={undefined}
-                step={0.0001}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_4?.ki}
-                renderValue={(value) => roundToDecimals(value, 4)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_4",
-                    state?.heating_pid_settings?.zone_4?.kp ?? 0,
-                    value,
-                    state?.heating_pid_settings?.zone_4?.kd ?? 0,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Integral Gain (Ki)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_4?.ki}
+                  title={"Ki"}
+                  unit={undefined}
+                  step={0.0001}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_4?.ki}
+                  renderValue={(value) => roundToDecimals(value, 4)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_4",
+                      state?.heating_pid_settings?.zone_4?.kp ?? 0,
+                      value,
+                      state?.heating_pid_settings?.zone_4?.kd ?? 0,
+                    )
+                  }
+                />
+              </Label>
 
-            <Label label="Derivative Gain (Kd)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_4?.kd}
-                title={"Kd"}
-                unit={undefined}
-                step={0.001}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_4?.kd}
-                renderValue={(value) => roundToDecimals(value, 4)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_4",
-                    state?.heating_pid_settings?.zone_4?.kp ?? 0,
-                    state?.heating_pid_settings?.zone_4?.ki ?? 0,
-                    value,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Derivative Gain (Kd)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_4?.kd}
+                  title={"Kd"}
+                  unit={undefined}
+                  step={0.001}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_4?.kd}
+                  renderValue={(value) => roundToDecimals(value, 4)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_4",
+                      state?.heating_pid_settings?.zone_4?.kp ?? 0,
+                      state?.heating_pid_settings?.zone_4?.ki ?? 0,
+                      value,
+                    )
+                  }
+                />
+              </Label>
             </div>
           </div>
         </ControlCard>
@@ -894,14 +969,27 @@ export function GluetexSettingPage() {
         <ControlCard title="Heating Zone 5">
           <div className="flex flex-col gap-4">
             {state?.heating_states?.zone_5?.autotuning_active && (
-              <div className="bg-blue-100 dark:bg-blue-900 p-4 rounded">
-                <p className="text-sm font-semibold">Auto-tuning in progress...</p>
-                <p className="text-sm">Progress: {state?.heating_states?.zone_5?.autotuning_progress.toFixed(0)}%</p>
-                <button onClick={() => stopHeatingAutoTune(5)} className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Stop Auto-Tuning</button>
+              <div className="rounded bg-blue-100 p-4 dark:bg-blue-900">
+                <p className="text-sm font-semibold">
+                  Auto-tuning in progress...
+                </p>
+                <p className="text-sm">
+                  Progress:{" "}
+                  {state?.heating_states?.zone_5?.autotuning_progress.toFixed(
+                    0,
+                  )}
+                  %
+                </p>
+                <button
+                  onClick={() => stopHeatingAutoTune(5)}
+                  className="mt-2 rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+                >
+                  Stop Auto-Tuning
+                </button>
               </div>
             )}
             {!state?.heating_states?.zone_5?.autotuning_active && (
-              <div className="flex flex-row gap-2 items-center">
+              <div className="flex flex-row items-center gap-2">
                 <Label label="Target Temperature (°C)">
                   <EditValue
                     value={autoTuneTargetTemps.zone_5}
@@ -912,80 +1000,87 @@ export function GluetexSettingPage() {
                     max={250}
                     defaultValue={150}
                     renderValue={(value) => value.toFixed(0)}
-                    onChange={(value) => setAutoTuneTargetTemps({...autoTuneTargetTemps, zone_5: value})}
+                    onChange={(value) =>
+                      setAutoTuneTargetTemps({
+                        ...autoTuneTargetTemps,
+                        zone_5: value,
+                      })
+                    }
                   />
                 </Label>
                 <button
-                  onClick={() => startHeatingAutoTune(5, autoTuneTargetTemps.zone_5)}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
+                  onClick={() =>
+                    startHeatingAutoTune(5, autoTuneTargetTemps.zone_5)
+                  }
+                  className="rounded bg-green-500 px-4 py-2 whitespace-nowrap text-white hover:bg-green-600"
                 >
                   Start PID Tuning
                 </button>
               </div>
             )}
             <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Proportional Gain (Kp)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_5?.kp}
-                title={"Kp"}
-                unit={undefined}
-                step={0.01}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_5?.kp}
-                renderValue={(value) => roundToDecimals(value, 3)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_5",
-                    value,
-                    state?.heating_pid_settings?.zone_5?.ki ?? 0,
-                    state?.heating_pid_settings?.zone_5?.kd ?? 0,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Proportional Gain (Kp)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_5?.kp}
+                  title={"Kp"}
+                  unit={undefined}
+                  step={0.01}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_5?.kp}
+                  renderValue={(value) => roundToDecimals(value, 3)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_5",
+                      value,
+                      state?.heating_pid_settings?.zone_5?.ki ?? 0,
+                      state?.heating_pid_settings?.zone_5?.kd ?? 0,
+                    )
+                  }
+                />
+              </Label>
 
-            <Label label="Integral Gain (Ki)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_5?.ki}
-                title={"Ki"}
-                unit={undefined}
-                step={0.0001}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_5?.ki}
-                renderValue={(value) => roundToDecimals(value, 4)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_5",
-                    state?.heating_pid_settings?.zone_5?.kp ?? 0,
-                    value,
-                    state?.heating_pid_settings?.zone_5?.kd ?? 0,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Integral Gain (Ki)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_5?.ki}
+                  title={"Ki"}
+                  unit={undefined}
+                  step={0.0001}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_5?.ki}
+                  renderValue={(value) => roundToDecimals(value, 4)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_5",
+                      state?.heating_pid_settings?.zone_5?.kp ?? 0,
+                      value,
+                      state?.heating_pid_settings?.zone_5?.kd ?? 0,
+                    )
+                  }
+                />
+              </Label>
 
-            <Label label="Derivative Gain (Kd)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_5?.kd}
-                title={"Kd"}
-                unit={undefined}
-                step={0.001}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_5?.kd}
-                renderValue={(value) => roundToDecimals(value, 4)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_5",
-                    state?.heating_pid_settings?.zone_5?.kp ?? 0,
-                    state?.heating_pid_settings?.zone_5?.ki ?? 0,
-                    value,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Derivative Gain (Kd)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_5?.kd}
+                  title={"Kd"}
+                  unit={undefined}
+                  step={0.001}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_5?.kd}
+                  renderValue={(value) => roundToDecimals(value, 4)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_5",
+                      state?.heating_pid_settings?.zone_5?.kp ?? 0,
+                      state?.heating_pid_settings?.zone_5?.ki ?? 0,
+                      value,
+                    )
+                  }
+                />
+              </Label>
             </div>
           </div>
         </ControlCard>
@@ -993,14 +1088,27 @@ export function GluetexSettingPage() {
         <ControlCard title="Heating Zone 6">
           <div className="flex flex-col gap-4">
             {state?.heating_states?.zone_6?.autotuning_active && (
-              <div className="bg-blue-100 dark:bg-blue-900 p-4 rounded">
-                <p className="text-sm font-semibold">Auto-tuning in progress...</p>
-                <p className="text-sm">Progress: {state?.heating_states?.zone_6?.autotuning_progress.toFixed(0)}%</p>
-                <button onClick={() => stopHeatingAutoTune(6)} className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Stop Auto-Tuning</button>
+              <div className="rounded bg-blue-100 p-4 dark:bg-blue-900">
+                <p className="text-sm font-semibold">
+                  Auto-tuning in progress...
+                </p>
+                <p className="text-sm">
+                  Progress:{" "}
+                  {state?.heating_states?.zone_6?.autotuning_progress.toFixed(
+                    0,
+                  )}
+                  %
+                </p>
+                <button
+                  onClick={() => stopHeatingAutoTune(6)}
+                  className="mt-2 rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+                >
+                  Stop Auto-Tuning
+                </button>
               </div>
             )}
             {!state?.heating_states?.zone_6?.autotuning_active && (
-              <div className="flex flex-row gap-2 items-center">
+              <div className="flex flex-row items-center gap-2">
                 <Label label="Target Temperature (°C)">
                   <EditValue
                     value={autoTuneTargetTemps.zone_6}
@@ -1011,80 +1119,87 @@ export function GluetexSettingPage() {
                     max={250}
                     defaultValue={150}
                     renderValue={(value) => value.toFixed(0)}
-                    onChange={(value) => setAutoTuneTargetTemps({...autoTuneTargetTemps, zone_6: value})}
+                    onChange={(value) =>
+                      setAutoTuneTargetTemps({
+                        ...autoTuneTargetTemps,
+                        zone_6: value,
+                      })
+                    }
                   />
                 </Label>
                 <button
-                  onClick={() => startHeatingAutoTune(6, autoTuneTargetTemps.zone_6)}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 whitespace-nowrap"
+                  onClick={() =>
+                    startHeatingAutoTune(6, autoTuneTargetTemps.zone_6)
+                  }
+                  className="rounded bg-green-500 px-4 py-2 whitespace-nowrap text-white hover:bg-green-600"
                 >
                   Start PID Tuning
                 </button>
               </div>
             )}
             <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Proportional Gain (Kp)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_6?.kp}
-                title={"Kp"}
-                unit={undefined}
-                step={0.01}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_6?.kp}
-                renderValue={(value) => roundToDecimals(value, 3)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_6",
-                    value,
-                    state?.heating_pid_settings?.zone_6?.ki ?? 0,
-                    state?.heating_pid_settings?.zone_6?.kd ?? 0,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Proportional Gain (Kp)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_6?.kp}
+                  title={"Kp"}
+                  unit={undefined}
+                  step={0.01}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_6?.kp}
+                  renderValue={(value) => roundToDecimals(value, 3)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_6",
+                      value,
+                      state?.heating_pid_settings?.zone_6?.ki ?? 0,
+                      state?.heating_pid_settings?.zone_6?.kd ?? 0,
+                    )
+                  }
+                />
+              </Label>
 
-            <Label label="Integral Gain (Ki)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_6?.ki}
-                title={"Ki"}
-                unit={undefined}
-                step={0.0001}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_6?.ki}
-                renderValue={(value) => roundToDecimals(value, 4)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_6",
-                    state?.heating_pid_settings?.zone_6?.kp ?? 0,
-                    value,
-                    state?.heating_pid_settings?.zone_6?.kd ?? 0,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Integral Gain (Ki)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_6?.ki}
+                  title={"Ki"}
+                  unit={undefined}
+                  step={0.0001}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_6?.ki}
+                  renderValue={(value) => roundToDecimals(value, 4)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_6",
+                      state?.heating_pid_settings?.zone_6?.kp ?? 0,
+                      value,
+                      state?.heating_pid_settings?.zone_6?.kd ?? 0,
+                    )
+                  }
+                />
+              </Label>
 
-            <Label label="Derivative Gain (Kd)">
-              <EditValue
-                value={state?.heating_pid_settings?.zone_6?.kd}
-                title={"Kd"}
-                unit={undefined}
-                step={0.001}
-                min={0}
-                max={15}
-                defaultValue={defaultState?.heating_pid_settings?.zone_6?.kd}
-                renderValue={(value) => roundToDecimals(value, 4)}
-                onChange={(value) =>
-                  setHeatingPid(
-                    "zone_6",
-                    state?.heating_pid_settings?.zone_6?.kp ?? 0,
-                    state?.heating_pid_settings?.zone_6?.ki ?? 0,
-                    value,
-                  )
-                }
-              />
-            </Label>
+              <Label label="Derivative Gain (Kd)">
+                <EditValue
+                  value={state?.heating_pid_settings?.zone_6?.kd}
+                  title={"Kd"}
+                  unit={undefined}
+                  step={0.001}
+                  min={0}
+                  max={15}
+                  defaultValue={defaultState?.heating_pid_settings?.zone_6?.kd}
+                  renderValue={(value) => roundToDecimals(value, 4)}
+                  onChange={(value) =>
+                    setHeatingPid(
+                      "zone_6",
+                      state?.heating_pid_settings?.zone_6?.kp ?? 0,
+                      state?.heating_pid_settings?.zone_6?.ki ?? 0,
+                      value,
+                    )
+                  }
+                />
+              </Label>
             </div>
           </div>
         </ControlCard>
