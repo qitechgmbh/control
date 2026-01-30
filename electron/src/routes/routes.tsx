@@ -81,6 +81,7 @@ import { MetricsControlPage } from "@/metrics/MetricsControlPage";
 
 import { WagoPower1Page } from "@/machines/wago_power/wago_power1/WagoPower1Page";
 import { WagoPower1ControlPage } from "@/machines/wago_power/wago_power1/WagoPower1ControlPage";
+import { VacuumConfigPage } from "@/machines/vacuum/ConfigPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -166,7 +167,7 @@ export const vacuumControlRoute = createRoute({
 export const vacuumConfigRoute = createRoute({
   getParentRoute: () => vacuumSerialRoute,
   path: "config",
-  component: () => <VacuumControlPage />,
+  component: () => <VacuumConfigPage />,
 });
 
 // ---
