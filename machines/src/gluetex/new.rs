@@ -267,12 +267,44 @@ impl MachineNewTrait for Gluetex {
                 device.0
             };
 
-            // Role 9: Addon Motor 4 EL7031-0030
-            let el7031_addon4 = {
+            // Role 9: Slave Puller EL7031-0030 (with analog input for tension arm)
+            let el7031_0030_slave = {
                 let device = get_ethercat_device::<EL7031_0030>(
                     hardware,
                     params,
                     9,
+                    vec![EL7031_0030_IDENTITY_A, EL7031_IDENTITY_A, EL7031_IDENTITY_B],
+                )
+                .await?;
+
+                let el7031_0030_config = EL7031_0030Configuration {
+                    stm_features: el7031_0030::coe::StmFeatures {
+                        operation_mode: EL70x1OperationMode::DirectVelocity,
+                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
+                        ..Default::default()
+                    },
+                    stm_motor: StmMotorConfiguration {
+                        max_current: 2700,
+                        ..Default::default()
+                    },
+                    pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
+                    ..Default::default()
+                };
+                device
+                    .0
+                    .write()
+                    .await
+                    .write_config(&device.1, &el7031_0030_config)
+                    .await?;
+                device.0
+            };
+
+            // Role 10: Addon Motor 4 EL7031-0030
+            let el7031_addon4 = {
+                let device = get_ethercat_device::<EL7031_0030>(
+                    hardware,
+                    params,
+                    10,
                     vec![EL7031_0030_IDENTITY_A, EL7031_IDENTITY_A, EL7031_IDENTITY_B],
                 )
                 .await?;
@@ -298,38 +330,6 @@ impl MachineNewTrait for Gluetex {
                     .write_config(&device.1, &el7031_0030_config)
                     .await?;
 
-                device.0
-            };
-
-            // Role 10: Slave Puller EL7031-0030 (with analog input for tension arm)
-            let el7031_0030_slave = {
-                let device = get_ethercat_device::<EL7031_0030>(
-                    hardware,
-                    params,
-                    10,
-                    vec![EL7031_0030_IDENTITY_A, EL7031_IDENTITY_A, EL7031_IDENTITY_B],
-                )
-                .await?;
-
-                let el7031_0030_config = EL7031_0030Configuration {
-                    stm_features: el7031_0030::coe::StmFeatures {
-                        operation_mode: EL70x1OperationMode::DirectVelocity,
-                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
-                        ..Default::default()
-                    },
-                    stm_motor: StmMotorConfiguration {
-                        max_current: 2700,
-                        ..Default::default()
-                    },
-                    pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
-                    ..Default::default()
-                };
-                device
-                    .0
-                    .write()
-                    .await
-                    .write_config(&device.1, &el7031_0030_config)
-                    .await?;
                 device.0
             };
 
