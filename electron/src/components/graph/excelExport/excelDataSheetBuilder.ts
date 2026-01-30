@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import { TimeSeries, seriesToUPlotData } from "@/lib/timeseries";
 import { renderUnitSymbol, Unit } from "@/control/units";
-import { GraphConfig, GraphLine } from "./types";
+import { GraphConfig, GraphLine } from "../types";
 import { IValueFormatter, ValueFormatter } from "./excelFormatters";
 import { StatisticsCalculator } from "./excelStatisticsCalculator";
 

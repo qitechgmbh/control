@@ -2,7 +2,7 @@ import * as XLSX from "xlsx";
 import ExcelJS from "exceljs";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { renderUnitSymbol } from "@/control/units";
-import { GraphLine } from "./types";
+import { GraphLine } from "../types";
 import { LogEntry } from "@/stores/logsStore";
 import {
   ExportConfig,

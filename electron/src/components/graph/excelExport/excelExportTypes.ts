@@ -1,5 +1,5 @@
 import { Unit } from "@/control/units";
-import { GraphConfig, SeriesData, GraphLine } from "./types";
+import { GraphConfig, SeriesData, GraphLine } from "../types";
 
 /**
  * Type definitions for export data structures
