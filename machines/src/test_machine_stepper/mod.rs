@@ -3,6 +3,7 @@ use crate::test_machine_stepper::api::{StateEvent, TestMachineStepperEvents};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::stepper_velocity_wago_750_671::StepperVelocityWago750671;
+use ethercat_hal::io::stepper_velocity_wago_750_672::StepperVelocityWago750672;
 use smol::channel::{Receiver, Sender};
 use std::time::Instant;
 pub mod act;
@@ -19,7 +20,7 @@ pub struct TestMachineStepper {
     pub namespace: TestMachineStepperNamespace,
     pub last_state_emit: Instant,
     pub main_sender: Option<Sender<AsyncThreadMessage>>,
-    pub stepper: StepperVelocityWago750671,
+    pub stepper: StepperVelocityWago750672,
 }
 
 impl Machine for TestMachineStepper {
@@ -41,7 +42,9 @@ impl TestMachineStepper {
 impl TestMachineStepper {
     pub fn get_state(&self) -> StateEvent {
         StateEvent {
-            target_speed: self.stepper.target_velocity as i16,
+            target_speed: self.stepper.target_velocity,
+            enabled: self.stepper.enabled,
+            clear: false,
         }
     }
 
@@ -52,9 +55,26 @@ impl TestMachineStepper {
     }
 
     pub fn set_target_speed(&mut self, speed: i16) {
+        self.stepper.set_velocity(speed);
+        self.emit_state();
+    }
 
-        self.stepper.target_velocity = speed;
+    pub fn set_enabled(&mut self, enabled: bool) {
+        tracing::error!("Enabling driver now.");
+        self.stepper.set_enabled(enabled);
+        self.emit_state();
+    }
 
-        self.stepper.set_enabled(speed != 0);
+    pub fn clear_errors(&mut self, clear: bool) {
+        self.stepper.clear_errors(clear);
+        self.stepper.clear_reset(clear);
+        self.emit_state();
+    }
+
+    pub fn stop_clear_errors(&mut self, clear: bool) {
+        self.stepper.stop_clear_errors(clear);
+        self.stepper.stop_clear_reset(clear);
+        self.emit_state();
+
     }
 }

@@ -1,6 +1,6 @@
 /*
- * Wago Stepper Controller 750-671
- * 24 VDC / 1.5 A
+ * Wago Stepper Controller 750-672
+ * 70 VDC / 7.5 A
  */
 
 use anyhow::Ok;
@@ -15,25 +15,15 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub struct Wago750_671 {
+pub struct Wago750_672 {
     is_used: bool,
     tx_bit_offset: usize,
     rx_bit_offset: usize,
-    pub rxpdo: Wago750_671RxPdo,
-    pub txpdo: Wago750_671TxPdo,
+    pub rxpdo: Wago750_672RxPdo,
+    pub txpdo: Wago750_672TxPdo,
     module: Option<Module>,
 
-    pub state: u32,
-    
-    pub s0_cached: u8,
-    pub s1_cached: u8,
-    pub s2_cached: u8,
-    pub s3_cached: u8,
-    
-    pub c0_cached: u8,
-    pub c1_cached: u8,
-    pub c2_cached: u8,
-    pub c3_cached: u8,
+    pub enabled: bool,
 }
 
 /*
@@ -41,12 +31,16 @@ pub struct Wago750_671 {
 * running the Stepper Controller.
 * - Positioning
 * - Frequency/Speed Control
+* !!!! IMPORTANT !!!!
+* It seems like this is only true for the 750 671.
+* The 750 672 has differnt commands inside of ControlByteC1
+* where w can choose the Speed control mode - just like that
 * we always want to use the latter one so the following
 * process images are for that usecase.
 */
 
 #[derive(Clone, Debug, Default)]
-pub struct Wago750_671RxPdo {
+pub struct Wago750_672RxPdo {
     pub c0: u8,            // C0
     pub velocity: i16,     // D0/D1
     pub acceleration: u16, // D2/D3
@@ -56,7 +50,7 @@ pub struct Wago750_671RxPdo {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct Wago750_671TxPdo {
+pub struct Wago750_672TxPdo {
     pub s0: u8,               // S0
     pub actual_velocity: i16, // D0/D1
     pub position_l: u8,       // D4
@@ -67,7 +61,7 @@ pub struct Wago750_671TxPdo {
     pub s1: u8,               // S1
 }
 
-impl EthercatDeviceUsed for Wago750_671 {
+impl EthercatDeviceUsed for Wago750_672 {
     fn is_used(&self) -> bool {
         self.is_used
     }
@@ -76,9 +70,9 @@ impl EthercatDeviceUsed for Wago750_671 {
     }
 }
 
-impl DynamicEthercatDevice for Wago750_671 {}
+impl DynamicEthercatDevice for Wago750_672 {}
 
-impl EthercatDynamicPDO for Wago750_671 {
+impl EthercatDynamicPDO for Wago750_672 {
     fn get_tx_offset(&self) -> usize {
         self.tx_bit_offset
     }
@@ -93,42 +87,8 @@ impl EthercatDynamicPDO for Wago750_671 {
     }
 }
 
-impl Wago750_671 {
-    /// Set speed setpoint and acceleration (Velocity Control process image).
-    /// vel: i16 (sign determines direction)
-    /// acc: u16 (must be > 0, acc==0 will trigger error)
-    pub fn set_speed_setpoint(&mut self, vel: i16, acc: u16) {
-        self.rxpdo.velocity = vel;
-        self.rxpdo.acceleration = acc;
-    }
+impl Wago750_672 {
 
-    /// Apply control state for speed control application.
-    ///
-    /// Typical usage:
-    /// - keep enable=true continuously after DI1 is high
-    /// - keep speed_mode=true
-    /// - pulse start_pulse=true for ONE cycle to accept setpoints / (re)start output
-    pub fn apply_speed_control_state(&mut self, enable: bool, speed_mode: bool, start_pulse: bool) {
-        let mut c1 = 0;
-
-        if enable {
-            c1 |= ControlByteC1::ENABLE | ControlByteC1::STOP2_N;
-        }
-        if speed_mode {
-            c1 |= ControlByteC1::M_SPEED_CONTROL;
-        }
-        if start_pulse {
-            c1 |= ControlByteC1::START;
-        }
-
-        self.rxpdo.c1 = c1;
-    }
-
-    pub fn write_control_bits(&mut self, c1: u8, c2: u8, c3: u8) {
-        self.rxpdo.c1 = c1;
-        self.rxpdo.c2 = c2;
-        self.rxpdo.c3 = c3;
-    }
 
     /// Error acknowledgement is edge-triggered (0->1). Pulse for one cycle.
     pub fn apply_error_quit(&mut self, pulse: bool) {
@@ -159,7 +119,6 @@ impl Wago750_671 {
     pub fn s3(&self) -> u8 {
         self.txpdo.s3
     }
-
     pub fn ready(&self) -> bool {
         (self.s1() & StatusByteS1::READY) != 0
     }
@@ -178,22 +137,9 @@ impl Wago750_671 {
     pub fn reset_active(&self) -> bool {
         (self.s3() & StatusByteS3::RESET) != 0
     }
-
-    /// Actual velocity feedback (slave -> master), i16 little-endian.
-    pub fn actual_velocity(&self) -> i16 {
-        self.txpdo.actual_velocity
-    }
-
-    /// Actual position feedback is 23-bit + sign in other modes; in speed control it is still
-    /// updated in the background. Here we just expose the raw 24-bit little-endian value.
-    pub fn actual_position_raw24(&self) -> i32 {
-        (self.txpdo.position_l as i32)
-            | ((self.txpdo.position_m as i32) << 8)
-            | ((self.txpdo.position_h as i32) << 16)
-    }
 }
 
-impl EthercatDeviceProcessing for Wago750_671 {
+impl EthercatDeviceProcessing for Wago750_672 {
     fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
         Ok(())
     }
@@ -205,7 +151,7 @@ impl EthercatDeviceProcessing for Wago750_671 {
 
 
 
-impl EthercatDevice for Wago750_671 {
+impl EthercatDevice for Wago750_672 {
     fn input(
         &mut self,
         input: &bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
@@ -218,7 +164,7 @@ impl EthercatDevice for Wago750_671 {
             b[i] = input[base + i * 8..base + (i + 1) * 8].load_le();
         }
 
-        self.txpdo = Wago750_671TxPdo {
+        self.txpdo = Wago750_672TxPdo {
             s0: b[0],
             actual_velocity: i16::from_le_bytes([b[2], b[3]]),
             position_l: b[6],
@@ -229,113 +175,10 @@ impl EthercatDevice for Wago750_671 {
             s1: b[11],
         };
 
-        if self.txpdo.s0 != self.s0_cached
-        {
-            tracing::warn!("S0 Changed: {:08b}", self.txpdo.s0);
-            self.s0_cached = self.txpdo.s0;
-        }
-
-        if self.s1() != self.s1_cached
-        {
-            tracing::warn!("S1 Changed: {:08b}", self.s1());
-            self.s1_cached = self.s1();
-        }
-        
-        if self.s2() != self.s2_cached
-        {
-            tracing::warn!("S2 Changed: {:08b}", self.s2());
-            self.s2_cached = self.s2();
-        }
-
-        if self.s3() != self.s3_cached
-        {
-            tracing::warn!("S3 Changed: {:08b}", self.s3());
-            self.s3_cached = self.s3();
-        }
-
-        // states
-
-        if self.state == 0 
-        {
-            tracing::warn!("State 0: Reset All");
-            
-            // enable "Enable"
-            self.write_control_bits(0, 128, 128);
-            self.state = 1;
-        }
-
-        else if self.state == 1 
-        {
-            tracing::warn!("State 1: Enable");
-            
-            // enable "Enable"
-            self.write_control_bits(1, 0, 0);
-            self.set_speed_setpoint(10_000, 10_000);
-            self.state = 2;
-        }
-        
-        // await ack
-        else if self.state == 2 && (self.s1() & 0x1) != 0
-        {
-            tracing::warn!("State 2: Stop2_N");
-            // enable "Stop2_N"
-            self.write_control_bits(1 + 2, 0, 0);
-            self.state = 3;
-        }
-        
-        // await ack 
-        else if self.state == 3 && (self.s1() & 0x2) != 0
-        {
-            tracing::warn!("State 3: Set M_SpeedControl");
-            // set M_SpeedControl
-            self.write_control_bits(1 + 2 + 8, 0, 0);
-            self.state = 4;
-        }
-        
-        // await ack    
-        else if self.state == 4 && (self.s1() & 0x8) != 0
-        {
-            tracing::warn!("State 4: Set Start");
-            // send start signal
-            self.write_control_bits(1 + 2 + 4 + 8, 0, 0);
-            self.state = 5;
-        }
-        
-        else if self.state == 5
-        {
-            if (self.s1() & 0x4) != 0
-            {
-                tracing::warn!("State 5: Operational");
-            }
-            
+        if self.txpdo.s1 & 0b00011111 != 0b00011111 {
             // should be running now
-            self.write_control_bits(1 + 2 + 8, 0, 0);
-        }
-        
-        // check if outputs changed
-        
-        if self.rxpdo.c0 != self.c0_cached
-        {
-            tracing::warn!("C0 Changed: {:08b}", self.rxpdo.c0);
-            self.c0_cached = self.rxpdo.c0;
-        }
-        
-        if self.rxpdo.c1 != self.c1_cached
-        {
-            tracing::warn!("C1 Changed: {:08b}", self.rxpdo.c1);
-            self.c1_cached = self.rxpdo.c1;
-        }
-        
-        if self.rxpdo.c2 != self.c2_cached
-        {
-            tracing::warn!("C2 Changed: {:08b}", self.rxpdo.c2);
-            self.c2_cached = self.rxpdo.c2;
-        }
-
-        if self.rxpdo.c3 != self.c3_cached
-        {
-            tracing::warn!("C3 Changed: {:08b}", self.rxpdo.c3);
-            self.c3_cached = self.rxpdo.c3;
+            // tracing::warn!("Should be running now!");
+            self.rxpdo.c1 = 0b00011011;
         }
 
         Ok(())
@@ -439,37 +282,27 @@ impl EthercatDevice for Wago750_671 {
     }
 }
 
-impl NewEthercatDevice for Wago750_671 {
+impl NewEthercatDevice for Wago750_672 {
     fn new() -> Self {
         Self {
             is_used: false,
             tx_bit_offset: 0,
             rx_bit_offset: 0,
             module: None,
-            rxpdo: Wago750_671RxPdo::default(),
-            txpdo: Wago750_671TxPdo::default(),
-            state: 99,
-            
-            c0_cached: 0,
-            c1_cached: 0,
-            c2_cached: 0,
-            c3_cached: 0,
-            
-            s0_cached: 0,
-            s1_cached: 0,
-            s2_cached: 0,
-            s3_cached: 0,
+            rxpdo: Wago750_672RxPdo::default(),
+            txpdo: Wago750_672TxPdo::default(),
+            enabled: false,
         }
     }
 }
 
-impl std::fmt::Debug for Wago750_671 {
+impl std::fmt::Debug for Wago750_672 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Wago750_671")
+        write!(f, "Wago750_672")
     }
 }
 
-pub const WAGO_750_671_VENDOR_ID: u32 = 0x00000021;
-pub const WAGO_750_671_PRODUCT_ID: u32 = 108074216;
-pub const WAGO_750_671_MODULE_IDENT: SubDeviceProductTuple =
-    (WAGO_750_671_VENDOR_ID, WAGO_750_671_PRODUCT_ID);
+pub const WAGO_750_672_VENDOR_ID: u32 = 0x00000021;
+pub const WAGO_750_672_PRODUCT_ID: u32 = 108139752;
+pub const WAGO_750_672_MODULE_IDENT: SubDeviceProductTuple =
+    (WAGO_750_672_VENDOR_ID, WAGO_750_672_PRODUCT_ID);
