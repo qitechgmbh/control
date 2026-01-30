@@ -24,6 +24,8 @@ pub enum PatternControlState {
 pub struct AddonMotorController {
     /// Whether the motor is enabled (Run mode)
     enabled: bool,
+    /// Direction: true = forward, false = reverse
+    forward: bool,
     /// Master ratio value (e.g., 2 in "2:1")
     master_ratio: f64,
     /// Slave ratio value (e.g., 1 in "2:1")
@@ -50,6 +52,7 @@ impl AddonMotorController {
     pub fn new(steps_per_revolution: i16) -> Self {
         Self {
             enabled: false,
+            forward: true,
             master_ratio: 1.0,
             slave_ratio: 1.0,
             converter: AngularStepConverter::new(steps_per_revolution),
@@ -83,6 +86,16 @@ impl AddonMotorController {
     /// Get whether the motor is enabled
     pub const fn is_enabled(&self) -> bool {
         self.enabled
+    }
+
+    /// Set the rotation direction
+    pub fn set_forward(&mut self, forward: bool) {
+        self.forward = forward;
+    }
+
+    /// Get the rotation direction
+    pub const fn is_forward(&self) -> bool {
+        self.forward
     }
 
     /// Set the master ratio value
@@ -179,7 +192,10 @@ impl AddonMotorController {
         // For 2:1, motor rotates at half the puller speed (1/2)
         // For 1:2, motor rotates at twice the puller speed (2/1)
         let ratio = self.slave_ratio / self.master_ratio;
-        puller_angular_velocity * ratio
+        let velocity = puller_angular_velocity * ratio;
+
+        // Apply direction: negative velocity for reverse
+        if self.forward { velocity } else { -velocity }
     }
 
     /// Update the motor speed based on the puller angular velocity and optionally handle homing/pattern control
