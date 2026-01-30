@@ -90,16 +90,23 @@ impl TemperatureController {
     /// Start PID auto-tuning for this heater
     pub fn start_autotuning(&mut self, target_temp: ThermodynamicTemperature) {
         let config = AutoTuneConfig {
-            target: target_temp.get::<degree_celsius>(),
-            hysteresis: 2.0,          // ±2°C oscillation around target (faster cycles)
-            min_oscillations: 4,      // Faster convergence with stability check
-            min_cycle_secs: 2.0,
+            output_step: 0.5,         // 50% step above/below current output
+            noise_band: 2.0,          // ±2°C dead zone around setpoint
+            lookback_samples: 40,     // 10 seconds at 250ms sample time
+            control_type: 1,          // PID
             max_duration_secs: 600.0, // 10 minutes
-            ..Default::default()
+            sample_time_ms: 250,
+        };
+        
+        // Start with current PID output or 0.5 if heating is off
+        let current_output = if self.heating_allowed {
+            self.temperature_pid_output
+        } else {
+            0.5
         };
         
         let mut tuner = PidAutoTuner::new(config);
-        tuner.start(Instant::now());
+        tuner.start(Instant::now(), current_output);
         
         self.autotuner = Some(tuner);
         self.autotuning_active = true;
