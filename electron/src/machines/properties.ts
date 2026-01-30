@@ -1,3 +1,4 @@
+import { MachineSelector } from "@/components/MachineConnectionDropdown";
 import {
   MachineProperties,
   MachineIdentification,
@@ -543,6 +544,30 @@ export const bottleSorter: MachineProperties = {
     },
     {
       role: 2,
+      role_label: "IP20-EC-DI8-DO8",
+      allowed_devices: [
+        {
+          vendor_id: 0x741,
+          product_id: 0x117b6722,
+          revision: 0x1,
+        },
+      ],
+    },
+  ],
+};
+
+export const vacuum: MachineProperties = {
+  name: "Vacuum",
+  version: "V1",
+  slug: "vacuum",
+  icon: "lu:ToggleLeft",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0037,
+  },
+  device_roles: [
+    {
+      role: 0,
       role_label: "IP20-EC-DI8-DO8",
       allowed_devices: [
         {

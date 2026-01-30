@@ -63,6 +63,12 @@ import { IP20TestMachineControlPage } from "@/machines/ip20testmachine/IP20TestM
 import { BottleSorterPage } from "@/machines/bottlesorter/BottleSorterPage";
 import { BottleSorterControlPage } from "@/machines/bottlesorter/BottleSorterControlPage";
 
+// vacuum
+import { VacuumPage        } from "@/machines/vacuum/Page";
+import { VacuumControlPage } from "@/machines/vacuum/ControlPage";
+
+
+// ---
 import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
 import { MetricsControlPage } from "@/metrics/MetricsControlPage";
 
@@ -113,6 +119,21 @@ export const ip20TestMachineControlRoute = createRoute({
   component: () => <IP20TestMachineControlPage />,
 });
 
+// vacuum
+export const vacuumSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "vacuum/$serial",
+  component: () => <VacuumPage />,
+});
+
+export const vacuumControlRoute = createRoute({
+  getParentRoute: () => vacuumSerialRoute,
+  path: "control",
+  component: () => <VacuumControlPage />,
+});
+
+
+// ---
 export const bottleSorterSerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "bottlesorter/$serial",

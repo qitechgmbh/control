@@ -1,5 +1,6 @@
 use crate::analog_input_test_machine::AnalogInputTestMachine;
 use crate::bottle_sorter::BottleSorter;
+use crate::vacuum::VacuumMachine;
 use crate::ip20_test_machine::IP20TestMachine;
 #[cfg(feature = "mock-machine")]
 use crate::{
@@ -96,7 +97,9 @@ impl MachineRegistry {
 
 lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
+        
         let mut mc = MachineRegistry::new();
+        
         mc.register::<Winder2>(Winder2::MACHINE_IDENTIFICATION);
 
         #[cfg(feature = "mock-machine")]
@@ -130,6 +133,8 @@ lazy_static! {
         mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<BottleSorter>(BottleSorter::MACHINE_IDENTIFICATION);
+
+        mc.register::<VacuumMachine>(VacuumMachine::MACHINE_IDENTIFICATION);
 
         mc
     };

@@ -33,6 +33,7 @@ pub mod serial;
 pub mod test_machine;
 pub mod wago_power;
 pub mod winder2;
+pub mod vacuum;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
@@ -47,6 +48,7 @@ pub const TEST_MACHINE: u16 = 0x0033;
 pub const IP20_TEST_MACHINE: u16 = 0x0034;
 pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
 pub const BOTTLE_SORTER: u16 = 0x0036;
+pub const MACHINE_VACUUM: u16 = 0x0037;
 
 use serde_json::Value;
 use smol::lock::RwLock;
