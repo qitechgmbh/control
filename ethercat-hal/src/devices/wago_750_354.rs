@@ -22,7 +22,6 @@ use crate::{
 };
 use anyhow::Error;
 use smol::lock::RwLock;
-use std::collections::HashMap;
 use std::sync::Arc;
 const MODULE_COUNT_INDEX: (u16, u8) = (0xf050, 0x00);
 const TX_MAPPING_INDEX: (u16, u8) = (0x1c13, 0x00);
@@ -31,7 +30,6 @@ const RX_MAPPING_INDEX: (u16, u8) = (0x1c12, 0x00);
 #[derive(Clone, Debug)]
 struct ModulePdoMapping {
     pub offset: usize,
-    pub is_tx: bool,
     pub module_i: u32,
 }
 
@@ -209,7 +207,6 @@ impl Wago750_354 {
             if module_i < 64 {
                 vec.push(ModulePdoMapping {
                     offset: bit_offset,
-                    is_tx: get_tx,
                     module_i,
                 });
             }
