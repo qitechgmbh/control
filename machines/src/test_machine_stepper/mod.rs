@@ -3,6 +3,7 @@ use crate::test_machine_stepper::api::{StateEvent, TestMachineStepperEvents};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::stepper_velocity_wago_750_671::StepperVelocityWago750671;
+use ethercat_hal::io::stepper_velocity_wago_750_672::StepperVelocityWago750672;
 use smol::channel::{Receiver, Sender};
 use std::time::Instant;
 pub mod act;
@@ -19,7 +20,7 @@ pub struct TestMachineStepper {
     pub namespace: TestMachineStepperNamespace,
     pub last_state_emit: Instant,
     pub main_sender: Option<Sender<AsyncThreadMessage>>,
-    pub stepper: StepperVelocityWago750671,
+    pub stepper: StepperVelocityWago750672,
 }
 
 impl Machine for TestMachineStepper {
