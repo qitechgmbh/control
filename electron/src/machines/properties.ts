@@ -826,7 +826,7 @@ export const gluetex: MachineProperties = {
     },
     {
       role: 9,
-      role_label: "Addon Motor 4",
+      role_label: "Slave Puller",
       allowed_devices: [
         {
           vendor_id: 2,
@@ -847,7 +847,7 @@ export const gluetex: MachineProperties = {
     },
     {
       role: 10,
-      role_label: "Slave Puller",
+      role_label: "Addon Motor 4",
       allowed_devices: [
         {
           vendor_id: 2,
