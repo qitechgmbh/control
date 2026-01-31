@@ -161,6 +161,7 @@ export interface AnimationRefs {
     values: number[];
   }>;
   realPointsCount: React.RefObject<number>;
+  targetLineCache: React.RefObject<Map<number, number[]>>;
 }
 
 export interface HandlerRefs {

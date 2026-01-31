@@ -4,7 +4,11 @@ import uPlot from "uplot";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { BigGraphProps, SeriesData, AnimationRefs, HandlerRefs } from "./types";
 import { GraphExportData } from "./excelExport";
-import { getPrimarySeries, stopAnimations } from "./animation";
+import {
+  getPrimarySeries,
+  stopAnimations,
+  normalizeDataSeries,
+} from "./animation";
 import { createChart } from "./createChart";
 import { LiveModeHandlers } from "./liveMode";
 import { HistoricalModeHandlers } from "./historicalMode";
@@ -106,6 +110,10 @@ export function useBigGraphEffects({
   handleTimeWindowChangeInternal,
 }: UseBigGraphEffectsProps) {
   const [isChartCreated, setIsChartCreated] = useState(false);
+  const setChartCreatedState = (created: boolean) => {
+    setIsChartCreated(created);
+    chartCreatedRef.current = created;
+  };
 
   // Track the last synchronized state for comparison
   const lastSyncStateRef = useRef({
@@ -239,18 +247,25 @@ export function useBigGraphEffects({
     updateYAxisScale,
   ]);
 
-  // Create and initialize the chart when data becomes available
+  // Compute stable structural keys for chart creation.
+  // These only change when series count or visible line count changes,
+  // NOT on every data update (which would destroy/recreate the chart every ~1s).
+  const seriesWithDataCount = normalizeDataSeries(newData).filter(
+    (s) => s.newData !== null,
+  ).length;
+  const visibleLineCount =
+    config.lines?.filter((l) => l.show !== false)?.length ?? 0;
+
+  // Create and initialize the chart when data becomes available or structure changes
   useEffect(() => {
     if (!containerRef.current || !primarySeries?.newData?.long) {
-      setIsChartCreated(false);
-      chartCreatedRef.current = false;
+      setChartCreatedState(false);
       return;
     }
 
     const [timestamps] = seriesToUPlotData(primarySeries.newData.long);
     if (timestamps.length === 0) {
-      setIsChartCreated(false);
-      chartCreatedRef.current = false;
+      setChartCreatedState(false);
       return;
     }
 
@@ -280,8 +295,7 @@ export function useBigGraphEffects({
       showFromTimestamp,
     });
 
-    setIsChartCreated(true);
-    chartCreatedRef.current = true;
+    setChartCreatedState(true);
 
     if (isLiveMode) {
       lastProcessedCountRef.current = timestamps.length;
@@ -292,10 +306,9 @@ export function useBigGraphEffects({
       uplotRef.current?.destroy();
       uplotRef.current = null;
       stopAnimations(animationRefs);
-      setIsChartCreated(false);
-      chartCreatedRef.current = false;
+      setChartCreatedState(false);
     };
-  }, [primarySeries?.newData?.long, containerRef.current]);
+  }, [seriesWithDataCount, visibleLineCount, containerRef.current]);
 
   // Process new historical data in live mode
   useEffect(() => {
