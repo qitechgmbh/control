@@ -26,7 +26,10 @@ export type PropGraphSync = {
 // Configuration types for additional lines
 export type GraphLine = {
   type: "threshold" | "target";
+  /** Current value (used as fallback and for Y-axis scaling) */
   value: number;
+  /** Optional TimeSeries for historical target values. When provided, the line shows the target history over time instead of a constant horizontal line */
+  targetSeries?: TimeSeries;
   color: string;
   label?: string;
   width?: number;
@@ -158,6 +161,7 @@ export interface AnimationRefs {
     values: number[];
   }>;
   realPointsCount: React.RefObject<number>;
+  targetLineCache: React.RefObject<Map<number, number[]>>;
 }
 
 export interface HandlerRefs {

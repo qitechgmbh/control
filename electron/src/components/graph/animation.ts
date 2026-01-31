@@ -5,8 +5,10 @@ import {
   AnimationRefs,
   AnimationState,
   BigGraphProps,
+  GraphLine,
   SeriesData,
 } from "./types";
+import { alignTargetSeriesToTimestamps } from "@/lib/timeseries";
 
 export function useAnimationRefs(): AnimationRefs {
   const animationFrameRef = useRef<number | null>(null);
@@ -24,12 +26,14 @@ export function useAnimationRefs(): AnimationRefs {
     values: number[];
   }>({ timestamps: [], values: [] });
   const realPointsCountRef = useRef(0);
+  const targetLineCacheRef = useRef<Map<number, number[]>>(new Map());
 
   return {
     animationFrame: animationFrameRef,
     animationState: animationStateRef,
     lastRenderedData: lastRenderedDataRef,
     realPointsCount: realPointsCountRef,
+    targetLineCache: targetLineCacheRef,
   };
 }
 
@@ -50,8 +54,11 @@ export function buildUPlotData(
   values: number[],
   realPointsCount: number | undefined,
   realPointsCountRef: React.RefObject<number>,
-  config: { lines?: Array<{ show?: boolean; value: number }> },
+  config: {
+    lines?: Array<Partial<GraphLine> & { show?: boolean; value: number }>;
+  },
   allSeriesData?: number[][],
+  targetLineCache?: React.RefObject<Map<number, number[]>>,
 ): uPlot.AlignedData {
   const uData: uPlot.AlignedData = [timestamps];
 
@@ -70,9 +77,47 @@ export function buildUPlotData(
   }
 
   // Add config lines
+  let lineIndex = 0;
   config.lines?.forEach((line) => {
     if (line.show !== false) {
-      uData.push(timestamps.map(() => line.value));
+      let lineData: number[];
+
+      if (line.targetSeries && targetLineCache) {
+        // Target line with history - use cache to prevent wiggle
+        const cached = targetLineCache.current.get(lineIndex);
+
+        if (cached && cached.length <= timestamps.length) {
+          // Reuse cached data for existing points, extend with current value
+          const extension = timestamps.length - cached.length;
+          if (extension > 0) {
+            lineData = [...cached, ...new Array(extension).fill(line.value)];
+          } else {
+            lineData = cached;
+          }
+          targetLineCache.current.set(lineIndex, lineData);
+        } else {
+          // Full recalculation (first time or chart was rebuilt)
+          lineData = alignTargetSeriesToTimestamps(
+            line.targetSeries,
+            timestamps,
+            line.value,
+          );
+          targetLineCache.current.set(lineIndex, lineData);
+        }
+      } else if (line.targetSeries) {
+        // targetSeries but no cache available - full calculation
+        lineData = alignTargetSeriesToTimestamps(
+          line.targetSeries,
+          timestamps,
+          line.value,
+        );
+      } else {
+        // Constant value line (original behavior)
+        lineData = timestamps.map(() => line.value);
+      }
+
+      uData.push(lineData);
+      lineIndex++;
     }
   });
 
@@ -88,8 +133,10 @@ export function animateNewPoint(
   viewMode: string,
   selectedTimeWindow: number | "all",
   startTimeRef: React.RefObject<number | null>,
-  config: { lines?: Array<{ show?: boolean; value: number }> },
-  updateYAxisScale: (xMin?: number, xMax?: number) => void, // Updated signature
+  config: {
+    lines?: Array<Partial<GraphLine> & { show?: boolean; value: number }>;
+  },
+  updateYAxisScale: (xMin?: number, xMax?: number) => void,
   getAllSeriesData?: () => number[][],
 ): void {
   if (targetData.timestamps.length <= currentData.timestamps.length) {
@@ -173,6 +220,7 @@ export function animateNewPoint(
       refs.realPointsCount,
       config,
       allSeriesData,
+      refs.targetLineCache,
     );
 
     uplotRef.current.setData(animatedUData);
