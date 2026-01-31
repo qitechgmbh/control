@@ -20,8 +20,8 @@ impl MachineAct for SensorMachine {
             self.act_machine_message(msg);
         }
 
-        // Print at 5 Hz
-        if now.duration_since(self.last_print) >= Duration::from_millis(200) {
+        
+        if now.duration_since(self.last_print) >= Duration::from_millis(2000) {
             let ai1_norm = self.ai1.get_normalized();
             
             // EL3001: normalized = voltage / 10
