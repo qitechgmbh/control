@@ -60,7 +60,9 @@ export function createChart({
     uPlotData.push(values as any);
   });
 
-  // Add config lines data
+  // Add config lines data and populate target line cache
+  animationRefs.targetLineCache.current.clear();
+  let lineIndex = 0;
   config.lines?.forEach((line) => {
     if (line.show !== false) {
       let lineData: number[];
@@ -71,11 +73,15 @@ export function createChart({
           timestamps,
           line.value,
         );
+        // Cache the computed target line data so subsequent updates
+        // can extend it instead of recalculating (prevents wiggle)
+        animationRefs.targetLineCache.current.set(lineIndex, [...lineData]);
       } else {
         // Use constant value (original behavior)
         lineData = new Array(timestamps.length).fill(line.value);
       }
       uPlotData.push(lineData as any);
+      lineIndex++;
     }
   });
 

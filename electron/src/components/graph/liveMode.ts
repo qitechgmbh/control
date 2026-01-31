@@ -107,6 +107,7 @@ export function useLiveMode({
         animationRefs.realPointsCount,
         config,
         additionalSeriesValues,
+        animationRefs.targetLineCache,
       );
 
       uplotRef.current.setData(liveData);
@@ -283,6 +284,7 @@ export function useLiveMode({
             animationRefs.realPointsCount,
             config,
             additionalSeriesValues,
+            animationRefs.targetLineCache,
           );
 
           uplotRef.current.setData(uData);
