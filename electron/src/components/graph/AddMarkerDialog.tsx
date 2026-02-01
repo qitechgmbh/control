@@ -34,24 +34,25 @@ export function AddMarkerDialog({
   );
   const [color, setColor] = useState("#000000");
 
-  // Reset form when dialog opens/closes
+  // Reset form only when dialog opens or closes; do not reset when currentTimestamp
+  // updates while open (e.g. from graph) or we overwrite the user's time input
   useEffect(() => {
     if (open) {
       setName(defaultName);
-      // Always use current time when dialog opens
-      setSelectedTimestamp(currentTimestamp);
+      setSelectedTimestamp(currentTimestamp ?? Date.now());
     } else {
       setName("");
       setSelectedTimestamp(null);
     }
-  }, [open, currentTimestamp, defaultName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when open toggles
+  }, [open]);
 
   const handleAdd = () => {
     if (!name.trim()) return;
 
-    // Always use current timestamp when dialog is opened (as per requirement)
-    // The time input is optional and only for historical markers
-    const timestamp = currentTimestamp || Date.now();
+    // Use selected time if set, else context/graph time, else now
+    const timestamp =
+      selectedTimestamp ?? currentTimestamp ?? Date.now();
     if (!timestamp) return;
 
     onAddMarker(name.trim(), timestamp, color);
@@ -101,7 +102,9 @@ export function AddMarkerDialog({
             <TimeInput
               timestamp={selectedTimestamp}
               onTimeChange={setSelectedTimestamp}
-              onClear={() => setSelectedTimestamp(currentTimestamp)}
+              onClear={() =>
+                setSelectedTimestamp(currentTimestamp ?? Date.now())
+              }
             />
             <p className="text-muted-foreground text-xs">
               Leave empty to use current time
@@ -143,7 +146,7 @@ export function AddMarkerDialog({
             className="h-21 flex-1 flex-shrink-0"
             onClick={handleAdd}
             icon="lu:Bookmark"
-            disabled={!name.trim() || !(selectedTimestamp || currentTimestamp)}
+            disabled={!name.trim()}
           >
             Add Marker
           </TouchButton>
