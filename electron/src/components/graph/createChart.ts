@@ -198,7 +198,9 @@ export function createChart({
 
   // Always destroy existing chart before creating new one
   if (uplotRef.current) {
-    uplotRefOut?.current && (uplotRefOut.current = null);
+    if (uplotRefOut?.current != null) {
+      uplotRefOut.current = null;
+    }
     uplotRef.current.destroy();
     uplotRef.current = null;
   }
