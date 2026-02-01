@@ -14,7 +14,7 @@ import {
   NamespaceId,
   createNamespaceHookImplementation,
   ThrottledStoreUpdater,
-} from "../../../client/socketioStore";
+} from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import {
   createTimeSeries,
@@ -66,19 +66,13 @@ export type Laser1NamespaceStore = {
   roundness: TimeSeries;
 };
 
-// Constants for time durations
-const HALF_SECOND = 500;
-
-const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries({
-  sampleIntervalLong: HALF_SECOND,
-});
+const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries();
 const { initialTimeSeries: x_diameter, insert: addXDiameter } =
-  createTimeSeries({ sampleIntervalLong: HALF_SECOND });
+  createTimeSeries();
 const { initialTimeSeries: y_diameter, insert: addYDiameter } =
-  createTimeSeries({ sampleIntervalLong: HALF_SECOND });
-const { initialTimeSeries: roundness, insert: addRoundness } = createTimeSeries(
-  { sampleIntervalLong: HALF_SECOND },
-);
+  createTimeSeries();
+const { initialTimeSeries: roundness, insert: addRoundness } =
+  createTimeSeries();
 
 /**
  * Factory function to create a new Laser1 namespace store

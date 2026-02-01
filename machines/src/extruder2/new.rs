@@ -159,7 +159,7 @@ impl MachineNewTrait for ExtruderV3 {
                 digital_out_1,
                 Heating::default(),
                 Duration::from_millis(500),
-                700.0,
+                900.0,
                 1.0,
             );
 
@@ -174,7 +174,7 @@ impl MachineNewTrait for ExtruderV3 {
                 digital_out_2,
                 Heating::default(),
                 Duration::from_millis(500),
-                700.0,
+                900.0,
                 1.0,
             );
 
@@ -189,7 +189,7 @@ impl MachineNewTrait for ExtruderV3 {
                 digital_out_3,
                 Heating::default(),
                 Duration::from_millis(500),
-                700.0,
+                900.0,
                 1.0,
             );
 
@@ -204,7 +204,7 @@ impl MachineNewTrait for ExtruderV3 {
                 digital_out_4,
                 Heating::default(),
                 Duration::from_millis(500),
-                200.0,
+                150.0,
                 0.95,
             );
 
