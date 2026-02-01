@@ -231,7 +231,7 @@ export function FloatingControlPanel({
             >
               Live
             </TouchButton>
-              {isExpanded && (onExport || onAddMarker) && (
+            {isExpanded && (onExport || onAddMarker) && (
               <div className="h-8 w-px bg-gray-200"></div>
             )}
             {isExpanded && onAddMarker && (
