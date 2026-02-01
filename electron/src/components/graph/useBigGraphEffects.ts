@@ -1,5 +1,11 @@
 /* eslint-disable react-compiler/react-compiler */
-import { useEffect, MutableRefObject, RefObject, useRef, useState } from "react";
+import {
+  useEffect,
+  MutableRefObject,
+  RefObject,
+  useRef,
+  useState,
+} from "react";
 import uPlot from "uplot";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { BigGraphProps, SeriesData, AnimationRefs, HandlerRefs } from "./types";
