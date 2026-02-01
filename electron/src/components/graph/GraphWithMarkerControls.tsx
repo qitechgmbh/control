@@ -36,7 +36,7 @@ type GraphWithMarkerControlsProps = {
 
 const MARKER_HIT_WIDTH = 28;
 
-const LABEL_TOP_OFFSET = 44;
+const LABEL_TOP_OFFSET = 30;
 
 function applyLabelHighlight(label: HTMLDivElement, highlighted: boolean) {
   if (highlighted) {
@@ -56,7 +56,11 @@ function unhighlightAllLabels(container: HTMLElement) {
   });
 }
 
-/** Build marker DOM: one wrapper (hit area) for hover/tap, contains line, point, label. */
+// Duration (ms) to hold pointer on marker before it is deleted
+const LONG_PRESS_DELETE_MS = 5000;
+
+// Build marker DOM: one wrapper (hit area) for hover/tap, contains line, point, label.
+// Optional onLongPress: called after LONG_PRESS_DELETE_MS hold (e.g. to delete marker).
 function createMarkerElement(
   u: uPlot,
   overlayRect: DOMRect,
@@ -64,6 +68,7 @@ function createMarkerElement(
   name: string,
   value: number,
   color?: string,
+  onLongPress?: () => void,
 ): HTMLDivElement {
   const plotRect = u.rect;
   const plotLeftInOverlay = plotRect.left - overlayRect.left;
@@ -82,8 +87,8 @@ function createMarkerElement(
   const pointColor = color || "rgba(0, 0, 0, 0.8)";
   const half = MARKER_HIT_WIDTH / 2;
 
-  const wrapperTop = Math.max(0, plotTopInOverlay - LABEL_TOP_OFFSET);
-  const plotStartInWrapper = plotTopInOverlay - wrapperTop;
+  const wrapperTop = plotTopInOverlay - LABEL_TOP_OFFSET;
+  const plotStartInWrapper = LABEL_TOP_OFFSET;
 
   const wrapper = document.createElement("div");
   wrapper.style.position = "absolute";
@@ -152,6 +157,26 @@ function createMarkerElement(
   wrapper.addEventListener("mouseleave", unhighlight);
   wrapper.addEventListener("click", () => highlight());
 
+  // Long-press: hold 5s on marker to delete it (timer on pointerdown, clear on up/leave/cancel)
+  let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  const clearLongPressTimer = () => {
+    if (longPressTimer !== null) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  };
+  wrapper.addEventListener("pointerdown", () => {
+    if (!onLongPress) return;
+    clearLongPressTimer();
+    longPressTimer = setTimeout(() => {
+      longPressTimer = null;
+      onLongPress(); // removes this marker
+    }, LONG_PRESS_DELETE_MS);
+  });
+  wrapper.addEventListener("pointerup", clearLongPressTimer);
+  wrapper.addEventListener("pointerleave", clearLongPressTimer);
+  wrapper.addEventListener("pointercancel", clearLongPressTimer);
+
   wrapper.appendChild(line);
   wrapper.appendChild(point);
   wrapper.appendChild(label);
@@ -215,17 +240,19 @@ function GraphWithMarkerControlsContent({
     u.syncRect();
 
     const overlayContainer = u.root.parentElement;
+    const overlayParent = overlayContainer.parentElement;
 
     const previousOverflow = overlayContainer.style.overflow;
     const previousPosition = overlayContainer.style.position;
+    const previousParentOverflow = overlayParent?.style.overflow ?? "";
     overlayContainer.style.overflow = "visible";
     overlayContainer.style.position = "relative";
+    if (overlayParent) overlayParent.style.overflow = "visible";
 
     const overlayRect = overlayContainer.getBoundingClientRect();
 
     const wrappers: HTMLDivElement[] = [];
-    for (const { timestamp, name, value, color } of markers) {
-
+    markers.forEach(({ timestamp, name, value, color }) => {
       let markerValue = value;
       if (markerValue === undefined && currentTimeSeries) {
         const validValues = currentTimeSeries.long.values.filter(
@@ -249,6 +276,7 @@ function GraphWithMarkerControlsContent({
             : 0;
       }
 
+      // Pass remove callback so long-press (5s) on this marker deletes it
       wrappers.push(
         createMarkerElement(
           u,
@@ -257,9 +285,10 @@ function GraphWithMarkerControlsContent({
           name,
           markerValue,
           color,
+          () => markerManager.removeMarker(timestamp),
         ),
       );
-    }
+    });
 
     overlayContainer
       .querySelectorAll(".marker-wrapper")
@@ -279,14 +308,9 @@ function GraphWithMarkerControlsContent({
       overlayContainer.removeEventListener("click", onOverlayClick, true);
       overlayContainer.style.overflow = previousOverflow;
       overlayContainer.style.position = previousPosition;
+      if (overlayParent) overlayParent.style.overflow = previousParentOverflow;
     };
-  }, [
-    markers,
-    currentTimeSeries,
-    timeTick,
-    uplotRefOut,
-    graphWrapperRef,
-  ]);
+  }, [markers, currentTimeSeries, timeTick, uplotRefOut, graphWrapperRef]);
 
   // Use original config without adding marker lines (markers are overlay elements)
   const finalConfig = config;

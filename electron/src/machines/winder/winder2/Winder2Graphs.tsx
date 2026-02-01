@@ -1,6 +1,5 @@
 import { Page } from "@/components/Page";
 import {
-  AutoSyncedBigGraph,
   MarkerProvider,
   SyncedFloatingControlPanel,
   useGraphSync,
@@ -33,43 +32,43 @@ export function Winder2GraphsPage() {
         <div className="flex flex-col gap-4">
           <div className="grid gap-4">
             <PullerSpeedGraph
-            syncHook={syncHook}
-            newData={pullerSpeed}
-            targetSeries={targetPullerSpeed}
-            targetSpeed={state?.puller_state?.target_speed}
-            unit="m/min"
-            renderValue={(value) => roundToDecimals(value, 0)}
-          />
+              syncHook={syncHook}
+              newData={pullerSpeed}
+              targetSeries={targetPullerSpeed}
+              targetSpeed={state?.puller_state?.target_speed}
+              unit="m/min"
+              renderValue={(value) => roundToDecimals(value, 0)}
+            />
 
-          <TensionArmAngleGraph
-            syncHook={syncHook}
-            newData={tensionArmAngle}
-            unit="deg"
-            renderValue={(value) => roundDegreesToDecimals(value, 0)}
-          />
+            <TensionArmAngleGraph
+              syncHook={syncHook}
+              newData={tensionArmAngle}
+              unit="deg"
+              renderValue={(value) => roundDegreesToDecimals(value, 0)}
+            />
 
-          <SpoolRpmGraph
-            syncHook={syncHook}
-            newData={spoolRpm}
-            unit="rpm"
-            renderValue={(value) => roundToDecimals(value, 0)}
-          />
+            <SpoolRpmGraph
+              syncHook={syncHook}
+              newData={spoolRpm}
+              unit="rpm"
+              renderValue={(value) => roundToDecimals(value, 0)}
+            />
 
-          <TraversePositionGraph
-            syncHook={syncHook}
-            newData={traversePosition}
-            limitInner={state?.traverse_state?.limit_inner}
-            limitOuter={state?.traverse_state?.limit_outer}
-            unit="mm"
-            renderValue={(value) => roundToDecimals(value, 1)}
-          />
+            <TraversePositionGraph
+              syncHook={syncHook}
+              newData={traversePosition}
+              limitInner={state?.traverse_state?.limit_inner}
+              limitOuter={state?.traverse_state?.limit_outer}
+              unit="mm"
+              renderValue={(value) => roundToDecimals(value, 1)}
+            />
 
-          <SpoolProgressGraph
-            syncHook={syncHook}
-            newData={spoolProgress}
-            unit="m"
-            renderValue={(value) => roundToDecimals(value, 2)}
-          />
+            <SpoolProgressGraph
+              syncHook={syncHook}
+              newData={spoolProgress}
+              unit="m"
+              renderValue={(value) => roundToDecimals(value, 2)}
+            />
           </div>
         </div>
 
