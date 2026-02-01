@@ -6,7 +6,7 @@ import { BigGraphProps, PropGraphSync, TimeWindowOption } from "./types";
 import { GraphExportData } from "./excelExport";
 import { useMarkerManager } from "./useMarkerManager";
 import { AddMarkerDialog } from "./AddMarkerDialog";
-import { MarkerProvider, useMarkerContext } from "./MarkerContext";
+import { useMarkerContext } from "./MarkerContext";
 
 export function SyncedBigGraph({
   syncGraph: externalSyncGraph,
@@ -56,17 +56,20 @@ export function SyncedGraphControls({
 function SyncedFloatingControlPanelInner({
   controlProps,
   timeWindowOptions,
+  machineId: machineIdProp,
   ...props
 }: {
   controlProps?: ReturnType<typeof useGraphSync>["controlProps"];
   timeWindowOptions?: TimeWindowOption[];
+  machineId?: string;
 }) {
   const defaultSync = useGraphSync();
   const finalProps = controlProps || defaultSync.controlProps;
-  const { machineId, currentTimestamp } = useMarkerContext();
+  const { machineId: machineIdContext, currentTimestamp } = useMarkerContext();
 
-  // Use machineId from context (set by GraphWithMarkerControls) or fallback to "default"
-  const detectedMachineId = machineId || "default";
+  // Prefer explicit prop so panel and graphs always use the same store
+  const detectedMachineId =
+    machineIdProp ?? machineIdContext ?? "default";
   const { addMarker } = useMarkerManager(detectedMachineId);
   const [isMarkerDialogOpen, setIsMarkerDialogOpen] = useState(false);
 
@@ -99,20 +102,20 @@ function SyncedFloatingControlPanelInner({
 export function SyncedFloatingControlPanel({
   controlProps,
   timeWindowOptions,
+  machineId,
   ...props
 }: {
   controlProps?: ReturnType<typeof useGraphSync>["controlProps"];
   timeWindowOptions?: TimeWindowOption[];
+  machineId?: string;
 }) {
-  // Wrap in MarkerProvider so it's only available for graph pages
   return (
-    <MarkerProvider>
-      <SyncedFloatingControlPanelInner
-        controlProps={controlProps}
-        timeWindowOptions={timeWindowOptions}
-        {...props}
-      />
-    </MarkerProvider>
+    <SyncedFloatingControlPanelInner
+      controlProps={controlProps}
+      timeWindowOptions={timeWindowOptions}
+      machineId={machineId}
+      {...props}
+    />
   );
 }
 

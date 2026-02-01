@@ -1,4 +1,5 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import type uPlot from "uplot";
 import {
   AutoSyncedBigGraph,
   useGraphSync,
@@ -33,66 +34,128 @@ type GraphWithMarkerControlsProps = {
   }>;
 };
 
+const MARKER_HIT_WIDTH = 28;
+
+const LABEL_TOP_OFFSET = 44;
+
+function applyLabelHighlight(label: HTMLDivElement, highlighted: boolean) {
+  if (highlighted) {
+    label.style.zIndex = "20";
+    label.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+    label.style.borderColor = "rgb(59 130 246)";
+  } else {
+    label.style.zIndex = "";
+    label.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
+    label.style.borderColor = "rgba(0,0,0,0.12)";
+  }
+}
+
+function unhighlightAllLabels(container: HTMLElement) {
+  container.querySelectorAll<HTMLDivElement>(".marker-label").forEach((el) => {
+    applyLabelHighlight(el, false);
+  });
+}
+
+/** Build marker DOM: one wrapper (hit area) for hover/tap, contains line, point, label. */
 function createMarkerElement(
+  u: uPlot,
+  overlayRect: DOMRect,
   timestamp: number,
   name: string,
   value: number,
-  graphMin: number,
-  graphMax: number,
-  startTime: number,
-  endTime: number,
-  graphWidth: number,
-  graphHeight: number,
   color?: string,
-) {
-  // Calculate the X position of the timestamp
-  const ratio = (timestamp - startTime) / (endTime - startTime);
-  const xPos = Math.min(Math.max(ratio, 0), 1) * graphWidth;
+): HTMLDivElement {
+  const plotRect = u.rect;
+  const plotLeftInOverlay = plotRect.left - overlayRect.left;
+  const plotTopInOverlay = plotRect.top - overlayRect.top;
+  const plotHeight = plotRect.height;
+  const plotWidth = plotRect.width;
 
-  // Calculate the Y position of the value (from bottom of graph)
-  const normalizedValue = (value - graphMin) / (graphMax - graphMin);
-  const valueY = graphHeight - normalizedValue * graphHeight;
+  let xInPlot = u.valToPos(timestamp, "x", false);
+  xInPlot = Math.max(0, Math.min(plotWidth, xInPlot));
+  const xPos = plotLeftInOverlay + xInPlot;
+  let yInPlot = u.valToPos(value, "y", false);
+  yInPlot = Math.max(0, Math.min(plotHeight, yInPlot));
+  const valueY = plotTopInOverlay + yInPlot;
 
-  // Create vertical line that spans full height (shows time position)
+  const lineColor = color || "rgba(0, 0, 0, 0.5)";
+  const pointColor = color || "rgba(0, 0, 0, 0.8)";
+  const half = MARKER_HIT_WIDTH / 2;
+
+  const wrapperTop = Math.max(0, plotTopInOverlay - LABEL_TOP_OFFSET);
+  const plotStartInWrapper = plotTopInOverlay - wrapperTop;
+
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "absolute";
+  wrapper.style.left = `${xPos - half}px`;
+  wrapper.style.top = `${wrapperTop}px`;
+  wrapper.style.width = `${MARKER_HIT_WIDTH}px`;
+  wrapper.style.height = `${plotHeight + 50 + plotStartInWrapper}px`;
+  wrapper.style.cursor = "pointer";
+  wrapper.style.touchAction = "manipulation";
+  wrapper.style.zIndex = "10";
+  wrapper.className = "marker-wrapper";
+
   const line = document.createElement("div");
   line.style.position = "absolute";
-  line.style.left = `${xPos}px`;
-  line.style.top = "0px";
-  line.style.height = `${graphHeight}px`;
+  line.style.left = `${half - 1}px`;
+  line.style.top = `${plotStartInWrapper}px`;
+  line.style.height = `${plotHeight}px`;
   line.style.width = "2px";
-  // Use custom color if provided, otherwise default gray
-  const lineColor = color || "rgba(0, 0, 0, 0.5)";
   line.style.background = lineColor;
+  line.style.pointerEvents = "none";
+  line.title = name;
   line.className = "vertical-marker";
 
-  // Create a point at the actual data value position
   const point = document.createElement("div");
   point.style.position = "absolute";
-  point.style.left = `${xPos}px`;
-  point.style.top = `${valueY}px`;
+  point.style.left = `${half}px`;
+  point.style.top = `${plotStartInWrapper + yInPlot}px`;
   point.style.width = "8px";
   point.style.height = "8px";
   point.style.borderRadius = "50%";
-  // Use custom color if provided, otherwise default black
-  const pointColor = color || "rgba(0, 0, 0, 0.8)";
   point.style.background = pointColor;
   point.style.transform = "translate(-50%, -50%)";
   point.style.border = "2px solid white";
+  point.style.pointerEvents = "none";
+  point.title = name;
   point.className = "marker-point";
 
   const label = document.createElement("div");
   label.textContent = name;
+  label.title = name;
   label.style.position = "absolute";
-  label.style.left = `${xPos}px`;
-  label.style.top = `${graphHeight + 5}px`;
+  label.style.left = `${half}px`;
+  label.style.top = "6px";
   label.style.transform = "translateX(-50%)";
-  label.style.color = "black";
-  label.style.padding = "2px 4px";
+  label.style.color = "rgb(30 41 59)";
+  label.style.padding = "4px 8px";
   label.style.fontSize = "12px";
+  label.style.fontWeight = "600";
   label.style.whiteSpace = "nowrap";
+  label.style.maxWidth = "160px";
+  label.style.overflow = "hidden";
+  label.style.textOverflow = "ellipsis";
+  label.style.background = "rgba(255, 255, 255, 1)";
+  label.style.borderRadius = "6px";
+  label.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
+  label.style.border = "1px solid rgba(0,0,0,0.2)";
+  label.style.pointerEvents = "none";
+  label.style.transition = "box-shadow 0.15s ease, border-color 0.15s ease";
+  label.style.zIndex = "1";
   label.className = "marker-label";
 
-  return { line, point, label };
+  const highlight = () => applyLabelHighlight(label, true);
+  const unhighlight = () => applyLabelHighlight(label, false);
+
+  wrapper.addEventListener("mouseenter", highlight);
+  wrapper.addEventListener("mouseleave", unhighlight);
+  wrapper.addEventListener("click", () => highlight());
+
+  wrapper.appendChild(line);
+  wrapper.appendChild(point);
+  wrapper.appendChild(label);
+  return wrapper;
 }
 
 function GraphWithMarkerControlsContent({
@@ -106,8 +169,10 @@ function GraphWithMarkerControlsContent({
   machineId: providedMachineId,
   markers: providedMarkers,
   graphWrapperRef,
+  uplotRefOut,
 }: GraphWithMarkerControlsProps & {
   graphWrapperRef: React.RefObject<HTMLDivElement | null>;
+  uplotRefOut: React.MutableRefObject<uPlot | null>;
 }) {
   const { setMachineId, setCurrentTimestamp } = useMarkerContext();
 
@@ -142,122 +207,85 @@ function GraphWithMarkerControlsContent({
     return () => clearInterval(intervalId);
   }, [currentTimeSeries?.current]);
 
-  // Marker Drawing Effect
+  // Marker Drawing Effect: use uPlot instance for exact valToPos so point sits on the curve
   useEffect(() => {
-    if (!graphWrapperRef.current || !currentTimeSeries?.current) return;
+    const u = uplotRefOut.current;
+    if (!u?.root?.parentElement) return;
 
-    const graphEl = graphWrapperRef.current;
-    // Find chart container via uPlot canvas (canvas is always a direct child)
-    const canvas = graphEl.querySelector("canvas");
-    if (!canvas) return;
-    const chartContainer = canvas.parentElement;
-    if (!chartContainer) return;
+    u.syncRect();
 
-    const graphWidth = chartContainer.clientWidth;
-    const graphHeight = chartContainer.clientHeight;
+    const overlayContainer = u.root.parentElement;
 
-    const overlayContainer = chartContainer.parentElement;
-    if (!overlayContainer) return;
+    const previousOverflow = overlayContainer.style.overflow;
+    const previousPosition = overlayContainer.style.position;
+    overlayContainer.style.overflow = "visible";
+    overlayContainer.style.position = "relative";
 
-    // Remove previous markers, points and labels from the overlay container
-    overlayContainer
-      .querySelectorAll(".vertical-marker, .marker-point, .marker-label")
-      .forEach((el) => el.remove());
+    const overlayRect = overlayContainer.getBoundingClientRect();
 
-    // Get the visible time window
-    const currentTimeWindow = syncHook.controlProps.timeWindow;
-    const defaultDuration = config.defaultTimeWindow as number;
-    const validTimeWindowMs =
-      (typeof currentTimeWindow === "number" && currentTimeWindow) ||
-      defaultDuration || // Fallback to config default
-      30 * 60 * 1000; // Final fallback (30 minutes)
+    const wrappers: HTMLDivElement[] = [];
+    for (const { timestamp, name, value, color } of markers) {
 
-    const endTime = currentTimeSeries.current.timestamp;
-    const startTime = endTime - validTimeWindowMs;
-
-    // Calculate Y-axis scale from visible data (similar to createChart.ts)
-    const visibleValues: number[] = [];
-
-    // Collect values from the time series in the visible time window
-    currentTimeSeries.long.values
-      .filter((v): v is TimeSeriesValue => v !== null)
-      .forEach((v) => {
-        if (v.timestamp >= startTime && v.timestamp <= endTime) {
-          visibleValues.push(v.value);
-        }
-      });
-
-    // Include config lines in the scale calculation
-    config.lines?.forEach((line) => {
-      if (line.show !== false) {
-        visibleValues.push(line.value);
-      }
-    });
-
-    // Calculate min/max with 10% padding (matching createChart.ts behavior)
-    let graphMin: number, graphMax: number;
-    if (visibleValues.length > 0) {
-      const minY = Math.min(...visibleValues);
-      const maxY = Math.max(...visibleValues);
-      const range = maxY - minY || Math.abs(maxY) * 0.1 || 1;
-      graphMin = minY - range * 0.1;
-      graphMax = maxY + range * 0.1;
-    } else {
-      // Fallback if no data is available
-      graphMin = -1;
-      graphMax = 1;
-    }
-
-    markers.forEach(({ timestamp, name, value, color }) => {
-      if (timestamp >= startTime && timestamp <= endTime) {
-        // Find the data point closest to the marker timestamp to get the correct Y-value
-        // If value is not provided, use the closest data point
-        let markerValue = value;
-        if (markerValue === undefined && currentTimeSeries) {
-          const validValues = currentTimeSeries.long.values.filter(
-            (v): v is TimeSeriesValue => v !== null,
+      let markerValue = value;
+      if (markerValue === undefined && currentTimeSeries) {
+        const validValues = currentTimeSeries.long.values.filter(
+          (v): v is TimeSeriesValue => v !== null,
+        );
+        if (validValues.length > 0) {
+          const closest = validValues.reduce((prev, curr) =>
+            Math.abs(curr.timestamp - timestamp) <
+            Math.abs(prev.timestamp - timestamp)
+              ? curr
+              : prev,
           );
-          if (validValues.length > 0) {
-            const closest = validValues.reduce((prev, curr) =>
-              Math.abs(curr.timestamp - timestamp) <
-              Math.abs(prev.timestamp - timestamp)
-                ? curr
-                : prev,
-            );
-            markerValue = closest.value;
-          }
+          markerValue = closest.value;
         }
+      }
+      if (markerValue === undefined) {
+        const yScale = u.scales.y;
+        markerValue =
+          yScale?.min != null && yScale?.max != null
+            ? (yScale.min + yScale.max) / 2
+            : 0;
+      }
 
-        // Use a default value if still undefined
-        if (markerValue === undefined) {
-          markerValue = (graphMin + graphMax) / 2;
-        }
-
-        // Create marker element (full height line + point at data value)
-        const { line, point, label } = createMarkerElement(
+      wrappers.push(
+        createMarkerElement(
+          u,
+          overlayRect,
           timestamp,
           name,
           markerValue,
-          graphMin,
-          graphMax,
-          startTime,
-          endTime,
-          graphWidth,
-          graphHeight,
           color,
-        );
+        ),
+      );
+    }
 
-        overlayContainer.appendChild(line);
-        overlayContainer.appendChild(point);
-        overlayContainer.appendChild(label);
+    overlayContainer
+      .querySelectorAll(".marker-wrapper")
+      .forEach((el) => el.remove());
+
+    wrappers.forEach((wrapper) => overlayContainer.appendChild(wrapper));
+
+    const onOverlayClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".marker-wrapper")) {
+        unhighlightAllLabels(overlayContainer);
       }
-    });
+    };
+    overlayContainer.addEventListener("click", onOverlayClick, true);
+
+    return () => {
+      overlayContainer.removeEventListener("click", onOverlayClick, true);
+      overlayContainer.style.overflow = previousOverflow;
+      overlayContainer.style.position = previousPosition;
+    };
   }, [
     markers,
     currentTimeSeries,
     timeTick,
-    config.defaultTimeWindow,
-    syncHook.controlProps.timeWindow,
+    uplotRefOut,
+    graphWrapperRef,
   ]);
 
   // Use original config without adding marker lines (markers are overlay elements)
@@ -266,7 +294,6 @@ function GraphWithMarkerControlsContent({
   return (
     <div className="flex flex-col gap-2">
       <div ref={graphWrapperRef} className="relative">
-        {/* Render the core chart component */}
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={newData}
@@ -274,6 +301,7 @@ function GraphWithMarkerControlsContent({
           unit={unit}
           renderValue={renderValue}
           graphId={graphId}
+          uplotRefOut={uplotRefOut}
         />
       </div>
     </div>
@@ -282,12 +310,13 @@ function GraphWithMarkerControlsContent({
 
 export function GraphWithMarkerControls(props: GraphWithMarkerControlsProps) {
   const graphWrapperRef = useRef<HTMLDivElement | null>(null);
+  const uplotRefOut = useRef<uPlot | null>(null);
 
-  // Use context if available (from SyncedFloatingControlPanel), otherwise work without it
   return (
     <GraphWithMarkerControlsContent
       {...props}
       graphWrapperRef={graphWrapperRef}
+      uplotRefOut={uplotRefOut}
     />
   );
 }

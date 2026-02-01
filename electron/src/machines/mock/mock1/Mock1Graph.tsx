@@ -1,6 +1,7 @@
 import { Page } from "@/components/Page";
 import {
   AutoSyncedBigGraph,
+  MarkerProvider,
   SyncedFloatingControlPanel,
   useGraphSync,
   type GraphConfig,
@@ -99,16 +100,18 @@ export function Mock1GraphPage() {
 
   return (
     <Page className="pb-27">
-      <div className="flex flex-col gap-4">
-        <GraphWithMarkerControls
-          syncHook={syncHook}
-          newData={singleData}
-          config={singleGraphConfig}
-          unit={"mm" as Unit}
-          renderValue={(value) => value.toFixed(3)}
-          graphId="single-graph1"
-          currentTimeSeries={sineWaveSum}
-        />
+      <MarkerProvider>
+        <div className="flex flex-col gap-4">
+          <GraphWithMarkerControls
+            syncHook={syncHook}
+            newData={singleData}
+            config={singleGraphConfig}
+            unit={"mm" as Unit}
+            renderValue={(value) => value.toFixed(3)}
+            graphId="single-graph1"
+            currentTimeSeries={sineWaveSum}
+            machineId="mock-graphs"
+          />
         <GraphWithMarkerControls
           syncHook={syncHook}
           newData={combinedData}
@@ -120,6 +123,7 @@ export function Mock1GraphPage() {
           renderValue={(value) => value.toFixed(3)}
           graphId="combined-graph"
           currentTimeSeries={sineWaveSum}
+          machineId="mock-graphs"
         />
         <GraphWithMarkerControls
           syncHook={syncHook}
@@ -129,6 +133,7 @@ export function Mock1GraphPage() {
           renderValue={(value) => value.toFixed(3)}
           graphId="single-graph2"
           currentTimeSeries={sineWaveSum}
+          machineId="mock-graphs"
         />
         <GraphWithMarkerControls
           syncHook={syncHook}
@@ -138,10 +143,15 @@ export function Mock1GraphPage() {
           renderValue={(value) => value.toFixed(3)}
           graphId="single-graph"
           currentTimeSeries={sineWaveSum}
+          machineId="mock-graphs"
         />
-      </div>
+        </div>
 
-      <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
+        <SyncedFloatingControlPanel
+          controlProps={syncHook.controlProps}
+          machineId="mock-graphs"
+        />
+      </MarkerProvider>
     </Page>
   );
 }

@@ -1,5 +1,5 @@
 /* eslint-disable react-compiler/react-compiler */
-import { useEffect, RefObject, useRef, useState } from "react";
+import { useEffect, MutableRefObject, RefObject, useRef, useState } from "react";
 import uPlot from "uplot";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { BigGraphProps, SeriesData, AnimationRefs, HandlerRefs } from "./types";
@@ -13,6 +13,7 @@ interface UseBigGraphEffectsProps {
   // Refs
   containerRef: RefObject<HTMLDivElement | null>;
   uplotRef: RefObject<uPlot | null>;
+  uplotRefOut?: MutableRefObject<uPlot | null>;
   startTimeRef: RefObject<number | null>;
   manualScaleRef: RefObject<{
     x: { min: number; max: number };
@@ -71,6 +72,7 @@ interface UseBigGraphEffectsProps {
 export function useBigGraphEffects({
   containerRef,
   uplotRef,
+  uplotRefOut,
   startTimeRef,
   manualScaleRef,
   lastProcessedCountRef,
@@ -257,6 +259,7 @@ export function useBigGraphEffects({
     const cleanup = createChart({
       containerRef,
       uplotRef,
+      uplotRefOut,
       newData,
       config,
       colors,
@@ -291,6 +294,7 @@ export function useBigGraphEffects({
       cleanup?.();
       uplotRef.current?.destroy();
       uplotRef.current = null;
+      if (uplotRefOut) uplotRefOut.current = null;
       stopAnimations(animationRefs);
       setIsChartCreated(false);
       chartCreatedRef.current = false;
