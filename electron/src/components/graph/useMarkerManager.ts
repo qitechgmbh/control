@@ -17,32 +17,21 @@ const MARKER_UPDATE_EVENT = "marker-update";
 export function useMarkerManager(machineId: string) {
   const storageKey = `machine-markers-${machineId}`;
 
-  // Load markers from localStorage
+  // Load markers from localStorage (no time-based deletion; keep last 200 only)
   const loadMarkers = useCallback((): Marker[] => {
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         const allMarkers: Marker[] = JSON.parse(stored);
-
-        // Remove markers older than 7 days to save storage space
-        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-        const recentMarkers = allMarkers.filter(
-          (marker) => marker.timestamp >= sevenDaysAgo,
-        );
-
-        // Limit to max 200 markers per machine to prevent storage bloat
         const maxMarkers = 200;
-        const limitedMarkers =
-          recentMarkers.length > maxMarkers
-            ? recentMarkers.slice(-maxMarkers)
-            : recentMarkers;
-
-        // Save cleaned markers back if we removed any
-        if (limitedMarkers.length !== allMarkers.length) {
-          localStorage.setItem(storageKey, JSON.stringify(limitedMarkers));
+        const limited =
+          allMarkers.length > maxMarkers
+            ? allMarkers.slice(-maxMarkers)
+            : allMarkers;
+        if (limited.length !== allMarkers.length) {
+          localStorage.setItem(storageKey, JSON.stringify(limited));
         }
-
-        return limitedMarkers;
+        return limited;
       }
     } catch (error) {
       console.warn("Failed to load markers from localStorage:", error);
@@ -77,7 +66,6 @@ export function useMarkerManager(machineId: string) {
   // Save markers to localStorage whenever they change
   useEffect(() => {
     try {
-      // Limit to max 200 markers per machine
       const maxMarkers = 200;
       const markersToSave =
         markers.length > maxMarkers ? markers.slice(-maxMarkers) : markers;
