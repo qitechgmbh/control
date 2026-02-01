@@ -38,7 +38,7 @@ serialport = "4.7.3"
 #tracing
 tracing = { version = "0.1.44", features = ["attributes"] }
 tracing-journald = { version = "0.3.1", optional = true }
-tracing-subscriber = { version = "0.3.20", features = [
+tracing-subscriber = { version = "0.3.22", features = [
     "env-filter",
     "chrono",
     "registry",
