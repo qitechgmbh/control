@@ -231,10 +231,10 @@ export function FloatingControlPanel({
             >
               Live
             </TouchButton>
-            {isExpanded && (onExport || onAddMarker) && (
+              {isExpanded && (onExport || onAddMarker) && (
               <div className="h-8 w-px bg-gray-200"></div>
             )}
-            {onAddMarker && (
+            {isExpanded && onAddMarker && (
               <TouchButton
                 onClick={onAddMarker}
                 variant="outline"
@@ -243,7 +243,7 @@ export function FloatingControlPanel({
                 Add Marker
               </TouchButton>
             )}
-            {onExport && (
+            {isExpanded && onExport && (
               <TouchButton
                 onClick={onExport}
                 variant="outline"

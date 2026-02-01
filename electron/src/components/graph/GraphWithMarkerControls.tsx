@@ -8,7 +8,7 @@ import {
 import { TimeSeries, TimeSeriesValue } from "@/lib/timeseries";
 import { Unit } from "@/control/units";
 import { useMarkerManager } from "./useMarkerManager";
-import { MarkerProvider, useMarkerContext } from "./MarkerContext";
+import { useMarkerContext } from "./MarkerContext";
 
 type TimeSeriesData = {
   newData: TimeSeries | null;
@@ -56,6 +56,24 @@ function unhighlightAllLabels(container: HTMLElement) {
   });
 }
 
+// Apply or restore overlay styles (avoids React Compiler "mutates immutable" on inline DOM writes)
+function setOverlayOverflow(
+  container: HTMLElement,
+  parent: HTMLElement | null,
+  visible: boolean,
+  previous: { overflow: string; position: string; parentOverflow: string },
+) {
+  if (visible) {
+    container.style.overflow = "visible";
+    container.style.position = "relative";
+    if (parent) parent.style.overflow = "visible";
+  } else {
+    container.style.overflow = previous.overflow;
+    container.style.position = previous.position;
+    if (parent) parent.style.overflow = previous.parentOverflow;
+  }
+}
+
 // Duration (ms) to hold pointer on marker before it is deleted
 const LONG_PRESS_DELETE_MS = 5000;
 
@@ -81,7 +99,6 @@ function createMarkerElement(
   const xPos = plotLeftInOverlay + xInPlot;
   let yInPlot = u.valToPos(value, "y", false);
   yInPlot = Math.max(0, Math.min(plotHeight, yInPlot));
-  const valueY = plotTopInOverlay + yInPlot;
 
   const lineColor = color || "rgba(0, 0, 0, 0.5)";
   const pointColor = color || "rgba(0, 0, 0, 0.8)";
@@ -242,43 +259,42 @@ function GraphWithMarkerControlsContent({
     const overlayContainer = u.root.parentElement;
     const overlayParent = overlayContainer.parentElement;
 
-    const previousOverflow = overlayContainer.style.overflow;
-    const previousPosition = overlayContainer.style.position;
-    const previousParentOverflow = overlayParent?.style.overflow ?? "";
-    overlayContainer.style.overflow = "visible";
-    overlayContainer.style.position = "relative";
-    if (overlayParent) overlayParent.style.overflow = "visible";
+    const previous = {
+      overflow: overlayContainer.style.overflow,
+      position: overlayContainer.style.position,
+      parentOverflow: overlayParent?.style.overflow ?? "",
+    };
+    setOverlayOverflow(overlayContainer, overlayParent, true, previous);
 
     const overlayRect = overlayContainer.getBoundingClientRect();
 
-    const wrappers: HTMLDivElement[] = [];
-    markers.forEach(({ timestamp, name, value, color }) => {
-      let markerValue = value;
-      if (markerValue === undefined && currentTimeSeries) {
-        const validValues = currentTimeSeries.long.values.filter(
-          (v): v is TimeSeriesValue => v !== null,
-        );
-        if (validValues.length > 0) {
-          const closest = validValues.reduce((prev, curr) =>
-            Math.abs(curr.timestamp - timestamp) <
-            Math.abs(prev.timestamp - timestamp)
-              ? curr
-              : prev,
+    const wrappers: HTMLDivElement[] = markers.map(
+      ({ timestamp, name, value, color }) => {
+        let markerValue = value;
+        if (markerValue === undefined && currentTimeSeries) {
+          const validValues = currentTimeSeries.long.values.filter(
+            (v): v is TimeSeriesValue => v !== null,
           );
-          markerValue = closest.value;
+          if (validValues.length > 0) {
+            const closest = validValues.reduce((prev, curr) =>
+              Math.abs(curr.timestamp - timestamp) <
+              Math.abs(prev.timestamp - timestamp)
+                ? curr
+                : prev,
+            );
+            markerValue = closest.value;
+          }
         }
-      }
-      if (markerValue === undefined) {
-        const yScale = u.scales.y;
-        markerValue =
-          yScale?.min != null && yScale?.max != null
-            ? (yScale.min + yScale.max) / 2
-            : 0;
-      }
+        if (markerValue === undefined) {
+          const yScale = u.scales.y;
+          markerValue =
+            yScale?.min != null && yScale?.max != null
+              ? (yScale.min + yScale.max) / 2
+              : 0;
+        }
 
-      // Pass remove callback so long-press (5s) on this marker deletes it
-      wrappers.push(
-        createMarkerElement(
+        // Pass remove callback so long-press (5s) on this marker deletes it
+        return createMarkerElement(
           u,
           overlayRect,
           timestamp,
@@ -286,9 +302,9 @@ function GraphWithMarkerControlsContent({
           markerValue,
           color,
           () => markerManager.removeMarker(timestamp),
-        ),
-      );
-    });
+        );
+      },
+    );
 
     overlayContainer
       .querySelectorAll(".marker-wrapper")
@@ -306,9 +322,7 @@ function GraphWithMarkerControlsContent({
 
     return () => {
       overlayContainer.removeEventListener("click", onOverlayClick, true);
-      overlayContainer.style.overflow = previousOverflow;
-      overlayContainer.style.position = previousPosition;
-      if (overlayParent) overlayParent.style.overflow = previousParentOverflow;
+      setOverlayOverflow(overlayContainer, overlayParent, false, previous);
     };
   }, [markers, currentTimeSeries, timeTick, uplotRefOut, graphWrapperRef]);
 

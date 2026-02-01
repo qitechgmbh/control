@@ -51,7 +51,6 @@ export function AddMarkerDialog({
       setSelectedTimestamp(null);
       setDuplicateNameError(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when open toggles
   }, [open]);
 
   const handleAdd = () => {
