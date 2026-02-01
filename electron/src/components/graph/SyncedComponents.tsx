@@ -68,9 +68,8 @@ function SyncedFloatingControlPanelInner({
   const { machineId: machineIdContext, currentTimestamp } = useMarkerContext();
 
   // Prefer explicit prop so panel and graphs always use the same store
-  const detectedMachineId =
-    machineIdProp ?? machineIdContext ?? "default";
-  const { addMarker } = useMarkerManager(detectedMachineId);
+  const detectedMachineId = machineIdProp ?? machineIdContext ?? "default";
+  const { addMarker, markers } = useMarkerManager(detectedMachineId);
   const [isMarkerDialogOpen, setIsMarkerDialogOpen] = useState(false);
 
   // Always use current timestamp from context (live time from graphs) or current time
@@ -94,6 +93,7 @@ function SyncedFloatingControlPanelInner({
         onOpenChange={setIsMarkerDialogOpen}
         onAddMarker={handleAddMarker}
         currentTimestamp={markerTimestamp}
+        existingNames={markers.map((m) => m.name)}
       />
     </>
   );

@@ -108,11 +108,26 @@ export function useMarkerManager(machineId: string) {
     [storageKey, machineId],
   );
 
-  const removeMarker = useCallback((timestamp: number) => {
-    setMarkers((prev) =>
-      prev.filter((marker) => marker.timestamp !== timestamp),
-    );
-  }, []);
+  const removeMarker = useCallback(
+    (timestamp: number) => {
+      setMarkers((prev) => {
+        const updated = prev.filter((marker) => marker.timestamp !== timestamp);
+        // Persist and notify other components (e.g. dialog, other graphs)
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(updated));
+          window.dispatchEvent(
+            new CustomEvent(MARKER_UPDATE_EVENT, {
+              detail: { machineId, markers: updated },
+            }),
+          );
+        } catch (error) {
+          console.warn("Failed to save markers after remove:", error);
+        }
+        return updated;
+      });
+    },
+    [storageKey, machineId],
+  );
 
   const clearMarkers = useCallback(() => {
     setMarkers([]);

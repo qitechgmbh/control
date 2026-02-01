@@ -1,6 +1,5 @@
 import { Page } from "@/components/Page";
 import {
-  AutoSyncedBigGraph,
   MarkerProvider,
   SyncedFloatingControlPanel,
   useGraphSync,
@@ -257,87 +256,87 @@ export function Extruder2GraphsPage() {
       <MarkerProvider>
         <div className="flex flex-col gap-4">
           <GraphWithMarkerControls
-          syncHook={syncHook}
-          newData={{
-            newData: pressure,
-            color: "#3b82f6",
-            lines:
-              state?.pressure_state.target_bar !== undefined
-                ? [
-                    {
-                      type: "target" as const,
-                      value: state.pressure_state.target_bar,
-                      targetSeries: targetPressure,
-                      color: "#3b82f6",
-                      show: true,
-                    },
-                  ]
-                : [],
-          }}
-          config={pressureConfig}
-          unit="bar"
-          renderValue={(value) => value.toFixed(2)}
-          graphId="pressure-graph"
-          currentTimeSeries={pressure}
-        />
+            syncHook={syncHook}
+            newData={{
+              newData: pressure,
+              color: "#3b82f6",
+              lines:
+                state?.pressure_state.target_bar !== undefined
+                  ? [
+                      {
+                        type: "target" as const,
+                        value: state.pressure_state.target_bar,
+                        targetSeries: targetPressure,
+                        color: "#3b82f6",
+                        show: true,
+                      },
+                    ]
+                  : [],
+            }}
+            config={pressureConfig}
+            unit="bar"
+            renderValue={(value) => value.toFixed(2)}
+            graphId="pressure-graph"
+            currentTimeSeries={pressure}
+          />
 
-        <GraphWithMarkerControls
-          syncHook={syncHook}
-          newData={temperatureData}
-          config={temperatureConfig}
-          unit="C"
-          renderValue={(value) => value.toFixed(1)}
-          graphId="combined-temperatures"
-          currentTimeSeries={nozzleTemperature}
-        />
+          <GraphWithMarkerControls
+            syncHook={syncHook}
+            newData={temperatureData}
+            config={temperatureConfig}
+            unit="C"
+            renderValue={(value) => value.toFixed(1)}
+            graphId="combined-temperatures"
+            currentTimeSeries={nozzleTemperature}
+          />
 
-        <GraphWithMarkerControls
-          syncHook={syncHook}
-          newData={powerData}
-          config={powerConfig}
-          unit="W"
-          renderValue={(value) => value.toFixed(1)}
-          graphId="combined-power"
-          currentTimeSeries={combinedPower}
-        />
+          <GraphWithMarkerControls
+            syncHook={syncHook}
+            newData={powerData}
+            config={powerConfig}
+            unit="W"
+            renderValue={(value) => value.toFixed(1)}
+            graphId="combined-power"
+            currentTimeSeries={combinedPower}
+          />
 
-        <GraphWithMarkerControls
-          syncHook={syncHook}
-          newData={{
-            newData: motorCurrent,
-            color: "#3b82f6",
-          }}
-          config={currentConfig}
-          unit="A"
-          renderValue={(value) => value.toFixed(2)}
-          graphId="motor-current"
-          currentTimeSeries={motorCurrent}
-        />
+          <GraphWithMarkerControls
+            syncHook={syncHook}
+            newData={{
+              newData: motorCurrent,
+              color: "#3b82f6",
+            }}
+            config={currentConfig}
+            unit="A"
+            renderValue={(value) => value.toFixed(2)}
+            graphId="motor-current"
+            currentTimeSeries={motorCurrent}
+          />
 
-        <GraphWithMarkerControls
-          syncHook={syncHook}
-          newData={{
-            newData: motorScrewRpm,
-            color: "#8b5cf6",
-            lines:
-              state?.screw_state.target_rpm !== undefined
-                ? [
-                    {
-                      type: "target" as const,
-                      value: state.screw_state.target_rpm,
-                      targetSeries: targetScrewRpm,
-                      color: "#8b5cf6",
-                      show: true,
-                    },
-                  ]
-                : [],
-          }}
-          config={rpmConfig}
-          unit="rpm"
-          renderValue={(value) => value.toFixed(0)}
-          graphId="rpm-graph"
-          currentTimeSeries={motorScrewRpm}
-        />
+          <GraphWithMarkerControls
+            syncHook={syncHook}
+            newData={{
+              newData: motorScrewRpm,
+              color: "#8b5cf6",
+              lines:
+                state?.screw_state.target_rpm !== undefined
+                  ? [
+                      {
+                        type: "target" as const,
+                        value: state.screw_state.target_rpm,
+                        targetSeries: targetScrewRpm,
+                        color: "#8b5cf6",
+                        show: true,
+                      },
+                    ]
+                  : [],
+            }}
+            config={rpmConfig}
+            unit="rpm"
+            renderValue={(value) => value.toFixed(0)}
+            graphId="rpm-graph"
+            currentTimeSeries={motorScrewRpm}
+          />
         </div>
 
         <SyncedFloatingControlPanel
