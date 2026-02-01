@@ -267,6 +267,7 @@ export function Extruder2GraphsPage() {
             renderValue={(value) => value.toFixed(2)}
             graphId="pressure-graph"
             currentTimeSeries={pressure}
+            machineId="extruder-graphs"
           />
 
           <GraphWithMarkerControls
@@ -277,6 +278,7 @@ export function Extruder2GraphsPage() {
             renderValue={(value) => value.toFixed(1)}
             graphId="combined-temperatures"
             currentTimeSeries={nozzleTemperature}
+            machineId="extruder-graphs"
           />
 
           <GraphWithMarkerControls
@@ -287,6 +289,7 @@ export function Extruder2GraphsPage() {
             renderValue={(value) => value.toFixed(1)}
             graphId="combined-power"
             currentTimeSeries={combinedPower}
+            machineId="extruder-graphs"
           />
 
           <GraphWithMarkerControls
@@ -300,6 +303,7 @@ export function Extruder2GraphsPage() {
             renderValue={(value) => value.toFixed(2)}
             graphId="motor-current"
             currentTimeSeries={motorCurrent}
+            machineId="extruder-graphs"
           />
 
           <GraphWithMarkerControls
@@ -324,6 +328,7 @@ export function Extruder2GraphsPage() {
             renderValue={(value) => value.toFixed(0)}
             graphId="rpm-graph"
             currentTimeSeries={motorScrewRpm}
+            machineId="extruder-graphs"
           />
         </div>
 
