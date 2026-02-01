@@ -112,39 +112,39 @@ export function Mock1GraphPage() {
             currentTimeSeries={sineWaveSum}
             machineId="mock-graphs"
           />
-        <GraphWithMarkerControls
-          syncHook={syncHook}
-          newData={combinedData}
-          config={{
-            ...config,
-            title: "Combined Sine Waves",
-          }}
-          unit={"mm" as Unit}
-          renderValue={(value) => value.toFixed(3)}
-          graphId="combined-graph"
-          currentTimeSeries={sineWaveSum}
-          machineId="mock-graphs"
-        />
-        <GraphWithMarkerControls
-          syncHook={syncHook}
-          newData={singleData}
-          config={singleGraphConfig}
-          unit={"mm" as Unit}
-          renderValue={(value) => value.toFixed(3)}
-          graphId="single-graph2"
-          currentTimeSeries={sineWaveSum}
-          machineId="mock-graphs"
-        />
-        <GraphWithMarkerControls
-          syncHook={syncHook}
-          newData={singleData}
-          config={singleGraphConfig}
-          unit={"mm" as Unit}
-          renderValue={(value) => value.toFixed(3)}
-          graphId="single-graph"
-          currentTimeSeries={sineWaveSum}
-          machineId="mock-graphs"
-        />
+          <GraphWithMarkerControls
+            syncHook={syncHook}
+            newData={combinedData}
+            config={{
+              ...config,
+              title: "Combined Sine Waves",
+            }}
+            unit={"mm" as Unit}
+            renderValue={(value) => value.toFixed(3)}
+            graphId="combined-graph"
+            currentTimeSeries={sineWaveSum}
+            machineId="mock-graphs"
+          />
+          <GraphWithMarkerControls
+            syncHook={syncHook}
+            newData={singleData}
+            config={singleGraphConfig}
+            unit={"mm" as Unit}
+            renderValue={(value) => value.toFixed(3)}
+            graphId="single-graph2"
+            currentTimeSeries={sineWaveSum}
+            machineId="mock-graphs"
+          />
+          <GraphWithMarkerControls
+            syncHook={syncHook}
+            newData={singleData}
+            config={singleGraphConfig}
+            unit={"mm" as Unit}
+            renderValue={(value) => value.toFixed(3)}
+            graphId="single-graph"
+            currentTimeSeries={sineWaveSum}
+            machineId="mock-graphs"
+          />
         </div>
 
         <SyncedFloatingControlPanel
