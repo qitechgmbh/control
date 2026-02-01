@@ -19,6 +19,8 @@ type AddMarkerDialogProps = {
   onAddMarker: (name: string, timestamp: number, color?: string) => void;
   currentTimestamp: number | null;
   defaultName?: string;
+  // Existing marker names to prevent duplicates (case-insensitive)
+  existingNames?: string[];
 };
 
 export function AddMarkerDialog({
@@ -27,12 +29,15 @@ export function AddMarkerDialog({
   onAddMarker,
   currentTimestamp,
   defaultName = "",
+  existingNames = [],
 }: AddMarkerDialogProps) {
   const [name, setName] = useState(defaultName);
   const [selectedTimestamp, setSelectedTimestamp] = useState<number | null>(
     null,
   );
   const [color, setColor] = useState("#000000");
+  // Shown when user tries to add a marker whose name already exists
+  const [duplicateNameError, setDuplicateNameError] = useState(false);
 
   // Reset form only when dialog opens or closes; do not reset when currentTimestamp
   // updates while open (e.g. from graph) or we overwrite the user's time input
@@ -40,9 +45,11 @@ export function AddMarkerDialog({
     if (open) {
       setName(defaultName);
       setSelectedTimestamp(currentTimestamp ?? Date.now());
+      setDuplicateNameError(false);
     } else {
       setName("");
       setSelectedTimestamp(null);
+      setDuplicateNameError(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when open toggles
   }, [open]);
@@ -50,12 +57,23 @@ export function AddMarkerDialog({
   const handleAdd = () => {
     if (!name.trim()) return;
 
+    // Reject duplicate names (compare trimmed, case-insensitive)
+    const trimmedName = name.trim();
+    const isDuplicate = existingNames.some(
+      (existing) => existing.trim().toLowerCase() === trimmedName.toLowerCase(),
+    );
+    if (isDuplicate) {
+      setDuplicateNameError(true);
+      return;
+    }
+
+    setDuplicateNameError(false);
+
     // Use selected time if set, else context/graph time, else now
-    const timestamp =
-      selectedTimestamp ?? currentTimestamp ?? Date.now();
+    const timestamp = selectedTimestamp ?? currentTimestamp ?? Date.now();
     if (!timestamp) return;
 
-    onAddMarker(name.trim(), timestamp, color);
+    onAddMarker(trimmedName, timestamp, color);
     onOpenChange(false);
   };
 
@@ -85,7 +103,10 @@ export function AddMarkerDialog({
               id="marker-name"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                setDuplicateNameError(false);
+              }}
               placeholder="Enter marker name"
               autoFocus
               onKeyDown={(e) => {
@@ -94,6 +115,11 @@ export function AddMarkerDialog({
                 }
               }}
             />
+            {duplicateNameError && (
+              <p className="text-destructive text-sm">
+                A marker with this name already exists.
+              </p>
+            )}
           </div>
 
           {/* Time Input (optional) */}
