@@ -1,6 +1,7 @@
 import { Page } from "@/components/Page";
 import {
   AutoSyncedBigGraph,
+  MarkerProvider,
   SyncedFloatingControlPanel,
   useGraphSync,
   type GraphConfig,
@@ -27,9 +28,10 @@ export function Winder2GraphsPage() {
 
   return (
     <Page className="pb-27">
-      <div className="flex flex-col gap-4">
-        <div className="grid gap-4">
-          <PullerSpeedGraph
+      <MarkerProvider>
+        <div className="flex flex-col gap-4">
+          <div className="grid gap-4">
+            <PullerSpeedGraph
             syncHook={syncHook}
             newData={pullerSpeed}
             targetSpeed={state?.puller_state?.target_speed}
@@ -66,10 +68,14 @@ export function Winder2GraphsPage() {
             unit="m"
             renderValue={(value) => roundToDecimals(value, 2)}
           />
+          </div>
         </div>
-      </div>
 
-      <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
+        <SyncedFloatingControlPanel
+          controlProps={syncHook.controlProps}
+          machineId="winder2"
+        />
+      </MarkerProvider>
     </Page>
   );
 }
@@ -108,6 +114,7 @@ export function SpoolRpmGraph({
       config={config}
       graphId="spool-rpm"
       currentTimeSeries={newData}
+      machineId="winder2"
     />
   );
 }
@@ -169,6 +176,7 @@ export function TraversePositionGraph({
       config={config}
       graphId="traverse-position"
       currentTimeSeries={newData}
+      machineId="winder2"
     />
   );
 }
@@ -205,6 +213,7 @@ export function TensionArmAngleGraph({
       config={config}
       graphId="tension-arm-angle"
       currentTimeSeries={newData}
+      machineId="winder2"
     />
   );
 }
@@ -242,6 +251,7 @@ export function SpoolProgressGraph({
       config={config}
       graphId="spool-progress"
       currentTimeSeries={newData}
+      machineId="winder2"
     />
   );
 }
@@ -292,6 +302,7 @@ export function PullerSpeedGraph({
       config={config}
       graphId="puller-speed"
       currentTimeSeries={newData}
+      machineId="winder2"
     />
   );
 }

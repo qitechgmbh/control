@@ -1,3 +1,4 @@
+import type uPlot from "uplot";
 import { IconName } from "@/components/Icon";
 import { Unit } from "@/control/units";
 import { TimeSeries } from "@/lib/timeseries";
@@ -72,6 +73,8 @@ export type BigGraphProps = {
   config: GraphConfig;
   graphId: string;
   syncGraph?: PropGraphSync;
+  /** Optional ref to receive the uPlot instance when chart is created (e.g. for marker positioning) */
+  uplotRefOut?: React.MutableRefObject<uPlot | null>;
 };
 
 export type TimeWindowOption = {
@@ -109,6 +112,8 @@ export interface HistoricalModeHandlers {
 export interface CreateChartParams {
   containerRef: React.RefObject<HTMLDivElement | null>;
   uplotRef: React.RefObject<uPlot | null>;
+  /** Optional ref to expose uPlot instance (e.g. for marker overlay positioning) */
+  uplotRefOut?: React.MutableRefObject<uPlot | null>;
   newData: BigGraphProps["newData"];
   config: BigGraphProps["config"];
   colors: {

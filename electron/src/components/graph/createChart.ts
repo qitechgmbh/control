@@ -11,6 +11,7 @@ import { normalizeDataSeries } from "./animation";
 export function createChart({
   containerRef,
   uplotRef,
+  uplotRefOut,
   newData,
   config,
   colors,
@@ -182,6 +183,7 @@ export function createChart({
 
   // Always destroy existing chart before creating new one
   if (uplotRef.current) {
+    uplotRefOut?.current && (uplotRefOut.current = null);
     uplotRef.current.destroy();
     uplotRef.current = null;
   }
@@ -482,6 +484,10 @@ export function createChart({
     uPlotData,
     containerRef.current,
   );
+
+  if (uplotRefOut) {
+    uplotRefOut.current = uplotRef.current;
+  }
 
   // Create handler callbacks
   const handlerCallbacks: HandlerCallbacks = {

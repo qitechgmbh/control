@@ -1,6 +1,7 @@
 import { Page } from "@/components/Page";
 import {
   AutoSyncedBigGraph,
+  MarkerProvider,
   SyncedFloatingControlPanel,
   useGraphSync,
   type GraphConfig,
@@ -242,8 +243,9 @@ export function Extruder2GraphsPage() {
 
   return (
     <Page className="pb-25">
-      <div className="flex flex-col gap-4">
-        <GraphWithMarkerControls
+      <MarkerProvider>
+        <div className="flex flex-col gap-4">
+          <GraphWithMarkerControls
           syncHook={syncHook}
           newData={{
             newData: pressure,
@@ -323,9 +325,13 @@ export function Extruder2GraphsPage() {
           graphId="rpm-graph"
           currentTimeSeries={motorScrewRpm}
         />
-      </div>
+        </div>
 
-      <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
+        <SyncedFloatingControlPanel
+          controlProps={syncHook.controlProps}
+          machineId="extruder-graphs"
+        />
+      </MarkerProvider>
     </Page>
   );
 }
