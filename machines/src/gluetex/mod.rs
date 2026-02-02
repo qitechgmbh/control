@@ -73,6 +73,21 @@ impl Default for TensionArmMonitorConfig {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct SleepTimerConfig {
+    pub enabled: bool,
+    pub timeout_seconds: u64,
+}
+
+impl Default for SleepTimerConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            timeout_seconds: 900, // 15 minutes
+        }
+    }
+}
+
 pub enum HeatingZone {
     Zone1,
     Zone2,
@@ -198,6 +213,10 @@ pub struct Gluetex {
     // tension arm monitoring
     pub tension_arm_monitor_config: TensionArmMonitorConfig,
     pub tension_arm_monitor_triggered: bool,
+
+    // sleep timer
+    pub sleep_timer_config: SleepTimerConfig,
+    pub last_activity_time: Instant,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
@@ -615,6 +634,55 @@ impl Gluetex {
         self.spool_speed_controller.set_enabled(false);
         self.puller_speed_controller.set_enabled(false);
         self.slave_puller_speed_controller.set_enabled(false);
+    }
+
+    /// Check if sleep timer has expired and trigger standby if needed
+    pub fn check_sleep_timer(&mut self, now: Instant) {
+        if !self.sleep_timer_config.enabled {
+            return;
+        }
+
+        let elapsed = now.duration_since(self.last_activity_time).as_secs();
+        
+        if elapsed >= self.sleep_timer_config.timeout_seconds {
+            tracing::info!("Sleep timer expired - entering standby mode");
+            self.enter_sleep_mode();
+        }
+    }
+
+    /// Enter sleep mode: similar to emergency stop but triggered by inactivity
+    fn enter_sleep_mode(&mut self) {
+        // Use emergency_stop to safely shut down everything
+        self.emergency_stop();
+        tracing::info!("Entered sleep mode due to inactivity");
+    }
+
+    /// Get remaining seconds on sleep timer
+    pub fn get_sleep_timer_remaining_seconds(&self) -> u64 {
+        if !self.sleep_timer_config.enabled {
+            return 0;
+        }
+
+        let elapsed = Instant::now()
+            .duration_since(self.last_activity_time)
+            .as_secs();
+        
+        if elapsed >= self.sleep_timer_config.timeout_seconds {
+            0
+        } else {
+            self.sleep_timer_config.timeout_seconds - elapsed
+        }
+    }
+
+    /// Reset the sleep timer (mark activity)
+    pub fn reset_sleep_timer(&mut self) {
+        self.last_activity_time = Instant::now();
+    }
+
+    /// Detect if there is any activity that should reset the sleep timer
+    fn detect_activity(&self) -> bool {
+        // Activity is any mode other than Standby, or heating being enabled
+        self.mode != GluetexMode::Standby || self.heating_enabled
     }
 }
 

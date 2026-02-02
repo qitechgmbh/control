@@ -19,12 +19,12 @@ import {
 export function GluetexSettingPage() {
   const [xlMode, setXlMode] = useState(getGluetexXLMode());
   const [autoTuneTargetTemps, setAutoTuneTargetTemps] = useState({
-    zone_1: 150,
-    zone_2: 150,
-    zone_3: 150,
-    zone_4: 150,
-    zone_5: 150,
-    zone_6: 150,
+    zone_1: 75,
+    zone_2: 75,
+    zone_3: 75,
+    zone_4: 75,
+    zone_5: 75,
+    zone_6: 75,
   });
 
   const {
@@ -65,6 +65,8 @@ export function GluetexSettingPage() {
     setTensionArmMonitorEnabled,
     setTensionArmMonitorMinAngle,
     setTensionArmMonitorMaxAngle,
+    setSleepTimerEnabled,
+    setSleepTimerTimeout,
     setStepper3Forward,
     setStepper4Forward,
     setStepper5Forward,
@@ -577,11 +579,11 @@ export function GluetexSettingPage() {
                   <EditValue
                     value={autoTuneTargetTemps.zone_1}
                     title="Target"
-                    unit="°C"
+                    unit="C"
                     step={5}
                     min={50}
                     max={250}
-                    defaultValue={150}
+                    defaultValue={75}
                     renderValue={(value) => value.toFixed(0)}
                     onChange={(value) =>
                       setAutoTuneTargetTemps({
@@ -696,11 +698,11 @@ export function GluetexSettingPage() {
                   <EditValue
                     value={autoTuneTargetTemps.zone_2}
                     title="Target"
-                    unit="°C"
+                    unit="C"
                     step={5}
                     min={50}
                     max={250}
-                    defaultValue={150}
+                    defaultValue={75}
                     renderValue={(value) => value.toFixed(0)}
                     onChange={(value) =>
                       setAutoTuneTargetTemps({
@@ -815,11 +817,11 @@ export function GluetexSettingPage() {
                   <EditValue
                     value={autoTuneTargetTemps.zone_3}
                     title="Target"
-                    unit="°C"
+                    unit="C"
                     step={5}
                     min={50}
                     max={250}
-                    defaultValue={150}
+                    defaultValue={75}
                     renderValue={(value) => value.toFixed(0)}
                     onChange={(value) =>
                       setAutoTuneTargetTemps({
@@ -934,11 +936,11 @@ export function GluetexSettingPage() {
                   <EditValue
                     value={autoTuneTargetTemps.zone_4}
                     title="Target"
-                    unit="°C"
+                    unit="C"
                     step={5}
                     min={50}
                     max={250}
-                    defaultValue={150}
+                    defaultValue={75}
                     renderValue={(value) => value.toFixed(0)}
                     onChange={(value) =>
                       setAutoTuneTargetTemps({
@@ -1053,11 +1055,11 @@ export function GluetexSettingPage() {
                   <EditValue
                     value={autoTuneTargetTemps.zone_5}
                     title="Target"
-                    unit="°C"
+                    unit="C"
                     step={5}
                     min={50}
                     max={250}
-                    defaultValue={150}
+                    defaultValue={75}
                     renderValue={(value) => value.toFixed(0)}
                     onChange={(value) =>
                       setAutoTuneTargetTemps({
@@ -1172,11 +1174,11 @@ export function GluetexSettingPage() {
                   <EditValue
                     value={autoTuneTargetTemps.zone_6}
                     title="Target"
-                    unit="°C"
+                    unit="C"
                     step={5}
                     min={50}
                     max={250}
-                    defaultValue={150}
+                    defaultValue={75}
                     renderValue={(value) => value.toFixed(0)}
                     onChange={(value) =>
                       setAutoTuneTargetTemps({
@@ -1332,6 +1334,49 @@ export function GluetexSettingPage() {
               onChange={(value) => setTensionArmMonitorMaxAngle(value)}
             />
           </Label>
+        </ControlCard>
+
+        <ControlCard title="Sleep Timer">
+          <Label label="Enable Sleep Timer">
+            <SelectionGroupBoolean
+              value={state?.sleep_timer_state?.enabled}
+              disabled={isDisabled}
+              loading={isLoading}
+              optionFalse={{
+                children: "Disabled",
+                icon: "lu:CircleOff",
+              }}
+              optionTrue={{
+                children: "Enabled",
+                icon: "lu:Timer",
+              }}
+              onChange={(value) => setSleepTimerEnabled(value)}
+            />
+          </Label>
+          <Label label="Sleep Timeout">
+            <EditValue
+              value={
+                state?.sleep_timer_state?.timeout_seconds
+                  ? state.sleep_timer_state.timeout_seconds / 60
+                  : 15
+              }
+              title={"Sleep Timeout"}
+              unit="min"
+              step={1}
+              min={1}
+              max={120}
+              defaultValue={15}
+              renderValue={(value) => roundToDecimals(value, 0)}
+              onChange={(value) => setSleepTimerTimeout(value * 60)}
+            />
+          </Label>
+          <div className="text-sm text-muted-foreground">
+            Machine will automatically enter standby mode after{" "}
+            {state?.sleep_timer_state?.timeout_seconds
+              ? Math.round(state.sleep_timer_state.timeout_seconds / 60)
+              : 15}{" "}
+            minutes of inactivity.
+          </div>
         </ControlCard>
       </ControlGrid>
     </Page>
