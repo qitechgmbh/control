@@ -6,6 +6,14 @@ import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useGluetex } from "../hooks/useGluetex";
 import { roundToDecimals } from "@/lib/decimal";
 import { SpoolAutomaticActionMode } from "../state/gluetexNamespace";
@@ -30,6 +38,10 @@ export function GluetexOverviewPage() {
     isDisabled,
     resetSleepTimer,
   } = useGluetex();
+
+  const [productDescription, setProductDescription] = React.useState("");
+  const [tempDescription, setTempDescription] = React.useState("");
+  const [descriptionOpen, setDescriptionOpen] = React.useState(false);
 
   // Helper function to get temperature status color
   const getTemperatureColor = (temp?: number, target?: number) => {
@@ -350,34 +362,86 @@ export function GluetexOverviewPage() {
         </ControlCard>
 
         {/* Bottom Row: Order Information (left, width 2) */}
-        <ControlCard width={2} title="Auftragsdaten">
+        <ControlCard width={2} title="Order Information">
           <div className="grid gap-4">
-            <Label label="Auftragsnummer">
-              <EditValue
-                value={0}
-                title="Auftragsnummer"
-                defaultValue={0}
-                min={0}
-                max={999999}
-                renderValue={(value) => value.toString()}
-                onChange={() => {}}
-              />
-            </Label>
-            <Label label="Artikelbezeichnung">
-              <div className="rounded-lg border bg-gray-50 px-4 py-2">
-                <span className="text-gray-500">Placeholder</span>
-              </div>
-            </Label>
-            <Label label="Seriennummer">
-              <EditValue
-                value={0}
-                title="Seriennummer"
-                defaultValue={0}
-                min={0}
-                max={999999}
-                renderValue={(value) => value.toString()}
-                onChange={() => {}}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <Label label="Order Number">
+                <EditValue
+                  value={0}
+                  title="Order Number"
+                  defaultValue={0}
+                  min={0}
+                  max={999999}
+                  renderValue={(value) => value.toString()}
+                  onChange={() => {}}
+                />
+              </Label>
+              <Label label="Serial Number">
+                <EditValue
+                  value={0}
+                  title="Serial Number"
+                  defaultValue={0}
+                  min={0}
+                  max={999999}
+                  renderValue={(value) => value.toString()}
+                  onChange={() => {}}
+                />
+              </Label>
+            </div>
+            <Label label="Product Description">
+              <Dialog
+                open={descriptionOpen}
+                onOpenChange={(isOpen) => {
+                  setDescriptionOpen(isOpen);
+                  if (isOpen) {
+                    setTempDescription(productDescription);
+                  }
+                }}
+              >
+                <DialogTrigger asChild>
+                  <TouchButton variant="outline" className="h-12 w-full justify-start text-lg font-normal">
+                    {productDescription || "Enter description..."}
+                  </TouchButton>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Product Description</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex flex-col gap-6 py-4">
+                    <Input
+                      type="text"
+                      placeholder="Enter description..."
+                      className="h-14 text-xl"
+                      value={tempDescription}
+                      onChange={(e) => setTempDescription(e.target.value)}
+                      autoComplete="off"
+                      autoFocus
+                    />
+                    <div className="flex gap-3">
+                      <TouchButton
+                        variant="outline"
+                        className="h-14 flex-1 text-lg"
+                        onClick={() => {
+                          setDescriptionOpen(false);
+                          setTempDescription(productDescription);
+                        }}
+                      >
+                        Cancel
+                      </TouchButton>
+                      <TouchButton
+                        variant="default"
+                        className="h-14 flex-1 text-lg"
+                        onClick={() => {
+                          setProductDescription(tempDescription);
+                          setDescriptionOpen(false);
+                        }}
+                      >
+                        Save
+                      </TouchButton>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </Label>
           </div>
         </ControlCard>
