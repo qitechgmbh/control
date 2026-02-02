@@ -43,6 +43,8 @@ impl TestMachineStepper {
     pub fn get_state(&self) -> StateEvent {
         StateEvent {
             target_speed: self.stepper.target_velocity,
+            enabled: self.stepper.enabled,
+            clear: false,
         }
     }
 
@@ -53,9 +55,26 @@ impl TestMachineStepper {
     }
 
     pub fn set_target_speed(&mut self, speed: i16) {
+        self.stepper.set_velocity(speed);
+        self.emit_state();
+    }
 
-        self.stepper.target_velocity = speed;
+    pub fn set_enabled(&mut self, enabled: bool) {
+        tracing::error!("Enabling driver now.");
+        self.stepper.set_enabled(enabled);
+        self.emit_state();
+    }
 
-        self.stepper.set_enabled(speed != 0);
+    pub fn clear_errors(&mut self, clear: bool) {
+        self.stepper.clear_errors(clear);
+        self.stepper.clear_reset(clear);
+        self.emit_state();
+    }
+
+    pub fn stop_clear_errors(&mut self, clear: bool) {
+        self.stepper.stop_clear_errors(clear);
+        self.stepper.stop_clear_reset(clear);
+        self.emit_state();
+
     }
 }
