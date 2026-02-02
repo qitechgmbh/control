@@ -28,6 +28,7 @@ export function GluetexOverviewPage() {
     resetSpoolProgress,
     isLoading,
     isDisabled,
+    resetSleepTimer,
   } = useGluetex();
 
   // Helper function to get temperature status color
@@ -305,11 +306,46 @@ export function GluetexOverviewPage() {
         </ControlCard>
 
         {/* Second Row: AI-Info (center) */}
-        <ControlCard title="KI Info">
-          <div className="flex h-full items-center justify-center">
-            <p className="text-center text-gray-500">
-              AI Information will be displayed here
-            </p>
+        <ControlCard title="Sleep Timer">
+          <div className="flex h-full flex-col items-center justify-center gap-4 p-4">
+            {state?.sleep_timer_state?.enabled ? (
+              <>
+                <div className="text-center">
+                  <div className="mb-2 text-sm text-muted-foreground">
+                    Time until standby
+                  </div>
+                  <div className="text-4xl font-bold">
+                    {Math.floor(
+                      (state.sleep_timer_state.remaining_seconds || 0) / 60,
+                    )}
+                    :
+                    {String(
+                      (state.sleep_timer_state.remaining_seconds || 0) % 60,
+                    ).padStart(2, "0")}
+                  </div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    minutes
+                  </div>
+                </div>
+                <TouchButton
+                  variant="default"
+                  disabled={isDisabled}
+                  className="w-full"
+                  icon="lu:RotateCcw"
+                  onClick={() => resetSleepTimer()}
+                >
+                  Reset Timer
+                </TouchButton>
+              </>
+            ) : (
+              <div className="text-center text-gray-500">
+                <div className="mb-2">Sleep Timer Disabled</div>
+                <div className="text-sm">
+                  Enable in Settings to automatically enter standby after
+                  inactivity
+                </div>
+              </div>
+            )}
           </div>
         </ControlCard>
 
