@@ -28,19 +28,90 @@ impl StepperVelocityWago750672 {
         }
     }
 
-    pub fn set_enabled(&self, enabled: bool)
-    {
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
+
         let mut dev = block_on(self.device.write());
 
-        tracing::error!("Enabled: {}", enabled);
+        if enabled {
+            dev.rxpdo.c1 = 0b00000011;
+            tracing::info!("Enabling!");
+            if dev.txpdo.s1 & 0b00000011 != 0 {
+                tracing::info!("Enabled!");
+                tracing::info!("Setting Mode");
+                dev.rxpdo.c1 = 0b00011011;
+            }
+            if dev.txpdo.s1 & 0b00011011 != 0 {
+                tracing::info!("Mode Set");
+                tracing::info!("Starting up...");
+                dev.rxpdo.c1 = 0b00011111;
+            }
+        } else {
+            tracing::info!("Disabled."); dev.rxpdo.c1 = 0b00000000;
+        }
+    }
 
-        dev.state = 0;
+    pub fn set_velocity(&mut self, velocity: i16) {
+        self.target_velocity = velocity;
 
-        // match enabled
-        // {
-        //     true => dev.write_control_bits(1 + 2 + 8, 128, 0),
-        //     _    => dev.write_control_bits(0, 0, 0),
-        // }
+        let mut dev = block_on(self.device.write());
+
+        dev.rxpdo.velocity = velocity;
+        dev.rxpdo.acceleration = 10000; // hardcoded for now
+    }
+
+    pub fn clear_errors(&self, clear: bool) {
+        let mut dev = block_on(self.device.write());
+        let _ = clear;
+
+        dev.rxpdo.c2 = 0b10000000;
+        tracing::info!("S1{:08b}, S2{:08b}, S3{:08b}", dev.txpdo.s1, dev.txpdo.s2, dev.txpdo.s3);
+    }
+
+    pub fn clear_reset(&self, clear: bool) {
+        let mut dev = block_on(self.device.write());
+        let _ = clear;
+
+        dev.rxpdo.c3 = 0b10000000;
+    }
+
+    pub fn stop_clear_errors(&self, clear: bool) {
+        let mut dev = block_on(self.device.write());
+        let _ = clear;
+
+        dev.rxpdo.c2 = 0b00000000;
+        tracing::info!("C1{:08b}, C2{:08b}, C3{:08b}", dev.rxpdo.c1, dev.rxpdo.c2, dev.rxpdo.c3);
+    }
+
+    pub fn stop_clear_reset(&self, clear: bool) {
+        let mut dev = block_on(self.device.write());
+        let _ = clear;
+
+        dev.rxpdo.c3 = 0b00000000;
+    }
+
+
+    fn write_control_byte(&self, control_byte: ControlByte, value: u8) {
+        let mut dev = block_on(self.device.write());
+
+        match control_byte {
+            ControlByte::C0 => dev.rxpdo.c0 = value,
+            ControlByte::C1 => dev.rxpdo.c1 = value,
+            ControlByte::C2 => dev.rxpdo.c2 = value,
+            ControlByte::C3 => dev.rxpdo.c3 = value,
+        }
+    }
+
+    fn read_status_byte(&self, status_byte: StatusByte) -> u8 {
+
+        let dev = block_on(self.device.write());
+
+        match status_byte {
+            StatusByte::S0 => return dev.txpdo.s0,
+            StatusByte::S1 => return dev.txpdo.s1,
+            StatusByte::S2 => return dev.txpdo.s2,
+            StatusByte::S3 => return dev.txpdo.s3,
+        }
     }
 }
 
@@ -141,4 +212,20 @@ pub enum SpeedControlState {
     StartPulse,
     Running,
     ErrorAck,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ControlByte {
+    C0,
+    C1,
+    C2,
+    C3,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum StatusByte {
+    S0,
+    S1,
+    S2,
+    S3,
 }
