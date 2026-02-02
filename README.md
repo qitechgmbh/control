@@ -104,8 +104,6 @@ For complete step-by-step tutorials on setting up your first hardware, including
 | Dryer V1          | polymer dryer               | 14         | Reserved    | [Video](https://youtu.be/6hdmUUAdZp0?si=eKOW1WlgkqTpnfdS)       | -                                     |
 | Pelletizier V1    | Filament chopper            | 15         | Reserved    |                                                                 | -                                     |
 
-
-
 # Current Restructuring Efforts
 
 [![](https://img.youtube.com/vi/UlbnSVIhfLI/maxresdefault.jpg)](https://www.youtube.com/live/UlbnSVIhfLI?si=ZTotC5B7gd87tUim)

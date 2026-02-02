@@ -24,6 +24,7 @@ use crate::test_machine::TestMachine;
 
 use lazy_static::lazy_static;
 
+use crate::motor_test_machine::MotorTestMachine;
 use anyhow::Error;
 use std::{any::TypeId, collections::HashMap};
 
@@ -131,6 +132,8 @@ lazy_static! {
         mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<WagoAiTestMachine>(WagoAiTestMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<MotorTestMachine>(MotorTestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
 
