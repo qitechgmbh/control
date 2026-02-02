@@ -18,7 +18,10 @@ export function GluetexGraphsPage() {
     spoolRpm,
     traversePosition,
     tensionArmAngle,
+    slaveTensionArmAngle,
+    addonTensionArmAngle,
     pullerSpeed,
+    slavePullerSpeed,
     spoolProgress,
     temperature1,
     temperature2,
@@ -37,6 +40,7 @@ export function GluetexGraphsPage() {
           <PullerSpeedGraph
             syncHook={syncHook}
             newData={pullerSpeed}
+            slavePullerSpeed={slavePullerSpeed}
             targetSpeed={state?.puller_state?.target_speed}
             unit="m/min"
             renderValue={(value) => roundToDecimals(value, 0)}
@@ -45,6 +49,8 @@ export function GluetexGraphsPage() {
           <TensionArmAngleGraph
             syncHook={syncHook}
             newData={tensionArmAngle}
+            slaveTensionArmAngle={slaveTensionArmAngle}
+            addonTensionArmAngle={addonTensionArmAngle}
             unit="deg"
             renderValue={(value) => roundDegreesToDecimals(value, 0)}
           />
@@ -197,30 +203,62 @@ export function TraversePositionGraph({
 export function TensionArmAngleGraph({
   syncHook,
   newData,
+  slaveTensionArmAngle,
+  addonTensionArmAngle,
   unit,
   renderValue,
 }: {
   syncHook: ReturnType<typeof useGraphSync>;
   newData: TimeSeries | null;
+  slaveTensionArmAngle: TimeSeries | null;
+  addonTensionArmAngle: TimeSeries | null;
   unit?: Unit;
   renderValue?: (value: number) => string;
 }) {
+  const tensionArmData = [
+    ...(newData
+      ? [
+          {
+            newData,
+            title: "Main Tension Arm",
+            color: "#06b6d4",
+          },
+        ]
+      : []),
+    ...(addonTensionArmAngle
+      ? [
+          {
+            newData: addonTensionArmAngle,
+            title: "Addon Tension Arm",
+            color: "#f59e0b",
+          },
+        ]
+      : []),
+    ...(slaveTensionArmAngle
+      ? [
+          {
+            newData: slaveTensionArmAngle,
+            title: "Slave Tension Arm",
+            color: "#8b5cf6",
+          },
+        ]
+      : []),
+  ];
+
   const config: GraphConfig = {
     title: "Tension Arm Angle",
     icon: "lu:RotateCw",
     colors: {
-      primary: "#f59e0b",
+      primary: "#06b6d4",
     },
     exportFilename: "tension_arm_angle_data",
+    showLegend: true,
   };
 
   return (
     <AutoSyncedBigGraph
       syncHook={syncHook}
-      newData={{
-        newData,
-        color: "#f59e0b",
-      }}
+      newData={tensionArmData}
       unit={unit}
       renderValue={renderValue}
       config={config}
@@ -267,26 +305,49 @@ export function SpoolProgressGraph({
 export function PullerSpeedGraph({
   syncHook,
   newData,
+  slavePullerSpeed,
   targetSpeed,
   unit,
   renderValue,
 }: {
   syncHook: ReturnType<typeof useGraphSync>;
   newData: TimeSeries | null;
+  slavePullerSpeed: TimeSeries | null;
   targetSpeed?: number;
   unit?: Unit;
   renderValue?: (value: number) => string;
 }) {
-  const lines: GraphLine[] = [];
-
-  if (targetSpeed !== undefined) {
-    lines.push({
-      type: "target",
-      value: targetSpeed,
-      label: "Target Speed",
-      color: "#06b6d4", // Match series color
-    });
-  }
+  const pullerSpeedData = [
+    ...(newData
+      ? [
+          {
+            newData,
+            title: "Main Puller Speed",
+            color: "#06b6d4",
+            lines:
+              targetSpeed !== undefined
+                ? [
+                    {
+                      type: "target" as const,
+                      value: targetSpeed,
+                      label: "Target Speed",
+                      color: "#06b6d4",
+                    },
+                  ]
+                : [],
+          },
+        ]
+      : []),
+    ...(slavePullerSpeed
+      ? [
+          {
+            newData: slavePullerSpeed,
+            title: "Slave Puller Speed",
+            color: "#8b5cf6",
+          },
+        ]
+      : []),
+  ];
 
   const config: GraphConfig = {
     title: "Puller Speed",
@@ -295,16 +356,13 @@ export function PullerSpeedGraph({
       primary: "#06b6d4",
     },
     exportFilename: "puller_speed_data",
+    showLegend: true,
   };
 
   return (
     <AutoSyncedBigGraph
       syncHook={syncHook}
-      newData={{
-        newData,
-        color: "#06b6d4",
-        lines,
-      }}
+      newData={pullerSpeedData}
       unit={unit}
       renderValue={renderValue}
       config={config}
