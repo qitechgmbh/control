@@ -214,7 +214,7 @@ impl EthercatDevice for IP20EcDi8Do8 {
     }
 
     fn set_module(&mut self, module: Module) {
-        self.slots[self.module_count] = Some(module);
+        self.slots[self.module_count] = Some(module.clone());
         self.module_count += 1;
         self.tx_size += module.tx_offset;
         self.rx_size += module.rx_offset;
@@ -378,6 +378,7 @@ impl IP20EcDi8Do8 {
                 has_rx: false,
                 tx_offset: 0,
                 rx_offset: 0,
+                name: "".to_string(),
             };
 
             match ident_iom {
@@ -415,7 +416,7 @@ impl IP20EcDi8Do8 {
             let _ = self.get_pdo_offsets(device, false).await;
         });
 
-        for module in self.slots {
+        for module in &self.slots {
             match module {
                 Some(m) => {
                     // Map ModuleIdent's to Terminals
