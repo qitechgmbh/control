@@ -2,11 +2,16 @@ import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { HeatingZone } from "@/machines/extruder/HeatingZone";
+import { ControlCard } from "@/control/ControlCard";
+import { SelectionGroup } from "@/control/SelectionGroup";
 import { useGluetex } from "../hooks/useGluetex";
+import { HeatingMode } from "../state/gluetexNamespace";
 
 export function GluetexHeatersPage() {
   const {
     state,
+    isLoading,
+    isDisabled,
     temperature1,
     temperature2,
     temperature3,
@@ -19,6 +24,7 @@ export function GluetexHeatersPage() {
     heater4Power,
     heater5Power,
     heater6Power,
+    setHeatingMode,
     setHeatingZone1Temperature,
     setHeatingZone2Temperature,
     setHeatingZone3Temperature,
@@ -84,6 +90,29 @@ export function GluetexHeatersPage() {
           min={0}
           max={300}
         />
+
+        <ControlCard className="bg-red" title="Heating Mode">
+          <SelectionGroup<HeatingMode>
+            value={state?.heating_state?.heating_mode}
+            disabled={isDisabled}
+            loading={isLoading}
+            onChange={setHeatingMode}
+            orientation="horizontal"
+            className="grid grid-cols-2 gap-2"
+            options={{
+              Standby: {
+                children: "Standby",
+                icon: "lu:Power",
+                isActiveClassName: "bg-green-600",
+              },
+              Heating: {
+                children: "Heating",
+                icon: "lu:Flame",
+                isActiveClassName: "bg-green-600",
+              },
+            }}
+          />
+        </ControlCard>
       </ControlGrid>
     </Page>
   );
