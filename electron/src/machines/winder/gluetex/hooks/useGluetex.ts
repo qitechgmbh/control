@@ -281,6 +281,17 @@ export function useGluetex() {
     z.object({ SetTensionArmMonitorMaxAngle: z.number() }),
   );
 
+  // Sleep Timer mutations
+  const { request: requestSetSleepTimerEnabled } = useMachineMutation(
+    z.object({ SetSleepTimerEnabled: z.boolean() }),
+  );
+  const { request: requestSetSleepTimerTimeout } = useMachineMutation(
+    z.object({ SetSleepTimerTimeout: z.number() }),
+  );
+  const { request: requestResetSleepTimer } = useMachineMutation(
+    z.literal("ResetSleepTimer"),
+  );
+
   const { request: requestConfigureHeatingPid } = useMachineMutation(
     z.object({
       ConfigureHeatingPid: z.object({
@@ -1113,6 +1124,52 @@ export function useGluetex() {
     );
   };
 
+  // Sleep Timer action functions
+  const setSleepTimerEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.sleep_timer_state.enabled = enabled;
+        // Reset remaining time when enabling
+        if (enabled) {
+          current.data.sleep_timer_state.remaining_seconds =
+            current.data.sleep_timer_state.timeout_seconds;
+        }
+      },
+      () =>
+        requestSetSleepTimerEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetSleepTimerEnabled: enabled },
+        }),
+    );
+  };
+
+  const setSleepTimerTimeout = (timeoutSeconds: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.sleep_timer_state.timeout_seconds = timeoutSeconds;
+      },
+      () =>
+        requestSetSleepTimerTimeout({
+          machine_identification_unique: machineIdentification,
+          data: { SetSleepTimerTimeout: timeoutSeconds },
+        }),
+    );
+  };
+
+  const resetSleepTimer = () => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.sleep_timer_state.remaining_seconds =
+          current.data.sleep_timer_state.timeout_seconds;
+      },
+      () =>
+        requestResetSleepTimer({
+          machine_identification_unique: machineIdentification,
+          data: "ResetSleepTimer",
+        }),
+    );
+  };
+
   const setHeatingPid = (zone: string, kp: number, ki: number, kd: number) => {
     updateStateOptimistically(
       (current) => {
@@ -1373,6 +1430,11 @@ export function useGluetex() {
     setTensionArmMonitorEnabled,
     setTensionArmMonitorMinAngle,
     setTensionArmMonitorMaxAngle,
+
+    // Sleep Timer action functions
+    setSleepTimerEnabled,
+    setSleepTimerTimeout,
+    resetSleepTimer,
 
     // Heating action functions
     setHeatingPid,

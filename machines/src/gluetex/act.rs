@@ -32,6 +32,14 @@ impl MachineAct for Gluetex {
         // check tension arm positions and trigger emergency stop if needed
         self.check_tension_arm_monitor();
 
+        // check sleep timer and enter standby if inactive for too long
+        self.check_sleep_timer(now);
+
+        // auto-reset sleep timer if there's activity
+        if self.detect_activity() {
+            self.reset_sleep_timer();
+        }
+
         // update all temperature controllers
         self.temperature_controller_1.update(now);
         self.temperature_controller_2.update(now);

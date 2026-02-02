@@ -176,6 +176,11 @@ pub enum Mutation {
     SetTensionArmMonitorEnabled(bool),
     SetTensionArmMonitorMinAngle(f64),
     SetTensionArmMonitorMaxAngle(f64),
+
+    // Sleep Timer
+    SetSleepTimerEnabled(bool),
+    SetSleepTimerTimeout(u64),
+    ResetSleepTimer,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -261,6 +266,8 @@ pub struct StateEvent {
     pub addon_tension_arm_state: TensionArmState,
     /// tension arm monitor state
     pub tension_arm_monitor_state: TensionArmMonitorState,
+    /// sleep timer state
+    pub sleep_timer_state: SleepTimerState,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -458,6 +465,16 @@ pub struct TensionArmMonitorState {
     pub max_angle: f64,
     /// is monitor currently triggered (limits exceeded)
     pub triggered: bool,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct SleepTimerState {
+    /// is sleep timer enabled
+    pub enabled: bool,
+    /// timeout in seconds
+    pub timeout_seconds: u64,
+    /// remaining seconds until sleep
+    pub remaining_seconds: u64,
 }
 
 pub enum GluetexEvents {
@@ -700,6 +717,22 @@ impl MachineApi for Gluetex {
             }
             Mutation::SetTensionArmMonitorMaxAngle(angle_deg) => {
                 self.tension_arm_monitor_config.max_angle = Angle::new::<degree>(angle_deg);
+                self.emit_state();
+            }
+            Mutation::SetSleepTimerEnabled(enabled) => {
+                self.sleep_timer_config.enabled = enabled;
+                // Reset the timer when enabling
+                if enabled {
+                    self.reset_sleep_timer();
+                }
+                self.emit_state();
+            }
+            Mutation::SetSleepTimerTimeout(timeout_seconds) => {
+                self.sleep_timer_config.timeout_seconds = timeout_seconds;
+                self.emit_state();
+            }
+            Mutation::ResetSleepTimer => {
+                self.reset_sleep_timer();
                 self.emit_state();
             }
         }
