@@ -306,6 +306,15 @@ export const tensionArmMonitorStateSchema = z.object({
 });
 
 /**
+ * Sleep timer state schema (from backend)
+ */
+export const sleepTimerStateSchema = z.object({
+  enabled: z.boolean(),
+  timeout_seconds: z.number(),
+  remaining_seconds: z.number(),
+});
+
+/**
  * Consolidated state event schema (state changes only) - from backend
  */
 export const stateEventDataSchema = z.object({
@@ -325,6 +334,7 @@ export const stateEventDataSchema = z.object({
   slave_puller_state: slavePullerStateSchema,
   addon_tension_arm_state: tensionArmStateSchema,
   tension_arm_monitor_state: tensionArmMonitorStateSchema,
+  sleep_timer_state: sleepTimerStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========

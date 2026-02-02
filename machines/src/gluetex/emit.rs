@@ -513,6 +513,11 @@ impl Gluetex {
                 max_angle: self.tension_arm_monitor_config.max_angle.get::<degree>(),
                 triggered: self.tension_arm_monitor_triggered,
             },
+            sleep_timer_state: api::SleepTimerState {
+                enabled: self.sleep_timer_config.enabled,
+                timeout_seconds: self.sleep_timer_config.timeout_seconds,
+                remaining_seconds: self.get_sleep_timer_remaining_seconds(),
+            },
         }
     }
 
