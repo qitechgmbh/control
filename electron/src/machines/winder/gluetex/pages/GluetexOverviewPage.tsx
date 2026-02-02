@@ -30,6 +30,12 @@ export function GluetexOverviewPage() {
     temperature4,
     temperature5,
     temperature6,
+    heater1Power,
+    heater2Power,
+    heater3Power,
+    heater4Power,
+    heater5Power,
+    heater6Power,
     spoolProgress,
     setSpoolAutomaticRequiredMeters,
     setSpoolAutomaticAction,
@@ -93,8 +99,51 @@ export function GluetexOverviewPage() {
         </ControlCard>
 
         {/* Right Column: Tall tile spans two rows */}
-        <ControlCard height={2} width={1} title="Temperature & Motors">
+        <ControlCard height={2} width={1} title="Motors, Temperatures & Heaters">
           <div className="flex flex-col gap-4">
+            {/* Addon Motors Status Grid */}
+            <div>
+              <h3 className="mb-2 text-lg font-semibold">Addon Motors</h3>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
+                  <span className="text-sm font-medium">Stepper 3</span>
+                  <div
+                    className={cn(
+                      "h-8 w-8 rounded-full",
+                      getStepperColor(state?.stepper_state?.stepper3_mode),
+                    )}
+                  />
+                  <span className="text-xs">
+                    {state?.stepper_state?.stepper3_mode || "Standby"}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
+                  <span className="text-sm font-medium">Stepper 4</span>
+                  <div
+                    className={cn(
+                      "h-8 w-8 rounded-full",
+                      getStepperColor(state?.stepper_state?.stepper4_mode),
+                    )}
+                  />
+                  <span className="text-xs">
+                    {state?.stepper_state?.stepper4_mode || "Standby"}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
+                  <span className="text-sm font-medium">Stepper 5</span>
+                  <div
+                    className={cn(
+                      "h-8 w-8 rounded-full",
+                      getStepperColor(state?.stepper_state?.stepper5_mode),
+                    )}
+                  />
+                  <span className="text-xs">
+                    {state?.stepper_state?.stepper5_mode || "Standby"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {/* Temperature Status Grid */}
             <div>
               <h3 className="mb-2 text-lg font-semibold">Temperatures</h3>
@@ -210,46 +259,28 @@ export function GluetexOverviewPage() {
               </div>
             </div>
 
-            {/* Addon Motors Status Grid */}
+            {/* Heaters Power Draw */}
             <div>
-              <h3 className="mb-2 text-lg font-semibold">Addon Motors</h3>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
-                  <span className="text-sm font-medium">Stepper 3</span>
-                  <div
-                    className={cn(
-                      "h-8 w-8 rounded-full",
-                      getStepperColor(state?.stepper_state?.stepper3_mode),
-                    )}
-                  />
-                  <span className="text-xs">
-                    {state?.stepper_state?.stepper3_mode || "Standby"}
-                  </span>
-                </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
-                  <span className="text-sm font-medium">Stepper 4</span>
-                  <div
-                    className={cn(
-                      "h-8 w-8 rounded-full",
-                      getStepperColor(state?.stepper_state?.stepper4_mode),
-                    )}
-                  />
-                  <span className="text-xs">
-                    {state?.stepper_state?.stepper4_mode || "Standby"}
-                  </span>
-                </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
-                  <span className="text-sm font-medium">Stepper 5</span>
-                  <div
-                    className={cn(
-                      "h-8 w-8 rounded-full",
-                      getStepperColor(state?.stepper_state?.stepper5_mode),
-                    )}
-                  />
-                  <span className="text-xs">
-                    {state?.stepper_state?.stepper5_mode || "Standby"}
-                  </span>
-                </div>
+              <h3 className="mb-2 text-lg font-semibold">Heaters Power</h3>
+              <div className="flex flex-col items-center gap-2 rounded-lg border p-4">
+                <span className="text-sm font-medium">Total Power Draw</span>
+                <span className="text-3xl font-bold">
+                  {(() => {
+                    const powers = [
+                      heater1Power.current?.value,
+                      heater2Power.current?.value,
+                      heater3Power.current?.value,
+                      heater4Power.current?.value,
+                      heater5Power.current?.value,
+                      heater6Power.current?.value,
+                    ];
+                    const allDefined = powers.every((p) => p !== undefined);
+                    if (!allDefined) return "—";
+                    const total = powers.reduce((sum, p) => sum + (p || 0), 0);
+                    return roundToDecimals(total, 1);
+                  })()}
+                </span>
+                <span className="text-sm text-muted-foreground">Watts</span>
               </div>
             </div>
           </div>

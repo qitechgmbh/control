@@ -127,27 +127,32 @@ export function GluetexAddonsPage() {
           </Label>
         </ControlCard>
 
-        <ControlCard className="bg-red" title="Heating Mode">
-          <SelectionGroup<HeatingMode>
-            value={state?.heating_state?.heating_mode}
-            disabled={isDisabled}
-            loading={isLoading}
-            onChange={setHeatingMode}
-            orientation="horizontal"
-            className="grid grid-cols-2 gap-2"
-            options={{
-              Standby: {
-                children: "Standby",
-                icon: "lu:Power",
-                isActiveClassName: "bg-green-600",
-              },
-              Heating: {
-                children: "Heating",
-                icon: "lu:Flame",
-                isActiveClassName: "bg-green-600",
-              },
-            }}
+        <ControlCard title="Tension Arm">
+          <TensionArm degrees={slaveTensionArmAngle.current?.value} />
+          <TimeSeriesValueNumeric
+            label="Tension Arm"
+            unit="deg"
+            timeseries={slaveTensionArmAngle}
+            renderValue={(value) => roundDegreesToDecimals(value, 0)}
           />
+          <TimeSeriesValueNumeric
+            label="Slave Puller Speed"
+            unit="m/min"
+            timeseries={slavePullerSpeed}
+            renderValue={(value) => roundToDecimals(value, 1)}
+          />
+          <TouchButton
+            variant="outline"
+            icon="lu:House"
+            onClick={zeroSlaveTensionArm}
+            disabled={isDisabled}
+            isLoading={isLoading}
+          >
+            Set Zero Point
+          </TouchButton>
+          {!state?.slave_puller_state?.tension_arm?.zeroed && (
+            <StatusBadge variant="error">Not Zeroed</StatusBadge>
+          )}
         </ControlCard>
 
         <ControlCard className="bg-red" height={2} title="Quality Control">
@@ -293,35 +298,32 @@ export function GluetexAddonsPage() {
                 </Label>
               </div>
             </div>
-          </div>
-        </ControlCard>
 
-        <ControlCard title="Tension Arm">
-          <TensionArm degrees={slaveTensionArmAngle.current?.value} />
-          <TimeSeriesValueNumeric
-            label="Tension Arm"
-            unit="deg"
-            timeseries={slaveTensionArmAngle}
-            renderValue={(value) => roundDegreesToDecimals(value, 0)}
-          />
-          <TimeSeriesValueNumeric
-            label="Slave Puller Speed"
-            unit="m/min"
-            timeseries={slavePullerSpeed}
-            renderValue={(value) => roundToDecimals(value, 1)}
-          />
-          <TouchButton
-            variant="outline"
-            icon="lu:House"
-            onClick={zeroSlaveTensionArm}
-            disabled={isDisabled}
-            isLoading={isLoading}
-          >
-            Set Zero Point
-          </TouchButton>
-          {!state?.slave_puller_state?.tension_arm?.zeroed && (
-            <StatusBadge variant="error">Not Zeroed</StatusBadge>
-          )}
+            {/* Heating Mode */}
+            <div className="space-y-3 mt-8">
+              <h3 className="text-lg font-semibold">Heating Mode</h3>
+              <SelectionGroup<HeatingMode>
+                value={state?.heating_state?.heating_mode}
+                disabled={isDisabled}
+                loading={isLoading}
+                onChange={setHeatingMode}
+                orientation="horizontal"
+                className="grid grid-cols-2 gap-2"
+                options={{
+                  Standby: {
+                    children: "Standby",
+                    icon: "lu:Power",
+                    isActiveClassName: "bg-green-600",
+                  },
+                  Heating: {
+                    children: "Heating",
+                    icon: "lu:Flame",
+                    isActiveClassName: "bg-green-600",
+                  },
+                }}
+              />
+            </div>
+          </div>
         </ControlCard>
 
         <ControlCard className="bg-red" title="Motor Ratios">
