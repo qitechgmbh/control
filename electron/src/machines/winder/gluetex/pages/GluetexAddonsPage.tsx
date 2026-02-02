@@ -358,32 +358,34 @@ export function GluetexAddonsPage() {
               }}
             />
           </Label>
-          <Label label="Stepper 5 Konturlänge">
-            <EditValue
-              value={state?.addon_motor_5_state?.konturlaenge_mm}
-              title="Konturlänge"
-              unit="mm"
-              step={1}
-              min={0}
-              max={10000}
-              defaultValue={0}
-              renderValue={(value) => roundToDecimals(value, 1)}
-              onChange={(value) => setStepper5Konturlaenge(value)}
-            />
-          </Label>
-          <Label label="Stepper 5 Pause">
-            <EditValue
-              value={state?.addon_motor_5_state?.pause_mm}
-              title="Pause"
-              unit="mm"
-              step={1}
-              min={0}
-              max={10000}
-              defaultValue={0}
-              renderValue={(value) => roundToDecimals(value, 1)}
-              onChange={(value) => setStepper5Pause(value)}
-            />
-          </Label>
+          <div className="flex flex-row gap-4">
+            <Label label="Stepper 5: Contour Length">
+              <EditValue
+                value={state?.addon_motor_5_state?.konturlaenge_mm}
+                title="Contour Length"
+                unit="mm"
+                step={1}
+                min={0}
+                max={10000}
+                defaultValue={0}
+                renderValue={(value) => roundToDecimals(value, 1)}
+                onChange={(value) => setStepper5Konturlaenge(value)}
+              />
+            </Label>
+            <Label label="Pause">
+              <EditValue
+                value={state?.addon_motor_5_state?.pause_mm}
+                title="Pause"
+                unit="mm"
+                step={1}
+                min={0}
+                max={10000}
+                defaultValue={0}
+                renderValue={(value) => roundToDecimals(value, 1)}
+                onChange={(value) => setStepper5Pause(value)}
+              />
+            </Label>
+          </div>
           {state?.addon_motor_5_state?.konturlaenge_mm !== undefined &&
             state?.addon_motor_5_state?.konturlaenge_mm > 0 && (
               <Label label="Stepper 5 Pattern State">
