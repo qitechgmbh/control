@@ -15,6 +15,12 @@ import {
   GLUETEX_TRAVERSE_MAX_STANDARD,
   GLUETEX_TRAVERSE_MAX_XL,
 } from "../config/gluetexConfig";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Icon } from "@/components/Icon";
 
 export function GluetexSettingPage() {
   const [xlMode, setXlMode] = useState(getGluetexXLMode());
@@ -26,6 +32,11 @@ export function GluetexSettingPage() {
     zone_5: 75,
     zone_6: 75,
   });
+  
+  // Collapsible section states - all collapsed by default
+  const [winderOpen, setWinderOpen] = useState(false);
+  const [heatingOpen, setHeatingOpen] = useState(false);
+  const [addonsOpen, setAddonsOpen] = useState(false);
 
   const {
     state,
@@ -106,9 +117,27 @@ export function GluetexSettingPage() {
 
   return (
     <Page>
-      <ControlGrid>
+      <div className="flex flex-col gap-6">
         {/* ========== WINDER SETTINGS ========== */}
-        <ControlCard title="Winder: Traverse">
+        <Collapsible open={winderOpen} onOpenChange={setWinderOpen}>
+          <CollapsibleTrigger asChild>
+            <div className="cursor-pointer rounded-lg border border-gray-200 bg-white p-4 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-750 transition-colors">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Icon name="lu:Settings2" className="h-5 w-5" />
+                  Winder Settings
+                </h2>
+                <Icon
+                  name={winderOpen ? "lu:ChevronUp" : "lu:ChevronDown"}
+                  className="h-5 w-5 transition-transform"
+                />
+              </div>
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-4">
+              <ControlGrid>
+        <ControlCard title="Traverse">
           <Label label="Traverse Size">
             <SelectionGroupBoolean
               value={xlMode}
@@ -153,7 +182,7 @@ export function GluetexSettingPage() {
           </Label>
         </ControlCard>
 
-        <ControlCard title="Winder: Spool">
+        <ControlCard title="Spool">
           <Label label="Speed Algorithm">
             <SelectionGroup
               value={state?.spool_speed_controller_state?.regulation_mode}
@@ -337,7 +366,7 @@ export function GluetexSettingPage() {
           )}
         </ControlCard>
 
-        <ControlCard title="Winder: Puller">
+        <ControlCard title="Puller">
           <Label label="Rotation Direction">
             <SelectionGroupBoolean
               value={state?.puller_state?.forward}
@@ -381,9 +410,31 @@ export function GluetexSettingPage() {
             />
           </Label>
         </ControlCard>
+              </ControlGrid>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* ========== ADDON SETTINGS ========== */}
-        <ControlCard title="Addons: Slave Puller">
+        <Collapsible open={addonsOpen} onOpenChange={setAddonsOpen}>
+          <CollapsibleTrigger asChild>
+            <div className="cursor-pointer rounded-lg border border-gray-200 bg-white p-4 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-750 transition-colors">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Icon name="lu:Puzzle" className="h-5 w-5" />
+                  Addon Settings
+                </h2>
+                <Icon
+                  name={addonsOpen ? "lu:ChevronUp" : "lu:ChevronDown"}
+                  className="h-5 w-5 transition-transform"
+                />
+              </div>
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-4">
+              <ControlGrid>
+        <ControlCard title="Slave Puller">
           <Label label="Enable Slave Puller">
             <SelectionGroupBoolean
               value={state?.slave_puller_state?.enabled}
@@ -497,7 +548,7 @@ export function GluetexSettingPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Addons: Motors">
+        <ControlCard title="Motors">
           <Label label="Motor 3 Direction">
             <SelectionGroupBoolean
               value={state?.addon_motor_3_state?.forward}
@@ -549,9 +600,31 @@ export function GluetexSettingPage() {
             />
           </Label>
         </ControlCard>
+              </ControlGrid>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* ========== HEATING SETTINGS ========== */}
-        <ControlCard title="Heating Zone 1">
+        <Collapsible open={heatingOpen} onOpenChange={setHeatingOpen}>
+          <CollapsibleTrigger asChild>
+            <div className="cursor-pointer rounded-lg border border-gray-200 bg-white p-4 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-750 transition-colors">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Icon name="lu:Flame" className="h-5 w-5" />
+                  Heating Settings
+                </h2>
+                <Icon
+                  name={heatingOpen ? "lu:ChevronUp" : "lu:ChevronDown"}
+                  className="h-5 w-5 transition-transform"
+                />
+              </div>
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-4">
+              <ControlGrid>
+        <ControlCard title="Zone 1">
           <div className="flex flex-col gap-4">
             {state?.heating_states?.zone_1?.autotuning_active && (
               <div className="rounded bg-blue-100 p-4 dark:bg-blue-900">
@@ -670,7 +743,7 @@ export function GluetexSettingPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Heating Zone 2">
+        <ControlCard title="Zone 2">
           <div className="flex flex-col gap-4">
             {state?.heating_states?.zone_2?.autotuning_active && (
               <div className="rounded bg-blue-100 p-4 dark:bg-blue-900">
@@ -789,7 +862,7 @@ export function GluetexSettingPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Heating Zone 3">
+        <ControlCard title="Zone 3">
           <div className="flex flex-col gap-4">
             {state?.heating_states?.zone_3?.autotuning_active && (
               <div className="rounded bg-blue-100 p-4 dark:bg-blue-900">
@@ -908,7 +981,7 @@ export function GluetexSettingPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Heating Zone 4">
+        <ControlCard title="Zone 4">
           <div className="flex flex-col gap-4">
             {state?.heating_states?.zone_4?.autotuning_active && (
               <div className="rounded bg-blue-100 p-4 dark:bg-blue-900">
@@ -1027,7 +1100,7 @@ export function GluetexSettingPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Heating Zone 5">
+        <ControlCard title="Zone 5">
           <div className="flex flex-col gap-4">
             {state?.heating_states?.zone_5?.autotuning_active && (
               <div className="rounded bg-blue-100 p-4 dark:bg-blue-900">
@@ -1146,7 +1219,7 @@ export function GluetexSettingPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Heating Zone 6">
+        <ControlCard title="Zone 6">
           <div className="flex flex-col gap-4">
             {state?.heating_states?.zone_6?.autotuning_active && (
               <div className="rounded bg-blue-100 p-4 dark:bg-blue-900">
@@ -1264,23 +1337,13 @@ export function GluetexSettingPage() {
             </div>
           </div>
         </ControlCard>
+              </ControlGrid>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* ========== OTHER SETTINGS ========== */}
-        <MachineSelector
-          machines={filteredMachines}
-          selectedMachine={selectedMachine}
-          connectedMachineState={state?.connected_machine_state}
-          setConnectedMachine={setConnectedMachine}
-          clearConnectedMachine={() => {
-            if (!selectedMachine) return;
-            setConnectedMachine({
-              machine_identification: { vendor: 0, machine: 0 },
-              serial: 0,
-            });
-            disconnectMachine(selectedMachine.machine_identification_unique);
-          }}
-        />
-
+        <ControlGrid>
         <ControlCard title="Tension Arm Monitor">
           <Label label="Enable Monitoring">
             <SelectionGroupBoolean
@@ -1378,7 +1441,8 @@ export function GluetexSettingPage() {
             minutes of inactivity.
           </div>
         </ControlCard>
-      </ControlGrid>
+        </ControlGrid>
+      </div>
     </Page>
   );
 }
