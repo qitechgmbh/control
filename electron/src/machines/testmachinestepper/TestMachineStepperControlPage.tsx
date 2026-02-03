@@ -10,7 +10,7 @@ import { TouchButton } from "@/components/touch/TouchButton";
 import { fa } from "zod/v4/locales";
 
 export function TestMachineStepperControlPage() {
-  const { state, setTargetSpeed, setEnabled, clearErrors, stopClearErrors } = useTestMachineStepper();
+  const { state, setTargetSpeed, setEnabled } = useTestMachineStepper();
 
   return (
     <Page>
@@ -46,24 +46,6 @@ export function TestMachineStepperControlPage() {
             isLoading={false}
           >
             Disable
-          </TouchButton>
-          <TouchButton
-            variant="outline"
-            icon="lu:CirclePower"
-            onClick={() => clearErrors()}
-            disabled={false}
-            isLoading={false}
-          >
-            Clear Errors
-          </TouchButton>
-          <TouchButton
-            variant="outline"
-            icon="lu:CirclePower"
-            onClick={() => stopClearErrors()}
-            disabled={false}
-            isLoading={false}
-          >
-            Stop clearing Errors
           </TouchButton>
         </ControlCard>
       </ControlGrid>
