@@ -237,11 +237,11 @@ export function useGluetex() {
   const { request: requestAddonMotor5SetSlaveRatio } = useMachineMutation(
     z.object({ SetAddonMotor5SlaveRatio: z.number() }),
   );
-  const { request: requestAddonMotor5SetKonturlaenge } = useMachineMutation(
-    z.object({ SetAddonMotor5Konturlaenge: z.number() }),
+  const { request: requestAddonMotor3SetKonturlaenge } = useMachineMutation(
+    z.object({ SetAddonMotor3Konturlaenge: z.number() }),
   );
-  const { request: requestAddonMotor5SetPause } = useMachineMutation(
-    z.object({ SetAddonMotor5Pause: z.number() }),
+  const { request: requestAddonMotor3SetPause } = useMachineMutation(
+    z.object({ SetAddonMotor3Pause: z.number() }),
   );
 
   // Slave Puller mutations
@@ -918,19 +918,19 @@ export function useGluetex() {
     );
   };
 
-  const setStepper5Konturlaenge = (value: number) => {
+  const setStepper3Konturlaenge = (value: number) => {
     // Update backend only, no optimistic update needed for now
-    requestAddonMotor5SetKonturlaenge({
+    requestAddonMotor3SetKonturlaenge({
       machine_identification_unique: machineIdentification,
-      data: { SetAddonMotor5Konturlaenge: value },
+      data: { SetAddonMotor3Konturlaenge: value },
     });
   };
 
-  const setStepper5Pause = (value: number) => {
+  const setStepper3Pause = (value: number) => {
     // Update backend only, no optimistic update needed for now
-    requestAddonMotor5SetPause({
+    requestAddonMotor3SetPause({
       machine_identification_unique: machineIdentification,
-      data: { SetAddonMotor5Pause: value },
+      data: { SetAddonMotor3Pause: value },
     });
   };
 
@@ -1465,7 +1465,7 @@ export function useGluetex() {
     setStepper5Master,
     setStepper5Slave,
     setStepper5Forward,
-    setStepper5Konturlaenge,
-    setStepper5Pause,
+    setStepper3Konturlaenge,
+    setStepper3Pause,
   };
 }

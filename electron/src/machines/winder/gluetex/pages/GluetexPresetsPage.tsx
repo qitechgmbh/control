@@ -45,9 +45,9 @@ const gluetexPresetDataSchema = z
     heating_pid_settings: heatingPidStatesSchema.partial(),
 
     // Addon settings - Motors
-    addon_motor_3_state: addonMotorStateSchema.partial(),
+    addon_motor_3_state: addonMotor5StateSchema.partial(),
     addon_motor_4_state: addonMotorStateSchema.partial(),
-    addon_motor_5_state: addonMotor5StateSchema.partial(),
+    addon_motor_5_state: addonMotorStateSchema.partial(),
 
     // Addon settings - Slave puller
     slave_puller_state: slavePullerStateSchema.partial(),
@@ -340,8 +340,8 @@ export function GluetexPresetsPage() {
     setStepper5Master,
     setStepper5Slave,
     setStepper5Forward,
-    setStepper5Konturlaenge,
-    setStepper5Pause,
+    setStepper3Konturlaenge,
+    setStepper3Pause,
 
     // Addons - Slave puller
     setSlavePullerEnabled,
@@ -555,6 +555,12 @@ export function GluetexPresetsPage() {
     if (preset.data?.addon_motor_3_state?.slave_ratio !== undefined) {
       setStepper3Slave(preset.data.addon_motor_3_state.slave_ratio);
     }
+    if (preset.data?.addon_motor_3_state?.konturlaenge_mm !== undefined) {
+      setStepper3Konturlaenge(preset.data.addon_motor_3_state.konturlaenge_mm);
+    }
+    if (preset.data?.addon_motor_3_state?.pause_mm !== undefined) {
+      setStepper3Pause(preset.data.addon_motor_3_state.pause_mm);
+    }
 
     // Apply addon motor 4 settings
     if (preset.data?.addon_motor_4_state?.enabled !== undefined) {
@@ -586,12 +592,6 @@ export function GluetexPresetsPage() {
     }
     if (preset.data?.addon_motor_5_state?.slave_ratio !== undefined) {
       setStepper5Slave(preset.data.addon_motor_5_state.slave_ratio);
-    }
-    if (preset.data?.addon_motor_5_state?.konturlaenge_mm !== undefined) {
-      setStepper5Konturlaenge(preset.data.addon_motor_5_state.konturlaenge_mm);
-    }
-    if (preset.data?.addon_motor_5_state?.pause_mm !== undefined) {
-      setStepper5Pause(preset.data.addon_motor_5_state.pause_mm);
     }
 
     // Apply slave puller settings
