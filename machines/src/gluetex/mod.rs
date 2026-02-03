@@ -218,6 +218,8 @@ pub struct Gluetex {
     // sleep timer
     pub sleep_timer_config: SleepTimerConfig,
     pub last_activity_time: Instant,
+    pub last_emitted_sleep_timer_remaining: u64,
+    pub sleep_mode_triggered: bool,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
@@ -646,8 +648,13 @@ impl Gluetex {
         let elapsed = now.duration_since(self.last_activity_time).as_secs();
         
         if elapsed >= self.sleep_timer_config.timeout_seconds {
-            tracing::info!("Sleep timer expired - entering standby mode");
-            self.enter_sleep_mode();
+            // Only trigger sleep mode once
+            if !self.sleep_mode_triggered {
+                tracing::info!("Sleep timer expired - entering standby mode");
+                self.enter_sleep_mode();
+                self.sleep_mode_triggered = true;
+            }
+            // Keep remaining at 0 and don't allow any activity
         }
     }
 
@@ -678,6 +685,7 @@ impl Gluetex {
     /// Reset the sleep timer (mark activity)
     pub fn reset_sleep_timer(&mut self) {
         self.last_activity_time = Instant::now();
+        self.sleep_mode_triggered = false;
     }
 
     /// Detect if there is any activity that should reset the sleep timer
