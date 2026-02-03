@@ -242,7 +242,7 @@ impl PidAutoTuner {
         // Ziegler-Nichols method to generate PID parameters
         let ti = 0.5 * tu;
         let td = 0.125 * tu;
-        let kp = 0.6 * ku;
+        let kp = 0.4 * ku;
         let ki = kp / ti;
         let kd = kp * td;
 
