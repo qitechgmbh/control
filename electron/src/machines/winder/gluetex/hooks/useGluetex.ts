@@ -251,11 +251,11 @@ export function useGluetex() {
   const { request: requestSlavePullerSetForward } = useMachineMutation(
     z.object({ SetSlavePullerForward: z.boolean() }),
   );
-  const { request: requestSlavePullerSetMinAngle } = useMachineMutation(
-    z.object({ SetSlavePullerMinAngle: z.number() }),
+  const { request: requestSlavePullerSetTargetAngle } = useMachineMutation(
+    z.object({ SetSlavePullerTargetAngle: z.number() }),
   );
-  const { request: requestSlavePullerSetMaxAngle } = useMachineMutation(
-    z.object({ SetSlavePullerMaxAngle: z.number() }),
+  const { request: requestSlavePullerSetSensitivity } = useMachineMutation(
+    z.object({ SetSlavePullerSensitivity: z.number() }),
   );
   const { request: requestSlavePullerSetMinSpeedFactor } = useMachineMutation(
     z.object({ SetSlavePullerMinSpeedFactor: z.number() }),
@@ -1002,28 +1002,28 @@ export function useGluetex() {
     );
   };
 
-  const setSlavePullerMinAngle = (angle: number) => {
+  const setSlavePullerTargetAngle = (angle: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.slave_puller_state.min_angle = angle;
+        current.data.slave_puller_state.target_angle = angle;
       },
       () =>
-        requestSlavePullerSetMinAngle({
+        requestSlavePullerSetTargetAngle({
           machine_identification_unique: machineIdentification,
-          data: { SetSlavePullerMinAngle: angle },
+          data: { SetSlavePullerTargetAngle: angle },
         }),
     );
   };
 
-  const setSlavePullerMaxAngle = (angle: number) => {
+  const setSlavePullerSensitivity = (sensitivity: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.slave_puller_state.max_angle = angle;
+        current.data.slave_puller_state.sensitivity = sensitivity;
       },
       () =>
-        requestSlavePullerSetMaxAngle({
+        requestSlavePullerSetSensitivity({
           machine_identification_unique: machineIdentification,
-          data: { SetSlavePullerMaxAngle: angle },
+          data: { SetSlavePullerSensitivity: sensitivity },
         }),
     );
   };
@@ -1419,8 +1419,8 @@ export function useGluetex() {
     // Slave Puller action functions
     setSlavePullerEnabled,
     setSlavePullerForward,
-    setSlavePullerMinAngle,
-    setSlavePullerMaxAngle,
+    setSlavePullerTargetAngle,
+    setSlavePullerSensitivity,
     setSlavePullerMinSpeedFactor,
     setSlavePullerMaxSpeedFactor,
     zeroSlaveTensionArm,

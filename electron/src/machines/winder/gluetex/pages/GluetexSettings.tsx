@@ -65,8 +65,8 @@ export function GluetexSettingPage() {
     disconnectMachine,
     setSlavePullerEnabled,
     setSlavePullerForward,
-    setSlavePullerMinAngle,
-    setSlavePullerMaxAngle,
+    setSlavePullerTargetAngle,
+    setSlavePullerSensitivity,
     setSlavePullerMinSpeedFactor,
     setSlavePullerMaxSpeedFactor,
     zeroSlaveTensionArm,
@@ -485,39 +485,31 @@ export function GluetexSettingPage() {
                   </Label>
 
                   <div className="flex flex-row flex-wrap gap-4">
-                    <Label label="Min Angle (Detection Zone)">
+                    <Label label="Target Angle">
                       <EditValue
-                        value={state?.slave_puller_state?.min_angle}
-                        title={"Minimum Angle"}
+                        value={state?.slave_puller_state?.target_angle}
+                        title={"Target Angle"}
                         unit="deg"
                         step={1}
                         min={0}
-                        max={
-                          state?.slave_puller_state?.max_angle
-                            ? state.slave_puller_state.max_angle - 5
-                            : 85
-                        }
-                        defaultValue={20}
+                        max={180}
+                        defaultValue={55}
                         renderValue={(value) => roundToDecimals(value, 0)}
-                        onChange={(value) => setSlavePullerMinAngle(value)}
+                        onChange={(value) => setSlavePullerTargetAngle(value)}
                       />
                     </Label>
 
-                    <Label label="Max Angle (Detection Zone)">
+                    <Label label="Sensitivity (Adjustment Range)">
                       <EditValue
-                        value={state?.slave_puller_state?.max_angle}
-                        title={"Maximum Angle"}
+                        value={state?.slave_puller_state?.sensitivity}
+                        title={"Sensitivity"}
                         unit="deg"
                         step={1}
-                        min={
-                          state?.slave_puller_state?.min_angle
-                            ? state.slave_puller_state.min_angle + 5
-                            : 25
-                        }
-                        max={180}
-                        defaultValue={90}
+                        min={5}
+                        max={90}
+                        defaultValue={35}
                         renderValue={(value) => roundToDecimals(value, 0)}
-                        onChange={(value) => setSlavePullerMaxAngle(value)}
+                        onChange={(value) => setSlavePullerSensitivity(value)}
                       />
                     </Label>
 

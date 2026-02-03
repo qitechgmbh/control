@@ -274,16 +274,16 @@ const previewEntries: PresetPreviewEntries<GluetexPreset> = [
         : "N/A",
   },
   {
-    name: "Slave Puller Min Angle",
+    name: "Slave Puller Target Angle",
     unit: "deg",
     renderValue: (data: GluetexPreset) =>
-      data.slave_puller_state?.min_angle?.toFixed(1) ?? "N/A",
+      data.slave_puller_state?.target_angle?.toFixed(1) ?? "N/A",
   },
   {
-    name: "Slave Puller Max Angle",
+    name: "Slave Puller Sensitivity",
     unit: "deg",
     renderValue: (data: GluetexPreset) =>
-      data.slave_puller_state?.max_angle?.toFixed(1) ?? "N/A",
+      data.slave_puller_state?.sensitivity?.toFixed(1) ?? "N/A",
   },
 ];
 
@@ -346,8 +346,8 @@ export function GluetexPresetsPage() {
     // Addons - Slave puller
     setSlavePullerEnabled,
     setSlavePullerForward,
-    setSlavePullerMinAngle,
-    setSlavePullerMaxAngle,
+    setSlavePullerTargetAngle,
+    setSlavePullerSensitivity,
     setSlavePullerMinSpeedFactor,
     setSlavePullerMaxSpeedFactor,
 
@@ -601,11 +601,11 @@ export function GluetexPresetsPage() {
     if (preset.data?.slave_puller_state?.forward !== undefined) {
       setSlavePullerForward(preset.data.slave_puller_state.forward);
     }
-    if (preset.data?.slave_puller_state?.min_angle !== undefined) {
-      setSlavePullerMinAngle(preset.data.slave_puller_state.min_angle);
+    if (preset.data?.slave_puller_state?.target_angle !== undefined) {
+      setSlavePullerTargetAngle(preset.data.slave_puller_state.target_angle);
     }
-    if (preset.data?.slave_puller_state?.max_angle !== undefined) {
-      setSlavePullerMaxAngle(preset.data.slave_puller_state.max_angle);
+    if (preset.data?.slave_puller_state?.sensitivity !== undefined) {
+      setSlavePullerSensitivity(preset.data.slave_puller_state.sensitivity);
     }
     if (preset.data?.slave_puller_state?.min_speed_factor !== undefined) {
       setSlavePullerMinSpeedFactor(

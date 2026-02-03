@@ -528,7 +528,7 @@ impl MachineApi for Gluetex {
         use crate::Machine;
 
         let mutation: Mutation = serde_json::from_value(request_body)?;
-        
+
         // Reset sleep timer on any user interaction (except explicit sleep timer commands)
         match mutation {
             Mutation::SetSleepTimerEnabled(_)
@@ -541,7 +541,7 @@ impl MachineApi for Gluetex {
                 self.reset_sleep_timer();
             }
         }
-        
+
         match mutation {
             Mutation::EnableTraverseLaserpointer(enable) => self.set_laser(enable),
             Mutation::SetMode(mode) => self.set_mode(&mode.into()),

@@ -5,9 +5,7 @@ use units::ConstZero;
 use units::f64::*;
 
 use super::tension_arm::TensionArm;
-use crate::gluetex::features::{
-    filament_tension::FilamentTensionCalculator,
-};
+use crate::gluetex::features::filament_tension::FilamentTensionCalculator;
 
 /// Slave puller speed controller that follows the master puller
 /// with speed adjustments based on tension arm angle feedback.
@@ -76,21 +74,23 @@ impl SlavePullerSpeedController {
     fn speed_raw(&self, master_speed: Velocity, tension_arm: &TensionArm) -> Velocity {
         // Get tension arm angle
         let current_angle = tension_arm.get_angle();
-        
+
         // Calculate deviation from target angle
         let deviation = current_angle - self.target_angle;
-        
+
         // Normalize deviation to [-1.0, 1.0] based on sensitivity range
         // Positive deviation = angle above target = too much tension = slow down
         // Negative deviation = angle below target = too little tension = speed up
-        let normalized_deviation = (deviation.get::<units::angle::degree>() / self.sensitivity.get::<units::angle::degree>()).clamp(-1.0, 1.0);
-        
+        let normalized_deviation = (deviation.get::<units::angle::degree>()
+            / self.sensitivity.get::<units::angle::degree>())
+        .clamp(-1.0, 1.0);
+
         // Calculate speed factor:
         // -1.0 (below target) -> 1.5 (150% speed)
         //  0.0 (at target)    -> 1.0 (100% speed)
         // +1.0 (above target) -> 0.5 (50% speed)
         let speed_factor = 1.0 - (normalized_deviation * 0.5);
-        
+
         let base_speed = master_speed * speed_factor;
 
         // Apply optional speed factor limits for overspeed protection
