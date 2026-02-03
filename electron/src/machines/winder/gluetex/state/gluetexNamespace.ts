@@ -509,55 +509,63 @@ const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
 
+// Time series configuration for 30Hz data from backend
+// sampleIntervalShort: 200ms to downsample 30Hz (~33ms) data to ~5Hz for short buffer
+// sampleIntervalLong: 1000ms to downsample to 1Hz for long buffer
+const timeSeriesConfig = {
+  sampleIntervalShort: 200,
+  sampleIntervalLong: 1000,
+};
+
 // Create time series for backend values
 const { initialTimeSeries: spoolProgress, insert: addSpoolProgress } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
-  createTimeSeries();
-const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
+const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 
 // Create time series for temperature values (from backend)
 const { initialTimeSeries: temperature1, insert: addTemperature1 } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: temperature2, insert: addTemperature2 } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: temperature3, insert: addTemperature3 } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: temperature4, insert: addTemperature4 } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: temperature5, insert: addTemperature5 } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: temperature6, insert: addTemperature6 } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 
 const { initialTimeSeries: heater1Power, insert: addHeater1Power } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: heater2Power, insert: addHeater2Power } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: heater3Power, insert: addHeater3Power } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: heater4Power, insert: addHeater4Power } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: heater5Power, insert: addHeater5Power } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: heater6Power, insert: addHeater6Power } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 
 // Create time series for addon values (local)
 const { initialTimeSeries: slavePullerSpeed, insert: addSlavePullerSpeed } =
-  createTimeSeries();
+  createTimeSeries(timeSeriesConfig);
 const {
   initialTimeSeries: slaveTensionArmAngle,
   insert: addSlaveTensionArmAngle,
-} = createTimeSeries();
+} = createTimeSeries(timeSeriesConfig);
 const {
   initialTimeSeries: addonTensionArmAngle,
   insert: addAddonTensionArmAngle,
-} = createTimeSeries();
+} = createTimeSeries(timeSeriesConfig);
 
 // Default addon state (local-only fields)
 // Note: slave_puller_state is no longer needed here as it comes from backend
