@@ -288,8 +288,8 @@ export const slaveTensionArmStateSchema = z.object({
 export const slavePullerStateSchema = z.object({
   enabled: z.boolean(),
   forward: z.boolean(),
-  min_angle: z.number(),
-  max_angle: z.number(),
+  target_angle: z.number(),
+  sensitivity: z.number(),
   min_speed_factor: z.number().nullable(),
   max_speed_factor: z.number().nullable(),
   tension_arm: slaveTensionArmStateSchema,
