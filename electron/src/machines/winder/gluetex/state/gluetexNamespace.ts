@@ -328,9 +328,9 @@ export const stateEventDataSchema = z.object({
   heating_states: heatingStatesSchema,
   heating_pid_settings: heatingPidStatesSchema,
   connected_machine_state: connectedMachineStateSchema,
-  addon_motor_3_state: addonMotorStateSchema,
+  addon_motor_3_state: addonMotor5StateSchema,
   addon_motor_4_state: addonMotorStateSchema,
-  addon_motor_5_state: addonMotor5StateSchema,
+  addon_motor_5_state: addonMotorStateSchema,
   slave_puller_state: slavePullerStateSchema,
   addon_tension_arm_state: tensionArmStateSchema,
   tension_arm_monitor_state: tensionArmMonitorStateSchema,
@@ -386,7 +386,7 @@ export type StepperState = {
  * Helper to convert backend addon motor state to frontend MotorRatiosState
  */
 function getMotorRatiosFromBackend(
-  motor3: z.infer<typeof addonMotorStateSchema>,
+  motor3: z.infer<typeof addonMotor5StateSchema>,
   motor4: z.infer<typeof addonMotorStateSchema>,
   motor5: z.infer<typeof addonMotorStateSchema>,
 ): MotorRatiosState {
