@@ -16,13 +16,6 @@ import {
   VENDOR_QITECH,
 } from "@/machines/properties";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -102,6 +95,13 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   const client = useClient();
   const [isApplying, setIsApplying] = useState(false);
   const [writeSuccess, setWriteSuccess] = useState(false);
+
+  const [numpadOpen, setNumpadOpen] = useState(false);
+  const [numpadPosition, setNumpadPosition] = useState({ left: 0, top: 0 });
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const serialInputRef = useRef<HTMLInputElement | null>(null);
+  const serialContainerRef = useRef<HTMLDivElement | null>(null);
+  const numpadRef = useRef<HTMLDivElement | null>(null);
 
   const initialMachine = useMemo(
     () =>
