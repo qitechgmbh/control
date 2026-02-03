@@ -46,8 +46,8 @@ export function GluetexAddonsPage() {
     setStepper4Slave,
     setStepper5Master,
     setStepper5Slave,
-    setStepper5Konturlaenge,
-    setStepper5Pause,
+    setStepper3Konturlaenge,
+    setStepper3Pause,
   } = useGluetex();
 
   // Calculate max speed based on gear ratio (same as main puller)
@@ -361,9 +361,9 @@ export function GluetexAddonsPage() {
             />
           </Label>
           <div className="flex flex-row gap-4">
-            <Label label="Stepper 5: Contour Length">
+            <Label label="Stepper 3: Contour Length">
               <EditValue
-                value={state?.addon_motor_5_state?.konturlaenge_mm}
+                value={state?.addon_motor_3_state?.konturlaenge_mm}
                 title="Contour Length"
                 unit="mm"
                 step={1}
@@ -371,12 +371,12 @@ export function GluetexAddonsPage() {
                 max={10000}
                 defaultValue={0}
                 renderValue={(value) => roundToDecimals(value, 1)}
-                onChange={(value) => setStepper5Konturlaenge(value)}
+                onChange={(value) => setStepper3Konturlaenge(value)}
               />
             </Label>
             <Label label="Pause">
               <EditValue
-                value={state?.addon_motor_5_state?.pause_mm}
+                value={state?.addon_motor_3_state?.pause_mm}
                 title="Pause"
                 unit="mm"
                 step={1}
@@ -384,21 +384,21 @@ export function GluetexAddonsPage() {
                 max={10000}
                 defaultValue={0}
                 renderValue={(value) => roundToDecimals(value, 1)}
-                onChange={(value) => setStepper5Pause(value)}
+                onChange={(value) => setStepper3Pause(value)}
               />
             </Label>
           </div>
-          {state?.addon_motor_5_state?.konturlaenge_mm !== undefined &&
-            state?.addon_motor_5_state?.konturlaenge_mm > 0 && (
-              <Label label="Stepper 5 Pattern State">
+          {state?.addon_motor_3_state?.konturlaenge_mm !== undefined &&
+            state?.addon_motor_3_state?.konturlaenge_mm > 0 && (
+              <Label label="Stepper 3 Pattern State">
                 <StatusBadge
                   variant={
-                    state?.addon_motor_5_state?.pattern_state === "Running"
+                    state?.addon_motor_3_state?.pattern_state === "Running"
                       ? "success"
                       : "error"
                   }
                 >
-                  {state?.addon_motor_5_state?.pattern_state || "Idle"}
+                  {state?.addon_motor_3_state?.pattern_state || "Idle"}
                 </StatusBadge>
               </Label>
             )}
