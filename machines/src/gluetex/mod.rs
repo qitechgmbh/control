@@ -698,12 +698,6 @@ impl Gluetex {
         self.last_activity_time = Instant::now();
         self.sleep_timer_triggered = false;
     }
-
-    /// Detect if there is any activity that should reset the sleep timer
-    fn detect_activity(&self) -> bool {
-        // Activity is any mode other than Standby, or heating being enabled
-        self.mode != GluetexMode::Standby || self.heating_enabled
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
