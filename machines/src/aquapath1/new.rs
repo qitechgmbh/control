@@ -1,7 +1,6 @@
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
-    get_subdevice_by_index, validate_no_role_dublicates,
-    validate_same_machine_identification_unique,
+    validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
 
 use super::{
@@ -92,7 +91,12 @@ impl MachineNewTrait for AquaPathV1 {
                 pdo_assignment: EL5152PredefinedPdoAssignment::Frequency,
                 ..Default::default()
             };
-            let subdevice = get_subdevice_by_index(hardware.subdevices, 4)?;
+
+            let subdevice =
+                get_ethercat_device::<EL5152>(hardware, params, 4, [EL5152_IDENTITY_A].to_vec())
+                    .await?
+                    .1;
+
             el5152
                 .write()
                 .await

@@ -968,8 +968,7 @@ dependencies = [
 [[package]]
 name = "ethercrab"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbb13becfa15713adb09b27fdb74468b827cdc78aa99aea638a89c1b0db3ce94"
+source = "git+https://github.com/v-morlock/ethercrab?branch=main#d297d13389d85a4edb4e69cc98f9dd7f12626cac"
 dependencies = [
  "async-io",
  "atomic-waker",
@@ -998,8 +997,7 @@ dependencies = [
 [[package]]
 name = "ethercrab-wire"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d15828cb020fb44c92ca67e1ee3c122c9621c2e00d383d066e488f0619023ba2"
+source = "git+https://github.com/v-morlock/ethercrab?branch=main#d297d13389d85a4edb4e69cc98f9dd7f12626cac"
 dependencies = [
  "ethercrab-wire-derive",
  "heapless",
@@ -1008,8 +1006,7 @@ dependencies = [
 [[package]]
 name = "ethercrab-wire-derive"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e790b8011211ed70babfcacbd4277b91ee21402ad5ba6a2c293db02e2f12919"
+source = "git+https://github.com/v-morlock/ethercrab?branch=main#d297d13389d85a4edb4e69cc98f9dd7f12626cac"
 dependencies = [
  "criterion",
  "proc-macro2",
@@ -2332,6 +2329,7 @@ dependencies = [
  "smol",
  "socketioxide",
  "spin_sleep",
+ "ta",
  "textplots",
  "tokio",
  "tower-http",
@@ -2587,6 +2585,12 @@ name = "sync_wrapper"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bf256ce5efdfa370213c1dabab5935a12e49f2c58d15e9eac2870d3b4f27263"
+
+[[package]]
+name = "ta"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "609409d472a0a7d8d4dd9e19891bbdef546b9dce670c3057d0e02192dc541226"
 
 [[package]]
 name = "tap"
