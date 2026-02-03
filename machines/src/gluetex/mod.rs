@@ -655,7 +655,7 @@ impl Gluetex {
         }
 
         let elapsed = now.duration_since(self.last_activity_time).as_secs();
-        
+
         if elapsed >= self.sleep_timer_config.timeout_seconds && !self.sleep_timer_triggered {
             tracing::info!("Sleep timer expired - entering standby mode");
             self.sleep_timer_triggered = true;
@@ -684,7 +684,7 @@ impl Gluetex {
         let elapsed = Instant::now()
             .duration_since(self.last_activity_time)
             .as_secs();
-        
+
         if elapsed >= self.sleep_timer_config.timeout_seconds {
             0
         } else {
