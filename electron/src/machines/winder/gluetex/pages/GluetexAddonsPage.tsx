@@ -300,7 +300,7 @@ export function GluetexAddonsPage() {
             </div>
 
             {/* Heating Mode */}
-            <div className="space-y-3 mt-8">
+            <div className="mt-8 space-y-3">
               <h3 className="text-lg font-semibold">Heating Mode</h3>
               <SelectionGroup<HeatingMode>
                 value={state?.heating_state?.heating_mode}
