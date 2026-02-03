@@ -56,8 +56,9 @@ use std::{any::Any, fmt::Debug, sync::Arc};
 use wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
 use wago_modules::ip20_ec_di8_do8::{IP20_EC_DI8_DO8_IDENTITY, IP20EcDi8Do8};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Module {
+    pub name: String,
     pub slot: u16,
     pub belongs_to_addr: u16,
     pub has_tx: bool,

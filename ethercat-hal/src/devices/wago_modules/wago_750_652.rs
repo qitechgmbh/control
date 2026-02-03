@@ -148,8 +148,7 @@ impl EthercatDevice for Wago750_652 {
         &self,
         output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
-        let base = 32;
-
+        let base = self.rx_bit_offset;
         let mut ol0_i = 5; // Ol0 starts at bit 5 and goes to bit 7 (inclusive) 
         let mut ol1_i = 8;
 
@@ -174,12 +173,10 @@ impl EthercatDevice for Wago750_652 {
             );
             ol1_i += 1;
         }
-        println!("{}", self.rx_pdo.control.output_length);
         let data_start = base + 16;
         for (i, &byte) in self.rx_pdo.out_buffer.iter().take(22).enumerate() {
             output[(data_start + i * 8)..(data_start + (i + 1) * 8)].store_le(byte);
         }
-        //println!("{:?}",self.rx_pdo.out_buffer);
         Ok(())
     }
 

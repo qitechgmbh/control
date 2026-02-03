@@ -16,6 +16,13 @@ import {
   VENDOR_QITECH,
 } from "@/machines/properties";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -196,6 +203,15 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
     })();
   };
 
+  const updateNumpadPosition = useCallback(() => {
+    if (!numpadOpen || !dialogRef.current) return;
+    const rect = dialogRef.current.getBoundingClientRect();
+    setNumpadPosition({
+      left: rect.right + 20,
+      top: rect.top + rect.height / 2,
+    });
+  }, [numpadOpen]);
+
   const machinePreset = useMemo(() => {
     if (!values.machine) return;
     return getMachineProperties({
@@ -231,6 +247,155 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
     }
   }, [filteredAllowedDevices]);
 
+  // Position numpad once when it opens
+  useEffect(() => {
+    updateNumpadPosition();
+  }, [numpadOpen]);
+
+  // Close numpad when clicking outside input/numpad
+  useEffect(() => {
+    if (!numpadOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      const insideSerial = serialContainerRef.current?.contains(target);
+      const insideNumpad = numpadRef.current?.contains(target);
+      if (!insideSerial && !insideNumpad) {
+        setNumpadOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [numpadOpen]);
+
+  // Keep focus on input field when numpad is opened
+  useEffect(() => {
+    if (numpadOpen && serialInputRef.current) {
+      // Use setTimeout to ensure this runs after any other focus changes
+      setTimeout(() => {
+        if (serialInputRef.current) {
+          serialInputRef.current.focus();
+        }
+      }, 0);
+    }
+  }, [numpadOpen]);
+
+  // Update numpad position whenever the window resizes
+  useEffect(() => {
+    window.addEventListener("resize", updateNumpadPosition);
+    return () => {
+      window.removeEventListener("resize", updateNumpadPosition);
+    };
+  }, [updateNumpadPosition]);
+
+  // Numpad handlers for serial input
+  const numpadHandlers = useMemo(() => {
+    const ensureFocus = () => {
+      if (
+        serialInputRef.current &&
+        document.activeElement !== serialInputRef.current
+      ) {
+        serialInputRef.current.focus();
+      }
+    };
+
+    const updateCursorPosition = (position: number) => {
+      setTimeout(() => {
+        if (serialInputRef.current) {
+          serialInputRef.current.setSelectionRange(position, position);
+        }
+      }, 0);
+    };
+
+    const getCurrentValue = () => {
+      return form.getValues("serial") || "";
+    };
+
+    return {
+      appendDigit: (digit: string) => {
+        if (!serialInputRef.current) return;
+
+        ensureFocus();
+        const input = serialInputRef.current;
+        const start = input.selectionStart || 0;
+        const end = input.selectionEnd || 0;
+        const currentValue = getCurrentValue();
+        const newValue =
+          currentValue.slice(0, start) + digit + currentValue.slice(end);
+
+        form.setValue("serial", newValue, { shouldValidate: true });
+        updateCursorPosition(start + 1);
+      },
+
+      addDecimal: () => {
+        // Not needed for serial (U16 integer), but keeping for consistency
+        // Could be used for other numeric inputs if needed
+      },
+
+      deleteChar: () => {
+        if (!serialInputRef.current) return;
+
+        ensureFocus();
+        const input = serialInputRef.current;
+        const start = input.selectionStart || 0;
+        const end = input.selectionEnd || 0;
+        const currentValue = getCurrentValue();
+
+        let newValue: string;
+        let newPosition: number;
+
+        if (start !== end) {
+          // Delete selection
+          newValue = currentValue.slice(0, start) + currentValue.slice(end);
+          newPosition = start;
+        } else if (start > 0) {
+          // Backspace
+          newValue =
+            currentValue.slice(0, start - 1) + currentValue.slice(start);
+          newPosition = start - 1;
+        } else {
+          return;
+        }
+
+        form.setValue("serial", newValue, { shouldValidate: true });
+        updateCursorPosition(newPosition);
+      },
+
+      toggleSign: () => {
+        // Not needed for U16 (unsigned), but keeping for consistency
+      },
+
+      moveCursorLeft: () => {
+        if (!serialInputRef.current) return;
+
+        ensureFocus();
+        const currentPos = serialInputRef.current.selectionStart || 0;
+        if (currentPos > 0) {
+          serialInputRef.current.setSelectionRange(
+            currentPos - 1,
+            currentPos - 1,
+          );
+        }
+      },
+
+      moveCursorRight: () => {
+        if (!serialInputRef.current) return;
+
+        ensureFocus();
+        const currentPos = serialInputRef.current.selectionStart || 0;
+        const currentValue = getCurrentValue();
+        if (currentPos < currentValue.length) {
+          serialInputRef.current.setSelectionRange(
+            currentPos + 1,
+            currentPos + 1,
+          );
+        }
+      },
+    };
+  }, [form]);
   return (
     <>
       <DialogContent

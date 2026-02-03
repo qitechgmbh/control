@@ -1,3 +1,9 @@
+# `2.14.1`
+_26.01.2026_
+
+## Laser
+-[#1079](https://github.com/qitechgmbh/control/pull/1079) Fixed Overflowing of buffer for Graphs causing crashes
+
 # `2.14.0`
 _22.01.2026_
 
