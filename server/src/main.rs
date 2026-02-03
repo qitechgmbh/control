@@ -14,9 +14,11 @@ use machines::{
     serial::{devices::laser::Laser, init::SerialDetection},
     winder2::api::GenericEvent,
 };
+use socketio::main_namespace::{MainNamespaceEvents, ethercat_devices_event::EthercatDevicesEventBuilder};
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
 use utils::start_dnsmasq;
+use control_core::socketio::namespace::NamespaceCacheingLogic;
 
 use app_state::{HotThreadMessage, SharedState};
 use ethercat::ethercat_discovery_info::send_ethercat_discovering;
@@ -145,8 +147,28 @@ pub async fn start_interface_discovery(
         Ok(setup) => {
             let _ = sender.send(HotThreadMessage::AddEtherCatSetup(setup)).await;
             tracing::info!("Successfully initialized EtherCAT devices");
-        }
 
+            {
+        // Notify client via socketio
+        let app_state_clone = app_state.clone();
+        let main_namespace = &mut app_state_clone
+            .socketio_setup
+            .namespaces
+            .write()
+            .await
+            .main_namespace;
+        let event = EthercatDevicesEventBuilder()
+            .build(app_state_clone.clone())
+            .await;
+        main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
+    }
+            
+            let res = start_dnsmasq();
+            match res {
+                Ok(o) => o,
+                Err(e) => tracing::error!("Failed to start dnsmasq: {:?}", e),
+            };
+        }
         Err(e) => {
             tracing::error!(
                 "[{}::main] Failed to initialize EtherCAT network \n{:?}",

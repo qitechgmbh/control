@@ -8,7 +8,7 @@ workspace = true
 
 [dependencies]
 anyhow = "1.0.100"
-ethercrab = "0.6"
+ethercrab = { git = "https://github.com/v-morlock/ethercrab", branch = "main" }
 ethercat_hal_derive = { version = "0.1.0", path = "../ethercat-hal-derive" }
 units = { path = "../units" }
 bitvec = { version = "1.0.1", features = ["alloc"] }

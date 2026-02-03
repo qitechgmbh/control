@@ -92,12 +92,16 @@ impl MachineNewTrait for AquaPathV1 {
                 pdo_assignment: EL5152PredefinedPdoAssignment::Frequency,
                 ..Default::default()
             };
-            let subdevice = get_subdevice_by_index(hardware.subdevices, 4)?;
+
+            let subdevice = get_ethercat_device::<EL5152>(hardware, params, 4, [EL5152_IDENTITY_A].to_vec())
+                    .await?
+                    .1;
+        
             el5152
-                .write()
-                .await
-                .write_config(&subdevice, &config)
-                .await?;
+                    .write()
+                    .await
+                    .write_config(&subdevice, &config)
+                    .await?;
 
             let enc1 = EncoderInput::new(el5152.clone(), EL5152Port::ENC1);
 

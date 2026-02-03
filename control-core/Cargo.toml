@@ -13,7 +13,7 @@ axum = "0.8.6"
 
 ethercat_hal = { path = "../ethercat-hal" }
 units = { path = "../units" }
-ethercrab = "0.6"
+ethercrab = { git = "https://github.com/v-morlock/ethercrab", branch = "main" }
 interfaces = "0.0.9"
 serde = "1.0.219"
 serialport = "4.7.3"
