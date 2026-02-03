@@ -90,37 +90,9 @@ export function useTestMachineStepper() {
     );
   };
 
-  const clearErrors = () => {
-    updateStateOptimistically(
-      (current) => {
-        current.clear = true;
-      },
-      () =>
-        sendMutation({
-          machine_identification_unique: machineIdentification,
-          data: { action: "ClearErrors", value: { clear: true } },
-        }),
-    );
-  };
-
-  const stopClearErrors = () => {
-    updateStateOptimistically(
-      (current) => {
-        current.clear = true
-      },
-      () =>
-        sendMutation({
-          machine_identification_unique: machineIdentification,
-          data: { action: "StopClearErrors", value: { clear: true } },
-        }),
-    );
-  };
-
   return {
     state: stateOptimistic.value,
     setTargetSpeed,
     setEnabled,
-    clearErrors,
-    stopClearErrors,
   };
 }

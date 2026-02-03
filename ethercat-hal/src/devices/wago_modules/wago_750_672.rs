@@ -11,7 +11,9 @@ use crate::{
         DynamicEthercatDevice, EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed,
         EthercatDynamicPDO, Module, NewEthercatDevice, SubDeviceProductTuple,
     },
-    helpers::counter_wrapper_u16_i128::CounterWrapperU16U128, io::stepper_velocity_wago_750_671::{ControlByteC1, ControlByteC2, ControlByteC3, StatusByteS1, StatusByteS2, StatusByteS3},
+    io::stepper_velocity_wago_750_672::{
+        C1Command, C1Flag, C2Flag, C3Flag, ControlByteC1, ControlByteC2, ControlByteC3,
+    },
 };
 
 #[derive(Clone)]
@@ -22,8 +24,23 @@ pub struct Wago750_672 {
     pub rxpdo: Wago750_672RxPdo,
     pub txpdo: Wago750_672TxPdo,
     module: Option<Module>,
+    pub state: InitState,
+    pub initialized: bool,
+}
 
-    pub enabled: bool,
+// unfortunately we need to track and set bits over multiple cycles
+// and wait for their acknowledgement so we have to use a state machine
+// inside of our loop.
+#[derive(Debug, Clone)]
+pub enum InitState {
+    Off,
+    Enable,
+    SetMode,
+    StartPulseStart,
+    StartPulseEnd,
+    Running,
+    ErrorQuit,
+    ResetQuit,
 }
 
 /*
@@ -87,58 +104,6 @@ impl EthercatDynamicPDO for Wago750_672 {
     }
 }
 
-impl Wago750_672 {
-
-
-    /// Error acknowledgement is edge-triggered (0->1). Pulse for one cycle.
-    pub fn apply_error_quit(&mut self, pulse: bool) {
-        if pulse {
-            self.rxpdo.c2 |= ControlByteC2::ERROR_QUIT;
-        } else {
-            self.rxpdo.c2 &= !ControlByteC2::ERROR_QUIT;
-        }
-    }
-
-    /// Reset acknowledgement (Reset_Quit) to clear S3.Reset after warm start / power-on reset.
-    /// Pulse for one cycle when S3.Reset is set.
-    pub fn apply_reset_quit(&mut self, pulse: bool) {
-        if pulse {
-            self.rxpdo.c3 |= ControlByteC3::RESET_QUIT;
-        } else {
-            self.rxpdo.c3 &= !ControlByteC3::RESET_QUIT;
-        }
-    }
-
-    // Status helper functions
-    pub fn s1(&self) -> u8 {
-        self.txpdo.s1
-    }
-    pub fn s2(&self) -> u8 {
-        self.txpdo.s2
-    }
-    pub fn s3(&self) -> u8 {
-        self.txpdo.s3
-    }
-    pub fn ready(&self) -> bool {
-        (self.s1() & StatusByteS1::READY) != 0
-    }
-    pub fn stop_n_ack(&self) -> bool {
-        (self.s1() & StatusByteS1::STOP_N_ACK) != 0
-    }
-    pub fn start_ack(&self) -> bool {
-        (self.s1() & StatusByteS1::START_ACK) != 0
-    }
-    pub fn speed_mode_ack(&self) -> bool {
-        (self.s1() & StatusByteS1::M_SPEED_CONTROL_ACK) != 0
-    }
-    pub fn error_active(&self) -> bool {
-        (self.s2() & StatusByteS2::ERROR) != 0
-    }
-    pub fn reset_active(&self) -> bool {
-        (self.s3() & StatusByteS3::RESET) != 0
-    }
-}
-
 impl EthercatDeviceProcessing for Wago750_672 {
     fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
         Ok(())
@@ -149,14 +114,11 @@ impl EthercatDeviceProcessing for Wago750_672 {
     }
 }
 
-
-
 impl EthercatDevice for Wago750_672 {
     fn input(
         &mut self,
         input: &bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
-
         let base = self.tx_bit_offset;
 
         let mut b = [0u8; 12];
@@ -175,10 +137,91 @@ impl EthercatDevice for Wago750_672 {
             s1: b[11],
         };
 
-        if self.txpdo.s1 & 0b00011111 != 0b00011111 {
-            // should be running now
-            // tracing::warn!("Should be running now!");
-            self.rxpdo.c1 = 0b00011011;
+        match self.state {
+            InitState::Off => {
+                // Do nothing
+                self.initialized = false;
+            }
+            InitState::Enable => {
+                let c1 = ControlByteC1::new()
+                    .with_flag(C1Flag::Enable)
+                    .with_flag(C1Flag::Stop2N)
+                    .bits();
+                self.rxpdo.c1 = c1;
+
+                // Switch state if ENABLE and STOP2_N is acknowledged
+                if self.txpdo.s1 == c1 {
+                    self.state = InitState::SetMode;
+                }
+            }
+            InitState::SetMode => {
+                let c1 = ControlByteC1::new()
+                    .with_flag(C1Flag::Enable)
+                    .with_flag(C1Flag::Stop2N)
+                    .with_command(C1Command::SpeedControl)
+                    .bits();
+                self.rxpdo.c1 = c1;
+
+                // Switch state if SPEED MODE is acknowledged
+                if self.txpdo.s1 == c1 {
+                    self.initialized = true;
+                    self.state = InitState::StartPulseStart;
+                }
+            }
+            InitState::StartPulseStart => {
+                let c1 = ControlByteC1::new()
+                    .with_flag(C1Flag::Enable)
+                    .with_flag(C1Flag::Stop2N)
+                    .with_flag(C1Flag::Start)
+                    .with_command(C1Command::SpeedControl)
+                    .bits();
+                self.rxpdo.c1 = c1;
+
+                // Switch state after StartPulse is acknowledged
+                if self.txpdo.s1 == c1 {
+                    self.state = InitState::StartPulseEnd;
+                }
+            }
+            InitState::StartPulseEnd => {
+                let c1 = ControlByteC1::new()
+                    .with_flag(C1Flag::Enable)
+                    .with_flag(C1Flag::Stop2N)
+                    .with_command(C1Command::SpeedControl)
+                    .bits();
+                self.rxpdo.c1 = c1;
+
+                // Switch state after StartPulse is over
+                if self.txpdo.s1 == c1 {
+                    self.state = InitState::Running;
+                }
+            }
+            InitState::Running => {
+                let c2 = ControlByteC2::new().with_flag(C2Flag::ErrorQuit).bits();
+                let c3 = ControlByteC3::new().with_flag(C3Flag::ResetQuit).bits();
+
+                // Check for Error
+                if self.txpdo.s2 & c2 != 0 {
+                    self.state = InitState::ErrorQuit;
+                } else {
+                    self.rxpdo.c2 |= c2;
+                }
+                // Check for Reset
+                if self.txpdo.s3 & c3 != 0 {
+                    self.state = InitState::ResetQuit;
+                } else {
+                    self.rxpdo.c3 |= c3;
+                }
+            }
+            InitState::ErrorQuit => {
+                self.rxpdo.c2 |= ControlByteC2::new().with_flag(C2Flag::ErrorQuit).bits();
+                tracing::error!("Stepper Controller Errored. Trying to reenable...");
+                self.state = InitState::Enable;
+            }
+            InitState::ResetQuit => {
+                self.rxpdo.c3 |= ControlByteC3::new().with_flag(C3Flag::ResetQuit).bits();
+                tracing::error!("Stepper Controller Reset not Quit. Trying to reenable...");
+                self.state = InitState::Enable;
+            }
         }
 
         Ok(())
@@ -192,7 +235,6 @@ impl EthercatDevice for Wago750_672 {
         &self,
         output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
-
         let base = self.rx_bit_offset;
 
         let b = [
@@ -291,7 +333,8 @@ impl NewEthercatDevice for Wago750_672 {
             module: None,
             rxpdo: Wago750_672RxPdo::default(),
             txpdo: Wago750_672TxPdo::default(),
-            enabled: false,
+            state: InitState::Off,
+            initialized: false,
         }
     }
 }

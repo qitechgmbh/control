@@ -29,7 +29,7 @@ impl MachineAct for TestMachineStepper {
             }
             MachineMessage::ConnectToMachine(_machine_connection) => {}
             MachineMessage::DisconnectMachine(_machine_connection) => {}
-            MachineMessage::RequestValues(sender) => {},
+            MachineMessage::RequestValues(_sender) => {},
         }
     }
 }
