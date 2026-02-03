@@ -93,13 +93,19 @@ type ContentProps = {
 
 export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   const client = useClient();
-  const [isRestartingBackend, setIsRestartingBackend] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [writeSuccess, setWriteSuccess] = useState(false);
+
+  const initialMachine = useMemo(
+    () =>
+      device.device_identification.device_machine_identification?.machine_identification_unique.machine_identification.machine.toString(),
+    [device],
+  );
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      machine:
-        device.device_identification.device_machine_identification?.machine_identification_unique.machine_identification.machine.toString(),
+      machine: initialMachine ?? "",
       serial:
         device.device_identification.device_machine_identification?.machine_identification_unique.serial.toString(),
       role: device.device_identification.device_machine_identification?.role.toString(),
@@ -108,65 +114,86 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   });
   const values = useFormValues(form);
 
-  // Removed unnecessary console.log statements.
+  const isChangingMachine = initialMachine != null && values.machine !== initialMachine;
 
-  const onSubmit = (values: FormSchema) => {
-    client
-      .writeMachineDeviceIdentification({
-        hardware_identification_ethercat: {
-          subdevice_index:
-            device.device_identification.device_hardware_identification
-              .Ethercat!.subdevice_index,
-        },
-        device_machine_identification: {
-          machine_identification_unique: {
-            machine_identification: {
-              vendor: VENDOR_QITECH,
-              machine: parseInt(values.machine!),
-            },
-            serial: parseInt(values.serial!),
+  const performWrite = (values: FormSchema) =>
+    client.writeMachineDeviceIdentification({
+      hardware_identification_ethercat: {
+        subdevice_index:
+          device.device_identification.device_hardware_identification.Ethercat!.subdevice_index,
+      },
+      device_machine_identification: {
+        machine_identification_unique: {
+          machine_identification: {
+            vendor: VENDOR_QITECH,
+            machine: parseInt(values.machine!),
           },
-          role: parseInt(values.role!),
+          serial: parseInt(values.serial!),
         },
-      })
-      .then((res) => {
-        if (res.success) {
-          toast(
-            <Toast title={"Gespeichert"} icon="lu:CircleCheck">
-              Machine assignment written successfully.
-            </Toast>,
-          );
-          setOpen();
-        }
-      });
+        role: parseInt(values.role!),
+      },
+    });
+
+  const confirmIfChangingMachine = (): boolean => {
+    if (!isChangingMachine) return true;
+    return window.confirm(
+      "Changing this device to another machine will disconnect it from the current setup. A backend restart is required and terminals may need to be rediscovered (Setup → Troubleshoot → Restart backend). Continue?",
+    );
   };
 
-  const handleRestartBackend = async () => {
-    setIsRestartingBackend(true);
-    try {
-      const result = await restartBackend();
-      if (result.success) {
+  const onSubmit = (values: FormSchema) => {
+    if (!confirmIfChangingMachine()) return;
+    performWrite(values).then((res) => {
+      if (res.success) {
+        setWriteSuccess(true);
         toast(
-          <Toast title="Backend restart" icon="lu:RotateCcw">
-            Backend service restart initiated.
-          </Toast>,
-        );
-      } else {
-        toast(
-          <Toast title="Backend restart failed" icon="lu:CircleAlert">
-            {result.error ?? "Unknown error"}
+          <Toast title="Saved" icon="lu:CircleCheck">
+            Saved successfully. Restart required to apply changes.
           </Toast>,
         );
       }
-    } catch (error) {
-      toast(
-        <Toast title="Backend restart failed" icon="lu:CircleAlert">
-          {error instanceof Error ? error.message : String(error)}
-        </Toast>,
-      );
-    } finally {
-      setIsRestartingBackend(false);
-    }
+    });
+  };
+
+  // Apply & restart: always save first; if save fails, block restart and show error
+  const handleApplyAndRestart = () => {
+    if (!confirmIfChangingMachine()) return;
+    form.handleSubmit((values) => {
+      setIsApplying(true);
+      performWrite(values)
+        .then(async (res) => {
+          if (!res.success) {
+            toast(
+              <Toast title="Save failed" icon="lu:CircleAlert">
+                Could not save assignment. Restart aborted.
+              </Toast>,
+            );
+            return;
+          }
+          setWriteSuccess(true);
+          toast(
+            <Toast title="Saved" icon="lu:CircleCheck">
+              Saved. Restarting backend…
+            </Toast>,
+          );
+          const result = await restartBackend();
+          if (result.success) {
+            toast(
+              <Toast title="Backend restart" icon="lu:RotateCcw">
+                Backend restart initiated.
+              </Toast>,
+            );
+            setOpen();
+          } else {
+            toast(
+              <Toast title="Backend restart failed" icon="lu:CircleAlert">
+                {result.error ?? "Unknown error"}
+              </Toast>,
+            );
+          }
+        })
+        .finally(() => setIsApplying(false));
+    })();
   };
 
   const machinePreset = useMemo(() => {
@@ -302,36 +329,55 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
               )}
             />
             <Separator />
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit" disabled={!form.formState.isValid}>
-                <Icon name="lu:Save" /> Write
+            {isChangingMachine && (
+              <Alert title="Changing machine assignment" variant="warning">
+                This will disconnect the device from its current machine. Restart
+                required; if terminals disappear, use Setup → Troubleshoot →
+                Restart backend to rediscover.
+              </Alert>
+            )}
+            {form.formState.isDirty && !writeSuccess && (
+              <p className="text-muted-foreground text-sm">
+                Save or Apply & restart for assignment changes to apply.
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="submit"
+                disabled={!form.formState.isValid || isApplying}
+                onClick={() => setWriteSuccess(false)}
+              >
+                <Icon name="lu:Save" /> Save
               </Button>
               <Button
                 type="button"
-                variant="secondary"
-                onClick={handleRestartBackend}
-                disabled={isRestartingBackend}
-                aria-busy={isRestartingBackend}
+                variant="outline"
+                disabled={!form.formState.isValid || isApplying}
+                onClick={handleApplyAndRestart}
+                aria-busy={isApplying}
+                title="Saves assignment then restarts the backend. Restart is required for changes to take effect."
               >
-                {isRestartingBackend ? (
+                {isApplying ? (
                   <>
                     <LoadingSpinner />
-                    Restarting...
+                    Saving & restarting…
                   </>
                 ) : (
                   <>
                     <Icon name="lu:RotateCcw" />
-                    Restart backend
+                    Apply & restart
                   </>
                 )}
               </Button>
+              {writeSuccess && (
+                <Button type="button" variant="secondary" onClick={() => setOpen()}>
+                  Close
+                </Button>
+              )}
             </div>
-            <Button type="submit" disabled={!form.formState.isValid}>
-              <Icon name="lu:Save" /> Write
-            </Button>
-            <Alert title="Restart mandatory" variant="info">
-              The backend service must be restarted for the changes to take
-              effect
+            <Alert title="Restart required" variant="info">
+              The backend must be restarted for assignment changes to take
+              effect.
             </Alert>
           </form>
         </Form>
