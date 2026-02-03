@@ -165,8 +165,8 @@ pub enum Mutation {
     // Slave Puller
     SetSlavePullerEnabled(bool),
     SetSlavePullerForward(bool),
-    SetSlavePullerMinAngle(f64),
-    SetSlavePullerMaxAngle(f64),
+    SetSlavePullerTargetAngle(f64),
+    SetSlavePullerSensitivity(f64),
     SetSlavePullerMinSpeedFactor(f64),
     SetSlavePullerMaxSpeedFactor(f64),
     ZeroSlaveTensionArm,
@@ -404,10 +404,10 @@ pub struct SlavePullerState {
     pub enabled: bool,
     /// forward rotation direction
     pub forward: bool,
-    /// minimum tension arm angle for detection zone (degrees)
-    pub min_angle: f64,
-    /// maximum tension arm angle for detection zone (degrees)
-    pub max_angle: f64,
+    /// target tension arm angle (setpoint in degrees)
+    pub target_angle: f64,
+    /// sensitivity range around target angle for speed adjustment (degrees)
+    pub sensitivity: f64,
     /// minimum speed factor for overspeed protection (optional)
     pub min_speed_factor: Option<f64>,
     /// maximum speed factor for overspeed protection (optional)
@@ -689,14 +689,14 @@ impl MachineApi for Gluetex {
                 self.slave_puller_speed_controller.set_forward(forward);
                 self.emit_state();
             }
-            Mutation::SetSlavePullerMinAngle(angle_deg) => {
+            Mutation::SetSlavePullerTargetAngle(angle_deg) => {
                 self.slave_puller_speed_controller
-                    .set_min_angle(Angle::new::<degree>(angle_deg));
+                    .set_target_angle(Angle::new::<degree>(angle_deg));
                 self.emit_state();
             }
-            Mutation::SetSlavePullerMaxAngle(angle_deg) => {
+            Mutation::SetSlavePullerSensitivity(sensitivity_deg) => {
                 self.slave_puller_speed_controller
-                    .set_max_angle(Angle::new::<degree>(angle_deg));
+                    .set_sensitivity(Angle::new::<degree>(sensitivity_deg));
                 self.emit_state();
             }
             Mutation::SetSlavePullerMinSpeedFactor(factor) => {
