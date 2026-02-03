@@ -79,17 +79,17 @@ impl SlavePullerSpeedController {
         let deviation = current_angle - self.target_angle;
 
         // Normalize deviation to [-1.0, 1.0] based on sensitivity range
-        // Positive deviation = angle above target = too much tension = slow down
-        // Negative deviation = angle below target = too little tension = speed up
+        // Positive deviation = angle above target = speed up
+        // Negative deviation = angle below target = slow down
         let normalized_deviation = (deviation.get::<units::angle::degree>()
             / self.sensitivity.get::<units::angle::degree>())
         .clamp(-1.0, 1.0);
 
         // Calculate speed factor:
-        // -1.0 (below target) -> 1.5 (150% speed)
+        // -1.0 (below target) -> 0.5 (50% speed - slow down)
         //  0.0 (at target)    -> 1.0 (100% speed)
-        // +1.0 (above target) -> 0.5 (50% speed)
-        let speed_factor = 1.0 - (normalized_deviation * 0.5);
+        // +1.0 (above target) -> 1.5 (150% speed - speed up)
+        let speed_factor = 1.0 + (normalized_deviation * 0.5);
 
         let base_speed = master_speed * speed_factor;
 
