@@ -99,7 +99,11 @@ export function GluetexOverviewPage() {
         </ControlCard>
 
         {/* Right Column: Tall tile spans two rows */}
-        <ControlCard height={2} width={1} title="Motors, Temperatures & Heaters">
+        <ControlCard
+          height={2}
+          width={1}
+          title="Motors, Temperatures & Heaters"
+        >
           <div className="flex flex-col gap-4">
             {/* Addon Motors Status Grid */}
             <div>
@@ -280,7 +284,7 @@ export function GluetexOverviewPage() {
                     return roundToDecimals(total, 1);
                   })()}
                 </span>
-                <span className="text-sm text-muted-foreground">Watts</span>
+                <span className="text-muted-foreground text-sm">Watts</span>
               </div>
             </div>
           </div>
@@ -354,7 +358,7 @@ export function GluetexOverviewPage() {
             {state?.sleep_timer_state?.enabled ? (
               <>
                 <div className="text-center">
-                  <div className="mb-2 text-sm text-muted-foreground">
+                  <div className="text-muted-foreground mb-2 text-sm">
                     Time until standby
                   </div>
                   <div className="text-4xl font-bold">
@@ -366,7 +370,7 @@ export function GluetexOverviewPage() {
                       (state.sleep_timer_state.remaining_seconds || 0) % 60,
                     ).padStart(2, "0")}
                   </div>
-                  <div className="mt-1 text-sm text-muted-foreground">
+                  <div className="text-muted-foreground mt-1 text-sm">
                     minutes
                   </div>
                 </div>
@@ -430,7 +434,10 @@ export function GluetexOverviewPage() {
                 }}
               >
                 <DialogTrigger asChild>
-                  <TouchButton variant="outline" className="h-12 w-full justify-start text-lg font-normal">
+                  <TouchButton
+                    variant="outline"
+                    className="h-12 w-full justify-start text-lg font-normal"
+                  >
                     {productDescription || "Enter description..."}
                   </TouchButton>
                 </DialogTrigger>

@@ -524,7 +524,8 @@ const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
   createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
   createTimeSeries(timeSeriesConfig);
-const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(timeSeriesConfig);
+const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } =
+  createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
   createTimeSeries(timeSeriesConfig);
 

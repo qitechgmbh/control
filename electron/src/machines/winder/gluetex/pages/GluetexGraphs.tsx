@@ -86,12 +86,24 @@ export function GluetexGraphsPage() {
             temperature4={temperature4}
             temperature5={temperature5}
             temperature6={temperature6}
-            targetTemperature1={state?.heating_states?.zone_1?.target_temperature}
-            targetTemperature2={state?.heating_states?.zone_2?.target_temperature}
-            targetTemperature3={state?.heating_states?.zone_3?.target_temperature}
-            targetTemperature4={state?.heating_states?.zone_4?.target_temperature}
-            targetTemperature5={state?.heating_states?.zone_5?.target_temperature}
-            targetTemperature6={state?.heating_states?.zone_6?.target_temperature}
+            targetTemperature1={
+              state?.heating_states?.zone_1?.target_temperature
+            }
+            targetTemperature2={
+              state?.heating_states?.zone_2?.target_temperature
+            }
+            targetTemperature3={
+              state?.heating_states?.zone_3?.target_temperature
+            }
+            targetTemperature4={
+              state?.heating_states?.zone_4?.target_temperature
+            }
+            targetTemperature5={
+              state?.heating_states?.zone_5?.target_temperature
+            }
+            targetTemperature6={
+              state?.heating_states?.zone_6?.target_temperature
+            }
             unit="C"
             renderValue={(value) => roundToDecimals(value, 1)}
           />
@@ -551,4 +563,3 @@ export function TemperaturesGraph({
     />
   );
 }
-
