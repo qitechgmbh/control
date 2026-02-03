@@ -6,7 +6,6 @@ use units::f64::*;
 
 use super::tension_arm::TensionArm;
 use crate::gluetex::features::{
-    clamp_revolution::Clamping, clamp_revolution::clamp_revolution_uom,
     filament_tension::FilamentTensionCalculator,
 };
 
@@ -25,10 +24,10 @@ pub struct SlavePullerSpeedController {
     enabled: bool,
     /// Forward rotation direction
     forward: bool,
-    /// Minimum angle for detection zone (low tension, high speed)
-    min_angle: Angle,
-    /// Maximum angle for detection zone (high tension, low speed)
-    max_angle: Angle,
+    /// Target angle for the tension arm (setpoint)
+    target_angle: Angle,
+    /// Sensitivity range around target angle (in degrees) for speed adjustment
+    sensitivity: Angle,
     /// Optional minimum speed factor for overspeed protection (e.g., 0.5 = 50%)
     min_speed_factor: Option<f64>,
     /// Optional maximum speed factor for overspeed protection (e.g., 2.0 = 200%)
@@ -43,13 +42,13 @@ impl SlavePullerSpeedController {
     /// Create a new slave puller speed controller
     ///
     /// # Arguments
-    /// * `min_angle` - Minimum angle for detection zone (low tension, high speed)
-    /// * `max_angle` - Maximum angle for detection zone (high tension, low speed)
+    /// * `target_angle` - Target angle for the tension arm (setpoint)
+    /// * `sensitivity` - Sensitivity range around target for speed adjustment (degrees)
     /// * `converter` - Linear step converter for the motor
     /// * `filament_calc` - Tension calculator for the tension arm
     pub fn new(
-        min_angle: Angle,
-        max_angle: Angle,
+        target_angle: Angle,
+        sensitivity: Angle,
         converter: LinearStepConverter,
         filament_calc: FilamentTensionCalculator,
     ) -> Self {
@@ -57,8 +56,8 @@ impl SlavePullerSpeedController {
             last_speed: Velocity::ZERO,
             enabled: false,
             forward: true,
-            min_angle,
-            max_angle,
+            target_angle,
+            sensitivity,
             min_speed_factor: None,
             max_speed_factor: None,
             filament_calc,
@@ -75,34 +74,24 @@ impl SlavePullerSpeedController {
     /// # Returns
     /// Target velocity for the slave puller
     fn speed_raw(&self, master_speed: Velocity, tension_arm: &TensionArm) -> Velocity {
-        // Get tension arm angle and clamp to valid range
-        let tension_arm_angle = tension_arm.get_angle();
-        let (clamped_angle, clamping_state) = clamp_revolution_uom(
-            tension_arm_angle,
-            self.max_angle, // Inverted: min angle = max tension = low speed
-            self.min_angle, // Inverted: max angle = min tension = high speed
-        );
-
-        // If at limits, return master speed (no adjustment)
-        let base_speed = match clamping_state {
-            Clamping::Min => master_speed, // At max angle (high tension) - return base speed
-            Clamping::Max => master_speed, // At min angle (low tension) - return base speed
-            _ => {
-                // Calculate normalized tension (0.0 = low tension, 1.0 = high tension)
-                let filament_tension = self.filament_calc.calc_filament_tension(clamped_angle);
-
-                // Invert tension for speed calculation: low tension = high speed, high tension = low speed
-                // At min_angle (low tension): tension = 0.0, inverted = 1.0 -> slave runs faster
-                // At max_angle (high tension): tension = 1.0, inverted = 0.0 -> slave runs slower
-                let speed_factor = 1.0 - filament_tension;
-
-                // Interpolate between 50% and 150% of master speed based on tension
-                // This gives a natural range that can be further limited by optional factors
-                let factor = 0.5 + speed_factor; // Maps 0.0-1.0 to 0.5-1.5
-
-                master_speed * factor
-            }
-        };
+        // Get tension arm angle
+        let current_angle = tension_arm.get_angle();
+        
+        // Calculate deviation from target angle
+        let deviation = current_angle - self.target_angle;
+        
+        // Normalize deviation to [-1.0, 1.0] based on sensitivity range
+        // Positive deviation = angle above target = too much tension = slow down
+        // Negative deviation = angle below target = too little tension = speed up
+        let normalized_deviation = (deviation.get::<units::angle::degree>() / self.sensitivity.get::<units::angle::degree>()).clamp(-1.0, 1.0);
+        
+        // Calculate speed factor:
+        // -1.0 (below target) -> 1.5 (150% speed)
+        //  0.0 (at target)    -> 1.0 (100% speed)
+        // +1.0 (above target) -> 0.5 (50% speed)
+        let speed_factor = 1.0 - (normalized_deviation * 0.5);
+        
+        let base_speed = master_speed * speed_factor;
 
         // Apply optional speed factor limits for overspeed protection
         let limited_speed = if let Some(min_factor) = self.min_speed_factor {
@@ -168,20 +157,20 @@ impl SlavePullerSpeedController {
         self.forward
     }
 
-    pub const fn set_min_angle(&mut self, angle: Angle) {
-        self.min_angle = angle;
+    pub const fn set_target_angle(&mut self, angle: Angle) {
+        self.target_angle = angle;
     }
 
-    pub const fn get_min_angle(&self) -> Angle {
-        self.min_angle
+    pub const fn get_target_angle(&self) -> Angle {
+        self.target_angle
     }
 
-    pub const fn set_max_angle(&mut self, angle: Angle) {
-        self.max_angle = angle;
+    pub const fn set_sensitivity(&mut self, sensitivity: Angle) {
+        self.sensitivity = sensitivity;
     }
 
-    pub const fn get_max_angle(&self) -> Angle {
-        self.max_angle
+    pub const fn get_sensitivity(&self) -> Angle {
+        self.sensitivity
     }
 
     pub fn set_min_speed_factor(&mut self, factor: Option<f64>) {
@@ -228,14 +217,14 @@ mod tests {
             FilamentTensionCalculator::new(Angle::new::<degree>(20.0), Angle::new::<degree>(90.0));
 
         let controller = SlavePullerSpeedController::new(
-            Angle::new::<degree>(20.0),
-            Angle::new::<degree>(90.0),
+            Angle::new::<degree>(55.0), // target angle
+            Angle::new::<degree>(35.0), // sensitivity (range around target)
             converter,
             filament_calc,
         );
 
-        assert_eq!(controller.get_min_angle().get::<degree>(), 20.0);
-        assert_eq!(controller.get_max_angle().get::<degree>(), 90.0);
+        assert_eq!(controller.get_target_angle().get::<degree>(), 55.0);
+        assert_eq!(controller.get_sensitivity().get::<degree>(), 35.0);
     }
 
     #[test]
@@ -246,8 +235,8 @@ mod tests {
             FilamentTensionCalculator::new(Angle::new::<degree>(20.0), Angle::new::<degree>(90.0));
 
         let mut controller = SlavePullerSpeedController::new(
-            Angle::new::<degree>(20.0),
-            Angle::new::<degree>(90.0),
+            Angle::new::<degree>(55.0),
+            Angle::new::<degree>(35.0),
             converter,
             filament_calc,
         );
@@ -269,8 +258,8 @@ mod tests {
             FilamentTensionCalculator::new(Angle::new::<degree>(20.0), Angle::new::<degree>(90.0));
 
         let mut controller = SlavePullerSpeedController::new(
-            Angle::new::<degree>(20.0),
-            Angle::new::<degree>(90.0),
+            Angle::new::<degree>(55.0),
+            Angle::new::<degree>(35.0),
             converter,
             filament_calc,
         );
