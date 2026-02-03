@@ -218,8 +218,7 @@ pub struct Gluetex {
     // sleep timer
     pub sleep_timer_config: SleepTimerConfig,
     pub last_activity_time: Instant,
-    pub last_emitted_sleep_timer_remaining: u64,
-    pub sleep_mode_triggered: bool,
+    pub sleep_timer_triggered: bool,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
@@ -441,10 +440,19 @@ impl Gluetex {
         let distance_moved =
             Length::new::<meter>(puller_speed.get::<meter_per_second>() * dt).abs();
 
+        // Check analog input for endstop (voltage > 1V means endstop is hit)
+        let endstop_hit = match self.addon_motor_3_analog_input.get_physical() {
+            ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(voltage) => {
+                use units::electric_potential::volt;
+                voltage.get::<volt>() > 1.0
+            }
+            _ => false, // Current-based inputs are not expected here
+        };
+
         self.addon_motor_3_controller.sync_motor_speed(
             &mut self.addon_motor_3,
             puller_angular_velocity,
-            Some(&self.addon_motor_3_endstop),
+            Some(endstop_hit),
             distance_moved,
         );
 
@@ -642,19 +650,16 @@ impl Gluetex {
     /// Check if sleep timer has expired and trigger standby if needed
     pub fn check_sleep_timer(&mut self, now: Instant) {
         if !self.sleep_timer_config.enabled {
+            self.sleep_timer_triggered = false;
             return;
         }
 
         let elapsed = now.duration_since(self.last_activity_time).as_secs();
         
-        if elapsed >= self.sleep_timer_config.timeout_seconds {
-            // Only trigger sleep mode once
-            if !self.sleep_mode_triggered {
-                tracing::info!("Sleep timer expired - entering standby mode");
-                self.enter_sleep_mode();
-                self.sleep_mode_triggered = true;
-            }
-            // Keep remaining at 0 and don't allow any activity
+        if elapsed >= self.sleep_timer_config.timeout_seconds && !self.sleep_timer_triggered {
+            tracing::info!("Sleep timer expired - entering standby mode");
+            self.sleep_timer_triggered = true;
+            self.enter_sleep_mode();
         }
     }
 
@@ -668,6 +673,11 @@ impl Gluetex {
     /// Get remaining seconds on sleep timer
     pub fn get_sleep_timer_remaining_seconds(&self) -> u64 {
         if !self.sleep_timer_config.enabled {
+            return 0;
+        }
+
+        // If timer has been triggered, keep it at 0
+        if self.sleep_timer_triggered {
             return 0;
         }
 
@@ -685,7 +695,7 @@ impl Gluetex {
     /// Reset the sleep timer (mark activity)
     pub fn reset_sleep_timer(&mut self) {
         self.last_activity_time = Instant::now();
-        self.sleep_mode_triggered = false;
+        self.sleep_timer_triggered = false;
     }
 
     /// Detect if there is any activity that should reset the sleep timer

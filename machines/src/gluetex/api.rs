@@ -696,11 +696,11 @@ impl MachineApi for Gluetex {
                 self.emit_state();
             }
             Mutation::ZeroSlaveTensionArm => {
-                self.addon_tension_arm.zero();
+                self.slave_tension_arm.zero();
                 self.emit_state();
             }
             Mutation::ZeroAddonTensionArm => {
-                self.slave_tension_arm.zero();
+                self.addon_tension_arm.zero();
                 self.emit_state();
             }
             Mutation::SetTensionArmMonitorEnabled(enabled) => {

@@ -79,12 +79,6 @@ impl Gluetex {
     }
     /// Implement Mode
     pub fn set_mode(&mut self, mode: &GluetexMode) {
-        // Prevent mode changes when in sleep mode (except manual reset to Standby)
-        if self.sleep_mode_triggered && *mode != GluetexMode::Standby {
-            tracing::warn!("Cannot change mode while in sleep mode. Please reset the sleep timer first.");
-            return;
-        }
-
         let should_update = *mode != GluetexMode::Wind || self.can_wind();
 
         if should_update {
@@ -723,12 +717,6 @@ impl Gluetex {
 
     /// Enable or disable all heating zones
     pub fn set_heating_enabled(&mut self, enabled: bool) {
-        // Prevent enabling heating when in sleep mode
-        if self.sleep_mode_triggered && enabled {
-            tracing::warn!("Cannot enable heating while in sleep mode. Please reset the sleep timer first.");
-            return;
-        }
-
         self.heating_enabled = enabled;
         if enabled {
             self.temperature_controller_1.allow_heating();
