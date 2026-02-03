@@ -490,11 +490,11 @@ impl Gluetex {
         // Get master puller speed as reference
         let master_speed = self.puller_speed_controller.get_target_speed();
 
-        // Calculate slave speed based on tension arm
+        // Calculate slave speed based on slave tension arm
         let slave_velocity = self.slave_puller_speed_controller.update_speed(
             t,
             master_speed,
-            &self.addon_tension_arm,
+            &self.slave_tension_arm,
         );
 
         // Apply direction
