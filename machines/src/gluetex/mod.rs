@@ -440,11 +440,12 @@ impl Gluetex {
         let distance_moved =
             Length::new::<meter>(puller_speed.get::<meter_per_second>() * dt).abs();
 
-        // Check analog input for endstop (voltage > 1V means endstop is hit)
+        // Check analog input for endstop (voltage < 1V means endstop is hit)
+        // Endstop shows ~10V when not detected, ~0V when detected
         let endstop_hit = match self.addon_motor_3_analog_input.get_physical() {
             ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(voltage) => {
                 use units::electric_potential::volt;
-                voltage.get::<volt>() > 1.0
+                voltage.get::<volt>() < 1.0
             }
             _ => false, // Current-based inputs are not expected here
         };
