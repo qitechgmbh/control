@@ -107,21 +107,21 @@ pub struct EthercatSetup {
     /// The Ethercat main device
     /// Needed to interface with the devices
     pub maindevice: MainDevice<'static>,
-    pub all_operational : bool,
+    pub all_operational: bool,
 }
 
 impl EthercatSetup {
     pub fn new(
         devices: Vec<(DeviceIdentification, Arc<RwLock<dyn EthercatDevice>>)>,
-        group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op,HasDc>,
+        group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op, HasDc>,
         maindevice: MainDevice<'static>,
-        all_operational : bool
+        all_operational: bool,
     ) -> Self {
         Self {
             devices,
             group,
             maindevice,
-            all_operational
+            all_operational,
         }
     }
 }

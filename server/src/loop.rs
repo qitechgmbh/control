@@ -90,7 +90,7 @@ pub fn start_loop_thread(
                 match msg {
                     HotThreadMessage::NoMsg => {}
                     HotThreadMessage::AddEtherCatSetup(ethercat_setup) => {
-                        println!("EthercatSetup: {:?}", ethercat_setup.devices);                        
+                        println!("EthercatSetup: {:?}", ethercat_setup.devices);
                         rt_loop_inputs.ethercat_setup = Some(Box::new(ethercat_setup));
                     }
                     HotThreadMessage::WriteMachineDeviceInfo(info_request) => {
@@ -167,7 +167,6 @@ pub async fn copy_ethercat_inputs(
     // - tx/rx cycle
     // - copy inputs to devices
     if let Some(ethercat_setup) = ethercat_setup {
-
         if ethercat_setup.all_operational {
             ethercat_setup
                 .group
@@ -214,30 +213,30 @@ pub async fn copy_ethercat_inputs(
                 })?;
             }
             return Ok(());
-        }        
-        else{
+        } else {
             loop {
                 let now = Instant::now();
                 let response @ TxRxResponse {
                     working_counter: _wkc,
-                    extra: CycleInfo {
-                    next_cycle_wait, ..
-                },
-                ..
-                } = 
-                ethercat_setup.group.tx_rx_dc(
-                    &ethercat_setup.maindevice
-                ).await.expect("TX/RX");
+                    extra:
+                        CycleInfo {
+                            next_cycle_wait, ..
+                        },
+                    ..
+                } = ethercat_setup
+                    .group
+                    .tx_rx_dc(&ethercat_setup.maindevice)
+                    .await
+                    .expect("TX/RX");
                 if response.all_op() {
                     ethercat_setup.all_operational = true;
                     break;
                 }
-                smol::Timer::at(now + next_cycle_wait).await;                
-            }            
+                smol::Timer::at(now + next_cycle_wait).await;
+            }
         }
-
     }
-    Ok(())        
+    Ok(())
 }
 
 pub async fn copy_ethercat_outputs(
@@ -302,8 +301,6 @@ pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyho
             .as_deref_mut()
             .unwrap()
             .cycle_start();
-
-
 
         let res = smol::block_on(copy_ethercat_inputs(inputs.ethercat_setup.as_deref_mut()));
         match res {

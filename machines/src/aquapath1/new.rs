@@ -93,15 +93,16 @@ impl MachineNewTrait for AquaPathV1 {
                 ..Default::default()
             };
 
-            let subdevice = get_ethercat_device::<EL5152>(hardware, params, 4, [EL5152_IDENTITY_A].to_vec())
+            let subdevice =
+                get_ethercat_device::<EL5152>(hardware, params, 4, [EL5152_IDENTITY_A].to_vec())
                     .await?
                     .1;
-        
+
             el5152
-                    .write()
-                    .await
-                    .write_config(&subdevice, &config)
-                    .await?;
+                .write()
+                .await
+                .write_config(&subdevice, &config)
+                .await?;
 
             let enc1 = EncoderInput::new(el5152.clone(), EL5152Port::ENC1);
 

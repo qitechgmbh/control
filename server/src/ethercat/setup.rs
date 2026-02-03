@@ -24,9 +24,12 @@ use smol::stream::StreamExt;
 use ta::Next;
 use ta::indicators::ExponentialMovingAverage;
 
-use crate::utils::{stop_dnsmasq};
+use crate::utils::stop_dnsmasq;
 use ethercrab::std::ethercat_now;
-use ethercrab::{DcSync, MainDevice, MainDeviceConfig, PduStorage, RegisterAddress, RetryBehaviour, SubDeviceGroup, Timeouts};
+use ethercrab::{
+    DcSync, MainDevice, MainDeviceConfig, PduStorage, RegisterAddress, RetryBehaviour,
+    SubDeviceGroup, Timeouts,
+};
 use machines::machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
     DeviceIdentificationIdentified, MachineIdentificationUnique, read_device_identifications,
@@ -283,40 +286,44 @@ pub async fn setup_loop(
         ))?,
     };
 
-    for mut subdevice in group_preop.iter_mut(&maindevice) {        
-            println!("subdevice {} {:X?}",subdevice.name(),subdevice.configured_address());
-            if subdevice.name() == "EL4002" {
-                // Sync mode 01 = SM Synchronous, says it does dc but actually doesnt, thx?
-                subdevice
-                    .sdo_write(0x1c32, 1, 1u16)
-                    .await
-                    .expect("Set sync mode");
-            }
-            // Configure SYNC0 AND SYNC1 for EL4102
-            else if subdevice.name() == "EL5152" {
-                // Sync mode 02 = SYNC0
-                subdevice
-                    .sdo_write(0x1c32, 1, 2u16)
-                    .await
-                    .expect("Set sync mode");
+    for mut subdevice in group_preop.iter_mut(&maindevice) {
+        println!(
+            "subdevice {} {:X?}",
+            subdevice.name(),
+            subdevice.configured_address()
+        );
+        if subdevice.name() == "EL4002" {
+            // Sync mode 01 = SM Synchronous, says it does dc but actually doesnt, thx?
+            subdevice
+                .sdo_write(0x1c32, 1, 1u16)
+                .await
+                .expect("Set sync mode");
+        }
+        // Configure SYNC0 AND SYNC1 for EL4102
+        else if subdevice.name() == "EL5152" {
+            // Sync mode 02 = SYNC0
+            subdevice
+                .sdo_write(0x1c32, 1, 2u16)
+                .await
+                .expect("Set sync mode");
 
-                subdevice
-                    .sdo_write(0x1c32, 0x02, TICK_INTERVAL.as_nanos() as u32)
-                    .await
-                    .expect("Set cycle time");                                        
-                
-                subdevice.set_dc_sync(DcSync::Sync01 {
-                    // EL4102 ESI specifies SYNC1 with an offset of 100k ns
-                    sync1_period: Duration::from_nanos(100_000),
-                });
-            } else {
-                match subdevice.dc_support() {
-                    ethercrab::DcSupport::None => (),
-                    ethercrab::DcSupport::RefOnly => (),
-                    ethercrab::DcSupport::Bits64 => subdevice.set_dc_sync(DcSync::Sync0),
-                    ethercrab::DcSupport::Bits32 => subdevice.set_dc_sync(DcSync::Sync0),
-                }
+            subdevice
+                .sdo_write(0x1c32, 0x02, TICK_INTERVAL.as_nanos() as u32)
+                .await
+                .expect("Set cycle time");
+
+            subdevice.set_dc_sync(DcSync::Sync01 {
+                // EL4102 ESI specifies SYNC1 with an offset of 100k ns
+                sync1_period: Duration::from_nanos(100_000),
+            });
+        } else {
+            match subdevice.dc_support() {
+                ethercrab::DcSupport::None => (),
+                ethercrab::DcSupport::RefOnly => (),
+                ethercrab::DcSupport::Bits64 => subdevice.set_dc_sync(DcSync::Sync0),
+                ethercrab::DcSupport::Bits32 => subdevice.set_dc_sync(DcSync::Sync0),
             }
+        }
     }
     // create devices
     let devices =
@@ -446,7 +453,6 @@ pub async fn setup_loop(
     };
     drop(ethercat_meta_devices);
 
-
     // remove subdevice from devices tuple
     let devices = devices
         .iter()
@@ -475,7 +481,6 @@ pub async fn setup_loop(
     }
     let mut tick_interval = smol::Timer::interval(TICK_INTERVAL);
 
-    
     tracing::info!("Moving into PRE-OP with PDI");
     let group = group_preop.into_pre_op_pdi(&maindevice).await?;
     tracing::info!("Done. PDI available. Waiting for SubDevices to align");
@@ -508,12 +513,14 @@ pub async fn setup_loop(
                         }
                     }
                     Err(Error::WorkingCounter { .. }) => 0,
-                    Err(e) => return Err(anyhow::anyhow!("Failed to read DC system time: {:?}", e)),
+                    Err(e) => {
+                        return Err(anyhow::anyhow!("Failed to read DC system time: {:?}", e));
+                    }
                 };
 
                 let ema_next = ema.next(diff as f64);
                 max_deviation = max_deviation.max(ema_next.abs() as u32);
-            }    
+            }
             if max_deviation < 100 {
                 tracing::info!("Clocks settled after {} ms", start.elapsed().as_millis());
                 break;
@@ -522,64 +529,64 @@ pub async fn setup_loop(
         tick_interval.next().await;
     }
 
-      // SubDevice clocks are aligned. We can turn DC on now.
-        let group = group
-            .configure_dc_sync(
-                &maindevice,
-                DcConfiguration {
-                    // Start SYNC0 100ms in the future
-                    start_delay: Duration::from_millis(100),
-                    // SYNC0 period should be the same as the process data loop in most cases
-                    sync0_period: TICK_INTERVAL,
-                    // Send process data half way through cycle
-                    sync0_shift: TICK_INTERVAL / 2,
-                },
-            )
-            .await?;
+    // SubDevice clocks are aligned. We can turn DC on now.
+    let group = group
+        .configure_dc_sync(
+            &maindevice,
+            DcConfiguration {
+                // Start SYNC0 100ms in the future
+                start_delay: Duration::from_millis(100),
+                // SYNC0 period should be the same as the process data loop in most cases
+                sync0_period: TICK_INTERVAL,
+                // Send process data half way through cycle
+                sync0_shift: TICK_INTERVAL / 2,
+            },
+        )
+        .await?;
 
-        // State machine to handle transition to SafeOp with process data
-        enum GroupState {
-            PreOp(SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, PreOpPdi, HasDc>),
-            SafeOp(SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, SafeOp, HasDc>),
-        }
+    // State machine to handle transition to SafeOp with process data
+    enum GroupState {
+        PreOp(SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, PreOpPdi, HasDc>),
+        SafeOp(SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, SafeOp, HasDc>),
+    }
 
-        let mut group_container = Some(GroupState::PreOp(group));
-        let mut tick = 0;
+    let mut group_container = Some(GroupState::PreOp(group));
+    let mut tick = 0;
 
-        let group = loop {
-            let now = Instant::now();
-            match group_container.take().unwrap() {
-                GroupState::PreOp(group) => {                                
-                    let res = group.tx_rx_dc(&maindevice).await.expect("TX/RX");
-                    if tick > 300 {
-                        let group = group.request_into_safe_op(&maindevice).await?;
-                        group_container = Some(GroupState::SafeOp(group));
-                        tracing::info!("Requested SAFE-OP");
-                    } else {
-                        group_container = Some(GroupState::PreOp(group));
-                    }
-                    
-                    smol::Timer::at(now + res.extra.next_cycle_wait).await;
+    let group = loop {
+        let now = Instant::now();
+        match group_container.take().unwrap() {
+            GroupState::PreOp(group) => {
+                let res = group.tx_rx_dc(&maindevice).await.expect("TX/RX");
+                if tick > 300 {
+                    let group = group.request_into_safe_op(&maindevice).await?;
+                    group_container = Some(GroupState::SafeOp(group));
+                    tracing::info!("Requested SAFE-OP");
+                } else {
+                    group_container = Some(GroupState::PreOp(group));
                 }
-                GroupState::SafeOp(group) => {                    
-                    let res = group.tx_rx_dc(&maindevice).await.expect("TX/RX");
-                    if res.all_safe_op() {
-                        tracing::info!("SAFE-OP");
-                        break group;
-                    } else {
-                        group_container = Some(GroupState::SafeOp(group));
-                    }
-                    smol::Timer::at(now + res.extra.next_cycle_wait).await;
-                }
+
+                smol::Timer::at(now + res.extra.next_cycle_wait).await;
             }
-            tick += 1;
-        };
+            GroupState::SafeOp(group) => {
+                let res = group.tx_rx_dc(&maindevice).await.expect("TX/RX");
+                if res.all_safe_op() {
+                    tracing::info!("SAFE-OP");
+                    break group;
+                } else {
+                    group_container = Some(GroupState::SafeOp(group));
+                }
+                smol::Timer::at(now + res.extra.next_cycle_wait).await;
+            }
+        }
+        tick += 1;
+    };
 
-        let group_op = group
-            .request_into_op(&maindevice)
-            .await
-            .expect("SAFE-OP -> OP");
-        tracing::info!("Started Transition to OP");
+    let group_op = group
+        .request_into_op(&maindevice)
+        .await
+        .expect("SAFE-OP -> OP");
+    tracing::info!("Started Transition to OP");
 
     Ok(EthercatSetup {
         devices,
