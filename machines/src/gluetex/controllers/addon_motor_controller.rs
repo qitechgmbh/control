@@ -1,5 +1,4 @@
 use control_core::converters::angular_step_converter::AngularStepConverter;
-use ethercat_hal::io::digital_input::DigitalInput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use units::Length;
 use units::angular_velocity::revolution_per_second;
@@ -203,13 +202,13 @@ impl AddonMotorController {
     /// # Arguments
     /// * `motor` - The stepper motor to control
     /// * `puller_angular_velocity` - The current angular velocity of the puller
-    /// * `endstop` - Optional endstop for homing and pattern control
+    /// * `endstop_hit` - Optional boolean indicating if endstop is triggered (for homing and pattern control)
     /// * `puller_length_moved` - Length moved by the puller (for distance tracking in pattern mode)
     pub fn sync_motor_speed(
         &mut self,
         motor: &mut StepperVelocityEL70x1,
         puller_angular_velocity: AngularVelocity,
-        endstop: Option<&DigitalInput>,
+        endstop_hit: Option<bool>,
         puller_length_moved: Length,
     ) {
         if !self.enabled {
@@ -228,11 +227,11 @@ impl AddonMotorController {
         // Check if we're in pattern control mode
         let pattern_mode = self.konturlaenge_mm > 0.0 || self.pause_mm > 0.0;
 
-        if pattern_mode && endstop.is_some() {
+        if pattern_mode && endstop_hit.is_some() {
             self.handle_pattern_control(
                 motor,
                 puller_angular_velocity,
-                endstop.unwrap(),
+                endstop_hit.unwrap(),
                 puller_length_moved,
             );
         } else {
@@ -248,7 +247,7 @@ impl AddonMotorController {
         &mut self,
         motor: &mut StepperVelocityEL70x1,
         puller_angular_velocity: AngularVelocity,
-        endstop: &DigitalInput,
+        endstop_hit: bool,
         puller_length_moved: Length,
     ) {
         // Update accumulated distance
@@ -257,7 +256,7 @@ impl AddonMotorController {
         match self.pattern_state {
             PatternControlState::Homing => {
                 // Check if endstop is hit
-                if endstop.get_value().unwrap_or(false) {
+                if endstop_hit {
                     // Endstop hit - stop and transition to Running
                     let _ = motor.set_speed(0.0);
                     self.pattern_state = PatternControlState::Running;
@@ -281,7 +280,7 @@ impl AddonMotorController {
                     let _ = motor.set_speed(steps_per_second);
 
                     // Check if we've reached the endstop
-                    if endstop.get_value().unwrap_or(false) {
+                    if endstop_hit {
                         let _ = motor.set_speed(0.0);
                         self.pattern_state = PatternControlState::Paused;
                         self.accumulated_distance = 0.0;
