@@ -670,7 +670,7 @@ export function GluetexPresetsPage() {
     }
   };
 
-  const toPresetData = (s: typeof state): GluetexPreset => ({
+  const toPresetData = (s?: typeof state): GluetexPreset => ({
     traverse_state: {
       limit_inner: s?.traverse_state?.limit_inner,
       limit_outer: s?.traverse_state?.limit_outer,
@@ -678,17 +678,205 @@ export function GluetexPresetsPage() {
       padding: s?.traverse_state?.padding,
       laserpointer: s?.traverse_state?.laserpointer,
     },
-    puller_state: s?.puller_state,
-    spool_speed_controller_state: s?.spool_speed_controller_state,
-    heating_states: s?.heating_states,
-    heating_pid_settings: s?.heating_pid_settings,
-    addon_motor_3_state: s?.addon_motor_3_state,
-    addon_motor_4_state: s?.addon_motor_4_state,
-    addon_motor_5_state: s?.addon_motor_5_state,
-    slave_puller_state: s?.slave_puller_state,
-    tension_arm_monitor_state: s?.tension_arm_monitor_state,
-    quality_control_state: s?.quality_control_state,
+    puller_state: s?.puller_state
+      ? {
+          regulation: s.puller_state.regulation,
+          target_speed: s.puller_state.target_speed,
+          target_diameter: s.puller_state.target_diameter,
+          forward: s.puller_state.forward,
+          gear_ratio: s.puller_state.gear_ratio,
+        }
+      : undefined,
+    spool_speed_controller_state: s?.spool_speed_controller_state
+      ? {
+          regulation_mode: s.spool_speed_controller_state.regulation_mode,
+          minmax_min_speed: s.spool_speed_controller_state.minmax_min_speed,
+          minmax_max_speed: s.spool_speed_controller_state.minmax_max_speed,
+          adaptive_tension_target:
+            s.spool_speed_controller_state.adaptive_tension_target,
+          adaptive_radius_learning_rate:
+            s.spool_speed_controller_state.adaptive_radius_learning_rate,
+          adaptive_max_speed_multiplier:
+            s.spool_speed_controller_state.adaptive_max_speed_multiplier,
+          adaptive_acceleration_factor:
+            s.spool_speed_controller_state.adaptive_acceleration_factor,
+          adaptive_deacceleration_urgency_multiplier:
+            s.spool_speed_controller_state
+              .adaptive_deacceleration_urgency_multiplier,
+          forward: s.spool_speed_controller_state.forward,
+        }
+      : undefined,
+    heating_states: s?.heating_states
+      ? {
+          enabled: s.heating_states.enabled,
+          zone_1: s.heating_states.zone_1
+            ? {
+                target_temperature: s.heating_states.zone_1.target_temperature,
+                wiring_error: s.heating_states.zone_1.wiring_error,
+                autotuning_active: s.heating_states.zone_1.autotuning_active,
+                autotuning_progress: s.heating_states.zone_1.autotuning_progress,
+              }
+            : undefined,
+          zone_2: s.heating_states.zone_2
+            ? {
+                target_temperature: s.heating_states.zone_2.target_temperature,
+                wiring_error: s.heating_states.zone_2.wiring_error,
+                autotuning_active: s.heating_states.zone_2.autotuning_active,
+                autotuning_progress: s.heating_states.zone_2.autotuning_progress,
+              }
+            : undefined,
+          zone_3: s.heating_states.zone_3
+            ? {
+                target_temperature: s.heating_states.zone_3.target_temperature,
+                wiring_error: s.heating_states.zone_3.wiring_error,
+                autotuning_active: s.heating_states.zone_3.autotuning_active,
+                autotuning_progress: s.heating_states.zone_3.autotuning_progress,
+              }
+            : undefined,
+          zone_4: s.heating_states.zone_4
+            ? {
+                target_temperature: s.heating_states.zone_4.target_temperature,
+                wiring_error: s.heating_states.zone_4.wiring_error,
+                autotuning_active: s.heating_states.zone_4.autotuning_active,
+                autotuning_progress: s.heating_states.zone_4.autotuning_progress,
+              }
+            : undefined,
+          zone_5: s.heating_states.zone_5
+            ? {
+                target_temperature: s.heating_states.zone_5.target_temperature,
+                wiring_error: s.heating_states.zone_5.wiring_error,
+                autotuning_active: s.heating_states.zone_5.autotuning_active,
+                autotuning_progress: s.heating_states.zone_5.autotuning_progress,
+              }
+            : undefined,
+          zone_6: s.heating_states.zone_6
+            ? {
+                target_temperature: s.heating_states.zone_6.target_temperature,
+                wiring_error: s.heating_states.zone_6.wiring_error,
+                autotuning_active: s.heating_states.zone_6.autotuning_active,
+                autotuning_progress: s.heating_states.zone_6.autotuning_progress,
+              }
+            : undefined,
+        }
+      : undefined,
+    heating_pid_settings: s?.heating_pid_settings
+      ? {
+          zone_1: s.heating_pid_settings.zone_1
+            ? {
+                kp: s.heating_pid_settings.zone_1.kp,
+                ki: s.heating_pid_settings.zone_1.ki,
+                kd: s.heating_pid_settings.zone_1.kd,
+                zone: s.heating_pid_settings.zone_1.zone,
+              }
+            : undefined,
+          zone_2: s.heating_pid_settings.zone_2
+            ? {
+                kp: s.heating_pid_settings.zone_2.kp,
+                ki: s.heating_pid_settings.zone_2.ki,
+                kd: s.heating_pid_settings.zone_2.kd,
+                zone: s.heating_pid_settings.zone_2.zone,
+              }
+            : undefined,
+          zone_3: s.heating_pid_settings.zone_3
+            ? {
+                kp: s.heating_pid_settings.zone_3.kp,
+                ki: s.heating_pid_settings.zone_3.ki,
+                kd: s.heating_pid_settings.zone_3.kd,
+                zone: s.heating_pid_settings.zone_3.zone,
+              }
+            : undefined,
+          zone_4: s.heating_pid_settings.zone_4
+            ? {
+                kp: s.heating_pid_settings.zone_4.kp,
+                ki: s.heating_pid_settings.zone_4.ki,
+                kd: s.heating_pid_settings.zone_4.kd,
+                zone: s.heating_pid_settings.zone_4.zone,
+              }
+            : undefined,
+          zone_5: s.heating_pid_settings.zone_5
+            ? {
+                kp: s.heating_pid_settings.zone_5.kp,
+                ki: s.heating_pid_settings.zone_5.ki,
+                kd: s.heating_pid_settings.zone_5.kd,
+                zone: s.heating_pid_settings.zone_5.zone,
+              }
+            : undefined,
+          zone_6: s.heating_pid_settings.zone_6
+            ? {
+                kp: s.heating_pid_settings.zone_6.kp,
+                ki: s.heating_pid_settings.zone_6.ki,
+                kd: s.heating_pid_settings.zone_6.kd,
+                zone: s.heating_pid_settings.zone_6.zone,
+              }
+            : undefined,
+        }
+      : undefined,
+    addon_motor_3_state: s?.addon_motor_3_state
+      ? {
+          enabled: s.addon_motor_3_state.enabled,
+          forward: s.addon_motor_3_state.forward,
+          master_ratio: s.addon_motor_3_state.master_ratio,
+          slave_ratio: s.addon_motor_3_state.slave_ratio,
+          konturlaenge_mm: s.addon_motor_3_state.konturlaenge_mm,
+          pause_mm: s.addon_motor_3_state.pause_mm,
+        }
+      : undefined,
+    addon_motor_4_state: s?.addon_motor_4_state
+      ? {
+          enabled: s.addon_motor_4_state.enabled,
+          forward: s.addon_motor_4_state.forward,
+          master_ratio: s.addon_motor_4_state.master_ratio,
+          slave_ratio: s.addon_motor_4_state.slave_ratio,
+        }
+      : undefined,
+    addon_motor_5_state: s?.addon_motor_5_state
+      ? {
+          enabled: s.addon_motor_5_state.enabled,
+          forward: s.addon_motor_5_state.forward,
+          master_ratio: s.addon_motor_5_state.master_ratio,
+          slave_ratio: s.addon_motor_5_state.slave_ratio,
+        }
+      : undefined,
+    slave_puller_state: s?.slave_puller_state
+      ? {
+          enabled: s.slave_puller_state.enabled,
+          forward: s.slave_puller_state.forward,
+          target_angle: s.slave_puller_state.target_angle,
+          sensitivity: s.slave_puller_state.sensitivity,
+          min_speed_factor: s.slave_puller_state.min_speed_factor,
+          max_speed_factor: s.slave_puller_state.max_speed_factor,
+        }
+      : undefined,
+    tension_arm_monitor_state: s?.tension_arm_monitor_state
+      ? {
+          enabled: s.tension_arm_monitor_state.enabled,
+          min_angle: s.tension_arm_monitor_state.min_angle,
+          max_angle: s.tension_arm_monitor_state.max_angle,
+        }
+      : undefined,
+    quality_control_state: s?.quality_control_state
+      ? {
+          temperature1: s.quality_control_state.temperature1
+            ? {
+                min_temperature:
+                  s.quality_control_state.temperature1.min_temperature,
+                max_temperature:
+                  s.quality_control_state.temperature1.max_temperature,
+              }
+            : undefined,
+          temperature2: s.quality_control_state.temperature2
+            ? {
+                min_temperature:
+                  s.quality_control_state.temperature2.min_temperature,
+                max_temperature:
+                  s.quality_control_state.temperature2.max_temperature,
+              }
+            : undefined,
+        }
+      : undefined,
   });
+
+  const defaults = toPresetData(defaultState);
 
   return (
     <PresetsPage
@@ -696,7 +884,7 @@ export function GluetexPresetsPage() {
       currentState={toPresetData(state)}
       schemas={schemas}
       schemaVersion={1}
-      defaultState={toPresetData(defaultState)}
+      defaultState={defaults}
       applyPreset={applyPreset}
       previewEntries={previewEntries}
     />
