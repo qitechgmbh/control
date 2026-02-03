@@ -513,7 +513,7 @@ const ONE_HOUR = 60 * 60 * ONE_SECOND;
 // sampleIntervalShort: 200ms to downsample 30Hz (~33ms) data to ~5Hz for short buffer
 // sampleIntervalLong: 1000ms to downsample to 1Hz for long buffer
 const timeSeriesConfig = {
-  sampleIntervalShort: 200,
+  sampleIntervalShort: 20,
   sampleIntervalLong: 1000,
 };
 

@@ -40,14 +40,6 @@ impl MachineAct for Gluetex {
             self.reset_sleep_timer();
         }
 
-        // Emit state when sleep timer remaining changes (for countdown updates)
-        let current_remaining = self.get_sleep_timer_remaining_seconds();
-        if current_remaining != self.last_emitted_sleep_timer_remaining {
-            self.last_emitted_sleep_timer_remaining = current_remaining;
-            self.emit_state();
-            self.last_state_emit = now;
-        }
-
         // update all temperature controllers
         self.temperature_controller_1.update(now);
         self.temperature_controller_2.update(now);
@@ -71,7 +63,10 @@ impl MachineAct for Gluetex {
             || self.temperature_controller_5.is_autotuning()
             || self.temperature_controller_6.is_autotuning();
 
-        if autotuning_active
+        // Emit state regularly when autotuning or when sleep timer is enabled
+        let should_emit_state = autotuning_active || self.sleep_timer_config.enabled;
+
+        if should_emit_state
             && now.duration_since(self.last_state_emit) > Duration::from_millis(500)
         {
             self.emit_state();
