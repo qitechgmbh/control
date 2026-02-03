@@ -15,7 +15,13 @@ import {
   machineProperties,
   VENDOR_QITECH,
 } from "@/machines/properties";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -121,13 +127,15 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   });
   const values = useFormValues(form);
 
-  const isChangingMachine = initialMachine != null && values.machine !== initialMachine;
+  const isChangingMachine =
+    initialMachine != null && values.machine !== initialMachine;
 
   const performWrite = (values: FormSchema) =>
     client.writeMachineDeviceIdentification({
       hardware_identification_ethercat: {
         subdevice_index:
-          device.device_identification.device_hardware_identification.Ethercat!.subdevice_index,
+          device.device_identification.device_hardware_identification.Ethercat!
+            .subdevice_index,
       },
       device_machine_identification: {
         machine_identification_unique: {
@@ -496,9 +504,9 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
             <Separator />
             {isChangingMachine && (
               <Alert title="Changing machine assignment" variant="warning">
-                This will disconnect the device from its current machine. Restart
-                required; if terminals disappear, use Setup → Troubleshoot →
-                Restart backend to rediscover.
+                This will disconnect the device from its current machine.
+                Restart required; if terminals disappear, use Setup →
+                Troubleshoot → Restart backend to rediscover.
               </Alert>
             )}
             {form.formState.isDirty && !writeSuccess && (
@@ -535,7 +543,11 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                 )}
               </Button>
               {writeSuccess && (
-                <Button type="button" variant="secondary" onClick={() => setOpen()}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setOpen()}
+                >
                   Close
                 </Button>
               )}
