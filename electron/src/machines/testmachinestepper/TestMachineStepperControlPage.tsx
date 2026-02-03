@@ -24,8 +24,8 @@ export function TestMachineStepperControlPage() {
               defaultValue={0}
               min={-25000}
               max={25000}
-              step={0.1}
-              renderValue={(value) => roundToDecimals(value, 1)}
+              step={1}
+              renderValue={(value) => roundToDecimals(value, 0)}
               onChange={setTargetSpeed}
             />
           </Label>

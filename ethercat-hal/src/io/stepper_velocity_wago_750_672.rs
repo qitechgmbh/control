@@ -37,7 +37,6 @@ impl StepperVelocityWago750672 {
             self.change_init_state(InitState::Off);
             self.write_control_byte(ControlByte::C1, 0b00000000);
         }
-
     }
 
     pub fn set_velocity(&mut self, velocity: i16) {
@@ -49,7 +48,9 @@ impl StepperVelocityWago750672 {
         dev.rxpdo.acceleration = 10000; // hardcoded for now
 
         if dev.initialized {
-            self.change_init_state(InitState::StartPulse);
+            // This does not work because i can't block twice without a deadlock
+            // self.change_init_state(InitState::StartPulse);
+            dev.state = InitState::StartPulse;
         }
     }
 
@@ -71,7 +72,6 @@ impl StepperVelocityWago750672 {
     }
 
     fn read_status_byte(&self, status_byte: StatusByte) -> u8 {
-
         let dev = block_on(self.device.write());
 
         match status_byte {
@@ -87,89 +87,88 @@ impl StepperVelocityWago750672 {
 /// Bits 0 - 7
 pub struct ControlByteC1;
 impl ControlByteC1 {
-    pub const ENABLE: u8 = 0x01;
-    pub const STOP2_N: u8 = 0x02;
-    pub const START: u8 = 0x04;
-
-    pub const COMMAND_MASK: u8 = 0xF8;
-
-    pub const CMD_IDLE: u8 = 0x00;
-    pub const CMD_SINGLE_POSITION: u8 = 0x08;
-    pub const CMD_RUN_PROGRAM: u8 = 0x10;
-    pub const CMD_SPEED_CONTROL: u8 = 0x18;
-    pub const CMD_REFERENCE: u8 = 0x20;
-    pub const CMD_JOG_MODE: u8 = 0x40;
-    pub const CMD_MAILBOX: u8 = 0x80;
+    pub const ENABLE: u8 = 0b0000_0001;
+    pub const STOP2_N: u8 = 0b0000_0010;
+    pub const START: u8 = 0b0000_0100;
+    pub const CMD_IDLE: u8 = 0b0000_0000;
+    pub const CMD_SINGLE_POSITION: u8 = 0b0000_0000;
+    pub const CMD_RUN_PROGRAM: u8 = 0b0000_0000;
+    pub const CMD_SPEED_CONTROL: u8 = 0b0000_0000;
+    pub const CMD_REFERENCE: u8 = 0b0000_0000;
+    pub const CMD_JOG_MODE: u8 = 0b0000_0000;
+    pub const CMD_MAILBOX: u8 = 0b0000_0000;
 }
 
 /// Control Byte C2
 /// Bits 0 - 7
 pub struct ControlByteC2;
 impl ControlByteC2 {
-    pub const FREQ_RANGE_SEL_LSB: u8 = 0x01;
-    pub const FREQ_RANGE_SEL_MSB: u8 = 0x02;
-    pub const ACCELERATION_RANGE_SEL_LSB: u8 = 0x04;
-    pub const ACCELERATION_RANGE_SEL_MSB: u8 = 0x08;
+    pub const FREQ_RANGE_SEL_L: u8 = 0b0000_0001;
+    pub const FREQ_RANGE_SEL_H: u8 = 0b0000_0010;
+    pub const ACCELERATION_RANGE_SEL_L: u8 = 0b0000_0100;
+    pub const ACCELERATION_RANGE_SEL_H: u8 = 0b0000_1000;
     // RESERVED
     // RESERVED
-    pub const PRE_CALC: u8 = 0x40;
-    pub const ERROR_QUIT: u8 = 0x80;
+    pub const PRE_CALC: u8 = 0b0100_0000;
+    pub const ERROR_QUIT: u8 = 0b1000_0000;
 }
 
 /// Control Byte C3
 /// Bits 0 - 7
 pub struct ControlByteC3;
 impl ControlByteC3 {
+    pub const SET_ACTUAL_POS: u8 = 0b0000_0001;
+    // RESERVED
+    pub const DIRECTION_POS: u8 = 0b0000_0010;
+    pub const DIRCTION_NEG: u8 = 0b0000_0100;
     // RESERVED
     // RESERVED
     // RESERVED
-    // RESERVED
-    pub const LIMIT_SWITCH_POS: u8 = 0x10;
-    pub const LIMIT_SWITCH_NEG: u8 = 0x20;
-    pub const SETUP_SPEED_ACTIVE: u8 = 0x40;
-    pub const RESET_QUIT: u8 = 0x80;
+    pub const RESET_QUIT: u8 = 0b1000_0000;
 }
 
 /// Status Byte S1
 /// Bits 0 - 7
 pub struct StatusByteS1;
 impl StatusByteS1 {
-    pub const READY: u8 = 0x01;
-    pub const STOP_N_ACK: u8 = 0x02;
-    pub const START_ACK: u8 = 0x04;
-    pub const M_SPEED_CONTROL_ACK: u8 = 0x08;
-    pub const M_PROGRAM_ACK: u8 = 0x10;
-    pub const M_REFERENCE_ACK: u8 = 0x20;
-    pub const M_JOG_ACK: u8 = 0x40;
-    pub const M_DRIVE_BYMBX_ACK: u8 = 0x80;
+    pub const READY: u8 = 0b0000_0001;
+    pub const STOP2_N_ACK: u8 = 0b0000_0010;
+    pub const START_ACK: u8 = 0b0000_0100;
+    pub const CMD_IDLE_ACK: u8 = 0b0000_0000;
+    pub const CMD_SINGLE_POSITION_ACK: u8 = 0b0000_0000;
+    pub const CMD_RUN_PROGRAM_ACK: u8 = 0b0000_0000;
+    pub const CMD_SPEED_CONTROL_ACK: u8 = 0b0000_0000;
+    pub const CMD_REFERENCE_ACK: u8 = 0b0000_0000;
+    pub const CMD_JOG_MODE_ACK: u8 = 0b0000_0000;
+    pub const CMD_MAILBOX_ACK: u8 = 0b0000_0000;
 }
 
 /// Status Byte S2
 /// Bits 0 - 7
 pub struct StatusByteS2;
 impl StatusByteS2 {
-    // RESERVED
-    pub const BUSY: u8 = 0x02;
-    pub const STAND_STILL: u8 = 0x04;
-    pub const ON_SPEED: u8 = 0x08;
-    pub const DIRECTION: u8 = 0x10;
-    // RESERVED
-    pub const PRE_CALC_ACK: u8 = 0x40;
-    pub const ERROR: u8 = 0x80;
+    pub const ON_TARGET: u8 = 0b0000_0001;
+    pub const BUSY: u8 = 0b0000_0010;
+    pub const STAND_STILL: u8 = 0b0000_0100;
+    pub const ON_SPEED: u8 = 0b0000_1000;
+    pub const DIRECTION: u8 = 0b0001_0000;
+    pub const REFERENCE_OK: u8 = 0b0010_0000;
+    pub const PRE_CALC_ACK: u8 = 0b0100_0000;
+    pub const ERROR: u8 = 0b1000_0000;
 }
 
 /// Status Byte S3
 /// Bits 0 - 7
 pub struct StatusByteS3;
 impl StatusByteS3 {
-    pub const INPUT1: u8 = 0x01;
-    // RESERVED
-    // RESERVED
-    // RESERVED
-    // RESERVED
-    // RESERVED
-    pub const SETUP_SPEED_ACTIVE_ACK: u8 = 0x40;
-    pub const RESET: u8 = 0x80;
+    pub const INPUT1: u8 = 0b0000_0001;
+    pub const INPUT2: u8 = 0b0000_0010;
+    pub const INPUT3: u8 = 0b0000_0100;
+    pub const INPUT4: u8 = 0b0000_1000;
+    pub const INPUT5: u8 = 0b0001_0000;
+    pub const INPUT6: u8 = 0b0010_0000;
+    pub const WARNING: u8 = 0b0100_0000;
+    pub const RESET: u8 = 0b1000_0000;
 }
 
 #[derive(Debug, Clone, Copy)]
