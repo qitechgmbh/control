@@ -159,8 +159,8 @@ pub enum Mutation {
     SetAddonMotor4SlaveRatio(f64),
     SetAddonMotor5MasterRatio(f64),
     SetAddonMotor5SlaveRatio(f64),
-    SetAddonMotor5Konturlaenge(f64),
-    SetAddonMotor5Pause(f64),
+    SetAddonMotor3Konturlaenge(f64),
+    SetAddonMotor3Pause(f64),
 
     // Slave Puller
     SetSlavePullerEnabled(bool),
@@ -254,12 +254,12 @@ pub struct StateEvent {
     pub heating_pid_settings: HeatingPidStates,
     /// Is a Machine Connected?
     pub connected_machine_state: MachineCrossConnectionState,
-    /// addon motor 3 state
-    pub addon_motor_3_state: AddonMotorState,
+    /// addon motor 3 state (konturrad with endstop)
+    pub addon_motor_3_state: AddonMotor5State,
     /// addon motor 4 state
     pub addon_motor_4_state: AddonMotorState,
     /// addon motor 5 state
-    pub addon_motor_5_state: AddonMotor5State,
+    pub addon_motor_5_state: AddonMotorState,
     /// slave puller state
     pub slave_puller_state: SlavePullerState,
     /// addon tension arm state
@@ -655,12 +655,12 @@ impl MachineApi for Gluetex {
                 self.addon_motor_5_controller.set_slave_ratio(ratio);
                 self.emit_state();
             }
-            Mutation::SetAddonMotor5Konturlaenge(length_mm) => {
-                self.addon_motor_5_controller.set_konturlaenge_mm(length_mm);
+            Mutation::SetAddonMotor3Konturlaenge(length_mm) => {
+                self.addon_motor_3_controller.set_konturlaenge_mm(length_mm);
                 self.emit_state();
             }
-            Mutation::SetAddonMotor5Pause(pause_mm) => {
-                self.addon_motor_5_controller.set_pause_mm(pause_mm);
+            Mutation::SetAddonMotor3Pause(pause_mm) => {
+                self.addon_motor_3_controller.set_pause_mm(pause_mm);
                 self.emit_state();
             }
             Mutation::SetSlavePullerEnabled(enabled) => {

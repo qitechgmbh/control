@@ -152,9 +152,10 @@ pub struct Gluetex {
 
     // addon motors
     pub addon_motor_3: StepperVelocityEL70x1,
+    pub addon_motor_3_endstop: DigitalInput,
+    pub addon_motor_3_analog_input: AnalogInput,
     pub addon_motor_4: StepperVelocityEL70x1,
     pub addon_motor_5: StepperVelocityEL70x1,
-    pub addon_motor_5_endstop: DigitalInput,
 
     // controllers
     pub traverse_controller: TraverseController,
@@ -164,8 +165,8 @@ pub struct Gluetex {
     pub addon_motor_3_controller: AddonMotorController,
     pub addon_motor_4_controller: AddonMotorController,
     pub addon_motor_5_controller: AddonMotorController,
-    /// Last time addon motor 5 was synced (for distance tracking)
-    pub addon_motor_5_last_sync: Instant,
+    /// Last time addon motor 3 was synced (for distance tracking)
+    pub addon_motor_3_last_sync: Instant,
 
     // temperature controllers (PID-controlled heaters with temperature sensors)
     pub temperature_controller_1: TemperatureController,
@@ -431,12 +432,21 @@ impl Gluetex {
     /// called by `act`
     pub fn sync_addon_motor_3_speed(&mut self, t: Instant) {
         let puller_angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
+
+        // Calculate distance moved since last sync
+        let puller_speed = self.puller_speed_controller.last_speed;
+        let dt = t.duration_since(self.addon_motor_3_last_sync).as_secs_f64();
+        let distance_moved =
+            Length::new::<meter>(puller_speed.get::<meter_per_second>() * dt).abs();
+
         self.addon_motor_3_controller.sync_motor_speed(
             &mut self.addon_motor_3,
             puller_angular_velocity,
-            None,
-            Length::ZERO,
+            Some(&self.addon_motor_3_endstop),
+            distance_moved,
         );
+
+        self.addon_motor_3_last_sync = t;
     }
 
     /// Sync addon motor 4 speed based on puller angular velocity and ratio
@@ -455,21 +465,12 @@ impl Gluetex {
     /// called by `act`
     pub fn sync_addon_motor_5_speed(&mut self, t: Instant) {
         let puller_angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
-
-        // Calculate distance moved since last sync
-        let puller_speed = self.puller_speed_controller.last_speed;
-        let dt = t.duration_since(self.addon_motor_5_last_sync).as_secs_f64();
-        let distance_moved =
-            Length::new::<meter>(puller_speed.get::<meter_per_second>() * dt).abs();
-
         self.addon_motor_5_controller.sync_motor_speed(
             &mut self.addon_motor_5,
             puller_angular_velocity,
-            Some(&self.addon_motor_5_endstop),
-            distance_moved,
+            None,
+            Length::ZERO,
         );
-
-        self.addon_motor_5_last_sync = t;
     }
 
     /// Sync slave puller speed based on master puller speed and slave tension arm
