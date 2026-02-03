@@ -26,6 +26,9 @@ pub struct Wago750_672 {
     pub initialized: bool,
 }
 
+// unfortunately we need to track and set bits over multiple cycles
+// and wait for their acknowledgement so we have to use a state machine
+// inside of our loop.
 #[derive(Debug, Clone)]
 pub enum InitState {
     Off,
@@ -99,58 +102,6 @@ impl EthercatDynamicPDO for Wago750_672 {
     }
 }
 
-impl Wago750_672 {
-
-
-    /// Error acknowledgement is edge-triggered (0->1). Pulse for one cycle.
-    pub fn apply_error_quit(&mut self, pulse: bool) {
-        if pulse {
-            self.rxpdo.c2 |= ControlByteC2::ERROR_QUIT;
-        } else {
-            self.rxpdo.c2 &= !ControlByteC2::ERROR_QUIT;
-        }
-    }
-
-    /// Reset acknowledgement (Reset_Quit) to clear S3.Reset after warm start / power-on reset.
-    /// Pulse for one cycle when S3.Reset is set.
-    pub fn apply_reset_quit(&mut self, pulse: bool) {
-        if pulse {
-            self.rxpdo.c3 |= ControlByteC3::RESET_QUIT;
-        } else {
-            self.rxpdo.c3 &= !ControlByteC3::RESET_QUIT;
-        }
-    }
-
-    // Status helper functions
-    pub fn s1(&self) -> u8 {
-        self.txpdo.s1
-    }
-    pub fn s2(&self) -> u8 {
-        self.txpdo.s2
-    }
-    pub fn s3(&self) -> u8 {
-        self.txpdo.s3
-    }
-    pub fn ready(&self) -> bool {
-        (self.s1() & StatusByteS1::READY) != 0
-    }
-    pub fn stop_n_ack(&self) -> bool {
-        (self.s1() & StatusByteS1::STOP_N_ACK) != 0
-    }
-    pub fn start_ack(&self) -> bool {
-        (self.s1() & StatusByteS1::START_ACK) != 0
-    }
-    pub fn speed_mode_ack(&self) -> bool {
-        (self.s1() & StatusByteS1::M_SPEED_CONTROL_ACK) != 0
-    }
-    pub fn error_active(&self) -> bool {
-        (self.s2() & StatusByteS2::ERROR) != 0
-    }
-    pub fn reset_active(&self) -> bool {
-        (self.s3() & StatusByteS3::RESET) != 0
-    }
-}
-
 impl EthercatDeviceProcessing for Wago750_672 {
     fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
         Ok(())
@@ -160,8 +111,6 @@ impl EthercatDeviceProcessing for Wago750_672 {
         Ok(())
     }
 }
-
-
 
 impl EthercatDevice for Wago750_672 {
     fn input(
@@ -227,20 +176,22 @@ impl EthercatDevice for Wago750_672 {
                 if self.txpdo.s2 & 0b10000000 != 0 {
                     self.state = InitState::ErrorQuit;
                 } else {
-                    self.rxpdo.c2 = self.rxpdo.c2 | 0b10000000;
+                    self.rxpdo.c2 |= 0b10000000;
                 }
                 // Check for Reset
                 if self.txpdo.s2 & 0b10000000 != 0 {
                     self.state = InitState::ResetQuit;
                 } else {
-                    self.rxpdo.c3 = self.rxpdo.c3 | 0b10000000;
+                    self.rxpdo.c3 |= 0b10000000;
                 }
             }
             InitState::ErrorQuit => {
                 self.rxpdo.c2 |= 0b10000000;
+                self.state = InitState::Running;
             }
             InitState::ResetQuit => {
                 self.rxpdo.c3 |= 0b10000000;
+                self.state = InitState::Running;
             }
         }
 
