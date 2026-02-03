@@ -11,7 +11,7 @@ use crate::devices::wago_modules::wago_750_672::{InitState, Wago750_672};
 #[derive(Debug)]
 pub struct StepperVelocityWago750672 {
     pub device: Arc<RwLock<Wago750_672>>,
-    pub state: SpeedControlState,
+    pub state: InitState,
     pub target_velocity: i16,
     pub target_acceleration: u16,
     pub enabled: bool,
@@ -21,7 +21,7 @@ impl StepperVelocityWago750672 {
     pub fn new(device: Arc<RwLock<Wago750_672>>) -> Self {
         Self {
             device,
-            state: SpeedControlState::Init,
+            state: InitState::Off,
             target_velocity: 1000,
             target_acceleration: 10000,
             enabled: false,
@@ -29,8 +29,9 @@ impl StepperVelocityWago750672 {
     }
 
     pub fn set_enabled(&mut self, enabled: bool) {
-        self.enabled = enabled;
+        if self.enabled && enabled {return}
 
+        self.enabled = enabled;
         if enabled {
             self.change_init_state(InitState::Enable);
         } else {
@@ -48,15 +49,13 @@ impl StepperVelocityWago750672 {
         dev.rxpdo.acceleration = 10000; // hardcoded for now
 
         if dev.initialized {
-            // This does not work because i can't block twice without a deadlock
-            // self.change_init_state(InitState::StartPulse);
-            dev.state = InitState::StartPulse;
+            dev.state = InitState::StartPulseStart;
         }
     }
 
-    fn change_init_state(&self, state: InitState) {
+    fn change_init_state(&mut self, state: InitState) {
+        self.state = state.clone();
         let mut dev = block_on(self.device.write());
-
         dev.state = state;
     }
 
@@ -84,101 +83,197 @@ impl StepperVelocityWago750672 {
 }
 
 /// Control Byte C1
-/// Bits 0 - 7
-pub struct ControlByteC1;
+#[derive(Clone, Copy, Default)]
+pub struct ControlByteC1(u8);
+
+#[repr(u8)]
+#[derive(Clone, Copy)]
+pub enum C1Flag {
+    Enable  = 0b0000_0001,
+    Stop2N  = 0b0000_0010,
+    Start   = 0b0000_0100,
+}
+
+#[repr(u8)]
+#[derive(Clone, Copy)]
+pub enum C1Command {
+    Idle           = 0b0000_0000,
+    SinglePosition = 0b0000_1000,
+    RunProgram     = 0b0001_0000,
+    SpeedControl   = 0b0001_1000,
+    Reference      = 0b0010_0000,
+    JogMode        = 0b0010_1000,
+    Mailbox        = 0b0011_0000,
+}
+
 impl ControlByteC1 {
-    pub const ENABLE: u8 = 0b0000_0001;
-    pub const STOP2_N: u8 = 0b0000_0010;
-    pub const START: u8 = 0b0000_0100;
-    pub const CMD_IDLE: u8 = 0b0000_0000;
-    pub const CMD_SINGLE_POSITION: u8 = 0b0000_0000;
-    pub const CMD_RUN_PROGRAM: u8 = 0b0000_0000;
-    pub const CMD_SPEED_CONTROL: u8 = 0b0000_0000;
-    pub const CMD_REFERENCE: u8 = 0b0000_0000;
-    pub const CMD_JOG_MODE: u8 = 0b0000_0000;
-    pub const CMD_MAILBOX: u8 = 0b0000_0000;
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub const fn with_flag(mut self, flag: C1Flag) -> Self {
+        self.0 |= flag as u8;
+        self
+    }
+
+    pub const fn with_command(mut self, cmd: C1Command) -> Self {
+        self.0 = (self.0 & 0b0000_0111) | (cmd as u8);
+        self
+    }
+
+    pub const fn bits(self) -> u8 {
+        self.0
+    }
 }
 
 /// Control Byte C2
-/// Bits 0 - 7
-pub struct ControlByteC2;
+#[derive(Clone, Copy, Default)]
+pub struct ControlByteC2(u8);
+
+#[repr(u8)]
+#[derive(Clone, Copy)]
+pub enum C2Flag {
+    FreqRangeSelL         = 0b0000_0001,
+    FreqRangeSelH         = 0b0000_0010,
+    AccRangeSelL          = 0b0000_0100,
+    AccRangeSelH          = 0b0000_1000,
+    PreCalc               = 0b0100_0000,
+    ErrorQuit             = 0b1000_0000,
+}
+
 impl ControlByteC2 {
-    pub const FREQ_RANGE_SEL_L: u8 = 0b0000_0001;
-    pub const FREQ_RANGE_SEL_H: u8 = 0b0000_0010;
-    pub const ACCELERATION_RANGE_SEL_L: u8 = 0b0000_0100;
-    pub const ACCELERATION_RANGE_SEL_H: u8 = 0b0000_1000;
-    // RESERVED
-    // RESERVED
-    pub const PRE_CALC: u8 = 0b0100_0000;
-    pub const ERROR_QUIT: u8 = 0b1000_0000;
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub const fn with_flag(mut self, flag: C2Flag) -> Self {
+        self.0 |= flag as u8;
+        self
+    }
+
+    pub const fn bits(self) -> u8 {
+        self.0
+    }
 }
 
 /// Control Byte C3
-/// Bits 0 - 7
-pub struct ControlByteC3;
+#[derive(Clone, Copy, Default)]
+pub struct ControlByteC3(u8);
+
+#[repr(u8)]
+#[derive(Clone, Copy)]
+pub enum C3Flag {
+    SetActualPos = 0b0000_0001,
+    DirectionPos = 0b0000_0010,
+    DirectionNeg = 0b0000_0100,
+    ResetQuit    = 0b1000_0000,
+}
+
 impl ControlByteC3 {
-    pub const SET_ACTUAL_POS: u8 = 0b0000_0001;
-    // RESERVED
-    pub const DIRECTION_POS: u8 = 0b0000_0010;
-    pub const DIRCTION_NEG: u8 = 0b0000_0100;
-    // RESERVED
-    // RESERVED
-    // RESERVED
-    pub const RESET_QUIT: u8 = 0b1000_0000;
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
+    pub const fn with_flag(mut self, flag: C3Flag) -> Self {
+        self.0 |= flag as u8;
+        self
+    }
+
+    pub const fn bits(self) -> u8 {
+        self.0
+    }
 }
 
 /// Status Byte S1
-/// Bits 0 - 7
-pub struct StatusByteS1;
+#[derive(Clone, Copy, Default)]
+pub struct StatusByteS1(u8);
+
+#[repr(u8)]
+#[derive(Clone, Copy)]
+pub enum S1Flag {
+    Ready      = 0b0000_0001,
+    Stop2NAck  = 0b0000_0010,
+    StartAck   = 0b0000_0100,
+}
+
+#[repr(u8)]
+#[derive(Clone, Copy)]
+pub enum S1CommandAck {
+    Idle           = 0b0000_0000,
+    SinglePosition = 0b0000_1000,
+    RunProgram     = 0b0001_0000,
+    SpeedControl   = 0b0001_1000,
+    Reference      = 0b0010_0000,
+    JogMode        = 0b0010_1000,
+    Mailbox        = 0b0011_0000,
+}
+
 impl StatusByteS1 {
-    pub const READY: u8 = 0b0000_0001;
-    pub const STOP2_N_ACK: u8 = 0b0000_0010;
-    pub const START_ACK: u8 = 0b0000_0100;
-    pub const CMD_IDLE_ACK: u8 = 0b0000_0000;
-    pub const CMD_SINGLE_POSITION_ACK: u8 = 0b0000_0000;
-    pub const CMD_RUN_PROGRAM_ACK: u8 = 0b0000_0000;
-    pub const CMD_SPEED_CONTROL_ACK: u8 = 0b0000_0000;
-    pub const CMD_REFERENCE_ACK: u8 = 0b0000_0000;
-    pub const CMD_JOG_MODE_ACK: u8 = 0b0000_0000;
-    pub const CMD_MAILBOX_ACK: u8 = 0b0000_0000;
+    pub const fn from_bits(bits: u8) -> Self {
+        Self(bits)
+    }
+
+    pub const fn has_flag(self, flag: S1Flag) -> bool {
+        (self.0 & flag as u8) != 0
+    }
+
+    pub const fn bits(self) -> u8 {
+        self.0
+    }
 }
 
 /// Status Byte S2
-/// Bits 0 - 7
-pub struct StatusByteS2;
+#[derive(Clone, Copy, Default)]
+pub struct StatusByteS2(u8);
+
+#[repr(u8)]
+#[derive(Clone, Copy)]
+pub enum S2Flag {
+    OnTarget     = 0b0000_0001,
+    Busy         = 0b0000_0010,
+    StandStill   = 0b0000_0100,
+    OnSpeed      = 0b0000_1000,
+    Direction    = 0b0001_0000,
+    ReferenceOk  = 0b0010_0000,
+    PreCalcAck   = 0b0100_0000,
+    Error        = 0b1000_0000,
+}
+
 impl StatusByteS2 {
-    pub const ON_TARGET: u8 = 0b0000_0001;
-    pub const BUSY: u8 = 0b0000_0010;
-    pub const STAND_STILL: u8 = 0b0000_0100;
-    pub const ON_SPEED: u8 = 0b0000_1000;
-    pub const DIRECTION: u8 = 0b0001_0000;
-    pub const REFERENCE_OK: u8 = 0b0010_0000;
-    pub const PRE_CALC_ACK: u8 = 0b0100_0000;
-    pub const ERROR: u8 = 0b1000_0000;
+    pub const fn from_bits(bits: u8) -> Self {
+        Self(bits)
+    }
+
+    pub const fn has_flag(self, flag: S2Flag) -> bool {
+        (self.0 & flag as u8) != 0
+    }
 }
 
 /// Status Byte S3
-/// Bits 0 - 7
-pub struct StatusByteS3;
-impl StatusByteS3 {
-    pub const INPUT1: u8 = 0b0000_0001;
-    pub const INPUT2: u8 = 0b0000_0010;
-    pub const INPUT3: u8 = 0b0000_0100;
-    pub const INPUT4: u8 = 0b0000_1000;
-    pub const INPUT5: u8 = 0b0001_0000;
-    pub const INPUT6: u8 = 0b0010_0000;
-    pub const WARNING: u8 = 0b0100_0000;
-    pub const RESET: u8 = 0b1000_0000;
+#[derive(Clone, Copy, Default)]
+pub struct StatusByteS3(u8);
+
+#[repr(u8)]
+#[derive(Clone, Copy)]
+pub enum S3Flag {
+    Input1  = 0b0000_0001,
+    Input2  = 0b0000_0010,
+    Input3  = 0b0000_0100,
+    Input4  = 0b0000_1000,
+    Input5  = 0b0001_0000,
+    Input6  = 0b0010_0000,
+    Warning = 0b0100_0000,
+    Reset   = 0b1000_0000,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum SpeedControlState {
-    Init,
-    WaitReady,
-    SelectMode,
-    StartPulse,
-    Running,
-    ErrorAck,
+impl StatusByteS3 {
+    pub const fn from_bits(bits: u8) -> Self {
+        Self(bits)
+    }
+
+    pub const fn has_flag(self, flag: S3Flag) -> bool {
+        (self.0 & flag as u8) != 0
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
