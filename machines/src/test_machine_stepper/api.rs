@@ -14,7 +14,6 @@ use std::sync::Arc;
 pub struct StateEvent {
     pub target_speed: i16,
     pub enabled: bool,
-    pub clear: bool,
 }
 
 impl StateEvent {
@@ -32,8 +31,6 @@ pub enum TestMachineStepperEvents {
 pub enum Mutation {
     SetTargetSpeed { target: i16 },
     SetEnabled { enabled: bool },
-    ClearErrors { clear: bool },
-    StopClearErrors { clear: bool },
 }
 
 #[derive(Debug, Clone)]
@@ -73,8 +70,6 @@ impl MachineApi for TestMachineStepper {
         match mutation {
             Mutation::SetTargetSpeed { target } => self.set_target_speed(target),
             Mutation::SetEnabled { enabled } => self.set_enabled(enabled),
-            Mutation::ClearErrors { clear } => self.clear_errors(clear),
-            Mutation::StopClearErrors { clear } => self.stop_clear_errors(clear),
         }
 
         Ok(())

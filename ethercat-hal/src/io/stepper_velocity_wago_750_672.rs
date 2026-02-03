@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use smol::{block_on, lock::RwLock};
 
-use crate::devices::wago_modules::wago_750_672::Wago750_672;
+use crate::devices::wago_modules::wago_750_672::{InitState, Wago750_672};
 
 /*
  * Wago Stepper Velocity Wrapper around Stepper Controller
@@ -31,24 +31,13 @@ impl StepperVelocityWago750672 {
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
 
-        let mut dev = block_on(self.device.write());
-
         if enabled {
-            dev.rxpdo.c1 = 0b00000011;
-            tracing::info!("Enabling!");
-            if dev.txpdo.s1 & 0b00000011 != 0 {
-                tracing::info!("Enabled!");
-                tracing::info!("Setting Mode");
-                dev.rxpdo.c1 = 0b00011011;
-            }
-            if dev.txpdo.s1 & 0b00011011 != 0 {
-                tracing::info!("Mode Set");
-                tracing::info!("Starting up...");
-                dev.rxpdo.c1 = 0b00011111;
-            }
+            self.change_init_state(InitState::Enable);
         } else {
-            tracing::info!("Disabled."); dev.rxpdo.c1 = 0b00000000;
+            self.change_init_state(InitState::Off);
+            self.write_control_byte(ControlByte::C1, 0b00000000);
         }
+
     }
 
     pub fn set_velocity(&mut self, velocity: i16) {
@@ -58,38 +47,17 @@ impl StepperVelocityWago750672 {
 
         dev.rxpdo.velocity = velocity;
         dev.rxpdo.acceleration = 10000; // hardcoded for now
+
+        if dev.initialized {
+            self.change_init_state(InitState::StartPulse);
+        }
     }
 
-    pub fn clear_errors(&self, clear: bool) {
+    fn change_init_state(&self, state: InitState) {
         let mut dev = block_on(self.device.write());
-        let _ = clear;
 
-        dev.rxpdo.c2 = 0b10000000;
-        tracing::info!("S1{:08b}, S2{:08b}, S3{:08b}", dev.txpdo.s1, dev.txpdo.s2, dev.txpdo.s3);
+        dev.state = state;
     }
-
-    pub fn clear_reset(&self, clear: bool) {
-        let mut dev = block_on(self.device.write());
-        let _ = clear;
-
-        dev.rxpdo.c3 = 0b10000000;
-    }
-
-    pub fn stop_clear_errors(&self, clear: bool) {
-        let mut dev = block_on(self.device.write());
-        let _ = clear;
-
-        dev.rxpdo.c2 = 0b00000000;
-        tracing::info!("C1{:08b}, C2{:08b}, C3{:08b}", dev.rxpdo.c1, dev.rxpdo.c2, dev.rxpdo.c3);
-    }
-
-    pub fn stop_clear_reset(&self, clear: bool) {
-        let mut dev = block_on(self.device.write());
-        let _ = clear;
-
-        dev.rxpdo.c3 = 0b00000000;
-    }
-
 
     fn write_control_byte(&self, control_byte: ControlByte, value: u8) {
         let mut dev = block_on(self.device.write());
@@ -107,10 +75,10 @@ impl StepperVelocityWago750672 {
         let dev = block_on(self.device.write());
 
         match status_byte {
-            StatusByte::S0 => return dev.txpdo.s0,
-            StatusByte::S1 => return dev.txpdo.s1,
-            StatusByte::S2 => return dev.txpdo.s2,
-            StatusByte::S3 => return dev.txpdo.s3,
+            StatusByte::S0 => dev.txpdo.s0,
+            StatusByte::S1 => dev.txpdo.s1,
+            StatusByte::S2 => dev.txpdo.s2,
+            StatusByte::S3 => dev.txpdo.s3,
         }
     }
 }

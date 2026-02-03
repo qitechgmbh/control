@@ -22,9 +22,21 @@ pub struct Wago750_672 {
     pub rxpdo: Wago750_672RxPdo,
     pub txpdo: Wago750_672TxPdo,
     module: Option<Module>,
-
-    pub enabled: bool,
+    pub state: InitState,
+    pub initialized: bool,
 }
+
+#[derive(Debug, Clone)]
+pub enum InitState {
+    Off,
+    Enable,
+    SetMode,
+    StartPulse,
+    Running,
+    ErrorQuit,
+    ResetQuit,
+}
+
 
 /*
 * Wago has two different kind of applications when it comes to
@@ -175,10 +187,61 @@ impl EthercatDevice for Wago750_672 {
             s1: b[11],
         };
 
-        if self.txpdo.s1 & 0b00011111 != 0b00011111 {
-            // should be running now
-            // tracing::warn!("Should be running now!");
-            self.rxpdo.c1 = 0b00011011;
+        match self.state {
+            InitState::Off => {
+                // Do nothing
+                self.initialized = false;
+            }
+            InitState::Enable => {
+                self.rxpdo.c1 = 0b00000011;
+                tracing::info!("Set ENABLE AND STOP2_N");
+                // Switch state if ENABLE and STOP2_N is acknowledged
+                if self.txpdo.s1 == 0b00000011 {
+                    tracing::info!("Ack ENABLE AND STOP2_N");
+                    self.state = InitState::SetMode;
+                }
+            }
+            InitState::SetMode => {
+                self.rxpdo.c1 = 0b00011011;
+                tracing::info!("Set Speed Mode");
+                // Switch state if SPEED MODE is acknowledged
+                if self.txpdo.s1 == 0b00011011 {
+                    tracing::info!("Ack Speed Mode");
+                    self.initialized = true;
+                    self.state = InitState::StartPulse;
+                }
+            }
+            InitState::StartPulse => {
+                self.rxpdo.c1 = 0b00011111;
+                tracing::info!("Set Start Pulse");
+                // Switch state after StartPulse is acknowledged
+                if self.txpdo.s1 == 0b00011111 {
+                    tracing::info!("Ack Start Pulse");
+                    self.state = InitState::Running;
+                }
+            }
+            InitState::Running => {
+                self.rxpdo.c1 = 0b00011011;
+
+                // Check for Error
+                if self.txpdo.s2 & 0b10000000 != 0 {
+                    self.state = InitState::ErrorQuit;
+                } else {
+                    self.rxpdo.c2 = self.rxpdo.c2 | 0b10000000;
+                }
+                // Check for Reset
+                if self.txpdo.s2 & 0b10000000 != 0 {
+                    self.state = InitState::ResetQuit;
+                } else {
+                    self.rxpdo.c3 = self.rxpdo.c3 | 0b10000000;
+                }
+            }
+            InitState::ErrorQuit => {
+                self.rxpdo.c2 |= 0b10000000;
+            }
+            InitState::ResetQuit => {
+                self.rxpdo.c3 |= 0b10000000;
+            }
         }
 
         Ok(())
@@ -291,7 +354,8 @@ impl NewEthercatDevice for Wago750_672 {
             module: None,
             rxpdo: Wago750_672RxPdo::default(),
             txpdo: Wago750_672TxPdo::default(),
-            enabled: false,
+            state: InitState::Off,
+            initialized: false,
         }
     }
 }
