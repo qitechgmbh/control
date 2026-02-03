@@ -556,8 +556,8 @@ impl MachineNewTrait for Gluetex {
                     EL7031_0030AnalogInputPort::AI1,
                 )),
                 slave_puller_speed_controller: SlavePullerSpeedController::new(
-                    Angle::new::<degree>(20.0), // Min angle (low tension, high speed)
-                    Angle::new::<degree>(90.0), // Max angle (high tension, low speed)
+                    Angle::new::<degree>(55.0), // Target angle (setpoint)
+                    Angle::new::<degree>(35.0), // Sensitivity range around target
                     LinearStepConverter::from_diameter(
                         200,                            // 200 steps per revolution
                         Length::new::<centimeter>(8.0), // 8cm diameter

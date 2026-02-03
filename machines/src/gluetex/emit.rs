@@ -490,13 +490,13 @@ impl Gluetex {
             slave_puller_state: api::SlavePullerState {
                 enabled: self.slave_puller_user_enabled,
                 forward: self.slave_puller_speed_controller.get_forward(),
-                min_angle: self
+                target_angle: self
                     .slave_puller_speed_controller
-                    .get_min_angle()
+                    .get_target_angle()
                     .get::<degree>(),
-                max_angle: self
+                sensitivity: self
                     .slave_puller_speed_controller
-                    .get_max_angle()
+                    .get_sensitivity()
                     .get::<degree>(),
                 min_speed_factor: self.slave_puller_speed_controller.get_min_speed_factor(),
                 max_speed_factor: self.slave_puller_speed_controller.get_max_speed_factor(),
