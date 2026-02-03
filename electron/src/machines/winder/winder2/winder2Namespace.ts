@@ -215,14 +215,15 @@ export type Winder2NamespaceStore = {
 
 //Store Factory and Message Handler -> no param, so default values
 const { initialTimeSeries: spoolProgress, insert: addSpoolProgress } =
-  createTimeSeries();
+  createTimeSeries({ sampleIntervalLong: 500 });
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
-  createTimeSeries();
+  createTimeSeries({ sampleIntervalLong: 500 });
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
-  createTimeSeries();
-const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries();
+  createTimeSeries({ sampleIntervalLong: 500 });
+const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } =
+  createTimeSeries({ sampleIntervalLong: 500 });
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
-  createTimeSeries();
+  createTimeSeries({ sampleIntervalLong: 500 });
 
 /**
  * Factory function to create a new Winder2 namespace store

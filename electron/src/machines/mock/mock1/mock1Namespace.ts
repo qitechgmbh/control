@@ -78,7 +78,7 @@ export type Mock1NamespaceStore = {
   sineWave3: TimeSeries;
 };
 
-const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries();
+const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries({ retentionDurationShort: 300, sampleIntervalLong: 500 });
 
 /**
  * Factory function to create a new Mock1 namespace store

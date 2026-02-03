@@ -66,13 +66,14 @@ export type Laser1NamespaceStore = {
   roundness: TimeSeries;
 };
 
-const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries();
+const { initialTimeSeries: diameter, insert: addDiameter } =
+  createTimeSeries({ sampleIntervalLong: 500 });
 const { initialTimeSeries: x_diameter, insert: addXDiameter } =
-  createTimeSeries();
+  createTimeSeries({ sampleIntervalLong: 500 });
 const { initialTimeSeries: y_diameter, insert: addYDiameter } =
-  createTimeSeries();
+  createTimeSeries({ sampleIntervalLong: 500 });
 const { initialTimeSeries: roundness, insert: addRoundness } =
-  createTimeSeries();
+  createTimeSeries({ sampleIntervalLong: 500 });
 
 /**
  * Factory function to create a new Laser1 namespace store

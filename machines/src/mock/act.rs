@@ -29,7 +29,7 @@ impl MachineAct for MockMachine {
         };
         // Only emit live values if machine is in Running mode
         // The live values are updated approximately 30 times per second
-        if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
+        if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0) {
             self.emit_live_values();
             self.last_measurement_emit = now;
         }
