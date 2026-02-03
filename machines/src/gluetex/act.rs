@@ -40,6 +40,14 @@ impl MachineAct for Gluetex {
             self.reset_sleep_timer();
         }
 
+        // Emit state when sleep timer remaining changes (for countdown updates)
+        let current_remaining = self.get_sleep_timer_remaining_seconds();
+        if current_remaining != self.last_emitted_sleep_timer_remaining {
+            self.last_emitted_sleep_timer_remaining = current_remaining;
+            self.emit_state();
+            self.last_state_emit = now;
+        }
+
         // update all temperature controllers
         self.temperature_controller_1.update(now);
         self.temperature_controller_2.update(now);
