@@ -587,6 +587,8 @@ impl MachineNewTrait for Gluetex {
                 tension_arm_monitor_triggered: false,
                 sleep_timer_config: super::SleepTimerConfig::default(),
                 last_activity_time: Instant::now(),
+                last_emitted_sleep_timer_remaining: 0,
+                sleep_mode_triggered: false,
             };
 
             // initalize events
