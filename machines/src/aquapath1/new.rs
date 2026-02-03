@@ -1,7 +1,6 @@
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
-    validate_no_role_dublicates,
-    validate_same_machine_identification_unique,
+    validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
 
 use super::{
