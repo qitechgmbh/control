@@ -1,18 +1,18 @@
 import { toastError } from "@/components/Toast";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { testMachineSerialRoute } from "@/routes/routes";
+import { wago8chDioTestMachineRoute } from "@/routes/routes";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { useMachineMutate } from "@/client/useClient";
 import { produce } from "immer";
 import { useEffect, useMemo } from "react";
-import { testmachine } from "@/machines/properties";
+import { wago8chDioTestMachine } from "@/machines/properties";
 import { z } from "zod";
 import {
   StateEvent,
   useWago8chDioTestMachineNamespace,
 } from "./wago8chDioTestMachineNameSpace";
 export function useWago8chDioTestMachine() {
-  const { serial: serialString } = testMachineSerialRoute.useParams();
+  const { serial: serialString } = wago8chDioTestMachineRoute.useParams();
 
   // Memoize machine identification
   const machineIdentification: MachineIdentificationUnique = useMemo(() => {
@@ -31,7 +31,7 @@ export function useWago8chDioTestMachine() {
     }
 
     return {
-      machine_identification: testmachine.machine_identification,
+      machine_identification: wago8chDioTestMachine.machine_identification,
       serial,
     };
   }, [serialString]);

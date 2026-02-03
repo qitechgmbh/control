@@ -75,8 +75,8 @@ import { MetricsControlPage } from "@/metrics/MetricsControlPage";
 
 import { WagoPower1Page } from "@/machines/wago_power/wago_power1/WagoPower1Page";
 import { WagoPower1ControlPage } from "@/machines/wago_power/wago_power1/WagoPower1ControlPage";
-import { Wago8chDioTestMachinePage } from "@/machines/wago8chdiotestmachine/TestMachinePage";
-import { Wago8chDioTestMachineControlRoute } from "@/machines/wago8chdiotestmachine/TestMachineControlPage";
+import { Wago8chDioTestMachinePage } from "@/machines/wago8chdiotestmachine/wago8chDioTestMachinePage";
+import { Wago8chDioTestMachineControlRoute } from "@/machines/wago8chdiotestmachine/wago8chDioTestMachineControlPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
