@@ -153,20 +153,20 @@ pub async fn start_interface_discovery(
         Ok(setup) => {
             let _ = sender.send(HotThreadMessage::AddEtherCatSetup(setup)).await;
             tracing::info!("Successfully initialized EtherCAT devices");
-            
-                // Notify client via socketio
-                let app_state_clone = app_state.clone();
-                let main_namespace = &mut app_state_clone
-                    .socketio_setup
-                    .namespaces
-                    .write()
-                    .await
-                    .main_namespace;
-                let event = EthercatDevicesEventBuilder()
-                    .build(app_state_clone.clone())
-                    .await;
-                main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
-            
+
+            // Notify client via socketio
+            let app_state_clone = app_state.clone();
+            let main_namespace = &mut app_state_clone
+                .socketio_setup
+                .namespaces
+                .write()
+                .await
+                .main_namespace;
+            let event = EthercatDevicesEventBuilder()
+                .build(app_state_clone.clone())
+                .await;
+            main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
+
             #[cfg(not(feature = "development-build"))]
             {
                 let res = start_dnsmasq();
@@ -175,8 +175,6 @@ pub async fn start_interface_discovery(
                     Err(e) => tracing::error!("Failed to start dnsmasq: {:?}", e),
                 };
             }
-
-            
         }
         Err(e) => {
             tracing::error!(

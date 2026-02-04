@@ -303,7 +303,7 @@ impl EL5152ChannelConfiguration {
         device
             .sdo_write(base_index, 0x11, self.frequency_window)
             .await?;
-            
+
         device
             .sdo_write(base_index, 0x13, self.frequency_scaling)
             .await?;

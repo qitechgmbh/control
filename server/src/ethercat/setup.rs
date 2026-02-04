@@ -192,7 +192,7 @@ pub async fn setup_loop(
         // Small Timeout to ensure interfaces get released
         smol::Timer::after(Duration::from_millis(1500)).await;
     }
-    
+
     // Setup ethercrab tx/rx task
     let pdu_storage = Box::leak(Box::new(PduStorage::<MAX_FRAMES, MAX_PDU_DATA>::new()));
     let (tx, rx, pdu) = pdu_storage.try_split().expect("can only split once");
