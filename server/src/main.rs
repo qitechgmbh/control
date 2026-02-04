@@ -37,6 +37,12 @@ use smol::{
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
+#[cfg(feature = "development-build")]
+const CYCLE_TARGET_TIME: Duration = Duration::from_micros(2000);
+
+#[cfg(not(feature = "development-build"))]
+const CYCLE_TARGET_TIME: Duration = Duration::from_micros(700);
+
 #[cfg(feature = "mock-machine")]
 use mock_init::init_mock;
 
@@ -128,10 +134,8 @@ pub async fn add_serial_device(
 pub async fn start_serial_discovery(app_state: Arc<SharedState>) {
     loop {
         let devices = SerialDetection::detect_devices();
-
         // This allows detection of disconnected devices
         handle_serial_device_hotplug(app_state.clone(), devices).await;
-
         smol::Timer::after(Duration::from_secs(1)).await;
     }
 }
@@ -143,14 +147,13 @@ pub async fn start_interface_discovery(
     let interface = find_ethercat_interface().await;
     tracing::info!("Inferface found {}, setting up EtherCAT loop", interface);
     set_ethercat_iface(interface.clone());
-    let res = setup_loop(&interface, app_state.clone()).await;
+    let res = setup_loop(&interface, CYCLE_TARGET_TIME, app_state.clone()).await;
 
     match res {
         Ok(setup) => {
             let _ = sender.send(HotThreadMessage::AddEtherCatSetup(setup)).await;
             tracing::info!("Successfully initialized EtherCAT devices");
-
-            {
+            
                 // Notify client via socketio
                 let app_state_clone = app_state.clone();
                 let main_namespace = &mut app_state_clone
@@ -163,13 +166,17 @@ pub async fn start_interface_discovery(
                     .build(app_state_clone.clone())
                     .await;
                 main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
+            
+            #[cfg(not(feature = "development-build"))]
+            {
+                let res = start_dnsmasq();
+                match res {
+                    Ok(o) => o,
+                    Err(e) => tracing::error!("Failed to start dnsmasq: {:?}", e),
+                };
             }
 
-            let res = start_dnsmasq();
-            match res {
-                Ok(o) => o,
-                Err(e) => tracing::error!("Failed to start dnsmasq: {:?}", e),
-            };
+            
         }
         Err(e) => {
             tracing::error!(
@@ -354,8 +361,6 @@ fn main() {
 
     #[cfg(feature = "development-build")]
     let running = setup_ctrlc_handler();
-
-    const CYCLE_TARGET_TIME: Duration = Duration::from_micros(700);
 
     // for the "hot thread"
     let (sender, receiver) = smol::channel::unbounded();
