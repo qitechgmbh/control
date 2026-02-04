@@ -20,11 +20,9 @@ QiTech Control combines the modularity and reliability of standard EtherCAT term
 
 ## Videos
 
-[![](https://img.youtube.com/vi/KI3YeBwfV-s/maxresdefault.jpg)](https://www.youtube.com/watch?v=KI3YeBwfV-s)
-*Software demo*
-
-[![](https://img.youtube.com/vi/55egCAkQgyM/maxresdefault.jpg)](https://youtu.be/55egCAkQgyM) 
-*Full explainer*
+| Software Demo | Full Explainer |
+|---------------|----------------|
+| [![](https://img.youtube.com/vi/KI3YeBwfV-s/maxresdefault.jpg)](https://www.youtube.com/watch?v=KI3YeBwfV-s) | [![](https://img.youtube.com/vi/55egCAkQgyM/maxresdefault.jpg)](https://youtu.be/55egCAkQgyM) |
 
 ## Repository Structure
 
