@@ -2,7 +2,7 @@
 
 # QiTech Control
 
-QiTech Control is an open-source framework designed to bring modern software paradigms to certified industrial hardware.
+QiTech Control is an open-source framework designed to bring modern software development practices to certified industrial hardware.
 
 It frees developers from proprietary, license-heavy PLC ecosystems and rigid "point-and-click" workflows that are no longer adequate for today's complex automation challenges.
 
