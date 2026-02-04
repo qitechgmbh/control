@@ -180,7 +180,6 @@ impl Configuration for EL5152Configuration {
     ) -> Result<(), anyhow::Error> {
         // Configure channel 1
         self.channel1.write_channel_config(device, 0x8000).await?;
-
         // Configure channel 2
         self.channel2.write_channel_config(device, 0x8010).await?;
         // Write PDO assignments
