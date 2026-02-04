@@ -7,6 +7,7 @@ use anyhow::{Result, bail};
 use control_core::socketio::event::GenericEvent;
 use ethercat_hal::devices::EthercatDevice;
 use ethercrab::SubDeviceRef;
+use ethercrab::subdevice_group::HasDc;
 use ethercrab::{MainDevice, SubDeviceGroup, subdevice_group::Op};
 use machines::machine_identification::{DeviceIdentification, MachineIdentificationUnique};
 use machines::serial::registry::SERIAL_DEVICE_REGISTRY;
@@ -102,22 +103,25 @@ pub struct EthercatSetup {
     /// All Ethercat devices
     /// Generic interface for all devices
     /// Needed to interface with the devices on an Ethercat level
-    pub group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
+    pub group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op, HasDc>,
     /// The Ethercat main device
     /// Needed to interface with the devices
     pub maindevice: MainDevice<'static>,
+    pub all_operational: bool,
 }
 
 impl EthercatSetup {
     pub fn new(
         devices: Vec<(DeviceIdentification, Arc<RwLock<dyn EthercatDevice>>)>,
-        group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
+        group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op, HasDc>,
         maindevice: MainDevice<'static>,
+        all_operational: bool,
     ) -> Self {
         Self {
             devices,
             group,
             maindevice,
+            all_operational,
         }
     }
 }

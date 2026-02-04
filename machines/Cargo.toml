@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-ethercrab = "0.6"
+ethercrab = { git = "https://github.com/v-morlock/ethercrab", branch = "main" }
 ethercat_hal = { path = "../ethercat-hal" }
 control_core = { path = "../control-core" }
 control_core_derive = { path = "../control-core-derive" }
