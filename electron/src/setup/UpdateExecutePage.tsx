@@ -113,7 +113,7 @@ export function UpdateExecutePage() {
           <div className="ml-auto flex items-center gap-2 rounded-xl border border-blue-400 bg-blue-600 px-4 py-2.5 text-white shadow-xl backdrop-blur-sm transition-all duration-300">
             <Icon name="lu:Info" className="h-5 w-5 text-blue-100" />
             <span className="text-base leading-snug text-blue-50">
-              Approximately <strong>5 minutes</strong> remaining
+              Updates typically take approximately <strong>5 minutes</strong>
             </span>
           </div>
         )}
