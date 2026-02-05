@@ -152,6 +152,7 @@ pub struct HeatingState {
 pub struct ExtruderSettingsState {
     pub pressure_limit: f64,
     pub pressure_limit_enabled: bool,
+    pub nozzle_temperature_target_enabled: bool,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
