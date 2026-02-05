@@ -224,6 +224,20 @@ export function useExtruder3() {
     );
   };
 
+  const setTemperatureTargetEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.extruder_settings_state.nozzle_temperature_target_enabled =
+          enabled;
+      },
+      () =>
+        requestTemperatureTargetEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetTemperatureTargetEnabled: enabled },
+        }),
+    );
+  };
+
   const setPressurePidKp = (kp: number) => {
     updateStateOptimistically(
       (current) => {
@@ -373,6 +387,10 @@ export function useExtruder3() {
     z.object({ SetExtruderPressureLimitIsEnabled: z.boolean() }),
   );
 
+  const { request: requestTemperatureTargetEnabled } = useMachineMutation(
+    z.object({ SetTemperatureTargetEnabled: z.boolean() }),
+  );
+
   const { request: requestPressurePidSettings } = useMachineMutation(
     z.object({
       SetPressurePidSettings: z.object({
@@ -439,6 +457,7 @@ export function useExtruder3() {
     setMiddleHeatingTemperature,
     setExtruderPressureLimit,
     setExtruderPressureLimitEnabled,
+    setTemperatureTargetEnabled,
     setPressurePidKp,
     setPressurePidKi,
     setPressurePidKd,

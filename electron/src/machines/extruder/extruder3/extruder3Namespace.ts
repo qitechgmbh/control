@@ -109,6 +109,7 @@ export const heatingStatesSchema = z.object({
 export const extruderSettingsStateSchema = z.object({
   pressure_limit: z.number(),
   pressure_limit_enabled: z.boolean(),
+  nozzle_temperature_target_enabled: z.boolean(),
 });
 
 /**

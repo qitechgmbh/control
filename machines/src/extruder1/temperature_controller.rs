@@ -20,6 +20,7 @@ pub struct TemperatureController {
     temperature_pid_output: f64,
     heating_element_wattage: f64,
     max_clamp: f64,
+    target_temp_enabled: bool,
 }
 
 impl TemperatureController {
@@ -55,11 +56,20 @@ impl TemperatureController {
             temperature_pid_output: 0.0,
             heating_element_wattage,
             max_clamp,
+            target_temp_enabled: true,
         }
     }
 
     pub fn set_target_temperature(&mut self, temp: ThermodynamicTemperature) {
         self.heating.target_temperature = temp;
+    }
+
+    pub fn set_temperature_target_enabled(&mut self, enabled: bool) {
+        self.target_temp_enabled = enabled;
+    }
+
+    pub fn get_temperature_target_enabled(&self) -> bool {
+        self.target_temp_enabled
     }
 
     pub const fn disallow_heating(&mut self) {
