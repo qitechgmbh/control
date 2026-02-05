@@ -52,7 +52,12 @@ impl MachineNewTrait for TestMachineStepper {
             }
 
             coupler.init_slot_modules(_wago_750_354.1);
-            let dev = coupler.slot_devices.get(0).unwrap().clone().unwrap();
+            let dev = coupler.slot_devices.first().unwrap().clone().unwrap();
+
+            // change uncomment this to change to different stepper driver
+            //
+            // let wago_750_671: Arc<RwLock<Wago750_671>> =
+            //     downcast_device::<Wago750_671>(dev).await?;
             let wago_750_672: Arc<RwLock<Wago750_672>> =
                 downcast_device::<Wago750_672>(dev).await?;
             drop(coupler);
