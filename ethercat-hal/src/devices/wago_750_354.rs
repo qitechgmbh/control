@@ -250,6 +250,7 @@ impl Wago750_354 {
                 WAGO_750_402_PRODUCT_ID => {
                     module.has_tx = true;
                     module.has_rx = false;
+                }
                 WAGO_750_671_PRODUCT_ID => {
                     module.has_tx = true;
                     module.has_rx = true;
@@ -309,6 +310,7 @@ impl Wago750_354 {
                         }
                         WAGO_750_402_MODULE_IDENT => {
                             Arc::new(RwLock::new(wago_750_402::Wago750_402::new()))
+                        }
                         WAGO_750_671_MODULE_IDENT => {
                             Arc::new(RwLock::new(wago_750_671::Wago750_671::new()))
                         }
