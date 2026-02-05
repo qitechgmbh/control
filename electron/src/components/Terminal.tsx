@@ -16,7 +16,9 @@ const cache = new CellMeasurerCache({
 });
 
 type Props = {
-  lines: string[];
+  numLines: number;
+  getLine: (index: number) => string | undefined;
+  loadLines: (start: number, end: number) => void;
   autoScroll?: boolean;
   className?: string;
   title?: string;
@@ -76,7 +78,9 @@ const stripColorCodes = (text: string): string =>
   text.replace(/\x1b\[\d+m/g, "");
 
 export function Terminal({
-  lines,
+  numLines,
+  getLine,
+  loadLines,
   autoScroll = true,
   className,
   title = "Terminal",
@@ -89,12 +93,12 @@ export function Terminal({
   // Auto-scroll to bottom when new lines arrive
   useEffect(() => {
     if (autoScroll && listRef.current) {
-      listRef.current.scrollToRow(lines.length - 1);
+      listRef.current.scrollToRow(numLines - 1);
     }
-  }, [lines, autoScroll]);
+  }, [numLines, autoScroll]);
 
   const handleCopy = async () => {
-    const plainText = lines.map(stripColorCodes).join("\n");
+    const plainText = [].map(stripColorCodes).join("\n");
     try {
       await navigator.clipboard.writeText(plainText);
       setCopySuccess(true);
@@ -106,7 +110,7 @@ export function Terminal({
 
   const handleExport = () => {
     if (!exportPrefix) return;
-    const plainText = lines.map(stripColorCodes).join("\n");
+    const plainText = [].map(stripColorCodes).join("\n");
     const timestamp = new Date()
       .toISOString()
       .replace(/[:.]/g, "-")
@@ -126,7 +130,8 @@ export function Terminal({
   };
 
   const rowRenderer: ListRowRenderer = ({ index, key, parent, style }) => {
-    const colorParts = parseColorCodes(lines[index] || "");
+    const line = getLine(index) || "";
+    const colorParts = parseColorCodes(line);
 
     return (
       <CellMeasurer
@@ -149,7 +154,7 @@ export function Terminal({
                   {part.text || " "}
                 </span>
               ))
-            : lines[index] || " "}
+            : line || " "}
         </div>
       </CellMeasurer>
     );
@@ -208,9 +213,10 @@ export function Terminal({
               height={height}
               deferredMeasurementCache={cache}
               rowHeight={cache.rowHeight}
-              rowCount={lines.length}
+              rowCount={numLines}
               rowRenderer={rowRenderer}
               overscanRowCount={5}
+              onRowsRendered={p => loadLines(p.startIndex, p.stopIndex)}
             />
           )}
         </AutoSizer>
@@ -218,7 +224,7 @@ export function Terminal({
 
       {/* Footer */}
       <div className="flex items-center justify-between bg-neutral-800 px-4 py-1 text-xs text-neutral-400">
-        <div>{lines.length} lines</div>
+        <div>{numLines} lines</div>
         <div>{autoScroll ? "Auto-scroll enabled" : "Auto-scroll disabled"}</div>
       </div>
     </div>
