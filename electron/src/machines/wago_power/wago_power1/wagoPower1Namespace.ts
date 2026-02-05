@@ -75,7 +75,7 @@ function wagoPower1MessageHandler(
     };
 
     try {
-      if (eventName === "StateEvent") {
+      if (eventName === "State") {
         const stateEvent = stateEventSchema.parse(event);
 
         updateStore((state) => ({
@@ -86,7 +86,7 @@ function wagoPower1MessageHandler(
             ? stateEvent
             : state.defaultState,
         }));
-      } else if (eventName === "LiveValuesEvent") {
+      } else if (eventName === "LiveValues") {
         console.log(event);
         const liveValues = liveValuesEventSchema.parse(event);
         const { voltage, current } = liveValues.data;
