@@ -183,6 +183,7 @@ pub async fn start_interface_discovery(
                 e
             );
             // if this doesnt work, unlucky
+            #[cfg(not(feature = "development-build"))]
             let _ = start_dnsmasq();
         }
     }
