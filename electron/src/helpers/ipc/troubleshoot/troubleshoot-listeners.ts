@@ -1,30 +1,49 @@
 import { ipcMain } from "electron";
-import { spawn, ChildProcess } from "child_process";
+import { ChildProcess, spawn } from "child_process";
 import {
+    TROUBLESHOOT_GET_LOG_LINES,
+    TROUBLESHOOT_ON_LOG_LINE,
   TROUBLESHOOT_REBOOT_HMI,
   TROUBLESHOOT_RESTART_BACKEND,
-  TROUBLESHOOT_START_LOG_STREAM,
-  TROUBLESHOOT_STOP_LOG_STREAM,
-  TROUBLESHOOT_LOG_DATA,
 } from "./troubleshoot-channels";
 
-let logStreamProcess: ChildProcess | null = null;
-
 export function addTroubleshootEventListeners() {
+  let numLogLines = 0;
+
+  try {
+    const logListeningProcess: ChildProcess = spawn("journalctl", ["--boot", "--lines=all", "--follow", "--unit", "bluetooth.service"]);
+
+    logListeningProcess.stdout?.on("data", (data: Uint8Array) => { // Single Line
+      for (let i = 0; i < data.length; i++) {
+        if (data[i] === 10) {
+          numLogLines++;
+        }
+      }
+
+      ipcMain.emit(TROUBLESHOOT_ON_LOG_LINE, numLogLines);
+    });
+
+    logListeningProcess.on("error", error => {
+      console.error("Failed to subscribe to systemd log:", error);
+    });
+
+    logListeningProcess.on("exit", code => {
+      console.error("Process exited unexpectedly:", code);
+    });
+  } catch (error) {
+      console.error("Failed to subscribe to systemd log:", error);
+  }
+
   ipcMain.handle(TROUBLESHOOT_REBOOT_HMI, async () => {
     try {
       spawn("sudo", ["reboot"], { shell: true });
-      return { success: true };
-    } catch (error) {
-      console.error("Failed to reboot HMI:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
+    } catch (e) {
+      console.error("Failed to reboot HMI:", e);
+      throw e;
     }
   });
 
-  ipcMain.handle(TROUBLESHOOT_RESTART_BACKEND, async () => {
+  ipcMain.handle(TROUBLESHOOT_RESTART_BACKEND, () => {
     try {
       const process = spawn(
         "sudo",
@@ -32,94 +51,59 @@ export function addTroubleshootEventListeners() {
         { shell: true },
       );
 
-      return new Promise<{ success: boolean; error?: string }>((resolve) => {
+      return new Promise<void>((resolve, reject) => {
         process.on("close", (code) => {
           if (code === 0) {
-            resolve({ success: true });
+            resolve();
           } else {
-            resolve({
-              success: false,
-              error: `Process exited with code ${code}`,
-            });
+            reject(new Error(`Process exited with code ${code}`));
           }
         });
 
         process.on("error", (error) => {
-          resolve({
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-          });
+          reject(error);
         });
       });
-    } catch (error) {
-      console.error("Failed to restart backend:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
+    } catch (e) {
+      console.error("Failed to restart backend:", e);
+      throw e;
     }
   });
 
-  ipcMain.handle(TROUBLESHOOT_START_LOG_STREAM, async (event) => {
-    try {
-      // Stop any existing log stream
-      if (logStreamProcess) {
-        logStreamProcess.kill();
-        logStreamProcess = null;
-      }
+  ipcMain.handle(TROUBLESHOOT_GET_LOG_LINES, (_event, start: number, count: number) => {
+      const first = Math.max(0, numLogLines - start);
+      const lines: string[] = [];
 
-      logStreamProcess = spawn(
-        "journalctl",
-        ["-u", "qitech-control-server", "-n", "10000", "-f"],
-        {
-          shell: true,
-        },
-      );
+      return new Promise((resolve, reject) => {
+        try {
+          const process = spawn("journalctl", ["--boot", `--lines=${first}`, "--unit", "bluetooth.service"]);
 
-      logStreamProcess.stdout?.on("data", (data) => {
-        const logLine = data.toString();
-        event.sender.send(TROUBLESHOOT_LOG_DATA, logLine);
+          process.stdout?.on("data", (data: Uint8Array) => {
+            if (count <= 0) {
+              resolve(lines);
+              process.kill();
+            } else {
+              const str = data.toString().trim();
+
+              const newLines = str.split("\n").splice(0, count);
+              count -= newLines.length;
+              lines.push(...newLines);
+            }
+          });
+
+          process.on("error", error => {
+            console.error("Failed to read systemd log:", error);
+            reject(error);
+          });
+
+          process.on("exit", () => {
+            resolve(lines);
+          });
+
+        } catch (error) {
+            console.error("Failed to read systemd log:", error);
+            reject(error);
+        }
       });
-
-      logStreamProcess.stderr?.on("data", (data) => {
-        const logLine = data.toString();
-        event.sender.send(TROUBLESHOOT_LOG_DATA, logLine);
-      });
-
-      logStreamProcess.on("close", (code) => {
-        console.log(`Log stream process exited with code ${code}`);
-        logStreamProcess = null;
-      });
-
-      logStreamProcess.on("error", (error) => {
-        console.error("Log stream process error:", error);
-        logStreamProcess = null;
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error("Failed to start log stream:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
-  });
-
-  ipcMain.handle(TROUBLESHOOT_STOP_LOG_STREAM, async () => {
-    try {
-      if (logStreamProcess) {
-        logStreamProcess.kill();
-        logStreamProcess = null;
-        console.log("Log stream stopped");
-      }
-      return { success: true };
-    } catch (error) {
-      console.error("Failed to stop log stream:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
   });
 }
