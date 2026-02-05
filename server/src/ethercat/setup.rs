@@ -24,7 +24,9 @@ use smol::stream::StreamExt;
 use ta::Next;
 use ta::indicators::ExponentialMovingAverage;
 
+#[cfg(not(feature = "development-build"))]
 use crate::utils::stop_dnsmasq;
+
 use ethercrab::std::ethercat_now;
 use ethercrab::{
     DcSync, MainDevice, MainDeviceConfig, PduStorage, RegisterAddress, RetryBehaviour,
