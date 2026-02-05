@@ -15,9 +15,10 @@ use machines::{
     serial::{devices::laser::Laser, init::SerialDetection},
     winder2::api::GenericEvent,
 };
-use socketio::{main_namespace::{
-    MainNamespaceEvents, ethercat_devices_event::EthercatDevicesEventBuilder,
-}, queue::start_socketio_queue};
+use socketio::{
+    main_namespace::{MainNamespaceEvents, ethercat_devices_event::EthercatDevicesEventBuilder},
+    queue::start_socketio_queue,
+};
 
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -322,7 +323,6 @@ async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state:
 
     tracing::warn!("Async handler task finished");
 }
-
 
 #[cfg(feature = "development-build")]
 fn setup_ctrlc_handler() -> Arc<AtomicBool> {

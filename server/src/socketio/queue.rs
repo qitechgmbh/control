@@ -1,5 +1,5 @@
 use crate::app_state::SharedState;
-use std::{sync::Arc};
+use std::sync::Arc;
 use tracing::{error, info, instrument, trace};
 
 /// Send a single event with retry logic
@@ -59,15 +59,15 @@ async fn send_event_with_retry(
 }
 
 pub async fn start_socketio_queue(app_state: Arc<SharedState>) {
-    let app_state = app_state.as_ref();    
+    let app_state = app_state.as_ref();
     loop {
         let res = app_state.socketio_setup.socket_queue_rx.recv().await;
         match res {
-            Ok((socket,event)) => send_event_with_retry(&socket, &event).await,
-            Err(e) => {                
+            Ok((socket, event)) => send_event_with_retry(&socket, &event).await,
+            Err(e) => {
                 error!("SocketIO global queue listener stopped: {:?}", e);
                 break;
-            },
+            }
         }
     }
 }
