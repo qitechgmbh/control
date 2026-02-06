@@ -570,14 +570,12 @@ const previewEntries: PresetPreviewEntries<GluetexPresetData> = [
   {
     name: "Optris 1 Min Voltage",
     unit: "V",
-    renderValue: (data) =>
-      data.optris_1_monitor_state?.min_voltage?.toFixed(2),
+    renderValue: (data) => data.optris_1_monitor_state?.min_voltage?.toFixed(2),
   },
   {
     name: "Optris 1 Max Voltage",
     unit: "V",
-    renderValue: (data) =>
-      data.optris_1_monitor_state?.max_voltage?.toFixed(2),
+    renderValue: (data) => data.optris_1_monitor_state?.max_voltage?.toFixed(2),
   },
   previewSeparator,
 
@@ -594,14 +592,12 @@ const previewEntries: PresetPreviewEntries<GluetexPresetData> = [
   {
     name: "Optris 2 Min Voltage",
     unit: "V",
-    renderValue: (data) =>
-      data.optris_2_monitor_state?.min_voltage?.toFixed(2),
+    renderValue: (data) => data.optris_2_monitor_state?.min_voltage?.toFixed(2),
   },
   {
     name: "Optris 2 Max Voltage",
     unit: "V",
-    renderValue: (data) =>
-      data.optris_2_monitor_state?.max_voltage?.toFixed(2),
+    renderValue: (data) => data.optris_2_monitor_state?.max_voltage?.toFixed(2),
   },
   previewSeparator,
 
@@ -618,8 +614,7 @@ const previewEntries: PresetPreviewEntries<GluetexPresetData> = [
   {
     name: "Sleep Timer Timeout",
     unit: "s",
-    renderValue: (data) =>
-      data.sleep_timer_state?.timeout_seconds?.toFixed(0),
+    renderValue: (data) => data.sleep_timer_state?.timeout_seconds?.toFixed(0),
   },
 ];
 
@@ -724,127 +719,440 @@ export function GluetexPresetsPage() {
     // Build a list of setter calls for values that differ from current state
     const actions: Array<() => void> = [];
 
-    const changed = <T,>(presetVal: T | undefined, currentVal: T | undefined): presetVal is T => {
+    const changed = <T,>(
+      presetVal: T | undefined,
+      currentVal: T | undefined,
+    ): presetVal is T => {
       if (presetVal === undefined) return false;
       return presetVal !== currentVal;
     };
 
     // Traverse
-    if (changed(d?.traverse_state?.limit_inner, currentData.traverse_state?.limit_inner))
+    if (
+      changed(
+        d?.traverse_state?.limit_inner,
+        currentData.traverse_state?.limit_inner,
+      )
+    )
       actions.push(() => setTraverseLimitInner(d.traverse_state!.limit_inner!));
-    if (changed(d?.traverse_state?.limit_outer, currentData.traverse_state?.limit_outer))
+    if (
+      changed(
+        d?.traverse_state?.limit_outer,
+        currentData.traverse_state?.limit_outer,
+      )
+    )
       actions.push(() => setTraverseLimitOuter(d.traverse_state!.limit_outer!));
-    if (changed(d?.traverse_state?.step_size, currentData.traverse_state?.step_size))
+    if (
+      changed(
+        d?.traverse_state?.step_size,
+        currentData.traverse_state?.step_size,
+      )
+    )
       actions.push(() => setTraverseStepSize(d.traverse_state!.step_size!));
-    if (changed(d?.traverse_state?.padding, currentData.traverse_state?.padding))
+    if (
+      changed(d?.traverse_state?.padding, currentData.traverse_state?.padding)
+    )
       actions.push(() => setTraversePadding(d.traverse_state!.padding!));
-    if (changed(d?.traverse_state?.laserpointer, currentData.traverse_state?.laserpointer))
-      actions.push(() => enableTraverseLaserpointer(d.traverse_state!.laserpointer!));
+    if (
+      changed(
+        d?.traverse_state?.laserpointer,
+        currentData.traverse_state?.laserpointer,
+      )
+    )
+      actions.push(() =>
+        enableTraverseLaserpointer(d.traverse_state!.laserpointer!),
+      );
 
     // Puller
-    if (changed(d?.puller_state?.regulation, currentData.puller_state?.regulation))
+    if (
+      changed(d?.puller_state?.regulation, currentData.puller_state?.regulation)
+    )
       actions.push(() => setPullerRegulationMode(d.puller_state!.regulation!));
     if (changed(d?.puller_state?.forward, currentData.puller_state?.forward))
       actions.push(() => setPullerForward(d.puller_state!.forward!));
-    if (changed(d?.puller_state?.target_speed, currentData.puller_state?.target_speed))
+    if (
+      changed(
+        d?.puller_state?.target_speed,
+        currentData.puller_state?.target_speed,
+      )
+    )
       actions.push(() => setPullerTargetSpeed(d.puller_state!.target_speed!));
-    if (changed(d?.puller_state?.gear_ratio, currentData.puller_state?.gear_ratio))
+    if (
+      changed(d?.puller_state?.gear_ratio, currentData.puller_state?.gear_ratio)
+    )
       actions.push(() => setPullerGearRatio(d.puller_state!.gear_ratio!));
-    if (changed(d?.puller_state?.target_diameter, currentData.puller_state?.target_diameter))
-      actions.push(() => setPullerTargetDiameter(d.puller_state!.target_diameter!));
+    if (
+      changed(
+        d?.puller_state?.target_diameter,
+        currentData.puller_state?.target_diameter,
+      )
+    )
+      actions.push(() =>
+        setPullerTargetDiameter(d.puller_state!.target_diameter!),
+      );
 
     // Spool
-    if (changed(d?.spool_speed_controller_state?.regulation_mode, currentData.spool_speed_controller_state?.regulation_mode))
-      actions.push(() => setSpoolRegulationMode(d.spool_speed_controller_state!.regulation_mode!));
-    if (changed(d?.spool_speed_controller_state?.forward, currentData.spool_speed_controller_state?.forward))
-      actions.push(() => setSpoolForward(d.spool_speed_controller_state!.forward!));
-    if (changed(d?.spool_speed_controller_state?.minmax_min_speed, currentData.spool_speed_controller_state?.minmax_min_speed))
-      actions.push(() => setSpoolMinMaxMinSpeed(d.spool_speed_controller_state!.minmax_min_speed!));
-    if (changed(d?.spool_speed_controller_state?.minmax_max_speed, currentData.spool_speed_controller_state?.minmax_max_speed))
-      actions.push(() => setSpoolMinMaxMaxSpeed(d.spool_speed_controller_state!.minmax_max_speed!));
-    if (changed(d?.spool_speed_controller_state?.adaptive_tension_target, currentData.spool_speed_controller_state?.adaptive_tension_target))
-      actions.push(() => setSpoolAdaptiveTensionTarget(d.spool_speed_controller_state!.adaptive_tension_target!));
-    if (changed(d?.spool_speed_controller_state?.adaptive_radius_learning_rate, currentData.spool_speed_controller_state?.adaptive_radius_learning_rate))
-      actions.push(() => setSpoolAdaptiveRadiusLearningRate(d.spool_speed_controller_state!.adaptive_radius_learning_rate!));
-    if (changed(d?.spool_speed_controller_state?.adaptive_max_speed_multiplier, currentData.spool_speed_controller_state?.adaptive_max_speed_multiplier))
-      actions.push(() => setSpoolAdaptiveMaxSpeedMultiplier(d.spool_speed_controller_state!.adaptive_max_speed_multiplier!));
-    if (changed(d?.spool_speed_controller_state?.adaptive_acceleration_factor, currentData.spool_speed_controller_state?.adaptive_acceleration_factor))
-      actions.push(() => setSpoolAdaptiveAccelerationFactor(d.spool_speed_controller_state!.adaptive_acceleration_factor!));
-    if (changed(d?.spool_speed_controller_state?.adaptive_deacceleration_urgency_multiplier, currentData.spool_speed_controller_state?.adaptive_deacceleration_urgency_multiplier))
-      actions.push(() => setSpoolAdaptiveDeaccelerationUrgencyMultiplier(d.spool_speed_controller_state!.adaptive_deacceleration_urgency_multiplier!));
+    if (
+      changed(
+        d?.spool_speed_controller_state?.regulation_mode,
+        currentData.spool_speed_controller_state?.regulation_mode,
+      )
+    )
+      actions.push(() =>
+        setSpoolRegulationMode(
+          d.spool_speed_controller_state!.regulation_mode!,
+        ),
+      );
+    if (
+      changed(
+        d?.spool_speed_controller_state?.forward,
+        currentData.spool_speed_controller_state?.forward,
+      )
+    )
+      actions.push(() =>
+        setSpoolForward(d.spool_speed_controller_state!.forward!),
+      );
+    if (
+      changed(
+        d?.spool_speed_controller_state?.minmax_min_speed,
+        currentData.spool_speed_controller_state?.minmax_min_speed,
+      )
+    )
+      actions.push(() =>
+        setSpoolMinMaxMinSpeed(
+          d.spool_speed_controller_state!.minmax_min_speed!,
+        ),
+      );
+    if (
+      changed(
+        d?.spool_speed_controller_state?.minmax_max_speed,
+        currentData.spool_speed_controller_state?.minmax_max_speed,
+      )
+    )
+      actions.push(() =>
+        setSpoolMinMaxMaxSpeed(
+          d.spool_speed_controller_state!.minmax_max_speed!,
+        ),
+      );
+    if (
+      changed(
+        d?.spool_speed_controller_state?.adaptive_tension_target,
+        currentData.spool_speed_controller_state?.adaptive_tension_target,
+      )
+    )
+      actions.push(() =>
+        setSpoolAdaptiveTensionTarget(
+          d.spool_speed_controller_state!.adaptive_tension_target!,
+        ),
+      );
+    if (
+      changed(
+        d?.spool_speed_controller_state?.adaptive_radius_learning_rate,
+        currentData.spool_speed_controller_state?.adaptive_radius_learning_rate,
+      )
+    )
+      actions.push(() =>
+        setSpoolAdaptiveRadiusLearningRate(
+          d.spool_speed_controller_state!.adaptive_radius_learning_rate!,
+        ),
+      );
+    if (
+      changed(
+        d?.spool_speed_controller_state?.adaptive_max_speed_multiplier,
+        currentData.spool_speed_controller_state?.adaptive_max_speed_multiplier,
+      )
+    )
+      actions.push(() =>
+        setSpoolAdaptiveMaxSpeedMultiplier(
+          d.spool_speed_controller_state!.adaptive_max_speed_multiplier!,
+        ),
+      );
+    if (
+      changed(
+        d?.spool_speed_controller_state?.adaptive_acceleration_factor,
+        currentData.spool_speed_controller_state?.adaptive_acceleration_factor,
+      )
+    )
+      actions.push(() =>
+        setSpoolAdaptiveAccelerationFactor(
+          d.spool_speed_controller_state!.adaptive_acceleration_factor!,
+        ),
+      );
+    if (
+      changed(
+        d?.spool_speed_controller_state
+          ?.adaptive_deacceleration_urgency_multiplier,
+        currentData.spool_speed_controller_state
+          ?.adaptive_deacceleration_urgency_multiplier,
+      )
+    )
+      actions.push(() =>
+        setSpoolAdaptiveDeaccelerationUrgencyMultiplier(
+          d.spool_speed_controller_state!
+            .adaptive_deacceleration_urgency_multiplier!,
+        ),
+      );
 
     // Spool Automatic Action
-    if (changed(d?.spool_automatic_action_state?.spool_required_meters, currentData.spool_automatic_action_state?.spool_required_meters))
-      actions.push(() => setSpoolAutomaticRequiredMeters(d.spool_automatic_action_state!.spool_required_meters!));
-    if (changed(d?.spool_automatic_action_state?.spool_automatic_action_mode, currentData.spool_automatic_action_state?.spool_automatic_action_mode))
-      actions.push(() => setSpoolAutomaticAction(d.spool_automatic_action_state!.spool_automatic_action_mode!));
+    if (
+      changed(
+        d?.spool_automatic_action_state?.spool_required_meters,
+        currentData.spool_automatic_action_state?.spool_required_meters,
+      )
+    )
+      actions.push(() =>
+        setSpoolAutomaticRequiredMeters(
+          d.spool_automatic_action_state!.spool_required_meters!,
+        ),
+      );
+    if (
+      changed(
+        d?.spool_automatic_action_state?.spool_automatic_action_mode,
+        currentData.spool_automatic_action_state?.spool_automatic_action_mode,
+      )
+    )
+      actions.push(() =>
+        setSpoolAutomaticAction(
+          d.spool_automatic_action_state!.spool_automatic_action_mode!,
+        ),
+      );
 
     // Heating
-    if (d?.heating_states?.enabled !== undefined && d.heating_states.enabled !== currentData.heating_states?.enabled)
-      actions.push(() => setHeatingMode(d.heating_states!.enabled ? "Heating" : "Standby"));
-    if (changed(d?.heating_states?.zone_1_target, currentData.heating_states?.zone_1_target))
-      actions.push(() => setHeatingZone1Temperature(d.heating_states!.zone_1_target!));
-    if (changed(d?.heating_states?.zone_2_target, currentData.heating_states?.zone_2_target))
-      actions.push(() => setHeatingZone2Temperature(d.heating_states!.zone_2_target!));
-    if (changed(d?.heating_states?.zone_3_target, currentData.heating_states?.zone_3_target))
-      actions.push(() => setHeatingZone3Temperature(d.heating_states!.zone_3_target!));
-    if (changed(d?.heating_states?.zone_4_target, currentData.heating_states?.zone_4_target))
-      actions.push(() => setHeatingZone4Temperature(d.heating_states!.zone_4_target!));
-    if (changed(d?.heating_states?.zone_5_target, currentData.heating_states?.zone_5_target))
-      actions.push(() => setHeatingZone5Temperature(d.heating_states!.zone_5_target!));
-    if (changed(d?.heating_states?.zone_6_target, currentData.heating_states?.zone_6_target))
-      actions.push(() => setHeatingZone6Temperature(d.heating_states!.zone_6_target!));
+    if (
+      d?.heating_states?.enabled !== undefined &&
+      d.heating_states.enabled !== currentData.heating_states?.enabled
+    )
+      actions.push(() =>
+        setHeatingMode(d.heating_states!.enabled ? "Heating" : "Standby"),
+      );
+    if (
+      changed(
+        d?.heating_states?.zone_1_target,
+        currentData.heating_states?.zone_1_target,
+      )
+    )
+      actions.push(() =>
+        setHeatingZone1Temperature(d.heating_states!.zone_1_target!),
+      );
+    if (
+      changed(
+        d?.heating_states?.zone_2_target,
+        currentData.heating_states?.zone_2_target,
+      )
+    )
+      actions.push(() =>
+        setHeatingZone2Temperature(d.heating_states!.zone_2_target!),
+      );
+    if (
+      changed(
+        d?.heating_states?.zone_3_target,
+        currentData.heating_states?.zone_3_target,
+      )
+    )
+      actions.push(() =>
+        setHeatingZone3Temperature(d.heating_states!.zone_3_target!),
+      );
+    if (
+      changed(
+        d?.heating_states?.zone_4_target,
+        currentData.heating_states?.zone_4_target,
+      )
+    )
+      actions.push(() =>
+        setHeatingZone4Temperature(d.heating_states!.zone_4_target!),
+      );
+    if (
+      changed(
+        d?.heating_states?.zone_5_target,
+        currentData.heating_states?.zone_5_target,
+      )
+    )
+      actions.push(() =>
+        setHeatingZone5Temperature(d.heating_states!.zone_5_target!),
+      );
+    if (
+      changed(
+        d?.heating_states?.zone_6_target,
+        currentData.heating_states?.zone_6_target,
+      )
+    )
+      actions.push(() =>
+        setHeatingZone6Temperature(d.heating_states!.zone_6_target!),
+      );
 
     // Addon Motor 3
-    if (d?.addon_motor_3_state?.enabled !== undefined && d.addon_motor_3_state.enabled !== currentData.addon_motor_3_state?.enabled)
-      actions.push(() => setStepper3Mode(d.addon_motor_3_state!.enabled ? "Run" : "Standby"));
-    if (changed(d?.addon_motor_3_state?.forward, currentData.addon_motor_3_state?.forward))
+    if (
+      d?.addon_motor_3_state?.enabled !== undefined &&
+      d.addon_motor_3_state.enabled !== currentData.addon_motor_3_state?.enabled
+    )
+      actions.push(() =>
+        setStepper3Mode(d.addon_motor_3_state!.enabled ? "Run" : "Standby"),
+      );
+    if (
+      changed(
+        d?.addon_motor_3_state?.forward,
+        currentData.addon_motor_3_state?.forward,
+      )
+    )
       actions.push(() => setStepper3Forward(d.addon_motor_3_state!.forward!));
-    if (changed(d?.addon_motor_3_state?.master_ratio, currentData.addon_motor_3_state?.master_ratio))
-      actions.push(() => setStepper3Master(d.addon_motor_3_state!.master_ratio!));
-    if (changed(d?.addon_motor_3_state?.slave_ratio, currentData.addon_motor_3_state?.slave_ratio))
+    if (
+      changed(
+        d?.addon_motor_3_state?.master_ratio,
+        currentData.addon_motor_3_state?.master_ratio,
+      )
+    )
+      actions.push(() =>
+        setStepper3Master(d.addon_motor_3_state!.master_ratio!),
+      );
+    if (
+      changed(
+        d?.addon_motor_3_state?.slave_ratio,
+        currentData.addon_motor_3_state?.slave_ratio,
+      )
+    )
       actions.push(() => setStepper3Slave(d.addon_motor_3_state!.slave_ratio!));
-    if (changed(d?.addon_motor_3_state?.konturlaenge_mm, currentData.addon_motor_3_state?.konturlaenge_mm))
-      actions.push(() => setStepper3Konturlaenge(d.addon_motor_3_state!.konturlaenge_mm!));
-    if (changed(d?.addon_motor_3_state?.pause_mm, currentData.addon_motor_3_state?.pause_mm))
+    if (
+      changed(
+        d?.addon_motor_3_state?.konturlaenge_mm,
+        currentData.addon_motor_3_state?.konturlaenge_mm,
+      )
+    )
+      actions.push(() =>
+        setStepper3Konturlaenge(d.addon_motor_3_state!.konturlaenge_mm!),
+      );
+    if (
+      changed(
+        d?.addon_motor_3_state?.pause_mm,
+        currentData.addon_motor_3_state?.pause_mm,
+      )
+    )
       actions.push(() => setStepper3Pause(d.addon_motor_3_state!.pause_mm!));
 
     // Addon Motor 4
-    if (d?.addon_motor_4_state?.enabled !== undefined && d.addon_motor_4_state.enabled !== currentData.addon_motor_4_state?.enabled)
-      actions.push(() => setStepper4Mode(d.addon_motor_4_state!.enabled ? "Run" : "Standby"));
-    if (changed(d?.addon_motor_4_state?.forward, currentData.addon_motor_4_state?.forward))
+    if (
+      d?.addon_motor_4_state?.enabled !== undefined &&
+      d.addon_motor_4_state.enabled !== currentData.addon_motor_4_state?.enabled
+    )
+      actions.push(() =>
+        setStepper4Mode(d.addon_motor_4_state!.enabled ? "Run" : "Standby"),
+      );
+    if (
+      changed(
+        d?.addon_motor_4_state?.forward,
+        currentData.addon_motor_4_state?.forward,
+      )
+    )
       actions.push(() => setStepper4Forward(d.addon_motor_4_state!.forward!));
-    if (changed(d?.addon_motor_4_state?.master_ratio, currentData.addon_motor_4_state?.master_ratio))
-      actions.push(() => setStepper4Master(d.addon_motor_4_state!.master_ratio!));
-    if (changed(d?.addon_motor_4_state?.slave_ratio, currentData.addon_motor_4_state?.slave_ratio))
+    if (
+      changed(
+        d?.addon_motor_4_state?.master_ratio,
+        currentData.addon_motor_4_state?.master_ratio,
+      )
+    )
+      actions.push(() =>
+        setStepper4Master(d.addon_motor_4_state!.master_ratio!),
+      );
+    if (
+      changed(
+        d?.addon_motor_4_state?.slave_ratio,
+        currentData.addon_motor_4_state?.slave_ratio,
+      )
+    )
       actions.push(() => setStepper4Slave(d.addon_motor_4_state!.slave_ratio!));
 
     // Addon Motor 5
-    if (d?.addon_motor_5_state?.enabled !== undefined && d.addon_motor_5_state.enabled !== currentData.addon_motor_5_state?.enabled)
-      actions.push(() => setStepper5Mode(d.addon_motor_5_state!.enabled ? "Run" : "Standby"));
-    if (changed(d?.addon_motor_5_state?.forward, currentData.addon_motor_5_state?.forward))
+    if (
+      d?.addon_motor_5_state?.enabled !== undefined &&
+      d.addon_motor_5_state.enabled !== currentData.addon_motor_5_state?.enabled
+    )
+      actions.push(() =>
+        setStepper5Mode(d.addon_motor_5_state!.enabled ? "Run" : "Standby"),
+      );
+    if (
+      changed(
+        d?.addon_motor_5_state?.forward,
+        currentData.addon_motor_5_state?.forward,
+      )
+    )
       actions.push(() => setStepper5Forward(d.addon_motor_5_state!.forward!));
-    if (changed(d?.addon_motor_5_state?.master_ratio, currentData.addon_motor_5_state?.master_ratio))
-      actions.push(() => setStepper5Master(d.addon_motor_5_state!.master_ratio!));
-    if (changed(d?.addon_motor_5_state?.slave_ratio, currentData.addon_motor_5_state?.slave_ratio))
+    if (
+      changed(
+        d?.addon_motor_5_state?.master_ratio,
+        currentData.addon_motor_5_state?.master_ratio,
+      )
+    )
+      actions.push(() =>
+        setStepper5Master(d.addon_motor_5_state!.master_ratio!),
+      );
+    if (
+      changed(
+        d?.addon_motor_5_state?.slave_ratio,
+        currentData.addon_motor_5_state?.slave_ratio,
+      )
+    )
       actions.push(() => setStepper5Slave(d.addon_motor_5_state!.slave_ratio!));
 
     // Slave Puller
-    if (changed(d?.slave_puller_state?.enabled, currentData.slave_puller_state?.enabled))
+    if (
+      changed(
+        d?.slave_puller_state?.enabled,
+        currentData.slave_puller_state?.enabled,
+      )
+    )
       actions.push(() => setSlavePullerEnabled(d.slave_puller_state!.enabled!));
-    if (changed(d?.slave_puller_state?.forward, currentData.slave_puller_state?.forward))
+    if (
+      changed(
+        d?.slave_puller_state?.forward,
+        currentData.slave_puller_state?.forward,
+      )
+    )
       actions.push(() => setSlavePullerForward(d.slave_puller_state!.forward!));
-    if (changed(d?.slave_puller_state?.target_angle, currentData.slave_puller_state?.target_angle))
-      actions.push(() => setSlavePullerTargetAngle(d.slave_puller_state!.target_angle!));
-    if (changed(d?.slave_puller_state?.sensitivity, currentData.slave_puller_state?.sensitivity))
-      actions.push(() => setSlavePullerSensitivity(d.slave_puller_state!.sensitivity!));
-    if (changed(d?.slave_puller_state?.min_speed_factor, currentData.slave_puller_state?.min_speed_factor))
-      actions.push(() => setSlavePullerMinSpeedFactor(d.slave_puller_state!.min_speed_factor!));
-    if (changed(d?.slave_puller_state?.max_speed_factor, currentData.slave_puller_state?.max_speed_factor))
-      actions.push(() => setSlavePullerMaxSpeedFactor(d.slave_puller_state!.max_speed_factor!));
+    if (
+      changed(
+        d?.slave_puller_state?.target_angle,
+        currentData.slave_puller_state?.target_angle,
+      )
+    )
+      actions.push(() =>
+        setSlavePullerTargetAngle(d.slave_puller_state!.target_angle!),
+      );
+    if (
+      changed(
+        d?.slave_puller_state?.sensitivity,
+        currentData.slave_puller_state?.sensitivity,
+      )
+    )
+      actions.push(() =>
+        setSlavePullerSensitivity(d.slave_puller_state!.sensitivity!),
+      );
+    if (
+      changed(
+        d?.slave_puller_state?.min_speed_factor,
+        currentData.slave_puller_state?.min_speed_factor,
+      )
+    )
+      actions.push(() =>
+        setSlavePullerMinSpeedFactor(d.slave_puller_state!.min_speed_factor!),
+      );
+    if (
+      changed(
+        d?.slave_puller_state?.max_speed_factor,
+        currentData.slave_puller_state?.max_speed_factor,
+      )
+    )
+      actions.push(() =>
+        setSlavePullerMaxSpeedFactor(d.slave_puller_state!.max_speed_factor!),
+      );
 
     // Heating PID (each zone sends all 3 PID values together)
-    for (const zone of ["zone_1", "zone_2", "zone_3", "zone_4", "zone_5", "zone_6"] as const) {
+    for (const zone of [
+      "zone_1",
+      "zone_2",
+      "zone_3",
+      "zone_4",
+      "zone_5",
+      "zone_6",
+    ] as const) {
       const presetZone = d?.heating_pid_settings?.[zone];
       const currentZone = currentData.heating_pid_settings?.[zone];
       if (
@@ -861,50 +1169,185 @@ export function GluetexPresetsPage() {
     }
 
     // Winder Tension Arm Monitor
-    if (changed(d?.winder_tension_arm_monitor_state?.enabled, currentData.winder_tension_arm_monitor_state?.enabled))
-      actions.push(() => setWinderTensionArmMonitorEnabled(d.winder_tension_arm_monitor_state!.enabled!));
-    if (changed(d?.winder_tension_arm_monitor_state?.min_angle, currentData.winder_tension_arm_monitor_state?.min_angle))
-      actions.push(() => setWinderTensionArmMonitorMinAngle(d.winder_tension_arm_monitor_state!.min_angle!));
-    if (changed(d?.winder_tension_arm_monitor_state?.max_angle, currentData.winder_tension_arm_monitor_state?.max_angle))
-      actions.push(() => setWinderTensionArmMonitorMaxAngle(d.winder_tension_arm_monitor_state!.max_angle!));
+    if (
+      changed(
+        d?.winder_tension_arm_monitor_state?.enabled,
+        currentData.winder_tension_arm_monitor_state?.enabled,
+      )
+    )
+      actions.push(() =>
+        setWinderTensionArmMonitorEnabled(
+          d.winder_tension_arm_monitor_state!.enabled!,
+        ),
+      );
+    if (
+      changed(
+        d?.winder_tension_arm_monitor_state?.min_angle,
+        currentData.winder_tension_arm_monitor_state?.min_angle,
+      )
+    )
+      actions.push(() =>
+        setWinderTensionArmMonitorMinAngle(
+          d.winder_tension_arm_monitor_state!.min_angle!,
+        ),
+      );
+    if (
+      changed(
+        d?.winder_tension_arm_monitor_state?.max_angle,
+        currentData.winder_tension_arm_monitor_state?.max_angle,
+      )
+    )
+      actions.push(() =>
+        setWinderTensionArmMonitorMaxAngle(
+          d.winder_tension_arm_monitor_state!.max_angle!,
+        ),
+      );
 
     // Addon Tension Arm Monitor
-    if (changed(d?.addon_tension_arm_monitor_state?.enabled, currentData.addon_tension_arm_monitor_state?.enabled))
-      actions.push(() => setAddonTensionArmMonitorEnabled(d.addon_tension_arm_monitor_state!.enabled!));
-    if (changed(d?.addon_tension_arm_monitor_state?.min_angle, currentData.addon_tension_arm_monitor_state?.min_angle))
-      actions.push(() => setAddonTensionArmMonitorMinAngle(d.addon_tension_arm_monitor_state!.min_angle!));
-    if (changed(d?.addon_tension_arm_monitor_state?.max_angle, currentData.addon_tension_arm_monitor_state?.max_angle))
-      actions.push(() => setAddonTensionArmMonitorMaxAngle(d.addon_tension_arm_monitor_state!.max_angle!));
+    if (
+      changed(
+        d?.addon_tension_arm_monitor_state?.enabled,
+        currentData.addon_tension_arm_monitor_state?.enabled,
+      )
+    )
+      actions.push(() =>
+        setAddonTensionArmMonitorEnabled(
+          d.addon_tension_arm_monitor_state!.enabled!,
+        ),
+      );
+    if (
+      changed(
+        d?.addon_tension_arm_monitor_state?.min_angle,
+        currentData.addon_tension_arm_monitor_state?.min_angle,
+      )
+    )
+      actions.push(() =>
+        setAddonTensionArmMonitorMinAngle(
+          d.addon_tension_arm_monitor_state!.min_angle!,
+        ),
+      );
+    if (
+      changed(
+        d?.addon_tension_arm_monitor_state?.max_angle,
+        currentData.addon_tension_arm_monitor_state?.max_angle,
+      )
+    )
+      actions.push(() =>
+        setAddonTensionArmMonitorMaxAngle(
+          d.addon_tension_arm_monitor_state!.max_angle!,
+        ),
+      );
 
     // Slave Tension Arm Monitor
-    if (changed(d?.slave_tension_arm_monitor_state?.enabled, currentData.slave_tension_arm_monitor_state?.enabled))
-      actions.push(() => setSlaveTensionArmMonitorEnabled(d.slave_tension_arm_monitor_state!.enabled!));
-    if (changed(d?.slave_tension_arm_monitor_state?.min_angle, currentData.slave_tension_arm_monitor_state?.min_angle))
-      actions.push(() => setSlaveTensionArmMonitorMinAngle(d.slave_tension_arm_monitor_state!.min_angle!));
-    if (changed(d?.slave_tension_arm_monitor_state?.max_angle, currentData.slave_tension_arm_monitor_state?.max_angle))
-      actions.push(() => setSlaveTensionArmMonitorMaxAngle(d.slave_tension_arm_monitor_state!.max_angle!));
+    if (
+      changed(
+        d?.slave_tension_arm_monitor_state?.enabled,
+        currentData.slave_tension_arm_monitor_state?.enabled,
+      )
+    )
+      actions.push(() =>
+        setSlaveTensionArmMonitorEnabled(
+          d.slave_tension_arm_monitor_state!.enabled!,
+        ),
+      );
+    if (
+      changed(
+        d?.slave_tension_arm_monitor_state?.min_angle,
+        currentData.slave_tension_arm_monitor_state?.min_angle,
+      )
+    )
+      actions.push(() =>
+        setSlaveTensionArmMonitorMinAngle(
+          d.slave_tension_arm_monitor_state!.min_angle!,
+        ),
+      );
+    if (
+      changed(
+        d?.slave_tension_arm_monitor_state?.max_angle,
+        currentData.slave_tension_arm_monitor_state?.max_angle,
+      )
+    )
+      actions.push(() =>
+        setSlaveTensionArmMonitorMaxAngle(
+          d.slave_tension_arm_monitor_state!.max_angle!,
+        ),
+      );
 
     // Optris 1 Monitor
-    if (changed(d?.optris_1_monitor_state?.enabled, currentData.optris_1_monitor_state?.enabled))
-      actions.push(() => setOptris1MonitorEnabled(d.optris_1_monitor_state!.enabled!));
-    if (changed(d?.optris_1_monitor_state?.min_voltage, currentData.optris_1_monitor_state?.min_voltage))
-      actions.push(() => setOptris1MonitorMinVoltage(d.optris_1_monitor_state!.min_voltage!));
-    if (changed(d?.optris_1_monitor_state?.max_voltage, currentData.optris_1_monitor_state?.max_voltage))
-      actions.push(() => setOptris1MonitorMaxVoltage(d.optris_1_monitor_state!.max_voltage!));
+    if (
+      changed(
+        d?.optris_1_monitor_state?.enabled,
+        currentData.optris_1_monitor_state?.enabled,
+      )
+    )
+      actions.push(() =>
+        setOptris1MonitorEnabled(d.optris_1_monitor_state!.enabled!),
+      );
+    if (
+      changed(
+        d?.optris_1_monitor_state?.min_voltage,
+        currentData.optris_1_monitor_state?.min_voltage,
+      )
+    )
+      actions.push(() =>
+        setOptris1MonitorMinVoltage(d.optris_1_monitor_state!.min_voltage!),
+      );
+    if (
+      changed(
+        d?.optris_1_monitor_state?.max_voltage,
+        currentData.optris_1_monitor_state?.max_voltage,
+      )
+    )
+      actions.push(() =>
+        setOptris1MonitorMaxVoltage(d.optris_1_monitor_state!.max_voltage!),
+      );
 
     // Optris 2 Monitor
-    if (changed(d?.optris_2_monitor_state?.enabled, currentData.optris_2_monitor_state?.enabled))
-      actions.push(() => setOptris2MonitorEnabled(d.optris_2_monitor_state!.enabled!));
-    if (changed(d?.optris_2_monitor_state?.min_voltage, currentData.optris_2_monitor_state?.min_voltage))
-      actions.push(() => setOptris2MonitorMinVoltage(d.optris_2_monitor_state!.min_voltage!));
-    if (changed(d?.optris_2_monitor_state?.max_voltage, currentData.optris_2_monitor_state?.max_voltage))
-      actions.push(() => setOptris2MonitorMaxVoltage(d.optris_2_monitor_state!.max_voltage!));
+    if (
+      changed(
+        d?.optris_2_monitor_state?.enabled,
+        currentData.optris_2_monitor_state?.enabled,
+      )
+    )
+      actions.push(() =>
+        setOptris2MonitorEnabled(d.optris_2_monitor_state!.enabled!),
+      );
+    if (
+      changed(
+        d?.optris_2_monitor_state?.min_voltage,
+        currentData.optris_2_monitor_state?.min_voltage,
+      )
+    )
+      actions.push(() =>
+        setOptris2MonitorMinVoltage(d.optris_2_monitor_state!.min_voltage!),
+      );
+    if (
+      changed(
+        d?.optris_2_monitor_state?.max_voltage,
+        currentData.optris_2_monitor_state?.max_voltage,
+      )
+    )
+      actions.push(() =>
+        setOptris2MonitorMaxVoltage(d.optris_2_monitor_state!.max_voltage!),
+      );
 
     // Sleep Timer
-    if (changed(d?.sleep_timer_state?.enabled, currentData.sleep_timer_state?.enabled))
+    if (
+      changed(
+        d?.sleep_timer_state?.enabled,
+        currentData.sleep_timer_state?.enabled,
+      )
+    )
       actions.push(() => setSleepTimerEnabled(d.sleep_timer_state!.enabled!));
-    if (changed(d?.sleep_timer_state?.timeout_seconds, currentData.sleep_timer_state?.timeout_seconds))
-      actions.push(() => setSleepTimerTimeout(d.sleep_timer_state!.timeout_seconds!));
+    if (
+      changed(
+        d?.sleep_timer_state?.timeout_seconds,
+        currentData.sleep_timer_state?.timeout_seconds,
+      )
+    )
+      actions.push(() =>
+        setSleepTimerTimeout(d.sleep_timer_state!.timeout_seconds!),
+      );
 
     // Execute actions sequentially, spread evenly over 5 seconds
     if (actions.length === 0) {
@@ -914,21 +1357,17 @@ export function GluetexPresetsPage() {
       return;
     }
 
-    const toastId = toast.loading(
-      `Applying preset... (0/${actions.length})`,
-      { description: "Please wait while settings are applied." },
-    );
+    const toastId = toast.loading(`Applying preset... (0/${actions.length})`, {
+      description: "Please wait while settings are applied.",
+    });
 
     const delay = Math.min(5000 / actions.length, 200);
     for (let i = 0; i < actions.length; i++) {
       actions[i]();
-      toast.loading(
-        `Applying preset... (${i + 1}/${actions.length})`,
-        {
-          id: toastId,
-          description: "Please wait while settings are applied.",
-        },
-      );
+      toast.loading(`Applying preset... (${i + 1}/${actions.length})`, {
+        id: toastId,
+        description: "Please wait while settings are applied.",
+      });
       if (i < actions.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
@@ -999,12 +1438,36 @@ export function GluetexPresetsPage() {
       : {},
     heating_pid_settings: s?.heating_pid_settings
       ? {
-          zone_1: { kp: s.heating_pid_settings.zone_1?.kp, ki: s.heating_pid_settings.zone_1?.ki, kd: s.heating_pid_settings.zone_1?.kd },
-          zone_2: { kp: s.heating_pid_settings.zone_2?.kp, ki: s.heating_pid_settings.zone_2?.ki, kd: s.heating_pid_settings.zone_2?.kd },
-          zone_3: { kp: s.heating_pid_settings.zone_3?.kp, ki: s.heating_pid_settings.zone_3?.ki, kd: s.heating_pid_settings.zone_3?.kd },
-          zone_4: { kp: s.heating_pid_settings.zone_4?.kp, ki: s.heating_pid_settings.zone_4?.ki, kd: s.heating_pid_settings.zone_4?.kd },
-          zone_5: { kp: s.heating_pid_settings.zone_5?.kp, ki: s.heating_pid_settings.zone_5?.ki, kd: s.heating_pid_settings.zone_5?.kd },
-          zone_6: { kp: s.heating_pid_settings.zone_6?.kp, ki: s.heating_pid_settings.zone_6?.ki, kd: s.heating_pid_settings.zone_6?.kd },
+          zone_1: {
+            kp: s.heating_pid_settings.zone_1?.kp,
+            ki: s.heating_pid_settings.zone_1?.ki,
+            kd: s.heating_pid_settings.zone_1?.kd,
+          },
+          zone_2: {
+            kp: s.heating_pid_settings.zone_2?.kp,
+            ki: s.heating_pid_settings.zone_2?.ki,
+            kd: s.heating_pid_settings.zone_2?.kd,
+          },
+          zone_3: {
+            kp: s.heating_pid_settings.zone_3?.kp,
+            ki: s.heating_pid_settings.zone_3?.ki,
+            kd: s.heating_pid_settings.zone_3?.kd,
+          },
+          zone_4: {
+            kp: s.heating_pid_settings.zone_4?.kp,
+            ki: s.heating_pid_settings.zone_4?.ki,
+            kd: s.heating_pid_settings.zone_4?.kd,
+          },
+          zone_5: {
+            kp: s.heating_pid_settings.zone_5?.kp,
+            ki: s.heating_pid_settings.zone_5?.ki,
+            kd: s.heating_pid_settings.zone_5?.kd,
+          },
+          zone_6: {
+            kp: s.heating_pid_settings.zone_6?.kp,
+            ki: s.heating_pid_settings.zone_6?.ki,
+            kd: s.heating_pid_settings.zone_6?.kd,
+          },
         }
       : {},
     winder_tension_arm_monitor_state: s?.winder_tension_arm_monitor_state

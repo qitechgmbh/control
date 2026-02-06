@@ -25,11 +25,7 @@ impl VoltageMonitor {
     /// Check voltage and trigger emergency stop if limits exceeded
     /// Uses a 200ms debounce to prevent false triggers from momentary spikes
     /// Returns (new_triggered_state, state_changed)
-    pub fn check(
-        &mut self,
-        voltage: f64,
-        operation_mode: OperationMode,
-    ) -> (bool, bool) {
+    pub fn check(&mut self, voltage: f64, operation_mode: OperationMode) -> (bool, bool) {
         let now = Instant::now();
         let in_production_mode = operation_mode == OperationMode::Production;
 
