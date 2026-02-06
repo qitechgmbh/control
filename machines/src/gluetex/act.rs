@@ -32,6 +32,9 @@ impl MachineAct for Gluetex {
         // check tension arm positions and trigger emergency stop if needed
         self.check_tension_arm_monitor();
 
+        // check voltage monitors and trigger emergency stop if needed
+        self.check_voltage_monitors();
+
         // check sleep timer and enter standby if inactive for too long
         self.check_sleep_timer(now);
 

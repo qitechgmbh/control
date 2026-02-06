@@ -550,6 +550,18 @@ impl Gluetex {
                 max_angle: self.slave_tension_arm_monitor_config.max_angle.get::<degree>(),
                 triggered: self.slave_tension_arm_monitor_triggered,
             },
+            optris_1_monitor_state: api::VoltageMonitorState {
+                enabled: self.optris_1_monitor_config.enabled,
+                min_voltage: self.optris_1_monitor_config.min_voltage,
+                max_voltage: self.optris_1_monitor_config.max_voltage,
+                triggered: self.optris_1_monitor_triggered,
+            },
+            optris_2_monitor_state: api::VoltageMonitorState {
+                enabled: self.optris_2_monitor_config.enabled,
+                min_voltage: self.optris_2_monitor_config.min_voltage,
+                max_voltage: self.optris_2_monitor_config.max_voltage,
+                triggered: self.optris_2_monitor_triggered,
+            },
             sleep_timer_state: api::SleepTimerState {
                 enabled: self.sleep_timer_config.enabled,
                 timeout_seconds: self.sleep_timer_config.timeout_seconds,

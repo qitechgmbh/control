@@ -315,6 +315,16 @@ export const tensionArmMonitorStateSchema = z.object({
 });
 
 /**
+ * Voltage monitor state schema (from backend)
+ */
+export const voltageMonitorStateSchema = z.object({
+  enabled: z.boolean(),
+  min_voltage: z.number(),
+  max_voltage: z.number(),
+  triggered: z.boolean(),
+});
+
+/**
  * Sleep timer state schema (from backend)
  */
 export const sleepTimerStateSchema = z.object({
@@ -346,6 +356,8 @@ export const stateEventDataSchema = z.object({
   winder_tension_arm_monitor_state: tensionArmMonitorStateSchema,
   addon_tension_arm_monitor_state: tensionArmMonitorStateSchema,
   slave_tension_arm_monitor_state: tensionArmMonitorStateSchema,
+  optris_1_monitor_state: voltageMonitorStateSchema,
+  optris_2_monitor_state: voltageMonitorStateSchema,
   sleep_timer_state: sleepTimerStateSchema,
 });
 
