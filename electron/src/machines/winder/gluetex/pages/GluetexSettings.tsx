@@ -37,6 +37,7 @@ export function GluetexSettingPage() {
   const [winderOpen, setWinderOpen] = useState(false);
   const [heatingOpen, setHeatingOpen] = useState(false);
   const [addonsOpen, setAddonsOpen] = useState(false);
+  const [tensionArmMonitorsOpen, setTensionArmMonitorsOpen] = useState(false);
 
   const {
     state,
@@ -73,9 +74,15 @@ export function GluetexSettingPage() {
     setHeatingPid,
     startHeatingAutoTune,
     stopHeatingAutoTune,
-    setTensionArmMonitorEnabled,
-    setTensionArmMonitorMinAngle,
-    setTensionArmMonitorMaxAngle,
+    setWinderTensionArmMonitorEnabled,
+    setWinderTensionArmMonitorMinAngle,
+    setWinderTensionArmMonitorMaxAngle,
+    setAddonTensionArmMonitorEnabled,
+    setAddonTensionArmMonitorMinAngle,
+    setAddonTensionArmMonitorMaxAngle,
+    setSlaveTensionArmMonitorEnabled,
+    setSlaveTensionArmMonitorMinAngle,
+    setSlaveTensionArmMonitorMaxAngle,
     setSleepTimerEnabled,
     setSleepTimerTimeout,
     setStepper3Forward,
@@ -1389,67 +1396,233 @@ export function GluetexSettingPage() {
           </CollapsibleContent>
         </Collapsible>
 
+        {/* ========== TENSION ARM MONITORS ========== */}
+        <Collapsible
+          open={tensionArmMonitorsOpen}
+          onOpenChange={setTensionArmMonitorsOpen}
+        >
+          <CollapsibleTrigger asChild>
+            <div className="dark:hover:bg-gray-750 cursor-pointer rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+              <div className="flex items-center justify-between">
+                <h2 className="flex items-center gap-2 text-xl font-semibold">
+                  <Icon name="lu:Shield" className="h-5 w-5" />
+                  Tension Arm Monitors
+                </h2>
+                <Icon
+                  name={
+                    tensionArmMonitorsOpen ? "lu:ChevronUp" : "lu:ChevronDown"
+                  }
+                  className="h-5 w-5 transition-transform"
+                />
+              </div>
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-4">
+              <ControlGrid>
+                <ControlCard title="Winder Tension Arm Monitor">
+                  <Label label="Enable Monitoring">
+                    <SelectionGroupBoolean
+                      value={state?.winder_tension_arm_monitor_state?.enabled}
+                      disabled={isDisabled}
+                      loading={isLoading}
+                      optionFalse={{
+                        children: "Disabled",
+                        icon: "lu:CircleOff",
+                      }}
+                      optionTrue={{
+                        children: "Enabled",
+                        icon: "lu:Shield",
+                      }}
+                      onChange={(value) =>
+                        setWinderTensionArmMonitorEnabled(value)
+                      }
+                    />
+                  </Label>
+                  {state?.winder_tension_arm_monitor_state?.triggered && (
+                    <div className="rounded-md bg-red-500/10 p-3 text-red-600 dark:text-red-400">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">⚠️</span>
+                        <span className="font-semibold">
+                          Winder Tension Arm Limit Exceeded - Machine Stopped
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <Label label="Minimum Angle">
+                    <EditValue
+                      value={state?.winder_tension_arm_monitor_state?.min_angle}
+                      title={"Minimum Angle"}
+                      unit="deg"
+                      step={1}
+                      min={0}
+                      max={180}
+                      defaultValue={
+                        defaultState?.winder_tension_arm_monitor_state
+                          ?.min_angle
+                      }
+                      renderValue={(value) => roundToDecimals(value, 1)}
+                      onChange={(value) =>
+                        setWinderTensionArmMonitorMinAngle(value)
+                      }
+                    />
+                  </Label>
+                  <Label label="Maximum Angle">
+                    <EditValue
+                      value={state?.winder_tension_arm_monitor_state?.max_angle}
+                      title={"Maximum Angle"}
+                      unit="deg"
+                      step={1}
+                      min={0}
+                      max={180}
+                      defaultValue={
+                        defaultState?.winder_tension_arm_monitor_state
+                          ?.max_angle
+                      }
+                      renderValue={(value) => roundToDecimals(value, 1)}
+                      onChange={(value) =>
+                        setWinderTensionArmMonitorMaxAngle(value)
+                      }
+                    />
+                  </Label>
+                </ControlCard>
+
+                <ControlCard title="Addon Tension Arm Monitor">
+                  <Label label="Enable Monitoring">
+                    <SelectionGroupBoolean
+                      value={state?.addon_tension_arm_monitor_state?.enabled}
+                      disabled={isDisabled}
+                      loading={isLoading}
+                      optionFalse={{
+                        children: "Disabled",
+                        icon: "lu:CircleOff",
+                      }}
+                      optionTrue={{
+                        children: "Enabled",
+                        icon: "lu:Shield",
+                      }}
+                      onChange={(value) =>
+                        setAddonTensionArmMonitorEnabled(value)
+                      }
+                    />
+                  </Label>
+                  {state?.addon_tension_arm_monitor_state?.triggered && (
+                    <div className="rounded-md bg-red-500/10 p-3 text-red-600 dark:text-red-400">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">⚠️</span>
+                        <span className="font-semibold">
+                          Addon Tension Arm Limit Exceeded - Machine Stopped
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <Label label="Minimum Angle">
+                    <EditValue
+                      value={state?.addon_tension_arm_monitor_state?.min_angle}
+                      title={"Minimum Angle"}
+                      unit="deg"
+                      step={1}
+                      min={0}
+                      max={180}
+                      defaultValue={
+                        defaultState?.addon_tension_arm_monitor_state?.min_angle
+                      }
+                      renderValue={(value) => roundToDecimals(value, 1)}
+                      onChange={(value) =>
+                        setAddonTensionArmMonitorMinAngle(value)
+                      }
+                    />
+                  </Label>
+                  <Label label="Maximum Angle">
+                    <EditValue
+                      value={state?.addon_tension_arm_monitor_state?.max_angle}
+                      title={"Maximum Angle"}
+                      unit="deg"
+                      step={1}
+                      min={0}
+                      max={180}
+                      defaultValue={
+                        defaultState?.addon_tension_arm_monitor_state?.max_angle
+                      }
+                      renderValue={(value) => roundToDecimals(value, 1)}
+                      onChange={(value) =>
+                        setAddonTensionArmMonitorMaxAngle(value)
+                      }
+                    />
+                  </Label>
+                </ControlCard>
+
+                <ControlCard title="Slave Tension Arm Monitor">
+                  <Label label="Enable Monitoring">
+                    <SelectionGroupBoolean
+                      value={state?.slave_tension_arm_monitor_state?.enabled}
+                      disabled={isDisabled}
+                      loading={isLoading}
+                      optionFalse={{
+                        children: "Disabled",
+                        icon: "lu:CircleOff",
+                      }}
+                      optionTrue={{
+                        children: "Enabled",
+                        icon: "lu:Shield",
+                      }}
+                      onChange={(value) =>
+                        setSlaveTensionArmMonitorEnabled(value)
+                      }
+                    />
+                  </Label>
+                  {state?.slave_tension_arm_monitor_state?.triggered && (
+                    <div className="rounded-md bg-red-500/10 p-3 text-red-600 dark:text-red-400">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">⚠️</span>
+                        <span className="font-semibold">
+                          Slave Tension Arm Limit Exceeded - Machine Stopped
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <Label label="Minimum Angle">
+                    <EditValue
+                      value={state?.slave_tension_arm_monitor_state?.min_angle}
+                      title={"Minimum Angle"}
+                      unit="deg"
+                      step={1}
+                      min={0}
+                      max={180}
+                      defaultValue={
+                        defaultState?.slave_tension_arm_monitor_state?.min_angle
+                      }
+                      renderValue={(value) => roundToDecimals(value, 1)}
+                      onChange={(value) =>
+                        setSlaveTensionArmMonitorMinAngle(value)
+                      }
+                    />
+                  </Label>
+                  <Label label="Maximum Angle">
+                    <EditValue
+                      value={state?.slave_tension_arm_monitor_state?.max_angle}
+                      title={"Maximum Angle"}
+                      unit="deg"
+                      step={1}
+                      min={0}
+                      max={180}
+                      defaultValue={
+                        defaultState?.slave_tension_arm_monitor_state?.max_angle
+                      }
+                      renderValue={(value) => roundToDecimals(value, 1)}
+                      onChange={(value) =>
+                        setSlaveTensionArmMonitorMaxAngle(value)
+                      }
+                    />
+                  </Label>
+                </ControlCard>
+              </ControlGrid>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
         {/* ========== OTHER SETTINGS ========== */}
         <ControlGrid>
-          <ControlCard title="Tension Arm Monitor">
-            <Label label="Enable Monitoring">
-              <SelectionGroupBoolean
-                value={state?.tension_arm_monitor_state?.enabled}
-                disabled={isDisabled}
-                loading={isLoading}
-                optionFalse={{
-                  children: "Disabled",
-                  icon: "lu:CircleOff",
-                }}
-                optionTrue={{
-                  children: "Enabled",
-                  icon: "lu:Shield",
-                }}
-                onChange={(value) => setTensionArmMonitorEnabled(value)}
-              />
-            </Label>
-            {state?.tension_arm_monitor_state?.triggered && (
-              <div className="rounded-md bg-red-500/10 p-3 text-red-600 dark:text-red-400">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">⚠️</span>
-                  <span className="font-semibold">
-                    Tension Arm Limit Exceeded - Machine Stopped
-                  </span>
-                </div>
-              </div>
-            )}
-            <Label label="Minimum Angle">
-              <EditValue
-                value={state?.tension_arm_monitor_state?.min_angle}
-                title={"Minimum Angle"}
-                unit="deg"
-                step={1}
-                min={0}
-                max={180}
-                defaultValue={
-                  defaultState?.tension_arm_monitor_state?.min_angle
-                }
-                renderValue={(value) => roundToDecimals(value, 1)}
-                onChange={(value) => setTensionArmMonitorMinAngle(value)}
-              />
-            </Label>
-            <Label label="Maximum Angle">
-              <EditValue
-                value={state?.tension_arm_monitor_state?.max_angle}
-                title={"Maximum Angle"}
-                unit="deg"
-                step={1}
-                min={0}
-                max={180}
-                defaultValue={
-                  defaultState?.tension_arm_monitor_state?.max_angle
-                }
-                renderValue={(value) => roundToDecimals(value, 1)}
-                onChange={(value) => setTensionArmMonitorMaxAngle(value)}
-              />
-            </Label>
-          </ControlCard>
-
           <ControlCard title="Sleep Timer">
             <Label label="Enable Sleep Timer">
               <SelectionGroupBoolean

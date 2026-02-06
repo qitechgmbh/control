@@ -21,8 +21,17 @@ export function GluetexErrorBanner() {
   const router = useRouter();
   const { serial } = gluetexRoute.useParams();
 
-  // Check for various error conditions
-  const tensionArmTriggered = state?.tension_arm_monitor_state?.triggered;
+  // Check for various error conditions - check each tension arm separately
+  const winderTensionArmTriggered =
+    state?.winder_tension_arm_monitor_state?.triggered;
+  const addonTensionArmTriggered =
+    state?.addon_tension_arm_monitor_state?.triggered;
+  const slaveTensionArmTriggered =
+    state?.slave_tension_arm_monitor_state?.triggered;
+  const anyTensionArmTriggered =
+    winderTensionArmTriggered ||
+    addonTensionArmTriggered ||
+    slaveTensionArmTriggered;
   const sleepTimerTriggered = state?.sleep_timer_state?.triggered;
 
   // Track if we should show the dialog (set to true when error triggers)
@@ -30,16 +39,17 @@ export function GluetexErrorBanner() {
   const [showSleepTimerDialog, setShowSleepTimerDialog] = useState(false);
 
   // Track previous trigger state to detect new errors
-  const [prevTensionArmTriggered, setPrevTensionArmTriggered] = useState(false);
+  const [prevAnyTensionArmTriggered, setPrevAnyTensionArmTriggered] =
+    useState(false);
   const [prevSleepTimerTriggered, setPrevSleepTimerTriggered] = useState(false);
 
   // Show dialog when error is triggered (transition from false to true)
   useEffect(() => {
-    if (tensionArmTriggered && !prevTensionArmTriggered) {
+    if (anyTensionArmTriggered && !prevAnyTensionArmTriggered) {
       setShowTensionArmDialog(true);
     }
-    setPrevTensionArmTriggered(tensionArmTriggered ?? false);
-  }, [tensionArmTriggered, prevTensionArmTriggered]);
+    setPrevAnyTensionArmTriggered(anyTensionArmTriggered ?? false);
+  }, [anyTensionArmTriggered, prevAnyTensionArmTriggered]);
 
   useEffect(() => {
     if (sleepTimerTriggered && !prevSleepTimerTriggered) {
@@ -68,7 +78,8 @@ export function GluetexErrorBanner() {
 
   // Determine which dialog to show (priority: tension arm > sleep timer)
   const displayTensionArmDialog = showTensionArmDialog;
-  const displaySleepTimerDialog = !displayTensionArmDialog && showSleepTimerDialog;
+  const displaySleepTimerDialog =
+    !displayTensionArmDialog && showSleepTimerDialog;
 
   return (
     <>
@@ -94,12 +105,26 @@ export function GluetexErrorBanner() {
               limits. The machine has been automatically stopped to prevent
               damage.
             </p>
+
+            {/* Show which specific tension arm(s) triggered */}
+            <div className="rounded-md bg-red-500/20 p-3">
+              <p className="mb-2 font-semibold text-red-600 dark:text-red-400">
+                Triggered Tension Arms:
+              </p>
+              <ul className="list-inside list-disc space-y-1 text-red-600/90 dark:text-red-400/90">
+                {winderTensionArmTriggered && <li>Winder Tension Arm</li>}
+                {addonTensionArmTriggered && <li>Addon Tension Arm</li>}
+                {slaveTensionArmTriggered && <li>Slave Tension Arm</li>}
+              </ul>
+            </div>
+
             <p className="text-red-600/90 dark:text-red-400/90">
               Check the tension arm positions and ensure they are within the
               configured limits before resuming operation.
             </p>
             <p className="text-sm text-red-600/80 dark:text-red-400/80">
-              Configure limits in Settings → Tension Arm Monitor
+              Configure limits in Settings → Winder/Addon/Slave Tension Arm
+              Monitor
             </p>
           </DialogDescription>
 
@@ -146,10 +171,7 @@ export function GluetexErrorBanner() {
           </DialogDescription>
 
           <div className="mt-4">
-            <TouchButton
-              className="w-full"
-              onClick={dismissSleepTimerDialog}
-            >
+            <TouchButton className="w-full" onClick={dismissSleepTimerDialog}>
               Acknowledge & Return to Setup Mode
             </TouchButton>
           </div>
