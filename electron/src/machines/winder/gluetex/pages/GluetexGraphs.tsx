@@ -30,6 +30,8 @@ export function GluetexGraphsPage() {
     temperature4,
     temperature5,
     temperature6,
+    optris1Voltage,
+    optris2Voltage,
   } = useGluetex();
 
   const syncHook = useGraphSync("gluetex-group");
@@ -108,6 +110,14 @@ export function GluetexGraphsPage() {
             }
             unit="C"
             renderValue={(value) => roundToDecimals(value, 1)}
+          />
+
+          <OptrisVoltageGraph
+            syncHook={syncHook}
+            optris1Voltage={optris1Voltage}
+            optris2Voltage={optris2Voltage}
+            unit="V"
+            renderValue={(value) => roundToDecimals(value, 2)}
           />
         </div>
       </div>
@@ -562,6 +572,65 @@ export function TemperaturesGraph({
       renderValue={renderValue}
       config={config}
       graphId="heater-temperatures"
+    />
+  );
+}
+
+export function OptrisVoltageGraph({
+  syncHook,
+  optris1Voltage,
+  optris2Voltage,
+  unit,
+  renderValue,
+}: {
+  syncHook: ReturnType<typeof useGraphSync>;
+  optris1Voltage: TimeSeries | null;
+  optris2Voltage: TimeSeries | null;
+  unit?: Unit;
+  renderValue?: (value: number) => string;
+}) {
+  const optrisVoltageData = [
+    ...(optris1Voltage
+      ? [
+          {
+            newData: optris1Voltage,
+            title: "Optris 1",
+            color: "#3b82f6",
+          },
+        ]
+      : []),
+    ...(optris2Voltage
+      ? [
+          {
+            newData: optris2Voltage,
+            title: "Optris 2",
+            color: "#8b5cf6",
+          },
+        ]
+      : []),
+  ];
+
+  const config: GraphConfig = {
+    title: "Optris Voltage",
+    icon: "lu:Zap",
+    colors: {
+      primary: "#3b82f6",
+      grid: "#e2e8f0",
+      axis: "#64748b",
+      background: "#ffffff",
+    },
+    exportFilename: "optris_voltage_data",
+    showLegend: true,
+  };
+
+  return (
+    <AutoSyncedBigGraph
+      syncHook={syncHook}
+      newData={optrisVoltageData}
+      unit={unit}
+      renderValue={renderValue}
+      config={config}
+      graphId="optris-voltage"
     />
   );
 }
