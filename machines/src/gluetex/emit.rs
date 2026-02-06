@@ -533,58 +533,64 @@ impl Gluetex {
                 zeroed: self.addon_tension_arm.zeroed,
             },
             winder_tension_arm_monitor_state: api::TensionArmMonitorState {
-                enabled: self.winder_tension_arm_monitor_config.enabled,
+                enabled: self.winder_tension_arm_monitor.config.enabled,
                 min_angle: self
-                    .winder_tension_arm_monitor_config
+                    .winder_tension_arm_monitor
+                    .config
                     .min_angle
                     .get::<degree>(),
                 max_angle: self
-                    .winder_tension_arm_monitor_config
+                    .winder_tension_arm_monitor
+                    .config
                     .max_angle
                     .get::<degree>(),
-                triggered: self.winder_tension_arm_monitor_triggered,
+                triggered: self.winder_tension_arm_monitor.triggered,
             },
             addon_tension_arm_monitor_state: api::TensionArmMonitorState {
-                enabled: self.addon_tension_arm_monitor_config.enabled,
+                enabled: self.addon_tension_arm_monitor.config.enabled,
                 min_angle: self
-                    .addon_tension_arm_monitor_config
+                    .addon_tension_arm_monitor
+                    .config
                     .min_angle
                     .get::<degree>(),
                 max_angle: self
-                    .addon_tension_arm_monitor_config
+                    .addon_tension_arm_monitor
+                    .config
                     .max_angle
                     .get::<degree>(),
-                triggered: self.addon_tension_arm_monitor_triggered,
+                triggered: self.addon_tension_arm_monitor.triggered,
             },
             slave_tension_arm_monitor_state: api::TensionArmMonitorState {
-                enabled: self.slave_tension_arm_monitor_config.enabled,
+                enabled: self.slave_tension_arm_monitor.config.enabled,
                 min_angle: self
-                    .slave_tension_arm_monitor_config
+                    .slave_tension_arm_monitor
+                    .config
                     .min_angle
                     .get::<degree>(),
                 max_angle: self
-                    .slave_tension_arm_monitor_config
+                    .slave_tension_arm_monitor
+                    .config
                     .max_angle
                     .get::<degree>(),
-                triggered: self.slave_tension_arm_monitor_triggered,
+                triggered: self.slave_tension_arm_monitor.triggered,
             },
             optris_1_monitor_state: api::VoltageMonitorState {
-                enabled: self.optris_1_monitor_config.enabled,
-                min_voltage: self.optris_1_monitor_config.min_voltage,
-                max_voltage: self.optris_1_monitor_config.max_voltage,
-                triggered: self.optris_1_monitor_triggered,
+                enabled: self.optris_1_monitor.config.enabled,
+                min_voltage: self.optris_1_monitor.config.min_voltage,
+                max_voltage: self.optris_1_monitor.config.max_voltage,
+                triggered: self.optris_1_monitor.triggered,
             },
             optris_2_monitor_state: api::VoltageMonitorState {
-                enabled: self.optris_2_monitor_config.enabled,
-                min_voltage: self.optris_2_monitor_config.min_voltage,
-                max_voltage: self.optris_2_monitor_config.max_voltage,
-                triggered: self.optris_2_monitor_triggered,
+                enabled: self.optris_2_monitor.config.enabled,
+                min_voltage: self.optris_2_monitor.config.min_voltage,
+                max_voltage: self.optris_2_monitor.config.max_voltage,
+                triggered: self.optris_2_monitor.triggered,
             },
             sleep_timer_state: api::SleepTimerState {
-                enabled: self.sleep_timer_config.enabled,
-                timeout_seconds: self.sleep_timer_config.timeout_seconds,
+                enabled: self.sleep_timer.config.enabled,
+                timeout_seconds: self.sleep_timer.config.timeout_seconds,
                 remaining_seconds: self.get_sleep_timer_remaining_seconds(),
-                triggered: self.sleep_timer_triggered,
+                triggered: self.sleep_timer.triggered,
             },
             order_info_state: api::OrderInfoState {
                 order_number: self.order_info.order_number,
