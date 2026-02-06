@@ -811,91 +811,91 @@ impl MachineApi for Gluetex {
             }
             // Winder Tension Arm Monitor
             Mutation::SetWinderTensionArmMonitorEnabled(enabled) => {
-                self.winder_tension_arm_monitor_config.enabled = enabled;
+                self.winder_tension_arm_monitor.config.enabled = enabled;
                 // Clear triggered flag when disabling
                 if !enabled {
-                    self.winder_tension_arm_monitor_triggered = false;
+                    self.winder_tension_arm_monitor.triggered = false;
                 }
                 self.emit_state();
             }
             Mutation::SetWinderTensionArmMonitorMinAngle(angle_deg) => {
-                self.winder_tension_arm_monitor_config.min_angle = Angle::new::<degree>(angle_deg);
+                self.winder_tension_arm_monitor.config.min_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
             Mutation::SetWinderTensionArmMonitorMaxAngle(angle_deg) => {
-                self.winder_tension_arm_monitor_config.max_angle = Angle::new::<degree>(angle_deg);
+                self.winder_tension_arm_monitor.config.max_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
             // Addon Tension Arm Monitor
             Mutation::SetAddonTensionArmMonitorEnabled(enabled) => {
-                self.addon_tension_arm_monitor_config.enabled = enabled;
+                self.addon_tension_arm_monitor.config.enabled = enabled;
                 // Clear triggered flag when disabling
                 if !enabled {
-                    self.addon_tension_arm_monitor_triggered = false;
+                    self.addon_tension_arm_monitor.triggered = false;
                 }
                 self.emit_state();
             }
             Mutation::SetAddonTensionArmMonitorMinAngle(angle_deg) => {
-                self.addon_tension_arm_monitor_config.min_angle = Angle::new::<degree>(angle_deg);
+                self.addon_tension_arm_monitor.config.min_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
             Mutation::SetAddonTensionArmMonitorMaxAngle(angle_deg) => {
-                self.addon_tension_arm_monitor_config.max_angle = Angle::new::<degree>(angle_deg);
+                self.addon_tension_arm_monitor.config.max_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
             // Slave Tension Arm Monitor
             Mutation::SetSlaveTensionArmMonitorEnabled(enabled) => {
-                self.slave_tension_arm_monitor_config.enabled = enabled;
+                self.slave_tension_arm_monitor.config.enabled = enabled;
                 // Clear triggered flag when disabling
                 if !enabled {
-                    self.slave_tension_arm_monitor_triggered = false;
+                    self.slave_tension_arm_monitor.triggered = false;
                 }
                 self.emit_state();
             }
             Mutation::SetSlaveTensionArmMonitorMinAngle(angle_deg) => {
-                self.slave_tension_arm_monitor_config.min_angle = Angle::new::<degree>(angle_deg);
+                self.slave_tension_arm_monitor.config.min_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
             Mutation::SetSlaveTensionArmMonitorMaxAngle(angle_deg) => {
-                self.slave_tension_arm_monitor_config.max_angle = Angle::new::<degree>(angle_deg);
+                self.slave_tension_arm_monitor.config.max_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
             // Optris 1 Voltage Monitor
             Mutation::SetOptris1MonitorEnabled(enabled) => {
-                self.optris_1_monitor_config.enabled = enabled;
+                self.optris_1_monitor.config.enabled = enabled;
                 // Clear triggered flag when disabling
                 if !enabled {
-                    self.optris_1_monitor_triggered = false;
+                    self.optris_1_monitor.triggered = false;
                 }
                 self.emit_state();
             }
             Mutation::SetOptris1MonitorMinVoltage(voltage) => {
-                self.optris_1_monitor_config.min_voltage = voltage;
+                self.optris_1_monitor.config.min_voltage = voltage;
                 self.emit_state();
             }
             Mutation::SetOptris1MonitorMaxVoltage(voltage) => {
-                self.optris_1_monitor_config.max_voltage = voltage;
+                self.optris_1_monitor.config.max_voltage = voltage;
                 self.emit_state();
             }
             // Optris 2 Voltage Monitor
             Mutation::SetOptris2MonitorEnabled(enabled) => {
-                self.optris_2_monitor_config.enabled = enabled;
+                self.optris_2_monitor.config.enabled = enabled;
                 // Clear triggered flag when disabling
                 if !enabled {
-                    self.optris_2_monitor_triggered = false;
+                    self.optris_2_monitor.triggered = false;
                 }
                 self.emit_state();
             }
             Mutation::SetOptris2MonitorMinVoltage(voltage) => {
-                self.optris_2_monitor_config.min_voltage = voltage;
+                self.optris_2_monitor.config.min_voltage = voltage;
                 self.emit_state();
             }
             Mutation::SetOptris2MonitorMaxVoltage(voltage) => {
-                self.optris_2_monitor_config.max_voltage = voltage;
+                self.optris_2_monitor.config.max_voltage = voltage;
                 self.emit_state();
             }
             Mutation::SetSleepTimerEnabled(enabled) => {
-                self.sleep_timer_config.enabled = enabled;
+                self.sleep_timer.config.enabled = enabled;
                 // Reset the timer when enabling
                 if enabled {
                     self.reset_sleep_timer();
@@ -903,7 +903,7 @@ impl MachineApi for Gluetex {
                 self.emit_state();
             }
             Mutation::SetSleepTimerTimeout(timeout_seconds) => {
-                self.sleep_timer_config.timeout_seconds = timeout_seconds;
+                self.sleep_timer.config.timeout_seconds = timeout_seconds;
                 self.emit_state();
             }
             Mutation::ResetSleepTimer => {

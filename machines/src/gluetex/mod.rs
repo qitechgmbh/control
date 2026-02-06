@@ -7,6 +7,7 @@ pub mod new;
 // Organized submodules
 pub mod controllers;
 pub mod features;
+pub mod monitoring;
 
 use units::Length;
 use units::f64::ThermodynamicTemperature;
@@ -56,54 +57,8 @@ impl Default for Heating {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct TensionArmMonitorConfig {
-    pub enabled: bool,
-    pub min_angle: Angle,
-    pub max_angle: Angle,
-}
-
-impl Default for TensionArmMonitorConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            min_angle: Angle::new::<degree>(10.0),
-            max_angle: Angle::new::<degree>(170.0),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct VoltageMonitorConfig {
-    pub enabled: bool,
-    pub min_voltage: f64,
-    pub max_voltage: f64,
-}
-
-impl Default for VoltageMonitorConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            min_voltage: 2.0,
-            max_voltage: 8.0,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct SleepTimerConfig {
-    pub enabled: bool,
-    pub timeout_seconds: u64,
-}
-
-impl Default for SleepTimerConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            timeout_seconds: 900, // 15 minutes
-        }
-    }
-}
+// Re-export monitoring types for convenience
+pub use monitoring::{SleepTimer, SleepTimerConfig, TensionArmMonitor, TensionArmMonitorConfig, VoltageMonitor, VoltageMonitorConfig};
 
 #[derive(Debug, Clone, Default)]
 pub struct OrderInfo {
@@ -240,37 +195,13 @@ pub struct Gluetex {
     pub optris_1: AnalogInput,
     pub optris_2: AnalogInput,
 
-    // tension arm monitoring - separate for each arm
-    pub winder_tension_arm_monitor_config: TensionArmMonitorConfig,
-    pub winder_tension_arm_monitor_triggered: bool,
-    /// Time when winder tension arm first went out of range (used for debouncing)
-    pub winder_tension_arm_out_of_range_since: Option<Instant>,
-
-    pub addon_tension_arm_monitor_config: TensionArmMonitorConfig,
-    pub addon_tension_arm_monitor_triggered: bool,
-    /// Time when addon tension arm first went out of range (used for debouncing)
-    pub addon_tension_arm_out_of_range_since: Option<Instant>,
-
-    pub slave_tension_arm_monitor_config: TensionArmMonitorConfig,
-    pub slave_tension_arm_monitor_triggered: bool,
-    /// Time when slave tension arm first went out of range (used for debouncing)
-    pub slave_tension_arm_out_of_range_since: Option<Instant>,
-
-    // voltage monitoring - separate for each optris sensor
-    pub optris_1_monitor_config: VoltageMonitorConfig,
-    pub optris_1_monitor_triggered: bool,
-    /// Time when optris 1 first went out of range (used for debouncing)
-    pub optris_1_out_of_range_since: Option<Instant>,
-
-    pub optris_2_monitor_config: VoltageMonitorConfig,
-    pub optris_2_monitor_triggered: bool,
-    /// Time when optris 2 first went out of range (used for debouncing)
-    pub optris_2_out_of_range_since: Option<Instant>,
-
-    // sleep timer
-    pub sleep_timer_config: SleepTimerConfig,
-    pub last_activity_time: Instant,
-    pub sleep_timer_triggered: bool,
+    // Monitoring systems
+    pub winder_tension_arm_monitor: TensionArmMonitor,
+    pub addon_tension_arm_monitor: TensionArmMonitor,
+    pub slave_tension_arm_monitor: TensionArmMonitor,
+    pub optris_1_monitor: VoltageMonitor,
+    pub optris_2_monitor: VoltageMonitor,
+    pub sleep_timer: SleepTimer,
 
     // order information
     pub order_info: OrderInfo,
@@ -636,54 +567,30 @@ impl Gluetex {
     /// Uses a 200ms debounce to prevent false triggers from momentary spikes
     /// Each tension arm has its own independent monitoring configuration
     pub fn check_tension_arm_monitor(&mut self) {
-        let now = Instant::now();
-
-        // Only check if in Production mode
-        // In Setup mode, monitoring is paused to allow setup movements
-        let in_production_mode = self.operation_mode == OperationMode::Production;
-
         let mut any_trigger = false;
         let mut state_changed = false;
 
         // Check winder tension arm
-        let (trigger, changed) = Self::check_single_arm(
+        let (trigger, changed) = self.winder_tension_arm_monitor.check(
             self.tension_arm.get_angle(),
-            &self.winder_tension_arm_monitor_config,
-            self.winder_tension_arm_monitor_triggered,
-            &mut self.winder_tension_arm_out_of_range_since,
-            "Winder",
-            now,
-            in_production_mode,
+            self.operation_mode,
         );
-        self.winder_tension_arm_monitor_triggered = trigger;
         any_trigger |= trigger;
         state_changed |= changed;
 
         // Check addon tension arm
-        let (trigger, changed) = Self::check_single_arm(
+        let (trigger, changed) = self.addon_tension_arm_monitor.check(
             self.addon_tension_arm.get_angle(),
-            &self.addon_tension_arm_monitor_config,
-            self.addon_tension_arm_monitor_triggered,
-            &mut self.addon_tension_arm_out_of_range_since,
-            "Addon",
-            now,
-            in_production_mode,
+            self.operation_mode,
         );
-        self.addon_tension_arm_monitor_triggered = trigger;
         any_trigger |= trigger;
         state_changed |= changed;
 
         // Check slave tension arm
-        let (trigger, changed) = Self::check_single_arm(
+        let (trigger, changed) = self.slave_tension_arm_monitor.check(
             self.slave_tension_arm.get_angle(),
-            &self.slave_tension_arm_monitor_config,
-            self.slave_tension_arm_monitor_triggered,
-            &mut self.slave_tension_arm_out_of_range_since,
-            "Slave",
-            now,
-            in_production_mode,
+            self.operation_mode,
         );
-        self.slave_tension_arm_monitor_triggered = trigger;
         any_trigger |= trigger;
         state_changed |= changed;
 
@@ -695,76 +602,6 @@ impl Gluetex {
         // Emit state if anything changed
         if state_changed {
             self.emit_state();
-        }
-    }
-
-    /// Check a single tension arm against its monitoring configuration
-    /// Returns (new_triggered_state, state_changed)
-    fn check_single_arm(
-        angle: Angle,
-        config: &TensionArmMonitorConfig,
-        current_triggered: bool,
-        out_of_range_since: &mut Option<Instant>,
-        arm_name: &str,
-        now: Instant,
-        in_production_mode: bool,
-    ) -> (bool, bool) {
-        // Only check if monitoring is enabled AND in Production mode
-        if !config.enabled || !in_production_mode {
-            // Clear debounce timer
-            *out_of_range_since = None;
-
-            // Clear triggered flag if monitoring is disabled or not in Production mode
-            if current_triggered {
-                return (false, true); // state changed
-            }
-            return (false, false); // no change
-        }
-
-        let min_angle = config.min_angle;
-        let max_angle = config.max_angle;
-
-        // Check if this tension arm is out of range
-        let is_out_of_range = angle < min_angle || angle > max_angle;
-
-        if is_out_of_range {
-            // Start or continue tracking out-of-range time
-            if out_of_range_since.is_none() {
-                *out_of_range_since = Some(now);
-            }
-
-            // Check if out of range for more than 200ms
-            if let Some(start_time) = *out_of_range_since {
-                let duration = now.duration_since(start_time);
-                if duration.as_millis() >= 200 && !current_triggered {
-                    // Trigger emergency stop after debounce period
-                    tracing::warn!(
-                        "{} tension arm monitor triggered after 200ms! Angle: {:.1}° (limits: {:.1}°-{:.1}°)",
-                        arm_name,
-                        angle.get::<degree>(),
-                        min_angle.get::<degree>(),
-                        max_angle.get::<degree>()
-                    );
-                    return (true, true); // triggered and state changed
-                }
-            }
-            return (current_triggered, false); // no change yet (still within debounce)
-        } else {
-            // Back in range - clear debounce timer
-            if out_of_range_since.is_some() {
-                *out_of_range_since = None;
-            }
-
-            // Clear triggered flag if back in range
-            if current_triggered {
-                tracing::info!(
-                    "{} tension arm monitor cleared - arm back in range",
-                    arm_name
-                );
-                return (false, true); // state changed
-            }
-
-            return (false, false); // no change
         }
     }
 
@@ -792,9 +629,6 @@ impl Gluetex {
 
     /// Check voltage monitors and trigger emergency stop if limits exceeded
     pub fn check_voltage_monitors(&mut self) {
-        let now = Instant::now();
-        let in_production_mode = self.operation_mode == OperationMode::Production;
-
         let mut any_trigger = false;
         let mut state_changed = false;
 
@@ -807,16 +641,10 @@ impl Gluetex {
                 _ => 0.0,
             }
         };
-        let (trigger, changed) = Self::check_single_voltage(
+        let (trigger, changed) = self.optris_1_monitor.check(
             optris_1_voltage,
-            &self.optris_1_monitor_config,
-            self.optris_1_monitor_triggered,
-            &mut self.optris_1_out_of_range_since,
-            "Optris 1",
-            now,
-            in_production_mode,
+            self.operation_mode,
         );
-        self.optris_1_monitor_triggered = trigger;
         any_trigger |= trigger;
         state_changed |= changed;
 
@@ -829,16 +657,10 @@ impl Gluetex {
                 _ => 0.0,
             }
         };
-        let (trigger, changed) = Self::check_single_voltage(
+        let (trigger, changed) = self.optris_2_monitor.check(
             optris_2_voltage,
-            &self.optris_2_monitor_config,
-            self.optris_2_monitor_triggered,
-            &mut self.optris_2_out_of_range_since,
-            "Optris 2",
-            now,
-            in_production_mode,
+            self.operation_mode,
         );
-        self.optris_2_monitor_triggered = trigger;
         any_trigger |= trigger;
         state_changed |= changed;
 
@@ -853,89 +675,10 @@ impl Gluetex {
         }
     }
 
-    /// Check a single voltage against its monitoring configuration
-    /// Returns (new_triggered_state, state_changed)
-    fn check_single_voltage(
-        voltage: f64,
-        config: &VoltageMonitorConfig,
-        current_triggered: bool,
-        out_of_range_since: &mut Option<Instant>,
-        sensor_name: &str,
-        now: Instant,
-        in_production_mode: bool,
-    ) -> (bool, bool) {
-        // Only check if monitoring is enabled AND in Production mode
-        if !config.enabled || !in_production_mode {
-            // Clear debounce timer
-            *out_of_range_since = None;
-
-            // Clear triggered flag if monitoring is disabled or not in Production mode
-            if current_triggered {
-                return (false, true); // state changed
-            }
-            return (false, false); // no change
-        }
-
-        let min_voltage = config.min_voltage;
-        let max_voltage = config.max_voltage;
-
-        // Check if this voltage is out of range
-        let is_out_of_range = voltage < min_voltage || voltage > max_voltage;
-
-        if is_out_of_range {
-            // Start or continue tracking out-of-range time
-            if out_of_range_since.is_none() {
-                *out_of_range_since = Some(now);
-            }
-
-            // Check if out of range for more than 200ms
-            if let Some(start_time) = *out_of_range_since {
-                let duration = now.duration_since(start_time);
-                if duration.as_millis() >= 200 && !current_triggered {
-                    // Trigger emergency stop after debounce period
-                    tracing::warn!(
-                        "{} voltage monitor triggered after 200ms! Voltage: {:.2}V (limits: {:.2}V-{:.2}V)",
-                        sensor_name,
-                        voltage,
-                        min_voltage,
-                        max_voltage
-                    );
-                    return (true, true); // triggered and state changed
-                }
-            }
-            return (current_triggered, false); // no change yet (still within debounce)
-        } else {
-            // Back in range - clear debounce timer
-            if out_of_range_since.is_some() {
-                *out_of_range_since = None;
-            }
-
-            // Clear triggered flag if back in range
-            if current_triggered {
-                tracing::info!(
-                    "{} voltage monitor cleared - voltage back in range",
-                    sensor_name
-                );
-                return (false, true); // state changed
-            }
-
-            return (false, false); // no change
-        }
-    }
-
     /// Check if sleep timer has expired and trigger standby if needed
     /// Only active in Production mode - paused during Setup to allow setup
-    pub fn check_sleep_timer(&mut self, now: Instant) {
-        if !self.sleep_timer_config.enabled || self.operation_mode != OperationMode::Production {
-            self.sleep_timer_triggered = false;
-            return;
-        }
-
-        let elapsed = now.duration_since(self.last_activity_time).as_secs();
-
-        if elapsed >= self.sleep_timer_config.timeout_seconds && !self.sleep_timer_triggered {
-            tracing::info!("Sleep timer expired - entering standby mode");
-            self.sleep_timer_triggered = true;
+    pub fn check_sleep_timer(&mut self, _now: Instant) {
+        if self.sleep_timer.check(self.operation_mode) {
             self.enter_sleep_mode();
         }
     }
@@ -949,30 +692,12 @@ impl Gluetex {
 
     /// Get remaining seconds on sleep timer
     pub fn get_sleep_timer_remaining_seconds(&self) -> u64 {
-        if !self.sleep_timer_config.enabled {
-            return 0;
-        }
-
-        // If timer has been triggered, keep it at 0
-        if self.sleep_timer_triggered {
-            return 0;
-        }
-
-        let elapsed = Instant::now()
-            .duration_since(self.last_activity_time)
-            .as_secs();
-
-        if elapsed >= self.sleep_timer_config.timeout_seconds {
-            0
-        } else {
-            self.sleep_timer_config.timeout_seconds - elapsed
-        }
+        self.sleep_timer.get_remaining_seconds()
     }
 
     /// Reset the sleep timer (mark activity)
     pub fn reset_sleep_timer(&mut self) {
-        self.last_activity_time = Instant::now();
-        self.sleep_timer_triggered = false;
+        self.sleep_timer.reset();
     }
 }
 
@@ -984,7 +709,7 @@ pub enum GluetexMode {
     Wind,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OperationMode {
     /// Setup mode: safety monitoring is paused to allow setup movements
     Setup,
