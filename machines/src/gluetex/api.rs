@@ -189,6 +189,7 @@ pub enum Mutation {
     SetAddonMotor5SlaveRatio(f64),
     SetAddonMotor3Konturlaenge(f64),
     SetAddonMotor3Pause(f64),
+    HomeAddonMotor3,
 
     // Slave Puller
     SetSlavePullerEnabled(bool),
@@ -767,6 +768,10 @@ impl MachineApi for Gluetex {
             }
             Mutation::SetAddonMotor3Pause(pause_mm) => {
                 self.addon_motor_3_controller.set_pause_mm(pause_mm);
+                self.emit_state();
+            }
+            Mutation::HomeAddonMotor3 => {
+                self.addon_motor_3_controller.start_manual_homing();
                 self.emit_state();
             }
             Mutation::SetSlavePullerEnabled(enabled) => {
