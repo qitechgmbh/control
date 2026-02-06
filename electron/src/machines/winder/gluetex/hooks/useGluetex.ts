@@ -250,6 +250,9 @@ export function useGluetex() {
   const { request: requestAddonMotor3SetPause } = useMachineMutation(
     z.object({ SetAddonMotor3Pause: z.number() }),
   );
+  const { request: requestHomeAddonMotor3 } = useMachineMutation(
+    z.literal("HomeAddonMotor3"),
+  );
 
   // Slave Puller mutations
   const { request: requestSlavePullerSetEnabled } = useMachineMutation(
@@ -1013,6 +1016,14 @@ export function useGluetex() {
     requestAddonMotor3SetPause({
       machine_identification_unique: machineIdentification,
       data: { SetAddonMotor3Pause: value },
+    });
+  };
+
+  const homeAddonMotor3 = () => {
+    // Trigger manual homing for addon motor 3
+    requestHomeAddonMotor3({
+      machine_identification_unique: machineIdentification,
+      data: "HomeAddonMotor3",
     });
   };
 
@@ -1788,5 +1799,6 @@ export function useGluetex() {
     setStepper5Forward,
     setStepper3Konturlaenge,
     setStepper3Pause,
+    homeAddonMotor3,
   };
 }
