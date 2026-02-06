@@ -211,6 +211,10 @@ pub struct Gluetex {
     // addon tension arm (independent tension arm on Role 9)
     pub addon_tension_arm: TensionArm,
 
+    // optris temperature sensors (analog voltage inputs)
+    pub optris_1: AnalogInput,
+    pub optris_2: AnalogInput,
+
     // tension arm monitoring
     pub tension_arm_monitor_config: TensionArmMonitorConfig,
     pub tension_arm_monitor_triggered: bool,
