@@ -84,6 +84,34 @@ impl From<Mode> for GluetexMode {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub enum OperationMode {
+    #[default]
+    Standby,
+    Starting,
+    Run,
+}
+
+impl From<super::OperationMode> for OperationMode {
+    fn from(mode: super::OperationMode) -> Self {
+        match mode {
+            super::OperationMode::Standby => Self::Standby,
+            super::OperationMode::Starting => Self::Starting,
+            super::OperationMode::Run => Self::Run,
+        }
+    }
+}
+
+impl From<OperationMode> for super::OperationMode {
+    fn from(mode: OperationMode) -> Self {
+        match mode {
+            OperationMode::Standby => Self::Standby,
+            OperationMode::Starting => Self::Starting,
+            OperationMode::Run => Self::Run,
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 pub enum Mutation {
     // Traverse
@@ -139,6 +167,7 @@ pub enum Mutation {
 
     // Mode
     SetMode(Mode),
+    SetOperationMode(OperationMode),
 
     // Connected Machine
     SetConnectedMachine(MachineIdentificationUnique),
@@ -347,6 +376,8 @@ pub struct SpoolAutomaticActionState {
 pub struct ModeState {
     /// mode
     pub mode: Mode,
+    /// operation mode (safety monitoring level)
+    pub operation_mode: OperationMode,
     /// can wind
     pub can_wind: bool,
 }
@@ -566,6 +597,7 @@ impl MachineApi for Gluetex {
         match mutation {
             Mutation::EnableTraverseLaserpointer(enable) => self.set_laser(enable),
             Mutation::SetMode(mode) => self.set_mode(&mode.into()),
+            Mutation::SetOperationMode(mode) => self.set_operation_mode(&mode.into()),
             Mutation::SetTraverseLimitOuter(limit) => self.traverse_set_limit_outer(limit),
             Mutation::SetTraverseLimitInner(limit) => self.traverse_set_limit_inner(limit),
             Mutation::SetTraverseStepSize(size) => self.traverse_set_step_size(size),
