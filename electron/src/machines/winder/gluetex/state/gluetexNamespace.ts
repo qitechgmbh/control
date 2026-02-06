@@ -452,15 +452,15 @@ export type HeatingState = {
   heating_mode: HeatingMode;
 };
 
-export type TemperatureState = {
-  current_temperature: number;
-  min_temperature: number;
-  max_temperature: number;
+export type VoltageState = {
+  current_voltage: number;
+  min_voltage: number;
+  max_voltage: number;
 };
 
 export type QualityControlState = {
-  temperature1: TemperatureState;
-  temperature2: TemperatureState;
+  optris1: VoltageState;
+  optris2: VoltageState;
 };
 
 /**
@@ -610,15 +610,15 @@ const DEFAULT_ADDON_STATE = {
     heating_mode: "Standby" as HeatingMode,
   },
   quality_control_state: {
-    temperature1: {
-      current_temperature: 85.0,
-      min_temperature: 75.0,
-      max_temperature: 95.0,
+    optris1: {
+      current_voltage: 5.0,
+      min_voltage: 2.0,
+      max_voltage: 8.0,
     },
-    temperature2: {
-      current_temperature: 125.0,
-      min_temperature: 115.0,
-      max_temperature: 135.0,
+    optris2: {
+      current_voltage: 5.0,
+      min_voltage: 2.0,
+      max_voltage: 8.0,
     },
   },
 };

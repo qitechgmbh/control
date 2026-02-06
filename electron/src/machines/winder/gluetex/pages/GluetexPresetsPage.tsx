@@ -58,16 +58,16 @@ const gluetexPresetDataSchema = z
     // Settings - Quality control (local state)
     quality_control_state: z
       .object({
-        temperature1: z
+        optris1: z
           .object({
-            min_temperature: z.number(),
-            max_temperature: z.number(),
+            min_voltage: z.number(),
+            max_voltage: z.number(),
           })
           .partial(),
-        temperature2: z
+        optris2: z
           .object({
-            min_temperature: z.number(),
-            max_temperature: z.number(),
+            min_voltage: z.number(),
+            max_voltage: z.number(),
           })
           .partial(),
       })
@@ -357,10 +357,10 @@ export function GluetexPresetsPage() {
     setTensionArmMonitorMaxAngle,
 
     // Settings - Quality control
-    setTemperature1Min,
-    setTemperature1Max,
-    setTemperature2Min,
-    setTemperature2Max,
+    setOptris1Min,
+    setOptris1Max,
+    setOptris2Min,
+    setOptris2Max,
   } = useGluetex();
 
   const applyPreset = (preset: Preset<GluetexPreset>) => {
@@ -637,36 +637,24 @@ export function GluetexPresetsPage() {
 
     // Apply quality control settings
     if (
-      preset.data?.quality_control_state?.temperature1?.min_temperature !==
-      undefined
+      preset.data?.quality_control_state?.optris1?.min_voltage !== undefined
     ) {
-      setTemperature1Min(
-        preset.data.quality_control_state.temperature1.min_temperature,
-      );
+      setOptris1Min(preset.data.quality_control_state.optris1.min_voltage);
     }
     if (
-      preset.data?.quality_control_state?.temperature1?.max_temperature !==
-      undefined
+      preset.data?.quality_control_state?.optris1?.max_voltage !== undefined
     ) {
-      setTemperature1Max(
-        preset.data.quality_control_state.temperature1.max_temperature,
-      );
+      setOptris1Max(preset.data.quality_control_state.optris1.max_voltage);
     }
     if (
-      preset.data?.quality_control_state?.temperature2?.min_temperature !==
-      undefined
+      preset.data?.quality_control_state?.optris2?.min_voltage !== undefined
     ) {
-      setTemperature2Min(
-        preset.data.quality_control_state.temperature2.min_temperature,
-      );
+      setOptris2Min(preset.data.quality_control_state.optris2.min_voltage);
     }
     if (
-      preset.data?.quality_control_state?.temperature2?.max_temperature !==
-      undefined
+      preset.data?.quality_control_state?.optris2?.max_voltage !== undefined
     ) {
-      setTemperature2Max(
-        preset.data.quality_control_state.temperature2.max_temperature,
-      );
+      setOptris2Max(preset.data.quality_control_state.optris2.max_voltage);
     }
   };
 
@@ -862,20 +850,16 @@ export function GluetexPresetsPage() {
       : undefined,
     quality_control_state: s?.quality_control_state
       ? {
-          temperature1: s.quality_control_state.temperature1
+          optris1: s.quality_control_state.optris1
             ? {
-                min_temperature:
-                  s.quality_control_state.temperature1.min_temperature,
-                max_temperature:
-                  s.quality_control_state.temperature1.max_temperature,
+                min_voltage: s.quality_control_state.optris1.min_voltage,
+                max_voltage: s.quality_control_state.optris1.max_voltage,
               }
             : undefined,
-          temperature2: s.quality_control_state.temperature2
+          optris2: s.quality_control_state.optris2
             ? {
-                min_temperature:
-                  s.quality_control_state.temperature2.min_temperature,
-                max_temperature:
-                  s.quality_control_state.temperature2.max_temperature,
+                min_voltage: s.quality_control_state.optris2.min_voltage,
+                max_voltage: s.quality_control_state.optris2.max_voltage,
               }
             : undefined,
         }
