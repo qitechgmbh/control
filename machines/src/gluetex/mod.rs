@@ -58,7 +58,10 @@ impl Default for Heating {
 }
 
 // Re-export monitoring types for convenience
-pub use monitoring::{SleepTimer, SleepTimerConfig, TensionArmMonitor, TensionArmMonitorConfig, VoltageMonitor, VoltageMonitorConfig};
+pub use monitoring::{
+    SleepTimer, SleepTimerConfig, TensionArmMonitor, TensionArmMonitorConfig, VoltageMonitor,
+    VoltageMonitorConfig,
+};
 
 #[derive(Debug, Clone, Default)]
 pub struct OrderInfo {
@@ -571,26 +574,23 @@ impl Gluetex {
         let mut state_changed = false;
 
         // Check winder tension arm
-        let (trigger, changed) = self.winder_tension_arm_monitor.check(
-            self.tension_arm.get_angle(),
-            self.operation_mode,
-        );
+        let (trigger, changed) = self
+            .winder_tension_arm_monitor
+            .check(self.tension_arm.get_angle(), self.operation_mode);
         any_trigger |= trigger;
         state_changed |= changed;
 
         // Check addon tension arm
-        let (trigger, changed) = self.addon_tension_arm_monitor.check(
-            self.addon_tension_arm.get_angle(),
-            self.operation_mode,
-        );
+        let (trigger, changed) = self
+            .addon_tension_arm_monitor
+            .check(self.addon_tension_arm.get_angle(), self.operation_mode);
         any_trigger |= trigger;
         state_changed |= changed;
 
         // Check slave tension arm
-        let (trigger, changed) = self.slave_tension_arm_monitor.check(
-            self.slave_tension_arm.get_angle(),
-            self.operation_mode,
-        );
+        let (trigger, changed) = self
+            .slave_tension_arm_monitor
+            .check(self.slave_tension_arm.get_angle(), self.operation_mode);
         any_trigger |= trigger;
         state_changed |= changed;
 
@@ -641,10 +641,9 @@ impl Gluetex {
                 _ => 0.0,
             }
         };
-        let (trigger, changed) = self.optris_1_monitor.check(
-            optris_1_voltage,
-            self.operation_mode,
-        );
+        let (trigger, changed) = self
+            .optris_1_monitor
+            .check(optris_1_voltage, self.operation_mode);
         any_trigger |= trigger;
         state_changed |= changed;
 
@@ -657,10 +656,9 @@ impl Gluetex {
                 _ => 0.0,
             }
         };
-        let (trigger, changed) = self.optris_2_monitor.check(
-            optris_2_voltage,
-            self.operation_mode,
-        );
+        let (trigger, changed) = self
+            .optris_2_monitor
+            .check(optris_2_voltage, self.operation_mode);
         any_trigger |= trigger;
         state_changed |= changed;
 
