@@ -93,7 +93,7 @@ export type Mode = z.infer<typeof modeSchema>;
 /**
  * Operation mode enum (safety monitoring level)
  */
-export const operationModeSchema = z.enum(["Standby", "Starting", "Run"]);
+export const operationModeSchema = z.enum(["Setup", "Production"]);
 export type OperationMode = z.infer<typeof operationModeSchema>;
 
 /**
