@@ -534,6 +534,11 @@ impl Gluetex {
                 timeout_seconds: self.sleep_timer_config.timeout_seconds,
                 remaining_seconds: self.get_sleep_timer_remaining_seconds(),
             },
+            order_info_state: api::OrderInfoState {
+                order_number: self.order_info.order_number.clone(),
+                serial_number: self.order_info.serial_number.clone(),
+                product_description: self.order_info.product_description.clone(),
+            },
         }
     }
 
