@@ -225,6 +225,10 @@ pub struct LiveValuesEvent {
     pub slave_tension_arm_angle: f64,
     /// addon tension arm angle in degrees
     pub addon_tension_arm_angle: f64,
+    /// optris 1 voltage (role 9 AI2)
+    pub optris_1_voltage: f64,
+    /// optris 2 voltage (role 10 AI2)
+    pub optris_2_voltage: f64,
 }
 
 impl LiveValuesEvent {

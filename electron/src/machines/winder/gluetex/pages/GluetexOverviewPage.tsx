@@ -36,6 +36,8 @@ export function GluetexOverviewPage() {
     heater4Power,
     heater5Power,
     heater6Power,
+    optris1Voltage,
+    optris2Voltage,
     spoolProgress,
     setSpoolAutomaticRequiredMeters,
     setSpoolAutomaticAction,
@@ -85,16 +87,16 @@ export function GluetexOverviewPage() {
         {/* Top Row: Quali (center) */}
         <ControlCard title="Quali">
           <TimeSeriesValueNumeric
-            label="Temperature 1"
-            unit="C"
-            timeseries={temperature1}
-            renderValue={(value) => roundToDecimals(value, 1)}
+            label="Optris 1"
+            unit="V"
+            timeseries={optris1Voltage}
+            renderValue={(value) => roundToDecimals(value, 2)}
           />
           <TimeSeriesValueNumeric
-            label="Temperature 2"
-            unit="C"
-            timeseries={temperature2}
-            renderValue={(value) => roundToDecimals(value, 1)}
+            label="Optris 2"
+            unit="V"
+            timeseries={optris2Voltage}
+            renderValue={(value) => roundToDecimals(value, 2)}
           />
         </ControlCard>
 
