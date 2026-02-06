@@ -674,9 +674,9 @@ impl Gluetex {
     }
 
     /// Check if sleep timer has expired and trigger standby if needed
-    /// Only active in Production mode - paused during Setup to allow setup
+    /// Works in all operation modes (Setup and Production)
     pub fn check_sleep_timer(&mut self, _now: Instant) {
-        if self.sleep_timer.check(self.operation_mode) {
+        if self.sleep_timer.check() {
             self.enter_sleep_mode();
         }
     }
