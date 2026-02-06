@@ -62,7 +62,7 @@ impl MachineAct for Gluetex {
             || self.temperature_controller_6.is_autotuning();
 
         // Emit state regularly when autotuning or when sleep timer is enabled
-        let should_emit_state = autotuning_active || self.sleep_timer_config.enabled;
+        let should_emit_state = autotuning_active || self.sleep_timer.config.enabled;
 
         if should_emit_state
             && now.duration_since(self.last_state_emit) > Duration::from_millis(500)
