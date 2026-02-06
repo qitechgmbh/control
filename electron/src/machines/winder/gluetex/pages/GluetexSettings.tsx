@@ -38,6 +38,7 @@ export function GluetexSettingPage() {
   const [heatingOpen, setHeatingOpen] = useState(false);
   const [addonsOpen, setAddonsOpen] = useState(false);
   const [tensionArmMonitorsOpen, setTensionArmMonitorsOpen] = useState(false);
+  const [voltageMonitoringOpen, setVoltageMonitoringOpen] = useState(false);
 
   const {
     state,
@@ -88,6 +89,16 @@ export function GluetexSettingPage() {
     setStepper3Forward,
     setStepper4Forward,
     setStepper5Forward,
+    setOptris1Min,
+    setOptris1Max,
+    setOptris2Min,
+    setOptris2Max,
+    setOptris1MonitorEnabled,
+    setOptris1MonitorMinVoltage,
+    setOptris1MonitorMaxVoltage,
+    setOptris2MonitorEnabled,
+    setOptris2MonitorMinVoltage,
+    setOptris2MonitorMaxVoltage,
   } = useGluetex();
 
   const handleXlModeChange = (enabled: boolean) => {
@@ -1615,6 +1626,184 @@ export function GluetexSettingPage() {
                       }
                     />
                   </Label>
+                </ControlCard>
+              </ControlGrid>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* ========== VOLTAGE MONITORING ========== */}
+        <Collapsible
+          open={voltageMonitoringOpen}
+          onOpenChange={setVoltageMonitoringOpen}
+        >
+          <CollapsibleTrigger asChild>
+            <div className="dark:hover:bg-gray-750 cursor-pointer rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+              <div className="flex items-center justify-between">
+                <h2 className="flex items-center gap-2 text-xl font-semibold">
+                  <Icon name="lu:Activity" className="h-5 w-5" />
+                  Voltage Monitoring
+                </h2>
+                <Icon
+                  name={
+                    voltageMonitoringOpen ? "lu:ChevronUp" : "lu:ChevronDown"
+                  }
+                  className="h-5 w-5 transition-transform"
+                />
+              </div>
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-4">
+              <ControlGrid>
+                <ControlCard title="Optris 1">
+                  <Label label="Enable Monitoring">
+                    <SelectionGroupBoolean
+                      value={state?.optris_1_monitor_state?.enabled}
+                      disabled={isDisabled}
+                      loading={isLoading}
+                      optionFalse={{
+                        children: "Disabled",
+                        icon: "lu:CircleOff",
+                      }}
+                      optionTrue={{
+                        children: "Enabled",
+                        icon: "lu:Shield",
+                      }}
+                      onChange={(value) => setOptris1MonitorEnabled(value)}
+                    />
+                  </Label>
+                  <div className="flex flex-row flex-wrap gap-4">
+                    <Label label="Min Voltage">
+                      <EditValue
+                        value={
+                          state?.optris_1_monitor_state?.min_voltage ??
+                          state?.quality_control_state?.optris1.min_voltage
+                        }
+                        unit="V"
+                        title="Min Optris 1 Voltage"
+                        defaultValue={
+                          defaultState?.optris_1_monitor_state?.min_voltage ??
+                          defaultState?.quality_control_state?.optris1.min_voltage
+                        }
+                        min={0}
+                        max={Math.min(
+                          9.95,
+                          (state?.optris_1_monitor_state?.max_voltage ??
+                            state?.quality_control_state?.optris1.max_voltage ??
+                            10) - 0.05,
+                        )}
+                        step={0.05}
+                        renderValue={(value) => roundToDecimals(value, 2)}
+                        onChange={(value) => {
+                          setOptris1Min(value);
+                          setOptris1MonitorMinVoltage(value);
+                        }}
+                      />
+                    </Label>
+                    <Label label="Max Voltage">
+                      <EditValue
+                        value={
+                          state?.optris_1_monitor_state?.max_voltage ??
+                          state?.quality_control_state?.optris1.max_voltage
+                        }
+                        unit="V"
+                        title="Max Optris 1 Voltage"
+                        defaultValue={
+                          defaultState?.optris_1_monitor_state?.max_voltage ??
+                          defaultState?.quality_control_state?.optris1.max_voltage
+                        }
+                        min={Math.max(
+                          0.05,
+                          (state?.optris_1_monitor_state?.min_voltage ??
+                            state?.quality_control_state?.optris1.min_voltage ??
+                            0) + 0.05,
+                        )}
+                        max={10}
+                        step={0.05}
+                        renderValue={(value) => roundToDecimals(value, 2)}
+                        onChange={(value) => {
+                          setOptris1Max(value);
+                          setOptris1MonitorMaxVoltage(value);
+                        }}
+                      />
+                    </Label>
+                  </div>
+                </ControlCard>
+
+                <ControlCard title="Optris 2">
+                  <Label label="Enable Monitoring">
+                    <SelectionGroupBoolean
+                      value={state?.optris_2_monitor_state?.enabled}
+                      disabled={isDisabled}
+                      loading={isLoading}
+                      optionFalse={{
+                        children: "Disabled",
+                        icon: "lu:CircleOff",
+                      }}
+                      optionTrue={{
+                        children: "Enabled",
+                        icon: "lu:Shield",
+                      }}
+                      onChange={(value) => setOptris2MonitorEnabled(value)}
+                    />
+                  </Label>
+                  <div className="flex flex-row flex-wrap gap-4">
+                    <Label label="Min Voltage">
+                      <EditValue
+                        value={
+                          state?.optris_2_monitor_state?.min_voltage ??
+                          state?.quality_control_state?.optris2.min_voltage
+                        }
+                        unit="V"
+                        title="Min Optris 2 Voltage"
+                        defaultValue={
+                          defaultState?.optris_2_monitor_state?.min_voltage ??
+                          defaultState?.quality_control_state?.optris2.min_voltage
+                        }
+                        min={0}
+                        max={Math.min(
+                          9.95,
+                          (state?.optris_2_monitor_state?.max_voltage ??
+                            state?.quality_control_state?.optris2.max_voltage ??
+                            10) - 0.05,
+                        )}
+                        step={0.05}
+                        renderValue={(value) => roundToDecimals(value, 2)}
+                        onChange={(value) => {
+                          setOptris2Min(value);
+                          setOptris2MonitorMinVoltage(value);
+                        }}
+                      />
+                    </Label>
+                    <Label label="Max Voltage">
+                      <EditValue
+                        value={
+                          state?.optris_2_monitor_state?.max_voltage ??
+                          state?.quality_control_state?.optris2.max_voltage
+                        }
+                        unit="V"
+                        title="Max Optris 2 Voltage"
+                        defaultValue={
+                          defaultState?.optris_2_monitor_state?.max_voltage ??
+                          defaultState?.quality_control_state?.optris2.max_voltage
+                        }
+                        min={Math.max(
+                          0.05,
+                          (state?.optris_2_monitor_state?.min_voltage ??
+                            state?.quality_control_state?.optris2.min_voltage ??
+                            0) + 0.05,
+                        )}
+                        max={10}
+                        step={0.05}
+                        renderValue={(value) => roundToDecimals(value, 2)}
+                        onChange={(value) => {
+                          setOptris2Max(value);
+                          setOptris2MonitorMaxVoltage(value);
+                        }}
+                      />
+                    </Label>
+                  </div>
                 </ControlCard>
               </ControlGrid>
             </div>
