@@ -591,6 +591,7 @@ impl MachineNewTrait for Gluetex {
                 connected_machines: vec![],
                 tension_arm_monitor_config: super::TensionArmMonitorConfig::default(),
                 tension_arm_monitor_triggered: false,
+                tension_arm_out_of_range_since: None,
                 sleep_timer_config: super::SleepTimerConfig::default(),
                 last_activity_time: Instant::now(),
                 sleep_timer_triggered: false,

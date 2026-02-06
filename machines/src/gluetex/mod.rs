@@ -226,6 +226,8 @@ pub struct Gluetex {
     // tension arm monitoring
     pub tension_arm_monitor_config: TensionArmMonitorConfig,
     pub tension_arm_monitor_triggered: bool,
+    /// Time when tension arms first went out of range (used for debouncing)
+    pub tension_arm_out_of_range_since: Option<Instant>,
 
     // sleep timer
     pub sleep_timer_config: SleepTimerConfig,
@@ -593,7 +595,10 @@ impl Gluetex {
     }
 
     /// Check all tension arm positions and trigger emergency stop if any are out of range
+    /// Uses a 200ms debounce to prevent false triggers from momentary spikes
     pub fn check_tension_arm_monitor(&mut self) {
+        let now = Instant::now();
+
         // Only check if monitoring is enabled AND in Production mode
         // In Setup mode, monitoring is paused to allow setup movements
         if !self.tension_arm_monitor_config.enabled
@@ -604,13 +609,15 @@ impl Gluetex {
                 self.tension_arm_monitor_triggered = false;
                 self.emit_state();
             }
+            // Clear debounce timer
+            self.tension_arm_out_of_range_since = None;
             return;
         }
 
         // Check all three tension arms
         let main_angle = self.tension_arm.get_angle();
-        let slave_angle = self.addon_tension_arm.get_angle();
-        let addon_angle = self.slave_tension_arm.get_angle();
+        let slave_angle = self.slave_tension_arm.get_angle();
+        let addon_angle = self.addon_tension_arm.get_angle();
 
         let min_angle = self.tension_arm_monitor_config.min_angle;
         let max_angle = self.tension_arm_monitor_config.max_angle;
@@ -623,24 +630,42 @@ impl Gluetex {
             || addon_angle < min_angle
             || addon_angle > max_angle;
 
-        // If out of range, trigger emergency stop
-        if out_of_range && !self.tension_arm_monitor_triggered {
-            self.tension_arm_monitor_triggered = true;
-            self.emergency_stop();
-            self.emit_state();
-            tracing::warn!(
-                "Tension arm monitor triggered! Main: {:.1}°, Slave: {:.1}°, Addon: {:.1}° (limits: {:.1}°-{:.1}°)",
-                main_angle.get::<degree>(),
-                slave_angle.get::<degree>(),
-                addon_angle.get::<degree>(),
-                min_angle.get::<degree>(),
-                max_angle.get::<degree>()
-            );
-        } else if !out_of_range && self.tension_arm_monitor_triggered {
+        if out_of_range {
+            // Start or continue tracking out-of-range time
+            if self.tension_arm_out_of_range_since.is_none() {
+                self.tension_arm_out_of_range_since = Some(now);
+            }
+
+            // Check if out of range for more than 200ms
+            if let Some(start_time) = self.tension_arm_out_of_range_since {
+                let duration = now.duration_since(start_time);
+                if duration.as_millis() >= 200 && !self.tension_arm_monitor_triggered {
+                    // Trigger emergency stop after debounce period
+                    self.tension_arm_monitor_triggered = true;
+                    self.emergency_stop();
+                    self.emit_state();
+                    tracing::warn!(
+                        "Tension arm monitor triggered after 200ms! Main: {:.1}°, Slave: {:.1}°, Addon: {:.1}° (limits: {:.1}°-{:.1}°)",
+                        main_angle.get::<degree>(),
+                        slave_angle.get::<degree>(),
+                        addon_angle.get::<degree>(),
+                        min_angle.get::<degree>(),
+                        max_angle.get::<degree>()
+                    );
+                }
+            }
+        } else {
+            // Back in range - clear debounce timer
+            if self.tension_arm_out_of_range_since.is_some() {
+                self.tension_arm_out_of_range_since = None;
+            }
+
             // Clear triggered flag if back in range
-            self.tension_arm_monitor_triggered = false;
-            self.emit_state();
-            tracing::info!("Tension arm monitor cleared - all arms back in range");
+            if self.tension_arm_monitor_triggered {
+                self.tension_arm_monitor_triggered = false;
+                self.emit_state();
+                tracing::info!("Tension arm monitor cleared - all arms back in range");
+            }
         }
     }
 
