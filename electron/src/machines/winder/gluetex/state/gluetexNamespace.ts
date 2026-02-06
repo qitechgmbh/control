@@ -343,7 +343,9 @@ export const stateEventDataSchema = z.object({
   addon_motor_5_state: addonMotorStateSchema,
   slave_puller_state: slavePullerStateSchema,
   addon_tension_arm_state: tensionArmStateSchema,
-  tension_arm_monitor_state: tensionArmMonitorStateSchema,
+  winder_tension_arm_monitor_state: tensionArmMonitorStateSchema,
+  addon_tension_arm_monitor_state: tensionArmMonitorStateSchema,
+  slave_tension_arm_monitor_state: tensionArmMonitorStateSchema,
   sleep_timer_state: sleepTimerStateSchema,
 });
 
