@@ -537,7 +537,7 @@ impl MachineNewTrait for Gluetex {
                     namespace: params.namespace.clone(),
                 },
                 mode: mode.clone(),
-                operation_mode: super::OperationMode::Standby,
+                operation_mode: super::OperationMode::Setup,
                 spool_step_converter: AngularStepConverter::new(200),
                 spool_speed_controller: SpoolSpeedController::new(),
                 last_measurement_emit: Instant::now(),

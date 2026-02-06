@@ -86,18 +86,18 @@ impl From<Mode> for GluetexMode {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum OperationMode {
+    /// Setup mode: safety monitoring paused
     #[default]
-    Standby,
-    Starting,
-    Run,
+    Setup,
+    /// Production mode: full safety monitoring
+    Production,
 }
 
 impl From<super::OperationMode> for OperationMode {
     fn from(mode: super::OperationMode) -> Self {
         match mode {
-            super::OperationMode::Standby => Self::Standby,
-            super::OperationMode::Starting => Self::Starting,
-            super::OperationMode::Run => Self::Run,
+            super::OperationMode::Setup => Self::Setup,
+            super::OperationMode::Production => Self::Production,
         }
     }
 }
@@ -105,9 +105,8 @@ impl From<super::OperationMode> for OperationMode {
 impl From<OperationMode> for super::OperationMode {
     fn from(mode: OperationMode) -> Self {
         match mode {
-            OperationMode::Standby => Self::Standby,
-            OperationMode::Starting => Self::Starting,
-            OperationMode::Run => Self::Run,
+            OperationMode::Setup => Self::Setup,
+            OperationMode::Production => Self::Production,
         }
     }
 }
