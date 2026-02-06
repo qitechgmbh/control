@@ -319,6 +319,26 @@ export function useGluetex() {
       z.object({ SetSlaveTensionArmMonitorMaxAngle: z.number() }),
     );
 
+  // Voltage Monitor mutations
+  const { request: requestSetOptris1MonitorEnabled } = useMachineMutation(
+    z.object({ SetOptris1MonitorEnabled: z.boolean() }),
+  );
+  const { request: requestSetOptris1MonitorMinVoltage } = useMachineMutation(
+    z.object({ SetOptris1MonitorMinVoltage: z.number() }),
+  );
+  const { request: requestSetOptris1MonitorMaxVoltage } = useMachineMutation(
+    z.object({ SetOptris1MonitorMaxVoltage: z.number() }),
+  );
+  const { request: requestSetOptris2MonitorEnabled } = useMachineMutation(
+    z.object({ SetOptris2MonitorEnabled: z.boolean() }),
+  );
+  const { request: requestSetOptris2MonitorMinVoltage } = useMachineMutation(
+    z.object({ SetOptris2MonitorMinVoltage: z.number() }),
+  );
+  const { request: requestSetOptris2MonitorMaxVoltage } = useMachineMutation(
+    z.object({ SetOptris2MonitorMaxVoltage: z.number() }),
+  );
+
   // Sleep Timer mutations
   const { request: requestSetSleepTimerEnabled } = useMachineMutation(
     z.object({ SetSleepTimerEnabled: z.boolean() }),
@@ -1263,6 +1283,93 @@ export function useGluetex() {
     );
   };
 
+  // Voltage Monitor action functions
+  const setOptris1MonitorEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.optris_1_monitor_state.enabled = enabled;
+        // Clear triggered flag when disabling
+        if (!enabled) {
+          current.data.optris_1_monitor_state.triggered = false;
+        }
+      },
+      () =>
+        requestSetOptris1MonitorEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetOptris1MonitorEnabled: enabled },
+        }),
+    );
+  };
+
+  const setOptris1MonitorMinVoltage = (voltage: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.optris_1_monitor_state.min_voltage = voltage;
+      },
+      () =>
+        requestSetOptris1MonitorMinVoltage({
+          machine_identification_unique: machineIdentification,
+          data: { SetOptris1MonitorMinVoltage: voltage },
+        }),
+    );
+  };
+
+  const setOptris1MonitorMaxVoltage = (voltage: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.optris_1_monitor_state.max_voltage = voltage;
+      },
+      () =>
+        requestSetOptris1MonitorMaxVoltage({
+          machine_identification_unique: machineIdentification,
+          data: { SetOptris1MonitorMaxVoltage: voltage },
+        }),
+    );
+  };
+
+  const setOptris2MonitorEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.optris_2_monitor_state.enabled = enabled;
+        // Clear triggered flag when disabling
+        if (!enabled) {
+          current.data.optris_2_monitor_state.triggered = false;
+        }
+      },
+      () =>
+        requestSetOptris2MonitorEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetOptris2MonitorEnabled: enabled },
+        }),
+    );
+  };
+
+  const setOptris2MonitorMinVoltage = (voltage: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.optris_2_monitor_state.min_voltage = voltage;
+      },
+      () =>
+        requestSetOptris2MonitorMinVoltage({
+          machine_identification_unique: machineIdentification,
+          data: { SetOptris2MonitorMinVoltage: voltage },
+        }),
+    );
+  };
+
+  const setOptris2MonitorMaxVoltage = (voltage: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.optris_2_monitor_state.max_voltage = voltage;
+      },
+      () =>
+        requestSetOptris2MonitorMaxVoltage({
+          machine_identification_unique: machineIdentification,
+          data: { SetOptris2MonitorMaxVoltage: voltage },
+        }),
+    );
+  };
+
   // Sleep Timer action functions
   const setSleepTimerEnabled = (enabled: boolean) => {
     updateStateOptimistically(
@@ -1580,6 +1687,14 @@ export function useGluetex() {
     setSlaveTensionArmMonitorEnabled,
     setSlaveTensionArmMonitorMinAngle,
     setSlaveTensionArmMonitorMaxAngle,
+
+    // Voltage Monitor action functions
+    setOptris1MonitorEnabled,
+    setOptris1MonitorMinVoltage,
+    setOptris1MonitorMaxVoltage,
+    setOptris2MonitorEnabled,
+    setOptris2MonitorMinVoltage,
+    setOptris2MonitorMaxVoltage,
 
     // Sleep Timer action functions
     setSleepTimerEnabled,

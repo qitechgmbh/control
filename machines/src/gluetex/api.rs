@@ -215,6 +215,14 @@ pub enum Mutation {
     SetSlaveTensionArmMonitorMinAngle(f64),
     SetSlaveTensionArmMonitorMaxAngle(f64),
 
+    // Voltage Monitors
+    SetOptris1MonitorEnabled(bool),
+    SetOptris1MonitorMinVoltage(f64),
+    SetOptris1MonitorMaxVoltage(f64),
+    SetOptris2MonitorEnabled(bool),
+    SetOptris2MonitorMinVoltage(f64),
+    SetOptris2MonitorMaxVoltage(f64),
+
     // Sleep Timer
     SetSleepTimerEnabled(bool),
     SetSleepTimerTimeout(u64),
@@ -317,6 +325,10 @@ pub struct StateEvent {
     pub addon_tension_arm_monitor_state: TensionArmMonitorState,
     /// slave tension arm monitor state
     pub slave_tension_arm_monitor_state: TensionArmMonitorState,
+    /// optris 1 voltage monitor state
+    pub optris_1_monitor_state: VoltageMonitorState,
+    /// optris 2 voltage monitor state
+    pub optris_2_monitor_state: VoltageMonitorState,
     /// sleep timer state
     pub sleep_timer_state: SleepTimerState,
     /// order information state
@@ -518,6 +530,18 @@ pub struct TensionArmMonitorState {
     pub min_angle: f64,
     /// maximum allowed angle in degrees
     pub max_angle: f64,
+    /// is monitor currently triggered (limits exceeded)
+    pub triggered: bool,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct VoltageMonitorState {
+    /// is monitoring enabled
+    pub enabled: bool,
+    /// minimum allowed voltage
+    pub min_voltage: f64,
+    /// maximum allowed voltage
+    pub max_voltage: f64,
     /// is monitor currently triggered (limits exceeded)
     pub triggered: bool,
 }
@@ -834,6 +858,40 @@ impl MachineApi for Gluetex {
             }
             Mutation::SetSlaveTensionArmMonitorMaxAngle(angle_deg) => {
                 self.slave_tension_arm_monitor_config.max_angle = Angle::new::<degree>(angle_deg);
+                self.emit_state();
+            }
+            // Optris 1 Voltage Monitor
+            Mutation::SetOptris1MonitorEnabled(enabled) => {
+                self.optris_1_monitor_config.enabled = enabled;
+                // Clear triggered flag when disabling
+                if !enabled {
+                    self.optris_1_monitor_triggered = false;
+                }
+                self.emit_state();
+            }
+            Mutation::SetOptris1MonitorMinVoltage(voltage) => {
+                self.optris_1_monitor_config.min_voltage = voltage;
+                self.emit_state();
+            }
+            Mutation::SetOptris1MonitorMaxVoltage(voltage) => {
+                self.optris_1_monitor_config.max_voltage = voltage;
+                self.emit_state();
+            }
+            // Optris 2 Voltage Monitor
+            Mutation::SetOptris2MonitorEnabled(enabled) => {
+                self.optris_2_monitor_config.enabled = enabled;
+                // Clear triggered flag when disabling
+                if !enabled {
+                    self.optris_2_monitor_triggered = false;
+                }
+                self.emit_state();
+            }
+            Mutation::SetOptris2MonitorMinVoltage(voltage) => {
+                self.optris_2_monitor_config.min_voltage = voltage;
+                self.emit_state();
+            }
+            Mutation::SetOptris2MonitorMaxVoltage(voltage) => {
+                self.optris_2_monitor_config.max_voltage = voltage;
                 self.emit_state();
             }
             Mutation::SetSleepTimerEnabled(enabled) => {
