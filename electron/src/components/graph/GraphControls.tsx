@@ -21,6 +21,7 @@ export function GraphControls({
   onSwitchToLive,
   onSwitchToHistorical,
   onExport,
+  onAddMarker,
   timeWindowOptions = DEFAULT_TIME_WINDOW_OPTIONS,
   showFromTimestamp,
   onShowFromChange,
@@ -102,16 +103,27 @@ export function GraphControls({
             Live
           </TouchButton>
 
-          {onExport && (
+          {(onExport || onAddMarker) && (
             <>
               <div className="mx-2 h-8 w-px bg-gray-200"></div>
-              <TouchButton
-                onClick={onExport}
-                variant="outline"
-                className="h-auto bg-green-600 px-3 py-3 text-base font-medium text-white hover:bg-green-700"
-              >
-                Export
-              </TouchButton>
+              {onAddMarker && (
+                <TouchButton
+                  onClick={onAddMarker}
+                  variant="outline"
+                  className="h-auto bg-blue-600 px-3 py-3 text-base font-medium text-white hover:bg-blue-700"
+                >
+                  Add Marker
+                </TouchButton>
+              )}
+              {onExport && (
+                <TouchButton
+                  onClick={onExport}
+                  variant="outline"
+                  className="h-auto bg-green-600 px-3 py-3 text-base font-medium text-white hover:bg-green-700"
+                >
+                  Export
+                </TouchButton>
+              )}
             </>
           )}
         </div>
@@ -127,6 +139,7 @@ export function FloatingControlPanel({
   onSwitchToLive,
   onSwitchToHistorical,
   onExport,
+  onAddMarker,
   timeWindowOptions = DEFAULT_TIME_WINDOW_OPTIONS,
   showFromTimestamp,
   onShowFromChange,
@@ -218,10 +231,19 @@ export function FloatingControlPanel({
             >
               Live
             </TouchButton>
-            {isExpanded && onExport && (
+            {isExpanded && (onExport || onAddMarker) && (
               <div className="h-8 w-px bg-gray-200"></div>
             )}
-            {onExport && (
+            {isExpanded && onAddMarker && (
+              <TouchButton
+                onClick={onAddMarker}
+                variant="outline"
+                className="h-auto bg-blue-600 px-3 py-3 text-base font-medium text-white hover:bg-blue-700"
+              >
+                Add Marker
+              </TouchButton>
+            )}
+            {isExpanded && onExport && (
               <TouchButton
                 onClick={onExport}
                 variant="outline"

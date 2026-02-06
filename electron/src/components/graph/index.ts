@@ -10,6 +10,9 @@ export {
   AutoSyncedBigGraph,
 } from "./SyncedComponents";
 
+// Context
+export { MarkerProvider } from "./MarkerContext";
+
 // Hooks
 export { useGraphSync } from "./useGraphSync";
 
