@@ -4,7 +4,7 @@ import { cva } from "class-variance-authority";
 import React from "react";
 
 type Props = {
-  variant: "error" | "success";
+  variant: "error" | "success" | "info";
   children: React.ReactNode;
 };
 
@@ -14,10 +14,16 @@ export function StatusBadge({ variant, children }: Props) {
       variant: {
         error: "bg-red-500",
         success: "bg-green-600",
+        info: "bg-blue-500",
       },
     },
   });
-  const icon: IconName = variant === "error" ? "lu:TriangleAlert" : "lu:Check";
+  const icon: IconName =
+    variant === "error"
+      ? "lu:TriangleAlert"
+      : variant === "success"
+        ? "lu:Check"
+        : "lu:Info";
   return (
     <Badge
       className={badgeStyle({
