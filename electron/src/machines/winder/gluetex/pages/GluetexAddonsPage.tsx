@@ -32,10 +32,6 @@ export function GluetexAddonsPage() {
     setHeatingMode,
     optris1Voltage,
     optris2Voltage,
-    setOptris1Min,
-    setOptris1Max,
-    setOptris2Min,
-    setOptris2Max,
     slavePullerSpeed,
     slaveTensionArmAngle,
     addonTensionArmAngle,
@@ -161,132 +157,62 @@ export function GluetexAddonsPage() {
           <div className="space-y-6">
             {/* Optris 1 Voltage */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <TimeSeriesValueNumeric
-                  label="Optris 1 Voltage"
-                  unit="V"
-                  timeseries={optris1Voltage}
-                  renderValue={(value) => roundToDecimals(value, 2)}
-                />
-              </div>
-
+              <TimeSeriesValueNumeric
+                label="Optris 1 Voltage"
+                unit="V"
+                timeseries={optris1Voltage}
+                renderValue={(value) => roundToDecimals(value, 2)}
+              />
+              {state?.optris_1_monitor_state?.triggered && (
+                <StatusBadge variant="error">
+                  Voltage Out of Range - Machine Stopped
+                </StatusBadge>
+              )}
               <TemperatureBar
                 min={0}
                 max={10}
                 minLimit={
-                  state?.quality_control_state?.optris1.min_voltage ?? 0
+                  state?.optris_1_monitor_state?.min_voltage ??
+                  state?.quality_control_state?.optris1.min_voltage ??
+                  0
                 }
                 maxLimit={
-                  state?.quality_control_state?.optris1.max_voltage ?? 10
+                  state?.optris_1_monitor_state?.max_voltage ??
+                  state?.quality_control_state?.optris1.max_voltage ??
+                  10
                 }
                 current={optris1Voltage.current?.value ?? 0}
               />
-
-              <div className="flex flex-row flex-wrap gap-4">
-                <Label label="Min Voltage">
-                  <EditValue
-                    value={state?.quality_control_state?.optris1.min_voltage}
-                    unit="V"
-                    title="Min Optris 1 Voltage"
-                    defaultValue={
-                      defaultState?.quality_control_state?.optris1.min_voltage
-                    }
-                    min={0}
-                    max={Math.min(
-                      9.95,
-                      (state?.quality_control_state?.optris1.max_voltage ??
-                        10) - 0.05,
-                    )}
-                    step={0.05}
-                    renderValue={(value) => roundToDecimals(value, 2)}
-                    onChange={setOptris1Min}
-                  />
-                </Label>
-                <Label label="Max Voltage">
-                  <EditValue
-                    value={state?.quality_control_state?.optris1.max_voltage}
-                    unit="V"
-                    title="Max Optris 1 Voltage"
-                    defaultValue={
-                      defaultState?.quality_control_state?.optris1.max_voltage
-                    }
-                    min={Math.max(
-                      0.05,
-                      (state?.quality_control_state?.optris1.min_voltage ??
-                        0) + 0.05,
-                    )}
-                    max={10}
-                    step={0.05}
-                    renderValue={(value) => roundToDecimals(value, 2)}
-                    onChange={setOptris1Max}
-                  />
-                </Label>
-              </div>
             </div>
 
             {/* Optris 2 Voltage */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <TimeSeriesValueNumeric
-                  label="Optris 2 Voltage"
-                  unit="V"
-                  timeseries={optris2Voltage}
-                  renderValue={(value) => roundToDecimals(value, 2)}
-                />
-              </div>
-
+              <TimeSeriesValueNumeric
+                label="Optris 2 Voltage"
+                unit="V"
+                timeseries={optris2Voltage}
+                renderValue={(value) => roundToDecimals(value, 2)}
+              />
+              {state?.optris_2_monitor_state?.triggered && (
+                <StatusBadge variant="error">
+                  Voltage Out of Range - Machine Stopped
+                </StatusBadge>
+              )}
               <TemperatureBar
                 min={0}
                 max={10}
                 minLimit={
-                  state?.quality_control_state?.optris2.min_voltage ?? 0
+                  state?.optris_2_monitor_state?.min_voltage ??
+                  state?.quality_control_state?.optris2.min_voltage ??
+                  0
                 }
                 maxLimit={
-                  state?.quality_control_state?.optris2.max_voltage ?? 10
+                  state?.optris_2_monitor_state?.max_voltage ??
+                  state?.quality_control_state?.optris2.max_voltage ??
+                  10
                 }
                 current={optris2Voltage.current?.value ?? 0}
               />
-
-              <div className="flex flex-row flex-wrap gap-4">
-                <Label label="Min Voltage">
-                  <EditValue
-                    value={state?.quality_control_state?.optris2.min_voltage}
-                    unit="V"
-                    title="Min Optris 2 Voltage"
-                    defaultValue={
-                      defaultState?.quality_control_state?.optris2.min_voltage
-                    }
-                    min={0}
-                    max={Math.min(
-                      9.95,
-                      (state?.quality_control_state?.optris2.max_voltage ??
-                        10) - 0.05,
-                    )}
-                    step={0.05}
-                    renderValue={(value) => roundToDecimals(value, 2)}
-                    onChange={setOptris2Min}
-                  />
-                </Label>
-                <Label label="Max Voltage">
-                  <EditValue
-                    value={state?.quality_control_state?.optris2.max_voltage}
-                    unit="V"
-                    title="Max Optris 2 Voltage"
-                    defaultValue={
-                      defaultState?.quality_control_state?.optris2.max_voltage
-                    }
-                    min={Math.max(
-                      0.05,
-                      (state?.quality_control_state?.optris2.min_voltage ??
-                        0) + 0.05,
-                    )}
-                    max={10}
-                    step={0.05}
-                    renderValue={(value) => roundToDecimals(value, 2)}
-                    onChange={setOptris2Max}
-                  />
-                </Label>
-              </div>
             </div>
 
             {/* Heating Mode */}
