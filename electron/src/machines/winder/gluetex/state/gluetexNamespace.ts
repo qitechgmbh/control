@@ -91,6 +91,12 @@ export const modeSchema = z.enum(["Standby", "Hold", "Pull", "Wind"]);
 export type Mode = z.infer<typeof modeSchema>;
 
 /**
+ * Operation mode enum (safety monitoring level)
+ */
+export const operationModeSchema = z.enum(["Standby", "Starting", "Run"]);
+export type OperationMode = z.infer<typeof operationModeSchema>;
+
+/**
  * Machine operation mode enum
  */
 export const spoolAutomaticActionModeSchema = z.enum([
@@ -166,6 +172,7 @@ export const pullerStateSchema = z.object({
  */
 export const modeStateSchema = z.object({
   mode: modeSchema,
+  operation_mode: operationModeSchema,
   can_wind: z.boolean(),
 });
 
@@ -503,7 +510,7 @@ export type GluetexNamespaceStore = {
   slavePullerSpeed: TimeSeries;
   slaveTensionArmAngle: TimeSeries;
   addonTensionArmAngle: TimeSeries;
-  
+
   // Optris temperature sensor voltages
   optris1Voltage: TimeSeries;
   optris2Voltage: TimeSeries;
@@ -648,7 +655,7 @@ export const createGluetexNamespaceStore =
         slavePullerSpeed,
         slaveTensionArmAngle,
         addonTensionArmAngle,
-        
+
         // Optris sensor voltages
         optris1Voltage,
         optris2Voltage,
