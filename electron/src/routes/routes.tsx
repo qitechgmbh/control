@@ -75,6 +75,8 @@ import { MetricsControlPage } from "@/metrics/MetricsControlPage";
 
 import { WagoPower1Page } from "@/machines/wago_power/wago_power1/WagoPower1Page";
 import { WagoPower1ControlPage } from "@/machines/wago_power/wago_power1/WagoPower1ControlPage";
+import { WagoDoTestMachinePage } from "@/machines/wagodotestmachine/WagoDoTestMachinePage";
+import { WagoDoTestMachineControlPage } from "@/machines/wagodotestmachine/WagoDoTestMachineControlPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -383,6 +385,18 @@ export const wagoPower1ControlRoute = createRoute({
   component: () => <WagoPower1ControlPage />,
 });
 
+export const wagoDoTestMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wagoDotestmachine/$serial",
+  component: () => <WagoDoTestMachinePage />,
+});
+
+export const wagoDoTestMachineControlRoute = createRoute({
+  getParentRoute: () => wagoDoTestMachineSerialRoute,
+  path: "control",
+  component: () => <WagoDoTestMachineControlPage />,
+});
+
 export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "setup",
@@ -541,6 +555,10 @@ export const rootTree = RootRoute.addChildren([
       wagoPower1SerialRoute.addChildren([wagoPower1ControlRoute]),
 
       buffer1SerialRoute.addChildren([buffer1ControlRoute]),
+
+      wagoDoTestMachineSerialRoute.addChildren([
+        wagoDoTestMachineControlRoute,
+      ]),
     ]),
   ]),
 ]);
