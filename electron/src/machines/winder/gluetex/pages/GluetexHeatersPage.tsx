@@ -6,6 +6,7 @@ import { ControlCard } from "@/control/ControlCard";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { useGluetex } from "../hooks/useGluetex";
 import { HeatingMode } from "../state/gluetexNamespace";
+import { GluetexErrorBanner } from "../components/GluetexErrorBanner";
 
 export function GluetexHeatersPage() {
   const {
@@ -35,6 +36,7 @@ export function GluetexHeatersPage() {
 
   return (
     <Page>
+      <GluetexErrorBanner />
       <ControlGrid>
         <HeatingZone
           title={"Temperature 1"}

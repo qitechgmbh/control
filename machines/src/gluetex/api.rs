@@ -516,6 +516,8 @@ pub struct SleepTimerState {
     pub timeout_seconds: u64,
     /// remaining seconds until sleep
     pub remaining_seconds: u64,
+    /// is sleep timer currently triggered (timeout reached)
+    pub triggered: bool,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]

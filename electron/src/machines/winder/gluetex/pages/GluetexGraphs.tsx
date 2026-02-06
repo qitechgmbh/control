@@ -11,6 +11,7 @@ import { useGluetex } from "../hooks/useGluetex";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { TimeSeries } from "@/lib/timeseries";
 import { Unit } from "@/control/units";
+import { GluetexErrorBanner } from "../components/GluetexErrorBanner";
 
 export function GluetexGraphsPage() {
   const {
@@ -35,6 +36,7 @@ export function GluetexGraphsPage() {
 
   return (
     <Page className="pb-27">
+      <GluetexErrorBanner />
       <div className="flex flex-col gap-4">
         <div className="grid gap-4">
           <PullerSpeedGraph

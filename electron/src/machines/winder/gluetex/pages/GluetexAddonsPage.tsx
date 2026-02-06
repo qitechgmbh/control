@@ -18,6 +18,7 @@ import {
 import { roundToDecimals, roundDegreesToDecimals } from "@/lib/decimal";
 import { TensionArm } from "../../TensionArm";
 import { RatioInput } from "@/components/ratio/RatioInput";
+import { GluetexErrorBanner } from "../components/GluetexErrorBanner";
 
 export function GluetexAddonsPage() {
   const {
@@ -57,6 +58,7 @@ export function GluetexAddonsPage() {
 
   return (
     <Page>
+      <GluetexErrorBanner />
       <ControlGrid>
         <ControlCard className="bg-red" title="Motors">
           <Label label="Stepper 3">

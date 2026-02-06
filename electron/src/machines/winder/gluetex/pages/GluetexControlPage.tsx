@@ -20,6 +20,7 @@ import {
 } from "../state/gluetexNamespace";
 import { TensionArm } from "../../TensionArm";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
+import { GluetexErrorBanner } from "../components/GluetexErrorBanner";
 import { Spool } from "../../Spool";
 import {
   Dialog,
@@ -82,6 +83,7 @@ export function GluetexControlPage() {
 
   return (
     <Page>
+      <GluetexErrorBanner />
       <ControlGrid>
         <ControlCard title="Spool">
           <Spool rpm={spoolRpm.current?.value} />

@@ -19,6 +19,7 @@ import { roundToDecimals } from "@/lib/decimal";
 import { SpoolAutomaticActionMode } from "../state/gluetexNamespace";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { cn } from "@/lib/utils";
+import { GluetexErrorBanner } from "../components/GluetexErrorBanner";
 
 export function GluetexOverviewPage() {
   const {
@@ -74,6 +75,7 @@ export function GluetexOverviewPage() {
 
   return (
     <Page>
+      <GluetexErrorBanner />
       <ControlGrid>
         {/* Top Row: Speed (left) */}
         <ControlCard title="Speed">
