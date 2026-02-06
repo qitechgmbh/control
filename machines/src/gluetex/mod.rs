@@ -88,6 +88,13 @@ impl Default for SleepTimerConfig {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct OrderInfo {
+    pub order_number: String,
+    pub serial_number: String,
+    pub product_description: String,
+}
+
 pub enum HeatingZone {
     Zone1,
     Zone2,
@@ -223,6 +230,9 @@ pub struct Gluetex {
     pub sleep_timer_config: SleepTimerConfig,
     pub last_activity_time: Instant,
     pub sleep_timer_triggered: bool,
+
+    // order information
+    pub order_info: OrderInfo,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
