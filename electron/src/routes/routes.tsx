@@ -556,9 +556,7 @@ export const rootTree = RootRoute.addChildren([
 
       buffer1SerialRoute.addChildren([buffer1ControlRoute]),
 
-      wagoDoTestMachineSerialRoute.addChildren([
-        wagoDoTestMachineControlRoute,
-      ]),
+      wagoDoTestMachineSerialRoute.addChildren([wagoDoTestMachineControlRoute]),
     ]),
   ]),
 ]);

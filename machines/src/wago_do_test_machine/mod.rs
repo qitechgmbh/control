@@ -5,11 +5,9 @@ use ethercat_hal::io::digital_output::DigitalOutput;
 use smol::channel::{Receiver, Sender};
 
 use crate::{
-    AsyncThreadMessage, WAGO_DO_TEST_MACHINE, Machine, MachineMessage, VENDOR_QITECH,
-    wago_do_test_machine::api::{
-        WagoDOTestMachineEvents, WagoDOTestMachineNamespace, StateEvent,
-    },
+    AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH, WAGO_DO_TEST_MACHINE,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
+    wago_do_test_machine::api::{StateEvent, WagoDOTestMachineEvents, WagoDOTestMachineNamespace},
 };
 
 pub mod act;

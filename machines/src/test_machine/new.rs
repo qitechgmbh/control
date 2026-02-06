@@ -11,9 +11,6 @@ use crate::{
 use anyhow::Error;
 use ethercat_hal::devices::el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port};
 use ethercat_hal::io::digital_output::DigitalOutput;
-use smol::lock::RwLock;
-use std::sync::Arc;
-
 
 impl MachineNewTrait for TestMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -36,14 +33,10 @@ impl MachineNewTrait for TestMachine {
             }
         };
         block_on(async {
-            let el2004 = get_ethercat_device::<EL2004>(
-                hardware,
-                params,
-                0,
-                [EL2004_IDENTITY_A].to_vec(),
-            )
-            .await?
-            .0;
+            let el2004 =
+                get_ethercat_device::<EL2004>(hardware, params, 0, [EL2004_IDENTITY_A].to_vec())
+                    .await?
+                    .0;
 
             let do1 = DigitalOutput::new(el2004.clone(), EL2004Port::DO1);
             let do2 = DigitalOutput::new(el2004.clone(), EL2004Port::DO2);

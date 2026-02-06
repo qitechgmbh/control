@@ -586,7 +586,7 @@ export const wagoDoTestMachine: MachineProperties = {
   icon: "lu:ToggleRight",
   machine_identification: {
     vendor: VENDOR_QITECH,
-    machine: 0x000E,
+    machine: 0x000e,
   },
   device_roles: [
     {

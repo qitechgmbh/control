@@ -54,8 +54,7 @@ impl MachineNewTrait for WagoDOTestMachine {
 
             coupler.init_slot_modules(_wago_750_354.1);
             let dev = coupler.slot_devices.get(0).unwrap().clone().unwrap();
-            let wago750_530: Arc<RwLock<Wago750_530>> =
-                downcast_device::<Wago750_530>(dev).await?;
+            let wago750_530: Arc<RwLock<Wago750_530>> = downcast_device::<Wago750_530>(dev).await?;
 
             let do1 = DigitalOutput::new(wago750_530.clone(), Wago750_530Port::Port1);
             let do2 = DigitalOutput::new(wago750_530.clone(), Wago750_530Port::Port2);

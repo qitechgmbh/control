@@ -2,7 +2,10 @@ import { toastError } from "@/components/Toast";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { wagoDoTestMachineSerialRoute } from "@/routes/routes";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { useWagoDoTestMachineNamespace, StateEvent } from "./WagoDoTestMachineNamespace";
+import {
+  useWagoDoTestMachineNamespace,
+  StateEvent,
+} from "./WagoDoTestMachineNamespace";
 import { useMachineMutate } from "@/client/useClient";
 import { produce } from "immer";
 import { useEffect, useMemo } from "react";
