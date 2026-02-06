@@ -4,7 +4,7 @@ import {
 } from "@/machines/types";
 import { usePresetStore } from "./presetStore";
 import { Preset, presetSchema, PresetSchema } from "./preset";
-import { deepEquals } from "@/lib/objects";
+import { deepSubsetEquals } from "@/lib/objects";
 import { useEffect } from "react";
 import { toastError } from "@/components/Toast";
 import { z } from "zod";
@@ -164,7 +164,10 @@ export function usePresets<T>({
       return false;
     }
 
-    return deepEquals(currentState, preset.data ?? {});
+    return deepSubsetEquals(
+      currentState as object,
+      (preset.data ?? {}) as object,
+    );
   };
 
   const importPreset = (json: any) => {

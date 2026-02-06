@@ -16,7 +16,7 @@ import { PresetPreviewEntries, PresetPreviewTable } from "./PresetPreviewTable";
 export type PresetShowDialogProps<T> = {
   preset: Preset<T>;
   previewEntries: PresetPreviewEntries<T>;
-  onApply: (preset: Preset<T>) => void;
+  onApply: (preset: Preset<T>) => void | Promise<void>;
   hideDate?: boolean;
 };
 
