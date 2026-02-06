@@ -487,47 +487,34 @@ export function GluetexOverviewPage() {
           </div>
         </ControlCard>
 
-        {/* Bottom Row: Status (right, width 1) */}
-        <ControlCard width={1} title="Status">
-          <div className="flex flex-col gap-3">
+        {/* Bottom Row: Control Mode (right, width 1) */}
+        <ControlCard width={1} title="Control Mode">
+          <div className="flex flex-col gap-4">
             <TouchButton
               variant={
-                state?.mode_state?.operation_mode === "Standby"
+                state?.mode_state?.operation_mode === "Setup"
                   ? "default"
                   : "outline"
               }
               disabled={isDisabled}
-              className="h-16 text-lg"
-              icon="lu:Power"
-              onClick={() => setOperationMode("Standby")}
+              className="h-20 text-lg"
+              icon="lu:Wrench"
+              onClick={() => setOperationMode("Setup")}
             >
-              STANDBY
+              Setup Mode
             </TouchButton>
             <TouchButton
               variant={
-                state?.mode_state?.operation_mode === "Starting"
+                state?.mode_state?.operation_mode === "Production"
                   ? "default"
                   : "outline"
               }
               disabled={isDisabled}
-              className="h-16 text-lg"
-              icon="lu:Loader"
-              onClick={() => setOperationMode("Starting")}
+              className="h-20 text-lg"
+              icon="lu:ShieldCheck"
+              onClick={() => setOperationMode("Production")}
             >
-              STARTING
-            </TouchButton>
-            <TouchButton
-              variant={
-                state?.mode_state?.operation_mode === "Run"
-                  ? "default"
-                  : "outline"
-              }
-              disabled={isDisabled}
-              className="h-16 text-lg"
-              icon="lu:Play"
-              onClick={() => setOperationMode("Run")}
-            >
-              RUN
+              Production Mode
             </TouchButton>
           </div>
         </ControlCard>

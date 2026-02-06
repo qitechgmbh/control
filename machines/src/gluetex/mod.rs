@@ -594,9 +594,11 @@ impl Gluetex {
 
     /// Check all tension arm positions and trigger emergency stop if any are out of range
     pub fn check_tension_arm_monitor(&mut self) {
-        // Only check if monitoring is enabled AND in Run mode
-        // In Starting mode, monitoring is paused to allow setup movements
-        if !self.tension_arm_monitor_config.enabled || self.operation_mode != OperationMode::Run {
+        // Only check if monitoring is enabled AND in Production mode
+        // In Setup mode, monitoring is paused to allow setup movements
+        if !self.tension_arm_monitor_config.enabled
+            || self.operation_mode != OperationMode::Production
+        {
             // Clear triggered flag if monitoring is disabled or not in Run mode
             if self.tension_arm_monitor_triggered {
                 self.tension_arm_monitor_triggered = false;
@@ -665,9 +667,9 @@ impl Gluetex {
     }
 
     /// Check if sleep timer has expired and trigger standby if needed
-    /// Only active in Run mode - paused during Starting to allow setup
+    /// Only active in Production mode - paused during Setup to allow setup
     pub fn check_sleep_timer(&mut self, now: Instant) {
-        if !self.sleep_timer_config.enabled || self.operation_mode != OperationMode::Run {
+        if !self.sleep_timer_config.enabled || self.operation_mode != OperationMode::Production {
             self.sleep_timer_triggered = false;
             return;
         }
@@ -727,13 +729,10 @@ pub enum GluetexMode {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OperationMode {
-    /// Everything is switched off, nothing runs
-    Standby,
-    /// Can wind, run puller and heat, but safety monitoring is paused
-    /// (allows setup movements without triggering stops)
-    Starting,
-    /// Full operation with all safety monitoring active
-    Run,
+    /// Setup mode: safety monitoring is paused to allow setup movements
+    Setup,
+    /// Production mode: full operation with all safety monitoring active
+    Production,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
