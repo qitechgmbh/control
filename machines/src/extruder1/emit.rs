@@ -51,6 +51,7 @@ impl ExtruderV2 {
                     .screw_speed_controller
                     .get_target_rpm()
                     .get::<revolution_per_minute>(),
+                motor_poles: self.screw_speed_controller.motor_poles,
             },
             heating_states: HeatingStates {
                 nozzle: HeatingState {
@@ -249,7 +250,7 @@ impl ExtruderV2 {
             self.screw_speed_controller.set_target_screw_rpm(
                 self.screw_speed_controller.target_rpm,
                 AngularVelocity::new::<revolution_per_minute>(1500.0),
-                4,
+                self.screw_speed_controller.motor_poles,
             );
             self.screw_speed_controller.set_uses_rpm(uses_rpm);
         }
@@ -271,8 +272,13 @@ impl ExtruderV2 {
         self.screw_speed_controller.set_target_screw_rpm(
             AngularVelocity::new::<revolution_per_minute>(rpm),
             AngularVelocity::new::<revolution_per_minute>(1500.0),
-            4,
+            self.screw_speed_controller.motor_poles,
         );
+        self.emit_state();
+    }
+
+    pub fn set_motor_poles(&mut self, motor_poles: usize) {
+        self.screw_speed_controller.motor_poles = motor_poles;
         self.emit_state();
     }
 

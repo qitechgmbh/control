@@ -132,6 +132,7 @@ pub struct PressureState {
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct ScrewState {
     pub target_rpm: f64,
+    pub motor_poles: usize,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
@@ -235,6 +236,9 @@ pub enum Mutation {
     SetPressurePidSettings(PidSettings),
     SetTemperaturePidSettings(TemperaturePid),
 
+    // Motor
+    SetMotorPoles(usize),
+
     // Reset
     ResetInverter(bool),
 }
@@ -316,6 +320,10 @@ impl MachineApi for ExtruderV2 {
 
             Mutation::SetTemperaturePidSettings(settings) => {
                 self.configure_temperature_pid(settings);
+            }
+
+            Mutation::SetMotorPoles(motor_poles) => {
+                self.set_motor_poles(motor_poles);
             }
         }
         Ok(())

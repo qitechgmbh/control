@@ -21,6 +21,7 @@ pub struct ScrewSpeedController {
     pub pid: ClampingTimeagnosticPidController,
     pub target_pressure: Pressure,
     pub target_rpm: AngularVelocity,
+    pub motor_poles: usize,
     pub inverter: MitsubishiCS80,
     pressure_sensor: AnalogInput,
     last_update: Instant,
@@ -42,6 +43,7 @@ impl ScrewSpeedController {
         target_rpm: AngularVelocity,
         pressure_sensor: AnalogInput,
         transmission: FixedTransmission,
+        motor_poles: usize,
     ) -> Self {
         let now = Instant::now();
         Self {
@@ -62,6 +64,7 @@ impl ScrewSpeedController {
             frequency: Frequency::new::<hertz>(0.0),
             maximum_frequency: Frequency::new::<hertz>(60.0),
             minimum_frequency: Frequency::new::<hertz>(0.0),
+            motor_poles,
         }
     }
 
