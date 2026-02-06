@@ -181,6 +181,11 @@ pub enum Mutation {
     SetSleepTimerEnabled(bool),
     SetSleepTimerTimeout(u64),
     ResetSleepTimer,
+
+    // Order Information
+    SetOrderNumber(String),
+    SetSerialNumber(String),
+    SetProductDescription(String),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -272,6 +277,8 @@ pub struct StateEvent {
     pub tension_arm_monitor_state: TensionArmMonitorState,
     /// sleep timer state
     pub sleep_timer_state: SleepTimerState,
+    /// order information state
+    pub order_info_state: OrderInfoState,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -479,6 +486,16 @@ pub struct SleepTimerState {
     pub timeout_seconds: u64,
     /// remaining seconds until sleep
     pub remaining_seconds: u64,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct OrderInfoState {
+    /// order number
+    pub order_number: String,
+    /// serial number
+    pub serial_number: String,
+    /// product description
+    pub product_description: String,
 }
 
 pub enum GluetexEvents {
@@ -751,6 +768,18 @@ impl MachineApi for Gluetex {
             }
             Mutation::ResetSleepTimer => {
                 self.reset_sleep_timer();
+                self.emit_state();
+            }
+            Mutation::SetOrderNumber(order_number) => {
+                self.order_info.order_number = order_number;
+                self.emit_state();
+            }
+            Mutation::SetSerialNumber(serial_number) => {
+                self.order_info.serial_number = serial_number;
+                self.emit_state();
+            }
+            Mutation::SetProductDescription(description) => {
+                self.order_info.product_description = description;
                 self.emit_state();
             }
         }

@@ -593,6 +593,7 @@ impl MachineNewTrait for Gluetex {
                 sleep_timer_config: super::SleepTimerConfig::default(),
                 last_activity_time: Instant::now(),
                 sleep_timer_triggered: false,
+                order_info: super::OrderInfo::default(),
             };
 
             // initalize events
