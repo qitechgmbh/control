@@ -201,16 +201,26 @@ export function GluetexErrorBanner() {
                 <ul className="mt-2 list-inside list-disc space-y-1 text-red-700 dark:text-red-400">
                   {optris1MonitorTriggered && (
                     <li>
-                      Optris 1: {state?.quality_control_state?.optris1.current_voltage?.toFixed(2) ?? "N/A"}V (Limits:{" "}
-                      {state?.optris_1_monitor_state?.min_voltage?.toFixed(2)}V -{" "}
-                      {state?.optris_1_monitor_state?.max_voltage?.toFixed(2)}V)
+                      Optris 1:{" "}
+                      {state?.quality_control_state?.optris1.current_voltage?.toFixed(
+                        2,
+                      ) ?? "N/A"}
+                      V (Limits:{" "}
+                      {state?.optris_1_monitor_state?.min_voltage?.toFixed(2)}V
+                      - {state?.optris_1_monitor_state?.max_voltage?.toFixed(2)}
+                      V)
                     </li>
                   )}
                   {optris2MonitorTriggered && (
                     <li>
-                      Optris 2: {state?.quality_control_state?.optris2.current_voltage?.toFixed(2) ?? "N/A"}V (Limits:{" "}
-                      {state?.optris_2_monitor_state?.min_voltage?.toFixed(2)}V -{" "}
-                      {state?.optris_2_monitor_state?.max_voltage?.toFixed(2)}V)
+                      Optris 2:{" "}
+                      {state?.quality_control_state?.optris2.current_voltage?.toFixed(
+                        2,
+                      ) ?? "N/A"}
+                      V (Limits:{" "}
+                      {state?.optris_2_monitor_state?.min_voltage?.toFixed(2)}V
+                      - {state?.optris_2_monitor_state?.max_voltage?.toFixed(2)}
+                      V)
                     </li>
                   )}
                 </ul>
