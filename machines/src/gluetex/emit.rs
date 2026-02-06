@@ -545,8 +545,8 @@ impl Gluetex {
                 triggered: self.sleep_timer_triggered,
             },
             order_info_state: api::OrderInfoState {
-                order_number: self.order_info.order_number.clone(),
-                serial_number: self.order_info.serial_number.clone(),
+                order_number: self.order_info.order_number,
+                serial_number: self.order_info.serial_number,
                 product_description: self.order_info.product_description.clone(),
             },
         }

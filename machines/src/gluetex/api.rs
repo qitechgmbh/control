@@ -211,8 +211,8 @@ pub enum Mutation {
     ResetSleepTimer,
 
     // Order Information
-    SetOrderNumber(String),
-    SetSerialNumber(String),
+    SetOrderNumber(u32),
+    SetSerialNumber(u32),
     SetProductDescription(String),
 }
 
@@ -523,9 +523,9 @@ pub struct SleepTimerState {
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct OrderInfoState {
     /// order number
-    pub order_number: String,
+    pub order_number: u32,
     /// serial number
-    pub serial_number: String,
+    pub serial_number: u32,
     /// product description
     pub product_description: String,
 }
