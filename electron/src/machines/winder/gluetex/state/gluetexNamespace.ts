@@ -50,6 +50,8 @@ export const liveValuesEventDataSchema = z.object({
   slave_puller_speed: z.number(),
   slave_tension_arm_angle: z.number(),
   addon_tension_arm_angle: z.number(),
+  optris_1_voltage: z.number(),
+  optris_2_voltage: z.number(),
 });
 
 /**
@@ -501,6 +503,10 @@ export type GluetexNamespaceStore = {
   slavePullerSpeed: TimeSeries;
   slaveTensionArmAngle: TimeSeries;
   addonTensionArmAngle: TimeSeries;
+  
+  // Optris temperature sensor voltages
+  optris1Voltage: TimeSeries;
+  optris2Voltage: TimeSeries;
 };
 
 // Constants for time durations
@@ -567,6 +573,12 @@ const {
   initialTimeSeries: addonTensionArmAngle,
   insert: addAddonTensionArmAngle,
 } = createTimeSeries(timeSeriesConfig);
+
+// Create time series for optris sensors
+const { initialTimeSeries: optris1Voltage, insert: addOptris1Voltage } =
+  createTimeSeries(timeSeriesConfig);
+const { initialTimeSeries: optris2Voltage, insert: addOptris2Voltage } =
+  createTimeSeries(timeSeriesConfig);
 
 // Default addon state (local-only fields)
 // Note: slave_puller_state is no longer needed here as it comes from backend
@@ -636,6 +648,10 @@ export const createGluetexNamespaceStore =
         slavePullerSpeed,
         slaveTensionArmAngle,
         addonTensionArmAngle,
+        
+        // Optris sensor voltages
+        optris1Voltage,
+        optris2Voltage,
       };
     });
 
@@ -752,6 +768,8 @@ export function gluetexMessageHandler(
           slave_puller_speed,
           slave_tension_arm_angle,
           addon_tension_arm_angle,
+          optris_1_voltage,
+          optris_2_voltage,
         } = liveValuesEvent.data;
         const timestamp = liveValuesEvent.ts;
 
@@ -944,6 +962,25 @@ export function gluetexMessageHandler(
           newState.addonTensionArmAngle = addAddonTensionArmAngle(
             state.addonTensionArmAngle,
             addonTensionArmValue,
+          );
+
+          // Add optris voltage readings
+          const optris1Value: TimeSeriesValue = {
+            value: optris_1_voltage,
+            timestamp,
+          };
+          newState.optris1Voltage = addOptris1Voltage(
+            state.optris1Voltage,
+            optris1Value,
+          );
+
+          const optris2Value: TimeSeriesValue = {
+            value: optris_2_voltage,
+            timestamp,
+          };
+          newState.optris2Voltage = addOptris2Voltage(
+            state.optris2Voltage,
+            optris2Value,
           );
 
           return newState;
