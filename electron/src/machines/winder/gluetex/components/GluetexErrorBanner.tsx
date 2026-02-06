@@ -8,6 +8,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { TouchButton } from "@/components/touch/TouchButton";
+import { useRouter } from "@tanstack/react-router";
+import { gluetexRoute } from "@/routes/routes";
 
 /**
  * Error dialog component that displays critical system errors for the Gluetex winder
@@ -15,7 +17,9 @@ import { TouchButton } from "@/components/touch/TouchButton";
  * User must explicitly dismiss each error before continuing
  */
 export function GluetexErrorBanner() {
-  const { state } = useGluetex();
+  const { state, setOperationMode } = useGluetex();
+  const router = useRouter();
+  const { serial } = gluetexRoute.useParams();
 
   // Check for various error conditions
   const tensionArmTriggered = state?.tension_arm_monitor_state?.triggered;
@@ -44,14 +48,22 @@ export function GluetexErrorBanner() {
     setPrevSleepTimerTriggered(sleepTimerTriggered ?? false);
   }, [sleepTimerTriggered, prevSleepTimerTriggered]);
 
-  // Handler to dismiss tension arm dialog
+  // Handler to dismiss tension arm dialog and switch to setup mode
   const dismissTensionArmDialog = () => {
+    setOperationMode("Setup");
     setShowTensionArmDialog(false);
+    router.navigate({
+      to: `/_sidebar/machines/gluetex/${serial}/overview`,
+    });
   };
 
-  // Handler to dismiss sleep timer dialog
+  // Handler to dismiss sleep timer dialog and switch to setup mode
   const dismissSleepTimerDialog = () => {
+    setOperationMode("Setup");
     setShowSleepTimerDialog(false);
+    router.navigate({
+      to: `/_sidebar/machines/gluetex/${serial}/overview`,
+    });
   };
 
   // Determine which dialog to show (priority: tension arm > sleep timer)
@@ -97,7 +109,7 @@ export function GluetexErrorBanner() {
               className="w-full"
               onClick={dismissTensionArmDialog}
             >
-              Acknowledge Error
+              Acknowledge & Return to Setup Mode
             </TouchButton>
           </div>
         </DialogContent>
@@ -138,7 +150,7 @@ export function GluetexErrorBanner() {
               className="w-full"
               onClick={dismissSleepTimerDialog}
             >
-              Acknowledge
+              Acknowledge & Return to Setup Mode
             </TouchButton>
           </div>
         </DialogContent>
