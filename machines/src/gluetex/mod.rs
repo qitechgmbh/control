@@ -713,7 +713,7 @@ impl Gluetex {
         if !config.enabled || !in_production_mode {
             // Clear debounce timer
             *out_of_range_since = None;
-            
+
             // Clear triggered flag if monitoring is disabled or not in Production mode
             if current_triggered {
                 return (false, true); // state changed
@@ -757,10 +757,13 @@ impl Gluetex {
 
             // Clear triggered flag if back in range
             if current_triggered {
-                tracing::info!("{} tension arm monitor cleared - arm back in range", arm_name);
+                tracing::info!(
+                    "{} tension arm monitor cleared - arm back in range",
+                    arm_name
+                );
                 return (false, true); // state changed
             }
-            
+
             return (false, false); // no change
         }
     }
@@ -865,7 +868,7 @@ impl Gluetex {
         if !config.enabled || !in_production_mode {
             // Clear debounce timer
             *out_of_range_since = None;
-            
+
             // Clear triggered flag if monitoring is disabled or not in Production mode
             if current_triggered {
                 return (false, true); // state changed
@@ -909,10 +912,13 @@ impl Gluetex {
 
             // Clear triggered flag if back in range
             if current_triggered {
-                tracing::info!("{} voltage monitor cleared - voltage back in range", sensor_name);
+                tracing::info!(
+                    "{} voltage monitor cleared - voltage back in range",
+                    sensor_name
+                );
                 return (false, true); // state changed
             }
-            
+
             return (false, false); // no change
         }
     }

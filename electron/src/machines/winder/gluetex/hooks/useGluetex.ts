@@ -350,6 +350,17 @@ export function useGluetex() {
     z.literal("ResetSleepTimer"),
   );
 
+  // Order Information mutations
+  const { request: requestSetOrderNumber } = useMachineMutation(
+    z.object({ SetOrderNumber: z.number() }),
+  );
+  const { request: requestSetSerialNumber } = useMachineMutation(
+    z.object({ SetSerialNumber: z.number() }),
+  );
+  const { request: requestSetProductDescription } = useMachineMutation(
+    z.object({ SetProductDescription: z.string() }),
+  );
+
   const { request: requestConfigureHeatingPid } = useMachineMutation(
     z.object({
       ConfigureHeatingPid: z.object({
@@ -1416,6 +1427,46 @@ export function useGluetex() {
     );
   };
 
+  // Order Information action functions
+  const setOrderNumber = (orderNumber: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.order_info_state.order_number = orderNumber;
+      },
+      () =>
+        requestSetOrderNumber({
+          machine_identification_unique: machineIdentification,
+          data: { SetOrderNumber: orderNumber },
+        }),
+    );
+  };
+
+  const setSerialNumber = (serialNumber: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.order_info_state.serial_number = serialNumber;
+      },
+      () =>
+        requestSetSerialNumber({
+          machine_identification_unique: machineIdentification,
+          data: { SetSerialNumber: serialNumber },
+        }),
+    );
+  };
+
+  const setProductDescription = (description: string) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.order_info_state.product_description = description;
+      },
+      () =>
+        requestSetProductDescription({
+          machine_identification_unique: machineIdentification,
+          data: { SetProductDescription: description },
+        }),
+    );
+  };
+
   const setHeatingPid = (zone: string, kp: number, ki: number, kd: number) => {
     updateStateOptimistically(
       (current) => {
@@ -1700,6 +1751,11 @@ export function useGluetex() {
     setSleepTimerEnabled,
     setSleepTimerTimeout,
     resetSleepTimer,
+
+    // Order Information action functions
+    setOrderNumber,
+    setSerialNumber,
+    setProductDescription,
 
     // Heating action functions
     setHeatingPid,

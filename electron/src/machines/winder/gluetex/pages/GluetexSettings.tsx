@@ -1684,7 +1684,8 @@ export function GluetexSettingPage() {
                         title="Min Optris 1 Voltage"
                         defaultValue={
                           defaultState?.optris_1_monitor_state?.min_voltage ??
-                          defaultState?.quality_control_state?.optris1.min_voltage
+                          defaultState?.quality_control_state?.optris1
+                            .min_voltage
                         }
                         min={0}
                         max={Math.min(
@@ -1711,7 +1712,8 @@ export function GluetexSettingPage() {
                         title="Max Optris 1 Voltage"
                         defaultValue={
                           defaultState?.optris_1_monitor_state?.max_voltage ??
-                          defaultState?.quality_control_state?.optris1.max_voltage
+                          defaultState?.quality_control_state?.optris1
+                            .max_voltage
                         }
                         min={Math.max(
                           0.05,
@@ -1759,7 +1761,8 @@ export function GluetexSettingPage() {
                         title="Min Optris 2 Voltage"
                         defaultValue={
                           defaultState?.optris_2_monitor_state?.min_voltage ??
-                          defaultState?.quality_control_state?.optris2.min_voltage
+                          defaultState?.quality_control_state?.optris2
+                            .min_voltage
                         }
                         min={0}
                         max={Math.min(
@@ -1786,7 +1789,8 @@ export function GluetexSettingPage() {
                         title="Max Optris 2 Voltage"
                         defaultValue={
                           defaultState?.optris_2_monitor_state?.max_voltage ??
-                          defaultState?.quality_control_state?.optris2.max_voltage
+                          defaultState?.quality_control_state?.optris2
+                            .max_voltage
                         }
                         min={Math.max(
                           0.05,

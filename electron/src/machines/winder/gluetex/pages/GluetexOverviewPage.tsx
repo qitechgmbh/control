@@ -47,9 +47,11 @@ export function GluetexOverviewPage() {
     isLoading,
     isDisabled,
     resetSleepTimer,
+    setOrderNumber,
+    setSerialNumber,
+    setProductDescription,
   } = useGluetex();
 
-  const [productDescription, setProductDescription] = React.useState("");
   const [tempDescription, setTempDescription] = React.useState("");
   const [descriptionOpen, setDescriptionOpen] = React.useState(false);
 
@@ -407,24 +409,24 @@ export function GluetexOverviewPage() {
             <div className="grid grid-cols-2 gap-4">
               <Label label="Order Number">
                 <EditValue
-                  value={0}
+                  value={state?.order_info_state?.order_number ?? 0}
                   title="Order Number"
                   defaultValue={0}
                   min={0}
                   max={999999}
                   renderValue={(value) => value.toString()}
-                  onChange={() => {}}
+                  onChange={setOrderNumber}
                 />
               </Label>
               <Label label="Serial Number">
                 <EditValue
-                  value={0}
+                  value={state?.order_info_state?.serial_number ?? 0}
                   title="Serial Number"
                   defaultValue={0}
                   min={0}
                   max={999999}
                   renderValue={(value) => value.toString()}
-                  onChange={() => {}}
+                  onChange={setSerialNumber}
                 />
               </Label>
             </div>
@@ -434,7 +436,9 @@ export function GluetexOverviewPage() {
                 onOpenChange={(isOpen) => {
                   setDescriptionOpen(isOpen);
                   if (isOpen) {
-                    setTempDescription(productDescription);
+                    setTempDescription(
+                      state?.order_info_state?.product_description ?? "",
+                    );
                   }
                 }}
               >
@@ -443,7 +447,8 @@ export function GluetexOverviewPage() {
                     variant="outline"
                     className="h-12 w-full justify-start text-lg font-normal"
                   >
-                    {productDescription || "Enter description..."}
+                    {state?.order_info_state?.product_description ||
+                      "Enter description..."}
                   </TouchButton>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[600px]">
@@ -466,7 +471,9 @@ export function GluetexOverviewPage() {
                         className="h-14 flex-1 text-lg"
                         onClick={() => {
                           setDescriptionOpen(false);
-                          setTempDescription(productDescription);
+                          setTempDescription(
+                            state?.order_info_state?.product_description ?? "",
+                          );
                         }}
                       >
                         Cancel

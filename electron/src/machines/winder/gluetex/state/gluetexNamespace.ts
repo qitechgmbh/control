@@ -335,6 +335,15 @@ export const sleepTimerStateSchema = z.object({
 });
 
 /**
+ * Order information state schema (from backend)
+ */
+export const orderInfoStateSchema = z.object({
+  order_number: z.number(),
+  serial_number: z.number(),
+  product_description: z.string(),
+});
+
+/**
  * Consolidated state event schema (state changes only) - from backend
  */
 export const stateEventDataSchema = z.object({
@@ -359,6 +368,7 @@ export const stateEventDataSchema = z.object({
   optris_1_monitor_state: voltageMonitorStateSchema,
   optris_2_monitor_state: voltageMonitorStateSchema,
   sleep_timer_state: sleepTimerStateSchema,
+  order_info_state: orderInfoStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
