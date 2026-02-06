@@ -852,27 +852,27 @@ export function useGluetex() {
     );
   };
 
-  const setTemperature1Min = (min: number) => {
+  const setOptris1Min = (min: number) => {
     updateStateLocally((current) => {
-      current.data.quality_control_state.temperature1.min_temperature = min;
+      current.data.quality_control_state.optris1.min_voltage = min;
     });
   };
 
-  const setTemperature1Max = (max: number) => {
+  const setOptris1Max = (max: number) => {
     updateStateLocally((current) => {
-      current.data.quality_control_state.temperature1.max_temperature = max;
+      current.data.quality_control_state.optris1.max_voltage = max;
     });
   };
 
-  const setTemperature2Min = (min: number) => {
+  const setOptris2Min = (min: number) => {
     updateStateLocally((current) => {
-      current.data.quality_control_state.temperature2.min_temperature = min;
+      current.data.quality_control_state.optris2.min_voltage = min;
     });
   };
 
-  const setTemperature2Max = (max: number) => {
+  const setOptris2Max = (max: number) => {
     updateStateLocally((current) => {
-      current.data.quality_control_state.temperature2.max_temperature = max;
+      current.data.quality_control_state.optris2.max_voltage = max;
     });
   };
 
@@ -1602,10 +1602,10 @@ export function useGluetex() {
     setStepper4Mode,
     setStepper5Mode,
     setHeatingMode,
-    setTemperature1Min,
-    setTemperature1Max,
-    setTemperature2Min,
-    setTemperature2Max,
+    setOptris1Min,
+    setOptris1Max,
+    setOptris2Min,
+    setOptris2Max,
     setStepper3Master,
     setStepper3Slave,
     setStepper3Forward,
