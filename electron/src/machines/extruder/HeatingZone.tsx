@@ -8,9 +8,15 @@ import { TimeSeries } from "@/lib/timeseries";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { StatusBadge } from "@/control/StatusBadge";
 
+// Extended heating state type that includes optional autotuning fields
+type HeatingStateWithAutoTune = HeatingState & {
+  autotuning_active?: boolean;
+  autotuning_progress?: number;
+};
+
 type Props = {
   title: string;
-  heatingState?: HeatingState;
+  heatingState?: HeatingStateWithAutoTune;
   heatingTimeSeries: TimeSeries;
   heatingPower: TimeSeries;
   min: number;
@@ -68,6 +74,13 @@ export function HeatingZone({
       {heatingState?.wiring_error && (
         <StatusBadge variant="error">
           Cant Read Temperature! Check Temperature Sensor Wiring!
+        </StatusBadge>
+      )}
+
+      {heatingState?.autotuning_active && (
+        <StatusBadge variant="info">
+          Auto-Tuning in Progress...{" "}
+          {roundToDecimals((heatingState?.autotuning_progress ?? 0) * 100, 0)}%
         </StatusBadge>
       )}
     </ControlCard>
