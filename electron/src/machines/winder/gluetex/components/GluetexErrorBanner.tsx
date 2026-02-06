@@ -32,14 +32,25 @@ export function GluetexErrorBanner() {
     winderTensionArmTriggered ||
     addonTensionArmTriggered ||
     slaveTensionArmTriggered;
+
+  // Check voltage monitors
+  const optris1MonitorTriggered = state?.optris_1_monitor_state?.triggered;
+  const optris2MonitorTriggered = state?.optris_2_monitor_state?.triggered;
+  const anyVoltageMonitorTriggered =
+    optris1MonitorTriggered || optris2MonitorTriggered;
+
   const sleepTimerTriggered = state?.sleep_timer_state?.triggered;
 
   // Track if we should show the dialog (set to true when error triggers)
   const [showTensionArmDialog, setShowTensionArmDialog] = useState(false);
+  const [showVoltageMonitorDialog, setShowVoltageMonitorDialog] =
+    useState(false);
   const [showSleepTimerDialog, setShowSleepTimerDialog] = useState(false);
 
   // Track previous trigger state to detect new errors
   const [prevAnyTensionArmTriggered, setPrevAnyTensionArmTriggered] =
+    useState(false);
+  const [prevAnyVoltageMonitorTriggered, setPrevAnyVoltageMonitorTriggered] =
     useState(false);
   const [prevSleepTimerTriggered, setPrevSleepTimerTriggered] = useState(false);
 
@@ -50,6 +61,13 @@ export function GluetexErrorBanner() {
     }
     setPrevAnyTensionArmTriggered(anyTensionArmTriggered ?? false);
   }, [anyTensionArmTriggered, prevAnyTensionArmTriggered]);
+
+  useEffect(() => {
+    if (anyVoltageMonitorTriggered && !prevAnyVoltageMonitorTriggered) {
+      setShowVoltageMonitorDialog(true);
+    }
+    setPrevAnyVoltageMonitorTriggered(anyVoltageMonitorTriggered ?? false);
+  }, [anyVoltageMonitorTriggered, prevAnyVoltageMonitorTriggered]);
 
   useEffect(() => {
     if (sleepTimerTriggered && !prevSleepTimerTriggered) {
@@ -67,6 +85,15 @@ export function GluetexErrorBanner() {
     });
   };
 
+  // Handler to dismiss voltage monitor dialog and switch to setup mode
+  const dismissVoltageMonitorDialog = () => {
+    setOperationMode("Setup");
+    setShowVoltageMonitorDialog(false);
+    router.navigate({
+      to: `/_sidebar/machines/gluetex/${serial}/addons`,
+    });
+  };
+
   // Handler to dismiss sleep timer dialog and switch to setup mode
   const dismissSleepTimerDialog = () => {
     setOperationMode("Setup");
@@ -76,10 +103,14 @@ export function GluetexErrorBanner() {
     });
   };
 
-  // Determine which dialog to show (priority: tension arm > sleep timer)
+  // Determine which dialog to show (priority: tension arm > voltage > sleep timer)
   const displayTensionArmDialog = showTensionArmDialog;
+  const displayVoltageMonitorDialog =
+    !displayTensionArmDialog && showVoltageMonitorDialog;
   const displaySleepTimerDialog =
-    !displayTensionArmDialog && showSleepTimerDialog;
+    !displayTensionArmDialog &&
+    !displayVoltageMonitorDialog &&
+    showSleepTimerDialog;
 
   return (
     <>
@@ -137,6 +168,70 @@ export function GluetexErrorBanner() {
               Acknowledge & Return to Setup Mode
             </TouchButton>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Voltage Monitor Error Dialog */}
+      <Dialog open={displayVoltageMonitorDialog} onOpenChange={() => {}}>
+        <DialogContent
+          className="max-w-lg border-red-500"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">⚠️</span>
+              <DialogTitle className="text-xl text-red-600 dark:text-red-400">
+                Voltage Monitor Safety Limit Exceeded
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          <DialogDescription className="space-y-4">
+            <div className="text-base">
+              <p className="mb-3">
+                One or more Optris voltage sensors have detected readings
+                outside the configured safe operating range. The machine has
+                been automatically stopped to prevent potential damage.
+              </p>
+
+              <div className="rounded-md bg-red-50 p-4 dark:bg-red-950">
+                <p className="font-semibold text-red-700 dark:text-red-400">
+                  Triggered monitors:
+                </p>
+                <ul className="mt-2 list-inside list-disc space-y-1 text-red-700 dark:text-red-400">
+                  {optris1MonitorTriggered && (
+                    <li>
+                      Optris 1: {state?.quality_control_state?.optris1.current_voltage?.toFixed(2) ?? "N/A"}V (Limits:{" "}
+                      {state?.optris_1_monitor_state?.min_voltage?.toFixed(2)}V -{" "}
+                      {state?.optris_1_monitor_state?.max_voltage?.toFixed(2)}V)
+                    </li>
+                  )}
+                  {optris2MonitorTriggered && (
+                    <li>
+                      Optris 2: {state?.quality_control_state?.optris2.current_voltage?.toFixed(2) ?? "N/A"}V (Limits:{" "}
+                      {state?.optris_2_monitor_state?.min_voltage?.toFixed(2)}V -{" "}
+                      {state?.optris_2_monitor_state?.max_voltage?.toFixed(2)}V)
+                    </li>
+                  )}
+                </ul>
+              </div>
+
+              <p className="mt-3">
+                Please check the Optris sensors and verify the readings are
+                correct before resuming operation.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <TouchButton
+                onClick={dismissVoltageMonitorDialog}
+                variant="default"
+                className="w-full"
+              >
+                Switch to Setup Mode & Check Sensors
+              </TouchButton>
+            </div>
+          </DialogDescription>
         </DialogContent>
       </Dialog>
 

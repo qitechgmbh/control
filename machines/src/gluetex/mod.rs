@@ -74,6 +74,23 @@ impl Default for TensionArmMonitorConfig {
 }
 
 #[derive(Debug, Clone)]
+pub struct VoltageMonitorConfig {
+    pub enabled: bool,
+    pub min_voltage: f64,
+    pub max_voltage: f64,
+}
+
+impl Default for VoltageMonitorConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            min_voltage: 2.0,
+            max_voltage: 8.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct SleepTimerConfig {
     pub enabled: bool,
     pub timeout_seconds: u64,
@@ -238,6 +255,17 @@ pub struct Gluetex {
     pub slave_tension_arm_monitor_triggered: bool,
     /// Time when slave tension arm first went out of range (used for debouncing)
     pub slave_tension_arm_out_of_range_since: Option<Instant>,
+
+    // voltage monitoring - separate for each optris sensor
+    pub optris_1_monitor_config: VoltageMonitorConfig,
+    pub optris_1_monitor_triggered: bool,
+    /// Time when optris 1 first went out of range (used for debouncing)
+    pub optris_1_out_of_range_since: Option<Instant>,
+
+    pub optris_2_monitor_config: VoltageMonitorConfig,
+    pub optris_2_monitor_triggered: bool,
+    /// Time when optris 2 first went out of range (used for debouncing)
+    pub optris_2_out_of_range_since: Option<Instant>,
 
     // sleep timer
     pub sleep_timer_config: SleepTimerConfig,
@@ -757,6 +785,136 @@ impl Gluetex {
         self.spool_speed_controller.set_enabled(false);
         self.puller_speed_controller.set_enabled(false);
         self.slave_puller_speed_controller.set_enabled(false);
+    }
+
+    /// Check voltage monitors and trigger emergency stop if limits exceeded
+    pub fn check_voltage_monitors(&mut self) {
+        let now = Instant::now();
+        let in_production_mode = self.operation_mode == OperationMode::Production;
+
+        let mut any_trigger = false;
+        let mut state_changed = false;
+
+        // Check optris 1 voltage
+        let optris_1_voltage = {
+            use ethercat_hal::io::analog_input::physical::AnalogInputValue;
+            use units::electric_potential::volt;
+            match self.optris_1.get_physical() {
+                AnalogInputValue::Potential(v) => v.get::<volt>(),
+                _ => 0.0,
+            }
+        };
+        let (trigger, changed) = Self::check_single_voltage(
+            optris_1_voltage,
+            &self.optris_1_monitor_config,
+            self.optris_1_monitor_triggered,
+            &mut self.optris_1_out_of_range_since,
+            "Optris 1",
+            now,
+            in_production_mode,
+        );
+        self.optris_1_monitor_triggered = trigger;
+        any_trigger |= trigger;
+        state_changed |= changed;
+
+        // Check optris 2 voltage
+        let optris_2_voltage = {
+            use ethercat_hal::io::analog_input::physical::AnalogInputValue;
+            use units::electric_potential::volt;
+            match self.optris_2.get_physical() {
+                AnalogInputValue::Potential(v) => v.get::<volt>(),
+                _ => 0.0,
+            }
+        };
+        let (trigger, changed) = Self::check_single_voltage(
+            optris_2_voltage,
+            &self.optris_2_monitor_config,
+            self.optris_2_monitor_triggered,
+            &mut self.optris_2_out_of_range_since,
+            "Optris 2",
+            now,
+            in_production_mode,
+        );
+        self.optris_2_monitor_triggered = trigger;
+        any_trigger |= trigger;
+        state_changed |= changed;
+
+        // If any voltage monitor triggered emergency stop, execute it
+        if any_trigger && state_changed {
+            self.emergency_stop();
+        }
+
+        // Emit state if anything changed
+        if state_changed {
+            self.emit_state();
+        }
+    }
+
+    /// Check a single voltage against its monitoring configuration
+    /// Returns (new_triggered_state, state_changed)
+    fn check_single_voltage(
+        voltage: f64,
+        config: &VoltageMonitorConfig,
+        current_triggered: bool,
+        out_of_range_since: &mut Option<Instant>,
+        sensor_name: &str,
+        now: Instant,
+        in_production_mode: bool,
+    ) -> (bool, bool) {
+        // Only check if monitoring is enabled AND in Production mode
+        if !config.enabled || !in_production_mode {
+            // Clear debounce timer
+            *out_of_range_since = None;
+            
+            // Clear triggered flag if monitoring is disabled or not in Production mode
+            if current_triggered {
+                return (false, true); // state changed
+            }
+            return (false, false); // no change
+        }
+
+        let min_voltage = config.min_voltage;
+        let max_voltage = config.max_voltage;
+
+        // Check if this voltage is out of range
+        let is_out_of_range = voltage < min_voltage || voltage > max_voltage;
+
+        if is_out_of_range {
+            // Start or continue tracking out-of-range time
+            if out_of_range_since.is_none() {
+                *out_of_range_since = Some(now);
+            }
+
+            // Check if out of range for more than 200ms
+            if let Some(start_time) = *out_of_range_since {
+                let duration = now.duration_since(start_time);
+                if duration.as_millis() >= 200 && !current_triggered {
+                    // Trigger emergency stop after debounce period
+                    tracing::warn!(
+                        "{} voltage monitor triggered after 200ms! Voltage: {:.2}V (limits: {:.2}V-{:.2}V)",
+                        sensor_name,
+                        voltage,
+                        min_voltage,
+                        max_voltage
+                    );
+                    return (true, true); // triggered and state changed
+                }
+            }
+            return (current_triggered, false); // no change yet (still within debounce)
+        } else {
+            // Back in range - clear debounce timer
+            if out_of_range_since.is_some() {
+                *out_of_range_since = None;
+            }
+
+            // Clear triggered flag if back in range
+            if current_triggered {
+                tracing::info!("{} voltage monitor cleared - voltage back in range", sensor_name);
+                return (false, true); // state changed
+            }
+            
+            return (false, false); // no change
+        }
     }
 
     /// Check if sleep timer has expired and trigger standby if needed
