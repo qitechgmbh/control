@@ -200,10 +200,20 @@ pub enum Mutation {
     ZeroSlaveTensionArm,
     ZeroAddonTensionArm,
 
-    // Tension Arm Monitoring
-    SetTensionArmMonitorEnabled(bool),
-    SetTensionArmMonitorMinAngle(f64),
-    SetTensionArmMonitorMaxAngle(f64),
+    // Tension Arm Monitoring - Winder
+    SetWinderTensionArmMonitorEnabled(bool),
+    SetWinderTensionArmMonitorMinAngle(f64),
+    SetWinderTensionArmMonitorMaxAngle(f64),
+
+    // Tension Arm Monitoring - Addon
+    SetAddonTensionArmMonitorEnabled(bool),
+    SetAddonTensionArmMonitorMinAngle(f64),
+    SetAddonTensionArmMonitorMaxAngle(f64),
+
+    // Tension Arm Monitoring - Slave
+    SetSlaveTensionArmMonitorEnabled(bool),
+    SetSlaveTensionArmMonitorMinAngle(f64),
+    SetSlaveTensionArmMonitorMaxAngle(f64),
 
     // Sleep Timer
     SetSleepTimerEnabled(bool),
@@ -301,8 +311,12 @@ pub struct StateEvent {
     pub slave_puller_state: SlavePullerState,
     /// addon tension arm state
     pub addon_tension_arm_state: TensionArmState,
-    /// tension arm monitor state
-    pub tension_arm_monitor_state: TensionArmMonitorState,
+    /// winder tension arm monitor state
+    pub winder_tension_arm_monitor_state: TensionArmMonitorState,
+    /// addon tension arm monitor state
+    pub addon_tension_arm_monitor_state: TensionArmMonitorState,
+    /// slave tension arm monitor state
+    pub slave_tension_arm_monitor_state: TensionArmMonitorState,
     /// sleep timer state
     pub sleep_timer_state: SleepTimerState,
     /// order information state
@@ -771,20 +785,55 @@ impl MachineApi for Gluetex {
                 self.addon_tension_arm.zero();
                 self.emit_state();
             }
-            Mutation::SetTensionArmMonitorEnabled(enabled) => {
-                self.tension_arm_monitor_config.enabled = enabled;
+            // Winder Tension Arm Monitor
+            Mutation::SetWinderTensionArmMonitorEnabled(enabled) => {
+                self.winder_tension_arm_monitor_config.enabled = enabled;
                 // Clear triggered flag when disabling
                 if !enabled {
-                    self.tension_arm_monitor_triggered = false;
+                    self.winder_tension_arm_monitor_triggered = false;
                 }
                 self.emit_state();
             }
-            Mutation::SetTensionArmMonitorMinAngle(angle_deg) => {
-                self.tension_arm_monitor_config.min_angle = Angle::new::<degree>(angle_deg);
+            Mutation::SetWinderTensionArmMonitorMinAngle(angle_deg) => {
+                self.winder_tension_arm_monitor_config.min_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
-            Mutation::SetTensionArmMonitorMaxAngle(angle_deg) => {
-                self.tension_arm_monitor_config.max_angle = Angle::new::<degree>(angle_deg);
+            Mutation::SetWinderTensionArmMonitorMaxAngle(angle_deg) => {
+                self.winder_tension_arm_monitor_config.max_angle = Angle::new::<degree>(angle_deg);
+                self.emit_state();
+            }
+            // Addon Tension Arm Monitor
+            Mutation::SetAddonTensionArmMonitorEnabled(enabled) => {
+                self.addon_tension_arm_monitor_config.enabled = enabled;
+                // Clear triggered flag when disabling
+                if !enabled {
+                    self.addon_tension_arm_monitor_triggered = false;
+                }
+                self.emit_state();
+            }
+            Mutation::SetAddonTensionArmMonitorMinAngle(angle_deg) => {
+                self.addon_tension_arm_monitor_config.min_angle = Angle::new::<degree>(angle_deg);
+                self.emit_state();
+            }
+            Mutation::SetAddonTensionArmMonitorMaxAngle(angle_deg) => {
+                self.addon_tension_arm_monitor_config.max_angle = Angle::new::<degree>(angle_deg);
+                self.emit_state();
+            }
+            // Slave Tension Arm Monitor
+            Mutation::SetSlaveTensionArmMonitorEnabled(enabled) => {
+                self.slave_tension_arm_monitor_config.enabled = enabled;
+                // Clear triggered flag when disabling
+                if !enabled {
+                    self.slave_tension_arm_monitor_triggered = false;
+                }
+                self.emit_state();
+            }
+            Mutation::SetSlaveTensionArmMonitorMinAngle(angle_deg) => {
+                self.slave_tension_arm_monitor_config.min_angle = Angle::new::<degree>(angle_deg);
+                self.emit_state();
+            }
+            Mutation::SetSlaveTensionArmMonitorMaxAngle(angle_deg) => {
+                self.slave_tension_arm_monitor_config.max_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
             Mutation::SetSleepTimerEnabled(enabled) => {

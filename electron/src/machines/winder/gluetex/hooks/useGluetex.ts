@@ -277,16 +277,47 @@ export function useGluetex() {
     z.literal("ZeroAddonTensionArm"),
   );
 
-  // Tension Arm Monitor mutations
-  const { request: requestSetTensionArmMonitorEnabled } = useMachineMutation(
-    z.object({ SetTensionArmMonitorEnabled: z.boolean() }),
-  );
-  const { request: requestSetTensionArmMonitorMinAngle } = useMachineMutation(
-    z.object({ SetTensionArmMonitorMinAngle: z.number() }),
-  );
-  const { request: requestSetTensionArmMonitorMaxAngle } = useMachineMutation(
-    z.object({ SetTensionArmMonitorMaxAngle: z.number() }),
-  );
+  // Winder Tension Arm Monitor mutations
+  const { request: requestSetWinderTensionArmMonitorEnabled } =
+    useMachineMutation(
+      z.object({ SetWinderTensionArmMonitorEnabled: z.boolean() }),
+    );
+  const { request: requestSetWinderTensionArmMonitorMinAngle } =
+    useMachineMutation(
+      z.object({ SetWinderTensionArmMonitorMinAngle: z.number() }),
+    );
+  const { request: requestSetWinderTensionArmMonitorMaxAngle } =
+    useMachineMutation(
+      z.object({ SetWinderTensionArmMonitorMaxAngle: z.number() }),
+    );
+
+  // Addon Tension Arm Monitor mutations
+  const { request: requestSetAddonTensionArmMonitorEnabled } =
+    useMachineMutation(
+      z.object({ SetAddonTensionArmMonitorEnabled: z.boolean() }),
+    );
+  const { request: requestSetAddonTensionArmMonitorMinAngle } =
+    useMachineMutation(
+      z.object({ SetAddonTensionArmMonitorMinAngle: z.number() }),
+    );
+  const { request: requestSetAddonTensionArmMonitorMaxAngle } =
+    useMachineMutation(
+      z.object({ SetAddonTensionArmMonitorMaxAngle: z.number() }),
+    );
+
+  // Slave Tension Arm Monitor mutations
+  const { request: requestSetSlaveTensionArmMonitorEnabled } =
+    useMachineMutation(
+      z.object({ SetSlaveTensionArmMonitorEnabled: z.boolean() }),
+    );
+  const { request: requestSetSlaveTensionArmMonitorMinAngle } =
+    useMachineMutation(
+      z.object({ SetSlaveTensionArmMonitorMinAngle: z.number() }),
+    );
+  const { request: requestSetSlaveTensionArmMonitorMaxAngle } =
+    useMachineMutation(
+      z.object({ SetSlaveTensionArmMonitorMaxAngle: z.number() }),
+    );
 
   // Sleep Timer mutations
   const { request: requestSetSleepTimerEnabled } = useMachineMutation(
@@ -1100,46 +1131,134 @@ export function useGluetex() {
     );
   };
 
-  // Tension Arm Monitor action functions
-  const setTensionArmMonitorEnabled = (enabled: boolean) => {
+  // Winder Tension Arm Monitor action functions
+  const setWinderTensionArmMonitorEnabled = (enabled: boolean) => {
     updateStateOptimistically(
       (current) => {
-        current.data.tension_arm_monitor_state.enabled = enabled;
+        current.data.winder_tension_arm_monitor_state.enabled = enabled;
         // Clear triggered flag when disabling
         if (!enabled) {
-          current.data.tension_arm_monitor_state.triggered = false;
+          current.data.winder_tension_arm_monitor_state.triggered = false;
         }
       },
       () =>
-        requestSetTensionArmMonitorEnabled({
+        requestSetWinderTensionArmMonitorEnabled({
           machine_identification_unique: machineIdentification,
-          data: { SetTensionArmMonitorEnabled: enabled },
+          data: { SetWinderTensionArmMonitorEnabled: enabled },
         }),
     );
   };
 
-  const setTensionArmMonitorMinAngle = (angle: number) => {
+  const setWinderTensionArmMonitorMinAngle = (angle: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.tension_arm_monitor_state.min_angle = angle;
+        current.data.winder_tension_arm_monitor_state.min_angle = angle;
       },
       () =>
-        requestSetTensionArmMonitorMinAngle({
+        requestSetWinderTensionArmMonitorMinAngle({
           machine_identification_unique: machineIdentification,
-          data: { SetTensionArmMonitorMinAngle: angle },
+          data: { SetWinderTensionArmMonitorMinAngle: angle },
         }),
     );
   };
 
-  const setTensionArmMonitorMaxAngle = (angle: number) => {
+  const setWinderTensionArmMonitorMaxAngle = (angle: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.tension_arm_monitor_state.max_angle = angle;
+        current.data.winder_tension_arm_monitor_state.max_angle = angle;
       },
       () =>
-        requestSetTensionArmMonitorMaxAngle({
+        requestSetWinderTensionArmMonitorMaxAngle({
           machine_identification_unique: machineIdentification,
-          data: { SetTensionArmMonitorMaxAngle: angle },
+          data: { SetWinderTensionArmMonitorMaxAngle: angle },
+        }),
+    );
+  };
+
+  // Addon Tension Arm Monitor action functions
+  const setAddonTensionArmMonitorEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.addon_tension_arm_monitor_state.enabled = enabled;
+        // Clear triggered flag when disabling
+        if (!enabled) {
+          current.data.addon_tension_arm_monitor_state.triggered = false;
+        }
+      },
+      () =>
+        requestSetAddonTensionArmMonitorEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonTensionArmMonitorEnabled: enabled },
+        }),
+    );
+  };
+
+  const setAddonTensionArmMonitorMinAngle = (angle: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.addon_tension_arm_monitor_state.min_angle = angle;
+      },
+      () =>
+        requestSetAddonTensionArmMonitorMinAngle({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonTensionArmMonitorMinAngle: angle },
+        }),
+    );
+  };
+
+  const setAddonTensionArmMonitorMaxAngle = (angle: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.addon_tension_arm_monitor_state.max_angle = angle;
+      },
+      () =>
+        requestSetAddonTensionArmMonitorMaxAngle({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonTensionArmMonitorMaxAngle: angle },
+        }),
+    );
+  };
+
+  // Slave Tension Arm Monitor action functions
+  const setSlaveTensionArmMonitorEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.slave_tension_arm_monitor_state.enabled = enabled;
+        // Clear triggered flag when disabling
+        if (!enabled) {
+          current.data.slave_tension_arm_monitor_state.triggered = false;
+        }
+      },
+      () =>
+        requestSetSlaveTensionArmMonitorEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetSlaveTensionArmMonitorEnabled: enabled },
+        }),
+    );
+  };
+
+  const setSlaveTensionArmMonitorMinAngle = (angle: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.slave_tension_arm_monitor_state.min_angle = angle;
+      },
+      () =>
+        requestSetSlaveTensionArmMonitorMinAngle({
+          machine_identification_unique: machineIdentification,
+          data: { SetSlaveTensionArmMonitorMinAngle: angle },
+        }),
+    );
+  };
+
+  const setSlaveTensionArmMonitorMaxAngle = (angle: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.slave_tension_arm_monitor_state.max_angle = angle;
+      },
+      () =>
+        requestSetSlaveTensionArmMonitorMaxAngle({
+          machine_identification_unique: machineIdentification,
+          data: { SetSlaveTensionArmMonitorMaxAngle: angle },
         }),
     );
   };
@@ -1361,9 +1480,7 @@ export function useGluetex() {
         (m) => m.machine_identification_unique.serial === serial,
       ) ?? null
     );
-  }, [filteredMachines, state]);
-
-  // ========== Loading States ==========
+  }, [filteredMachines, state?.data.connected_machine_state]);
 
   const isLoading = stateOptimistic.isOptimistic;
   const isDisabled = !stateOptimistic.isInitialized;
@@ -1449,10 +1566,20 @@ export function useGluetex() {
     zeroSlaveTensionArm,
     zeroAddonTensionArm,
 
-    // Tension Arm Monitor action functions
-    setTensionArmMonitorEnabled,
-    setTensionArmMonitorMinAngle,
-    setTensionArmMonitorMaxAngle,
+    // Winder Tension Arm Monitor action functions
+    setWinderTensionArmMonitorEnabled,
+    setWinderTensionArmMonitorMinAngle,
+    setWinderTensionArmMonitorMaxAngle,
+
+    // Addon Tension Arm Monitor action functions
+    setAddonTensionArmMonitorEnabled,
+    setAddonTensionArmMonitorMinAngle,
+    setAddonTensionArmMonitorMaxAngle,
+
+    // Slave Tension Arm Monitor action functions
+    setSlaveTensionArmMonitorEnabled,
+    setSlaveTensionArmMonitorMinAngle,
+    setSlaveTensionArmMonitorMaxAngle,
 
     // Sleep Timer action functions
     setSleepTimerEnabled,

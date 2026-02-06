@@ -223,11 +223,21 @@ pub struct Gluetex {
     pub optris_1: AnalogInput,
     pub optris_2: AnalogInput,
 
-    // tension arm monitoring
-    pub tension_arm_monitor_config: TensionArmMonitorConfig,
-    pub tension_arm_monitor_triggered: bool,
-    /// Time when tension arms first went out of range (used for debouncing)
-    pub tension_arm_out_of_range_since: Option<Instant>,
+    // tension arm monitoring - separate for each arm
+    pub winder_tension_arm_monitor_config: TensionArmMonitorConfig,
+    pub winder_tension_arm_monitor_triggered: bool,
+    /// Time when winder tension arm first went out of range (used for debouncing)
+    pub winder_tension_arm_out_of_range_since: Option<Instant>,
+
+    pub addon_tension_arm_monitor_config: TensionArmMonitorConfig,
+    pub addon_tension_arm_monitor_triggered: bool,
+    /// Time when addon tension arm first went out of range (used for debouncing)
+    pub addon_tension_arm_out_of_range_since: Option<Instant>,
+
+    pub slave_tension_arm_monitor_config: TensionArmMonitorConfig,
+    pub slave_tension_arm_monitor_triggered: bool,
+    /// Time when slave tension arm first went out of range (used for debouncing)
+    pub slave_tension_arm_out_of_range_since: Option<Instant>,
 
     // sleep timer
     pub sleep_timer_config: SleepTimerConfig,
@@ -596,76 +606,134 @@ impl Gluetex {
 
     /// Check all tension arm positions and trigger emergency stop if any are out of range
     /// Uses a 200ms debounce to prevent false triggers from momentary spikes
+    /// Each tension arm has its own independent monitoring configuration
     pub fn check_tension_arm_monitor(&mut self) {
         let now = Instant::now();
 
-        // Only check if monitoring is enabled AND in Production mode
+        // Only check if in Production mode
         // In Setup mode, monitoring is paused to allow setup movements
-        if !self.tension_arm_monitor_config.enabled
-            || self.operation_mode != OperationMode::Production
-        {
-            // Clear triggered flag if monitoring is disabled or not in Run mode
-            if self.tension_arm_monitor_triggered {
-                self.tension_arm_monitor_triggered = false;
-                self.emit_state();
-            }
-            // Clear debounce timer
-            self.tension_arm_out_of_range_since = None;
-            return;
+        let in_production_mode = self.operation_mode == OperationMode::Production;
+
+        let mut any_trigger = false;
+        let mut state_changed = false;
+
+        // Check winder tension arm
+        let (trigger, changed) = Self::check_single_arm(
+            self.tension_arm.get_angle(),
+            &self.winder_tension_arm_monitor_config,
+            self.winder_tension_arm_monitor_triggered,
+            &mut self.winder_tension_arm_out_of_range_since,
+            "Winder",
+            now,
+            in_production_mode,
+        );
+        self.winder_tension_arm_monitor_triggered = trigger;
+        any_trigger |= trigger;
+        state_changed |= changed;
+
+        // Check addon tension arm
+        let (trigger, changed) = Self::check_single_arm(
+            self.addon_tension_arm.get_angle(),
+            &self.addon_tension_arm_monitor_config,
+            self.addon_tension_arm_monitor_triggered,
+            &mut self.addon_tension_arm_out_of_range_since,
+            "Addon",
+            now,
+            in_production_mode,
+        );
+        self.addon_tension_arm_monitor_triggered = trigger;
+        any_trigger |= trigger;
+        state_changed |= changed;
+
+        // Check slave tension arm
+        let (trigger, changed) = Self::check_single_arm(
+            self.slave_tension_arm.get_angle(),
+            &self.slave_tension_arm_monitor_config,
+            self.slave_tension_arm_monitor_triggered,
+            &mut self.slave_tension_arm_out_of_range_since,
+            "Slave",
+            now,
+            in_production_mode,
+        );
+        self.slave_tension_arm_monitor_triggered = trigger;
+        any_trigger |= trigger;
+        state_changed |= changed;
+
+        // If any arm triggered emergency stop, execute it
+        if any_trigger && state_changed {
+            self.emergency_stop();
         }
 
-        // Check all three tension arms
-        let main_angle = self.tension_arm.get_angle();
-        let slave_angle = self.slave_tension_arm.get_angle();
-        let addon_angle = self.addon_tension_arm.get_angle();
+        // Emit state if anything changed
+        if state_changed {
+            self.emit_state();
+        }
+    }
 
-        let min_angle = self.tension_arm_monitor_config.min_angle;
-        let max_angle = self.tension_arm_monitor_config.max_angle;
+    /// Check a single tension arm against its monitoring configuration
+    /// Returns (new_triggered_state, state_changed)
+    fn check_single_arm(
+        angle: Angle,
+        config: &TensionArmMonitorConfig,
+        current_triggered: bool,
+        out_of_range_since: &mut Option<Instant>,
+        arm_name: &str,
+        now: Instant,
+        in_production_mode: bool,
+    ) -> (bool, bool) {
+        // Only check if monitoring is enabled AND in Production mode
+        if !config.enabled || !in_production_mode {
+            // Clear debounce timer
+            *out_of_range_since = None;
+            
+            // Clear triggered flag if monitoring is disabled or not in Production mode
+            if current_triggered {
+                return (false, true); // state changed
+            }
+            return (false, false); // no change
+        }
 
-        // Check if any tension arm is out of range
-        let out_of_range = main_angle < min_angle
-            || main_angle > max_angle
-            || slave_angle < min_angle
-            || slave_angle > max_angle
-            || addon_angle < min_angle
-            || addon_angle > max_angle;
+        let min_angle = config.min_angle;
+        let max_angle = config.max_angle;
 
-        if out_of_range {
+        // Check if this tension arm is out of range
+        let is_out_of_range = angle < min_angle || angle > max_angle;
+
+        if is_out_of_range {
             // Start or continue tracking out-of-range time
-            if self.tension_arm_out_of_range_since.is_none() {
-                self.tension_arm_out_of_range_since = Some(now);
+            if out_of_range_since.is_none() {
+                *out_of_range_since = Some(now);
             }
 
             // Check if out of range for more than 200ms
-            if let Some(start_time) = self.tension_arm_out_of_range_since {
+            if let Some(start_time) = *out_of_range_since {
                 let duration = now.duration_since(start_time);
-                if duration.as_millis() >= 200 && !self.tension_arm_monitor_triggered {
+                if duration.as_millis() >= 200 && !current_triggered {
                     // Trigger emergency stop after debounce period
-                    self.tension_arm_monitor_triggered = true;
-                    self.emergency_stop();
-                    self.emit_state();
                     tracing::warn!(
-                        "Tension arm monitor triggered after 200ms! Main: {:.1}°, Slave: {:.1}°, Addon: {:.1}° (limits: {:.1}°-{:.1}°)",
-                        main_angle.get::<degree>(),
-                        slave_angle.get::<degree>(),
-                        addon_angle.get::<degree>(),
+                        "{} tension arm monitor triggered after 200ms! Angle: {:.1}° (limits: {:.1}°-{:.1}°)",
+                        arm_name,
+                        angle.get::<degree>(),
                         min_angle.get::<degree>(),
                         max_angle.get::<degree>()
                     );
+                    return (true, true); // triggered and state changed
                 }
             }
+            return (current_triggered, false); // no change yet (still within debounce)
         } else {
             // Back in range - clear debounce timer
-            if self.tension_arm_out_of_range_since.is_some() {
-                self.tension_arm_out_of_range_since = None;
+            if out_of_range_since.is_some() {
+                *out_of_range_since = None;
             }
 
             // Clear triggered flag if back in range
-            if self.tension_arm_monitor_triggered {
-                self.tension_arm_monitor_triggered = false;
-                self.emit_state();
-                tracing::info!("Tension arm monitor cleared - all arms back in range");
+            if current_triggered {
+                tracing::info!("{} tension arm monitor cleared - arm back in range", arm_name);
+                return (false, true); // state changed
             }
+            
+            return (false, false); // no change
         }
     }
 
