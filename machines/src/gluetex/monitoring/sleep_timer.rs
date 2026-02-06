@@ -1,5 +1,4 @@
 use super::config::SleepTimerConfig;
-use crate::gluetex::OperationMode;
 use std::time::Instant;
 
 /// Sleep timer monitoring state
@@ -26,12 +25,12 @@ impl SleepTimer {
     }
 
     /// Check if sleep timer has expired
-    /// Only active in Production mode - paused during Setup to allow setup
+    /// Works in all operation modes (Setup and Production)
     /// Returns true if timer just triggered (state change)
-    pub fn check(&mut self, operation_mode: OperationMode) -> bool {
+    pub fn check(&mut self) -> bool {
         let now = Instant::now();
 
-        if !self.config.enabled || operation_mode != OperationMode::Production {
+        if !self.config.enabled {
             self.triggered = false;
             return false;
         }
