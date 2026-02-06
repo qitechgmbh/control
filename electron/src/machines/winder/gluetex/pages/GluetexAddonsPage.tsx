@@ -127,10 +127,10 @@ export function GluetexAddonsPage() {
           </Label>
         </ControlCard>
 
-        <ControlCard title="Tension Arm">
+        <ControlCard title="Slave Tension Arm">
           <TensionArm degrees={slaveTensionArmAngle.current?.value} />
           <TimeSeriesValueNumeric
-            label="Tension Arm"
+            label="Slave Tension Arm"
             unit="deg"
             timeseries={slaveTensionArmAngle}
             renderValue={(value) => roundDegreesToDecimals(value, 0)}
