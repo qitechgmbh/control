@@ -1518,6 +1518,9 @@ export function useGluetex() {
       return;
     }
 
+    // Automatically switch to Heating mode for auto-tuning
+    setHeatingMode("Heating");
+
     requestStartHeatingAutoTune({
       machine_identification_unique: machineIdentification,
       data: { StartHeatingAutoTune: [zone, targetTemperature] },
