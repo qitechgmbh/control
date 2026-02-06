@@ -276,7 +276,7 @@ export function GluetexAddonsPage() {
               }}
             />
           </Label>
-          <div className="flex flex-row gap-4">
+          <div className="flex flex-col gap-4">
             <Label label="Stepper 3: Contour Length">
               <EditValue
                 value={state?.addon_motor_3_state?.konturlaenge_mm}
