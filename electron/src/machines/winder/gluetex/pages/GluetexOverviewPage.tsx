@@ -41,6 +41,7 @@ export function GluetexOverviewPage() {
     spoolProgress,
     setSpoolAutomaticRequiredMeters,
     setSpoolAutomaticAction,
+    setOperationMode,
     resetSpoolProgress,
     isLoading,
     isDisabled,
@@ -490,26 +491,41 @@ export function GluetexOverviewPage() {
         <ControlCard width={1} title="Status">
           <div className="flex flex-col gap-3">
             <TouchButton
-              variant="outline"
-              disabled
+              variant={
+                state?.mode_state?.operation_mode === "Standby"
+                  ? "default"
+                  : "outline"
+              }
+              disabled={isDisabled}
               className="h-16 text-lg"
               icon="lu:Power"
+              onClick={() => setOperationMode("Standby")}
             >
               STANDBY
             </TouchButton>
             <TouchButton
-              variant="outline"
-              disabled
+              variant={
+                state?.mode_state?.operation_mode === "Starting"
+                  ? "default"
+                  : "outline"
+              }
+              disabled={isDisabled}
               className="h-16 text-lg"
               icon="lu:Loader"
+              onClick={() => setOperationMode("Starting")}
             >
               STARTING
             </TouchButton>
             <TouchButton
-              variant="outline"
-              disabled
+              variant={
+                state?.mode_state?.operation_mode === "Run"
+                  ? "default"
+                  : "outline"
+              }
+              disabled={isDisabled}
               className="h-16 text-lg"
               icon="lu:Play"
+              onClick={() => setOperationMode("Run")}
             >
               RUN
             </TouchButton>
