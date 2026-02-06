@@ -96,25 +96,6 @@ export function MachinesPage() {
         <RefreshIndicator ts={machines?.ts} />
       </SectionTitle>
       <MyTable table={table} key={data.toString()} />
-
-      <div className="mt-8 border-t border-gray-200 p-4">
-        <h3 className="mb-2 text-lg font-semibold">Test Machines</h3>
-        <p className="mb-4 text-sm text-gray-600">
-          Hardcoded frontend machines for testing (no backend required)
-        </p>
-        <TouchButton
-          onClick={() =>
-            navigate({
-              to: "/_sidebar/machines/gluetex/$serial/overview",
-              params: { serial: "999" },
-            })
-          }
-          icon="lu:TestTube"
-          variant="outline"
-        >
-          Open Gluetex Test Winder
-        </TouchButton>
-      </div>
     </Page>
   );
 }
