@@ -183,6 +183,7 @@ use crate::MACHINE_AQUAPATH_V1;
 use crate::MACHINE_BUFFER_V1;
 use crate::MACHINE_EXTRUDER_V1;
 use crate::MACHINE_EXTRUDER_V2;
+use crate::MACHINE_GLUETEX_V1;
 use crate::MACHINE_LASER_V1;
 use crate::MACHINE_MOCK;
 use crate::MACHINE_WAGO_POWER_V1;
