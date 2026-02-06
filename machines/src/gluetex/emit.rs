@@ -94,6 +94,14 @@ impl Gluetex {
         self.emit_state();
     }
 
+    /// Set operation mode (safety monitoring level)
+    pub fn set_operation_mode(&mut self, mode: &super::OperationMode) {
+        self.operation_mode = mode.clone();
+        // Reset activity timer when changing operation mode
+        self.reset_sleep_timer();
+        self.emit_state();
+    }
+
     /// Implement Traverse
     pub fn set_laser(&mut self, value: bool) {
         self.laser.set(value);
@@ -346,6 +354,7 @@ impl Gluetex {
             },
             mode_state: ModeState {
                 mode: self.mode.clone().into(),
+                operation_mode: self.operation_mode.clone().into(),
                 can_wind: self.can_wind(),
             },
             tension_arm_state: TensionArmState {

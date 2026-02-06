@@ -20,6 +20,8 @@ import {
   useGluetexNamespace,
   modeSchema,
   Mode,
+  operationModeSchema,
+  OperationMode,
   spoolRegulationModeSchema,
   pullerRegulationSchema,
   PullerRegulation,
@@ -114,6 +116,9 @@ export function useGluetex() {
   );
   const { request: requestModeSet } = useMachineMutation(
     z.object({ SetMode: modeSchema }),
+  );
+  const { request: requestOperationModeSet } = useMachineMutation(
+    z.object({ SetOperationMode: operationModeSchema }),
   );
   const { request: requestTensionArmZero } = useMachineMutation(
     z.literal("ZeroTensionArmAngle"),
@@ -466,6 +471,19 @@ export function useGluetex() {
         requestModeSet({
           machine_identification_unique: machineIdentification,
           data: { SetMode: mode },
+        }),
+    );
+  };
+
+  const setOperationMode = (mode: OperationMode) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.mode_state.operation_mode = mode;
+      },
+      () =>
+        requestOperationModeSet({
+          machine_identification_unique: machineIdentification,
+          data: { SetOperationMode: mode },
         }),
     );
   };
@@ -1392,6 +1410,7 @@ export function useGluetex() {
     // Standard winder action functions (backend connected)
     enableTraverseLaserpointer,
     setMode,
+    setOperationMode,
     zeroTensionArmAngle,
     setTraverseLimitInner,
     setTraverseLimitOuter,
