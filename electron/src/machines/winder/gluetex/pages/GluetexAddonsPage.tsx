@@ -30,12 +30,12 @@ export function GluetexAddonsPage() {
     setStepper4Mode,
     setStepper5Mode,
     setHeatingMode,
-    temperature1,
-    temperature2,
-    setTemperature1Min,
-    setTemperature1Max,
-    setTemperature2Min,
-    setTemperature2Max,
+    optris1Voltage,
+    optris2Voltage,
+    setOptris1Min,
+    setOptris1Max,
+    setOptris2Min,
+    setOptris2Max,
     slavePullerSpeed,
     slaveTensionArmAngle,
     addonTensionArmAngle,
@@ -159,143 +159,131 @@ export function GluetexAddonsPage() {
 
         <ControlCard className="bg-red" height={2} title="Quality Control">
           <div className="space-y-6">
-            {/* Temperature 1 */}
+            {/* Optris 1 Voltage */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <TimeSeriesValueNumeric
-                  label="Temperature 1"
-                  unit="C"
-                  timeseries={temperature1}
-                  renderValue={(value) => roundToDecimals(value, 1)}
+                  label="Optris 1 Voltage"
+                  unit="V"
+                  timeseries={optris1Voltage}
+                  renderValue={(value) => roundToDecimals(value, 2)}
                 />
               </div>
 
               <TemperatureBar
                 min={0}
-                max={150}
+                max={10}
                 minLimit={
-                  state?.quality_control_state?.temperature1.min_temperature ??
-                  0
+                  state?.quality_control_state?.optris1.min_voltage ?? 0
                 }
                 maxLimit={
-                  state?.quality_control_state?.temperature1.max_temperature ??
-                  150
+                  state?.quality_control_state?.optris1.max_voltage ?? 10
                 }
-                current={temperature1.current?.value ?? 0}
+                current={optris1Voltage.current?.value ?? 0}
               />
 
               <div className="flex flex-row flex-wrap gap-4">
-                <Label label="Min Temperature">
+                <Label label="Min Voltage">
                   <EditValue
-                    value={
-                      state?.quality_control_state?.temperature1.min_temperature
-                    }
-                    unit="C"
-                    title="Min Temperature 1"
+                    value={state?.quality_control_state?.optris1.min_voltage}
+                    unit="V"
+                    title="Min Optris 1 Voltage"
                     defaultValue={
-                      defaultState?.quality_control_state?.temperature1
-                        .min_temperature
+                      defaultState?.quality_control_state?.optris1.min_voltage
                     }
                     min={0}
                     max={Math.min(
-                      149,
-                      (state?.quality_control_state?.temperature1
-                        .max_temperature ?? 150) - 1,
+                      9.95,
+                      (state?.quality_control_state?.optris1.max_voltage ??
+                        10) - 0.05,
                     )}
-                    renderValue={(value) => roundToDecimals(value, 1)}
-                    onChange={setTemperature1Min}
+                    step={0.05}
+                    renderValue={(value) => roundToDecimals(value, 2)}
+                    onChange={setOptris1Min}
                   />
                 </Label>
-                <Label label="Max Temperature">
+                <Label label="Max Voltage">
                   <EditValue
-                    value={
-                      state?.quality_control_state?.temperature1.max_temperature
-                    }
-                    unit="C"
-                    title="Max Temperature 1"
+                    value={state?.quality_control_state?.optris1.max_voltage}
+                    unit="V"
+                    title="Max Optris 1 Voltage"
                     defaultValue={
-                      defaultState?.quality_control_state?.temperature1
-                        .max_temperature
+                      defaultState?.quality_control_state?.optris1.max_voltage
                     }
                     min={Math.max(
-                      1,
-                      (state?.quality_control_state?.temperature1
-                        .min_temperature ?? 0) + 1,
+                      0.05,
+                      (state?.quality_control_state?.optris1.min_voltage ??
+                        0) + 0.05,
                     )}
-                    max={150}
-                    renderValue={(value) => roundToDecimals(value, 1)}
-                    onChange={setTemperature1Max}
+                    max={10}
+                    step={0.05}
+                    renderValue={(value) => roundToDecimals(value, 2)}
+                    onChange={setOptris1Max}
                   />
                 </Label>
               </div>
             </div>
 
-            {/* Temperature 2 */}
+            {/* Optris 2 Voltage */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <TimeSeriesValueNumeric
-                  label="Temperature 2"
-                  unit="C"
-                  timeseries={temperature2}
-                  renderValue={(value) => roundToDecimals(value, 1)}
+                  label="Optris 2 Voltage"
+                  unit="V"
+                  timeseries={optris2Voltage}
+                  renderValue={(value) => roundToDecimals(value, 2)}
                 />
               </div>
 
               <TemperatureBar
                 min={0}
-                max={200}
+                max={10}
                 minLimit={
-                  state?.quality_control_state?.temperature2.min_temperature ??
-                  0
+                  state?.quality_control_state?.optris2.min_voltage ?? 0
                 }
                 maxLimit={
-                  state?.quality_control_state?.temperature2.max_temperature ??
-                  200
+                  state?.quality_control_state?.optris2.max_voltage ?? 10
                 }
-                current={temperature2.current?.value ?? 0}
+                current={optris2Voltage.current?.value ?? 0}
               />
 
               <div className="flex flex-row flex-wrap gap-4">
-                <Label label="Min Temperature">
+                <Label label="Min Voltage">
                   <EditValue
-                    value={
-                      state?.quality_control_state?.temperature2.min_temperature
-                    }
-                    unit="C"
-                    title="Min Temperature 2"
+                    value={state?.quality_control_state?.optris2.min_voltage}
+                    unit="V"
+                    title="Min Optris 2 Voltage"
                     defaultValue={
-                      defaultState?.quality_control_state?.temperature2
-                        .min_temperature
+                      defaultState?.quality_control_state?.optris2.min_voltage
                     }
                     min={0}
                     max={Math.min(
-                      199,
-                      (state?.quality_control_state?.temperature2
-                        .max_temperature ?? 200) - 1,
+                      9.95,
+                      (state?.quality_control_state?.optris2.max_voltage ??
+                        10) - 0.05,
                     )}
-                    renderValue={(value) => roundToDecimals(value, 1)}
-                    onChange={setTemperature2Min}
+                    step={0.05}
+                    renderValue={(value) => roundToDecimals(value, 2)}
+                    onChange={setOptris2Min}
                   />
                 </Label>
-                <Label label="Max Temperature">
+                <Label label="Max Voltage">
                   <EditValue
-                    value={
-                      state?.quality_control_state?.temperature2.max_temperature
-                    }
-                    unit="C"
-                    title="Max Temperature 2"
+                    value={state?.quality_control_state?.optris2.max_voltage}
+                    unit="V"
+                    title="Max Optris 2 Voltage"
                     defaultValue={
-                      defaultState?.quality_control_state?.temperature2
-                        .max_temperature
+                      defaultState?.quality_control_state?.optris2.max_voltage
                     }
                     min={Math.max(
-                      1,
-                      (state?.quality_control_state?.temperature2
-                        .min_temperature ?? 0) + 1,
+                      0.05,
+                      (state?.quality_control_state?.optris2.min_voltage ??
+                        0) + 0.05,
                     )}
-                    max={200}
-                    renderValue={(value) => roundToDecimals(value, 1)}
-                    onChange={setTemperature2Max}
+                    max={10}
+                    step={0.05}
+                    renderValue={(value) => roundToDecimals(value, 2)}
+                    onChange={setOptris2Max}
                   />
                 </Label>
               </div>
