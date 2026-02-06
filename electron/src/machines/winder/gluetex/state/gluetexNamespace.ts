@@ -321,6 +321,7 @@ export const sleepTimerStateSchema = z.object({
   enabled: z.boolean(),
   timeout_seconds: z.number(),
   remaining_seconds: z.number(),
+  triggered: z.boolean(),
 });
 
 /**
