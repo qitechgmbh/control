@@ -714,7 +714,8 @@ export function GluetexPresetsPage() {
                 target_temperature: s.heating_states.zone_1.target_temperature,
                 wiring_error: s.heating_states.zone_1.wiring_error,
                 autotuning_active: s.heating_states.zone_1.autotuning_active,
-                autotuning_progress: s.heating_states.zone_1.autotuning_progress,
+                autotuning_progress:
+                  s.heating_states.zone_1.autotuning_progress,
               }
             : undefined,
           zone_2: s.heating_states.zone_2
@@ -722,7 +723,8 @@ export function GluetexPresetsPage() {
                 target_temperature: s.heating_states.zone_2.target_temperature,
                 wiring_error: s.heating_states.zone_2.wiring_error,
                 autotuning_active: s.heating_states.zone_2.autotuning_active,
-                autotuning_progress: s.heating_states.zone_2.autotuning_progress,
+                autotuning_progress:
+                  s.heating_states.zone_2.autotuning_progress,
               }
             : undefined,
           zone_3: s.heating_states.zone_3
@@ -730,7 +732,8 @@ export function GluetexPresetsPage() {
                 target_temperature: s.heating_states.zone_3.target_temperature,
                 wiring_error: s.heating_states.zone_3.wiring_error,
                 autotuning_active: s.heating_states.zone_3.autotuning_active,
-                autotuning_progress: s.heating_states.zone_3.autotuning_progress,
+                autotuning_progress:
+                  s.heating_states.zone_3.autotuning_progress,
               }
             : undefined,
           zone_4: s.heating_states.zone_4
@@ -738,7 +741,8 @@ export function GluetexPresetsPage() {
                 target_temperature: s.heating_states.zone_4.target_temperature,
                 wiring_error: s.heating_states.zone_4.wiring_error,
                 autotuning_active: s.heating_states.zone_4.autotuning_active,
-                autotuning_progress: s.heating_states.zone_4.autotuning_progress,
+                autotuning_progress:
+                  s.heating_states.zone_4.autotuning_progress,
               }
             : undefined,
           zone_5: s.heating_states.zone_5
@@ -746,7 +750,8 @@ export function GluetexPresetsPage() {
                 target_temperature: s.heating_states.zone_5.target_temperature,
                 wiring_error: s.heating_states.zone_5.wiring_error,
                 autotuning_active: s.heating_states.zone_5.autotuning_active,
-                autotuning_progress: s.heating_states.zone_5.autotuning_progress,
+                autotuning_progress:
+                  s.heating_states.zone_5.autotuning_progress,
               }
             : undefined,
           zone_6: s.heating_states.zone_6
@@ -754,7 +759,8 @@ export function GluetexPresetsPage() {
                 target_temperature: s.heating_states.zone_6.target_temperature,
                 wiring_error: s.heating_states.zone_6.wiring_error,
                 autotuning_active: s.heating_states.zone_6.autotuning_active,
-                autotuning_progress: s.heating_states.zone_6.autotuning_progress,
+                autotuning_progress:
+                  s.heating_states.zone_6.autotuning_progress,
               }
             : undefined,
         }
