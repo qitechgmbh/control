@@ -534,20 +534,38 @@ impl Gluetex {
             },
             winder_tension_arm_monitor_state: api::TensionArmMonitorState {
                 enabled: self.winder_tension_arm_monitor_config.enabled,
-                min_angle: self.winder_tension_arm_monitor_config.min_angle.get::<degree>(),
-                max_angle: self.winder_tension_arm_monitor_config.max_angle.get::<degree>(),
+                min_angle: self
+                    .winder_tension_arm_monitor_config
+                    .min_angle
+                    .get::<degree>(),
+                max_angle: self
+                    .winder_tension_arm_monitor_config
+                    .max_angle
+                    .get::<degree>(),
                 triggered: self.winder_tension_arm_monitor_triggered,
             },
             addon_tension_arm_monitor_state: api::TensionArmMonitorState {
                 enabled: self.addon_tension_arm_monitor_config.enabled,
-                min_angle: self.addon_tension_arm_monitor_config.min_angle.get::<degree>(),
-                max_angle: self.addon_tension_arm_monitor_config.max_angle.get::<degree>(),
+                min_angle: self
+                    .addon_tension_arm_monitor_config
+                    .min_angle
+                    .get::<degree>(),
+                max_angle: self
+                    .addon_tension_arm_monitor_config
+                    .max_angle
+                    .get::<degree>(),
                 triggered: self.addon_tension_arm_monitor_triggered,
             },
             slave_tension_arm_monitor_state: api::TensionArmMonitorState {
                 enabled: self.slave_tension_arm_monitor_config.enabled,
-                min_angle: self.slave_tension_arm_monitor_config.min_angle.get::<degree>(),
-                max_angle: self.slave_tension_arm_monitor_config.max_angle.get::<degree>(),
+                min_angle: self
+                    .slave_tension_arm_monitor_config
+                    .min_angle
+                    .get::<degree>(),
+                max_angle: self
+                    .slave_tension_arm_monitor_config
+                    .max_angle
+                    .get::<degree>(),
                 triggered: self.slave_tension_arm_monitor_triggered,
             },
             optris_1_monitor_state: api::VoltageMonitorState {
