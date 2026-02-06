@@ -62,7 +62,7 @@ export function PresetCardMenu({
 
 export type PresetCardProps<T> = {
   preset: Preset<T>;
-  onApply: (preset: Preset<T>) => void;
+  onApply: (preset: Preset<T>) => void | Promise<void>;
   onOverwrite: (preset: Preset<T>) => void;
   onDelete: (preset: Preset<T>) => void;
   onExport?: (preset: Preset<T>) => void;

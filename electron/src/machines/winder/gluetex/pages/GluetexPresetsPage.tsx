@@ -1,4 +1,5 @@
 import React from "react";
+import { toast } from "sonner";
 import { useGluetex } from "../hooks/useGluetex";
 import { gluetex } from "@/machines/properties";
 
@@ -12,6 +13,10 @@ import {
   addonMotor5StateSchema,
   slavePullerStateSchema,
   spoolAutomaticActionStateSchema,
+  heatingPidSettingsSchema,
+  tensionArmMonitorStateSchema,
+  voltageMonitorStateSchema,
+  sleepTimerStateSchema,
 } from "../state/gluetexNamespace";
 import { z } from "zod";
 import {
@@ -49,6 +54,34 @@ const gluetexPresetDataSchema = z
     addon_motor_5_state: addonMotorStateSchema.partial(),
     slave_puller_state: slavePullerStateSchema
       .omit({ tension_arm: true })
+      .partial(),
+    heating_pid_settings: z
+      .object({
+        zone_1: heatingPidSettingsSchema.omit({ zone: true }).partial(),
+        zone_2: heatingPidSettingsSchema.omit({ zone: true }).partial(),
+        zone_3: heatingPidSettingsSchema.omit({ zone: true }).partial(),
+        zone_4: heatingPidSettingsSchema.omit({ zone: true }).partial(),
+        zone_5: heatingPidSettingsSchema.omit({ zone: true }).partial(),
+        zone_6: heatingPidSettingsSchema.omit({ zone: true }).partial(),
+      })
+      .partial(),
+    winder_tension_arm_monitor_state: tensionArmMonitorStateSchema
+      .omit({ triggered: true })
+      .partial(),
+    addon_tension_arm_monitor_state: tensionArmMonitorStateSchema
+      .omit({ triggered: true })
+      .partial(),
+    slave_tension_arm_monitor_state: tensionArmMonitorStateSchema
+      .omit({ triggered: true })
+      .partial(),
+    optris_1_monitor_state: voltageMonitorStateSchema
+      .omit({ triggered: true })
+      .partial(),
+    optris_2_monitor_state: voltageMonitorStateSchema
+      .omit({ triggered: true })
+      .partial(),
+    sleep_timer_state: sleepTimerStateSchema
+      .pick({ enabled: true, timeout_seconds: true })
       .partial(),
   })
   .partial();
@@ -375,6 +408,219 @@ const previewEntries: PresetPreviewEntries<GluetexPresetData> = [
     renderValue: (data) =>
       data.slave_puller_state?.max_speed_factor?.toFixed(2),
   },
+  previewSeparator,
+
+  // ── Heating PID ──
+  {
+    name: "Zone 1 PID Kp",
+    renderValue: (data) => data.heating_pid_settings?.zone_1?.kp?.toFixed(3),
+  },
+  {
+    name: "Zone 1 PID Ki",
+    renderValue: (data) => data.heating_pid_settings?.zone_1?.ki?.toFixed(3),
+  },
+  {
+    name: "Zone 1 PID Kd",
+    renderValue: (data) => data.heating_pid_settings?.zone_1?.kd?.toFixed(3),
+  },
+  {
+    name: "Zone 2 PID Kp",
+    renderValue: (data) => data.heating_pid_settings?.zone_2?.kp?.toFixed(3),
+  },
+  {
+    name: "Zone 2 PID Ki",
+    renderValue: (data) => data.heating_pid_settings?.zone_2?.ki?.toFixed(3),
+  },
+  {
+    name: "Zone 2 PID Kd",
+    renderValue: (data) => data.heating_pid_settings?.zone_2?.kd?.toFixed(3),
+  },
+  {
+    name: "Zone 3 PID Kp",
+    renderValue: (data) => data.heating_pid_settings?.zone_3?.kp?.toFixed(3),
+  },
+  {
+    name: "Zone 3 PID Ki",
+    renderValue: (data) => data.heating_pid_settings?.zone_3?.ki?.toFixed(3),
+  },
+  {
+    name: "Zone 3 PID Kd",
+    renderValue: (data) => data.heating_pid_settings?.zone_3?.kd?.toFixed(3),
+  },
+  {
+    name: "Zone 4 PID Kp",
+    renderValue: (data) => data.heating_pid_settings?.zone_4?.kp?.toFixed(3),
+  },
+  {
+    name: "Zone 4 PID Ki",
+    renderValue: (data) => data.heating_pid_settings?.zone_4?.ki?.toFixed(3),
+  },
+  {
+    name: "Zone 4 PID Kd",
+    renderValue: (data) => data.heating_pid_settings?.zone_4?.kd?.toFixed(3),
+  },
+  {
+    name: "Zone 5 PID Kp",
+    renderValue: (data) => data.heating_pid_settings?.zone_5?.kp?.toFixed(3),
+  },
+  {
+    name: "Zone 5 PID Ki",
+    renderValue: (data) => data.heating_pid_settings?.zone_5?.ki?.toFixed(3),
+  },
+  {
+    name: "Zone 5 PID Kd",
+    renderValue: (data) => data.heating_pid_settings?.zone_5?.kd?.toFixed(3),
+  },
+  {
+    name: "Zone 6 PID Kp",
+    renderValue: (data) => data.heating_pid_settings?.zone_6?.kp?.toFixed(3),
+  },
+  {
+    name: "Zone 6 PID Ki",
+    renderValue: (data) => data.heating_pid_settings?.zone_6?.ki?.toFixed(3),
+  },
+  {
+    name: "Zone 6 PID Kd",
+    renderValue: (data) => data.heating_pid_settings?.zone_6?.kd?.toFixed(3),
+  },
+  previewSeparator,
+
+  // ── Winder Tension Arm Monitor ──
+  {
+    name: "Winder Tension Monitor",
+    renderValue: (data) =>
+      data.winder_tension_arm_monitor_state?.enabled !== undefined
+        ? data.winder_tension_arm_monitor_state.enabled
+          ? "Enabled"
+          : "Disabled"
+        : "N/A",
+  },
+  {
+    name: "Winder Tension Min Angle",
+    unit: "deg",
+    renderValue: (data) =>
+      data.winder_tension_arm_monitor_state?.min_angle?.toFixed(1),
+  },
+  {
+    name: "Winder Tension Max Angle",
+    unit: "deg",
+    renderValue: (data) =>
+      data.winder_tension_arm_monitor_state?.max_angle?.toFixed(1),
+  },
+  previewSeparator,
+
+  // ── Addon Tension Arm Monitor ──
+  {
+    name: "Addon Tension Monitor",
+    renderValue: (data) =>
+      data.addon_tension_arm_monitor_state?.enabled !== undefined
+        ? data.addon_tension_arm_monitor_state.enabled
+          ? "Enabled"
+          : "Disabled"
+        : "N/A",
+  },
+  {
+    name: "Addon Tension Min Angle",
+    unit: "deg",
+    renderValue: (data) =>
+      data.addon_tension_arm_monitor_state?.min_angle?.toFixed(1),
+  },
+  {
+    name: "Addon Tension Max Angle",
+    unit: "deg",
+    renderValue: (data) =>
+      data.addon_tension_arm_monitor_state?.max_angle?.toFixed(1),
+  },
+  previewSeparator,
+
+  // ── Slave Tension Arm Monitor ──
+  {
+    name: "Slave Tension Monitor",
+    renderValue: (data) =>
+      data.slave_tension_arm_monitor_state?.enabled !== undefined
+        ? data.slave_tension_arm_monitor_state.enabled
+          ? "Enabled"
+          : "Disabled"
+        : "N/A",
+  },
+  {
+    name: "Slave Tension Min Angle",
+    unit: "deg",
+    renderValue: (data) =>
+      data.slave_tension_arm_monitor_state?.min_angle?.toFixed(1),
+  },
+  {
+    name: "Slave Tension Max Angle",
+    unit: "deg",
+    renderValue: (data) =>
+      data.slave_tension_arm_monitor_state?.max_angle?.toFixed(1),
+  },
+  previewSeparator,
+
+  // ── Optris 1 Monitor ──
+  {
+    name: "Optris 1 Monitor",
+    renderValue: (data) =>
+      data.optris_1_monitor_state?.enabled !== undefined
+        ? data.optris_1_monitor_state.enabled
+          ? "Enabled"
+          : "Disabled"
+        : "N/A",
+  },
+  {
+    name: "Optris 1 Min Voltage",
+    unit: "V",
+    renderValue: (data) =>
+      data.optris_1_monitor_state?.min_voltage?.toFixed(2),
+  },
+  {
+    name: "Optris 1 Max Voltage",
+    unit: "V",
+    renderValue: (data) =>
+      data.optris_1_monitor_state?.max_voltage?.toFixed(2),
+  },
+  previewSeparator,
+
+  // ── Optris 2 Monitor ──
+  {
+    name: "Optris 2 Monitor",
+    renderValue: (data) =>
+      data.optris_2_monitor_state?.enabled !== undefined
+        ? data.optris_2_monitor_state.enabled
+          ? "Enabled"
+          : "Disabled"
+        : "N/A",
+  },
+  {
+    name: "Optris 2 Min Voltage",
+    unit: "V",
+    renderValue: (data) =>
+      data.optris_2_monitor_state?.min_voltage?.toFixed(2),
+  },
+  {
+    name: "Optris 2 Max Voltage",
+    unit: "V",
+    renderValue: (data) =>
+      data.optris_2_monitor_state?.max_voltage?.toFixed(2),
+  },
+  previewSeparator,
+
+  // ── Sleep Timer ──
+  {
+    name: "Sleep Timer",
+    renderValue: (data) =>
+      data.sleep_timer_state?.enabled !== undefined
+        ? data.sleep_timer_state.enabled
+          ? "Enabled"
+          : "Disabled"
+        : "N/A",
+  },
+  {
+    name: "Sleep Timer Timeout",
+    unit: "s",
+    renderValue: (data) =>
+      data.sleep_timer_state?.timeout_seconds?.toFixed(0),
+  },
 ];
 
 export function GluetexPresetsPage() {
@@ -443,155 +689,255 @@ export function GluetexPresetsPage() {
     setSlavePullerSensitivity,
     setSlavePullerMinSpeedFactor,
     setSlavePullerMaxSpeedFactor,
+
+    // Heating PID
+    setHeatingPid,
+
+    // Tension Arm Monitors
+    setWinderTensionArmMonitorEnabled,
+    setWinderTensionArmMonitorMinAngle,
+    setWinderTensionArmMonitorMaxAngle,
+    setAddonTensionArmMonitorEnabled,
+    setAddonTensionArmMonitorMinAngle,
+    setAddonTensionArmMonitorMaxAngle,
+    setSlaveTensionArmMonitorEnabled,
+    setSlaveTensionArmMonitorMinAngle,
+    setSlaveTensionArmMonitorMaxAngle,
+
+    // Optris Monitors
+    setOptris1MonitorEnabled,
+    setOptris1MonitorMinVoltage,
+    setOptris1MonitorMaxVoltage,
+    setOptris2MonitorEnabled,
+    setOptris2MonitorMinVoltage,
+    setOptris2MonitorMaxVoltage,
+
+    // Sleep Timer
+    setSleepTimerEnabled,
+    setSleepTimerTimeout,
   } = useGluetex();
 
-  const applyPreset = (preset: Preset<GluetexPresetData>) => {
+  const applyPreset = async (preset: Preset<GluetexPresetData>) => {
+    const currentData = toPresetData(state);
+    const d = preset.data;
+
+    // Build a list of setter calls for values that differ from current state
+    const actions: Array<() => void> = [];
+
+    const changed = <T,>(presetVal: T | undefined, currentVal: T | undefined): presetVal is T => {
+      if (presetVal === undefined) return false;
+      return presetVal !== currentVal;
+    };
+
     // Traverse
-    setTraverseLimitInner(preset.data?.traverse_state?.limit_inner ?? 22);
-    setTraverseLimitOuter(preset.data?.traverse_state?.limit_outer ?? 92);
-    setTraverseStepSize(preset.data?.traverse_state?.step_size ?? 1.75);
-    setTraversePadding(preset.data?.traverse_state?.padding ?? 0.88);
-    enableTraverseLaserpointer(
-      preset.data?.traverse_state?.laserpointer ?? false,
-    );
+    if (changed(d?.traverse_state?.limit_inner, currentData.traverse_state?.limit_inner))
+      actions.push(() => setTraverseLimitInner(d.traverse_state!.limit_inner!));
+    if (changed(d?.traverse_state?.limit_outer, currentData.traverse_state?.limit_outer))
+      actions.push(() => setTraverseLimitOuter(d.traverse_state!.limit_outer!));
+    if (changed(d?.traverse_state?.step_size, currentData.traverse_state?.step_size))
+      actions.push(() => setTraverseStepSize(d.traverse_state!.step_size!));
+    if (changed(d?.traverse_state?.padding, currentData.traverse_state?.padding))
+      actions.push(() => setTraversePadding(d.traverse_state!.padding!));
+    if (changed(d?.traverse_state?.laserpointer, currentData.traverse_state?.laserpointer))
+      actions.push(() => enableTraverseLaserpointer(d.traverse_state!.laserpointer!));
 
     // Puller
-    setPullerRegulationMode(preset.data?.puller_state?.regulation ?? "Speed");
-    setPullerForward(preset.data?.puller_state?.forward ?? true);
-    setPullerTargetSpeed(preset.data?.puller_state?.target_speed ?? 1.0);
-    setPullerGearRatio(preset.data?.puller_state?.gear_ratio ?? "OneToOne");
-    setPullerTargetDiameter(preset.data?.puller_state?.target_diameter ?? 1.75);
+    if (changed(d?.puller_state?.regulation, currentData.puller_state?.regulation))
+      actions.push(() => setPullerRegulationMode(d.puller_state!.regulation!));
+    if (changed(d?.puller_state?.forward, currentData.puller_state?.forward))
+      actions.push(() => setPullerForward(d.puller_state!.forward!));
+    if (changed(d?.puller_state?.target_speed, currentData.puller_state?.target_speed))
+      actions.push(() => setPullerTargetSpeed(d.puller_state!.target_speed!));
+    if (changed(d?.puller_state?.gear_ratio, currentData.puller_state?.gear_ratio))
+      actions.push(() => setPullerGearRatio(d.puller_state!.gear_ratio!));
+    if (changed(d?.puller_state?.target_diameter, currentData.puller_state?.target_diameter))
+      actions.push(() => setPullerTargetDiameter(d.puller_state!.target_diameter!));
 
     // Spool
-    setSpoolRegulationMode(
-      preset.data?.spool_speed_controller_state?.regulation_mode ?? "MinMax",
-    );
-    setSpoolForward(preset.data?.spool_speed_controller_state?.forward ?? true);
-    setSpoolMinMaxMinSpeed(
-      preset.data?.spool_speed_controller_state?.minmax_min_speed ?? 0,
-    );
-    setSpoolMinMaxMaxSpeed(
-      preset.data?.spool_speed_controller_state?.minmax_max_speed ?? 150.0,
-    );
-    setSpoolAdaptiveTensionTarget(
-      preset.data?.spool_speed_controller_state?.adaptive_tension_target ?? 0.7,
-    );
-    setSpoolAdaptiveRadiusLearningRate(
-      preset.data?.spool_speed_controller_state
-        ?.adaptive_radius_learning_rate ?? 0.5,
-    );
-    setSpoolAdaptiveMaxSpeedMultiplier(
-      preset.data?.spool_speed_controller_state
-        ?.adaptive_max_speed_multiplier ?? 4,
-    );
-    setSpoolAdaptiveAccelerationFactor(
-      preset.data?.spool_speed_controller_state?.adaptive_acceleration_factor ??
-        0.2,
-    );
-    setSpoolAdaptiveDeaccelerationUrgencyMultiplier(
-      preset.data?.spool_speed_controller_state
-        ?.adaptive_deacceleration_urgency_multiplier ?? 15.0,
-    );
+    if (changed(d?.spool_speed_controller_state?.regulation_mode, currentData.spool_speed_controller_state?.regulation_mode))
+      actions.push(() => setSpoolRegulationMode(d.spool_speed_controller_state!.regulation_mode!));
+    if (changed(d?.spool_speed_controller_state?.forward, currentData.spool_speed_controller_state?.forward))
+      actions.push(() => setSpoolForward(d.spool_speed_controller_state!.forward!));
+    if (changed(d?.spool_speed_controller_state?.minmax_min_speed, currentData.spool_speed_controller_state?.minmax_min_speed))
+      actions.push(() => setSpoolMinMaxMinSpeed(d.spool_speed_controller_state!.minmax_min_speed!));
+    if (changed(d?.spool_speed_controller_state?.minmax_max_speed, currentData.spool_speed_controller_state?.minmax_max_speed))
+      actions.push(() => setSpoolMinMaxMaxSpeed(d.spool_speed_controller_state!.minmax_max_speed!));
+    if (changed(d?.spool_speed_controller_state?.adaptive_tension_target, currentData.spool_speed_controller_state?.adaptive_tension_target))
+      actions.push(() => setSpoolAdaptiveTensionTarget(d.spool_speed_controller_state!.adaptive_tension_target!));
+    if (changed(d?.spool_speed_controller_state?.adaptive_radius_learning_rate, currentData.spool_speed_controller_state?.adaptive_radius_learning_rate))
+      actions.push(() => setSpoolAdaptiveRadiusLearningRate(d.spool_speed_controller_state!.adaptive_radius_learning_rate!));
+    if (changed(d?.spool_speed_controller_state?.adaptive_max_speed_multiplier, currentData.spool_speed_controller_state?.adaptive_max_speed_multiplier))
+      actions.push(() => setSpoolAdaptiveMaxSpeedMultiplier(d.spool_speed_controller_state!.adaptive_max_speed_multiplier!));
+    if (changed(d?.spool_speed_controller_state?.adaptive_acceleration_factor, currentData.spool_speed_controller_state?.adaptive_acceleration_factor))
+      actions.push(() => setSpoolAdaptiveAccelerationFactor(d.spool_speed_controller_state!.adaptive_acceleration_factor!));
+    if (changed(d?.spool_speed_controller_state?.adaptive_deacceleration_urgency_multiplier, currentData.spool_speed_controller_state?.adaptive_deacceleration_urgency_multiplier))
+      actions.push(() => setSpoolAdaptiveDeaccelerationUrgencyMultiplier(d.spool_speed_controller_state!.adaptive_deacceleration_urgency_multiplier!));
 
     // Spool Automatic Action
-    setSpoolAutomaticRequiredMeters(
-      preset.data?.spool_automatic_action_state?.spool_required_meters ?? 0,
-    );
-    setSpoolAutomaticAction(
-      preset.data?.spool_automatic_action_state?.spool_automatic_action_mode ??
-        "NoAction",
-    );
+    if (changed(d?.spool_automatic_action_state?.spool_required_meters, currentData.spool_automatic_action_state?.spool_required_meters))
+      actions.push(() => setSpoolAutomaticRequiredMeters(d.spool_automatic_action_state!.spool_required_meters!));
+    if (changed(d?.spool_automatic_action_state?.spool_automatic_action_mode, currentData.spool_automatic_action_state?.spool_automatic_action_mode))
+      actions.push(() => setSpoolAutomaticAction(d.spool_automatic_action_state!.spool_automatic_action_mode!));
 
     // Heating
-    if (preset.data?.heating_states?.enabled !== undefined) {
-      setHeatingMode(
-        preset.data.heating_states.enabled ? "Heating" : "Standby",
-      );
-    }
-    setHeatingZone1Temperature(preset.data?.heating_states?.zone_1_target ?? 0);
-    setHeatingZone2Temperature(preset.data?.heating_states?.zone_2_target ?? 0);
-    setHeatingZone3Temperature(preset.data?.heating_states?.zone_3_target ?? 0);
-    setHeatingZone4Temperature(preset.data?.heating_states?.zone_4_target ?? 0);
-    setHeatingZone5Temperature(preset.data?.heating_states?.zone_5_target ?? 0);
-    setHeatingZone6Temperature(preset.data?.heating_states?.zone_6_target ?? 0);
+    if (d?.heating_states?.enabled !== undefined && d.heating_states.enabled !== currentData.heating_states?.enabled)
+      actions.push(() => setHeatingMode(d.heating_states!.enabled ? "Heating" : "Standby"));
+    if (changed(d?.heating_states?.zone_1_target, currentData.heating_states?.zone_1_target))
+      actions.push(() => setHeatingZone1Temperature(d.heating_states!.zone_1_target!));
+    if (changed(d?.heating_states?.zone_2_target, currentData.heating_states?.zone_2_target))
+      actions.push(() => setHeatingZone2Temperature(d.heating_states!.zone_2_target!));
+    if (changed(d?.heating_states?.zone_3_target, currentData.heating_states?.zone_3_target))
+      actions.push(() => setHeatingZone3Temperature(d.heating_states!.zone_3_target!));
+    if (changed(d?.heating_states?.zone_4_target, currentData.heating_states?.zone_4_target))
+      actions.push(() => setHeatingZone4Temperature(d.heating_states!.zone_4_target!));
+    if (changed(d?.heating_states?.zone_5_target, currentData.heating_states?.zone_5_target))
+      actions.push(() => setHeatingZone5Temperature(d.heating_states!.zone_5_target!));
+    if (changed(d?.heating_states?.zone_6_target, currentData.heating_states?.zone_6_target))
+      actions.push(() => setHeatingZone6Temperature(d.heating_states!.zone_6_target!));
 
     // Addon Motor 3
-    if (preset.data?.addon_motor_3_state?.enabled !== undefined) {
-      setStepper3Mode(
-        preset.data.addon_motor_3_state.enabled ? "Run" : "Standby",
-      );
-    }
-    if (preset.data?.addon_motor_3_state?.forward !== undefined) {
-      setStepper3Forward(preset.data.addon_motor_3_state.forward);
-    }
-    if (preset.data?.addon_motor_3_state?.master_ratio !== undefined) {
-      setStepper3Master(preset.data.addon_motor_3_state.master_ratio);
-    }
-    if (preset.data?.addon_motor_3_state?.slave_ratio !== undefined) {
-      setStepper3Slave(preset.data.addon_motor_3_state.slave_ratio);
-    }
-    if (preset.data?.addon_motor_3_state?.konturlaenge_mm !== undefined) {
-      setStepper3Konturlaenge(preset.data.addon_motor_3_state.konturlaenge_mm);
-    }
-    if (preset.data?.addon_motor_3_state?.pause_mm !== undefined) {
-      setStepper3Pause(preset.data.addon_motor_3_state.pause_mm);
-    }
+    if (d?.addon_motor_3_state?.enabled !== undefined && d.addon_motor_3_state.enabled !== currentData.addon_motor_3_state?.enabled)
+      actions.push(() => setStepper3Mode(d.addon_motor_3_state!.enabled ? "Run" : "Standby"));
+    if (changed(d?.addon_motor_3_state?.forward, currentData.addon_motor_3_state?.forward))
+      actions.push(() => setStepper3Forward(d.addon_motor_3_state!.forward!));
+    if (changed(d?.addon_motor_3_state?.master_ratio, currentData.addon_motor_3_state?.master_ratio))
+      actions.push(() => setStepper3Master(d.addon_motor_3_state!.master_ratio!));
+    if (changed(d?.addon_motor_3_state?.slave_ratio, currentData.addon_motor_3_state?.slave_ratio))
+      actions.push(() => setStepper3Slave(d.addon_motor_3_state!.slave_ratio!));
+    if (changed(d?.addon_motor_3_state?.konturlaenge_mm, currentData.addon_motor_3_state?.konturlaenge_mm))
+      actions.push(() => setStepper3Konturlaenge(d.addon_motor_3_state!.konturlaenge_mm!));
+    if (changed(d?.addon_motor_3_state?.pause_mm, currentData.addon_motor_3_state?.pause_mm))
+      actions.push(() => setStepper3Pause(d.addon_motor_3_state!.pause_mm!));
 
     // Addon Motor 4
-    if (preset.data?.addon_motor_4_state?.enabled !== undefined) {
-      setStepper4Mode(
-        preset.data.addon_motor_4_state.enabled ? "Run" : "Standby",
-      );
-    }
-    if (preset.data?.addon_motor_4_state?.forward !== undefined) {
-      setStepper4Forward(preset.data.addon_motor_4_state.forward);
-    }
-    if (preset.data?.addon_motor_4_state?.master_ratio !== undefined) {
-      setStepper4Master(preset.data.addon_motor_4_state.master_ratio);
-    }
-    if (preset.data?.addon_motor_4_state?.slave_ratio !== undefined) {
-      setStepper4Slave(preset.data.addon_motor_4_state.slave_ratio);
-    }
+    if (d?.addon_motor_4_state?.enabled !== undefined && d.addon_motor_4_state.enabled !== currentData.addon_motor_4_state?.enabled)
+      actions.push(() => setStepper4Mode(d.addon_motor_4_state!.enabled ? "Run" : "Standby"));
+    if (changed(d?.addon_motor_4_state?.forward, currentData.addon_motor_4_state?.forward))
+      actions.push(() => setStepper4Forward(d.addon_motor_4_state!.forward!));
+    if (changed(d?.addon_motor_4_state?.master_ratio, currentData.addon_motor_4_state?.master_ratio))
+      actions.push(() => setStepper4Master(d.addon_motor_4_state!.master_ratio!));
+    if (changed(d?.addon_motor_4_state?.slave_ratio, currentData.addon_motor_4_state?.slave_ratio))
+      actions.push(() => setStepper4Slave(d.addon_motor_4_state!.slave_ratio!));
 
     // Addon Motor 5
-    if (preset.data?.addon_motor_5_state?.enabled !== undefined) {
-      setStepper5Mode(
-        preset.data.addon_motor_5_state.enabled ? "Run" : "Standby",
-      );
-    }
-    if (preset.data?.addon_motor_5_state?.forward !== undefined) {
-      setStepper5Forward(preset.data.addon_motor_5_state.forward);
-    }
-    if (preset.data?.addon_motor_5_state?.master_ratio !== undefined) {
-      setStepper5Master(preset.data.addon_motor_5_state.master_ratio);
-    }
-    if (preset.data?.addon_motor_5_state?.slave_ratio !== undefined) {
-      setStepper5Slave(preset.data.addon_motor_5_state.slave_ratio);
-    }
+    if (d?.addon_motor_5_state?.enabled !== undefined && d.addon_motor_5_state.enabled !== currentData.addon_motor_5_state?.enabled)
+      actions.push(() => setStepper5Mode(d.addon_motor_5_state!.enabled ? "Run" : "Standby"));
+    if (changed(d?.addon_motor_5_state?.forward, currentData.addon_motor_5_state?.forward))
+      actions.push(() => setStepper5Forward(d.addon_motor_5_state!.forward!));
+    if (changed(d?.addon_motor_5_state?.master_ratio, currentData.addon_motor_5_state?.master_ratio))
+      actions.push(() => setStepper5Master(d.addon_motor_5_state!.master_ratio!));
+    if (changed(d?.addon_motor_5_state?.slave_ratio, currentData.addon_motor_5_state?.slave_ratio))
+      actions.push(() => setStepper5Slave(d.addon_motor_5_state!.slave_ratio!));
 
     // Slave Puller
-    if (preset.data?.slave_puller_state?.enabled !== undefined) {
-      setSlavePullerEnabled(preset.data.slave_puller_state.enabled);
+    if (changed(d?.slave_puller_state?.enabled, currentData.slave_puller_state?.enabled))
+      actions.push(() => setSlavePullerEnabled(d.slave_puller_state!.enabled!));
+    if (changed(d?.slave_puller_state?.forward, currentData.slave_puller_state?.forward))
+      actions.push(() => setSlavePullerForward(d.slave_puller_state!.forward!));
+    if (changed(d?.slave_puller_state?.target_angle, currentData.slave_puller_state?.target_angle))
+      actions.push(() => setSlavePullerTargetAngle(d.slave_puller_state!.target_angle!));
+    if (changed(d?.slave_puller_state?.sensitivity, currentData.slave_puller_state?.sensitivity))
+      actions.push(() => setSlavePullerSensitivity(d.slave_puller_state!.sensitivity!));
+    if (changed(d?.slave_puller_state?.min_speed_factor, currentData.slave_puller_state?.min_speed_factor))
+      actions.push(() => setSlavePullerMinSpeedFactor(d.slave_puller_state!.min_speed_factor!));
+    if (changed(d?.slave_puller_state?.max_speed_factor, currentData.slave_puller_state?.max_speed_factor))
+      actions.push(() => setSlavePullerMaxSpeedFactor(d.slave_puller_state!.max_speed_factor!));
+
+    // Heating PID (each zone sends all 3 PID values together)
+    for (const zone of ["zone_1", "zone_2", "zone_3", "zone_4", "zone_5", "zone_6"] as const) {
+      const presetZone = d?.heating_pid_settings?.[zone];
+      const currentZone = currentData.heating_pid_settings?.[zone];
+      if (
+        presetZone &&
+        (changed(presetZone.kp, currentZone?.kp) ||
+          changed(presetZone.ki, currentZone?.ki) ||
+          changed(presetZone.kd, currentZone?.kd))
+      ) {
+        const kp = presetZone.kp ?? currentZone?.kp ?? 0;
+        const ki = presetZone.ki ?? currentZone?.ki ?? 0;
+        const kd = presetZone.kd ?? currentZone?.kd ?? 0;
+        actions.push(() => setHeatingPid(zone, kp, ki, kd));
+      }
     }
-    if (preset.data?.slave_puller_state?.forward !== undefined) {
-      setSlavePullerForward(preset.data.slave_puller_state.forward);
+
+    // Winder Tension Arm Monitor
+    if (changed(d?.winder_tension_arm_monitor_state?.enabled, currentData.winder_tension_arm_monitor_state?.enabled))
+      actions.push(() => setWinderTensionArmMonitorEnabled(d.winder_tension_arm_monitor_state!.enabled!));
+    if (changed(d?.winder_tension_arm_monitor_state?.min_angle, currentData.winder_tension_arm_monitor_state?.min_angle))
+      actions.push(() => setWinderTensionArmMonitorMinAngle(d.winder_tension_arm_monitor_state!.min_angle!));
+    if (changed(d?.winder_tension_arm_monitor_state?.max_angle, currentData.winder_tension_arm_monitor_state?.max_angle))
+      actions.push(() => setWinderTensionArmMonitorMaxAngle(d.winder_tension_arm_monitor_state!.max_angle!));
+
+    // Addon Tension Arm Monitor
+    if (changed(d?.addon_tension_arm_monitor_state?.enabled, currentData.addon_tension_arm_monitor_state?.enabled))
+      actions.push(() => setAddonTensionArmMonitorEnabled(d.addon_tension_arm_monitor_state!.enabled!));
+    if (changed(d?.addon_tension_arm_monitor_state?.min_angle, currentData.addon_tension_arm_monitor_state?.min_angle))
+      actions.push(() => setAddonTensionArmMonitorMinAngle(d.addon_tension_arm_monitor_state!.min_angle!));
+    if (changed(d?.addon_tension_arm_monitor_state?.max_angle, currentData.addon_tension_arm_monitor_state?.max_angle))
+      actions.push(() => setAddonTensionArmMonitorMaxAngle(d.addon_tension_arm_monitor_state!.max_angle!));
+
+    // Slave Tension Arm Monitor
+    if (changed(d?.slave_tension_arm_monitor_state?.enabled, currentData.slave_tension_arm_monitor_state?.enabled))
+      actions.push(() => setSlaveTensionArmMonitorEnabled(d.slave_tension_arm_monitor_state!.enabled!));
+    if (changed(d?.slave_tension_arm_monitor_state?.min_angle, currentData.slave_tension_arm_monitor_state?.min_angle))
+      actions.push(() => setSlaveTensionArmMonitorMinAngle(d.slave_tension_arm_monitor_state!.min_angle!));
+    if (changed(d?.slave_tension_arm_monitor_state?.max_angle, currentData.slave_tension_arm_monitor_state?.max_angle))
+      actions.push(() => setSlaveTensionArmMonitorMaxAngle(d.slave_tension_arm_monitor_state!.max_angle!));
+
+    // Optris 1 Monitor
+    if (changed(d?.optris_1_monitor_state?.enabled, currentData.optris_1_monitor_state?.enabled))
+      actions.push(() => setOptris1MonitorEnabled(d.optris_1_monitor_state!.enabled!));
+    if (changed(d?.optris_1_monitor_state?.min_voltage, currentData.optris_1_monitor_state?.min_voltage))
+      actions.push(() => setOptris1MonitorMinVoltage(d.optris_1_monitor_state!.min_voltage!));
+    if (changed(d?.optris_1_monitor_state?.max_voltage, currentData.optris_1_monitor_state?.max_voltage))
+      actions.push(() => setOptris1MonitorMaxVoltage(d.optris_1_monitor_state!.max_voltage!));
+
+    // Optris 2 Monitor
+    if (changed(d?.optris_2_monitor_state?.enabled, currentData.optris_2_monitor_state?.enabled))
+      actions.push(() => setOptris2MonitorEnabled(d.optris_2_monitor_state!.enabled!));
+    if (changed(d?.optris_2_monitor_state?.min_voltage, currentData.optris_2_monitor_state?.min_voltage))
+      actions.push(() => setOptris2MonitorMinVoltage(d.optris_2_monitor_state!.min_voltage!));
+    if (changed(d?.optris_2_monitor_state?.max_voltage, currentData.optris_2_monitor_state?.max_voltage))
+      actions.push(() => setOptris2MonitorMaxVoltage(d.optris_2_monitor_state!.max_voltage!));
+
+    // Sleep Timer
+    if (changed(d?.sleep_timer_state?.enabled, currentData.sleep_timer_state?.enabled))
+      actions.push(() => setSleepTimerEnabled(d.sleep_timer_state!.enabled!));
+    if (changed(d?.sleep_timer_state?.timeout_seconds, currentData.sleep_timer_state?.timeout_seconds))
+      actions.push(() => setSleepTimerTimeout(d.sleep_timer_state!.timeout_seconds!));
+
+    // Execute actions sequentially, spread evenly over 5 seconds
+    if (actions.length === 0) {
+      toast.success("Preset already active", {
+        description: "All values already match the preset.",
+      });
+      return;
     }
-    if (preset.data?.slave_puller_state?.target_angle !== undefined) {
-      setSlavePullerTargetAngle(preset.data.slave_puller_state.target_angle);
-    }
-    if (preset.data?.slave_puller_state?.sensitivity !== undefined) {
-      setSlavePullerSensitivity(preset.data.slave_puller_state.sensitivity);
-    }
-    if (preset.data?.slave_puller_state?.min_speed_factor !== undefined) {
-      setSlavePullerMinSpeedFactor(
-        preset.data.slave_puller_state.min_speed_factor,
+
+    const toastId = toast.loading(
+      `Applying preset... (0/${actions.length})`,
+      { description: "Please wait while settings are applied." },
+    );
+
+    const delay = Math.min(5000 / actions.length, 200);
+    for (let i = 0; i < actions.length; i++) {
+      actions[i]();
+      toast.loading(
+        `Applying preset... (${i + 1}/${actions.length})`,
+        {
+          id: toastId,
+          description: "Please wait while settings are applied.",
+        },
       );
+      if (i < actions.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
     }
-    if (preset.data?.slave_puller_state?.max_speed_factor !== undefined) {
-      setSlavePullerMaxSpeedFactor(
-        preset.data.slave_puller_state.max_speed_factor,
-      );
-    }
+
+    toast.success("Preset applied", {
+      id: toastId,
+      description: `${actions.length} setting${actions.length > 1 ? "s" : ""} applied successfully.`,
+    });
   };
 
   const toPresetData = (s: typeof state): GluetexPresetData => ({
@@ -649,6 +995,57 @@ export function GluetexPresetsPage() {
           sensitivity: s.slave_puller_state.sensitivity,
           min_speed_factor: s.slave_puller_state.min_speed_factor ?? undefined,
           max_speed_factor: s.slave_puller_state.max_speed_factor ?? undefined,
+        }
+      : {},
+    heating_pid_settings: s?.heating_pid_settings
+      ? {
+          zone_1: { kp: s.heating_pid_settings.zone_1?.kp, ki: s.heating_pid_settings.zone_1?.ki, kd: s.heating_pid_settings.zone_1?.kd },
+          zone_2: { kp: s.heating_pid_settings.zone_2?.kp, ki: s.heating_pid_settings.zone_2?.ki, kd: s.heating_pid_settings.zone_2?.kd },
+          zone_3: { kp: s.heating_pid_settings.zone_3?.kp, ki: s.heating_pid_settings.zone_3?.ki, kd: s.heating_pid_settings.zone_3?.kd },
+          zone_4: { kp: s.heating_pid_settings.zone_4?.kp, ki: s.heating_pid_settings.zone_4?.ki, kd: s.heating_pid_settings.zone_4?.kd },
+          zone_5: { kp: s.heating_pid_settings.zone_5?.kp, ki: s.heating_pid_settings.zone_5?.ki, kd: s.heating_pid_settings.zone_5?.kd },
+          zone_6: { kp: s.heating_pid_settings.zone_6?.kp, ki: s.heating_pid_settings.zone_6?.ki, kd: s.heating_pid_settings.zone_6?.kd },
+        }
+      : {},
+    winder_tension_arm_monitor_state: s?.winder_tension_arm_monitor_state
+      ? {
+          enabled: s.winder_tension_arm_monitor_state.enabled,
+          min_angle: s.winder_tension_arm_monitor_state.min_angle,
+          max_angle: s.winder_tension_arm_monitor_state.max_angle,
+        }
+      : {},
+    addon_tension_arm_monitor_state: s?.addon_tension_arm_monitor_state
+      ? {
+          enabled: s.addon_tension_arm_monitor_state.enabled,
+          min_angle: s.addon_tension_arm_monitor_state.min_angle,
+          max_angle: s.addon_tension_arm_monitor_state.max_angle,
+        }
+      : {},
+    slave_tension_arm_monitor_state: s?.slave_tension_arm_monitor_state
+      ? {
+          enabled: s.slave_tension_arm_monitor_state.enabled,
+          min_angle: s.slave_tension_arm_monitor_state.min_angle,
+          max_angle: s.slave_tension_arm_monitor_state.max_angle,
+        }
+      : {},
+    optris_1_monitor_state: s?.optris_1_monitor_state
+      ? {
+          enabled: s.optris_1_monitor_state.enabled,
+          min_voltage: s.optris_1_monitor_state.min_voltage,
+          max_voltage: s.optris_1_monitor_state.max_voltage,
+        }
+      : {},
+    optris_2_monitor_state: s?.optris_2_monitor_state
+      ? {
+          enabled: s.optris_2_monitor_state.enabled,
+          min_voltage: s.optris_2_monitor_state.min_voltage,
+          max_voltage: s.optris_2_monitor_state.max_voltage,
+        }
+      : {},
+    sleep_timer_state: s?.sleep_timer_state
+      ? {
+          enabled: s.sleep_timer_state.enabled,
+          timeout_seconds: s.sleep_timer_state.timeout_seconds,
         }
       : {},
   });
