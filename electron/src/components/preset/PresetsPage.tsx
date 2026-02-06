@@ -10,7 +10,7 @@ import { downloadJson } from "@/lib/download";
 import { JsonFileInput } from "../FileInput";
 
 type PresetsPageProps<T> = UsePresetsParams<T> & {
-  applyPreset: (preset: Preset<T>) => void;
+  applyPreset: (preset: Preset<T>) => void | Promise<void>;
   previewEntries: PresetPreviewEntries<T>;
 };
 
