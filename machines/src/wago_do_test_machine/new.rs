@@ -53,7 +53,22 @@ impl MachineNewTrait for WagoDOTestMachine {
             }
 
             coupler.init_slot_modules(_wago_750_354.1);
-            let dev = coupler.slot_devices.get(0).unwrap().clone().unwrap();
+            let dev = coupler
+                .slot_devices
+                .get(0)
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "[{}::MachineNewTrait/WagoDOTestMachine::new] Expected Wago 750-530 module in slot 0, but slot 0 is not configured",
+                        module_path!()
+                    )
+                })?
+                .clone()
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "[{}::MachineNewTrait/WagoDOTestMachine::new] Expected Wago 750-530 module in slot 0, but slot 0 is empty or no device is present",
+                        module_path!()
+                    )
+                })?;
             let wago750_530: Arc<RwLock<Wago750_530>> = downcast_device::<Wago750_530>(dev).await?;
 
             let do1 = DigitalOutput::new(wago750_530.clone(), Wago750_530Port::Port1);
@@ -80,7 +95,6 @@ impl MachineNewTrait for WagoDOTestMachine {
                 douts: [do1, do2, do3, do4, do5, do6, do7, do8],
             };
             machine.emit_state();
-            println!("WagoDOTestMachine::new called, Wago750_530 with 8 digital outputs created!");
             Ok(machine)
         })
     }

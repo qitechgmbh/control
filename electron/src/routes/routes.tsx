@@ -387,7 +387,7 @@ export const wagoPower1ControlRoute = createRoute({
 
 export const wagoDoTestMachineSerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
-  path: "wagoDotestmachine/$serial",
+  path: "wagodotestmachine/$serial",
   component: () => <WagoDoTestMachinePage />,
 });
 
