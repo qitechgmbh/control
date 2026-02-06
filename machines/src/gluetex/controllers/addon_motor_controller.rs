@@ -41,6 +41,8 @@ pub struct AddonMotorController {
     accumulated_distance: f64,
     /// Whether the motor needs homing on next enable
     needs_homing: bool,
+    /// Whether the motor is in manual homing mode (triggered by user button)
+    manual_homing: bool,
 }
 
 impl AddonMotorController {
@@ -60,6 +62,7 @@ impl AddonMotorController {
             pattern_state: PatternControlState::Idle,
             accumulated_distance: 0.0,
             needs_homing: false,
+            manual_homing: false,
         }
     }
 
@@ -168,6 +171,19 @@ impl AddonMotorController {
         self.pattern_state
     }
 
+    /// Start manual homing - moves motor in positive direction until endstop is hit
+    ///
+    /// This method initiates a manual homing sequence, putting the motor into
+    /// the Homing state. The motor will move in the positive direction at a fixed
+    /// speed until the endstop is triggered, then automatically go to standby.
+    pub fn start_manual_homing(&mut self) {
+        self.enabled = true;
+        self.manual_homing = true;
+        self.pattern_state = PatternControlState::Homing;
+        self.accumulated_distance = 0.0;
+        self.needs_homing = false;
+    }
+
     /// Calculate the motor angular velocity based on puller angular velocity and ratio
     ///
     /// # Arguments
@@ -211,6 +227,32 @@ impl AddonMotorController {
         endstop_hit: Option<bool>,
         puller_length_moved: Length,
     ) {
+        // Handle manual homing first (highest priority)
+        if self.manual_homing {
+            // Enable motor if not already enabled
+            if !motor.is_enabled() {
+                motor.set_enabled(true);
+            }
+
+            if let Some(endstop_triggered) = endstop_hit {
+                if endstop_triggered {
+                    // Endstop hit - stop motor, disable, and exit manual homing
+                    let _ = motor.set_speed(0.0);
+                    motor.set_enabled(false);
+                    self.enabled = false;
+                    self.manual_homing = false;
+                    self.pattern_state = PatternControlState::Idle;
+                    return;
+                }
+            }
+
+            // Move towards endstop at fixed speed (0.5 rev/s regardless of puller speed)
+            let homing_velocity = AngularVelocity::new::<revolution_per_second>(0.5);
+            let steps_per_second = self.converter.angular_velocity_to_steps(homing_velocity);
+            let _ = motor.set_speed(steps_per_second);
+            return;
+        }
+
         if !self.enabled {
             // If disabled, ensure motor is not enabled
             if motor.is_enabled() {
