@@ -45,6 +45,7 @@ export function GluetexAddonsPage() {
     setStepper5Slave,
     setStepper3Konturlaenge,
     setStepper3Pause,
+    homeAddonMotor3,
   } = useGluetex();
 
   // Calculate max speed based on gear ratio (same as main puller)
@@ -318,6 +319,17 @@ export function GluetexAddonsPage() {
                 </StatusBadge>
               </Label>
             )}
+          <Label label="Stepper 3 Homing">
+            <TouchButton
+              variant="outline"
+              icon="lu:House"
+              onClick={homeAddonMotor3}
+              disabled={isDisabled}
+              isLoading={isLoading}
+            >
+              Home Motor
+            </TouchButton>
+          </Label>
         </ControlCard>
 
         <ControlCard title="Addon Tension Arm">
