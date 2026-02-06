@@ -280,6 +280,7 @@ export function extruder2MessageHandler(
             : state.defaultState,
         }));
       } else if (eventName === "LiveValuesEvent") {
+        console.log(event);
         const liveValuesEvent = liveValuesEventSchema.parse(event);
         const timestamp = event.ts;
         updateStore((state) => ({
