@@ -90,8 +90,8 @@ impl Default for SleepTimerConfig {
 
 #[derive(Debug, Clone, Default)]
 pub struct OrderInfo {
-    pub order_number: String,
-    pub serial_number: String,
+    pub order_number: u32,
+    pub serial_number: u32,
     pub product_description: String,
 }
 
