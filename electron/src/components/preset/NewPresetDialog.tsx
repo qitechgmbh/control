@@ -41,7 +41,7 @@ export function NewPresetDialog<T>({
         </TouchButton>
       </DialogTrigger>
 
-      <DialogContent>
+      <DialogContent className="flex max-h-[90vh] flex-col">
         <DialogHeader>
           <DialogTitle className="flex flex-row items-center gap-2">
             <Icon name="lu:SquarePlus" />
@@ -58,7 +58,7 @@ export function NewPresetDialog<T>({
           onChange={(e) => setName(e.target.value)}
           className="w-full"
         />
-        <div className="flex flex-col gap-6 text-sm">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto text-sm">
           <span>Current Settings:</span>
           <PresetPreviewTable entries={previewEntries} data={currentState} />
         </div>

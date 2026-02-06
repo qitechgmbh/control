@@ -41,7 +41,7 @@ export function PresetShowDialog<T>({
         </TouchButton>
       </DialogTrigger>
 
-      <DialogContent>
+      <DialogContent className="flex max-h-[90vh] flex-col">
         <DialogHeader>
           <DialogTitle className="flex flex-row items-center gap-2">
             <Icon name="lu:Save" />
@@ -53,7 +53,7 @@ export function PresetShowDialog<T>({
         </DialogHeader>
         <Separator />
 
-        <div className="flex flex-col gap-6 text-sm">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto text-sm">
           {!hideDate && (
             <div>
               Latest modification at{" "}
