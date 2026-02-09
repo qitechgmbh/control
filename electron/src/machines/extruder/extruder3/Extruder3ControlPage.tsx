@@ -22,7 +22,7 @@ import { GlobalHeatingFaultToastManager } from "./GlobalHeatingFaultToastManager
 export function Extruder3ControlPage() {
   const { serial: serialString } = extruder3Route.useParams();
 
-  // Memoize machine identification for toast manager
+  // Memorize machine identification for toast manager
   const machineIdentification: MachineIdentificationUnique = useMemo(() => {
     const serial = parseInt(serialString);
     if (isNaN(serial)) {
