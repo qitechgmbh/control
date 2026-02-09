@@ -114,11 +114,6 @@ impl EL4002 {
 
         self.configuration
             .pdo_assignment
-            .txpdo_assignment()
-            .write_config(subdevice)
-            .await?;
-        self.configuration
-            .pdo_assignment
             .rxpdo_assignment()
             .write_config(subdevice)
             .await?;
