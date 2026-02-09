@@ -29,7 +29,9 @@ impl StepperVelocityWago750672 {
     }
 
     pub fn set_enabled(&mut self, enabled: bool) {
-        if self.enabled && enabled {return}
+        if self.enabled && enabled {
+            return;
+        }
 
         self.enabled = enabled;
         if enabled {
@@ -51,6 +53,14 @@ impl StepperVelocityWago750672 {
         if dev.initialized {
             dev.state = InitState::StartPulseStart;
         }
+    }
+
+    pub fn set_acceleration(&mut self, acceleration: u16) {
+        self.target_acceleration = acceleration;
+
+        let mut dev = block_on(self.device.write());
+
+        dev.rxpdo.acceleration = acceleration;
     }
 
     fn change_init_state(&mut self, state: InitState) {
@@ -82,6 +92,12 @@ impl StepperVelocityWago750672 {
     }
 }
 
+// The Different Control Bytes set control the stepper controller
+// by setting and resetting specific bits.
+//
+// There are some construction functions provided to create the
+// control bytes correctly.
+
 /// Control Byte C1
 #[derive(Clone, Copy, Default)]
 pub struct ControlByteC1(u8);
@@ -89,21 +105,21 @@ pub struct ControlByteC1(u8);
 #[repr(u8)]
 #[derive(Clone, Copy)]
 pub enum C1Flag {
-    Enable  = 0b0000_0001,
-    Stop2N  = 0b0000_0010,
-    Start   = 0b0000_0100,
+    Enable = 0b0000_0001,
+    Stop2N = 0b0000_0010,
+    Start = 0b0000_0100,
 }
 
 #[repr(u8)]
 #[derive(Clone, Copy)]
 pub enum C1Command {
-    Idle           = 0b0000_0000,
+    Idle = 0b0000_0000,
     SinglePosition = 0b0000_1000,
-    RunProgram     = 0b0001_0000,
-    SpeedControl   = 0b0001_1000,
-    Reference      = 0b0010_0000,
-    JogMode        = 0b0010_1000,
-    Mailbox        = 0b0011_0000,
+    RunProgram = 0b0001_0000,
+    SpeedControl = 0b0001_1000,
+    Reference = 0b0010_0000,
+    JogMode = 0b0010_1000,
+    Mailbox = 0b0011_0000,
 }
 
 impl ControlByteC1 {
@@ -133,12 +149,12 @@ pub struct ControlByteC2(u8);
 #[repr(u8)]
 #[derive(Clone, Copy)]
 pub enum C2Flag {
-    FreqRangeSelL         = 0b0000_0001,
-    FreqRangeSelH         = 0b0000_0010,
-    AccRangeSelL          = 0b0000_0100,
-    AccRangeSelH          = 0b0000_1000,
-    PreCalc               = 0b0100_0000,
-    ErrorQuit             = 0b1000_0000,
+    FreqRangeSelL = 0b0000_0001,
+    FreqRangeSelH = 0b0000_0010,
+    AccRangeSelL = 0b0000_0100,
+    AccRangeSelH = 0b0000_1000,
+    PreCalc = 0b0100_0000,
+    ErrorQuit = 0b1000_0000,
 }
 
 impl ControlByteC2 {
@@ -166,7 +182,7 @@ pub enum C3Flag {
     SetActualPos = 0b0000_0001,
     DirectionPos = 0b0000_0010,
     DirectionNeg = 0b0000_0100,
-    ResetQuit    = 0b1000_0000,
+    ResetQuit = 0b1000_0000,
 }
 
 impl ControlByteC3 {
@@ -184,6 +200,13 @@ impl ControlByteC3 {
     }
 }
 
+// The status bytes are similar to the control bytes but are only readable
+// and most of the time provide corresponding acknoledgements to the diffrent
+// Control bytes.
+//
+// There are also helper functions to construct the diffrent Status bytes for
+// compoarison.
+
 /// Status Byte S1
 #[derive(Clone, Copy, Default)]
 pub struct StatusByteS1(u8);
@@ -191,21 +214,21 @@ pub struct StatusByteS1(u8);
 #[repr(u8)]
 #[derive(Clone, Copy)]
 pub enum S1Flag {
-    Ready      = 0b0000_0001,
-    Stop2NAck  = 0b0000_0010,
-    StartAck   = 0b0000_0100,
+    Ready = 0b0000_0001,
+    Stop2NAck = 0b0000_0010,
+    StartAck = 0b0000_0100,
 }
 
 #[repr(u8)]
 #[derive(Clone, Copy)]
 pub enum S1CommandAck {
-    Idle           = 0b0000_0000,
+    Idle = 0b0000_0000,
     SinglePosition = 0b0000_1000,
-    RunProgram     = 0b0001_0000,
-    SpeedControl   = 0b0001_1000,
-    Reference      = 0b0010_0000,
-    JogMode        = 0b0010_1000,
-    Mailbox        = 0b0011_0000,
+    RunProgram = 0b0001_0000,
+    SpeedControl = 0b0001_1000,
+    Reference = 0b0010_0000,
+    JogMode = 0b0010_1000,
+    Mailbox = 0b0011_0000,
 }
 
 impl StatusByteS1 {
@@ -229,14 +252,14 @@ pub struct StatusByteS2(u8);
 #[repr(u8)]
 #[derive(Clone, Copy)]
 pub enum S2Flag {
-    OnTarget     = 0b0000_0001,
-    Busy         = 0b0000_0010,
-    StandStill   = 0b0000_0100,
-    OnSpeed      = 0b0000_1000,
-    Direction    = 0b0001_0000,
-    ReferenceOk  = 0b0010_0000,
-    PreCalcAck   = 0b0100_0000,
-    Error        = 0b1000_0000,
+    OnTarget = 0b0000_0001,
+    Busy = 0b0000_0010,
+    StandStill = 0b0000_0100,
+    OnSpeed = 0b0000_1000,
+    Direction = 0b0001_0000,
+    ReferenceOk = 0b0010_0000,
+    PreCalcAck = 0b0100_0000,
+    Error = 0b1000_0000,
 }
 
 impl StatusByteS2 {
@@ -256,14 +279,14 @@ pub struct StatusByteS3(u8);
 #[repr(u8)]
 #[derive(Clone, Copy)]
 pub enum S3Flag {
-    Input1  = 0b0000_0001,
-    Input2  = 0b0000_0010,
-    Input3  = 0b0000_0100,
-    Input4  = 0b0000_1000,
-    Input5  = 0b0001_0000,
-    Input6  = 0b0010_0000,
+    Input1 = 0b0000_0001,
+    Input2 = 0b0000_0010,
+    Input3 = 0b0000_0100,
+    Input4 = 0b0000_1000,
+    Input5 = 0b0001_0000,
+    Input6 = 0b0010_0000,
     Warning = 0b0100_0000,
-    Reset   = 0b1000_0000,
+    Reset = 0b1000_0000,
 }
 
 impl StatusByteS3 {

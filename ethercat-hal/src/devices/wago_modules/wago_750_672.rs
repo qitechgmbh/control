@@ -11,9 +11,7 @@ use crate::{
         DynamicEthercatDevice, EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed,
         EthercatDynamicPDO, Module, NewEthercatDevice, SubDeviceProductTuple,
     },
-    io::stepper_velocity_wago_750_672::{
-        C1Command, C1Flag, C2Flag, C3Flag, ControlByteC1, ControlByteC2, ControlByteC3,
-    },
+    io::{digital_input::{DigitalInputDevice, DigitalInputInput}, stepper_velocity_wago_750_672::{C1Command, C1Flag, C2Flag, C3Flag, ControlByteC1, ControlByteC2, ControlByteC3, S3Flag, StatusByteS3}},
 };
 
 #[derive(Clone)]
@@ -78,6 +76,34 @@ pub struct Wago750_672TxPdo {
     pub s1: u8,               // S1
 }
 
+/// Digital input port enumeration for the 6 inputs
+#[derive(Debug, Clone, Copy)]
+pub enum Wago750_672_InputPort {
+    DI1,
+    DI2,
+    DI3,
+    DI4,
+    DI5,
+    DI6,
+}
+
+// Get the Digital Inputs from the Status Byte S3
+impl DigitalInputDevice<Wago750_672_InputPort> for Wago750_672 {
+    fn get_input(&self, port: Wago750_672_InputPort) -> Result<DigitalInputInput, anyhow::Error> {
+        let s3 = StatusByteS3::from_bits(self.txpdo.s3);
+        Ok(DigitalInputInput {
+            value: match port {
+                Wago750_672_InputPort::DI1 => s3.has_flag(S3Flag::Input1),
+                Wago750_672_InputPort::DI2 => s3.has_flag(S3Flag::Input2),
+                Wago750_672_InputPort::DI3 => s3.has_flag(S3Flag::Input3),
+                Wago750_672_InputPort::DI4 => s3.has_flag(S3Flag::Input4),
+                Wago750_672_InputPort::DI5 => s3.has_flag(S3Flag::Input5),
+                Wago750_672_InputPort::DI6 => s3.has_flag(S3Flag::Input6),
+            },
+        })
+    }
+}
+
 impl EthercatDeviceUsed for Wago750_672 {
     fn is_used(&self) -> bool {
         self.is_used
@@ -137,6 +163,8 @@ impl EthercatDevice for Wago750_672 {
             s1: b[11],
         };
 
+        // Yes this statemachine is unfortunately needed in here to make sure
+        // bits are correctly set and reset in the correct cycle.
         match self.state {
             InitState::Off => {
                 // Do nothing
