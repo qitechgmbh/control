@@ -231,9 +231,9 @@ export function useExtruder3() {
           enabled;
       },
       () =>
-        requestTemperatureTargetEnabled({
+        requestNozzleTemperatureTargetEnabled({
           machine_identification_unique: machineIdentification,
-          data: { SetTemperatureTargetEnabled: enabled },
+          data: { SetNozzleTemperatureTargetEnabled: enabled },
         }),
     );
   };
@@ -387,8 +387,8 @@ export function useExtruder3() {
     z.object({ SetExtruderPressureLimitIsEnabled: z.boolean() }),
   );
 
-  const { request: requestTemperatureTargetEnabled } = useMachineMutation(
-    z.object({ SetTemperatureTargetEnabled: z.boolean() }),
+  const { request: requestNozzleTemperatureTargetEnabled } = useMachineMutation(
+    z.object({ SetNozzleTemperatureTargetEnabled: z.boolean() }),
   );
 
   const { request: requestPressurePidSettings } = useMachineMutation(

@@ -144,7 +144,7 @@ pub enum Mutation {
     SetExtruderPressureLimitIsEnabled(bool),
 
     // ToggleTemperatureTarget
-    SetTemperatureTargetEnabled(bool),
+    SetNozzleTemperatureTargetEnabled(bool),
 
     // Pid Configure
     SetPressurePidSettings(PidSettings),
@@ -230,7 +230,7 @@ impl MachineApi for ExtruderV3 {
             Mutation::SetTemperaturePidSettings(settings) => {
                 self.configure_temperature_pid(settings);
             }
-            Mutation::SetTemperatureTargetEnabled(enabled) => {
+            Mutation::SetNozzleTemperatureTargetEnabled(enabled) => {
                 self.set_nozzle_temperature_target_is_enabled(enabled);
             }
         }
