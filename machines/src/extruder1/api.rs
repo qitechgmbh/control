@@ -238,6 +238,8 @@ pub enum Mutation {
 
     // Reset
     ResetInverter(bool),
+
+    SetNozzleTemperatureTargetEnabled(bool),
 }
 
 #[derive(Debug)]
@@ -317,6 +319,9 @@ impl MachineApi for ExtruderV2 {
 
             Mutation::SetTemperaturePidSettings(settings) => {
                 self.configure_temperature_pid(settings);
+            }
+            Mutation::SetNozzleTemperatureTargetEnabled(enabled) => {
+                self.set_nozzle_temperature_target_is_enabled(enabled);
             }
         }
         Ok(())
