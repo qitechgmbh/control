@@ -16,6 +16,9 @@ import { MachineIdentificationUnique } from "@/machines/types";
 
 export const stateEventDataSchema = z.object({
   target_speed: z.number(),
+  enabled: z.boolean(),
+  freq: z.number(),
+  acc_freq: z.number(),
 });
 
 export const stateEventSchema = eventSchema(stateEventDataSchema);

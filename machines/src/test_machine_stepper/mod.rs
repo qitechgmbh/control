@@ -42,6 +42,9 @@ impl TestMachineStepper {
     pub fn get_state(&self) -> StateEvent {
         StateEvent {
             target_speed: self.stepper.target_velocity,
+            enabled: self.stepper.enabled,
+            freq: self.stepper.freq_range_sel,
+            acc_freq: self.stepper.acc_range_sel,
         }
     }
 
@@ -52,9 +55,22 @@ impl TestMachineStepper {
     }
 
     pub fn set_target_speed(&mut self, speed: i16) {
+        self.stepper.set_velocity(speed);
+        self.emit_state();
+    }
 
-        self.stepper.target_velocity = speed;
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.stepper.set_enabled(enabled);
+        self.emit_state();
+    }
 
-        self.stepper.set_enabled(speed != 0);
+    pub fn set_freq(&mut self, factor: u8) {
+        self.stepper.set_freq_range_sel(factor);
+        self.emit_state();
+    }
+
+    pub fn set_acc_freq(&mut self, factor: u8) {
+        self.stepper.set_acc_range_sel(factor);
+        self.emit_state();
     }
 }

@@ -3,7 +3,7 @@ use ethercat_hal::{devices::{
     EthercatDevice, downcast_device,
     wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
     wago_modules::wago_750_671::Wago750_671,
-}, io::stepper_velocity_wago_750_671::StepperVelocityWago750671};
+}, io::{stepper_velocity_wago_750_671::StepperVelocityWago750671}};
 use smol::{block_on, lock::RwLock};
 use std::{sync::Arc, time::Instant};
 
@@ -52,9 +52,14 @@ impl MachineNewTrait for TestMachineStepper {
             }
 
             coupler.init_slot_modules(_wago_750_354.1);
-            let dev = coupler.slot_devices.get(0).unwrap().clone().unwrap();
+            let dev = coupler.slot_devices.first().unwrap().clone().unwrap();
+
+            // change uncomment this to change to different stepper driver
+            //
             let wago_750_671: Arc<RwLock<Wago750_671>> =
                 downcast_device::<Wago750_671>(dev).await?;
+            // let wago_750_672: Arc<RwLock<Wago750_672>> =
+            //     downcast_device::<Wago750_672>(dev).await?;
             drop(coupler);
 
             let stepper = StepperVelocityWago750671::new(wago_750_671);
