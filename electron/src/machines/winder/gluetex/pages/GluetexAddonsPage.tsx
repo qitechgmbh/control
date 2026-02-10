@@ -3,7 +3,7 @@ import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
-import { TemperatureBar } from "../../TemperatureBar";
+import { TemperatureBar } from "../components/TemperatureBar";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
