@@ -7,10 +7,9 @@ import { Label } from "@/control/Label";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { fa } from "zod/v4/locales";
 
 export function TestMachineStepperControlPage() {
-  const { state, setTargetSpeed, setEnabled } = useTestMachineStepper();
+  const { state, setTargetSpeed, setEnabled, setFreq, setAccFreq } = useTestMachineStepper();
 
   return (
     <Page>
@@ -28,25 +27,101 @@ export function TestMachineStepperControlPage() {
               renderValue={(value) => roundToDecimals(value, 0)}
               onChange={setTargetSpeed}
             />
+            <TouchButton
+              variant="outline"
+              icon="lu:CirclePower"
+              onClick={() => setEnabled(true)}
+              disabled={false}
+              isLoading={false}
+            >
+              Enable
+            </TouchButton>
+            <TouchButton
+              variant="outline"
+              icon="lu:CirclePower"
+              onClick={() => setEnabled(false)}
+              disabled={false}
+              isLoading={false}
+            >
+              Disable
+            </TouchButton>
           </Label>
-          <TouchButton
-            variant="outline"
-            icon="lu:CirclePower"
-            onClick={() => setEnabled(true)}
-            disabled={false}
-            isLoading={false}
-          >
-            Enable
-          </TouchButton>
-          <TouchButton
-            variant="outline"
-            icon="lu:CirclePower"
-            onClick={() => setEnabled(false)}
-            disabled={false}
-            isLoading={false}
-          >
-            Disable
-          </TouchButton>
+        </ControlCard>
+        <ControlCard height={2} title="Frequency Prescaler">
+            <TouchButton
+              variant="outline"
+              icon="lu:CirclePower"
+              onClick={() => setFreq(0)}
+              disabled={false}
+              isLoading={false}
+            >
+              Default (00)
+            </TouchButton>
+            <TouchButton
+              variant="outline"
+              icon="lu:CirclePower"
+              onClick={() => setFreq(1)}
+              disabled={false}
+              isLoading={false}
+            >
+              Low (01)
+            </TouchButton>
+            <TouchButton
+              variant="outline"
+              icon="lu:CirclePower"
+              onClick={() => setFreq(2)}
+              disabled={false}
+              isLoading={false}
+            >
+              Mid (10)
+            </TouchButton>
+            <TouchButton
+              variant="outline"
+              icon="lu:CirclePower"
+              onClick={() => setFreq(3)}
+              disabled={false}
+              isLoading={false}
+            >
+              High (11)
+            </TouchButton>
+        <ControlCard height={2} title="Acceleration Factor">
+            <TouchButton
+              variant="outline"
+              icon="lu:CirclePower"
+              onClick={() => setAccFreq(0)}
+              disabled={false}
+              isLoading={false}
+            >
+              Default (00)
+            </TouchButton>
+            <TouchButton
+              variant="outline"
+              icon="lu:CirclePower"
+              onClick={() => setAccFreq(1)}
+              disabled={false}
+              isLoading={false}
+            >
+              Low (01)
+            </TouchButton>
+            <TouchButton
+              variant="outline"
+              icon="lu:CirclePower"
+              onClick={() => setAccFreq(2)}
+              disabled={false}
+              isLoading={false}
+            >
+              Mid (10)
+            </TouchButton>
+            <TouchButton
+              variant="outline"
+              icon="lu:CirclePower"
+              onClick={() => setAccFreq(3)}
+              disabled={false}
+              isLoading={false}
+            >
+              High (11)
+            </TouchButton>
+        </ControlCard>
         </ControlCard>
       </ControlGrid>
     </Page>

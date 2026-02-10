@@ -671,6 +671,17 @@ export const testmachinestepper: MachineProperties = {
       allowed_devices: [
         {
           vendor_id: 0x00000021,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "Stepper Motor",
+      allowed_devices: [
+        {
+          vendor_id: 0x00000021,
           product_id: 0x67214e8,
           revision: 0x2,
         },

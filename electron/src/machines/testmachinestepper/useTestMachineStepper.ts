@@ -90,9 +90,37 @@ export function useTestMachineStepper() {
     );
   };
 
+     const setFreq = (factor: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.freq = factor;
+      },
+      () =>
+        sendMutation({
+          machine_identification_unique: machineIdentification,
+          data: { action: "SetFreq", value: { factor } },
+        }),
+    );
+  };
+
+  const setAccFreq = (factor: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.acc_freq = factor;
+      },
+      () =>
+        sendMutation({
+          machine_identification_unique: machineIdentification,
+          data: { action: "SetAccFreq", value: { factor } },
+        }),
+    );
+  };
+
   return {
     state: stateOptimistic.value,
     setTargetSpeed,
     setEnabled,
+    setFreq,
+    setAccFreq,
   };
 }
