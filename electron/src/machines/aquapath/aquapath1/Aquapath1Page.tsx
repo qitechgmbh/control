@@ -18,7 +18,7 @@ export function Aquapath1Page() {
           link: "graph",
           title: "Graph",
           icon: "lu:ChartSpline",
-          activeLink: "graphs",
+          activeLink: "graph",
         },
         {
           link: "settings",
