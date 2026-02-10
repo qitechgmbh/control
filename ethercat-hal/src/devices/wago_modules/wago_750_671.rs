@@ -228,6 +228,8 @@ impl EthercatDevice for Wago750_671 {
             }
         }
 
+        tracing::info!("S1: {:08b} S2: {:08b} S3: {:08b} C1: {:08b} C2: {:08b} C3: {:08b}", self.txpdo.s1, self.txpdo.s2, self.txpdo.s3, self.rxpdo.c1, self. rxpdo.c2, self.rxpdo.c3);
+
         Ok(())
     }
 
