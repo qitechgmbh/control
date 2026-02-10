@@ -16,6 +16,7 @@ type Props = {
   min: number;
   max: number;
   onChangeTargetTemp?: (temperature: number) => void;
+  targetTemperatureEnabled: boolean;
 };
 export function HeatingZone({
   title,
@@ -25,6 +26,7 @@ export function HeatingZone({
   heatingTimeSeries,
   heatingPower,
   onChangeTargetTemp,
+  targetTemperatureEnabled,
 }: Props) {
   const targetTemperature = heatingState?.target_temperature ?? 150;
 
@@ -41,19 +43,20 @@ export function HeatingZone({
             timeseries={heatingTimeSeries}
           />
         </div>
-
-        <Label label="Target Temperature">
-          <EditValue
-            value={targetTemperature}
-            defaultValue={150}
-            min={min}
-            max={max}
-            unit="C"
-            title="Target Temperature"
-            renderValue={(value) => roundToDecimals(value, 1)}
-            onChange={onChangeTargetTemp}
-          />
-        </Label>
+        {targetTemperatureEnabled && (
+          <Label label="Target Temperature">
+            <EditValue
+              value={targetTemperature}
+              defaultValue={150}
+              min={min}
+              max={max}
+              unit="C"
+              title="Target Temperature"
+              renderValue={(value) => roundToDecimals(value, 1)}
+              onChange={onChangeTargetTemp}
+            />
+          </Label>
+        )}
       </div>
 
       <TimeSeriesValueNumeric
@@ -65,7 +68,7 @@ export function HeatingZone({
         timeseries={heatingPower}
       />
 
-      {heatingState?.wiring_error && (
+      {heatingState?.wiring_error && targetTemperatureEnabled && (
         <StatusBadge variant="error">
           Cant Read Temperature! Check Temperature Sensor Wiring!
         </StatusBadge>

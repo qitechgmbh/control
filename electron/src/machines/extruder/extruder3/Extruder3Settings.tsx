@@ -20,6 +20,7 @@ export function Extruder3SettingsPage() {
     setPressurePidKi,
     setPressurePidKd,
     setTemperaturePidValue,
+    setTemperatureTargetEnabled,
   } = useExtruder3();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -66,6 +67,16 @@ export function Extruder3SettingsPage() {
             optionTrue={{ children: "Enabled" }}
             optionFalse={{ children: "Disabled" }}
             onChange={setExtruderPressureLimitEnabled}
+          />
+        </Label>
+        <Label label="Nozzle Temperature Target Enabled">
+          <SelectionGroupBoolean
+            value={
+              state?.extruder_settings_state.nozzle_temperature_target_enabled
+            }
+            optionTrue={{ children: "Enabled" }}
+            optionFalse={{ children: "Disabled" }}
+            onChange={setTemperatureTargetEnabled}
           />
         </Label>
         <Label label="Show Advanced PID Settings">

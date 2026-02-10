@@ -130,6 +130,12 @@ impl ExtruderV2 {
         self.emit_state();
     }
 
+    pub fn set_nozzle_temperature_target_is_enabled(&mut self, enabled: bool) {
+        self.extruder_settings_state
+            .nozzle_temperature_target_enabled = enabled;
+        self.emit_state();
+    }
+
     pub fn configure_pressure_pid(&mut self, settings: PidSettings) {
         self.pid_settings.pressure.ki = settings.ki;
         self.pid_settings.pressure.kp = settings.kp;
