@@ -90,18 +90,13 @@ export const winder2: MachineProperties = {
       ],
     },
     {
-      role: 10,
-      role_label: "Slave Puller",
+      role: 4,
+      role_label: "1x Stepper Puller",
       allowed_devices: [
         {
           vendor_id: 2,
           product_id: 0x1b773052,
-          revision: 0x1a0000,
-        },
-        {
-          vendor_id: 2,
-          product_id: 0x1b773052,
-          revision: 0x190000,
+          revision: 0x10001e,
         },
       ],
     },

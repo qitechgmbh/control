@@ -15,8 +15,6 @@ import {
 } from "@/machines/properties";
 import { IconText } from "@/components/IconText";
 import { MachinesEventData, useMainNamespace } from "@/client/mainNamespace";
-import { TouchButton } from "@/components/touch/TouchButton";
-import { useNavigate } from "@tanstack/react-router";
 
 export const columns: ColumnDef<
   NonNullable<MachinesEventData>["machines"][number]
@@ -78,7 +76,6 @@ export const columns: ColumnDef<
 
 export function MachinesPage() {
   const { machines } = useMainNamespace();
-  const navigate = useNavigate();
 
   const data = useMemo(() => {
     return machines?.data?.machines || [];

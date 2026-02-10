@@ -110,7 +110,8 @@ export function buffer1MessageHandler(
           state: stateEvent,
         }));
       } else if (eventName === "LiveValuesEvent") {
-        liveValuesEventSchema.parse(event);
+        const liveValuesEvent = liveValuesEventSchema.parse(event);
+        const timestamp = event.ts;
         updateStore((state) => ({
           ...state,
         }));
