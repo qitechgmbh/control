@@ -15,9 +15,11 @@ use machines::{
     serial::{devices::laser::Laser, init::SerialDetection},
     winder2::api::GenericEvent,
 };
-use socketio::main_namespace::{
-    MainNamespaceEvents, ethercat_devices_event::EthercatDevicesEventBuilder,
+use socketio::{
+    main_namespace::{MainNamespaceEvents, ethercat_devices_event::EthercatDevicesEventBuilder},
+    queue::start_socketio_queue,
 };
+
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
 use utils::start_dnsmasq;
@@ -52,7 +54,6 @@ use crate::{
         setup::setup_loop,
     },
     modbus_tcp::start_modbus_tcp_discovery,
-    socketio::queue::socketio_queue_worker,
 };
 
 #[cfg(feature = "mock-machine")]
@@ -323,15 +324,6 @@ async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state:
     tracing::warn!("Async handler task finished");
 }
 
-pub async fn start_socketio_queue(app_state: Arc<SharedState>) {
-    let app_state = app_state.as_ref();
-    loop {
-        let res = socketio_queue_worker(app_state).await;
-        tracing::error!("SocketIO task finished, but should never finish: {:?}", res);
-        tracing::error!("Restarting SocketIO...");
-    }
-}
-
 #[cfg(feature = "development-build")]
 fn setup_ctrlc_handler() -> Arc<AtomicBool> {
     let running = Arc::new(AtomicBool::new(true));
@@ -384,7 +376,6 @@ fn main() {
 
     #[cfg(not(feature = "mock-machine"))]
     smol::spawn(start_interface_discovery(app_state.clone(), sender)).detach();
-
     smol::spawn(start_modbus_tcp_discovery(app_state.clone())).detach();
 
     smol::block_on(async {
