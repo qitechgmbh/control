@@ -15,6 +15,8 @@ pub struct StepperVelocityWago750672 {
     pub target_velocity: i16,
     pub target_acceleration: u16,
     pub enabled: bool,
+    pub freq_range_sel: u8,
+    pub acc_range_sel: u8,
 }
 
 impl StepperVelocityWago750672 {
@@ -22,9 +24,11 @@ impl StepperVelocityWago750672 {
         Self {
             device,
             state: InitState::Off,
-            target_velocity: 1000,
+            target_velocity: 0,
             target_acceleration: 10000,
             enabled: false,
+            freq_range_sel: 0,
+            acc_range_sel: 0,
         }
     }
 
@@ -61,6 +65,30 @@ impl StepperVelocityWago750672 {
         let mut dev = block_on(self.device.write());
 
         dev.rxpdo.acceleration = acceleration;
+    }
+
+    pub fn set_freq_range_sel(&mut self, factor: u8) {
+        if self.enabled || factor > 3 {
+            return;
+        }
+        self.freq_range_sel = factor;
+        let mut dev = block_on(self.device.write());
+        let c2 = ControlByteC2::from_bits(dev.rxpdo.c2)
+            .with_freq_range(factor)
+            .bits();
+        dev.rxpdo.c2 = c2;
+    }
+
+    pub fn set_acc_range_sel(&mut self, factor: u8) {
+        if self.enabled || factor > 3 {
+            return;
+        }
+        self.acc_range_sel = factor;
+        let mut dev = block_on(self.device.write());
+        let c2 = ControlByteC2::from_bits(dev.rxpdo.c2)
+            .with_acc_range(factor)
+            .bits();
+        dev.rxpdo.c2 = c2;
     }
 
     fn change_init_state(&mut self, state: InitState) {
@@ -160,6 +188,20 @@ pub enum C2Flag {
 impl ControlByteC2 {
     pub const fn new() -> Self {
         Self(0)
+    }
+
+    pub const fn from_bits(bits: u8) -> Self {
+        Self(bits)
+    }
+
+    pub const fn with_freq_range(mut self, sel: u8) -> Self {
+        self.0 = (self.0 & 0b1111_1100) | (sel & 0b0000_0011);
+        self
+    }
+
+    pub const fn with_acc_range(mut self, sel: u8) -> Self {
+        self.0 = (self.0 & 0b1111_0011) | ((sel & 0b0000_0011) << 2);
+        self
     }
 
     pub const fn with_flag(mut self, flag: C2Flag) -> Self {

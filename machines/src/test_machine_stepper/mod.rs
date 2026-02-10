@@ -43,6 +43,8 @@ impl TestMachineStepper {
         StateEvent {
             target_speed: self.stepper.target_velocity,
             enabled: self.stepper.enabled,
+            freq: self.stepper.freq_range_sel,
+            acc_freq: self.stepper.acc_range_sel,
         }
     }
 
@@ -60,6 +62,16 @@ impl TestMachineStepper {
     pub fn set_enabled(&mut self, enabled: bool) {
         tracing::error!("Enabling driver now.");
         self.stepper.set_enabled(enabled);
+        self.emit_state();
+    }
+
+    pub fn set_freq(&mut self, factor: u8) {
+        self.stepper.set_freq_range_sel(factor);
+        self.emit_state();
+    }
+
+    pub fn set_acc_freq(&mut self, factor: u8) {
+        self.stepper.set_acc_range_sel(factor);
         self.emit_state();
     }
 }
