@@ -1,6 +1,6 @@
 import { StoreApi } from "zustand";
 import { create } from "zustand";
-import { z } from "zod";
+import { number, z } from "zod";
 import {
   EventHandler,
   eventSchema,
@@ -17,6 +17,8 @@ import { MachineIdentificationUnique } from "@/machines/types";
 export const stateEventDataSchema = z.object({
   target_speed: z.number(),
   enabled: z.boolean(),
+  freq: z.number(),
+  acc_freq: z.number(),
 });
 
 export const stateEventSchema = eventSchema(stateEventDataSchema);
@@ -41,7 +43,9 @@ export function testMachineStepperMessageHandler(
 ): EventHandler {
   return (event: Event<any>) => {
     const updateStore = (
-      updater: (state: TestMachineStepperNamespaceStore) => TestMachineStepperNamespaceStore,
+      updater: (
+        state: TestMachineStepperNamespaceStore,
+      ) => TestMachineStepperNamespaceStore,
     ) => throttledUpdater.updateWith(updater);
 
     try {
