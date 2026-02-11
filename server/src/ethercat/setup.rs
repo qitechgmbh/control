@@ -12,13 +12,16 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 use control_core::{irq_handling::set_irq_affinity, realtime::set_realtime_priority};
 use ethercat_hal::debugging::diagnosis_history::get_most_recent_diagnosis_message;
 use ethercat_hal::devices::devices_from_subdevices;
+
 use ethercat_hal::devices::wago_750_354::{
     WAGO_750_354_PRODUCT_ID, WAGO_750_354_VENDOR_ID, Wago750_354,
 };
+
 use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::{
     IP20_EC_DI8_DO8_PRODUCT_ID, IP20_EC_DI8_DO8_VENDOR_ID, IP20EcDi8Do8,
 };
-use ethercat_hal::helpers::{set_beckhoff_eeprom_lock_active, set_mut_beckhoff_eeprom_lock_active};
+
+use ethercat_hal::helpers::set_mut_beckhoff_eeprom_lock_active;
 use ethercrab::error::Error;
 use ethercrab::subdevice_group::{DcConfiguration, HasDc, PreOpPdi, SafeOp};
 use smol::stream::StreamExt;
@@ -296,7 +299,7 @@ pub async fn setup_loop(
         // 0x2 vendor id is Beckhoff
         if subdevice.identity().vendor_id == 0x2 {
             let _res = set_mut_beckhoff_eeprom_lock_active(&subdevice).await;
-        }   
+        }
 
         if subdevice.name() == "EL4002" {
             // Sync mode 01 = SM Synchronous, says it does dc but actually doesnt, thx?
