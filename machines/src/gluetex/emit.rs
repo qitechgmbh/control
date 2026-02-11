@@ -612,6 +612,15 @@ impl Gluetex {
                 serial_number: self.order_info.serial_number,
                 product_description: self.order_info.product_description.clone(),
             },
+            valve_state: api::ValveState {
+                enabled: self.valve_controller.is_enabled(),
+                manual_override: self.valve_controller.get_manual_override(),
+                on_distance_mm: self.valve_controller.get_on_distance_mm(),
+                off_distance_mm: self.valve_controller.get_off_distance_mm(),
+                pattern_state: self.valve_controller.get_pattern_state(),
+                accumulated_distance: self.valve_controller.get_accumulated_distance(),
+                valve_output: self.valve_controller.get_desired_state(),
+            },
         }
     }
 

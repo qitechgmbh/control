@@ -10,6 +10,7 @@ pub mod spool_speed_controller;
 pub mod temperature_controller;
 pub mod tension_arm;
 pub mod traverse_controller;
+pub mod valve_controller;
 
 // Re-export main controller types
 pub use adaptive_spool_speed_controller::*;
@@ -22,3 +23,4 @@ pub use spool_speed_controller::SpoolSpeedController;
 pub use temperature_controller::TemperatureController;
 pub use tension_arm::TensionArm;
 pub use traverse_controller::TraverseController;
+pub use valve_controller::ValveController;

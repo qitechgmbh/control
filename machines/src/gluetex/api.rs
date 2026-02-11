@@ -240,6 +240,12 @@ pub enum Mutation {
     SetOrderNumber(u32),
     SetSerialNumber(u32),
     SetProductDescription(String),
+
+    // Valve Control
+    SetValveEnabled(bool),
+    SetValveManualOverride(Option<bool>),
+    SetValveOnDistanceMm(f64),
+    SetValveOffDistanceMm(f64),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -345,6 +351,8 @@ pub struct StateEvent {
     pub sleep_timer_state: SleepTimerState,
     /// order information state
     pub order_info_state: OrderInfoState,
+    /// valve control state
+    pub valve_state: ValveState,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -592,6 +600,24 @@ pub struct OrderInfoState {
     pub serial_number: u32,
     /// product description
     pub product_description: String,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct ValveState {
+    /// valve control enabled
+    pub enabled: bool,
+    /// manual override (None = automatic, Some(true) = manually on, Some(false) = manually off)
+    pub manual_override: Option<bool>,
+    /// distance in mm for valve ON phase
+    pub on_distance_mm: f64,
+    /// distance in mm for valve OFF phase
+    pub off_distance_mm: f64,
+    /// current pattern state (true = ON phase, false = OFF phase)
+    pub pattern_state: bool,
+    /// accumulated distance in current phase (mm)
+    pub accumulated_distance: f64,
+    /// desired/actual valve output state
+    pub valve_output: bool,
 }
 
 pub enum GluetexEvents {
@@ -974,6 +1000,23 @@ impl MachineApi for Gluetex {
             }
             Mutation::SetProductDescription(description) => {
                 self.order_info.product_description = description;
+                self.emit_state();
+            }
+            // Valve Control
+            Mutation::SetValveEnabled(enabled) => {
+                self.valve_controller.set_enabled(enabled);
+                self.emit_state();
+            }
+            Mutation::SetValveManualOverride(manual) => {
+                self.valve_controller.set_manual_override(manual);
+                self.emit_state();
+            }
+            Mutation::SetValveOnDistanceMm(distance_mm) => {
+                self.valve_controller.set_on_distance_mm(distance_mm);
+                self.emit_state();
+            }
+            Mutation::SetValveOffDistanceMm(distance_mm) => {
+                self.valve_controller.set_off_distance_mm(distance_mm);
                 self.emit_state();
             }
         }
