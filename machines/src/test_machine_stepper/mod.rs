@@ -60,7 +60,6 @@ impl TestMachineStepper {
     }
 
     pub fn set_enabled(&mut self, enabled: bool) {
-        tracing::error!("Enabling driver now.");
         self.stepper.set_enabled(enabled);
         self.emit_state();
     }
