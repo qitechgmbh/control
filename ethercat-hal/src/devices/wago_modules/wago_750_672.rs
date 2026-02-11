@@ -11,7 +11,13 @@ use crate::{
         DynamicEthercatDevice, EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed,
         EthercatDynamicPDO, Module, NewEthercatDevice, SubDeviceProductTuple,
     },
-    io::{digital_input::{DigitalInputDevice, DigitalInputInput}, stepper_velocity_wago_750_672::{C1Command, C1Flag, C2Flag, C3Flag, ControlByteC1, ControlByteC2, ControlByteC3, S3Flag, StatusByteS3}},
+    io::{
+        digital_input::{DigitalInputDevice, DigitalInputInput},
+        stepper_velocity_wago_750_672::{
+            C1Command, C1Flag, C2Flag, C3Flag, ControlByteC1, ControlByteC2, ControlByteC3, S3Flag,
+            StatusByteS3,
+        },
+    },
 };
 
 #[derive(Clone)]
@@ -56,29 +62,29 @@ pub enum InitState {
 
 #[derive(Clone, Debug, Default)]
 pub struct Wago750_672RxPdo {
-    pub c0: u8,            // C0
+    pub control_byte: u8,  // C0
     pub velocity: i16,     // D0/D1
     pub acceleration: u16, // D2/D3
-    pub c3: u8,            // C3
-    pub c2: u8,            // C2
-    pub c1: u8,            // C1
+    pub control_byte3: u8, // C3
+    pub control_byte2: u8, // C2
+    pub control_byte1: u8, // C1
 }
 
 #[derive(Clone, Debug, Default)]
 pub struct Wago750_672TxPdo {
-    pub s0: u8,               // S0
+    pub status_byte0: u8,     // S0
     pub actual_velocity: i16, // D0/D1
     pub position_l: u8,       // D4
     pub position_m: u8,       // D5
     pub position_h: u8,       // D6
-    pub s3: u8,               // S3
-    pub s2: u8,               // S2
-    pub s1: u8,               // S1
+    pub status_byte3: u8,     // S3
+    pub status_byte2: u8,     // S2
+    pub status_byte1: u8,     // S1
 }
 
 /// Digital input port enumeration for the 6 inputs
 #[derive(Debug, Clone, Copy)]
-pub enum Wago750_672_InputPort {
+pub enum Wago750_672InputPort {
     DI1,
     DI2,
     DI3,
@@ -88,17 +94,17 @@ pub enum Wago750_672_InputPort {
 }
 
 // Get the Digital Inputs from the Status Byte S3
-impl DigitalInputDevice<Wago750_672_InputPort> for Wago750_672 {
-    fn get_input(&self, port: Wago750_672_InputPort) -> Result<DigitalInputInput, anyhow::Error> {
-        let s3 = StatusByteS3::from_bits(self.txpdo.s3);
+impl DigitalInputDevice<Wago750_672InputPort> for Wago750_672 {
+    fn get_input(&self, port: Wago750_672InputPort) -> Result<DigitalInputInput, anyhow::Error> {
+        let s3 = StatusByteS3::from_bits(self.txpdo.status_byte3);
         Ok(DigitalInputInput {
             value: match port {
-                Wago750_672_InputPort::DI1 => s3.has_flag(S3Flag::Input1),
-                Wago750_672_InputPort::DI2 => s3.has_flag(S3Flag::Input2),
-                Wago750_672_InputPort::DI3 => s3.has_flag(S3Flag::Input3),
-                Wago750_672_InputPort::DI4 => s3.has_flag(S3Flag::Input4),
-                Wago750_672_InputPort::DI5 => s3.has_flag(S3Flag::Input5),
-                Wago750_672_InputPort::DI6 => s3.has_flag(S3Flag::Input6),
+                Wago750_672InputPort::DI1 => s3.has_flag(S3Flag::Input1),
+                Wago750_672InputPort::DI2 => s3.has_flag(S3Flag::Input2),
+                Wago750_672InputPort::DI3 => s3.has_flag(S3Flag::Input3),
+                Wago750_672InputPort::DI4 => s3.has_flag(S3Flag::Input4),
+                Wago750_672InputPort::DI5 => s3.has_flag(S3Flag::Input5),
+                Wago750_672InputPort::DI6 => s3.has_flag(S3Flag::Input6),
             },
         })
     }
@@ -153,14 +159,14 @@ impl EthercatDevice for Wago750_672 {
         }
 
         self.txpdo = Wago750_672TxPdo {
-            s0: b[0],
+            status_byte0: b[0],
             actual_velocity: i16::from_le_bytes([b[2], b[3]]),
             position_l: b[6],
             position_m: b[7],
             position_h: b[8],
-            s3: b[9],
-            s2: b[10],
-            s1: b[11],
+            status_byte3: b[9],
+            status_byte2: b[10],
+            status_byte1: b[11],
         };
 
         // Yes this statemachine is unfortunately needed in here to make sure
@@ -175,10 +181,10 @@ impl EthercatDevice for Wago750_672 {
                     .with_flag(C1Flag::Enable)
                     .with_flag(C1Flag::Stop2N)
                     .bits();
-                self.rxpdo.c1 = c1;
+                self.rxpdo.control_byte1 = c1;
 
                 // Switch state if ENABLE and STOP2_N is acknowledged
-                if self.txpdo.s1 == c1 {
+                if self.txpdo.status_byte1 == c1 {
                     self.state = InitState::SetMode;
                 }
             }
@@ -188,10 +194,10 @@ impl EthercatDevice for Wago750_672 {
                     .with_flag(C1Flag::Stop2N)
                     .with_command(C1Command::SpeedControl)
                     .bits();
-                self.rxpdo.c1 = c1;
+                self.rxpdo.control_byte1 = c1;
 
                 // Switch state if SPEED MODE is acknowledged
-                if self.txpdo.s1 == c1 {
+                if self.txpdo.status_byte1 == c1 {
                     self.initialized = true;
                     self.state = InitState::StartPulseStart;
                 }
@@ -203,10 +209,10 @@ impl EthercatDevice for Wago750_672 {
                     .with_flag(C1Flag::Start)
                     .with_command(C1Command::SpeedControl)
                     .bits();
-                self.rxpdo.c1 = c1;
+                self.rxpdo.control_byte1 = c1;
 
                 // Switch state after StartPulse is acknowledged
-                if self.txpdo.s1 == c1 {
+                if self.txpdo.status_byte1 == c1 {
                     self.state = InitState::StartPulseEnd;
                 }
             }
@@ -216,10 +222,10 @@ impl EthercatDevice for Wago750_672 {
                     .with_flag(C1Flag::Stop2N)
                     .with_command(C1Command::SpeedControl)
                     .bits();
-                self.rxpdo.c1 = c1;
+                self.rxpdo.control_byte1 = c1;
 
                 // Switch state after StartPulse is over
-                if self.txpdo.s1 == c1 {
+                if self.txpdo.status_byte1 == c1 {
                     self.state = InitState::Running;
                 }
             }
@@ -228,25 +234,27 @@ impl EthercatDevice for Wago750_672 {
                 let c3 = ControlByteC3::new().with_flag(C3Flag::ResetQuit).bits();
 
                 // Check for Error
-                if self.txpdo.s2 & c2 != 0 {
+                if self.txpdo.status_byte2 & c2 != 0 {
                     self.state = InitState::ErrorQuit;
                 } else {
-                    self.rxpdo.c2 |= c2;
+                    self.rxpdo.control_byte2 |= c2;
                 }
                 // Check for Reset
-                if self.txpdo.s3 & c3 != 0 {
+                if self.txpdo.status_byte3 & c3 != 0 {
                     self.state = InitState::ResetQuit;
                 } else {
-                    self.rxpdo.c3 |= c3;
+                    self.rxpdo.control_byte3 |= c3;
                 }
             }
             InitState::ErrorQuit => {
-                self.rxpdo.c2 |= ControlByteC2::new().with_flag(C2Flag::ErrorQuit).bits();
+                self.rxpdo.control_byte2 |=
+                    ControlByteC2::new().with_flag(C2Flag::ErrorQuit).bits();
                 tracing::error!("Stepper Controller Errored. Trying to reenable...");
                 self.state = InitState::Enable;
             }
             InitState::ResetQuit => {
-                self.rxpdo.c3 |= ControlByteC3::new().with_flag(C3Flag::ResetQuit).bits();
+                self.rxpdo.control_byte3 |=
+                    ControlByteC3::new().with_flag(C3Flag::ResetQuit).bits();
                 tracing::error!("Stepper Controller Reset not Quit. Trying to reenable...");
                 self.state = InitState::Enable;
             }
@@ -265,8 +273,8 @@ impl EthercatDevice for Wago750_672 {
     ) -> Result<(), anyhow::Error> {
         let base = self.rx_bit_offset;
 
-        let b = [
-            self.rxpdo.c0,
+        let output_bytes = [
+            self.rxpdo.control_byte,
             0,
             self.rxpdo.velocity.to_le_bytes()[0],
             self.rxpdo.velocity.to_le_bytes()[1],
@@ -275,13 +283,13 @@ impl EthercatDevice for Wago750_672 {
             0,
             0,
             0,
-            self.rxpdo.c3,
-            self.rxpdo.c2,
-            self.rxpdo.c1,
+            self.rxpdo.control_byte3,
+            self.rxpdo.control_byte2,
+            self.rxpdo.control_byte1,
         ];
 
         for i in 0..12 {
-            output[base + i * 8..base + (i + 1) * 8].store_le(b[i]);
+            output[base + i * 8..base + (i + 1) * 8].store_le(output_bytes[i]);
         }
 
         Ok(())

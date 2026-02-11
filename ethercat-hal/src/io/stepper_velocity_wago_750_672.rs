@@ -37,6 +37,10 @@ impl StepperVelocityWago750672 {
             return;
         }
 
+        // this needs to be set before the stepper controller
+        // is enabled because it will generate an error otherwise
+        self.set_acceleration(self.target_acceleration);
+
         self.enabled = enabled;
         if enabled {
             self.change_init_state(InitState::Enable);
@@ -51,8 +55,9 @@ impl StepperVelocityWago750672 {
 
         let mut dev = block_on(self.device.write());
 
-        dev.rxpdo.velocity = velocity;
-        dev.rxpdo.acceleration = 10000; // hardcoded for now
+        // clamp velocity to -25000 - 25000 :: because this is
+        // the min max for the controller
+        dev.rxpdo.velocity = velocity.clamp(-25000, 25000);
 
         if dev.initialized {
             dev.state = InitState::StartPulseStart;
@@ -67,16 +72,26 @@ impl StepperVelocityWago750672 {
         dev.rxpdo.acceleration = acceleration;
     }
 
+    fn get_actual_velocity(&self) -> i16 {
+        let dev = block_on(self.device.read());
+        dev.txpdo.actual_velocity
+    }
+
+    fn get_target_acceleration(&self) -> u16 {
+        let dev = block_on(self.device.read());
+        dev.rxpdo.acceleration
+    }
+
     pub fn set_freq_range_sel(&mut self, factor: u8) {
         if self.enabled || factor > 3 {
             return;
         }
         self.freq_range_sel = factor;
         let mut dev = block_on(self.device.write());
-        let c2 = ControlByteC2::from_bits(dev.rxpdo.c2)
+        let c2 = ControlByteC2::from_bits(dev.rxpdo.control_byte2)
             .with_freq_range(factor)
             .bits();
-        dev.rxpdo.c2 = c2;
+        dev.rxpdo.control_byte2 = c2;
     }
 
     pub fn set_acc_range_sel(&mut self, factor: u8) {
@@ -85,10 +100,10 @@ impl StepperVelocityWago750672 {
         }
         self.acc_range_sel = factor;
         let mut dev = block_on(self.device.write());
-        let c2 = ControlByteC2::from_bits(dev.rxpdo.c2)
+        let c2 = ControlByteC2::from_bits(dev.rxpdo.control_byte2)
             .with_acc_range(factor)
             .bits();
-        dev.rxpdo.c2 = c2;
+        dev.rxpdo.control_byte2 = c2;
     }
 
     fn change_init_state(&mut self, state: InitState) {
@@ -101,10 +116,10 @@ impl StepperVelocityWago750672 {
         let mut dev = block_on(self.device.write());
 
         match control_byte {
-            ControlByte::C0 => dev.rxpdo.c0 = value,
-            ControlByte::C1 => dev.rxpdo.c1 = value,
-            ControlByte::C2 => dev.rxpdo.c2 = value,
-            ControlByte::C3 => dev.rxpdo.c3 = value,
+            ControlByte::C0 => dev.rxpdo.control_byte = value,
+            ControlByte::C1 => dev.rxpdo.control_byte1 = value,
+            ControlByte::C2 => dev.rxpdo.control_byte2 = value,
+            ControlByte::C3 => dev.rxpdo.control_byte3 = value,
         }
     }
 
@@ -112,10 +127,10 @@ impl StepperVelocityWago750672 {
         let dev = block_on(self.device.write());
 
         match status_byte {
-            StatusByte::S0 => dev.txpdo.s0,
-            StatusByte::S1 => dev.txpdo.s1,
-            StatusByte::S2 => dev.txpdo.s2,
-            StatusByte::S3 => dev.txpdo.s3,
+            StatusByte::S0 => dev.txpdo.status_byte0,
+            StatusByte::S1 => dev.txpdo.status_byte1,
+            StatusByte::S2 => dev.txpdo.status_byte2,
+            StatusByte::S3 => dev.txpdo.status_byte3,
         }
     }
 }

@@ -1,6 +1,6 @@
 import { StoreApi } from "zustand";
 import { create } from "zustand";
-import { number, z } from "zod";
+import { z } from "zod";
 import {
   EventHandler,
   eventSchema,
