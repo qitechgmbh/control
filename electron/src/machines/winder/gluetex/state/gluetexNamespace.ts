@@ -667,6 +667,128 @@ const DEFAULT_ADDON_STATE = {
   },
 };
 
+// Defaults derived from backend Gluetex::new() (used when no default state is emitted)
+const DEFAULT_BACKEND_EXTENDED_STATE: ExtendedStateEvent = {
+  name: "StateEvent",
+  ts: Date.now(),
+  data: {
+    is_default_state: true,
+    status_out: false,
+    traverse_state: {
+      limit_inner: 22.0,
+      limit_outer: 92.0,
+      position_in: 0.0,
+      position_out: 0.0,
+      is_going_in: false,
+      is_going_out: false,
+      is_homed: true,
+      is_going_home: false,
+      is_traversing: false,
+      laserpointer: false,
+      step_size: 1.75,
+      padding: 0.88,
+      can_go_in: true,
+      can_go_out: true,
+      can_go_home: true,
+    },
+    puller_state: {
+      regulation: "Speed",
+      target_speed: 1.0,
+      target_diameter: 1.75,
+      forward: true,
+      gear_ratio: "OneToOne",
+    },
+    mode_state: {
+      mode: "Standby",
+      operation_mode: "Setup",
+      can_wind: false,
+    },
+    tension_arm_state: { zeroed: false },
+    spool_speed_controller_state: {
+      regulation_mode: "Adaptive",
+      minmax_min_speed: 0.0,
+      minmax_max_speed: 150.0,
+      adaptive_tension_target: 0.7,
+      adaptive_radius_learning_rate: 0.5,
+      adaptive_max_speed_multiplier: 4.0,
+      adaptive_acceleration_factor: 0.2,
+      adaptive_deacceleration_urgency_multiplier: 15.0,
+      forward: true,
+    },
+    spool_automatic_action_state: {
+      spool_required_meters: 250.0,
+      spool_automatic_action_mode: "NoAction",
+    },
+    heating_states: {
+      enabled: false,
+      zone_1: {
+        target_temperature: 150.0,
+        wiring_error: false,
+        autotuning_active: false,
+        autotuning_progress: 0,
+      },
+      zone_2: {
+        target_temperature: 150.0,
+        wiring_error: false,
+        autotuning_active: false,
+        autotuning_progress: 0,
+      },
+      zone_3: {
+        target_temperature: 150.0,
+        wiring_error: false,
+        autotuning_active: false,
+        autotuning_progress: 0,
+      },
+      zone_4: {
+        target_temperature: 150.0,
+        wiring_error: false,
+        autotuning_active: false,
+        autotuning_progress: 0,
+      },
+      zone_5: {
+        target_temperature: 150.0,
+        wiring_error: false,
+        autotuning_active: false,
+        autotuning_progress: 0,
+      },
+      zone_6: {
+        target_temperature: 150.0,
+        wiring_error: false,
+        autotuning_active: false,
+        autotuning_progress: 0,
+      },
+    },
+    heating_pid_settings: {
+      zone_1: { ki: 0.0004, kp: 0.053, kd: 1.7061, zone: "zone_1" },
+      zone_2: { ki: 0.0003, kp: 0.044, kd: 1.6572, zone: "zone_2" },
+      zone_3: { ki: 0.0003, kp: 0.051, kd: 1.9218, zone: "zone_3" },
+      zone_4: { ki: 0.0004, kp: 0.049, kd: 1.7026, zone: "zone_4" },
+      zone_5: { ki: 0.0004, kp: 0.052, kd: 1.9088, zone: "zone_5" },
+      zone_6: { ki: 0.0003, kp: 0.047, kd: 1.6978, zone: "zone_6" },
+    },
+    // Addon-derived local fields expected by ExtendedStateEventData
+    motor_ratios_state: DEFAULT_ADDON_STATE.motor_ratios_state,
+    stepper_state: DEFAULT_ADDON_STATE.stepper_state,
+    heating_state: DEFAULT_ADDON_STATE.heating_state,
+    quality_control_state: DEFAULT_ADDON_STATE.quality_control_state,
+    connected_machine_state: { machine_identification_unique: null, is_available: false },
+    addon_motor_3_state: { enabled: false, forward: true, master_ratio: 1.0, slave_ratio: 1.0, konturlaenge_mm: 0.0, pause_mm: 0.0, pattern_state: "" },
+    addon_motor_4_state: { enabled: false, forward: true, master_ratio: 1.0, slave_ratio: 1.0 },
+    addon_motor_5_state: { enabled: false, forward: true, master_ratio: 1.0, slave_ratio: 1.0 },
+    addon_motor_5_tension_control_state: { enabled: false, target_angle: 55.0, sensitivity: 35.0, min_speed_factor: null, max_speed_factor: null },
+    slave_puller_state: { enabled: false, forward: true, target_angle: 55.0, sensitivity: 35.0, min_speed_factor: null, max_speed_factor: null, tension_arm: { zeroed: false } },
+    addon_tension_arm_state: { zeroed: false },
+    winder_tension_arm_monitor_state: { enabled: false, min_angle: 20.0, max_angle: 90.0, triggered: false },
+    addon_tension_arm_monitor_state: { enabled: false, min_angle: 20.0, max_angle: 90.0, triggered: false },
+    slave_tension_arm_monitor_state: { enabled: false, min_angle: 20.0, max_angle: 90.0, triggered: false },
+    optris_1_monitor_state: { enabled: false, min_voltage: 2.0, max_voltage: 8.0, triggered: false },
+    optris_2_monitor_state: { enabled: false, min_voltage: 2.0, max_voltage: 8.0, triggered: false },
+    sleep_timer_state: { enabled: false, timeout_seconds: 0, remaining_seconds: 0, triggered: false },
+    order_info_state: { order_number: 0, serial_number: 0, product_description: "" },
+    valve_state: { enabled: false, manual_override: null, on_distance_mm: 0.0, off_distance_mm: 0.0, pattern_state: false, accumulated_distance: 0.0, valve_output: false },
+  },
+};
+
 /**
  * Factory function to create a new Gluetex namespace store
  * @returns A new Zustand store instance for Gluetex namespace
@@ -677,7 +799,8 @@ export const createGluetexNamespaceStore =
       return {
         // State event from server (will be extended with addon state)
         state: null,
-        defaultState: null,
+        // Initialize defaultState with backend defaults so UI shows same defaults
+        defaultState: DEFAULT_BACKEND_EXTENDED_STATE,
 
         // Time series data for live values
         traversePosition,
