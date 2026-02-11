@@ -311,6 +311,7 @@ impl Gluetex {
 
         StateEvent {
             is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
+            status_out: self.status_out.get(),
             traverse_state: TraverseState {
                 limit_inner: self
                     .traverse_controller
