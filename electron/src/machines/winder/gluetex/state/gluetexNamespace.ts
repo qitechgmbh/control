@@ -285,6 +285,17 @@ export const addonMotor5StateSchema = z.object({
 });
 
 /**
+ * Addon motor 5 tension control state schema (from backend)
+ */
+export const addonMotor5TensionControlStateSchema = z.object({
+  enabled: z.boolean(),
+  target_angle: z.number(),
+  sensitivity: z.number(),
+  min_speed_factor: z.number().nullable(),
+  max_speed_factor: z.number().nullable(),
+});
+
+/**
  * Slave tension arm state schema (from backend)
  */
 export const slaveTensionArmStateSchema = z.object({
@@ -361,6 +372,7 @@ export const stateEventDataSchema = z.object({
   addon_motor_3_state: addonMotor5StateSchema,
   addon_motor_4_state: addonMotorStateSchema,
   addon_motor_5_state: addonMotorStateSchema,
+  addon_motor_5_tension_control_state: addonMotor5TensionControlStateSchema,
   slave_puller_state: slavePullerStateSchema,
   addon_tension_arm_state: tensionArmStateSchema,
   winder_tension_arm_monitor_state: tensionArmMonitorStateSchema,

@@ -89,6 +89,11 @@ export function GluetexSettingPage() {
     setStepper3Forward,
     setStepper4Forward,
     setStepper5Forward,
+    setAddonMotor5TensionEnabled,
+    setAddonMotor5TensionTargetAngle,
+    setAddonMotor5TensionSensitivity,
+    setAddonMotor5TensionMinSpeedFactor,
+    setAddonMotor5TensionMaxSpeedFactor,
     setOptris1Min,
     setOptris1Max,
     setOptris2Min,
@@ -569,6 +574,121 @@ export function GluetexSettingPage() {
                         renderValue={(value) => roundToDecimals(value, 2)}
                         onChange={(value) =>
                           setSlavePullerMaxSpeedFactor(
+                            value === 0 ? null : value,
+                          )
+                        }
+                      />
+                    </Label>
+                  </div>
+                </ControlCard>
+
+                <ControlCard title="Addon Motor 5 Tension Control">
+                  <Label label="Enable Tension Control">
+                    <SelectionGroupBoolean
+                      value={
+                        state?.addon_motor_5_tension_control_state?.enabled
+                      }
+                      disabled={isDisabled}
+                      loading={isLoading}
+                      optionFalse={{
+                        children: "Disabled",
+                        icon: "lu:Circle",
+                      }}
+                      optionTrue={{
+                        children: "Enabled",
+                        icon: "lu:Circle",
+                      }}
+                      onChange={(value) => setAddonMotor5TensionEnabled(value)}
+                    />
+                  </Label>
+
+                  <div className="flex flex-row flex-wrap gap-4">
+                    <Label label="Target Angle">
+                      <EditValue
+                        value={
+                          state?.addon_motor_5_tension_control_state
+                            ?.target_angle
+                        }
+                        title={"Target Angle"}
+                        unit="deg"
+                        step={1}
+                        min={0}
+                        max={180}
+                        defaultValue={55}
+                        renderValue={(value) => roundToDecimals(value, 0)}
+                        onChange={(value) =>
+                          setAddonMotor5TensionTargetAngle(value)
+                        }
+                      />
+                    </Label>
+
+                    <Label label="Sensitivity (Adjustment Range)">
+                      <EditValue
+                        value={
+                          state?.addon_motor_5_tension_control_state
+                            ?.sensitivity
+                        }
+                        title={"Sensitivity"}
+                        unit="deg"
+                        step={1}
+                        min={5}
+                        max={90}
+                        defaultValue={35}
+                        renderValue={(value) => roundToDecimals(value, 0)}
+                        onChange={(value) =>
+                          setAddonMotor5TensionSensitivity(value)
+                        }
+                      />
+                    </Label>
+
+                    <Label label="Min Speed Factor (Optional)">
+                      <EditValue
+                        value={
+                          state?.addon_motor_5_tension_control_state
+                            ?.min_speed_factor ?? 0
+                        }
+                        title={"Minimum Speed Factor"}
+                        unit={undefined}
+                        step={0.05}
+                        min={0.1}
+                        max={
+                          state?.addon_motor_5_tension_control_state
+                            ?.max_speed_factor
+                            ? state.addon_motor_5_tension_control_state
+                                .max_speed_factor - 0.1
+                            : 2
+                        }
+                        defaultValue={0}
+                        renderValue={(value) => roundToDecimals(value, 2)}
+                        onChange={(value) =>
+                          setAddonMotor5TensionMinSpeedFactor(
+                            value === 0 ? null : value,
+                          )
+                        }
+                      />
+                    </Label>
+
+                    <Label label="Max Speed Factor (Optional)">
+                      <EditValue
+                        value={
+                          state?.addon_motor_5_tension_control_state
+                            ?.max_speed_factor ?? 0
+                        }
+                        title={"Maximum Speed Factor"}
+                        unit={undefined}
+                        step={0.05}
+                        min={
+                          state?.addon_motor_5_tension_control_state
+                            ?.min_speed_factor
+                            ? state.addon_motor_5_tension_control_state
+                                .min_speed_factor + 0.1
+                            : 0.2
+                        }
+                        max={3}
+                        defaultValue={0}
+                        renderValue={(value) => roundToDecimals(value, 2)}
+                        onChange={(value) =>
+                          setAddonMotor5TensionMaxSpeedFactor(
                             value === 0 ? null : value,
                           )
                         }
