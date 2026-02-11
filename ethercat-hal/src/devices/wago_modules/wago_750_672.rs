@@ -11,7 +11,13 @@ use crate::{
         DynamicEthercatDevice, EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed,
         EthercatDynamicPDO, Module, NewEthercatDevice, SubDeviceProductTuple,
     },
-    io::{digital_input::{DigitalInputDevice, DigitalInputInput}, stepper_velocity_wago_750_672::{C1Command, C1Flag, C2Flag, C3Flag, ControlByteC1, ControlByteC2, ControlByteC3, S3Flag, StatusByteS3}},
+    io::{
+        digital_input::{DigitalInputDevice, DigitalInputInput},
+        stepper_velocity_wago_750_672::{
+            C1Command, C1Flag, C2Flag, C3Flag, ControlByteC1, ControlByteC2, ControlByteC3, S3Flag,
+            StatusByteS3,
+        },
+    },
 };
 
 #[derive(Clone)]

@@ -33,7 +33,7 @@ impl StepperVelocityWago750672 {
     }
 
     pub fn set_enabled(&mut self, enabled: bool) {
-        if self.enabled && enabled {
+        if self.enabled && enabled || self.get_target_acceleration() == 0 {
             return;
         }
 
@@ -51,7 +51,8 @@ impl StepperVelocityWago750672 {
 
         let mut dev = block_on(self.device.write());
 
-        dev.rxpdo.velocity = velocity;
+        // clamp velocity to -25000 - 25000
+        dev.rxpdo.velocity = velocity.clamp(-25000, 25000);
         dev.rxpdo.acceleration = 10000; // hardcoded for now
 
         if dev.initialized {
@@ -65,6 +66,16 @@ impl StepperVelocityWago750672 {
         let mut dev = block_on(self.device.write());
 
         dev.rxpdo.acceleration = acceleration;
+    }
+
+    fn get_actual_velocity(&self) -> i16 {
+        let dev = block_on(self.device.read());
+        dev.txpdo.actual_velocity
+    }
+
+    fn get_target_acceleration(&self) -> u16 {
+        let dev = block_on(self.device.read());
+        dev.rxpdo.acceleration
     }
 
     pub fn set_freq_range_sel(&mut self, factor: u8) {
