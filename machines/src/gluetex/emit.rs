@@ -514,6 +514,19 @@ impl Gluetex {
                 master_ratio: self.addon_motor_5_controller.get_master_ratio(),
                 slave_ratio: self.addon_motor_5_controller.get_slave_ratio(),
             },
+            addon_motor_5_tension_control_state: api::AddonMotorTensionControlState {
+                enabled: self.addon_motor_5_tension_controller.is_enabled(),
+                target_angle: self
+                    .addon_motor_5_tension_controller
+                    .get_target_angle()
+                    .get::<degree>(),
+                sensitivity: self
+                    .addon_motor_5_tension_controller
+                    .get_sensitivity()
+                    .get::<degree>(),
+                min_speed_factor: self.addon_motor_5_tension_controller.get_min_speed_factor(),
+                max_speed_factor: self.addon_motor_5_tension_controller.get_max_speed_factor(),
+            },
             slave_puller_state: api::SlavePullerState {
                 enabled: self.slave_puller_user_enabled,
                 forward: self.slave_puller_speed_controller.get_forward(),

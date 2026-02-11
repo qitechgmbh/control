@@ -528,6 +528,11 @@ impl MachineNewTrait for Gluetex {
                     super::controllers::addon_motor_controller::AddonMotorController::new(200),
                 addon_motor_5_controller:
                     super::controllers::addon_motor_controller::AddonMotorController::new(200),
+                addon_motor_5_tension_controller:
+                    super::controllers::addon_motor_tension_controller::AddonMotorTensionController::new(
+                        Angle::new::<degree>(55.0),
+                        Angle::new::<degree>(35.0),
+                    ),
                 addon_motor_3_last_sync: Instant::now(),
                 tension_arm: TensionArm::new(AnalogInput::new(
                     el7031_0030,

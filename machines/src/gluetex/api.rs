@@ -191,6 +191,13 @@ pub enum Mutation {
     SetAddonMotor3Pause(f64),
     HomeAddonMotor3,
 
+    // Addon Motor 5 Tension Control
+    SetAddonMotor5TensionEnabled(bool),
+    SetAddonMotor5TensionTargetAngle(f64),
+    SetAddonMotor5TensionSensitivity(f64),
+    SetAddonMotor5TensionMinSpeedFactor(f64),
+    SetAddonMotor5TensionMaxSpeedFactor(f64),
+
     // Slave Puller
     SetSlavePullerEnabled(bool),
     SetSlavePullerForward(bool),
@@ -318,6 +325,8 @@ pub struct StateEvent {
     pub addon_motor_4_state: AddonMotorState,
     /// addon motor 5 state
     pub addon_motor_5_state: AddonMotorState,
+    /// addon motor 5 tension control state
+    pub addon_motor_5_tension_control_state: AddonMotorTensionControlState,
     /// slave puller state
     pub slave_puller_state: SlavePullerState,
     /// addon tension arm state
@@ -466,6 +475,20 @@ pub struct AddonMotor5State {
     pub pause_mm: f64,
     /// Current pattern control state
     pub pattern_state: String,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct AddonMotorTensionControlState {
+    /// is tension control enabled
+    pub enabled: bool,
+    /// target tension arm angle (setpoint in degrees)
+    pub target_angle: f64,
+    /// sensitivity range around target angle for speed adjustment (degrees)
+    pub sensitivity: f64,
+    /// minimum speed factor for overspeed protection (optional)
+    pub min_speed_factor: Option<f64>,
+    /// maximum speed factor for overspeed protection (optional)
+    pub max_speed_factor: Option<f64>,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -762,6 +785,30 @@ impl MachineApi for Gluetex {
             }
             Mutation::SetAddonMotor5SlaveRatio(ratio) => {
                 self.addon_motor_5_controller.set_slave_ratio(ratio);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor5TensionEnabled(enabled) => {
+                self.addon_motor_5_tension_controller.set_enabled(enabled);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor5TensionTargetAngle(angle_deg) => {
+                self.addon_motor_5_tension_controller
+                    .set_target_angle(Angle::new::<degree>(angle_deg));
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor5TensionSensitivity(sensitivity_deg) => {
+                self.addon_motor_5_tension_controller
+                    .set_sensitivity(Angle::new::<degree>(sensitivity_deg));
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor5TensionMinSpeedFactor(factor) => {
+                self.addon_motor_5_tension_controller
+                    .set_min_speed_factor(Some(factor));
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor5TensionMaxSpeedFactor(factor) => {
+                self.addon_motor_5_tension_controller
+                    .set_max_speed_factor(Some(factor));
                 self.emit_state();
             }
             Mutation::SetAddonMotor3Konturlaenge(length_mm) => {

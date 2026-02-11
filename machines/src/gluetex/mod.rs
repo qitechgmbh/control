@@ -17,6 +17,7 @@ mod gluetex_imports {
     pub use super::api::GluetexNamespace;
     pub use super::api::SpoolAutomaticActionMode;
     pub use super::controllers::addon_motor_controller::AddonMotorController;
+    pub use super::controllers::addon_motor_tension_controller::AddonMotorTensionController;
     pub use super::controllers::puller_speed_controller::PullerSpeedController;
     pub use super::controllers::slave_puller_speed_controller::SlavePullerSpeedController;
     pub use super::controllers::spool_speed_controller::SpoolSpeedController;
@@ -148,6 +149,7 @@ pub struct Gluetex {
     pub addon_motor_3_controller: AddonMotorController,
     pub addon_motor_4_controller: AddonMotorController,
     pub addon_motor_5_controller: AddonMotorController,
+    pub addon_motor_5_tension_controller: AddonMotorTensionController,
     /// Last time addon motor 3 was synced (for distance tracking)
     pub addon_motor_3_last_sync: Instant,
 
@@ -465,7 +467,15 @@ impl Gluetex {
     /// Sync addon motor 5 speed based on puller angular velocity and ratio
     /// called by `act`
     pub fn sync_addon_motor_5_speed(&mut self, t: Instant) {
-        let puller_angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
+        let master_speed = self.puller_speed_controller.last_speed;
+        let adjusted_speed = self.addon_motor_5_tension_controller.update_speed(
+            t,
+            master_speed,
+            &self.addon_tension_arm,
+        );
+        let puller_angular_velocity = self
+            .puller_speed_controller
+            .speed_to_angular_velocity(adjusted_speed);
         self.addon_motor_5_controller.sync_motor_speed(
             &mut self.addon_motor_5,
             puller_angular_velocity,
