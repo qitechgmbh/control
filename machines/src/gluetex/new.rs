@@ -5,6 +5,7 @@ mod gluetex_imports {
     pub use super::super::controllers::spool_speed_controller::SpoolSpeedController;
     pub use super::super::controllers::tension_arm::TensionArm;
     pub use super::super::controllers::traverse_controller::TraverseController;
+    pub use super::super::controllers::valve_controller::ValveController;
     pub use super::super::features::filament_tension::FilamentTensionCalculator;
     pub use super::super::{Gluetex, GluetexMode, PullerMode};
     pub use crate::{
@@ -367,13 +368,14 @@ impl MachineNewTrait for Gluetex {
                 device.0
             };
 
-            // Digital outputs for SSR control (24V to external SSRs for 60W heaters), valve outputs & status output
+            // Digital outputs for SSR control (24V to external SSRs for 60W heaters), valve output & status output
             let heater_ssr_1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
             let heater_ssr_2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
             let heater_ssr_3 = DigitalOutput::new(el2008.clone(), EL2008Port::DO3);
             let heater_ssr_4 = DigitalOutput::new(el2008.clone(), EL2008Port::DO4);
             let heater_ssr_5 = DigitalOutput::new(el2008.clone(), EL2008Port::DO5);
             let heater_ssr_6 = DigitalOutput::new(el2008.clone(), EL2008Port::DO6);
+            let valve = DigitalOutput::new(el2008.clone(), EL2008Port::DO7);
             let status_out = DigitalOutput::new(el2008, EL2008Port::DO8);
 
             // Maximum temperature for all heating zones
@@ -603,6 +605,9 @@ impl MachineNewTrait for Gluetex {
                 optris_2_monitor: super::VoltageMonitor::new("Optris 2"),
                 sleep_timer: super::SleepTimer::new(),
                 order_info: super::OrderInfo::default(),
+                valve,
+                valve_controller: ValveController::new(),
+                valve_last_sync: Instant::now(),
             };
 
             // initalize events

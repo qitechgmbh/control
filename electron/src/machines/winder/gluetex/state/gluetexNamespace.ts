@@ -382,6 +382,15 @@ export const stateEventDataSchema = z.object({
   optris_2_monitor_state: voltageMonitorStateSchema,
   sleep_timer_state: sleepTimerStateSchema,
   order_info_state: orderInfoStateSchema,
+  valve_state: z.object({
+    enabled: z.boolean(),
+    manual_override: z.boolean().nullable(),
+    on_distance_mm: z.number(),
+    off_distance_mm: z.number(),
+    pattern_state: z.boolean(),
+    accumulated_distance: z.number(),
+    valve_output: z.boolean(),
+  }),
 });
 
 // ========== Event Schemas with Wrappers ==========
