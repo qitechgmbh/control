@@ -10,6 +10,9 @@ use crate::{
     mock::MockMachine, winder2::mock::Winder2,
 };
 
+#[cfg(feature = "gluetex-mock")]
+use crate::gluetex::mock::Gluetex as GluetexMock;
+
 use crate::{
     Machine, MachineNewParams, MachineNewTrait, machine_identification::MachineIdentification,
     test_machine::TestMachine,
@@ -19,9 +22,12 @@ use crate::{
 use crate::extruder1::ExtruderV2;
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
-    aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, gluetex::Gluetex,
-    laser::LaserMachine, winder2::Winder2,
+    aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, laser::LaserMachine,
+    winder2::Winder2,
 };
+
+#[cfg(not(feature = "gluetex-mock"))]
+use crate::gluetex::Gluetex;
 
 use lazy_static::lazy_static;
 
@@ -143,7 +149,10 @@ lazy_static! {
             Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION,
         );
 
-        #[cfg(not(feature = "mock-machine"))]
+        #[cfg(feature = "gluetex-mock")]
+        mc.register::<GluetexMock>(GluetexMock::MACHINE_IDENTIFICATION);
+
+        #[cfg(not(feature = "gluetex-mock"))]
         mc.register::<Gluetex>(Gluetex::MACHINE_IDENTIFICATION);
         mc
     };

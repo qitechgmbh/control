@@ -1,5 +1,7 @@
 #[cfg(feature = "mock-machine")]
 pub mod extruder_mock;
+#[cfg(feature = "gluetex-mock")]
+pub mod gluetex_mock;
 pub mod laser;
 #[cfg(feature = "mock-machine")]
 pub mod mock;

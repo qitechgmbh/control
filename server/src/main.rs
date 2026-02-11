@@ -48,6 +48,9 @@ const CYCLE_TARGET_TIME: Duration = Duration::from_micros(700);
 #[cfg(feature = "mock-machine")]
 use mock_init::init_mock;
 
+#[cfg(feature = "gluetex-mock")]
+use gluetex_mock_init::init_gluetex_mock;
+
 use crate::{
     ethercat::{
         ethercat_discovery_info::send_ethercat_found, init::find_ethercat_interface,
@@ -58,6 +61,9 @@ use crate::{
 
 #[cfg(feature = "mock-machine")]
 pub mod mock_init;
+
+#[cfg(feature = "gluetex-mock")]
+pub mod gluetex_mock_init;
 
 pub mod app_state;
 pub mod ethercat;
@@ -374,17 +380,21 @@ fn main() {
         app_state.clone(),
     ));
 
-    #[cfg(not(feature = "mock-machine"))]
+    #[cfg(not(any(feature = "mock-machine", feature = "gluetex-mock")))]
     smol::spawn(start_interface_discovery(app_state.clone(), sender)).detach();
     smol::spawn(start_modbus_tcp_discovery(app_state.clone())).detach();
 
     smol::block_on(async {
         send_empty_machines_event(app_state.clone()).await;
+        #[cfg(not(any(feature = "mock-machine", feature = "gluetex-mock")))]
         send_ethercat_discovering(app_state.clone()).await;
     });
 
     #[cfg(feature = "mock-machine")]
     init_mock(app_state.clone()).expect("Failed to initialize mock machines");
+
+    #[cfg(feature = "gluetex-mock")]
+    init_gluetex_mock(app_state.clone()).expect("Failed to initialize gluetex mock machine");
 
     smol::block_on(async {
         loop {

@@ -4,6 +4,9 @@ pub mod api;
 pub mod emit;
 pub mod new;
 
+#[cfg(feature = "gluetex-mock")]
+pub mod mock;
+
 // Organized submodules
 pub mod controllers;
 pub mod features;
