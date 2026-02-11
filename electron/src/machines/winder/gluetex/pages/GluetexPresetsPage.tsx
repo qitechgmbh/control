@@ -50,6 +50,14 @@ const gluetexPresetDataSchema = z
         zone_6_target: z.number(),
       })
       .partial(),
+    valve_state: z
+      .object({
+        enabled: z.boolean(),
+        manual_override: z.boolean().nullable(),
+        on_distance_mm: z.number(),
+        off_distance_mm: z.number(),
+      })
+      .partial(),
     addon_motor_3_state: addonMotor5StateSchema.partial(),
     addon_motor_4_state: addonMotorStateSchema.partial(),
     addon_motor_5_state: addonMotorStateSchema.partial(),
@@ -649,6 +657,37 @@ const previewEntries: PresetPreviewEntries<GluetexPresetData> = [
     unit: "s",
     renderValue: (data) => data.sleep_timer_state?.timeout_seconds?.toFixed(0),
   },
+  previewSeparator,
+
+  // ── Valve ──
+  {
+    name: "Valve Enabled",
+    renderValue: (data) =>
+      data.valve_state?.enabled !== undefined
+        ? data.valve_state.enabled
+          ? "Enabled"
+          : "Disabled"
+        : "N/A",
+  },
+  {
+    name: "Valve Manual",
+    renderValue: (data) => {
+      const manual = data.valve_state?.manual_override;
+      if (manual === undefined) return "N/A";
+      if (manual === null) return "Auto";
+      return manual ? "On" : "Off";
+    },
+  },
+  {
+    name: "Valve ON Distance",
+    unit: "mm",
+    renderValue: (data) => data.valve_state?.on_distance_mm?.toFixed(0),
+  },
+  {
+    name: "Valve OFF Distance",
+    unit: "mm",
+    renderValue: (data) => data.valve_state?.off_distance_mm?.toFixed(0),
+  },
 ];
 
 export function GluetexPresetsPage() {
@@ -693,6 +732,12 @@ export function GluetexPresetsPage() {
     setHeatingZone4Temperature,
     setHeatingZone5Temperature,
     setHeatingZone6Temperature,
+
+    // Valve
+    setValveEnabled,
+    setValveManualOverride,
+    setValveOnDistanceMm,
+    setValveOffDistanceMm,
 
     // Addon Motors
     setStepper3Mode,
@@ -1016,6 +1061,39 @@ export function GluetexPresetsPage() {
     )
       actions.push(() =>
         setHeatingZone6Temperature(d.heating_states!.zone_6_target!),
+      );
+
+    // Valve
+    if (
+      changed(d?.valve_state?.enabled, currentData.valve_state?.enabled)
+    )
+      actions.push(() => setValveEnabled(d.valve_state!.enabled!));
+    if (
+      changed(
+        d?.valve_state?.manual_override,
+        currentData.valve_state?.manual_override,
+      )
+    )
+      actions.push(() =>
+        setValveManualOverride(d.valve_state!.manual_override ?? null),
+      );
+    if (
+      changed(
+        d?.valve_state?.on_distance_mm,
+        currentData.valve_state?.on_distance_mm,
+      )
+    )
+      actions.push(() =>
+        setValveOnDistanceMm(d.valve_state!.on_distance_mm!),
+      );
+    if (
+      changed(
+        d?.valve_state?.off_distance_mm,
+        currentData.valve_state?.off_distance_mm,
+      )
+    )
+      actions.push(() =>
+        setValveOffDistanceMm(d.valve_state!.off_distance_mm!),
       );
 
     // Addon Motor 3
@@ -1494,6 +1572,14 @@ export function GluetexPresetsPage() {
       zone_5_target: s?.heating_states?.zone_5?.target_temperature,
       zone_6_target: s?.heating_states?.zone_6?.target_temperature,
     },
+    valve_state: s?.valve_state
+      ? {
+          enabled: s.valve_state.enabled,
+          manual_override: s.valve_state.manual_override,
+          on_distance_mm: s.valve_state.on_distance_mm,
+          off_distance_mm: s.valve_state.off_distance_mm,
+        }
+      : {},
     addon_motor_3_state: s?.addon_motor_3_state
       ? {
           enabled: s.addon_motor_3_state.enabled,

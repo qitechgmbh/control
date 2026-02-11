@@ -18,6 +18,9 @@ impl MachineAct for Gluetex {
         // sync the slave puller speed
         self.sync_slave_puller_speed(now);
 
+        // sync valve
+        self.sync_valve(now);
+
         // sync addon motor speeds
         self.sync_addon_motor_3_speed(now);
         self.sync_addon_motor_4_speed(now);
