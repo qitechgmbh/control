@@ -348,6 +348,7 @@ export const orderInfoStateSchema = z.object({
  */
 export const stateEventDataSchema = z.object({
   is_default_state: z.boolean(),
+  status_out: z.boolean(),
   traverse_state: traverseStateSchema,
   puller_state: pullerStateSchema,
   mode_state: modeStateSchema,
