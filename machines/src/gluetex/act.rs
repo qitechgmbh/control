@@ -46,6 +46,9 @@ impl MachineAct for Gluetex {
         self.temperature_controller_5.update(now);
         self.temperature_controller_6.update(now);
 
+        // update status output based on current activity
+        self.update_status_output();
+
         // Check for completed auto-tuning and emit results
         self.check_autotuning_results();
 
