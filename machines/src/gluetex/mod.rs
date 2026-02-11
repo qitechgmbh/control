@@ -24,6 +24,7 @@ mod gluetex_imports {
     pub use super::controllers::temperature_controller::TemperatureController;
     pub use super::controllers::tension_arm::TensionArm;
     pub use super::controllers::traverse_controller::TraverseController;
+    pub use super::controllers::valve_controller::ValveController;
     pub use control_core::converters::angular_step_converter::AngularStepConverter;
     pub use ethercat_hal::io::{
         analog_input::AnalogInput, digital_input::DigitalInput, digital_output::DigitalOutput,
@@ -140,6 +141,12 @@ pub struct Gluetex {
     pub addon_motor_3_analog_input: AnalogInput,
     pub addon_motor_4: StepperVelocityEL70x1,
     pub addon_motor_5: StepperVelocityEL70x1,
+
+    // valve output and controller
+    pub valve: DigitalOutput,
+    pub valve_controller: ValveController,
+    /// Last time valve was synced (for distance tracking)
+    pub valve_last_sync: Instant,
 
     // controllers
     pub traverse_controller: TraverseController,
@@ -515,6 +522,22 @@ impl Gluetex {
             .angular_velocity_to_steps(angular_velocity);
 
         let _ = self.slave_puller.set_speed(steps_per_second);
+    }
+
+    /// Update valve based on puller movement
+    /// called by `act`
+    pub fn sync_valve(&mut self, t: Instant) {
+        // Calculate distance moved by puller since last sync
+        let puller_speed = self.puller_speed_controller.last_speed;
+        let dt = t.duration_since(self.valve_last_sync).as_secs_f64();
+        let distance_moved =
+            Length::new::<meter>(puller_speed.get::<meter_per_second>() * dt).abs();
+
+        // Update valve controller with the distance moved
+        self.valve_controller
+            .update_valve(&mut self.valve, distance_moved);
+
+        self.valve_last_sync = t;
     }
 
     /// Apply the mode changes to the slave puller

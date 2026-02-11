@@ -383,6 +383,20 @@ export function useGluetex() {
     z.object({ SetProductDescription: z.string() }),
   );
 
+  // Valve Control mutations
+  const { request: requestSetValveEnabled } = useMachineMutation(
+    z.object({ SetValveEnabled: z.boolean() }),
+  );
+  const { request: requestSetValveManualOverride } = useMachineMutation(
+    z.object({ SetValveManualOverride: z.boolean().nullable() }),
+  );
+  const { request: requestSetValveOnDistanceMm } = useMachineMutation(
+    z.object({ SetValveOnDistanceMm: z.number() }),
+  );
+  const { request: requestSetValveOffDistanceMm } = useMachineMutation(
+    z.object({ SetValveOffDistanceMm: z.number() }),
+  );
+
   const { request: requestConfigureHeatingPid } = useMachineMutation(
     z.object({
       ConfigureHeatingPid: z.object({
@@ -1714,6 +1728,60 @@ export function useGluetex() {
     );
   };
 
+  // ========== Valve Control Functions ==========
+
+  const setValveEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.valve_state.enabled = enabled;
+      },
+      () =>
+        requestSetValveEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetValveEnabled: enabled },
+        }),
+    );
+  };
+
+  const setValveManualOverride = (manual: boolean | null) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.valve_state.manual_override = manual;
+      },
+      () =>
+        requestSetValveManualOverride({
+          machine_identification_unique: machineIdentification,
+          data: { SetValveManualOverride: manual },
+        }),
+    );
+  };
+
+  const setValveOnDistanceMm = (distance: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.valve_state.on_distance_mm = distance;
+      },
+      () =>
+        requestSetValveOnDistanceMm({
+          machine_identification_unique: machineIdentification,
+          data: { SetValveOnDistanceMm: distance },
+        }),
+    );
+  };
+
+  const setValveOffDistanceMm = (distance: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.valve_state.off_distance_mm = distance;
+      },
+      () =>
+        requestSetValveOffDistanceMm({
+          machine_identification_unique: machineIdentification,
+          data: { SetValveOffDistanceMm: distance },
+        }),
+    );
+  };
+
   // ========== Machine Filtering ==========
 
   const machines = useMachines();
@@ -1868,6 +1936,12 @@ export function useGluetex() {
     setHeatingZone4Temperature,
     setHeatingZone5Temperature,
     setHeatingZone6Temperature,
+
+    // Valve control action functions
+    setValveEnabled,
+    setValveManualOverride,
+    setValveOnDistanceMm,
+    setValveOffDistanceMm,
 
     // Addon action functions (local only)
     setStepper3Mode,
