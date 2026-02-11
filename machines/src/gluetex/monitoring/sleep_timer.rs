@@ -1,3 +1,4 @@
+use super::super::OperationMode;
 use super::config::SleepTimerConfig;
 use std::time::Instant;
 
@@ -25,12 +26,20 @@ impl SleepTimer {
     }
 
     /// Check if sleep timer has expired
-    /// Works in all operation modes (Setup and Production)
+    /// Only counts down in Setup mode
     /// Returns true if timer just triggered (state change)
-    pub fn check(&mut self) -> bool {
+    pub fn check(&mut self, operation_mode: OperationMode) -> bool {
         let now = Instant::now();
 
         if !self.config.enabled {
+            self.triggered = false;
+            return false;
+        }
+
+        // Only count down in Setup mode
+        // Reset timer when not in Setup mode
+        if operation_mode != OperationMode::Setup {
+            self.last_activity_time = now;
             self.triggered = false;
             return false;
         }
@@ -47,7 +56,8 @@ impl SleepTimer {
     }
 
     /// Get remaining seconds on sleep timer
-    pub fn get_remaining_seconds(&self) -> u64 {
+    /// Only counts down in Setup mode, returns full time otherwise
+    pub fn get_remaining_seconds(&self, operation_mode: OperationMode) -> u64 {
         if !self.config.enabled {
             return 0;
         }
@@ -55,6 +65,11 @@ impl SleepTimer {
         // If timer has been triggered, keep it at 0
         if self.triggered {
             return 0;
+        }
+
+        // Return full time when not in Setup mode
+        if operation_mode != OperationMode::Setup {
+            return self.config.timeout_seconds;
         }
 
         let elapsed = Instant::now()
