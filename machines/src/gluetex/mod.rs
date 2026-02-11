@@ -131,6 +131,7 @@ pub struct Gluetex {
     pub spool: StepperVelocityEL70x1,
     pub tension_arm: TensionArm,
     pub laser: DigitalOutput,
+    pub status_out: DigitalOutput,
 
     // addon motors
     pub addon_motor_3: StepperVelocityEL70x1,
@@ -612,6 +613,9 @@ impl Gluetex {
 
         // Disable heating
         self.heating_enabled = false;
+
+        // Ensure status output is off
+        self.update_status_output();
 
         // Ensure all motors are disabled
         self.spool.set_enabled(false);

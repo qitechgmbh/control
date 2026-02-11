@@ -91,6 +91,7 @@ impl Gluetex {
             self.set_slave_puller_mode(mode);
             self.set_traverse_mode(mode);
         }
+        self.update_status_output();
         self.emit_state();
     }
 
@@ -812,6 +813,26 @@ impl Gluetex {
             self.temperature_controller_5.disallow_heating();
             self.temperature_controller_6.disallow_heating();
         }
+        self.update_status_output();
+    }
+
+    pub fn update_status_output(&mut self) {
+        let any_heating_active = self.temperature_controller_1.heating.heating
+            || self.temperature_controller_2.heating.heating
+            || self.temperature_controller_3.heating.heating
+            || self.temperature_controller_4.heating.heating
+            || self.temperature_controller_5.heating.heating
+            || self.temperature_controller_6.heating.heating
+            || self.temperature_controller_1.is_autotuning()
+            || self.temperature_controller_2.is_autotuning()
+            || self.temperature_controller_3.is_autotuning()
+            || self.temperature_controller_4.is_autotuning()
+            || self.temperature_controller_5.is_autotuning()
+            || self.temperature_controller_6.is_autotuning();
+
+        let machine_active = self.mode != GluetexMode::Standby || self.heating_enabled;
+        let status_on = machine_active || any_heating_active;
+        self.status_out.set(status_on);
     }
 
     /// Configure PID parameters for a heating zone
