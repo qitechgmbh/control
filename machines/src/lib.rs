@@ -33,10 +33,10 @@ pub mod registry;
 pub mod serial;
 pub mod test_machine;
 pub mod wago_8ch_dio_test_machine;
+pub mod test_machine_stepper;
 pub mod wago_ai_test_machine;
 pub mod wago_do_test_machine;
 pub mod wago_power;
-pub mod test_machine_stepper;
 pub mod winder2;
 
 pub const VENDOR_QITECH: u16 = 0x0001;

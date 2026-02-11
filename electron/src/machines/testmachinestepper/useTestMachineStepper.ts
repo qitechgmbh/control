@@ -90,7 +90,7 @@ export function useTestMachineStepper() {
     );
   };
 
-     const setFreq = (factor: number) => {
+  const setFreq = (factor: number) => {
     updateStateOptimistically(
       (current) => {
         current.freq = factor;
