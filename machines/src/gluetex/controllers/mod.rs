@@ -2,6 +2,7 @@
 
 pub mod adaptive_spool_speed_controller;
 pub mod addon_motor_controller;
+pub mod addon_motor_tension_controller;
 pub mod minmax_spool_speed_controller;
 pub mod puller_speed_controller;
 pub mod slave_puller_speed_controller;
@@ -13,6 +14,7 @@ pub mod traverse_controller;
 // Re-export main controller types
 pub use adaptive_spool_speed_controller::*;
 pub use addon_motor_controller::AddonMotorController;
+pub use addon_motor_tension_controller::AddonMotorTensionController;
 pub use minmax_spool_speed_controller::*;
 pub use puller_speed_controller::PullerSpeedController;
 pub use slave_puller_speed_controller::SlavePullerSpeedController;

@@ -11,6 +11,7 @@ import {
   heatingStatesSchema,
   addonMotorStateSchema,
   addonMotor5StateSchema,
+  addonMotor5TensionControlStateSchema,
   slavePullerStateSchema,
   spoolAutomaticActionStateSchema,
   heatingPidSettingsSchema,
@@ -52,6 +53,8 @@ const gluetexPresetDataSchema = z
     addon_motor_3_state: addonMotor5StateSchema.partial(),
     addon_motor_4_state: addonMotorStateSchema.partial(),
     addon_motor_5_state: addonMotorStateSchema.partial(),
+    addon_motor_5_tension_control_state:
+      addonMotor5TensionControlStateSchema.partial(),
     slave_puller_state: slavePullerStateSchema
       .omit({ tension_arm: true })
       .partial(),
@@ -368,6 +371,36 @@ const previewEntries: PresetPreviewEntries<GluetexPresetData> = [
     name: "Motor 5 Slave Ratio",
     renderValue: (data) => data.addon_motor_5_state?.slave_ratio?.toFixed(2),
   },
+  {
+    name: "Addon Motor 5 Tension Control",
+    renderValue: (data) =>
+      data.addon_motor_5_tension_control_state?.enabled !== undefined
+        ? data.addon_motor_5_tension_control_state.enabled
+          ? "Enabled"
+          : "Disabled"
+        : "N/A",
+  },
+  {
+    name: "Addon Motor 5 Target Angle",
+    unit: "deg",
+    renderValue: (data) =>
+      data.addon_motor_5_tension_control_state?.target_angle?.toFixed(1),
+  },
+  {
+    name: "Addon Motor 5 Sensitivity",
+    renderValue: (data) =>
+      data.addon_motor_5_tension_control_state?.sensitivity?.toFixed(2),
+  },
+  {
+    name: "Addon Motor 5 Min Speed Factor",
+    renderValue: (data) =>
+      data.addon_motor_5_tension_control_state?.min_speed_factor?.toFixed(2),
+  },
+  {
+    name: "Addon Motor 5 Max Speed Factor",
+    renderValue: (data) =>
+      data.addon_motor_5_tension_control_state?.max_speed_factor?.toFixed(2),
+  },
   previewSeparator,
 
   // ── Slave Puller ──
@@ -676,6 +709,11 @@ export function GluetexPresetsPage() {
     setStepper5Forward,
     setStepper5Master,
     setStepper5Slave,
+    setAddonMotor5TensionEnabled,
+    setAddonMotor5TensionTargetAngle,
+    setAddonMotor5TensionSensitivity,
+    setAddonMotor5TensionMinSpeedFactor,
+    setAddonMotor5TensionMaxSpeedFactor,
 
     // Slave Puller
     setSlavePullerEnabled,
@@ -1092,6 +1130,63 @@ export function GluetexPresetsPage() {
     )
       actions.push(() => setStepper5Slave(d.addon_motor_5_state!.slave_ratio!));
 
+    // Addon Motor 5 Tension Control
+    if (
+      changed(
+        d?.addon_motor_5_tension_control_state?.enabled,
+        currentData.addon_motor_5_tension_control_state?.enabled,
+      )
+    )
+      actions.push(() =>
+        setAddonMotor5TensionEnabled(
+          d.addon_motor_5_tension_control_state!.enabled!,
+        ),
+      );
+    if (
+      changed(
+        d?.addon_motor_5_tension_control_state?.target_angle,
+        currentData.addon_motor_5_tension_control_state?.target_angle,
+      )
+    )
+      actions.push(() =>
+        setAddonMotor5TensionTargetAngle(
+          d.addon_motor_5_tension_control_state!.target_angle!,
+        ),
+      );
+    if (
+      changed(
+        d?.addon_motor_5_tension_control_state?.sensitivity,
+        currentData.addon_motor_5_tension_control_state?.sensitivity,
+      )
+    )
+      actions.push(() =>
+        setAddonMotor5TensionSensitivity(
+          d.addon_motor_5_tension_control_state!.sensitivity!,
+        ),
+      );
+    if (
+      changed(
+        d?.addon_motor_5_tension_control_state?.min_speed_factor,
+        currentData.addon_motor_5_tension_control_state?.min_speed_factor,
+      )
+    )
+      actions.push(() =>
+        setAddonMotor5TensionMinSpeedFactor(
+          d.addon_motor_5_tension_control_state!.min_speed_factor!,
+        ),
+      );
+    if (
+      changed(
+        d?.addon_motor_5_tension_control_state?.max_speed_factor,
+        currentData.addon_motor_5_tension_control_state?.max_speed_factor,
+      )
+    )
+      actions.push(() =>
+        setAddonMotor5TensionMaxSpeedFactor(
+          d.addon_motor_5_tension_control_state!.max_speed_factor!,
+        ),
+      );
+
     // Slave Puller
     if (
       changed(
@@ -1424,6 +1519,17 @@ export function GluetexPresetsPage() {
           forward: s.addon_motor_5_state.forward,
           master_ratio: s.addon_motor_5_state.master_ratio,
           slave_ratio: s.addon_motor_5_state.slave_ratio,
+        }
+      : {},
+    addon_motor_5_tension_control_state: s?.addon_motor_5_tension_control_state
+      ? {
+          enabled: s.addon_motor_5_tension_control_state.enabled,
+          target_angle: s.addon_motor_5_tension_control_state.target_angle,
+          sensitivity: s.addon_motor_5_tension_control_state.sensitivity,
+          min_speed_factor:
+            s.addon_motor_5_tension_control_state.min_speed_factor ?? undefined,
+          max_speed_factor:
+            s.addon_motor_5_tension_control_state.max_speed_factor ?? undefined,
         }
       : {},
     slave_puller_state: s?.slave_puller_state

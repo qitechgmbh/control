@@ -244,6 +244,25 @@ export function useGluetex() {
   const { request: requestAddonMotor5SetSlaveRatio } = useMachineMutation(
     z.object({ SetAddonMotor5SlaveRatio: z.number() }),
   );
+  const { request: requestAddonMotor5TensionSetEnabled } = useMachineMutation(
+    z.object({ SetAddonMotor5TensionEnabled: z.boolean() }),
+  );
+  const { request: requestAddonMotor5TensionSetTargetAngle } =
+    useMachineMutation(
+      z.object({ SetAddonMotor5TensionTargetAngle: z.number() }),
+    );
+  const { request: requestAddonMotor5TensionSetSensitivity } =
+    useMachineMutation(
+      z.object({ SetAddonMotor5TensionSensitivity: z.number() }),
+    );
+  const { request: requestAddonMotor5TensionSetMinSpeedFactor } =
+    useMachineMutation(
+      z.object({ SetAddonMotor5TensionMinSpeedFactor: z.number() }),
+    );
+  const { request: requestAddonMotor5TensionSetMaxSpeedFactor } =
+    useMachineMutation(
+      z.object({ SetAddonMotor5TensionMaxSpeedFactor: z.number() }),
+    );
   const { request: requestAddonMotor3SetKonturlaenge } = useMachineMutation(
     z.object({ SetAddonMotor3Konturlaenge: z.number() }),
   );
@@ -1067,6 +1086,74 @@ export function useGluetex() {
     );
   };
 
+  const setAddonMotor5TensionEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.addon_motor_5_tension_control_state.enabled = enabled;
+      },
+      () =>
+        requestAddonMotor5TensionSetEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor5TensionEnabled: enabled },
+        }),
+    );
+  };
+
+  const setAddonMotor5TensionTargetAngle = (angle: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.addon_motor_5_tension_control_state.target_angle = angle;
+      },
+      () =>
+        requestAddonMotor5TensionSetTargetAngle({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor5TensionTargetAngle: angle },
+        }),
+    );
+  };
+
+  const setAddonMotor5TensionSensitivity = (sensitivity: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.addon_motor_5_tension_control_state.sensitivity =
+          sensitivity;
+      },
+      () =>
+        requestAddonMotor5TensionSetSensitivity({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor5TensionSensitivity: sensitivity },
+        }),
+    );
+  };
+
+  const setAddonMotor5TensionMinSpeedFactor = (factor: number | null) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.addon_motor_5_tension_control_state.min_speed_factor =
+          factor;
+      },
+      () =>
+        requestAddonMotor5TensionSetMinSpeedFactor({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor5TensionMinSpeedFactor: factor ?? 0 },
+        }),
+    );
+  };
+
+  const setAddonMotor5TensionMaxSpeedFactor = (factor: number | null) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.addon_motor_5_tension_control_state.max_speed_factor =
+          factor;
+      },
+      () =>
+        requestAddonMotor5TensionSetMaxSpeedFactor({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor5TensionMaxSpeedFactor: factor ?? 0 },
+        }),
+    );
+  };
+
   // ========== Slave Puller Functions ==========
 
   const setSlavePullerEnabled = (enabled: boolean) => {
@@ -1803,5 +1890,10 @@ export function useGluetex() {
     setStepper3Konturlaenge,
     setStepper3Pause,
     homeAddonMotor3,
+    setAddonMotor5TensionEnabled,
+    setAddonMotor5TensionTargetAngle,
+    setAddonMotor5TensionSensitivity,
+    setAddonMotor5TensionMinSpeedFactor,
+    setAddonMotor5TensionMaxSpeedFactor,
   };
 }
