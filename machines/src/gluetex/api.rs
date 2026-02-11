@@ -292,6 +292,8 @@ impl LiveValuesEvent {
 #[derive(Serialize, Debug, Clone, BuildEvent)]
 pub struct StateEvent {
     pub is_default_state: bool,
+    /// status output (EL2008 DO8)
+    pub status_out: bool,
     /// traverse state
     pub traverse_state: TraverseState,
     /// puller state
