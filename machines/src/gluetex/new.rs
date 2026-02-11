@@ -367,13 +367,14 @@ impl MachineNewTrait for Gluetex {
                 device.0
             };
 
-            // Digital outputs for SSR control (24V to external SSRs for 60W heaters)
+            // Digital outputs for SSR control (24V to external SSRs for 60W heaters), valve outputs & status output
             let heater_ssr_1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
             let heater_ssr_2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
             let heater_ssr_3 = DigitalOutput::new(el2008.clone(), EL2008Port::DO3);
             let heater_ssr_4 = DigitalOutput::new(el2008.clone(), EL2008Port::DO4);
             let heater_ssr_5 = DigitalOutput::new(el2008.clone(), EL2008Port::DO5);
-            let heater_ssr_6 = DigitalOutput::new(el2008, EL2008Port::DO6);
+            let heater_ssr_6 = DigitalOutput::new(el2008.clone(), EL2008Port::DO6);
+            let status_out = DigitalOutput::new(el2008, EL2008Port::DO8);
 
             // Maximum temperature for all heating zones
             let max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
@@ -533,6 +534,7 @@ impl MachineNewTrait for Gluetex {
                     EL7031_0030AnalogInputPort::AI1,
                 )),
                 laser: DigitalOutput::new(el2002, EL2002Port::DO1),
+                status_out,
                 namespace: GluetexNamespace {
                     namespace: params.namespace.clone(),
                 },
