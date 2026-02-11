@@ -502,7 +502,9 @@ export const rootTree = RootRoute.addChildren([
 
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
 
-      testMachineStepperSerialRoute.addChildren([testMachineStepperControlRoute]),
+      testMachineStepperSerialRoute.addChildren([
+        testMachineStepperControlRoute,
+      ]),
 
       analogInputTestMachineSerialRoute.addChildren([
         analogInputTestMachineControlRoute,

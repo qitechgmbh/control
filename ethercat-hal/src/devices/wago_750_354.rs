@@ -163,7 +163,9 @@ impl Wago750_354 {
         if pdo_index < start_index {
             tracing::warn!(
                 "PDO mapping 0x{:08X} has index 0x{:04X} < expected start 0x{:04X}",
-                pdo_mapping, pdo_index, start_index
+                pdo_mapping,
+                pdo_index,
+                start_index
             );
             return 0; // Treat as coupler/module 0
         }

@@ -43,7 +43,9 @@ export function testMachineStepperMessageHandler(
 ): EventHandler {
   return (event: Event<any>) => {
     const updateStore = (
-      updater: (state: TestMachineStepperNamespaceStore) => TestMachineStepperNamespaceStore,
+      updater: (
+        state: TestMachineStepperNamespaceStore,
+      ) => TestMachineStepperNamespaceStore,
     ) => throttledUpdater.updateWith(updater);
 
     try {

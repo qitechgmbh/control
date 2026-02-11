@@ -1,9 +1,12 @@
 use crate::test_machine_stepper::{TestMachineStepper, api::TestMachineStepperNamespace};
-use ethercat_hal::{devices::{
-    EthercatDevice, downcast_device,
-    wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
-    wago_modules::wago_750_671::Wago750_671,
-}, io::{stepper_velocity_wago_750_671::StepperVelocityWago750671}};
+use ethercat_hal::{
+    devices::{
+        EthercatDevice, downcast_device,
+        wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
+        wago_modules::wago_750_671::Wago750_671,
+    },
+    io::stepper_velocity_wago_750_671::StepperVelocityWago750671,
+};
 use smol::{block_on, lock::RwLock};
 use std::{sync::Arc, time::Instant};
 
