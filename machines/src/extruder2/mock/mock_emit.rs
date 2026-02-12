@@ -135,6 +135,11 @@ impl ExtruderV2 {
         self.emit_state();
     }
 
+    pub fn set_motor_poles(&mut self, motor_poles: usize) {
+        self.screw_state.motor_poles = motor_poles;
+        self.emit_state();
+    }
+
     pub fn configure_temperature_pid(&mut self, settings: TemperaturePid) {
         match settings.zone.as_str() {
             "front" => {

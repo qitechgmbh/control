@@ -147,6 +147,9 @@ pub enum Mutation {
     SetPressurePidSettings(PidSettings),
     SetTemperaturePidSettings(TemperaturePid),
 
+    // Motor
+    SetMotorPoles(usize),
+
     // Reset
     ResetInverter(bool),
 }
@@ -229,6 +232,10 @@ impl MachineApi for ExtruderV3 {
 
             Mutation::SetTemperaturePidSettings(settings) => {
                 self.configure_temperature_pid(settings);
+            }
+
+            Mutation::SetMotorPoles(motor_poles) => {
+                self.set_motor_poles(motor_poles);
             }
         }
         Ok(())

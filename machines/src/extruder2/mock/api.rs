@@ -41,6 +41,10 @@ impl MachineApi for ExtruderV2 {
             Mutation::SetTemperaturePidSettings(settings) => {
                 self.configure_temperature_pid(settings);
             }
+
+            Mutation::SetMotorPoles(motor_poles) => {
+                self.set_motor_poles(motor_poles);
+            }
         }
         Ok(())
     }
