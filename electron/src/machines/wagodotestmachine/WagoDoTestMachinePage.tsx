@@ -6,7 +6,7 @@ export function WagoDoTestMachinePage() {
   const { serial } = wagoDoTestMachineSerialRoute.useParams();
   return (
     <Topbar
-      pathname={`/_sidebar/machines/wagoDoTestMachine/${serial}`}
+      pathname={`/_sidebar/machines/wagodotestmachine/${serial}`}
       items={[
         {
           link: "control",
