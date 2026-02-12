@@ -34,6 +34,7 @@ pub mod serial;
 pub mod test_machine;
 pub mod wago_8ch_dio_test_machine;
 pub mod wago_ai_test_machine;
+pub mod wago_do_test_machine;
 pub mod wago_power;
 pub mod winder2;
 
@@ -54,7 +55,7 @@ pub const DIGITAL_INPUT_TEST_MACHINE: u16 = 0x0040;
 pub const WAGO_8CH_IO_TEST_MACHINE: u16 = 0x0041;
 
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
-
+pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
 use serde_json::Value;
 use smol::lock::RwLock;
 
