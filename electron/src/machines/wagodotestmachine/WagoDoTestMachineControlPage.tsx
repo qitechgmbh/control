@@ -10,7 +10,7 @@ export function WagoDoTestMachineControlPage() {
   const { state, setLed, setAllLeds } = useWagoDoTestMachine();
 
   const safeState = state ?? {
-    led_on: [false, false, false, false, false, false, false, false],
+    led_on: Array(8).fill(false),
   };
 
   return (

@@ -81,7 +81,7 @@ export function useWagoDoTestMachine() {
   const setAllLeds = (on: boolean) => {
     updateStateOptimistically(
       (current) => {
-        current.led_on = [on, on, on, on, on, on, on, on];
+        current.led_on = Array(8).fill(on);
       },
       () =>
         sendMutation({
