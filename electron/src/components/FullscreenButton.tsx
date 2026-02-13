@@ -20,20 +20,24 @@ export function FullscreenButton() {
 
   return (
     <Button
-      onClick={() => {
-        if (isFullscreen) {
-          window.electronWindow.fullscreen(false);
-          setIsFullscreen(false);
-        } else {
-          window.electronWindow.fullscreen(true);
-          setIsFullscreen(true);
-        }
-      }}
-      className="px-6 py-7"
-      variant="ghost"
+        onClick={() => {
+            if (window.electronWindow?.fullscreen) {
+                if (isFullscreen) {
+                    window.electronWindow.fullscreen(false);
+                    setIsFullscreen(false);
+                } else {
+                    window.electronWindow.fullscreen(true);
+                    setIsFullscreen(true);
+                }
+            } else {
+                console.warn("Fullscreen API not available on this Device");
+            }
+        }}
+        className="px-6 py-7"
+        variant="ghost"
     >
-      <Icon name={isFullscreen ? "lu:Minimize" : "lu:Maximize"} />
-      {isFullscreen ? null : "Fullscreen"}
+        <Icon name={isFullscreen ? "lu:Minimize" : "lu:Maximize"} />
+        {isFullscreen ? null : "Fullscreen"}
     </Button>
   );
 }
