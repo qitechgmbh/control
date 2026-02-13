@@ -62,6 +62,7 @@ export function useWinder2() {
     defaultState,
     traversePosition,
     pullerSpeed,
+    targetPullerSpeed,
     spoolRpm,
     tensionArmAngle,
     spoolProgress,
@@ -638,6 +639,7 @@ export function useWinder2() {
     // Individual live values (TimeSeries)
     traversePosition,
     pullerSpeed,
+    targetPullerSpeed,
     spoolRpm,
     tensionArmAngle,
     spoolProgress,

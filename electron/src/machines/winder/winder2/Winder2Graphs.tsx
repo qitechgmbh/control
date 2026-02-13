@@ -19,6 +19,7 @@ export function Winder2GraphsPage() {
     traversePosition,
     tensionArmAngle,
     pullerSpeed,
+    targetPullerSpeed,
     spoolProgress,
   } = useWinder2();
 
@@ -31,6 +32,7 @@ export function Winder2GraphsPage() {
           <PullerSpeedGraph
             syncHook={syncHook}
             newData={pullerSpeed}
+            targetSeries={targetPullerSpeed}
             targetSpeed={state?.puller_state?.target_speed}
             unit="m/min"
             renderValue={(value) => roundToDecimals(value, 0)}
@@ -243,12 +245,14 @@ export function SpoolProgressGraph({
 export function PullerSpeedGraph({
   syncHook,
   newData,
+  targetSeries,
   targetSpeed,
   unit,
   renderValue,
 }: {
   syncHook: ReturnType<typeof useGraphSync>;
   newData: TimeSeries | null;
+  targetSeries?: TimeSeries;
   targetSpeed?: number;
   unit?: Unit;
   renderValue?: (value: number) => string;
@@ -259,6 +263,7 @@ export function PullerSpeedGraph({
     lines.push({
       type: "target",
       value: targetSpeed,
+      targetSeries,
       label: "Target Speed",
       color: "#06b6d4", // Match series color
     });

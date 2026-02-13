@@ -24,6 +24,13 @@ export function Extruder2GraphsPage() {
     motorCurrent,
     motorPower,
     combinedPower,
+    // Target value history for graph target lines
+    targetPressure,
+    targetScrewRpm,
+    targetNozzleTemperature,
+    targetFrontTemperature,
+    targetMiddleTemperature,
+    targetBackTemperature,
   } = useExtruder2();
 
   const syncHook = useGraphSync("extruder-graphs");
@@ -49,6 +56,7 @@ export function Extruder2GraphsPage() {
                     {
                       type: "target" as const,
                       value: state.heating_states.nozzle.target_temperature,
+                      targetSeries: targetNozzleTemperature,
                       color: "#ef4444",
                       show: true,
                     },
@@ -69,6 +77,7 @@ export function Extruder2GraphsPage() {
                     {
                       type: "target" as const,
                       value: state.heating_states.front.target_temperature,
+                      targetSeries: targetFrontTemperature,
                       color: "#f59e0b",
                       show: true,
                     },
@@ -89,6 +98,7 @@ export function Extruder2GraphsPage() {
                     {
                       type: "target" as const,
                       value: state.heating_states.middle.target_temperature,
+                      targetSeries: targetMiddleTemperature,
                       color: "#8b5cf6",
                       show: true,
                     },
@@ -109,6 +119,7 @@ export function Extruder2GraphsPage() {
                     {
                       type: "target" as const,
                       value: state.heating_states.back.target_temperature,
+                      targetSeries: targetBackTemperature,
                       color: "#3b82f6",
                       show: true,
                     },
@@ -253,6 +264,7 @@ export function Extruder2GraphsPage() {
                     {
                       type: "target" as const,
                       value: state.pressure_state.target_bar,
+                      targetSeries: targetPressure,
                       color: "#3b82f6",
                       show: true,
                     },
@@ -306,6 +318,7 @@ export function Extruder2GraphsPage() {
                     {
                       type: "target" as const,
                       value: state.screw_state.target_rpm,
+                      targetSeries: targetScrewRpm,
                       color: "#8b5cf6",
                       show: true,
                     },
