@@ -64,6 +64,7 @@ export type Laser1NamespaceStore = {
   x_diameter: TimeSeries;
   y_diameter: TimeSeries;
   roundness: TimeSeries;
+  targetDiameter: TimeSeries;
 };
 
 const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries();
@@ -72,6 +73,8 @@ const { initialTimeSeries: x_diameter, insert: addXDiameter } =
 const { initialTimeSeries: y_diameter, insert: addYDiameter } =
   createTimeSeries();
 const { initialTimeSeries: roundness, insert: addRoundness } =
+  createTimeSeries();
+const { initialTimeSeries: targetDiameter, insert: addTargetDiameter } =
   createTimeSeries();
 
 /**
@@ -87,6 +90,7 @@ export const createLaser1NamespaceStore = (): StoreApi<Laser1NamespaceStore> =>
       x_diameter,
       y_diameter,
       roundness,
+      targetDiameter,
     };
   });
 
@@ -117,6 +121,10 @@ export function laser1MessageHandler(
         updateStore((state) => ({
           ...state,
           state: stateEvent,
+          targetDiameter: addTargetDiameter(state.targetDiameter, {
+            value: stateEvent.data.laser_state.target_diameter,
+            timestamp: event.ts,
+          }),
           // only set default state if is_default_state is true
           defaultState: stateEvent.data.is_default_state
             ? stateEvent

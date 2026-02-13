@@ -14,6 +14,17 @@ import {
   AnimationRefs,
 } from "./types";
 
+function hasHistoricalDashedTargets(config: GraphConfig): boolean {
+  return (
+    config.lines?.some(
+      (line) =>
+        line.show !== false &&
+        !!line.targetSeries &&
+        (line.dash?.length ?? 0) > 0,
+    ) ?? false
+  );
+}
+
 // Retrieve all series data as an array of number arrays
 function getAllSeriesData(data: BigGraphProps["newData"]): number[][] {
   const normalized = normalizeDataSeries(data);
@@ -77,6 +88,7 @@ export function useLiveMode({
       return;
 
     try {
+      const hasDashedHistoricalTargets = hasHistoricalDashedTargets(config);
       const [timestamps, values] = seriesToUPlotData(primaryData.long);
       const cur = primaryData.current;
       const liveTimestamps = [...timestamps, cur.timestamp];
@@ -108,6 +120,7 @@ export function useLiveMode({
         config,
         additionalSeriesValues,
         animationRefs.targetLineCache,
+        hasDashedHistoricalTargets,
       );
 
       uplotRef.current.setData(liveData);

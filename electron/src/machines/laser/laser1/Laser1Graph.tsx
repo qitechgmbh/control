@@ -10,10 +10,17 @@ import React from "react";
 import { useLaser1 } from "./useLaser1";
 
 export function Laser1GraphsPage() {
-  const { diameter, x_diameter, y_diameter, roundness, state } = useLaser1();
+  const {
+    diameter,
+    x_diameter,
+    y_diameter,
+    roundness,
+    state,
+    targetDiameter: targetDiameterSeries,
+  } = useLaser1();
 
   const syncHook = useGraphSync("diameter-roundness-group");
-  const targetDiameter = state?.laser_state?.target_diameter ?? 0;
+  const targetDiameterValue = state?.laser_state?.target_diameter ?? 0;
   const lowerTolerance = state?.laser_state?.lower_tolerance ?? 0;
   const higherTolerance = state?.laser_state?.higher_tolerance ?? 0;
 
@@ -71,21 +78,22 @@ export function Laser1GraphsPage() {
         // Tolerance for diameter
         {
           type: "threshold" as const,
-          value: targetDiameter + higherTolerance,
+          value: targetDiameterValue + higherTolerance,
           label: "Upper Tolerance",
           color: diameterColor,
           dash: [5, 5],
         },
         {
           type: "threshold" as const,
-          value: targetDiameter - lowerTolerance,
+          value: targetDiameterValue - lowerTolerance,
           label: "Lower Tolerance",
           color: diameterColor,
           dash: [5, 5],
         },
         {
           type: "target" as const,
-          value: targetDiameter,
+          value: targetDiameterValue,
+          targetSeries: targetDiameterSeries,
           label: "Target",
           color: diameterColor,
         },

@@ -12,6 +12,13 @@ import {
 import { BigGraphProps, CreateChartParams } from "./types";
 import { normalizeDataSeries } from "./animation";
 
+type CustomDashedTargetLine = {
+  dataIndex: number;
+  dash: number[];
+  color: string;
+  width: number;
+};
+
 export function createChart({
   containerRef,
   uplotRef,
@@ -163,6 +170,7 @@ export function createChart({
 
   // Build series configuration for ALL series (but control visibility)
   const seriesConfig: uPlot.Series[] = [{ label: "Time" }];
+  const customDashedTargetLines: CustomDashedTargetLine[] = [];
 
   // Add ALL data series with visibility control
   const defaultColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
@@ -188,16 +196,34 @@ export function createChart({
   });
 
   // Add config lines
+  let visibleLineIndex = 0;
+  const firstConfigLineDataIndex = 1 + allOriginalSeries.length;
   config.lines?.forEach((line) => {
     if (line.show !== false) {
+      const dash = line.dash ?? (line.type === "threshold" ? [5, 5] : undefined);
+      const lineDataIndex = firstConfigLineDataIndex + visibleLineIndex;
+      const isHistoricalDashedTarget = !!line.targetSeries && !!dash?.length;
+
+      if (isHistoricalDashedTarget) {
+        customDashedTargetLines.push({
+          dataIndex: lineDataIndex,
+          dash: dash!,
+          color: line.color,
+          width: line.width ?? 1,
+        });
+      }
+
       seriesConfig.push({
         label: line.label,
-        stroke: line.color,
+        // Historical dashed targets are custom rendered in draw hook to avoid
+        // canvas dash shimmer during smooth live updates.
+        stroke: isHistoricalDashedTarget ? "rgba(0,0,0,0)" : line.color,
         width: line.width ?? 1,
-        dash: line.dash ?? (line.type === "threshold" ? [5, 5] : undefined),
+        dash: isHistoricalDashedTarget ? undefined : dash,
         show: true,
         points: { show: false },
       });
+      visibleLineIndex++;
     }
   });
 
@@ -325,6 +351,79 @@ export function createChart({
                 setCursorValues(new Array(allOriginalSeries.length).fill(null));
               }
             }
+          },
+        ],
+        draw: [
+          (u) => {
+            if (customDashedTargetLines.length === 0) return;
+            const xData = u.data[0] as number[] | undefined;
+            if (!xData || xData.length === 0) return;
+
+            const xMin = u.scales.x?.min;
+            const xMax = u.scales.x?.max;
+            if (xMin === undefined || xMax === undefined) return;
+
+            const pxPerX = u.bbox.width / Math.max(xMax - xMin, 1e-9);
+            const ctx = u.ctx;
+            const left = u.bbox.left;
+            const top = u.bbox.top;
+            const right = left + u.bbox.width;
+            const bottom = top + u.bbox.height;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(left, top, u.bbox.width, u.bbox.height);
+            ctx.clip();
+            ctx.lineCap = "butt";
+
+            customDashedTargetLines.forEach(({ dataIndex, dash, color, width }) => {
+              const yData = u.data[dataIndex] as Array<number | null> | undefined;
+              if (!yData || yData.length === 0) return;
+
+              const dashPeriod = dash.reduce((acc, curr) => acc + curr, 0);
+              ctx.setLineDash(dash);
+              // Anchor dash phase to world-X so dashes remain stable while axis slides.
+              ctx.lineDashOffset =
+                dashPeriod > 0 ? -((xMin * pxPerX) % dashPeriod) : 0;
+              ctx.strokeStyle = color;
+              ctx.lineWidth = width;
+              ctx.beginPath();
+
+              let started = false;
+              let prevX = 0;
+              let prevY = 0;
+
+              for (let i = 0; i < xData.length; i++) {
+                const value = yData[i];
+                if (value === null || value === undefined) continue;
+
+                const x = u.valToPos(xData[i], "x", true);
+                const y = u.valToPos(value, "y", true);
+                if (x < left || x > right || y < top || y > bottom) continue;
+
+                if (!started) {
+                  ctx.moveTo(x, y);
+                  started = true;
+                  prevX = x;
+                  prevY = y;
+                  continue;
+                }
+
+                if (x !== prevX) {
+                  ctx.lineTo(x, prevY);
+                }
+                if (y !== prevY) {
+                  ctx.lineTo(x, y);
+                }
+                prevX = x;
+                prevY = y;
+              }
+
+              if (started) {
+                ctx.stroke();
+              }
+            });
+            ctx.restore();
           },
         ],
       },

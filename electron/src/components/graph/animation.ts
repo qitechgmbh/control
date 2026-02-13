@@ -10,6 +10,19 @@ import {
 } from "./types";
 import { alignTargetSeriesToTimestamps } from "@/lib/timeseries";
 
+function hasHistoricalDashedTargets(
+  lines?: Array<Partial<GraphLine> & { show?: boolean; value: number }>,
+): boolean {
+  return (
+    lines?.some(
+      (line) =>
+        line.show !== false &&
+        !!line.targetSeries &&
+        (line.dash?.length ?? 0) > 0,
+    ) ?? false
+  );
+}
+
 export function useAnimationRefs(): AnimationRefs {
   const animationFrameRef = useRef<number | null>(null);
   const animationStateRef = useRef<AnimationState>({
@@ -59,6 +72,7 @@ export function buildUPlotData(
   },
   allSeriesData?: number[][],
   targetLineCache?: React.RefObject<Map<number, number[]>>,
+  freezeTargetTail: boolean = false,
 ): uPlot.AlignedData {
   const uData: uPlot.AlignedData = [timestamps];
 
@@ -90,11 +104,19 @@ export function buildUPlotData(
           // Reuse cached data for existing points, extend with current value
           const extension = timestamps.length - cached.length;
           if (extension > 0) {
-            lineData = [...cached, ...new Array(extension).fill(line.value)];
+            const stableTailValue = cached[cached.length - 1] ?? line.value;
+            lineData = [
+              ...cached,
+              ...new Array(extension).fill(
+                freezeTargetTail ? stableTailValue : line.value,
+              ),
+            ];
           } else {
-            lineData = cached;
+            lineData = [...cached];
           }
-          targetLineCache.current.set(lineIndex, lineData);
+          if (!freezeTargetTail) {
+            targetLineCache.current.set(lineIndex, lineData);
+          }
         } else {
           // Full recalculation (first time or chart was rebuilt)
           lineData = alignTargetSeriesToTimestamps(
@@ -170,6 +192,8 @@ export function animateNewPoint(
     targetIndex: newIndex,
   };
 
+  const freezeTargetTail = hasHistoricalDashedTargets(config.lines);
+
   const animate = (currentTime: number) => {
     if (
       !uplotRef.current ||
@@ -221,6 +245,7 @@ export function animateNewPoint(
       config,
       allSeriesData,
       refs.targetLineCache,
+      freezeTargetTail,
     );
 
     uplotRef.current.setData(animatedUData);
