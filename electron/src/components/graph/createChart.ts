@@ -200,7 +200,8 @@ export function createChart({
   const firstConfigLineDataIndex = 1 + allOriginalSeries.length;
   config.lines?.forEach((line) => {
     if (line.show !== false) {
-      const dash = line.dash ?? (line.type === "threshold" ? [5, 5] : undefined);
+      const dash =
+        line.dash ?? (line.type === "threshold" ? [5, 5] : undefined);
       const lineDataIndex = firstConfigLineDataIndex + visibleLineIndex;
       const isHistoricalDashedTarget = !!line.targetSeries && !!dash?.length;
 
@@ -376,53 +377,57 @@ export function createChart({
             ctx.clip();
             ctx.lineCap = "butt";
 
-            customDashedTargetLines.forEach(({ dataIndex, dash, color, width }) => {
-              const yData = u.data[dataIndex] as Array<number | null> | undefined;
-              if (!yData || yData.length === 0) return;
+            customDashedTargetLines.forEach(
+              ({ dataIndex, dash, color, width }) => {
+                const yData = u.data[dataIndex] as
+                  | Array<number | null>
+                  | undefined;
+                if (!yData || yData.length === 0) return;
 
-              const dashPeriod = dash.reduce((acc, curr) => acc + curr, 0);
-              ctx.setLineDash(dash);
-              // Anchor dash phase to world-X so dashes remain stable while axis slides.
-              ctx.lineDashOffset =
-                dashPeriod > 0 ? -((xMin * pxPerX) % dashPeriod) : 0;
-              ctx.strokeStyle = color;
-              ctx.lineWidth = width;
-              ctx.beginPath();
+                const dashPeriod = dash.reduce((acc, curr) => acc + curr, 0);
+                ctx.setLineDash(dash);
+                // Anchor dash phase to world-X so dashes remain stable while axis slides.
+                ctx.lineDashOffset =
+                  dashPeriod > 0 ? -((xMin * pxPerX) % dashPeriod) : 0;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                ctx.beginPath();
 
-              let started = false;
-              let prevX = 0;
-              let prevY = 0;
+                let started = false;
+                let prevX = 0;
+                let prevY = 0;
 
-              for (let i = 0; i < xData.length; i++) {
-                const value = yData[i];
-                if (value === null || value === undefined) continue;
+                for (let i = 0; i < xData.length; i++) {
+                  const value = yData[i];
+                  if (value === null || value === undefined) continue;
 
-                const x = u.valToPos(xData[i], "x", true);
-                const y = u.valToPos(value, "y", true);
-                if (x < left || x > right || y < top || y > bottom) continue;
+                  const x = u.valToPos(xData[i], "x", true);
+                  const y = u.valToPos(value, "y", true);
+                  if (x < left || x > right || y < top || y > bottom) continue;
 
-                if (!started) {
-                  ctx.moveTo(x, y);
-                  started = true;
+                  if (!started) {
+                    ctx.moveTo(x, y);
+                    started = true;
+                    prevX = x;
+                    prevY = y;
+                    continue;
+                  }
+
+                  if (x !== prevX) {
+                    ctx.lineTo(x, prevY);
+                  }
+                  if (y !== prevY) {
+                    ctx.lineTo(x, y);
+                  }
                   prevX = x;
                   prevY = y;
-                  continue;
                 }
 
-                if (x !== prevX) {
-                  ctx.lineTo(x, prevY);
+                if (started) {
+                  ctx.stroke();
                 }
-                if (y !== prevY) {
-                  ctx.lineTo(x, y);
-                }
-                prevX = x;
-                prevY = y;
-              }
-
-              if (started) {
-                ctx.stroke();
-              }
-            });
+              },
+            );
             ctx.restore();
           },
         ],
