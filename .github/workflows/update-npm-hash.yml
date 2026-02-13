@@ -1,0 +1,80 @@
+name: Update npm deps hash
+
+on:
+  pull_request:
+    paths:
+      - 'electron/package-lock.json'
+      - 'electron/package.json'
+  workflow_dispatch:
+
+env:
+  NIX_PATH: nixpkgs=channel:nixos-25.05
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  update-hash:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Nix
+        uses: nixbuild/nix-quick-install-action@v34
+        with:
+          nix_conf: |
+            keep-env-derivations = true
+            keep-outputs = true
+
+      - name: Calculate new npm deps hash
+        id: calc-hash
+        run: |
+          # Calculate the hash using nix run with nixpkgs
+          NEW_HASH=$(nix run 'nixpkgs#prefetch-npm-deps' electron/package-lock.json)
+          echo "hash=$NEW_HASH" >> $GITHUB_OUTPUT
+          echo "Calculated hash: $NEW_HASH"
+
+      - name: Update npmDepsHash in electron.nix
+        run: |
+          NEW_HASH="${{ steps.calc-hash.outputs.hash }}"
+          sed -i "s|npmDepsHash = \".*\";|npmDepsHash = \"$NEW_HASH\";|" nixos/packages/electron.nix
+          
+      - name: Check if hash changed
+        id: check-changes
+        run: |
+          if git diff --quiet nixos/packages/electron.nix; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes needed - hash is already correct"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Hash updated in electron.nix"
+          fi
+
+      - name: Commit and push if changed
+        if: steps.check-changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add nixos/packages/electron.nix
+          git commit -m "chore: update npmDepsHash to ${{ steps.calc-hash.outputs.hash }}"
+          git push
+
+      - name: Comment on PR
+        if: steps.check-changes.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Automatically updated `npmDepsHash` to `${{ steps.calc-hash.outputs.hash }}`\n\n**Next step:** Trigger the checks by pushing an empty commit:\n```bash\ngit commit --allow-empty -m "trigger ci" && git push\n```'
+            })

@@ -12,16 +12,30 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 use control_core::{irq_handling::set_irq_affinity, realtime::set_realtime_priority};
 use ethercat_hal::debugging::diagnosis_history::get_most_recent_diagnosis_message;
 use ethercat_hal::devices::devices_from_subdevices;
+
 use ethercat_hal::devices::wago_750_354::{
     WAGO_750_354_PRODUCT_ID, WAGO_750_354_VENDOR_ID, Wago750_354,
 };
+
 use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::{
     IP20_EC_DI8_DO8_PRODUCT_ID, IP20_EC_DI8_DO8_VENDOR_ID, IP20EcDi8Do8,
 };
 
-use crate::utils::{start_dnsmasq, stop_dnsmasq};
+use ethercat_hal::helpers::set_mut_beckhoff_eeprom_lock_active;
+use ethercrab::error::Error;
+use ethercrab::subdevice_group::{DcConfiguration, HasDc, PreOpPdi, SafeOp};
+use smol::stream::StreamExt;
+use ta::Next;
+use ta::indicators::ExponentialMovingAverage;
+
+#[cfg(not(feature = "development-build"))]
+use crate::utils::stop_dnsmasq;
+
 use ethercrab::std::ethercat_now;
-use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
+use ethercrab::{
+    DcSync, MainDevice, MainDeviceConfig, PduStorage, RegisterAddress, RetryBehaviour,
+    SubDeviceGroup, Timeouts,
+};
 use machines::machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
     DeviceIdentificationIdentified, MachineIdentificationUnique, read_device_identifications,
@@ -30,6 +44,7 @@ use machines::registry::{MACHINE_REGISTRY, MachineRegistry};
 use machines::{Machine, MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams};
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
+use std::time::Instant;
 use std::{sync::Arc, time::Duration};
 
 /// Structure to hold the result of grouping devices by identification
@@ -169,23 +184,25 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
 
 pub async fn setup_loop(
     interface: &str,
+    cycle_target: Duration,
     app_state: Arc<SharedState>,
 ) -> Result<EthercatSetup, anyhow::Error> {
     tracing::info!("Starting Ethercat PDU loop");
-
-    let res = stop_dnsmasq();
-    match res {
-        Ok(_) => (),
-        Err(e) => tracing::error!("Failed to stop dnsmasq: {:?}", e),
-    };
-    // Small Timeout to ensure interfaces get released
-    smol::Timer::after(Duration::from_millis(1500)).await;
+    #[cfg(not(feature = "development-build"))]
+    {
+        let res = stop_dnsmasq();
+        match res {
+            Ok(_) => tracing::info!("Stopped dnsmasq"),
+            Err(e) => tracing::error!("Failed to stop dnsmasq: {:?}", e),
+        };
+        // Small Timeout to ensure interfaces get released
+        smol::Timer::after(Duration::from_millis(1500)).await;
+    }
 
     // Setup ethercrab tx/rx task
     let pdu_storage = Box::leak(Box::new(PduStorage::<MAX_FRAMES, MAX_PDU_DATA>::new()));
     let (tx, rx, pdu) = pdu_storage.try_split().expect("can only split once");
     let interface = interface.to_string();
-    let mut has_dc = false;
 
     std::thread::Builder::new()
         .name("EthercatTxRxThread".to_owned())
@@ -229,11 +246,11 @@ pub async fn setup_loop(
         pdu,
         Timeouts {
             // Default 5000ms
-            state_transition: Duration::from_millis(5000),
+            state_transition: Duration::from_millis(20000),
             // Default 30_000us
             pdu: Duration::from_micros(30_000),
             // Default 10ms
-            eeprom: Duration::from_millis(10),
+            eeprom: Duration::from_millis(100),
             // Default 0ms
             wait_loop_delay: Duration::from_millis(0),
             // Default 100ms
@@ -278,6 +295,45 @@ pub async fn setup_loop(
         ))?,
     };
 
+    for mut subdevice in group_preop.iter_mut(&maindevice) {
+        // 0x2 vendor id is Beckhoff
+        if subdevice.identity().vendor_id == 0x2 {
+            let _res = set_mut_beckhoff_eeprom_lock_active(&subdevice).await;
+        }
+
+        if subdevice.name() == "EL4002" {
+            // Sync mode 01 = SM Synchronous, says it does dc but actually doesnt, thx?
+            subdevice
+                .sdo_write(0x1c32, 1, 1u16)
+                .await
+                .expect("Set sync mode");
+        }
+        // Configure SYNC0 AND SYNC1 for EL4102
+        else if subdevice.name() == "EL5152" {
+            // Sync mode 02 = SYNC0
+            subdevice
+                .sdo_write(0x1c32, 1, 2u16)
+                .await
+                .expect("Set sync mode");
+
+            subdevice
+                .sdo_write(0x1c32, 0x02, cycle_target.as_nanos() as u32)
+                .await
+                .expect("Set cycle time");
+
+            subdevice.set_dc_sync(DcSync::Sync01 {
+                // EL4102 ESI specifies SYNC1 with an offset of 100k ns
+                sync1_period: Duration::from_nanos(100_000),
+            });
+        } else {
+            match subdevice.dc_support() {
+                ethercrab::DcSupport::None => (),
+                ethercrab::DcSupport::RefOnly => (),
+                ethercrab::DcSupport::Bits64 => subdevice.set_dc_sync(DcSync::Sync0),
+                ethercrab::DcSupport::Bits32 => subdevice.set_dc_sync(DcSync::Sync0),
+            }
+        }
+    }
     // create devices
     let devices =
         devices_from_subdevices::<MAX_SUBDEVICES, PDI_LEN>(&mut group_preop, &maindevice)?;
@@ -298,6 +354,7 @@ pub async fn setup_loop(
             },
         )
         .collect::<Vec<_>>();
+
     let devices = device_identifications
         .into_iter()
         .zip(devices)
@@ -356,7 +413,6 @@ pub async fn setup_loop(
     */
     match (coupler.identity().vendor_id, coupler.identity().product_id) {
         (WAGO_750_354_VENDOR_ID, WAGO_750_354_PRODUCT_ID) => {
-            has_dc = true;
             let r = Wago750_354::initialize_modules(coupler).await?;
             for module in r {
                 if coupler.configured_address() == module.belongs_to_addr {
@@ -364,7 +420,7 @@ pub async fn setup_loop(
                         Some(meta) => {
                             let meta_data = EtherCatDeviceMetaData {
                                 configured_address: module.slot,
-                                name: "wago module".to_owned(),
+                                name:module.name,
                                 vendor_id:module.vendor_id,
                                 product_id: module.product_id,
                                 revision: 0x2,
@@ -380,7 +436,6 @@ pub async fn setup_loop(
             }
         }
         (IP20_EC_DI8_DO8_VENDOR_ID, IP20_EC_DI8_DO8_PRODUCT_ID) => {
-            has_dc = true;
             let r = IP20EcDi8Do8::initialize_modules(coupler).await?;
             for module in r {
                 if coupler.configured_address() == module.belongs_to_addr {
@@ -388,7 +443,7 @@ pub async fn setup_loop(
                         Some(meta) => {
                             let meta_data = EtherCatDeviceMetaData {
                                 configured_address: module.slot,
-                                name: "IP20 EC DI8 DO8 module".to_owned(),
+                                name:module.name,
                                 vendor_id:module.vendor_id,
                                 product_id: module.product_id,
                                 revision: 0x1,
@@ -407,19 +462,11 @@ pub async fn setup_loop(
     };
     drop(ethercat_meta_devices);
 
-    for subdevice in subdevices.iter() {
-        // Hack so El5152 goes into OP
-        if subdevice.name() == "EL5152" {
-            has_dc = true;
-        }
-    }
-
     // remove subdevice from devices tuple
     let devices = devices
         .iter()
         .map(|(device_identification, device, _)| (device_identification.clone(), device.clone()))
         .collect::<Vec<_>>();
-    // Notify client via socketio
 
     set_ethercat_devices::<MAX_SUBDEVICES, PDI_LEN>(
         &identified_device_identifications,
@@ -433,72 +480,130 @@ pub async fn setup_loop(
     )
     .await?;
 
-    let group_safe = match group_preop.into_safe_op(&maindevice).await {
-        Ok(group_op) => {
-            tracing::info!("Group in Safe-OP state");
-            group_op
-        }
-        Err(err) => Err(anyhow::anyhow!(
-            "[{}::setup_loop] Failed to put group in Safe-OP state: {:?}",
-            module_path!(),
-            err
-        ))?,
-    };
+    // Avoid potential Sdo write Contention on the bus, by just waiting a bit
+    // Timeout is not enough ... or rather a monstrous timeout would be required for all of the sdo writes we do ...
+    // TODO: Keep small timeout here and add Complete Access configuration for the stepper terminals and complex trerminals like (el5152)
+    smol::Timer::after(Duration::from_millis(4000)).await;
 
-    // TODO Make a more extensive init for the case of DC-Sync
-    // Maybe we need multiple groups? like one DC group and one non dc sync group?
-    // For now we just check if we use wago coupler or IP20
-    if has_dc {
-        for _ in 1..1000 {
-            let res = group_safe.tx_rx_sync_system_time(&maindevice).await;
-            match res {
-                Ok(_) => (),
-                Err(e) => tracing::error!(
-                    "[{}::setup_loop] Failed to sync dc time: {:?}",
-                    e,
-                    module_path!()
-                ),
+    let mut now = Instant::now();
+    let start = Instant::now();
+    let mut averages = Vec::new();
+    for _ in 0..group_preop.len() {
+        averages.push(ExponentialMovingAverage::new(64).unwrap());
+    }
+    let mut tick_interval = smol::Timer::interval(cycle_target);
+
+    tracing::info!("Moving into PRE-OP with PDI");
+    let group = group_preop.into_pre_op_pdi(&maindevice).await?;
+    tracing::info!("Done. PDI available. Waiting for SubDevices to align");
+
+    loop {
+        group
+            .tx_rx_sync_system_time(&maindevice)
+            .await
+            .expect("TX/RX");
+
+        if now.elapsed() >= Duration::from_millis(25) {
+            now = Instant::now();
+            let mut max_deviation = 0;
+            for (s1, ema) in group.iter(&maindevice).zip(averages.iter_mut()) {
+                let diff = match s1
+                    .register_read::<u32>(RegisterAddress::DcSystemTimeDifference)
+                    .await
+                {
+                    Ok(value) =>
+                    // The returned value is NOT in two's compliment, rather the upper bit specifies
+                    // whether the number in the remaining bits is odd or even, so we convert the
+                    // value to `i32` using that logic here.
+                    {
+                        let flag = 0b1u32 << 31;
+                        if value >= flag {
+                            // Strip off negative flag bit and negate value as normal
+                            -((value & !flag) as i32)
+                        } else {
+                            value as i32
+                        }
+                    }
+                    Err(Error::WorkingCounter { .. }) => 0,
+                    Err(e) => {
+                        return Err(anyhow::anyhow!("Failed to read DC system time: {:?}", e));
+                    }
+                };
+
+                let ema_next = ema.next(diff as f64);
+                max_deviation = max_deviation.max(ema_next.abs() as u32);
+            }
+            if max_deviation < 100 {
+                tracing::info!("Clocks settled after {} ms", start.elapsed().as_millis());
+                break;
             }
         }
+        tick_interval.next().await;
     }
 
-    // Put group in operational state
-    let group_op = match group_safe.into_op(&maindevice).await {
-        Ok(group_op) => {
-            tracing::info!("Group in OP state");
-            group_op
+    // SubDevice clocks are aligned. We can turn DC on now.
+    let group = group
+        .configure_dc_sync(
+            &maindevice,
+            DcConfiguration {
+                // Start SYNC0 100ms in the future
+                start_delay: Duration::from_millis(100),
+                // SYNC0 period should be the same as the process data loop in most cases
+                sync0_period: cycle_target,
+                // Send process data half way through cycle
+                sync0_shift: cycle_target / 2,
+            },
+        )
+        .await?;
+
+    // State machine to handle transition to SafeOp with process data
+    enum GroupState {
+        PreOp(SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, PreOpPdi, HasDc>),
+        SafeOp(SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, SafeOp, HasDc>),
+    }
+
+    let mut group_container = Some(GroupState::PreOp(group));
+    let mut tick = 0;
+
+    let group = loop {
+        let now = Instant::now();
+        match group_container.take().unwrap() {
+            GroupState::PreOp(group) => {
+                let res = group.tx_rx_dc(&maindevice).await.expect("TX/RX");
+                if tick > 300 {
+                    let group = group.request_into_safe_op(&maindevice).await?;
+                    group_container = Some(GroupState::SafeOp(group));
+                    tracing::info!("Requested SAFE-OP");
+                } else {
+                    group_container = Some(GroupState::PreOp(group));
+                }
+
+                smol::Timer::at(now + res.extra.next_cycle_wait).await;
+            }
+            GroupState::SafeOp(group) => {
+                let res = group.tx_rx_dc(&maindevice).await.expect("TX/RX");
+                if res.all_safe_op() {
+                    tracing::info!("SAFE-OP");
+                    break group;
+                } else {
+                    group_container = Some(GroupState::SafeOp(group));
+                }
+                smol::Timer::at(now + res.extra.next_cycle_wait).await;
+            }
         }
-        Err(err) => Err(anyhow::anyhow!(
-            "[{}::setup_loop] Failed to put group in OP state: {:?}",
-            module_path!(),
-            err
-        ))?,
+        tick += 1;
     };
 
-    {
-        // Notify client via socketio
-        let app_state_clone = app_state.clone();
-        let main_namespace = &mut app_state_clone
-            .socketio_setup
-            .namespaces
-            .write()
-            .await
-            .main_namespace;
-        let event = EthercatDevicesEventBuilder()
-            .build(app_state_clone.clone())
-            .await;
-        main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
-    }
-
-    let res = start_dnsmasq();
-    match res {
-        Ok(o) => o,
-        Err(e) => tracing::error!("Failed to start dnsmasq: {:?}", e),
-    };
+    let group_op = group
+        .request_into_op(&maindevice)
+        .await
+        .expect("SAFE-OP -> OP");
+    tracing::info!("Started Transition to OP");
 
     Ok(EthercatSetup {
         devices,
         group: group_op,
         maindevice,
+        all_operational: false,
     })
 }

@@ -1,8 +1,8 @@
 {
   "name": "qitech-control-electron",
   "productName": "QiTech Control",
-  "version": "1.0.0",
-  "description": "",
+  "version": "2.4.1",
+  "description": "Next Generation Machine Interface ",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
@@ -36,7 +36,7 @@
     "@types/react-virtualized": "^9.22.2",
     "electron": "^37.3.1",
     "electron-playwright-helpers": "^1.7.1",
-    "eslint": "^9.20.1",
+    "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.37.4",
@@ -53,7 +53,7 @@
     "vite": "^6.4.1",
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6",
-    "vitest": "^3.0.6"
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -88,12 +88,12 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.57.0",
-    "react-i18next": "^15.4.1",
+    "react-i18next": "^16.5.4",
     "react-markdown": "^10.1.0",
     "react-virtualized": "^9.22.6",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
-    "socket.io-client": "^4.8.1",
+    "socket.io-client": "^4.8.3",
     "socket.io-msgpack-parser": "^3.0.2",
     "sonner": "^2.0.1",
     "tailwind-merge": "^3.0.1",
@@ -102,6 +102,6 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.3.5",
     "zod-validation-error": "^5.0.0",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.11"
   }
 }

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-ethercrab = "0.6"
+ethercrab = { git = "https://github.com/v-morlock/ethercrab", branch = "main" }
 ethercat_hal = { path = "../ethercat-hal" }
 control_core = { path = "../control-core" }
 control_core_derive = { path = "../control-core-derive" }
@@ -15,13 +15,13 @@ anyhow = "1.0.100"
 
 bitvec = "1.0.1"
 lazy_static = "1.5.0"
-euclid = "0.22.11"
+euclid = "0.22.13"
 
 # concurrency
 smol = "2.0.2"
 
 # web
-serde_json = "1.0.143"
+serde_json = "1.0.149"
 socketioxide = { version = "0.17.2", features = ["msgpack"] }
 
 # serial

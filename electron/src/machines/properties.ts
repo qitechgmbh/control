@@ -390,6 +390,11 @@ export const aquapath1: MachineProperties = {
           product_id: 0x7d83052,
           revision: 0x110000,
         },
+        {
+          vendor_id: 2,
+          product_id: 0x7d83052,
+          revision: 0x120000,
+        },
       ],
     },
     {
@@ -472,6 +477,30 @@ export const digitalInputTestMachine: MachineProperties = {
     machine: 0x0040,
   },
   device_roles: [],
+};
+
+export const wago8chDioTestMachine: MachineProperties = {
+  name: "WAGO 8ch DIO Test",
+  version: "V1",
+  slug: "wago8chdiotestmachine",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0041,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Wago 750-354 Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x21,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
 };
 export const wagoPower1: MachineProperties = {
   name: "WAGO Power",
@@ -579,6 +608,29 @@ export const TestMotor: MachineProperties = {
   ],
 };
 
+export const wagoDoTestMachine: MachineProperties = {
+  name: "Wago DO Test",
+  version: "V1",
+  slug: "wagodotestmachine",
+  icon: "lu:ToggleRight",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x000e,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Wago 750-354 Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x21,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
 export const wagoAiTestMachine: MachineProperties = {
   name: "Wago AI Test",
   version: "V1",
@@ -616,7 +668,9 @@ export const machineProperties: MachineProperties[] = [
   analogInputTestMachine,
   wagoAiTestMachine,
   digitalInputTestMachine,
+  wago8chDioTestMachine,
   ip20TestMachine,
+  wagoDoTestMachine,
   TestMotor,
 ];
 
