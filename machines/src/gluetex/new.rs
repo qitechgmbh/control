@@ -487,6 +487,17 @@ impl MachineNewTrait for Gluetex {
 
             let mode = GluetexMode::Standby;
 
+            let extra_analog_input_1 =
+                AnalogInput::new(el7031_0030.clone(), EL7031_0030AnalogInputPort::AI2);
+            let extra_analog_input_2 = AnalogInput::new(
+                el7031_addon3_shared.clone(),
+                EL7031_0030AnalogInputPort::AI2,
+            );
+            let extra_analog_input_3 =
+                AnalogInput::new(el7031_addon5.clone(), EL7031_0030AnalogInputPort::AI1);
+            let extra_analog_input_4 =
+                AnalogInput::new(el7031_addon5.clone(), EL7031_0030AnalogInputPort::AI2);
+
             let machine_id = params
                 .device_group
                 .first()
@@ -543,6 +554,12 @@ impl MachineNewTrait for Gluetex {
                     EL7031_0030AnalogInputPort::AI2,
                 ),
                 optris_2: AnalogInput::new(el7031_addon4, EL7031_0030AnalogInputPort::AI2),
+                extra_analog_inputs: [
+                    extra_analog_input_1,
+                    extra_analog_input_2,
+                    extra_analog_input_3,
+                    extra_analog_input_4,
+                ],
                 addon_motor_3_controller:
                     super::controllers::addon_motor_controller::AddonMotorController::new(200),
                 addon_motor_4_controller:

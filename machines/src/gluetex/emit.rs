@@ -223,6 +223,15 @@ impl Gluetex {
             .get::<revolution_per_minute>()
             .abs();
 
+        let read_voltage = |input: &ethercat_hal::io::analog_input::AnalogInput| {
+            use ethercat_hal::io::analog_input::physical::AnalogInputValue;
+            use units::electric_potential::volt;
+            match input.get_physical() {
+                AnalogInputValue::Potential(v) => v.get::<volt>(),
+                _ => 0.0,
+            }
+        };
+
         let live_values = LiveValuesEvent {
             traverse_position: self
                 .traverse_controller
@@ -284,22 +293,12 @@ impl Gluetex {
                 // Wrap [270;<360] to [-90; 0]
                 if angle >= 270.0 { angle - 360.0 } else { angle }
             },
-            optris_1_voltage: {
-                use ethercat_hal::io::analog_input::physical::AnalogInputValue;
-                use units::electric_potential::volt;
-                match self.optris_1.get_physical() {
-                    AnalogInputValue::Potential(v) => v.get::<volt>(),
-                    _ => 0.0,
-                }
-            },
-            optris_2_voltage: {
-                use ethercat_hal::io::analog_input::physical::AnalogInputValue;
-                use units::electric_potential::volt;
-                match self.optris_2.get_physical() {
-                    AnalogInputValue::Potential(v) => v.get::<volt>(),
-                    _ => 0.0,
-                }
-            },
+            optris_1_voltage: read_voltage(&self.optris_1),
+            optris_2_voltage: read_voltage(&self.optris_2),
+            extra_analog_input_1: read_voltage(&self.extra_analog_inputs[0]),
+            extra_analog_input_2: read_voltage(&self.extra_analog_inputs[1]),
+            extra_analog_input_3: read_voltage(&self.extra_analog_inputs[2]),
+            extra_analog_input_4: read_voltage(&self.extra_analog_inputs[3]),
         };
 
         live_values

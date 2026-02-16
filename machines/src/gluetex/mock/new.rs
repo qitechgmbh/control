@@ -46,6 +46,10 @@ impl MachineNewTrait for Gluetex {
             addon_tension_arm_angle: 0.0,
             optris_1_voltage: 0.0,
             optris_2_voltage: 0.0,
+            extra_analog_input_1: 0.0,
+            extra_analog_input_2: 0.0,
+            extra_analog_input_3: 0.0,
+            extra_analog_input_4: 0.0,
         };
 
         let connected_machine_state = MachineCrossConnectionState {
