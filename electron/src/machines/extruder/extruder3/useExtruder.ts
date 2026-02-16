@@ -225,17 +225,25 @@ export function useExtruder3() {
   };
 
   const setTemperatureTargetEnabled = (enabled: boolean) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.extruder_settings_state.nozzle_temperature_target_enabled =
-          enabled;
-      },
-      () =>
-        requestNozzleTemperatureTargetEnabled({
-          machine_identification_unique: machineIdentification,
-          data: { SetNozzleTemperatureTargetEnabled: enabled },
-        }),
-    );
+    const res = enabled
+      ? true
+      : confirm(
+          "This will disable the ability to set a temperature target for the nozzle heating element and will any wiring error message. Only proceed if you understand the risks.",
+        );
+
+    if (res) {
+      updateStateOptimistically(
+        (current) => {
+          current.data.extruder_settings_state.nozzle_temperature_target_enabled =
+            enabled;
+        },
+        () =>
+          requestNozzleTemperatureTargetEnabled({
+            machine_identification_unique: machineIdentification,
+            data: { SetNozzleTemperatureTargetEnabled: enabled },
+          }),
+      );
+    }
   };
 
   const setPressurePidKp = (kp: number) => {
