@@ -37,6 +37,18 @@ pub enum HeatingZone {
     Zone6,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub enum ExtraOutputChannel {
+    Output1,
+    Output2,
+    Output3,
+    Output4,
+    Output5,
+    Output6,
+    Output7,
+    Output8,
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct HeatingPidSettings {
     pub ki: f64,
@@ -241,6 +253,9 @@ pub enum Mutation {
     SetSerialNumber(u32),
     SetProductDescription(String),
 
+    // Extra Outputs
+    SetExtraOutput(ExtraOutputChannel, bool),
+
     // Valve Control
     SetValveEnabled(bool),
     SetValveManualOverride(Option<bool>),
@@ -351,6 +366,8 @@ pub struct StateEvent {
     pub sleep_timer_state: SleepTimerState,
     /// order information state
     pub order_info_state: OrderInfoState,
+    /// extra outputs state
+    pub extra_outputs_state: ExtraOutputsState,
     /// valve control state
     pub valve_state: ValveState,
 }
@@ -600,6 +617,18 @@ pub struct OrderInfoState {
     pub serial_number: u32,
     /// product description
     pub product_description: String,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct ExtraOutputsState {
+    pub output_1: bool,
+    pub output_2: bool,
+    pub output_3: bool,
+    pub output_4: bool,
+    pub output_5: bool,
+    pub output_6: bool,
+    pub output_7: bool,
+    pub output_8: bool,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -1001,6 +1030,10 @@ impl MachineApi for Gluetex {
             Mutation::SetProductDescription(description) => {
                 self.order_info.product_description = description;
                 self.emit_state();
+            }
+            // Extra Outputs
+            Mutation::SetExtraOutput(channel, enabled) => {
+                self.set_extra_output(channel, enabled);
             }
             // Valve Control
             Mutation::SetValveEnabled(enabled) => {

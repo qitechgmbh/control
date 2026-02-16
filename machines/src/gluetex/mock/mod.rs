@@ -9,9 +9,9 @@ pub mod new;
 
 #[cfg(feature = "gluetex-mock")]
 use super::api::{
-    AddonMotor5State, AddonMotorState, AddonMotorTensionControlState, GluetexNamespace,
-    HeatingPidStates, HeatingStates, LiveValuesEvent, ModeState, OrderInfoState, PullerState,
-    SleepTimerState, SpoolAutomaticActionState, SpoolSpeedControllerState, StateEvent,
+    AddonMotor5State, AddonMotorState, AddonMotorTensionControlState, ExtraOutputsState,
+    GluetexNamespace, HeatingPidStates, HeatingStates, LiveValuesEvent, ModeState, OrderInfoState,
+    PullerState, SleepTimerState, SpoolAutomaticActionState, SpoolSpeedControllerState, StateEvent,
     TensionArmMonitorState, TensionArmState, TraverseState, ValveState, VoltageMonitorState,
 };
 #[cfg(feature = "gluetex-mock")]
@@ -57,6 +57,7 @@ pub struct Gluetex {
     optris_2_monitor_state: VoltageMonitorState,
     sleep_timer_state: SleepTimerState,
     order_info_state: OrderInfoState,
+    extra_outputs_state: ExtraOutputsState,
     valve_state: ValveState,
 
     live_values: LiveValuesEvent,
@@ -114,6 +115,7 @@ impl Gluetex {
             optris_2_monitor_state: self.optris_2_monitor_state.clone(),
             sleep_timer_state: self.sleep_timer_state.clone(),
             order_info_state: self.order_info_state.clone(),
+            extra_outputs_state: self.extra_outputs_state.clone(),
             valve_state: self.valve_state.clone(),
         }
     }

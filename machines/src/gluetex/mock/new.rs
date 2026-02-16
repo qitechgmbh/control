@@ -1,10 +1,10 @@
 use super::Gluetex;
 use crate::MachineCrossConnectionState;
 use crate::gluetex::api::{
-    AddonMotor5State, AddonMotorState, AddonMotorTensionControlState, GluetexNamespace,
-    HeatingPidSettings, HeatingPidStates, HeatingStates, LiveValuesEvent, ModeState,
-    OrderInfoState, PullerState, SleepTimerState, SpoolAutomaticActionState,
-    SpoolSpeedControllerState, SlavePullerState, TensionArmMonitorState, TensionArmState,
+    AddonMotor5State, AddonMotorState, AddonMotorTensionControlState, ExtraOutputsState,
+    GluetexNamespace, HeatingPidSettings, HeatingPidStates, HeatingStates, LiveValuesEvent,
+    ModeState, OrderInfoState, PullerState, SlavePullerState, SleepTimerState,
+    SpoolAutomaticActionState, SpoolSpeedControllerState, TensionArmMonitorState, TensionArmState,
     TraverseState, ValveState, VoltageMonitorState,
 };
 use crate::machine_identification::MachineIdentificationUnique;
@@ -122,6 +122,7 @@ impl MachineNewTrait for Gluetex {
             optris_2_monitor_state: VoltageMonitorState::default(),
             sleep_timer_state: SleepTimerState::default(),
             order_info_state: OrderInfoState::default(),
+            extra_outputs_state: ExtraOutputsState::default(),
             valve_state: ValveState::default(),
             live_values,
             api_receiver: receiver,
