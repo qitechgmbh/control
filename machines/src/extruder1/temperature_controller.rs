@@ -20,7 +20,7 @@ pub struct TemperatureController {
     temperature_pid_output: f64,
     heating_element_wattage: f64,
     max_clamp: f64,
-    target_temp_enabled: bool,
+    target_temp_enabled: bool, // Sets whether the frontend should display a target temperature setter for this temp controller
 }
 
 impl TemperatureController {

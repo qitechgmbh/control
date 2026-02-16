@@ -239,6 +239,7 @@ pub enum Mutation {
     // Reset
     ResetInverter(bool),
 
+    // Toggle nozzle temperature target
     SetNozzleTemperatureTargetEnabled(bool),
 }
 
