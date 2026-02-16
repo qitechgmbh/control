@@ -170,11 +170,11 @@ pub async fn start_interface_discovery(
 
             #[cfg(not(feature = "development-build"))]
             {
-                let res = start_dnsmasq();
+                /*let res = start_dnsmasq();
                 match res {
                     Ok(o) => o,
                     Err(e) => tracing::error!("Failed to start dnsmasq: {:?}", e),
-                };
+                };*/
             }
         }
         Err(e) => {
@@ -184,8 +184,8 @@ pub async fn start_interface_discovery(
                 e
             );
             // if this doesnt work, unlucky
-            #[cfg(not(feature = "development-build"))]
-            let _ = start_dnsmasq();
+            /*#[cfg(not(feature = "development-build"))]
+            let _ = start_dnsmasq();*/
         }
     }
     send_ethercat_found(app_state.clone(), &interface).await;
