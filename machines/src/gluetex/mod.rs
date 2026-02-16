@@ -211,6 +211,8 @@ pub struct Gluetex {
     // optris temperature sensors (analog voltage inputs)
     pub optris_1: AnalogInput,
     pub optris_2: AnalogInput,
+    // unused analog inputs from EL7031 devices
+    pub extra_analog_inputs: [AnalogInput; 4],
 
     // Monitoring systems
     pub winder_tension_arm_monitor: TensionArmMonitor,
