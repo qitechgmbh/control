@@ -109,6 +109,21 @@ impl Gluetex {
         self.emit_state();
     }
 
+    pub fn set_extra_output(&mut self, channel: api::ExtraOutputChannel, enabled: bool) {
+        let output = match channel {
+            api::ExtraOutputChannel::Output1 => &mut self.extra_outputs[0],
+            api::ExtraOutputChannel::Output2 => &mut self.extra_outputs[1],
+            api::ExtraOutputChannel::Output3 => &mut self.extra_outputs[2],
+            api::ExtraOutputChannel::Output4 => &mut self.extra_outputs[3],
+            api::ExtraOutputChannel::Output5 => &mut self.extra_outputs[4],
+            api::ExtraOutputChannel::Output6 => &mut self.extra_outputs[5],
+            api::ExtraOutputChannel::Output7 => &mut self.extra_outputs[6],
+            api::ExtraOutputChannel::Output8 => &mut self.extra_outputs[7],
+        };
+        output.set(enabled);
+        self.emit_state();
+    }
+
     pub fn traverse_set_limit_inner(&mut self, limit: f64) {
         let new_inner = Length::new::<millimeter>(limit);
         let current_outer = self.traverse_controller.get_limit_outer();
@@ -611,6 +626,16 @@ impl Gluetex {
                 order_number: self.order_info.order_number,
                 serial_number: self.order_info.serial_number,
                 product_description: self.order_info.product_description.clone(),
+            },
+            extra_outputs_state: api::ExtraOutputsState {
+                output_1: self.extra_outputs[0].get(),
+                output_2: self.extra_outputs[1].get(),
+                output_3: self.extra_outputs[2].get(),
+                output_4: self.extra_outputs[3].get(),
+                output_5: self.extra_outputs[4].get(),
+                output_6: self.extra_outputs[5].get(),
+                output_7: self.extra_outputs[6].get(),
+                output_8: self.extra_outputs[7].get(),
             },
             valve_state: api::ValveState {
                 enabled: self.valve_controller.is_enabled(),

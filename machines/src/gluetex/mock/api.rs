@@ -277,6 +277,35 @@ impl MachineApi for Gluetex {
             Mutation::SetProductDescription(value) => {
                 self.order_info_state.product_description = value;
             }
+            Mutation::SetExtraOutput(channel, enabled) => {
+                let output = match channel {
+                    crate::gluetex::api::ExtraOutputChannel::Output1 => {
+                        &mut self.extra_outputs_state.output_1
+                    }
+                    crate::gluetex::api::ExtraOutputChannel::Output2 => {
+                        &mut self.extra_outputs_state.output_2
+                    }
+                    crate::gluetex::api::ExtraOutputChannel::Output3 => {
+                        &mut self.extra_outputs_state.output_3
+                    }
+                    crate::gluetex::api::ExtraOutputChannel::Output4 => {
+                        &mut self.extra_outputs_state.output_4
+                    }
+                    crate::gluetex::api::ExtraOutputChannel::Output5 => {
+                        &mut self.extra_outputs_state.output_5
+                    }
+                    crate::gluetex::api::ExtraOutputChannel::Output6 => {
+                        &mut self.extra_outputs_state.output_6
+                    }
+                    crate::gluetex::api::ExtraOutputChannel::Output7 => {
+                        &mut self.extra_outputs_state.output_7
+                    }
+                    crate::gluetex::api::ExtraOutputChannel::Output8 => {
+                        &mut self.extra_outputs_state.output_8
+                    }
+                };
+                *output = enabled;
+            }
             Mutation::SetValveEnabled(enabled) => {
                 self.valve_state.enabled = enabled;
             }

@@ -882,6 +882,22 @@ export const gluetex: MachineProperties = {
         },
       ],
     },
+    {
+      role: 12,
+      role_label: "Extra Digital Outputs",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x7d83052,
+          revision: 0x110000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x7d83052,
+          revision: 0x120000,
+        },
+      ],
+    },
   ],
 };
 
