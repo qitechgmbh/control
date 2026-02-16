@@ -320,19 +320,6 @@ export function useExtruder2() {
     );
   };
 
-  const setMotorPoles = (motorPoles: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.screw_state.motor_poles = motorPoles;
-      },
-      () =>
-        requestMotorPoles({
-          machine_identification_unique: machineIdentification,
-          data: { SetMotorPoles: motorPoles },
-        }),
-    );
-  };
-
   const resetInverter = () => {
     // No optimistic update needed for reset
     requestResetInverter({
@@ -411,10 +398,6 @@ export function useExtruder2() {
     z.object({ ResetInverter: z.boolean() }),
   );
 
-  const { request: requestMotorPoles } = useMachineMutation(
-    z.object({ SetMotorPoles: z.number() }),
-  );
-
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -460,7 +443,6 @@ export function useExtruder2() {
     setPressurePidKi,
     setPressurePidKd,
     setTemperaturePidValue,
-    setMotorPoles,
     resetInverter,
   };
 }

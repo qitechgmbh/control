@@ -23,32 +23,12 @@ export function Extruder2SettingsPage() {
     setPressurePidKi,
     setPressurePidKd,
     setTemperaturePidValue,
-    setMotorPoles,
   } = useExtruder2();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
     <Page>
-      <ControlCard className="bg-red" title="Motor Settings">
-        <Label label="Motor Poles">
-          <SelectionGroup<"2" | "4" | "6">
-            value={
-              state?.screw_state.motor_poles?.toString() as
-                | "2"
-                | "4"
-                | "6"
-                | undefined
-            }
-            options={{
-              "2": { children: "2 Poles" },
-              "4": { children: "4 Poles" },
-              "6": { children: "6 Poles" },
-            }}
-            onChange={(value) => setMotorPoles(parseInt(value))}
-          />
-        </Label>
-      </ControlCard>
       <ControlCard className="bg-red" title="Inverter Settings">
         <Label label="Rotation Direction">
           <SelectionGroupBoolean
