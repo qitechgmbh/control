@@ -309,6 +309,14 @@ pub struct LiveValuesEvent {
     pub optris_1_voltage: f64,
     /// optris 2 voltage (role 10 AI2)
     pub optris_2_voltage: f64,
+    /// extra analog input 1 voltage (role 4 AI2)
+    pub extra_analog_input_1: f64,
+    /// extra analog input 2 voltage (role 8 AI2)
+    pub extra_analog_input_2: f64,
+    /// extra analog input 3 voltage (role 11 AI1)
+    pub extra_analog_input_3: f64,
+    /// extra analog input 4 voltage (role 11 AI2)
+    pub extra_analog_input_4: f64,
 }
 
 impl LiveValuesEvent {
