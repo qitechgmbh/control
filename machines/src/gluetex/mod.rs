@@ -137,6 +137,7 @@ pub struct Gluetex {
     pub tension_arm: TensionArm,
     pub laser: DigitalOutput,
     pub status_out: DigitalOutput,
+    pub extra_outputs: [DigitalOutput; 8],
 
     // addon motors
     pub addon_motor_3: StepperVelocityEL70x1,

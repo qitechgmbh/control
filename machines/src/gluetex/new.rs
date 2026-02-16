@@ -368,6 +368,16 @@ impl MachineNewTrait for Gluetex {
                 device.0
             };
 
+            // Role 12: Extra digital outputs EL2008
+            let el2008_extra = get_ethercat_device::<EL2008>(
+                hardware,
+                params,
+                12,
+                vec![EL2008_IDENTITY_A, EL2008_IDENTITY_B],
+            )
+            .await?
+            .0;
+
             // Digital outputs for SSR control (24V to external SSRs for 60W heaters), valve output & status output
             let heater_ssr_1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
             let heater_ssr_2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
@@ -377,6 +387,15 @@ impl MachineNewTrait for Gluetex {
             let heater_ssr_6 = DigitalOutput::new(el2008.clone(), EL2008Port::DO6);
             let valve = DigitalOutput::new(el2008.clone(), EL2008Port::DO7);
             let status_out = DigitalOutput::new(el2008, EL2008Port::DO8);
+
+            let extra_output_1 = DigitalOutput::new(el2008_extra.clone(), EL2008Port::DO1);
+            let extra_output_2 = DigitalOutput::new(el2008_extra.clone(), EL2008Port::DO2);
+            let extra_output_3 = DigitalOutput::new(el2008_extra.clone(), EL2008Port::DO3);
+            let extra_output_4 = DigitalOutput::new(el2008_extra.clone(), EL2008Port::DO4);
+            let extra_output_5 = DigitalOutput::new(el2008_extra.clone(), EL2008Port::DO5);
+            let extra_output_6 = DigitalOutput::new(el2008_extra.clone(), EL2008Port::DO6);
+            let extra_output_7 = DigitalOutput::new(el2008_extra.clone(), EL2008Port::DO7);
+            let extra_output_8 = DigitalOutput::new(el2008_extra, EL2008Port::DO8);
 
             // Maximum temperature for all heating zones
             let max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
@@ -542,6 +561,16 @@ impl MachineNewTrait for Gluetex {
                 )),
                 laser: DigitalOutput::new(el2002, EL2002Port::DO1),
                 status_out,
+                extra_outputs: [
+                    extra_output_1,
+                    extra_output_2,
+                    extra_output_3,
+                    extra_output_4,
+                    extra_output_5,
+                    extra_output_6,
+                    extra_output_7,
+                    extra_output_8,
+                ],
                 namespace: GluetexNamespace {
                     namespace: params.namespace.clone(),
                 },
