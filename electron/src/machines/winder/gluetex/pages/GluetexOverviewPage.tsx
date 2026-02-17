@@ -20,8 +20,12 @@ import { SpoolAutomaticActionMode, Mode } from "../state/gluetexNamespace";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { cn } from "@/lib/utils";
 import { GluetexErrorBanner } from "../components/GluetexErrorBanner";
+import { gluetexRoute } from "@/routes/routes";
 
 export function GluetexOverviewPage() {
+  const { serial: serialString } = gluetexRoute.useParams();
+  const deviceSerialId = parseInt(serialString);
+
   const {
     state,
     pullerSpeed,
@@ -431,7 +435,12 @@ export function GluetexOverviewPage() {
         {/* Bottom Row: Order Information (left, width 2) */}
         <ControlCard width={2} title="Order Information">
           <div className="grid gap-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
+              <Label label="Machine Serial ID">
+                <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2 font-mono text-lg">
+                  {deviceSerialId}
+                </div>
+              </Label>
               <Label label="Order Number">
                 <EditValue
                   value={state?.order_info_state?.order_number ?? 0}
