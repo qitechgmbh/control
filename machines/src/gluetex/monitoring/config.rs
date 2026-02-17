@@ -25,6 +25,8 @@ pub struct VoltageMonitorConfig {
     pub enabled: bool,
     pub min_voltage: f64,
     pub max_voltage: f64,
+    /// Delay for voltage readings in millimeters of filament travel
+    pub delay_mm: f64,
 }
 
 impl Default for VoltageMonitorConfig {
@@ -33,6 +35,7 @@ impl Default for VoltageMonitorConfig {
             enabled: false,
             min_voltage: 2.0,
             max_voltage: 8.0,
+            delay_mm: 0.0,
         }
     }
 }

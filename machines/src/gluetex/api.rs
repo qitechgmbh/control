@@ -239,9 +239,11 @@ pub enum Mutation {
     SetOptris1MonitorEnabled(bool),
     SetOptris1MonitorMinVoltage(f64),
     SetOptris1MonitorMaxVoltage(f64),
+    SetOptris1MonitorDelay(f64),
     SetOptris2MonitorEnabled(bool),
     SetOptris2MonitorMinVoltage(f64),
     SetOptris2MonitorMaxVoltage(f64),
+    SetOptris2MonitorDelay(f64),
 
     // Sleep Timer
     SetSleepTimerEnabled(bool),
@@ -603,6 +605,8 @@ pub struct VoltageMonitorState {
     pub min_voltage: f64,
     /// maximum allowed voltage
     pub max_voltage: f64,
+    /// voltage reading delay in millimeters of material travel
+    pub delay_mm: f64,
     /// is monitor currently triggered (limits exceeded)
     pub triggered: bool,
 }
@@ -996,6 +1000,10 @@ impl MachineApi for Gluetex {
                 self.optris_1_monitor.config.max_voltage = voltage;
                 self.emit_state();
             }
+            Mutation::SetOptris1MonitorDelay(delay_mm) => {
+                self.optris_1_monitor.config.delay_mm = delay_mm;
+                self.emit_state();
+            }
             // Optris 2 Voltage Monitor
             Mutation::SetOptris2MonitorEnabled(enabled) => {
                 self.optris_2_monitor.config.enabled = enabled;
@@ -1011,6 +1019,10 @@ impl MachineApi for Gluetex {
             }
             Mutation::SetOptris2MonitorMaxVoltage(voltage) => {
                 self.optris_2_monitor.config.max_voltage = voltage;
+                self.emit_state();
+            }
+            Mutation::SetOptris2MonitorDelay(delay_mm) => {
+                self.optris_2_monitor.config.delay_mm = delay_mm;
                 self.emit_state();
             }
             Mutation::SetSleepTimerEnabled(enabled) => {

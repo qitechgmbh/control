@@ -618,6 +618,11 @@ const previewEntries: PresetPreviewEntries<GluetexPresetData> = [
     unit: "V",
     renderValue: (data) => data.optris_1_monitor_state?.max_voltage?.toFixed(2),
   },
+  {
+    name: "Optris 1 Delay",
+    unit: "mm",
+    renderValue: (data) => data.optris_1_monitor_state?.delay_mm?.toFixed(0),
+  },
   previewSeparator,
 
   // ── Optris 2 Monitor ──
@@ -639,6 +644,11 @@ const previewEntries: PresetPreviewEntries<GluetexPresetData> = [
     name: "Optris 2 Max Voltage",
     unit: "V",
     renderValue: (data) => data.optris_2_monitor_state?.max_voltage?.toFixed(2),
+  },
+  {
+    name: "Optris 2 Delay",
+    unit: "mm",
+    renderValue: (data) => data.optris_2_monitor_state?.delay_mm?.toFixed(0),
   },
   previewSeparator,
 
@@ -786,9 +796,11 @@ export function GluetexPresetsPage() {
     setOptris1MonitorEnabled,
     setOptris1MonitorMinVoltage,
     setOptris1MonitorMaxVoltage,
+    setOptris1MonitorDelay,
     setOptris2MonitorEnabled,
     setOptris2MonitorMinVoltage,
     setOptris2MonitorMaxVoltage,
+    setOptris2MonitorDelay,
 
     // Sleep Timer
     setSleepTimerEnabled,
@@ -1470,6 +1482,15 @@ export function GluetexPresetsPage() {
       actions.push(() =>
         setOptris1MonitorMaxVoltage(d.optris_1_monitor_state!.max_voltage!),
       );
+    if (
+      changed(
+        d?.optris_1_monitor_state?.delay_mm,
+        currentData.optris_1_monitor_state?.delay_mm,
+      )
+    )
+      actions.push(() =>
+        setOptris1MonitorDelay(d.optris_1_monitor_state!.delay_mm!),
+      );
 
     // Optris 2 Monitor
     if (
@@ -1498,6 +1519,15 @@ export function GluetexPresetsPage() {
     )
       actions.push(() =>
         setOptris2MonitorMaxVoltage(d.optris_2_monitor_state!.max_voltage!),
+      );
+    if (
+      changed(
+        d?.optris_2_monitor_state?.delay_mm,
+        currentData.optris_2_monitor_state?.delay_mm,
+      )
+    )
+      actions.push(() =>
+        setOptris2MonitorDelay(d.optris_2_monitor_state!.delay_mm!),
       );
 
     // Sleep Timer

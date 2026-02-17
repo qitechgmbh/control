@@ -101,9 +101,11 @@ export function GluetexSettingPage() {
     setOptris1MonitorEnabled,
     setOptris1MonitorMinVoltage,
     setOptris1MonitorMaxVoltage,
+    setOptris1MonitorDelay,
     setOptris2MonitorEnabled,
     setOptris2MonitorMinVoltage,
     setOptris2MonitorMaxVoltage,
+    setOptris2MonitorDelay,
   } = useGluetex();
 
   const handleXlModeChange = (enabled: boolean) => {
@@ -1850,6 +1852,21 @@ export function GluetexSettingPage() {
                         }}
                       />
                     </Label>
+                    <Label label="Delay">
+                      <EditValue
+                        value={state?.optris_1_monitor_state?.delay_mm ?? 0}
+                        unit="mm"
+                        title="Optris 1 Voltage Reading Delay"
+                        defaultValue={
+                          defaultState?.optris_1_monitor_state?.delay_mm ?? 0
+                        }
+                        min={0}
+                        max={10000}
+                        step={1}
+                        renderValue={(value) => roundToDecimals(value, 0)}
+                        onChange={(value) => setOptris1MonitorDelay(value)}
+                      />
+                    </Label>
                   </div>
                 </ControlCard>
 
@@ -1925,6 +1942,21 @@ export function GluetexSettingPage() {
                           setOptris2Max(value);
                           setOptris2MonitorMaxVoltage(value);
                         }}
+                      />
+                    </Label>
+                    <Label label="Delay">
+                      <EditValue
+                        value={state?.optris_2_monitor_state?.delay_mm ?? 0}
+                        unit="mm"
+                        title="Optris 2 Voltage Reading Delay"
+                        defaultValue={
+                          defaultState?.optris_2_monitor_state?.delay_mm ?? 0
+                        }
+                        min={0}
+                        max={10000}
+                        step={1}
+                        renderValue={(value) => roundToDecimals(value, 0)}
+                        onChange={(value) => setOptris2MonitorDelay(value)}
                       />
                     </Label>
                   </div>

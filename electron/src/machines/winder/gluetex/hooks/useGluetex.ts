@@ -351,6 +351,9 @@ export function useGluetex() {
   const { request: requestSetOptris1MonitorMaxVoltage } = useMachineMutation(
     z.object({ SetOptris1MonitorMaxVoltage: z.number() }),
   );
+  const { request: requestSetOptris1MonitorDelay } = useMachineMutation(
+    z.object({ SetOptris1MonitorDelay: z.number() }),
+  );
   const { request: requestSetOptris2MonitorEnabled } = useMachineMutation(
     z.object({ SetOptris2MonitorEnabled: z.boolean() }),
   );
@@ -359,6 +362,9 @@ export function useGluetex() {
   );
   const { request: requestSetOptris2MonitorMaxVoltage } = useMachineMutation(
     z.object({ SetOptris2MonitorMaxVoltage: z.number() }),
+  );
+  const { request: requestSetOptris2MonitorDelay } = useMachineMutation(
+    z.object({ SetOptris2MonitorDelay: z.number() }),
   );
 
   // Sleep Timer mutations
@@ -1493,6 +1499,32 @@ export function useGluetex() {
     );
   };
 
+  const setOptris1MonitorDelay = (delay_mm: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.optris_1_monitor_state.delay_mm = delay_mm;
+      },
+      () =>
+        requestSetOptris1MonitorDelay({
+          machine_identification_unique: machineIdentification,
+          data: { SetOptris1MonitorDelay: delay_mm },
+        }),
+    );
+  };
+
+  const setOptris2MonitorDelay = (delay_mm: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.optris_2_monitor_state.delay_mm = delay_mm;
+      },
+      () =>
+        requestSetOptris2MonitorDelay({
+          machine_identification_unique: machineIdentification,
+          data: { SetOptris2MonitorDelay: delay_mm },
+        }),
+    );
+  };
+
   // Sleep Timer action functions
   const setSleepTimerEnabled = (enabled: boolean) => {
     updateStateOptimistically(
@@ -1912,9 +1944,11 @@ export function useGluetex() {
     setOptris1MonitorEnabled,
     setOptris1MonitorMinVoltage,
     setOptris1MonitorMaxVoltage,
+    setOptris1MonitorDelay,
     setOptris2MonitorEnabled,
     setOptris2MonitorMinVoltage,
     setOptris2MonitorMaxVoltage,
+    setOptris2MonitorDelay,
 
     // Sleep Timer action functions
     setSleepTimerEnabled,

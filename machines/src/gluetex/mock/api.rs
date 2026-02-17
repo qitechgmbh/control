@@ -255,6 +255,12 @@ impl MachineApi for Gluetex {
             Mutation::SetOptris2MonitorMaxVoltage(value) => {
                 self.optris_2_monitor_state.max_voltage = value;
             }
+            Mutation::SetOptris1MonitorDelay(delay_mm) => {
+                self.optris_1_monitor_state.delay_mm = delay_mm;
+            }
+            Mutation::SetOptris2MonitorDelay(delay_mm) => {
+                self.optris_2_monitor_state.delay_mm = delay_mm;
+            }
             Mutation::SetSleepTimerEnabled(enabled) => {
                 self.sleep_timer_state.enabled = enabled;
                 self.sleep_timer_state.triggered = false;

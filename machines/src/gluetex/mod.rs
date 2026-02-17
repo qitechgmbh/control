@@ -225,6 +225,12 @@ pub struct Gluetex {
     pub optris_2_monitor: VoltageMonitor,
     pub sleep_timer: SleepTimer,
 
+    // Distance tracking for optris voltage delay
+    /// Last recorded distance for optris 1 voltage delay calculation
+    pub optris_1_last_distance_mm: f64,
+    /// Last recorded distance for optris 2 voltage delay calculation
+    pub optris_2_last_distance_mm: f64,
+
     // order information
     pub order_info: OrderInfo,
 
@@ -742,6 +748,41 @@ impl Gluetex {
         if state_changed {
             self.emit_state();
         }
+    }
+
+    /// Record optris voltage readings with distance tracking for delayed readings
+    /// Should be called once per control loop iteration
+    pub fn record_optris_voltages(&mut self, _now: Instant) {
+        // Read current voltages
+        let optris_1_voltage = {
+            use ethercat_hal::io::analog_input::physical::AnalogInputValue;
+            use units::electric_potential::volt;
+            match self.optris_1.get_physical() {
+                AnalogInputValue::Potential(v) => v.get::<volt>(),
+                _ => 0.0,
+            }
+        };
+
+        let optris_2_voltage = {
+            use ethercat_hal::io::analog_input::physical::AnalogInputValue;
+            use units::electric_potential::volt;
+            match self.optris_2.get_physical() {
+                AnalogInputValue::Potential(v) => v.get::<volt>(),
+                _ => 0.0,
+            }
+        };
+
+        // Calculate distance moved since last recording for optris 1
+        let current_distance_1 = self.spool_automatic_action.progress.get::<units::length::meter>() * 1000.0;
+        let distance_moved_1 = (current_distance_1 - self.optris_1_last_distance_mm).max(0.0);
+        self.optris_1_last_distance_mm = current_distance_1;
+        self.optris_1_monitor.record_voltage(optris_1_voltage, distance_moved_1);
+
+        // Calculate distance moved since last recording for optris 2
+        let current_distance_2 = self.spool_automatic_action.progress.get::<units::length::meter>() * 1000.0;
+        let distance_moved_2 = (current_distance_2 - self.optris_2_last_distance_mm).max(0.0);
+        self.optris_2_last_distance_mm = current_distance_2;
+        self.optris_2_monitor.record_voltage(optris_2_voltage, distance_moved_2);
     }
 
     /// Check if sleep timer has expired and trigger standby if needed

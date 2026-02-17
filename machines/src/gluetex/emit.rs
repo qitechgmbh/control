@@ -294,8 +294,8 @@ impl Gluetex {
                 // Wrap [270;<360] to [-90; 0]
                 if angle >= 270.0 { angle - 360.0 } else { angle }
             },
-            optris_1_voltage: read_voltage(&self.optris_1),
-            optris_2_voltage: read_voltage(&self.optris_2),
+            optris_1_voltage: self.optris_1_monitor.get_delayed_voltage(),
+            optris_2_voltage: self.optris_2_monitor.get_delayed_voltage(),
             extra_analog_input_1: read_voltage(&self.extra_analog_inputs[0]),
             extra_analog_input_2: read_voltage(&self.extra_analog_inputs[1]),
             extra_analog_input_3: read_voltage(&self.extra_analog_inputs[2]),
@@ -623,12 +623,14 @@ impl Gluetex {
                 enabled: self.optris_1_monitor.config.enabled,
                 min_voltage: self.optris_1_monitor.config.min_voltage,
                 max_voltage: self.optris_1_monitor.config.max_voltage,
+                delay_mm: self.optris_1_monitor.config.delay_mm,
                 triggered: self.optris_1_monitor.triggered,
             },
             optris_2_monitor_state: api::VoltageMonitorState {
                 enabled: self.optris_2_monitor.config.enabled,
                 min_voltage: self.optris_2_monitor.config.min_voltage,
                 max_voltage: self.optris_2_monitor.config.max_voltage,
+                delay_mm: self.optris_2_monitor.config.delay_mm,
                 triggered: self.optris_2_monitor.triggered,
             },
             sleep_timer_state: api::SleepTimerState {
