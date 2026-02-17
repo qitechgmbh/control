@@ -456,7 +456,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
                 <FormItem>
                   <FormLabel>Device Role</FormLabel>
                   <FormControl>
-                    <Select {...field}>
+                    <Select {...field} onValueChange={field.onChange}>
                       <SelectTrigger className="w-min">
                         <SelectValue placeholder="Device Role" />
                       </SelectTrigger>
