@@ -440,6 +440,8 @@ pub enum SpoolAutomaticActionMode {
 pub struct SpoolAutomaticActionState {
     pub spool_required_meters: f64,
     pub spool_automatic_action_mode: SpoolAutomaticActionMode,
+    /// Estimated time in minutes until the target length is reached
+    pub estimated_minutes_remaining: f64,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]

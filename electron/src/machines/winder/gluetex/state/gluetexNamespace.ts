@@ -129,6 +129,7 @@ export type HeatingZone =
 export const spoolAutomaticActionStateSchema = z.object({
   spool_required_meters: z.number(),
   spool_automatic_action_mode: spoolAutomaticActionModeSchema,
+  estimated_minutes_remaining: z.number(),
 });
 
 export type SpoolAutomaticActionState = z.infer<
@@ -718,6 +719,7 @@ const DEFAULT_BACKEND_EXTENDED_STATE: ExtendedStateEvent = {
     spool_automatic_action_state: {
       spool_required_meters: 250.0,
       spool_automatic_action_mode: "NoAction",
+      estimated_minutes_remaining: 0,
     },
     heating_states: {
       enabled: false,
