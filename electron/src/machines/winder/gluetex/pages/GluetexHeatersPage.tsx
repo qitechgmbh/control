@@ -209,28 +209,6 @@ export function GluetexHeatersPage() {
               />
             </Label>
 
-            <div className="flex flex-col gap-1 rounded bg-black/20 p-2">
-              <div className="flex justify-between text-xs">
-                <span>Pattern State:</span>
-                <span className="font-mono">
-                  {state?.valve_state?.pattern_state ? "ON" : "OFF"}
-                </span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span>Accumulated:</span>
-                <span className="font-mono">
-                  {state?.valve_state?.accumulated_distance?.toFixed(1) ?? 0} mm
-                </span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span>Output:</span>
-                <span
-                  className={`font-mono ${state?.valve_state?.valve_output ? "text-green-400" : "text-gray-400"}`}
-                >
-                  {state?.valve_state?.valve_output ? "OPEN" : "CLOSED"}
-                </span>
-              </div>
-            </div>
           </div>
         </ControlCard>
       </ControlGrid>
