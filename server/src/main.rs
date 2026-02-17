@@ -15,9 +15,11 @@ use machines::{
     serial::{devices::laser::Laser, init::SerialDetection},
     winder2::api::GenericEvent,
 };
-use socketio::main_namespace::{
-    MainNamespaceEvents, ethercat_devices_event::EthercatDevicesEventBuilder,
+use socketio::{
+    main_namespace::{MainNamespaceEvents, ethercat_devices_event::EthercatDevicesEventBuilder},
+    queue::start_socketio_queue,
 };
+
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
 use utils::start_dnsmasq;
@@ -37,6 +39,12 @@ use smol::{
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
+#[cfg(feature = "development-build")]
+const CYCLE_TARGET_TIME: Duration = Duration::from_micros(2000);
+
+#[cfg(not(feature = "development-build"))]
+const CYCLE_TARGET_TIME: Duration = Duration::from_micros(700);
+
 #[cfg(feature = "mock-machine")]
 use mock_init::init_mock;
 
@@ -46,7 +54,6 @@ use crate::{
         setup::setup_loop,
     },
     modbus_tcp::start_modbus_tcp_discovery,
-    socketio::queue::socketio_queue_worker,
 };
 
 #[cfg(feature = "mock-machine")]
@@ -128,10 +135,8 @@ pub async fn add_serial_device(
 pub async fn start_serial_discovery(app_state: Arc<SharedState>) {
     loop {
         let devices = SerialDetection::detect_devices();
-
         // This allows detection of disconnected devices
         handle_serial_device_hotplug(app_state.clone(), devices).await;
-
         smol::Timer::after(Duration::from_secs(1)).await;
     }
 }
@@ -143,33 +148,34 @@ pub async fn start_interface_discovery(
     let interface = find_ethercat_interface().await;
     tracing::info!("Inferface found {}, setting up EtherCAT loop", interface);
     set_ethercat_iface(interface.clone());
-    let res = setup_loop(&interface, app_state.clone()).await;
+    let res = setup_loop(&interface, CYCLE_TARGET_TIME, app_state.clone()).await;
 
     match res {
         Ok(setup) => {
             let _ = sender.send(HotThreadMessage::AddEtherCatSetup(setup)).await;
             tracing::info!("Successfully initialized EtherCAT devices");
 
-            {
-                // Notify client via socketio
-                let app_state_clone = app_state.clone();
-                let main_namespace = &mut app_state_clone
-                    .socketio_setup
-                    .namespaces
-                    .write()
-                    .await
-                    .main_namespace;
-                let event = EthercatDevicesEventBuilder()
-                    .build(app_state_clone.clone())
-                    .await;
-                main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
-            }
+            // Notify client via socketio
+            let app_state_clone = app_state.clone();
+            let main_namespace = &mut app_state_clone
+                .socketio_setup
+                .namespaces
+                .write()
+                .await
+                .main_namespace;
+            let event = EthercatDevicesEventBuilder()
+                .build(app_state_clone.clone())
+                .await;
+            main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
 
-            let res = start_dnsmasq();
-            match res {
-                Ok(o) => o,
-                Err(e) => tracing::error!("Failed to start dnsmasq: {:?}", e),
-            };
+            #[cfg(not(feature = "development-build"))]
+            {
+                let res = start_dnsmasq();
+                match res {
+                    Ok(o) => o,
+                    Err(e) => tracing::error!("Failed to start dnsmasq: {:?}", e),
+                };
+            }
         }
         Err(e) => {
             tracing::error!(
@@ -178,6 +184,7 @@ pub async fn start_interface_discovery(
                 e
             );
             // if this doesnt work, unlucky
+            #[cfg(not(feature = "development-build"))]
             let _ = start_dnsmasq();
         }
     }
@@ -317,15 +324,6 @@ async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state:
     tracing::warn!("Async handler task finished");
 }
 
-pub async fn start_socketio_queue(app_state: Arc<SharedState>) {
-    let app_state = app_state.as_ref();
-    loop {
-        let res = socketio_queue_worker(app_state).await;
-        tracing::error!("SocketIO task finished, but should never finish: {:?}", res);
-        tracing::error!("Restarting SocketIO...");
-    }
-}
-
 #[cfg(feature = "development-build")]
 fn setup_ctrlc_handler() -> Arc<AtomicBool> {
     let running = Arc::new(AtomicBool::new(true));
@@ -355,8 +353,6 @@ fn main() {
     #[cfg(feature = "development-build")]
     let running = setup_ctrlc_handler();
 
-    const CYCLE_TARGET_TIME: Duration = Duration::from_micros(700);
-
     // for the "hot thread"
     let (sender, receiver) = smol::channel::unbounded();
     let (main_sender, main_receiver) = smol::channel::unbounded();
@@ -380,7 +376,6 @@ fn main() {
 
     #[cfg(not(feature = "mock-machine"))]
     smol::spawn(start_interface_discovery(app_state.clone(), sender)).detach();
-
     smol::spawn(start_modbus_tcp_discovery(app_state.clone())).detach();
 
     smol::block_on(async {

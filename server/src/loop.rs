@@ -90,7 +90,6 @@ pub fn start_loop_thread(
                 match msg {
                     HotThreadMessage::NoMsg => {}
                     HotThreadMessage::AddEtherCatSetup(ethercat_setup) => {
-                        println!("EthercatSetup: {:?}", ethercat_setup.devices);
                         rt_loop_inputs.ethercat_setup = Some(Box::new(ethercat_setup));
                     }
                     HotThreadMessage::WriteMachineDeviceInfo(info_request) => {
@@ -115,7 +114,6 @@ pub fn start_loop_thread(
                             .retain(|m| m.get_machine_identification_unique() != unique_id);
                     }
                     HotThreadMessage::AddMachines(machine_vec) => {
-                        tracing::info!("received machines{:?}", machine_vec);
                         for new_machine in machine_vec {
                             let id = new_machine.get_machine_identification_unique();
                             if !rt_loop_inputs
