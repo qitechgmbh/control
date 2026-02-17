@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { useGluetex } from "../hooks/useGluetex";
 import { roundToDecimals } from "@/lib/decimal";
-import { SpoolAutomaticActionMode } from "../state/gluetexNamespace";
+import { SpoolAutomaticActionMode, Mode } from "../state/gluetexNamespace";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { cn } from "@/lib/utils";
 import { GluetexErrorBanner } from "../components/GluetexErrorBanner";
@@ -46,7 +46,7 @@ export function GluetexOverviewPage() {
     resetSpoolProgress,
     isLoading,
     isDisabled,
-    resetSleepTimer,
+    setMode,
     setOrderNumber,
     setSerialNumber,
     setProductDescription,
@@ -375,48 +375,43 @@ export function GluetexOverviewPage() {
           </Label>
         </ControlCard>
 
-        {/* Second Row: AI-Info (center) */}
-        <ControlCard title="Sleep Timer">
-          <div className="flex h-full flex-col items-center justify-center gap-4 p-4">
-            {state?.sleep_timer_state?.enabled ? (
-              <>
-                <div className="text-center">
-                  <div className="text-muted-foreground mb-2 text-sm">
-                    Time until standby
-                  </div>
-                  <div className="text-4xl font-bold">
-                    {Math.floor(
-                      (state.sleep_timer_state.remaining_seconds || 0) / 60,
-                    )}
-                    :
-                    {String(
-                      (state.sleep_timer_state.remaining_seconds || 0) % 60,
-                    ).padStart(2, "0")}
-                  </div>
-                  <div className="text-muted-foreground mt-1 text-sm">
-                    minutes
-                  </div>
-                </div>
-                <TouchButton
-                  variant="default"
-                  disabled={isDisabled}
-                  className="w-full"
-                  icon="lu:RotateCcw"
-                  onClick={() => resetSleepTimer()}
-                >
-                  Reset Timer
-                </TouchButton>
-              </>
-            ) : (
-              <div className="text-center text-gray-500">
-                <div className="mb-2">Sleep Timer Disabled</div>
-                <div className="text-sm">
-                  Enable in Settings to automatically enter standby after
-                  inactivity
-                </div>
-              </div>
-            )}
-          </div>
+        {/* Second Row: Winder Mode (center) */}
+        <ControlCard title="Winder Mode">
+          <SelectionGroup<Mode>
+            value={state?.mode_state.mode}
+            disabled={isDisabled}
+            loading={isLoading}
+            onChange={setMode}
+            orientation="vertical"
+            className="grid h-full grid-cols-2 gap-2"
+            options={{
+              Standby: {
+                children: "Standby",
+                icon: "lu:Power",
+                isActiveClassName: "bg-green-600",
+                className: "h-full",
+              },
+              Hold: {
+                children: "Hold",
+                icon: "lu:CirclePause",
+                isActiveClassName: "bg-green-600",
+                className: "h-full",
+              },
+              Pull: {
+                children: "Pull",
+                icon: "lu:ChevronsLeft",
+                isActiveClassName: "bg-green-600",
+                className: "h-full",
+              },
+              Wind: {
+                children: "Wind",
+                icon: "lu:RefreshCcw",
+                isActiveClassName: "bg-green-600",
+                disabled: !state?.mode_state?.can_wind,
+                className: "h-full",
+              },
+            }}
+          />
         </ControlCard>
 
         {/* Bottom Row: Order Information (left, width 2) */}
