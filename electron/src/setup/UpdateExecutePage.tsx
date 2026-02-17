@@ -145,8 +145,7 @@ export function UpdateExecutePage() {
             </div>
             <div className="text-sm">
               Please stay connected to the internet and leave the power on. The
-              update procedure takes approximately 5 minutes on average and
-              reboots the machine afterwards.
+              machine will reboot after the update completes.
             </div>
           </div>
         </Alert>
