@@ -18,6 +18,7 @@ mod gluetex_imports {
         length::{meter, millimeter},
         velocity::meter_per_minute,
     };
+    pub use units::ConstZero;
 }
 
 pub use gluetex_imports::*;
@@ -404,6 +405,18 @@ impl Gluetex {
             spool_automatic_action_state: SpoolAutomaticActionState {
                 spool_required_meters: self.spool_automatic_action.target_length.get::<meter>(),
                 spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
+                estimated_minutes_remaining: {
+                    let remaining_distance = (self.spool_automatic_action.target_length
+                        - self.spool_automatic_action.progress)
+                    .max(Length::ZERO);
+                    let puller_speed_m_per_min =
+                        self.puller_speed_controller.last_speed.abs().get::<meter_per_minute>();
+                    if puller_speed_m_per_min > 0.0 {
+                        remaining_distance.get::<meter>() / puller_speed_m_per_min
+                    } else {
+                        0.0
+                    }
+                },
             },
             heating_states: api::HeatingStates {
                 enabled: self.heating_enabled,

@@ -320,6 +320,22 @@ export function GluetexOverviewPage() {
             />
           </Label>
 
+          <Label label="Estimated Time Remaining">
+            <span className="text-lg font-mono">
+              {(() => {
+                const minutes =
+                  state?.spool_automatic_action_state
+                    .estimated_minutes_remaining || 0;
+                if (minutes >= 60) {
+                  const hours = Math.floor(minutes / 60);
+                  const mins = Math.round(minutes % 60);
+                  return `${hours}h ${mins}min`;
+                }
+                return `${Math.round(minutes)} min`;
+              })()}
+            </span>
+          </Label>
+
           <TouchButton
             variant="outline"
             onClick={handleResetProgress}
