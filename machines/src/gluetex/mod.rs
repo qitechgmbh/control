@@ -637,9 +637,9 @@ impl Gluetex {
         any_trigger |= trigger;
         state_changed |= changed;
 
-        // If any arm triggered emergency stop, execute it
+        // If any arm triggered, execute emergency stop without heaters
         if any_trigger && state_changed {
-            self.emergency_stop();
+            self.emergency_stop_no_heaters();
         }
 
         // Emit state if anything changed
@@ -655,6 +655,31 @@ impl Gluetex {
 
         // Disable heating
         self.heating_enabled = false;
+
+        // Ensure status output is off
+        self.update_status_output();
+
+        // Ensure all motors are disabled
+        self.spool.set_enabled(false);
+        self.puller.set_enabled(false);
+        self.slave_puller.set_enabled(false);
+        self.traverse.set_enabled(false);
+        self.addon_motor_3.set_enabled(false);
+        self.addon_motor_4.set_enabled(false);
+
+        // Disable all controllers
+        self.spool_speed_controller.set_enabled(false);
+        self.puller_speed_controller.set_enabled(false);
+        self.slave_puller_speed_controller.set_enabled(false);
+    }
+
+    /// Emergency stop without heaters: stops all motors but keeps heaters enabled
+    /// Used when tension arm or voltage monitors are triggered
+    fn emergency_stop_no_heaters(&mut self) {
+        // Stop all motors by setting mode to hold
+        self.set_mode(&GluetexMode::Hold);
+
+        // Keep heating enabled (do NOT disable heating)
 
         // Ensure status output is off
         self.update_status_output();
@@ -708,9 +733,9 @@ impl Gluetex {
         any_trigger |= trigger;
         state_changed |= changed;
 
-        // If any voltage monitor triggered emergency stop, execute it
+        // If any voltage monitor triggered, execute emergency stop without heaters
         if any_trigger && state_changed {
-            self.emergency_stop();
+            self.emergency_stop_no_heaters();
         }
 
         // Emit state if anything changed
