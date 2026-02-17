@@ -11,6 +11,7 @@ mod gluetex_imports {
     pub use control_core::socketio::event::BuildEvent;
     pub use control_core::socketio::namespace::NamespaceCacheingLogic;
     pub use std::time::Instant;
+    pub use units::ConstZero;
     pub use units::{
         angle::degree,
         angular_velocity::revolution_per_minute,
@@ -18,7 +19,6 @@ mod gluetex_imports {
         length::{meter, millimeter},
         velocity::meter_per_minute,
     };
-    pub use units::ConstZero;
 }
 
 pub use gluetex_imports::*;
@@ -408,9 +408,12 @@ impl Gluetex {
                 estimated_minutes_remaining: {
                     let remaining_distance = (self.spool_automatic_action.target_length
                         - self.spool_automatic_action.progress)
-                    .max(Length::ZERO);
-                    let puller_speed_m_per_min =
-                        self.puller_speed_controller.last_speed.abs().get::<meter_per_minute>();
+                        .max(Length::ZERO);
+                    let puller_speed_m_per_min = self
+                        .puller_speed_controller
+                        .last_speed
+                        .abs()
+                        .get::<meter_per_minute>();
                     if puller_speed_m_per_min > 0.0 {
                         remaining_distance.get::<meter>() / puller_speed_m_per_min
                     } else {

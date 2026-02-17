@@ -1064,9 +1064,7 @@ export function GluetexPresetsPage() {
       );
 
     // Valve
-    if (
-      changed(d?.valve_state?.enabled, currentData.valve_state?.enabled)
-    )
+    if (changed(d?.valve_state?.enabled, currentData.valve_state?.enabled))
       actions.push(() => setValveEnabled(d.valve_state!.enabled!));
     if (
       changed(
@@ -1083,9 +1081,7 @@ export function GluetexPresetsPage() {
         currentData.valve_state?.on_distance_mm,
       )
     )
-      actions.push(() =>
-        setValveOnDistanceMm(d.valve_state!.on_distance_mm!),
-      );
+      actions.push(() => setValveOnDistanceMm(d.valve_state!.on_distance_mm!));
     if (
       changed(
         d?.valve_state?.off_distance_mm,
