@@ -22,7 +22,7 @@ QiTech Control combines the modularity and reliability of standard EtherCAT term
 
 | Software Demo | Full Explainer |
 |---------------|----------------|
-| [![](https://img.youtube.com/vi/KI3YeBwfV-s/maxresdefault.jpg)](https://www.youtube.com/watch?v=KI3YeBwfV-s)<br/>*Click to watch a demo of the control software in action* | [![](https://img.youtube.com/vi/55egCAkQgyM/maxresdefault.jpg)](https://youtu.be/55egCAkQgyM)<br/>*Click to watch a complete overview of QiTech Control* |
+| [![](https://img.youtube.com/vi/KI3YeBwfV-s/maxresdefault.jpg)](https://www.youtube.com/watch?v=KI3YeBwfV-s)<br/>*Watch a demo of the control software in action* | [![](https://img.youtube.com/vi/55egCAkQgyM/maxresdefault.jpg)](https://youtu.be/55egCAkQgyM)<br/>*Watch a complete overview of QiTech Control* |
 
 ## Repository Structure
 
@@ -62,6 +62,15 @@ QiTech Control powers 10+ production machines for filament extrusion, winding, m
 ## Contributing
 
 This is an open-source project. Contributions are welcome! Please see the [wiki](https://github.com/qitechgmbh/control/wiki) for development guidelines.
+
+
+
+## Additional Videos
+
+| Episode Highlights |  |
+|--------------------|--------------------|
+| [![](https://img.youtube.com/vi/U2wNN6sF4to/maxresdefault.jpg)](https://www.youtube.com/watch?v=U2wNN6sF4to&t=163s)<br/>**Day in the Software Team**<br/>*Behind the scenes with Robin and how the team ships control software.* | [![](https://img.youtube.com/vi/R5WGAY3WRWA/maxresdefault.jpg)](https://www.youtube.com/watch?v=R5WGAY3WRWA&t=1s)<br/>**Software Stack Day**<br/>*A fast tour through the tools, stack, and daily workflow.* |
+| [![](https://img.youtube.com/vi/xyaHwxXguw4/maxresdefault.jpg)](https://www.youtube.com/watch?v=xyaHwxXguw4&t=32s)<br/>**First Client**<br/>*A milestone week building the first real client project.* | [![](https://img.youtube.com/vi/moI7z2PVdF4/maxresdefault.jpg)](https://www.youtube.com/watch?v=moI7z2PVdF4)<br/>**Steelworks Week**<br/>*A deep-dive week on a demanding steelworks order.* |
 
 ## License
 
