@@ -714,7 +714,13 @@ impl Gluetex {
                 TraverseMode::Hold => {}
                 TraverseMode::Traverse => {
                     // From [`TraverseMode::Hold`] to [`TraverseMode::Wind`]
-                    self.traverse_controller.start_traversing();
+                    // Resume from saved position if available, otherwise start from beginning
+                    if let Some(saved_pos) = self.saved_traverse_position {
+                        self.traverse_controller
+                            .start_traversing_from_position(saved_pos);
+                    } else {
+                        self.traverse_controller.start_traversing();
+                    }
                 }
             },
             TraverseMode::Traverse => match mode {
@@ -725,7 +731,9 @@ impl Gluetex {
                 }
                 TraverseMode::Hold => {
                     // From [`TraverseMode::Wind`] to [`TraverseMode::Hold`]
-                    self.traverse_controller.goto_home();
+                    // Save the current traverse position to resume later
+                    self.saved_traverse_position = self.traverse_controller.get_current_position();
+                    // Stay at current position (don't go home)
                 }
                 TraverseMode::Traverse => {}
             },
