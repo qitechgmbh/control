@@ -50,7 +50,7 @@ impl AddonMotorTensionController {
         }
 
         // Get tension arm angle
-        let current_angle = tension_arm.get_angle();
+        let current_angle = tension_arm.get_angle().abs();
 
         // Calculate deviation from target angle
         let deviation = current_angle - self.target_angle;
