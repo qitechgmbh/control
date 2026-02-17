@@ -333,6 +333,7 @@ export const voltageMonitorStateSchema = z.object({
   enabled: z.boolean(),
   min_voltage: z.number(),
   max_voltage: z.number(),
+  delay_mm: z.number(),
   triggered: z.boolean(),
 });
 
@@ -837,12 +838,14 @@ const DEFAULT_BACKEND_EXTENDED_STATE: ExtendedStateEvent = {
       enabled: false,
       min_voltage: 2.0,
       max_voltage: 8.0,
+      delay_mm: 0,
       triggered: false,
     },
     optris_2_monitor_state: {
       enabled: false,
       min_voltage: 2.0,
       max_voltage: 8.0,
+      delay_mm: 0,
       triggered: false,
     },
     sleep_timer_state: {

@@ -18,6 +18,9 @@ impl MachineAct for Gluetex {
         // sync the slave puller speed
         self.sync_slave_puller_speed(now);
 
+        // record optris voltage readings with distance tracking for delayed readings
+        self.record_optris_voltages(now);
+
         // sync valve
         self.sync_valve(now);
 
