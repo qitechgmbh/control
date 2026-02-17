@@ -155,6 +155,9 @@ pub struct Gluetex {
     // controllers
     pub traverse_controller: TraverseController,
     pub traverse_end_stop: DigitalInput,
+    /// Saved traverse position when going into hold mode
+    /// This allows resuming exactly where it left off when returning to wind mode
+    pub saved_traverse_position: Option<Length>,
 
     // addon motor controllers
     pub addon_motor_3_controller: AddonMotorController,
