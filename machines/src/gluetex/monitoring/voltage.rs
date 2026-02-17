@@ -32,7 +32,13 @@ impl VoltageMonitor {
             triggered: false,
             out_of_range_since: None,
             name: name.into(),
-            voltage_history: vec![VoltageHistoryEntry { voltage: 0.0, distance_mm: 0.0 }; 1000],
+            voltage_history: vec![
+                VoltageHistoryEntry {
+                    voltage: 0.0,
+                    distance_mm: 0.0
+                };
+                1000
+            ],
             history_index: 0,
             accumulated_distance_mm: 0.0,
         }
@@ -42,12 +48,12 @@ impl VoltageMonitor {
     /// Should be called once per control loop iteration
     pub fn record_voltage(&mut self, voltage: f64, distance_traveled_mm: f64) {
         self.accumulated_distance_mm += distance_traveled_mm;
-        
+
         self.voltage_history[self.history_index] = VoltageHistoryEntry {
             voltage,
             distance_mm: self.accumulated_distance_mm,
         };
-        
+
         self.history_index = (self.history_index + 1) % self.voltage_history.len();
     }
 
@@ -56,8 +62,7 @@ impl VoltageMonitor {
     pub fn get_delayed_voltage(&self) -> f64 {
         if self.accumulated_distance_mm < self.config.delay_mm {
             // Not enough history yet, return the oldest reading we have
-            return self.voltage_history
-                [(self.history_index + 1) % self.voltage_history.len()]
+            return self.voltage_history[(self.history_index + 1) % self.voltage_history.len()]
                 .voltage;
         }
 
@@ -99,7 +104,7 @@ impl VoltageMonitor {
 
         let min_voltage = self.config.min_voltage;
         let max_voltage = self.config.max_voltage;
-        
+
         // Use delayed voltage for checking limits
         let check_voltage = self.get_delayed_voltage();
 

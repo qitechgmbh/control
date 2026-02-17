@@ -551,8 +551,9 @@ export function GluetexOverviewPage() {
               Production Mode
             </TouchButton>
             {isAnyMonitoringTriggered() && (
-              <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded text-center">
-                Production mode is disabled because monitoring alert is triggered
+              <div className="rounded bg-orange-50 p-2 text-center text-sm text-orange-600">
+                Production mode is disabled because monitoring alert is
+                triggered
               </div>
             )}
           </div>

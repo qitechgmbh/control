@@ -773,16 +773,26 @@ impl Gluetex {
         };
 
         // Calculate distance moved since last recording for optris 1
-        let current_distance_1 = self.spool_automatic_action.progress.get::<units::length::meter>() * 1000.0;
+        let current_distance_1 = self
+            .spool_automatic_action
+            .progress
+            .get::<units::length::meter>()
+            * 1000.0;
         let distance_moved_1 = (current_distance_1 - self.optris_1_last_distance_mm).max(0.0);
         self.optris_1_last_distance_mm = current_distance_1;
-        self.optris_1_monitor.record_voltage(optris_1_voltage, distance_moved_1);
+        self.optris_1_monitor
+            .record_voltage(optris_1_voltage, distance_moved_1);
 
         // Calculate distance moved since last recording for optris 2
-        let current_distance_2 = self.spool_automatic_action.progress.get::<units::length::meter>() * 1000.0;
+        let current_distance_2 = self
+            .spool_automatic_action
+            .progress
+            .get::<units::length::meter>()
+            * 1000.0;
         let distance_moved_2 = (current_distance_2 - self.optris_2_last_distance_mm).max(0.0);
         self.optris_2_last_distance_mm = current_distance_2;
-        self.optris_2_monitor.record_voltage(optris_2_voltage, distance_moved_2);
+        self.optris_2_monitor
+            .record_voltage(optris_2_voltage, distance_moved_2);
     }
 
     /// Check if sleep timer has expired and trigger standby if needed
