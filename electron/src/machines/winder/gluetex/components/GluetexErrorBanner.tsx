@@ -55,48 +55,52 @@ export function GluetexErrorBanner() {
   const [prevSleepTimerTriggered, setPrevSleepTimerTriggered] = useState(false);
 
   // Show dialog when error is triggered (transition from false to true)
+  // Also immediately switch to Setup mode
   useEffect(() => {
     if (anyTensionArmTriggered && !prevAnyTensionArmTriggered) {
       setShowTensionArmDialog(true);
+      // Immediately switch to Setup mode when error is detected
+      setOperationMode("Setup");
     }
     setPrevAnyTensionArmTriggered(anyTensionArmTriggered ?? false);
-  }, [anyTensionArmTriggered, prevAnyTensionArmTriggered]);
+  }, [anyTensionArmTriggered, prevAnyTensionArmTriggered, setOperationMode]);
 
   useEffect(() => {
     if (anyVoltageMonitorTriggered && !prevAnyVoltageMonitorTriggered) {
       setShowVoltageMonitorDialog(true);
+      // Immediately switch to Setup mode when error is detected
+      setOperationMode("Setup");
     }
     setPrevAnyVoltageMonitorTriggered(anyVoltageMonitorTriggered ?? false);
-  }, [anyVoltageMonitorTriggered, prevAnyVoltageMonitorTriggered]);
+  }, [anyVoltageMonitorTriggered, prevAnyVoltageMonitorTriggered, setOperationMode]);
 
   useEffect(() => {
     if (sleepTimerTriggered && !prevSleepTimerTriggered) {
       setShowSleepTimerDialog(true);
+      // Immediately switch to Setup mode when timer expires
+      setOperationMode("Setup");
     }
     setPrevSleepTimerTriggered(sleepTimerTriggered ?? false);
-  }, [sleepTimerTriggered, prevSleepTimerTriggered]);
+  }, [sleepTimerTriggered, prevSleepTimerTriggered, setOperationMode]);
 
-  // Handler to dismiss tension arm dialog and switch to setup mode
+  // Handler to dismiss tension arm dialog (mode already switched to Setup)
   const dismissTensionArmDialog = () => {
-    setOperationMode("Setup");
     setShowTensionArmDialog(false);
     router.navigate({
       to: `/_sidebar/machines/gluetex/${serial}/overview`,
     });
   };
 
-  // Handler to dismiss voltage monitor dialog and switch to setup mode
+  // Handler to dismiss voltage monitor dialog (mode already switched to Setup)
   const dismissVoltageMonitorDialog = () => {
-    setOperationMode("Setup");
     setShowVoltageMonitorDialog(false);
     router.navigate({
       to: `/_sidebar/machines/gluetex/${serial}/addons`,
     });
   };
 
-  // Handler to dismiss sleep timer dialog and switch to setup mode
+  // Handler to dismiss sleep timer dialog (mode already switched to Setup)
   const dismissSleepTimerDialog = () => {
-    setOperationMode("Setup");
     setShowSleepTimerDialog(false);
     router.navigate({
       to: `/_sidebar/machines/gluetex/${serial}/overview`,
