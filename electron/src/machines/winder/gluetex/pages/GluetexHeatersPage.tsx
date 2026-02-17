@@ -208,7 +208,6 @@ export function GluetexHeatersPage() {
                 }}
               />
             </Label>
-
           </div>
         </ControlCard>
       </ControlGrid>

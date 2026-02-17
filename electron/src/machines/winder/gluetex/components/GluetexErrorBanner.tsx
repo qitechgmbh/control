@@ -72,7 +72,11 @@ export function GluetexErrorBanner() {
       setOperationMode("Setup");
     }
     setPrevAnyVoltageMonitorTriggered(anyVoltageMonitorTriggered ?? false);
-  }, [anyVoltageMonitorTriggered, prevAnyVoltageMonitorTriggered, setOperationMode]);
+  }, [
+    anyVoltageMonitorTriggered,
+    prevAnyVoltageMonitorTriggered,
+    setOperationMode,
+  ]);
 
   useEffect(() => {
     if (sleepTimerTriggered && !prevSleepTimerTriggered) {

@@ -300,7 +300,7 @@ export function GluetexControlPage() {
           </Label>
 
           <Label label="Estimated Time Remaining">
-            <span className="text-lg font-mono">
+            <span className="font-mono text-lg">
               {(() => {
                 const minutes =
                   state?.spool_automatic_action_state
