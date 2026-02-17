@@ -71,6 +71,20 @@ export function GluetexOverviewPage() {
     return "bg-gray-300";
   };
 
+  // Helper function to check if any monitoring is triggered in setup mode
+  const isAnyMonitoringTriggered = () => {
+    if (!state) return false;
+    return (
+      state.winder_tension_arm_monitor_state?.triggered ||
+      state.addon_tension_arm_monitor_state?.triggered ||
+      state.slave_tension_arm_monitor_state?.triggered ||
+      state.optris_1_monitor_state?.triggered ||
+      state.optris_2_monitor_state?.triggered ||
+      state.sleep_timer_state?.triggered ||
+      false
+    );
+  };
+
   const handleResetProgress = () => {
     resetSpoolProgress();
   };
@@ -529,13 +543,18 @@ export function GluetexOverviewPage() {
                   ? "default"
                   : "outline"
               }
-              disabled={isDisabled}
+              disabled={isDisabled || isAnyMonitoringTriggered()}
               className="h-20 text-lg"
               icon="lu:ShieldCheck"
               onClick={() => setOperationMode("Production")}
             >
               Production Mode
             </TouchButton>
+            {isAnyMonitoringTriggered() && (
+              <div className="text-sm text-orange-600 bg-orange-50 p-2 rounded text-center">
+                Production mode is disabled because monitoring alert is triggered
+              </div>
+            )}
           </div>
         </ControlCard>
       </ControlGrid>
