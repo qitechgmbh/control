@@ -5,6 +5,8 @@ type MarkerContextType = {
   setMachineId: (id: string) => void;
   currentTimestamp: number | null;
   setCurrentTimestamp: (timestamp: number) => void;
+  currentValue: number | null;
+  setCurrentValue: (value: number | null) => void;
 };
 
 const MarkerContext = createContext<MarkerContextType | null>(null);
@@ -12,6 +14,7 @@ const MarkerContext = createContext<MarkerContextType | null>(null);
 export function MarkerProvider({ children }: { children: React.ReactNode }) {
   const [machineId, setMachineId] = useState<string | null>(null);
   const [currentTimestamp, setCurrentTimestamp] = useState<number | null>(null);
+  const [currentValue, setCurrentValue] = useState<number | null>(null);
 
   return (
     <MarkerContext.Provider
@@ -20,6 +23,8 @@ export function MarkerProvider({ children }: { children: React.ReactNode }) {
         setMachineId,
         currentTimestamp,
         setCurrentTimestamp,
+        currentValue,
+        setCurrentValue,
       }}
     >
       {children}
@@ -36,6 +41,8 @@ export function useMarkerContext() {
       setMachineId: () => {},
       currentTimestamp: null,
       setCurrentTimestamp: () => {},
+      currentValue: null,
+      setCurrentValue: () => {},
     };
   }
   return context;

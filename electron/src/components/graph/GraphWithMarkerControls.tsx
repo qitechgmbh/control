@@ -216,22 +216,32 @@ function GraphWithMarkerControlsContent({
   graphWrapperRef: React.RefObject<HTMLDivElement | null>;
   uplotRefOut: React.MutableRefObject<uPlot | null>;
 }) {
-  const { setMachineId, setCurrentTimestamp } = useMarkerContext();
+  const { setMachineId, setCurrentTimestamp, setCurrentValue } =
+    useMarkerContext();
 
   // Auto-detect machineId from graphId if not provided (extract base name)
   // e.g., "pressure-graph" -> "pressure", "extruder-graphs" -> "extruder-graphs"
   const machineId = providedMachineId || graphId.split("-")[0] || "default";
 
-  // Update context with machineId and current timestamp
+  // Update context with machineId, current timestamp and value for marker creation
   useEffect(() => {
     setMachineId(machineId);
   }, [machineId, setMachineId]);
 
   useEffect(() => {
-    if (currentTimeSeries?.current?.timestamp) {
-      setCurrentTimestamp(currentTimeSeries.current.timestamp);
+    const curr = currentTimeSeries?.current;
+    if (curr?.timestamp != null) {
+      setCurrentTimestamp(curr.timestamp);
+      setCurrentValue(curr.value);
+    } else {
+      setCurrentValue(null);
     }
-  }, [currentTimeSeries?.current?.timestamp, setCurrentTimestamp]);
+  }, [
+    currentTimeSeries?.current?.timestamp,
+    currentTimeSeries?.current?.value,
+    setCurrentTimestamp,
+    setCurrentValue,
+  ]);
 
   // Use provided markers or load from marker manager
   const markerManager = useMarkerManager(machineId);
@@ -268,7 +278,14 @@ function GraphWithMarkerControlsContent({
 
     const overlayRect = overlayContainer.getBoundingClientRect();
 
-    const wrappers: HTMLDivElement[] = markers.map(
+    // Only show markers within the visible time window (saved markers stay in store for export)
+    const xMin = u.scales.x?.min ?? -Infinity;
+    const xMax = u.scales.x?.max ?? Infinity;
+    const visibleMarkers = markers.filter(
+      (m) => m.timestamp >= xMin && m.timestamp <= xMax,
+    );
+
+    const wrappers: HTMLDivElement[] = visibleMarkers.map(
       ({ timestamp, name, value, color }) => {
         let markerValue = value;
         if (markerValue === undefined && currentTimeSeries) {
@@ -276,13 +293,25 @@ function GraphWithMarkerControlsContent({
             (v): v is TimeSeriesValue => v !== null,
           );
           if (validValues.length > 0) {
-            const closest = validValues.reduce((prev, curr) =>
-              Math.abs(curr.timestamp - timestamp) <
-              Math.abs(prev.timestamp - timestamp)
-                ? curr
-                : prev,
+            // Use linear interpolation between surrounding points for stable positioning
+            // (avoids "closest" flipping between adjacent points which causes jumping)
+            const sorted = [...validValues].sort(
+              (a, b) => a.timestamp - b.timestamp,
             );
-            markerValue = closest.value;
+            const after = sorted.find((p) => p.timestamp >= timestamp);
+            const before = [...sorted].reverse().find((p) => p.timestamp <= timestamp);
+            if (after && before) {
+              if (after.timestamp === before.timestamp) {
+                markerValue = after.value;
+              } else {
+                const t = (timestamp - before.timestamp) / (after.timestamp - before.timestamp);
+                markerValue = before.value + t * (after.value - before.value);
+              }
+            } else if (after) {
+              markerValue = after.value;
+            } else if (before) {
+              markerValue = before.value;
+            }
           }
         }
         if (markerValue === undefined) {

@@ -1,137 +1,37 @@
-import { useState, useCallback, useEffect } from "react";
-
-export type Marker = {
-  timestamp: number;
-  name: string;
-  value?: number; // Optional: value at that timestamp
-  color?: string; // Optional: color for the marker
-};
-
-// Custom event for marker updates to ensure immediate propagation
-const MARKER_UPDATE_EVENT = "marker-update";
+import { useCallback } from "react";
+import { useMarkerStore, type Marker } from "@/stores/markerStore";
 
 /**
- * Centralized marker management for all graphs of a machine
- * Markers are stored per machine (machineId) and appear on all graphs
+ * Hook for marker management backed by a centralized Zustand store.
+ * Single source of truth ensures all markers persist correctly across navigation
+ * and multiple graph instances.
  */
 export function useMarkerManager(machineId: string) {
-  const storageKey = `machine-markers-${machineId}`;
-
-  // Load markers from localStorage (no time-based deletion; keep last 200 only)
-  const loadMarkers = useCallback((): Marker[] => {
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        const allMarkers: Marker[] = JSON.parse(stored);
-        const maxMarkers = 200;
-        const limited =
-          allMarkers.length > maxMarkers
-            ? allMarkers.slice(-maxMarkers)
-            : allMarkers;
-        if (limited.length !== allMarkers.length) {
-          localStorage.setItem(storageKey, JSON.stringify(limited));
-        }
-        return limited;
-      }
-    } catch (error) {
-      console.warn("Failed to load markers from localStorage:", error);
-    }
-    return [];
-  }, [storageKey]);
-
-  const [markers, setMarkers] = useState<Marker[]>(loadMarkers);
-
-  // Listen for marker updates from other components
-  useEffect(() => {
-    const handleMarkerUpdate = (event: CustomEvent) => {
-      if (event.detail?.machineId === machineId) {
-        // Reload markers immediately when updated
-        setMarkers(loadMarkers());
-      }
-    };
-
-    window.addEventListener(
-      MARKER_UPDATE_EVENT,
-      handleMarkerUpdate as EventListener,
-    );
-
-    return () => {
-      window.removeEventListener(
-        MARKER_UPDATE_EVENT,
-        handleMarkerUpdate as EventListener,
-      );
-    };
-  }, [machineId, loadMarkers]);
-
-  // Save markers to localStorage whenever they change
-  useEffect(() => {
-    try {
-      const maxMarkers = 200;
-      const markersToSave =
-        markers.length > maxMarkers ? markers.slice(-maxMarkers) : markers;
-
-      localStorage.setItem(storageKey, JSON.stringify(markersToSave));
-    } catch (error) {
-      console.warn("Failed to save markers to localStorage:", error);
-    }
-  }, [markers, storageKey]);
+  const markers = useMarkerStore(
+    (state) => state.markersByMachine[machineId] ?? [],
+  );
+  const addMarkerAction = useMarkerStore((state) => state.addMarker);
+  const removeMarkerAction = useMarkerStore((state) => state.removeMarker);
+  const clearMarkersAction = useMarkerStore((state) => state.clearMarkers);
 
   const addMarker = useCallback(
     (name: string, timestamp: number, color?: string, value?: number) => {
-      const newMarker: Marker = {
-        timestamp,
-        name,
-        color,
-        value,
-      };
-      setMarkers((prev) => {
-        const updated = [...prev, newMarker];
-        // Save immediately to localStorage
-        try {
-          const maxMarkers = 200;
-          const markersToSave =
-            updated.length > maxMarkers ? updated.slice(-maxMarkers) : updated;
-          localStorage.setItem(storageKey, JSON.stringify(markersToSave));
-        } catch (error) {
-          console.warn("Failed to save marker to localStorage:", error);
-        }
-        // Dispatch event to notify other components immediately
-        window.dispatchEvent(
-          new CustomEvent(MARKER_UPDATE_EVENT, {
-            detail: { machineId, markers: updated },
-          }),
-        );
-        return updated;
-      });
-      return newMarker;
+      addMarkerAction(machineId, { name, timestamp, color, value });
+      return { name, timestamp, color, value } as Marker;
     },
-    [storageKey, machineId],
+    [machineId, addMarkerAction],
   );
 
   const removeMarker = useCallback(
     (timestamp: number) => {
-      setMarkers((prev) => {
-        const updated = prev.filter((marker) => marker.timestamp !== timestamp);
-        // Persist and notify other components (e.g. dialog, other graphs)
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(updated));
-          window.dispatchEvent(
-            new CustomEvent(MARKER_UPDATE_EVENT, {
-              detail: { machineId, markers: updated },
-            }),
-          );
-        } catch (error) {
-          console.warn("Failed to save markers after remove:", error);
-        }
-        return updated;
-      });
+      removeMarkerAction(machineId, timestamp);
     },
-    [storageKey, machineId],
+    [machineId, removeMarkerAction],
   );
 
   const clearMarkers = useCallback(() => {
-    setMarkers([]);
-  }, []);
+    clearMarkersAction(machineId);
+  }, [machineId, clearMarkersAction]);
 
   return {
     markers,
