@@ -1,15 +1,15 @@
 import { useCallback } from "react";
 import { useMarkerStore, type Marker } from "@/stores/markerStore";
 
-/**
- * Hook for marker management backed by a centralized Zustand store.
- * Single source of truth ensures all markers persist correctly across navigation
- * and multiple graph instances.
- */
+// Stable empty array to avoid "getSnapshot should be cached" infinite loop
+const EMPTY_MARKERS: Marker[] = [];
+
+
 export function useMarkerManager(machineId: string) {
-  const markers = useMarkerStore(
-    (state) => state.markersByMachine[machineId] ?? [],
-  );
+  const markers = useMarkerStore((state) => {
+    const list = state.markersByMachine[machineId];
+    return list ?? EMPTY_MARKERS;
+  });
   const addMarkerAction = useMarkerStore((state) => state.addMarker);
   const removeMarkerAction = useMarkerStore((state) => state.removeMarker);
   const clearMarkersAction = useMarkerStore((state) => state.clearMarkers);
