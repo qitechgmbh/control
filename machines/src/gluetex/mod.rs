@@ -648,10 +648,10 @@ impl Gluetex {
         }
     }
 
-    /// Emergency stop: stops all motors, heating, and sets machine to standby
+    /// Emergency stop: stops all motors, heating, and sets machine to hold
     fn emergency_stop(&mut self) {
-        // Stop all motors by setting mode to standby
-        self.set_mode(&GluetexMode::Standby);
+        // Stop all motors by setting mode to hold
+        self.set_mode(&GluetexMode::Hold);
 
         // Disable heating
         self.heating_enabled = false;
