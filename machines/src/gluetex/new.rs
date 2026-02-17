@@ -635,6 +635,7 @@ impl MachineNewTrait for Gluetex {
                     Length::new::<millimeter>(92.0), // Default outer limit
                     64,                              // Microsteps
                 ),
+                saved_traverse_position: None,
                 emitted_default_state: false,
                 spool_automatic_action: super::SpoolAutomaticAction {
                     progress: Length::ZERO,

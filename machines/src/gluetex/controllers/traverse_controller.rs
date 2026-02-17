@@ -194,6 +194,21 @@ impl TraverseController {
         self.state = State::Traversing(TraversingState::GoingOut);
     }
 
+    /// Start traversing from a saved position
+    /// This method will determine the appropriate traversing direction based on the saved position
+    pub fn start_traversing_from_position(&mut self, saved_position: Length) {
+        // Calculate the midpoint between inner and outer limits
+        let midpoint = (self.limit_inner + self.limit_outer) / 2.0;
+        
+        // If saved position is closer to inner limit, start going out
+        // If saved position is closer to outer limit, start going in
+        if saved_position <= midpoint {
+            self.state = State::Traversing(TraversingState::TraversingOut);
+        } else {
+            self.state = State::Traversing(TraversingState::TraversingIn);
+        }
+    }
+
     pub const fn is_homed(&self) -> bool {
         // if not [`State::NotHomed`], then it is homed
         !matches!(self.state, State::NotHomed)
