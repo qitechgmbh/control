@@ -651,6 +651,8 @@ impl MachineNewTrait for Gluetex {
                 optris_1_monitor: super::VoltageMonitor::new("Optris 1"),
                 optris_2_monitor: super::VoltageMonitor::new("Optris 2"),
                 sleep_timer: super::SleepTimer::new(),
+                optris_1_last_distance_mm: 0.0,
+                optris_2_last_distance_mm: 0.0,
                 order_info: super::OrderInfo::default(),
                 valve,
                 valve_controller: ValveController::new(),
