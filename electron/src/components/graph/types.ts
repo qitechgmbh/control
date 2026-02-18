@@ -26,7 +26,10 @@ export type PropGraphSync = {
 // Configuration types for additional lines
 export type GraphLine = {
   type: "threshold" | "target";
+  // Fallback/current value and constant-line value.
   value: number;
+  // Optional historical series used for target lines.
+  targetSeries?: TimeSeries;
   color: string;
   label?: string;
   width?: number;
