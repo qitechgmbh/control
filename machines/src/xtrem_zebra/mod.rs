@@ -47,7 +47,8 @@ pub struct XtremZebra {
     cycle_max_weight: f64,
     in_accumulation: bool,
 
-    tolerance: f64,
+    upper_tolerance: f64,
+    lower_tolerance: f64,
 
     plate_counter: u32,
 
@@ -121,7 +122,8 @@ impl XtremZebra {
 
     pub fn build_state_event(&self) -> StateEvent {
         let xtrem_zebra = XtremZebraState {
-            tolerance: self.tolerance,
+            upper_tolerance: self.upper_tolerance,
+            lower_tolerance: self.lower_tolerance,
         };
 
         StateEvent {
@@ -162,8 +164,9 @@ impl XtremZebra {
                 self.in_accumulation = false;
                 let w = self.cycle_max_weight;
 
-                if (w >= self.weighted_item.weight as f64 - self.tolerance)
-                    && (w <= self.weighted_item.weight as f64 + self.tolerance)
+                // Check if weight is inside tolerance
+                if (w >= self.lower_tolerance)
+                    && (w <= self.upper_tolerance)
                 {
                     self.signal_light.green_light.set(true);
                     self.signal_light.green_light_on_since = Some(Instant::now());
@@ -201,8 +204,12 @@ impl XtremZebra {
         self.current_weight = new_weight;
     }
 
-    pub fn set_tolerance(&mut self, tolerance: f64) {
-        self.tolerance = tolerance;
+    pub fn set_upper_tolerance(&mut self, tolerance: f64) {
+        self.upper_tolerance = tolerance;
+        self.emit_state();
+    }
+    pub fn set_lower_tolerance(&mut self, tolerance: f64) {
+        self.lower_tolerance = tolerance;
         self.emit_state();
     }
     pub fn set_tare(&mut self) {

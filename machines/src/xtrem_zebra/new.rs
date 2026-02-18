@@ -32,9 +32,9 @@ impl MachineNewTrait for XtremZebra {
         // This creates the "driver" for the serial connection to the scales.
         let hardware_serial = XtremSerial::new_serial();
         let (_device_id, xtrem_serial) = hardware_serial?;
-        let (request_tx, item_rx, config_tx, _worker_handle) = start();    
+        let (request_tx, item_rx, config_tx, _worker_handle) = start();
         let api_config = read_api_config_from_file("/home/qitech/api_config.json");
-        
+
         match api_config {
             Ok(api_config) => {
                 let _res = config_tx.try_send(api_config);
@@ -76,7 +76,8 @@ impl MachineNewTrait for XtremZebra {
                 cycle_max_weight: 0.0,
                 in_accumulation: false,
                 plate_counter: 0,
-                tolerance: 0.3,
+                upper_tolerance: 0.3,
+                lower_tolerance: 0.3,
                 tare_weight: 0.0,
                 last_raw_weight: 0.0,
                 signal_light: SignalLight {

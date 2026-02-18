@@ -50,7 +50,8 @@ impl StateEvent {
 #[derive(Serialize, Debug, Clone)]
 pub struct XtremZebraState {
     /// tolerance
-    pub tolerance: f64,
+    pub upper_tolerance: f64,
+    pub lower_tolerance: f64,
 }
 
 pub enum XtremZebraEvents {
@@ -86,7 +87,8 @@ impl CacheableEvents<Self> for XtremZebraEvents {
 /// This ensures that the parameters for setting tolerances and target diameter
 /// are valid and meaningful within the context of the XtremZebra's operation.
 enum Mutation {
-    SetTolerance(f64),
+    SetUpperTolerance(f64),
+    SetLowerTolerance(f64),
     SetTare,
     SetConfigString(String),
     SetPassword(String),
@@ -112,8 +114,11 @@ impl MachineApi for XtremZebra {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
-            Mutation::SetTolerance(tolerance) => {
-                self.tolerance = tolerance;
+            Mutation::SetUpperTolerance(tolerance) => {
+                self.set_upper_tolerance(tolerance);
+            }
+            Mutation::SetLowerTolerance(tolerance) => {
+                self.set_lower_tolerance(tolerance);
             }
             Mutation::SetTare => {
                 self.set_tare();

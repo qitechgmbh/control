@@ -98,14 +98,27 @@ export function XtremZebraControlPage() {
               onChange={(val) => setStringValue(val)}
             />
           </Label>
-          <Label label="Set Tolerance">
+          <Label label="Set Upper Tolerance">
             <EditValue
               title="Set Tolerance"
               value={state?.xtrem_zebra_state.tolerance}
               unit="kg"
               step={0.1}
               min={0}
-              max={100}
+              max={1000}
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => setTolerance(val)}
+              defaultValue={defaultState?.xtrem_zebra_state.tolerance}
+            />
+          </Label>
+          <Label label="Set Lower Tolerance">
+            <EditValue
+              title="Set Tolerance"
+              value={state?.xtrem_zebra_state.tolerance}
+              unit="kg"
+              step={0.1}
+              min={0}
+              max={1000}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => setTolerance(val)}
               defaultValue={defaultState?.xtrem_zebra_state.tolerance}
