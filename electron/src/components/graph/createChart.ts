@@ -354,6 +354,42 @@ export function createChart({
             const left = u.bbox.left;
             const top = u.bbox.top;
             const snap = (v: number) => Math.round(v) + 0.5;
+            const findFirstGe = (arr: number[], value: number): number => {
+              let lo = 0;
+              let hi = arr.length - 1;
+              let ans = arr.length;
+              while (lo <= hi) {
+                const mid = (lo + hi) >> 1;
+                if (arr[mid] >= value) {
+                  ans = mid;
+                  hi = mid - 1;
+                } else {
+                  lo = mid + 1;
+                }
+              }
+              return ans;
+            };
+            const findLastLe = (arr: number[], value: number): number => {
+              let lo = 0;
+              let hi = arr.length - 1;
+              let ans = -1;
+              while (lo <= hi) {
+                const mid = (lo + hi) >> 1;
+                if (arr[mid] <= value) {
+                  ans = mid;
+                  lo = mid + 1;
+                } else {
+                  hi = mid - 1;
+                }
+              }
+              return ans;
+            };
+            const firstVisibleIdx = Math.max(0, findFirstGe(xData, xMin) - 1);
+            const lastVisibleIdx = Math.min(
+              xData.length - 1,
+              findLastLe(xData, xMax) + 1,
+            );
+            if (lastVisibleIdx < firstVisibleIdx) return;
 
             ctx.save();
             ctx.beginPath();
@@ -380,7 +416,7 @@ export function createChart({
                 let prevX = 0;
                 let prevY = 0;
 
-                for (let i = 0; i < xData.length; i++) {
+                for (let i = firstVisibleIdx; i <= lastVisibleIdx; i++) {
                   const value = yData[i];
                   if (value === null || value === undefined) continue;
 
