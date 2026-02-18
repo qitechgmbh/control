@@ -302,6 +302,16 @@ export function extruder3MessageHandler(
         console.log(event);
         const stateEvent = stateEventSchema.parse(event);
         const timestamp = event.ts;
+        const nextTargetPressure = stateEvent.data.pressure_state.target_bar;
+        const nextTargetScrewRpm = stateEvent.data.screw_state.target_rpm;
+        const nextTargetNozzleTemperature =
+          stateEvent.data.heating_states.nozzle.target_temperature;
+        const nextTargetFrontTemperature =
+          stateEvent.data.heating_states.front.target_temperature;
+        const nextTargetMiddleTemperature =
+          stateEvent.data.heating_states.middle.target_temperature;
+        const nextTargetBackTemperature =
+          stateEvent.data.heating_states.back.target_temperature;
         updateStore((state) => ({
           ...state,
           state: stateEvent,
@@ -310,42 +320,52 @@ export function extruder3MessageHandler(
             ? stateEvent
             : state.defaultState,
           // Update target value history
-          targetPressure: addTargetPressure(state.targetPressure, {
-            value: stateEvent.data.pressure_state.target_bar,
-            timestamp,
-          }),
-          targetScrewRpm: addTargetScrewRpm(state.targetScrewRpm, {
-            value: stateEvent.data.screw_state.target_rpm,
-            timestamp,
-          }),
-          targetNozzleTemperature: addTargetNozzleTemperature(
-            state.targetNozzleTemperature,
-            {
-              value: stateEvent.data.heating_states.nozzle.target_temperature,
-              timestamp,
-            },
-          ),
-          targetFrontTemperature: addTargetFrontTemperature(
-            state.targetFrontTemperature,
-            {
-              value: stateEvent.data.heating_states.front.target_temperature,
-              timestamp,
-            },
-          ),
-          targetMiddleTemperature: addTargetMiddleTemperature(
-            state.targetMiddleTemperature,
-            {
-              value: stateEvent.data.heating_states.middle.target_temperature,
-              timestamp,
-            },
-          ),
-          targetBackTemperature: addTargetBackTemperature(
-            state.targetBackTemperature,
-            {
-              value: stateEvent.data.heating_states.back.target_temperature,
-              timestamp,
-            },
-          ),
+          targetPressure:
+            state.targetPressure.current?.value === nextTargetPressure
+              ? state.targetPressure
+              : addTargetPressure(state.targetPressure, {
+                  value: nextTargetPressure,
+                  timestamp,
+                }),
+          targetScrewRpm:
+            state.targetScrewRpm.current?.value === nextTargetScrewRpm
+              ? state.targetScrewRpm
+              : addTargetScrewRpm(state.targetScrewRpm, {
+                  value: nextTargetScrewRpm,
+                  timestamp,
+                }),
+          targetNozzleTemperature:
+            state.targetNozzleTemperature.current?.value ===
+            nextTargetNozzleTemperature
+              ? state.targetNozzleTemperature
+              : addTargetNozzleTemperature(state.targetNozzleTemperature, {
+                  value: nextTargetNozzleTemperature,
+                  timestamp,
+                }),
+          targetFrontTemperature:
+            state.targetFrontTemperature.current?.value ===
+            nextTargetFrontTemperature
+              ? state.targetFrontTemperature
+              : addTargetFrontTemperature(state.targetFrontTemperature, {
+                  value: nextTargetFrontTemperature,
+                  timestamp,
+                }),
+          targetMiddleTemperature:
+            state.targetMiddleTemperature.current?.value ===
+            nextTargetMiddleTemperature
+              ? state.targetMiddleTemperature
+              : addTargetMiddleTemperature(state.targetMiddleTemperature, {
+                  value: nextTargetMiddleTemperature,
+                  timestamp,
+                }),
+          targetBackTemperature:
+            state.targetBackTemperature.current?.value ===
+            nextTargetBackTemperature
+              ? state.targetBackTemperature
+              : addTargetBackTemperature(state.targetBackTemperature, {
+                  value: nextTargetBackTemperature,
+                  timestamp,
+                }),
         }));
       } else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);

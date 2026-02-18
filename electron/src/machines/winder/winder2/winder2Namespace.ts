@@ -277,14 +277,18 @@ export function winder2MessageHandler(
         console.log(event);
         // Parse and validate the state event
         const stateEvent = stateEventSchema.parse(event);
+        const nextTargetPullerSpeed = stateEvent.data.puller_state.target_speed;
 
         updateStore((state) => ({
           ...state,
           state: stateEvent,
-          targetPullerSpeed: addTargetPullerSpeed(state.targetPullerSpeed, {
-            value: stateEvent.data.puller_state.target_speed,
-            timestamp: event.ts,
-          }),
+          targetPullerSpeed:
+            state.targetPullerSpeed.current?.value === nextTargetPullerSpeed
+              ? state.targetPullerSpeed
+              : addTargetPullerSpeed(state.targetPullerSpeed, {
+                  value: nextTargetPullerSpeed,
+                  timestamp: event.ts,
+                }),
           // only set default state if is_default_state is true
           defaultState: stateEvent.data.is_default_state
             ? stateEvent

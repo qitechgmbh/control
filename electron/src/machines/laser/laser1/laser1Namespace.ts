@@ -118,13 +118,17 @@ export function laser1MessageHandler(
       // Apply appropriate caching strategy based on event type
       if (eventName === "StateEvent") {
         const stateEvent = stateEventSchema.parse(event);
+        const nextTargetDiameter = stateEvent.data.laser_state.target_diameter;
         updateStore((state) => ({
           ...state,
           state: stateEvent,
-          targetDiameter: addTargetDiameter(state.targetDiameter, {
-            value: stateEvent.data.laser_state.target_diameter,
-            timestamp: event.ts,
-          }),
+          targetDiameter:
+            state.targetDiameter.current?.value === nextTargetDiameter
+              ? state.targetDiameter
+              : addTargetDiameter(state.targetDiameter, {
+                  value: nextTargetDiameter,
+                  timestamp: event.ts,
+                }),
           // only set default state if is_default_state is true
           defaultState: stateEvent.data.is_default_state
             ? stateEvent
