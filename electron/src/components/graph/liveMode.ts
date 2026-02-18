@@ -91,8 +91,13 @@ export function useLiveMode({
       const hasDashedHistoricalTargets = hasHistoricalDashedTargets(config);
       const [timestamps, values] = seriesToUPlotData(primaryData.long);
       const cur = primaryData.current;
-      const liveTimestamps = [...timestamps, cur.timestamp];
-      const liveValues = [...values, cur.value];
+      const lastHistoricalTimestamp =
+        timestamps[timestamps.length - 1] ?? cur.timestamp;
+      const shouldAppendCurrent = cur.timestamp > lastHistoricalTimestamp;
+      const liveTimestamps = shouldAppendCurrent
+        ? [...timestamps, cur.timestamp]
+        : timestamps;
+      const liveValues = shouldAppendCurrent ? [...values, cur.value] : values;
 
       const allSeriesValues = getAllSeriesData(newData);
       const normalized = normalizeDataSeries(newData);
@@ -108,7 +113,9 @@ export function useLiveMode({
                 (seriesValues.length > 0
                   ? seriesValues[seriesValues.length - 1]
                   : 0);
-              return [...seriesValues, currentValue];
+              return shouldAppendCurrent
+                ? [...seriesValues, currentValue]
+                : seriesValues;
             })
           : [];
 
