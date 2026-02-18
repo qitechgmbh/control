@@ -304,3 +304,46 @@ export function resetSeries(series: Series): void {
   series.lastTimestamp = 0;
   series.validCount = 0;
 }
+
+/**
+ * Aligns target series values with a given set of timestamps.
+ * For each timestamp in dataTimestamps, finds the most recent target value
+ * that was set before or at that timestamp (step function interpolation).
+ */
+export function alignTargetSeriesToTimestamps(
+  targetSeries: TimeSeries,
+  dataTimestamps: number[],
+  fallbackValue: number,
+): number[] {
+  if (dataTimestamps.length === 0) {
+    return [];
+  }
+
+  const [targetTimestamps, targetValues] = extractDataFromSeries(
+    targetSeries.long,
+  );
+
+  if (targetTimestamps.length === 0) {
+    return new Array(dataTimestamps.length).fill(fallbackValue);
+  }
+
+  const result: number[] = [];
+  let targetIndex = 0;
+
+  for (const dataTs of dataTimestamps) {
+    while (
+      targetIndex < targetTimestamps.length - 1 &&
+      targetTimestamps[targetIndex + 1] <= dataTs
+    ) {
+      targetIndex++;
+    }
+
+    if (targetTimestamps[targetIndex] > dataTs) {
+      result.push(fallbackValue);
+    } else {
+      result.push(targetValues[targetIndex]);
+    }
+  }
+
+  return result;
+}
