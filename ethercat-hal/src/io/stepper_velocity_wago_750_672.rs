@@ -124,7 +124,7 @@ impl StepperVelocityWago750672 {
     }
 
     fn read_status_byte(&self, status_byte: StatusByte) -> u8 {
-        let dev = block_on(self.device.write());
+        let dev = block_on(self.device.read());
 
         match status_byte {
             StatusByte::S0 => dev.txpdo.status_byte0,

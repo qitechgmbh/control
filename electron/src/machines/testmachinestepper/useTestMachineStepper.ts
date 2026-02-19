@@ -7,7 +7,7 @@ import {
   StateEvent,
 } from "./testMachineStepperNamespace";
 import { useMachineMutate } from "@/client/useClient";
-import { current, produce } from "immer";
+import { produce } from "immer";
 import { useEffect, useMemo } from "react";
 import { testmachinestepper } from "@/machines/properties";
 import { z } from "zod";
