@@ -19,7 +19,7 @@ type CustomDashedTargetLine = {
   width: number;
 };
 
-const DASH_FLOW_PX_PER_SEC = 100;
+const DASH_FLOW_PX_PER_SEC = 180;
 
 export function createChart({
   containerRef,
