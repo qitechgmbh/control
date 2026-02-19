@@ -19,6 +19,8 @@ type CustomDashedTargetLine = {
   width: number;
 };
 
+const DASH_FLOW_PX_PER_SEC = 100;
+
 export function createChart({
   containerRef,
   uplotRef,
@@ -156,6 +158,7 @@ export function createChart({
   // Build series configuration for ALL series (but control visibility)
   const seriesConfig: uPlot.Series[] = [{ label: "Time" }];
   const customDashedTargetLines: CustomDashedTargetLine[] = [];
+  const dashFlowStartTime = performance.now();
 
   // Add ALL data series with visibility control
   const defaultColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
@@ -349,7 +352,6 @@ export function createChart({
             const xMax = u.scales.x?.max;
             if (xMin === undefined || xMax === undefined) return;
 
-            const pxPerX = u.bbox.width / Math.max(xMax - xMin, 1e-9);
             const ctx = u.ctx;
             const left = u.bbox.left;
             const top = u.bbox.top;
@@ -406,8 +408,11 @@ export function createChart({
 
                 const dashPeriod = dash.reduce((acc, curr) => acc + curr, 0);
                 ctx.setLineDash(dash);
+                const elapsedMs = performance.now() - dashFlowStartTime;
+                const dashTravelPx =
+                  (elapsedMs * DASH_FLOW_PX_PER_SEC) / 1000;
                 ctx.lineDashOffset =
-                  dashPeriod > 0 ? -((xMin * pxPerX) % dashPeriod) : 0;
+                  dashPeriod > 0 ? -(dashTravelPx % dashPeriod) : 0;
                 ctx.strokeStyle = color;
                 ctx.lineWidth = width;
                 ctx.beginPath();
@@ -652,12 +657,27 @@ export function createChart({
 
   const cleanup = attachEventHandlers(containerRef.current, handlers);
 
+  let dashFlowAnimationFrame: number | null = null;
+  if (customDashedTargetLines.length > 0) {
+    const animateDashFlow = () => {
+      if (!uplotRef.current) return;
+      uplotRef.current.redraw();
+      dashFlowAnimationFrame = requestAnimationFrame(animateDashFlow);
+    };
+    dashFlowAnimationFrame = requestAnimationFrame(animateDashFlow);
+  }
+
   animationRefs.lastRenderedData.current = {
     timestamps: [...timestamps],
     values: [...primaryValues],
   };
 
-  return cleanup;
+  return () => {
+    if (dashFlowAnimationFrame !== null) {
+      cancelAnimationFrame(dashFlowAnimationFrame);
+    }
+    cleanup();
+  };
 }
 
 // Helper function to get all valid TimeSeries from DataSeries
