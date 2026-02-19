@@ -1,5 +1,3 @@
-use smol::block_on;
-
 use super::TestMachineStepper;
 use crate::{MachineAct, MachineMessage};
 use std::time::{Duration, Instant};
