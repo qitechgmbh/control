@@ -30,6 +30,7 @@ export type PropGraphSync = {
 export type GraphLine = {
   type: "threshold" | "target";
   value: number;
+  targetSeries?: TimeSeries;
   color: string;
   label?: string;
   width?: number;

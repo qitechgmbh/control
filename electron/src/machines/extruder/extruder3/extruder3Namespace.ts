@@ -221,6 +221,14 @@ export type Extruder3NamespaceStore = {
   // Combined power consumption and energy
   combinedPower: TimeSeries;
   totalEnergyKWh: TimeSeries;
+
+  // Target value history (for graph target lines)
+  targetPressure: TimeSeries;
+  targetScrewRpm: TimeSeries;
+  targetNozzleTemperature: TimeSeries;
+  targetFrontTemperature: TimeSeries;
+  targetMiddleTemperature: TimeSeries;
+  targetBackTemperature: TimeSeries;
 };
 
 const { initialTimeSeries: pressure, insert: addPressure } = createTimeSeries();
@@ -253,6 +261,28 @@ const { initialTimeSeries: motorScrewRpm, insert: addMotorScrewRpm } =
 const { initialTimeSeries: motorPower, insert: addMotorPower } =
   createTimeSeries();
 
+// Target value time series (for historical target lines on graphs)
+const { initialTimeSeries: targetPressure, insert: addTargetPressure } =
+  createTimeSeries();
+const { initialTimeSeries: targetScrewRpm, insert: addTargetScrewRpm } =
+  createTimeSeries();
+const {
+  initialTimeSeries: targetNozzleTemperature,
+  insert: addTargetNozzleTemperature,
+} = createTimeSeries();
+const {
+  initialTimeSeries: targetFrontTemperature,
+  insert: addTargetFrontTemperature,
+} = createTimeSeries();
+const {
+  initialTimeSeries: targetMiddleTemperature,
+  insert: addTargetMiddleTemperature,
+} = createTimeSeries();
+const {
+  initialTimeSeries: targetBackTemperature,
+  insert: addTargetBackTemperature,
+} = createTimeSeries();
+
 export function extruder3MessageHandler(
   store: StoreApi<Extruder3NamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<Extruder3NamespaceStore>,
@@ -271,6 +301,17 @@ export function extruder3MessageHandler(
       if (eventName === "StateEvent") {
         console.log(event);
         const stateEvent = stateEventSchema.parse(event);
+        const timestamp = event.ts;
+        const nextTargetPressure = stateEvent.data.pressure_state.target_bar;
+        const nextTargetScrewRpm = stateEvent.data.screw_state.target_rpm;
+        const nextTargetNozzleTemperature =
+          stateEvent.data.heating_states.nozzle.target_temperature;
+        const nextTargetFrontTemperature =
+          stateEvent.data.heating_states.front.target_temperature;
+        const nextTargetMiddleTemperature =
+          stateEvent.data.heating_states.middle.target_temperature;
+        const nextTargetBackTemperature =
+          stateEvent.data.heating_states.back.target_temperature;
         updateStore((state) => ({
           ...state,
           state: stateEvent,
@@ -278,6 +319,53 @@ export function extruder3MessageHandler(
           defaultState: stateEvent.data.is_default_state
             ? stateEvent
             : state.defaultState,
+          // Update target value history
+          targetPressure:
+            state.targetPressure.current?.value === nextTargetPressure
+              ? state.targetPressure
+              : addTargetPressure(state.targetPressure, {
+                  value: nextTargetPressure,
+                  timestamp,
+                }),
+          targetScrewRpm:
+            state.targetScrewRpm.current?.value === nextTargetScrewRpm
+              ? state.targetScrewRpm
+              : addTargetScrewRpm(state.targetScrewRpm, {
+                  value: nextTargetScrewRpm,
+                  timestamp,
+                }),
+          targetNozzleTemperature:
+            state.targetNozzleTemperature.current?.value ===
+            nextTargetNozzleTemperature
+              ? state.targetNozzleTemperature
+              : addTargetNozzleTemperature(state.targetNozzleTemperature, {
+                  value: nextTargetNozzleTemperature,
+                  timestamp,
+                }),
+          targetFrontTemperature:
+            state.targetFrontTemperature.current?.value ===
+            nextTargetFrontTemperature
+              ? state.targetFrontTemperature
+              : addTargetFrontTemperature(state.targetFrontTemperature, {
+                  value: nextTargetFrontTemperature,
+                  timestamp,
+                }),
+          targetMiddleTemperature:
+            state.targetMiddleTemperature.current?.value ===
+            nextTargetMiddleTemperature
+              ? state.targetMiddleTemperature
+              : addTargetMiddleTemperature(state.targetMiddleTemperature, {
+                  value: nextTargetMiddleTemperature,
+                  timestamp,
+                }),
+          targetBackTemperature:
+            state.targetBackTemperature.current?.value ===
+            nextTargetBackTemperature
+              ? state.targetBackTemperature
+              : addTargetBackTemperature(state.targetBackTemperature, {
+                  value: nextTargetBackTemperature,
+                  timestamp,
+                }),
         }));
       } else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
@@ -378,6 +466,14 @@ export const createExtruder3NamespaceStore =
         middlePower,
         combinedPower,
         totalEnergyKWh,
+
+        // Target value history
+        targetPressure,
+        targetScrewRpm,
+        targetNozzleTemperature,
+        targetFrontTemperature,
+        targetMiddleTemperature,
+        targetBackTemperature,
       };
     });
 
