@@ -77,7 +77,11 @@ export function buildUPlotData(
   config.lines?.forEach((line) => {
     if (line.show !== false) {
       const lineData = line.targetSeries
-        ? alignTargetSeriesToTimestamps(line.targetSeries, timestamps, line.value)
+        ? alignTargetSeriesToTimestamps(
+            line.targetSeries,
+            timestamps,
+            line.value,
+          )
         : timestamps.map(() => line.value);
       uData.push(lineData);
     }

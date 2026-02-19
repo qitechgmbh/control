@@ -73,7 +73,11 @@ export function createChart({
   config.lines?.forEach((line) => {
     if (line.show !== false) {
       const lineData = line.targetSeries
-        ? alignTargetSeriesToTimestamps(line.targetSeries, timestamps, line.value)
+        ? alignTargetSeriesToTimestamps(
+            line.targetSeries,
+            timestamps,
+            line.value,
+          )
         : new Array(timestamps.length).fill(line.value);
       uPlotData.push(lineData as any);
     }
@@ -409,8 +413,7 @@ export function createChart({
                 const dashPeriod = dash.reduce((acc, curr) => acc + curr, 0);
                 ctx.setLineDash(dash);
                 const elapsedMs = performance.now() - dashFlowStartTime;
-                const dashTravelPx =
-                  (elapsedMs * DASH_FLOW_PX_PER_SEC) / 1000;
+                const dashTravelPx = (elapsedMs * DASH_FLOW_PX_PER_SEC) / 1000;
                 ctx.lineDashOffset =
                   dashPeriod > 0 ? -(dashTravelPx % dashPeriod) : 0;
                 ctx.strokeStyle = color;
