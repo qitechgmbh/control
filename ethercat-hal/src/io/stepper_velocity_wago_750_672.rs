@@ -72,11 +72,13 @@ impl StepperVelocityWago750672 {
         dev.rxpdo.acceleration = acceleration;
     }
 
+    #[allow(dead_code)]
     fn get_actual_velocity(&self) -> i16 {
         let dev = block_on(self.device.read());
         dev.txpdo.actual_velocity
     }
 
+    #[allow(dead_code)]
     fn get_target_acceleration(&self) -> u16 {
         let dev = block_on(self.device.read());
         dev.rxpdo.acceleration
@@ -123,6 +125,7 @@ impl StepperVelocityWago750672 {
         }
     }
 
+    #[allow(dead_code)]
     fn read_status_byte(&self, status_byte: StatusByte) -> u8 {
         let dev = block_on(self.device.read());
 
