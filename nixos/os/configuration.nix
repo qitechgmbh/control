@@ -322,7 +322,8 @@ in {
 
   # Set revision label
   system.nixos.label = "${gitInfo.gitAbbreviationEscaped}_${gitInfo.gitCommit}";
-  networking.firewall.enable = disable;
+  networking.firewall.enable = false;
+  
   system.stateVersion = "24.11"; # Did you read the comment?
 
 }
