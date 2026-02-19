@@ -144,7 +144,6 @@ in {
 
   services.caddy = {
     enable = true;
-    openFirewall = true;
     # This puts the import at the TOP of the Caddyfile (Global Scope)
     extraConfig = ''
       import /var/lib/caddy/auth_snippet.conf
@@ -324,7 +323,8 @@ in {
   system.nixos.label = "${gitInfo.gitAbbreviationEscaped}_${gitInfo.gitCommit}";
   
   networking.firewall.allowedUDPPorts = [ 53 67 69 ];
-  
+  networking.firewall.allowedTCPPorts = [ 443 ];
+
   system.stateVersion = "24.11"; # Did you read the comment?
 
 }
