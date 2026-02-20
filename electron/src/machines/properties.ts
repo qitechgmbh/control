@@ -5,6 +5,10 @@ import {
   machineIdentificationEquals,
 } from "./types";
 
+import { 
+  machineProperties as stahlwerkMachineProperties 
+} from "../extensions/stahlwerk/properties";
+
 export const VENDOR_QITECH = 0x0001;
 
 export type VendorProperties = {
@@ -708,6 +712,7 @@ export const machineProperties: MachineProperties[] = [
   wagoDoTestMachine,
   TestMotor,
   testmachinestepper,
+  ...stahlwerkMachineProperties
 ];
 
 export const getMachineProperties = (
