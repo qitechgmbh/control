@@ -10,7 +10,7 @@ import { SetupPage } from "@/setup/SetupPage";
 import { EthercatPage } from "@/setup/EthercatPage";
 import { MachinesPage } from "@/setup/MachinesPage";
 import { ChangelogPage } from "@/setup/ChangelogPage";
-import { TroubleshootPage } from "@/setup/Trobleshoot";
+import { TroubleshootPage } from "@/setup/Troubleshoot";
 import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
 
 import { Winder2Page } from "@/machines/winder/winder2/Winder2Page";

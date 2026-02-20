@@ -3,30 +3,55 @@ import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import { Terminal } from "@/components/Terminal";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { useLogsStore } from "@/stores/logsStore";
-import { rebootHmi, restartBackend } from "@/helpers/troubleshoot_helpers";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+
+type LogLineCache = {
+    numLines: number;
+    getLine: (index: number) => string | undefined;
+    loadLines: (start: number, end: number) => void;
+}
+
+function useLogLineCache(): LogLineCache {
+  const [numLines, setNumLines] = useState(200);
+
+  const [cachedLines, setCashedLines] = useState<string[]>([]);
+  const [firstCachedLine, setFirstCachedLine] = useState(0);
+
+  useEffect(() => {
+    loadLinesIntoCache(numLines, numLines - 100);
+    return window.troubleshoot.subscribeLogLine(setNumLines);
+  }, []);
+
+  const loadLinesIntoCache = async (start: number, end: number) => {
+      const lines = await window.troubleshoot.getLogLines(start - 100, end - start + 100);
+      setFirstCachedLine(start);
+      setCashedLines(lines);
+  }
+
+  const getLine = useCallback((index: number) => {
+      console.log(index, firstCachedLine, cachedLines.length);
+      if (index < firstCachedLine || firstCachedLine + cachedLines.length <= index) {
+          return undefined;
+      }
+
+      return cachedLines[index - firstCachedLine];
+  }, [firstCachedLine, cachedLines]);
+
+
+  return { numLines, getLine, loadLines: loadLinesIntoCache };
+}
 
 export function TroubleshootPage() {
   const [isRebootLoading, setIsRebootLoading] = useState(false);
   const [isRestartLoading, setIsRestartLoading] = useState(false);
-  const { getLogsBySource, clearLogs } = useLogsStore();
+  const { numLines, getLine, loadLines } = useLogLineCache();
 
-  // Perhaps we just need to clear the logs ?
-  // Get backend logs for display
-  const backendLogs = getLogsBySource("qitech-control-server");
-  const logLines = backendLogs.map((log) => log.raw);
   const handleRebootHmi = async () => {
     setIsRebootLoading(true);
 
     try {
-      const result = await rebootHmi();
-      if (result.success) {
-        toast.success("HMI Panel reboot initiated");
-      } else {
-        toast.error(`Failed to reboot HMI: ${result.error}`);
-      }
+        await window.troubleshoot.rebootHmi();
     } catch (error) {
       toast.error(`Failed to reboot HMI: ${error}`);
     } finally {
@@ -37,12 +62,7 @@ export function TroubleshootPage() {
   const handleRestartBackend = async () => {
     setIsRestartLoading(true);
     try {
-      const result = await restartBackend();
-      if (result.success) {
-        toast.success("Backend service restart initiated");
-      } else {
-        toast.error(`Failed to restart backend: ${result.error}`);
-      }
+        await window.troubleshoot.restartBackend();
     } catch (error) {
       toast.error(`Failed to restart backend: ${error}`);
     } finally {
@@ -85,7 +105,9 @@ export function TroubleshootPage() {
       <h2 className="text-lg font-semibold">Backend Service Logs</h2>
 
       <Terminal
-        lines={logLines}
+        numLines={numLines}
+        getLine={getLine}
+        loadLines={loadLines}
         autoScroll={true}
         className="h-160"
         title="qitech-control-server"
