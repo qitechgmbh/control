@@ -132,6 +132,7 @@ pub struct PressureState {
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct ScrewState {
     pub target_rpm: f64,
+    pub motor_poles: usize,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
