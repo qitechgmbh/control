@@ -110,9 +110,25 @@ export function BigGraph({
 
   // State for series visibility
   const normalizedSeries = normalizeDataSeries(newData);
+  const latestExportContextRef = useRef({
+    normalizedSeries,
+    config,
+    unit,
+    renderValue,
+  });
   const [visibleSeries, setVisibleSeries] = useState<boolean[]>(
     new Array(normalizedSeries.length).fill(true),
   );
+
+  // Keep latest export context in a ref so export callbacks always read fresh data.
+  useEffect(() => {
+    latestExportContextRef.current = {
+      normalizedSeries,
+      config,
+      unit,
+      renderValue,
+    };
+  }, [normalizedSeries, config, unit, renderValue]);
 
   // Enhanced configuration with visible series lines
   const enhancedConfig = React.useMemo(() => {
@@ -206,35 +222,27 @@ export function BigGraph({
   // Register export functionality for the graph
   useEffect(() => {
     if (onRegisterForExport) {
-      // Unregister any previous registrations for this graph
-      if (onUnregisterFromExport) {
-        // Clear any existing registrations for this graph's series
-        normalizedSeries.forEach((_, index) => {
-          const seriesId = `${graphId}-series-${index}`;
-          onUnregisterFromExport(seriesId);
-        });
-      }
-
       // Register each series as a separate export entry
-      normalizedSeries.forEach((series, index) => {
-        if (!series.newData) return;
-
+      normalizedSeries.forEach((_, index) => {
         const seriesId = `${graphId}-series-${index}`;
-        const seriesTitle = series.title || `Series ${index + 1}`;
 
         const getSeriesExportData = (): GraphExportData | null => {
+          const current = latestExportContextRef.current;
+          const series = current.normalizedSeries[index];
+          if (!series?.newData) return null;
+
           // Create export data for this specific series only
           const seriesLines = series.lines || [];
           const exportConfig = {
-            ...config,
-            title: config.title, // Keep original graph title
-            lines: [...(config.lines || []), ...seriesLines],
+            ...current.config,
+            title: current.config.title, // Keep original graph title
+            lines: [...(current.config.lines || []), ...seriesLines],
           };
 
           // Create a single-series data structure for this series
           const singleSeriesData: SeriesData = {
             newData: series.newData,
-            title: seriesTitle,
+            title: series.title || `Series ${index + 1}`,
             color: series.color,
             lines: series.lines,
           };
@@ -242,8 +250,8 @@ export function BigGraph({
           return {
             config: exportConfig,
             data: singleSeriesData, // Return ONLY this specific series
-            unit,
-            renderValue,
+            unit: current.unit,
+            renderValue: current.renderValue,
           };
         };
 
@@ -264,19 +272,7 @@ export function BigGraph({
     onRegisterForExport,
     onUnregisterFromExport,
     graphId,
-    config,
     normalizedSeries.length,
-    unit,
-    renderValue,
-    // Add dependencies for series data
-    JSON.stringify(
-      normalizedSeries.map((s) => ({
-        title: s.title,
-        color: s.color,
-        hasData: !!s.newData,
-        linesCount: s.lines?.length || 0,
-      })),
-    ),
   ]);
 
   // Updates Y-axis scale dynamically based on visible data
