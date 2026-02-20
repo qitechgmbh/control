@@ -1,6 +1,7 @@
 use crate::analog_input_test_machine::AnalogInputTestMachine;
 use crate::digital_input_test_machine::DigitalInputTestMachine;
 use crate::ip20_test_machine::IP20TestMachine;
+use crate::stahlwerk::{self, register_machines};
 use crate::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine;
 use crate::wago_ai_test_machine::WagoAiTestMachine;
 use crate::wago_do_test_machine::WagoDOTestMachine;
@@ -145,6 +146,10 @@ lazy_static! {
         );
 
         mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
+
+        // register all machines from stahlwerk
+        stahlwerk::register_machines(&mut mc);
+
         mc
     };
 }

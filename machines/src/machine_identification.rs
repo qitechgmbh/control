@@ -49,7 +49,13 @@ impl MachineIdentification {
         }
     }
 
-    pub fn slug(&self) -> String {
+    pub fn slug(&self) -> String 
+    {
+        if let Some(slug) = stahlwerk::get_slug(self.machine)
+        {
+            return slug.to_string();
+        }
+
         match self.machine {
             x if x == MACHINE_WINDER_V1 => "winder_v1".to_string(),
             x if x == MACHINE_EXTRUDER_V1 => "extruder_v1".to_string(),
@@ -190,6 +196,7 @@ use crate::TEST_MACHINE;
 use crate::VENDOR_QITECH;
 use crate::WAGO_AI_TEST_MACHINE;
 use crate::WAGO_DO_TEST_MACHINE;
+use crate::stahlwerk;
 
 #[derive(Debug)]
 pub struct MachineIdentificationAddresses {

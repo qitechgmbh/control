@@ -39,6 +39,8 @@ pub mod wago_do_test_machine;
 pub mod wago_power;
 pub mod winder2;
 
+pub mod stahlwerk;
+
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
 pub const MACHINE_EXTRUDER_V1: u16 = 0x0004;
