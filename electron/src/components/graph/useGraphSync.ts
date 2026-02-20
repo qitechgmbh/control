@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { PropGraphSync, SwitchOrigin } from "./types";
 import { GraphExportData, exportGraphsToExcel } from "./excelExport";
+import { useLogsStore } from "@/stores/logsStore";
 import { useGraphSettingsStore } from "@/stores/graphSettingsStore";
 
 export function useGraphSync(exportGroupId?: string) {
@@ -132,7 +133,14 @@ export function useGraphSync(exportGroupId?: string) {
       console.warn("No graphs registered for export");
       return;
     }
-    exportGraphsToExcel(graphDataRef.current, exportGroupId || "synced-graphs");
+    const logs = useLogsStore.getState().entries;
+    exportGraphsToExcel(
+      graphDataRef.current,
+      exportGroupId || "synced-graphs",
+      logs,
+    ).catch((error) => {
+      console.error("Failed to export graphs:", error);
+    });
   }, [exportGroupId]);
 
   const handleTimeWindowChange = useCallback(
