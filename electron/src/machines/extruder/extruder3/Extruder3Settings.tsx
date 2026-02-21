@@ -22,7 +22,6 @@ export function Extruder3SettingsPage() {
     setPressurePidKi,
     setPressurePidKd,
     setTemperaturePidValue,
-    setTemperatureTargetEnabled,
   } = useExtruder3();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
