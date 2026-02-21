@@ -17,6 +17,7 @@ export function Extruder3SettingsPage() {
     setExtruderPressureLimit,
     setExtruderPressureLimitEnabled,
     setHeatingSafeguardEnabled,
+    setTemperatureTargetEnabled,
     setPressurePidKp,
     setPressurePidKi,
     setPressurePidKd,

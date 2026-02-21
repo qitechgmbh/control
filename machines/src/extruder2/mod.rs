@@ -131,6 +131,9 @@ pub struct ExtruderV3 {
     /// Heating safeguard configuration
     heating_safeguard_enabled: bool,
 
+    /// Whether nozzle temperature target can be set (disabling hides wiring errors)
+    nozzle_temperature_target_enabled: bool,
+
     /// Heating watchdog state for each zone
     heating_watchdog: HeatingWatchdog,
 
