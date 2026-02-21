@@ -20,11 +20,12 @@ use crate::{
     extruder1::{
         ExtruderV2Mode,
         api::{
-            ExtruderSettingsState, ExtruderV2Namespace, HeatingStates, InverterStatusState,
+            HeatingStates, InverterStatusState,
             ModeState, MotorStatusValues, PidSettingsStates, PressureState, RegulationState,
             RotationState, ScrewState,
         },
     },
+    extruder2::api::{ExtruderSettingsState, ExtruderV3Namespace},
 };
 
 // Just checking mock-machine feature here to exclude these modules from compilation entirely
@@ -57,7 +58,7 @@ pub struct ExtruderV2 {
 
     machine_identification_unique: MachineIdentificationUnique,
 
-    namespace: ExtruderV2Namespace,
+    namespace: ExtruderV3Namespace,
     last_measurement_emit: Instant,
     last_status_hash: Option<u64>,
     mode: ExtruderV2Mode,

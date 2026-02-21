@@ -1,7 +1,8 @@
 use super::ExtruderV2;
 use crate::{
     MachineApi,
-    extruder1::{HeatingType, api::Mutation},
+    extruder1::HeatingType,
+    extruder2::api::Mutation,
 };
 
 impl MachineApi for ExtruderV2 {
@@ -41,8 +42,17 @@ impl MachineApi for ExtruderV2 {
             Mutation::SetTemperaturePidSettings(settings) => {
                 self.configure_temperature_pid(settings);
             }
+            Mutation::SetHeatingSafeguardEnabled(_enabled) => {
+                // Mock implementation - just acknowledge
+            }
             Mutation::SetNozzleTemperatureTargetEnabled(enabled) => {
                 self.set_nozzle_temperature_target_is_enabled(enabled);
+            }
+            Mutation::RetryHeating => {
+                // Mock implementation - just acknowledge
+            }
+            Mutation::AcknowledgeHeatingFault => {
+                // Mock implementation - just acknowledge
             }
         }
         Ok(())

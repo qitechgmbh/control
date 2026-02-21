@@ -20,7 +20,8 @@ pub struct TemperatureController {
     temperature_pid_output: f64,
     heating_element_wattage: f64,
     max_clamp: f64,
-    target_temp_enabled: bool, // Sets whether the frontend should display a target temperature setter for this temp controller
+    /// When false, target temperature cannot be set (nozzle only; other zones always true)
+    temperature_target_enabled: bool,
 }
 
 impl TemperatureController {
@@ -56,20 +57,20 @@ impl TemperatureController {
             temperature_pid_output: 0.0,
             heating_element_wattage,
             max_clamp,
-            target_temp_enabled: true,
+            temperature_target_enabled: true,
         }
+    }
+
+    pub fn get_temperature_target_enabled(&self) -> bool {
+        self.temperature_target_enabled
+    }
+
+    pub fn set_temperature_target_enabled(&mut self, enabled: bool) {
+        self.temperature_target_enabled = enabled;
     }
 
     pub fn set_target_temperature(&mut self, temp: ThermodynamicTemperature) {
         self.heating.target_temperature = temp;
-    }
-
-    pub fn set_temperature_target_enabled(&mut self, enabled: bool) {
-        self.target_temp_enabled = enabled;
-    }
-
-    pub fn get_temperature_target_enabled(&self) -> bool {
-        self.target_temp_enabled
     }
 
     pub const fn disallow_heating(&mut self) {
@@ -96,7 +97,7 @@ impl TemperatureController {
         self.heating.temperature = temperature_celsius;
 
         if self.heating.temperature > self.max_temperature {
-            // disable the relais and return
+            // Disable the relays and return
             self.relais.set(false);
             self.heating.heating = false;
             return;
