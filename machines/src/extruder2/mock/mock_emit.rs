@@ -81,6 +81,11 @@ impl ExtruderV2 {
         self.emit_state();
     }
 
+    pub fn set_nozzle_temperature_target_enabled(&mut self, enabled: bool) {
+        self.extruder_settings_state.nozzle_temperature_target_enabled = enabled;
+        self.emit_state();
+    }
+
     pub fn set_nozzle_pressure_limit(&mut self, pressure: f64) {
         self.extruder_settings_state.pressure_limit = pressure;
         self.emit_state();

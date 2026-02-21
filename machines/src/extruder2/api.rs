@@ -234,7 +234,9 @@ impl MachineApi for ExtruderV3 {
                 self.set_target_temperature(temp, HeatingType::Back)
             }
             Mutation::SetNozzleHeatingTemperature(temp) => {
-                self.set_target_temperature(temp, HeatingType::Nozzle)
+                if self.temperature_controller_nozzle.get_temperature_target_enabled() {
+                    self.set_target_temperature(temp, HeatingType::Nozzle)
+                }
             }
             Mutation::SetExtruderPressureLimit(pressure_limit) => {
                 self.set_nozzle_pressure_limit(pressure_limit);
