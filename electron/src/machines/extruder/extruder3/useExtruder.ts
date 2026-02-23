@@ -358,6 +358,25 @@ export function useExtruder3() {
     });
   };
 
+  const startPressurePidAutoTune = (tuneDelta: number, frequencyStepHz: number) => {
+    requestStartPressurePidAutoTune({
+      machine_identification_unique: machineIdentification,
+      data: {
+        StartPressurePidAutoTune: {
+          tune_delta: tuneDelta,
+          frequency_step_hz: frequencyStepHz,
+        },
+      },
+    });
+  };
+
+  const stopPressurePidAutoTune = () => {
+    requestStopPressurePidAutoTune({
+      machine_identification_unique: machineIdentification,
+      data: { StopPressurePidAutoTune: true },
+    });
+  };
+
   // Mutation hooks
   const { request: requestInverterRotationDirection } = useMachineMutation(
     z.object({ SetInverterRotationDirection: z.boolean() }),
@@ -432,6 +451,19 @@ export function useExtruder3() {
     z.object({ ResetInverter: z.boolean() }),
   );
 
+  const { request: requestStartPressurePidAutoTune } = useMachineMutation(
+    z.object({
+      StartPressurePidAutoTune: z.object({
+        tune_delta: z.number(),
+        frequency_step_hz: z.number(),
+      }),
+    }),
+  );
+
+  const { request: requestStopPressurePidAutoTune } = useMachineMutation(
+    z.object({ StopPressurePidAutoTune: z.boolean() }),
+  );
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -487,5 +519,7 @@ export function useExtruder3() {
     setPressurePidKd,
     setTemperaturePidValue,
     resetInverter,
+    startPressurePidAutoTune,
+    stopPressurePidAutoTune,
   };
 }

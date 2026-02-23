@@ -165,6 +165,26 @@ export const pidSettingsSchema = z.object({
 });
 
 /**
+ * PID auto-tune result schema
+ */
+export const pidAutoTuneResultSchema = z.object({
+  kp: z.number(),
+  ki: z.number(),
+  kd: z.number(),
+});
+
+/**
+ * PID auto-tune state schema
+ */
+export const pidAutoTuneStateSchema = z.object({
+  state: z.string(),
+  progress: z.number(),
+  result: pidAutoTuneResultSchema.nullable(),
+});
+
+export type PidAutoTuneState = z.infer<typeof pidAutoTuneStateSchema>;
+
+/**
  * Consolidated state event schema (state changes only)
  */
 export const stateEventDataSchema = z.object({
@@ -178,6 +198,7 @@ export const stateEventDataSchema = z.object({
   extruder_settings_state: extruderSettingsStateSchema,
   inverter_status_state: inverterStatusStateSchema,
   pid_settings: pidSettingsSchema,
+  pid_autotune_state: pidAutoTuneStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
