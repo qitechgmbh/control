@@ -106,6 +106,8 @@ pub struct StateEvent {
     pub inverter_status_state: InverterStatusState,
     /// pid settings
     pub pid_settings: PidSettingsStates,
+    /// pressure PID auto-tuner state
+    pub pid_autotune_state: PidAutoTuneState,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
@@ -206,6 +208,41 @@ pub struct PidSettingsStates {
     pub pressure: PidSettings,
 }
 
+/// Parameters for starting a pressure PID auto-tune run.
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+pub struct PressureAutoTuneConfig {
+    /// Pressure oscillation half-amplitude in bar (e.g. `0.5` for ±0.5 bar).
+    /// Typical starting value: 0.5 – 2 bar depending on operating pressure.
+    pub tune_delta: f64,
+    /// Frequency step in Hz.  The inverter will oscillate between
+    /// `(current_freq − frequency_step_hz)` and `(current_freq + frequency_step_hz)`.
+    /// Keep this small relative to the steady-state operating frequency to avoid
+    /// over-pressing the machine (e.g. 3 – 8 Hz for a typical extruder).
+    pub frequency_step_hz: f64,
+}
+
+/// Live state of the pressure PID auto-tuner, broadcast as part of the machine
+/// state.  The `result` field is populated once `state == "completed"`.
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct PidAutoTuneState {
+    /// One of: `"not_started"`, `"running"`, `"completed"`, `"failed"`
+    pub state: String,
+    /// Progress percentage in the range 0 – 100
+    pub progress: f64,
+    /// Computed PID parameters – only present after a successful run
+    pub result: Option<PidSettings>,
+}
+
+impl Default for PidAutoTuneState {
+    fn default() -> Self {
+        Self {
+            state: "not_started".to_string(),
+            progress: 0.0,
+            result: None,
+        }
+    }
+}
+
 pub enum ExtruderV2Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
@@ -235,6 +272,11 @@ pub enum Mutation {
     // Pid Configure
     SetPressurePidSettings(PidSettings),
     SetTemperaturePidSettings(TemperaturePid),
+
+    // Pressure PID Auto-Tune
+    /// Start pressure PID auto-tuning with bounded frequency excitation.
+    StartPressurePidAutoTune(PressureAutoTuneConfig),
+    StopPressurePidAutoTune,
 
     // Reset
     ResetInverter(bool),
@@ -323,6 +365,12 @@ impl MachineApi for ExtruderV2 {
             }
             Mutation::SetNozzleTemperatureTargetEnabled(enabled) => {
                 self.set_nozzle_temperature_target_is_enabled(enabled);
+            }
+            Mutation::StartPressurePidAutoTune(config) => {
+                self.start_pressure_pid_autotune(config);
+            }
+            Mutation::StopPressurePidAutoTune => {
+                self.stop_pressure_pid_autotune();
             }
         }
         Ok(())

@@ -1,6 +1,9 @@
 use crate::extruder1::{
     ExtruderV2Mode, HeatingType,
-    api::{ExtruderV2Events, LiveValuesEvent, ModeState, PidSettings, StateEvent, TemperaturePid},
+    api::{
+        ExtruderV2Events, LiveValuesEvent, ModeState, PidAutoTuneState, PidSettings, StateEvent,
+        TemperaturePid,
+    },
 };
 use crate::extruder2::mock::ExtruderV2;
 
@@ -22,6 +25,7 @@ impl ExtruderV2 {
             extruder_settings_state: self.extruder_settings_state.clone(),
             inverter_status_state: self.inverter_status_state.clone(),
             pid_settings: self.pid_settings.clone(),
+            pid_autotune_state: self.pid_autotune_state.clone(),
         }
     }
 

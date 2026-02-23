@@ -4,9 +4,9 @@ use crate::{
         ExtruderV2Mode,
         api::{
             ExtruderSettingsState, ExtruderV2Namespace, HeatingState, HeatingStates,
-            InverterStatusState, ModeState, MotorStatusValues, PidSettings, PidSettingsStates,
-            PressureState, RegulationState, RotationState, ScrewState, TemperaturePid,
-            TemperaturePidStates,
+            InverterStatusState, ModeState, MotorStatusValues, PidAutoTuneState, PidSettings,
+            PidSettingsStates, PressureState, RegulationState, RotationState, ScrewState,
+            TemperaturePid, TemperaturePidStates,
         },
     },
     extruder2::mock::ExtruderV2,
@@ -127,6 +127,7 @@ impl MachineNewTrait for ExtruderV2 {
                     kd: 0.0,
                 },
             },
+            pid_autotune_state: PidAutoTuneState::default(),
             motor_status: MotorStatusValues {
                 screw_rpm: 0.0,
                 frequency: 0.0,

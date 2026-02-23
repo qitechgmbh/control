@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use crate::extruder1::{
     api::{
-        ExtruderSettingsState, HeatingStates, InverterStatusState, PidSettings, PidSettingsStates,
-        PressureState, RegulationState, RotationState, ScrewState, TemperaturePid,
+        ExtruderSettingsState, HeatingStates, InverterStatusState, PidAutoTuneState, PidSettings,
+        PidSettingsStates, PressureAutoTuneConfig, PressureState, RegulationState, RotationState,
+        ScrewState, TemperaturePid,
     },
     mitsubishi_cs80::MotorStatus,
 };
@@ -110,6 +111,8 @@ pub struct StateEvent {
     pub inverter_status_state: InverterStatusState,
     /// pid settings
     pub pid_settings: PidSettingsStates,
+    /// pressure PID auto-tuner state
+    pub pid_autotune_state: PidAutoTuneState,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
@@ -149,6 +152,11 @@ pub enum Mutation {
     // Pid Configure
     SetPressurePidSettings(PidSettings),
     SetTemperaturePidSettings(TemperaturePid),
+
+    // Pressure PID Auto-Tune
+    /// Start pressure PID auto-tuning with bounded frequency excitation.
+    StartPressurePidAutoTune(PressureAutoTuneConfig),
+    StopPressurePidAutoTune,
 
     // Reset
     ResetInverter(bool),
@@ -232,6 +240,12 @@ impl MachineApi for ExtruderV3 {
             }
             Mutation::SetNozzleTemperatureTargetEnabled(enabled) => {
                 self.set_nozzle_temperature_target_is_enabled(enabled);
+            }
+            Mutation::StartPressurePidAutoTune(config) => {
+                self.start_pressure_pid_autotune(config);
+            }
+            Mutation::StopPressurePidAutoTune => {
+                self.stop_pressure_pid_autotune();
             }
         }
         Ok(())

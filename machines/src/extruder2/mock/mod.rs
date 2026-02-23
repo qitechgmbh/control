@@ -21,8 +21,8 @@ use crate::{
         ExtruderV2Mode,
         api::{
             ExtruderSettingsState, ExtruderV2Namespace, HeatingStates, InverterStatusState,
-            ModeState, MotorStatusValues, PidSettingsStates, PressureState, RegulationState,
-            RotationState, ScrewState,
+            ModeState, MotorStatusValues, PidAutoTuneState, PidSettingsStates, PressureState,
+            RegulationState, RotationState, ScrewState,
         },
     },
 };
@@ -88,6 +88,8 @@ pub struct ExtruderV2 {
     pub inverter_status_state: InverterStatusState,
     /// pid settings
     pub pid_settings: PidSettingsStates,
+    /// pressure PID auto-tuner state (mock: not_started by default)
+    pub pid_autotune_state: PidAutoTuneState,
 
     pub motor_status: MotorStatusValues,
     /// pressure in bar

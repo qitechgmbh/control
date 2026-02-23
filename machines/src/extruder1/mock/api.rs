@@ -44,6 +44,13 @@ impl MachineApi for ExtruderV2 {
             Mutation::SetNozzleTemperatureTargetEnabled(enabled) => {
                 self.set_nozzle_temperature_target_is_enabled(enabled);
             }
+            // Auto-tuning is not simulated in the mock machine
+            Mutation::StartPressurePidAutoTune(_config) => {
+                tracing::info!("StartPressurePidAutoTune ignored on mock machine");
+            }
+            Mutation::StopPressurePidAutoTune => {
+                tracing::info!("StopPressurePidAutoTune ignored on mock machine");
+            }
         }
         Ok(())
     }
