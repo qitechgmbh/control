@@ -1,6 +1,6 @@
 # REST API `/api/v2`
 
-The Qitech Control Panel exposes a small HTTP interface for discovering machines and reading their current values. All examples below assume you are connected to the panel’s Ethernet subnet and talk directly to the panel at:
+The panel behaves like any other NetworkManager-managed linux and is able to either receive an IP-Address over DHCP or a statically defined one. Where the static IP is most likely the easiest to work with.
 
 - **Base URL:** `https://IP_ADDRESS`
 
@@ -10,8 +10,8 @@ The Qitech Control Panel exposes a small HTTP interface for discovering machines
 
 ## Authentication
 
-The panel performs Basic Auth authentication. 
-For EVERY request made over HTTPS Basic Auth is expected.
+The panel performs Basic-Auth authentication. 
+For EVERY request made over HTTPS, Basic Auth is required.
 
 To set the password on the Panel for Basic Auth do the following:
 1. Open a Terminal
@@ -22,19 +22,25 @@ credentials.sh prints the username and password for the api ONCE in the console.
 Afterwards its accessible in machine_password in /tmp/ until the machine shuts down.
 If you ever forget your password you can simply run ./credentials.sh again, resetting the password used, however the username will always be machine 
 
+Example request with curl:
+```
+curl https://192.168.130.195  -u
+```
+
 For HTTPS+Authentication we have Caddy (a reverse proxy, with automatic https) in front of the internal API.
-The panel is configured like any other NetworkManager linux and is able to either receive an IP-Address over DHCP or a statically defined one.
-Where the static IP is most likely the easiest to work with.
-In theory the HTTPS-Api Can be accessed over any network interface that is configured by NetworkManager.
+In theory the HTTPS-Api Can be accessed over any network interface that is configured.
 
 If DNS is available on the subnet, you may be able to resolve `qitech.control`.
+
 
 ## Handling Self signed Certificate Warnings
 
 What you might notice is that caddy automatically generates certificates with its internal CA.
 These are untrusted by default in browsers,tools like curl and https libraries.
 
-For most programs you can either ignore this warning or you can manually trust the certificate on your system:
+For most programs you can either ignore this warning or you can manually trust the certificate on your system.
+How these are installed depends on your system.
+
 ```
 ./.local/share/caddy/pki/authorities/local/root.crt
 /var/lib/caddy/.local>/share/caddy/pki/authorities/local/root.crt
