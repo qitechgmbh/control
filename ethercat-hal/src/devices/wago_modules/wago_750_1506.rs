@@ -38,27 +38,27 @@ impl From<Wago750_1506OutputPort> for usize {
 
 #[derive(Debug, Clone)]
 pub enum Wago750_1506InputPort {
-    DO1,
-    DO2,
-    DO3,
-    DO4,
-    DO5,
-    DO6,
-    DO7,
-    DO8,
+    DI1,
+    DI2,
+    DI3,
+    DI4,
+    DI5,
+    DI6,
+    DI7,
+    DI8,
 }
 
 impl From<Wago750_1506InputPort> for usize {
     fn from(value: Wago750_1506InputPort) -> Self {
         match value {
-            Wago750_1506InputPort::DO1 => 0,
-            Wago750_1506InputPort::DO2 => 1,
-            Wago750_1506InputPort::DO3 => 2,
-            Wago750_1506InputPort::DO4 => 3,
-            Wago750_1506InputPort::DO5 => 4,
-            Wago750_1506InputPort::DO6 => 5,
-            Wago750_1506InputPort::DO7 => 6,
-            Wago750_1506InputPort::DO8 => 7,
+            Wago750_1506InputPort::DI1 => 0,
+            Wago750_1506InputPort::DI2 => 1,
+            Wago750_1506InputPort::DI3 => 2,
+            Wago750_1506InputPort::DI4 => 3,
+            Wago750_1506InputPort::DI5 => 4,
+            Wago750_1506InputPort::DI6 => 5,
+            Wago750_1506InputPort::DI7 => 6,
+            Wago750_1506InputPort::DI8 => 7,
         }
     }
 }
@@ -91,14 +91,14 @@ impl DigitalInputDevice<Wago750_1506InputPort> for Wago750_1506 {
     fn get_input(&self, port: Wago750_1506InputPort) -> Result<DigitalInputInput, anyhow::Error> {
         Ok(DigitalInputInput {
             value: match port {
-                Wago750_1506InputPort::DO1 => self.tx_pdo.port1,
-                Wago750_1506InputPort::DO2 => self.tx_pdo.port2,
-                Wago750_1506InputPort::DO3 => self.tx_pdo.port3,
-                Wago750_1506InputPort::DO4 => self.tx_pdo.port4,
-                Wago750_1506InputPort::DO5 => self.tx_pdo.port5,
-                Wago750_1506InputPort::DO6 => self.tx_pdo.port6,
-                Wago750_1506InputPort::DO7 => self.tx_pdo.port7,
-                Wago750_1506InputPort::DO8 => self.tx_pdo.port8,
+                Wago750_1506InputPort::DI1 => self.tx_pdo.port1,
+                Wago750_1506InputPort::DI2 => self.tx_pdo.port2,
+                Wago750_1506InputPort::DI3 => self.tx_pdo.port3,
+                Wago750_1506InputPort::DI4 => self.tx_pdo.port4,
+                Wago750_1506InputPort::DI5 => self.tx_pdo.port5,
+                Wago750_1506InputPort::DI6 => self.tx_pdo.port6,
+                Wago750_1506InputPort::DI7 => self.tx_pdo.port7,
+                Wago750_1506InputPort::DI8 => self.tx_pdo.port8,
             },
         })
     }
@@ -143,7 +143,7 @@ pub struct Wago750_1506 {
     is_used: bool,
     tx_bit_offset: usize,
     rx_bit_offset: usize,
-    // Should always have on but not when calling constructor
+    // Should always have one but not when calling constructor
     module: Option<Module>,
     rx_pdo: Wago750_1506RxPdo,
     tx_pdo: Wago750_1506TxPdo,
@@ -189,28 +189,28 @@ impl EthercatDevice for Wago750_1506 {
     ) -> Result<(), anyhow::Error> {
         let base = self.tx_bit_offset;
 
-        let idx1 = base + Into::<usize>::into(Wago750_1506InputPort::DO1);
+        let idx1 = base + Into::<usize>::into(Wago750_1506InputPort::DI1);
         self.tx_pdo.port1 = *input.get(idx1).expect("Bit 1 out of bounds");
 
-        let idx2 = base + Into::<usize>::into(Wago750_1506InputPort::DO2);
+        let idx2 = base + Into::<usize>::into(Wago750_1506InputPort::DI2);
         self.tx_pdo.port2 = *input.get(idx2).expect("Bit 2 out of bounds");
 
-        let idx3 = base + Into::<usize>::into(Wago750_1506InputPort::DO3);
+        let idx3 = base + Into::<usize>::into(Wago750_1506InputPort::DI3);
         self.tx_pdo.port3 = *input.get(idx3).expect("Bit 3 out of bounds");
 
-        let idx4 = base + Into::<usize>::into(Wago750_1506InputPort::DO4);
+        let idx4 = base + Into::<usize>::into(Wago750_1506InputPort::DI4);
         self.tx_pdo.port4 = *input.get(idx4).expect("Bit 4 out of bounds");
 
-        let idx5 = base + Into::<usize>::into(Wago750_1506InputPort::DO5);
+        let idx5 = base + Into::<usize>::into(Wago750_1506InputPort::DI5);
         self.tx_pdo.port5 = *input.get(idx5).expect("Bit 5 out of bounds");
 
-        let idx6 = base + Into::<usize>::into(Wago750_1506InputPort::DO6);
+        let idx6 = base + Into::<usize>::into(Wago750_1506InputPort::DI6);
         self.tx_pdo.port6 = *input.get(idx6).expect("Bit 6 out of bounds");
 
-        let idx7 = base + Into::<usize>::into(Wago750_1506InputPort::DO7);
+        let idx7 = base + Into::<usize>::into(Wago750_1506InputPort::DI7);
         self.tx_pdo.port7 = *input.get(idx7).expect("Bit 7 out of bounds");
 
-        let idx8 = base + Into::<usize>::into(Wago750_1506InputPort::DO8);
+        let idx8 = base + Into::<usize>::into(Wago750_1506InputPort::DI8);
         self.tx_pdo.port8 = *input.get(idx8).expect("Bit 8 out of bounds");
         Ok(())
     }

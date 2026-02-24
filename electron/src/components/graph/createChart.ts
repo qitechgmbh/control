@@ -1,5 +1,9 @@
 import uPlot from "uplot";
-import { seriesToUPlotData, TimeSeries } from "@/lib/timeseries";
+import {
+  seriesToUPlotData,
+  TimeSeries,
+  alignTargetSeriesToTimestamps,
+} from "@/lib/timeseries";
 import {
   createEventHandlers,
   attachEventHandlers,
@@ -7,6 +11,15 @@ import {
 } from "./handlers";
 import { BigGraphProps, CreateChartParams } from "./types";
 import { normalizeDataSeries } from "./animation";
+
+type CustomDashedTargetLine = {
+  dataIndex: number;
+  dash: number[];
+  color: string;
+  width: number;
+};
+
+const DASH_FLOW_PX_PER_SEC = 180;
 
 export function createChart({
   containerRef,
@@ -59,7 +72,13 @@ export function createChart({
   // Add config lines data
   config.lines?.forEach((line) => {
     if (line.show !== false) {
-      const lineData = new Array(timestamps.length).fill(line.value);
+      const lineData = line.targetSeries
+        ? alignTargetSeriesToTimestamps(
+            line.targetSeries,
+            timestamps,
+            line.value,
+          )
+        : new Array(timestamps.length).fill(line.value);
       uPlotData.push(lineData as any);
     }
   });
@@ -142,6 +161,8 @@ export function createChart({
 
   // Build series configuration for ALL series (but control visibility)
   const seriesConfig: uPlot.Series[] = [{ label: "Time" }];
+  const customDashedTargetLines: CustomDashedTargetLine[] = [];
+  const dashFlowStartTime = performance.now();
 
   // Add ALL data series with visibility control
   const defaultColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
@@ -167,16 +188,35 @@ export function createChart({
   });
 
   // Add config lines
+  let visibleLineIndex = 0;
+  const firstConfigLineDataIndex = 1 + allOriginalSeries.length;
   config.lines?.forEach((line) => {
     if (line.show !== false) {
+      const dash =
+        line.dash ?? (line.type === "threshold" ? [5, 5] : undefined);
+      const lineDataIndex = firstConfigLineDataIndex + visibleLineIndex;
+      const isHistoricalDashedTarget = !!line.targetSeries && !!dash?.length;
+
+      if (isHistoricalDashedTarget) {
+        customDashedTargetLines.push({
+          dataIndex: lineDataIndex,
+          dash: dash!,
+          color: line.color,
+          width: line.width ?? 1,
+        });
+      }
+
       seriesConfig.push({
         label: line.label,
-        stroke: line.color,
+        // Historical dashed targets are rendered manually in draw hook to
+        // avoid dash shimmer while the live x-axis slides.
+        stroke: isHistoricalDashedTarget ? "rgba(0,0,0,0)" : line.color,
         width: line.width ?? 1,
-        dash: line.dash ?? (line.type === "threshold" ? [5, 5] : undefined),
+        dash: isHistoricalDashedTarget ? undefined : dash,
         show: true,
         points: { show: false },
       });
+      visibleLineIndex++;
     }
   });
 
@@ -304,6 +344,119 @@ export function createChart({
                 setCursorValues(new Array(allOriginalSeries.length).fill(null));
               }
             }
+          },
+        ],
+        draw: [
+          (u) => {
+            if (customDashedTargetLines.length === 0) return;
+            const xData = u.data[0] as number[] | undefined;
+            if (!xData || xData.length < 2) return;
+
+            const xMin = u.scales.x?.min;
+            const xMax = u.scales.x?.max;
+            if (xMin === undefined || xMax === undefined) return;
+
+            const ctx = u.ctx;
+            const left = u.bbox.left;
+            const top = u.bbox.top;
+            const snap = (v: number) => Math.round(v) + 0.5;
+            const findFirstGe = (arr: number[], value: number): number => {
+              let lo = 0;
+              let hi = arr.length - 1;
+              let ans = arr.length;
+              while (lo <= hi) {
+                const mid = (lo + hi) >> 1;
+                if (arr[mid] >= value) {
+                  ans = mid;
+                  hi = mid - 1;
+                } else {
+                  lo = mid + 1;
+                }
+              }
+              return ans;
+            };
+            const findLastLe = (arr: number[], value: number): number => {
+              let lo = 0;
+              let hi = arr.length - 1;
+              let ans = -1;
+              while (lo <= hi) {
+                const mid = (lo + hi) >> 1;
+                if (arr[mid] <= value) {
+                  ans = mid;
+                  lo = mid + 1;
+                } else {
+                  hi = mid - 1;
+                }
+              }
+              return ans;
+            };
+            const firstVisibleIdx = Math.max(0, findFirstGe(xData, xMin) - 1);
+            const lastVisibleIdx = Math.min(
+              xData.length - 1,
+              findLastLe(xData, xMax) + 1,
+            );
+            if (lastVisibleIdx < firstVisibleIdx) return;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(left, top, u.bbox.width, u.bbox.height);
+            ctx.clip();
+            ctx.lineCap = "butt";
+
+            customDashedTargetLines.forEach(
+              ({ dataIndex, dash, color, width }) => {
+                const yData = u.data[dataIndex] as
+                  | Array<number | null>
+                  | undefined;
+                if (!yData || yData.length < 2) return;
+
+                const dashPeriod = dash.reduce((acc, curr) => acc + curr, 0);
+                ctx.setLineDash(dash);
+                const elapsedMs = performance.now() - dashFlowStartTime;
+                const dashTravelPx = (elapsedMs * DASH_FLOW_PX_PER_SEC) / 1000;
+                ctx.lineDashOffset =
+                  dashPeriod > 0 ? -(dashTravelPx % dashPeriod) : 0;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                ctx.beginPath();
+
+                let started = false;
+                let prevX = 0;
+                let prevY = 0;
+
+                for (let i = firstVisibleIdx; i <= lastVisibleIdx; i++) {
+                  const value = yData[i];
+                  if (value === null || value === undefined) continue;
+
+                  const x = snap(u.valToPos(xData[i], "x", true));
+                  const y = snap(u.valToPos(value, "y", true));
+
+                  if (!started) {
+                    ctx.moveTo(x, y);
+                    started = true;
+                    prevX = x;
+                    prevY = y;
+                    continue;
+                  }
+
+                  if (x !== prevX) {
+                    ctx.lineTo(x, prevY);
+                  }
+                  if (y !== prevY) {
+                    ctx.lineTo(x, y);
+                  }
+
+                  prevX = x;
+                  prevY = y;
+                }
+
+                if (started) {
+                  ctx.stroke();
+                }
+              },
+            );
+
+            ctx.restore();
           },
         ],
       },
@@ -507,12 +660,27 @@ export function createChart({
 
   const cleanup = attachEventHandlers(containerRef.current, handlers);
 
+  let dashFlowAnimationFrame: number | null = null;
+  if (customDashedTargetLines.length > 0) {
+    const animateDashFlow = () => {
+      if (!uplotRef.current) return;
+      uplotRef.current.redraw();
+      dashFlowAnimationFrame = requestAnimationFrame(animateDashFlow);
+    };
+    dashFlowAnimationFrame = requestAnimationFrame(animateDashFlow);
+  }
+
   animationRefs.lastRenderedData.current = {
     timestamps: [...timestamps],
     values: [...primaryValues],
   };
 
-  return cleanup;
+  return () => {
+    if (dashFlowAnimationFrame !== null) {
+      cancelAnimationFrame(dashFlowAnimationFrame);
+    }
+    cleanup();
+  };
 }
 
 // Helper function to get all valid TimeSeries from DataSeries

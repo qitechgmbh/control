@@ -64,7 +64,6 @@ in {
 
   ];
 
-  # Add these system settings for a more comprehensive kiosk setup
   boot.kernel.sysctl = {
     "kernel.panic_on_oops" = 1; # Reboot on kernel oops
     "kernel.panic" = 10; # Reboot after 10 seconds on panic
@@ -105,15 +104,7 @@ in {
     }
   ];
 
-  networking.hostName = "nixos"; # Define your hostname.
-  # networking.wireless.enable = true; # Enables wireless support via wpa_supplicant.
-
-  networking.interfaces.enp1s0.ipv4.addresses = [
-    {
-      address = "10.10.10.1";
-      prefixLength = 24;
-    }
-  ];
+  networking.hostName = "nixos";
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
@@ -149,8 +140,37 @@ in {
     autoSuspend = false;
     wayland = true;
   };
-
   services.xserver.desktopManager.gnome.enable = true;
+
+  services.caddy = {
+    enable = true;
+    # This puts the import at the TOP of the Caddyfile (Global Scope)
+    extraConfig = ''
+      import /var/lib/caddy/auth_snippet.conf
+    '';
+
+    virtualHosts.":443" = {
+      extraConfig = ''       
+        import machine_basic_auth
+        
+        reverse_proxy localhost:3001
+        
+        tls internal {
+          on_demand
+        }
+
+      '';
+    };
+  };
+  
+  systemd.services.caddy.serviceConfig.ReadOnlyPaths = [ "/var/lib/caddy/auth_snippet.conf" ];
+  #services.caddy = {
+  #  enable = true;
+  #  virtualHosts."localhost".extraConfig = ''
+  #    respond "Hello, world!"
+  #  '';
+  #};
+
 
   # Disable sleep/suspend
   systemd.targets.sleep.enable = false;
@@ -198,12 +218,6 @@ in {
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
-    # If you want to use JACK applications, uncomment this
-    #jack.enable = true;
-
-    # use the example session manager (no others are packaged yet so this is enabled by default,
-    # no need to redefine it in your config for now)
-    #media-session.enable = true;
   };
 
   # Enable graphics acceleration
@@ -264,6 +278,7 @@ in {
     wireshark
     pciutils
     neofetch
+    caddy
   ];
 
   xdg.portal.enable = true;
@@ -304,51 +319,12 @@ in {
     QITECH_OS_GIT_URL = gitInfo.gitUrl;
   };
 
-  # Set revision labe;
+  # Set revision label
   system.nixos.label = "${gitInfo.gitAbbreviationEscaped}_${gitInfo.gitCommit}";
+  
+  networking.firewall.allowedUDPPorts = [ 53 67 69 ];
+  networking.firewall.allowedTCPPorts = [ 443 ];
 
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
-
-  # List services that you want to enable:
-
-  # Enable the OpenSSH daemon.
-  # services.openssh.enable = true;
-
-  services.dnsmasq = {
-    enable = true;
-    resolveLocalQueries = false;
-
-    settings = {
-      interface = "enp1s0"; # only this interface
-      bind-interfaces = true;
-      server = [ "1.1.1.1" "8.8.8.8" ];
-
-      # DHCP subnet + pool
-      dhcp-range = "10.10.10.50,10.10.10.250,255.255.255.0,12h";
-
-      # Default gateway (router)
-      dhcp-option = [
-        "3,10.10.10.1"      # option 3 = router
-        "6,1.1.1.1,8.8.8.8" # option 6 = DNS servers
-      ];
-    };
-  };
-
-  networking.firewall.enable = true;
-  networking.firewall.trustedInterfaces = [ "enp1s0" ];
-
-  # This value determines the NixOS release from which the default
-  # settings for stateful data, like file locations and database versions
-  # on your system were taken. It‘s perfectly fine and recommended to leave
-  # this value at the release version of the first install of this system.
-  # Before changing this value read the documentation for this option
-  # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "24.11"; # Did you read the comment?
 
 }

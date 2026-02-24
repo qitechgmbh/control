@@ -175,7 +175,7 @@ export function useBigGraphEffects({
       const newIsLiveMode = syncGraph.isLiveMode;
 
       if (lastState.isLiveMode && !newIsLiveMode) {
-        historicalMode.switchToHistoricalMode();
+        historicalMode.switchToHistoricalMode(syncGraph.historicalSwitchOrigin);
       } else if (!lastState.isLiveMode && newIsLiveMode) {
         historicalMode.switchToLiveMode();
 

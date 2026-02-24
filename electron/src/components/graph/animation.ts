@@ -5,8 +5,10 @@ import {
   AnimationRefs,
   AnimationState,
   BigGraphProps,
+  GraphLine,
   SeriesData,
 } from "./types";
+import { alignTargetSeriesToTimestamps } from "@/lib/timeseries";
 
 export function useAnimationRefs(): AnimationRefs {
   const animationFrameRef = useRef<number | null>(null);
@@ -50,7 +52,9 @@ export function buildUPlotData(
   values: number[],
   realPointsCount: number | undefined,
   realPointsCountRef: React.RefObject<number>,
-  config: { lines?: Array<{ show?: boolean; value: number }> },
+  config: {
+    lines?: Array<Partial<GraphLine> & { show?: boolean; value: number }>;
+  },
   allSeriesData?: number[][],
 ): uPlot.AlignedData {
   const uData: uPlot.AlignedData = [timestamps];
@@ -72,7 +76,14 @@ export function buildUPlotData(
   // Add config lines
   config.lines?.forEach((line) => {
     if (line.show !== false) {
-      uData.push(timestamps.map(() => line.value));
+      const lineData = line.targetSeries
+        ? alignTargetSeriesToTimestamps(
+            line.targetSeries,
+            timestamps,
+            line.value,
+          )
+        : timestamps.map(() => line.value);
+      uData.push(lineData);
     }
   });
 
@@ -88,7 +99,9 @@ export function animateNewPoint(
   viewMode: string,
   selectedTimeWindow: number | "all",
   startTimeRef: React.RefObject<number | null>,
-  config: { lines?: Array<{ show?: boolean; value: number }> },
+  config: {
+    lines?: Array<Partial<GraphLine> & { show?: boolean; value: number }>;
+  },
   updateYAxisScale: (xMin?: number, xMax?: number) => void, // Updated signature
   getAllSeriesData?: () => number[][],
 ): void {

@@ -12,19 +12,25 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 use control_core::{irq_handling::set_irq_affinity, realtime::set_realtime_priority};
 use ethercat_hal::debugging::diagnosis_history::get_most_recent_diagnosis_message;
 use ethercat_hal::devices::devices_from_subdevices;
+
 use ethercat_hal::devices::wago_750_354::{
     WAGO_750_354_PRODUCT_ID, WAGO_750_354_VENDOR_ID, Wago750_354,
 };
+
 use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::{
     IP20_EC_DI8_DO8_PRODUCT_ID, IP20_EC_DI8_DO8_VENDOR_ID, IP20EcDi8Do8,
 };
+
+use ethercat_hal::helpers::set_mut_beckhoff_eeprom_lock_active;
 use ethercrab::error::Error;
 use ethercrab::subdevice_group::{DcConfiguration, HasDc, PreOpPdi, SafeOp};
 use smol::stream::StreamExt;
 use ta::Next;
 use ta::indicators::ExponentialMovingAverage;
 
+#[cfg(not(feature = "development-build"))]
 use crate::utils::stop_dnsmasq;
+
 use ethercrab::std::ethercat_now;
 use ethercrab::{
     DcSync, MainDevice, MainDeviceConfig, PduStorage, RegisterAddress, RetryBehaviour,
@@ -178,17 +184,20 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
 
 pub async fn setup_loop(
     interface: &str,
+    cycle_target: Duration,
     app_state: Arc<SharedState>,
 ) -> Result<EthercatSetup, anyhow::Error> {
     tracing::info!("Starting Ethercat PDU loop");
-    const TICK_INTERVAL: Duration = Duration::from_micros(700);
-    let res = stop_dnsmasq();
-    match res {
-        Ok(_) => (),
-        Err(e) => tracing::error!("Failed to stop dnsmasq: {:?}", e),
-    };
-    // Small Timeout to ensure interfaces get released
-    smol::Timer::after(Duration::from_millis(1500)).await;
+    #[cfg(not(feature = "development-build"))]
+    {
+        let res = stop_dnsmasq();
+        match res {
+            Ok(_) => tracing::info!("Stopped dnsmasq"),
+            Err(e) => tracing::error!("Failed to stop dnsmasq: {:?}", e),
+        };
+        // Small Timeout to ensure interfaces get released
+        smol::Timer::after(Duration::from_millis(1500)).await;
+    }
 
     // Setup ethercrab tx/rx task
     let pdu_storage = Box::leak(Box::new(PduStorage::<MAX_FRAMES, MAX_PDU_DATA>::new()));
@@ -237,11 +246,11 @@ pub async fn setup_loop(
         pdu,
         Timeouts {
             // Default 5000ms
-            state_transition: Duration::from_millis(5000),
+            state_transition: Duration::from_millis(20000),
             // Default 30_000us
             pdu: Duration::from_micros(30_000),
             // Default 10ms
-            eeprom: Duration::from_millis(10),
+            eeprom: Duration::from_millis(100),
             // Default 0ms
             wait_loop_delay: Duration::from_millis(0),
             // Default 100ms
@@ -287,11 +296,11 @@ pub async fn setup_loop(
     };
 
     for mut subdevice in group_preop.iter_mut(&maindevice) {
-        println!(
-            "subdevice {} {:X?}",
-            subdevice.name(),
-            subdevice.configured_address()
-        );
+        // 0x2 vendor id is Beckhoff
+        if subdevice.identity().vendor_id == 0x2 {
+            let _res = set_mut_beckhoff_eeprom_lock_active(&subdevice).await;
+        }
+
         if subdevice.name() == "EL4002" {
             // Sync mode 01 = SM Synchronous, says it does dc but actually doesnt, thx?
             subdevice
@@ -308,7 +317,7 @@ pub async fn setup_loop(
                 .expect("Set sync mode");
 
             subdevice
-                .sdo_write(0x1c32, 0x02, TICK_INTERVAL.as_nanos() as u32)
+                .sdo_write(0x1c32, 0x02, cycle_target.as_nanos() as u32)
                 .await
                 .expect("Set cycle time");
 
@@ -472,14 +481,17 @@ pub async fn setup_loop(
     .await?;
 
     // Avoid potential Sdo write Contention on the bus, by just waiting a bit
+    // Timeout is not enough ... or rather a monstrous timeout would be required for all of the sdo writes we do ...
+    // TODO: Keep small timeout here and add Complete Access configuration for the stepper terminals and complex trerminals like (el5152)
     smol::Timer::after(Duration::from_millis(4000)).await;
+
     let mut now = Instant::now();
     let start = Instant::now();
     let mut averages = Vec::new();
     for _ in 0..group_preop.len() {
         averages.push(ExponentialMovingAverage::new(64).unwrap());
     }
-    let mut tick_interval = smol::Timer::interval(TICK_INTERVAL);
+    let mut tick_interval = smol::Timer::interval(cycle_target);
 
     tracing::info!("Moving into PRE-OP with PDI");
     let group = group_preop.into_pre_op_pdi(&maindevice).await?;
@@ -537,9 +549,9 @@ pub async fn setup_loop(
                 // Start SYNC0 100ms in the future
                 start_delay: Duration::from_millis(100),
                 // SYNC0 period should be the same as the process data loop in most cases
-                sync0_period: TICK_INTERVAL,
+                sync0_period: cycle_target,
                 // Send process data half way through cycle
-                sync0_shift: TICK_INTERVAL / 2,
+                sync0_shift: cycle_target / 2,
             },
         )
         .await?;
