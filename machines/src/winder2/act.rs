@@ -86,7 +86,8 @@ impl MachineAct for Winder2 {
                 if let Laser(live_values) = any_live_values 
                 {
                     _ = live_values;
-                    todo!("Adjust speed or smth idk...");
+
+                    // TODO: use data to regulate speed. But not idea how, when what?
                 }
             },
         }
