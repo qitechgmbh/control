@@ -1,0 +1,537 @@
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #242736;
+  --border: #2e3148;
+  --accent: #6c8cff;
+  --accent-dim: #3b4fa8;
+  --text: #e2e4f0;
+  --text-muted: #717898;
+  --ok: #4ade80;
+  --error: #f87171;
+  --font: 'Inter', system-ui, sans-serif;
+  --radius: 8px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#root { height: 100vh; }
+
+/* ── App layout ── */
+.app-layout {
+  display: flex;
+  height: 100vh;
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+}
+
+.sidebar-brand {
+  padding: 8px 16px 16px;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.sidebar-section {
+  padding: 4px 0;
+}
+
+.sidebar-section-label {
+  padding: 8px 16px 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.sidebar-link {
+  display: block;
+  padding: 7px 16px;
+  color: var(--text);
+  text-decoration: none;
+  border-radius: 0;
+  transition: background 0.1s;
+}
+
+.sidebar-link:hover { background: var(--surface2); }
+.sidebar-link.active { color: var(--accent); background: var(--surface2); }
+
+.sidebar-sublink {
+  display: block;
+  padding: 4px 16px 4px 28px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.sidebar-sublink:hover { color: var(--text); }
+.sidebar-sublink.active { color: var(--accent); }
+
+.sidebar-serial { color: var(--text-muted); font-size: 12px; }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+}
+
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.connection-dot.connected { background: var(--ok); }
+.connection-dot.disconnected { background: var(--error); }
+
+/* ── Pages ── */
+.page {
+  max-width: 800px;
+}
+
+.page h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.muted { color: var(--text-muted); }
+
+.serial { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+
+/* ── Machine list ── */
+.machine-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.machine-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.machine-card.error { border-color: var(--error); }
+
+.machine-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.machine-info strong { font-weight: 500; }
+
+.error-badge {
+  background: #3b1c1c;
+  color: var(--error);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.machine-links {
+  display: flex;
+  gap: 8px;
+}
+
+.machine-links a {
+  padding: 5px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.machine-links a:hover { background: var(--accent-dim); border-color: var(--accent); }
+
+/* ── LED control ── */
+.led-grid {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.led-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.12s;
+  min-width: 90px;
+}
+
+.led-btn:hover { border-color: var(--accent-dim); }
+
+.led-btn.led-on {
+  border-color: var(--ok);
+  background: #0d2b1a;
+}
+
+.led-indicator {
+  font-size: 20px;
+}
+
+.led-btn.led-on .led-indicator { color: var(--ok); }
+.led-btn.led-off .led-indicator { color: var(--text-muted); }
+
+.led-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.led-actions button {
+  padding: 8px 20px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.led-actions button:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+/* ── Control grid (used by machine control pages) ── */
+.control-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.control-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.control-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+/* ── Live values ── */
+.live-values {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Row with sparkline: [label + number] [graph] */
+.live-value-row-spark {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+}
+
+.live-value-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 68px;
+  flex-shrink: 0;
+}
+
+.live-value-spark {
+  flex: 1;
+  min-width: 0;
+  height: 64px;
+  overflow: hidden;
+}
+
+.live-value-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.live-value-number {
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* Card wide enough to show the sparklines nicely */
+.live-values-card {
+  grid-column: span 2;
+}
+
+/* MiniGraph container */
+.minigraph-wrap {
+  width: 100%;
+  display: block;
+  height: 64px;
+  overflow: hidden;
+}
+
+/* ── Frequency inputs ── */
+.freq-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.freq-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.freq-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.freq-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.freq-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: var(--font);
+}
+
+.freq-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.freq-reset-btn {
+  padding: 5px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.freq-reset-btn:hover {
+  color: var(--text);
+  border-color: var(--accent-dim);
+}
+
+/* ── Mode selector ── */
+.mode-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 8px 16px;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  font-family: var(--font);
+  transition: all 0.12s;
+}
+
+.mode-btn:hover {
+  border-color: var(--accent-dim);
+  color: var(--text);
+}
+
+.mode-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #1a2040;
+}
+
+.mode-btn.active.running {
+  border-color: var(--ok);
+  color: var(--ok);
+  background: #0d2b1a;
+}
+
+/* ── Graph page ── */
+.page-wide {
+  max-width: 1100px;
+}
+
+.graph-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.graph-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.graph-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* ── Graph toolbar (time-window selector) ── */
+.graph-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.graph-toolbar-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+
+.graph-window-btn {
+  padding: 4px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font);
+  transition: all 0.1s;
+}
+
+.graph-window-btn:hover {
+  color: var(--text);
+  border-color: var(--accent-dim);
+}
+
+.graph-window-btn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+/* uPlot container — must be a block that fills its parent */
+.uplot-wrap {
+  width: 100%;
+  display: block;
+}
+
+/* Hide the built-in title (we use .graph-card-title instead) */
+.uplot-wrap .u-title {
+  display: none;
+}
+
+/* ── Legend table ── */
+/* uPlot renders the legend as a <table>; our CSS reset strips table layout,
+   so we need to restore it explicitly. */
+.uplot-wrap .u-legend {
+  display: table;
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--text-muted);
+  padding-top: 8px;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.uplot-wrap .u-legend tr {
+  display: table-row;
+}
+
+.uplot-wrap .u-legend th,
+.uplot-wrap .u-legend td {
+  display: table-cell;
+  padding: 2px 8px 2px 0;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* First row is the header (Time / series names) */
+.uplot-wrap .u-legend .u-thead tr {
+  display: table-row;
+}
+
+/* Series colour swatch */
+.uplot-wrap .u-legend .u-marker {
+  width: 12px;
+  height: 3px;
+  display: inline-block;
+  border-radius: 2px;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+/* Cursor crosshair colour */
+.uplot-wrap .u-cursor-x,
+.uplot-wrap .u-cursor-y {
+  border-color: var(--text-muted) !important;
+}
