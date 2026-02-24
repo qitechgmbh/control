@@ -80,8 +80,8 @@ impl MachineAct for Winder2 {
 
                 #[allow(irrefutable_let_patterns)]
                 if let Laser(live_values) = any_live_values {
-                    _ = live_values;
 
+                    println!("Winder2: Received values: {:?}", live_values);
                     // TODO: use data to regulate speed. But not idea how, when what?
                 }
             }

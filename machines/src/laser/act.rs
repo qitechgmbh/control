@@ -48,6 +48,8 @@ impl MachineAct for LaserMachine {
                     _ = machine
                         .connection
                         .try_send(ReceiveLiveValues(values.clone()));
+
+                    println!("Sending Laser Live Values");
                 }
             }
 
