@@ -90,8 +90,6 @@ impl MachineAct for LaserMachine {
                 }
 
                 self.connected_machines.push(machine_connection);
-
-                tracing::warn!("ADDED WINDER LETS GOOO");
             }
             MachineMessage::DisconnectMachine(machine_connection) => {
                 self.connected_machines

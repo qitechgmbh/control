@@ -83,8 +83,6 @@ impl MachineAct for Winder2 {
                 if let Laser(live_values) = any_live_values {
                     tracing::info!("Winder2: Received values: {:?}", live_values);
                     // TODO: use data to regulate speed. But not idea how, when what?
-
-                    std::process::exit(69);
                 }
             }
         }
