@@ -36,15 +36,15 @@ impl MachineAct for LaserMachine {
 
         if now.duration_since(self.last_machine_send) > Duration::from_millis(1)
         {
+            use crate::LiveValues;
+
+            let values = LiveValues::Laser(self.get_live_values());
+
             for machine in self.connected_machines.iter()
             {
-                use crate::LiveValues;
-
-                let values = LiveValues::Laser(self.get_live_values());
-
                 if machine.connection.len() <= 5
                 {
-                    _ = machine.connection.try_send(MachineMessage::ReceiveLiveValues(values));
+                    _ = machine.connection.try_send(MachineMessage::ReceiveLiveValues(values.clone()));
                 }
             }
 
