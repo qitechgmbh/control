@@ -2,10 +2,7 @@ import React, { useState } from "react";
 import { Page } from "@/components/Page";
 import { ControlCard } from "@/control/ControlCard";
 import { Label } from "@/control/Label";
-import {
-  SelectionGroup,
-  SelectionGroupBoolean,
-} from "@/control/SelectionGroup";
+import { SelectionGroupBoolean } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder3 } from "./useExtruder";
