@@ -59,10 +59,7 @@ impl MachineNewTrait for ExtruderV2 {
                 target_bar: 0.0,
                 wiring_error: false,
             },
-            screw_state: ScrewState {
-                target_rpm: 0.0,
-                motor_poles: 4,
-            },
+            screw_state: ScrewState { target_rpm: 0.0 },
             heating_states: HeatingStates {
                 nozzle: HeatingState {
                     target_temperature: 0.0,

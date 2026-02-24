@@ -138,7 +138,6 @@ impl ExtruderV2 {
     }
 
     pub fn set_motor_poles(&mut self, motor_poles: usize) {
-        self.screw_state.motor_poles = motor_poles;
         self.emit_state();
     }
 
