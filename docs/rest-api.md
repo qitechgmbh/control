@@ -26,6 +26,7 @@ Example request with curl:
 ```
 # username=machine
 # password=VoMZKZK4K4ZIvON+OU2ZcCXy
+# With -k you can ignore curl's self signed certificate error
 curl https://192.168.130.195/api/v2/machine -k -u machine:VoMZKZK4K4ZIvON+OU2ZcCXy
 ```
 
