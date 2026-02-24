@@ -603,13 +603,7 @@ export function useWinder2() {
   // Filter machines for the correct type
   const filteredMachines = useMemo(
     () =>
-      machines.filter(
-        (m) =>
-          m.machine_identification_unique.machine_identification.vendor ===
-            VENDOR_QITECH &&
-          m.machine_identification_unique.machine_identification.machine ===
-            0x0008,
-      ),
+      machines,
     [machines, machineIdentification],
   );
 
