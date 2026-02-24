@@ -375,7 +375,7 @@ impl MachineApi for Winder2 {
                         ));
                     }
                 };
-                main_sender.try_send(crate::AsyncThreadMessage::ConnectOneWayRequest(
+                main_sender.try_send(crate::AsyncThreadMessage::ConnectTwoWayRequest(
                     crate::CrossConnection {
                         src: self.get_machine_identification_unique(),
                         dest: machine_identification_unique,

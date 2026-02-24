@@ -256,6 +256,7 @@ async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state:
     while let Ok(message) = recv.recv().await {
         match message {
             AsyncThreadMessage::NoMsg => (),
+
             AsyncThreadMessage::ConnectOneWayRequest(cross_connection) => {
                 let api_machines_guard = shared_state.api_machines.lock().await;
                 // The Src Connection is from the machine that recvs the request to connect
@@ -268,7 +269,6 @@ async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state:
                 };
 
                 tracing::warn!("Received signal for ONE WAY REQUEST");
-                std::process::exit(79);
 
                 let dest_sender = match api_machines_guard.get(&dest_ident) {
                     Some(sender) => sender,
@@ -284,6 +284,53 @@ async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state:
                 match res {
                     Ok(_) => (),
                     Err(_) => tracing::error!("Failed to send MachineConnection"),
+                }
+            }
+            AsyncThreadMessage::ConnectTwoWayRequest(cross_connection) => 
+            {
+                let api_machines_guard = shared_state.api_machines.lock().await;
+
+                let src_ident  = cross_connection.src;
+                let dest_ident = cross_connection.dest;
+
+                let src_sender = match api_machines_guard.get(&src_ident) 
+                {
+                    Some(sender) => sender,
+                    None => continue,
+                };
+
+                let dest_sender = match api_machines_guard.get(&dest_ident) 
+                {
+                    Some(sender) => sender,
+                    None => continue,
+                };
+
+                // connect src -> dest
+                let connection_src_to_dest = MachineConnection {
+                    ident: dest_ident.clone(),
+                    connection: dest_sender.clone(),
+                };
+
+                let res = src_sender
+                    .send(machines::MachineMessage::ConnectToMachine(connection_src_to_dest))
+                    .await;
+                match res {
+                    Ok(_) => (),
+                    Err(_) => tracing::error!("Failed to send MachineConnection src -> dest"),
+                }
+
+                // connect dest -> src
+                let connection_dest_to_src = MachineConnection {
+                    ident: src_ident.clone(),
+                    connection: src_sender.clone(),
+                };
+
+                let res = dest_sender
+                    .send(machines::MachineMessage::ConnectToMachine(connection_dest_to_src))
+                    .await;
+                match res {
+                    Ok(_) => (),
+                    Err(_) => tracing::error!("Failed to send MachineConnection dest -> src"),
                 }
             }
             AsyncThreadMessage::DisconnectMachines(cross_connection) => {

@@ -79,6 +79,7 @@ pub struct CrossConnection {
 pub enum AsyncThreadMessage {
     NoMsg,
     ConnectOneWayRequest(CrossConnection),
+    ConnectTwoWayRequest(CrossConnection),
     DisconnectMachines(CrossConnection),
 }
 
