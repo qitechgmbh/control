@@ -67,8 +67,8 @@ impl MachineAct for MockMachine {
                     })
                     .expect("Failed to send values");
                 sender.close();
-            },
-            MachineMessage::ReceiveLiveValues(_) => {},
+            }
+            MachineMessage::ReceiveLiveValues(_) => {}
         }
     }
 }

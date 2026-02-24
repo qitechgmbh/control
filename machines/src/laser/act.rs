@@ -36,19 +36,18 @@ impl MachineAct for LaserMachine {
         }
 
         // send live values to all connected machines every frame
-        if now.duration_since(self.last_machine_send) > Duration::from_millis(1)
-        {
+        if now.duration_since(self.last_machine_send) > Duration::from_millis(1) {
             let values = LiveValues::Laser(self.get_live_values());
 
-            for machine in self.connected_machines.iter()
-            {
+            for machine in self.connected_machines.iter() {
                 const CHANNEL_MESSAGE_CAP: usize = 5;
 
                 // ensure we don' flood the channel. Cap it at 5
-                if machine.connection.len() <= CHANNEL_MESSAGE_CAP
-                {
+                if machine.connection.len() <= CHANNEL_MESSAGE_CAP {
                     use MachineMessage::ReceiveLiveValues;
-                    _ = machine.connection.try_send(ReceiveLiveValues(values.clone()));
+                    _ = machine
+                        .connection
+                        .try_send(ReceiveLiveValues(values.clone()));
                 }
             }
 
@@ -82,21 +81,17 @@ impl MachineAct for LaserMachine {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(machine_connection) =>
-            {   
-                if self.connected_machines.len() >= Self::MAX_CONNECTIONS
-                {
+            MachineMessage::ConnectToMachine(machine_connection) => {
+                if self.connected_machines.len() >= Self::MAX_CONNECTIONS {
                     tracing::debug!("Not adding machine connection. Max capacity reached!");
                     return;
                 }
 
                 self.connected_machines.push(machine_connection);
             }
-            MachineMessage::DisconnectMachine(machine_connection) =>
-            {
+            MachineMessage::DisconnectMachine(machine_connection) => {
                 self.connected_machines
-                    .retain(|machine| 
-                        machine.ident != machine_connection.ident);
+                    .retain(|machine| machine.ident != machine_connection.ident);
             }
             MachineMessage::RequestValues(sender) => {
                 sender
@@ -111,7 +106,7 @@ impl MachineAct for LaserMachine {
 
                 ()
             }
-            MachineMessage::ReceiveLiveValues(_) => {},
+            MachineMessage::ReceiveLiveValues(_) => {}
         }
     }
 }

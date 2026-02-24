@@ -26,6 +26,7 @@ pub mod extruder1;
 pub mod extruder2;
 pub mod ip20_test_machine;
 pub mod laser;
+mod live_values;
 pub mod machine_identification;
 pub mod mock;
 pub mod motor_test_machine;
@@ -38,7 +39,6 @@ pub mod wago_ai_test_machine;
 pub mod wago_do_test_machine;
 pub mod wago_power;
 pub mod winder2;
-mod live_values;
 
 pub use live_values::LiveValues;
 // pub use live_values::
@@ -311,7 +311,7 @@ pub enum MachineMessage {
     ConnectToMachine(MachineConnection),
     DisconnectMachine(MachineConnection),
     RequestValues(Sender<MachineValues>),
-    ReceiveLiveValues(LiveValues)
+    ReceiveLiveValues(LiveValues),
 }
 
 pub trait MachineApi {
@@ -557,7 +557,7 @@ where
                     .expect("Failed to send values");
                 sender.close();
             }
-            MachineMessage::ReceiveLiveValues(_) => {},
+            MachineMessage::ReceiveLiveValues(_) => {}
         }
     }
 }

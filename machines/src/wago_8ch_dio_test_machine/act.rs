@@ -40,8 +40,8 @@ impl MachineAct for Wago8chDigitalIOTestMachine {
                     })
                     .expect("Failed to send values");
                 sender.close();
-            },
-            MachineMessage::ReceiveLiveValues(_) => {},
+            }
+            MachineMessage::ReceiveLiveValues(_) => {}
         }
     }
 }

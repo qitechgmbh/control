@@ -54,9 +54,9 @@ pub struct LaserMachine {
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
     did_change_state: bool,
-    
+
     /// last time we sent live values to connected machines
-    last_machine_send:  Instant,
+    last_machine_send: Instant,
 
     connected_machines: Vec<MachineConnection>,
 }

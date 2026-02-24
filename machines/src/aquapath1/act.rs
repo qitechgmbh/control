@@ -60,8 +60,8 @@ impl MachineAct for AquaPathV1 {
                     })
                     .expect("Failed to send values");
                 sender.close();
-            },
-            MachineMessage::ReceiveLiveValues(_) => {},
+            }
+            MachineMessage::ReceiveLiveValues(_) => {}
         }
     }
 }

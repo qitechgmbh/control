@@ -52,8 +52,8 @@ impl MachineAct for IP20TestMachine {
                     })
                     .expect("Failed to send values");
                 sender.close();
-            },
-            MachineMessage::ReceiveLiveValues(_) => {},
+            }
+            MachineMessage::ReceiveLiveValues(_) => {}
         }
     }
 }
