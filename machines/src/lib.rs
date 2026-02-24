@@ -38,6 +38,10 @@ pub mod wago_ai_test_machine;
 pub mod wago_do_test_machine;
 pub mod wago_power;
 pub mod winder2;
+mod live_values;
+
+pub use live_values::LiveValues;
+// pub use live_values::
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
@@ -307,6 +311,7 @@ pub enum MachineMessage {
     ConnectToMachine(MachineConnection),
     DisconnectMachine(MachineConnection),
     RequestValues(Sender<MachineValues>),
+    ReceiveLiveValues(LiveValues)
 }
 
 pub trait MachineApi {
@@ -552,6 +557,7 @@ where
                     .expect("Failed to send values");
                 sender.close();
             }
+            MachineMessage::ReceiveLiveValues(_) => {},
         }
     }
 }

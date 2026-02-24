@@ -55,6 +55,8 @@ impl MachineNewTrait for LaserMachine {
             higher_tolerance: Length::new::<millimeter>(0.05),
             in_tolerance: true,
             did_change_state: true,
+            last_machine_send: Instant::now(),
+            connected_machines: Vec::new(),
         };
 
         Ok(laser_machine)

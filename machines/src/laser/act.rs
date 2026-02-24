@@ -34,6 +34,23 @@ impl MachineAct for LaserMachine {
             self.emit_state();
         }
 
+        if now.duration_since(self.last_machine_send) > Duration::from_millis(1)
+        {
+            for machine in self.connected_machines.iter()
+            {
+                use crate::LiveValues;
+
+                let values = LiveValues::Laser(self.get_live_values());
+
+                if machine.connection.len() <= 5
+                {
+                    _ = machine.connection.try_send(MachineMessage::ReceiveLiveValues(values));
+                }
+            }
+
+            self.last_machine_send = now;
+        }
+
         // more than 33ms have passed since last emit (30 "fps" target)
         if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             self.emit_live_values();
@@ -60,12 +77,22 @@ impl MachineAct for LaserMachine {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(_machine_connection) =>
-                /*Doesnt connect to any Machine so do nothing*/
-                {}
-            MachineMessage::DisconnectMachine(_machine_connection) =>
-                /*Doesnt connect to any Machine so do nothing*/
-                {}
+            MachineMessage::ConnectToMachine(machine_connection) =>
+            {   
+                if self.connected_machines.len() >= Self::MAX_CONNECTIONS
+                {
+                    tracing::debug!("Not adding machine connection. Max capacity reached!");
+                    return;
+                }
+
+                self.connected_machines.push(machine_connection);
+            }
+            MachineMessage::DisconnectMachine(machine_connection) =>
+            {
+                self.connected_machines
+                    .retain(|machine| 
+                        machine.ident != machine_connection.ident);
+            }
             MachineMessage::RequestValues(sender) => {
                 sender
                     .send_blocking(MachineValues {
@@ -79,6 +106,7 @@ impl MachineAct for LaserMachine {
 
                 ()
             }
+            MachineMessage::ReceiveLiveValues(_) => {},
         }
     }
 }

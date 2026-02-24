@@ -7,12 +7,18 @@ use std::time::{Duration, Instant};
 
 #[cfg(not(feature = "mock-machine"))]
 impl MachineAct for Winder2 {
-    fn act(&mut self, now: Instant) {
-        let machine_message = self.api_receiver.try_recv();
-        match machine_message {
-            Ok(machine_message) => self.act_machine_message(machine_message),
-            Err(_e) => (),
-        };
+    fn act(&mut self, now: Instant) 
+    {
+        // handle up to 5 requests to not run into sync issues        
+        for _ in 0..5 
+        {
+            match self.api_receiver.try_recv() 
+            {
+                Ok(msg) => self.act_machine_message(msg),
+                Err(_) => break,
+            }
+        }
+
         // sync the spool speed
         self.sync_spool_speed(now);
 
@@ -71,7 +77,18 @@ impl MachineAct for Winder2 {
                     })
                     .expect("Failed to send values");
                 sender.close();
-            }
+            },
+            MachineMessage::ReceiveLiveValues(any_live_values) => 
+            {
+                use crate::LiveValues::Laser;
+
+                #[allow(irrefutable_let_patterns)]
+                if let Laser(live_values) = any_live_values 
+                {
+                    _ = live_values;
+                    todo!("Adjust speed or smth idk...");
+                }
+            },
         }
     }
 }

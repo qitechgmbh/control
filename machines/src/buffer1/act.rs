@@ -48,7 +48,8 @@ impl MachineAct for BufferV1 {
                     })
                     .expect("Failed to send values");
                 sender.close();
-            }
+            },
+            MachineMessage::ReceiveLiveValues(_) => {},
         }
     }
 }

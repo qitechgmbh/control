@@ -40,7 +40,8 @@ impl MachineAct for DigitalInputTestMachine {
                     })
                     .expect("Failed to send values");
                 sender.close();
-            }
+            },
+            MachineMessage::ReceiveLiveValues(_) => {},
         }
     }
 }

@@ -24,7 +24,8 @@ impl MachineAct for WagoAiTestMachine {
                     })
                     .expect("Failed to send values");
                 sender.close();
-            }
+            },
+            MachineMessage::ReceiveLiveValues(_) => {},
         }
     }
 

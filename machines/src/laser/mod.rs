@@ -3,7 +3,7 @@ use crate::{
     MACHINE_LASER_V1, VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
-use crate::{Machine, MachineMessage};
+use crate::{Machine, MachineConnection, MachineMessage};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use smol::{
@@ -14,6 +14,7 @@ use socketioxide::extract::SocketRef;
 use units::Length;
 
 use crate::AsyncThreadMessage;
+use std::os::unix::raw::uid_t;
 use std::{sync::Arc, time::Instant};
 use units::length::millimeter;
 
@@ -53,6 +54,11 @@ pub struct LaserMachine {
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
     did_change_state: bool,
+    
+    /// last time we sent live values to connected machines
+    last_machine_send:  Instant,
+
+    connected_machines: Vec<MachineConnection>,
 }
 
 impl Machine for LaserMachine {
@@ -96,6 +102,8 @@ impl LaserMachine {
         vendor: VENDOR_QITECH,
         machine: MACHINE_LASER_V1,
     };
+
+    pub const MAX_CONNECTIONS: usize = 2;
 
     pub fn get_live_values(&self) -> LiveValuesEvent {
         let diameter = self.diameter.get::<millimeter>();

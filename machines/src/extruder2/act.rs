@@ -79,7 +79,8 @@ impl MachineAct for ExtruderV3 {
                     })
                     .expect("Failed to send values");
                 sender.close();
-            }
+            },
+            MachineMessage::ReceiveLiveValues(_) => {},
         }
     }
 }
