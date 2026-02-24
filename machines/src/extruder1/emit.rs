@@ -276,11 +276,6 @@ impl ExtruderV2 {
         self.emit_state();
     }
 
-    pub fn set_motor_poles(&mut self, motor_poles: usize) {
-        self.screw_speed_controller.motor_poles = motor_poles;
-        self.emit_state();
-    }
-
     pub fn set_target_temperature(&mut self, target_temperature: f64, heating_type: HeatingType) {
         let target_temp = ThermodynamicTemperature::new::<degree_celsius>(target_temperature);
 
