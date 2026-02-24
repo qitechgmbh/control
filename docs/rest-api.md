@@ -44,10 +44,12 @@ These are untrusted by default in browsers,tools like curl and https libraries.
 For most programs you can either ignore this warning or you can manually trust the certificate on your system.
 How these are installed depends on your system.
 
-```
-./.local/share/caddy/pki/authorities/local/root.crt
-/var/lib/caddy/.local>/share/caddy/pki/authorities/local/root.crt
-```
+On Nixos the root Certificate for Caddy is located at: /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt
+You just need to copy this file to an usb drive or copy it some other way and add it as a trusted root certificate in your OS.
+
+How this is done heavily depends on your OS and is not further expanded on.
+A single Google seach for your OS should give you the answer.
+
 
 ## Bypassing HTTPS and Authentication
 If you have an isolated network and dont wish to perform Authentication, then you can achieve this by: 
