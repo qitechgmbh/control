@@ -52,6 +52,7 @@ impl MachineAct for Winder2 {
 
                 ()
             }
+            MachineMessage::ReceiveLiveValues(_) => {}
         }
     }
 }

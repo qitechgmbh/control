@@ -14,7 +14,6 @@ use socketioxide::extract::SocketRef;
 use units::Length;
 
 use crate::AsyncThreadMessage;
-use std::os::unix::raw::uid_t;
 use std::{sync::Arc, time::Instant};
 use units::length::millimeter;
 
