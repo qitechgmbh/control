@@ -13,18 +13,20 @@ The panel behaves like any other NetworkManager-managed linux and is able to eit
 The panel performs Basic-Auth authentication. 
 For EVERY request made over HTTPS, Basic Auth is required.
 
-To set the password on the Panel for Basic Auth do the following:
+To set the password on the Panel for Basic Auth, do the following:
 1. Open a Terminal
 2. cd /home/qitech/control
 3. ./credentials.sh
 
-credentials.sh prints the username and password for the api ONCE in the console. 
+The credentials.sh script sets and prints the username and password for the api ONCE in the console. 
 Afterwards its accessible in machine_password in /tmp/ until the machine shuts down.
 If you ever forget your password you can simply run ./credentials.sh again, resetting the password used, however the username will always be machine 
 
 Example request with curl:
 ```
-curl https://192.168.130.195  -u
+# username=machine
+# password=VoMZKZK4K4ZIvON+OU2ZcCXy
+curl https://192.168.130.195/api/v2/machine -k -u machine:VoMZKZK4K4ZIvON+OU2ZcCXy
 ```
 
 For HTTPS+Authentication we have Caddy (a reverse proxy, with automatic https) in front of the internal API.
@@ -78,7 +80,7 @@ Each machine also includes a `legacy_id` to support older **v1** workflows. If a
 ### Example request
 
 ```bash
-curl -X GET "https://IP_ADDRESS/api/v2/machine"
+curl -X GET "https://IP_ADDRESS/api/v2/machine" -u machine:YOUR_PASSWORD
 ```
 
 ### Example response
@@ -159,7 +161,7 @@ To receive continuous updates (via WebSockets), subscribe to the machine namespa
 ### Example request (mock machine)
 
 ```bash
-curl -X GET "https://IP_ADDRESS/api/v2/machine/mock/57922"
+curl -X GET "https://IP_ADDRESS/api/v2/machine/mock/57922" -u machine:YOUR_PASSWORD
 ```
 
 ### Example response
@@ -214,7 +216,7 @@ The API does **not** return the newly-applied state in the POST response. The pa
 curl -X POST \
   -d  \
   -H "Content-Type: application/json" \
-  "http://IP_ADDRESS/api/v1/machine/mock/57922"
+  "https://IP_ADDRESS/api/v1/machine/mock/57922" -u machine:YOUR_PASSWORD
 ```
 
 ### Example response
