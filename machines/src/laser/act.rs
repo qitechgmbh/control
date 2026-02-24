@@ -1,4 +1,5 @@
 use super::LaserMachine;
+use crate::LiveValues;
 use crate::MachineAct;
 use crate::MachineMessage;
 use crate::MachineValues;
@@ -34,20 +35,24 @@ impl MachineAct for LaserMachine {
             self.emit_state();
         }
 
+        // send live values to all connected machines every frame
         if now.duration_since(self.last_machine_send) > Duration::from_millis(1)
         {
-            use crate::LiveValues;
-
             let values = LiveValues::Laser(self.get_live_values());
 
             for machine in self.connected_machines.iter()
             {
-                if machine.connection.len() <= 5
+                const CHANNEL_MESSAGE_CAP: usize = 5;
+
+                // ensure we don' flood the channel. Cap it at 5
+                if machine.connection.len() <= CHANNEL_MESSAGE_CAP
                 {
-                    _ = machine.connection.try_send(MachineMessage::ReceiveLiveValues(values.clone()));
+                    use MachineMessage::ReceiveLiveValues;
+                    _ = machine.connection.try_send(ReceiveLiveValues(values.clone()));
                 }
             }
 
+            // reset timer
             self.last_machine_send = now;
         }
 
