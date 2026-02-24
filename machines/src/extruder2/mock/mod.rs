@@ -20,12 +20,12 @@ use crate::{
     extruder1::{
         ExtruderV2Mode,
         api::{
-            HeatingStates, InverterStatusState,
-            ModeState, MotorStatusValues, PidSettingsStates, PressureState, RegulationState,
-            RotationState, ScrewState,
+            ExtruderSettingsState, HeatingStates, InverterStatusState, ModeState,
+            MotorStatusValues, PidSettingsStates, PressureState, RegulationState, RotationState,
+            ScrewState,
         },
     },
-    extruder2::api::{ExtruderSettingsState, ExtruderV3Namespace},
+    extruder2::api::ExtruderV3Namespace,
 };
 
 // Just checking mock-machine feature here to exclude these modules from compilation entirely

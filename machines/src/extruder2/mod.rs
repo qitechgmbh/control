@@ -92,10 +92,13 @@ impl HeatingWatchdogZone {
         use units::thermodynamic_temperature::degree_celsius;
 
         let current_temp = controller.heating.temperature.get::<degree_celsius>();
-        let target_temp = controller.heating.target_temperature.get::<degree_celsius>();
+        let target_temp = controller
+            .heating
+            .target_temperature
+            .get::<degree_celsius>();
         let is_heating_active = controller.heating.heating;
 
-        // Check if heating should be active 
+        // Check if heating should be active
         let should_be_heating = target_temp > current_temp;
 
         // Start monitoring when heating becomes active
@@ -124,7 +127,8 @@ impl HeatingWatchdogZone {
         }
 
         // Check for fault if we're monitoring
-        if let (Some(start_temp), Some(start_time)) = (self.start_temperature, self.heating_start_time)
+        if let (Some(start_temp), Some(start_time)) =
+            (self.start_temperature, self.heating_start_time)
         {
             let elapsed = now.duration_since(start_time);
             let temp_increase = current_temp - start_temp;
@@ -440,10 +444,7 @@ impl ExtruderV3 {
             // In theory fault_detected guarantees at least one zone here, but use a
             // defensive default to avoid panicking on an empty list in case the logic
             // above is changed in the future.
-            let first_fault_zone = fault_zones
-                .first()
-                .copied()
-                .unwrap_or("unknown");
+            let first_fault_zone = fault_zones.first().copied().unwrap_or("unknown");
 
             if first_fault_zone == "unknown" {
                 tracing::error!(

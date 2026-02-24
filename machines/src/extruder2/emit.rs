@@ -267,7 +267,9 @@ impl ExtruderV3 {
     }
 
     pub fn retry_heating(&mut self) {
-        tracing::info!("Retrying heating after fault - resetting watchdog and switching to Heat mode");
+        tracing::info!(
+            "Retrying heating after fault - resetting watchdog and switching to Heat mode"
+        );
         self.heating_fault_state.fault_zone = None;
         self.heating_fault_state.fault_acknowledged = false;
         self.heating_watchdog = super::HeatingWatchdog::default();
