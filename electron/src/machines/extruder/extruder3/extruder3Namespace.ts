@@ -81,7 +81,6 @@ export const pressureStateSchema = z.object({
  */
 export const screwStateSchema = z.object({
   target_rpm: z.number(),
-  motor_poles: z.number(),
 });
 
 /**

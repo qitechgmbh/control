@@ -51,7 +51,6 @@ impl ExtruderV2 {
                     .screw_speed_controller
                     .get_target_rpm()
                     .get::<revolution_per_minute>(),
-                motor_poles: self.screw_speed_controller.motor_poles,
             },
             heating_states: HeatingStates {
                 nozzle: HeatingState {

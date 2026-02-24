@@ -81,7 +81,6 @@ export const pressureStateSchema = z.object({
  */
 export const screwStateSchema = z.object({
   target_rpm: z.number(),
-  motor_poles: z.number(),
 });
 
 /**
@@ -281,7 +280,6 @@ export function extruder2MessageHandler(
             : state.defaultState,
         }));
       } else if (eventName === "LiveValuesEvent") {
-        console.log(event);
         const liveValuesEvent = liveValuesEventSchema.parse(event);
         const timestamp = event.ts;
         updateStore((state) => ({
