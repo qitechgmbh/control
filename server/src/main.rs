@@ -286,21 +286,18 @@ async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state:
                     Err(_) => tracing::error!("Failed to send MachineConnection"),
                 }
             }
-            AsyncThreadMessage::ConnectTwoWayRequest(cross_connection) => 
-            {
+            AsyncThreadMessage::ConnectTwoWayRequest(cross_connection) => {
                 let api_machines_guard = shared_state.api_machines.lock().await;
 
-                let src_ident  = cross_connection.src;
+                let src_ident = cross_connection.src;
                 let dest_ident = cross_connection.dest;
 
-                let src_sender = match api_machines_guard.get(&src_ident) 
-                {
+                let src_sender = match api_machines_guard.get(&src_ident) {
                     Some(sender) => sender,
                     None => continue,
                 };
 
-                let dest_sender = match api_machines_guard.get(&dest_ident) 
-                {
+                let dest_sender = match api_machines_guard.get(&dest_ident) {
                     Some(sender) => sender,
                     None => continue,
                 };
@@ -312,7 +309,9 @@ async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state:
                 };
 
                 let res = src_sender
-                    .send(machines::MachineMessage::ConnectToMachine(connection_src_to_dest))
+                    .send(machines::MachineMessage::ConnectToMachine(
+                        connection_src_to_dest,
+                    ))
                     .await;
                 match res {
                     Ok(_) => (),
@@ -326,7 +325,9 @@ async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state:
                 };
 
                 let res = dest_sender
-                    .send(machines::MachineMessage::ConnectToMachine(connection_dest_to_src))
+                    .send(machines::MachineMessage::ConnectToMachine(
+                        connection_dest_to_src,
+                    ))
                     .await;
                 match res {
                     Ok(_) => (),

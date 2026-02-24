@@ -9,8 +9,7 @@ use std::time::{Duration, Instant};
 impl MachineAct for Winder2 {
     fn act(&mut self, now: Instant) {
         // handle up to 5 requests to not run into sync issues
-        for _ in 0..5 
-        {
+        for _ in 0..5 {
             match self.api_receiver.try_recv() {
                 Ok(msg) => self.act_machine_message(msg),
                 Err(_) => break,
@@ -80,8 +79,7 @@ impl MachineAct for Winder2 {
                 use crate::LiveValues::Laser;
 
                 #[allow(irrefutable_let_patterns)]
-                if let Laser(live_values) = any_live_values 
-                {
+                if let Laser(live_values) = any_live_values {
                     _ = live_values;
                     // TODO: use data to regulate speed. But not idea how, when what?
                 }
