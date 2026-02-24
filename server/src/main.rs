@@ -267,6 +267,9 @@ async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state:
                     None => continue,
                 };
 
+                tracing::warn!("Received signal for ONE WAY REQUEST");
+                std::process::exit(79);
+
                 let dest_sender = match api_machines_guard.get(&dest_ident) {
                     Some(sender) => sender,
                     None => continue,
