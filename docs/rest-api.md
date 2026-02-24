@@ -2,7 +2,7 @@
 
 The Qitech Control Panel exposes a small HTTP interface for discovering machines and reading their current values. All examples below assume you are connected to the panel’s Ethernet subnet and talk directly to the panel at:
 
-- **Base URL:** `http://10.10.10.1:3001`
+- **Base URL:** `https://IP_ADDRESS`
 
 > **Schema note:** This documentation intentionally stays light on field details beyond what is shown in the examples. For the exact datatypes and complete payload shapes, refer to the corresponding Rust types (linked below).
 
@@ -10,17 +10,51 @@ The Qitech Control Panel exposes a small HTTP interface for discovering machines
 
 ## Authentication
 
-The panel does **not** perform HTTP authentication. The expected security model is **network-level isolation**: anything that can send packets to the panel’s Ethernet interface is treated as trusted. This matches common security assumptions in EtherCAT-style control networks. It is therefore suggested to run the entire production line in isolated operation.
+The panel performs Basic Auth authentication. 
+For EVERY request made over HTTPS Basic Auth is expected.
 
-The panel is configured to administer its own subnet `10.10.10.0/24` via DHCP, while Wi-Fi can be used for upstream internet connectivity. To let the outside world communicate with the production line, a router should be placed at the network bondary bridging the production line's subnet and the rest of the network. The router can run in **client/bridge mode** on the line's subnet and expose the panel's API via **port forwading** or through a **reverse proxy** where one can add authentication, logging, rate limiting, etc.
+To set the password on the Panel for Basic Auth do the following:
+1. Open a Terminal
+2. cd /home/qitech/control
+3. ./credentials.sh
 
-The following graphic depicts the suggested network topology for a single production line. Many lines could potentially share the same router.
+credentials.sh prints the username and password for the api ONCE in the console. 
+Afterwards its accessible in machine_password in /tmp/ until the machine shuts down.
+If you ever forget your password you can simply run ./credentials.sh again, resetting the password used, however the username will always be machine 
 
-<p align="center">
-  <img width="769" height="528" alt="Suggested network topology" src="./assets/subnet.png" />
-</p>
+For HTTPS+Authentication we have Caddy (a reverse proxy, with automatic https) in front of the internal API.
+The panel is configured like any other NetworkManager linux and is able to either receive an IP-Address over DHCP or a statically defined one.
+Where the static IP is most likely the easiest to work with.
+In theory the HTTPS-Api Can be accessed over any network interface that is configured by NetworkManager.
 
-If DNS is available on the subnet, you may be able to resolve `qitech.control`; otherwise use the static address `10.10.10.1`.
+If DNS is available on the subnet, you may be able to resolve `qitech.control`.
+
+## Handling Self signed Certificate Warnings
+
+What you might notice is that caddy automatically generates certificates with its internal CA.
+These are untrusted by default in browsers,tools like curl and https libraries.
+
+For most programs you can either ignore this warning or you can manually trust the certificate on your system:
+```
+./.local/share/caddy/pki/authorities/local/root.crt
+/var/lib/caddy/.local>/share/caddy/pki/authorities/local/root.crt
+```
+
+## Bypassing HTTPS and Authentication
+If you have an isolated network and dont wish to perform Authentication, then you can achieve this by: 
+1. Forking our repository
+2. Changing the Open Ports in nixos/os/configuration.nix:
+```
+  # All the way at the Bottom   
+  networking.firewall.allowedUDPPorts = [ 53 67 69 ];
+  # Change this 
+  networking.firewall.allowedTCPPorts = [ 443 ];
+  # To this
+  networking.firewall.allowedTCPPorts = [ 3001 ];
+```
+
+Again, you should only ever do this if you have your own reverse proxy with authentication or you have an isolated network.
+
 
 ---
 
@@ -38,7 +72,7 @@ Each machine also includes a `legacy_id` to support older **v1** workflows. If a
 ### Example request
 
 ```bash
-curl -X GET "http://10.10.10.1:3001/api/v2/machine"
+curl -X GET "https://IP_ADDRESS/api/v2/machine"
 ```
 
 ### Example response
@@ -119,7 +153,7 @@ To receive continuous updates (via WebSockets), subscribe to the machine namespa
 ### Example request (mock machine)
 
 ```bash
-curl -X GET "http://10.10.10.1:3001/api/v2/machine/mock/57922"
+curl -X GET "https://IP_ADDRESS/api/v2/machine/mock/57922"
 ```
 
 ### Example response
@@ -174,7 +208,7 @@ The API does **not** return the newly-applied state in the POST response. The pa
 curl -X POST \
   -d  \
   -H "Content-Type: application/json" \
-  "http://10.10.10.1:3001/api/v1/machine/mock/57922"
+  "http://IP_ADDRESS/api/v1/machine/mock/57922"
 ```
 
 ### Example response
