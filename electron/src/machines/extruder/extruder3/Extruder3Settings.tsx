@@ -72,21 +72,24 @@ export function Extruder3SettingsPage() {
         </Label>
         <Label label="Heating Safeguard">
           <SelectionGroupBoolean
-            value={state?.extruder_settings_state.heating_safeguard_enabled ?? true}
+            value={
+              state?.extruder_settings_state.heating_safeguard_enabled ?? true
+            }
             optionTrue={{ children: "Enabled" }}
             optionFalse={{ children: "Disabled" }}
             onChange={setHeatingSafeguardEnabled}
           />
-          <p className="text-sm text-muted-foreground mt-1">
-            When enabled, monitors heating progress and automatically sets to standby if
-            temperature doesn&apos;t increase by at least 5°C within 60 seconds.
+          <p className="text-muted-foreground mt-1 text-sm">
+            When enabled, monitors heating progress and automatically sets to
+            standby if temperature doesn&apos;t increase by at least 5°C within
+            60 seconds.
           </p>
         </Label>
         <Label label="Nozzle Temperature Target Enabled">
           <SelectionGroupBoolean
             value={
-              state?.extruder_settings_state.nozzle_temperature_target_enabled ??
-              true
+              state?.extruder_settings_state
+                .nozzle_temperature_target_enabled ?? true
             }
             optionTrue={{ children: "Enabled" }}
             optionFalse={{ children: "Disabled" }}

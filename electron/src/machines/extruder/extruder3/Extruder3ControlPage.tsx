@@ -11,35 +11,11 @@ import { Label } from "@/control/Label";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder3 } from "./useExtruder";
-import { extruder3Route } from "@/routes/routes";
-import { useMemo } from "react";
-import { extruder3 } from "@/machines/properties";
-import type { MachineIdentificationUnique } from "@/machines/types";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { StatusBadge } from "@/control/StatusBadge";
 import { GlobalHeatingFaultToastManager } from "./GlobalHeatingFaultToastManager";
 
 export function Extruder3ControlPage() {
-  const { serial: serialString } = extruder3Route.useParams();
-
-  // Memorize machine identification for toast manager
-  const machineIdentification: MachineIdentificationUnique = useMemo(() => {
-    const serial = parseInt(serialString);
-    if (isNaN(serial)) {
-      return {
-        machine_identification: {
-          vendor: 0,
-          machine: 0,
-        },
-        serial: 0,
-      };
-    }
-    return {
-      machine_identification: extruder3.machine_identification,
-      serial,
-    };
-  }, [serialString]);
-
   const {
     state,
     defaultState,
@@ -71,6 +47,7 @@ export function Extruder3ControlPage() {
     isLoading,
     isDisabled,
     retryHeating,
+    acknowledgeHeatingFault,
   } = useExtruder3();
 
   // Helper to check if a zone has a heating fault
@@ -114,7 +91,8 @@ export function Extruder3ControlPage() {
   return (
     <Page>
       <GlobalHeatingFaultToastManager
-        machineIdentification={machineIdentification}
+        state={state}
+        onAcknowledgeHeatingFault={acknowledgeHeatingFault}
       />
       <ControlGrid>
         <HeatingZone

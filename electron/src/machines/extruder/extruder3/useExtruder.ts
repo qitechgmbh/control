@@ -239,7 +239,8 @@ export function useExtruder3() {
   const setHeatingSafeguardEnabled = (enabled: boolean) => {
     updateStateOptimistically(
       (current) => {
-        current.data.extruder_settings_state.heating_safeguard_enabled = enabled;
+        current.data.extruder_settings_state.heating_safeguard_enabled =
+          enabled;
       },
       () =>
         requestHeatingSafeguardEnabled({
