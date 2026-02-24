@@ -48,8 +48,6 @@ impl MachineAct for LaserMachine {
                     _ = machine
                         .connection
                         .try_send(ReceiveLiveValues(values.clone()));
-
-                    tracing::info!("Sending Laser Live Values");
                 }
             }
 
