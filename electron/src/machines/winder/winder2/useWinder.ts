@@ -603,7 +603,13 @@ export function useWinder2() {
   // Filter machines for the correct type
   const filteredMachines = useMemo(
     () =>
-      machines,
+      machines.filter(
+        (m) =>
+          m.machine_identification_unique.machine_identification.vendor ===
+            VENDOR_QITECH &&
+          m.machine_identification_unique.machine_identification.machine ===
+            0x0006, // id of laser machine
+      ),
     [machines, machineIdentification],
   );
 
