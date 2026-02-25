@@ -604,6 +604,8 @@ export function BigGraph({
               uplotRef={uplotRef}
               newData={newData}
               config={enhancedConfig}
+              selectedTimeWindow={selectedTimeWindow}
+              isLiveMode={isLiveMode}
             />
           </div>
         </div>

@@ -56,6 +56,28 @@ function buildSteppedPath(
   return parts.join(" ");
 }
 
+function buildFlatLatestValuePath(u: uPlot, yData: Array<number | null>): string {
+  let latestValue: number | null = null;
+
+  for (let i = yData.length - 1; i >= 0; i--) {
+    const value = yData[i];
+    if (value !== null && value !== undefined) {
+      latestValue = value;
+      break;
+    }
+  }
+
+  if (latestValue === null) {
+    return "";
+  }
+
+  const y = u.valToPos(latestValue, "y", true);
+  const left = u.bbox.left;
+  const right = u.bbox.left + u.bbox.width;
+
+  return `M ${left} ${y} L ${right} ${y}`;
+}
+
 function getHistoricalDashTargets(
   data: BigGraphProps["newData"],
   config: GraphConfig,
@@ -101,10 +123,14 @@ export function TargetDashOverlay({
   uplotRef,
   newData,
   config,
+  selectedTimeWindow,
+  isLiveMode,
 }: {
   uplotRef: React.RefObject<uPlot | null>;
   newData: BigGraphProps["newData"];
   config: GraphConfig;
+  selectedTimeWindow: number | "all";
+  isLiveMode: boolean;
 }) {
   const targetMeta = useMemo(
     () => getHistoricalDashTargets(newData, config),
@@ -144,7 +170,14 @@ export function TargetDashOverlay({
           const yData = u.data[meta.dataIndex] as Array<number | null> | undefined;
           if (!yData || yData.length < 2) return null;
 
-          const d = buildSteppedPath(u, xData, yData);
+          const useFlatShortWindowPath =
+            isLiveMode &&
+            selectedTimeWindow !== "all" &&
+            selectedTimeWindow <= 60_000;
+
+          const d = useFlatShortWindowPath
+            ? buildFlatLatestValuePath(u, yData)
+            : buildSteppedPath(u, xData, yData);
           if (!d) return null;
 
           return {
@@ -181,7 +214,7 @@ export function TargetDashOverlay({
     return () => {
       window.clearInterval(recalcIntervalId);
     };
-  }, [uplotRef, targetMeta]);
+  }, [uplotRef, targetMeta, isLiveMode, selectedTimeWindow]);
 
   if (lines.length === 0) {
     return null;
