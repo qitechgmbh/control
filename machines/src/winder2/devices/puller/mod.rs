@@ -66,23 +66,31 @@ impl Puller
 //     let _ = self.puller.set_speed(steps_per_second);
 // }
 
-pub struct SpeedController
+pub enum SpeedController
 {
-    last_speed: Velocity,
-
-    manual:   (),
-    diameter: (),
+    Fixed(FixedSpeedController),
+    Dynamic(DynamicSpeedController),
 }
 
-pub struct DiameterSpeedRegulator
+pub struct FixedSpeedController
 {
+    prev_speed:   Velocity,
+    target_speed: Velocity,
+}
+
+pub enum DynamicSpeedController
+{
+    Laser(LaserSpeedController)
+}
+
+pub struct LaserSpeedController
+{
+    base_speed:       Length,
     current_diameter: Length,
     target_diameter:  Length,
-
-    // pid controller
 }
 
-impl DiameterSpeedRegulator
+impl LaserSpeedController
 {
     pub fn update(&mut self) -> Velocity
     {
