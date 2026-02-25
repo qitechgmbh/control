@@ -286,7 +286,6 @@ export function TargetDashOverlay({
         })
         .filter((line): line is OverlayLine => !!line);
 
-      
       if (nextLines.length > 0) {
         setLines((prev) =>
           areOverlayLinesEqual(prev, nextLines) ? prev : nextLines,
