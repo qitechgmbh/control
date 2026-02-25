@@ -8,6 +8,9 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+
 env:
   NIX_PATH: nixpkgs=channel:nixos-25.05
 
