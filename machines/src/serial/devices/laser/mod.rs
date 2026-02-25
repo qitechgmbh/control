@@ -208,10 +208,28 @@ impl Laser {
 
         port.clear(ClearBuffer::All).ok();
 
+        let mut last_run = Instant::now();
+
         while !_self.read().await.shutdown_flag.load(Ordering::SeqCst) {
+
+            let now = Instant::now();
+
+            if now.duration_since(last_run) >= Duration::from_secs(1) 
+            {
+                // ✅ Execute your block
+                println!("Laser thread cycle");
+
+                // Reset timer
+                last_run = now;
+            }
+
             // send diameter request
             let response = retry_n_times(10, || {
                 if let Err(e) = port.write_all(&request_buffer) {
+
+
+                    println!("Failed to write to port!");
+
                     return Err(anyhow!("Failed to write to port: {}", e));
                 }
 
