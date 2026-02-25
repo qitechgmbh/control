@@ -10,7 +10,7 @@ buildNpmPackage rec {
   ELECTRON_SKIP_BINARY_DOWNLOAD = 0;
 
   makeCacheWritable = true;
-  npmDepsHash = "sha256-N2kdS9IKkEMNOPPnRNQ9GvCenR/k88fVyAFzXMJyxs4=";
+  npmDepsHash = "sha256-jW9nogboiuYBzjLNM5rlYsdfp+58OlDf+kxjgNlST70=";
   npmFlags = [ "--no-audit" "--no-fund" ];
 
   installPhase = ''
