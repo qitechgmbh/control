@@ -185,17 +185,24 @@ in {
     powertop.enable = false;
   };
 
-  # Ensure all power management is disabled
+
   services.logind = {
+    # This remains for backward compatibility/high-level override
     lidSwitch = "ignore";
-    settings.Login = ''
-      HandlePowerKey=ignore
-      HandleSuspendKey=ignore
-      HandleHibernateKey=ignore
-      HandleLidSwitch=ignore
-      IdleAction=ignore
-    '';
+
+    # Structured settings for logind.conf
+    settings = {
+      Login = {
+        HandlePowerKey = "ignore";
+        HandleSuspendKey = "ignore";
+        HandleHibernateKey = "ignore";
+        HandleLidSwitch = "ignore";
+        IdleAction = "ignore";
+      };
+    };
   };
+
+
 
   # Configure keymap in X11
   services.xserver.xkb = {
