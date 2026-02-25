@@ -83,7 +83,6 @@ pub async fn add_serial_device(
     machine_registry: &MachineRegistry,
     socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
 ) {
-    tracing::info!("add_serial_device");
     let hardware = MachineNewHardwareSerial { device };
 
     let device_identification_identified: DeviceIdentificationIdentified = device_identification
@@ -414,7 +413,6 @@ fn main() {
                     app_state.clone(),
                 ));
             }
-
             future::yield_now().await;
         }
     });

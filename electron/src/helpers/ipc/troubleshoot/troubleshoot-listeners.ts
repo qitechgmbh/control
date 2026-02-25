@@ -1,14 +1,13 @@
-import { ipcMain } from "electron";
-import { spawn, ChildProcess } from "child_process";
+import { ipcMain, dialog } from "electron";
+import { spawn, exec, ChildProcess } from "child_process";
 import {
   TROUBLESHOOT_REBOOT_HMI,
   TROUBLESHOOT_RESTART_BACKEND,
-  TROUBLESHOOT_START_LOG_STREAM,
-  TROUBLESHOOT_STOP_LOG_STREAM,
-  TROUBLESHOOT_LOG_DATA,
+  TROUBLESHOOT_EXPORT_LOGS,
 } from "./troubleshoot-channels";
 
-let logStreamProcess: ChildProcess | null = null;
+import fs from "fs";
+import path from "path";
 
 export function addTroubleshootEventListeners() {
   ipcMain.handle(TROUBLESHOOT_REBOOT_HMI, async () => {
@@ -60,62 +59,45 @@ export function addTroubleshootEventListeners() {
     }
   });
 
-  ipcMain.handle(TROUBLESHOOT_START_LOG_STREAM, async (event) => {
+  ipcMain.handle(TROUBLESHOOT_EXPORT_LOGS, async () => {
     try {
-      // Stop any existing log stream
-      if (logStreamProcess) {
-        logStreamProcess.kill();
-        logStreamProcess = null;
+      const now = new Date();
+      const datePart = now.toISOString().split("T")[0]; // YYYY-MM-DD
+      const timePart = now.toTimeString().split(" ")[0].replace(/:/g, "-"); // HH-mm-ss
+      const fileName = `journal_${datePart}_${timePart}.log`;
+
+      // 1. Open a Save Dialog so the user can choose the location
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: "Export System Logs",
+        defaultPath: fileName,
+        filters: [{ name: "Log Files", extensions: ["log"] }],
+      });
+
+      if (canceled || !filePath) {
+        return { success: false, error: "Export cancelled by user" };
       }
 
-      logStreamProcess = spawn(
-        "journalctl",
-        ["-u", "qitech-control-server", "-n", "10000", "-f"],
-        {
-          shell: true,
+      // 2. Wrap the exec in a typed Promise to match the backend restart pattern
+      // This resolves the TS2794 error by explicitly defining the return type
+      return await new Promise<{ success: boolean; error?: string }>(
+        (resolve) => {
+          // Note: journalctl -xb usually requires sudo or journal group membership
+          exec(`journalctl -xb > "${filePath}"`, (error, stdout, stderr) => {
+            if (error) {
+              console.error("Exec error:", error);
+              resolve({
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+              });
+              return;
+            }
+
+            resolve({ success: true });
+          });
         },
       );
-
-      logStreamProcess.stdout?.on("data", (data) => {
-        const logLine = data.toString();
-        event.sender.send(TROUBLESHOOT_LOG_DATA, logLine);
-      });
-
-      logStreamProcess.stderr?.on("data", (data) => {
-        const logLine = data.toString();
-        event.sender.send(TROUBLESHOOT_LOG_DATA, logLine);
-      });
-
-      logStreamProcess.on("close", (code) => {
-        console.log(`Log stream process exited with code ${code}`);
-        logStreamProcess = null;
-      });
-
-      logStreamProcess.on("error", (error) => {
-        console.error("Log stream process error:", error);
-        logStreamProcess = null;
-      });
-
-      return { success: true };
     } catch (error) {
-      console.error("Failed to start log stream:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
-  });
-
-  ipcMain.handle(TROUBLESHOOT_STOP_LOG_STREAM, async () => {
-    try {
-      if (logStreamProcess) {
-        logStreamProcess.kill();
-        logStreamProcess = null;
-        console.log("Log stream stopped");
-      }
-      return { success: true };
-    } catch (error) {
-      console.error("Failed to stop log stream:", error);
+      console.error("Failed to export logs: ", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),

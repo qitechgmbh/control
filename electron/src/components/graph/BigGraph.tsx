@@ -20,6 +20,7 @@ import { TouchButton } from "../touch/TouchButton";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { ControlCard } from "@/control/ControlCard";
 import { getAllTimeSeries } from "./createChart";
+import { TargetDashOverlay } from "./TargetDashOverlay";
 
 // Collects lines connected to visible series for rendering
 const getVisibleLines = (data: any, visibleSeries: boolean[]) => {
@@ -591,10 +592,18 @@ export function BigGraph({
 
         <div className="flex-1 overflow-hidden rounded-b-3xl pt-4">
           <div
-            ref={containerRef}
-            className={`h-full w-full overflow-hidden transition-opacity duration-100`}
+            className={`relative h-full w-full overflow-hidden transition-opacity duration-100`}
             style={{ backgroundColor: colors.background }}
-          />
+          >
+            <div ref={containerRef} className="h-full w-full overflow-hidden" />
+            <TargetDashOverlay
+              uplotRef={uplotRef}
+              newData={newData}
+              config={enhancedConfig}
+              selectedTimeWindow={selectedTimeWindow}
+              isLiveMode={isLiveMode}
+            />
+          </div>
         </div>
       </div>
     </div>
