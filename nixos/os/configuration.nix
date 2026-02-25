@@ -188,7 +188,7 @@ in {
   # Ensure all power management is disabled
   services.logind = {
     lidSwitch = "ignore";
-    extraConfig = ''
+    settings.Login = ''
       HandlePowerKey=ignore
       HandleSuspendKey=ignore
       HandleHibernateKey=ignore
