@@ -11,14 +11,68 @@ type OverlayLine = {
   d: string;
 };
 
-const PATH_RECALC_INTERVAL_MS = 120;
+type ClipRect = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+function findFirstGe(arr: number[], value: number): number {
+  let lo = 0;
+  let hi = arr.length - 1;
+  let ans = arr.length;
+
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (arr[mid] >= value) {
+      ans = mid;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+
+  return ans;
+}
+
+function findLastLe(arr: number[], value: number): number {
+  let lo = 0;
+  let hi = arr.length - 1;
+  let ans = -1;
+
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (arr[mid] <= value) {
+      ans = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+
+  return ans;
+}
 
 function buildSteppedPath(
   u: uPlot,
   xData: number[],
   yData: Array<number | null>,
 ): string {
-  if (xData.length < 2) {
+  const xMin = u.scales.x?.min;
+  const xMax = u.scales.x?.max;
+
+  if (xData.length < 2 || xMin === undefined || xMax === undefined) {
+    return "";
+  }
+
+  const firstVisibleIdx = Math.max(0, findFirstGe(xData, xMin) - 1);
+  const lastVisibleIdx = Math.min(
+    xData.length - 1,
+    findLastLe(xData, xMax) + 1,
+  );
+
+  if (lastVisibleIdx < firstVisibleIdx) {
     return "";
   }
 
@@ -27,7 +81,7 @@ function buildSteppedPath(
   let prevX = 0;
   let prevY = 0;
 
-  for (let i = 0; i < xData.length; i++) {
+  for (let i = firstVisibleIdx; i <= lastVisibleIdx; i++) {
     const value = yData[i];
     if (value === null || value === undefined) continue;
 
@@ -122,6 +176,40 @@ function getHistoricalDashTargets(
   return targets;
 }
 
+function areDashArraysEqual(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+function areOverlayLinesEqual(a: OverlayLine[], b: OverlayLine[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (
+      a[i].key !== b[i].key ||
+      a[i].color !== b[i].color ||
+      a[i].width !== b[i].width ||
+      a[i].d !== b[i].d ||
+      !areDashArraysEqual(a[i].dash, b[i].dash)
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isSameClipRect(a: ClipRect | null, b: ClipRect): boolean {
+  return (
+    !!a &&
+    a.x === b.x &&
+    a.y === b.y &&
+    a.width === b.width &&
+    a.height === b.height
+  );
+}
+
 export function TargetDashOverlay({
   uplotRef,
   newData,
@@ -142,12 +230,7 @@ export function TargetDashOverlay({
   const clipPathId = useId().replace(/:/g, "");
 
   const [lines, setLines] = useState<OverlayLine[]>([]);
-  const [clipRect, setClipRect] = useState<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  } | null>(null);
+  const [clipRect, setClipRect] = useState<ClipRect | null>(null);
 
   useEffect(() => {
     if (targetMeta.length === 0) {
@@ -157,7 +240,15 @@ export function TargetDashOverlay({
   }, [targetMeta]);
 
   useEffect(() => {
+    let rafId: number | null = null;
+    let bootstrapRafId: number | null = null;
+    let recalcScheduled = false;
+    let hooksAttached = false;
+    const removeHookFns: Array<() => void> = [];
+    let resizeObserver: ResizeObserver | null = null;
+
     const recalc = () => {
+      recalcScheduled = false;
       const u = uplotRef.current;
       if (!u || targetMeta.length === 0) {
         return;
@@ -195,32 +286,86 @@ export function TargetDashOverlay({
         })
         .filter((line): line is OverlayLine => !!line);
 
-      // Keep previous valid lines if uPlot is in a transient state and no path
-      // can be built for this tick; this prevents visible flicker.
+      
       if (nextLines.length > 0) {
-        setLines(nextLines);
-        setClipRect({
+        setLines((prev) =>
+          areOverlayLinesEqual(prev, nextLines) ? prev : nextLines,
+        );
+        const nextClipRect: ClipRect = {
           x: u.bbox.left,
           y: u.bbox.top,
           width: u.bbox.width,
           height: u.bbox.height,
-        });
+        };
+        setClipRect((prev) =>
+          isSameClipRect(prev, nextClipRect) ? prev : nextClipRect,
+        );
       }
     };
 
-    recalc();
+    const scheduleRecalc = () => {
+      if (recalcScheduled) return;
+      recalcScheduled = true;
+      rafId = window.requestAnimationFrame(recalc);
+    };
+
+    scheduleRecalc();
 
     if (targetMeta.length === 0) {
       return;
     }
 
-    const recalcIntervalId = window.setInterval(
-      recalc,
-      PATH_RECALC_INTERVAL_MS,
-    );
+    const addHook = (u: any, hookName: string, fn: () => void) => {
+      const hooks = u.hooks?.[hookName];
+      if (!Array.isArray(hooks)) return;
+      hooks.push(fn);
+      removeHookFns.push(() => {
+        const idx = hooks.indexOf(fn);
+        if (idx >= 0) hooks.splice(idx, 1);
+      });
+    };
+
+    const onWindowResize = () => scheduleRecalc();
+    window.addEventListener("resize", onWindowResize);
+
+    const attachHooks = (): boolean => {
+      if (hooksAttached) return true;
+      const u = uplotRef.current as any;
+      if (!u) return false;
+
+      addHook(u, "draw", scheduleRecalc);
+      addHook(u, "setScale", scheduleRecalc);
+      addHook(u, "setData", scheduleRecalc);
+
+      const rootElement = u.root as HTMLElement | undefined;
+      if (rootElement && typeof ResizeObserver !== "undefined") {
+        resizeObserver = new ResizeObserver(() => scheduleRecalc());
+        resizeObserver.observe(rootElement);
+      }
+
+      hooksAttached = true;
+      scheduleRecalc();
+      return true;
+    };
+
+    if (!attachHooks()) {
+      const tryAttach = () => {
+        if (attachHooks()) return;
+        bootstrapRafId = window.requestAnimationFrame(tryAttach);
+      };
+      bootstrapRafId = window.requestAnimationFrame(tryAttach);
+    }
 
     return () => {
-      window.clearInterval(recalcIntervalId);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      if (bootstrapRafId !== null) {
+        window.cancelAnimationFrame(bootstrapRafId);
+      }
+      removeHookFns.forEach((fn) => fn());
+      window.removeEventListener("resize", onWindowResize);
+      resizeObserver?.disconnect();
     };
   }, [uplotRef, targetMeta, isLiveMode, selectedTimeWindow]);
 
