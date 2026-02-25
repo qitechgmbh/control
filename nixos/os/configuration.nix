@@ -134,7 +134,6 @@ in {
 
   # Enable the X11 windowing system.
   services.xserver.enable = true;
-  #services.xserver.videoDrivers = [ "intel" ];
   services.xserver.displayManager.gdm = {
     enable = true;
     autoSuspend = false;

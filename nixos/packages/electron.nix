@@ -44,7 +44,6 @@ buildNpmPackage rec {
       --enable-gpu \
       --ignore-gpu-blocklist \
       --enable-gpu-rasterization \
-      --disable-software-rasterizer \
       "$@"
     EOF
     chmod +x $out/bin/qitech-control-electron
