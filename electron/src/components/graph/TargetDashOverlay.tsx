@@ -56,7 +56,10 @@ function buildSteppedPath(
   return parts.join(" ");
 }
 
-function buildFlatLatestValuePath(u: uPlot, yData: Array<number | null>): string {
+function buildFlatLatestValuePath(
+  u: uPlot,
+  yData: Array<number | null>,
+): string {
   let latestValue: number | null = null;
 
   for (let i = yData.length - 1; i >= 0; i--) {
@@ -167,7 +170,9 @@ export function TargetDashOverlay({
 
       const nextLines = targetMeta
         .map((meta, index) => {
-          const yData = u.data[meta.dataIndex] as Array<number | null> | undefined;
+          const yData = u.data[meta.dataIndex] as
+            | Array<number | null>
+            | undefined;
           if (!yData || yData.length < 2) return null;
 
           const useFlatShortWindowPath =
@@ -209,7 +214,10 @@ export function TargetDashOverlay({
       return;
     }
 
-    const recalcIntervalId = window.setInterval(recalc, PATH_RECALC_INTERVAL_MS);
+    const recalcIntervalId = window.setInterval(
+      recalc,
+      PATH_RECALC_INTERVAL_MS,
+    );
 
     return () => {
       window.clearInterval(recalcIntervalId);
@@ -221,7 +229,10 @@ export function TargetDashOverlay({
   }
 
   return (
-    <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>
+    <svg
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      aria-hidden
+    >
       {clipRect && (
         <defs>
           <clipPath id={clipPathId}>
