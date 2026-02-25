@@ -39,47 +39,18 @@ export async function restartBackend(): Promise<{
   }
 }
 
-export async function startLogStream(): Promise<{
+export async function exportLogs(): Promise<{
   success: boolean;
   error?: string;
 }> {
   try {
-    return await window.troubleshoot.startLogStream();
+    return await window.troubleshoot.exportLogs();
   } catch (error) {
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error),
     };
   }
-}
-
-export async function stopLogStream(): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  try {
-    return await window.troubleshoot.stopLogStream();
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-}
-
-/**
- * Setup log data streaming with callback
- * @param onLogData Callback function to handle incoming log data
- */
-export function setupLogDataListener(onLogData: (log: string) => void): void {
-  window.troubleshoot.onLogData(onLogData);
-}
-
-/**
- * Cleanup log data listener
- */
-export function cleanupLogDataListener(): void {
-  window.troubleshoot.onLogData(() => {});
 }
 
 /**
@@ -99,10 +70,10 @@ export async function restartBackendWithToast(): Promise<boolean> {
 
 /**
  * Combined function to reboot HMI and show appropriate toast messages
+ * ?????? How would you see this?
  */
 export async function rebootHmiWithToast(): Promise<boolean> {
   const result = await rebootHmi();
-
   if (result.success) {
     return true;
   } else {

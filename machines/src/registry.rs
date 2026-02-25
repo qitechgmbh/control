@@ -22,7 +22,7 @@ use crate::{
     winder2::Winder2,
 };
 
-use crate::test_machine::TestMachine;
+use crate::{test_machine::TestMachine, test_machine_stepper::TestMachineStepper};
 
 use lazy_static::lazy_static;
 
@@ -144,6 +144,7 @@ lazy_static! {
             Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION,
         );
 
+        mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
         mc
     };
 }

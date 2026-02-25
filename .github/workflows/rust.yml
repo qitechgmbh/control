@@ -12,6 +12,9 @@ env:
   CARGO_TERM_COLOR: always
   RUST_VERSION: "1.86"
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest

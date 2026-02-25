@@ -3,7 +3,12 @@ import { useRef, useCallback } from "react";
 import uPlot from "uplot";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { getPrimarySeriesData, stopAnimations } from "./animation";
-import { BigGraphProps, HistoricalModeHandlers, AnimationRefs } from "./types";
+import {
+  BigGraphProps,
+  HistoricalModeHandlers,
+  AnimationRefs,
+  SwitchOrigin,
+} from "./types";
 
 export function useHistoricalMode({
   newData,
@@ -120,12 +125,43 @@ export function useHistoricalMode({
   );
 
   // Switch to historical mode
-  const switchToHistoricalMode = useCallback(() => {
-    isInHistoricalModeRef.current = true;
-    captureHistoricalFreezeTimestamp();
-    stopAnimations(animationRefs);
-    lastProcessedCountRef.current = 0; // Reset processed count
-  }, [captureHistoricalFreezeTimestamp, animationRefs, lastProcessedCountRef]);
+  const switchToHistoricalMode = useCallback(
+    (origin?: SwitchOrigin) => {
+      isInHistoricalModeRef.current = true;
+
+      // Preserve current scale
+      if (origin === "gesture") {
+        try {
+          if (uplotRef.current) {
+            const xScale = uplotRef.current.scales.x;
+            const yScale = uplotRef.current.scales.y;
+            manualScaleRef.current = {
+              x: {
+                min: xScale?.min ?? 0,
+                max: xScale?.max ?? 0,
+              },
+              y: {
+                min: yScale?.min ?? 0,
+                max: yScale?.max ?? 1,
+              },
+            };
+          }
+        } catch (err) {
+          console.warn(
+            "Error preserving chart scales when switching to historical mode:",
+            err,
+          );
+        }
+      } else {
+        manualScaleRef.current = null;
+      }
+
+      captureHistoricalFreezeTimestamp();
+      stopAnimations(animationRefs);
+      lastProcessedCountRef.current = 0; // Reset processed count
+    },
+    [captureHistoricalFreezeTimestamp, animationRefs, lastProcessedCountRef],
+  );
 
   // Switch back to live mode
   const switchToLiveMode = useCallback(() => {
