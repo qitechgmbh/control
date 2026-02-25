@@ -143,6 +143,7 @@ impl PullerSpeedController {
         let speed = self.acceleration_controller.update(speed, t);
 
         self.last_speed = speed;
+        
         speed
     }
 
