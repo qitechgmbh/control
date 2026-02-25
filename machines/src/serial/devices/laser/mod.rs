@@ -136,6 +136,8 @@ impl SerialDeviceNew for Laser {
                 smol::block_on(async {
                     let _ = Self::process(_self_clone).await;
                 });
+
+                println!("Exiting Laser Device Thread ...");
             })?;
 
         Ok((device_identification, _self))
@@ -210,8 +212,8 @@ impl Laser {
 
         let mut last_run = Instant::now();
 
-        while !_self.read().await.shutdown_flag.load(Ordering::SeqCst) {
-
+        loop  
+        {
             let now = Instant::now();
 
             if now.duration_since(last_run) >= Duration::from_secs(1) 
@@ -257,7 +259,10 @@ impl Laser {
                     last_timestamp: Instant::now(),
                 });
             }
-        }
+        };
+
+        println!("Laser Device Received shutdown signal!");
+
         Ok(())
     }
 }
