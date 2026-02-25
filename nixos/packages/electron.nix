@@ -7,7 +7,7 @@ buildNpmPackage rec {
   srcs = [ ../../electron ../../docs ];
   sourceRoot = "electron";
 
-  ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
+  ELECTRON_SKIP_BINARY_DOWNLOAD = 0;
 
   makeCacheWritable = true;
   npmDepsHash = "sha256-N2kdS9IKkEMNOPPnRNQ9GvCenR/k88fVyAFzXMJyxs4=";
