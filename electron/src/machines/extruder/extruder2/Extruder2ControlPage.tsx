@@ -68,10 +68,12 @@ export function Extruder2ControlPage() {
       backTemperature.current?.value ?? 0,
       state?.heating_states.back.target_temperature ?? 1,
     );
-    const nozzleReady = isZoneReadyForExtrusion(
-      nozzleTemperature.current?.value ?? 0,
-      state?.heating_states.nozzle.target_temperature ?? 1,
-    );
+    const nozzleReady =
+      !state?.extruder_settings_state.nozzle_temperature_target_enabled ||
+      isZoneReadyForExtrusion(
+        nozzleTemperature.current?.value ?? 0,
+        state?.heating_states.nozzle.target_temperature ?? 1,
+      );
 
     return frontReady && middleReady && backReady && nozzleReady;
   };
@@ -87,6 +89,7 @@ export function Extruder2ControlPage() {
           onChangeTargetTemp={setFrontHeatingTemperature}
           min={0}
           max={300}
+          targetTemperatureEnabled={true}
         />
         <HeatingZone
           title={"Heating Middle"}
@@ -96,6 +99,7 @@ export function Extruder2ControlPage() {
           onChangeTargetTemp={setMiddleHeatingTemperature}
           min={0}
           max={300}
+          targetTemperatureEnabled={true}
         />
         <HeatingZone
           title={"Heating Back"}
@@ -105,6 +109,7 @@ export function Extruder2ControlPage() {
           onChangeTargetTemp={setBackHeatingTemperature}
           min={0}
           max={300}
+          targetTemperatureEnabled={true}
         />
         <HeatingZone
           title={"Heating Nozzle"}
@@ -114,6 +119,10 @@ export function Extruder2ControlPage() {
           onChangeTargetTemp={setNozzleHeatingTemperature}
           min={0}
           max={300}
+          targetTemperatureEnabled={
+            state?.extruder_settings_state.nozzle_temperature_target_enabled ??
+            true
+          }
         />
         <ControlCard className="bg-red" title="Screw Drive">
           {state?.inverter_status_state.overload_warning == true ? (

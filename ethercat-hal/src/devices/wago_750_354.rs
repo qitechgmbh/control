@@ -15,6 +15,7 @@ use crate::{
             wago_750_501::{WAGO_750_501_MODULE_IDENT, WAGO_750_501_PRODUCT_ID},
             wago_750_530::{WAGO_750_530_MODULE_IDENT, WAGO_750_530_PRODUCT_ID},
             wago_750_652::{WAGO_750_652_MODULE_IDENT, WAGO_750_652_PRODUCT_ID},
+            wago_750_672::{WAGO_750_672_MODULE_IDENT, WAGO_750_672_PRODUCT_ID},
             wago_750_1506::{WAGO_750_1506_MODULE_IDENT, WAGO_750_1506_PRODUCT_ID},
         },
     },
@@ -62,7 +63,6 @@ impl EthercatDevice for Wago750_354 {
                 None => break,
             }
         }
-
         Ok(())
     }
 
@@ -153,14 +153,22 @@ impl std::fmt::Debug for Wago750_354 {
 impl Wago750_354 {
     pub fn calculate_module_index(pdo_mapping: u32, is_tx: bool) -> u32 {
         let start_index = match is_tx {
-            true => 0x6000 as u32,
-            false => 0x7000 as u32,
+            true => 0x6000,
+            false => 0x7000,
         };
-        let index_in_hex = ((pdo_mapping & 0xFFFF0000) >> 16) - start_index;
-        if index_in_hex < 16 {
+        let pdo_index = (pdo_mapping & 0xFFFF0000) >> 16;
+
+        if pdo_index < start_index {
+            // Treat as coupler/module 0
             return 0;
+        }
+
+        let index_in_hex = pdo_index - start_index;
+
+        if index_in_hex < 16 {
+            0
         } else {
-            return index_in_hex / 16;
+            index_in_hex / 16
         }
     }
 
@@ -191,7 +199,7 @@ impl Wago750_354 {
         }
 
         let mut mappings_without_coupler: Vec<u32> = vec![];
-        for i in start_subindex..count_mappings {
+        for i in start_subindex..=count_mappings {
             let pdo_index = device.sdo_read(index.0, i).await?;
             let pdo_map_count = device.sdo_read::<u8>(pdo_index, 0).await?;
             for j in 0..pdo_map_count {
@@ -303,6 +311,11 @@ impl Wago750_354 {
                     module.has_rx = false;
                     module.name = "750-430".to_string();
                 }
+                WAGO_750_672_PRODUCT_ID => {
+                    module.has_tx = true;
+                    module.has_rx = true;
+                    module.name = "750-672".to_string();
+                }
                 _ => println!(
                     "Wago-750-354 found Unknown/Unimplemented Module: {}",
                     ident_iom
@@ -383,7 +396,9 @@ impl Wago750_354 {
                         WAGO_750_430_MODULE_IDENT => {
                             Arc::new(RwLock::new(wago_750_430::Wago750_430::new()))
                         }
-
+                        WAGO_750_672_MODULE_IDENT => {
+                            Arc::new(RwLock::new(wago_750_672::Wago750_672::new()))
+                        }
                         _ => {
                             println!(
                                 "{} Missing Implementation for Module Identification: vendor_id: {:?}, module ident: {:?} !",

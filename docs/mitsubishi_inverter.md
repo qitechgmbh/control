@@ -136,7 +136,7 @@ A slave recognizes message data as one message when a **3.5 character long no-da
 
 # Inverter settings
 
-## Motor Constants
+## Motor Constants for ExtruderV2:
 
 The following is a table that shows which Registers need to be set on the Inverter for the safe operation of the Motor.
 
@@ -148,6 +148,22 @@ The following is a table that shows which Registers need to be set on the Invert
 | `1`                   | Max Frequency                | 5000          |
 | `2`                   | Min Frequency                | 0             |
 | `9`                   | Electronic Thermal O/L Relay | 3.30 (Ampere) |
+| `3`                   | Base frequency               | 5000 (50 Hz)  |
+| `19`                  | Base frequency voltage       | 400 (Volt)    |
+
+
+## Motor Constants for ExtruderV3:
+
+The following is a table that shows which Registers need to be set on the Inverter for the safe operation of the Motor.
+
+| Parameter number (Pr) | Name                         | Value         |
+| --------------------- | ---------------------------- | ------------- |
+| `71`                  | Applied Motor                | 0             |
+| `80`                  | Motor Capacity               | 22 (2.2 kw)   |
+| `96`                  | Auto tuning setting/status   | 1             |
+| `1`                   | Max Frequency                | 5000          |
+| `2`                   | Min Frequency                | 0             |
+| `9`                   | Electronic Thermal O/L Relay | 4.40 (Ampere) |
 | `3`                   | Base frequency               | 5000 (50 Hz)  |
 | `19`                  | Base frequency voltage       | 400 (Volt)    |
 
