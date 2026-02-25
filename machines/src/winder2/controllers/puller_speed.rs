@@ -1,18 +1,21 @@
 use std::time::Instant;
-
-use control_core::{
-    controllers::second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController,
-    converters::linear_step_converter::LinearStepConverter,
-};
 use serde::{Deserialize, Serialize};
+
 use units::ConstZero;
 use units::acceleration::meter_per_minute_per_second;
 use units::f64::*;
 use units::jerk::meter_per_minute_per_second_squared;
 use units::velocity::meter_per_minute;
 
+use control_core::{
+    controllers::second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController,
+    converters::linear_step_converter::LinearStepConverter,
+};
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Default)]
 pub enum GearRatio {
+    #[default]
     OneToOne,
     OneToFive,
     OneToTen,
@@ -29,17 +32,13 @@ impl GearRatio {
     }
 }
 
-impl Default for GearRatio {
-    fn default() -> Self {
-        GearRatio::OneToOne
-    }
-}
 
 #[derive(Debug)]
 pub struct PullerSpeedController {
     enabled: bool,
     pub target_speed: Velocity,
     pub target_diameter: Length,
+    pub current_diamater: Option<Length>,
     pub regulation_mode: PullerRegulationMode,
     /// Forward rotation direction. If false, applies negative sign to speed
     pub forward: bool,
@@ -66,6 +65,7 @@ impl PullerSpeedController {
             enabled: false,
             target_speed,
             target_diameter,
+            current_diamater: None,
             regulation_mode: PullerRegulationMode::Speed,
             forward: true,
             gear_ratio: GearRatio::default(),
@@ -107,11 +107,30 @@ impl PullerSpeedController {
         self.gear_ratio
     }
 
-    fn update_speed(&mut self, t: Instant) -> Velocity {
-        let base_speed = match self.enabled {
-            true => match self.regulation_mode {
+    fn update_speed(&mut self, t: Instant) -> Velocity 
+    {
+        let base_speed = match self.enabled 
+        {
+            true => match self.regulation_mode 
+            {
                 PullerRegulationMode::Speed => self.target_speed,
-                PullerRegulationMode::Diameter => unimplemented!(),
+                PullerRegulationMode::Diameter => 
+                'block: {
+                    match self.current_diamater
+                    {
+                        Some(current_diameter) => 
+                        {
+
+                            // self.target_diameter
+                            // self.pid
+                            // compute speed from: target_diameter, current_diameter, (p, i, d)
+                        },
+                        None => break 'block 0,
+                    }
+
+                    // requires: target_diameter, current_diameter, (p, i, d)
+                    todo!("JSE HERE")
+                },
             },
             false => Velocity::ZERO,
         };
@@ -145,6 +164,9 @@ impl PullerSpeedController {
     pub fn get_target_speed(&self) -> Velocity {
         self.target_speed
     }
+
+    fn min_speed() -> Velocity { Velocity::new::<meter_per_minute>(0.0) }
+    fn max_speed() -> Velocity { Velocity::new::<meter_per_minute>(75.0) }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

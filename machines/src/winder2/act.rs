@@ -79,7 +79,8 @@ impl MachineAct for Winder2 {
                 use crate::LiveValues::Laser;
 
                 #[allow(irrefutable_let_patterns)]
-                if let Laser(live_values) = any_live_values {
+                if let Laser(live_values) = any_live_values 
+                {
                     _ = live_values;
                     // TODO: use data to regulate speed. But not idea how, when what?
                 }

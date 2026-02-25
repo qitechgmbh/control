@@ -23,8 +23,18 @@ mod winder2_imports {
 
 #[cfg(not(feature = "mock-machine"))]
 mod winder2_imports {
-    pub use super::super::puller_speed_controller::{GearRatio, PullerRegulationMode};
-    pub use super::super::{Winder2, Winder2Mode};
+
+    use crate::winder2::{
+        controllers::{ 
+            PullerSpeedController, 
+            PullerSpeedGearRatio,
+            AdaptiveSpoolSpeedController, 
+            MinMaxSpoolSpeedController 
+        },
+        devices::TensionArm
+    };
+
+    pub use crate::winder2::{Winder2, Winder2Mode};
     pub use control_core::socketio::{
         event::{Event, GenericEvent},
         namespace::{

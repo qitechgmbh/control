@@ -1,9 +1,13 @@
-use crate::winder2::{
-    clamp_revolution::clamp_revolution_uom, filament_tension::FilamentTensionCalculator,
-    puller_speed_controller::PullerSpeedController,
-};
+use std::time::Instant;
 
-use super::{clamp_revolution::Clamping, tension_arm::TensionArm};
+use units::ConstZero;
+use units::angle::degree;
+use units::angular_acceleration::{radian_per_second_squared, revolution_per_minute_per_second};
+use units::angular_velocity::{radian_per_second, revolution_per_minute, revolution_per_second};
+use units::f64::*;
+use units::length::meter;
+use units::velocity::meter_per_second;
+
 use control_core::{
     controllers::{
         first_degree_motion::angular_acceleration_speed_controller::AngularAccelerationSpeedController,
@@ -14,15 +18,16 @@ use control_core::{
         moving_time_window::MovingTimeWindow,
     },
 };
-use std::time::Instant;
 
-use units::ConstZero;
-use units::angle::degree;
-use units::angular_acceleration::{radian_per_second_squared, revolution_per_minute_per_second};
-use units::angular_velocity::{radian_per_second, revolution_per_minute, revolution_per_second};
-use units::f64::*;
-use units::length::meter;
-use units::velocity::meter_per_second;
+use crate::winder2::{
+    utils::{
+        Clamping,
+        clamp_revolution_uom, 
+        FilamentTensionCalculator 
+    },
+    controllers::{ PullerSpeedController },
+    devices::{ TensionArm }
+};
 
 #[derive(Debug)]
 pub struct MinMaxSpoolSpeedController {

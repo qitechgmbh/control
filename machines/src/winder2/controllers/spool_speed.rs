@@ -1,14 +1,18 @@
-use crate::winder2::{
-    adaptive_spool_speed_controller::AdaptiveSpoolSpeedController,
-    minmax_spool_speed_controller::MinMaxSpoolSpeedController,
-    puller_speed_controller::PullerSpeedController,
-};
-use control_core::controllers::second_degree_motion::acceleration_position_controller::MotionControllerError;
-
-use super::tension_arm::TensionArm;
-use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use units::f64::*;
+use serde::{Deserialize, Serialize};
+
+use control_core::controllers::second_degree_motion::acceleration_position_controller::MotionControllerError;
+
+use crate::winder2::{
+    controllers::{ 
+        PullerSpeedController, 
+        AdaptiveSpoolSpeedController, 
+        MinMaxSpoolSpeedController 
+    },
+    devices::TensionArm
+};
+
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum SpoolSpeedControllerType {

@@ -1,15 +1,5 @@
-use crate::winder2::{
-    clamp_revolution::clamp_revolution_uom, filament_tension::FilamentTensionCalculator,
-    puller_speed_controller::PullerSpeedController,
-};
-
-use super::{clamp_revolution::Clamping, tension_arm::TensionArm};
-use control_core::{
-    controllers::first_degree_motion::angular_acceleration_speed_controller::AngularAccelerationSpeedController,
-    helpers::{interpolation::scale, moving_time_window::MovingTimeWindow},
-};
-use core::f64;
 use std::time::Instant;
+
 use units::ConstZero;
 use units::angle::degree;
 use units::angular_acceleration::radian_per_second_squared;
@@ -17,6 +7,21 @@ use units::angular_velocity::{radian_per_second, revolution_per_minute};
 use units::f64::*;
 use units::length::{centimeter, meter};
 use units::velocity::meter_per_second;
+
+use control_core::{
+    controllers::first_degree_motion::angular_acceleration_speed_controller::AngularAccelerationSpeedController,
+    helpers::{interpolation::scale, moving_time_window::MovingTimeWindow},
+};
+
+use crate::winder2::{
+    utils::{
+        Clamping,
+        clamp_revolution_uom, 
+        FilamentTensionCalculator 
+    },
+    controllers::{ PullerSpeedController },
+    devices::{ TensionArm }
+};
 
 /// Adaptive spool speed controller that automatically adjusts to maintain optimal filament tension.
 ///

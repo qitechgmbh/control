@@ -1,15 +1,12 @@
 pub mod act;
-pub mod adaptive_spool_speed_controller;
 pub mod api;
-pub mod clamp_revolution;
 pub mod emit;
-pub mod filament_tension;
-pub mod minmax_spool_speed_controller;
 pub mod new;
-pub mod puller_speed_controller;
-pub mod spool_speed_controller;
-pub mod tension_arm;
-pub mod traverse_controller;
+
+mod controllers;
+mod puller;
+mod devices;
+pub mod utils;
 
 #[cfg(feature = "mock-machine")]
 pub mod mock;
