@@ -53,11 +53,13 @@ export function createChart({
   }
 
   // Build uPlot data for ALL series (including hidden ones)
-  const uPlotData: uPlot.AlignedData = [timestamps as any];
+  const uPlotData: uPlot.AlignedData = [
+    timestamps as uPlot.AlignedData[0],
+  ];
 
   allOriginalSeries.forEach(({ series }) => {
     const [, values] = seriesToUPlotData(series.long);
-    uPlotData.push(values as any);
+    uPlotData.push(values as uPlot.AlignedData[1]);
   });
 
   // Add config lines data
@@ -70,7 +72,7 @@ export function createChart({
             line.value,
           )
         : new Array(timestamps.length).fill(line.value);
-      uPlotData.push(lineData as any);
+      uPlotData.push(lineData as uPlot.AlignedData[number]);
     }
   });
 
@@ -367,25 +369,12 @@ export function createChart({
             return ticks.map((ts) => {
               const date = new Date(ts);
 
-              if (timeRange <= 30 * 1000) {
+              if (timeRange <= 5 * 60 * 1000) {
                 return date.toLocaleTimeString(undefined, {
                   hour12: false,
                   hour: "2-digit",
                   minute: "2-digit",
                   second: "2-digit",
-                });
-              } else if (timeRange <= 5 * 60 * 1000) {
-                return date.toLocaleTimeString(undefined, {
-                  hour12: false,
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                });
-              } else if (timeRange <= 60 * 60 * 1000) {
-                return date.toLocaleTimeString(undefined, {
-                  hour12: false,
-                  hour: "2-digit",
-                  minute: "2-digit",
                 });
               } else if (timeRange <= 24 * 60 * 60 * 1000) {
                 return date.toLocaleTimeString(undefined, {
