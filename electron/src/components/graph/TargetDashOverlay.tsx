@@ -110,31 +110,6 @@ function buildSteppedPath(
   return parts.join(" ");
 }
 
-function buildFlatLatestValuePath(
-  u: uPlot,
-  yData: Array<number | null>,
-): string {
-  let latestValue: number | null = null;
-
-  for (let i = yData.length - 1; i >= 0; i--) {
-    const value = yData[i];
-    if (value !== null && value !== undefined) {
-      latestValue = value;
-      break;
-    }
-  }
-
-  if (latestValue === null) {
-    return "";
-  }
-
-  const y = u.valToPos(latestValue, "y", true);
-  const left = u.bbox.left;
-  const right = u.bbox.left + u.bbox.width;
-
-  return `M ${left} ${y} L ${right} ${y}`;
-}
-
 function getHistoricalDashTargets(
   data: BigGraphProps["newData"],
   config: GraphConfig,
@@ -266,14 +241,7 @@ export function TargetDashOverlay({
             | undefined;
           if (!yData || yData.length < 2) return null;
 
-          const useFlatShortWindowPath =
-            isLiveMode &&
-            selectedTimeWindow !== "all" &&
-            selectedTimeWindow <= 60_000;
-
-          const d = useFlatShortWindowPath
-            ? buildFlatLatestValuePath(u, yData)
-            : buildSteppedPath(u, xData, yData);
+          const d = buildSteppedPath(u, xData, yData);
           if (!d) return null;
 
           return {
