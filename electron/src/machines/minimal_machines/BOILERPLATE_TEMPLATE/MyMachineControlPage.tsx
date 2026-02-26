@@ -25,8 +25,6 @@
 import { Page } from "@/components/Page";
 import { ControlCard } from "@/control/ControlCard";
 import { ControlGrid } from "@/control/ControlGrid";
-import { Label } from "@/control/Label";
-import { SelectionGroup } from "@/control/SelectionGroup";
 import React from "react";
 import { useMyMachine } from "./useMyMachine";
 
@@ -37,10 +35,12 @@ export function MyMachineControlPage() {
 
   // Provide a safe default so the UI renders before the first server event.
   // TODO: replace with the actual shape of your StateEvent.
-  const safeState = state ?? {
-    // e.g. outputs: [false, false, false, false],
-    //      value:   0,
-  };
+  const safeState =
+    state ??
+    {
+      // e.g. outputs: [false, false, false, false],
+      //      value:   0,
+    };
 
   return (
     <Page>
@@ -51,7 +51,7 @@ export function MyMachineControlPage() {
         {/* Example: four digital outputs                                        */}
         {/* ------------------------------------------------------------------ */}
         <ControlCard title="Outputs">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {/* Replace this placeholder with real controls, e.g.: */}
           </p>
 
