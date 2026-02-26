@@ -53,9 +53,7 @@ export function createChart({
   }
 
   // Build uPlot data for ALL series (including hidden ones)
-  const uPlotData: uPlot.AlignedData = [
-    timestamps as uPlot.AlignedData[0],
-  ];
+  const uPlotData: uPlot.AlignedData = [timestamps as uPlot.AlignedData[0]];
 
   allOriginalSeries.forEach(({ series }) => {
     const [, values] = seriesToUPlotData(series.long);
