@@ -19,20 +19,23 @@
 
 import { toastError } from "@/components/Toast";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { myMachineSerialRoute } from "@/routes/routes";
+// TODO: Import the actual serial route.
+//import { myMachineSerialRoute } from "@/routes/routes";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { useMyMachineNamespace, StateEvent } from "./MyMachineNamespace";
 import { useMachineMutate } from "@/client/useClient";
 import { produce } from "immer";
 import { useEffect, useMemo } from "react";
-import { myMachine } from "@/machines/properties";
+// TODO: Import the actual properties.
+//import { myMachine } from "@/machines/properties";
 import { z } from "zod";
 
 export function useMyMachine() {
   // --------------------------------------------------------------------------
   // 1. Route params — serial comes from the URL (e.g. /machines/mymachine/42)
   // --------------------------------------------------------------------------
-  const { serial: serialString } = myMachineSerialRoute.useParams();
+  // TODO: use myMachineSerialRoute.useParams();
+  const { serial: serialString } = { serial: "REPLACEME" };
 
   // --------------------------------------------------------------------------
   // 2. Build MachineIdentificationUnique
@@ -54,7 +57,11 @@ export function useMyMachine() {
     }
 
     return {
-      machine_identification: myMachine.machine_identification,
+      //TODO: use the actual myMachine.machine_identification,
+      machine_identification: {
+        vendor: Number.NaN,
+        machine: Number.NaN,
+      },
       serial,
     };
   }, [serialString]);
