@@ -9,6 +9,7 @@ use crate::{
     AsyncThreadMessage, DIGITAL_INPUT_TEST_MACHINE, Machine, MachineMessage, VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
+use self::api::{DigitalInputTestMachineEvents, DigitalInputTestMachineNamespace, StateEvent};
 
 pub mod act;
 pub mod api;

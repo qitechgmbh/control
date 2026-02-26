@@ -1,6 +1,4 @@
-use crate::minimal_machines::test_machine_stepper::{
-    TestMachineStepper, api::TestMachineStepperNamespace,
-};
+use crate::minimal_machines::test_machine_stepper::{TestMachineStepper, api::TestMachineStepperNamespace};
 use ethercat_hal::{
     devices::{
         EthercatDevice, downcast_device,
@@ -14,7 +12,7 @@ use std::{sync::Arc, time::Instant};
 
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
-    validate_no_role_duplicates, validate_same_machine_identification_unique,
+    validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
 
 use anyhow::Error;
@@ -28,7 +26,7 @@ impl MachineNewTrait for TestMachineStepper {
             .map(|device_identification| device_identification.clone())
             .collect::<Vec<_>>();
         validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_duplicates(&device_identification)?;
+        validate_no_role_dublicates(&device_identification)?;
 
         let hardware = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,
@@ -59,7 +57,7 @@ impl MachineNewTrait for TestMachineStepper {
             coupler.init_slot_modules(_wago_750_354.1);
             let dev = coupler.slot_devices.first().unwrap().clone().unwrap();
 
-            // uncomment this to change to different stepper driver
+            // change uncomment this to change to different stepper driver
             //
             // let wago_750_671: Arc<RwLock<Wago750_671>> =
             //     downcast_device::<Wago750_671>(dev).await?;
@@ -68,7 +66,6 @@ impl MachineNewTrait for TestMachineStepper {
             drop(coupler);
 
             let stepper = StepperVelocityWago750672::new(wago_750_672);
-            // let stepper = StepperVelocityWago750671::new(wago_750_671);
 
             let (sender, receiver) = smol::channel::unbounded();
             let mut my_test = Self {

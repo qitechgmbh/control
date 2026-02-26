@@ -1,8 +1,7 @@
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use crate::{
-    MachineAct, MachineMessage, MachineValues,
-    minimal_machines::analog_input_test_machine::AnalogInputTestMachine,
+    MachineAct, MachineMessage, MachineValues, minimal_machines::analog_input_test_machine::AnalogInputTestMachine,
 };
 
 impl MachineAct for AnalogInputTestMachine {
@@ -17,6 +16,8 @@ impl MachineAct for AnalogInputTestMachine {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
+            crate::MachineMessage::ConnectToMachine(_machine_connection) => {}
+            MachineMessage::DisconnectMachine(_machine_connection) => {}
             MachineMessage::RequestValues(sender) => {
                 sender
                     .send_blocking(MachineValues {

@@ -1,9 +1,6 @@
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use crate::{
-    MachineAct, MachineMessage, MachineValues,
-    minimal_machines::wago_ai_test_machine::WagoAiTestMachine,
-};
+use crate::{MachineAct, MachineMessage, MachineValues, minimal_machines::wago_ai_test_machine::WagoAiTestMachine};
 
 impl MachineAct for WagoAiTestMachine {
     fn act_machine_message(&mut self, msg: MachineMessage) {
@@ -17,6 +14,8 @@ impl MachineAct for WagoAiTestMachine {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
+            crate::MachineMessage::ConnectToMachine(_machine_connection) => {}
+            MachineMessage::DisconnectMachine(_machine_connection) => {}
             MachineMessage::RequestValues(sender) => {
                 sender
                     .send_blocking(MachineValues {
