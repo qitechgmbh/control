@@ -63,7 +63,7 @@
             electron
           ];
 
-          ELECTON_SKIP_BINARY_DOWNLOAD = 1;
+          ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
 
           hardeningDisable = [ "fortify" ];
 
