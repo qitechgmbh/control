@@ -12,11 +12,11 @@ use ethercat_hal::{
 use smol::{block_on, channel::unbounded, lock::RwLock};
 use std::sync::Arc;
 
+use super::{WagoAiTestMachine, api::WagoAiTestMachineNamespace};
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
     validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
-use super::{WagoAiTestMachine, api::WagoAiTestMachineNamespace};
 
 impl MachineNewTrait for WagoAiTestMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {

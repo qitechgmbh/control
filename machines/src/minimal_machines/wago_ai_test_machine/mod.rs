@@ -9,7 +9,6 @@ use crate::{
     AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH, WAGO_AI_TEST_MACHINE,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
-use self::api::{AnalogInputsEvent, WagoAiTestMachineEvents, WagoAiTestMachineNamespace};
 
 pub mod act;
 pub mod api;

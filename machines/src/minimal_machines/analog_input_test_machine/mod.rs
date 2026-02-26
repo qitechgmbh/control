@@ -9,7 +9,6 @@ use crate::{
     ANALOG_INPUT_TEST_MACHINE, AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
-use self::api::{AnalogInputTestMachineEvents, AnalogInputTestMachineNamespace, MeasurementEvent};
 
 pub mod act;
 pub mod api;
