@@ -7,11 +7,11 @@ use ethercat_hal::{
 };
 use smol::{block_on, channel::unbounded};
 
-use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait,
-    get_ethercat_device, validate_no_role_dublicates, validate_same_machine_identification_unique,
-};
 use super::{AnalogInputTestMachine, api::AnalogInputTestMachineNamespace};
+use crate::{
+    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
+    validate_no_role_dublicates, validate_same_machine_identification_unique,
+};
 
 impl MachineNewTrait for AnalogInputTestMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {

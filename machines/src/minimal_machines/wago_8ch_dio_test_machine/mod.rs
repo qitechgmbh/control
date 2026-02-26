@@ -4,11 +4,13 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::{digital_input::DigitalInput, digital_output::DigitalOutput};
 use smol::channel::{Receiver, Sender};
 
+use self::api::{
+    StateEvent, Wago8chDigitalIOTestMachineEvents, Wago8chDigitalIOTestMachineNamespace,
+};
 use crate::{
     AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH, WAGO_8CH_IO_TEST_MACHINE,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
-use self::api::{StateEvent, Wago8chDigitalIOTestMachineEvents, Wago8chDigitalIOTestMachineNamespace};
 
 pub mod act;
 pub mod api;

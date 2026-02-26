@@ -13,11 +13,11 @@ use ethercat_hal::{
 };
 use smol::{block_on, lock::RwLock};
 
+use super::{Wago8chDigitalIOTestMachine, api::Wago8chDigitalIOTestMachineNamespace};
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
     validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
-use super::{Wago8chDigitalIOTestMachine, api::Wago8chDigitalIOTestMachineNamespace};
 
 impl MachineNewTrait for Wago8chDigitalIOTestMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {

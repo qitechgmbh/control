@@ -4,11 +4,11 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::digital_input::DigitalInput;
 use smol::channel::{Receiver, Sender};
 
+use self::api::{DigitalInputTestMachineEvents, DigitalInputTestMachineNamespace, StateEvent};
 use crate::{
     AsyncThreadMessage, DIGITAL_INPUT_TEST_MACHINE, Machine, MachineMessage, VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
-use self::api::{DigitalInputTestMachineEvents, DigitalInputTestMachineNamespace, StateEvent};
 
 pub mod act;
 pub mod api;
