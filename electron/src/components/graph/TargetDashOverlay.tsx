@@ -110,6 +110,49 @@ function buildSteppedPath(
   return parts.join(" ");
 }
 
+function buildSteppedPathFull(
+  u: uPlot,
+  xData: number[],
+  yData: Array<number | null>,
+): string {
+  if (xData.length < 2) {
+    return "";
+  }
+
+  const parts: string[] = [];
+  let started = false;
+  let prevX = 0;
+  let prevY = 0;
+
+  for (let i = 0; i < xData.length; i++) {
+    const value = yData[i];
+    if (value === null || value === undefined) continue;
+
+    const x = u.valToPos(xData[i], "x", true);
+    const y = u.valToPos(value, "y", true);
+
+    if (!started) {
+      parts.push(`M ${x} ${y}`);
+      started = true;
+      prevX = x;
+      prevY = y;
+      continue;
+    }
+
+    if (x !== prevX) {
+      parts.push(`L ${x} ${prevY}`);
+    }
+    if (y !== prevY) {
+      parts.push(`L ${x} ${y}`);
+    }
+
+    prevX = x;
+    prevY = y;
+  }
+
+  return parts.join(" ");
+}
+
 function getHistoricalDashTargets(
   data: BigGraphProps["newData"],
   config: GraphConfig,
@@ -241,7 +284,14 @@ export function TargetDashOverlay({
             | undefined;
           if (!yData || yData.length < 2) return null;
 
-          const d = buildSteppedPath(u, xData, yData);
+          const useFullPathForShortWindow =
+            isLiveMode &&
+            selectedTimeWindow !== "all" &&
+            selectedTimeWindow <= 60_000;
+
+          const d = useFullPathForShortWindow
+            ? buildSteppedPathFull(u, xData, yData)
+            : buildSteppedPath(u, xData, yData);
           if (!d) return null;
 
           return {
