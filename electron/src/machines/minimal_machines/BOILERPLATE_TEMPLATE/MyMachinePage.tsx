@@ -12,16 +12,18 @@
 // ============================================================================
 
 import { Topbar } from "@/components/Topbar";
-import { myMachineSerialRoute } from "@/routes/routes";
+// @TODO: Import the actual serial route.
+// import { myMachineSerialRoute } from "@/routes/routes";
 import React from "react";
 
 export function MyMachinePage() {
-  const { serial } = myMachineSerialRoute.useParams();
+  // @TODO: Use the serial route.
+  // const { serial } = myMachineSerialRoute.useParams();
 
   return (
     <Topbar
-      // The pathname must match the route defined in routes.tsx.
-      pathname={`/_sidebar/machines/mymachine/${serial}`}
+      // The pathname must match the route defined in routes.tsx. @TODO: use actual serial
+      pathname={`/_sidebar/machines/mymachine/${"REPLACEME"}`}
       items={[
         {
           link: "control",
