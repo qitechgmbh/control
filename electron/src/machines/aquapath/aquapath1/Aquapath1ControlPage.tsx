@@ -20,10 +20,6 @@ export function Aquapath1ControlPage() {
     back_temperature,
     front_revolutions,
     back_revolutions,
-    front_power,
-    back_power,
-    front_total_energy,
-    back_total_energy,
     setAquapathMode,
     setFrontTemperature,
     setBackTemperature,
@@ -94,13 +90,6 @@ export function Aquapath1ControlPage() {
                 />
               </Label>
 
-              {frontCurrentTemperature < frontHeatingBoundary &&
-                (state?.flow_states.front.flow ?? 0) > 0 && (
-                  <Badge variant="default">
-                    Power: {front_power.current?.value} W<br />
-                    Total: {front_total_energy.current?.value} kWh
-                  </Badge>
-                )}
               {frontCurrentTemperature > frontCoolingBoundary &&
                 frontTargetFlow &&
                 (state?.flow_states.front.flow ?? 0) && (
@@ -185,17 +174,9 @@ export function Aquapath1ControlPage() {
                 />
               </Label>
 
-              {backCurrentTemperature < backHeatingBoundary &&
-                backTargetFlow &&
-                (state?.flow_states.front.flow ?? 0) && (
-                  <Badge variant="default">
-                    Power: {back_power.current?.value} W<br />
-                    Total: {back_total_energy.current?.value} kWh
-                  </Badge>
-                )}
               {backCurrentTemperature > backCoolingBoundary &&
-                frontTargetFlow &&
-                (state?.flow_states.front.flow ?? 0) && (
+                backTargetFlow &&
+                (state?.flow_states.back.flow ?? 0) > 0 && (
                   <Badge variant="secondary">Cooling</Badge>
                 )}
             </div>

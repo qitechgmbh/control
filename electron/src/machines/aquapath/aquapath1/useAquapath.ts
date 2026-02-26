@@ -134,7 +134,7 @@ export function useAquapath1() {
   const setFrontRevolutions = (revolutions: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.fan_states.back.revolutions = revolutions;
+        current.data.fan_states.front.revolutions = revolutions;
       },
       () => {
         requestFrontRevolutions({
