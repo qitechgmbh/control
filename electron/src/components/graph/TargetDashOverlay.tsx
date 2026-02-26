@@ -8,6 +8,7 @@ type OverlayLine = {
   color: string;
   width: number;
   dash: number[];
+  dashOffset: number;
   d: string;
 };
 
@@ -196,6 +197,7 @@ export function TargetDashOverlay({
             color: meta.color,
             width: meta.width,
             dash: meta.dash,
+            dashOffset: 0,
             d,
           } as OverlayLine;
         })
@@ -247,7 +249,6 @@ export function TargetDashOverlay({
       const u = uplotRef.current as any;
       if (!u) return false;
 
-      addHook(u, "draw", scheduleRecalc);
       addHook(u, "setScale", scheduleRecalc);
       addHook(u, "setData", scheduleRecalc);
 
@@ -316,7 +317,7 @@ export function TargetDashOverlay({
               strokeWidth={line.width}
               strokeLinecap="butt"
               strokeDasharray={line.dash.join(" ")}
-              strokeDashoffset={0}
+              strokeDashoffset={line.dashOffset}
             />
           );
         })}
