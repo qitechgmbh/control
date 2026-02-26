@@ -18,98 +18,6 @@ type ClipRect = {
   height: number;
 };
 
-function findFirstGe(arr: number[], value: number): number {
-  let lo = 0;
-  let hi = arr.length - 1;
-  let ans = arr.length;
-
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    if (arr[mid] >= value) {
-      ans = mid;
-      hi = mid - 1;
-    } else {
-      lo = mid + 1;
-    }
-  }
-
-  return ans;
-}
-
-function findLastLe(arr: number[], value: number): number {
-  let lo = 0;
-  let hi = arr.length - 1;
-  let ans = -1;
-
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    if (arr[mid] <= value) {
-      ans = mid;
-      lo = mid + 1;
-    } else {
-      hi = mid - 1;
-    }
-  }
-
-  return ans;
-}
-
-function buildSteppedPath(
-  u: uPlot,
-  xData: number[],
-  yData: Array<number | null>,
-): string {
-  const xMin = u.scales.x?.min;
-  const xMax = u.scales.x?.max;
-
-  if (xData.length < 2 || xMin === undefined || xMax === undefined) {
-    return "";
-  }
-
-  const firstVisibleIdx = Math.max(0, findFirstGe(xData, xMin) - 1);
-  const lastVisibleIdx = Math.min(
-    xData.length - 1,
-    findLastLe(xData, xMax) + 1,
-  );
-
-  if (lastVisibleIdx < firstVisibleIdx) {
-    return "";
-  }
-
-  const parts: string[] = [];
-  let started = false;
-  let prevX = 0;
-  let prevY = 0;
-
-  for (let i = firstVisibleIdx; i <= lastVisibleIdx; i++) {
-    const value = yData[i];
-    if (value === null || value === undefined) continue;
-
-    const x = u.valToPos(xData[i], "x", true);
-    const y = u.valToPos(value, "y", true);
-
-    if (!started) {
-      parts.push(`M ${x} ${y}`);
-      started = true;
-      prevX = x;
-      prevY = y;
-      continue;
-    }
-
-    if (x !== prevX) {
-      parts.push(`L ${x} ${prevY}`);
-    }
-    if (y !== prevY) {
-      parts.push(`L ${x} ${y}`);
-    }
-
-    prevX = x;
-    prevY = y;
-  }
-
-  return parts.join(" ");
-}
-
 function buildSteppedPathFull(
   u: uPlot,
   xData: number[],
@@ -232,14 +140,10 @@ export function TargetDashOverlay({
   uplotRef,
   newData,
   config,
-  selectedTimeWindow,
-  isLiveMode,
 }: {
   uplotRef: React.RefObject<uPlot | null>;
   newData: BigGraphProps["newData"];
   config: GraphConfig;
-  selectedTimeWindow: number | "all";
-  isLiveMode: boolean;
 }) {
   const targetMeta = useMemo(
     () => getHistoricalDashTargets(newData, config),
@@ -284,14 +188,7 @@ export function TargetDashOverlay({
             | undefined;
           if (!yData || yData.length < 2) return null;
 
-          const useFullPathForShortWindow =
-            isLiveMode &&
-            selectedTimeWindow !== "all" &&
-            selectedTimeWindow <= 60_000;
-
-          const d = useFullPathForShortWindow
-            ? buildSteppedPathFull(u, xData, yData)
-            : buildSteppedPath(u, xData, yData);
+          const d = buildSteppedPathFull(u, xData, yData);
           if (!d) return null;
 
           return {
@@ -384,7 +281,7 @@ export function TargetDashOverlay({
       window.removeEventListener("resize", onWindowResize);
       resizeObserver?.disconnect();
     };
-  }, [uplotRef, targetMeta, isLiveMode, selectedTimeWindow]);
+  }, [uplotRef, targetMeta]);
 
   if (lines.length === 0) {
     return null;
