@@ -141,23 +141,6 @@ impl MachineNewTrait for AquaPathV1 {
                 0.015,
                 Temperature::default(),
                 ThermodynamicTemperature::new::<degree_celsius>(25.0),
-                ao1,
-                do4,
-                do2,
-                t1,
-                t2,
-                AngularVelocity::new::<revolution_per_minute>(100.0),
-                Flow::default(),
-                do1,
-                enc1,
-            );
-
-            let back_controller = Controller::new(
-                0.10,
-                0.0,
-                0.015,
-                Temperature::default(),
-                ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao2,
                 do8,
                 do6,
@@ -167,6 +150,23 @@ impl MachineNewTrait for AquaPathV1 {
                 Flow::default(),
                 do5,
                 enc2,
+            );
+
+            let back_controller = Controller::new(
+                0.10,
+                0.0,
+                0.015,
+                Temperature::default(),
+                ThermodynamicTemperature::new::<degree_celsius>(25.0),
+                ao1,
+                do4,
+                do2,
+                t1,
+                t2,
+                AngularVelocity::new::<revolution_per_minute>(100.0),
+                Flow::default(),
+                do1,
+                enc1,
             );
             let (sender, receiver) = smol::channel::unbounded();
             let mut water_cooling = Self {
