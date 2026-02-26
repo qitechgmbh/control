@@ -33,12 +33,15 @@ function buildSteppedPathFull(
   let prevX = 0;
   let prevY = 0;
 
+  // Use CSS pixels (canvasPixels=false) because the SVG overlay is in CSS pixel space.
+  // u.valToPos(..., true) returns device pixels (DPR-scaled) which would misplace
+  // everything by a factor of devicePixelRatio on high-DPI displays.
   for (let i = 0; i < xData.length; i++) {
     const value = yData[i];
     if (value === null || value === undefined) continue;
 
-    const x = u.valToPos(xData[i], "x", true);
-    const y = u.valToPos(value, "y", true);
+    const x = u.valToPos(xData[i], "x", false);
+    const y = u.valToPos(value, "y", false);
 
     if (!started) {
       parts.push(`M ${x} ${y}`);
@@ -57,6 +60,16 @@ function buildSteppedPathFull(
 
     prevX = x;
     prevY = y;
+  }
+
+  // Extend the last step to the right edge of the plot area so the target line
+  // reaches the same boundary as the data series drawn by uPlot.
+  if (started) {
+    const dpr = window.devicePixelRatio || 1;
+    const rightEdge = (u.bbox.left + u.bbox.width) / dpr;
+    if (rightEdge > prevX) {
+      parts.push(`L ${rightEdge} ${prevY}`);
+    }
   }
 
   return parts.join(" ");
@@ -207,11 +220,13 @@ export function TargetDashOverlay({
         setLines((prev) =>
           areOverlayLinesEqual(prev, nextLines) ? prev : nextLines,
         );
+        // u.bbox is in device pixels; divide by DPR to get CSS pixels for the SVG clip rect.
+        const dpr = window.devicePixelRatio || 1;
         const nextClipRect: ClipRect = {
-          x: u.bbox.left,
-          y: u.bbox.top,
-          width: u.bbox.width,
-          height: u.bbox.height,
+          x: u.bbox.left / dpr,
+          y: u.bbox.top / dpr,
+          width: u.bbox.width / dpr,
+          height: u.bbox.height / dpr,
         };
         setClipRect((prev) =>
           isSameClipRect(prev, nextClipRect) ? prev : nextClipRect,
