@@ -1,7 +1,8 @@
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use crate::{
-    MachineAct, MachineMessage, MachineValues, minimal_machines::analog_input_test_machine::AnalogInputTestMachine,
+    MachineAct, MachineMessage, MachineValues,
+    minimal_machines::analog_input_test_machine::AnalogInputTestMachine,
 };
 
 impl MachineAct for AnalogInputTestMachine {

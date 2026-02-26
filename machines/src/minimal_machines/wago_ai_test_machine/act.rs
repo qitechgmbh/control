@@ -1,6 +1,9 @@
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use crate::{MachineAct, MachineMessage, MachineValues, minimal_machines::wago_ai_test_machine::WagoAiTestMachine};
+use crate::{
+    MachineAct, MachineMessage, MachineValues,
+    minimal_machines::wago_ai_test_machine::WagoAiTestMachine,
+};
 
 impl MachineAct for WagoAiTestMachine {
     fn act_machine_message(&mut self, msg: MachineMessage) {

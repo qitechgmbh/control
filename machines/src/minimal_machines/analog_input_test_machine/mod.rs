@@ -4,11 +4,11 @@ use control_core::socketio::{event::Event, namespace::NamespaceCacheingLogic};
 use ethercat_hal::io::analog_input::AnalogInput;
 use smol::channel::{Receiver, Sender};
 
+use self::api::{AnalogInputTestMachineEvents, AnalogInputTestMachineNamespace, MeasurementEvent};
 use crate::{
     ANALOG_INPUT_TEST_MACHINE, AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
-use self::api::{AnalogInputTestMachineEvents, AnalogInputTestMachineNamespace, MeasurementEvent};
 
 pub mod act;
 pub mod api;

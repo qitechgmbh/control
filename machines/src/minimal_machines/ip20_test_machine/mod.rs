@@ -1,5 +1,7 @@
-use crate::minimal_machines::ip20_test_machine::api::{IP20TestMachineEvents, LiveValuesEvent, StateEvent};
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
+use crate::minimal_machines::ip20_test_machine::api::{
+    IP20TestMachineEvents, LiveValuesEvent, StateEvent,
+};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::digital_input::DigitalInput;

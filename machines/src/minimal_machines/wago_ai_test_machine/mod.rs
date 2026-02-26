@@ -4,11 +4,11 @@ use control_core::socketio::{event::Event, namespace::NamespaceCacheingLogic};
 use ethercat_hal::io::analog_input::AnalogInput;
 use smol::channel::{Receiver, Sender};
 
+use self::api::{AnalogInputsEvent, WagoAiTestMachineEvents, WagoAiTestMachineNamespace};
 use crate::{
     AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH, WAGO_AI_TEST_MACHINE,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
-use self::api::{AnalogInputsEvent, WagoAiTestMachineEvents, WagoAiTestMachineNamespace};
 
 pub mod act;
 pub mod api;

@@ -1,4 +1,6 @@
-use crate::minimal_machines::test_machine_stepper::{TestMachineStepper, api::TestMachineStepperNamespace};
+use crate::minimal_machines::test_machine_stepper::{
+    TestMachineStepper, api::TestMachineStepperNamespace,
+};
 use ethercat_hal::{
     devices::{
         EthercatDevice, downcast_device,
