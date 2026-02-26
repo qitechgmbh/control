@@ -3,6 +3,7 @@ use crate::minimal_machines::digital_input_test_machine::DigitalInputTestMachine
 use crate::minimal_machines::ip20_test_machine::IP20TestMachine;
 use crate::minimal_machines::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine;
 use crate::minimal_machines::wago_ai_test_machine::WagoAiTestMachine;
+use crate::minimal_machines::wago_750_501_test_machine::Wago750_501TestMachine;
 use crate::minimal_machines::wago_do_test_machine::WagoDOTestMachine;
 #[cfg(feature = "mock-machine")]
 use crate::{
@@ -142,6 +143,7 @@ lazy_static! {
         mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<WagoDOTestMachine>(WagoDOTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<Wago750_501TestMachine>(Wago750_501TestMachine::MACHINE_IDENTIFICATION);
         mc.register::<Wago8chDigitalIOTestMachine>(
             Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION,
         );
