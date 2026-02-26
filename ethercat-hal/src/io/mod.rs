@@ -7,4 +7,5 @@ pub mod encoder_input;
 pub mod pulse_train_output;
 pub mod serial_interface;
 pub mod stepper_velocity_el70x1;
+pub mod stepper_velocity_wago_750_672;
 pub mod temperature_input;

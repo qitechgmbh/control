@@ -211,6 +211,7 @@ export type Winder2NamespaceStore = {
   spoolRpm: TimeSeries;
   tensionArmAngle: TimeSeries;
   spoolProgress: TimeSeries;
+  targetPullerSpeed: TimeSeries;
 };
 
 //Store Factory and Message Handler -> no param, so default values
@@ -219,6 +220,8 @@ const { initialTimeSeries: spoolProgress, insert: addSpoolProgress } =
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
   createTimeSeries();
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
+  createTimeSeries();
+const { initialTimeSeries: targetPullerSpeed, insert: addTargetPullerSpeed } =
   createTimeSeries();
 const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries();
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
@@ -239,6 +242,7 @@ export const createWinder2NamespaceStore =
         // Time series data for live values
         traversePosition,
         pullerSpeed,
+        targetPullerSpeed,
         spoolRpm,
         tensionArmAngle,
         spoolProgress,
@@ -273,10 +277,18 @@ export function winder2MessageHandler(
         console.log(event);
         // Parse and validate the state event
         const stateEvent = stateEventSchema.parse(event);
+        const nextTargetPullerSpeed = stateEvent.data.puller_state.target_speed;
 
         updateStore((state) => ({
           ...state,
           state: stateEvent,
+          targetPullerSpeed:
+            state.targetPullerSpeed.current?.value === nextTargetPullerSpeed
+              ? state.targetPullerSpeed
+              : addTargetPullerSpeed(state.targetPullerSpeed, {
+                  value: nextTargetPullerSpeed,
+                  timestamp: event.ts,
+                }),
           // only set default state if is_default_state is true
           defaultState: stateEvent.data.is_default_state
             ? stateEvent

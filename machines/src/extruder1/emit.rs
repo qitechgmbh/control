@@ -94,6 +94,9 @@ impl ExtruderV2 {
                 pressure_limit_enabled: self
                     .screw_speed_controller
                     .get_nozzle_pressure_limit_enabled(),
+                nozzle_temperature_target_enabled: self
+                    .temperature_controller_nozzle
+                    .get_temperature_target_enabled(),
             },
             inverter_status_state: InverterStatusState {
                 running: self.screw_speed_controller.inverter.status.running,
@@ -293,6 +296,12 @@ impl ExtruderV2 {
                 .temperature_controller_middle
                 .set_target_temperature(target_temp),
         }
+        self.emit_state();
+    }
+
+    pub fn set_nozzle_temperature_target_is_enabled(&mut self, enabled: bool) {
+        self.temperature_controller_nozzle
+            .set_temperature_target_enabled(enabled);
         self.emit_state();
     }
 

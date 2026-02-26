@@ -1,5 +1,9 @@
 import uPlot from "uplot";
-import { seriesToUPlotData, TimeSeries } from "@/lib/timeseries";
+import {
+  seriesToUPlotData,
+  TimeSeries,
+  alignTargetSeriesToTimestamps,
+} from "@/lib/timeseries";
 import {
   createEventHandlers,
   attachEventHandlers,
@@ -59,7 +63,13 @@ export function createChart({
   // Add config lines data
   config.lines?.forEach((line) => {
     if (line.show !== false) {
-      const lineData = new Array(timestamps.length).fill(line.value);
+      const lineData = line.targetSeries
+        ? alignTargetSeriesToTimestamps(
+            line.targetSeries,
+            timestamps,
+            line.value,
+          )
+        : new Array(timestamps.length).fill(line.value);
       uPlotData.push(lineData as any);
     }
   });
@@ -169,11 +179,16 @@ export function createChart({
   // Add config lines
   config.lines?.forEach((line) => {
     if (line.show !== false) {
+      const dash =
+        line.dash ?? (line.type === "threshold" ? [5, 5] : undefined);
+      const isHistoricalDashedTarget = !!line.targetSeries && !!dash?.length;
+
       seriesConfig.push({
         label: line.label,
-        stroke: line.color,
+        // Historical dashed targets are rendered in an SVG overlay.
+        stroke: isHistoricalDashedTarget ? "rgba(0,0,0,0)" : line.color,
         width: line.width ?? 1,
-        dash: line.dash ?? (line.type === "threshold" ? [5, 5] : undefined),
+        dash: isHistoricalDashedTarget ? undefined : dash,
         show: true,
         points: { show: false },
       });
@@ -512,7 +527,9 @@ export function createChart({
     values: [...primaryValues],
   };
 
-  return cleanup;
+  return () => {
+    cleanup();
+  };
 }
 
 // Helper function to get all valid TimeSeries from DataSeries

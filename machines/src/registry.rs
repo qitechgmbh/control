@@ -1,7 +1,9 @@
 use crate::analog_input_test_machine::AnalogInputTestMachine;
 use crate::digital_input_test_machine::DigitalInputTestMachine;
 use crate::ip20_test_machine::IP20TestMachine;
+use crate::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine;
 use crate::wago_ai_test_machine::WagoAiTestMachine;
+use crate::wago_do_test_machine::WagoDOTestMachine;
 #[cfg(feature = "mock-machine")]
 use crate::{
     extruder1::mock::ExtruderV2 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
@@ -20,7 +22,7 @@ use crate::{
     winder2::Winder2,
 };
 
-use crate::test_machine::TestMachine;
+use crate::{test_machine::TestMachine, test_machine_stepper::TestMachineStepper};
 
 use lazy_static::lazy_static;
 
@@ -137,6 +139,12 @@ lazy_static! {
 
         mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
 
+        mc.register::<WagoDOTestMachine>(WagoDOTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<Wago8chDigitalIOTestMachine>(
+            Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION,
+        );
+
+        mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
         mc
     };
 }

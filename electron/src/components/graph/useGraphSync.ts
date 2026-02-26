@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { PropGraphSync } from "./types";
+import { PropGraphSync, SwitchOrigin } from "./types";
 import { GraphExportData, exportGraphsToExcel } from "./excelExport";
 import { useGraphSettingsStore } from "@/stores/graphSettingsStore";
 
@@ -19,6 +19,7 @@ export function useGraphSync(exportGroupId?: string) {
     null,
   );
 
+  const historicalSwitchOriginRef = useRef<SwitchOrigin>("gesture");
   const historicalFreezeTimestampRef = useRef<number | null>(null);
   const graphDataRef = useRef<Map<string, () => GraphExportData | null>>(
     new Map(),
@@ -65,6 +66,7 @@ export function useGraphSync(exportGroupId?: string) {
         showFromTimestamp?: number | null;
         clearHistoricalFreeze?: boolean;
         setHistoricalFreeze?: boolean;
+        historicalSwitchOrigin?: SwitchOrigin;
       },
       requestId?: number,
     ) => {
@@ -102,6 +104,10 @@ export function useGraphSync(exportGroupId?: string) {
           historicalFreezeTimestampRef.current = null;
         } else if (updates.setHistoricalFreeze) {
           historicalFreezeTimestampRef.current = Date.now();
+        }
+
+        if (updates.historicalSwitchOrigin !== undefined) {
+          historicalSwitchOriginRef.current = updates.historicalSwitchOrigin;
         }
 
         clearChangeSource();
@@ -164,6 +170,7 @@ export function useGraphSync(exportGroupId?: string) {
         viewMode: "manual",
         isLiveMode: false,
         setHistoricalFreeze: historicalFreezeTimestampRef.current === null,
+        historicalSwitchOrigin: "gesture",
       });
     },
     [updateSyncState],
@@ -210,6 +217,7 @@ export function useGraphSync(exportGroupId?: string) {
       isLiveMode: false,
       viewMode: "manual",
       setHistoricalFreeze: true,
+      historicalSwitchOrigin: "button",
     });
   }, [updateSyncState]);
 
@@ -242,6 +250,7 @@ export function useGraphSync(exportGroupId?: string) {
     xRange,
     historicalFreezeTimestamp: historicalFreezeTimestampRef.current,
     showFromTimestamp,
+    historicalSwitchOrigin: historicalSwitchOriginRef.current,
     onTimeWindowChange: handleTimeWindowChange,
     onViewModeChange: handleViewModeChange,
     onZoomChange: handleZoomChangeThrottled,

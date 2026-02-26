@@ -2,7 +2,7 @@
   description = "QiTech Control";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
 
     # Crane for Rust builds with dependency caching
     crane = { url = "github:ipetkov/crane"; };
