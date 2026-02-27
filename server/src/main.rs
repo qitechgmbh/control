@@ -33,7 +33,6 @@ use rest::init::start_api_thread;
 use serialport::UsbPortInfo;
 use smol::{
     channel::{Receiver, Sender},
-    future,
     lock::RwLock,
 };
 use socketioxide::extract::SocketRef;
