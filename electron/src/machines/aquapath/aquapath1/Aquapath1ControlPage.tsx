@@ -94,8 +94,11 @@ export function Aquapath1ControlPage() {
               {frontCurrentTemperature > frontCoolingBoundary &&
                 frontTargetFlow &&
                 (state?.flow_states.front.flow ?? 0) && (
-                  <Badge variant="cold">
-                    <Icon name="lu:Snowflake" className="size-3.5" />
+                  <Badge
+                    variant="cold"
+                    className="h-21 min-w-28 justify-center px-4 text-sm"
+                  >
+                    <Icon name="lu:Snowflake" className="size-4" />
                     Cooling
                   </Badge>
                 )}
@@ -181,8 +184,11 @@ export function Aquapath1ControlPage() {
               {backCurrentTemperature > backCoolingBoundary &&
                 backTargetFlow &&
                 (state?.flow_states.back.flow ?? 0) > 0 && (
-                  <Badge variant="cold">
-                    <Icon name="lu:Snowflake" className="size-3.5" />
+                  <Badge
+                    variant="cold"
+                    className="h-21 min-w-28 justify-center px-4 text-sm"
+                  >
+                    <Icon name="lu:Snowflake" className="size-4" />
                     Cooling
                   </Badge>
                 )}
