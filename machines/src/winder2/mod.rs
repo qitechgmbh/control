@@ -8,6 +8,10 @@ mod puller;
 mod devices;
 pub mod utils;
 
+mod winder;
+mod base;
+mod types;
+
 #[cfg(feature = "mock-machine")]
 pub mod mock;
 

@@ -39,6 +39,10 @@ pub mod wago_ai_test_machine;
 pub mod wago_do_test_machine;
 pub mod wago_power;
 pub mod winder2;
+pub mod types;
+pub mod helpers;
+
+pub mod winder2_new;
 
 pub use live_values::LiveValues;
 // pub use live_values::
