@@ -2,6 +2,8 @@ use std::time::{Duration, Instant}
 ;
 use crate::winder2::api::TraverseState;
 use crate::winder2::devices::TraverseMode;
+use crate::winder2::tasks::SpoolLengthTask;
+use crate::winder2::types::SpoolLengthTaskCompletedAction;
 use crate::{MachinesLiveValues, VENDOR_QITECH};
 use crate::machine_identification::MachineIdentification;
 use crate::{MachineChannel, MachineWithChannel};
@@ -10,6 +12,8 @@ use devices::Traverse;
 mod types;
 use types::Mode;
 use types::Hardware;
+
+mod tasks;
 
 mod devices;
 use devices::Puller;
@@ -46,8 +50,9 @@ pub struct Winder2
     traverse:    Traverse,
     tension_arm: TensionArm,
 
-    // actions
-    automatic_action: AutomaticAction
+    // tasks
+    spool_length_task: SpoolLengthTask,
+    on_spool_length_task_complete: SpoolLengthTaskCompletedAction,
 }
 
 impl MachineWithChannel for Winder2
@@ -71,9 +76,14 @@ impl MachineWithChannel for Winder2
         self.puller.update(now);
         self.traverse.update(&self.spool);
 
-        if let Some(next_mode) = self.automatic_action.update(now, self.mode, &self.puller)
+        // if let Some(next_mode) = self.automatic_action.update(now, self.mode, &self.puller)
+        // {
+        //     self.set_mode(next_mode);
+        // }
+
+        if self.on_spool_length_task_complete == SpoolLengthTaskCompletedAction::NoAction
         {
-            self.set_mode(next_mode);
+
         }
 
         if self.traverse.consume_state_changed() 
@@ -145,6 +155,39 @@ impl Winder2
         vendor: VENDOR_QITECH,
         machine: crate::MACHINE_WINDER_V1,
     };
+
+    fn update_spool_length_task(&mut self, now: Instant)
+    {
+        use SpoolLengthTaskCompletedAction::*;
+
+        if self.on_spool_length_task_complete == NoAction
+        {
+            self.spool_length_task.update_progress(now, &self.puller);
+        }
+
+        if self.mode != Mode::Pull && self.mode != Mode::Wind
+        {
+            self.spool_length_task.update_timer(now);
+            return;
+        }
+
+        self.spool_length_task.update_progress(now, &self.puller);
+
+        match self.on_spool_length_task_complete
+        {
+            NoAction => {},
+            Pull => 
+            {
+                self.spool_length_task.reset(now);
+                self.set_mode(Mode::Pull);
+            },
+            Hold =>
+            {
+                self.spool_length_task.reset(now);
+                self.set_mode(Mode::Pull);
+            },
+        }
+    }
 
     fn new(channel: MachineChannel, hardware: Hardware) -> Self
     {

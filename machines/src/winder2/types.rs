@@ -25,3 +25,11 @@ pub struct Hardware
     pub tension_arm_sensor:    AnalogInput,
     pub traverse_laser:                 DigitalOutput,
 }
+
+#[derive(Debug, Clone, Copy, Serialize)]
+pub enum SpoolLengthTaskCompletedAction
+{
+    NoAction,
+    Pull,
+    Hold,
+}
