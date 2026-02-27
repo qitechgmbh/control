@@ -72,7 +72,7 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            <div className="flex flex-row gap-4">
+            <div className="flex flex-row items-end gap-4">
               <Label label="Set Target Temperature">
                 <EditValue
                   title="Set Target Temperature"
@@ -81,6 +81,7 @@ export function Aquapath1ControlPage() {
                   max={80}
                   unit="C"
                   step={0.1}
+                  triggerClassName="h-21"
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
                     setFrontTemperature(val);
@@ -93,10 +94,10 @@ export function Aquapath1ControlPage() {
 
               {frontCurrentTemperature > frontCoolingBoundary &&
                 frontTargetFlow &&
-                (state?.flow_states.front.flow ?? 0) && (
+                (state?.flow_states.front.flow ?? 0) > 0 && (
                   <Badge
                     variant="cold"
-                    className="h-21 min-w-28 justify-center px-4 text-sm"
+                    className="h-21 min-w-28 justify-center self-end px-4 text-sm"
                   >
                     <Icon name="lu:Snowflake" className="size-4" />
                     Cooling
@@ -162,7 +163,7 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            <div className="flex flex-row gap-4">
+            <div className="flex flex-row items-end gap-4">
               <Label label="Set Target Temperature">
                 <EditValue
                   title="Set Target Temperature"
@@ -171,6 +172,7 @@ export function Aquapath1ControlPage() {
                   max={80}
                   unit="C"
                   step={0.1}
+                  triggerClassName="h-21"
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
                     setBackTemperature(val);
@@ -186,7 +188,7 @@ export function Aquapath1ControlPage() {
                 (state?.flow_states.back.flow ?? 0) > 0 && (
                   <Badge
                     variant="cold"
-                    className="h-21 min-w-28 justify-center px-4 text-sm"
+                    className="h-21 min-w-28 justify-center self-end px-4 text-sm"
                   >
                     <Icon name="lu:Snowflake" className="size-4" />
                     Cooling
