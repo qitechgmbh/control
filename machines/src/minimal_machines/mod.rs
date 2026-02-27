@@ -9,3 +9,4 @@ pub mod wago_750_501_test_machine;
 pub mod wago_8ch_dio_test_machine;
 pub mod wago_ai_test_machine;
 pub mod wago_do_test_machine;
+pub mod wago_750_430_di_machine;
