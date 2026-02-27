@@ -30,11 +30,6 @@ Example request with curl:
 curl https://192.168.130.195/api/v2/machine -k -u machine:VoMZKZK4K4ZIvON+OU2ZcCXy
 ```
 
-For HTTPS+Authentication we have Caddy (a reverse proxy, with automatic https) in front of the internal API.
-In theory the HTTPS-Api Can be accessed over any network interface that is configured.
-
-If DNS is available on the subnet, you may be able to resolve `qitech.control`.
-
 
 ## Handling Self signed Certificate Warnings
 
@@ -47,8 +42,7 @@ How these are installed depends on your system.
 On Nixos the root Certificate for Caddy is located at: /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt
 You just need to copy this file to an usb drive or copy it some other way and add it as a trusted root certificate in your OS.
 
-How this is done heavily depends on your OS and is not further expanded on.
-A single Google seach for your OS should give you the answer.
+Please refer to your OS' documentation or search the Internet about how to install a trusted SSL certificate.
 
 
 ## Bypassing HTTPS and Authentication
