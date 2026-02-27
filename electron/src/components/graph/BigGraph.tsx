@@ -202,7 +202,7 @@ export function BigGraph({
     if (uplotRef.current && chartCreatedRef.current) {
       updateSeriesVisibility();
     }
-  }, [visibleSeries, updateSeriesVisibility]);
+  }, [visibleSeries, updateSeriesVisibility, newData]);
 
   // Register export functionality for the graph
   useEffect(() => {
