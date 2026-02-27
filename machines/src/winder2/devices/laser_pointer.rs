@@ -2,24 +2,24 @@ use ethercat_hal::io::digital_output::DigitalOutput;
 
 /// Represents the laser?
 #[derive(Debug)]
-pub struct Laser
+pub struct LaserPointer
 {
     output: DigitalOutput,
 }
 
-impl Laser
+impl LaserPointer
 {
-    pub fn new(hardware: DigitalOutput) -> Self
+    pub fn new(output: DigitalOutput) -> Self
     {
-        Self { output: hardware }
+        Self { output }
     }
 
-    pub fn set_toggled(&mut self, value: bool)
+    pub fn set_enabled(&mut self, value: bool)
     {
         self.output.set(value);
     }
 
-    pub fn is_toggled(&self) -> bool
+    pub fn is_enabled(&self) -> bool
     {
         self.output.get()
     }

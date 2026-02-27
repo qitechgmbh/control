@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use control_core::converters::linear_step_converter::LinearStepConverter;
 use ethercat_hal::io::digital_input::DigitalInput;
+use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use units::AngularVelocity;
 use units::ConstZero;
@@ -11,21 +12,17 @@ use units::angular_velocity::revolution_per_second;
 use units::length::millimeter;
 use units::velocity::millimeter_per_second;
 
-use crate::winder2_new::devices::Spool;
-
-mod types;
-pub use types::State;
-pub use types::HomingState;
-pub use types::TraversingState;
+use crate::winder2::devices::Spool;
 
 /// Represents the puller motor
 #[derive(Debug)]
 pub struct Traverse
 {
     motor: StepperVelocityEL70x1,
+    laser: DigitalOutput,
     limit_switch: DigitalInput,
 
-    enabled: bool,
+    mode:        Mode,
     position:    Length,
     limit_inner: Length,
     limit_outer: Length,
@@ -45,7 +42,11 @@ impl Traverse
     pub const DEFAULT_PADDING: f64 = 0.88;
     pub const DEFAULT_STEP_SIZE: f64 = 1.75;
 
-    pub fn new(motor: StepperVelocityEL70x1, limit_switch: DigitalInput) -> Self
+    pub fn new(
+        motor: StepperVelocityEL70x1, 
+        laser: DigitalOutput,
+        limit_switch: DigitalInput,
+    ) -> Self
     {
         let limit_inner = Length::new::<millimeter>(22.0);
         let limit_outer = Length::new::<millimeter>(92.0);
@@ -68,8 +69,9 @@ impl Traverse
         let padding   = Length::new::<millimeter>(Self::DEFAULT_PADDING);
 
         Self {
-            enabled: false,
+            mode: Mode::Standby,
             motor,
+            laser,
             limit_switch,
             fullstep_converter,
             microstep_converter,
@@ -85,7 +87,7 @@ impl Traverse
 
     pub fn update(&mut self, spool: &Spool)
     {
-        if !self.enabled { return; }
+        if self.mode == Mode::Standby { return; }
 
         self.update_position();
         self.update_state();
@@ -99,8 +101,30 @@ impl Traverse
 // getters + setters
 impl Traverse
 {
-    pub const fn is_enabled(&self) -> bool { self.enabled }
-    pub const fn set_enabled(&mut self, value: bool) { self.enabled = value; }
+    pub const fn mode(&self) -> Mode { self.mode }
+
+    pub fn set_mode(&mut self, mode: Mode)
+    {
+        use Mode::*;
+
+        // No change, nothing to do
+        if self.mode == mode { return; }
+
+        // Leaving standby, enable motor
+        if self.mode == Standby
+        {
+            self.motor.set_enabled(true);
+        }
+
+        match mode // guranteed state change
+        {
+            Standby  => self.motor.set_enabled(false),
+            Hold     => self.goto_home(),
+            Traverse => self.start_traversing(),
+        }
+
+        self.mode = mode;
+    }
 
     pub fn limit_inner(&self) -> Length { self.limit_inner }
     pub fn set_limit_inner(&mut self, value: Length) { self.limit_inner = value; }
@@ -130,49 +154,113 @@ impl Traverse
         self.did_change_state = false;
         did_change
     }
+
+    pub fn laser_pointer_enabled(&self) -> bool
+    {
+        self.laser.get()
+    }
+
+    pub fn set_laser_pointer_enabled(&mut self, value: bool)
+    {
+        self.laser.set(value);
+    }
 }
 
 // State management
 impl Traverse 
 {
-    pub const fn goto_limit_inner(&mut self) {
+    pub fn can_goto_limit_inner(&self) -> bool
+    {
+        self.mode == Mode::Standby
+            || !self.is_homed() 
+            || self.is_going_in() 
+            || self.is_going_home()
+            || self.is_traversing()
+    }
+
+    pub fn goto_limit_inner(&mut self) -> Result<(), ()>
+    {
+        if !self.can_goto_limit_inner()
+        {
+            return Err(());
+        }
+
         self.state = State::GoingIn;
+        Ok(())
     }
 
-    pub const fn goto_limit_outer(&mut self) {
+    pub fn can_goto_limit_outer(&self)-> bool
+    {
+        self.mode == Mode::Standby
+            || !self.is_homed() 
+            || self.is_going_out() 
+            || self.is_going_home()
+            || self.is_traversing()
+    }
+
+    pub fn goto_limit_outer(&mut self) -> Result<(), ()>
+    {
+        if !self.can_goto_limit_outer()
+        {
+            return Err(());
+        }
+
         self.state = State::GoingOut;
+        Ok(())
     }
 
-    pub const fn goto_home(&mut self) {
+    pub fn can_go_home(&self)-> bool
+    {
+        self.mode == Mode::Standby
+            || !self.is_homed() 
+            || self.is_going_out() 
+            || self.is_going_home()
+            || self.is_traversing()
+    }
+
+    pub fn try_goto_home(&mut self) -> Result<(), ()>
+    {
+        if !self.can_go_home()
+        {
+            return Err(());
+        }
+
+        self.goto_home();
+        Ok(())
+    }
+
+    fn goto_home(&mut self)
+    {
         self.state = State::Homing(HomingState::Initialize);
     }
 
-    pub const fn start_traversing(&mut self) {
+    fn start_traversing(&mut self) 
+    {
         self.state = State::Traversing(TraversingState::GoingOut);
     }
 
-    pub const fn is_homed(&self) -> bool {
+    pub fn is_standby(&self) -> bool {
+        self.state == State::Idle
+    }
+
+    pub fn is_homed(&self) -> bool {
         // if not [`State::NotHomed`], then it is homed
         !matches!(self.state, State::NotHomed)
     }
 
-    pub const fn is_going_in(&self) -> bool {
-        // [`State::GoingIn`]
-        matches!(self.state, State::GoingIn)
+    pub fn is_going_in(&self) -> bool {
+        self.state == State::GoingIn
     }
 
-    pub const fn is_going_out(&self) -> bool {
-        // [`State::GoingOut`]
-        matches!(self.state, State::GoingOut)
+    pub fn is_going_out(&self) -> bool {
+        self.state == State::GoingOut
     }
 
-    pub const fn is_going_home(&self) -> bool {
-        // [`State::Homing`]
+    pub fn is_going_home(&self) -> bool {
         matches!(self.state, State::Homing(_))
     }
 
-    pub const fn is_traversing(&self) -> bool {
-        // [`State::Traversing`]
+    pub fn is_traversing(&self) -> bool {
         matches!(self.state, State::Traversing(_))
     }
 }
@@ -245,8 +333,7 @@ impl Traverse
 
         match self.state
         {
-            NotHomed => {}
-            Idle => {}
+            NotHomed | Idle => {}
             GoingIn => 
             {
                 // If inner limit is reached
@@ -256,7 +343,8 @@ impl Traverse
                     self.state = State::Idle;
                 }
             }
-            GoingOut => {
+            GoingOut => 
+            {
                 // If outer limit is reached
                 if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.01)) {
                     // Put Into Idle
@@ -452,4 +540,85 @@ impl Traverse
             }
         }
     }
+}
+
+// other types
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Mode {
+    Standby,
+    Hold,
+    Traverse,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum State 
+{
+    /// Initial state
+    NotHomed,
+
+    /// Doing nothing
+    /// Already homed
+    Idle,
+
+    /// Going to inner limit
+    ///
+    /// After reaching the inner limit, the state will change to [`State::Idle`]
+    GoingIn,
+
+    /// Going to outer limit
+    ///
+    /// After reaching the outer limit, the state will change to [`State::Idle`]
+    GoingOut,
+
+    /// Homing is in progress
+    ///
+    /// After homing is done, the state will change to [`State::Idle`]
+    Homing(HomingState),
+
+    /// Move between inner and outer limits
+    Traversing(TraversingState),
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum TraversingState 
+{
+    /// Like [`State::GoingOut`] but
+    /// - will go into [`State::GoingIn`] after reaching the outer limit
+    GoingOut,
+
+    /// Like [`State::GoingIn`] but
+    /// - will go into [`State::GoingOut`] after reaching the inner limit
+    /// - speed is synced to spool speed
+    TraversingIn,
+
+    /// Like [`State::GoingOut`] but
+    /// - will go into [`State::GoingIn`] after reaching the outer limit
+    /// - speed is synced to spool speed
+    TraversingOut,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum HomingState 
+{
+    /// In this state the traverse is not moving but checks if the endstop si triggered
+    /// If the endstop is triggered we go into [`HomingState::EscapeEndstop`]
+    /// If the endstop is not triggered we go into [`HomingState::FindEndstop`]
+    Initialize,
+
+    /// In this state the traverse is moving out away from the endstop until it's not triggered anymore
+    /// The it goes into [`HomingState::FindEnstopFineDistancing`]
+    EscapeEndstop,
+
+    /// Moving out away from the endstop
+    /// Then Transition into [`HomingState::FindEndtopFine`]
+    FindEndstopFineDistancing,
+
+    /// In this state the traverse is fast until it reaches the endstop
+    FindEndstopCoarse,
+
+    /// In this state the traverse is moving slowly until it reaches the endstop
+    FindEndtopFine,
+
+    /// In this state we check if th current position is actually 0.0, if not we redo the homing routine
+    Validate(Instant),
 }

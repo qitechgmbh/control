@@ -10,7 +10,7 @@ pub use min_max::MinMaxSpeedController;
 mod adapative;
 pub use adapative::AdaptiveSpeedController;
 
-use crate::winder2_new::devices::{Puller, TensionArm};
+use crate::winder2::devices::{Puller, TensionArm};
 
 pub trait SpeedController
 {

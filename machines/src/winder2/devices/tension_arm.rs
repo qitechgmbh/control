@@ -1,69 +1,83 @@
-use ethercat_hal::io::analog_input::{AnalogInput, physical::AnalogInputValue};
 use units::angle::revolution;
 use units::electric_potential::volt;
 use units::f64::*;
 
+use ethercat_hal::io::analog_input::{AnalogInput, physical::AnalogInputValue};
+
 #[derive(Debug)]
-pub struct TensionArm {
-    pub analog_input: AnalogInput,
-    pub zero: Angle,
-    /// was zeroed at least once
-    pub zeroed: bool,
+pub struct TensionArm 
+{
+    analog_input:  AnalogInput,
+    zero_offset:   Angle,
+    is_calibrated: bool,
 }
 
-impl TensionArm {
-    pub fn new(analog_input: AnalogInput) -> Self {
+// public interface
+impl TensionArm 
+{
+    pub fn new(analog_input: AnalogInput) -> Self 
+    {
         Self {
             analog_input,
-            zero: Angle::new::<revolution>(0.0),
-            zeroed: false,
+            zero_offset:   Angle::new::<revolution>(0.0),
+            is_calibrated: false,
         }
     }
 
-    fn volts_to_angle(&self, volts: f64) -> Angle {
-        // 0V = 0deg 5V = 3600deg
-        // always wrap into 0..1 revolution
-        Angle::new::<revolution>(volts / 5.0) % Angle::new::<revolution>(1.0)
+    pub fn calibrate(&mut self) 
+    {
+        self.zero_offset = self.raw_angle();
+        self.is_calibrated = true;
     }
 
-    fn get_volts(&self) -> f64 {
-        // get the normalized value from the analog input
-        let value = self.analog_input.get_physical();
-
-        match value {
-            AnalogInputValue::Potential(v) => v.get::<volt>(),
-            _ => panic!("Expected a potential value"),
-        }
+    pub const fn is_calibrated(&self) -> bool
+    {
+        self.is_calibrated
     }
 
-    fn raw_angle(&self) -> Angle {
-        // get volts
-        let volts = self.get_volts();
-
-        // 0V = 0deg 5V = 3600deg
-        self.volts_to_angle(volts)
-    }
-
-    pub fn get_angle(&self) -> Angle {
+    pub fn get_angle(&self) -> Angle
+    {
         // revolution is maping -1/1 to 0/1
         let raw = self.raw_angle();
 
         // Handle the wraparound case
-        if raw < self.zero {
+        if raw < self.zero_offset {
             // We've wrapped around, so add a full revolution
-            (raw + Angle::new::<revolution>(1.0)) - self.zero
+            (raw + Angle::new::<revolution>(1.0)) - self.zero_offset
         } else {
             // Normal case
-            raw - self.zero
+            raw - self.zero_offset
         }
-    }
-
-    pub fn zero(&mut self) {
-        self.zero = self.raw_angle();
-        self.zeroed = true;
     }
 }
 
+// utils
+impl TensionArm 
+{
+    fn volts_to_angle(&self, volts: f64) -> Angle 
+    {
+        // 0V = 0deg -> 5V = 3600deg
+        // always wrap into 0..1 revolution
+        Angle::new::<revolution>(volts / 5.0) % Angle::new::<revolution>(1.0)
+    }
+
+    fn get_volts(&self) -> f64 
+    {
+        // TODO: reconsider panicking, to allow system to shutdown gracefully.
+        // but since I am only moving code, I will not touch this...
+        let AnalogInputValue::Potential(potential) = 
+            self.analog_input.get_physical() else { panic!("Expected a potential value"); };
+
+        potential.get::<volt>()
+    }
+
+    fn raw_angle(&self) -> Angle 
+    {
+        self.volts_to_angle(self.get_volts())
+    }
+}
+
+// tests
 #[cfg(test)]
 mod tests {
     use super::*;

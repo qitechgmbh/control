@@ -42,9 +42,7 @@ pub mod winder2;
 pub mod types;
 pub mod helpers;
 
-pub mod winder2_new;
-
-pub use live_values::LiveValues;
+pub use live_values::MachinesLiveValues;
 // pub use live_values::
 
 pub const VENDOR_QITECH: u16 = 0x0001;
@@ -316,7 +314,7 @@ pub enum MachineMessage {
     ConnectToMachine(MachineConnection),
     DisconnectMachine(MachineConnection),
     RequestValues(Sender<MachineValues>),
-    ReceiveLiveValues(LiveValues),
+    ReceiveLiveValues(MachinesLiveValues),
 }
 
 pub trait MachineApi {
@@ -492,6 +490,10 @@ pub trait MachineWithChannel: Send + Debug + Sync {
     fn get_live_values(&self) -> Option<Self::LiveValues> {
         None
     }
+
+    fn on_receive_live_values(&mut self,live_values: MachinesLiveValues)      { _ = live_values; }
+    fn on_connect_to_machine(&mut self,connection: MachineConnection) { _ = connection; }
+    fn on_disconnect_machine(&mut self,connection: MachineConnection) { _ = connection; }
 }
 
 impl<C> MachineApi for C
@@ -521,9 +523,15 @@ impl<C> MachineAct for C
 where
     C: MachineWithChannel,
 {
-    fn act(&mut self, now: Instant) {
-        while let Ok(msg) = self.get_machine_channel_mut().api_receiver.try_recv() {
-            self.act_machine_message(msg);
+    fn act(&mut self, now: Instant) 
+    {
+        for _ in 0..5 // Limit to 5 requests max 
+        {
+            match self.get_machine_channel_mut().api_receiver.try_recv() 
+            {
+                Ok(msg) => self.act_machine_message(msg),
+                Err(_) => break,
+            }
         }
 
         if let Err(e) = self.update(now) {
@@ -545,11 +553,11 @@ where
             MachineMessage::HttpApiJsonRequest(value) => {
                 let _ = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(_machine_connection) => {
-                todo!();
+            MachineMessage::ConnectToMachine(connection) => {
+                self.on_connect_to_machine(connection);
             }
-            MachineMessage::DisconnectMachine(_machine_connection) => {
-                todo!();
+            MachineMessage::DisconnectMachine(connection) => {
+                self.on_disconnect_machine(connection);
             }
             MachineMessage::RequestValues(sender) => {
                 sender
@@ -562,7 +570,10 @@ where
                     .expect("Failed to send values");
                 sender.close();
             }
-            MachineMessage::ReceiveLiveValues(_) => {}
+            MachineMessage::ReceiveLiveValues(live_values) => 
+            {
+                self.on_receive_live_values(live_values);
+            }
         }
     }
 }

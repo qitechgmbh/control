@@ -21,8 +21,8 @@ use control_core::{
     },
 };
 
-use crate::{helpers::{Clamp, clamp_revolution_uom}, winder2_new::devices::{Puller, spool::speed_controller::SpeedController}};
-use crate::winder2_new::devices::TensionArm;
+use crate::{helpers::{Clamp, clamp_revolution_uom}, winder2::devices::{Puller, spool::speed_controller::SpeedController}};
+use crate::winder2::devices::TensionArm;
 use super::helpers::FilamentTensionCalculator;
 
 #[derive(Debug)]
@@ -38,38 +38,6 @@ pub struct MinMaxSpeedController
     filament_calc: FilamentTensionCalculator,
     /// Unit is angular velocity in rad/s
     speed_time_window: MovingTimeWindow<f64>,
-}
-
-impl SpeedController for MinMaxSpeedController
-{
-    fn speed(&self) -> AngularVelocity 
-    {
-        todo!()
-    }
-
-    fn set_speed(&mut self, speed: AngularVelocity) 
-    {
-        todo!()
-    }
-
-    fn is_enabled(&self) -> bool 
-    {
-        todo!()
-    }
-
-    fn set_enabled(&mut self, enabled: bool) 
-    {
-        todo!()
-    }
-
-    fn update_speed(&mut self, t: Instant, tension_arm: &TensionArm, puller: &Puller) 
-    {
-        todo!()
-    }
-    
-    fn reset(&mut self) {
-        todo!()
-    }
 }
 
 impl MinMaxSpeedController 
@@ -192,35 +160,6 @@ impl MinMaxSpeedController
 
 impl MinMaxSpeedController 
 {
-    pub fn update_speed(&mut self, t: Instant, tension_arm: &TensionArm) -> AngularVelocity 
-    {
-        let speed = self.speed_raw(t, tension_arm.get_angle());
-        let speed = match self.enabled 
-        {
-            true  => speed,
-            false => AngularVelocity::ZERO,
-        };
-        let speed = self.accelerate_speed(speed, t);
-
-        // save speed before clamping or it will stay 0.0
-        self.speed = speed;
-
-        self.clamp_speed(speed)
-    }
-
-    pub const fn set_enabled(&mut self, enabled: bool) {
-        self.enabled = enabled;
-    }
-
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
-    pub fn reset(&mut self) {
-        self.speed = AngularVelocity::ZERO;
-        self.acceleration_controller.reset(AngularVelocity::ZERO);
-    }
-
     fn update_acceleration(&mut self) -> Result<(), MotionControllerError> {
         // Set acceleration to 1/4 of the range between min and max speed
         // The spool will accelerate from min to max speed in 4 seconds
@@ -286,5 +225,55 @@ impl MinMaxSpeedController
         let radius = Some(radius).filter(|&n| n.is_normal()).unwrap_or(0.0);
 
         Length::new::<meter>(radius)
+    }
+}
+
+impl SpeedController for MinMaxSpeedController
+{
+    fn speed(&self) -> AngularVelocity {
+        self.speed
+    }
+
+    fn set_speed(&mut self, speed: AngularVelocity) {
+        self.speed = speed;
+        // Also update the acceleration controller's 
+        // current speed to ensure smooth transitions
+        self.acceleration_controller.reset(speed);
+    }
+
+    fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
+    }
+
+    fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    fn update_speed(
+        &mut self, 
+        t: Instant, 
+        tension_arm: &TensionArm, 
+        puller: &Puller
+    ) -> AngularVelocity
+    {
+        _ = puller;
+
+        let speed = self.speed_raw(t, tension_arm.get_angle());
+        let speed = match self.enabled 
+        {
+            true  => speed,
+            false => AngularVelocity::ZERO,
+        };
+        let speed = self.accelerate_speed(speed, t);
+
+        // save speed before clamping or it will stay 0.0
+        self.speed = speed;
+
+        self.clamp_speed(speed)
+    }
+    
+    fn reset(&mut self) {
+        self.speed = AngularVelocity::ZERO;
+        self.acceleration_controller.reset(AngularVelocity::ZERO);
     }
 }

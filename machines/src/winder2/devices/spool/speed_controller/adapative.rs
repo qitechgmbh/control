@@ -12,8 +12,8 @@ use units::f64::*;
 use units::length::{centimeter, meter};
 use units::velocity::meter_per_second;
 
-use crate::{helpers::{Clamp, clamp_revolution_uom}, winder2_new::devices::spool::speed_controller::SpeedController};
-use crate::winder2_new::devices::{Puller, TensionArm};
+use crate::{helpers::{Clamp, clamp_revolution_uom}, winder2::devices::spool::speed_controller::SpeedController};
+use crate::winder2::devices::{Puller, TensionArm};
 
 use super::helpers::FilamentTensionCalculator;
 
@@ -93,16 +93,6 @@ impl AdaptiveSpeedController
 // getter + setter
 impl AdaptiveSpeedController
 {
-    pub const fn is_enabled(&self) -> bool 
-    {
-        self.enabled
-    }
-
-    pub const fn set_enabled(&mut self, enabled: bool) 
-    {
-        self.enabled = enabled;
-    }
-
     pub fn speed(&self) -> AngularVelocity {
         self.last_speed
     }
@@ -196,41 +186,6 @@ impl AdaptiveSpeedController
             acceleration_factor: Self::ACCELERATION_FACTOR,
             deacceleration_urgency_multiplier: Self::DEACCELERATION_URGENCY_MULTIPLIER,
         }
-    }
-
-    pub fn update_speed(
-        &mut self,
-        t: Instant, 
-        tension_arm: &TensionArm, 
-        puller: &Puller
-    ) -> AngularVelocity 
-    {
-        let target_speed = self.calculate_speed(t, tension_arm, puller);
-
-        let enabled_speed = if self.enabled {
-            target_speed
-        } else {
-            AngularVelocity::ZERO
-        };
-
-        let accelerated_speed = self.accelerate_speed(enabled_speed, puller, t);
-
-        // Store speed before clamping to preserve the actual commanded value
-        self.last_speed = accelerated_speed;
-
-        self.clamp_speed(accelerated_speed)
-    }
-
-    pub fn reset(&mut self) {
-        self.last_speed = AngularVelocity::ZERO;
-        self.acceleration_controller.reset(AngularVelocity::ZERO);
-        self.speed_factor = Length::new::<centimeter>(4.25);
-        self.last_max_speed_factor_update = None;
-        self.tension_target = Self::TENSION_TARGET;
-        self.radius_learning_rate = Self::RADIUS_LEARNING_RATE;
-        self.max_speed_multiplier = Self::MAX_SPEED_MULTIPLIER;
-        self.acceleration_factor = Self::ACCELERATION_FACTOR;
-        self.deacceleration_urgency_multiplier = Self::DEACCELERATION_URGENCY_MULTIPLIER;
     }
 }
 
@@ -368,30 +323,58 @@ impl SpeedController for AdaptiveSpeedController
 {
     fn speed(&self) -> AngularVelocity 
     {
-        todo!()
+        self.last_speed
     }
 
-    fn set_speed(&mut self, speed: AngularVelocity) 
+    fn set_speed(&mut self, value: AngularVelocity) 
     {
-        todo!()
+        self.last_speed = value;
+        self.acceleration_controller.reset(value);
     }
 
     fn is_enabled(&self) -> bool 
     {
-        todo!()
+        self.enabled
     }
 
-    fn set_enabled(&mut self, enabled: bool) 
+    fn set_enabled(&mut self, value: bool) 
     {
-        todo!()
+        self.enabled = value;
     }
 
-    fn update_speed(&mut self, t: Instant, tension_arm: &TensionArm, puller: &Puller) 
+    fn update_speed(
+        &mut self, 
+        t: Instant, 
+        tension_arm: &TensionArm, 
+        puller: &Puller
+    ) -> AngularVelocity 
     {
-        todo!()
+        let target_speed = self.calculate_speed(t, tension_arm, puller);
+
+        let enabled_speed = if self.enabled {
+            target_speed
+        } else {
+            AngularVelocity::ZERO
+        };
+
+        let accelerated_speed = self.accelerate_speed(enabled_speed, puller, t);
+
+        // Store speed before clamping to preserve the actual commanded value
+        self.last_speed = accelerated_speed;
+
+        self.clamp_speed(accelerated_speed)
     }
     
-    fn reset(&mut self) {
-        todo!()
+    fn reset(&mut self) 
+    {
+        self.last_speed = AngularVelocity::ZERO;
+        self.acceleration_controller.reset(AngularVelocity::ZERO);
+        self.speed_factor = Length::new::<centimeter>(4.25);
+        self.last_max_speed_factor_update = None;
+        self.tension_target = Self::TENSION_TARGET;
+        self.radius_learning_rate = Self::RADIUS_LEARNING_RATE;
+        self.max_speed_multiplier = Self::MAX_SPEED_MULTIPLIER;
+        self.acceleration_factor = Self::ACCELERATION_FACTOR;
+        self.deacceleration_urgency_multiplier = Self::DEACCELERATION_URGENCY_MULTIPLIER;
     }
 }
