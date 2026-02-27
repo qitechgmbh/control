@@ -38,7 +38,7 @@ pub fn start_loop_thread(
                 SpinSleeper::new(3_333_333) // frequency in Hz ~ 1 / 300µs, Basically specifies the accuracy of our sleep
                     .with_spin_strategy(spin_sleep::SpinStrategy::YieldThread);
 
-            let _ = set_core_affinity(2);
+            let _ = set_core_affinity(3);
 
             // Get thread ID in a platform-specific way
             #[cfg(target_os = "linux")]
