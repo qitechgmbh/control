@@ -33,14 +33,15 @@ curl https://192.168.130.195/api/v2/machine -k -u machine:VoMZKZK4K4ZIvON+OU2ZcC
 
 ## Handling Self signed Certificate Warnings
 
-What you might notice is that caddy automatically generates certificates with its internal CA.
+For HTTPS we use self-signed certificates.
 These are untrusted by default in browsers,tools like curl and https libraries.
 
 For most programs you can either ignore this warning or you can manually trust the certificate on your system.
 How these are installed depends on your system.
 
-On Nixos the root Certificate for Caddy is located at: /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt
-You just need to copy this file to an usb drive or copy it some other way and add it as a trusted root certificate in your OS.
+On the panel pc, the root Certificate is located at: /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt
+
+You need to copy this file to an usb drive or copy it some other way and add it as a trusted root certificate in your OS.
 
 Please refer to your OS' documentation or search the Internet about how to install a trusted SSL certificate.
 
