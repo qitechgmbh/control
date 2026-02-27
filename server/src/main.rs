@@ -413,7 +413,7 @@ fn main() {
                     app_state.clone(),
                 ));
             }
-            future::yield_now().await;
+            smol::Timer::after(Duration::from_micros(150)).await;
         }
     });
 }
