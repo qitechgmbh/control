@@ -81,6 +81,8 @@ import { WagoDoTestMachinePage } from "@/machines/minimal_machines/wagodotestmac
 import { WagoDoTestMachineControlPage } from "@/machines/minimal_machines/wagodotestmachine/WagoDoTestMachineControlPage";
 import { Wago8chDioTestMachinePage } from "@/machines/minimal_machines/wago8chdiotestmachine/wago8chDioTestMachinePage";
 import { Wago8chDioTestMachineControlRoute } from "@/machines/minimal_machines/wago8chdiotestmachine/wago8chDioTestMachineControlPage";
+import { Wago750430DiMachinePage } from "@/machines/minimal_machines/wago750430dimachine/Wago750430DiMachinePage";
+import { Wago750430DiMachineControlPage } from "@/machines/minimal_machines/wago750430dimachine/Wago750430DiMachineControlPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -105,6 +107,18 @@ export const wago8chDioTestMachineControlRoute = createRoute({
   getParentRoute: () => wago8chDioTestMachineRoute,
   path: "control",
   component: () => <Wago8chDioTestMachineControlRoute />,
+});
+
+export const wago750430DiMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wago750430dimachine/$serial",
+  component: () => <Wago750430DiMachinePage />,
+});
+
+export const wago750430DiMachineControlRoute = createRoute({
+  getParentRoute: () => wago750430DiMachineSerialRoute,
+  path: "control",
+  component: () => <Wago750430DiMachineControlPage />,
 });
 
 // Leaf route: control page
@@ -594,6 +608,10 @@ export const rootTree = RootRoute.addChildren([
       buffer1SerialRoute.addChildren([buffer1ControlRoute]),
 
       wagoDoTestMachineSerialRoute.addChildren([wagoDoTestMachineControlRoute]),
+
+      wago750430DiMachineSerialRoute.addChildren([
+        wago750430DiMachineControlRoute,
+      ]),
     ]),
   ]),
 ]);
