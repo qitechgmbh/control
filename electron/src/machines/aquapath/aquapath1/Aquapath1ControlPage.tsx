@@ -7,6 +7,7 @@ import { useAquapath1 } from "./useAquapath";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/Icon";
 import { Label } from "@/control/Label";
 import { HeatingZone } from "../../extruder/HeatingZone";
 
@@ -93,7 +94,10 @@ export function Aquapath1ControlPage() {
               {frontCurrentTemperature > frontCoolingBoundary &&
                 frontTargetFlow &&
                 (state?.flow_states.front.flow ?? 0) && (
-                  <Badge variant="secondary">Cooling</Badge>
+                  <Badge variant="cold">
+                    <Icon name="lu:Snowflake" className="size-3.5" />
+                    Cooling
+                  </Badge>
                 )}
             </div>
 
@@ -177,7 +181,10 @@ export function Aquapath1ControlPage() {
               {backCurrentTemperature > backCoolingBoundary &&
                 backTargetFlow &&
                 (state?.flow_states.back.flow ?? 0) > 0 && (
-                  <Badge variant="secondary">Cooling</Badge>
+                  <Badge variant="cold">
+                    <Icon name="lu:Snowflake" className="size-3.5" />
+                    Cooling
+                  </Badge>
                 )}
             </div>
 
