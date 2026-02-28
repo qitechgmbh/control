@@ -20,9 +20,9 @@ use super::OperationState;
 #[derive(Debug)]
 pub struct Traverse
 {
-    // hardwares
+    // hardware
     motor: StepperVelocityEL70x1,
-    laser: DigitalOutput,
+    laser_pointer: DigitalOutput,
     limit_switch: DigitalInput,
 
     // config
@@ -80,7 +80,7 @@ impl Traverse
         Self {
             device_state: OperationState::Disabled,
             motor,
-            laser: laser_pointer,
+            laser_pointer,
             limit_switch,
             fullstep_converter,
             microstep_converter,
@@ -186,12 +186,12 @@ impl Traverse
 
     pub fn laser_pointer_enabled(&self) -> bool
     {
-        self.laser.get()
+        self.laser_pointer.get()
     }
 
     pub fn set_laser_pointer_enabled(&mut self, value: bool)
     {
-        self.laser.set(value);
+        self.laser_pointer.set(value);
     }
 }
 
