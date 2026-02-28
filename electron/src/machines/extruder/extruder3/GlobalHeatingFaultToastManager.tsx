@@ -25,10 +25,7 @@ function HeatingFaultToast({
     <div className="flex w-100 flex-col gap-3 rounded-xl border border-red-400 bg-red-600 p-4 text-white shadow-xl backdrop-blur-sm transition-all duration-300">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Icon
-            name="lu:TriangleAlert"
-            className="h-5 w-5 text-yellow-200"
-          />
+          <Icon name="lu:TriangleAlert" className="h-5 w-5 text-yellow-200" />
           <strong className="text-lg font-semibold tracking-wide">
             Heating Fault
           </strong>
