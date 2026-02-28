@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use serde::{Deserialize, Serialize};
 use units::{
     AngularVelocity, 
@@ -32,7 +34,6 @@ pub enum Mutation
     EnableTraverseLaserpointer(bool),
 
     // Puller
-    /// on = speed, off = stop
     // SetPullerRegulationMode(PullerRegulationMode), TODO: replace
     SetPullerTargetSpeed(f64),
     SetPullerTargetDiameter(f64),
@@ -103,23 +104,23 @@ impl Winder2
             SetPullerGearRatio(v)      => self.puller_set_gear_ratio(v),
 
             // spool
-            SetSpoolRegulationMode(_) => todo!(),
-            SetSpoolMinMaxMinSpeed(_) => todo!(),
-            SetSpoolMinMaxMaxSpeed(_) => todo!(),
-            SetSpoolForward(_) => todo!(),
-            SetSpoolAdaptiveTensionTarget(_) => todo!(),
-            SetSpoolAdaptiveRadiusLearningRate(_) => todo!(),
-            SetSpoolAdaptiveMaxSpeedMultiplier(_) => todo!(),
-            SetSpoolAdaptiveAccelerationFactor(_) => todo!(),
-            SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(_) => todo!(),
+            SetSpoolRegulationMode(v) => self.spool_set_speed_control_mode(v),
+            SetSpoolMinMaxMinSpeed(v) => self.spool_set_minmax_min_speed(v),
+            SetSpoolMinMaxMaxSpeed(v) => self.spool_set_minmax_max_speed(v),
+            SetSpoolForward(v) => self.spool_set_direction(Direction::from_bool(v)),
+            SetSpoolAdaptiveTensionTarget(v)      => self.spool_set_adaptive_tension_target(v),
+            SetSpoolAdaptiveRadiusLearningRate(v) => self.spool_set_adaptive_radius_learning_rate(v),
+            SetSpoolAdaptiveMaxSpeedMultiplier(v) => self.spool_set_adaptive_max_speed_multiplier(v),
+            SetSpoolAdaptiveAccelerationFactor(v) => self.spool_set_adaptive_acceleration_factor(v),
+            SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(v) => self.spool_set_adaptive_deacceleration_urgency_multiplier(v),
 
             // tension arm
-            ZeroTensionArmAngle => todo!(),
+            ZeroTensionArmAngle => self.tension_arm_calibrate(),
 
             // spool length task
-            SetSpoolAutomaticRequiredMeters(_) => todo!(),
-            SetSpoolAutomaticAction(_) => todo!(),
-            ResetSpoolProgress => todo!(),
+            SetSpoolAutomaticRequiredMeters(v) => self.spool_length_task_set_target_length(v),
+            SetSpoolAutomaticAction(v) => self.set_on_spool_length_task_completed_action(v),
+            ResetSpoolProgress => self.spool_length_task_reset(Instant::now()),
         }
 
         Ok(())
@@ -369,7 +370,7 @@ impl Winder2
 // Spool Length Task
 impl Winder2
 {
-    pub fn set_spool_length_task_target_length(&mut self, meters: f64) 
+    pub fn spool_length_task_set_target_length(&mut self, meters: f64) 
     {
         let target_length = Length::new::<meter>(meters);
         self.spool_length_task.set_target_length(target_length);
@@ -380,6 +381,12 @@ impl Winder2
         &mut self, action: SpoolLengthTaskCompletedAction) 
     {
         self.on_spool_length_task_complete = action;
+        self.emit_state();
+    }
+
+    pub fn spool_length_task_reset(&mut self, now: Instant) 
+    {
+        self.spool_length_task.reset(now);
         self.emit_state();
     }
 }

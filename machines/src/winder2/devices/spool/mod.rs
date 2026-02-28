@@ -17,12 +17,13 @@ use speed_controller::{SpeedController, AdaptiveSpeedController, MinMaxSpeedCont
 #[derive(Debug)]
 pub struct Spool
 {
-    motor: StepperVelocityEL70x1,
+    motor:              StepperVelocityEL70x1,
     state:              OperationState,
     direction:          Direction,
-    pub speed_controllers: SpeedControllers,
     speed_control_mode: SpeedControlMode,
     step_converter:     AngularStepConverter,
+
+    pub speed_controllers: SpeedControllers,
 }
 
 // public interface
