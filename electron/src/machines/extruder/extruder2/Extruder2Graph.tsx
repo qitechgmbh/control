@@ -1,12 +1,13 @@
 import { Page } from "@/components/Page";
 import {
-  AutoSyncedBigGraph,
+  MarkerProvider,
   SyncedFloatingControlPanel,
   useGraphSync,
   type GraphConfig,
 } from "@/components/graph";
 import React from "react";
 import { useExtruder2 } from "./useExtruder";
+import { GraphWithMarkerControls } from "@/components/graph/GraphWithMarkerControls";
 
 export function Extruder2GraphsPage() {
   const {
@@ -252,87 +253,102 @@ export function Extruder2GraphsPage() {
 
   return (
     <Page className="pb-25">
-      <div className="flex flex-col gap-4">
-        <AutoSyncedBigGraph
-          syncHook={syncHook}
-          newData={{
-            newData: pressure,
-            color: "#3b82f6",
-            lines:
-              state?.pressure_state.target_bar !== undefined
-                ? [
-                    {
-                      type: "target" as const,
-                      value: state.pressure_state.target_bar,
-                      targetSeries: targetPressure,
-                      color: "#3b82f6",
-                      show: true,
-                    },
-                  ]
-                : [],
-          }}
-          config={pressureConfig}
-          unit="bar"
-          renderValue={(value) => value.toFixed(2)}
-          graphId="pressure-graph"
-        />
+      <MarkerProvider>
+        <div className="flex flex-col gap-4">
+          <GraphWithMarkerControls
+            syncHook={syncHook}
+            newData={{
+              newData: pressure,
+              color: "#3b82f6",
+              lines:
+                state?.pressure_state.target_bar !== undefined
+                  ? [
+                      {
+                        type: "target" as const,
+                        value: state.pressure_state.target_bar,
+                        targetSeries: targetPressure,
+                        color: "#3b82f6",
+                        show: true,
+                      },
+                    ]
+                  : [],
+            }}
+            config={pressureConfig}
+            unit="bar"
+            renderValue={(value) => value.toFixed(2)}
+            graphId="pressure-graph"
+            currentTimeSeries={pressure}
+            machineId="extruder-graphs"
+          />
 
-        <AutoSyncedBigGraph
-          syncHook={syncHook}
-          newData={temperatureData}
-          config={temperatureConfig}
-          unit="C"
-          renderValue={(value) => value.toFixed(1)}
-          graphId="combined-temperatures"
-        />
+          <GraphWithMarkerControls
+            syncHook={syncHook}
+            newData={temperatureData}
+            config={temperatureConfig}
+            unit="C"
+            renderValue={(value) => value.toFixed(1)}
+            graphId="combined-temperatures"
+            currentTimeSeries={nozzleTemperature}
+            machineId="extruder-graphs"
+          />
 
-        <AutoSyncedBigGraph
-          syncHook={syncHook}
-          newData={powerData}
-          config={powerConfig}
-          unit="W"
-          renderValue={(value) => value.toFixed(1)}
-          graphId="combined-power"
-        />
+          <GraphWithMarkerControls
+            syncHook={syncHook}
+            newData={powerData}
+            config={powerConfig}
+            unit="W"
+            renderValue={(value) => value.toFixed(1)}
+            graphId="combined-power"
+            currentTimeSeries={combinedPower}
+            machineId="extruder-graphs"
+          />
 
-        <AutoSyncedBigGraph
-          syncHook={syncHook}
-          newData={{
-            newData: motorCurrent,
-            color: "#3b82f6",
-          }}
-          config={currentConfig}
-          unit="A"
-          renderValue={(value) => value.toFixed(2)}
-          graphId="motor-current"
-        />
+          <GraphWithMarkerControls
+            syncHook={syncHook}
+            newData={{
+              newData: motorCurrent,
+              color: "#3b82f6",
+            }}
+            config={currentConfig}
+            unit="A"
+            renderValue={(value) => value.toFixed(2)}
+            graphId="motor-current"
+            currentTimeSeries={motorCurrent}
+            machineId="extruder-graphs"
+          />
 
-        <AutoSyncedBigGraph
-          syncHook={syncHook}
-          newData={{
-            newData: motorScrewRpm,
-            color: "#8b5cf6",
-            lines:
-              state?.screw_state.target_rpm !== undefined
-                ? [
-                    {
-                      type: "target" as const,
-                      value: state.screw_state.target_rpm,
-                      targetSeries: targetScrewRpm,
-                      color: "#8b5cf6",
-                      show: true,
-                    },
-                  ]
-                : [],
-          }}
-          config={rpmConfig}
-          unit="rpm"
-          renderValue={(value) => value.toFixed(0)}
-          graphId="rpm-graph"
-        />
-      </div>
+          <GraphWithMarkerControls
+            syncHook={syncHook}
+            newData={{
+              newData: motorScrewRpm,
+              color: "#8b5cf6",
+              lines:
+                state?.screw_state.target_rpm !== undefined
+                  ? [
+                      {
+                        type: "target" as const,
+                        value: state.screw_state.target_rpm,
+                        targetSeries: targetScrewRpm,
+                        color: "#8b5cf6",
+                        show: true,
+                      },
+                    ]
+                  : [],
+            }}
+            config={rpmConfig}
+            unit="rpm"
+            renderValue={(value) => value.toFixed(0)}
+            graphId="rpm-graph"
+            currentTimeSeries={motorScrewRpm}
+            machineId="extruder-graphs"
+          />
+        </div>
 
-      <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
+        <SyncedFloatingControlPanel
+          controlProps={syncHook.controlProps}
+          machineId="extruder-graphs"
+        />
+      </MarkerProvider>
     </Page>
   );
 }

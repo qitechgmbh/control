@@ -93,6 +93,7 @@ export function BigGraph({
   config,
   graphId,
   syncGraph,
+  uplotRefOut,
   onRegisterForExport,
   onUnregisterFromExport,
 }: BigGraphProps & {
@@ -457,6 +458,7 @@ export function BigGraph({
   useBigGraphEffects({
     containerRef,
     uplotRef,
+    uplotRefOut,
     startTimeRef,
     manualScaleRef,
     lastProcessedCountRef,
@@ -495,8 +497,8 @@ export function BigGraph({
   return (
     <div className="h-[50vh] w-full">
       <div className="flex h-full w-full flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow">
-        <div className="flex items-center justify-between pt-4 pr-5 pb-6 pl-6">
-          <div className="mt-1 flex items-center gap-4">
+        <div className="flex shrink-0 items-center justify-between gap-4 pt-4 pr-5 pb-6 pl-6">
+          <div className="mt-1 flex min-w-0 flex-1 items-center gap-4">
             <Icon
               name={unit ? getUnitIcon(unit) : "lu:TrendingUp"}
               className="size-6 text-gray-600"
@@ -507,9 +509,9 @@ export function BigGraph({
             </h2>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-4">
             {normalizedSeries.length === 1 && (
-              <ControlCard className="rounded-md px-4 py-3">
+              <ControlCard className="rounded-lg border-gray-200/80 bg-gray-50/80 px-4 py-3 shadow-sm">
                 <div className="flex items-center gap-2 text-base text-gray-600">
                   <span className="font-mono leading-none font-bold text-gray-900">
                     {formatDisplayValue(displayValue, renderValue)}
