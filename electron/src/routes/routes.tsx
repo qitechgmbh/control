@@ -43,44 +43,46 @@ import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
 import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 
-import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
-import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
-import { Mock1ManualPage } from "@/machines/mock/mock1/Mock1Manual";
-import { Mock1Page } from "@/machines/mock/mock1/Mock1Page";
-import { Mock1PresetsPage } from "@/machines/mock/mock1/Mock1PresetsPage";
+import { Mock1ControlPage } from "@/machines/minimal_machines/mock/mock1/Mock1ControlPage";
+import { Mock1GraphPage } from "@/machines/minimal_machines/mock/mock1/Mock1Graph";
+import { Mock1ManualPage } from "@/machines/minimal_machines/mock/mock1/Mock1Manual";
+import { Mock1Page } from "@/machines/minimal_machines/mock/mock1/Mock1Page";
+import { Mock1PresetsPage } from "@/machines/minimal_machines/mock/mock1/Mock1PresetsPage";
 
 import { Aquapath1ControlPage } from "@/machines/aquapath/aquapath1/Aquapath1ControlPage";
 import { Aquapath1Page } from "@/machines/aquapath/aquapath1/Aquapath1Page";
 import { Aquapath1GraphPage } from "@/machines/aquapath/aquapath1/Aquapath1Graph";
 import { Aquapath1SettingsPage } from "@/machines/aquapath/aquapath1/Aquapath1Settings";
 
-import { TestMachinePage } from "@/machines/testmachine/TestMachinePage";
-import { TestMachineControlPage } from "@/machines/testmachine/TestMachineControlPage";
+import { TestMachinePage } from "@/machines/minimal_machines/testmachine/TestMachinePage";
+import { TestMachineControlPage } from "@/machines/minimal_machines/testmachine/TestMachineControlPage";
 
-import { TestMachineStepperPage } from "@/machines/testmachinestepper/TestMachineStepperPage";
-import { TestMachineStepperControlPage } from "@/machines/testmachinestepper/TestMachineStepperControlPage";
-import { AnalogInputTestMachine } from "@/machines/analoginputtestmachine/AnalogInputTestMachinePage";
-import { AnalogInputTestMachineControl } from "@/machines/analoginputtestmachine/AnalogInputTestMachineControlPage";
-import { WagoAiTestMachine } from "@/machines/wagoaitestmachine/WagoAiTestMachinePage";
-import { WagoAiTestMachineControl } from "@/machines/wagoaitestmachine/WagoAiTestMachineControlPage";
+import { TestMachineStepperPage } from "@/machines/minimal_machines/testmachinestepper/TestMachineStepperPage";
+import { TestMachineStepperControlPage } from "@/machines/minimal_machines/testmachinestepper/TestMachineStepperControlPage";
+import { AnalogInputTestMachine } from "@/machines/minimal_machines/analoginputtestmachine/AnalogInputTestMachinePage";
+import { AnalogInputTestMachineControl } from "@/machines/minimal_machines/analoginputtestmachine/AnalogInputTestMachineControlPage";
+import { WagoAiTestMachine } from "@/machines/minimal_machines/wagoaitestmachine/WagoAiTestMachinePage";
+import { WagoAiTestMachineControl } from "@/machines/minimal_machines/wagoaitestmachine/WagoAiTestMachineControlPage";
 
-import { DigitalInputTestMachinePage } from "@/machines/digitalinputtestmachine/DigitalInputTestMachinePage";
-import { DigitalInputTestMachineControlPage } from "@/machines/digitalinputtestmachine/DigitalInputTestMachineControlPage";
+import { DigitalInputTestMachinePage } from "@/machines/minimal_machines/digitalinputtestmachine/DigitalInputTestMachinePage";
+import { DigitalInputTestMachineControlPage } from "@/machines/minimal_machines/digitalinputtestmachine/DigitalInputTestMachineControlPage";
 
-import { IP20TestMachinePage } from "@/machines/ip20testmachine/IP20TestMachinePage";
-import { IP20TestMachineControlPage } from "@/machines/ip20testmachine/IP20TestMachineControlPage";
-import { TestMotorPage } from "@/machines/motor_test_machine/TestMotorPage";
-import { TestMotorControlPage } from "@/machines/motor_test_machine/TestMotorControlPage";
+import { IP20TestMachinePage } from "@/machines/minimal_machines/ip20testmachine/IP20TestMachinePage";
+import { IP20TestMachineControlPage } from "@/machines/minimal_machines/ip20testmachine/IP20TestMachineControlPage";
+import { TestMotorPage } from "@/machines/minimal_machines/motor_test_machine/TestMotorPage";
+import { TestMotorControlPage } from "@/machines/minimal_machines/motor_test_machine/TestMotorControlPage";
 
 import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
 import { MetricsControlPage } from "@/metrics/MetricsControlPage";
 
 import { WagoPower1Page } from "@/machines/wago_power/wago_power1/WagoPower1Page";
 import { WagoPower1ControlPage } from "@/machines/wago_power/wago_power1/WagoPower1ControlPage";
-import { WagoDoTestMachinePage } from "@/machines/wagodotestmachine/WagoDoTestMachinePage";
-import { WagoDoTestMachineControlPage } from "@/machines/wagodotestmachine/WagoDoTestMachineControlPage";
-import { Wago8chDioTestMachinePage } from "@/machines/wago8chdiotestmachine/wago8chDioTestMachinePage";
-import { Wago8chDioTestMachineControlRoute } from "@/machines/wago8chdiotestmachine/wago8chDioTestMachineControlPage";
+import { WagoDoTestMachinePage } from "@/machines/minimal_machines/wagodotestmachine/WagoDoTestMachinePage";
+import { WagoDoTestMachineControlPage } from "@/machines/minimal_machines/wagodotestmachine/WagoDoTestMachineControlPage";
+import { Wago750_501TestMachinePage } from "@/machines/minimal_machines/wago750501testmachine/Wago750_501TestMachinePage";
+import { Wago750_501TestMachineControlPage } from "@/machines/minimal_machines/wago750501testmachine/Wago750_501TestMachineControlPage";
+import { Wago8chDioTestMachinePage } from "@/machines/minimal_machines/wago8chdiotestmachine/wago8chDioTestMachinePage";
+import { Wago8chDioTestMachineControlRoute } from "@/machines/minimal_machines/wago8chdiotestmachine/wago8chDioTestMachineControlPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -426,6 +428,18 @@ export const wagoDoTestMachineControlRoute = createRoute({
   component: () => <WagoDoTestMachineControlPage />,
 });
 
+export const wago750_501TestMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wago750501testmachine/$serial",
+  component: () => <Wago750_501TestMachinePage />,
+});
+
+export const wago750_501TestMachineControlRoute = createRoute({
+  getParentRoute: () => wago750_501TestMachineSerialRoute,
+  path: "control",
+  component: () => <Wago750_501TestMachineControlPage />,
+});
+
 export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "setup",
@@ -594,6 +608,10 @@ export const rootTree = RootRoute.addChildren([
       buffer1SerialRoute.addChildren([buffer1ControlRoute]),
 
       wagoDoTestMachineSerialRoute.addChildren([wagoDoTestMachineControlRoute]),
+
+      wago750_501TestMachineSerialRoute.addChildren([
+        wago750_501TestMachineControlRoute,
+      ]),
     ]),
   ]),
 ]);
