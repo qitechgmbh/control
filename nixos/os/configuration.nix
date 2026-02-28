@@ -42,7 +42,7 @@ in {
     # - CONS: Vulnerable to Spectre, Meltdown, Foreshadow, ZombieLoad, etc.
     #         Should ONLY be used in completely trusted environments
     # - Improves performance by 7-43%
-    "mitigation=off"
+    "mitigations=off"
     "intel_pstate=performance" # Intel CPU-specific performance mode (if applicable)
 
     # Memory Management
