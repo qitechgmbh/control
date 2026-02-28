@@ -145,7 +145,7 @@ impl MachineNewTrait for Winder2
                 device.0
             };
 
-            Ok((el2002, el7041, el7031, el7031_0030))
+            Ok::<_, anyhow::Error>((el2002, el7041, el7031, el7031_0030))
         })?;
 
         let machine_id = params

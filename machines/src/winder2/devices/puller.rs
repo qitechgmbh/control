@@ -2,7 +2,6 @@ use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
 use units::{
-    ConstZero,
     acceleration::meter_per_minute_per_second,
     f64::*,
     jerk::meter_per_minute_per_second_squared,
@@ -19,13 +18,15 @@ use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 
 use crate::types::Direction;
 
+use super::OperationState;
+
 /// Represents the puller motor
 #[derive(Debug)]
 pub struct Puller
 {
     motor: StepperVelocityEL70x1,
 
-    state:      State,
+    state:      OperationState,
     direction:  Direction,
     gear_ratio: GearRatio,
     regulation: SpeedRegulation,
@@ -59,7 +60,7 @@ impl Puller
 
         Self {
             // config
-            state:           State::Disabled,
+            state:           OperationState::Disabled,
             direction:       Direction::Forward,
             gear_ratio:      GearRatio::OneToOne,
             target_speed:    Velocity::new::<meter_per_minute>(1.0),
@@ -93,21 +94,22 @@ impl Puller
 
         // Convert to steps/sec and write to hardware
         let steps_per_second = self.step_converter.velocity_to_steps(controlled_speed);
-        self.motor.set_speed(steps_per_second);
+        _ = self.motor.set_speed(steps_per_second);
     }
 }
 
 // getter + setter
 impl Puller
 {
-    pub fn state(&self) -> State 
+    #[allow(dead_code)]
+    pub fn device_state(&self) -> OperationState 
     { 
         self.state 
     }
 
-    pub fn set_state(&mut self, value: State)
+    pub fn set_device_state(&mut self, state: OperationState)
     {   
-        self.state = value;
+        self.state = state;
     }
 
     pub fn speed_regulation_mode(&self) -> SpeedRegulation 
@@ -115,7 +117,7 @@ impl Puller
         self.regulation 
     }
 
-    pub fn set_speed_regulation(&mut self, value: SpeedRegulation)
+    pub fn set_speed_regulation_mode(&mut self, value: SpeedRegulation)
     {   
         self.regulation = value;
     }
@@ -198,16 +200,9 @@ impl Puller
 // other types
 
 // state
-#[derive(Debug,Clone, Copy, PartialEq, Eq)]
-pub enum State 
-{
-    Disabled,
-    Holding,
-    Running,
-}
-
 // gear ratio
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[allow(clippy::enum_variant_names)]
 pub enum GearRatio 
 {
     OneToOne,

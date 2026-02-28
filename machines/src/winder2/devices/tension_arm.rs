@@ -87,7 +87,6 @@ mod tests {
         analog_input::{AnalogInputInput, physical::AnalogInputRange},
         analog_input_dummy::AnalogInputDummy,
     };
-    use std::i16;
 
     #[test]
     fn volts_to_angle() {

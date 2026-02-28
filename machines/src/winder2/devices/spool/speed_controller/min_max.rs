@@ -70,21 +70,6 @@ impl MinMaxSpeedController
 
 impl MinMaxSpeedController 
 {
-    /// Helper method to get min speed without Option type
-    fn min_speed(&self) -> AngularVelocity {
-        self.acceleration_controller
-            .get_min_speed()
-            .unwrap_or(AngularVelocity::ZERO)
-    }
-
-    /// Helper method to get max speed without Option type  
-    fn max_speed(&self) -> AngularVelocity 
-    {
-        self.acceleration_controller
-            .get_max_speed()
-            .unwrap_or(AngularVelocity::new::<radian_per_second>(f64::INFINITY))
-    }
-
     fn speed_raw(&mut self, _t: Instant, tension_arm_angle: Angle) -> AngularVelocity
     {
         let min_speed = AngularVelocity::ZERO;
@@ -194,12 +179,16 @@ impl MinMaxSpeedController
         Ok(())
     }
 
-    pub fn get_max_speed(&self) -> AngularVelocity {
-        self.max_speed()
+    pub fn max_speed(&self) -> AngularVelocity {
+        self.acceleration_controller
+            .get_max_speed()
+            .unwrap_or(AngularVelocity::ZERO)
     }
 
-    pub fn get_min_speed(&self) -> AngularVelocity {
-        self.min_speed()
+    pub fn min_speed(&self) -> AngularVelocity {
+        self.acceleration_controller
+            .get_min_speed()
+            .unwrap_or(AngularVelocity::ZERO)
     }
 
     pub fn get_speed(&self) -> AngularVelocity {

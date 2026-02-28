@@ -14,6 +14,8 @@ use units::velocity::millimeter_per_second;
 
 use crate::winder2::devices::Spool;
 
+use super::OperationState;
+
 /// Represents the puller motor
 #[derive(Debug)]
 pub struct Traverse
@@ -24,13 +26,13 @@ pub struct Traverse
     limit_switch: DigitalInput,
 
     // config
-    mode:        Mode,
-    position:    Length,
-    limit_inner: Length,
-    limit_outer: Length,
-    step_size:   Length,
-    padding:     Length,
-    state:       State,
+    device_state: OperationState,
+    position:     Length,
+    limit_inner:  Length,
+    limit_outer:  Length,
+    step_size:    Length,
+    padding:      Length,
+    state:        State,
 
     // converters
     fullstep_converter:  LinearStepConverter,
@@ -76,7 +78,7 @@ impl Traverse
         let padding   = Length::new::<millimeter>(Self::DEFAULT_PADDING);
 
         Self {
-            mode: Mode::Standby,
+            device_state: OperationState::Disabled,
             motor,
             laser: laser_pointer,
             limit_switch,
@@ -95,7 +97,7 @@ impl Traverse
     /// changed from this update
     pub fn update(&mut self, spool: &Spool) -> bool
     {
-        if self.mode == Mode::Standby { return false; }
+        if self.device_state == OperationState::Disabled { return false; }
 
         let old_state = self.state;
 
@@ -112,36 +114,60 @@ impl Traverse
 // getters + setters
 impl Traverse
 {
-    pub const fn mode(&self) -> Mode { self.mode }
+    #[allow(dead_code)]
+    pub const fn device_state(&self) -> OperationState { self.device_state }
 
-    pub fn set_mode(&mut self, mode: Mode)
+    pub fn set_device_state(&mut self, device_state: OperationState)
     {
-        use Mode::*;
+        use OperationState::*;
 
         // No change, nothing to do
-        if self.mode == mode { return; }
+        if self.device_state == device_state { return; }
 
         // Leaving standby, enable motor
-        if self.mode == Standby
+        if self.device_state == Disabled
         {
             self.motor.set_enabled(true);
         }
 
-        match mode // guranteed state change
+        match device_state // guranteed state change
         {
-            Standby  => self.motor.set_enabled(false),
-            Hold     => self.goto_home(),
-            Traverse => self.start_traversing(),
+            Disabled => self.motor.set_enabled(false),
+            Holding  => self.goto_home(),
+            Running  => self.start_traversing(),
         }
 
-        self.mode = mode;
+        self.device_state = device_state;
     }
 
     pub fn limit_inner(&self) -> Length { self.limit_inner }
-    pub fn set_limit_inner(&mut self, limit_inner: Length) { self.limit_inner = limit_inner; }
+
+    pub fn try_set_limit_inner(&mut self, limit_inner: Length) -> Result<(), ()>
+    { 
+        // Validate the new inner limit against current outer limit
+        if !Self::validate_traverse_limits(limit_inner, self.limit_outer)
+        {
+            // Don't update if validation fails - keep the current value
+            return Err(());
+        }
+
+        self.limit_inner = limit_inner;
+        Ok(())
+    }
 
     pub fn limit_outer(&self) -> Length { self.limit_outer }
-    pub fn set_limit_outer(&mut self, limit_outer: Length) { self.limit_outer = limit_outer; }
+    pub fn try_set_limit_outer(&mut self, limit_outer: Length) -> Result<(), ()>
+    { 
+        // Validate the new outer limit against current inner limit
+        if !Self::validate_traverse_limits(self.limit_inner, limit_outer)
+        {
+            // Don't update if validation fails - keep the current value
+            return Err(());
+        }
+
+        self.limit_outer = limit_outer; 
+        Ok(())
+    }
 
     pub fn step_size(&self) -> Length { self.step_size }
     pub fn set_step_size(&mut self, step_size: Length) { self.step_size = step_size; }
@@ -174,14 +200,14 @@ impl Traverse
 {
     pub fn can_goto_limit_inner(&self) -> bool
     {
-        self.mode == Mode::Standby
+        self.device_state == OperationState::Disabled
             || !self.is_homed() 
             || self.is_going_in() 
             || self.is_going_home()
             || self.is_traversing()
     }
 
-    pub fn goto_limit_inner(&mut self) -> Result<(), ()>
+    pub fn try_goto_limit_inner(&mut self) -> Result<(), ()>
     {
         if !self.can_goto_limit_inner()
         {
@@ -194,14 +220,14 @@ impl Traverse
 
     pub fn can_goto_limit_outer(&self)-> bool
     {
-        self.mode == Mode::Standby
+        self.device_state == OperationState::Disabled
             || !self.is_homed() 
             || self.is_going_out() 
             || self.is_going_home()
             || self.is_traversing()
     }
 
-    pub fn goto_limit_outer(&mut self) -> Result<(), ()>
+    pub fn try_goto_limit_outer(&mut self) -> Result<(), ()>
     {
         if !self.can_goto_limit_outer()
         {
@@ -214,7 +240,7 @@ impl Traverse
 
     pub fn can_go_home(&self)-> bool
     {
-        self.mode == Mode::Standby
+        self.device_state == OperationState::Disabled
             || !self.is_homed() 
             || self.is_going_out() 
             || self.is_going_home()
@@ -242,7 +268,9 @@ impl Traverse
         self.state = State::Traversing(TraversingState::GoingOut);
     }
 
-    pub fn is_standby(&self) -> bool {
+    #[allow(dead_code)]
+    pub fn is_idle(&self) -> bool 
+    {
         self.state == State::Idle
     }
 
@@ -285,7 +313,7 @@ impl Traverse
 
     fn endstop_triggered(&self) -> bool
     {
-        return self.limit_switch.get_value().unwrap_or(false);
+        self.limit_switch.get_value().unwrap_or(false)
     }
 
     fn calculate_traverse_speed(spool_speed: AngularVelocity, step_size: Length) -> Velocity 
@@ -322,6 +350,14 @@ impl Traverse
         let upper_tolerance = target_position + tolerance.abs();
         let lower_tolerance = target_position - tolerance.abs();
         lower_tolerance <= self.position && self.position <= upper_tolerance
+    }
+
+    /// Validates that traverse limits maintain proper constraints:
+    /// - Inner limit must be smaller than outer limit
+    /// - At least 0.9mm difference between inner and outer limits
+    fn validate_traverse_limits(inner: Length, outer: Length) -> bool 
+    {
+        outer > inner + Length::new::<millimeter>(0.9)
     }
 }
 
@@ -541,13 +577,6 @@ impl Traverse
 }
 
 // other types
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Mode {
-    Standby,
-    Hold,
-    Traverse,
-}
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum State 
 {

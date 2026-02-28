@@ -1,12 +1,14 @@
 use std::time::Instant;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use units::AngularVelocity;
 use control_core::converters::angular_step_converter::AngularStepConverter;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 
 use crate::types::Direction;
 use crate::winder2::devices::{ Puller, TensionArm };
+
+use super::OperationState;
 
 mod speed_controller;
 use speed_controller::{SpeedController, AdaptiveSpeedController, MinMaxSpeedController};
@@ -15,12 +17,39 @@ use speed_controller::{SpeedController, AdaptiveSpeedController, MinMaxSpeedCont
 #[derive(Debug)]
 pub struct Spool
 {
-    hardware_interface: StepperVelocityEL70x1,
-    mode:               Mode,
+    motor: StepperVelocityEL70x1,
+    state:              OperationState,
     direction:          Direction,
-    speed_controllers:  SpeedControllers,
+    pub speed_controllers: SpeedControllers,
     speed_control_mode: SpeedControlMode,
     step_converter:     AngularStepConverter,
+}
+
+// public interface
+impl Spool
+{
+    pub fn new(motor: StepperVelocityEL70x1) -> Self
+    {
+        Self { 
+            motor, 
+            state:              OperationState::Disabled,
+            direction:          Direction::Forward, 
+            speed_controllers:  SpeedControllers::new(),
+            speed_control_mode: SpeedControlMode::Adaptive,
+            step_converter:     AngularStepConverter::new(200),
+        }
+    }
+
+    pub fn update(&mut self, t: Instant,tension_arm: &TensionArm, puller: &Puller)
+    {
+        let velocity = self.active_controller_mut().update_speed(t, tension_arm, puller);
+
+        let velocity = if self.direction == Direction::Forward { velocity } else { -velocity };
+
+        let steps_per_second = self.step_converter.angular_velocity_to_steps(velocity);
+
+        _ = self.motor.set_speed(steps_per_second);
+    }
 }
 
 // getter + setter
@@ -60,41 +89,24 @@ impl Spool
         self.active_controller_mut().set_speed(value);
     }
 
-    pub fn mode(&self) -> Mode
+    pub fn operation_state(&self) -> OperationState
     {
-        self.mode
+        self.state
     }
 
-    pub fn set_mode(&mut self, value: Mode)
+    pub fn set_operation_state(&mut self, state: OperationState)
     {
-        self.mode = value;
-    }
-}
-
-// public interface
-impl Spool
-{
-    pub fn new(hardware_interface: StepperVelocityEL70x1) -> Self
-    {
-        Self { 
-            hardware_interface, 
-            mode:               Mode::Standby,
-            direction:          Direction::Forward, 
-            speed_controllers:  SpeedControllers::new(),
-            speed_control_mode: SpeedControlMode::Adaptive,
-            step_converter:     AngularStepConverter::new(200),
-        }
+        self.state = state;
     }
 
-    pub fn update(&mut self, t: Instant,tension_arm: &TensionArm, puller: &Puller)
+    pub fn direction(&self) -> Direction
     {
-        let velocity = self.active_controller_mut().update_speed(t, tension_arm, puller);
+        self.direction
+    }
 
-        let velocity = if self.direction == Direction::Forward { velocity } else { -velocity };
-
-        let steps_per_second = self.step_converter.angular_velocity_to_steps(velocity);
-
-        self.hardware_interface.set_speed(steps_per_second);
+    pub fn set_direction(&mut self, direction: Direction)
+    {
+        self.direction = direction;
     }
 }
 
@@ -125,15 +137,6 @@ impl Spool
 }
 
 // other types 
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Mode 
-{
-    Standby,
-    Hold,
-    Wind,
-}
-
 #[derive(Debug)]
 pub struct SpeedControllers
 {
@@ -152,7 +155,7 @@ impl SpeedControllers
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SpeedControlMode
 {
     Adaptive,

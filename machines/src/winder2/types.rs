@@ -15,7 +15,7 @@ pub enum Mode
     Wind,
 }
 
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SpoolLengthTaskCompletedAction
 {
     NoAction,

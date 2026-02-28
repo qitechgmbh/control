@@ -28,15 +28,18 @@ impl SpoolLengthTask
         self.current_length >= self.target_length
     }
 
-    pub const fn current_length(&self) -> Length {
+    pub const fn current_length(&self) -> Length 
+    {
         self.current_length
     }
 
-    pub const fn target_length(&self) -> Length {
+    pub const fn target_length(&self) -> Length 
+    {
         self.target_length
     }
 
-    pub fn set_target_length(&mut self, target_length: Length) {
+    pub fn set_target_length(&mut self, target_length: Length) 
+    {
         self.target_length = target_length;
     }
 

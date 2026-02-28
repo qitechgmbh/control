@@ -16,9 +16,9 @@ puller:
 traverse:
 - struct: complete
 - update: complete
-- state:  ???
+- state:  complete
 - live:   complete
-- mutate: ???
+- mutate: complete
 
 tension_arm:
 - struct: complete

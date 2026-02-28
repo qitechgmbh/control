@@ -1,17 +1,16 @@
-use control_core::socketio::{event::GenericEvent, namespace::{CacheFn, CacheableEvents}};
+use control_core::socketio::{event::{BuildEvent, GenericEvent}, namespace::{CacheFn, CacheableEvents, cache_first_and_last_event}};
 use control_core_derive::BuildEvent;
 use serde::Serialize;
-use units::{length::{meter, millimeter}, velocity::meter_per_minute};
+use units::{angular_velocity::revolution_per_minute, length::{meter, millimeter}, velocity::meter_per_minute};
 
 use crate::{
-    types::Direction, 
-    winder2::{
+    MachineCrossConnectionState, types::Direction, winder2::{
         Winder2, 
         devices::{
             PullerGearRatio, 
             PullerSpeedRegulation, 
             SpoolSpeedControlMode
-        }, types::SpoolLengthTaskCompletedAction
+        }, types::{Mode, SpoolLengthTaskCompletedAction}
     }
 };
 
@@ -31,7 +30,7 @@ pub struct State
     /// tension arm state
     pub tension_arm_state: TensionArmState,
     /// spool speed controller state
-    pub spool_speed_controller_state: SpoolSpeedControllerState,
+    pub spool_speed_controller_state: SpoolState,
     
     /// Is a Machine Connected?
     pub connected_machine_state: MachineCrossConnectionState,
@@ -48,7 +47,7 @@ impl CacheableEvents<Self> for State
     }
 }
 
-#[derive(Serialize, Debug, Clone, Default)]
+#[derive(Serialize, Debug, Clone)]
 pub struct ModeState 
 {
     /// mode
@@ -143,10 +142,41 @@ pub struct TraverseState {
     pub can_go_home: bool,
 }
 
-// state event
 impl Winder2
 {
-    // COMPLETE
+    pub fn create_state(&self) -> State
+    {
+        let is_default_state = !self.emitted_default_state;
+
+        let connected_machine_state = match &self.puller_speed_reference_machine
+        {
+            Some(connection) => MachineCrossConnectionState { 
+                machine_identification_unique: Some(connection.ident.clone()),
+                is_available: true
+            },
+            None => MachineCrossConnectionState { 
+                machine_identification_unique: None,
+                is_available: false
+            },
+        };
+
+        State {
+            is_default_state,
+            traverse_state: self.create_traverse_state(),
+            puller_state: self.create_puller_state(),
+            spool_automatic_action_state: self.create_spool_length_task_state(),
+            mode_state: self.create_mode_state(),
+            tension_arm_state: self.create_tension_arm_state(),
+            spool_speed_controller_state: self.create_spool_state(),
+            connected_machine_state,
+        }
+    }
+
+    fn create_mode_state(&self) -> ModeState
+    {
+        ModeState { mode: self.mode, can_wind: self.can_wind() }
+    }
+
     fn create_tension_arm_state(&self) -> TensionArmState
     {
         TensionArmState {
@@ -154,25 +184,32 @@ impl Winder2
         }
     }
 
-    //TODO: finish
     fn create_spool_state(&self) -> SpoolState
     {
+        use revolution_per_minute as rpm;
+
+        let speed_controllers = &self.spool.speed_controllers;
+        let minmax   = &speed_controllers.minmax;
+        let adaptive = &speed_controllers.adaptive;
+
+        let adaptive_deacceleration_urgency_multiplier = 
+            adaptive.deacceleration_urgency_multiplier();
+
         SpoolState {
-            regulation_mode:  self.spool.speed_control_mode(),
-            forward: todo!(),
+            regulation_mode: self.spool.speed_control_mode(),
+            forward: self.spool.direction().is_forward(),
             // min max speed controller
-            minmax_min_speed: todo!(),
-            minmax_max_speed: todo!(),
+            minmax_min_speed: minmax.min_speed().get::<rpm>(),
+            minmax_max_speed: minmax.max_speed().get::<rpm>(),
             // adaptive speed controller
-            adaptive_tension_target: todo!(),
-            adaptive_radius_learning_rate: todo!(),
-            adaptive_max_speed_multiplier: todo!(),
-            adaptive_acceleration_factor: todo!(),
-            adaptive_deacceleration_urgency_multiplier: todo!(),
+            adaptive_tension_target: adaptive.tension_target(),
+            adaptive_radius_learning_rate: adaptive.tension_target(),
+            adaptive_max_speed_multiplier: adaptive.max_speed_multiplier(),
+            adaptive_acceleration_factor:  adaptive.acceleration_factor(),
+            adaptive_deacceleration_urgency_multiplier,
         }
     }
 
-    // COMPLETE
     fn create_puller_state(&self) -> PullerState
     {
         let puller = &self.puller;
