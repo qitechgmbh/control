@@ -204,7 +204,7 @@ impl MinMaxSpeedController
     /// derive the radius from the puller speed and the current angular speed
     pub fn get_radius(&self, puller: &Puller) -> Length 
     {
-        let puller_speed  = puller.target_speed().get::<meter_per_second>();
+        let puller_speed  = puller.output_speed().get::<meter_per_second>();
         let angular_speed = self.speed.get::<revolution_per_second>();
 
         // Calculate the radius using the formula: radius = speed / angular_speed

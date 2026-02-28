@@ -5,7 +5,7 @@ pub use spool::SpeedControlMode as SpoolSpeedControlMode;
 mod puller;
 pub use puller::Puller;
 pub use puller::GearRatio as PullerGearRatio;
-pub use puller::SpeedRegulation as PullerSpeedRegulation;
+pub use puller::SpeedControlMode as PullerSpeedControlMode;
 
 mod tension_arm;
 pub use tension_arm::TensionArm;

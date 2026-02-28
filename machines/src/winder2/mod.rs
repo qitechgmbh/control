@@ -169,12 +169,6 @@ impl MachineWithChannel for Winder2
 
     fn update(&mut self, now: std::time::Instant) -> anyhow::Result<()> 
     {
-        if !self.emitted_default_state 
-        {
-            self.emit_state();
-            self.emitted_default_state = true;
-        }
-
         self.spool.update(now, &self.tension_arm, &self.puller);
         self.puller.update(now);
 
