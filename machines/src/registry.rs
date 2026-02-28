@@ -1,13 +1,13 @@
-use crate::analog_input_test_machine::AnalogInputTestMachine;
-use crate::digital_input_test_machine::DigitalInputTestMachine;
-use crate::ip20_test_machine::IP20TestMachine;
-use crate::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine;
-use crate::wago_ai_test_machine::WagoAiTestMachine;
-use crate::wago_do_test_machine::WagoDOTestMachine;
+use crate::minimal_machines::analog_input_test_machine::AnalogInputTestMachine;
+use crate::minimal_machines::digital_input_test_machine::DigitalInputTestMachine;
+use crate::minimal_machines::ip20_test_machine::IP20TestMachine;
+use crate::minimal_machines::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine;
+use crate::minimal_machines::wago_ai_test_machine::WagoAiTestMachine;
+use crate::minimal_machines::wago_do_test_machine::WagoDOTestMachine;
 #[cfg(feature = "mock-machine")]
 use crate::{
     extruder1::mock::ExtruderV2 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
-    mock::MockMachine, winder2::mock::Winder2,
+    minimal_machines::mock::MockMachine, winder2::mock::Winder2,
 };
 
 use crate::{
@@ -22,11 +22,13 @@ use crate::{
     winder2::Winder2,
 };
 
-use crate::{test_machine::TestMachine, test_machine_stepper::TestMachineStepper};
+use crate::minimal_machines::{
+    test_machine::TestMachine, test_machine_stepper::TestMachineStepper,
+};
 
 use lazy_static::lazy_static;
 
-use crate::motor_test_machine::MotorTestMachine;
+use crate::minimal_machines::motor_test_machine::MotorTestMachine;
 use anyhow::Error;
 use std::{any::TypeId, collections::HashMap};
 
