@@ -16,11 +16,12 @@ export function Extruder3SettingsPage() {
     resetInverter,
     setExtruderPressureLimit,
     setExtruderPressureLimitEnabled,
+    setHeatingSafeguardEnabled,
+    setTemperatureTargetEnabled,
     setPressurePidKp,
     setPressurePidKi,
     setPressurePidKd,
     setTemperaturePidValue,
-    setTemperatureTargetEnabled,
   } = useExtruder3();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -69,10 +70,26 @@ export function Extruder3SettingsPage() {
             onChange={setExtruderPressureLimitEnabled}
           />
         </Label>
+        <Label label="Heating Safeguard">
+          <SelectionGroupBoolean
+            value={
+              state?.extruder_settings_state.heating_safeguard_enabled ?? true
+            }
+            optionTrue={{ children: "Enabled" }}
+            optionFalse={{ children: "Disabled" }}
+            onChange={setHeatingSafeguardEnabled}
+          />
+          <p className="text-muted-foreground mt-1 text-sm">
+            When enabled, monitors heating progress and automatically sets to
+            standby if temperature doesn&apos;t increase by at least 5°C within
+            60 seconds.
+          </p>
+        </Label>
         <Label label="Nozzle Temperature Target Enabled">
           <SelectionGroupBoolean
             value={
-              state?.extruder_settings_state.nozzle_temperature_target_enabled
+              state?.extruder_settings_state
+                .nozzle_temperature_target_enabled ?? true
             }
             optionTrue={{ children: "Enabled" }}
             optionFalse={{ children: "Disabled" }}

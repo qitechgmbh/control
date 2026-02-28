@@ -81,6 +81,7 @@ impl MachineNewTrait for ExtruderV2 {
             extruder_settings_state: ExtruderSettingsState {
                 pressure_limit: 200.0,
                 pressure_limit_enabled: false,
+                heating_safeguard_enabled: true,
                 nozzle_temperature_target_enabled: true,
             },
             inverter_status_state: InverterStatusState {

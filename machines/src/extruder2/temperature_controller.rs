@@ -10,7 +10,7 @@ use units::thermodynamic_temperature::degree_celsius;
 pub struct TemperatureController {
     pub pid: PidController,
     temperature_sensor: TemperatureInput,
-    relais: DigitalOutput,
+    relay: DigitalOutput,
     pub heating: Heating,
     pub target_temp: ThermodynamicTemperature,
     window_start: Instant,
@@ -24,7 +24,7 @@ pub struct TemperatureController {
 
 impl TemperatureController {
     pub fn disable(&mut self) {
-        self.relais.set(false);
+        self.relay.set(false);
         self.heating.heating = false;
         self.disallow_heating();
     }
@@ -36,7 +36,7 @@ impl TemperatureController {
         target_temp: ThermodynamicTemperature,
         max_temperature: ThermodynamicTemperature,
         temperature_sensor: TemperatureInput,
-        relais: DigitalOutput,
+        relay: DigitalOutput,
         heating: Heating,
         pwm_duration: Duration,
         heating_element_wattage: f64,
@@ -47,7 +47,7 @@ impl TemperatureController {
             target_temp,
             window_start: Instant::now(),
             temperature_sensor,
-            relais,
+            relay,
             heating,
             heating_allowed: false,
             pwm_period: pwm_duration,
@@ -86,8 +86,8 @@ impl TemperatureController {
         self.heating.temperature = temperature_celsius;
 
         if self.heating.temperature > self.max_temperature {
-            // disable the relais and return
-            self.relais.set(false);
+            // Disable the relays and return
+            self.relay.set(false);
             self.heating.heating = false;
             return;
         }
@@ -113,7 +113,7 @@ impl TemperatureController {
 
             // Relay is ON if within duty cycle window
             let on = elapsed < on_time;
-            self.relais.set(on);
+            self.relay.set(on);
             self.heating.heating = on;
         }
     }

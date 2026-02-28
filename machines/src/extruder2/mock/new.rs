@@ -3,13 +3,12 @@ use crate::{
     extruder1::{
         ExtruderV2Mode,
         api::{
-            ExtruderSettingsState, ExtruderV2Namespace, HeatingState, HeatingStates,
-            InverterStatusState, ModeState, MotorStatusValues, PidSettings, PidSettingsStates,
-            PressureState, RegulationState, RotationState, ScrewState, TemperaturePid,
-            TemperaturePidStates,
+            ExtruderSettingsState, HeatingState, HeatingStates, InverterStatusState, ModeState,
+            MotorStatusValues, PidSettings, PidSettingsStates, PressureState, RegulationState,
+            RotationState, ScrewState, TemperaturePid, TemperaturePidStates,
         },
     },
-    extruder2::mock::ExtruderV2,
+    extruder2::{api::ExtruderV3Namespace, mock::ExtruderV2},
 };
 
 impl MachineNewTrait for ExtruderV2 {
@@ -39,7 +38,7 @@ impl MachineNewTrait for ExtruderV2 {
             api_receiver: receiver,
             api_sender: sender,
             machine_identification_unique: params.get_machine_identification_unique(),
-            namespace: ExtruderV2Namespace {
+            namespace: ExtruderV3Namespace {
                 namespace: params.namespace.clone(),
             },
             last_measurement_emit: now,
@@ -81,6 +80,7 @@ impl MachineNewTrait for ExtruderV2 {
             extruder_settings_state: ExtruderSettingsState {
                 pressure_limit: 200.0,
                 pressure_limit_enabled: false,
+                heating_safeguard_enabled: true,
                 nozzle_temperature_target_enabled: true,
             },
             inverter_status_state: InverterStatusState {

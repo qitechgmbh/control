@@ -104,12 +104,21 @@ export const heatingStatesSchema = z.object({
 });
 
 /**
+ * Heating fault state schema
+ */
+export const heatingFaultStateSchema = z.object({
+  fault_zone: z.string().nullable(),
+  fault_acknowledged: z.boolean(),
+});
+
+/**
  * Extruder settings state schema
  */
 export const extruderSettingsStateSchema = z.object({
   pressure_limit: z.number(),
   pressure_limit_enabled: z.boolean(),
-  nozzle_temperature_target_enabled: z.boolean(),
+  heating_safeguard_enabled: z.boolean(),
+  nozzle_temperature_target_enabled: z.boolean().optional(),
 });
 
 /**
@@ -178,6 +187,7 @@ export const stateEventDataSchema = z.object({
   extruder_settings_state: extruderSettingsStateSchema,
   inverter_status_state: inverterStatusStateSchema,
   pid_settings: pidSettingsSchema,
+  heating_fault_state: heatingFaultStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -300,7 +310,6 @@ export function extruder3MessageHandler(
 
     try {
       if (eventName === "StateEvent") {
-        console.log(event);
         const stateEvent = stateEventSchema.parse(event);
         const timestamp = event.ts;
         const nextTargetPressure = stateEvent.data.pressure_state.target_bar;

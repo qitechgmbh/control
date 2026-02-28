@@ -1,15 +1,25 @@
 use super::ExtruderV2;
 use crate::{
     MachineApi,
-    extruder1::{HeatingType, api::Mutation},
+    extruder1::{ExtruderV2Mode, HeatingType},
+    extruder2::ExtruderV3Mode,
+    extruder2::api::Mutation,
 };
+
+fn map_v3_mode_to_v2(mode: ExtruderV3Mode) -> ExtruderV2Mode {
+    match mode {
+        ExtruderV3Mode::Standby => ExtruderV2Mode::Standby,
+        ExtruderV3Mode::Heat => ExtruderV2Mode::Heat,
+        ExtruderV3Mode::Extrude => ExtruderV2Mode::Extrude,
+    }
+}
 
 impl MachineApi for ExtruderV2 {
     fn api_mutate(&mut self, request_body: serde_json::Value) -> Result<(), anyhow::Error> {
         // there are multiple Modbus Frames that are "prebuilt"
         let control: Mutation = serde_json::from_value(request_body)?;
         match control {
-            Mutation::SetExtruderMode(mode) => self.set_mode_state(mode),
+            Mutation::SetExtruderMode(mode) => self.set_mode_state(map_v3_mode_to_v2(mode)),
             Mutation::SetInverterRotationDirection(forward) => self.set_rotation_state(forward),
             Mutation::SetInverterRegulation(uses_rpm) => self.set_regulation(uses_rpm),
             Mutation::SetInverterTargetPressure(bar) => self.set_target_pressure(bar),
@@ -41,8 +51,17 @@ impl MachineApi for ExtruderV2 {
             Mutation::SetTemperaturePidSettings(settings) => {
                 self.configure_temperature_pid(settings);
             }
+            Mutation::SetHeatingSafeguardEnabled(_enabled) => {
+                // Mock implementation - just acknowledge
+            }
             Mutation::SetNozzleTemperatureTargetEnabled(enabled) => {
                 self.set_nozzle_temperature_target_is_enabled(enabled);
+            }
+            Mutation::RetryHeating => {
+                // Mock implementation - just acknowledge
+            }
+            Mutation::AcknowledgeHeatingFault => {
+                // Mock implementation - just acknowledge
             }
         }
         Ok(())

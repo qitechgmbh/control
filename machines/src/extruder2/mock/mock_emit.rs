@@ -1,6 +1,10 @@
 use crate::extruder1::{
     ExtruderV2Mode, HeatingType,
-    api::{ExtruderV2Events, LiveValuesEvent, ModeState, PidSettings, StateEvent, TemperaturePid},
+    api::{ModeState as ModeStateV2, PidSettings, TemperaturePid},
+};
+use crate::extruder2::ExtruderV3Mode;
+use crate::extruder2::api::{
+    ExtruderV3Events, HeatingFaultState, LiveValuesEvent, ModeState, MotorStatusValues, StateEvent,
 };
 use crate::extruder2::mock::ExtruderV2;
 
@@ -14,7 +18,13 @@ impl ExtruderV2 {
         StateEvent {
             is_default_state: !self.emitted_default_state,
             rotation_state: self.rotation_state.clone(),
-            mode_state: self.mode_state.clone(),
+            mode_state: ModeState {
+                mode: match self.mode_state.mode {
+                    ExtruderV2Mode::Standby => ExtruderV3Mode::Standby,
+                    ExtruderV2Mode::Heat => ExtruderV3Mode::Heat,
+                    ExtruderV2Mode::Extrude => ExtruderV3Mode::Extrude,
+                },
+            },
             regulation_state: self.regulation_state.clone(),
             pressure_state: self.pressure_state.clone(),
             screw_state: self.screw_state.clone(),
@@ -22,6 +32,10 @@ impl ExtruderV2 {
             extruder_settings_state: self.extruder_settings_state.clone(),
             inverter_status_state: self.inverter_status_state.clone(),
             pid_settings: self.pid_settings.clone(),
+            heating_fault_state: HeatingFaultState {
+                fault_zone: None,
+                fault_acknowledged: false,
+            },
         }
     }
 
@@ -31,7 +45,7 @@ impl ExtruderV2 {
         self.last_status_hash = Some(hash);
         self.emitted_default_state = true;
         let event = state.build();
-        self.namespace.emit(ExtruderV2Events::State(event));
+        self.namespace.emit(ExtruderV3Events::State(event));
     }
 
     pub fn maybe_emit_state_event(&mut self) {
@@ -51,7 +65,13 @@ impl ExtruderV2 {
 
     pub fn get_live_values(&self) -> LiveValuesEvent {
         LiveValuesEvent {
-            motor_status: self.motor_status.clone(),
+            motor_status: MotorStatusValues {
+                screw_rpm: self.motor_status.screw_rpm,
+                frequency: self.motor_status.frequency,
+                voltage: self.motor_status.voltage,
+                current: self.motor_status.current,
+                power: self.motor_status.power,
+            },
             pressure: self.pressure,
             nozzle_temperature: self.nozzle_temperature,
             front_temperature: self.front_temperature,
@@ -68,11 +88,17 @@ impl ExtruderV2 {
 
     pub fn emit_live_values(&mut self) {
         let event = self.get_live_values().build();
-        self.namespace.emit(ExtruderV2Events::LiveValues(event));
+        self.namespace.emit(ExtruderV3Events::LiveValues(event));
     }
 
     pub fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
         self.extruder_settings_state.pressure_limit_enabled = enabled;
+        self.emit_state();
+    }
+
+    pub fn set_nozzle_temperature_target_enabled(&mut self, enabled: bool) {
+        self.extruder_settings_state
+            .nozzle_temperature_target_enabled = enabled;
         self.emit_state();
     }
 
@@ -95,7 +121,7 @@ impl ExtruderV2 {
     }
 
     pub fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
-        self.mode_state = ModeState { mode };
+        self.mode_state = ModeStateV2 { mode };
         self.emit_state();
     }
 
