@@ -261,25 +261,6 @@ export function Winder2ControlPage() {
             timeseries={pullerSpeed}
             renderValue={(value) => roundToDecimals(value, 1)}
           />
-          <Label label="Regulation">
-            <SelectionGroup
-              value={state?.puller_state?.regulation}
-              options={{
-                Speed: {
-                  children: "Speed",
-                  icon: "lu:Gauge",
-                },
-                Diameter: {
-                  children: "Diameter",
-                  icon: "lu:Sun",
-                  disabled: true,
-                },
-              }}
-              onChange={setPullerRegulationMode}
-              disabled={isDisabled}
-              loading={isLoading}
-            />
-          </Label>
           <Label label="Target Speed">
             <EditValue
               value={state?.puller_state?.target_speed}
