@@ -34,8 +34,8 @@ export const liveValuesEventDataSchema = z.object({
 /**
  * Puller regulation type enum
  */
-export const pullerRegulationSchema = z.enum(["Speed", "Diameter"]);
-export type PullerRegulation = z.infer<typeof pullerRegulationSchema>;
+// export const pullerRegulationSchema = z.enum(["Speed", "Diameter"]);
+// export type PullerRegulation = z.infer<typeof pullerRegulationSchema>;
 
 /**
  * Gear ratio enum for winding speed
@@ -120,7 +120,7 @@ export const traverseStateSchema = z.object({
  * Puller state schema
  */
 export const pullerStateSchema = z.object({
-  regulation: pullerRegulationSchema,
+  // regulation: pullerRegulationSchema,
   target_speed: z.number(),
   target_diameter: z.number(),
   forward: z.boolean(),
