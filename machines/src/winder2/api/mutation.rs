@@ -247,9 +247,11 @@ impl Winder2
         {
             Some(machine_uid) => 
             {
-                if let Some(connection) = &self.puller_speed_reference_machine 
-                    && connection.ident == machine_uid 
+                if let Some(connection) = &self.puller_speed_reference_machine
+                {
+                    if connection.ident == machine_uid 
                         { return Ok(()); }
+                }
 
                 let main_sender = match &self.channel.main_sender 
                 {
