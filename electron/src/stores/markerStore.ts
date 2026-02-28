@@ -37,10 +37,7 @@ function migrateFromLegacyStorage(): Partial<MarkerStoreState> | null {
     const markersByMachine: Record<string, Marker[]> = {};
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (
-        key?.startsWith(OLD_STORAGE_PREFIX) &&
-        key !== STORAGE_NAME
-      ) {
+      if (key?.startsWith(OLD_STORAGE_PREFIX) && key !== STORAGE_NAME) {
         const machineId = key.slice(OLD_STORAGE_PREFIX.length);
         try {
           const stored = localStorage.getItem(key);
