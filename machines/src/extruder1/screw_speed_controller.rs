@@ -9,7 +9,7 @@ use ethercat_hal::io::analog_input::AnalogInput;
 use units::angular_velocity::revolution_per_minute;
 use units::electric_current::milliampere;
 use units::f64::*;
-use units::frequency::{cycle_per_minute, hertz};
+use units::frequency::hertz;
 use units::pressure::bar;
 
 use crate::extruder1::mitsubishi_cs80::MitsubishiCS80Status;
@@ -21,6 +21,7 @@ pub struct ScrewSpeedController {
     pub pid: ClampingTimeagnosticPidController,
     pub target_pressure: Pressure,
     pub target_rpm: AngularVelocity,
+    pub motor_poles: usize,
     pub inverter: MitsubishiCS80,
     pressure_sensor: AnalogInput,
     last_update: Instant,
@@ -42,6 +43,7 @@ impl ScrewSpeedController {
         target_rpm: AngularVelocity,
         pressure_sensor: AnalogInput,
         transmission: FixedTransmission,
+        motor_poles: usize,
     ) -> Self {
         let now = Instant::now();
         Self {
@@ -62,6 +64,7 @@ impl ScrewSpeedController {
             frequency: Frequency::new::<hertz>(0.0),
             maximum_frequency: Frequency::new::<hertz>(60.0),
             minimum_frequency: Frequency::new::<hertz>(0.0),
+            motor_poles,
         }
     }
 
@@ -150,10 +153,13 @@ impl ScrewSpeedController {
 
     pub fn get_motor_status(&self) -> MotorStatus {
         let frequency = self.inverter.motor_status.frequency;
-        let rpm =
-            AngularVelocity::new::<revolution_per_minute>(frequency.get::<cycle_per_minute>());
+        let motor_rpm = AngularVelocity::new::<revolution_per_minute>(
+            frequency.get::<hertz>() * 120.0 / self.motor_poles as f64,
+        );
 
-        let screw_rpm = self.transmission.calculate_angular_velocity_output(rpm);
+        let screw_rpm = self
+            .transmission
+            .calculate_angular_velocity_output(motor_rpm);
 
         let mut status = self.inverter.motor_status;
         status.rpm = screw_rpm;

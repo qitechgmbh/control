@@ -214,12 +214,15 @@ impl MachineNewTrait for ExtruderV2 {
             let target_pressure = Pressure::new::<bar>(0.0);
             let target_rpm = AngularVelocity::new::<revolution_per_minute>(0.0);
 
+            let motor_poles = 4;
+
             let screw_speed_controller = ScrewSpeedController::new(
                 inverter,
                 target_pressure,
                 target_rpm,
                 pressure_sensor,
                 FixedTransmission::new(1.0 / 34.0),
+                motor_poles,
             );
             let (sender, receiver) = smol::channel::unbounded();
 
