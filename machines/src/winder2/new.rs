@@ -164,7 +164,7 @@ impl MachineNewTrait for Winder2
             traverse_limit_switch: DigitalInput::new(el7031, EL7031DigitalInputPort::DI1),
             puller_motor: StepperVelocityEL70x1::new(el7031_0030.clone(), EL7031_0030StepperPort::STM1),
             tension_arm_sensor: AnalogInput::new(el7031_0030, EL7031_0030AnalogInputPort::AI1),
-            traverse_laser: DigitalOutput::new(el2002, EL2002Port::DO1),
+            traverse_laser_pointer: DigitalOutput::new(el2002, EL2002Port::DO1),
         };
 
         let mut instance = Self::new(channel, hardware);

@@ -15,21 +15,21 @@ pub enum Mode
     Wind,
 }
 
-#[derive(Debug)]
-pub struct Hardware
-{
-    pub spool_motor:           StepperVelocityEL70x1,
-    pub traverse_motor:        StepperVelocityEL70x1,
-    pub traverse_limit_switch: DigitalInput,
-    pub puller_motor:          StepperVelocityEL70x1,
-    pub tension_arm_sensor:    AnalogInput,
-    pub traverse_laser:                 DigitalOutput,
-}
-
 #[derive(Debug, Clone, Copy, Serialize)]
 pub enum SpoolLengthTaskCompletedAction
 {
     NoAction,
     Pull,
     Hold,
+}
+
+#[derive(Debug)]
+pub struct Hardware
+{
+    pub spool_motor:            StepperVelocityEL70x1,
+    pub traverse_motor:         StepperVelocityEL70x1,
+    pub traverse_limit_switch:  DigitalInput,
+    pub traverse_laser_pointer: DigitalOutput,
+    pub puller_motor:           StepperVelocityEL70x1,
+    pub tension_arm_sensor:     AnalogInput,
 }

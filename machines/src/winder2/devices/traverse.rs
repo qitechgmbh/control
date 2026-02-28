@@ -18,10 +18,12 @@ use crate::winder2::devices::Spool;
 #[derive(Debug)]
 pub struct Traverse
 {
+    // hardwares
     motor: StepperVelocityEL70x1,
     laser: DigitalOutput,
     limit_switch: DigitalInput,
 
+    // config
     mode:        Mode,
     position:    Length,
     limit_inner: Length,
@@ -29,39 +31,44 @@ pub struct Traverse
     step_size:   Length,
     padding:     Length,
     state:       State,
+
+    // converters
     fullstep_converter:  LinearStepConverter,
     microstep_converter: LinearStepConverter,
-    // A sticky flag if the [`State`] changed (not the sub states)
-    // Needed to send state updates to the UI
-    did_change_state: bool,
+}
+
+// constants
+impl Traverse
+{
+    const DEFAULT_LIMIT_INNER:  f64 = 22.0; // in mm
+    const DEFAULT_LIMIT_OUTER:  f64 = 92.0; // in mm
+    const DEFAULT_PADDING:      f64 = 0.88; // in mm
+    const DEFAULT_STEP_SIZE:    f64 = 1.75; // in mm
+    const CIRCUMFERENCE:        f64 = 35.0; // in mm
+    const STEPS_PER_REVOLUTION: i16 = 200;
+    const MICRO_STEPS_COUNT:    i16 = 64;
 }
 
 // public interface
 impl Traverse
 {
-    pub const DEFAULT_PADDING: f64 = 0.88;
-    pub const DEFAULT_STEP_SIZE: f64 = 1.75;
-
     pub fn new(
         motor: StepperVelocityEL70x1, 
-        laser: DigitalOutput,
         limit_switch: DigitalInput,
+        laser_pointer: DigitalOutput,
     ) -> Self
     {
-        let limit_inner = Length::new::<millimeter>(22.0);
-        let limit_outer = Length::new::<millimeter>(92.0);
-        let microsteps  = 64 as u8;
-
-        let steps_per_revolution = 200;
-        let circumference = Length::new::<millimeter>(35.0);
+        let limit_inner   = Length::new::<millimeter>(Self::DEFAULT_LIMIT_INNER);
+        let limit_outer   = Length::new::<millimeter>(Self::DEFAULT_LIMIT_OUTER);
+        let circumference = Length::new::<millimeter>(Self::CIRCUMFERENCE);
 
         let fullstep_converter = LinearStepConverter::from_circumference(
-            steps_per_revolution,
+            Self::STEPS_PER_REVOLUTION,
             circumference,
         );
 
         let microstep_converter = LinearStepConverter::from_circumference(
-            steps_per_revolution * microsteps as i16,
+            Self::STEPS_PER_REVOLUTION * Self::MICRO_STEPS_COUNT,
             circumference,
         );
 
@@ -71,7 +78,7 @@ impl Traverse
         Self {
             mode: Mode::Standby,
             motor,
-            laser,
+            laser: laser_pointer,
             limit_switch,
             fullstep_converter,
             microstep_converter,
@@ -81,20 +88,24 @@ impl Traverse
             padding,
             position: Length::ZERO,
             state: State::NotHomed,
-            did_change_state: false,
         }
     }
 
-    pub fn update(&mut self, spool: &Spool)
+    /// update the traverse. Returns true if the state
+    /// changed from this update
+    pub fn update(&mut self, spool: &Spool) -> bool
     {
-        if self.mode == Mode::Standby { return; }
+        if self.mode == Mode::Standby { return false; }
+
+        let old_state = self.state;
 
         self.update_position();
         self.update_state();
 
         let steps_per_second = self.compute_output_steps(spool.speed());
-        // ignoring error is probably not ideal but well I don't code this...
-        let _ = self.motor.set_speed(steps_per_second);
+        _ = self.motor.set_speed(steps_per_second);
+
+        old_state == self.state
     }
 }
 
@@ -127,16 +138,16 @@ impl Traverse
     }
 
     pub fn limit_inner(&self) -> Length { self.limit_inner }
-    pub fn set_limit_inner(&mut self, value: Length) { self.limit_inner = value; }
+    pub fn set_limit_inner(&mut self, limit_inner: Length) { self.limit_inner = limit_inner; }
 
     pub fn limit_outer(&self) -> Length { self.limit_outer }
-    pub fn set_limit_outer(&mut self, value: Length) { self.limit_outer = value; }
+    pub fn set_limit_outer(&mut self, limit_outer: Length) { self.limit_outer = limit_outer; }
 
     pub fn step_size(&self) -> Length { self.step_size }
-    pub fn set_step_size(&mut self, value: Length) { self.step_size = value; }
+    pub fn set_step_size(&mut self, step_size: Length) { self.step_size = step_size; }
 
     pub fn padding(&self) -> Length { self.padding }
-    pub fn set_padding(&mut self, value: Length) { self.padding = value; }
+    pub fn set_padding(&mut self, padding: Length) { self.padding = padding; }
 
     pub fn current_position(&self) -> Option<Length> 
     {
@@ -145,14 +156,6 @@ impl Traverse
             true  => Some(self.position),
             false => None,
         }
-    }
-
-    pub const fn consume_state_changed(&mut self) -> bool 
-    {
-        let did_change = self.did_change_state;
-        // Reset the flag
-        self.did_change_state = false;
-        did_change
     }
 
     pub fn laser_pointer_enabled(&self) -> bool
@@ -329,8 +332,6 @@ impl Traverse
     {
         use State::*;
 
-        let old_state = self.state.clone();
-
         match self.state
         {
             NotHomed | Idle => {}
@@ -354,9 +355,6 @@ impl Traverse
             Homing(state) => self.update_homing_state(state),
             Traversing(state) => self.update_traversing_state(state),
         };
-
-        // update flag of state changed
-        self.did_change_state = self.state != old_state;
     }
 
     fn update_homing_state(&mut self, homing_state: HomingState)

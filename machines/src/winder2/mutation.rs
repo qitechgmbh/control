@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
-use units::{AngularVelocity, Length, Velocity, angular_velocity::revolution_per_minute, length::millimeter, velocity::meter_per_minute};
+use units::{AngularVelocity, Length, Velocity, angular_velocity::revolution_per_minute, length::{meter, millimeter}, velocity::meter_per_minute};
 
-use crate::{types::Direction, winder2::{Winder2, api::SpoolSpeedControllerType, devices::{PullerGearRatio, SpoolSpeedControlMode}}};
+use crate::{types::Direction, winder2::{Winder2, api::SpoolSpeedControllerType, devices::{PullerGearRatio, SpoolSpeedControlMode}, types::SpoolLengthTaskCompletedAction}};
 
 #[derive(Deserialize, Serialize)]
 pub enum Mutation 
@@ -86,16 +86,6 @@ impl Winder2
     {
         self.tension_arm.calibrate();
         self.emit_live_values(); // For angle update
-        self.emit_state();
-    }
-}
-
-// Automatic Action
-impl Winder2
-{
-    pub fn set_spool_automatic_required_meters(&mut self)
-    {
-        // self.spool_automatic_action.target_length = Length::new::<meter>(meters);
         self.emit_state();
     }
 }
@@ -221,6 +211,24 @@ impl Winder2
     ) {
         self.spool_speed_controller
             .set_adaptive_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
+        self.emit_state();
+    }
+}
+
+// Spool Length Task
+impl Winder2
+{
+    pub fn set_spool_length_task_target_length(&mut self, meters: f64) 
+    {
+        let target_length = Length::new::<meter>(meters);
+        self.spool_length_task.set_target_length(target_length);
+        self.emit_state();
+    }
+
+    pub fn set_on_spool_length_task_completed_action(
+        &mut self, action: SpoolLengthTaskCompletedAction) 
+    {
+        self.on_spool_length_task_complete = action;
         self.emit_state();
     }
 }

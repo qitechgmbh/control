@@ -5,9 +5,9 @@ use units::f64::*;
 use ethercat_hal::io::analog_input::{AnalogInput, physical::AnalogInputValue};
 
 #[derive(Debug)]
-pub struct TensionArm 
+pub struct TensionArm
 {
-    analog_input:  AnalogInput,
+    sensor:        AnalogInput,
     zero_offset:   Angle,
     is_calibrated: bool,
 }
@@ -15,10 +15,10 @@ pub struct TensionArm
 // public interface
 impl TensionArm 
 {
-    pub fn new(analog_input: AnalogInput) -> Self 
+    pub fn new(sensor: AnalogInput) -> Self 
     {
         Self {
-            analog_input,
+            sensor,
             zero_offset:   Angle::new::<revolution>(0.0),
             is_calibrated: false,
         }
@@ -66,7 +66,7 @@ impl TensionArm
         // TODO: reconsider panicking, to allow system to shutdown gracefully.
         // but since I am only moving code, I will not touch this...
         let AnalogInputValue::Potential(potential) = 
-            self.analog_input.get_physical() else { panic!("Expected a potential value"); };
+            self.sensor.get_physical() else { panic!("Expected a potential value"); };
 
         potential.get::<volt>()
     }
@@ -144,7 +144,7 @@ mod tests {
             normalized: (5.0 / 10.0),
             wiring_error: false,
         });
-        let physical = tension_arm.analog_input.get_physical();
+        let physical = tension_arm.sensor.get_physical();
         match physical {
             AnalogInputValue::Potential(v) => {
                 assert_relative_eq!(v.get::<volt>(), 5.0, epsilon = f64::EPSILON);

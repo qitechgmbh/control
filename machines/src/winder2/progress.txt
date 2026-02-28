@@ -1,0 +1,38 @@
+
+spool:
+- struct: complete
+- update: complete
+- state:  ???
+- live:   complete
+- mutate: ???
+
+puller:
+- struct: complete
+- update: complete
+- state:  complete
+- live:   complete
+- mutate: complete
+
+traverse:
+- struct: complete
+- update: complete
+- state:  ???
+- live:   complete
+- mutate: ???
+
+tension_arm:
+- struct: complete
+- update: complete
+- state:  complete
+- live:   complete
+- mutate: complete
+
+spool_length_task:
+- struct: complete
+- state:  complete
+- live:   complete
+- mutate: complete
+
+
+connection:
+- ???

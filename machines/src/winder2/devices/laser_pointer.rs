@@ -1,6 +1,6 @@
 use ethercat_hal::io::digital_output::DigitalOutput;
 
-/// Represents the laser?
+/// Represents the traverses laser pointer
 #[derive(Debug)]
 pub struct LaserPointer
 {

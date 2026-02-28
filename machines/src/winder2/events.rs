@@ -1,17 +1,17 @@
+use control_core::socketio::{event::GenericEvent, namespace::{CacheFn, CacheableEvents}};
 use control_core_derive::BuildEvent;
 use serde::Serialize;
-use units::{length::millimeter, velocity::meter_per_minute};
+use units::{length::{meter, millimeter}, velocity::meter_per_minute};
 
 use crate::{
     types::Direction, 
     winder2::{
         Winder2, 
-        automatic_action::Mode, 
         devices::{
             PullerGearRatio, 
             PullerSpeedRegulation, 
             SpoolSpeedControlMode
-        }
+        }, types::SpoolLengthTaskCompletedAction
     }
 };
 
@@ -25,7 +25,7 @@ pub struct State
     /// puller state
     pub puller_state: PullerState,
     /// spool automatic action state and progress
-    pub spool_automatic_action_state: AutomaticActionState,
+    pub spool_automatic_action_state: SpoolLengthTaskState,
     /// mode state
     pub mode_state: ModeState,
     /// tension arm state
@@ -64,10 +64,11 @@ pub struct TensionArmState
     pub zeroed: bool,
 }
 
-#[derive(Serialize, Debug, Clone, Default)]
-pub struct AutomaticActionState {
+#[derive(Serialize, Debug, Clone)]
+pub struct SpoolLengthTaskState 
+{
     pub spool_required_meters: f64,
-    pub spool_automatic_action_mode: AutomaticActionMode,
+    pub spool_automatic_action_mode: SpoolLengthTaskCompletedAction,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -145,23 +146,12 @@ pub struct TraverseState {
 // state event
 impl Winder2
 {
-    fn create_state_event(&self)
-    {
-        todo!("implement");
-    }
-
     // COMPLETE
     fn create_tension_arm_state(&self) -> TensionArmState
     {
         TensionArmState {
             zeroed: self.tension_arm.is_calibrated()
         }
-    }
-
-    //TODO: finish
-    fn create_automatic_action_state(&self) -> AutomaticActionState
-    {
-
     }
 
     //TODO: finish
@@ -219,6 +209,17 @@ impl Winder2
             can_go_in:     traverse.can_goto_limit_inner(), 
             can_go_out:    traverse.can_goto_limit_outer(), 
             can_go_home:   traverse.can_go_home() 
+        }
+    }
+
+    // COMPLETE
+    fn create_spool_length_task_state(&self) -> SpoolLengthTaskState
+    {
+        let spool_required_meters = self.spool_length_task.target_length().get::<meter>();
+
+        SpoolLengthTaskState {
+            spool_required_meters,
+            spool_automatic_action_mode: self.on_spool_length_task_complete,
         }
     }
 }
