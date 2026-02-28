@@ -4,7 +4,6 @@ import { useMarkerStore, type Marker } from "@/stores/markerStore";
 // Stable empty array to avoid "getSnapshot should be cached" infinite loop
 const EMPTY_MARKERS: Marker[] = [];
 
-
 export function useMarkerManager(machineId: string) {
   const markers = useMarkerStore((state) => {
     const list = state.markersByMachine[machineId];

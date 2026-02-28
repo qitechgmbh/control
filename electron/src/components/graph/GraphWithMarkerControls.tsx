@@ -299,12 +299,16 @@ function GraphWithMarkerControlsContent({
               (a, b) => a.timestamp - b.timestamp,
             );
             const after = sorted.find((p) => p.timestamp >= timestamp);
-            const before = [...sorted].reverse().find((p) => p.timestamp <= timestamp);
+            const before = [...sorted]
+              .reverse()
+              .find((p) => p.timestamp <= timestamp);
             if (after && before) {
               if (after.timestamp === before.timestamp) {
                 markerValue = after.value;
               } else {
-                const t = (timestamp - before.timestamp) / (after.timestamp - before.timestamp);
+                const t =
+                  (timestamp - before.timestamp) /
+                  (after.timestamp - before.timestamp);
                 markerValue = before.value + t * (after.value - before.value);
               }
             } else if (after) {
