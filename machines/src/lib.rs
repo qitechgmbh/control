@@ -17,25 +17,16 @@ use std::any::Any;
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Instant;
-pub mod analog_input_test_machine;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
-pub mod digital_input_test_machine;
 pub mod extruder1;
 pub mod extruder2;
-pub mod ip20_test_machine;
 pub mod laser;
 pub mod machine_identification;
-pub mod mock;
-pub mod motor_test_machine;
+pub mod minimal_machines;
 pub mod registry;
 pub mod serial;
-pub mod test_machine;
-pub mod test_machine_stepper;
-pub mod wago_8ch_dio_test_machine;
-pub mod wago_ai_test_machine;
-pub mod wago_do_test_machine;
 pub mod wago_power;
 pub mod winder2;
 
@@ -54,6 +45,7 @@ pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
 pub const WAGO_AI_TEST_MACHINE: u16 = 0x0036;
 pub const DIGITAL_INPUT_TEST_MACHINE: u16 = 0x0040;
 pub const WAGO_8CH_IO_TEST_MACHINE: u16 = 0x0041;
+pub const WAGO_750_430_DI_MACHINE: u16 = 0x0043;
 pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
 
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
