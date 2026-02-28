@@ -120,7 +120,7 @@ export const traverseStateSchema = z.object({
  * Puller state schema
  */
 export const pullerStateSchema = z.object({
-  regulation: pullerRegulationSchema,
+  // regulation: pullerRegulationSchema,
   target_speed: z.number(),
   target_diameter: z.number(),
   forward: z.boolean(),
