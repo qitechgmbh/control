@@ -3,6 +3,7 @@ use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitEx
 #[cfg(feature = "tracing-fmt")]
 pub mod fmt;
 
+#[cfg(feature = "tracing-journald")]
 mod throttle;
 
 /// Initialize the basic tracing system (without OpenTelemetry if enabled)
