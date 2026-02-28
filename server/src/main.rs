@@ -22,6 +22,7 @@ use socketio::{
 
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
+#[cfg(not(feature = "development-build"))]
 use utils::start_dnsmasq;
 
 use app_state::{HotThreadMessage, SharedState};
