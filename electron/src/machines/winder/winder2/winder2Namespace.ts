@@ -273,7 +273,7 @@ export function winder2MessageHandler(
     };
 
     try {
-      if (eventName === "StateEvent") {
+      if (eventName === "State") {
         console.log(event);
         // Parse and validate the state event
         const stateEvent = stateEventSchema.parse(event);
@@ -294,7 +294,7 @@ export function winder2MessageHandler(
             ? stateEvent
             : state.defaultState,
         }));
-      } else if (eventName === "LiveValuesEvent") {
+      } else if (eventName === "LiveValues") {
         // Parse and validate the live values event
         const liveValuesEvent = liveValuesEventSchema.parse(event);
 
