@@ -167,11 +167,6 @@ impl Puller
         strategies.adaptive.set_deviation_max(Velocity::ZERO);
     }
 
-    pub fn motor_speed(&self) -> Velocity 
-    { 
-        self.speed_controller.speed() 
-    }
-
     pub fn output_speed(&self) -> Velocity 
     { 
         self.speed_controller.speed() / self.gear_ratio.multiplier() 
@@ -182,9 +177,9 @@ impl Puller
         self.speed_controller.mode()
     }
 
-    pub fn speed_control_set_mode(&mut self, mode: SpeedControlMode)
+    pub fn set_speed_control_mode(&mut self, mode: SpeedControlMode)
     {
-        self.speed_controller.set_mode(mode)
+        self.speed_controller.set_mode(mode);
     }
 
     pub fn speed_controller_strategies(&self) -> &SpeedControllerStrategies

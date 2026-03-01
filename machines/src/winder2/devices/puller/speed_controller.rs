@@ -8,7 +8,7 @@ use units::{Acceleration, ConstZero, Jerk, Velocity};
 pub enum Mode 
 {
     Fixed,
-    Adapative,
+    Adaptive,
 }
 
 #[derive(Debug)]
@@ -65,7 +65,7 @@ impl SpeedController
             true => match self.mode 
             {
                 Fixed     => self.strategies.fixed.compute(),
-                Adapative => self.strategies.adaptive.compute(),
+                Adaptive => self.strategies.adaptive.compute(),
             },
             false => Velocity::ZERO,
         };

@@ -135,13 +135,6 @@ impl Winder2
         }
     }
 
-    fn create_tension_arm_state(&self) -> TensionArmState
-    {
-        TensionArmState {
-            is_calibrated: self.tension_arm.is_calibrated()
-        }
-    }
-
     fn create_spool_state(&self) -> SpoolState
     {
         use revolution_per_minute as rpm;
@@ -228,6 +221,13 @@ impl Winder2
             can_go_in:     traverse.can_goto_limit_inner(), 
             can_go_out:    traverse.can_goto_limit_outer(), 
             can_go_home:   traverse.can_go_home() 
+        }
+    }
+
+    fn create_tension_arm_state(&self) -> TensionArmState
+    {
+        TensionArmState {
+            is_calibrated: self.tension_arm.is_calibrated()
         }
     }
 

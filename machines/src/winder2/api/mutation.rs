@@ -269,7 +269,7 @@ impl Winder2
 {
     pub fn puller_set_speed_control_mode(&mut self, mode: PullerSpeedControlMode) 
     {
-        self.puller.speed_control_set_mode(mode);
+        self.puller.set_speed_control_mode(mode);
         self.emit_state();
     }
 
