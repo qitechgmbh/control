@@ -232,7 +232,7 @@ export function Winder2ControlPage() {
             Set Zero Point
           </TouchButton>
           {!state?.tension_arm_state?.is_calibrated && (
-            <StatusBadge variant="error">Not Zeroed</StatusBadge>
+            <StatusBadge variant="error">Not Calibrated</StatusBadge>
           )}
         </ControlCard>
 
