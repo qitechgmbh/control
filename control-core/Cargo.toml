@@ -29,7 +29,7 @@ tokio = { version = "1.45.1", features = ["sync"], optional = true }
 
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2.176"
+libc = "0.2.182"
 
 [dev-dependencies]
 approx = "0.5.1"
