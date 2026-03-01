@@ -16,15 +16,21 @@ use crate::{
 #[derive(Serialize, Debug, Clone, BuildEvent)]
 pub struct State 
 {
+    // common
     pub is_default_state: bool,
+
+    // machine
     pub mode: Mode,
     pub can_wind: bool,
+
+    // devices
     pub spool_state: SpoolState,
     pub puller_state: PullerState,
     pub traverse_state: TraverseState,
     pub tension_arm_state: TensionArmState,
+
+    // tasks
     pub spool_length_task_state: SpoolLengthTaskState,
-    pub puller_adaptive_reference_machine: MachineCrossConnectionState,
 }
 
 impl CacheableEvents<Self> for State 
@@ -69,6 +75,7 @@ pub struct PullerState
     // adaptive speed strategy
     pub adaptive_base_speed: f64, // in m/min
     pub adaptive_deviation_max: f64, // in m/min
+    pub adaptive_reference_machine: MachineCrossConnectionState,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -116,18 +123,6 @@ impl Winder2
     {
         let is_default_state = !self.emitted_default_state;
 
-        let connected_machine_state = match &self.puller_speed_reference_machine
-        {
-            Some(connection) => MachineCrossConnectionState { 
-                machine_identification_unique: Some(connection.ident.clone()),
-                is_available: true
-            },
-            None => MachineCrossConnectionState { 
-                machine_identification_unique: None,
-                is_available: false
-            },
-        };
-
         State {
             is_default_state,
             mode: self.mode, 
@@ -137,7 +132,6 @@ impl Winder2
             spool_length_task_state: self.create_spool_length_task_state(),
             tension_arm_state: self.create_tension_arm_state(),
             spool_state: self.create_spool_state(),
-            puller_adaptive_reference_machine: connected_machine_state,
         }
     }
 
@@ -189,6 +183,18 @@ impl Winder2
         let adaptive_deviation_max = 
             strategies.adaptive.deviation_max().get::<meter_per_minute>();
 
+        let adaptive_reference_machine = match &self.puller_speed_reference_machine
+        {
+            Some(connection) => MachineCrossConnectionState { 
+                machine_identification_unique: Some(connection.ident.clone()),
+                is_available: true
+            },
+            None => MachineCrossConnectionState { 
+                machine_identification_unique: None,
+                is_available: false
+            },
+        };
+
         PullerState {
             direction:  puller.direction(),
             gear_ratio: puller.gear_ratio(),
@@ -196,6 +202,7 @@ impl Winder2
             fixed_target_speed,
             adaptive_base_speed,
             adaptive_deviation_max,
+            adaptive_reference_machine,
         }
     }
 

@@ -25,7 +25,7 @@ pub struct LiveValues
     /// tension arm angle in degrees
     pub tension_arm_angle: f64,
     // spool progress in meters (pulled distance of filament)
-    pub spool_progress: f64,
+    pub spool_length_task_progress: f64,
 }
 
 impl CacheableEvents<Self> for LiveValues 
@@ -58,7 +58,7 @@ impl Winder2
             traverse_position: self.traverse.current_position().map(|x| x.get::<millimeter>()),
             puller_speed: self.puller.motor_speed().get::<meter_per_minute>(),
             spool_rpm: self.spool.speed().get::<revolution_per_minute>(),
-            spool_progress: self.spool_length_task.current_length().get::<meter>(),
+            spool_length_task_progress: self.spool_length_task.current_length().get::<meter>(),
             tension_arm_angle,
         }
     }

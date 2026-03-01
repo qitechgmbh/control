@@ -49,27 +49,27 @@ pub enum Mutation
     SetPullerFixedTargetSpeed(f64),
 
     // Puller Speed Strategy
-    SetPullerAdaptiveReferenceMachine(Option<MachineIdentificationUnique>),
     SetPullerAdaptiveBaseSpeed(f64),  // in m/min
     SetPullerAdaptiveDeviationMax(f64), // in m/min
+    SetPullerAdaptiveReferenceMachine(Option<MachineIdentificationUnique>),
 
     // Traverse
     /// Position in mm from home point
-    SetTraverseLimitOuter(f64),
-    /// Position in mm from home point
     SetTraverseLimitInner(f64),
+    /// Position in mm from home point
+    SetTraverseLimitOuter(f64),
     /// Step size in mm for traverse movement
     SetTraverseStepSize(f64),
     /// Padding in mm for traverse movement limits
     SetTraversePadding(f64),
-    GotoTraverseLimitOuter,
     GotoTraverseLimitInner,
+    GotoTraverseLimitOuter,
     /// Find home point
     GotoTraverseHome,
-    EnableTraverseLaserpointer(bool),
+    SetTraverseLaserpointerEnabled(bool),
 
     // Tension Arm
-    ZeroTensionArmAngle,
+    CalibrateTensionArmAngle,
 
     // Spool Length Task
     SetSpoolLengthTaskTargetLength(f64),
@@ -102,26 +102,26 @@ impl Winder2
             SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(v) => self.spool_set_adaptive_deacceleration_urgency_multiplier(v),
 
             //traverse
-            SetTraverseLimitOuter(v)      => self.traverse_set_limit_outer(v),
             SetTraverseLimitInner(v)      => self.traverse_set_limit_inner(v),
+            SetTraverseLimitOuter(v)      => self.traverse_set_limit_outer(v),
             SetTraverseStepSize(v)        => self.traverse_set_step_size(v),
             SetTraversePadding(v)         => self.traverse_set_padding(v),
-            GotoTraverseLimitOuter        => self.traverse_goto_limit_outer(),
             GotoTraverseLimitInner        => self.traverse_goto_limit_inner(),
+            GotoTraverseLimitOuter        => self.traverse_goto_limit_outer(),
             GotoTraverseHome              => self.traverse_goto_home(),
-            EnableTraverseLaserpointer(v) => self.traverse_set_laser_pointer_enabled(v),
+            SetTraverseLaserpointerEnabled(v) => self.traverse_set_laser_pointer_enabled(v),
 
             // puller
             SetPullerDirection(v)                => self.puller_set_direction(v),
             SetPullerGearRatio(v)                => self.puller_set_gear_ratio(v),
             SetPullerSpeedControlMode(v)         => self.puller_set_speed_control_mode(v),
             SetPullerFixedTargetSpeed(v)         => self.puller_set_fixed_target_speed(v),
-            SetPullerAdaptiveReferenceMachine(v) => self.puller_set_adaptive_reference_machine(v)?,
             SetPullerAdaptiveBaseSpeed(v)        => self.puller_set_adaptive_base_speed(v),
             SetPullerAdaptiveDeviationMax(v)     => self.puller_set_adaptive_deviation_max(v),
+            SetPullerAdaptiveReferenceMachine(v) => self.puller_set_adaptive_reference_machine(v)?,
 
             // tension arm
-            ZeroTensionArmAngle => self.tension_arm_calibrate(),
+            CalibrateTensionArmAngle => self.tension_arm_calibrate(),
 
             // spool length task
             SetSpoolLengthTaskTargetLength(v) => 

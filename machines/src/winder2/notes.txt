@@ -1,0 +1,16 @@
+removed features:
+----------------------------------------------------------------------------------------------
+- removing puller target speed time series to accomodate different speed controllers
+
+detected 'bugs':
+----------------------------------------------------------------------------------------------
+- SpoolLengthTask updated in pull mode??
+- Inverting direction of spool while running can damage motor
+- gear ratio inverted
+- Standby mode doesn't properly de-accelerate speed as it should for spool and puller
+- Hold mode doesn't de-accelerate Spool motor but puller motor
+- traverse position jumps into negative
+
+adjustments:
+----------------------------------------------------------------------------------------------
+- Shift Gear speed change logic into backend from frontend

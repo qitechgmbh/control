@@ -6,7 +6,7 @@ import { PresetsPage } from "@/components/preset/PresetsPage";
 import { Preset } from "@/lib/preset/preset";
 import {
   pullerStateSchema,
-  spoolSpeedControllerStateSchema,
+  spoolStateSchema,
 } from "./winder2Namespace";
 import { z } from "zod";
 import {
@@ -26,7 +26,7 @@ const winder2PresetDataSchema = z
       })
       .partial(),
     puller_state: pullerStateSchema.partial(),
-    spool_speed_controller_state: spoolSpeedControllerStateSchema.partial(),
+    spool_speed_controller_state: spoolStateSchema.partial(),
   })
   .partial();
 
@@ -243,7 +243,7 @@ export function Winder2PresetsPage() {
       laserpointer: s?.traverse_state?.laserpointer,
     },
     puller_state: s?.puller_state ?? {},
-    spool_speed_controller_state: s?.spool_speed_controller_state ?? {},
+    spool_speed_controller_state: s?.spool_state ?? {},
   });
 
   return (
