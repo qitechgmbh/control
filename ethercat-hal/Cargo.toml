@@ -7,7 +7,7 @@ edition = "2024"
 workspace = true
 
 [dependencies]
-anyhow = "1.0.100"
+anyhow = "1.0.102"
 ethercrab = { git = "https://github.com/v-morlock/ethercrab", branch = "main" }
 ethercat_hal_derive = { version = "0.1.0", path = "../ethercat-hal-derive" }
 units = { path = "../units" }

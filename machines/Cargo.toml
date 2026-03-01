@@ -11,7 +11,7 @@ control_core_derive = { path = "../control-core-derive" }
 units = { path = "../units" }
 
 serde = "1.0.217"
-anyhow = "1.0.100"
+anyhow = "1.0.102"
 
 bitvec = "1.0.1"
 lazy_static = "1.5.0"

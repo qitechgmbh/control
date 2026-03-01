@@ -17,7 +17,7 @@ control_core = { path = "../control-core" }
 units = { path = "../units" }
 machines = { path = "../machines"}
 serde = "1.0.217"
-anyhow = "1.0.100"
+anyhow = "1.0.102"
 
 bitvec = "1.0.1"
 libc = "0.2"
