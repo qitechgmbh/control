@@ -183,13 +183,83 @@ impl Winder2
     }
 }
 
-// Tension Arm
+// Spool
 impl Winder2
 {
-    pub fn tension_arm_calibrate(&mut self)
+    pub fn spool_set_direction(&mut self, value: Direction) 
     {
-        self.tension_arm.calibrate();
-        self.emit_live_values(); // For angle update
+        self.spool.set_direction(value);
+        self.emit_state();
+    }
+
+    pub fn spool_set_speed_control_mode(&mut self, value: SpoolSpeedControlMode)
+    {
+        self.spool.set_speed_control_mode(value);
+        self.emit_state();
+    }
+
+    /// Set minimum speed for minmax mode in RPM
+    pub fn spool_set_minmax_min_speed(&mut self, min_speed_rpm: f64) 
+    {
+        let min_speed = AngularVelocity::new::<revolution_per_minute>(min_speed_rpm);
+        
+        if let Err(e) = self.spool.speed_controllers.minmax.set_min_speed(min_speed)
+        {
+            tracing::error!("Failed to set spool min speed: {:?}", e);
+        }
+
+        self.emit_state();
+    }
+
+    /// Set maximum speed for minmax mode in RPM
+    pub fn spool_set_minmax_max_speed(&mut self, max_speed_rpm: f64) 
+    {
+        let max_speed = AngularVelocity::new::<revolution_per_minute>(max_speed_rpm);
+
+        if let Err(e) = self.spool.speed_controllers.minmax.set_max_speed(max_speed)
+        {
+            tracing::error!("Failed to set spool max speed: {:?}", e);
+        }
+
+        self.emit_state();
+    }
+
+    /// Set tension target for adaptive mode (0.0-1.0)
+    pub fn spool_set_adaptive_tension_target(&mut self, tension_target: f64) 
+    {
+        self.spool.speed_controllers.adaptive.set_tension_target(tension_target);
+
+        self.emit_state();
+    }
+
+    /// Set radius learning rate for adaptive mode
+    pub fn spool_set_adaptive_radius_learning_rate(&mut self, radius_learning_rate: f64) {
+        self.spool.speed_controllers.adaptive
+            .set_radius_learning_rate(radius_learning_rate);
+        self.emit_state();
+    }
+
+    /// Set max speed multiplier for adaptive mode
+    pub fn spool_set_adaptive_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
+        self.spool.speed_controllers.adaptive
+            .set_max_speed_multiplier(max_speed_multiplier);
+        self.emit_state();
+    }
+
+    /// Set acceleration factor for adaptive mode
+    pub fn spool_set_adaptive_acceleration_factor(&mut self, acceleration_factor: f64) {
+        self.spool.speed_controllers.adaptive
+            .set_acceleration_factor(acceleration_factor);
+        self.emit_state();
+    }
+
+    /// Set deacceleration urgency multiplier for adaptive mode
+    pub fn spool_set_adaptive_deacceleration_urgency_multiplier(
+        &mut self,
+        deacceleration_urgency_multiplier: f64,
+    ) {
+        self.spool.speed_controllers.adaptive
+            .set_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
         self.emit_state();
     }
 }
@@ -314,87 +384,6 @@ impl Winder2
     }
 }
 
-// Spool
-impl Winder2
-{
-    pub fn spool_set_direction(&mut self, value: Direction) 
-    {
-        self.spool.set_direction(value);
-        self.emit_state();
-    }
-
-    pub fn spool_set_speed_control_mode(&mut self, value: SpoolSpeedControlMode)
-    {
-        self.spool.set_speed_control_mode(value);
-        self.emit_state();
-    }
-
-    /// Set minimum speed for minmax mode in RPM
-    pub fn spool_set_minmax_min_speed(&mut self, min_speed_rpm: f64) 
-    {
-        let min_speed = AngularVelocity::new::<revolution_per_minute>(min_speed_rpm);
-        
-        if let Err(e) = self.spool.speed_controllers.minmax.set_min_speed(min_speed)
-        {
-            tracing::error!("Failed to set spool min speed: {:?}", e);
-        }
-
-        self.emit_state();
-    }
-
-    /// Set maximum speed for minmax mode in RPM
-    pub fn spool_set_minmax_max_speed(&mut self, max_speed_rpm: f64) 
-    {
-        let max_speed = AngularVelocity::new::<revolution_per_minute>(max_speed_rpm);
-
-        if let Err(e) = self.spool.speed_controllers.minmax.set_max_speed(max_speed)
-        {
-            tracing::error!("Failed to set spool max speed: {:?}", e);
-        }
-
-        self.emit_state();
-    }
-
-    /// Set tension target for adaptive mode (0.0-1.0)
-    pub fn spool_set_adaptive_tension_target(&mut self, tension_target: f64) 
-    {
-        self.spool.speed_controllers.adaptive.set_tension_target(tension_target);
-
-        self.emit_state();
-    }
-
-    /// Set radius learning rate for adaptive mode
-    pub fn spool_set_adaptive_radius_learning_rate(&mut self, radius_learning_rate: f64) {
-        self.spool.speed_controllers.adaptive
-            .set_radius_learning_rate(radius_learning_rate);
-        self.emit_state();
-    }
-
-    /// Set max speed multiplier for adaptive mode
-    pub fn spool_set_adaptive_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
-        self.spool.speed_controllers.adaptive
-            .set_max_speed_multiplier(max_speed_multiplier);
-        self.emit_state();
-    }
-
-    /// Set acceleration factor for adaptive mode
-    pub fn spool_set_adaptive_acceleration_factor(&mut self, acceleration_factor: f64) {
-        self.spool.speed_controllers.adaptive
-            .set_acceleration_factor(acceleration_factor);
-        self.emit_state();
-    }
-
-    /// Set deacceleration urgency multiplier for adaptive mode
-    pub fn spool_set_adaptive_deacceleration_urgency_multiplier(
-        &mut self,
-        deacceleration_urgency_multiplier: f64,
-    ) {
-        self.spool.speed_controllers.adaptive
-            .set_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
-        self.emit_state();
-    }
-}
-
 // Traverse
 impl Winder2
 {
@@ -447,6 +436,17 @@ impl Winder2
     pub fn traverse_goto_home(&mut self) 
     {
         _ = self.traverse.try_goto_home();
+        self.emit_state();
+    }
+}
+
+// Tension Arm
+impl Winder2
+{
+    pub fn tension_arm_calibrate(&mut self)
+    {
+        self.tension_arm.calibrate();
+        self.emit_live_values(); // For angle update
         self.emit_state();
     }
 }

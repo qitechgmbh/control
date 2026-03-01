@@ -75,7 +75,7 @@ impl SpeedController
 
     pub fn set_mode(&mut self, mode: Mode)
     {
-        self.mode = mode
+        self.mode = mode;
     }
 
     pub fn speed(&self) -> Velocity

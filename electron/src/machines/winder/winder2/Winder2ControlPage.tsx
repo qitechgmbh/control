@@ -297,7 +297,7 @@ export function Winder2ControlPage() {
                 },
               }}
               onChange={(value) =>
-                setPullerSpeedControlMode(value as "Fixed" | "Adaptive")
+                setPullerSpeedControlMode(value)
               }
             />
           </Label>
