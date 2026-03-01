@@ -29,7 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getWinder2TraverseMax } from "./winder2Config";
-import { MachineSelector } from "@/components/MachineConnectionDropdown";
+import { MachineSelector } from "../MachineSelector";
 
 export function Winder2ControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
@@ -84,8 +84,8 @@ export function Winder2ControlPage() {
   const gearRatioMultiplier = getGearRatioMultiplier(
     state?.puller_state?.gear_ratio,
   );
-  const maxMotorSpeed = 75; // Maximum motor speed in m/min
-  const maxTargetSpeed = maxMotorSpeed / gearRatioMultiplier;
+  const maxMotorSpeed = 50; // Maximum motor speed in m/min
+  const maxPullerSpeed = maxMotorSpeed / gearRatioMultiplier;
 
   const handleResetProgress = () => {
     // Check if the machine is currently in Wind mode
@@ -281,19 +281,98 @@ export function Winder2ControlPage() {
             timeseries={pullerSpeed}
             renderValue={(value) => roundToDecimals(value, 1)}
           />
-          <MachineSelector
-            machines={filteredMachines}
-            selectedMachine={selectedMachine}
-            connectedMachineState={state?.puller_state.adaptive_reference_machine}
-            setConnectedMachine={(machine) => {
-              setPullerAdaptiveReferenceMachine(machine);
-            }}
-            clearConnectedMachine={() => 
-            {
-              if (!selectedMachine) return;
-              setPullerAdaptiveReferenceMachine(null);
-            }}
-          />
+          <Label label="Speed Regulation">
+            <SelectionGroup
+              value={state?.spool_state?.speed_control_mode}
+              disabled={isDisabled}
+              loading={isLoading}
+              options={{
+                MinMax: {
+                  children: "Fixed",
+                  icon: "lu:Crosshair",
+                },
+                Adaptive: {
+                  children: "Adaptive",
+                  icon: "lu:Brain",
+                },
+              }}
+              onChange={(value) =>
+                setPullerSpeedControlMode(value as "Fixed" | "Adaptive")
+              }
+            />
+          </Label>
+
+          {state?.puller_state?.speed_control_mode ===
+            "Fixed" && (
+            <>
+              <Label label="Target Speed">
+                <EditValue
+                  value={state?.puller_state?.fixed_target_speed}
+                  title={"Target Speed"}
+                  unit="m/min"
+                  step={0.1}
+                  min={0}
+                  max={maxPullerSpeed}
+                  defaultValue={
+                    defaultState?.puller_state?.fixed_target_speed
+                  }
+                  renderValue={(value) => roundToDecimals(value, 0)}
+                  onChange={(value) => setPullerFixedTargetSpeed(value)}
+                />
+              </Label>
+            </>
+          )}
+
+          {state?.puller_state?.speed_control_mode ===
+            "Adaptive" && (
+            <>
+              <Label label="Base Speed">
+                <EditValue
+                  value={state?.puller_state?.adaptive_base_speed}
+                  title={"Base Speed"}
+                  unit="m/min"
+                  step={0.1}
+                  min={0}
+                  max={maxPullerSpeed}
+                  defaultValue={
+                    defaultState?.puller_state?.adaptive_base_speed
+                  }
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) => setPullerAdaptiveBaseSpeed(value)}
+                />
+              </Label>
+              <Label label="Max Deviation">
+                <EditValue
+                  value={state?.puller_state?.adaptive_deviation_max}
+                  title={"Max Deviation"}
+                  unit="m/min"
+                  step={10}
+                  min={0.1}
+                  max={maxPullerSpeed}
+                  defaultValue={
+                    defaultState?.puller_state?.adaptive_deviation_max
+                  }
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) => setPullerAdaptiveDeviationMax(value)}
+                />
+              </Label>
+              <Label label="Reference Machine">
+                <MachineSelector
+                  machines={filteredMachines}
+                  selectedMachine={selectedMachine}
+                  connectedMachineState={state?.puller_state.adaptive_reference_machine}
+                  setConnectedMachine={(machine) => {
+                    setPullerAdaptiveReferenceMachine(machine);
+                  }}
+                  clearConnectedMachine={() => 
+                  {
+                    if (!selectedMachine) return;
+                    setPullerAdaptiveReferenceMachine(null);
+                  }}
+                />
+              </Label>
+            </>
+          )}
         </ControlCard>
 
         <ControlCard className="bg-red" title="Spool Autostop">
