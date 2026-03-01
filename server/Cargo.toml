@@ -24,7 +24,7 @@ libc = "0.2"
 # concurrency
 smol = "2.0.2"
 tokio = { version = "1.45.1", features = ["rt-multi-thread"] }
-regex = "1.11.3"
+regex = "1.12.3"
 
 # web
 serde_json = "1.0.149"
