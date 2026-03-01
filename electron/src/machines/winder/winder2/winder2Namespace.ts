@@ -100,7 +100,7 @@ export type SpoolSpeedControlMode = z.infer<typeof spoolSpeedControlModeSchema>;
 /**
  * Spool speed controller regulation mode enum
  */
-export const pullerSpeedControlModeSchema = z.enum(["Adaptive", "MinMax"]);
+export const pullerSpeedControlModeSchema = z.enum(["Fixed", "Adaptive"]);
 export type PullerSpeedControlMode = z.infer<typeof pullerSpeedControlModeSchema>;
 
 /**
