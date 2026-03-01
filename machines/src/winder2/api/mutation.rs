@@ -153,28 +153,28 @@ impl Winder2
                     let state = OperationState::Disabled;
                     self.spool.set_operation_state(state);
                     self.puller.set_operation_state(state);
-                    self.traverse.set_device_state(state);
+                    self.traverse.set_operation_state(state);
                 },
                 Mode::Hold => 
                 {
                     let state = OperationState::Holding;
                     self.spool.set_operation_state(state);
                     self.puller.set_operation_state(state);
-                    self.traverse.set_device_state(state);
+                    self.traverse.set_operation_state(state);
                 },
                 Mode::Pull => 
                 {
                     use OperationState::*;
                     self.spool.set_operation_state(Holding);
                     self.puller.set_operation_state(Running);
-                    self.traverse.set_device_state(Holding);
+                    self.traverse.set_operation_state(Holding);
                 },
                 Mode::Wind => 
                 {
                     let state = OperationState::Running;
                     self.spool.set_operation_state(state);
                     self.puller.set_operation_state(state);
-                    self.traverse.set_device_state(state);
+                    self.traverse.set_operation_state(state);
                 },
             }
         }
@@ -317,14 +317,12 @@ impl Winder2
 // Spool
 impl Winder2
 {
-    /// Set forward rotation direction
     pub fn spool_set_direction(&mut self, value: Direction) 
     {
         self.spool.set_direction(value);
         self.emit_state();
     }
 
-    /// Set speed control mode
     pub fn spool_set_speed_control_mode(&mut self, value: SpoolSpeedControlMode)
     {
         self.spool.set_speed_control_mode(value);

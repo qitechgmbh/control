@@ -169,21 +169,22 @@ impl MachineWithChannel for Winder2
 
     fn update(&mut self, now: std::time::Instant) -> anyhow::Result<()> 
     {
-        self.spool.update(now, &self.tension_arm, &self.puller);
-        self.puller.update(now);
+        // self.spool.update(now, &self.tension_arm, &self.puller);
+        // self.puller.update(now);
 
-        let state_changed = self.traverse.update(&self.spool);
+        // let state_changed = self.traverse.update(&self.spool);
 
         // update last since it can mutate mode
-        self.update_spool_length_task(now);
+        // self.update_spool_length_task(now);
 
-        if state_changed
-        {
-            self.emit_state();
-        }
+        // if state_changed
+        // {
+        //     self.emit_state();
+        // }
 
         if now.duration_since(self.last_emit) > Duration::from_secs_f64(1.0 / 30.0) 
         {
+            self.emit_state();
             self.emit_live_values();
         }
 

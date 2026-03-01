@@ -115,9 +115,9 @@ impl Traverse
 impl Traverse
 {
     #[allow(dead_code)]
-    pub const fn device_state(&self) -> OperationState { self.device_state }
+    pub const fn operation_state(&self) -> OperationState { self.device_state }
 
-    pub fn set_device_state(&mut self, device_state: OperationState)
+    pub fn set_operation_state(&mut self, device_state: OperationState)
     {
         use OperationState::*;
 
