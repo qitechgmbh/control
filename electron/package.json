@@ -21,7 +21,7 @@
   "author": "",
   "devDependencies": {
     "@electron/fuses": "^1.8.0",
-    "@eslint/compat": "^1.2.6",
+    "@eslint/compat": "^2.0.2",
     "@eslint/js": "^9.18.0",
     "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4.0.6",
