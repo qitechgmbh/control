@@ -282,6 +282,8 @@ impl Winder2
     pub fn puller_set_gear_ratio(&mut self, gear_ratio: PullerGearRatio) 
     {
         self.puller.set_gear_ratio(gear_ratio);
+        // safety measure when changing gear ratio
+        self.set_mode(Mode::Standby);
         self.emit_state();
     }
 

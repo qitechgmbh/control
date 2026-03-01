@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
+use units::ConstZero;
 use units::{
     acceleration::meter_per_minute_per_second,
     f64::*,
@@ -156,6 +157,14 @@ impl Puller
     {
         self.gear_ratio = gear_ratio;
         self.update_multiplier();
+
+        // reset configured speeds when gear ratio changes
+        // for added safety, since changing gear ratio should
+        // require a reconfiguration of the machine
+        let strategies = self.speed_controller.strategies_mut();
+        strategies.fixed.set_target_speed(Velocity::ZERO);
+        strategies.adaptive.set_base_speed(Velocity::ZERO);
+        strategies.adaptive.set_deviation_max(Velocity::ZERO);
     }
 
     pub fn motor_speed(&self) -> Velocity 

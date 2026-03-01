@@ -56,7 +56,7 @@ impl Winder2
 
         LiveValues {
             traverse_position: self.traverse.current_position().map(|x| x.get::<millimeter>()),
-            puller_speed: self.puller.motor_speed().get::<meter_per_minute>(),
+            puller_speed: self.puller.output_speed().get::<meter_per_minute>(),
             spool_rpm: self.spool.speed().get::<revolution_per_minute>(),
             spool_length_task_progress: self.spool_length_task.current_length().get::<meter>(),
             tension_arm_angle,
