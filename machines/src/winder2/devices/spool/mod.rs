@@ -85,16 +85,6 @@ impl Spool
         self.active_controller().speed()
     }
 
-    pub fn set_speed(&mut self, value: AngularVelocity) 
-    {
-        self.active_controller_mut().set_speed(value);
-    }
-
-    pub fn operation_state(&self) -> OperationState
-    {
-        self.state
-    }
-
     pub fn set_operation_state(&mut self, state: OperationState)
     {
         self.state = state;

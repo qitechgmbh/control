@@ -26,7 +26,7 @@ pub struct Traverse
     limit_switch: DigitalInput,
 
     // config
-    device_state: OperationState,
+    operation_state: OperationState,
     position:     Length,
     limit_inner:  Length,
     limit_outer:  Length,
@@ -78,7 +78,7 @@ impl Traverse
         let padding   = Length::new::<millimeter>(Self::DEFAULT_PADDING);
 
         Self {
-            device_state: OperationState::Disabled,
+            operation_state: OperationState::Disabled,
             motor,
             laser_pointer,
             limit_switch,
@@ -95,37 +95,30 @@ impl Traverse
 
     /// update the traverse. Returns true if the state
     /// changed from this update
-    pub fn update(&mut self, spool: &Spool) -> bool
+    pub fn update(&mut self, spool: &Spool)
     {
-        if self.device_state == OperationState::Disabled { return false; }
-
-        let old_state = self.state;
+        if self.operation_state == OperationState::Disabled { return; }
 
         self.update_position();
         self.update_state();
 
         let steps_per_second = self.compute_output_steps(spool.speed());
         _ = self.motor.set_speed(steps_per_second);
-
-        old_state == self.state
     }
 }
 
 // getters + setters
 impl Traverse
 {
-    #[allow(dead_code)]
-    pub const fn operation_state(&self) -> OperationState { self.device_state }
-
     pub fn set_operation_state(&mut self, device_state: OperationState)
     {
         use OperationState::*;
 
         // No change, nothing to do
-        if self.device_state == device_state { return; }
+        if self.operation_state == device_state { return; }
 
         // Leaving standby, enable motor
-        if self.device_state == Disabled
+        if self.operation_state == Disabled
         {
             self.motor.set_enabled(true);
         }
@@ -137,7 +130,12 @@ impl Traverse
             Running  => self.start_traversing(),
         }
 
-        self.device_state = device_state;
+        self.operation_state = device_state;
+    }
+
+    pub fn state(&self) -> State
+    {
+        self.state
     }
 
     pub fn limit_inner(&self) -> Length { self.limit_inner }
@@ -200,7 +198,7 @@ impl Traverse
 {
     pub fn can_goto_limit_inner(&self) -> bool
     {
-        self.device_state == OperationState::Disabled
+        self.operation_state == OperationState::Disabled
             || !self.is_homed() 
             || self.is_going_in() 
             || self.is_going_home()
@@ -220,7 +218,7 @@ impl Traverse
 
     pub fn can_goto_limit_outer(&self)-> bool
     {
-        self.device_state == OperationState::Disabled
+        self.operation_state == OperationState::Disabled
             || !self.is_homed() 
             || self.is_going_out() 
             || self.is_going_home()
@@ -240,7 +238,7 @@ impl Traverse
 
     pub fn can_go_home(&self)-> bool
     {
-        self.device_state == OperationState::Disabled
+        self.operation_state == OperationState::Disabled
             || !self.is_homed() 
             || self.is_going_out() 
             || self.is_going_home()

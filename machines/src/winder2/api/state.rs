@@ -83,8 +83,6 @@ pub struct TraverseState {
     // config
     pub limit_inner:  f64, /// in mm
     pub limit_outer:  f64, /// in mm
-    pub position_in:  f64, /// in mm
-    pub position_out: f64, /// in mm
     pub step_size:    f64, /// in mm
     pub padding:      f64, /// in mm
 
@@ -201,15 +199,11 @@ impl Winder2
 
     fn create_traverse_state(&self) -> TraverseState
     {
-        // NOTE(JSE): why is limit_inner and position_in identical?
-
         let traverse = &self.traverse;
 
         TraverseState { 
             limit_inner:   traverse.limit_inner().get::<millimeter>(), 
             limit_outer:   traverse.limit_outer().get::<millimeter>(),  
-            position_in:   traverse.limit_inner().get::<millimeter>(),  
-            position_out:  traverse.limit_outer().get::<millimeter>(),  
             is_going_in:   traverse.is_going_in(), 
             is_going_out:  traverse.is_going_out(), 
             is_homed:      traverse.is_homed(), 

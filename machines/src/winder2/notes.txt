@@ -14,3 +14,7 @@ detected 'bugs':
 adjustments:
 ----------------------------------------------------------------------------------------------
 - Shift Gear speed change logic into backend from frontend
+
+traverse: 
+    - finally dont allow to go in/out in UI
+    - 

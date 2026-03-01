@@ -140,12 +140,10 @@ export const pullerStateSchema = z.object({
  */
 export const traverseStateSchema = z.object({
   // config
-  limit_inner: z.number(),
-  limit_outer: z.number(),
-  position_in: z.number(),
-  position_out: z.number(),
-  step_size: z.number(),
-  padding: z.number(),
+  limit_inner:  z.number(),
+  limit_outer:  z.number(),
+  step_size:    z.number(),
+  padding:      z.number(),
 
   // states
   is_going_in: z.boolean(),
