@@ -176,7 +176,7 @@ impl MachineWithChannel for Winder2
         self.traverse.update(&self.spool);
 
         // update last since it can mutate mode
-        // self.update_spool_length_task(now);
+        self.update_spool_length_task(now);
 
         if prev_traverse_state != self.traverse.state()
         {
