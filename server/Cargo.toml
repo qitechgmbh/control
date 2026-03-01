@@ -9,9 +9,10 @@ workspace = true
 
 
 [dependencies]
-ethercrab = "0.6"
+ethercrab = { git = "https://github.com/v-morlock/ethercrab", branch = "main" }
 ethercat_hal = { path = "../ethercat-hal" }
 control_core = { path = "../control-core" }
+
 
 units = { path = "../units" }
 machines = { path = "../machines"}
@@ -19,40 +20,40 @@ serde = "1.0.217"
 anyhow = "1.0.100"
 
 bitvec = "1.0.1"
-
+libc = "0.2"
 # concurrency
 smol = "2.0.2"
 tokio = { version = "1.45.1", features = ["rt-multi-thread"] }
-futures = "0.3.31"
+regex = "1.11.3"
 
 # web
-serde_json = "1.0.143"
+serde_json = "1.0.149"
 socketioxide = { version = "0.17.2", features = ["msgpack"] }
 tower-http = { version = "0.6.6", features = ["cors", "trace", "fs"] }
-axum = { version = "0.8.6", features = ["macros"] }
+axum = { version = "0.8.8", features = ["macros"] }
 
 # serial
 serialport = "4.7.3"
 
 #tracing
-tracing = { version = "0.1.41", features = ["attributes"] }
+tracing = { version = "0.1.44", features = ["attributes"] }
 tracing-journald = { version = "0.3.1", optional = true }
-tracing-futures = "0.2.5"
-tracing-subscriber = { version = "0.3.20", features = [
+tracing-subscriber = { version = "0.3.22", features = [
     "env-filter",
     "chrono",
     "registry",
 ] }
 utils = { version = "0.1.0", path="../utils" }
-tonic = { version = "0.13.1", optional = true }
 spin_sleep = "1.3.3"
 dhat = { version = "0.3.3", optional = true }
 ctrlc = { version = "3.3", optional = true }
+ta = "0.5.0"
 
 
 [dev-dependencies]
 approx = "0.5.1"
 textplots = "0.8.7"
+
 
 [features]
 default = ["tracing-fmt"]
@@ -71,6 +72,3 @@ heap-profile = ["dhat"]
 [profile.release]
 codegen-units = 1
 lto = "fat"
-
-[package.metadata.cargo-machete]
-ignored =  ["tonic"]

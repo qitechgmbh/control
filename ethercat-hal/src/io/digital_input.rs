@@ -1,6 +1,5 @@
 use std::{fmt, sync::Arc};
 
-use futures::executor::block_on;
 use smol::lock::RwLock;
 
 /// Digital Input (DI) device
@@ -27,7 +26,7 @@ impl DigitalInput {
         let port2 = port;
         let device2 = device.clone();
         let get_input = Box::new(move || {
-            let device = block_on(device2.read());
+            let device = smol::block_on(device2.read());
             device.get_input(port2.clone())
         });
 

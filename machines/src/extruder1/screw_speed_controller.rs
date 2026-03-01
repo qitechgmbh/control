@@ -6,7 +6,6 @@ use control_core::{
     transmission::{Transmission, fixed::FixedTransmission},
 };
 use ethercat_hal::io::analog_input::AnalogInput;
-use futures::executor::block_on;
 use units::angular_velocity::revolution_per_minute;
 use units::electric_current::milliampere;
 use units::f64::*;
@@ -42,6 +41,7 @@ impl ScrewSpeedController {
         target_pressure: Pressure,
         target_rpm: AngularVelocity,
         pressure_sensor: AnalogInput,
+        transmission: FixedTransmission,
     ) -> Self {
         let now = Instant::now();
         Self {
@@ -54,7 +54,8 @@ impl ScrewSpeedController {
             pressure_sensor,
             uses_rpm: true,
             forward_rotation: true,
-            transmission: FixedTransmission::new(1.0 / 34.0),
+            transmission: transmission,
+            //FixedTransmission::new(1.0 / 34.0),
             motor_on: false,
             nozzle_pressure_limit: Pressure::new::<bar>(100.0),
             nozzle_pressure_limit_enabled: true,
@@ -76,11 +77,11 @@ impl ScrewSpeedController {
         self.nozzle_pressure_limit = pressure;
     }
 
-    pub fn get_nozzle_pressure_limit(&mut self) -> Pressure {
+    pub fn get_nozzle_pressure_limit(&self) -> Pressure {
         self.nozzle_pressure_limit
     }
 
-    pub const fn get_nozzle_pressure_limit_enabled(&mut self) -> bool {
+    pub const fn get_nozzle_pressure_limit_enabled(&self) -> bool {
         self.nozzle_pressure_limit_enabled
     }
 
@@ -88,11 +89,11 @@ impl ScrewSpeedController {
         self.nozzle_pressure_limit_enabled = enabled;
     }
 
-    pub fn get_target_rpm(&mut self) -> AngularVelocity {
+    pub fn get_target_rpm(&self) -> AngularVelocity {
         self.target_rpm
     }
 
-    pub const fn get_rotation_direction(&mut self) -> bool {
+    pub const fn get_rotation_direction(&self) -> bool {
         self.forward_rotation
     }
 
@@ -108,20 +109,27 @@ impl ScrewSpeedController {
         self.target_pressure = target_pressure;
     }
 
-    pub fn set_target_screw_rpm(&mut self, target_rpm: AngularVelocity) {
+    pub fn set_target_screw_rpm(
+        &mut self,
+        target_rpm: AngularVelocity,
+        _motor_rpm_rating: AngularVelocity,
+        motor_poles: usize,
+    ) {
         // Use uom here and perhaps clamp it
         let target_motor_rpm = self
             .transmission
             .calculate_angular_velocity_input(target_rpm);
 
         self.target_rpm = target_rpm;
-        let target_frequency =
-            Frequency::new::<cycle_per_minute>(target_motor_rpm.get::<revolution_per_minute>());
+
+        let target_frequency: Frequency = Frequency::new::<hertz>(
+            target_motor_rpm.get::<revolution_per_minute>() as f64 / 120.0 * motor_poles as f64,
+        );
 
         self.inverter.set_frequency_target(target_frequency);
     }
 
-    pub const fn get_uses_rpm(&mut self) -> bool {
+    pub const fn get_uses_rpm(&self) -> bool {
         self.uses_rpm
     }
 
@@ -140,7 +148,7 @@ impl ScrewSpeedController {
         self.motor_on = true;
     }
 
-    pub fn get_motor_status(&mut self) -> MotorStatus {
+    pub fn get_motor_status(&self) -> MotorStatus {
         let frequency = self.inverter.motor_status.frequency;
         let rpm =
             AngularVelocity::new::<revolution_per_minute>(frequency.get::<cycle_per_minute>());
@@ -189,7 +197,7 @@ impl ScrewSpeedController {
         self.pid.reset()
     }
 
-    pub fn get_pressure(&mut self) -> Pressure {
+    pub fn get_pressure(&self) -> Pressure {
         let current_result = self.get_sensor_current();
         let current = match current_result {
             Ok(current) => current.get::<milliampere>(),
@@ -206,15 +214,8 @@ impl ScrewSpeedController {
 
     pub fn update(&mut self, now: Instant, is_extruding: bool) {
         // TODO: move this logic elsewhere or make non async
-        block_on(self.inverter.act(now));
-
-        let wiring_error = self.get_wiring_error();
-        if wiring_error {
-            // emit in act
-        }
-
+        smol::block_on(self.inverter.act(now));
         let measured_pressure = self.get_pressure();
-
         if !self.uses_rpm && !is_extruding && self.motor_on {
             let frequency = Frequency::new::<hertz>(0.0);
             self.inverter.set_frequency_target(frequency);

@@ -57,6 +57,14 @@ export function useExtruder2() {
     backPower,
     combinedPower,
     totalEnergyKWh,
+
+    // Target value history for graph target lines
+    targetPressure,
+    targetScrewRpm,
+    targetNozzleTemperature,
+    targetFrontTemperature,
+    targetMiddleTemperature,
+    targetBackTemperature,
   } = useExtruder2Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -224,6 +232,20 @@ export function useExtruder2() {
     );
   };
 
+  const setTemperatureTargetEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.extruder_settings_state.nozzle_temperature_target_enabled =
+          enabled;
+      },
+      () =>
+        requestNozzleTemperatureTargetEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetNozzleTemperatureTargetEnabled: enabled },
+        }),
+    );
+  };
+
   const setPressurePidKp = (kp: number) => {
     updateStateOptimistically(
       (current) => {
@@ -373,6 +395,10 @@ export function useExtruder2() {
     z.object({ SetExtruderPressureLimitIsEnabled: z.boolean() }),
   );
 
+  const { request: requestNozzleTemperatureTargetEnabled } = useMachineMutation(
+    z.object({ SetNozzleTemperatureTargetEnabled: z.boolean() }),
+  );
+
   const { request: requestPressurePidSettings } = useMachineMutation(
     z.object({
       SetPressurePidSettings: z.object({
@@ -423,6 +449,14 @@ export function useExtruder2() {
     combinedPower,
     totalEnergyKWh,
 
+    // Target value history for graph target lines
+    targetPressure,
+    targetScrewRpm,
+    targetNozzleTemperature,
+    targetFrontTemperature,
+    targetMiddleTemperature,
+    targetBackTemperature,
+
     // Loading states
     isLoading: stateOptimistic.isOptimistic,
     isDisabled: !stateOptimistic.isInitialized,
@@ -443,6 +477,7 @@ export function useExtruder2() {
     setPressurePidKi,
     setPressurePidKd,
     setTemperaturePidValue,
+    setTemperatureTargetEnabled,
     resetInverter,
   };
 }

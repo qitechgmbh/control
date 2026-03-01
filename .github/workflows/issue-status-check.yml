@@ -1,0 +1,213 @@
+name: Stale Assigned Issue Check
+
+on:
+  schedule:
+    # Run every Sunday at 9:00 AM UTC
+    - cron: '0 9 * * 0'
+  workflow_dispatch: # Allow manual triggering for testing
+
+jobs:
+  check-stale-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    
+    steps:
+      - name: Check assigned issues for status updates
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+            const now = new Date();
+            
+            // Helper function to check rate limits
+            async function checkRateLimit() {
+              try {
+                const { data: rateLimit } = await github.rest.rateLimit.get();
+                const remaining = rateLimit.resources.core.remaining;
+                const reset = new Date(rateLimit.resources.core.reset * 1000);
+                console.log(`Rate limit: ${remaining} requests remaining (resets at ${reset.toISOString()})`);
+                return remaining > 10; // Stop if fewer than 10 requests remaining
+              } catch (error) {
+                console.log(`Could not check rate limit: ${error.message}`);
+                return true; // Continue on error
+              }
+            }
+            
+            // Get all open issues
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            console.log(`Found ${issues.length} open issues`);
+            
+            // Helper function to check if issue has linked PRs using GraphQL
+            async function hasLinkedPRs(issueNumber) {
+              try {
+                const query = `
+                  query($owner: String!, $repo: String!, $issueNumber: Int!) {
+                    repository(owner: $owner, name: $repo) {
+                      issue(number: $issueNumber) {
+                        timelineItems(first: 100, itemTypes: CONNECTED_EVENT) {
+                          nodes {
+                            ... on ConnectedEvent {
+                              subject {
+                                ... on PullRequest {
+                                  number
+                                  state
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `;
+                
+                const result = await github.graphql(query, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issueNumber: issueNumber
+                });
+                
+                const linkedPRs = result.repository.issue.timelineItems.nodes
+                  .filter(node => node.subject && node.subject.state === 'OPEN')
+                  .map(node => node.subject.number);
+                
+                return linkedPRs.length > 0;
+              } catch (error) {
+                console.log(`Could not check linked PRs for issue #${issueNumber}: ${error.message}`);
+                return false; // Assume no linked PRs on error to avoid false positives
+              }
+            }
+            
+            let processedCount = 0;
+            let commentedCount = 0;
+            let errorCount = 0;
+            
+            for (const issue of issues) {
+              try {
+                // Check rate limit periodically
+                if (processedCount % 10 === 0 && !(await checkRateLimit())) {
+                  console.log('Rate limit nearly exhausted, stopping to avoid hitting limit');
+                  break;
+                }
+                
+                // Skip pull requests (they appear in issues list too)
+                if (issue.pull_request) {
+                  continue;
+                }
+                
+                // Skip if not assigned
+                if (!issue.assignees || issue.assignees.length === 0) {
+                  console.log(`Issue #${issue.number}: Not assigned, skipping`);
+                  continue;
+                }
+                
+                console.log(`Checking issue #${issue.number}: ${issue.title}`);
+                processedCount++;
+                
+                // Check if issue has linked PRs
+                const hasOpenLinkedPR = await hasLinkedPRs(issue.number);
+                
+                if (hasOpenLinkedPR) {
+                  console.log(`Issue #${issue.number}: Has linked open PR, skipping`);
+                  continue;
+                }
+                
+                // Get all comments on the issue
+                let comments = [];
+                try {
+                  comments = await github.paginate(github.rest.issues.listComments, {
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    per_page: 100
+                  });
+                } catch (commentError) {
+                  console.error(`Issue #${issue.number}: Could not fetch comments - ${commentError.message}`);
+                  errorCount++;
+                  continue;
+                }
+                
+                // Find the most recent comment or update
+                let lastActivity = new Date(issue.created_at);
+                
+                if (issue.updated_at) {
+                  lastActivity = new Date(issue.updated_at);
+                }
+                
+                if (comments.length > 0) {
+                  const lastComment = comments[comments.length - 1];
+                  const lastCommentDate = new Date(lastComment.created_at);
+                  if (lastCommentDate > lastActivity) {
+                    lastActivity = lastCommentDate;
+                  }
+                }
+                
+                // Check if last activity was more than a week ago
+                const daysSinceActivity = Math.floor((now - lastActivity) / (1000 * 60 * 60 * 24));
+                
+                if (daysSinceActivity >= 7) {
+                  console.log(`Issue #${issue.number}: No activity for ${daysSinceActivity} days`);
+                  
+                  // Check if we already posted a status request in the last 7 days
+                  const recentComments = comments.filter(comment => {
+                    const commentDate = new Date(comment.created_at);
+                    return (now - commentDate) < ONE_WEEK_MS;
+                  });
+                  
+                  const alreadyAsked = recentComments.some(comment => 
+                    comment.user.type === 'Bot' && 
+                    comment.body.includes('status update')
+                  );
+                  
+                  if (alreadyAsked) {
+                    console.log(`Issue #${issue.number}: Already requested status this week, skipping`);
+                    continue;
+                  }
+                  
+                  // Post a status request comment
+                  try {
+                    const assigneeNames = issue.assignees.map(a => `@${a.login}`).join(', ');
+                    await github.rest.issues.createComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: issue.number,
+                      body: `Hi ${assigneeNames}! 👋\n\n` +
+                            `This issue has been assigned to you for ${daysSinceActivity} days with no recent activity or linked pull requests.\n\n` +
+                            `Could you please provide a status update? If you're:\n` +
+                            `- ✅ Working on it: Let us know your progress\n` +
+                            `- 🔄 Need help: Tag someone or describe what's blocking you\n` +
+                            `- 🚫 No longer working on it: Let us know so we can reassign\n\n` +
+                            `Thank you!`
+                    });
+                    
+                    console.log(`Issue #${issue.number}: Posted status request comment`);
+                    commentedCount++;
+                  } catch (commentError) {
+                    console.error(`Issue #${issue.number}: Could not post comment - ${commentError.message}`);
+                    errorCount++;
+                    // Continue to next issue
+                  }
+                } else {
+                  console.log(`Issue #${issue.number}: Activity ${daysSinceActivity} days ago, still fresh`);
+                }
+              } catch (error) {
+                console.error(`Issue #${issue.number}: Error processing - ${error.message}`);
+                errorCount++;
+                // Continue to next issue instead of failing the entire workflow
+                continue;
+              }
+            }
+            
+            console.log(`\nStale issue check complete!`);
+            console.log(`Processed: ${processedCount} issues`);
+            console.log(`Commented on: ${commentedCount} issues`);
+            console.log(`Errors: ${errorCount}`);

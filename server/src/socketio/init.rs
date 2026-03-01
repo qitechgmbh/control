@@ -1,12 +1,10 @@
+use super::namespace_id::NamespaceId;
+use crate::app_state::SharedState;
 use socketioxide::ParserConfig;
 use socketioxide::extract::SocketRef;
 use socketioxide::layer::SocketIoLayer;
 use std::str::FromStr;
 use std::sync::Arc;
-
-use crate::app_state::SharedState;
-
-use super::namespace_id::NamespaceId;
 
 pub async fn init_socketio(app_state: Arc<SharedState>) -> SocketIoLayer {
     // create
@@ -100,7 +98,6 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
                         None => tracing::info!("sender doesnt exist for: {}",ident),
                     };
                 }else{
-
                 }
         })
         .detach();
@@ -149,11 +146,10 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
                         },
                         None => tracing::info!("sender doesnt exist for: {}",ident),
                     };
-                }else{
+                }
 
-                }
-                }
-                Err(err) => {
+            }
+            Err(err) => {
                     tracing::warn!(
                         "Couldn't subscribe socket to namespace, disconnecting socket={:?} namespace={} error={:?}",
                         socket_clone.id,

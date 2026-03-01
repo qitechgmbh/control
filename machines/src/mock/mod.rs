@@ -58,8 +58,7 @@ impl MockMachine {
         vendor: VENDOR_QITECH,
     };
 
-    /// Emit live values data event with the current sine wave amplitude
-    pub fn emit_live_values(&mut self) {
+    pub fn get_live_values(&self) -> LiveValuesEvent {
         let now = Instant::now();
         let elapsed = now.duration_since(self.t_0).as_secs_f64();
         let freq1_hz = self.frequency1.get::<hertz>();
@@ -76,37 +75,44 @@ impl MockMachine {
         let amplitude2 = (t * freq2_hz).sin();
         let amplitude3 = (t * freq3_hz).sin();
 
-        let live_values = LiveValuesEvent {
+        LiveValuesEvent {
             amplitude_sum: amplitude1 + amplitude2 + amplitude3,
             amplitude1,
             amplitude2,
             amplitude3,
-        };
-
-        self.namespace
-            .emit(MockEvents::LiveValues(live_values.build()));
+        }
     }
 
-    /// Emit the current state of the mock machine only if values have changed
-    pub fn emit_state(&mut self) {
+    /// Emit live values data event with the current sine wave amplitude
+    pub fn emit_live_values(&mut self) {
+        let event = self.get_live_values().build();
+        self.namespace.emit(MockEvents::LiveValues(event));
+    }
+
+    pub fn get_state(&self) -> StateEvent {
         info!(
             "Emitting state for MockMachine, is default state: {}",
             !self.emitted_default_state
         );
 
-        let current_state = StateEvent {
-            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
+        StateEvent {
+            is_default_state: !self.emitted_default_state,
             frequency1: self.frequency1.get::<millihertz>(),
             frequency2: self.frequency2.get::<millihertz>(),
             frequency3: self.frequency3.get::<millihertz>(),
             mode_state: ModeState {
                 mode: self.mode.clone(),
             },
-        };
+        }
+    }
 
-        self.namespace
-            .emit(MockEvents::State(current_state.build()));
-        self.last_emitted_event = Some(current_state);
+    /// Emit the current state of the mock machine only if values have changed
+    pub fn emit_state(&mut self) {
+        let state = self.get_state();
+        let event = state.build();
+        self.namespace.emit(MockEvents::State(event));
+        self.emitted_default_state = true;
+        self.last_emitted_event = Some(state);
     }
 
     /// Set the frequencies of the sine waves

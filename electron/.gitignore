@@ -73,7 +73,7 @@ typings/
 # vuepress build output
 .vuepress/dist
 
-# Serverless directories
+# Serverless directoriesProcessMetrics
 .serverless/
 
 # FuseBox cache
@@ -88,6 +88,7 @@ typings/
 # Vite
 .vite/
 dist/
+dist-electron/
 
 # Electron-Forge
 out/

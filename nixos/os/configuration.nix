@@ -1,24 +1,22 @@
 { config, pkgs, ... }:
 
-let
-  gitInfo = import ../gitInfo.nix { inherit pkgs; };
-in
-{
-  imports =
-    [ # Include the results of the hardware scan.
+let gitInfo = import ../gitInfo.nix { inherit pkgs; };
+in {
+  imports = [
+    (if builtins.pathExists "/etc/nixos/hardware-configuration.nix" then
       /etc/nixos/hardware-configuration.nix
-    ];
+    else
+      ./ci-hardware-configuration.nix)
+  ];
 
   # Bootloader.
   boot.loader.systemd-boot = {
     enable = true;
-    consoleMode = "max";  # Use the highest available resolution
+    consoleMode = "max"; # Use the highest available resolution
   };
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelPackages = pkgs.linuxPackages_6_13;
+  boot.kernelPackages = pkgs.linuxPackages_6_18;
   boot.kernelModules = [ "i915" ];
-
-
 
   boot.kernelParams = [
     # Realtime Preemption
@@ -45,20 +43,20 @@ in
     #         Should ONLY be used in completely trusted environments
     # - Improves performance by 7-43%
     "mitigation=off"
-    "intel_pstate=performance"    # Intel CPU-specific performance mode (if applicable)
+    "intel_pstate=performance" # Intel CPU-specific performance mode (if applicable)
 
     # Memory Management
     "transparent_hugepage=always" # Use larger memory pages for memory intense applications
-    "nmi_watchdog=0"              # Disable NMI watchdog for reduced CPU overhead and realtime execution
+    "nmi_watchdog=0" # Disable NMI watchdog for reduced CPU overhead and realtime execution
 
     # High-throughput ethernet parameters
-    "pcie_aspm=off"         # Disable PCIe power management for NICs
-    "intel_iommu=off"       # Disable IOMMU (performance gain)
+    "pcie_aspm=off" # Disable PCIe power management for NICs
+    "intel_iommu=off" # Disable IOMMU (performance gain)
 
     # Reliability
-    "panic=10"              # Auto-reboot 10 seconds after kernel panic
-    "oops=panic"            # Treat kernel oops as panic for auto-recovery
-    "usbcore.autosuspend=-1"     # Possibly fixes dre disconnect issue?
+    "panic=10" # Auto-reboot 10 seconds after kernel panic
+    "oops=panic" # Treat kernel oops as panic for auto-recovery
+    "usbcore.autosuspend=-1" # Possibly fixes dre disconnect issue?
 
     "isolcpus=2,3" # Isolate cpus 2 and 3 from scheduler for better latency, 2 runs ethercatthread and 3 runs server control-loop
     "nohz_full=2,3" # In this mode, the periodic scheduler tick is stopped when only one task is running, reducing kernel interruptions on those CPUs.
@@ -66,12 +64,11 @@ in
 
   ];
 
-  # Add these system settings for a more comprehensive kiosk setup
   boot.kernel.sysctl = {
-    "kernel.panic_on_oops" = 1;          # Reboot on kernel oops
-    "kernel.panic" = 10;                 # Reboot after 10 seconds on panic
-    "vm.swappiness" = 10;                # Reduce swap usage
-    "kernel.sysrq" = 1;                  # Enable SysRq for emergency control
+    "kernel.panic_on_oops" = 1; # Reboot on kernel oops
+    "kernel.panic" = 10; # Reboot after 10 seconds on panic
+    "vm.swappiness" = 10; # Reduce swap usage
+    "kernel.sysrq" = 1; # Enable SysRq for emergency control
   };
 
   nix = {
@@ -79,13 +76,11 @@ in
     extraOptions = ''
       experimental-features = nix-command flakes
     '';
-    settings = {
-      sandbox = false;  
-    };
+    settings = { sandbox = false; };
   };
 
   # Create a realtime group
-  users.groups.realtime = {};
+  users.groups.realtime = { };
 
   # Configure real-time privileges
   security.pam.loginLimits = [
@@ -109,8 +104,7 @@ in
     }
   ];
 
-  networking.hostName = "nixos"; # Define your hostname.
-  # networking.wireless.enable = true; # Enables wireless support via wpa_supplicant.
+  networking.hostName = "nixos";
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
@@ -140,14 +134,42 @@ in
 
   # Enable the X11 windowing system.
   services.xserver.enable = true;
-  #services.xserver.videoDrivers = [ "intel" ];
   services.xserver.displayManager.gdm = {
     enable = true;
     autoSuspend = false;
     wayland = true;
   };
-
   services.xserver.desktopManager.gnome.enable = true;
+
+  services.caddy = {
+    enable = true;
+    # This puts the import at the TOP of the Caddyfile (Global Scope)
+    extraConfig = ''
+      import /var/lib/caddy/auth_snippet.conf
+    '';
+
+    virtualHosts.":443" = {
+      extraConfig = ''       
+        import machine_basic_auth
+        
+        reverse_proxy localhost:3001
+        
+        tls internal {
+          on_demand
+        }
+
+      '';
+    };
+  };
+  
+  systemd.services.caddy.serviceConfig.ReadOnlyPaths = [ "/var/lib/caddy/auth_snippet.conf" ];
+  #services.caddy = {
+  #  enable = true;
+  #  virtualHosts."localhost".extraConfig = ''
+  #    respond "Hello, world!"
+  #  '';
+  #};
+
 
   # Disable sleep/suspend
   systemd.targets.sleep.enable = false;
@@ -163,17 +185,24 @@ in
     powertop.enable = false;
   };
 
-  # Ensure all power management is disabled
+
   services.logind = {
+    # This remains for backward compatibility/high-level override
     lidSwitch = "ignore";
-    extraConfig = ''
-      HandlePowerKey=ignore
-      HandleSuspendKey=ignore
-      HandleHibernateKey=ignore
-      HandleLidSwitch=ignore
-      IdleAction=ignore
-    '';
+
+    # Structured settings for logind.conf
+    settings = {
+      Login = {
+        HandlePowerKey = "ignore";
+        HandleSuspendKey = "ignore";
+        HandleHibernateKey = "ignore";
+        HandleLidSwitch = "ignore";
+        IdleAction = "ignore";
+      };
+    };
   };
+
+
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -195,12 +224,6 @@ in
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
-    # If you want to use JACK applications, uncomment this
-    #jack.enable = true;
-
-    # use the example session manager (no others are packaged yet so this is enabled by default,
-    # no need to redefine it in your config for now)
-    #media-session.enable = true;
   };
 
   # Enable graphics acceleration
@@ -209,7 +232,6 @@ in
     extraPackages = with pkgs; [ mesa ];
   };
 
-
   services.libinput.enable = true;
   services.libinput.touchpad.tapping = true;
   services.touchegg.enable = true;
@@ -217,7 +239,6 @@ in
   # Enable the QiTech Control server
   services.qitech = {
     enable = true;
-    openFirewall = true;
     user = "qitech-service";
     group = "qitech-service";
     package = pkgs.qitechPackages.server;
@@ -263,6 +284,7 @@ in
     wireshark
     pciutils
     neofetch
+    caddy
   ];
 
   xdg.portal.enable = true;
@@ -303,34 +325,12 @@ in
     QITECH_OS_GIT_URL = gitInfo.gitUrl;
   };
 
-  # Set revision labe;
+  # Set revision label
   system.nixos.label = "${gitInfo.gitAbbreviationEscaped}_${gitInfo.gitCommit}";
+  
+  networking.firewall.allowedUDPPorts = [ 53 67 69 ];
+  networking.firewall.allowedTCPPorts = [ 443 ];
 
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
-
-  # List services that you want to enable:
-
-  # Enable the OpenSSH daemon.
-  # services.openssh.enable = true;
-
-  # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
-
-  # This value determines the NixOS release from which the default
-  # settings for stateful data, like file locations and database versions
-  # on your system were taken. It‘s perfectly fine and recommended to leave
-  # this value at the release version of the first install of this system.
-  # Before changing this value read the documentation for this option
-  # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "24.11"; # Did you read the comment?
 
 }

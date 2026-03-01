@@ -103,6 +103,94 @@ export const winder2: MachineProperties = {
   ],
 };
 
+export const extruder3: MachineProperties = {
+  name: "Extruder",
+  version: "V3",
+  slug: "extruder3",
+  icon: "qi:Extruder",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0016,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x44c2c52,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "Inverter Interface",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 394604626,
+          revision: 1376256,
+        },
+        {
+          vendor_id: 2,
+          product_id: 394604626,
+          revision: 0x140000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 394604626,
+          revision: 0x160000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 394604626,
+          revision: 0x100000,
+        },
+      ],
+    },
+    {
+      role: 2,
+      role_label: "Heating Elements",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 131346514,
+          revision: 1179648,
+        },
+      ],
+    },
+    {
+      role: 3,
+      role_label: "Pressure Sensor",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 197996626,
+          revision: 1310720,
+        },
+      ],
+    },
+    {
+      role: 4,
+      role_label: "Thermometers",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 1441792,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 0x150000,
+        },
+      ],
+    },
+  ],
+};
+
 export const extruder2: MachineProperties = {
   name: "Extruder",
   version: "V2",
@@ -302,6 +390,11 @@ export const aquapath1: MachineProperties = {
           product_id: 0x7d83052,
           revision: 0x110000,
         },
+        {
+          vendor_id: 2,
+          product_id: 0x7d83052,
+          revision: 0x120000,
+        },
       ],
     },
     {
@@ -340,13 +433,281 @@ export const aquapath1: MachineProperties = {
   ],
 };
 
+export const testmachine: MachineProperties = {
+  name: "TestMachine",
+  version: "V1",
+  slug: "testmachine",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0033,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x44c2c52,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "EL2004",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x7d43052,
+          revision: 0x120000,
+        },
+      ],
+    },
+  ],
+};
+export const digitalInputTestMachine: MachineProperties = {
+  name: "Digital Input Machine",
+  version: "V1",
+  slug: "digitalInputTestMachine",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0040,
+  },
+  device_roles: [],
+};
+
+export const wago8chDioTestMachine: MachineProperties = {
+  name: "WAGO 8ch DIO Test",
+  version: "V1",
+  slug: "wago8chdiotestmachine",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0041,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Wago 750-354 Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x21,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+export const wagoPower1: MachineProperties = {
+  name: "WAGO Power",
+  version: "V1",
+  slug: "wago_power1",
+  icon: "lu:PlugZap",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x000a,
+  },
+  device_roles: [],
+};
+
+export const analogInputTestMachine: MachineProperties = {
+  name: "AnalogTest",
+  version: "V1",
+  slug: "analogInputTestMachine",
+  icon: "lu:Clock",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0035,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x44c2c52,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "EL3021",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0xbcd3052,
+          revision: 0x140000,
+        },
+      ],
+    },
+  ],
+};
+
+export const ip20TestMachine: MachineProperties = {
+  name: "IP20 Test",
+  version: "V1",
+  slug: "ip20testmachine",
+  icon: "lu:ToggleLeft",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0034,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "IP20-EC-DI8-DO8",
+      allowed_devices: [
+        {
+          vendor_id: 0x741,
+          product_id: 0x117b6722,
+          revision: 0x1,
+        },
+      ],
+    },
+  ],
+};
+
+export const TestMotor: MachineProperties = {
+  name: "TestMotor",
+  version: "V1",
+  slug: "testmotor",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0011,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x2,
+          product_id: 0x44c2c52,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "Stepper Motor",
+      allowed_devices: [
+        {
+          vendor_id: 0x2,
+          product_id: 0x1b773052,
+          revision: 0x10001e,
+        },
+      ],
+    },
+  ],
+};
+
+export const wagoDoTestMachine: MachineProperties = {
+  name: "Wago DO Test",
+  version: "V1",
+  slug: "wagodotestmachine",
+  icon: "lu:ToggleRight",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x000e,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Wago 750-354 Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x21,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+export const wagoAiTestMachine: MachineProperties = {
+  name: "Wago AI Test",
+  version: "V1",
+  slug: "wagoaitestmachine",
+  icon: "lu:Activity",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0036,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Wago 750-354 Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x21,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+
+export const testmachinestepper: MachineProperties = {
+  name: "TestMachineStepper",
+  version: "V1",
+  slug: "testmachinestepper",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0037,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x00000021,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "Stepper Motor",
+      allowed_devices: [
+        {
+          vendor_id: 0x00000021,
+          product_id: 0x67214e8,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+
 export const machineProperties: MachineProperties[] = [
   winder2,
+  extruder3,
   extruder2,
   laser1,
   mock1,
   buffer1,
+  wagoPower1,
   aquapath1,
+  testmachine,
+  analogInputTestMachine,
+  wagoAiTestMachine,
+  digitalInputTestMachine,
+  wago8chDioTestMachine,
+  ip20TestMachine,
+  wagoDoTestMachine,
+  TestMotor,
+  testmachinestepper,
 ];
 
 export const getMachineProperties = (

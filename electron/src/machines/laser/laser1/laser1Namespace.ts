@@ -14,7 +14,7 @@ import {
   NamespaceId,
   createNamespaceHookImplementation,
   ThrottledStoreUpdater,
-} from "../../../client/socketioStore";
+} from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import {
   createTimeSeries,
@@ -42,6 +42,7 @@ export const stateEventDataSchema = z.object({
     higher_tolerance: z.number(),
     lower_tolerance: z.number(),
     target_diameter: z.number(),
+    in_tolerance: z.boolean(),
   }),
 });
 
@@ -63,32 +64,18 @@ export type Laser1NamespaceStore = {
   x_diameter: TimeSeries;
   y_diameter: TimeSeries;
   roundness: TimeSeries;
+  targetDiameter: TimeSeries;
 };
 
-// Constants for time durations
-const TWENTY_MILLISECOND = 20;
-const ONE_SECOND = 1000;
-const FIVE_SECOND = 5 * ONE_SECOND;
-const ONE_HOUR = 60 * 60 * ONE_SECOND;
-const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
-
+const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries();
 const { initialTimeSeries: x_diameter, insert: addXDiameter } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: y_diameter, insert: addYDiameter } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
-const { initialTimeSeries: roundness, insert: addRoundness } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
+  createTimeSeries();
+const { initialTimeSeries: roundness, insert: addRoundness } =
+  createTimeSeries();
+const { initialTimeSeries: targetDiameter, insert: addTargetDiameter } =
+  createTimeSeries();
 
 /**
  * Factory function to create a new Laser1 namespace store
@@ -102,7 +89,8 @@ export const createLaser1NamespaceStore = (): StoreApi<Laser1NamespaceStore> =>
       diameter: diameter,
       x_diameter,
       y_diameter,
-      roundness: roundness,
+      roundness,
+      targetDiameter,
     };
   });
 
@@ -130,9 +118,17 @@ export function laser1MessageHandler(
       // Apply appropriate caching strategy based on event type
       if (eventName === "StateEvent") {
         const stateEvent = stateEventSchema.parse(event);
+        const nextTargetDiameter = stateEvent.data.laser_state.target_diameter;
         updateStore((state) => ({
           ...state,
           state: stateEvent,
+          targetDiameter:
+            state.targetDiameter.current?.value === nextTargetDiameter
+              ? state.targetDiameter
+              : addTargetDiameter(state.targetDiameter, {
+                  value: nextTargetDiameter,
+                  timestamp: event.ts,
+                }),
           // only set default state if is_default_state is true
           defaultState: stateEvent.data.is_default_state
             ? stateEvent

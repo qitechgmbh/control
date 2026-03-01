@@ -1,6 +1,7 @@
 use super::LaserMachine;
 use crate::MachineAct;
 use crate::MachineMessage;
+use crate::MachineValues;
 use std::time::{Duration, Instant};
 
 /// Implements the `MachineAct` trait for the `LaserMachine`.
@@ -29,6 +30,10 @@ impl MachineAct for LaserMachine {
         };
         self.update();
 
+        if self.did_change_state {
+            self.emit_state();
+        }
+
         // more than 33ms have passed since last emit (30 "fps" target)
         if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             self.emit_live_values();
@@ -37,7 +42,6 @@ impl MachineAct for LaserMachine {
     }
 
     fn act_machine_message(&mut self, msg: MachineMessage) {
-        tracing::info!("{:?}", msg);
         match msg {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
@@ -57,13 +61,22 @@ impl MachineAct for LaserMachine {
                 let _res = self.api_mutate(value);
             }
             MachineMessage::ConnectToMachine(_machine_connection) =>
-            /*Doesnt connec to any Macine do nothing*/
-            {
-                ()
-            }
+                /*Doesnt connect to any Machine so do nothing*/
+                {}
             MachineMessage::DisconnectMachine(_machine_connection) =>
-            /*Doesnt connec to any Machine do nothing*/
-            {
+                /*Doesnt connect to any Machine so do nothing*/
+                {}
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send_blocking(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::to_value(self.get_live_values())
+                            .expect("Failed to serialize live values"),
+                    })
+                    .expect("Failed to send values");
+                sender.close();
+
                 ()
             }
         }

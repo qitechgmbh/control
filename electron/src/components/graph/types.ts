@@ -3,6 +3,8 @@ import { Unit } from "@/control/units";
 import { TimeSeries } from "@/lib/timeseries";
 import { RefObject } from "react";
 
+export type SwitchOrigin = "button" | "gesture";
+
 // Prop-based sync types
 export type PropGraphSync = {
   timeWindow: number | "all";
@@ -11,6 +13,7 @@ export type PropGraphSync = {
   xRange?: { min: number; max: number };
   historicalFreezeTimestamp?: number | null;
   showFromTimestamp?: number | null;
+  historicalSwitchOrigin: SwitchOrigin;
   onTimeWindowChange?: (graphId: string, timeWindow: number | "all") => void;
   onViewModeChange?: (
     graphId: string,
@@ -27,6 +30,7 @@ export type PropGraphSync = {
 export type GraphLine = {
   type: "threshold" | "target";
   value: number;
+  targetSeries?: TimeSeries;
   color: string;
   label?: string;
   width?: number;
@@ -63,7 +67,11 @@ export type DataSeries = SeriesData | SeriesData[];
 export type BigGraphProps = {
   newData: DataSeries;
   unit?: Unit;
-  renderValue?: (value: number) => string;
+  renderValue?: (
+    value: number,
+    seriesIndex?: number,
+    seriesTitle?: string,
+  ) => string;
   config: GraphConfig;
   graphId: string;
   syncGraph?: PropGraphSync;
@@ -79,7 +87,7 @@ export type ControlProps = {
   isLiveMode: boolean;
   onTimeWindowChange: (timeWindow: number | "all") => void;
   onSwitchToLive: () => void;
-  onSwitchToHistorical: () => void;
+  onSwitchToHistorical: (origin: SwitchOrigin) => void;
   onExport?: () => void;
   timeWindowOptions?: TimeWindowOption[];
   showFromTimestamp?: number | null;
@@ -96,7 +104,7 @@ export interface HistoricalModeHandlers {
   captureHistoricalFreezeTimestamp: () => number;
   getHistoricalEndTimestamp: () => number;
   handleHistoricalTimeWindow: (timeWindow: number | "all") => void;
-  switchToHistoricalMode: () => void;
+  switchToHistoricalMode: (origin?: SwitchOrigin) => void;
   switchToLiveMode: () => void;
 }
 

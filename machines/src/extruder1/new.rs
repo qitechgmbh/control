@@ -59,14 +59,12 @@ use super::{
 impl MachineNewTrait for ExtruderV2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
-
         use crate::{
             MachineNewHardware, MachineNewHardwareEthercat, validate_no_role_dublicates,
             validate_same_machine_identification_unique,
         };
 
         let device_identification = params.device_group.to_vec();
-
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_dublicates(&device_identification)?;
 
@@ -85,6 +83,8 @@ impl MachineNewTrait for ExtruderV2 {
         // so we can't drop subdevices unless this machine is dropped, which is bad
         smol::block_on(async {
             // Role 0 - Buscoupler EK1100
+
+            use control_core::transmission::fixed::FixedTransmission;
             let _ek1100 =
                 get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
 
@@ -214,8 +214,13 @@ impl MachineNewTrait for ExtruderV2 {
             let target_pressure = Pressure::new::<bar>(0.0);
             let target_rpm = AngularVelocity::new::<revolution_per_minute>(0.0);
 
-            let screw_speed_controller =
-                ScrewSpeedController::new(inverter, target_pressure, target_rpm, pressure_sensor);
+            let screw_speed_controller = ScrewSpeedController::new(
+                inverter,
+                target_pressure,
+                target_rpm,
+                pressure_sensor,
+                FixedTransmission::new(1.0 / 34.0),
+            );
             let (sender, receiver) = smol::channel::unbounded();
 
             let mut extruder: ExtruderV2 = Self {

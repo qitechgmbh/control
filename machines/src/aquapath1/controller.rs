@@ -5,17 +5,17 @@ use ethercat_hal::io::encoder_input::EncoderInput;
 use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
-use std::time::{Duration, Instant};
+use std::time::Instant;
+use units::AngularVelocity;
+use units::angular_velocity::revolution_per_minute;
 use units::f64::ThermodynamicTemperature;
-use units::thermodynamic_temperature::degree_celsius;
+use units::thermodynamic_temperature::{degree_celsius, kelvin};
 use units::volume_rate::liter_per_minute;
 #[derive(Debug)]
 
 pub struct Controller {
     pub pid: PidController,
-    temperature_pid_output: f64,
     window_start: Instant,
-    pwm_period: Duration,
 
     pub temperature: Temperature,
     pub target_temperature: ThermodynamicTemperature,
@@ -27,10 +27,18 @@ pub struct Controller {
     pub cooling_controller: AnalogOutput,
     pub cooling_relais: DigitalOutput,
 
+    pub cooling_tolerance: ThermodynamicTemperature,
+    pub heating_tolerance: ThermodynamicTemperature,
+
+    pub current_revolutions: AngularVelocity,
+    pub max_revolutions: AngularVelocity,
+
     pub heating_relais_1: DigitalOutput,
-    pub heating_relais_2: DigitalOutput,
     pub temperature_sensor_in: TemperatureInput,
     pub temperature_sensor_out: TemperatureInput,
+
+    pub power: f64,
+    pub total_energy: f64,
 
     pub cooling_allowed: bool,
     pub heating_allowed: bool,
@@ -49,15 +57,14 @@ impl Controller {
         kp: f64,
         ki: f64,
         kd: f64,
-        pwm_duration: Duration,
         temp: Temperature,
         target_tempetature: ThermodynamicTemperature,
         cooling_controller: AnalogOutput,
         cooling_relais: DigitalOutput,
         heating_relais_1: DigitalOutput,
-        heating_relais_2: DigitalOutput,
         temp_sensor_in: TemperatureInput,
         temp_sensor_out: TemperatureInput,
+        max_revolutions: AngularVelocity,
 
         flow: Flow,
         pump_relais: DigitalOutput,
@@ -65,9 +72,7 @@ impl Controller {
     ) -> Self {
         Self {
             pid: PidController::new(kp, ki, kd),
-            temperature_pid_output: 0.0,
             window_start: Instant::now(),
-            pwm_period: pwm_duration,
             target_temperature: target_tempetature,
             current_temperature: ThermodynamicTemperature::new::<degree_celsius>(25.0),
             temp_reservoir: ThermodynamicTemperature::new::<degree_celsius>(25.0),
@@ -76,13 +81,23 @@ impl Controller {
 
             temperature: temp,
             cooling_controller: cooling_controller,
+
+            cooling_tolerance: ThermodynamicTemperature::new::<degree_celsius>(2.0),
+            heating_tolerance: ThermodynamicTemperature::new::<degree_celsius>(2.0),
+
+            current_revolutions: AngularVelocity::new::<revolution_per_minute>(0.0),
+            max_revolutions: max_revolutions,
+
             cooling_relais: cooling_relais,
             heating_relais_1: heating_relais_1,
-            heating_relais_2: heating_relais_2,
+
             cooling_allowed: false,
             heating_allowed: false,
             temperature_sensor_in: temp_sensor_in,
             temperature_sensor_out: temp_sensor_out,
+
+            power: 700.0,
+            total_energy: 0.0,
 
             flow: flow,
             pump_relais: pump_relais,
@@ -95,15 +110,11 @@ impl Controller {
     }
 
     pub fn turn_pump_off(&mut self) {
-        tracing::info!("turn_pump_off");
-
         self.flow.pump = false;
         self.pump_relais.set(false);
     }
 
     pub fn turn_pump_on(&mut self) {
-        tracing::info!("turn_pump_on");
-
         self.flow.pump = true;
         self.pump_relais.set(true);
     }
@@ -180,33 +191,25 @@ impl Controller {
     }
 
     pub fn turn_cooling_on(&mut self) {
-        tracing::info!("turn_cooling_on");
         self.cooling_relais.set(true);
-        self.cooling_controller.set(10.0);
         self.temperature.cooling = true;
     }
 
     pub fn turn_cooling_off(&mut self) {
-        tracing::info!("turn_cooling_off");
-
         self.cooling_relais.set(false);
+        self.current_revolutions = AngularVelocity::new::<revolution_per_minute>(0.0);
         self.temperature.cooling = false;
     }
 
     pub fn turn_heating_on(&mut self) {
-        tracing::info!("turn_heating_on");
-
         self.heating_relais_1.set(true);
-        self.heating_relais_2.set(true);
         self.temperature.heating = true;
     }
 
     pub fn turn_heating_off(&mut self) {
-        tracing::info!("turn_heating_off");
-
         self.heating_relais_1.set(false);
-        self.heating_relais_2.set(false);
         self.temperature.heating = false;
+        self.power = 0.0;
     }
 
     pub fn set_should_pump(&mut self, should_pump: bool) {
@@ -220,8 +223,7 @@ impl Controller {
     pub fn get_flow(&mut self) -> VolumeRate {
         let value = match self.flow_sensor.get_frequency_value() {
             Ok(val) => val,
-            Err(e) => {
-                tracing::debug!("Error calculating frequency: {}", e);
+            Err(_e) => {
                 return VolumeRate::new::<liter_per_minute>(0.0);
             }
         };
@@ -239,6 +241,35 @@ impl Controller {
                 return VolumeRate::new::<liter_per_minute>(0.0);
             }
         }
+    }
+
+    pub fn get_current_revolutions(&self) -> AngularVelocity {
+        self.current_revolutions
+    }
+
+    pub fn get_max_revolutions(&self) -> AngularVelocity {
+        self.max_revolutions
+    }
+
+    pub fn set_max_revolutions(&mut self, revolutions: AngularVelocity) {
+        self.max_revolutions = revolutions;
+    }
+
+    pub fn set_cooling_tolerance(&mut self, tolerance: ThermodynamicTemperature) {
+        self.cooling_tolerance = tolerance;
+    }
+
+    pub fn set_heating_tolerance(&mut self, tolerance: ThermodynamicTemperature) {
+        self.heating_tolerance = tolerance;
+    }
+
+    // no power/energy unit implemented
+    pub fn get_current_power(&self) -> f64 {
+        self.power
+    }
+
+    pub fn get_total_energy(&self) -> f64 {
+        self.total_energy
     }
 
     pub fn update(&mut self, now: Instant) -> () {
@@ -267,43 +298,50 @@ impl Controller {
         // Calculate PID error once
         let error = self.target_temperature.get::<degree_celsius>()
             - self.current_temperature.get::<degree_celsius>();
-        let control = self.pid.update(error, now);
-        self.temperature_pid_output = control;
 
-        let elapsed = now.duration_since(self.window_start);
-        if elapsed >= self.pwm_period {
-            self.window_start = now;
-        }
+        let elapsed = now - self.window_start;
+        self.window_start = now;
 
         // Decide whether to heat or cool based on error
-        if error > 0.0 {
+        if error > self.heating_tolerance.get::<degree_celsius>() {
             // Need heating (current < target)
             if self.temperature.cooling {
                 self.turn_cooling_off();
             }
             if self.heating_allowed && current_flow > VolumeRate::new::<liter_per_minute>(0.0) {
-                // Only start heating if pump is on
-                let duty = control.clamp(0.0, 1.0);
-                let on_time = self.pwm_period.mul_f64(duty);
-                let on = elapsed < on_time;
-                if on && !self.temperature.heating {
-                    self.turn_heating_on();
-                } else if !on && self.temperature.heating {
-                    self.turn_heating_off();
-                }
+                self.turn_heating_on();
+
+                self.total_energy += self.get_current_power() * elapsed.as_secs_f64() / 3600.0;
             } else {
                 // Pump is off or heating not allowed - don't heat
                 if self.temperature.heating {
                     self.turn_heating_off();
                 }
             }
-        } else {
+        } else if error < -self.cooling_tolerance.get::<degree_celsius>() {
             // Need cooling (current > target)
             if self.temperature.heating {
                 self.turn_heating_off();
             }
-            if self.cooling_allowed && !self.temperature.cooling {
-                self.turn_cooling_on();
+            if self.cooling_allowed && current_flow > VolumeRate::new::<liter_per_minute>(0.0) {
+                if !self.temperature.cooling {
+                    self.turn_cooling_on();
+                }
+
+                let max_revolutions = self.get_max_revolutions();
+                let temp_offset = self.current_temperature - self.target_temperature;
+
+                let target_revolutions = (temp_offset.get::<kelvin>() * 10.0)
+                    .clamp(0.0, max_revolutions.get::<revolution_per_minute>());
+
+                self.cooling_controller
+                    .set(target_revolutions as f32 / 10.0);
+                self.current_revolutions =
+                    AngularVelocity::new::<revolution_per_minute>(target_revolutions);
+            } else {
+                if self.temperature.cooling {
+                    self.turn_cooling_off();
+                }
             }
         }
     }

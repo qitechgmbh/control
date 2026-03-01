@@ -1,6 +1,6 @@
 use super::ExtruderV2;
 use crate::MachineAct;
-use crate::MachineMessage;
+use crate::{MachineMessage, MachineValues};
 use std::time::{Duration, Instant};
 
 impl MachineAct for ExtruderV2 {
@@ -39,6 +39,17 @@ impl MachineAct for ExtruderV2 {
             /*Doesnt connec to any Machine do nothing*/
             {
                 ()
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send_blocking(MachineValues {
+                        state: serde_json::to_value(self.build_state_event())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::to_value(self.get_live_values())
+                            .expect("Failed to serialize live values"),
+                    })
+                    .expect("Failed to send values");
+                sender.close();
             }
         }
     }

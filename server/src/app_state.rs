@@ -3,9 +3,11 @@ use crate::rest::handlers::write_machine_device_identification::MachineDeviceInf
 use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::socketio::main_namespace::machines_event::{MachineObj, MachinesEventBuilder};
 use crate::socketio::namespaces::Namespaces;
+use anyhow::{Result, bail};
 use control_core::socketio::event::GenericEvent;
 use ethercat_hal::devices::EthercatDevice;
 use ethercrab::SubDeviceRef;
+use ethercrab::subdevice_group::HasDc;
 use ethercrab::{MainDevice, SubDeviceGroup, subdevice_group::Op};
 use machines::machine_identification::{DeviceIdentification, MachineIdentificationUnique};
 use machines::serial::registry::SERIAL_DEVICE_REGISTRY;
@@ -101,31 +103,54 @@ pub struct EthercatSetup {
     /// All Ethercat devices
     /// Generic interface for all devices
     /// Needed to interface with the devices on an Ethercat level
-    pub group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
+    pub group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op, HasDc>,
     /// The Ethercat main device
     /// Needed to interface with the devices
     pub maindevice: MainDevice<'static>,
+    pub all_operational: bool,
 }
 
 impl EthercatSetup {
     pub fn new(
         devices: Vec<(DeviceIdentification, Arc<RwLock<dyn EthercatDevice>>)>,
-        group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
+        group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op, HasDc>,
         maindevice: MainDevice<'static>,
+        all_operational: bool,
     ) -> Self {
         Self {
             devices,
             group,
             maindevice,
+            all_operational,
         }
     }
 }
 
 impl SharedState {
     pub async fn send_machines_event(&self) {
-        let event = MachinesEventBuilder().build(self.current_machines_meta.lock().await.clone());
+        let event = MachinesEventBuilder().build(self.get_machines_meta().await);
         let main_namespace = &mut self.socketio_setup.namespaces.write().await.main_namespace;
         main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
+    }
+
+    pub async fn get_machines_meta(&self) -> Vec<MachineObj> {
+        self.current_machines_meta.lock().await.clone()
+    }
+
+    pub async fn message_machine(
+        &self,
+        machine_identification_unique: &MachineIdentificationUnique,
+        message: MachineMessage,
+    ) -> Result<()> {
+        let machines = self.api_machines.lock().await;
+        let sender = machines.get(machine_identification_unique);
+
+        if let Some(sender) = sender {
+            sender.send(message).await?;
+            return Ok(());
+        }
+
+        bail!("Unknown machine!")
     }
 
     /// Removes a machine by its unique identifier
@@ -133,6 +158,8 @@ impl SharedState {
         let mut current_machines = self.current_machines_meta.lock().await;
         // Retain only machines that do not match the given ID
         current_machines.retain(|m| &m.machine_identification_unique != machine_id);
+        drop(current_machines);
+
         tracing::info!(
             "remove_machine {:?} {:?}",
             self.current_machines_meta,
@@ -154,6 +181,56 @@ impl SharedState {
                 current_machines.push(machine);
             }
         }
+        drop(current_machines);
+
+        self.send_machines_event().await;
+    }
+
+    pub async fn report_machine_error(
+        &self,
+        machine_identification_unique: MachineIdentificationUnique,
+        error: String,
+    ) {
+        let mut current_machines = self.current_machines_meta.lock().await;
+
+        for machine in current_machines.iter_mut() {
+            if machine.machine_identification_unique == machine_identification_unique {
+                machine.error = Some(error);
+                return;
+            }
+        }
+
+        current_machines.push(MachineObj {
+            machine_identification_unique,
+            error: Some(error),
+        });
+    }
+
+    pub async fn add_machines(&self, machines: Vec<Box<dyn Machine>>) {
+        let mut api_machines = self.api_machines.lock().await;
+        for machine in machines.iter() {
+            api_machines.insert(
+                machine.get_machine_identification_unique(),
+                machine.api_get_sender(),
+            );
+        }
+        drop(api_machines);
+
+        let objs = machines
+            .iter()
+            .map(|m| MachineObj {
+                machine_identification_unique: m.get_machine_identification_unique(),
+                error: None,
+            })
+            .collect();
+        self.add_machines_if_not_exists(objs).await;
+
+        self.rt_machine_creation_channel
+            .send(HotThreadMessage::AddMachines(machines))
+            .await
+            .expect("Could not send to real-time channel");
+
+        self.send_machines_event().await;
     }
 
     pub fn new(

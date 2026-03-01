@@ -2,18 +2,18 @@ use std::sync::Arc;
 
 use dump::dump_eeprom;
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, std::ethercat_now};
-use futures::executor::block_on;
 use read::read_eeprom;
 use restore::restore_eeoprom;
+use smol;
 
 /// Maximum number of SubDevices that can be stored. This must be a power of 2 greater than 1.
 const MAX_SUBDEVICES: usize = 16;
 /// Maximum PDU data payload size - set this to the max PDI size or higher.
-const MAX_PDU_DATA: usize = PduStorage::element_size(256);
+const MAX_PDU_DATA: usize = PduStorage::element_size(1024);
 /// Maximum number of EtherCAT frames that can be in flight at any one time.
 const MAX_FRAMES: usize = 16;
 /// Maximum total PDI length.
-const PDI_LEN: usize = 256;
+const PDI_LEN: usize = 1024;
 
 static PDU_STORAGE: PduStorage<MAX_FRAMES, MAX_PDU_DATA> = PduStorage::new();
 
@@ -57,7 +57,7 @@ async fn main() {
                 .get_one::<usize>("SUBDEVICE")
                 .expect("subdevice index is required");
             let file = sub_matches.get_one::<String>("file");
-            let result = block_on(dump_eeprom(&group, &maindevice, *subdevice_index, file));
+            let result = smol::block_on(dump_eeprom(&group, &maindevice, *subdevice_index, file));
             if let Err(e) = result {
                 eprintln!("Error reading EEPROM: {}", e);
             }
@@ -69,7 +69,8 @@ async fn main() {
             let file = sub_matches
                 .get_one::<String>("file")
                 .expect("file is required");
-            let result = block_on(restore_eeoprom(&group, &maindevice, *subdevice_index, file));
+            let result =
+                smol::block_on(restore_eeoprom(&group, &maindevice, *subdevice_index, file));
             if let Err(e) = result {
                 eprintln!("Error writing EEPROM: {}", e);
             }
@@ -78,7 +79,7 @@ async fn main() {
             let file = sub_matches
                 .get_one::<String>("file")
                 .expect("file is required");
-            let result = block_on(read_eeprom(file));
+            let result = smol::block_on(read_eeprom(file));
             if let Err(e) = result {
                 eprintln!("Error parsing EEPROM: {}", e);
             }

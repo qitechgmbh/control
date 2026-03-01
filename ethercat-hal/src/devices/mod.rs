@@ -20,7 +20,9 @@ pub mod el6021;
 pub mod el7031;
 pub mod el7031_0030;
 pub mod el7041_0052;
-// pub mod el4008;
+pub mod wago_750_354;
+pub mod wago_modules;
+
 use super::devices::el1008::EL1008;
 use crate::{
     devices::{el2521::EL2521, el4002::EL4002},
@@ -41,18 +43,31 @@ use el3021::EL3021_IDENTITY_A;
 use el3024::EL3024_IDENTITY_A;
 use el3062_0030::EL3062_0030_IDENTITY_A;
 use el3204::EL3204_IDENTITY_A;
+use el3204::EL3204_IDENTITY_B;
 use el4002::EL4002_IDENTITY_A;
 use el5152::{EL5152, EL5152_IDENTITY_A};
 use el6021::{EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D};
-
-use el3204::EL3204_IDENTITY_B;
-
 use el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
 use el7031_0030::EL7031_0030_IDENTITY_A;
 use el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
 use smol::lock::RwLock;
 use std::{any::Any, fmt::Debug, sync::Arc};
+use wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
+use wago_modules::ip20_ec_di8_do8::{IP20_EC_DI8_DO8_IDENTITY, IP20EcDi8Do8};
+
+#[derive(Debug, Clone)]
+pub struct Module {
+    pub name: String,
+    pub slot: u16,
+    pub belongs_to_addr: u16,
+    pub has_tx: bool,
+    pub has_rx: bool,
+    pub vendor_id: u32,
+    pub product_id: u32,
+    pub tx_offset: usize,
+    pub rx_offset: usize,
+}
 
 /// A trait for all devices
 ///
@@ -77,7 +92,7 @@ where
     /// automatically validate input length, then calls input
     fn input_checked(&mut self, input: &BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error> {
         // validate input has correct length
-        let expected = self.input_len();
+        /* let expected = self.input_len();
         let actual = input.len();
         if actual != expected {
             return Err(anyhow::anyhow!(
@@ -88,7 +103,7 @@ where
                 expected,
                 expected / 8
             ));
-        }
+        }*/
         self.input(input)
     }
 
@@ -103,7 +118,7 @@ where
         self.output(output)?;
 
         // validate input has correct length
-        let expected = self.output_len();
+        /*let expected = self.output_len();
         let actual = output.len();
         if output.len() != expected {
             return Err(anyhow::anyhow!(
@@ -114,12 +129,26 @@ where
                 expected,
                 expected / 8
             ));
-        }
+        }*/
 
         Ok(())
     }
 
     fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn is_module(&self) -> bool;
+    fn get_module(&self) -> Option<Module>;
+    fn set_module(&mut self, module: Module);
+}
+
+pub trait DynamicEthercatDevice: EthercatDevice + EthercatDynamicPDO {}
+
+pub trait EthercatDynamicPDO {
+    fn get_tx_offset(&self) -> usize;
+    fn get_rx_offset(&self) -> usize;
+
+    fn set_tx_offset(&mut self, offset: usize);
+    fn set_rx_offset(&mut self, offset: usize);
 }
 
 /// A trait for devices that want to process input and output data
@@ -186,19 +215,15 @@ pub fn device_from_subdevice_identity_tuple(
     subdevice_identity_tuple: SubDeviceIdentityTuple,
 ) -> Result<Arc<RwLock<dyn EthercatDevice>>, anyhow::Error> {
     match subdevice_identity_tuple {
+        WAGO_750_354_IDENTITY_A => Ok(Arc::new(RwLock::new(Wago750_354::new()))),
+        IP20_EC_DI8_DO8_IDENTITY => Ok(Arc::new(RwLock::new(IP20EcDi8Do8::new()))),
         EK1100_IDENTITY_A => Ok(Arc::new(RwLock::new(EK1100::new()))),
         EL1002_IDENTITY_A => Ok(Arc::new(RwLock::new(EL1002::new()))),
         EL1008_IDENTITY_A => Ok(Arc::new(RwLock::new(EL1008::new()))),
         EL2002_IDENTITY_A | EL2002_IDENTITY_B => Ok(Arc::new(RwLock::new(EL2002::new()))),
         EL2004_IDENTITY_A => Ok(Arc::new(RwLock::new(EL2004::new()))),
         EL2008_IDENTITY_A | EL2008_IDENTITY_B => Ok(Arc::new(RwLock::new(EL2008::new()))),
-        // TODO: implement EL2024 identity
-        // EL2024 => Ok(Arc::new(RwLock::new(EL2024::new()))),
         EL2522_IDENTITY_A => Ok(Arc::new(RwLock::new(EL2522::new()))),
-        // TODO: implement EL2634 identity
-        // "EL2634" => Ok(Arc::new(RwLock::new(EL2634::new()))),
-        // TODO: implement EL2809 identity
-        // "EL2809" => Ok(Arc::new(RwLock::new(EL2809::new()))),
         EL3001_IDENTITY_A => Ok(Arc::new(RwLock::new(el3001::EL3001::new()))),
         EL3021_IDENTITY_A => Ok(Arc::new(RwLock::new(el3021::EL3021::new()))),
         EL3024_IDENTITY_A => Ok(Arc::new(RwLock::new(el3024::EL3024::new()))),
@@ -209,9 +234,6 @@ pub fn device_from_subdevice_identity_tuple(
             Ok(Arc::new(RwLock::new(el6021::EL6021::new())))
         }
         EL3204_IDENTITY_A | EL3204_IDENTITY_B => Ok(Arc::new(RwLock::new(el3204::EL3204::new()))),
-        // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
-        // TODO: implement EL3204 identity
-        // "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
         EL7031_IDENTITY_A | EL7031_IDENTITY_B => Ok(Arc::new(RwLock::new(el7031::EL7031::new()))),
         EL7031_0030_IDENTITY_A => Ok(Arc::new(RwLock::new(el7031_0030::EL7031_0030::new()))),
         EL7041_0052_IDENTITY_A => Ok(Arc::new(RwLock::new(el7041_0052::EL7041_0052::new()))),
@@ -265,6 +287,10 @@ pub async fn specific_device_from_devices<DEVICE: EthercatDevice>(
 }
 
 pub type SubDeviceIdentityTuple = (u32, u32, u32);
+
+// Is vendor id at 0, and prodid at 1
+pub type SubDeviceProductTuple = (u32, u32);
+
 /// function that converts SubDeviceIdentity to tuple
 pub const fn subdevice_identity_to_tuple(identity: &SubDeviceIdentity) -> SubDeviceIdentityTuple {
     (identity.vendor_id, identity.product_id, identity.revision)

@@ -1,12 +1,13 @@
 import { app, BrowserWindow } from "electron";
 import registerListeners from "./helpers/ipc/listeners-register";
-// "electron-squirrel-startup" seems broken when packaging with vite
-//import started from "electron-squirrel-startup";
 import path from "path";
 import {
   installExtension,
   REACT_DEVELOPER_TOOLS,
 } from "electron-devtools-installer";
+
+const ARG1 = process.argv[1] ?? "./main.js";
+const DIR = path.dirname(ARG1);
 
 // Set consistent app ID for Windows taskbar and GNOME dock integration
 app.setAppUserModelId("de.qitech.control-electron");
@@ -29,7 +30,9 @@ if (!gotTheLock) {
 }
 
 function createWindow() {
-  const preload = path.join(__dirname, "preload.js");
+  const preload = path.join(DIR, "preload.js");
+  console.log("Setting preload.js to", preload);
+
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -43,7 +46,7 @@ function createWindow() {
       preload: preload,
     },
     // Add icon path for better integration
-    icon: path.join(__dirname, "../assets/icon.png"),
+    icon: path.join(DIR, "icon.png"),
     // Set window class explicitly for Linux/GNOME integration
     title: "QiTech Control",
   });
@@ -53,12 +56,11 @@ function createWindow() {
 
   registerListeners(mainWindow);
 
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+  if (process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-    );
+    const index = path.join(DIR, "index.html");
+    mainWindow.loadFile(index);
   }
 }
 

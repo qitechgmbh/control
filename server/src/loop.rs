@@ -4,6 +4,8 @@ use bitvec::prelude::*;
 use control_core::realtime::set_core_affinity;
 #[cfg(not(feature = "development-build"))]
 use control_core::realtime::set_realtime_priority;
+use ethercrab::TxRxResponse;
+use ethercrab::subdevice_group::CycleInfo;
 use machines::Machine;
 use machines::machine_identification::write_machine_device_identification;
 use smol::channel::Receiver;
@@ -11,6 +13,8 @@ use spin_sleep::SpinSleeper;
 use std::time::Duration;
 use std::time::Instant;
 
+use crate::metrics::jitter::record_machines_loop_jitter;
+use crate::metrics::preemption::set_rt_loop_tid;
 pub struct RtLoopInputs<'a> {
     pub machines: &'a mut Vec<Box<dyn Machine>>,
     pub ethercat_setup: Option<Box<EthercatSetup>>,
@@ -35,6 +39,23 @@ pub fn start_loop_thread(
                     .with_spin_strategy(spin_sleep::SpinStrategy::YieldThread);
 
             let _ = set_core_affinity(2);
+
+            // Get thread ID in a platform-specific way
+            #[cfg(target_os = "linux")]
+            let tid = unsafe { libc::syscall(libc::SYS_gettid) as libc::pid_t };
+            #[cfg(target_os = "macos")]
+            let tid = {
+                let mut thread_id_raw: u64 = 0;
+                unsafe { libc::pthread_threadid_np(libc::pthread_self(), &mut thread_id_raw) };
+                thread_id_raw as libc::pid_t
+            };
+            #[cfg(target_os = "windows")]
+            let tid = unsafe { libc::GetCurrentThreadId() as libc::pid_t };
+            #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+            let tid = 0 as libc::pid_t; // Fallback for unsupported platforms
+
+            set_rt_loop_tid(tid);
+
             #[cfg(not(feature = "development-build"))]
             if let Err(e) = set_realtime_priority() {
                 tracing::error!(
@@ -51,6 +72,7 @@ pub fn start_loop_thread(
 
             let mut ethercat_perf = EthercatPerformanceMetrics::new();
             let mut machines: Vec<Box<dyn Machine>> = vec![];
+            let mut last_iter_start: Option<Instant> = None;
             let mut rt_loop_inputs = RtLoopInputs {
                 machines: &mut machines,
                 ethercat_setup: None,
@@ -92,7 +114,6 @@ pub fn start_loop_thread(
                             .retain(|m| m.get_machine_identification_unique() != unique_id);
                     }
                     HotThreadMessage::AddMachines(machine_vec) => {
-                        tracing::info!("received machines{:?}", machine_vec);
                         for new_machine in machine_vec {
                             let id = new_machine.get_machine_identification_unique();
                             if !rt_loop_inputs
@@ -105,6 +126,15 @@ pub fn start_loop_thread(
                         }
                     }
                 }
+                let iter_start = Instant::now();
+                if let Some(prev) = last_iter_start {
+                    if let Some(period) = iter_start.checked_duration_since(prev) {
+                        let jitter_ns = period.as_nanos() as i128
+                            - rt_loop_inputs.cycle_target.as_nanos() as i128;
+                        record_machines_loop_jitter(jitter_ns);
+                    }
+                }
+                last_iter_start = Some(iter_start);
 
                 if let Err(e) = loop_once(&mut rt_loop_inputs) {
                     tracing::error!(
@@ -129,55 +159,79 @@ pub fn start_loop_thread(
 }
 
 pub async fn copy_ethercat_inputs(
-    ethercat_setup: Option<&EthercatSetup>,
+    ethercat_setup: Option<&mut EthercatSetup>,
 ) -> Result<(), anyhow::Error> {
     // only if we have an ethercat setup
     // - tx/rx cycle
     // - copy inputs to devices
     if let Some(ethercat_setup) = ethercat_setup {
-        ethercat_setup
-            .group
-            .tx_rx(&ethercat_setup.maindevice)
-            .await?;
+        if ethercat_setup.all_operational {
+            ethercat_setup
+                .group
+                .tx_rx_dc(&ethercat_setup.maindevice)
+                .await?;
 
-        // copy inputs to devices
-        for (i, subdevice) in ethercat_setup
-            .group
-            .iter(&ethercat_setup.maindevice)
-            .enumerate()
-        {
-            // retrieve inputs
-            let input = subdevice.inputs_raw();
-            let input_bits = input.view_bits::<Lsb0>();
+            // copy inputs to devices
+            for (i, subdevice) in ethercat_setup
+                .group
+                .iter(&ethercat_setup.maindevice)
+                .enumerate()
+            {
+                // retrieve inputs
+                let input = subdevice.inputs_raw();
+                let input_bits = input.view_bits::<Lsb0>();
 
-            // get device
-            let mut device = ethercat_setup.devices[i].1.as_ref().write().await;
+                // get device
+                let mut device = ethercat_setup.devices[i].1.as_ref().write().await;
 
-            // check if the device is used
-            if !device.is_used() {
-                // if the device is not used, we skip it
-                continue;
+                // check if the device is used
+                if !device.is_used() {
+                    // if the device is not used, we skip it
+                    continue;
+                }
+
+                // put inputs into device
+                device.input_checked(input_bits).map_err(|e| {
+                    anyhow::anyhow!(
+                        "[{}::loop_once] SubDevice with index {} failed to copy inputs\n{:?}",
+                        module_path!(),
+                        i,
+                        e
+                    )
+                })?;
+
+                // post process inputs
+                device.input_post_process().map_err(|e| {
+                    anyhow::anyhow!(
+                        "[{}::loop_once] SubDevice with index {} failed to copy post_process\n{:?}",
+                        module_path!(),
+                        i,
+                        e
+                    )
+                })?;
             }
-
-            // put inputs into device
-            device.input_checked(input_bits).map_err(|e| {
-                anyhow::anyhow!(
-                    "[{}::loop_once] SubDevice with index {} failed to copy inputs\n{:?}",
-                    module_path!(),
-                    i,
-                    e
-                )
-            })?;
-
-            // post process inputs
-            device.input_post_process().map_err(|e| {
-                anyhow::anyhow!(
-                    "[{}::loop_once] SubDevice with index {} failed to copy post_process\n{:?}",
-                    module_path!(),
-                    i,
-                    e
-                )
-            })?;
+            return Ok(());
+        } else {
+            loop {
+                let now = Instant::now();
+                let response @ TxRxResponse {
+                    working_counter: _wkc,
+                    extra:
+                        CycleInfo {
+                            next_cycle_wait, ..
+                        },
+                    ..
+                } = ethercat_setup
+                    .group
+                    .tx_rx_dc(&ethercat_setup.maindevice)
+                    .await
+                    .expect("TX/RX");
+                if response.all_op() {
+                    ethercat_setup.all_operational = true;
+                    break;
+                }
+                smol::Timer::at(now + next_cycle_wait).await;
+            }
         }
     }
     Ok(())
@@ -236,7 +290,6 @@ pub fn execute_machines(machines: &mut Vec<Box<dyn Machine>>) {
         machine.act(now);
     }
 }
-
 // No more logging in loop_once
 pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyhow::Error> {
     let loop_once_start = std::time::Instant::now();
@@ -247,7 +300,7 @@ pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyho
             .unwrap()
             .cycle_start();
 
-        let res = smol::block_on(copy_ethercat_inputs(inputs.ethercat_setup.as_deref()));
+        let res = smol::block_on(copy_ethercat_inputs(inputs.ethercat_setup.as_deref_mut()));
         match res {
             Ok(_) => (),
             Err(e) => {

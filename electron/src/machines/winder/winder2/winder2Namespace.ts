@@ -1,8 +1,3 @@
-/**
- * @file winder2Namespace.ts
- * @description TypeScript implementation of Winder2 namespace with Zod schema validation.
- */
-
 import { StoreApi } from "zustand";
 import { create } from "zustand";
 import { z } from "zod";
@@ -216,28 +211,21 @@ export type Winder2NamespaceStore = {
   spoolRpm: TimeSeries;
   tensionArmAngle: TimeSeries;
   spoolProgress: TimeSeries;
+  targetPullerSpeed: TimeSeries;
 };
 
-// Constants for time durations
-const TWENTY_MILLISECOND = 20;
-const ONE_SECOND = 1000;
-const FIVE_SECOND = 5 * ONE_SECOND;
-const ONE_HOUR = 60 * 60 * ONE_SECOND;
-
+//Store Factory and Message Handler -> no param, so default values
 const { initialTimeSeries: spoolProgress, insert: addSpoolProgress } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
+  createTimeSeries();
+const { initialTimeSeries: targetPullerSpeed, insert: addTargetPullerSpeed } =
+  createTimeSeries();
+const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries();
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 
 /**
  * Factory function to create a new Winder2 namespace store
@@ -254,6 +242,7 @@ export const createWinder2NamespaceStore =
         // Time series data for live values
         traversePosition,
         pullerSpeed,
+        targetPullerSpeed,
         spoolRpm,
         tensionArmAngle,
         spoolProgress,
@@ -288,10 +277,18 @@ export function winder2MessageHandler(
         console.log(event);
         // Parse and validate the state event
         const stateEvent = stateEventSchema.parse(event);
+        const nextTargetPullerSpeed = stateEvent.data.puller_state.target_speed;
 
         updateStore((state) => ({
           ...state,
           state: stateEvent,
+          targetPullerSpeed:
+            state.targetPullerSpeed.current?.value === nextTargetPullerSpeed
+              ? state.targetPullerSpeed
+              : addTargetPullerSpeed(state.targetPullerSpeed, {
+                  value: nextTargetPullerSpeed,
+                  timestamp: event.ts,
+                }),
           // only set default state if is_default_state is true
           defaultState: stateEvent.data.is_default_state
             ? stateEvent

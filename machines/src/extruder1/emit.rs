@@ -25,11 +25,11 @@ use units::{angular_velocity::revolution_per_minute, thermodynamic_temperature::
 
 #[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {
-    pub fn build_state_event(&mut self) -> StateEvent {
-        use crate::extruder1::api::{TemperaturePid, TemperaturePidStates};
+    pub fn get_state(&self) -> StateEvent {
+        use crate::extruder1::api::TemperaturePidStates;
 
         StateEvent {
-            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
+            is_default_state: !self.emitted_default_state,
             rotation_state: RotationState {
                 forward: self.screw_speed_controller.get_rotation_direction(),
             },
@@ -94,6 +94,9 @@ impl ExtruderV2 {
                 pressure_limit_enabled: self
                     .screw_speed_controller
                     .get_nozzle_pressure_limit_enabled(),
+                nozzle_temperature_target_enabled: self
+                    .temperature_controller_nozzle
+                    .get_temperature_target_enabled(),
             },
             inverter_status_state: InverterStatusState {
                 running: self.screw_speed_controller.inverter.status.running,
@@ -141,16 +144,14 @@ impl ExtruderV2 {
             },
         }
     }
-}
 
-#[cfg(not(feature = "mock-machine"))]
-impl ExtruderV2 {
     pub fn emit_state(&mut self) {
-        let state = self.build_state_event();
+        let state = self.get_state();
         let hash = hash_with_serde_model(self.screw_speed_controller.get_inverter_status());
         self.last_status_hash = Some(hash);
         let event = state.build();
         self.namespace.emit(ExtruderV2Events::State(event));
+        self.emitted_default_state = true;
     }
 
     pub fn maybe_emit_state_event(&mut self) {
@@ -168,13 +169,8 @@ impl ExtruderV2 {
         }
     }
 
-    pub fn emit_live_values(&mut self) {
-        use std::time::Instant;
-        let now = Instant::now();
-        let combined_power = self.calculate_combined_power();
-        self.update_total_energy(combined_power, now);
-
-        let live_values = LiveValuesEvent {
+    pub fn get_live_values(&self) -> LiveValuesEvent {
+        LiveValuesEvent {
             motor_status: self.screw_speed_controller.get_motor_status().into(),
             pressure: self.screw_speed_controller.get_pressure().get::<bar>(),
             nozzle_temperature: self
@@ -209,11 +205,13 @@ impl ExtruderV2 {
             middle_power: self
                 .temperature_controller_middle
                 .get_heating_element_wattage(),
-            combined_power,
+            combined_power: self.calculate_combined_power(),
             total_energy_kwh: self.total_energy_kwh,
-        };
+        }
+    }
 
-        let event = live_values.build();
+    pub fn emit_live_values(&mut self) {
+        let event = self.get_live_values().build();
         self.namespace.emit(ExtruderV2Events::LiveValues(event));
     }
 
@@ -251,8 +249,11 @@ impl ExtruderV2 {
 
     pub fn set_regulation(&mut self, uses_rpm: bool) {
         if !self.screw_speed_controller.get_uses_rpm() && uses_rpm {
-            self.screw_speed_controller
-                .set_target_screw_rpm(self.screw_speed_controller.target_rpm);
+            self.screw_speed_controller.set_target_screw_rpm(
+                self.screw_speed_controller.target_rpm,
+                AngularVelocity::new::<revolution_per_minute>(1500.0),
+                4,
+            );
             self.screw_speed_controller.set_uses_rpm(uses_rpm);
         }
 
@@ -270,8 +271,11 @@ impl ExtruderV2 {
     }
 
     pub fn set_target_rpm(&mut self, rpm: f64) {
-        self.screw_speed_controller
-            .set_target_screw_rpm(AngularVelocity::new::<revolution_per_minute>(rpm));
+        self.screw_speed_controller.set_target_screw_rpm(
+            AngularVelocity::new::<revolution_per_minute>(rpm),
+            AngularVelocity::new::<revolution_per_minute>(1500.0),
+            4,
+        );
         self.emit_state();
     }
 
@@ -292,6 +296,12 @@ impl ExtruderV2 {
                 .temperature_controller_middle
                 .set_target_temperature(target_temp),
         }
+        self.emit_state();
+    }
+
+    pub fn set_nozzle_temperature_target_is_enabled(&mut self, enabled: bool) {
+        self.temperature_controller_nozzle
+            .set_temperature_target_enabled(enabled);
         self.emit_state();
     }
 

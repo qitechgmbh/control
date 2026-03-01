@@ -25,16 +25,29 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:Gauge";
     case "mHz":
       return "lu:AudioWaveform";
+    case "Hz":
+      return "lu:AudioWaveform";
     case "W":
-      return "lu:Zap";
     case "V":
-      return "lu:Zap";
     case "A":
+    case "mA":
       return "lu:Zap";
     case "kWh":
       return "lu:BatteryFull";
     case "l/min":
       return "lu:Waves";
+    case "%":
+      return "lu:ChartNoAxesColumn";
+    case "µs":
+      return "lu:RefreshCcw";
+    case "s":
+      return "lu:Clock";
+    case "MiB":
+      return "lu:MemoryStick";
+    case "Mbit/s":
+      return "lu:Network";
+    case "/s":
+      return "lu:Gauge";
     default:
       return "lu:ChartNoAxesColumn";
   }
@@ -62,26 +75,42 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "m/min";
     case "mHz":
       return "mHz";
+    case "Hz":
+      return "Hz";
     case "W":
       return "W";
     case "V":
       return "V";
+    case "mA":
+      return "mA";
     case "A":
       return "A";
     case "kWh":
       return "kWh";
     case "l/min":
       return "l/min";
+    case "%":
+      return "%";
+    case "µs":
+      return "µs";
+    case "s":
+      return "s";
+    case "MiB":
+      return "MiB";
+    case "Mbit/s":
+      return "Mbit/s";
+    case "/s":
+      return "/s";
     default:
       return "";
   }
 }
 
+// this function will add prefix/suffix to the valueString but without unit symbol.
 // example
-// value: 10.0
-// -> valueString: "10" (custom input)
-// this function will add prefix/suffix to the valueString but without unit symbol
-// -> "10°"
+//   const f = 3.1415;
+//   renderUnitSyntax(f.toFixed(2), "deg")
+// result: "3.14°"
 export function renderUnitSyntax(
   valueString: string | undefined,
   unit: Unit | undefined,
@@ -121,16 +150,32 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "meters/minute";
     case "mHz":
       return "millihertz";
+    case "Hz":
+      return "hertz";
     case "W":
       return "watts";
     case "V":
       return "volts";
+    case "mA":
+      return "milliamperes";
     case "A":
       return "amperes";
     case "kWh":
       return "kilowatt-hours";
     case "l/min":
       return "liters/minute";
+    case "%":
+      return "percent";
+    case "µs":
+      return "microseconds";
+    case "s":
+      return "seconds";
+    case "MiB":
+      return "mebibytes";
+    case "Mbit/s":
+      return "megabits/second";
+    case "/s":
+      return "per second";
     default:
       return "";
   }
@@ -147,11 +192,19 @@ export const units = [
   "bar",
   "m/min",
   "mHz",
+  "Hz",
   "W",
   "V",
+  "mA",
   "A",
   "kWh",
   "l/min",
+  "%",
+  "µs",
+  "s",
+  "MiB",
+  "Mbit/s",
+  "/s",
 ] as const;
 
 export type Unit = (typeof units)[number];

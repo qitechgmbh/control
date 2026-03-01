@@ -80,7 +80,7 @@ export function GraphControls({
           )}
 
           <TouchButton
-            onClick={onSwitchToHistorical}
+            onClick={() => onSwitchToHistorical("button")}
             variant="outline"
             className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
               !isLiveMode
@@ -197,7 +197,7 @@ export function FloatingControlPanel({
             )}
 
             <TouchButton
-              onClick={onSwitchToHistorical}
+              onClick={() => onSwitchToHistorical("button")}
               variant="outline"
               className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
                 !isLiveMode

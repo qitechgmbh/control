@@ -152,6 +152,7 @@ pub struct HeatingState {
 pub struct ExtruderSettingsState {
     pub pressure_limit: f64,
     pub pressure_limit_enabled: bool,
+    pub nozzle_temperature_target_enabled: bool,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
@@ -237,6 +238,9 @@ pub enum Mutation {
 
     // Reset
     ResetInverter(bool),
+
+    // Toggle nozzle temperature target
+    SetNozzleTemperatureTargetEnabled(bool),
 }
 
 #[derive(Debug)]
@@ -316,6 +320,9 @@ impl MachineApi for ExtruderV2 {
 
             Mutation::SetTemperaturePidSettings(settings) => {
                 self.configure_temperature_pid(settings);
+            }
+            Mutation::SetNozzleTemperatureTargetEnabled(enabled) => {
+                self.set_nozzle_temperature_target_is_enabled(enabled);
             }
         }
         Ok(())

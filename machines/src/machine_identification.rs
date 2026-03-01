@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use ethercat_hal::devices::wago_750_354::WAGO_750_354_IDENTITY_A;
+use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTITY;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -38,6 +40,33 @@ impl MachineIdentification {
     /// Check if values are non-zero
     pub const fn is_valid(&self) -> bool {
         self.vendor != 0 && self.machine != 0
+    }
+
+    pub fn vendor_str(&self) -> String {
+        match self.vendor {
+            x if x == VENDOR_QITECH => "QiTech".to_string(),
+            _ => "N/A".to_string(),
+        }
+    }
+
+    pub fn slug(&self) -> String {
+        match self.machine {
+            x if x == MACHINE_WINDER_V1 => "winder_v1".to_string(),
+            x if x == MACHINE_EXTRUDER_V1 => "extruder_v1".to_string(),
+            x if x == MACHINE_LASER_V1 => "laser_v1".to_string(),
+            x if x == MACHINE_MOCK => "mock".to_string(),
+            x if x == MACHINE_AQUAPATH_V1 => "aquapath_v1".to_string(),
+            x if x == MACHINE_BUFFER_V1 => "buffer_v1".to_string(),
+            x if x == MACHINE_EXTRUDER_V2 => "extruder_v2".to_string(),
+            x if x == MACHINE_WAGO_POWER_V1 => "wago_power_v1".to_string(),
+            x if x == TEST_MACHINE => "test_machine".to_string(),
+            x if x == IP20_TEST_MACHINE => "ip20_test_machine".to_string(),
+            x if x == ANALOG_INPUT_TEST_MACHINE => "analog_input_test_machine".to_string(),
+            x if x == WAGO_AI_TEST_MACHINE => "wago_ai_test_machine".to_string(),
+            x if x == WAGO_DO_TEST_MACHINE => "wago_do_test_machine".to_string(),
+
+            _ => unreachable!("Unknown machine id"),
+        }
     }
 }
 
@@ -147,6 +176,21 @@ use ethercat_hal::helpers::ethercrab_types::{
 use ethercrab::MainDevice;
 use ethercrab::SubDeviceIdentity;
 
+use crate::ANALOG_INPUT_TEST_MACHINE;
+use crate::IP20_TEST_MACHINE;
+use crate::MACHINE_AQUAPATH_V1;
+use crate::MACHINE_BUFFER_V1;
+use crate::MACHINE_EXTRUDER_V1;
+use crate::MACHINE_EXTRUDER_V2;
+use crate::MACHINE_LASER_V1;
+use crate::MACHINE_MOCK;
+use crate::MACHINE_WAGO_POWER_V1;
+use crate::MACHINE_WINDER_V1;
+use crate::TEST_MACHINE;
+use crate::VENDOR_QITECH;
+use crate::WAGO_AI_TEST_MACHINE;
+use crate::WAGO_DO_TEST_MACHINE;
+
 #[derive(Debug)]
 pub struct MachineIdentificationAddresses {
     pub vendor_word: u16,
@@ -205,7 +249,7 @@ pub async fn machine_device_identification<'maindevice>(
     let addresses = match get_identification_addresses(&subdevice.identity(), subdevice.name()) {
         Ok(x) => x,
         Err(e) => {
-            u16dump(subdevice, maindevice, 0, 128).await?;
+            // u16dump(subdevice, maindevice, 0, 128).await?;
             return Err(e);
         }
     };
@@ -345,6 +389,8 @@ pub fn get_identification_addresses(
     let identity_tuple = subdevice_identity_to_tuple(subdevice_identity);
 
     Ok(match identity_tuple {
+        WAGO_750_354_IDENTITY_A => MachineIdentificationAddresses::default(),
+        IP20_EC_DI8_DO8_IDENTITY => MachineIdentificationAddresses::default(),
         EK1100_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1002_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1008_IDENTITY_A => MachineIdentificationAddresses::default(),
@@ -383,61 +429,7 @@ pub fn get_identification_addresses(
     })
 }
 
-async fn u16dump<'maindevice>(
-    subdevice: &'maindevice EthercrabSubDevicePreoperational<'maindevice>,
-    maindevice: &MainDevice<'maindevice>,
-    start_byte: u16,
-    end_byte: u16,
-) -> Result<(), Error> {
-    let mut words: Vec<u16> = Vec::new();
-    for word in start_byte..end_byte {
-        words.push(subdevice.eeprom_read(maindevice, word).await?);
-    }
-
-    println!(
-        "EEPROM dump for {} from 0x{:04x} to 0x{:04x}",
-        subdevice.name(),
-        start_byte / 2,
-        end_byte / 2
-    );
-
-    u16print(start_byte, end_byte, words);
-
-    Ok(())
-}
-
-fn u16print(start_byte: u16, end_byte: u16, data: Vec<u16>) {
-    let table_start_word = start_byte & 0xfff0;
-    let table_end_word = (end_byte & 0xfff0_u16) + 0x10_u16;
-
-    let rows = (table_end_word - table_start_word) >> 4;
-
-    for row in 0..rows {
-        print!("0x{:04x} | ", (table_start_word + row * 0x10) / 2);
-        for word in 0..8 {
-            let word_address = row * 8 + word;
-            if word_address < start_byte {
-                print!("     ");
-            } else {
-                let i = (word_address - start_byte) as usize;
-                if i > data.len() - 1 {
-                    print!("     ");
-                } else {
-                    print!("{:04x} ", data[i]);
-                }
-            }
-        }
-        println!();
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_hexprint() {
-        let data = vec![0x0000, 0x1ced];
-        u16print(0x01, 0x40, data);
-    }
 }

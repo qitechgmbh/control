@@ -69,17 +69,18 @@ impl Winder2 {
     }
 
     pub fn emit_live_values(&mut self) {
-        let event = LiveValuesEvent {
+        let event = self.get_live_values().build();
+        self.namespace.emit(Winder2Events::LiveValues(event));
+    }
+
+    pub fn get_live_values(&self) -> LiveValuesEvent {
+        LiveValuesEvent {
             traverse_position: Some(0.0),
             puller_speed: 0.0,
             spool_rpm: 0.0,
             tension_arm_angle: 0.0,
             spool_progress: 0.0,
-        };
-
-        let event = event.build();
-
-        self.namespace.emit(Winder2Events::LiveValues(event));
+        }
     }
 
     pub fn build_state_event(&mut self) -> StateEvent {
@@ -119,7 +120,7 @@ impl Winder2 {
     ///
     /// It contains a transition matrix for atomic changes.
     /// It will set [`Self::spool_mode`]
-    fn set_traverse_mode(&mut self, mode: &Winder2Mode) {
+    fn set_traverse_mode(&mut self, _mode: &Winder2Mode) {
         self.mode_state = ModeState {
             mode: crate::winder2::api::Mode::Standby,
             can_wind: true,

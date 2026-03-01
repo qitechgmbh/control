@@ -109,6 +109,7 @@ export const heatingStatesSchema = z.object({
 export const extruderSettingsStateSchema = z.object({
   pressure_limit: z.number(),
   pressure_limit_enabled: z.boolean(),
+  nozzle_temperature_target_enabled: z.boolean(),
 });
 
 /**
@@ -221,66 +222,67 @@ export type Extruder2NamespaceStore = {
   // Combined power consumption and energy
   combinedPower: TimeSeries;
   totalEnergyKWh: TimeSeries;
+
+  // Target value history (for graph target lines)
+  targetPressure: TimeSeries;
+  targetScrewRpm: TimeSeries;
+  targetNozzleTemperature: TimeSeries;
+  targetFrontTemperature: TimeSeries;
+  targetMiddleTemperature: TimeSeries;
+  targetBackTemperature: TimeSeries;
 };
 
-// Constants for time durations
-const TWENTY_MILLISECOND = 20;
-const ONE_SECOND = 1000;
-const FIVE_SECOND = 5 * ONE_SECOND;
-const ONE_HOUR = 60 * 60 * ONE_SECOND;
-
-const { initialTimeSeries: pressure, insert: addPressure } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
-
+const { initialTimeSeries: pressure, insert: addPressure } = createTimeSeries();
 const { initialTimeSeries: backTemperature, insert: addBackTemperature } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: frontTemperature, insert: addFrontTemperature } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: middleTemperature, insert: addMiddleTemperature } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: nozzleTemperature, insert: addNozzleTemperature } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: nozzlePower, insert: addNozzlePower } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: frontPower, insert: addFrontPower } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: middlePower, insert: addMiddlePower } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
-const { initialTimeSeries: backPower, insert: addBackPower } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
-
+  createTimeSeries();
+const { initialTimeSeries: backPower, insert: addBackPower } =
+  createTimeSeries();
 const { initialTimeSeries: combinedPower, insert: addCombinedPower } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: totalEnergyKWh, insert: addTotalEnergyKWh } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: motorCurrent, insert: addMotorCurrent } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: motorFrequency, insert: addMotorFrequency } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: motorScrewRpm, insert: addMotorScrewRpm } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: motorPower, insert: addMotorPower } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
+
+// Target value time series (for historical target lines on graphs)
+const { initialTimeSeries: targetPressure, insert: addTargetPressure } =
+  createTimeSeries();
+const { initialTimeSeries: targetScrewRpm, insert: addTargetScrewRpm } =
+  createTimeSeries();
+const {
+  initialTimeSeries: targetNozzleTemperature,
+  insert: addTargetNozzleTemperature,
+} = createTimeSeries();
+const {
+  initialTimeSeries: targetFrontTemperature,
+  insert: addTargetFrontTemperature,
+} = createTimeSeries();
+const {
+  initialTimeSeries: targetMiddleTemperature,
+  insert: addTargetMiddleTemperature,
+} = createTimeSeries();
+const {
+  initialTimeSeries: targetBackTemperature,
+  insert: addTargetBackTemperature,
+} = createTimeSeries();
 
 export function extruder2MessageHandler(
   store: StoreApi<Extruder2NamespaceStore>,
@@ -300,6 +302,17 @@ export function extruder2MessageHandler(
       if (eventName === "StateEvent") {
         console.log(event);
         const stateEvent = stateEventSchema.parse(event);
+        const timestamp = event.ts;
+        const nextTargetPressure = stateEvent.data.pressure_state.target_bar;
+        const nextTargetScrewRpm = stateEvent.data.screw_state.target_rpm;
+        const nextTargetNozzleTemperature =
+          stateEvent.data.heating_states.nozzle.target_temperature;
+        const nextTargetFrontTemperature =
+          stateEvent.data.heating_states.front.target_temperature;
+        const nextTargetMiddleTemperature =
+          stateEvent.data.heating_states.middle.target_temperature;
+        const nextTargetBackTemperature =
+          stateEvent.data.heating_states.back.target_temperature;
         updateStore((state) => ({
           ...state,
           state: stateEvent,
@@ -307,6 +320,53 @@ export function extruder2MessageHandler(
           defaultState: stateEvent.data.is_default_state
             ? stateEvent
             : state.defaultState,
+          // Update target value history
+          targetPressure:
+            state.targetPressure.current?.value === nextTargetPressure
+              ? state.targetPressure
+              : addTargetPressure(state.targetPressure, {
+                  value: nextTargetPressure,
+                  timestamp,
+                }),
+          targetScrewRpm:
+            state.targetScrewRpm.current?.value === nextTargetScrewRpm
+              ? state.targetScrewRpm
+              : addTargetScrewRpm(state.targetScrewRpm, {
+                  value: nextTargetScrewRpm,
+                  timestamp,
+                }),
+          targetNozzleTemperature:
+            state.targetNozzleTemperature.current?.value ===
+            nextTargetNozzleTemperature
+              ? state.targetNozzleTemperature
+              : addTargetNozzleTemperature(state.targetNozzleTemperature, {
+                  value: nextTargetNozzleTemperature,
+                  timestamp,
+                }),
+          targetFrontTemperature:
+            state.targetFrontTemperature.current?.value ===
+            nextTargetFrontTemperature
+              ? state.targetFrontTemperature
+              : addTargetFrontTemperature(state.targetFrontTemperature, {
+                  value: nextTargetFrontTemperature,
+                  timestamp,
+                }),
+          targetMiddleTemperature:
+            state.targetMiddleTemperature.current?.value ===
+            nextTargetMiddleTemperature
+              ? state.targetMiddleTemperature
+              : addTargetMiddleTemperature(state.targetMiddleTemperature, {
+                  value: nextTargetMiddleTemperature,
+                  timestamp,
+                }),
+          targetBackTemperature:
+            state.targetBackTemperature.current?.value ===
+            nextTargetBackTemperature
+              ? state.targetBackTemperature
+              : addTargetBackTemperature(state.targetBackTemperature, {
+                  value: nextTargetBackTemperature,
+                  timestamp,
+                }),
         }));
       } else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
@@ -407,6 +467,14 @@ export const createExtruder2NamespaceStore =
         middlePower,
         combinedPower,
         totalEnergyKWh,
+
+        // Target value history
+        targetPressure,
+        targetScrewRpm,
+        targetNozzleTemperature,
+        targetFrontTemperature,
+        targetMiddleTemperature,
+        targetBackTemperature,
       };
     });
 

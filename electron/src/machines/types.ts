@@ -2,7 +2,7 @@
 // each role can only be given once
 
 import { IconName } from "@/components/Icon";
-import { rustEnumSchema } from "@/lib/types";
+import { rustEnum } from "@/lib/types";
 import { z } from "zod";
 
 // EK1100 should have role 0
@@ -62,9 +62,11 @@ export type DeviceHardwareIdentificationEthercat = z.infer<
   typeof deviceHardwareIdentificationEthercatSchema
 >;
 
-export const deviceHardwareIdentificationSchema = rustEnumSchema({
-  Ethercat: deviceHardwareIdentificationEthercatSchema,
-});
+export const deviceHardwareIdentificationSchema = z
+  .object({
+    Ethercat: deviceHardwareIdentificationEthercatSchema,
+  })
+  .check(rustEnum);
 
 export type DeviceHardwareIdentification = z.infer<
   typeof deviceHardwareIdentificationSchema

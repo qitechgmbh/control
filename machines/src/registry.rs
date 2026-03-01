@@ -1,15 +1,32 @@
+use crate::analog_input_test_machine::AnalogInputTestMachine;
+use crate::digital_input_test_machine::DigitalInputTestMachine;
+use crate::ip20_test_machine::IP20TestMachine;
+use crate::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine;
+use crate::wago_ai_test_machine::WagoAiTestMachine;
+use crate::wago_do_test_machine::WagoDOTestMachine;
 #[cfg(feature = "mock-machine")]
-use crate::{extruder1::mock::ExtruderV2, mock::MockMachine, winder2::mock::Winder2};
+use crate::{
+    extruder1::mock::ExtruderV2 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
+    mock::MockMachine, winder2::mock::Winder2,
+};
 
-use crate::{Machine, MachineNewParams, machine_identification::MachineIdentification};
+use crate::{
+    Machine, MachineNewParams, MachineNewTrait, machine_identification::MachineIdentification,
+};
+
+#[cfg(not(feature = "mock-machine"))]
+use crate::extruder1::ExtruderV2;
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
-    aquapath1::AquaPathV1, buffer1::BufferV1, extruder1::ExtruderV2, laser::LaserMachine,
+    aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, laser::LaserMachine,
     winder2::Winder2,
 };
 
+use crate::{test_machine::TestMachine, test_machine_stepper::TestMachineStepper};
+
 use lazy_static::lazy_static;
 
+use crate::motor_test_machine::MotorTestMachine;
 use anyhow::Error;
 use std::{any::TypeId, collections::HashMap};
 
@@ -33,7 +50,7 @@ impl MachineRegistry {
         }
     }
 
-    pub fn register<T: Machine + 'static>(
+    pub fn register<T: MachineNewTrait + 'static>(
         &mut self,
         machine_identficiation: MachineIdentification,
     ) {
@@ -85,7 +102,18 @@ lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
         mc.register::<Winder2>(Winder2::MACHINE_IDENTIFICATION);
+
+        #[cfg(feature = "mock-machine")]
+        mc.register::<ExtruderV2Mock1>(ExtruderV2Mock1::MACHINE_IDENTIFICATION);
+
+        #[cfg(feature = "mock-machine")]
+        mc.register::<ExtruderV2Mock2>(ExtruderV2Mock2::MACHINE_IDENTIFICATION);
+
+        #[cfg(not(feature = "mock-machine"))]
         mc.register::<ExtruderV2>(ExtruderV2::MACHINE_IDENTIFICATION);
+
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<ExtruderV3>(ExtruderV3::MACHINE_IDENTIFICATION);
 
         #[cfg(feature = "mock-machine")]
         mc.register::<MockMachine>(MockMachine::MACHINE_IDENTIFICATION);
@@ -98,6 +126,25 @@ lazy_static! {
 
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
+
+        mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<IP20TestMachine>(IP20TestMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<WagoAiTestMachine>(WagoAiTestMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<MotorTestMachine>(MotorTestMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<WagoDOTestMachine>(WagoDOTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<Wago8chDigitalIOTestMachine>(
+            Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION,
+        );
+
+        mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
         mc
     };
 }

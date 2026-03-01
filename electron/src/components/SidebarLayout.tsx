@@ -1,10 +1,16 @@
 import { OutsideCorner } from "@/components/OutsideCorner";
 import { useMachines } from "@/client/useMachines";
 import { useOnSubpath } from "@/lib/useOnSubpath";
-import { Link, Outlet } from "@tanstack/react-router";
-import { Fragment } from "react";
+import {
+  Link,
+  Outlet,
+  useRouter,
+  useRouterState,
+} from "@tanstack/react-router";
+import { Fragment, useEffect } from "react";
 import React from "react";
 import { Icon, IconName } from "./Icon";
+import { useMainNamespace } from "@/client/mainNamespace";
 
 type SidebarItemContent = {
   link: string;
@@ -57,7 +63,51 @@ export function useSidebarlessWidth() {
 
 export function SidebarLayout() {
   const machines = useMachines();
+  const router = useRouter();
+  const routerState = useRouterState();
+  const { machines: machinesEvent } = useMainNamespace();
   const [contentWidth, setContentWidth] = React.useState<number>(0);
+
+  // Machine connection guard: redirect to setup if selected machine disconnects
+  useEffect(() => {
+    // Wait for machines data to be loaded
+    if (!machinesEvent?.data) return;
+
+    // Extract serial from current path (e.g., /machines/laser1/12345/control)
+    const pathMatch = routerState.location.pathname.match(
+      /\/machines\/[^/]+\/(\d+)/,
+    );
+    if (!pathMatch) return; // Not on a machine page
+
+    // Safety check: ensure pathMatch has at least 2 elements (full match + capture group)
+    if (pathMatch.length < 2) {
+      console.warn("[ConnectionGuard] Invalid pathMatch structure:", pathMatch);
+      return;
+    }
+
+    // Parse serial number with error handling
+    const serialString = pathMatch[1];
+    const serialNumber = parseInt(serialString, 10);
+
+    // Check if parseInt succeeded (NaN means parsing failed)
+    if (isNaN(serialNumber)) {
+      console.warn(
+        `[ConnectionGuard] Failed to parse serial number from "${serialString}"`,
+        { pathname: routerState.location.pathname },
+      );
+      return;
+    }
+
+    // Check if machine still exists in the raw machines data
+    const machineExists = machinesEvent.data.machines.some(
+      (m) => m.machine_identification_unique.serial === serialNumber,
+    );
+
+    if (!machineExists) {
+      router.navigate({ to: "/_sidebar/setup/machines" });
+    }
+  }, [machines, machinesEvent, routerState.location.pathname, router]);
+
   const items: SidebarItemContent[] = [
     ...machines.map((machine) => ({
       link: `/_sidebar/machines/${machine.slug}/${machine.machine_identification_unique.serial}/control`,

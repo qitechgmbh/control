@@ -51,6 +51,23 @@ export const flowStatesSchema = z.object({
   back: flowStateSchema,
 });
 
+export const fanStateSchema = z.object({
+  revolutions: z.number(),
+  max_revolutions: z.number(),
+});
+export const fanStatesSchema = z.object({
+  back: fanStateSchema,
+  front: fanStateSchema,
+});
+
+export const toleranceStateSchema = z.object({
+  heating: z.number(),
+  cooling: z.number(),
+});
+export const toleranceStatesSchema = z.object({
+  back: toleranceStateSchema,
+  front: toleranceStateSchema,
+});
 /**
  * Live values event schema (time-series data)
  */
@@ -61,6 +78,12 @@ export const liveValuesEventDataSchema = z.object({
   back_temperature: z.number(),
   front_temp_reservoir: z.number(),
   back_temp_reservoir: z.number(),
+  front_revolutions: z.number(),
+  back_revolutions: z.number(),
+  back_power: z.number(),
+  front_power: z.number(),
+  front_total_energy: z.number(),
+  back_total_energy: z.number(),
 });
 
 /**
@@ -71,6 +94,8 @@ export const stateEventDataSchema = z.object({
   mode_state: modeStateSchema,
   flow_states: flowStatesSchema,
   temperature_states: tempStatesSchema,
+  fan_states: fanStatesSchema,
+  tolerance_states: toleranceStatesSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -96,39 +121,40 @@ export type Aquapath1NamespaceStore = {
 
   front_temp_reservoir: TimeSeries;
   back_temp_reservoir: TimeSeries;
+
+  front_revolutions: TimeSeries;
+  back_revolutions: TimeSeries;
+
+  front_power: TimeSeries;
+  back_power: TimeSeries;
+
+  front_total_energy: TimeSeries;
+  back_total_energy: TimeSeries;
 };
 
-// Constants for time durations
-const TWENTY_MILLISECOND = 20;
-const ONE_SECOND = 1000;
-const FIVE_SECOND = 5 * ONE_SECOND;
-const ONE_HOUR = 60 * 60 * ONE_SECOND;
-
 const { initialTimeSeries: front_temperature, insert: addTemperature1 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: back_temperature, insert: addTemperature2 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: front_temp_reservoir, insert: addTempReserv1 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: back_temp_reservoir, insert: addTempReserv2 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
+const { initialTimeSeries: front_flow, insert: addFlow1 } = createTimeSeries();
+const { initialTimeSeries: back_flow, insert: addFlow2 } = createTimeSeries();
+const { initialTimeSeries: front_revolutions, insert: addFan1 } =
+  createTimeSeries();
+const { initialTimeSeries: back_revolutions, insert: addFan2 } =
+  createTimeSeries();
+const { initialTimeSeries: front_power, insert: addFrontPower } =
+  createTimeSeries();
+const { initialTimeSeries: back_power, insert: addBackPower } =
+  createTimeSeries();
+const { initialTimeSeries: front_total_energy, insert: addFrontEnergy } =
+  createTimeSeries();
+const { initialTimeSeries: back_total_energy, insert: addBackEnergy } =
+  createTimeSeries();
 
-const { initialTimeSeries: front_flow, insert: addFlow1 } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
-
-const { initialTimeSeries: back_flow, insert: addFlow2 } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
 /**
  * Factory function to create a new Aquapath namespace store
  * @returns A new Zustand store instance for Aquapath namespace
@@ -145,6 +171,12 @@ export const createAquapath1NamespaceStore =
         back_flow: back_flow,
         front_temp_reservoir: front_temp_reservoir,
         back_temp_reservoir: back_temp_reservoir,
+        front_revolutions: front_revolutions,
+        back_revolutions: back_revolutions,
+        back_power: back_power,
+        front_power: front_power,
+        front_total_energy: front_total_energy,
+        back_total_energy: back_total_energy,
       };
     });
   };
@@ -210,6 +242,30 @@ export function aquapath1MessageHandler(
           }),
           back_temp_reservoir: addTempReserv2(state.back_temp_reservoir, {
             value: liveValuesEvent.data.back_temp_reservoir,
+            timestamp: event.ts,
+          }),
+          front_revolutions: addFan1(state.front_revolutions, {
+            value: liveValuesEvent.data.front_revolutions,
+            timestamp: event.ts,
+          }),
+          back_revolutions: addFan2(state.back_revolutions, {
+            value: liveValuesEvent.data.back_revolutions,
+            timestamp: event.ts,
+          }),
+          front_power: addFrontPower(state.front_power, {
+            value: liveValuesEvent.data.front_power,
+            timestamp: event.ts,
+          }),
+          back_power: addBackPower(state.back_power, {
+            value: liveValuesEvent.data.back_power,
+            timestamp: event.ts,
+          }),
+          front_total_energy: addFrontEnergy(state.front_total_energy, {
+            value: liveValuesEvent.data.front_total_energy,
+            timestamp: event.ts,
+          }),
+          back_total_energy: addBackEnergy(state.back_total_energy, {
+            value: liveValuesEvent.data.back_total_energy,
             timestamp: event.ts,
           }),
         }));

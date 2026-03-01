@@ -10,7 +10,7 @@ This is why we chose nixos
 # How we do updates
 1. The user selects a version (commit/branch/tag) of the software they want to install
 2. The repo is cloned to the local machine
-3. the `installInfo.nix` is created and commited locally. It contains infos like the commit hash, branch, tag, timestamp etc. These are later available as environment variables `QITECH_OS...`
+3. Information like the commit hash, branch, tag, timestamp etc. is passed to the nix build process as environment variables `QITECH_OS...`
 4. The `nixos-switch` command is run. After rebuilding & compiling the software the system reboots.
    - The nixos-switch command does the following:
    1. The system is built with the new configuration

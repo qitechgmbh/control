@@ -2,153 +2,76 @@
 
 # QiTech Control
 
-QiTech Control is an industrial control panel software for the next generation of QiTech recycling machines built on top of Beckhoff Automation hardware.
+QiTech Control is an open-source framework designed to bring modern software development practices to certified industrial hardware.
 
-[![](https://img.youtube.com/vi/KI3YeBwfV-s/maxresdefault.jpg)](https://www.youtube.com/watch?v=KI3YeBwfV-s)
-*Click here to watch a video demo of our software.*
+It frees developers from proprietary, license-heavy PLC ecosystems and rigid "point-and-click" workflows that are no longer adequate for today's complex automation challenges.
 
-[![](https://img.youtube.com/vi/55egCAkQgyM/maxresdefault.jpg)](https://youtu.be/55egCAkQgyM) 
-*Click here to watch a full explainer Video of our Software.*
+QiTech Control combines the modularity and reliability of standard EtherCAT terminals (e.g., WAGO, Beckhoff) with the power of a modern Rust & React stack.
 
-# Repo Structure
+## Documentation
 
-Frontend
+**[View Full Documentation Wiki](https://github.com/qitechgmbh/control/wiki)**
 
-- `/electron`: Frontend code for the control software built with React and Electron.
+- [Getting Started](https://github.com/qitechgmbh/control/wiki/Getting-Started)
+- [Architecture Overview](https://github.com/qitechgmbh/control/wiki/Architecture-Overview)
+- [EtherCAT Basics](https://github.com/qitechgmbh/control/wiki/Ethercat-Basics)
+- [Device Examples](https://github.com/qitechgmbh/control/wiki/Hardware-Examples)
+- [REST API Reference](https://github.com/qitechgmbh/control/wiki/Rest-Api)
 
-Backend
+## Videos
 
-- `/server`: Glue between Beckhoff and Electron. Implements machine logic.
-- `/ethercat-hal`: Hardware abstraction layer for Beckhoff (and possibly other EtherCat) devices and protocols.
-- `/ethercat-hal-derive`: Macros for `ethercat-hal`
-- `/control-core`: Core control logic for the server.
+| Software Demo | Full Explainer |
+|---------------|----------------|
+| [![](https://img.youtube.com/vi/KI3YeBwfV-s/maxresdefault.jpg)](https://www.youtube.com/watch?v=KI3YeBwfV-s)<br/>*Watch a demo of the control software in action* | [![](https://img.youtube.com/vi/55egCAkQgyM/maxresdefault.jpg)](https://youtu.be/55egCAkQgyM)<br/>*Watch a complete overview of QiTech Control* |
 
-Operating System
+## Repository Structure
 
-- `/nixos`: Custom Linux with realtime kernel & preconfigured for touchscreens.
+- **`/electron`** - React + Electron frontend
+- **`/server`** - Rust backend implementing machine logic
+- **`/ethercat-hal`** - Hardware abstraction layer for EtherCAT devices
+- **`/control-core`** - Core control logic
+- **`/nixos`** - Custom Linux OS with realtime kernel
 
-Other
+## Technology Stack
 
-- `/docs`: Documentation for the project.
+**Backend:** Rust with [Ethercrab](https://github.com/ethercrab-rs/ethercrab) for EtherCAT, [SocketIO](https://socket.io/) for real-time communication, [axum](https://docs.rs/axum/latest/axum/) for REST API
 
-# Technology Choices
+**Frontend:** [Electron](https://www.electronjs.org/) + [React](https://react.dev/) with [Shadcn](https://ui.shadcn.com/) components and [Tailwind](https://tailwindcss.com/) styling
 
-## Backend
 
-To interface with Beckhoff and other EtherCAT devices we need an EtherCAT master stoftware. Possibilities are [PySOEM](https://github.com/bnjmnp/pysoem) (Python), [SOEM](https://github.com/OpenEtherCATsociety/SOEM) (C) and [Ethercrab](https://github.com/ethercrab-rs/ethercrab) (Rust). For realtime operation only C and Rust are suitable. We chose Rust because of safety and confidence in the written code.
+## Hardware Examples
 
-[SocketIO](https://socket.io/) was chosen for performant event driven communication from the backend to the server. But we still use REST with [axum](https://docs.rs/axum/latest/axum/) for the communication thet benefits from the request/response model.
+QiTech Control supports a wide range of EtherCAT hardware from WAGO and Beckhoff. We provide complete step-by-step tutorials with wiring diagrams and software configuration for many common modules.
 
-We use [Smol](https://github.com/smol-rs/smol) for EtherCAT IO in the control loop for it's performance and [Tokio](https://tokio.rs/) for server IO because of it's ecosystem and maturity.
+**[View all hardware examples and tutorials on the wiki](https://github.com/qitechgmbh/control/wiki/Hardware-Examples)**
 
-## Frontend
+Quick links to popular examples:
+- [EL2004 - LED Control](https://github.com/qitechgmbh/control/wiki/Minimal-Example-El2004) (simplest setup for beginners)
+- [EL3021 - Analog Input](https://github.com/qitechgmbh/control/wiki/Minimal-Example-El3021)
+- [EL7031 - Stepper Motor Control](https://github.com/qitechgmbh/control/wiki/Minimal-Example-El7031-Motor)
+- [WAGO 750-402 - Digital Input](https://github.com/qitechgmbh/control/wiki/Minimal-Example-Wago750-402)
+- [WAGO 750-455 - Analog Input](https://github.com/qitechgmbh/control/wiki/Minimal-Example-Wago-750-455)
 
-We could combine the code of the frontend and backend using [Doxius](https://dioxuslabs.com/) but it lacks good Linux support. We chose [Electron](https://www.electronjs.org/) with [React](https://react.dev/) for it's maturity and ecosystem. For the UI we use [Shadcn](https://ui.shadcn.com/) components and [Tailwind](https://tailwindcss.com/) for styling. For routing we use [TanStack Router](https://tanstack.com/router/v1).
+## QiTech Machines
 
-# Dev Setup
+QiTech Control powers 10+ production machines for filament extrusion, winding, measurement, and material processing.
 
-[Developer Documentation](./docs/developer-docs/)
+**[View complete machine catalog on the wiki](https://github.com/qitechgmbh/control/wiki/QiTech-Machines)**
 
-## Backend
 
-- Rust stable 1.86^ toolchain (install via [rustup](https://rustup.rs/))
-- `rust-analyzer` extension for VSCode
-- Set your interface in `server/src/ethercat/init.rs` like `en10`
-- Connect a Beckhoff EK1100 to your interface
-- run `cd server && cargo run` to start the server (localhost:3001)
+## Contributing
 
-## Frontend
+This is an open-source project. Contributions are welcome! Please see the [wiki](https://github.com/qitechgmbh/control/wiki) for development guidelines.
 
-- nodejs and npm installed
-- run `cd electron && npm i && npm run start` to start the frontend
 
-# Machines
 
-| Machine Type | Version | Release Date | Description                 | Change to Previous Version                             | Vendor ID                  | Machine ID | Implemented | Docs                            |
-| ------------ | ------- | ------------ | --------------------------- | ------------------------------------------------------ | -------------------------- | ---------- | ----------- | ------------------------------- |
-| Winder       | V1      | ???          | Winding Filaments & Similar | -                                                      | 1 (Qitech Industries GmbH) | 1          | Reserved    | -                               |
-| Winder       | V2      | 2025         | Winding Filaments & Similar | Reengineered Traverse                                  | 1 (Qitech Industries GmbH) | 2          | Yes         | [](./docs/machines/winder-1.md) |
-| Extruder     | V1      | ???          | Single Screw Extruder       | -                                                      | 1 (Qitech Industries GmbH) | 3          | Reserved    | -                               |
-| Extruder     | V2      | 2025         | Single Screw Extruder       | PT100 Thermometers, Optional Additional Heating Zone 4 | 1 (Qitech Industries GmbH) | 4          | Yes         |                                 |
-| Waterway     | V1      | 2025         | Filament Water Cooling      | -                                                      | 1 (Qitech Industries GmbH) | 5          | In Progress     |                                 |
-| Laser        | V1      | ???          | Diameter Measuring Laser    | -                                                      | 1 (Qitech Industries GmbH) | 6          | Yes         |                                 |
-| Mock         | -       | ???          | Mock Machine for Testing    | -                                                      | 1 (Qitech Industries GmbH) | 7          | Yes         | -                               |
+## Additional Videos
 
-# More Docs
+| Episode Highlights |  |
+|--------------------|--------------------|
+| [![](https://img.youtube.com/vi/U2wNN6sF4to/maxresdefault.jpg)](https://www.youtube.com/watch?v=U2wNN6sF4to&t=163s)<br/>**Day in the Software Team**<br/>*Behind the scenes with Robin and how the team ships control software.* | [![](https://img.youtube.com/vi/R5WGAY3WRWA/maxresdefault.jpg)](https://www.youtube.com/watch?v=R5WGAY3WRWA&t=1s)<br/>**Software Stack Day**<br/>*A fast tour through the tools, stack, and daily workflow.* |
+| [![](https://img.youtube.com/vi/xyaHwxXguw4/maxresdefault.jpg)](https://www.youtube.com/watch?v=xyaHwxXguw4&t=32s)<br/>**First Client**<br/>*A milestone week building the first real client project.* | [![](https://img.youtube.com/vi/moI7z2PVdF4/maxresdefault.jpg)](https://www.youtube.com/watch?v=moI7z2PVdF4)<br/>**Steelworks Week**<br/>*A deep-dive week on a demanding steelworks order.* |
 
-- [x] [Architecture & Data Flow](./docs/architecture-overview.md)
+## License
 
-  - [x] Example Winder V2
-
-- [ ] Electron
-
-  - Folder Structure
-  - Routing with TanStack Router
-  - Design with Tailwind & Shadcn
-  - ...
-
-- [ ] Interfacing with Electron/Server
-
-  - [ ] SocketIO
-    - Machine Namespace
-    - Main Namespace
-  - [ ] REST
-    - Machine Mutations
-    - Write Device Identification
-
-- Server
-
-  - [x] [Threading](./docs/control-loop.md)
-  - [x] [Logging](./docs/logging.md)
-  - [ ] Control Loop Setup
-    - Control Loop Thread
-      - [ ] realtime
-    - Maindevice
-    - Group
-    - Extracting Device Identifications
-    - Identifying Groups
-    - Validating Machines
-    - Run Control Loop
-  - [x] [Control Loop](./docs/control-loop.md)
-  - [x] [Machine/Device Identification](./docs/identification.md)
-  - [ ] Machines
-    - When to create a new Machine?
-      - Versioning
-      - Code sharing
-    - Creating/Validating a Machine
-      - Validation
-      - Configuration
-  - [ ] Machine Implementation Guide
-    - Link: How to create a Device
-    - Link: How to create an Actor
-    - Link: How to create a Machine
-      - API (SocketIO + REST)
-      - Creation/Validation Logic
-        - Optional/Mandatory Devices
-        - Validate Devices
-      - Business Logic
-    - Link: How to create Machine Abstraction (Like Traverse/Puller/...)
-    - Forward `act` in winder.
-
-- [ ] Control Core
-
-  - [x] [Actors](./docs/actors.md)
-  - [ ] SocketIO
-    - Namespaces & Caching
-    - Joining leaving namespaces
-    - NamespaceId
-    - Caching
-      - Serverside Caching
-      - Clientside Caching
-  - [ ] REST
-
-- [x] Ethercat HAL
-
-  - [x] [Devices](./docs/devices.md)
-  - [x] [Configuration (CoE)](./docs/coe.md)
-  - [x] [IO](./docs/io.md)
-  - [x] [PDO](./docs/pdo.md)
-
-- [x] [Ethercat Basics](./docs/ethercat-basics.md)
-
-- [x] [NixOS Operating System](./docs/nixos/README.md)
+See [LICENSE](LICENSE) file for details.
