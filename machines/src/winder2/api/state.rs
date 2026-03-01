@@ -151,8 +151,8 @@ impl Winder2
             minmax_min_speed: minmax.min_speed().get::<rpm>(),
             minmax_max_speed: minmax.max_speed().get::<rpm>(),
             // adaptive speed controller
-            adaptive_tension_target: adaptive.tension_target(),
-            adaptive_radius_learning_rate: adaptive.tension_target(),
+            adaptive_tension_target:       adaptive.tension_target(),
+            adaptive_radius_learning_rate: adaptive.radius_learning_rate(),
             adaptive_max_speed_multiplier: adaptive.max_speed_multiplier(),
             adaptive_acceleration_factor:  adaptive.acceleration_factor(),
             adaptive_deacceleration_urgency_multiplier,

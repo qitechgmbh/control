@@ -24,7 +24,8 @@ pub trait SpeedController
 
     fn update_speed(
         &mut self, 
-        t: Instant, 
+        t: Instant,
+        multiplier: f64,
         tension_arm: &TensionArm, 
         puller: &Puller
     ) -> AngularVelocity;

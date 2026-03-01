@@ -18,7 +18,7 @@ use speed_controller::{SpeedController, AdaptiveSpeedController, MinMaxSpeedCont
 pub struct Spool
 {
     motor:              StepperVelocityEL70x1,
-    state:              OperationState,
+    operation_state:              OperationState,
     direction:          Direction,
     speed_control_mode: SpeedControlMode,
     step_converter:     AngularStepConverter,
@@ -33,7 +33,7 @@ impl Spool
     {
         Self { 
             motor, 
-            state:              OperationState::Disabled,
+            operation_state:              OperationState::Disabled,
             direction:          Direction::Forward, 
             speed_controllers:  SpeedControllers::new(),
             speed_control_mode: SpeedControlMode::Adaptive,
@@ -43,9 +43,11 @@ impl Spool
 
     pub fn update(&mut self, t: Instant,tension_arm: &TensionArm, puller: &Puller)
     {
-        let velocity = self.active_controller_mut().update_speed(t, tension_arm, puller);
+        let multiplier = if self.direction == Direction::Forward { 1.0 } else { -1.0 };
 
-        let velocity = if self.direction == Direction::Forward { velocity } else { -velocity };
+        let controller = self.active_controller_mut();
+
+        let velocity = controller.update_speed(t, multiplier, tension_arm, puller);
 
         let steps_per_second = self.step_converter.angular_velocity_to_steps(velocity);
 
@@ -61,18 +63,15 @@ impl Spool
         self.speed_control_mode
     }
 
-    pub fn set_speed_control_mode(&mut self, value: SpeedControlMode)
+    pub fn set_speed_control_mode(&mut self, mode: SpeedControlMode)
     {
-        if self.speed_control_mode == value { return; }
+        if self.speed_control_mode == mode { return; }
 
-        // grab speed from active speed controller
-        let current_speed = self.active_controller().speed();
-
-        // change active speed controller
-        self.speed_control_mode = value;
+        self.speed_control_mode = mode;
 
         // get active speed controller
         let controller = self.active_controller_mut();
+        let current_speed = controller.speed();
 
         // Set the speed in the target controller and reset it for smooth transition
         controller.set_speed(current_speed);
@@ -85,9 +84,20 @@ impl Spool
         self.active_controller().speed()
     }
 
-    pub fn set_operation_state(&mut self, state: OperationState)
+    pub fn set_operation_state(&mut self, operation_state: OperationState)
     {
-        self.state = state;
+        use OperationState::*;
+
+        // No change, nothing to do
+        if self.operation_state == operation_state { return; }
+
+        // Leaving disabled state, enable motor
+        if self.operation_state == Disabled {
+            self.motor.set_enabled(true);
+        }
+
+        self.active_controller_mut().set_enabled(operation_state == Running);
+        self.operation_state = operation_state;
     }
 
     pub fn direction(&self) -> Direction

@@ -241,6 +241,7 @@ impl SpeedController for MinMaxSpeedController
     fn update_speed(
         &mut self, 
         t: Instant, 
+        multiplier: f64,
         tension_arm: &TensionArm, 
         puller: &Puller
     ) -> AngularVelocity
@@ -253,7 +254,7 @@ impl SpeedController for MinMaxSpeedController
             true  => speed,
             false => AngularVelocity::ZERO,
         };
-        let speed = self.accelerate_speed(speed, t);
+        let speed = self.accelerate_speed(speed * multiplier, t);
 
         // save speed before clamping or it will stay 0.0
         self.speed = speed;

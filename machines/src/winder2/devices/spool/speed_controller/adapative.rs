@@ -20,7 +20,7 @@ use super::helpers::FilamentTensionCalculator;
 #[derive(Debug)]
 pub struct AdaptiveSpeedController {
     /// Last commanded angular velocity sent to the spool motor
-    last_speed: AngularVelocity,
+    speed: AngularVelocity,
     /// Whether the speed controller is enabled (false = always returns zero speed)
     enabled: bool,
     /// Acceleration controller to smooth speed transitions and prevent sudden changes
@@ -93,19 +93,6 @@ impl AdaptiveSpeedController
 // getter + setter
 impl AdaptiveSpeedController
 {
-    pub fn speed(&self) -> AngularVelocity {
-        self.last_speed
-    }
-
-    pub fn set_speed(&mut self, speed: AngularVelocity) {
-        self.last_speed = speed;
-        self.acceleration_controller.reset(speed);
-    }
-
-    pub fn speed_factor(&self) -> Length {
-        self.speed_factor
-    }
-
     // Getters and setters for the new configurable parameters
     pub const fn tension_target(&self) -> f64 {
         self.tension_target
@@ -161,7 +148,7 @@ impl AdaptiveSpeedController
         let max_speed = AngularVelocity::new::<rpm>(Self::INITIAL_MAX_SPEED_RPM);
 
         Self {
-            last_speed: AngularVelocity::ZERO,
+            speed: AngularVelocity::ZERO,
             enabled: false,
             acceleration_controller: AngularAccelerationSpeedController::new(
                 Some(AngularVelocity::ZERO),
@@ -323,12 +310,12 @@ impl SpeedController for AdaptiveSpeedController
 {
     fn speed(&self) -> AngularVelocity 
     {
-        self.last_speed
+        self.speed
     }
 
     fn set_speed(&mut self, value: AngularVelocity) 
     {
-        self.last_speed = value;
+        self.speed = value;
         self.acceleration_controller.reset(value);
     }
 
@@ -345,29 +332,28 @@ impl SpeedController for AdaptiveSpeedController
     fn update_speed(
         &mut self, 
         t: Instant, 
+        multiplier: f64,
         tension_arm: &TensionArm, 
         puller: &Puller
     ) -> AngularVelocity 
     {
-        let target_speed = self.calculate_speed(t, tension_arm, puller);
-
-        let enabled_speed = if self.enabled {
-            target_speed
-        } else {
-            AngularVelocity::ZERO
+        let speed = match self.enabled
+        {
+            true  => self.calculate_speed(t, tension_arm, puller),
+            false => AngularVelocity::ZERO,
         };
-
-        let accelerated_speed = self.accelerate_speed(enabled_speed, puller, t);
+        
+        let accelerated_speed = self.accelerate_speed(speed * multiplier, puller, t);
 
         // Store speed before clamping to preserve the actual commanded value
-        self.last_speed = accelerated_speed;
+        self.speed = accelerated_speed;
 
         self.clamp_speed(accelerated_speed)
     }
     
     fn reset(&mut self) 
     {
-        self.last_speed = AngularVelocity::ZERO;
+        self.speed = AngularVelocity::ZERO;
         self.acceleration_controller.reset(AngularVelocity::ZERO);
         self.speed_factor = Length::new::<centimeter>(4.25);
         self.last_max_speed_factor_update = None;
