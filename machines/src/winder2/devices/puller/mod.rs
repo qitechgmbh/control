@@ -37,7 +37,7 @@ pub struct Puller
     motor: StepperVelocityEL70x1,
 
     // config
-    state:      OperationState,
+    operation_state:      OperationState,
     direction:  Direction,
     gear_ratio: GearRatio,
 
@@ -76,7 +76,7 @@ impl Puller
 
         Self {
             // config
-            state:      OperationState::Disabled,
+            operation_state:      OperationState::Disabled,
             direction:  Direction::Forward,
             gear_ratio: GearRatio::OneToOne,
 
@@ -95,6 +95,14 @@ impl Puller
         // retrieve speed
         let speed = self.speed_controller.speed();
 
+        // only disable motor once it reaches a really low speed
+        // to prevent an abrupt stop
+        if self.operation_state == OperationState::Disabled 
+            && speed.get::<meter_per_minute>() <= 0.1
+        {
+            self.motor.set_enabled(false);
+        }
+
         // convert to steps/sec
         let steps_per_second = self.step_converter.velocity_to_steps(speed);
 
@@ -109,12 +117,23 @@ impl Puller
     #[allow(dead_code)]
     pub fn operation_state(&self) -> OperationState 
     { 
-        self.state 
+        self.operation_state 
     }
 
-    pub fn set_operation_state(&mut self, state: OperationState)
-    {   
-        self.state = state;
+    pub fn set_operation_state(&mut self, operation_state: OperationState)
+    {
+        use OperationState::*;
+
+        // No change, nothing to do
+        if self.operation_state == operation_state { return; }
+
+        // Leaving disabled state, enable motor
+        if self.operation_state == Disabled {
+            self.motor.set_enabled(true);
+        }
+
+        self.speed_controller.set_enabled(operation_state == Running);
+        self.operation_state = operation_state;
     }
 
     pub fn direction(&self) -> Direction 

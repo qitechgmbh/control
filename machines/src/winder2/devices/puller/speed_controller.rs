@@ -16,6 +16,7 @@ pub struct SpeedController
 {
     // config
     mode: Mode,
+    enabled: bool,
     multiplier: f64,
 
     // state
@@ -46,9 +47,10 @@ impl SpeedController
         );
 
         Self { 
-            mode:  Mode::Fixed, 
-            multiplier:       1.0,
-            speed: Velocity::ZERO,
+            mode:       Mode::Fixed, 
+            enabled:    false,
+            multiplier: 1.0,
+            speed:      Velocity::ZERO,
             strategies: Strategies { fixed, adaptive },
             acceleration_controller, 
         }
@@ -58,14 +60,18 @@ impl SpeedController
     {
         use Mode::*;
 
-        let raw_speed = match self.mode 
+        let speed = match self.enabled 
         {
-            Fixed     => self.strategies.fixed.compute(),
-            Adapative => self.strategies.adaptive.compute(),
+            true => match self.mode 
+            {
+                Fixed     => self.strategies.fixed.compute(),
+                Adapative => self.strategies.adaptive.compute(),
+            },
+            false => Velocity::ZERO,
         };
 
         // Apply acceleration control
-        self.speed = self.acceleration_controller.update(raw_speed * self.multiplier, t);
+        self.speed = self.acceleration_controller.update(speed * self.multiplier, t);
     }
 
     pub fn mode(&self) -> Mode
@@ -76,6 +82,11 @@ impl SpeedController
     pub fn set_mode(&mut self, mode: Mode)
     {
         self.mode = mode;
+    }
+
+    pub fn set_enabled(&mut self, value: bool)
+    {
+        self.enabled = value;
     }
 
     pub fn speed(&self) -> Velocity
