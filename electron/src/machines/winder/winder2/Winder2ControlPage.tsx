@@ -229,7 +229,7 @@ export function Winder2ControlPage() {
             disabled={isDisabled}
             isLoading={isLoading}
           >
-            Set Zero Point
+            Calibrate
           </TouchButton>
           {!state?.tension_arm_state?.is_calibrated && (
             <StatusBadge variant="error">Not Calibrated</StatusBadge>
@@ -283,11 +283,11 @@ export function Winder2ControlPage() {
           />
           <Label label="Speed Regulation">
             <SelectionGroup
-              value={state?.spool_state?.speed_control_mode}
+              value={state?.puller_state?.speed_control_mode}
               disabled={isDisabled}
               loading={isLoading}
               options={{
-                MinMax: {
+                Fixed: {
                   children: "Fixed",
                   icon: "lu:Crosshair",
                 },
