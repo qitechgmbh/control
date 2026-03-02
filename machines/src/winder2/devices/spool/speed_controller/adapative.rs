@@ -93,7 +93,6 @@ impl AdaptiveSpeedController
 // getter + setter
 impl AdaptiveSpeedController
 {
-    // Getters and setters for the new configurable parameters
     pub const fn tension_target(&self) -> f64 {
         self.tension_target
     }
@@ -190,7 +189,7 @@ impl AdaptiveSpeedController
 
         // Calculate filament tension from arm angle
         let tension_arm_revolution = clamp_revolution_uom(
-            tension_arm.get_angle(),
+            tension_arm.angle(),
             self.filament_calc.get_max_angle(), // Inverted because min angle = max tension
             self.filament_calc.get_min_angle(),
         );
@@ -317,11 +316,6 @@ impl SpeedController for AdaptiveSpeedController
     {
         self.speed = value;
         self.acceleration_controller.reset(value);
-    }
-
-    fn is_enabled(&self) -> bool 
-    {
-        self.enabled
     }
 
     fn set_enabled(&mut self, value: bool) 

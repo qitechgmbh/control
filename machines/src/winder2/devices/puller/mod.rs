@@ -26,11 +26,10 @@ mod speed_controller;
 pub use speed_controller::SpeedController;
 
 pub use speed_controller::{
-    Mode as SpeedControlMode,
-    Strategies as SpeedControllerStrategies
+    Algorithm as SpeedControlAlgorithm,
+    Algorithms as SpeedControllerAlgorithms
 };
 
-/// Represents the puller motor
 #[derive(Debug)]
 pub struct Puller
 {
@@ -38,9 +37,11 @@ pub struct Puller
     motor: StepperVelocityEL70x1,
 
     // config
-    operation_state:      OperationState,
+    operation_state: OperationState,
     direction:  Direction,
     gear_ratio: GearRatio,
+
+    multiplier: f64,
 
     // misc
     speed_controller: SpeedController,
@@ -77,9 +78,11 @@ impl Puller
 
         Self {
             // config
-            operation_state:      OperationState::Disabled,
+            operation_state: OperationState::Disabled,
             direction:  Direction::Forward,
             gear_ratio: GearRatio::OneToOne,
+
+            multiplier: 1.0,
 
             // misc
             motor,
@@ -91,7 +94,7 @@ impl Puller
     pub fn update(&mut self, t: Instant) 
     {
         // update speed
-        self.speed_controller.update(t);
+        self.speed_controller.update(t, self.multiplier);
 
         // retrieve speed
         let speed = self.speed_controller.speed();
@@ -161,10 +164,10 @@ impl Puller
         // reset configured speeds when gear ratio changes
         // for added safety, since changing gear ratio should
         // require a reconfiguration of the machine
-        let strategies = self.speed_controller.strategies_mut();
-        strategies.fixed.set_target_speed(Velocity::ZERO);
-        strategies.adaptive.set_base_speed(Velocity::ZERO);
-        strategies.adaptive.set_deviation_max(Velocity::ZERO);
+        let algorithms = self.speed_controller.algorithms_mut();
+        algorithms.fixed.set_target_speed(Velocity::ZERO);
+        algorithms.adaptive.set_base_speed(Velocity::ZERO);
+        algorithms.adaptive.set_deviation_max(Velocity::ZERO);
     }
 
     pub fn output_speed(&self) -> Velocity 
@@ -172,24 +175,24 @@ impl Puller
         self.speed_controller.speed() / self.gear_ratio.multiplier() 
     }
 
-    pub fn speed_control_mode(&self) -> SpeedControlMode
+    pub fn active_speed_control_algorithm(&self) -> SpeedControlAlgorithm
     {
-        self.speed_controller.mode()
+        self.speed_controller.active_algorithm()
     }
 
-    pub fn set_speed_control_mode(&mut self, mode: SpeedControlMode)
+    pub fn select_speed_control_algorithm(&mut self, mode: SpeedControlAlgorithm)
     {
-        self.speed_controller.set_mode(mode);
+        self.speed_controller.select_algorithm(mode);
     }
 
-    pub fn speed_controller_strategies(&self) -> &SpeedControllerStrategies
+    pub fn speed_controller_algorithms(&self) -> &SpeedControllerAlgorithms
     {
-        self.speed_controller.strategies()
+        self.speed_controller.algorithms()
     }
 
-    pub fn speed_controller_strategies_mut(&mut self) -> &mut SpeedControllerStrategies
+    pub fn speed_controller_algorithms_mut(&mut self) -> &mut SpeedControllerAlgorithms
     {
-        self.speed_controller.strategies_mut()
+        self.speed_controller.algorithms_mut()
     }
 }
 
@@ -198,21 +201,21 @@ impl Puller
 {
     fn update_multiplier(&mut self)
     {
-        let multiplier = self.gear_ratio.multiplier();
-        let multiplier = match self.direction 
-        {
-            Direction::Forward => multiplier,
-            Direction::Reverse => -multiplier,
-        };
+        let mut multiplier = self.gear_ratio.multiplier();
 
-        self.speed_controller.set_multiplier(multiplier);
+        if self.direction.is_reverse() { 
+            multiplier = -multiplier;
+        }
+
+        self.multiplier = multiplier;
     }
 }
 
 // other types
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum GearRatio 
+#[allow(clippy::enum_variant_names)]
+pub enum GearRatio
 {
     OneToOne,
     FiveToOne,

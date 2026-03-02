@@ -17,7 +17,6 @@ pub trait SpeedController
     fn speed(&self) -> AngularVelocity;
     fn set_speed(&mut self, speed: AngularVelocity);
 
-    fn is_enabled(&self) -> bool;
     fn set_enabled(&mut self, enabled: bool);
 
     fn reset(&mut self);

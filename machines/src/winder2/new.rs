@@ -72,7 +72,7 @@ impl MachineNewTrait for Winder2
                     .0
                     .write()
                     .await
-                    .write_config(&device.1, &el7041_config)
+                    .write_config(device.1, &el7041_config)
                     .await?;
 
                 device.0
@@ -106,7 +106,7 @@ impl MachineNewTrait for Winder2
                     .0
                     .write()
                     .await
-                    .write_config(&device.1, &el7031_config)
+                    .write_config(device.1, &el7031_config)
                     .await?;
 
                 device.0
@@ -139,7 +139,7 @@ impl MachineNewTrait for Winder2
                     .0
                     .write()
                     .await
-                    .write_config(&device.1, &el7031_0030_config)
+                    .write_config(device.1, &el7031_0030_config)
                     .await?;
 
                 device.0
@@ -160,11 +160,11 @@ impl MachineNewTrait for Winder2
 
         let hardware = Hardware {
             spool_motor: StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
+            puller_motor: StepperVelocityEL70x1::new(el7031_0030.clone(), EL7031_0030StepperPort::STM1),
             traverse_motor: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
             traverse_limit_switch: DigitalInput::new(el7031, EL7031DigitalInputPort::DI1),
-            puller_motor: StepperVelocityEL70x1::new(el7031_0030.clone(), EL7031_0030StepperPort::STM1),
-            tension_arm_sensor: AnalogInput::new(el7031_0030, EL7031_0030AnalogInputPort::AI1),
             traverse_laser_pointer: DigitalOutput::new(el2002, EL2002Port::DO1),
+            tension_arm_sensor: AnalogInput::new(el7031_0030, EL7031_0030AnalogInputPort::AI1),
         };
 
         let mut instance = Self::new(channel, hardware);

@@ -7,7 +7,7 @@ use crate::{
     MachineCrossConnectionState, types::Direction, winder2::{
         Winder2, 
         devices::{
-            PullerGearRatio, PullerSpeedControlMode, SpoolSpeedControlMode
+            PullerGearRatio, PullerSpeedControlAlgorithm, SpoolSpeedControlMode
         }, types::{Mode, SpoolLengthTaskCompletedAction}
     }
 };
@@ -50,7 +50,7 @@ pub struct SpoolState
     pub direction: Direction,
     pub speed_control_mode: SpoolSpeedControlMode,
 
-    /// min max mode
+    /// minmax mode
     pub minmax_min_speed: f64, // in rpm
     pub minmax_max_speed: f64, // in rpm
 
@@ -67,7 +67,7 @@ pub struct PullerState
 {
     pub direction: Direction,
     pub gear_ratio: PullerGearRatio,
-    pub speed_control_mode: PullerSpeedControlMode,
+    pub speed_control_mode: PullerSpeedControlAlgorithm,
 
     // fixed speed strategy
     pub fixed_target_speed: f64, // in m/min
@@ -163,7 +163,7 @@ impl Winder2
     {
         let puller = &self.puller;
 
-        let strategies = puller.speed_controller_strategies();
+        let strategies = puller.speed_controller_algorithms();
 
         let fixed_target_speed = 
             strategies.fixed.target_speed().get::<meter_per_minute>();
@@ -174,7 +174,7 @@ impl Winder2
         let adaptive_deviation_max = 
             strategies.adaptive.deviation_max().get::<meter_per_minute>();
 
-        let adaptive_reference_machine = match &self.puller_speed_reference_machine
+        let adaptive_reference_machine = match &self.puller_reference_machine
         {
             Some(connection) => MachineCrossConnectionState { 
                 machine_identification_unique: Some(connection.ident.clone()),
@@ -189,7 +189,7 @@ impl Winder2
         PullerState {
             direction:  puller.direction(),
             gear_ratio: puller.gear_ratio(),
-            speed_control_mode: puller.speed_control_mode(),
+            speed_control_mode: puller.active_speed_control_algorithm(),
             fixed_target_speed,
             adaptive_base_speed,
             adaptive_deviation_max,
@@ -200,15 +200,16 @@ impl Winder2
     fn create_traverse_state(&self) -> TraverseState
     {
         let traverse = &self.traverse;
+        let state = &traverse.state();
 
         TraverseState { 
             limit_inner:   traverse.limit_inner().get::<millimeter>(), 
             limit_outer:   traverse.limit_outer().get::<millimeter>(),  
-            is_going_in:   traverse.is_going_in(), 
-            is_going_out:  traverse.is_going_out(), 
-            is_homed:      traverse.is_homed(), 
-            is_going_home: traverse.is_going_home(), 
-            is_traversing: traverse.is_traversing(), 
+            is_going_in:   state.is_going_in(), 
+            is_going_out:  state.is_going_out(), 
+            is_homed:      state.is_homed(), 
+            is_going_home: state.is_going_home(), 
+            is_traversing: state.is_traversing(), 
             laserpointer_enabled:  traverse.laser_pointer_enabled(),
             step_size:     traverse.step_size().get::<millimeter>(), 
             padding:       traverse.padding().get::<millimeter>(), 
@@ -221,7 +222,7 @@ impl Winder2
     fn create_tension_arm_state(&self) -> TensionArmState
     {
         TensionArmState {
-            is_calibrated: self.tension_arm.is_calibrated()
+            is_calibrated: self.tension_arm.is_zeroed()
         }
     }
 

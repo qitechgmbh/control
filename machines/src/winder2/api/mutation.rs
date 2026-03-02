@@ -1,6 +1,8 @@
 use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
+use anyhow::anyhow;
+
 use units::{
     AngularVelocity, 
     Length, 
@@ -14,7 +16,7 @@ use crate::{
     AsyncThreadMessage, CrossConnection, Machine, machine_identification::MachineIdentificationUnique, types::Direction, winder2::{Winder2, devices::{
         OperationState, 
         PullerGearRatio, 
-        PullerSpeedControlMode,
+        PullerSpeedControlAlgorithm,
         SpoolSpeedControlMode
     }, types::{Mode, SpoolLengthTaskCompletedAction}}
 };
@@ -43,15 +45,16 @@ pub enum Mutation
     // Puller
     SetPullerDirection(Direction),
     SetPullerGearRatio(PullerGearRatio),
-    SetPullerSpeedControlMode(PullerSpeedControlMode),
+    SetPullerSpeedControlMode(PullerSpeedControlAlgorithm),
 
     // Puller Speed Fixed Strategy
     SetPullerFixedTargetSpeed(f64),
 
-    // Puller Speed Strategy
+    // Puller Speed Adapative Strategy
     SetPullerAdaptiveBaseSpeed(f64),  // in m/min
     SetPullerAdaptiveDeviationMax(f64), // in m/min
     SetPullerAdaptiveReferenceMachine(Option<MachineIdentificationUnique>),
+
 
     // Traverse
     /// Position in mm from home point
@@ -79,7 +82,7 @@ pub enum Mutation
 
 impl Winder2
 {
-    pub fn handle_mutation(&mut self, value: serde_json::Value) -> Result<(), anyhow::Error> 
+    pub fn handle_mutation(&mut self, value: serde_json::Value) -> anyhow::Result<()>
     {
         use Mutation::*;
 
@@ -87,43 +90,80 @@ impl Winder2
 
         match mutation
         {
-            // machine
-            SetMode(v) => self.set_mode(v),
+            // Machine
+            SetMode(v) => self.set_mode(v)?,
 
-            // spool
-            SetSpoolDirection(v) => self.spool_set_direction(v),
-            SetSpoolSpeedControlMode(v) => self.spool_set_speed_control_mode(v),
-            SetSpoolMinMaxMinSpeed(v) => self.spool_set_minmax_min_speed(v),
-            SetSpoolMinMaxMaxSpeed(v) => self.spool_set_minmax_max_speed(v),
-            SetSpoolAdaptiveTensionTarget(v) => self.spool_set_adaptive_tension_target(v),
-            SetSpoolAdaptiveRadiusLearningRate(v) => self.spool_set_adaptive_radius_learning_rate(v),
-            SetSpoolAdaptiveMaxSpeedMultiplier(v) => self.spool_set_adaptive_max_speed_multiplier(v),
-            SetSpoolAdaptiveAccelerationFactor(v) => self.spool_set_adaptive_acceleration_factor(v),
-            SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(v) => self.spool_set_adaptive_deacceleration_urgency_multiplier(v),
+            // Spool
+            SetSpoolDirection(v) => 
+                self.spool_set_direction(v),
+            SetSpoolSpeedControlMode(v) => 
+                self.spool_set_speed_control_mode(v),
 
-            //traverse
-            SetTraverseLimitInner(v)      => self.traverse_set_limit_inner(v),
-            SetTraverseLimitOuter(v)      => self.traverse_set_limit_outer(v),
-            SetTraverseStepSize(v)        => self.traverse_set_step_size(v),
-            SetTraversePadding(v)         => self.traverse_set_padding(v),
-            GotoTraverseLimitInner        => self.traverse_goto_limit_inner(),
-            GotoTraverseLimitOuter        => self.traverse_goto_limit_outer(),
-            GotoTraverseHome              => self.traverse_goto_home(),
-            SetTraverseLaserpointerEnabled(v) => self.traverse_set_laser_pointer_enabled(v),
+            // Spool Speed MinMax Strategy
+            SetSpoolMinMaxMinSpeed(v) => 
+                self.spool_set_minmax_min_speed(v),
+            SetSpoolMinMaxMaxSpeed(v) => 
+                self.spool_set_minmax_max_speed(v),
 
-            // puller
-            SetPullerDirection(v)                => self.puller_set_direction(v),
-            SetPullerGearRatio(v)                => self.puller_set_gear_ratio(v),
-            SetPullerSpeedControlMode(v)         => self.puller_set_speed_control_mode(v),
-            SetPullerFixedTargetSpeed(v)         => self.puller_set_fixed_target_speed(v),
-            SetPullerAdaptiveBaseSpeed(v)        => self.puller_set_adaptive_base_speed(v),
-            SetPullerAdaptiveDeviationMax(v)     => self.puller_set_adaptive_deviation_max(v),
-            SetPullerAdaptiveReferenceMachine(v) => self.puller_set_adaptive_reference_machine(v)?,
+            // Spool Speed Adaptive Strategy
+            SetSpoolAdaptiveTensionTarget(v) => 
+                self.spool_set_adaptive_tension_target(v),
+            SetSpoolAdaptiveRadiusLearningRate(v) => 
+                self.spool_set_adaptive_radius_learning_rate(v),
+            SetSpoolAdaptiveMaxSpeedMultiplier(v) => 
+                self.spool_set_adaptive_max_speed_multiplier(v),
+            SetSpoolAdaptiveAccelerationFactor(v) => 
+                self.spool_set_adaptive_acceleration_factor(v),
+            SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(v) => 
+                self.spool_set_adaptive_deacceleration_urgency_multiplier(v),
 
-            // tension arm
-            CalibrateTensionArmAngle => self.tension_arm_calibrate(),
+            // Puller
+            SetPullerDirection(v) => 
+                self.puller_set_direction(v),
+            SetPullerGearRatio(v) => 
+                self.puller_set_gear_ratio(v),
+            SetPullerSpeedControlMode(v) => 
+                self.puller_set_speed_control_mode(v),
 
-            // spool length task
+            // Puller Speed Fixed Strategy
+            SetPullerFixedTargetSpeed(v) => 
+                self.puller_set_fixed_target_speed(v),
+
+            // Puller Speed Adapative Strategy
+            SetPullerAdaptiveBaseSpeed(v) => 
+                self.puller_set_adaptive_base_speed(v),
+            SetPullerAdaptiveDeviationMax(v) => 
+                self.puller_set_adaptive_deviation_max(v),
+            SetPullerAdaptiveReferenceMachine(v) => 
+                self.puller_set_adaptive_reference_machine(v)?,
+
+            // Traverse Config
+            SetTraverseLimitInner(v) => 
+                self.traverse_set_limit_inner(v),
+            SetTraverseLimitOuter(v) => 
+                self.traverse_set_limit_outer(v),
+            SetTraverseStepSize(v) => 
+                self.traverse_set_step_size(v),
+            SetTraversePadding(v) => 
+                self.traverse_set_padding(v),
+
+            // Traverse State Change
+            GotoTraverseLimitInner => 
+                self.traverse_goto_limit_inner(),
+            GotoTraverseLimitOuter => 
+                self.traverse_goto_limit_outer(),
+            GotoTraverseHome => 
+                self.traverse_goto_home(),
+
+            // Traverse Lazerpointer
+            SetTraverseLaserpointerEnabled(v) => 
+                self.traverse_set_laser_pointer_enabled(v),
+
+            // Tension Arm
+            CalibrateTensionArmAngle => 
+                self.tension_arm_calibrate(),
+
+            // Spool Length Task
             SetSpoolLengthTaskTargetLength(v) => 
                 self.spool_length_task_set_target_length(v),
             ResetSetSpoolLengthTaskProgress => 
@@ -139,47 +179,51 @@ impl Winder2
 // Machine
 impl Winder2 
 {
-    pub fn set_mode(&mut self, mode: Mode)
+    pub fn set_mode(&mut self, mode: Mode) -> anyhow::Result<()>
     {
-        let should_update = mode != Mode::Wind || self.can_wind();
+        use Mode::*;
 
-        if should_update
+        if mode == Wind && !self.can_wind()
         {
-            self.mode = mode;
-            match self.mode
+            return Err(anyhow!("Cannot enter wind mode in current state"));
+        }
+
+        self.mode = mode;
+
+        match self.mode
+        {
+            Standby =>
             {
-                Mode::Standby =>
-                {
-                    let state = OperationState::Disabled;
-                    self.spool.set_operation_state(state);
-                    self.puller.set_operation_state(state);
-                    self.traverse.set_operation_state(state);
-                },
-                Mode::Hold => 
-                {
-                    let state = OperationState::Holding;
-                    self.spool.set_operation_state(state);
-                    self.puller.set_operation_state(state);
-                    self.traverse.set_operation_state(state);
-                },
-                Mode::Pull => 
-                {
-                    use OperationState::*;
-                    self.spool.set_operation_state(Holding);
-                    self.puller.set_operation_state(Running);
-                    self.traverse.set_operation_state(Holding);
-                },
-                Mode::Wind => 
-                {
-                    let state = OperationState::Running;
-                    self.spool.set_operation_state(state);
-                    self.puller.set_operation_state(state);
-                    self.traverse.set_operation_state(state);
-                },
-            }
+                let state = OperationState::Disabled;
+                self.spool.set_operation_state(state);
+                self.puller.set_operation_state(state);
+                self.traverse.set_operation_state(state);
+            },
+            Hold => 
+            {
+                let state = OperationState::Holding;
+                self.spool.set_operation_state(state);
+                self.puller.set_operation_state(state);
+                self.traverse.set_operation_state(state);
+            },
+            Pull => 
+            {
+                use OperationState::*;
+                self.spool.set_operation_state(Holding);
+                self.puller.set_operation_state(Running);
+                self.traverse.set_operation_state(Holding);
+            },
+            Wind => 
+            {
+                let state = OperationState::Running;
+                self.spool.set_operation_state(state);
+                self.puller.set_operation_state(state);
+                self.traverse.set_operation_state(state);
+            },
         }
 
         self.emit_state();
+        Ok(())
     }
 }
 
@@ -267,9 +311,9 @@ impl Winder2
 // Puller
 impl Winder2
 {
-    pub fn puller_set_speed_control_mode(&mut self, mode: PullerSpeedControlMode) 
+    pub fn puller_set_speed_control_mode(&mut self, algorithm: PullerSpeedControlAlgorithm)
     {
-        self.puller.set_speed_control_mode(mode);
+        self.puller.select_speed_control_algorithm(algorithm);
         self.emit_state();
     }
 
@@ -283,7 +327,7 @@ impl Winder2
     {
         self.puller.set_gear_ratio(gear_ratio);
         // safety measure when changing gear ratio
-        self.set_mode(Mode::Standby);
+        _ = self.set_mode(Mode::Standby);
         self.emit_state();
     }
 
@@ -292,21 +336,21 @@ impl Winder2
     {
         // Convert m/min to velocity
         let speed = Velocity::new::<meter_per_minute>(speed);
-        self.puller.speed_controller_strategies_mut().fixed.set_target_speed(speed);
+        self.puller.speed_controller_algorithms_mut().fixed.set_target_speed(speed);
         self.emit_state();
     }
 
     pub fn puller_set_adaptive_base_speed(&mut self, speed: f64) 
     {
         let speed = Velocity::new::<meter_per_minute>(speed);
-        self.puller.speed_controller_strategies_mut().adaptive.set_base_speed(speed);
+        self.puller.speed_controller_algorithms_mut().adaptive.set_base_speed(speed);
         self.emit_state();
     }
 
     pub fn puller_set_adaptive_deviation_max(&mut self, deviation_max: f64) 
     {
         let speed = Velocity::new::<meter_per_minute>(deviation_max);
-        self.puller.speed_controller_strategies_mut().adaptive.set_deviation_max(speed);
+        self.puller.speed_controller_algorithms_mut().adaptive.set_deviation_max(speed);
         self.emit_state();
     }
 
@@ -319,10 +363,10 @@ impl Winder2
         {
             Some(machine_uid) => 
             {
-                if let Some(connection) = &self.puller_speed_reference_machine
+                if self.puller_reference_machine.as_ref()
+                    .is_some_and(|c| c.ident == machine_uid)
                 {
-                    if connection.ident == machine_uid 
-                        { return Ok(()); }
+                    return Ok(());
                 }
 
                 let main_sender = match &self.channel.main_sender 
@@ -349,7 +393,7 @@ impl Winder2
             },
             None => 
             {
-                match self.puller_speed_reference_machine.take()
+                match self.puller_reference_machine.take()
                 {
                     Some(connection) => 
                     {
@@ -447,7 +491,7 @@ impl Winder2
 {
     pub fn tension_arm_calibrate(&mut self)
     {
-        self.tension_arm.calibrate();
+        self.tension_arm.zero();
         self.emit_live_values(); // For angle update
         self.emit_state();
     }

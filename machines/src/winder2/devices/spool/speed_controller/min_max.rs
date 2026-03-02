@@ -5,9 +5,10 @@ use units::{
     f64::*,
     angle::degree,
     angular_acceleration::{radian_per_second_squared, revolution_per_minute_per_second},
-    angular_velocity::{radian_per_second, revolution_per_minute, revolution_per_second},
-    length::meter,
-    velocity::meter_per_second,
+    angular_velocity::{
+        radian_per_second, 
+        revolution_per_minute
+    },
 };
 
 use control_core::{
@@ -190,31 +191,6 @@ impl MinMaxSpeedController
             .get_min_speed()
             .unwrap_or(AngularVelocity::ZERO)
     }
-
-    pub fn get_speed(&self) -> AngularVelocity {
-        self.speed
-    }
-
-    pub fn set_speed(&mut self, speed: AngularVelocity) {
-        self.speed = speed;
-        // Also update the acceleration controller's current speed to ensure smooth transitions
-        self.acceleration_controller.reset(speed);
-    }
-
-    /// derive the radius from the puller speed and the current angular speed
-    pub fn get_radius(&self, puller: &Puller) -> Length 
-    {
-        let puller_speed  = puller.output_speed().get::<meter_per_second>();
-        let angular_speed = self.speed.get::<revolution_per_second>();
-
-        // Calculate the radius using the formula: radius = speed / angular_speed
-        let radius = puller_speed / angular_speed;
-
-        // Ensure the radius is a normal number, otherwise default to 0.0
-        let radius = Some(radius).filter(|&n| n.is_normal()).unwrap_or(0.0);
-
-        Length::new::<meter>(radius)
-    }
 }
 
 impl SpeedController for MinMaxSpeedController
@@ -234,10 +210,6 @@ impl SpeedController for MinMaxSpeedController
         self.enabled = enabled;
     }
 
-    fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     fn update_speed(
         &mut self, 
         t: Instant, 
@@ -248,7 +220,7 @@ impl SpeedController for MinMaxSpeedController
     {
         _ = puller;
 
-        let speed = self.speed_raw(t, tension_arm.get_angle());
+        let speed = self.speed_raw(t, tension_arm.angle());
         let speed = match self.enabled 
         {
             true  => speed,

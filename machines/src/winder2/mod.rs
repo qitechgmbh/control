@@ -12,10 +12,7 @@ use crate::{
 };
 
 mod types;
-use types::{Mode, Hardware, SpoolLengthTaskCompletedAction};
-
-mod tasks;
-use tasks::SpoolLengthTask;
+use types::{Mode, Hardware, SpoolLengthTask, SpoolLengthTaskCompletedAction};
 
 mod devices;
 use devices::{Spool, Traverse, Puller, TensionArm};
@@ -47,7 +44,7 @@ pub struct Winder2
     spool_length_task: SpoolLengthTask,
 
     // reference machine for the pullers adaptive speed mode
-    puller_speed_reference_machine: Option<MachineConnection>,
+    puller_reference_machine: Option<MachineConnection>,
 }
 
 // public interface
@@ -79,19 +76,93 @@ impl Winder2
             tension_arm: TensionArm::new(hardware.tension_arm_sensor), 
             spool_length_task: SpoolLengthTask::new(),
             on_spool_length_task_complete: SpoolLengthTaskCompletedAction::NoAction,
-            puller_speed_reference_machine: None,
+            puller_reference_machine: None,
         }
     }
 
-    /// Can wind capability check
-    fn can_wind(&self) -> bool 
+    pub fn can_wind(&self) -> bool 
     {
-        // Check if tension arm is calibrated and traverse is homed
-        self.tension_arm.is_calibrated() 
-            && self.traverse.is_homed() 
-            && !self.traverse.is_going_home()
+        let traverse_state = self.traverse.state();
 
-        // TODO(JSE): why the 2 checks for traverse?
+        // Ensure both devices are calibrated
+        self.tension_arm.is_zeroed() 
+            && traverse_state.is_homed() 
+            && !traverse_state.is_going_home()
+    }
+}
+
+// base machine trait
+impl MachineWithChannel for Winder2
+{
+    type State = State;
+    type LiveValues = LiveValues;
+
+    fn update(&mut self, now: Instant) -> anyhow::Result<()>
+    {
+        let prev_traverse_state = self.traverse.state();
+
+        self.spool.update(now, &self.tension_arm, &self.puller);
+        self.puller.update(now);
+        self.traverse.update(&self.spool);
+
+        // update this last since it can mutate mode
+        self.update_spool_length_task(now);
+
+        // check if traverse state changed
+        if prev_traverse_state != self.traverse.state()
+        {
+            self.emit_state();
+        }
+
+        if now.duration_since(self.last_emit) > Duration::from_secs_f64(1.0 / 30.0) 
+        {
+            self.emit_state();
+            self.emit_live_values();
+        }
+
+        Ok(())
+    }
+
+    fn on_receive_live_values(&mut self, live_values: MachinesLiveValues) 
+    {
+        use crate::MachinesLiveValues::Laser;
+
+        #[allow(irrefutable_let_patterns)]
+        if let Laser(live_values) = live_values 
+        {
+            _ = live_values;
+            // TODO: use data to regulate speed. But not idea how, when what?
+        }
+    }
+
+    fn get_state(&self) -> State 
+    {
+        self.create_state()
+    }
+
+    fn get_live_values(&self) -> Option<LiveValues> 
+    {
+        Some(self.create_live_values())
+    }
+
+    fn mutate(&mut self, value: serde_json::Value) -> anyhow::Result<()> 
+    {
+        self.handle_mutation(value)
+    }
+
+    fn on_namespace(&mut self) 
+    {
+        self.emit_state();
+    }
+
+    fn get_machine_channel(&self) -> &MachineChannel 
+    {
+        &self.channel
+    }
+
+    fn get_machine_channel_mut(&mut self) -> &mut MachineChannel 
+    {
+        &mut self.channel
     }
 }
 
@@ -142,7 +213,9 @@ impl Winder2
             };
 
             self.spool_length_task.reset(now);
-            self.set_mode(mode);
+
+            // can only fail if attempting to set mode to Wind so can't fail here
+            _ = self.set_mode(mode);
         }
     }
 
@@ -158,80 +231,5 @@ impl Winder2
         let event = self.create_live_values();
         self.channel.emit(event);
         self.last_emit = Instant::now();
-    }
-}
-
-// base machine trait
-impl MachineWithChannel for Winder2
-{
-    type State = State;
-    type LiveValues = LiveValues;
-
-    fn update(&mut self, now: std::time::Instant) -> anyhow::Result<()> 
-    {
-        let prev_traverse_state = self.traverse.state();
-
-        self.spool.update(now, &self.tension_arm, &self.puller);
-        self.puller.update(now);
-        self.traverse.update(&self.spool);
-
-        // update last since it can mutate mode
-        self.update_spool_length_task(now);
-
-        if prev_traverse_state != self.traverse.state()
-        {
-            // traverse state changed, emit state change
-            self.emit_state();
-        }
-
-        if now.duration_since(self.last_emit) > Duration::from_secs_f64(1.0 / 30.0) 
-        {
-            self.emit_state();
-            self.emit_live_values();
-        }
-
-        Ok(())
-    }
-
-    fn get_state(&self) -> State 
-    {
-        self.create_state()
-    }
-
-    fn get_live_values(&self) -> Option<LiveValues> 
-    {
-        Some(self.create_live_values())
-    }
-
-    fn mutate(&mut self, value: serde_json::Value) -> anyhow::Result<()> 
-    {
-        self.handle_mutation(value)
-    }
-
-    fn on_namespace(&mut self) 
-    {
-        self.emit_state();
-    }
-
-    fn on_receive_live_values(&mut self, live_values: MachinesLiveValues) 
-    {
-        use crate::MachinesLiveValues::Laser;
-
-        #[allow(irrefutable_let_patterns)]
-        if let Laser(live_values) = live_values 
-        {
-            _ = live_values;
-            // TODO: use data to regulate speed. But not idea how, when what?
-        }
-    }
-
-    fn get_machine_channel(&self) -> &MachineChannel 
-    {
-        &self.channel
-    }
-
-    fn get_machine_channel_mut(&mut self) -> &mut MachineChannel 
-    {
-        &mut self.channel
     }
 }

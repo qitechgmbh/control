@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use units::{Acceleration, ConstZero, Jerk, Velocity};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Mode 
+pub enum Algorithm 
 {
     Fixed,
     Adaptive,
@@ -14,15 +14,15 @@ pub enum Mode
 #[derive(Debug)]
 pub struct SpeedController
 {
-    // config
-    mode: Mode,
-    enabled: bool,
-    multiplier: f64,
+    enabled:    bool,
+    algorithm:  Algorithm,
+    speed:      Velocity,
+    algorithms: Algorithms,
 
-    // state
-    speed: Velocity,
-
-    strategies: Strategies,
+    // currently all algorithms share acceleration controller
+    // so we keep it in here. Might consider moving to each
+    // algorithm and introduce a sort of sync function
+    // for smooth transitions when switching algorithms
     acceleration_controller: LinearJerkSpeedController,
 }
 
@@ -30,11 +30,11 @@ impl SpeedController
 {
     pub fn new(speed_max: Velocity, jerk_max: Jerk, acceleration_max: Acceleration) -> Self
     {
-        let fixed = FixedSpeedStrategy { 
+        let fixed = FixedSpeedAlgorithm { 
             target_speed: Velocity::ZERO 
         };
 
-        let adaptive = AdaptiveSpeedStrategy { 
+        let adaptive = AdaptiveSpeedAlgorithm { 
             base_speed:    Velocity::ZERO, 
             deviation_max: Velocity::ZERO, 
             modulation:    0.0,
@@ -47,41 +47,40 @@ impl SpeedController
         );
 
         Self { 
-            mode:       Mode::Fixed, 
+            algorithm:  Algorithm::Fixed, 
             enabled:    false,
-            multiplier: 1.0,
             speed:      Velocity::ZERO,
-            strategies: Strategies { fixed, adaptive },
+            algorithms: Algorithms { fixed, adaptive },
             acceleration_controller, 
         }
     }
 
-    pub fn update(&mut self, t: Instant)
+    pub fn update(&mut self, t: Instant, multiplier: f64)
     {
-        use Mode::*;
+        use Algorithm::*;
 
         let speed = match self.enabled 
         {
-            true => match self.mode 
+            true => match self.algorithm 
             {
-                Fixed     => self.strategies.fixed.compute(),
-                Adaptive => self.strategies.adaptive.compute(),
+                Fixed    => self.algorithms.fixed.compute(),
+                Adaptive => self.algorithms.adaptive.compute(),
             },
             false => Velocity::ZERO,
         };
 
         // Apply acceleration control
-        self.speed = self.acceleration_controller.update(speed * self.multiplier, t);
+        self.speed = self.acceleration_controller.update(speed * multiplier, t);
     }
 
-    pub fn mode(&self) -> Mode
+    pub fn active_algorithm(&self) -> Algorithm
     {
-        self.mode
+        self.algorithm
     }
 
-    pub fn set_mode(&mut self, mode: Mode)
+    pub fn select_algorithm(&mut self, mode: Algorithm)
     {
-        self.mode = mode;
+        self.algorithm = mode;
     }
 
     pub fn set_enabled(&mut self, value: bool)
@@ -94,59 +93,57 @@ impl SpeedController
         self.speed
     }
 
-    pub fn set_multiplier(&mut self, multiplier: f64)
+    pub fn algorithms(&self) -> &Algorithms
     {
-        self.multiplier = multiplier;
+        &self.algorithms
     }
 
-    pub fn strategies(&self) -> &Strategies
+    pub fn algorithms_mut(&mut self) -> &mut Algorithms
     {
-        &self.strategies
-    }
-
-    pub fn strategies_mut(&mut self) -> &mut Strategies
-    {
-        &mut self.strategies
+        &mut self.algorithms
     }
 }
 
 #[derive(Debug)]
-pub struct Strategies
+pub struct Algorithms
 {
-    pub fixed:    FixedSpeedStrategy,
-    pub adaptive: AdaptiveSpeedStrategy,
+    pub fixed:    FixedSpeedAlgorithm,
+    pub adaptive: AdaptiveSpeedAlgorithm,
 }
 
 #[derive(Debug)]
-pub struct FixedSpeedStrategy
+pub struct FixedSpeedAlgorithm
 {
     target_speed: Velocity,
 }
 
-impl FixedSpeedStrategy
+impl FixedSpeedAlgorithm
 {
     pub fn compute(&self) -> Velocity
     {
         self.target_speed
     }
 
-    pub fn target_speed(&self) -> Velocity {
+    pub fn target_speed(&self) -> Velocity 
+    {
         self.target_speed
     }
 
-    pub fn set_target_speed(&mut self, speed: Velocity) {
+    pub fn set_target_speed(&mut self, speed: Velocity) 
+    {
         self.target_speed = speed;
     }
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct AdaptiveSpeedStrategy {
+pub struct AdaptiveSpeedAlgorithm 
+{
     base_speed: Velocity,
     deviation_max: Velocity,
     modulation: f64, // (-1.0 to 1.0)
 }
 
-impl AdaptiveSpeedStrategy
+impl AdaptiveSpeedAlgorithm
 {
     pub fn compute(&self) -> Velocity
     {
@@ -169,7 +166,9 @@ impl AdaptiveSpeedStrategy
         self.deviation_max = deviation;
     }
 
-    pub fn set_modulation(&mut self, modulation: f64) {
+    #[allow(dead_code)]
+    pub fn set_modulation(&mut self, modulation: f64) 
+    {
         self.modulation = modulation.clamp(-1.0, 1.0);
     }
 }

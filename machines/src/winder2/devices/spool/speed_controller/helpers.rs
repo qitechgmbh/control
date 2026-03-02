@@ -43,9 +43,11 @@ pub struct FilamentTensionCalculator {
     pub angle_converter: AngleConverterUom,
 }
 
-impl FilamentTensionCalculator {
+impl FilamentTensionCalculator 
+{
     /// [`max_angle_deg`] in Y-Flipped CW roation system
-    pub fn new(min_angle: Angle, max_angle: Angle) -> Self {
+    pub fn new(min_angle: Angle, max_angle: Angle) -> Self 
+    {
         let mut calculator = Self {
             point_puller: Point2D::<f64, ()>::new(7.0, -10.0),
             tension_arm_origin: Point2D::<f64, ()>::new(0.0, 0.0),
@@ -70,7 +72,8 @@ impl FilamentTensionCalculator {
     /// - [`tension_arm_angle_deg`] in Y-Flipped CW rotation system
     ///
     /// Returns the filament length in mm.
-    pub fn calc_filament_length(&self, tension_arm_angle: Angle) -> Length {
+    pub fn calc_filament_length(&self, tension_arm_angle: Angle) -> Length 
+    {
         let tension_arm_angle_rad = self
             .angle_converter
             .decode(tension_arm_angle)
@@ -104,7 +107,8 @@ impl FilamentTensionCalculator {
     /// `0.0` means the maximum amount of filament is in the tensioning system (low tension)
     ///
     /// - [`tension_arm_angle`] in Y-Flipped CW rotation system
-    pub fn calc_filament_tension(&self, tension_arm_angle: Angle) -> f64 {
+    pub fn calc_filament_tension(&self, tension_arm_angle: Angle) -> f64 
+    {
         let current_distance = self.calc_filament_length(tension_arm_angle);
 
         let distance_range = self.max_distance - self.min_distance;
@@ -117,7 +121,8 @@ impl FilamentTensionCalculator {
     /// Get the optimal angle (minimum filament length)
     ///
     /// Returns the angle in Y-Flipped CW rotation system.
-    pub fn get_min_angle(&self) -> Angle {
+    pub fn get_min_angle(&self) -> Angle 
+    {
         self.min_angle
     }
 
