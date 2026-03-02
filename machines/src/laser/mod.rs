@@ -3,7 +3,7 @@ use crate::{
     MACHINE_LASER_V1, VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
-use crate::{Machine, MachineMessage};
+use crate::{Machine, MachineMessage, MachinesData};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use smol::{
@@ -35,6 +35,9 @@ pub struct LaserMachine {
     namespace: LaserMachineNamespace,
     last_measurement_emit: Instant,
 
+    // state
+    state_generation: u64,
+
     // laser values
     diameter: Length,
     x_diameter: Option<Length>,
@@ -62,6 +65,37 @@ impl Machine for LaserMachine {
 
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
         self.main_sender.clone()
+    }
+
+    fn state_generation(&self) -> u64 
+    { 
+        self.state_generation
+    }
+
+    fn refresh_data(&self, data: &mut MachinesData, refresh_state: bool, refresh_live_values: bool)
+    {
+        use MachinesData::*;
+
+        match data 
+        {
+            Laser(state, live_values) => 
+            {
+                if refresh_state {
+                    *state = self.build_state_event();
+                }
+
+                if refresh_live_values {
+                    *live_values = self.get_live_values();
+                }
+            },
+            _ => 
+            {
+                *data = MachinesData::Laser(
+                    self.build_state_event(), 
+                    self.get_live_values()
+                );
+            },
+        };
     }
 }
 

@@ -5,8 +5,8 @@ use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTI
 use serde::Deserialize;
 use serde::Serialize;
 
-/// Identifies a spacifi machine
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+/// Identifies a specific machine
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct MachineIdentificationUnique {
     pub machine_identification: MachineIdentification,
     pub serial: u16,
@@ -30,7 +30,7 @@ impl Display for MachineIdentificationUnique {
 }
 
 /// Identifies a machine
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct MachineIdentification {
     pub vendor: u16,
     pub machine: u16,
@@ -427,9 +427,4 @@ pub fn get_identification_addresses(
             ))?
         }
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
 }

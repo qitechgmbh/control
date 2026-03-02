@@ -13,7 +13,7 @@ use units::{
 };
 
 use crate::{
-    machine_identification::MachineIdentificationUnique, types::Direction, winder2::{Winder2, devices::{
+    AsyncThreadMessage, Machine, MachineSubscriptionRequest, machine_identification::MachineIdentificationUnique, types::Direction, winder2::{Winder2, devices::{
         OperationState, 
         PullerGearRatio, 
         PullerSpeedControlAlgorithm,
@@ -359,77 +359,65 @@ impl Winder2
         machine_uid: Option<MachineIdentificationUnique>
     ) -> Result<(), anyhow::Error>
     {
-        _ = machine_uid;
-
-        // match machine_uid
-        // {
-        //     Some(machine_uid) => 
-        //     {
-        //         if self.puller_reference_machine.as_ref()
-        //             .is_some_and(|c| c.ident == machine_uid)
-        //         {
-        //             return Ok(());
-        //         }
-// 
-        //         let main_sender = match &self.channel.main_sender 
-        //         {
-        //             Some(v) => v,
-        //             None => 
-        //             {
-        //                 return Err(anyhow::anyhow!(
-        //                     "{:?} Failed to connect to {:?}",
-        //                     self.get_machine_identification_unique(),
-        //                     machine_uid,
-        //                 ));
-        //             }
-        //         };
-// 
-        //         main_sender.try_send(AsyncThreadMessage::ConnectTwoWayRequest(
-        //             CrossConnection {
-        //                 src: self.get_machine_identification_unique(),
-        //                 dest: machine_uid,
-        //             },
-        //         ))?;
-// 
-        //         self.emit_state();
-        //     },
-        //     None => 
-        //     {
-        //         match self.puller_reference_machine.take()
-        //         {
-        //             Some(connection) => 
-        //             {
-        //                 _ = connection;
-        //                 //TODO: Tell other machine to disconnect
-// 
-        //                 let main_sender = match &self.channel.main_sender 
-        //                 {
-        //                     Some(v) => v,
-        //                     None => 
-        //                     {
-        //                         return Err(anyhow::anyhow!(
-        //                             "{:?} Failed to connect to {:?}",
-        //                             self.get_machine_identification_unique(),
-        //                             machine_uid,
-        //                         ));
-        //                     }
-        //                 };
-// 
-        //                 main_sender.try_send(AsyncThreadMessage::DisconnectMachines(
-        //                     CrossConnection {
-        //                         src:  self.get_machine_identification_unique(),
-        //                         dest: connection.ident,
-        //                     },
-        //                 ))?;
-        //             },
-        //             None => return Ok(()), // nothing to do
-        //         }
-        //     },
-        // }
-// 
-        // self.emit_state();
-        // Ok(())
-
+        match machine_uid
+        {
+            Some(machine_uid) => 
+            {
+                if self.puller_reference_machine.as_ref()
+                    .is_some_and(|x| *x == machine_uid)
+                {
+                    return Ok(());
+                }
+                let main_sender = match &self.channel.main_sender 
+                {
+                    Some(v) => v,
+                    None => 
+                    {
+                        return Err(anyhow::anyhow!(
+                            "{:?} Failed to connect to {:?}",
+                            self.get_machine_identification_unique(),
+                            machine_uid,
+                        ));
+                    }
+                };
+                main_sender.try_send(AsyncThreadMessage::SubscribeToMachine(
+                    MachineSubscriptionRequest {
+                        subscriber: self.get_machine_identification_unique(),
+                        publisher:  machine_uid,
+                    },
+                ))?;
+                self.emit_state();
+            },
+            None => 
+            {
+                match self.puller_reference_machine.take()
+                {
+                    Some(machine_uid) => 
+                    {
+                        let main_sender = match &self.channel.main_sender 
+                        {
+                            Some(v) => v,
+                            None => 
+                            {
+                                return Err(anyhow::anyhow!(
+                                    "{:?} Failed to connect to {:?}",
+                                    self.get_machine_identification_unique(),
+                                    machine_uid,
+                                ));
+                            }
+                        };
+                        main_sender.try_send(AsyncThreadMessage::UnsubscribeFromMachine(
+                            MachineSubscriptionRequest {
+                                subscriber: self.get_machine_identification_unique(),
+                                publisher:  machine_uid,
+                            },
+                        ))?;
+                    },
+                    None => return Ok(()), // nothing to do
+                }
+            },
+        }
+        self.emit_state();
         Ok(())
     }
 }

@@ -18,6 +18,10 @@ use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Instant;
 
+
+mod machines_data;
+pub use machines_data::MachinesData;
+
 pub mod types;
 pub mod analog_input_test_machine;
 pub mod aquapath1;
@@ -69,15 +73,15 @@ pub struct MachineCrossConnectionState {
     is_available: bool,
 }
 
-pub struct CrossConnection {
-    pub src: MachineIdentificationUnique,
-    pub dest: MachineIdentificationUnique,
+pub struct MachineSubscriptionRequest {
+    pub subscriber: MachineIdentificationUnique,
+    pub publisher:  MachineIdentificationUnique,
 }
 
 pub enum AsyncThreadMessage {
     NoMsg,
-    ConnectOneWayRequest(CrossConnection),
-    DisconnectMachines(CrossConnection),
+    SubscribeToMachine(MachineSubscriptionRequest),
+    UnsubscribeFromMachine(MachineSubscriptionRequest),
 }
 
 pub struct MachineNewParams<
@@ -320,6 +324,30 @@ pub trait MachineApi {
 pub trait Machine: MachineAct + MachineApi + Any + Debug + Send + Sync {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique;
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>>;
+
+    fn state_generation(&self) -> u64 { 0 }
+
+    fn refresh_data(&self, data: &mut MachinesData, refresh_state: bool, refresh_live_values: bool)
+    {
+        _ = data;
+        _ = refresh_state;
+        _ = refresh_live_values;
+    }
+
+    fn receive_machines_data(&mut self, data: &MachinesData) 
+    {
+        _ = data;
+    }
+
+    fn subscribed_to_machine(&mut self, uid: MachineIdentificationUnique)
+    {
+        _ = uid;
+    }
+
+    fn unsubscribed_from_machine(&mut self, uid: MachineIdentificationUnique) 
+    {
+        _ = uid;
+    }
 }
 
 pub trait AnyGetters: Any {
@@ -484,6 +512,30 @@ pub trait MachineWithChannel: Send + Debug + Sync {
     fn get_live_values(&self) -> Option<Self::LiveValues> {
         None
     }
+
+    fn state_generation(&self) -> u64 { 0 }
+
+    fn refresh_data(&self, data: &mut MachinesData, refresh_state: bool, refresh_live_values: bool)
+    {
+        _ = data;
+        _ = refresh_state;
+        _ = refresh_live_values;
+    }
+
+    fn receive_machines_data(&mut self, data: &MachinesData) 
+    {
+        _ = data;
+    }
+
+    fn subscribed_to_machine(&mut self, uid: MachineIdentificationUnique)
+    {
+        _ = uid;
+    }
+
+    fn unsubscribed_from_machine(&mut self, uid: MachineIdentificationUnique) 
+    {
+        _ = uid;
+    }
 }
 
 impl<C> MachineApi for C
@@ -570,5 +622,30 @@ where
 
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
         self.get_machine_channel().main_sender.clone()
+    }
+
+    fn state_generation(&self) -> u64 
+    { 
+        self.state_generation() 
+    }
+
+    fn refresh_data(&self, data: &mut MachinesData, refresh_state: bool, refresh_live_values: bool)
+    {
+        self.refresh_data(data, refresh_state, refresh_live_values);
+    }
+
+    fn receive_machines_data(&mut self, data: &MachinesData) 
+    {
+        self.receive_machines_data(data);
+    }
+
+    fn subscribed_to_machine(&mut self, uid: MachineIdentificationUnique)
+    {
+        self.subscribed_to_machine(uid);
+    }
+
+    fn unsubscribed_from_machine(&mut self, uid: MachineIdentificationUnique) 
+    {
+        self.unsubscribed_from_machine(uid);
     }
 }

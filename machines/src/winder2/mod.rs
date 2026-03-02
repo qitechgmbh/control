@@ -3,11 +3,7 @@ use std::time::{Duration, Instant};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 
 use crate::{
-    MachineChannel, 
-    MachineWithChannel, 
-    MachineConnection, 
-    VENDOR_QITECH,
-    machine_identification::MachineIdentification
+    Machine, MachineChannel, MachineConnection, MachineWithChannel, MachinesData, VENDOR_QITECH, machine_identification::{MachineIdentification, MachineIdentificationUnique}
 };
 
 mod types;
@@ -43,7 +39,7 @@ pub struct Winder2
     spool_length_task: SpoolLengthTask,
 
     // reference machine for the pullers adaptive speed mode
-    puller_reference_machine: Option<MachineConnection>,
+    puller_reference_machine: Option<MachineIdentificationUnique>,
 }
 
 // public interface
@@ -120,6 +116,54 @@ impl MachineWithChannel for Winder2
         }
 
         Ok(())
+    }
+
+    fn receive_machines_data(&mut self, data: &MachinesData) 
+    {
+        use MachinesData::*;
+
+        debug_assert!(self.puller_reference_machine.is_some());
+
+        match data
+        {
+            Laser(state, live_values) => 
+            {
+                let current = live_values.diameter;
+                let target  = state.laser_state.target_diameter;
+                let lower   = state.laser_state.lower_tolerance;
+                let upper   = state.laser_state.higher_tolerance;
+
+                let error = current - target;
+
+                let modulation = if error < 0.0 {
+                    // below target → scale toward -1 using lower tolerance
+                    (error / lower).max(-1.0)
+                } else {
+                    // above target → scale toward +1 using upper tolerance
+                    (error / upper).min(1.0)
+                };
+
+                let algorithm = &mut self.puller.speed_controller_algorithms_mut().adaptive;
+                algorithm.set_modulation(modulation);
+            },
+            None => tracing::error!("Received MachineData::None"),
+        };
+    }
+
+    fn subscribed_to_machine(&mut self, uid: MachineIdentificationUnique)
+    {
+        self.puller_reference_machine = Some(uid);
+    }
+
+    fn unsubscribed_from_machine(&mut self, uid: MachineIdentificationUnique) 
+    {
+        if let Some(current_uid) = self.puller_reference_machine
+        {
+            if current_uid == uid
+            {
+                self.puller_reference_machine = None;
+            }
+        }
     }
 
     fn get_state(&self) -> State 

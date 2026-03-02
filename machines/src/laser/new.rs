@@ -55,6 +55,7 @@ impl MachineNewTrait for LaserMachine {
             higher_tolerance: Length::new::<millimeter>(0.05),
             in_tolerance: true,
             did_change_state: true,
+            state_generation: 0,
         };
 
         Ok(laser_machine)

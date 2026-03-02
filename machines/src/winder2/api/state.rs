@@ -4,7 +4,7 @@ use serde::Serialize;
 use units::{angular_velocity::revolution_per_minute, length::{meter, millimeter}, velocity::meter_per_minute};
 
 use crate::{
-    MachineCrossConnectionState, types::Direction, winder2::{
+    machine_identification::MachineIdentificationUnique, types::Direction, winder2::{
         Winder2, 
         devices::{
             PullerGearRatio, PullerSpeedControlAlgorithm, SpoolSpeedControlMode
@@ -75,7 +75,7 @@ pub struct PullerState
     // adaptive speed strategy
     pub adaptive_base_speed: f64, // in m/min
     pub adaptive_deviation_max: f64, // in m/min
-    pub adaptive_reference_machine: MachineCrossConnectionState,
+    pub adaptive_reference_machine: Option<MachineIdentificationUnique>,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -174,17 +174,7 @@ impl Winder2
         let adaptive_deviation_max = 
             strategies.adaptive.deviation_max().get::<meter_per_minute>();
 
-        let adaptive_reference_machine = match &self.puller_reference_machine
-        {
-            Some(connection) => MachineCrossConnectionState { 
-                machine_identification_unique: Some(connection.ident.clone()),
-                is_available: true
-            },
-            None => MachineCrossConnectionState { 
-                machine_identification_unique: None,
-                is_available: false
-            },
-        };
+        let adaptive_reference_machine = self.puller_reference_machine;
 
         PullerState {
             direction:  puller.direction(),
