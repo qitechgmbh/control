@@ -15,7 +15,7 @@ use crate::gluetex::mock::Gluetex as GluetexMock;
 
 use crate::{
     Machine, MachineNewParams, MachineNewTrait, machine_identification::MachineIdentification,
-    test_machine::TestMachine,
+    test_machine::TestMachine, test_machine_stepper::TestMachineStepper,
 };
 
 #[cfg(not(feature = "mock-machine"))]
@@ -25,8 +25,6 @@ use crate::{
     aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, laser::LaserMachine,
     winder2::Winder2,
 };
-
-use crate::{test_machine::TestMachine, test_machine_stepper::TestMachineStepper};
 
 #[cfg(not(feature = "gluetex-mock"))]
 use crate::gluetex::Gluetex;

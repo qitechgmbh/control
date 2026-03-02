@@ -51,6 +51,7 @@ export function GluetexHeatersPage() {
           heatingTimeSeries={temperature1}
           heatingPower={heater1Power}
           onChangeTargetTemp={setHeatingZone1Temperature}
+          targetTemperatureEnabled={true}
           min={0}
           max={300}
         />
@@ -60,6 +61,7 @@ export function GluetexHeatersPage() {
           heatingTimeSeries={temperature2}
           heatingPower={heater2Power}
           onChangeTargetTemp={setHeatingZone2Temperature}
+          targetTemperatureEnabled={true}
           min={0}
           max={300}
         />
@@ -69,6 +71,7 @@ export function GluetexHeatersPage() {
           heatingTimeSeries={temperature3}
           heatingPower={heater3Power}
           onChangeTargetTemp={setHeatingZone3Temperature}
+          targetTemperatureEnabled={true}
           min={0}
           max={300}
         />
@@ -78,6 +81,7 @@ export function GluetexHeatersPage() {
           heatingTimeSeries={temperature4}
           heatingPower={heater4Power}
           onChangeTargetTemp={setHeatingZone4Temperature}
+          targetTemperatureEnabled={true}
           min={0}
           max={300}
         />
@@ -87,6 +91,7 @@ export function GluetexHeatersPage() {
           heatingTimeSeries={temperature5}
           heatingPower={heater5Power}
           onChangeTargetTemp={setHeatingZone5Temperature}
+          targetTemperatureEnabled={true}
           min={0}
           max={300}
         />
@@ -96,6 +101,7 @@ export function GluetexHeatersPage() {
           heatingTimeSeries={temperature6}
           heatingPower={heater6Power}
           onChangeTargetTemp={setHeatingZone6Temperature}
+          targetTemperatureEnabled={true}
           min={0}
           max={300}
         />
