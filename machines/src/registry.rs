@@ -18,7 +18,7 @@ use crate::gluetex::mock::Gluetex as GluetexMock;
 
 use crate::{
     Machine, MachineNewParams, MachineNewTrait, machine_identification::MachineIdentification,
-    test_machine::TestMachine,
+    test_machine::TestMachine, test_machine_stepper::TestMachineStepper,
 };
 
 #[cfg(not(feature = "mock-machine"))]
