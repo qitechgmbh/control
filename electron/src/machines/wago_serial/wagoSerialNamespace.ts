@@ -18,7 +18,6 @@ import {
   TimeSeriesValue,
 } from "@/lib/timeseries";
 
-
 export const stateEventSchema = eventSchema(
   z.object({
     current_message: z.string().nullable(),
@@ -36,7 +35,7 @@ const createWagoSerialNamespaceStore = (): StoreApi<WagoSerialNamespaceStore> =>
   create<WagoSerialNamespaceStore>(() => {
     return {
       state: null,
-      defaultState: null,      
+      defaultState: null,
     };
   });
 

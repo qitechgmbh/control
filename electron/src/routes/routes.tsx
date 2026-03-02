@@ -43,9 +43,8 @@ import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
 import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 
-
-import { WagoSerialPage } from "@/machines/wago_serial/WagoSerialPage"
-import {WagoSerialControlPage} from "@/machines/wago_serial/WagoSerialControlPage"
+import { WagoSerialPage } from "@/machines/wago_serial/WagoSerialPage";
+import { WagoSerialControlPage } from "@/machines/wago_serial/WagoSerialControlPage";
 
 import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
 import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
@@ -430,7 +429,6 @@ export const wagoDoTestMachineControlRoute = createRoute({
   component: () => <WagoDoTestMachineControlPage />,
 });
 
-
 export const wagoSerialSerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "wago_serial/$serial",
@@ -442,8 +440,6 @@ export const wagoSerialControlRoute = createRoute({
   path: "control",
   component: () => <WagoSerialControlPage />,
 });
-
-
 
 export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
@@ -563,9 +559,7 @@ export const rootTree = RootRoute.addChildren([
 
       wagoAiTestMachineSerialRoute.addChildren([wagoAiTestMachineControlRoute]),
 
-      wagoSerialSerialRoute.addChildren(
-        [wagoSerialControlRoute]
-      ),
+      wagoSerialSerialRoute.addChildren([wagoSerialControlRoute]),
 
       digitalInputTestMachineSerialRoute.addChildren([
         digitalInputTestMachineControlRoute,

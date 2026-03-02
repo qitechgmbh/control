@@ -690,7 +690,7 @@ export const testmachinestepper: MachineProperties = {
   ],
 };
 
-export const wagoSerial : MachineProperties = {
+export const wagoSerial: MachineProperties = {
   name: "WagoSerial",
   version: "V1",
   slug: "wago_serial",
@@ -724,7 +724,6 @@ export const wagoSerial : MachineProperties = {
     },
   ],
 };
-
 
 export const machineProperties: MachineProperties[] = [
   winder2,

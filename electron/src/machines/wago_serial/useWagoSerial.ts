@@ -3,10 +3,7 @@ import { wagoSerial } from "@/machines/properties";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { wagoSerialSerialRoute } from "@/routes/routes";
 import { useEffect, useMemo } from "react";
-import {
-  StateEvent,
-  useWagoSerialNamespace,
-} from "./wagoSerialNamespace";
+import { StateEvent, useWagoSerialNamespace } from "./wagoSerialNamespace";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { produce } from "immer";
 import z from "zod";
@@ -38,9 +35,7 @@ export function useWagoSerial() {
     };
   }, [serialString]);
 
-  const { state, defaultState } = useWagoSerialNamespace(
-    machineIdentification,
-  );
+  const { state, defaultState } = useWagoSerialNamespace(machineIdentification);
   //
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -53,7 +48,7 @@ export function useWagoSerial() {
   }, [state]);
 
   const { request: requestSendMessage } = useMachineMutate(
-    z.object({ SendMessage : z.string() }),
+    z.object({ SendMessage: z.string() }),
   );
 
   // Helper function for optimistic updates using produce
@@ -85,7 +80,7 @@ export function useWagoSerial() {
   const isDisabled = !stateOptimistic.isInitialized;
 
   return {
-    state: stateOptimistic.value?.data,    
+    state: stateOptimistic.value?.data,
     isLoading,
     isDisabled,
     sendMessage,

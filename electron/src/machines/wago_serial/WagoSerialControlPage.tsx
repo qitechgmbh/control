@@ -9,25 +9,18 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { TouchButton } from "@/components/touch/TouchButton";
 
-
 export function WagoSerialControlPage() {
   const [message, setMessage] = useState("");
-  
-  const {
-    state,
-    sendMessage,
-    isLoading,
-    isDisabled,
-  } = useWagoSerial();
+
+  const { state, sendMessage, isLoading, isDisabled } = useWagoSerial();
 
   return (
     <Page>
-      
-     <Input
-          placeholder="Message here, Maximum 22 characters"
-          onChange={(e) => setMessage(e.target.value)}
-          className="w-full"
-      />     
+      <Input
+        placeholder="Message here, Maximum 22 characters"
+        onChange={(e) => setMessage(e.target.value)}
+        className="w-full"
+      />
 
       <TouchButton
         variant="outline"
@@ -39,16 +32,17 @@ export function WagoSerialControlPage() {
         Send Message
       </TouchButton>
 
-
-    <div className="p-4 bg-muted rounded-md min-h-[60px] flex items-center justify-center border">
+      <div className="bg-muted flex min-h-[60px] items-center justify-center rounded-md border p-4">
         {state?.current_message ? (
-          <span className="font-mono text-xl text-primary">
-              {state.current_message}
-            </span>
-            ) : (
-              <span className="text-muted-foreground italic">No data received yet</span>
-            )}
-          </div>
+          <span className="text-primary font-mono text-xl">
+            {state.current_message}
+          </span>
+        ) : (
+          <span className="text-muted-foreground italic">
+            No data received yet
+          </span>
+        )}
+      </div>
     </Page>
   );
 }
