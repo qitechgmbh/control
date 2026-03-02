@@ -115,12 +115,14 @@ impl FilamentTensionCalculator
 
     /// Get the minimum filament distance
     ///
+    #[allow(dead_code)]
     pub fn get_min_distance(&self) -> Length {
         self.min_distance
     }
 
     /// Get the maximum filament distance
     ///
+    #[allow(dead_code)]
     pub fn get_max_distance(&self) -> Length {
         self.max_distance
     }

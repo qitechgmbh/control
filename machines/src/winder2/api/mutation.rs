@@ -13,7 +13,7 @@ use units::{
 };
 
 use crate::{
-    AsyncThreadMessage, CrossConnection, Machine, machine_identification::MachineIdentificationUnique, types::Direction, winder2::{Winder2, devices::{
+    machine_identification::MachineIdentificationUnique, types::Direction, winder2::{Winder2, devices::{
         OperationState, 
         PullerGearRatio, 
         PullerSpeedControlAlgorithm,
@@ -359,6 +359,8 @@ impl Winder2
         machine_uid: Option<MachineIdentificationUnique>
     ) -> Result<(), anyhow::Error>
     {
+        _ = machine_uid;
+
         // match machine_uid
         // {
         //     Some(machine_uid) => 
