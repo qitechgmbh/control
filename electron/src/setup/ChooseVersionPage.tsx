@@ -344,7 +344,9 @@ export function ChooseVersionPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const searchedBranches =
-    branches?.filter((b) => b.name.toLowerCase().includes(searchTerm.toLowerCase())) ?? [];
+    branches?.filter((b) =>
+      b.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    ) ?? [];
 
   return (
     <Page>
