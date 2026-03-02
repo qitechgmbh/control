@@ -17,6 +17,8 @@ use std::any::Any;
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Instant;
+
+pub mod types;
 pub mod analog_input_test_machine;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
