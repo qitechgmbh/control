@@ -1,11 +1,12 @@
-use std::{time::Instant};
-use api::{WagoSerialMachineEvents, WagoSerialMachineNamespace,StateEvent};
+use api::{StateEvent, WagoSerialMachineEvents, WagoSerialMachineNamespace};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::serial_interface::SerialInterface;
 use smol::channel::{Receiver, Sender};
+use std::time::Instant;
 
 use crate::{
-    AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH, machine_identification::{MachineIdentification, MachineIdentificationUnique}
+    AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH,
+    machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
 
 pub mod act;
@@ -20,9 +21,9 @@ pub struct WagoSerialMachine {
     pub main_sender: Option<Sender<AsyncThreadMessage>>,
     pub namespace: WagoSerialMachineNamespace,
     pub last_state_emit: Instant,
-    pub serial_device : SerialInterface,
-    serial_init_is_complete : bool,
-    pub current_message : Option<String>,
+    pub serial_device: SerialInterface,
+    serial_init_is_complete: bool,
+    pub current_message: Option<String>,
 }
 
 impl Machine for WagoSerialMachine {

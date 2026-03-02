@@ -141,13 +141,13 @@ lazy_static! {
         mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<WagoDOTestMachine>(WagoDOTestMachine::MACHINE_IDENTIFICATION);
-        
+
         mc.register::<Wago8chDigitalIOTestMachine>(
             Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION,
         );
-        
+
         mc.register::<WagoSerialMachine>(WagoSerialMachine::MACHINE_IDENTIFICATION);
-        
+
         mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
         mc
     };

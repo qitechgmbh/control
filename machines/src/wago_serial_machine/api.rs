@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
-    pub current_message : Option<String>,
+    pub current_message: Option<String>,
 }
 
 impl StateEvent {
@@ -26,7 +26,7 @@ pub enum WagoSerialMachineEvents {
 }
 
 #[derive(Deserialize)]
-pub enum Mutation {    
+pub enum Mutation {
     SendMessage(String),
 }
 

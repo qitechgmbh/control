@@ -13,11 +13,15 @@ impl MachineAct for WagoSerialMachine {
             println!("trying Init");
         }
 
+        if smol::block_on((self.serial_device.has_message)()) {
+            let msg = smol::block_on((self.serial_device.read_message)());
+            self.current_message = msg.map(|m| String::from_utf8(m).unwrap_or("".to_owned()));
+        }
 
         if now.duration_since(self.last_state_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             self.emit_state();
             self.last_state_emit = now;
-        }        
+        }
     }
 
     fn act_machine_message(&mut self, msg: MachineMessage) {

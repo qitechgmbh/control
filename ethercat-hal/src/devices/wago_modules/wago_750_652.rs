@@ -279,7 +279,7 @@ impl SerialInterfaceDevice<Wago750_652Port> for Wago750_652 {
                 "Message is too long for RxPdo Buffer of 22 bytes!"
             ));
         }
-        
+
         if message.is_empty() {
             return Ok(self.rx_pdo.control.transmit_request == self.tx_pdo.status.transmit_ack);
         }

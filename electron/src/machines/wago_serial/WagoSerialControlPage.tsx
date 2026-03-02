@@ -22,8 +22,9 @@ export function WagoSerialControlPage() {
 
   return (
     <Page>
+      
      <Input
-          placeholder="Message here, Maximum 24 characters"
+          placeholder="Message here, Maximum 22 characters"
           onChange={(e) => setMessage(e.target.value)}
           className="w-full"
       />     
@@ -39,6 +40,15 @@ export function WagoSerialControlPage() {
       </TouchButton>
 
 
+    <div className="p-4 bg-muted rounded-md min-h-[60px] flex items-center justify-center border">
+        {state?.current_message ? (
+          <span className="font-mono text-xl text-primary">
+              {state.current_message}
+            </span>
+            ) : (
+              <span className="text-muted-foreground italic">No data received yet</span>
+            )}
+          </div>
     </Page>
   );
 }

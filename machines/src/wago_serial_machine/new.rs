@@ -4,7 +4,8 @@ use smol::block_on;
 use std::time::Instant;
 
 use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait,  get_ethercat_device, validate_no_role_dublicates, validate_same_machine_identification_unique
+    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
+    validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
 use anyhow::Error;
 use ethercat_hal::devices::wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
@@ -84,7 +85,7 @@ impl MachineNewTrait for WagoSerialMachine {
                 main_sender: params.main_thread_channel.clone(),
                 serial_device: serial_interface,
                 current_message: None,
-                serial_init_is_complete: false,                
+                serial_init_is_complete: false,
             };
             machine.emit_state();
             Ok(machine)
