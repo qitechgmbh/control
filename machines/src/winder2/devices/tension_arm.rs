@@ -133,7 +133,7 @@ mod tests
     {
         let range = AnalogInputRange::Potential {
             min: ElectricPotential::new::<volt>(0.0),
-            max: ElectricPotential::new::<volt>(1.0),
+            max: ElectricPotential::new::<volt>(10.0),
             min_raw: 0,
             max_raw: i16::MAX,
         };
