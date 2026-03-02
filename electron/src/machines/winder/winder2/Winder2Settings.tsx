@@ -22,28 +22,38 @@ export function Winder2SettingPage() {
   const {
     state,
     defaultState,
-    setTraverseStepSize,
-    setTraversePadding,
-    setTraverseLimitInner,
-    setTraverseLimitOuter,
-    gotoTraverseHome,
-    setPullerForward,
-    setPullerGearRatio,
-    setSpoolRegulationMode,
+    isLoading,
+    isDisabled,
+    // setters
+    setMode,
+    setSpoolDirection,
+    setSpoolSpeedControlMode,
     setSpoolMinMaxMinSpeed,
     setSpoolMinMaxMaxSpeed,
-    setSpoolForward,
     setSpoolAdaptiveTensionTarget,
     setSpoolAdaptiveRadiusLearningRate,
     setSpoolAdaptiveMaxSpeedMultiplier,
     setSpoolAdaptiveAccelerationFactor,
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
-    isLoading,
-    isDisabled,
-    selectedMachine,
-    filteredMachines,
-    setConnectedMachine,
-    disconnectMachine,
+    setPullerDirection,
+    setPullerGearRatio,
+    setPullerSpeedControlMode,
+    setPullerFixedTargetSpeed,
+    setPullerAdaptiveBaseSpeed,
+    setPullerAdaptiveDeviationMax,
+    setPullerAdaptiveReferenceMachine,
+    setTraverseLimitInner,
+    setTraverseLimitOuter,
+    setTraverseStepSize,
+    setTraversePadding,
+    gotoTraverseLimitInner,
+    gotoTraverseLimitOuter,
+    gotoTraverseHome,
+    setTraverseLaserpointerEnabled,
+    calibrateTensionArmAngle,
+    setSpoolLengthTaskTargetLength,
+    resetSpoolLengthTaskProgress,
+    setOnSpoolLengthTaskCompletedAction,
   } = useWinder2();
 
   const handleXlModeChange = (enabled: boolean) => {
@@ -129,7 +139,7 @@ export function Winder2SettingPage() {
         <ControlCard title="Spool">
           <Label label="Speed Algorithm">
             <SelectionGroup
-              value={state?.spool_speed_controller_state?.regulation_mode}
+              value={state?.spool_state?.speed_control_mode}
               disabled={isDisabled}
               loading={isLoading}
               options={{
@@ -143,14 +153,14 @@ export function Winder2SettingPage() {
                 },
               }}
               onChange={(value) =>
-                setSpoolRegulationMode(value as "Adaptive" | "MinMax")
+                setSpoolSpeedControlMode(value as "Adaptive" | "MinMax")
               }
             />
           </Label>
 
           <Label label="Rotation Direction">
             <SelectionGroupBoolean
-              value={state?.spool_speed_controller_state?.forward}
+              value={state?.spool_state?.direction == "Forward"}
               disabled={isDisabled}
               loading={isLoading}
               optionFalse={{
@@ -161,23 +171,23 @@ export function Winder2SettingPage() {
                 children: "Forward",
                 icon: "lu:RotateCw",
               }}
-              onChange={(value) => setSpoolForward(value)}
+              onChange={(value) => setSpoolDirection(value ? "Forward" : "Reverse")}
             />
           </Label>
 
-          {state?.spool_speed_controller_state?.regulation_mode ===
+          {state?.spool_state?.speed_control_mode ===
             "MinMax" && (
             <>
               <Label label="Minimum Speed">
                 <EditValue
-                  value={state?.spool_speed_controller_state?.minmax_min_speed}
+                  value={state?.spool_state?.minmax_min_speed}
                   title={"Minimum Speed"}
                   unit="rpm"
                   step={10}
                   min={0}
                   max={600}
                   defaultValue={
-                    defaultState?.spool_speed_controller_state?.minmax_min_speed
+                    defaultState?.spool_state?.minmax_min_speed
                   }
                   renderValue={(value) => roundToDecimals(value, 0)}
                   onChange={(value) => setSpoolMinMaxMinSpeed(value)}
@@ -185,14 +195,14 @@ export function Winder2SettingPage() {
               </Label>
               <Label label="Maximum Speed">
                 <EditValue
-                  value={state?.spool_speed_controller_state?.minmax_max_speed}
+                  value={state?.spool_state?.minmax_max_speed}
                   title={"Maximum Speed"}
                   unit="rpm"
                   step={10}
                   min={0}
                   max={600}
                   defaultValue={
-                    defaultState?.spool_speed_controller_state?.minmax_max_speed
+                    defaultState?.spool_state?.minmax_max_speed
                   }
                   renderValue={(value) => roundToDecimals(value, 0)}
                   onChange={(value) => setSpoolMinMaxMaxSpeed(value)}
@@ -201,13 +211,13 @@ export function Winder2SettingPage() {
             </>
           )}
 
-          {state?.spool_speed_controller_state?.regulation_mode ===
+          {state?.spool_state?.speed_control_mode ===
             "Adaptive" && (
             <div className="flex flex-row flex-wrap gap-4">
               <Label label="Tension Target">
                 <EditValue
                   value={
-                    state?.spool_speed_controller_state?.adaptive_tension_target
+                    state?.spool_state?.adaptive_tension_target
                   }
                   title={"Tension Target"}
                   unit={undefined}
@@ -215,7 +225,7 @@ export function Winder2SettingPage() {
                   min={0}
                   max={1}
                   defaultValue={
-                    defaultState?.spool_speed_controller_state
+                    defaultState?.spool_state
                       ?.adaptive_tension_target
                   }
                   renderValue={(value) => roundToDecimals(value, 2)}
@@ -225,7 +235,7 @@ export function Winder2SettingPage() {
               <Label label="Learning Rate">
                 <EditValue
                   value={
-                    state?.spool_speed_controller_state
+                    state?.spool_state
                       ?.adaptive_radius_learning_rate
                   }
                   title={"Radius Learning Rate"}
@@ -234,7 +244,7 @@ export function Winder2SettingPage() {
                   min={0}
                   max={100}
                   defaultValue={
-                    defaultState?.spool_speed_controller_state
+                    defaultState?.spool_state
                       ?.adaptive_radius_learning_rate
                   }
                   renderValue={(value) => roundToDecimals(value, 2)}
@@ -246,7 +256,7 @@ export function Winder2SettingPage() {
               <Label label="Max Speed Multiplier">
                 <EditValue
                   value={
-                    state?.spool_speed_controller_state
+                    state?.spool_state
                       ?.adaptive_max_speed_multiplier
                   }
                   title={"Max Speed Multiplier"}
@@ -255,7 +265,7 @@ export function Winder2SettingPage() {
                   min={0.1}
                   max={10}
                   defaultValue={
-                    defaultState?.spool_speed_controller_state
+                    defaultState?.spool_state
                       ?.adaptive_max_speed_multiplier
                   }
                   renderValue={(value) => roundToDecimals(value, 1)}
@@ -267,7 +277,7 @@ export function Winder2SettingPage() {
               <Label label="Acceleration Factor">
                 <EditValue
                   value={
-                    state?.spool_speed_controller_state
+                    state?.spool_state
                       ?.adaptive_acceleration_factor
                   }
                   title={"Acceleration Factor"}
@@ -276,7 +286,7 @@ export function Winder2SettingPage() {
                   min={0.01}
                   max={100}
                   defaultValue={
-                    defaultState?.spool_speed_controller_state
+                    defaultState?.spool_state
                       ?.adaptive_acceleration_factor
                   }
                   renderValue={(value) => roundToDecimals(value, 2)}
@@ -288,7 +298,7 @@ export function Winder2SettingPage() {
               <Label label="Deaccel. Urgency">
                 <EditValue
                   value={
-                    state?.spool_speed_controller_state
+                    state?.spool_state
                       ?.adaptive_deacceleration_urgency_multiplier
                   }
                   title={"Deacceleration Urgency Multiplier"}
@@ -297,7 +307,7 @@ export function Winder2SettingPage() {
                   min={1}
                   max={100}
                   defaultValue={
-                    defaultState?.spool_speed_controller_state
+                    defaultState?.spool_state
                       ?.adaptive_deacceleration_urgency_multiplier
                   }
                   renderValue={(value) => roundToDecimals(value, 1)}
@@ -313,7 +323,7 @@ export function Winder2SettingPage() {
         <ControlCard title="Puller">
           <Label label="Rotation Direction">
             <SelectionGroupBoolean
-              value={state?.puller_state?.forward}
+              value={state?.puller_state?.direction == "Forward"}
               disabled={isDisabled}
               loading={isLoading}
               optionFalse={{
@@ -324,7 +334,7 @@ export function Winder2SettingPage() {
                 children: "Forward",
                 icon: "lu:RotateCw",
               }}
-              onChange={(value) => setPullerForward(value)}
+              onChange={(value) => setPullerDirection(value ? "Forward" : "Reverse")}
             />
           </Label>
           <Label label="Gear Ratio">
@@ -337,37 +347,23 @@ export function Winder2SettingPage() {
                   children: "1:1",
                   icon: "lu:Circle",
                 },
-                OneToFive: {
-                  children: "1:5",
+                FiveToOne: {
+                  children: "5:1",
                   icon: "lu:Cog",
                 },
-                OneToTen: {
-                  children: "1:10",
+                TenToOne: {
+                  children: "10:1",
                   icon: "lu:Cog",
                 },
               }}
               onChange={(value) =>
                 setPullerGearRatio(
-                  value as "OneToOne" | "OneToFive" | "OneToTen",
+                  value as "OneToOne" | "FiveToOne" | "TenToOne",
                 )
               }
             />
           </Label>
         </ControlCard>
-        <MachineSelector
-          machines={filteredMachines}
-          selectedMachine={selectedMachine}
-          connectedMachineState={state?.connected_machine_state}
-          setConnectedMachine={setConnectedMachine}
-          clearConnectedMachine={() => {
-            if (!selectedMachine) return;
-            setConnectedMachine({
-              machine_identification: { vendor: 0, machine: 0 },
-              serial: 0,
-            });
-            disconnectMachine(selectedMachine.machine_identification_unique);
-          }}
-        />
       </ControlGrid>
     </Page>
   );

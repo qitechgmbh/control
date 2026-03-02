@@ -6,7 +6,7 @@ import { PresetsPage } from "@/components/preset/PresetsPage";
 import { Preset } from "@/lib/preset/preset";
 import {
   pullerStateSchema,
-  spoolSpeedControllerStateSchema,
+  spoolStateSchema,
 } from "./winder2Namespace";
 import { z } from "zod";
 import {
@@ -26,7 +26,7 @@ const winder2PresetDataSchema = z
       })
       .partial(),
     puller_state: pullerStateSchema.partial(),
-    spool_speed_controller_state: spoolSpeedControllerStateSchema.partial(),
+    spool_speed_controller_state: spoolStateSchema.partial(),
   })
   .partial();
 
@@ -61,50 +61,38 @@ const previewEntries: PresetPreviewEntries<Winder2> = [
   previewSeparator,
   {
     name: "Puller Regulation",
-    renderValue: (data: Winder2) => data?.puller_state?.regulation,
+    renderValue: (data: Winder2) => data?.puller_state?.speed_control_mode,
   },
   {
     name: "Puller Direction",
     renderValue: (data: Winder2) =>
-      data.puller_state?.forward ? "Forward" : "Backward",
+      data.puller_state?.direction ? "Forward" : "Backward",
   },
   {
     name: "Puller Gear Ratio",
     renderValue: (data: Winder2) => {
       const ratio = data.puller_state?.gear_ratio;
       if (ratio === "OneToOne") return "1:1";
-      if (ratio === "OneToFive") return "1:5";
-      if (ratio === "OneToTen") return "1:10";
+      if (ratio === "FiveToOne") return "1:5";
+      if (ratio === "TenToOne") return "1:10";
       return "N/A";
     },
   },
   {
     name: "Puller Target Speed",
     unit: "m/min",
-    renderValue: (data: Winder2) => data.puller_state?.target_speed?.toFixed(2),
-  },
-  {
-    name: "Puller Target Diameter",
-    unit: "mm",
-    renderValue: (data: Winder2) =>
-      data.puller_state?.target_diameter?.toFixed(1),
-  },
-  {
-    name: "Puller Target Diameter",
-    unit: "mm",
-    renderValue: (data: Winder2) =>
-      data.puller_state?.target_diameter?.toFixed(1),
+    renderValue: (data: Winder2) => data.puller_state?.fixed_target_speed?.toFixed(2),
   },
   previewSeparator,
   {
-    name: "Spool Regulation",
+    name: "Spool Speed Regulation",
     renderValue: (data: Winder2) =>
-      data.spool_speed_controller_state?.regulation_mode,
+      data.spool_speed_controller_state?.speed_control_mode,
   },
   {
     name: "Spool Direction",
     renderValue: (data: Winder2) =>
-      data.spool_speed_controller_state?.forward ? "Forward" : "Reverse",
+      data.spool_speed_controller_state?.direction,
   },
   {
     name: "Spool Min Speed",
@@ -164,14 +152,13 @@ export function Winder2PresetsPage() {
     setTraverseLimitInner,
     setTraverseLimitOuter,
 
-    setPullerRegulationMode,
-    setPullerTargetDiameter,
-    setPullerForward,
-    setPullerTargetSpeed,
+    setPullerSpeedControlMode,
+    setPullerDirection,
+    setPullerFixedTargetSpeed,
     setPullerGearRatio,
 
-    setSpoolRegulationMode,
-    setSpoolForward,
+    setSpoolSpeedControlMode,
+    setSpoolDirection,
 
     setSpoolMinMaxMinSpeed,
     setSpoolMinMaxMaxSpeed,
@@ -182,7 +169,7 @@ export function Winder2PresetsPage() {
     setSpoolAdaptiveAccelerationFactor,
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
 
-    enableTraverseLaserpointer,
+    setTraverseLaserpointerEnabled,
   } = useWinder2();
 
   const applyPreset = (preset: Preset<Winder2>) => {
@@ -191,16 +178,16 @@ export function Winder2PresetsPage() {
     setTraverseStepSize(preset.data?.traverse_state?.step_size ?? 1.75);
     setTraversePadding(preset.data?.traverse_state?.padding ?? 0.88);
 
-    setPullerRegulationMode(preset.data?.puller_state?.regulation ?? "Speed");
-    setPullerForward(preset.data?.puller_state?.forward ?? true);
-    setPullerTargetSpeed(preset.data?.puller_state?.target_speed ?? 1.0);
+    setPullerSpeedControlMode(preset.data?.puller_state?.speed_control_mode ?? "Fixed");
+    setPullerDirection(preset.data?.puller_state?.direction ?? "Forward");
+    setPullerFixedTargetSpeed(preset.data?.puller_state?.fixed_target_speed ?? 1.0);
     setPullerGearRatio(preset.data?.puller_state?.gear_ratio ?? "OneToOne");
     // setPullerTargetDiameter(preset.data?.puller_state?.target_diameter ?? 1.75);
 
-    setSpoolRegulationMode(
-      preset.data?.spool_speed_controller_state?.regulation_mode ?? "MinMax",
+    setSpoolSpeedControlMode(
+      preset.data?.spool_speed_controller_state?.speed_control_mode ?? "MinMax",
     );
-    setSpoolForward(preset.data?.spool_speed_controller_state?.forward ?? true);
+    setSpoolDirection(preset.data?.spool_speed_controller_state?.direction ?? "Forward");
     setSpoolMinMaxMinSpeed(
       preset.data?.spool_speed_controller_state?.minmax_min_speed ?? 0,
     );
@@ -229,7 +216,7 @@ export function Winder2PresetsPage() {
     //     ?.adaptive_deacceleration_urgency_multiplier ?? 15.0,
     // );
 
-    enableTraverseLaserpointer(
+    setTraverseLaserpointerEnabled(
       preset.data?.traverse_state?.laserpointer ?? false,
     );
   };
@@ -240,10 +227,10 @@ export function Winder2PresetsPage() {
       limit_outer: s?.traverse_state?.limit_outer,
       step_size: s?.traverse_state?.step_size,
       padding: s?.traverse_state?.padding,
-      laserpointer: s?.traverse_state?.laserpointer,
+      laserpointer: s?.traverse_state?.laserpointer_enabled,
     },
     puller_state: s?.puller_state ?? {},
-    spool_speed_controller_state: s?.spool_speed_controller_state ?? {},
+    spool_speed_controller_state: s?.spool_state ?? {},
   });
 
   return (

@@ -15,7 +15,7 @@ import { StatusBadge } from "@/control/StatusBadge";
 import { useWinder2 } from "./useWinder";
 import {
   Mode,
-  SpoolAutomaticActionMode,
+  OnSpoolLengthTaskCompletedAction,
   getGearRatioMultiplier,
 } from "./winder2Namespace";
 import { TensionArm } from "../TensionArm";
@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getWinder2TraverseMax } from "./winder2Config";
+import { MachineSelector } from "../MachineSelector";
 
 export function Winder2ControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
@@ -38,46 +39,65 @@ export function Winder2ControlPage() {
   const {
     state,
     defaultState,
-    enableTraverseLaserpointer,
     tensionArmAngle,
-    zeroTensionArmAngle,
     spoolRpm,
-    setMode,
     pullerSpeed,
     spoolProgress,
-    setPullerRegulationMode,
-    setPullerTargetSpeed,
     traversePosition,
-    resetSpoolProgress,
+    selectedMachine,
+    filteredMachines,
+    isLoading,
+    isDisabled,
+    // setters
+    setMode,
+    setSpoolDirection,
+    setSpoolSpeedControlMode,
+    setSpoolMinMaxMinSpeed,
+    setSpoolMinMaxMaxSpeed,
+    setSpoolAdaptiveTensionTarget,
+    setSpoolAdaptiveRadiusLearningRate,
+    setSpoolAdaptiveMaxSpeedMultiplier,
+    setSpoolAdaptiveAccelerationFactor,
+    setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
+    setPullerDirection,
+    setPullerGearRatio,
+    setPullerSpeedControlMode,
+    setPullerFixedTargetSpeed,
+    setPullerAdaptiveBaseSpeed,
+    setPullerAdaptiveDeviationMax,
+    setPullerAdaptiveReferenceMachine,
     setTraverseLimitInner,
     setTraverseLimitOuter,
+    setTraverseStepSize,
+    setTraversePadding,
     gotoTraverseLimitInner,
     gotoTraverseLimitOuter,
     gotoTraverseHome,
-    setSpoolAutomaticRequiredMeters,
-    setSpoolAutomaticAction,
-    isLoading,
-    isDisabled,
+    setTraverseLaserpointerEnabled,
+    calibrateTensionArmAngle,
+    setSpoolLengthTaskTargetLength,
+    resetSpoolLengthTaskProgress,
+    setOnSpoolLengthTaskCompletedAction,
   } = useWinder2();
 
   // Calculate max speed based on gear ratio
   const gearRatioMultiplier = getGearRatioMultiplier(
     state?.puller_state?.gear_ratio,
   );
-  const maxMotorSpeed = 75; // Maximum motor speed in m/min
-  const maxTargetSpeed = maxMotorSpeed / gearRatioMultiplier;
+  const maxMotorSpeed = 50; // Maximum motor speed in m/min
+  const maxPullerSpeed = maxMotorSpeed / gearRatioMultiplier;
 
   const handleResetProgress = () => {
     // Check if the machine is currently in Wind mode
-    if (state?.mode_state?.mode === "Wind") {
+    if (state?.mode === "Wind") {
       setShowResetConfirmDialog(true);
     } else {
-      resetSpoolProgress();
+      resetSpoolLengthTaskProgress();
     }
   };
 
   const confirmResetProgress = () => {
-    resetSpoolProgress();
+    resetSpoolLengthTaskProgress();
     setShowResetConfirmDialog(false);
   };
 
@@ -131,7 +151,7 @@ export function Winder2ControlPage() {
                 variant="outline"
                 icon="lu:ArrowLeftToLine"
                 onClick={gotoTraverseLimitOuter}
-                disabled={isDisabled}
+                disabled={isDisabled || state?.traverse_state?.can_go_out}
                 isLoading={isLoading}
               >
                 Go to Outer Limit
@@ -162,7 +182,7 @@ export function Winder2ControlPage() {
                 icon="lu:ArrowRightToLine"
                 onClick={gotoTraverseLimitInner}
                 disabled={isDisabled}
-                isLoading={isLoading}
+                isLoading={isLoading || state?.traverse_state?.can_go_in}
               >
                 Go to Inner Limit
               </TouchButton>
@@ -170,12 +190,12 @@ export function Winder2ControlPage() {
           </div>
           <Label label="Laserpointer">
             <SelectionGroupBoolean
-              value={state?.traverse_state.laserpointer}
+              value={state?.traverse_state.laserpointer_enabled}
               disabled={isLoading || isDisabled}
               loading={isLoading}
               optionFalse={{ children: "Off", icon: "lu:LightbulbOff" }}
               optionTrue={{ children: "On", icon: "lu:Lightbulb" }}
-              onChange={enableTraverseLaserpointer}
+              onChange={setTraverseLaserpointerEnabled}
             />
           </Label>
           <Label label="Home">
@@ -183,7 +203,7 @@ export function Winder2ControlPage() {
               variant="outline"
               icon="lu:House"
               onClick={() => gotoTraverseHome()}
-              disabled={isDisabled}
+              disabled={isDisabled || state?.traverse_state?.can_go_home}
               isLoading={isLoading}
             >
               Go to Home
@@ -205,20 +225,20 @@ export function Winder2ControlPage() {
           <TouchButton
             variant="outline"
             icon="lu:House"
-            onClick={zeroTensionArmAngle}
+            onClick={calibrateTensionArmAngle}
             disabled={isDisabled}
             isLoading={isLoading}
           >
-            Set Zero Point
+            Calibrate
           </TouchButton>
-          {!state?.tension_arm_state?.zeroed && (
-            <StatusBadge variant="error">Not Zeroed</StatusBadge>
+          {!state?.tension_arm_state?.is_calibrated && (
+            <StatusBadge variant="error">Not Calibrated</StatusBadge>
           )}
         </ControlCard>
 
         <ControlCard className="bg-red" title="Mode">
           <SelectionGroup<Mode>
-            value={state?.mode_state.mode}
+            value={state?.mode}
             disabled={isDisabled}
             loading={isLoading}
             onChange={setMode}
@@ -247,7 +267,7 @@ export function Winder2ControlPage() {
                 children: "Wind",
                 icon: "lu:RefreshCcw",
                 isActiveClassName: "bg-green-600",
-                disabled: !state?.mode_state?.can_wind,
+                disabled: !state?.can_wind,
                 className: "h-full",
               },
             }}
@@ -261,38 +281,98 @@ export function Winder2ControlPage() {
             timeseries={pullerSpeed}
             renderValue={(value) => roundToDecimals(value, 1)}
           />
-          <Label label="Regulation">
+          <Label label="Speed Regulation">
             <SelectionGroup
-              value={state?.puller_state?.regulation}
-              options={{
-                Speed: {
-                  children: "Speed",
-                  icon: "lu:Gauge",
-                },
-                Diameter: {
-                  children: "Diameter",
-                  icon: "lu:Sun",
-                  disabled: true,
-                },
-              }}
-              onChange={setPullerRegulationMode}
+              value={state?.puller_state?.speed_control_mode}
               disabled={isDisabled}
               loading={isLoading}
+              options={{
+                Fixed: {
+                  children: "Fixed",
+                  icon: "lu:Crosshair",
+                },
+                Adaptive: {
+                  children: "Adaptive",
+                  icon: "lu:Brain",
+                },
+              }}
+              onChange={(value) =>
+                setPullerSpeedControlMode(value)
+              }
             />
           </Label>
-          <Label label="Target Speed">
-            <EditValue
-              value={state?.puller_state?.target_speed}
-              unit="m/min"
-              title="Target Speed"
-              defaultValue={defaultState?.puller_state?.target_speed}
-              min={0}
-              max={maxTargetSpeed}
-              step={0.1}
-              renderValue={(value) => roundToDecimals(value, 1)}
-              onChange={setPullerTargetSpeed}
-            />
-          </Label>
+
+          {state?.puller_state?.speed_control_mode ===
+            "Fixed" && (
+            <>
+              <Label label="Target Speed">
+                <EditValue
+                  value={state?.puller_state?.fixed_target_speed}
+                  title={"Target Speed"}
+                  unit="m/min"
+                  step={0.1}
+                  min={0}
+                  max={maxPullerSpeed}
+                  defaultValue={
+                    defaultState?.puller_state?.fixed_target_speed
+                  }
+                  renderValue={(value) => roundToDecimals(value, 0)}
+                  onChange={(value) => setPullerFixedTargetSpeed(value)}
+                />
+              </Label>
+            </>
+          )}
+
+          {state?.puller_state?.speed_control_mode ===
+            "Adaptive" && (
+            <>
+              <Label label="Base Speed">
+                <EditValue
+                  value={state?.puller_state?.adaptive_base_speed}
+                  title={"Base Speed"}
+                  unit="m/min"
+                  step={0.1}
+                  min={0}
+                  max={maxPullerSpeed}
+                  defaultValue={
+                    defaultState?.puller_state?.adaptive_base_speed
+                  }
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) => setPullerAdaptiveBaseSpeed(value)}
+                />
+              </Label>
+              <Label label="Max Deviation">
+                <EditValue
+                  value={state?.puller_state?.adaptive_deviation_max}
+                  title={"Max Deviation"}
+                  unit="m/min"
+                  step={10}
+                  min={0.1}
+                  max={maxPullerSpeed}
+                  defaultValue={
+                    defaultState?.puller_state?.adaptive_deviation_max
+                  }
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) => setPullerAdaptiveDeviationMax(value)}
+                />
+              </Label>
+              <Label label="Reference Machine">
+                <MachineSelector
+                  machines={filteredMachines}
+                  selectedMachine={selectedMachine}
+                  connectedMachineState={state?.puller_state.adaptive_reference_machine}
+                  setConnectedMachine={(machine) => {
+                    setPullerAdaptiveReferenceMachine(machine);
+                  }}
+                  clearConnectedMachine={() => 
+                  {
+                    if (!selectedMachine) return;
+                    setPullerAdaptiveReferenceMachine(null);
+                  }}
+                />
+              </Label>
+            </>
+          )}
         </ControlCard>
 
         <ControlCard className="bg-red" title="Spool Autostop">
@@ -305,7 +385,7 @@ export function Winder2ControlPage() {
 
           <Label label="Target Length">
             <EditValue
-              value={state?.spool_automatic_action_state.spool_required_meters}
+              value={state?.spool_length_task_state.target_length}
               unit="m"
               title="Expected Meters"
               defaultValue={250}
@@ -313,7 +393,7 @@ export function Winder2ControlPage() {
               max={10000}
               step={10}
               renderValue={(value) => roundToDecimals(value, 2)}
-              onChange={setSpoolAutomaticRequiredMeters}
+              onChange={setSpoolLengthTaskTargetLength}
             />
           </Label>
 
@@ -327,13 +407,13 @@ export function Winder2ControlPage() {
           </TouchButton>
 
           <Label label="After Target Length Reached">
-            <SelectionGroup<SpoolAutomaticActionMode>
+            <SelectionGroup<OnSpoolLengthTaskCompletedAction>
               value={
-                state?.spool_automatic_action_state.spool_automatic_action_mode
+                state?.spool_length_task_state.on_completed_action
               }
               disabled={isDisabled}
               loading={isLoading}
-              onChange={setSpoolAutomaticAction}
+              onChange={setOnSpoolLengthTaskCompletedAction}
               orientation="vertical"
               options={{
                 Hold: {
