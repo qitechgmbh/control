@@ -132,7 +132,7 @@ export const pullerStateSchema = z.object({
   fixed_target_speed: z.number(),
   adaptive_base_speed: z.number(),
   adaptive_deviation_max: z.number(),
-  adaptive_reference_machine: machineCrossConnectionStateSchema,
+  adaptive_reference_machine: machineIdentificationUniqueSchema.nullable(),
 });
 
 /**
