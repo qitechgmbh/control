@@ -183,6 +183,11 @@ impl Winder2
     {
         use Mode::*;
 
+        if mode == self.mode
+        {
+            return Ok(());
+        }
+
         if mode == Wind && !self.can_wind()
         {
             return Err(anyhow!("Cannot enter wind mode in current state"));

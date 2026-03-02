@@ -106,7 +106,7 @@ impl MachineWithChannel for Winder2
         // check if traverse state changed
         if prev_traverse_state != self.traverse.state()
         {
-            // self.emit_state();
+            self.emit_state();
         }
 
         if now.duration_since(self.last_emit) > Duration::from_secs_f64(1.0 / 30.0) 
