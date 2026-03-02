@@ -29,15 +29,12 @@ interface MachineSelectorProps {
   machines: Machine[];
   selectedMachine?: Machine | null;
   connectedMachineState?: {
-    machine_identification_unique?: {
-      machine_identification: {
-        vendor: number;
-        machine: number;
-      };
-      serial: number;
-    } | null;
-    is_available: boolean;
-  };
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  } | null;
   setConnectedMachine: (machine: MachineIdentificationUnique) => void;
   clearConnectedMachine?: () => void;
   title?: string;
@@ -54,11 +51,11 @@ export const MachineSelector: React.FC<MachineSelectorProps> = ({
     <DropdownMenu>
         <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 rounded border px-4 py-2 text-left">
-            <Icon name="lu:Settings" className="text-xl" />
-            <span>
-                {selectedMachine?.name ?? "Select a Machine"}{" "}
-                {selectedMachine?.machine_identification_unique.serial ?? ""}
-            </span>
+              <Icon name="lu:Settings" className="text-xl" />
+              <span>
+                  {selectedMachine?.name ?? "Select a Machine"}{" "}
+                  {selectedMachine?.machine_identification_unique.serial ?? ""}
+              </span>
             </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
@@ -66,7 +63,7 @@ export const MachineSelector: React.FC<MachineSelectorProps> = ({
             <DropdownMenuSeparator />
             {machines.map((machine) => {
             const isSelected =
-                connectedMachineState?.machine_identification_unique
+                connectedMachineState
                 ?.machine_identification.machine ===
                 machine.machine_identification_unique.machine_identification
                 .machine;
@@ -81,7 +78,7 @@ export const MachineSelector: React.FC<MachineSelectorProps> = ({
                     isSelected ? "bg-blue-50" : ""
                 }`}
                 >
-                {connectedMachineState?.is_available ? (
+                {connectedMachineState != null ? (
                     <Icon name="lu:Power" className="text-lg text-green-600" />
                 ) : (
                     <Icon name="lu:Power" className="text-lg text-gray-400" />

@@ -111,7 +111,6 @@ impl MachineWithChannel for Winder2
 
         if now.duration_since(self.last_emit) > Duration::from_secs_f64(1.0 / 30.0) 
         {
-            self.emit_state();
             self.emit_live_values();
         }
 

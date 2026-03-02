@@ -430,7 +430,6 @@ export function useWinder2() {
       (current) => {
         current.data.puller_state
           .adaptive_reference_machine
-          .machine_identification_unique 
             = machineUid;
       },
       () =>
@@ -617,7 +616,7 @@ export function useWinder2() {
   // Get selected machine by serial
   const selectedMachine = useMemo(() => {
     const serial =
-      state?.data.puller_state.adaptive_reference_machine?.machine_identification_unique
+      state?.data.puller_state.adaptive_reference_machine
         ?.serial;
 
     return (
