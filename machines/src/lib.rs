@@ -469,15 +469,19 @@ pub struct MachineChannel {
 }
 
 impl MachineChannel {
-    pub fn new(machine_identification_unique: MachineIdentificationUnique) -> Self {
+    pub fn new(
+        machine_identification_unique: MachineIdentificationUnique,
+        main_sender: Option<Sender<AsyncThreadMessage>>,
+        namespace: Option<Namespace>,
+    ) -> Self {
         let (sender, receiver) = smol::channel::unbounded();
 
         Self {
             api_sender: sender,
             api_receiver: receiver,
             machine_identification_unique,
-            main_sender: None,
-            namespace: None,
+            main_sender,
+            namespace,
         }
     }
 }

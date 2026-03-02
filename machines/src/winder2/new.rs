@@ -153,10 +153,13 @@ impl MachineNewTrait for Winder2
             .first()
             .expect("device group must have at least one device")
             .device_machine_identification
-            .machine_identification_unique
-            .clone();
+            .machine_identification_unique;
 
-        let channel = MachineChannel::new(machine_id);
+        let channel = MachineChannel::new(
+            machine_id, 
+            params.main_thread_channel.clone(), 
+            params.namespace.clone()
+        );
 
         let hardware = Hardware {
             spool_motor: StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),

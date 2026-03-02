@@ -35,7 +35,7 @@ pub async fn start_modbus_tcp_discovery(shared_state: Arc<SharedState>) {
                         serial: probe.serial,
                     };
 
-                    let channel = MachineChannel::new(machine_identification_unique);
+                    let channel = MachineChannel::new(machine_identification_unique, None, None);
                     let power = WagoPower::new(channel, probe.addr)
                         .await
                         .expect("Failed to initialize wago power supply");

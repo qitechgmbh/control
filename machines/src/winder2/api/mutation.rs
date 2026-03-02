@@ -391,7 +391,6 @@ impl Winder2
                         publisher:  machine_uid,
                     },
                 ))?;
-                self.emit_state();
             },
             None => 
             {
