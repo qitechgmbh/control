@@ -12,9 +12,9 @@ use spin_sleep::SpinSleeper;
 use std::time::Duration;
 use std::time::Instant;
 
+use crate::MachineManager;
 use crate::metrics::jitter::record_machines_loop_jitter;
 use crate::metrics::preemption::set_rt_loop_tid;
-use crate::MachineManager;
 
 pub struct RtLoopInputs<'a> {
     pub machine_manager: MachineManager,
@@ -110,14 +110,16 @@ pub fn start_loop_thread(
                             }
                         }
                     }
-                    DeleteMachine(uid) =>
-                        rt_loop_inputs.machine_manager.remove_machine(uid),
-                    AddMachines(new_machines) => 
-                        rt_loop_inputs.machine_manager.add_machines(new_machines),
-                    SubscriptionEstablish(request) => 
-                        rt_loop_inputs.machine_manager.subscription_establish(request),
-                    SubscriptionTerminate(request) => 
-                        rt_loop_inputs.machine_manager.subscription_terminate(request),
+                    DeleteMachine(uid) => rt_loop_inputs.machine_manager.remove_machine(uid),
+                    AddMachines(new_machines) => {
+                        rt_loop_inputs.machine_manager.add_machines(new_machines)
+                    }
+                    SubscriptionEstablish(request) => rt_loop_inputs
+                        .machine_manager
+                        .subscription_establish(request),
+                    SubscriptionTerminate(request) => rt_loop_inputs
+                        .machine_manager
+                        .subscription_terminate(request),
                 }
                 let iter_start = Instant::now();
                 if let Some(prev) = last_iter_start {

@@ -50,7 +50,8 @@ pub use winder2_imports::*;
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
-    MACHINE_WINDER_V1, MachineConnection, MachineData, MachineMessage, VENDOR_QITECH, machine_identification::{MachineIdentification, MachineIdentificationUnique}
+    MACHINE_WINDER_V1, MachineConnection, MachineData, MachineMessage, VENDOR_QITECH,
+    machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
 
 #[derive(Debug)]
@@ -82,59 +83,54 @@ impl Machine for Winder2 {
         self.main_sender.clone()
     }
 
-    fn receive_machines_data(&mut self, data: &MachineData) 
-    {
+    fn receive_machines_data(&mut self, data: &MachineData) {
         use MachineData::*;
 
         debug_assert!(self.puller_reference_machine.is_some());
 
-        match data
-        {
-            Laser(state, live_values) => 
-            {
+        match data {
+            Laser(state, live_values) => {
                 let current = live_values.diameter;
-                let target  = state.laser_state.target_diameter;
-                let lower   = state.laser_state.lower_tolerance;
-                let upper   = state.laser_state.higher_tolerance;
+                let target = state.laser_state.target_diameter;
+                let lower = state.laser_state.lower_tolerance;
+                let upper = state.laser_state.higher_tolerance;
                 let modulation = Self::compute_modulation(current, target, lower, upper);
 
                 let algorithm = &mut self.puller_speed_controller.adaptive;
                 algorithm.set_modulation(modulation);
-            },
+            }
             None => tracing::error!("Received MachineData::None"),
         };
     }
 
-    fn subscribed_to_machine(&mut self, uid: MachineIdentificationUnique)
-    {
+    fn subscribed_to_machine(&mut self, uid: MachineIdentificationUnique) {
         self.puller_reference_machine = Some(uid);
         self.emit_state();
     }
 
-    fn unsubscribed_from_machine(&mut self, uid: MachineIdentificationUnique) 
-    {
-        if let Some(current_uid) = self.puller_reference_machine
-        {
-            if current_uid == uid
-            {
+    fn unsubscribed_from_machine(&mut self, uid: MachineIdentificationUnique) {
+        if let Some(current_uid) = self.puller_reference_machine {
+            if current_uid == uid {
                 self.puller_reference_machine = None;
             }
         }
-        
+
         self.emit_state();
     }
 }
 
 // utils
-impl Winder2
-{
-    fn compute_modulation(current: f64, target: f64, lower: f64, upper: f64) -> f64 
-    {
+impl Winder2 {
+    fn compute_modulation(current: f64, target: f64, lower: f64, upper: f64) -> f64 {
         let lower_bound = target - lower;
         let upper_bound = target + upper;
 
-        if current <= lower_bound { return -1.0 };
-        if current >= upper_bound { return 1.0 };
+        if current <= lower_bound {
+            return -1.0;
+        };
+        if current >= upper_bound {
+            return 1.0;
+        };
 
         if current < target {
             let min = lower_bound;

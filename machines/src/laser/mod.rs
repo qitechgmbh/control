@@ -3,7 +3,7 @@ use crate::{
     MACHINE_LASER_V1, VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
-use crate::{Machine, MachineMessage, MachineData};
+use crate::{Machine, MachineData, MachineMessage};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use smol::{
@@ -67,23 +67,20 @@ impl Machine for LaserMachine {
         self.main_sender.clone()
     }
 
-    fn mutation_counter(&self) -> u64 
-    { 
+    fn mutation_counter(&self) -> u64 {
         self.mutation_counter
     }
 
     fn update_machine_data(
-        &self, 
-        data: &mut MachineData, 
-        refresh_state: bool, 
-        refresh_live_values: bool)
-    {
+        &self,
+        data: &mut MachineData,
+        refresh_state: bool,
+        refresh_live_values: bool,
+    ) {
         use MachineData::*;
 
-        match data 
-        {
-            Laser(state, live_values) => 
-            {
+        match data {
+            Laser(state, live_values) => {
                 if refresh_state {
                     *state = self.build_state_event();
                 }
@@ -91,14 +88,10 @@ impl Machine for LaserMachine {
                 if refresh_live_values {
                     *live_values = self.get_live_values();
                 }
-            },
-            _ => 
-            {
-                *data = MachineData::Laser(
-                    self.build_state_event(), 
-                    self.get_live_values()
-                );
-            },
+            }
+            _ => {
+                *data = MachineData::Laser(self.build_state_event(), self.get_live_values());
+            }
         };
     }
 }
