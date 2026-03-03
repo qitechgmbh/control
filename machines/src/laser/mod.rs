@@ -187,18 +187,21 @@ impl LaserMachine {
     pub fn set_higher_tolerance(&mut self, higher_tolerance: f64) {
         self.higher_tolerance = Length::new::<millimeter>(higher_tolerance);
         self.laser_target.higher_tolerance = self.higher_tolerance;
+        self.state_generation += 1;
         self.emit_state();
     }
 
     pub fn set_lower_tolerance(&mut self, lower_tolerance: f64) {
         self.lower_tolerance = Length::new::<millimeter>(lower_tolerance);
         self.laser_target.lower_tolerance = self.lower_tolerance;
+        self.state_generation += 1;
         self.emit_state();
     }
 
     pub fn set_target_diameter(&mut self, target_diameter: f64) {
         self.target_diameter = Length::new::<millimeter>(target_diameter);
         self.laser_target.diameter = Length::new::<millimeter>(target_diameter);
+        self.state_generation += 1;
         self.emit_state();
     }
 
