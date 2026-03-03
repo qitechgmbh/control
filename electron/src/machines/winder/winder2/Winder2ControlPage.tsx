@@ -316,7 +316,7 @@ export function Winder2ControlPage() {
                   defaultValue={
                     defaultState?.puller_state?.fixed_target_speed
                   }
-                  renderValue={(value) => roundToDecimals(value, 0)}
+                  renderValue={(value) => roundToDecimals(value, 1)}
                   onChange={(value) => setPullerFixedTargetSpeed(value)}
                 />
               </Label>

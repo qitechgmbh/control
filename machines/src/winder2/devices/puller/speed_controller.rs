@@ -207,7 +207,6 @@ impl AdaptiveSpeedAlgorithm
                 { deviation_limit };
     }
 
-    #[allow(dead_code)]
     pub fn set_modulation(&mut self, modulation: f64) 
     {
         self.modulation = modulation.clamp(-1.0, 1.0);

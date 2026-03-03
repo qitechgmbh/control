@@ -1,6 +1,7 @@
 use std::time::{Duration, Instant};
 
 use control_core::socketio::namespace::NamespaceCacheingLogic;
+use units::{Length, length::{meter, millimeter}};
 
 use crate::{
     MachineChannel, 
@@ -138,16 +139,7 @@ impl MachineWithChannel for Winder2
                 let target  = state.laser_state.target_diameter;
                 let lower   = state.laser_state.lower_tolerance;
                 let upper   = state.laser_state.higher_tolerance;
-
-                let error = current - target;
-
-                let modulation = if error < 0.0 {
-                    // below target → scale toward -1 using lower tolerance
-                    (error / lower).max(-1.0)
-                } else {
-                    // above target → scale toward +1 using upper tolerance
-                    (error / upper).min(1.0)
-                };
+                let modulation = Self::compute_modulation(current, target, lower, upper);
 
                 let algorithm = &mut self.puller.speed_controller_algorithms_mut().adaptive;
                 algorithm.set_modulation(modulation);
@@ -209,6 +201,22 @@ impl MachineWithChannel for Winder2
 // utils
 impl Winder2
 {
+    fn compute_modulation(current: f64, target: f64, lower: f64, upper: f64) -> f64 
+    {
+        if current <= lower { return -1.0 };
+        if current >= upper { return 1.0 };
+
+        if current < target {
+            let min = lower;
+            let max = target;
+            -((current - min) / (max - min))
+        } else {
+            let min = target;
+            let max = upper;
+            (current - min) / (max - min)
+        }
+    }
+
     /// Updates the spool length task and changes the 
     /// machines mode as appropiate
     fn update_spool_length_task(&mut self, now: Instant)
