@@ -169,10 +169,10 @@ impl Winder2
             strategies.fixed.target_speed().get::<meter_per_minute>();
 
         let adaptive_base_speed = 
-            strategies.adaptive.base_speed().get::<meter_per_minute>();
+            strategies.adaptive.speed_base().get::<meter_per_minute>();
 
         let adaptive_deviation_max = 
-            strategies.adaptive.deviation_max().get::<meter_per_minute>();
+            strategies.adaptive.deviation_limit().get::<meter_per_minute>();
 
         let adaptive_reference_machine = self.puller_reference_machine;
 

@@ -31,13 +31,15 @@ impl SpeedController
     pub fn new(speed_max: Velocity, jerk_max: Jerk, acceleration_max: Acceleration) -> Self
     {
         let fixed = FixedSpeedAlgorithm { 
-            target_speed: Velocity::ZERO 
+            speed_max,
+            target_speed: Velocity::ZERO,
         };
 
         let adaptive = AdaptiveSpeedAlgorithm { 
-            base_speed:    Velocity::ZERO, 
-            deviation_max: Velocity::ZERO, 
-            modulation:    0.0,
+            speed_max,
+            speed_base: Velocity::ZERO, 
+            deviation_limit: Velocity::ZERO, 
+            modulation: 0.0,
         };
 
         let acceleration_controller = LinearJerkSpeedController::new_simple(
@@ -115,6 +117,7 @@ pub struct Algorithms
 pub struct FixedSpeedAlgorithm
 {
     target_speed: Velocity,
+    speed_max:    Velocity,
 }
 
 impl FixedSpeedAlgorithm
@@ -131,15 +134,16 @@ impl FixedSpeedAlgorithm
 
     pub fn set_target_speed(&mut self, speed: Velocity) 
     {
-        self.target_speed = speed;
+        self.target_speed = speed.min(self.speed_max);
     }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct AdaptiveSpeedAlgorithm 
 {
-    base_speed: Velocity,
-    deviation_max: Velocity,
+    speed_max:  Velocity,
+    speed_base: Velocity,
+    deviation_limit: Velocity,
     modulation: f64, // (-1.0 to 1.0)
 }
 
@@ -147,23 +151,39 @@ impl AdaptiveSpeedAlgorithm
 {
     pub fn compute(&self) -> Velocity
     {
-        self.base_speed + (self.deviation_max * self.modulation)
+        self.speed_base + (self.deviation_limit * self.modulation)
     }
 
-    pub fn base_speed(&self) -> Velocity {
-        self.base_speed
+    pub fn speed_base(&self) -> Velocity {
+        self.speed_base
     }
 
-    pub fn set_base_speed(&mut self, speed: Velocity) {
-        self.base_speed = speed;
+    pub fn set_speed_base(&mut self, speed: Velocity) {
+        self.speed_base = speed
+            .min(self.speed_max) // ensure < max
+            .max(Velocity::ZERO) // ensure > 0
+            ;
     }
 
-    pub fn deviation_max(&self) -> Velocity {
-        self.deviation_max
+    pub fn deviation_limit(&self) -> Velocity {
+        self.deviation_limit
     }
 
-    pub fn set_deviation_max(&mut self, deviation: Velocity) {
-        self.deviation_max = deviation;
+    pub fn set_deviation_limit(&mut self, deviation_limit: Velocity) 
+    {
+        self.deviation_limit = 
+            // ensure > 0
+            if deviation_limit < Velocity::ZERO
+                { Velocity::ZERO }
+            // ensure base - deviation can't below zero
+            else if deviation_limit > self.speed_base 
+                { self.speed_base } 
+            // ensure base + deviation can't exceed max
+            else if self.speed_base + deviation_limit > self.speed_max 
+                { self.speed_max - self.speed_base }
+            // in valid range
+            else 
+                { deviation_limit };
     }
 
     #[allow(dead_code)]

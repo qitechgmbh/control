@@ -3,7 +3,14 @@ use std::time::{Duration, Instant};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 
 use crate::{
-    Machine, MachineChannel, MachineConnection, MachineWithChannel, MachinesData, VENDOR_QITECH, machine_identification::{MachineIdentification, MachineIdentificationUnique}
+    MachineChannel, 
+    MachineWithChannel, 
+    MachinesData, 
+    VENDOR_QITECH, 
+    machine_identification::{
+        MachineIdentification, 
+        MachineIdentificationUnique
+    }
 };
 
 mod types;
@@ -152,6 +159,7 @@ impl MachineWithChannel for Winder2
     fn subscribed_to_machine(&mut self, uid: MachineIdentificationUnique)
     {
         self.puller_reference_machine = Some(uid);
+        self.emit_state();
     }
 
     fn unsubscribed_from_machine(&mut self, uid: MachineIdentificationUnique) 
@@ -163,6 +171,8 @@ impl MachineWithChannel for Winder2
                 self.puller_reference_machine = None;
             }
         }
+        
+        self.emit_state();
     }
 
     fn get_state(&self) -> State 

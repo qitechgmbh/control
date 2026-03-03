@@ -166,8 +166,8 @@ impl Puller
         // require a reconfiguration of the machine
         let algorithms = self.speed_controller.algorithms_mut();
         algorithms.fixed.set_target_speed(Velocity::ZERO);
-        algorithms.adaptive.set_base_speed(Velocity::ZERO);
-        algorithms.adaptive.set_deviation_max(Velocity::ZERO);
+        algorithms.adaptive.set_speed_base(Velocity::ZERO);
+        algorithms.adaptive.set_deviation_limit(Velocity::ZERO);
     }
 
     pub fn output_speed(&self) -> Velocity 

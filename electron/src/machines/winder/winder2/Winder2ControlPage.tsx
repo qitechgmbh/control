@@ -181,8 +181,8 @@ export function Winder2ControlPage() {
                 variant="outline"
                 icon="lu:ArrowRightToLine"
                 onClick={gotoTraverseLimitInner}
-                disabled={isDisabled}
-                isLoading={isLoading || state?.traverse_state?.can_go_in}
+                disabled={isDisabled || state?.traverse_state?.can_go_in}
+                isLoading={isLoading}
               >
                 Go to Inner Limit
               </TouchButton>
@@ -229,7 +229,7 @@ export function Winder2ControlPage() {
             disabled={isDisabled}
             isLoading={isLoading}
           >
-            Calibrate
+            Zero
           </TouchButton>
           {!state?.tension_arm_state?.is_calibrated && (
             <StatusBadge variant="error">Not Calibrated</StatusBadge>
@@ -341,21 +341,66 @@ export function Winder2ControlPage() {
                   onChange={(value) => setPullerAdaptiveBaseSpeed(value)}
                 />
               </Label>
-              <Label label="Max Deviation">
-                <EditValue
-                  value={state?.puller_state?.adaptive_deviation_max}
-                  title={"Max Deviation"}
-                  unit="m/min"
-                  step={10}
-                  min={0.1}
-                  max={maxPullerSpeed}
-                  defaultValue={
-                    defaultState?.puller_state?.adaptive_deviation_max
-                  }
-                  renderValue={(value) => roundToDecimals(value, 1)}
-                  onChange={(value) => setPullerAdaptiveDeviationMax(value)}
-                />
-              </Label>
+
+              <div className="flex flex-row flex-wrap gap-4">
+                <Label label="Deviation Limit (fixed)">
+                  <EditValue
+                    value={state?.puller_state?.adaptive_deviation_max}
+                    title={"Deviation Limit (fixed)"}
+                    unit="m/min"
+                    step={0.1}
+                    min={0.0}
+                    max={                    
+                      (() => {
+                        const base = state.puller_state?.adaptive_base_speed;
+                        const max  = maxPullerSpeed;
+
+                        // limit is towards upper bound
+                        if (base > max / 2) { return max - base; }
+
+                        // limit is towards lower bound
+                        return base;
+                      })()
+                    }
+                    defaultValue={0.0}
+                    renderValue={(value) => roundToDecimals(value, 1)}
+                    onChange={(value) => setPullerAdaptiveDeviationMax(value)}
+                  />
+                </Label>
+                <Label label="Deviation Limit (relative)">
+                  <EditValue
+                    value={(() => {
+                      const base = state?.puller_state?.adaptive_base_speed;
+                      const deviation = state?.puller_state?.adaptive_deviation_max;
+                      return deviation / base;
+                    })()}
+                    title={"Deviation Limit (relative)"}
+                    unit="%"
+                    step={0.5}
+                    min={0.0}
+                    max={                    
+                      (() => {
+                        const base = state?.puller_state?.adaptive_base_speed;
+                        const max  = maxPullerSpeed;
+                        const mid  = max / 2;
+
+                        // limit is towards upper bound
+                        if (base > mid) { return (max - base) / mid; }
+
+                        // limit is towards lower bound
+                        return base / mid;
+                      })()
+                    }
+                    defaultValue={0.0}
+                    renderValue={(value) => roundToDecimals(value, 1)}
+                    onChange={(value) => {
+                      const base = state?.puller_state?.adaptive_base_speed ?? 0;
+                      const velocity = base * value;
+                      setPullerAdaptiveDeviationMax(value)
+                    }}
+                  />
+                </Label>
+              </div>
               <Label label="Reference Machine">
                 <MachineSelector
                   machines={filteredMachines}
