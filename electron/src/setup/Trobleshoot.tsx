@@ -96,7 +96,7 @@ export function TroubleshootPage() {
 
         <TouchButton
           variant="outline"
-          icon="lu:Power"
+          icon="lu:FileDown"
           isLoading={isExportLoading}
           onClick={exportLogs}
           className="w-max"
