@@ -139,7 +139,13 @@ impl Winder2
         if current < target {
             let min = lower_bound;
             let max = target;
-            -((current - min) / (max - min))
+            let normalized = (current - min) / (max - min);
+            // currently we reach 1.0 when closest to target
+            // but since we want to return 0 when closest and
+            // -1.0 when furthest we invert it from 0..1 to 1..0
+            let inverted = 1.0 - normalized;
+            // now flip sign
+            -inverted
         } else {
             let min = target;
             let max = upper_bound;
