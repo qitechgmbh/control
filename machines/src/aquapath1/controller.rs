@@ -60,8 +60,9 @@ pub struct Controller {
 impl Controller {
     const MIN_FLOW_FOR_THERMAL_LPM: f64 = 0.2;
     const HEATING_PWM_PERIOD: Duration = Duration::from_secs(20);
-    const RELAY_MIN_ON_TIME: Duration = Duration::from_secs(3);
-    const RELAY_MIN_OFF_TIME: Duration = Duration::from_secs(3);
+    const RELAY_MIN_ON_TIME: Duration = Duration::from_secs(5);
+    const RELAY_MIN_OFF_TIME: Duration = Duration::from_secs(5);
+    const HEATING_FULL_POWER_ERROR_C: f64 = 6.0;
 
     pub fn new(
         kp: f64,
@@ -383,11 +384,15 @@ impl Controller {
             }
 
             if self.heating_allowed && thermal_interlock_ok {
-                let duty = self.temperature_pid_output.clamp(0.0, 1.0);
-                let on_time = self.pwm_period.mul_f64(duty);
-                let should_heat_on = duty > 0.0 && elapsed_in_window < on_time;
-
-                self.set_heating_state(should_heat_on, now);
+                if error >= Self::HEATING_FULL_POWER_ERROR_C {
+                    // Warmup phase: force full heating when far below target.
+                    self.set_heating_state(true, now);
+                } else {
+                    let duty = self.temperature_pid_output.clamp(0.0, 1.0);
+                    let on_time = self.pwm_period.mul_f64(duty);
+                    let should_heat_on = duty > 0.0 && elapsed_in_window < on_time;
+                    self.set_heating_state(should_heat_on, now);
+                }
                 if self.temperature.heating {
                     self.total_energy += self.get_current_power() * dt / 3600.0;
                 }

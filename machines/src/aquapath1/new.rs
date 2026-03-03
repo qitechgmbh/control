@@ -136,9 +136,9 @@ impl MachineNewTrait for AquaPathV1 {
             let ao2 = AnalogOutput::new(el4002.clone(), EL4002Port::AO2);
 
             let front_controller = Controller::new(
-                0.10,
+                0.12,
+                0.01,
                 0.0,
-                0.015,
                 Temperature::default(),
                 ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao2,
@@ -153,9 +153,9 @@ impl MachineNewTrait for AquaPathV1 {
             );
 
             let back_controller = Controller::new(
-                0.10,
+                0.12,
+                0.01,
                 0.0,
-                0.015,
                 Temperature::default(),
                 ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao1,
