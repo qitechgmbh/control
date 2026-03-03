@@ -203,16 +203,20 @@ impl Winder2
 {
     fn compute_modulation(current: f64, target: f64, lower: f64, upper: f64) -> f64 
     {
-        if current <= lower { return -1.0 };
-        if current >= upper { return 1.0 };
+        let lower_bound = target - lower;
+        let upper_bound = target + upper;
 
+        if current <= lower_bound { return -1.0 };
+        if current >= upper_bound { return 1.0 };
+
+        // 
         if current < target {
-            let min = lower;
+            let min = lower_bound;
             let max = target;
             -((current - min) / (max - min))
         } else {
             let min = target;
-            let max = upper;
+            let max = upper_bound;
             (current - min) / (max - min)
         }
     }
