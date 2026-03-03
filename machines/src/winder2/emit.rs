@@ -499,12 +499,14 @@ impl Winder2
     {
         let speed = Velocity::new::<meter_per_minute>(value);
         self.puller_speed_controller.adaptive.set_speed_base(speed);
+        self.emit_state();
     }
 
     pub fn puller_set_adaptive_deviation_limit(&mut self, value: f64)
     {
         let speed = Velocity::new::<meter_per_minute>(value);
         self.puller_speed_controller.adaptive.set_deviation_limit(speed);
+        self.emit_state();
     }
 
     pub fn puller_set_adaptive_reference_machine(
