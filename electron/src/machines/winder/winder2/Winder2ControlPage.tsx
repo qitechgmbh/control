@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getWinder2TraverseMax } from "./winder2Config";
+import { MachineSelector } from "../MachineSelector";
 
 export function Winder2ControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
@@ -58,13 +59,20 @@ export function Winder2ControlPage() {
     setSpoolAutomaticAction,
     isLoading,
     isDisabled,
+    filteredMachines,
+    selectedMachine,
+
+    // new stuff
+    setPullerAdaptiveBaseSpeed,
+    setPullerAdaptiveDeviationLimit,
+    setPullerAdaptiveReferenceMachine,
   } = useWinder2();
 
   // Calculate max speed based on gear ratio
   const gearRatioMultiplier = getGearRatioMultiplier(
     state?.puller_state?.gear_ratio,
   );
-  const maxMotorSpeed = 75; // Maximum motor speed in m/min
+  const maxMotorSpeed = 50; // Maximum motor speed in m/min
   const maxTargetSpeed = maxMotorSpeed / gearRatioMultiplier;
 
   const handleResetProgress = () => {
@@ -261,38 +269,144 @@ export function Winder2ControlPage() {
             timeseries={pullerSpeed}
             renderValue={(value) => roundToDecimals(value, 1)}
           />
-          <Label label="Regulation">
+          <Label label="Speed Regulation">
             <SelectionGroup
               value={state?.puller_state?.regulation}
-              options={{
-                Speed: {
-                  children: "Speed",
-                  icon: "lu:Gauge",
-                },
-                Diameter: {
-                  children: "Diameter",
-                  icon: "lu:Sun",
-                  disabled: true,
-                },
-              }}
-              onChange={setPullerRegulationMode}
               disabled={isDisabled}
               loading={isLoading}
+              options={{
+                Speed: {
+                  children: "Fixed",
+                  icon: "lu:Crosshair",
+                },
+                Diameter: {
+                  children: "Adaptive",
+                  icon: "lu:Brain",
+                },
+              }}
+              onChange={(value) =>
+                setPullerRegulationMode(value)
+              }
             />
           </Label>
-          <Label label="Target Speed">
-            <EditValue
-              value={state?.puller_state?.target_speed}
-              unit="m/min"
-              title="Target Speed"
-              defaultValue={defaultState?.puller_state?.target_speed}
-              min={0}
-              max={maxTargetSpeed}
-              step={0.1}
-              renderValue={(value) => roundToDecimals(value, 1)}
-              onChange={setPullerTargetSpeed}
-            />
-          </Label>
+
+          {state?.puller_state?.regulation ===
+            "Speed" && (
+            <>
+              <Label label="Target Speed">
+                <EditValue
+                  value={state?.puller_state?.target_speed}
+                  title={"Target Speed"}
+                  unit="m/min"
+                  step={0.1}
+                  min={0}
+                  max={maxTargetSpeed}
+                  defaultValue={
+                    defaultState?.puller_state?.target_speed
+                  }
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) => setPullerTargetSpeed(value)}
+                />
+              </Label>
+            </>
+          )}
+
+          {state?.puller_state?.regulation ===
+            "Diameter" && (
+            <>
+              <Label label="Base Speed">
+                <EditValue
+                  value={state?.puller_state?.adaptive_speed_base}
+                  title={"Base Speed"}
+                  unit="m/min"
+                  step={0.1}
+                  min={0}
+                  max={maxTargetSpeed}
+                  defaultValue={
+                    defaultState?.puller_state?.adaptive_speed_base
+                  }
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) => setPullerAdaptiveBaseSpeed(value)}
+                />
+              </Label>
+
+              <div className="flex flex-row flex-wrap gap-4">
+                <Label label="Deviation Limit (fixed)">
+                  <EditValue
+                    value={state?.puller_state?.adaptive_deviation_limit}
+                    title={"Deviation Limit (fixed)"}
+                    unit="m/min"
+                    step={0.1}
+                    min={0.0}
+                    max={                    
+                      (() => {
+                        const base = state.puller_state?.adaptive_speed_base;
+                        const max  = maxTargetSpeed;
+
+                        // limit is towards upper bound
+                        if (base > max / 2) { return max - base; }
+
+                        // limit is towards lower bound
+                        return base;
+                      })()
+                    }
+                    defaultValue={0.0}
+                    renderValue={(value) => roundToDecimals(value, 1)}
+                    onChange={(value) => setPullerAdaptiveDeviationLimit(value)}
+                  />
+                </Label>
+                <Label label="Deviation Limit (relative)">
+                  <EditValue
+                    value={(() => {
+                      const base = state?.puller_state?.adaptive_speed_base;
+                      const deviation = state?.puller_state?.adaptive_deviation_limit;
+                      if (base <= 0) return 0;
+                      return (deviation / base) * 100;
+                    })()}
+                    title={"Deviation Limit (relative)"}
+                    unit="%"
+                    step={0.5}
+                    min={0.0}
+                    max={                    
+                      (() => {
+                        const base = state?.puller_state?.adaptive_speed_base;
+                        const max  = maxTargetSpeed;
+                        const mid  = max / 2;
+
+                        // limit is towards lower bound
+                        if (base < mid) { return 100.0; }
+
+                        // limit is towards upper bound
+                        return (max - base) / base * 100.0;
+                      })()
+                    }
+                    defaultValue={0.0}
+                    renderValue={(value) => roundToDecimals(value, 1)}
+                    onChange={(value) => {
+                      const base = state?.puller_state?.adaptive_speed_base;
+                      const velocity = base * (value / 100);
+                      setPullerAdaptiveDeviationLimit(velocity)
+                    }}
+                  />
+                </Label>
+              </div>
+              <Label label="Reference Machine">
+                <MachineSelector
+                  machines={filteredMachines}
+                  selectedMachine={selectedMachine}
+                  connectedMachineState={state?.puller_state.adaptive_reference_machine}
+                  setConnectedMachine={(machine) => {
+                    setPullerAdaptiveReferenceMachine(machine);
+                  }}
+                  clearConnectedMachine={() => 
+                  {
+                    if (!selectedMachine) return;
+                    setPullerAdaptiveReferenceMachine(null);
+                  }}
+                />
+              </Label>
+            </>
+          )}
         </ControlCard>
 
         <ControlCard className="bg-red" title="Spool Autostop">
