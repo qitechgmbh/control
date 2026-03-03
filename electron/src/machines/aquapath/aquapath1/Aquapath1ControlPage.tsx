@@ -9,7 +9,6 @@ import { EditValue } from "@/control/EditValue";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/Icon";
 import { Label } from "@/control/Label";
-import { HeatingZone } from "../../extruder/HeatingZone";
 
 export function Aquapath1ControlPage() {
   const {
@@ -19,6 +18,8 @@ export function Aquapath1ControlPage() {
     back_flow,
     front_temperature,
     back_temperature,
+    front_power,
+    back_power,
     front_revolutions,
     back_revolutions,
     setAquapathMode,
@@ -53,13 +54,22 @@ export function Aquapath1ControlPage() {
     <Page>
       <ControlGrid columns={2}>
         <ControlCard title="Reservoir 1">
-          <div className="grid grid-rows-5 gap-4">
+          <div className="grid grid-rows-6 gap-4">
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Flow"
                 unit="l/min"
                 timeseries={front_flow}
                 renderValue={(value) => value.toFixed(1)}
+              />
+            </div>
+
+            <div className="flex flex-row">
+              <TimeSeriesValueNumeric
+                label="Heater Power"
+                unit="W"
+                timeseries={front_power}
+                renderValue={(value) => value.toFixed(0)}
               />
             </div>
 
@@ -144,13 +154,22 @@ export function Aquapath1ControlPage() {
         </ControlCard>
 
         <ControlCard title="Reservoir 2">
-          <div className="grid grid-rows-4 gap-4">
+          <div className="grid grid-rows-6 gap-4">
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Flow"
                 unit="l/min"
                 timeseries={back_flow}
                 renderValue={(value) => value.toFixed(1)}
+              />
+            </div>
+
+            <div className="flex flex-row">
+              <TimeSeriesValueNumeric
+                label="Heater Power"
+                unit="W"
+                timeseries={back_power}
+                renderValue={(value) => value.toFixed(0)}
               />
             </div>
 

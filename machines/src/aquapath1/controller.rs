@@ -308,9 +308,8 @@ impl Controller {
             if self.temperature.cooling {
                 self.turn_cooling_off();
             }
-            // Gate heating on commanded pump state rather than measured flow.
-            // A missing/miswired flow signal would otherwise block heating forever.
-            if self.heating_allowed && self.flow.pump {
+
+            if self.heating_allowed && current_flow > VolumeRate::new::<liter_per_minute>(0.0) {
                 self.turn_heating_on();
 
                 self.total_energy += self.get_current_power() * elapsed.as_secs_f64() / 3600.0;
