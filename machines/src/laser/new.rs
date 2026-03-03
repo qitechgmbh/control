@@ -39,6 +39,7 @@ impl MachineNewTrait for LaserMachine {
             api_receiver: receiver,
             api_sender: sender,
             machine_identification_unique: params.get_machine_identification_unique(),
+            mutation_counter: 0,
             laser,
             namespace: LaserMachineNamespace {
                 namespace: params.namespace.clone(),

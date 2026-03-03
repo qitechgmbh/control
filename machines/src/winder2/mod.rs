@@ -91,8 +91,6 @@ pub struct Winder2 {
     api_sender: Sender<MachineMessage>,
     main_sender: Option<Sender<AsyncThreadMessage>>,
 
-    connected_machines: Vec<MachineConnection>,
-    max_connected_machines: usize,
     // drivers
     pub traverse: StepperVelocityEL70x1,
     pub puller: StepperVelocityEL70x1,
@@ -124,6 +122,9 @@ pub struct Winder2 {
 
     // control circuit puller
     pub puller_speed_controller: PullerSpeedController,
+
+    // reference machine for adapative mode
+    puller_reference_machine: Option<MachineIdentificationUnique>,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
