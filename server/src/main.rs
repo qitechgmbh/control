@@ -5,7 +5,7 @@ use crate::{
 use control_core::socketio::event::GenericEvent;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use machines::{
-    AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
+    AsyncThreadMessage, MachineNewHardware, MachineNewHardwareSerial,
     MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
     SerialDeviceNewParams,
     laser::LaserMachine,

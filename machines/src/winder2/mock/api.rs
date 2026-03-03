@@ -46,11 +46,14 @@ impl MachineApi for Winder2 {
             Mutation::SetSpoolAutomaticAction(mode) => self.set_spool_automatic_mode(mode),
             Mutation::ResetSpoolProgress => self.stop_or_pull_spool_reset(Instant::now()),
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
-            Mutation::SetConnectedMachine(machine_identification_unique) => {
-                self.set_connected_buffer(machine_identification_unique)
+
+            // puller adaptive speed algorithm
+            Mutation::SetPullerAdaptiveSpeedBase(_) => self.emit_state(),
+            Mutation::SetPullerAdaptiveDeviationLimit(_) => {
+                self.emit_state(); // not implementing this...
             }
-            Mutation::DisconnectMachine(machine_identification_unique) => {
-                self.disconnect_buffer(machine_identification_unique)
+            Mutation::SetPullerAdaptiveReferenceMachine(_) => {
+                self.emit_state(); // not implementing this...
             }
         }
         Ok(())
