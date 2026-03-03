@@ -32,7 +32,7 @@ pub mod wago_serial_machine;
 pub mod winder2;
 
 mod machine_data;
-pub use machine_data::MachinesData;
+pub use machine_data::MachineData;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
@@ -310,11 +310,11 @@ pub trait Machine: MachineAct + MachineApi + Any + Debug + Send + Sync {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique;
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>>;
 
-    fn state_generation(&self) -> u64 { 0 }
+    fn mutation_counter(&self) -> u64 { 0 }
 
     fn refresh_data(
         &self, 
-        data: &mut MachinesData, 
+        data: &mut MachineData, 
         refresh_state: bool, 
         refresh_live_values: bool
     )
@@ -324,7 +324,7 @@ pub trait Machine: MachineAct + MachineApi + Any + Debug + Send + Sync {
         _ = refresh_live_values;
     }
 
-    fn receive_machines_data(&mut self, data: &MachinesData) {
+    fn receive_machines_data(&mut self, data: &MachineData) {
         _ = data;
     }
 
