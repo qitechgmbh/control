@@ -37,6 +37,7 @@ pub mod wago_8ch_dio_test_machine;
 pub mod wago_ai_test_machine;
 pub mod wago_do_test_machine;
 pub mod wago_power;
+pub mod wago_serial_machine;
 pub mod winder2;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
