@@ -5,17 +5,22 @@ use ethercat_hal::io::encoder_input::EncoderInput;
 use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
-use std::time::Instant;
-use units::AngularVelocity;
+use std::time::{Duration, Instant};
 use units::angular_velocity::revolution_per_minute;
 use units::f64::ThermodynamicTemperature;
 use units::thermodynamic_temperature::{degree_celsius, kelvin};
 use units::volume_rate::liter_per_minute;
+use units::AngularVelocity;
 #[derive(Debug)]
 
 pub struct Controller {
     pub pid: PidController,
     window_start: Instant,
+    last_update: Instant,
+    temperature_pid_output: f64,
+    pwm_period: Duration,
+    last_heating_switch: Instant,
+    last_cooling_switch: Instant,
 
     pub temperature: Temperature,
     pub target_temperature: ThermodynamicTemperature,
@@ -53,6 +58,11 @@ pub struct Controller {
 }
 
 impl Controller {
+    const MIN_FLOW_FOR_THERMAL_LPM: f64 = 0.2;
+    const HEATING_PWM_PERIOD: Duration = Duration::from_secs(20);
+    const RELAY_MIN_ON_TIME: Duration = Duration::from_secs(3);
+    const RELAY_MIN_OFF_TIME: Duration = Duration::from_secs(3);
+
     pub fn new(
         kp: f64,
         ki: f64,
@@ -70,9 +80,15 @@ impl Controller {
         pump_relais: DigitalOutput,
         flow_sensor: EncoderInput,
     ) -> Self {
+        let now = Instant::now();
         Self {
             pid: PidController::new(kp, ki, kd),
-            window_start: Instant::now(),
+            window_start: now,
+            last_update: now,
+            temperature_pid_output: 0.0,
+            pwm_period: Self::HEATING_PWM_PERIOD,
+            last_heating_switch: now,
+            last_cooling_switch: now,
             target_temperature: target_tempetature,
             current_temperature: ThermodynamicTemperature::new::<degree_celsius>(25.0),
             temp_reservoir: ThermodynamicTemperature::new::<degree_celsius>(25.0),
@@ -197,6 +213,7 @@ impl Controller {
 
     pub fn turn_cooling_off(&mut self) {
         self.cooling_relais.set(false);
+        self.cooling_controller.set(0.0);
         self.current_revolutions = AngularVelocity::new::<revolution_per_minute>(0.0);
         self.temperature.cooling = false;
     }
@@ -204,6 +221,7 @@ impl Controller {
     pub fn turn_heating_on(&mut self) {
         self.heating_relais_1.set(true);
         self.temperature.heating = true;
+        self.power = 700.0;
     }
 
     pub fn turn_heating_off(&mut self) {
@@ -272,7 +290,51 @@ impl Controller {
         self.total_energy
     }
 
+    fn can_switch_relay(currently_on: bool, last_switch: Instant, now: Instant) -> bool {
+        let min_dwell = if currently_on {
+            Self::RELAY_MIN_ON_TIME
+        } else {
+            Self::RELAY_MIN_OFF_TIME
+        };
+        now.duration_since(last_switch) >= min_dwell
+    }
+
+    fn set_heating_state(&mut self, on: bool, now: Instant) {
+        if on == self.temperature.heating {
+            return;
+        }
+        if !Self::can_switch_relay(self.temperature.heating, self.last_heating_switch, now) {
+            return;
+        }
+
+        if on {
+            self.turn_heating_on();
+        } else {
+            self.turn_heating_off();
+        }
+        self.last_heating_switch = now;
+    }
+
+    fn set_cooling_state(&mut self, on: bool, now: Instant) {
+        if on == self.temperature.cooling {
+            return;
+        }
+        if !Self::can_switch_relay(self.temperature.cooling, self.last_cooling_switch, now) {
+            return;
+        }
+
+        if on {
+            self.turn_cooling_on();
+        } else {
+            self.turn_cooling_off();
+        }
+        self.last_cooling_switch = now;
+    }
+
     pub fn update(&mut self, now: Instant) -> () {
+        let dt = now.duration_since(self.last_update).as_secs_f64();
+        self.last_update = now;
+
         let current_flow = self.get_flow();
         self.current_flow = current_flow;
         self.flow.flow = current_flow;
@@ -299,51 +361,68 @@ impl Controller {
         let error = self.target_temperature.get::<degree_celsius>()
             - self.current_temperature.get::<degree_celsius>();
 
-        let elapsed = now - self.window_start;
-        self.window_start = now;
+        let control = self.pid.update(error, now);
+        self.temperature_pid_output = if control.is_finite() { control } else { 0.0 };
+
+        let mut elapsed_in_window = now.duration_since(self.window_start);
+        if elapsed_in_window >= self.pwm_period {
+            self.window_start = now;
+            elapsed_in_window = Duration::ZERO;
+        }
+
+        let has_flow_for_thermal =
+            current_flow >= VolumeRate::new::<liter_per_minute>(Self::MIN_FLOW_FOR_THERMAL_LPM);
+        let pump_is_running = self.flow.pump && self.should_pump;
+        let thermal_interlock_ok = has_flow_for_thermal && pump_is_running;
 
         // Decide whether to heat or cool based on error
         if error > self.heating_tolerance.get::<degree_celsius>() {
             // Need heating (current < target)
             if self.temperature.cooling {
-                self.turn_cooling_off();
+                self.set_cooling_state(false, now);
             }
 
-            if self.heating_allowed && current_flow > VolumeRate::new::<liter_per_minute>(0.0) {
-                self.turn_heating_on();
+            if self.heating_allowed && thermal_interlock_ok {
+                let duty = self.temperature_pid_output.clamp(0.0, 1.0);
+                let on_time = self.pwm_period.mul_f64(duty);
+                let should_heat_on = duty > 0.0 && elapsed_in_window < on_time;
 
-                self.total_energy += self.get_current_power() * elapsed.as_secs_f64() / 3600.0;
-            } else {
-                // Pump is off or heating not allowed - don't heat
+                self.set_heating_state(should_heat_on, now);
                 if self.temperature.heating {
-                    self.turn_heating_off();
+                    self.total_energy += self.get_current_power() * dt / 3600.0;
                 }
+            } else {
+                // Flow/pump safety interlock or heating permission blocks heating.
+                self.set_heating_state(false, now);
             }
         } else if error < -self.cooling_tolerance.get::<degree_celsius>() {
             // Need cooling (current > target)
             if self.temperature.heating {
-                self.turn_heating_off();
+                self.set_heating_state(false, now);
             }
-            if self.cooling_allowed && current_flow > VolumeRate::new::<liter_per_minute>(0.0) {
-                if !self.temperature.cooling {
-                    self.turn_cooling_on();
-                }
-
+            if self.cooling_allowed && thermal_interlock_ok {
+                self.set_cooling_state(true, now);
                 let max_revolutions = self.get_max_revolutions();
                 let temp_offset = self.current_temperature - self.target_temperature;
 
                 let target_revolutions = (temp_offset.get::<kelvin>() * 10.0)
                     .clamp(0.0, max_revolutions.get::<revolution_per_minute>());
 
-                self.cooling_controller
-                    .set(target_revolutions as f32 / 10.0);
-                self.current_revolutions =
-                    AngularVelocity::new::<revolution_per_minute>(target_revolutions);
-            } else {
                 if self.temperature.cooling {
-                    self.turn_cooling_off();
+                    self.cooling_controller
+                        .set(target_revolutions as f32 / 10.0);
+                    self.current_revolutions =
+                        AngularVelocity::new::<revolution_per_minute>(target_revolutions);
                 }
+            } else {
+                self.set_cooling_state(false, now);
             }
+        } else {
+            // Inside deadband: keep actuators off and clear PID memory to prevent windup.
+            self.set_heating_state(false, now);
+            self.set_cooling_state(false, now);
+            self.temperature_pid_output = 0.0;
+            self.pid.reset();
         }
     }
 }
