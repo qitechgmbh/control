@@ -372,7 +372,8 @@ export function Winder2ControlPage() {
                     value={(() => {
                       const base = state?.puller_state?.adaptive_base_speed;
                       const deviation = state?.puller_state?.adaptive_deviation_max;
-                      return deviation / base;
+                      if (base <= 0) return 0;
+                      return (deviation / base) * 100;
                     })()}
                     title={"Deviation Limit (relative)"}
                     unit="%"
@@ -385,18 +386,18 @@ export function Winder2ControlPage() {
                         const mid  = max / 2;
 
                         // limit is towards upper bound
-                        if (base > mid) { return (max - base) / mid; }
+                        if (base > mid) { return ((max - base) / mid) * 100.0; }
 
                         // limit is towards lower bound
-                        return base / mid;
+                        return (base / mid) * 100.0;
                       })()
                     }
                     defaultValue={0.0}
                     renderValue={(value) => roundToDecimals(value, 1)}
                     onChange={(value) => {
                       const base = state?.puller_state?.adaptive_base_speed ?? 0;
-                      const velocity = base * value;
-                      setPullerAdaptiveDeviationMax(value)
+                      const velocity = base * (value / 100);
+                      setPullerAdaptiveDeviationMax(velocity)
                     }}
                   />
                 </Label>

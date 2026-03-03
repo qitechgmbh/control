@@ -163,6 +163,9 @@ impl AdaptiveSpeedAlgorithm
             .min(self.speed_max) // ensure < max
             .max(Velocity::ZERO) // ensure > 0
             ;
+
+        // update deviation limit as well
+        self.set_deviation_limit(self.deviation_limit);
     }
 
     pub fn deviation_limit(&self) -> Velocity {
