@@ -55,19 +55,16 @@ pub struct PullerSpeedController {
 }
 
 impl PullerSpeedController {
-    pub fn new(
-        target_speed: Velocity,
-        converter: LinearStepConverter,
-    ) -> Self {
+    pub fn new(target_speed: Velocity, converter: LinearStepConverter) -> Self {
         let acceleration = Acceleration::new::<meter_per_minute_per_second>(5.0);
         let jerk = Jerk::new::<meter_per_minute_per_second_squared>(10.0);
         let speed = Velocity::new::<meter_per_minute>(50.0);
 
         let adaptive = AdaptiveSpeedAlgorithm {
-            speed_max:       speed,
-            speed_base:      target_speed,
+            speed_max: speed,
+            speed_base: target_speed,
             deviation_limit: Velocity::ZERO,
-            modulation:      0.0,
+            modulation: 0.0,
         };
 
         Self {
@@ -159,18 +156,15 @@ pub enum PullerRegulationMode {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct AdaptiveSpeedAlgorithm 
-{
-    speed_max:  Velocity,
+pub struct AdaptiveSpeedAlgorithm {
+    speed_max: Velocity,
     speed_base: Velocity,
     deviation_limit: Velocity,
     modulation: f64, // (-1.0 to 1.0)
 }
 
-impl AdaptiveSpeedAlgorithm
-{
-    pub fn compute(&self) -> Velocity
-    {
+impl AdaptiveSpeedAlgorithm {
+    pub fn compute(&self) -> Velocity {
         self.speed_base + (self.deviation_limit * self.modulation)
     }
 
@@ -192,25 +186,23 @@ impl AdaptiveSpeedAlgorithm
         self.deviation_limit
     }
 
-    pub fn set_deviation_limit(&mut self, deviation_limit: Velocity) 
-    {
-        self.deviation_limit = 
+    pub fn set_deviation_limit(&mut self, deviation_limit: Velocity) {
+        self.deviation_limit =
             // ensure > 0
             if deviation_limit < Velocity::ZERO
                 { Velocity::ZERO }
             // ensure base - deviation can't below zero
-            else if deviation_limit > self.speed_base 
-                { self.speed_base } 
+            else if deviation_limit > self.speed_base
+                { self.speed_base }
             // ensure base + deviation can't exceed max
-            else if self.speed_base + deviation_limit > self.speed_max 
+            else if self.speed_base + deviation_limit > self.speed_max
                 { self.speed_max - self.speed_base }
             // in valid range
-            else 
+            else
                 { deviation_limit };
     }
 
-    pub fn set_modulation(&mut self, modulation: f64) 
-    {
+    pub fn set_modulation(&mut self, modulation: f64) {
         self.modulation = modulation.clamp(-1.0, 1.0);
     }
 }

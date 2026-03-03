@@ -284,14 +284,11 @@ export function Winder2ControlPage() {
                   icon: "lu:Brain",
                 },
               }}
-              onChange={(value) =>
-                setPullerRegulationMode(value)
-              }
+              onChange={(value) => setPullerRegulationMode(value)}
             />
           </Label>
 
-          {state?.puller_state?.regulation ===
-            "Speed" && (
+          {state?.puller_state?.regulation === "Speed" && (
             <>
               <Label label="Target Speed">
                 <EditValue
@@ -301,9 +298,7 @@ export function Winder2ControlPage() {
                   step={0.1}
                   min={0}
                   max={maxTargetSpeed}
-                  defaultValue={
-                    defaultState?.puller_state?.target_speed
-                  }
+                  defaultValue={defaultState?.puller_state?.target_speed}
                   renderValue={(value) => roundToDecimals(value, 1)}
                   onChange={(value) => setPullerTargetSpeed(value)}
                 />
@@ -311,8 +306,7 @@ export function Winder2ControlPage() {
             </>
           )}
 
-          {state?.puller_state?.regulation ===
-            "Diameter" && (
+          {state?.puller_state?.regulation === "Diameter" && (
             <>
               <Label label="Base Speed">
                 <EditValue
@@ -322,9 +316,7 @@ export function Winder2ControlPage() {
                   step={0.1}
                   min={0}
                   max={maxTargetSpeed}
-                  defaultValue={
-                    defaultState?.puller_state?.adaptive_speed_base
-                  }
+                  defaultValue={defaultState?.puller_state?.adaptive_speed_base}
                   renderValue={(value) => roundToDecimals(value, 1)}
                   onChange={(value) => setPullerAdaptiveBaseSpeed(value)}
                 />
@@ -338,18 +330,18 @@ export function Winder2ControlPage() {
                     unit="m/min"
                     step={0.1}
                     min={0.0}
-                    max={                    
-                      (() => {
-                        const base = state.puller_state?.adaptive_speed_base;
-                        const max  = maxTargetSpeed;
+                    max={(() => {
+                      const base = state.puller_state?.adaptive_speed_base;
+                      const max = maxTargetSpeed;
 
-                        // limit is towards upper bound
-                        if (base > max / 2) { return max - base; }
+                      // limit is towards upper bound
+                      if (base > max / 2) {
+                        return max - base;
+                      }
 
-                        // limit is towards lower bound
-                        return base;
-                      })()
-                    }
+                      // limit is towards lower bound
+                      return base;
+                    })()}
                     defaultValue={0.0}
                     renderValue={(value) => roundToDecimals(value, 1)}
                     onChange={(value) => setPullerAdaptiveDeviationLimit(value)}
@@ -359,7 +351,8 @@ export function Winder2ControlPage() {
                   <EditValue
                     value={(() => {
                       const base = state?.puller_state?.adaptive_speed_base;
-                      const deviation = state?.puller_state?.adaptive_deviation_limit;
+                      const deviation =
+                        state?.puller_state?.adaptive_deviation_limit;
                       if (base <= 0) return 0;
                       return (deviation / base) * 100;
                     })()}
@@ -367,25 +360,25 @@ export function Winder2ControlPage() {
                     unit="%"
                     step={0.5}
                     min={0.0}
-                    max={                    
-                      (() => {
-                        const base = state?.puller_state?.adaptive_speed_base;
-                        const max  = maxTargetSpeed;
-                        const mid  = max / 2;
+                    max={(() => {
+                      const base = state?.puller_state?.adaptive_speed_base;
+                      const max = maxTargetSpeed;
+                      const mid = max / 2;
 
-                        // limit is towards lower bound
-                        if (base < mid) { return 100.0; }
+                      // limit is towards lower bound
+                      if (base < mid) {
+                        return 100.0;
+                      }
 
-                        // limit is towards upper bound
-                        return (max - base) / base * 100.0;
-                      })()
-                    }
+                      // limit is towards upper bound
+                      return ((max - base) / base) * 100.0;
+                    })()}
                     defaultValue={0.0}
                     renderValue={(value) => roundToDecimals(value, 1)}
                     onChange={(value) => {
                       const base = state?.puller_state?.adaptive_speed_base;
                       const velocity = base * (value / 100);
-                      setPullerAdaptiveDeviationLimit(velocity)
+                      setPullerAdaptiveDeviationLimit(velocity);
                     }}
                   />
                 </Label>
@@ -394,12 +387,13 @@ export function Winder2ControlPage() {
                 <MachineSelector
                   machines={filteredMachines}
                   selectedMachine={selectedMachine}
-                  connectedMachineState={state?.puller_state.adaptive_reference_machine}
+                  connectedMachineState={
+                    state?.puller_state.adaptive_reference_machine
+                  }
                   setConnectedMachine={(machine) => {
                     setPullerAdaptiveReferenceMachine(machine);
                   }}
-                  clearConnectedMachine={() => 
-                  {
+                  clearConnectedMachine={() => {
                     if (!selectedMachine) return;
                     setPullerAdaptiveReferenceMachine(null);
                   }}

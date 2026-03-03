@@ -532,16 +532,19 @@ export function useWinder2() {
       SetPullerAdaptiveSpeedBase: z.number(),
     }),
   );
-  const { request: requestPullerSetAdaptiveDeviationLimit } = useMachineMutation(
-    z.object({
-      SetPullerAdaptiveDeviationLimit: z.number(),
-    }),
-  );
-  const { request: requestPullerSetAdaptiveReferenceMachine } = useMachineMutation(
-    z.object({
-      SetPullerAdaptiveReferenceMachine: machineIdentificationUnique.nullable(),
-    }),
-  );
+  const { request: requestPullerSetAdaptiveDeviationLimit } =
+    useMachineMutation(
+      z.object({
+        SetPullerAdaptiveDeviationLimit: z.number(),
+      }),
+    );
+  const { request: requestPullerSetAdaptiveReferenceMachine } =
+    useMachineMutation(
+      z.object({
+        SetPullerAdaptiveReferenceMachine:
+          machineIdentificationUnique.nullable(),
+      }),
+    );
 
   // more boilerplate junk setters from requests
   const setPullerAdaptiveBaseSpeed = (speed: number) => {
@@ -570,18 +573,18 @@ export function useWinder2() {
     );
   };
 
-  const setPullerAdaptiveReferenceMachine = (machineUid: {
-    machine_identification: {
-      vendor: number;
-      machine: number;
-    };
-    serial: number;
-  } | null) => {
+  const setPullerAdaptiveReferenceMachine = (
+    machineUid: {
+      machine_identification: {
+        vendor: number;
+        machine: number;
+      };
+      serial: number;
+    } | null,
+  ) => {
     updateStateOptimistically(
       (current) => {
-        current.data.puller_state
-          .adaptive_reference_machine
-            = machineUid;
+        current.data.puller_state.adaptive_reference_machine = machineUid;
       },
       () =>
         requestPullerSetAdaptiveReferenceMachine({
@@ -590,8 +593,6 @@ export function useWinder2() {
         }),
     );
   };
-
-
 
   // Calculate loading states
   const isLoading = stateOptimistic.isOptimistic;
@@ -614,8 +615,7 @@ export function useWinder2() {
 
   // Get selected machine by serial
   const selectedMachine = useMemo(() => {
-    const serial =
-      state?.data.puller_state.adaptive_reference_machine?.serial;
+    const serial = state?.data.puller_state.adaptive_reference_machine?.serial;
 
     return (
       filteredMachines.find(
@@ -677,6 +677,6 @@ export function useWinder2() {
     // new stuff
     setPullerAdaptiveBaseSpeed,
     setPullerAdaptiveDeviationLimit,
-    setPullerAdaptiveReferenceMachine
+    setPullerAdaptiveReferenceMachine,
   };
 }

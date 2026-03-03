@@ -23,9 +23,9 @@ mod winder2_imports {
 #[cfg(not(feature = "mock-machine"))]
 pub use winder2_imports::*;
 
-use crate::{AsyncThreadMessage, MachineSubscriptionRequest};
 #[cfg(not(feature = "mock-machine"))]
 use crate::machine_identification::MachineIdentificationUnique;
+use crate::{AsyncThreadMessage, MachineSubscriptionRequest};
 
 #[cfg(not(feature = "mock-machine"))]
 impl Winder2 {
@@ -214,7 +214,6 @@ impl Winder2 {
     }
 
     pub fn build_state_event(&mut self) -> StateEvent {
-
         StateEvent {
             is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
             traverse_state: TraverseState {
@@ -254,10 +253,16 @@ impl Winder2 {
                     .get::<meter_per_minute>(),
                 forward: self.puller_speed_controller.forward,
                 gear_ratio: self.puller_speed_controller.gear_ratio,
-                adaptive_speed_base:        
-                    self.puller_speed_controller.adaptive.speed_base().get::<meter_per_minute>(),
-                adaptive_deviation_limit:   
-                    self.puller_speed_controller.adaptive.deviation_limit().get::<meter_per_minute>(),
+                adaptive_speed_base: self
+                    .puller_speed_controller
+                    .adaptive
+                    .speed_base()
+                    .get::<meter_per_minute>(),
+                adaptive_deviation_limit: self
+                    .puller_speed_controller
+                    .adaptive
+                    .deviation_limit()
+                    .get::<meter_per_minute>(),
                 adaptive_reference_machine: self.puller_reference_machine,
             },
             mode_state: ModeState {
@@ -491,43 +496,38 @@ impl Winder2 {
     }
 }
 
-
 // Winder2 Extension
-impl Winder2
-{
-    pub fn puller_set_adaptive_speed_base(&mut self, value: f64)
-    {
+impl Winder2 {
+    pub fn puller_set_adaptive_speed_base(&mut self, value: f64) {
         let speed = Velocity::new::<meter_per_minute>(value);
         self.puller_speed_controller.adaptive.set_speed_base(speed);
         self.emit_state();
     }
 
-    pub fn puller_set_adaptive_deviation_limit(&mut self, value: f64)
-    {
+    pub fn puller_set_adaptive_deviation_limit(&mut self, value: f64) {
         let speed = Velocity::new::<meter_per_minute>(value);
-        self.puller_speed_controller.adaptive.set_deviation_limit(speed);
+        self.puller_speed_controller
+            .adaptive
+            .set_deviation_limit(speed);
         self.emit_state();
     }
 
     pub fn puller_set_adaptive_reference_machine(
-        &mut self, 
-        machine_uid: Option<MachineIdentificationUnique>
-    ) -> Result<(), anyhow::Error>
-    {
-        match machine_uid
-        {
-            Some(machine_uid) => 
-            {
-                if self.puller_reference_machine.as_ref()
+        &mut self,
+        machine_uid: Option<MachineIdentificationUnique>,
+    ) -> Result<(), anyhow::Error> {
+        match machine_uid {
+            Some(machine_uid) => {
+                if self
+                    .puller_reference_machine
+                    .as_ref()
                     .is_some_and(|x| *x == machine_uid)
                 {
                     return Ok(());
                 }
-                let main_sender = match &self.main_sender 
-                {
+                let main_sender = match &self.main_sender {
                     Some(v) => v,
-                    None => 
-                    {
+                    None => {
                         return Err(anyhow::anyhow!(
                             "{:?} Failed to connect to {:?}",
                             self.machine_identification_unique,
@@ -538,21 +538,16 @@ impl Winder2
                 main_sender.try_send(AsyncThreadMessage::SubscribeToMachine(
                     MachineSubscriptionRequest {
                         subscriber: self.machine_identification_unique,
-                        publisher:  machine_uid,
+                        publisher: machine_uid,
                     },
                 ))?;
-            },
-            None => 
-            {
-                match self.puller_reference_machine.take()
-                {
-                    Some(machine_uid) => 
-                    {
-                        let main_sender = match &self.main_sender 
-                        {
+            }
+            None => {
+                match self.puller_reference_machine.take() {
+                    Some(machine_uid) => {
+                        let main_sender = match &self.main_sender {
                             Some(v) => v,
-                            None => 
-                            {
+                            None => {
                                 return Err(anyhow::anyhow!(
                                     "{:?} Failed to connect to {:?}",
                                     self.machine_identification_unique,
@@ -563,13 +558,13 @@ impl Winder2
                         main_sender.try_send(AsyncThreadMessage::UnsubscribeFromMachine(
                             MachineSubscriptionRequest {
                                 subscriber: self.machine_identification_unique,
-                                publisher:  machine_uid,
+                                publisher: machine_uid,
                             },
                         ))?;
-                    },
+                    }
                     None => return Ok(()), // nothing to do
                 }
-            },
+            }
         }
         self.emit_state();
         Ok(())

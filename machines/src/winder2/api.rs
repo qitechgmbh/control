@@ -48,9 +48,9 @@ mod winder2_imports {
 use smol::channel::Sender;
 pub use winder2_imports::*;
 
+use crate::machine_identification::MachineIdentificationUnique;
 #[cfg(not(feature = "mock-machine"))]
 use crate::{MachineApi, MachineMessage};
-use crate::{machine_identification::MachineIdentificationUnique};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum Mode {
@@ -368,12 +368,13 @@ impl MachineApi for Winder2 {
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
 
             // puller adaptive speed algorithm
-            Mutation::SetPullerAdaptiveSpeedBase(v) =>
-                self.puller_set_adaptive_speed_base(v),
-            Mutation::SetPullerAdaptiveDeviationLimit(v) => 
-                self.puller_set_adaptive_deviation_limit(v),
-            Mutation::SetPullerAdaptiveReferenceMachine(v) => 
-                self.puller_set_adaptive_reference_machine(v)?,
+            Mutation::SetPullerAdaptiveSpeedBase(v) => self.puller_set_adaptive_speed_base(v),
+            Mutation::SetPullerAdaptiveDeviationLimit(v) => {
+                self.puller_set_adaptive_deviation_limit(v)
+            }
+            Mutation::SetPullerAdaptiveReferenceMachine(v) => {
+                self.puller_set_adaptive_reference_machine(v)?
+            }
         }
         Ok(())
     }

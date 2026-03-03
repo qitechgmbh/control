@@ -2,8 +2,8 @@ use crate::{
     metrics::collector::{RuntimeMetricsConfig, spawn_runtime_metrics_sampler},
     socketio::main_namespace::machines_event::MachineObj,
 };
-use control_core::socketio::namespace::NamespaceCacheingLogic;
 use control_core::socketio::event::GenericEvent;
+use control_core::socketio::namespace::NamespaceCacheingLogic;
 use machines::{
     AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
     MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
@@ -255,27 +255,22 @@ pub async fn handle_serial_device_hotplug(
     }
 }
 
-async fn handle_async_requests(
-    recv: Receiver<AsyncThreadMessage>, 
-    shared_state: Arc<SharedState>
-) {
+async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state: Arc<SharedState>) {
     use AsyncThreadMessage::*;
 
-    while let Ok(message) = recv.recv().await 
-    {
-        match message 
-        {
+    while let Ok(message) = recv.recv().await {
+        match message {
             NoMsg => (),
-            SubscribeToMachine(request) => 
-            {
-                shared_state.rt_machine_creation_channel
+            SubscribeToMachine(request) => {
+                shared_state
+                    .rt_machine_creation_channel
                     .send(HotThreadMessage::SubscriptionEstablish(request))
                     .await
                     .expect("Could not send to real-time channel");
-            },
-            UnsubscribeFromMachine(request) => 
-            {
-                shared_state.rt_machine_creation_channel
+            }
+            UnsubscribeFromMachine(request) => {
+                shared_state
+                    .rt_machine_creation_channel
                     .send(HotThreadMessage::SubscriptionTerminate(request))
                     .await
                     .expect("Could not send to real-time channel");

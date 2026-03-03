@@ -60,7 +60,7 @@ use smol::lock::RwLock;
 
 pub struct MachineSubscriptionRequest {
     pub subscriber: MachineIdentificationUnique,
-    pub publisher:  MachineIdentificationUnique,
+    pub publisher: MachineIdentificationUnique,
 }
 
 pub enum AsyncThreadMessage {
@@ -308,15 +308,16 @@ pub trait Machine: MachineAct + MachineApi + Any + Debug + Send + Sync {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique;
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>>;
 
-    fn mutation_counter(&self) -> u64 { 0 }
+    fn mutation_counter(&self) -> u64 {
+        0
+    }
 
     fn update_machine_data(
-        &self, 
-        data: &mut MachineData, 
-        refresh_state: bool, 
-        refresh_live_values: bool
-    )
-    {
+        &self,
+        data: &mut MachineData,
+        refresh_state: bool,
+        refresh_live_values: bool,
+    ) {
         _ = data;
         _ = refresh_state;
         _ = refresh_live_values;
