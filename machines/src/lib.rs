@@ -302,8 +302,6 @@ pub enum MachineMessage {
     SubscribeNamespace(Namespace),
     UnsubscribeNamespace,
     HttpApiJsonRequest(serde_json::Value),
-    ConnectToMachine(MachineConnection),
-    DisconnectMachine(MachineConnection),
     RequestValues(Sender<MachineValues>),
 }
 
@@ -319,7 +317,7 @@ pub trait Machine: MachineAct + MachineApi + Any + Debug + Send + Sync {
 
     fn mutation_counter(&self) -> u64 { 0 }
 
-    fn refresh_data(
+    fn update_machine_data(
         &self, 
         data: &mut MachineData, 
         refresh_state: bool, 
@@ -558,12 +556,6 @@ where
             }
             MachineMessage::HttpApiJsonRequest(value) => {
                 let _ = self.api_mutate(value);
-            }
-            MachineMessage::ConnectToMachine(_machine_connection) => {
-                todo!();
-            }
-            MachineMessage::DisconnectMachine(_machine_connection) => {
-                todo!();
             }
             MachineMessage::RequestValues(sender) => {
                 sender

@@ -73,7 +73,6 @@ impl MachineManager
     {
         let now = Instant::now();
 
-        // borrow 1
         for entry in self.machine_entries.iter_mut() 
         {
             // Fuck you rust - jsentity
@@ -111,7 +110,7 @@ impl MachineManager
                 .expect("entries must match registry");
 
             if refresh_state || refresh_live_values {
-                entry.machine.update_machines_data(&mut data_entry.data, refresh_state, refresh_live_values);
+                entry.machine.update_machine_data(&mut data_entry.data, refresh_state, refresh_live_values);
             }
         }
     }

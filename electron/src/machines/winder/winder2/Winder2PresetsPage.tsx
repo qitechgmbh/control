@@ -79,21 +79,21 @@ const previewEntries: PresetPreviewEntries<Winder2> = [
     },
   },
   {
-    name: "Puller Target Speed",
+    name: "Puller Fixed Algorithm Base Speed",
     unit: "m/min",
     renderValue: (data: Winder2) => data.puller_state?.target_speed?.toFixed(2),
   },
   {
-    name: "Puller Target Diameter",
+    name: "Puller Adaptive Algorithm Base Speed",
     unit: "mm",
     renderValue: (data: Winder2) =>
-      data.puller_state?.target_diameter?.toFixed(1),
+      data.puller_state?.adaptive_speed_base?.toFixed(1),
   },
   {
-    name: "Puller Target Diameter",
+    name: "Puller Adaptive Algorithm Deviation Limit",
     unit: "mm",
     renderValue: (data: Winder2) =>
-      data.puller_state?.target_diameter?.toFixed(1),
+      data.puller_state?.adaptive_deviation_limit?.toFixed(1),
   },
   previewSeparator,
   {
@@ -165,7 +165,6 @@ export function Winder2PresetsPage() {
     setTraverseLimitOuter,
 
     setPullerRegulationMode,
-    setPullerTargetDiameter,
     setPullerForward,
     setPullerTargetSpeed,
     setPullerGearRatio,

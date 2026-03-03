@@ -72,7 +72,6 @@ pub fn start_loop_thread(
             }
 
             let mut ethercat_perf = EthercatPerformanceMetrics::new();
-            let mut machines: Vec<Box<dyn Machine>> = vec![];
             let mut last_iter_start: Option<Instant> = None;
             let mut rt_loop_inputs = RtLoopInputs {
                 machine_manager: MachineManager::default(),

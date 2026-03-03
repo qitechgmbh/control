@@ -225,7 +225,6 @@ impl MachineNewTrait for Winder2 {
                 puller_mode: mode.into(),
                 puller_speed_controller: PullerSpeedController::new(
                     Velocity::new::<meter_per_minute>(1.0),
-                    Length::new::<millimeter>(1.75),
                     LinearStepConverter::from_diameter(
                         200,                            // Assuming 200 steps per revolution for the puller stepper,
                         Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
