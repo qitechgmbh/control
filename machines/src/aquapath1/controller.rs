@@ -62,7 +62,7 @@ impl Controller {
     const HEATING_PWM_PERIOD: Duration = Duration::from_secs(20);
     const RELAY_MIN_ON_TIME: Duration = Duration::from_secs(5);
     const RELAY_MIN_OFF_TIME: Duration = Duration::from_secs(5);
-    const HEATING_FULL_POWER_ERROR_C: f64 = 6.0;
+    const HEATING_FULL_POWER_ERROR_C: f64 = 2.0;
 
     pub fn new(
         kp: f64,
@@ -100,7 +100,7 @@ impl Controller {
             cooling_controller: cooling_controller,
 
             cooling_tolerance: ThermodynamicTemperature::new::<degree_celsius>(2.0),
-            heating_tolerance: ThermodynamicTemperature::new::<degree_celsius>(2.0),
+            heating_tolerance: ThermodynamicTemperature::new::<degree_celsius>(0.5),
 
             current_revolutions: AngularVelocity::new::<revolution_per_minute>(0.0),
             max_revolutions: max_revolutions,
