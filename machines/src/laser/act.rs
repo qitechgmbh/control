@@ -60,12 +60,6 @@ impl MachineAct for LaserMachine {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(_machine_connection) =>
-                /*Doesnt connect to any Machine so do nothing*/
-                {}
-            MachineMessage::DisconnectMachine(_machine_connection) =>
-                /*Doesnt connect to any Machine so do nothing*/
-                {}
             MachineMessage::RequestValues(sender) => {
                 sender
                     .send_blocking(MachineValues {
