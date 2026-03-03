@@ -341,7 +341,7 @@ impl Winder2
     {
         // Convert m/min to velocity
         let speed = Velocity::new::<meter_per_minute>(speed);
-        self.puller.speed_controller_algorithms_mut().fixed.set_target_speed(speed);
+        self.puller.speed_controller_algorithms_mut().fixed.set_speed_target(speed);
         self.emit_state();
     }
 

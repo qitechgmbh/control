@@ -166,7 +166,7 @@ impl Winder2
         let strategies = puller.speed_controller_algorithms();
 
         let fixed_target_speed = 
-            strategies.fixed.target_speed().get::<meter_per_minute>();
+            strategies.fixed.speed_target().get::<meter_per_minute>();
 
         let adaptive_base_speed = 
             strategies.adaptive.speed_base().get::<meter_per_minute>();

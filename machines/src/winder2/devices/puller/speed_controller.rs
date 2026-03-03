@@ -32,7 +32,7 @@ impl SpeedController
     {
         let fixed = FixedSpeedAlgorithm { 
             speed_max,
-            target_speed: Velocity::ZERO,
+            speed_target: Velocity::ZERO,
         };
 
         let adaptive = AdaptiveSpeedAlgorithm { 
@@ -80,9 +80,27 @@ impl SpeedController
         self.algorithm
     }
 
-    pub fn select_algorithm(&mut self, mode: Algorithm)
+    pub fn select_algorithm(&mut self, algorithm: Algorithm)
     {
-        self.algorithm = mode;
+        use Algorithm::*;
+
+        if self.algorithm == algorithm { return; }
+
+        let current_target = match self.algorithm 
+        {
+            Fixed    => self.algorithms.fixed.speed_target(),
+            Adaptive => self.algorithms.adaptive.speed_base(),
+        };
+
+        self.algorithm = algorithm;
+
+        // take the base/current from current algorithm and transfer over for
+        // smooth transitions
+        match self.algorithm 
+        {
+            Fixed    => self.algorithms.fixed.set_speed_target(current_target),
+            Adaptive => self.algorithms.adaptive.set_speed_base(current_target),
+        };
     }
 
     pub fn set_enabled(&mut self, value: bool)
@@ -116,7 +134,7 @@ pub struct Algorithms
 #[derive(Debug)]
 pub struct FixedSpeedAlgorithm
 {
-    target_speed: Velocity,
+    speed_target: Velocity,
     speed_max:    Velocity,
 }
 
@@ -124,17 +142,17 @@ impl FixedSpeedAlgorithm
 {
     pub fn compute(&self) -> Velocity
     {
-        self.target_speed
+        self.speed_target
     }
 
-    pub fn target_speed(&self) -> Velocity 
+    pub fn speed_target(&self) -> Velocity 
     {
-        self.target_speed
+        self.speed_target
     }
 
-    pub fn set_target_speed(&mut self, speed: Velocity) 
+    pub fn set_speed_target(&mut self, speed: Velocity) 
     {
-        self.target_speed = speed.min(self.speed_max);
+        self.speed_target = speed.min(self.speed_max);
     }
 }
 

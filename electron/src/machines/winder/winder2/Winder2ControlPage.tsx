@@ -385,17 +385,17 @@ export function Winder2ControlPage() {
                         const max  = maxPullerSpeed;
                         const mid  = max / 2;
 
-                        // limit is towards upper bound
-                        if (base > mid) { return ((max - base) / mid) * 100.0; }
-
                         // limit is towards lower bound
-                        return (base / mid) * 100.0;
+                        if (base < mid) { return 100.0; }
+
+                        // limit is towards upper bound
+                        return (max - base) / base * 100.0;
                       })()
                     }
                     defaultValue={0.0}
                     renderValue={(value) => roundToDecimals(value, 1)}
                     onChange={(value) => {
-                      const base = state?.puller_state?.adaptive_base_speed ?? 0;
+                      const base = state?.puller_state?.adaptive_base_speed;
                       const velocity = base * (value / 100);
                       setPullerAdaptiveDeviationMax(velocity)
                     }}

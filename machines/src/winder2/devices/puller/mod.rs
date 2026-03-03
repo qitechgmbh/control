@@ -165,7 +165,7 @@ impl Puller
         // for added safety, since changing gear ratio should
         // require a reconfiguration of the machine
         let algorithms = self.speed_controller.algorithms_mut();
-        algorithms.fixed.set_target_speed(Velocity::ZERO);
+        algorithms.fixed.set_speed_target(Velocity::ZERO);
         algorithms.adaptive.set_speed_base(Velocity::ZERO);
         algorithms.adaptive.set_deviation_limit(Velocity::ZERO);
     }
