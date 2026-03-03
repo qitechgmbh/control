@@ -527,9 +527,9 @@ export function useWinder2() {
   };
 
   // more requests for puller
-  const { request: requestPullerSetAdaptiveBaseSpeed } = useMachineMutation(
+  const { request: requestPullerSetAdaptiveSpeedBase } = useMachineMutation(
     z.object({
-      SetPullerAdaptiveBaseSpeed: z.number(),
+      SetPullerAdaptiveSpeedBase: z.number(),
     }),
   );
   const { request: requestPullerSetAdaptiveDeviationLimit } = useMachineMutation(
@@ -550,9 +550,9 @@ export function useWinder2() {
         current.data.puller_state.adaptive_speed_base = speed;
       },
       () =>
-        requestPullerSetAdaptiveBaseSpeed({
+        requestPullerSetAdaptiveSpeedBase({
           machine_identification_unique: machineIdentification,
-          data: { SetPullerAdaptiveBaseSpeed: speed },
+          data: { SetPullerAdaptiveSpeedBase: speed },
         }),
     );
   };
@@ -607,7 +607,7 @@ export function useWinder2() {
           m.machine_identification_unique.machine_identification.vendor ===
             VENDOR_QITECH &&
           m.machine_identification_unique.machine_identification.machine ===
-            0x0008,
+            0x0006,
       ),
     [machines, machineIdentification],
   );
