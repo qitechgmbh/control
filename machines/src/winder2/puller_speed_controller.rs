@@ -188,10 +188,10 @@ impl AdaptiveSpeedAlgorithm {
 
     pub fn set_deviation_limit(&mut self, deviation_limit: Velocity) {
         self.deviation_limit =
-            // ensure > 0
+            // ensure >= 0
             if deviation_limit < Velocity::ZERO
                 { Velocity::ZERO }
-            // ensure base - deviation can't below zero
+            // ensure base - deviation can't go below zero
             else if deviation_limit > self.speed_base
                 { self.speed_base }
             // ensure base + deviation can't exceed max
