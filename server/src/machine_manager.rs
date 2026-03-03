@@ -1,6 +1,6 @@
 use std::{collections::{HashMap, HashSet}, time::{Duration, Instant}};
 
-use machines::{Machine, MachinesData, MachineSubscriptionRequest, machine_identification::MachineIdentificationUnique as MachineUID};
+use machines::{Machine, MachineData, MachineSubscriptionRequest, machine_identification::MachineIdentificationUnique as MachineUID};
 
 #[derive(Default)]
 pub struct MachineManager
@@ -48,9 +48,9 @@ impl MachineManager
             }
 
             let data_entry = DataEntry { 
-                state_generation: machine.state_generation(), 
+                mutation_counter: machine.mutation_counter(), 
                 last_live_values: Instant::now(), 
-                data: MachinesData::None
+                data: MachineData::None
             };
 
             let machine_entry = MachineEntry { 
@@ -83,7 +83,7 @@ impl MachineManager
 
                 // update if generation out of sync
                 let refresh_state = 
-                    entry.machine.state_generation() != data_entry.state_generation;
+                    entry.machine.mutation_counter() != data_entry.mutation_counter;
 
                 // update once per 1/30s
                 let refresh_live_values =
@@ -133,12 +133,12 @@ pub struct DataEntry // Fuck you rust - jsentity
     /// is incremented internally in the machine when
     /// it's state is mutated. Comparing the generation
     /// reveals if we are out of sync
-    pub state_generation: u64,
+    pub mutation_counter: u64,
 
     /// tracks time since last time we checked live values
     /// to ensure we poll only as often as neded
     pub last_live_values: Instant,
 
     /// the data
-    pub data: MachinesData,
+    pub data: MachineData,
 }

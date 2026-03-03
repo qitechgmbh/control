@@ -365,7 +365,8 @@ impl MachineApi for Winder2 {
             Mutation::SetSpoolAutomaticAction(mode) => self.set_spool_automatic_mode(mode),
             Mutation::ResetSpoolProgress => self.stop_or_pull_spool_reset(Instant::now()),
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
-            Mutation::SetConnectedMachine(machine_identification_unique) => {
+            Mutation::SetConnectedMachine(machine_uid) => 
+            {
                 let main_sender = match &self.main_sender {
                     Some(sender) => sender,
                     None => {
