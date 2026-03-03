@@ -40,6 +40,9 @@ pub mod wago_power;
 pub mod wago_serial_machine;
 pub mod winder2;
 
+mod machine_data;
+pub use machine_data::MachinesData;
+
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
 pub const MACHINE_EXTRUDER_V1: u16 = 0x0004;
@@ -62,21 +65,15 @@ pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
 use serde_json::Value;
 use smol::lock::RwLock;
 
-#[derive(Serialize, Debug, Clone)]
-pub struct MachineCrossConnectionState {
-    machine_identification_unique: Option<MachineIdentificationUnique>,
-    is_available: bool,
-}
-
-pub struct CrossConnection {
-    pub src: MachineIdentificationUnique,
-    pub dest: MachineIdentificationUnique,
+pub struct MachineSubscriptionRequest {
+    pub subscriber: MachineIdentificationUnique,
+    pub publisher:  MachineIdentificationUnique,
 }
 
 pub enum AsyncThreadMessage {
     NoMsg,
-    ConnectOneWayRequest(CrossConnection),
-    DisconnectMachines(CrossConnection),
+    SubscribeToMachine(MachineSubscriptionRequest),
+    UnsubscribeFromMachine(MachineSubscriptionRequest),
 }
 
 pub struct MachineNewParams<
@@ -319,6 +316,32 @@ pub trait MachineApi {
 pub trait Machine: MachineAct + MachineApi + Any + Debug + Send + Sync {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique;
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>>;
+
+    fn state_generation(&self) -> u64 { 0 }
+
+    fn refresh_data(
+        &self, 
+        data: &mut MachinesData, 
+        refresh_state: bool, 
+        refresh_live_values: bool
+    )
+    {
+        _ = data;
+        _ = refresh_state;
+        _ = refresh_live_values;
+    }
+
+    fn receive_machines_data(&mut self, data: &MachinesData) {
+        _ = data;
+    }
+
+    fn subscribed_to_machine(&mut self, uid: MachineIdentificationUnique) {
+        _ = uid;
+    }
+
+    fn unsubscribed_from_machine(&mut self, uid: MachineIdentificationUnique) {
+        _ = uid;
+    }
 }
 
 pub trait AnyGetters: Any {
