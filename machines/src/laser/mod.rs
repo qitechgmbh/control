@@ -71,6 +71,36 @@ impl Machine for LaserMachine {
     { 
         self.mutation_counter
     }
+
+    fn update_machine_data(
+        &self, 
+        data: &mut MachineData, 
+        refresh_state: bool, 
+        refresh_live_values: bool)
+    {
+        use MachineData::*;
+
+        match data 
+        {
+            Laser(state, live_values) => 
+            {
+                if refresh_state {
+                    *state = self.build_state_event();
+                }
+
+                if refresh_live_values {
+                    *live_values = self.get_live_values();
+                }
+            },
+            _ => 
+            {
+                *data = MachineData::Laser(
+                    self.build_state_event(), 
+                    self.get_live_values()
+                );
+            },
+        };
+    }
 }
 
 impl LaserMachineNamespace {
