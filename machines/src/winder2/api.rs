@@ -323,8 +323,6 @@ impl MachineApi for Winder2 {
     }
 
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
-        use crate::Machine;
-
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
             Mutation::EnableTraverseLaserpointer(enable) => self.set_laser(enable),
