@@ -16,16 +16,20 @@ mod winder2_imports {
         angular_velocity::revolution_per_minute,
         f64::*,
         length::{meter, millimeter},
-        velocity::meter_per_minute,
     };
+
+    pub use units::Velocity;
+    pub use units::velocity::meter_per_minute;
 }
 
 #[cfg(not(feature = "mock-machine"))]
 pub use winder2_imports::*;
 
 #[cfg(not(feature = "mock-machine"))]
-use crate::machine_identification::MachineIdentificationUnique;
 use crate::{AsyncThreadMessage, MachineSubscriptionRequest};
+
+#[cfg(not(feature = "mock-machine"))]
+use crate::MachineIdentificationUnique;
 
 #[cfg(not(feature = "mock-machine"))]
 impl Winder2 {
@@ -497,6 +501,7 @@ impl Winder2 {
 }
 
 // Winder2 Extension
+#[cfg(not(feature = "mock-machine"))]
 impl Winder2 {
     pub fn puller_set_adaptive_speed_base(&mut self, value: f64) {
         let speed = Velocity::new::<meter_per_minute>(value);
