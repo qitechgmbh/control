@@ -40,7 +40,7 @@ const createWagoSerialNamespaceStore = (): StoreApi<WagoSerialNamespaceStore> =>
   });
 
 function wagoSerialMessageHandler(
-  store: StoreApi<WagoPower1NamespaceStore>,
+  store: StoreApi<WagoSerialNamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<WagoSerialNamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
@@ -60,10 +60,6 @@ function wagoSerialMessageHandler(
         updateStore((state) => ({
           ...state,
           state: stateEvent,
-          // only set default state if is_default_state is true
-          defaultState: stateEvent.data.is_default_state
-            ? stateEvent
-            : state.defaultState,
         }));
       } else {
         handleUnhandledEventError(eventName);

@@ -66,7 +66,7 @@ export function useWagoSerial() {
   const sendMessage = (msg: string) => {
     updateStateOptimistically(
       (current) => {
-        current.data.msg = msg;
+        current.data.current_message = msg;
       },
       () =>
         requestSendMessage({
