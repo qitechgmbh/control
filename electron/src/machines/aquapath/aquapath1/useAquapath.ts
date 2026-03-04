@@ -52,6 +52,8 @@ export function useAquapath1() {
     back_revolutions,
     front_power,
     back_power,
+    front_heating,
+    back_heating,
     front_total_energy,
     back_total_energy,
   } = useAquapath1Namespace(machineIdentification);
@@ -214,6 +216,20 @@ export function useAquapath1() {
     );
   };
 
+  const setAmbientTemperatureCalibration = (ambientTemp: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.ambient_temperature_calibration = ambientTemp;
+      },
+      () => {
+        requestAmbientTemperatureCalibration({
+          machine_identification_unique: machineIdentification,
+          data: { SetAmbientTemperatureCalibration: ambientTemp },
+        });
+      },
+    );
+  };
+
   // Mutation hooks
   const { request: requestAquapathMode } = useMachineMutation(
     z.object({ SetAquaPathMode: z.enum(["Standby", "Auto"]) }),
@@ -248,6 +264,9 @@ export function useAquapath1() {
   const { request: requestBackCoolingTolerance } = useMachineMutation(
     z.object({ SetBackCoolingTolerance: z.number() }),
   );
+  const { request: requestAmbientTemperatureCalibration } = useMachineMutation(
+    z.object({ SetAmbientTemperatureCalibration: z.number() }),
+  );
 
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
@@ -277,6 +296,8 @@ export function useAquapath1() {
     back_revolutions,
     front_power,
     back_power,
+    front_heating,
+    back_heating,
     front_total_energy,
     back_total_energy,
 
@@ -291,5 +312,6 @@ export function useAquapath1() {
     setBackHeatingTolerance,
     setFrontCoolingTolerance,
     setBackCoolingTolerance,
+    setAmbientTemperatureCalibration,
   };
 }

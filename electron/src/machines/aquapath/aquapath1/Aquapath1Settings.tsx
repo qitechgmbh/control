@@ -15,6 +15,7 @@ export function Aquapath1SettingsPage() {
     setFrontCoolingTolerance,
     setBackHeatingTolerance,
     setBackCoolingTolerance,
+    setAmbientTemperatureCalibration,
   } = useAquapath1();
 
   return (
@@ -47,6 +48,23 @@ export function Aquapath1SettingsPage() {
               renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
                 setBackRevolutions(val);
+              }}
+            />
+          </Label>
+        </ControlCard>
+
+        <ControlCard title="Ambient Calibration">
+          <Label label="Set Ambient Temperature">
+            <EditValue
+              title="Set Ambient Temperature"
+              min={10}
+              value={state?.ambient_temperature_calibration ?? 22}
+              max={40}
+              step={0.1}
+              unit="C"
+              renderValue={(value) => value.toFixed(1)}
+              onChange={(val) => {
+                setAmbientTemperatureCalibration(val);
               }}
             />
           </Label>

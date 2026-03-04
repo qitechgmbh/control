@@ -6,11 +6,11 @@ use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
 use std::time::{Duration, Instant};
+use units::AngularVelocity;
 use units::angular_velocity::revolution_per_minute;
 use units::f64::ThermodynamicTemperature;
 use units::thermodynamic_temperature::{degree_celsius, kelvin};
 use units::volume_rate::liter_per_minute;
-use units::AngularVelocity;
 #[derive(Debug)]
 
 pub struct Controller {
@@ -59,10 +59,39 @@ pub struct Controller {
 
 impl Controller {
     const MIN_FLOW_FOR_THERMAL_LPM: f64 = 0.2;
-    const HEATING_PWM_PERIOD: Duration = Duration::from_secs(20);
+    const HEATING_ELEMENT_WATTAGE: f64 = 700.0;
+    const HEATING_PWM_PERIOD: Duration = Duration::from_secs(12);
     const RELAY_MIN_ON_TIME: Duration = Duration::from_secs(5);
     const RELAY_MIN_OFF_TIME: Duration = Duration::from_secs(5);
-    const HEATING_FULL_POWER_ERROR_C: f64 = 2.0;
+    const HEATING_FULL_POWER_ERROR_C: f64 = 4.0;
+    const COOLING_TOLERANCE_C: f64 = 0.8;
+    const HEATING_TOLERANCE_C: f64 = 0.4;
+    const COOLING_NEAR_BAND_K: f64 = 2.0;
+    const COOLING_FULL_BAND_K: f64 = 4.0;
+    const COOLING_MIN_RPM: f64 = 20.0;
+
+    fn cooling_target_rpm(temp_offset_k: f64, max_rpm: f64) -> f64 {
+        if temp_offset_k >= Self::COOLING_FULL_BAND_K {
+            // Far above target: cool aggressively.
+            return max_rpm;
+        }
+
+        if temp_offset_k >= Self::COOLING_NEAR_BAND_K {
+            // Mid-range: ramp from 60% to 100% of max.
+            let t = (temp_offset_k - Self::COOLING_NEAR_BAND_K)
+                / (Self::COOLING_FULL_BAND_K - Self::COOLING_NEAR_BAND_K);
+            return (0.6 + 0.4 * t) * max_rpm;
+        }
+
+        // Near target (but above cooling tolerance): low, smooth cooling.
+        // Ramp from COOLING_MIN_RPM to 60% of max to reduce overshoot/chatter.
+        let t = ((temp_offset_k - Self::COOLING_TOLERANCE_C)
+            / (Self::COOLING_NEAR_BAND_K - Self::COOLING_TOLERANCE_C))
+            .clamp(0.0, 1.0);
+        let lower = Self::COOLING_MIN_RPM.min(max_rpm);
+        let upper = 0.6 * max_rpm;
+        lower + (upper - lower) * t
+    }
 
     pub fn new(
         kp: f64,
@@ -94,13 +123,17 @@ impl Controller {
             current_temperature: ThermodynamicTemperature::new::<degree_celsius>(25.0),
             temp_reservoir: ThermodynamicTemperature::new::<degree_celsius>(25.0),
             min_temperature: ThermodynamicTemperature::new::<degree_celsius>(10.0),
-            max_temperature: ThermodynamicTemperature::new::<degree_celsius>(50.0),
+            max_temperature: ThermodynamicTemperature::new::<degree_celsius>(80.0),
 
             temperature: temp,
             cooling_controller: cooling_controller,
 
-            cooling_tolerance: ThermodynamicTemperature::new::<degree_celsius>(2.0),
-            heating_tolerance: ThermodynamicTemperature::new::<degree_celsius>(0.5),
+            cooling_tolerance: ThermodynamicTemperature::new::<degree_celsius>(
+                Self::COOLING_TOLERANCE_C,
+            ),
+            heating_tolerance: ThermodynamicTemperature::new::<degree_celsius>(
+                Self::HEATING_TOLERANCE_C,
+            ),
 
             current_revolutions: AngularVelocity::new::<revolution_per_minute>(0.0),
             max_revolutions: max_revolutions,
@@ -113,7 +146,7 @@ impl Controller {
             temperature_sensor_in: temp_sensor_in,
             temperature_sensor_out: temp_sensor_out,
 
-            power: 700.0,
+            power: 0.0,
             total_energy: 0.0,
 
             flow: flow,
@@ -222,7 +255,7 @@ impl Controller {
     pub fn turn_heating_on(&mut self) {
         self.heating_relais_1.set(true);
         self.temperature.heating = true;
-        self.power = 700.0;
+        self.power = Self::HEATING_ELEMENT_WATTAGE;
     }
 
     pub fn turn_heating_off(&mut self) {
@@ -388,9 +421,9 @@ impl Controller {
                     // Warmup phase: force full heating when far below target.
                     self.set_heating_state(true, now);
                 } else {
-                    let duty = self.temperature_pid_output.clamp(0.0, 1.0);
-                    let on_time = self.pwm_period.mul_f64(duty);
-                    let should_heat_on = duty > 0.0 && elapsed_in_window < on_time;
+                    let heating_duty = self.temperature_pid_output.clamp(0.0, 1.0);
+                    let on_time = self.pwm_period.mul_f64(heating_duty);
+                    let should_heat_on = heating_duty > 0.0 && elapsed_in_window < on_time;
                     self.set_heating_state(should_heat_on, now);
                 }
                 if self.temperature.heating {
@@ -409,9 +442,11 @@ impl Controller {
                 self.set_cooling_state(true, now);
                 let max_revolutions = self.get_max_revolutions();
                 let temp_offset = self.current_temperature - self.target_temperature;
+                let max_rpm = max_revolutions.get::<revolution_per_minute>();
+                let temp_offset_k = temp_offset.get::<kelvin>();
 
-                let target_revolutions = (temp_offset.get::<kelvin>() * 10.0)
-                    .clamp(0.0, max_revolutions.get::<revolution_per_minute>());
+                let target_revolutions =
+                    Self::cooling_target_rpm(temp_offset_k, max_rpm).clamp(0.0, max_rpm);
 
                 if self.temperature.cooling {
                     self.cooling_controller

@@ -82,6 +82,8 @@ export const liveValuesEventDataSchema = z.object({
   back_revolutions: z.number(),
   back_power: z.number(),
   front_power: z.number(),
+  front_heating: z.boolean().optional().default(false),
+  back_heating: z.boolean().optional().default(false),
   front_total_energy: z.number(),
   back_total_energy: z.number(),
 });
@@ -92,6 +94,7 @@ export const liveValuesEventDataSchema = z.object({
 export const stateEventDataSchema = z.object({
   is_default_state: z.boolean(),
   mode_state: modeStateSchema,
+  ambient_temperature_calibration: z.number().optional().default(22),
   flow_states: flowStatesSchema,
   temperature_states: tempStatesSchema,
   fan_states: fanStatesSchema,
@@ -130,6 +133,8 @@ export type Aquapath1NamespaceStore = {
 
   front_total_energy: TimeSeries;
   back_total_energy: TimeSeries;
+  front_heating: boolean;
+  back_heating: boolean;
 };
 
 const { initialTimeSeries: front_temperature, insert: addTemperature1 } =
@@ -177,6 +182,8 @@ export const createAquapath1NamespaceStore =
         front_power: front_power,
         front_total_energy: front_total_energy,
         back_total_energy: back_total_energy,
+        front_heating: false,
+        back_heating: false,
       };
     });
   };
@@ -268,6 +275,8 @@ export function aquapath1MessageHandler(
             value: liveValuesEvent.data.back_total_energy,
             timestamp: event.ts,
           }),
+          front_heating: liveValuesEvent.data.front_heating,
+          back_heating: liveValuesEvent.data.back_heating,
         }));
       } else {
         handleUnhandledEventError(eventName);

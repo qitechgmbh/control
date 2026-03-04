@@ -14,6 +14,7 @@ const badgeVariants = cva(
         secondary:
           "border-transparent bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-50",
         cold: "border-blue-300/80 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-900 focus-visible:ring-blue-500/20 dark:border-blue-800 dark:from-blue-900/50 dark:to-cyan-900/40 dark:text-blue-100 dark:focus-visible:ring-blue-300/30",
+        hot: "border-orange-300/80 bg-gradient-to-r from-orange-100 to-amber-100 text-orange-900 focus-visible:ring-orange-500/20 dark:border-orange-800 dark:from-orange-900/50 dark:to-amber-900/40 dark:text-orange-100 dark:focus-visible:ring-orange-300/30",
         destructive:
           "border-transparent bg-red-500 text-white focus-visible:ring-red-500/20 dark:focus-visible:ring-red-500/40 dark:bg-red-500/70 dark:bg-red-900 dark:focus-visible:ring-red-900/20 dark:dark:focus-visible:ring-red-900/40 dark:dark:bg-red-900/70",
         outline: "text-neutral-950 dark:text-neutral-50",

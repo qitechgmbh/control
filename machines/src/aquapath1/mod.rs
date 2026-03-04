@@ -91,6 +91,7 @@ pub struct AquaPathV1 {
     machine_identification_unique: MachineIdentificationUnique,
     namespace: AquaPathV1Namespace,
     mode: AquaPathV1Mode,
+    ambient_temperature_calibration: ThermodynamicTemperature,
     last_measurement_emit: Instant,
     front_controller: Controller,
     back_controller: Controller,
@@ -135,6 +136,8 @@ impl AquaPathV1 {
                 .get::<revolution_per_minute>(),
             front_power: self.front_controller.get_current_power(),
             back_power: self.back_controller.get_current_power(),
+            front_heating: self.front_controller.temperature.heating,
+            back_heating: self.back_controller.temperature.heating,
             front_total_energy: self.front_controller.get_total_energy(),
             back_total_energy: self.back_controller.get_total_energy(),
         }
@@ -151,6 +154,9 @@ impl AquaPathV1 {
             mode_state: ModeState {
                 mode: self.mode.clone(),
             },
+            ambient_temperature_calibration: self
+                .ambient_temperature_calibration
+                .get::<degree_celsius>(),
             temperature_states: TempStates {
                 front: TempState {
                     temperature: self
@@ -314,8 +320,44 @@ impl AquaPathV1 {
 }
 
 impl AquaPathV1 {
+    fn get_min_settable_temperature(&self) -> ThermodynamicTemperature {
+        let ambient_c = self.ambient_temperature_calibration.get::<degree_celsius>();
+        let min_c = self
+            .front_controller
+            .min_temperature
+            .get::<degree_celsius>();
+        let max_c = self
+            .front_controller
+            .max_temperature
+            .get::<degree_celsius>();
+        ThermodynamicTemperature::new::<degree_celsius>(ambient_c.max(min_c).min(max_c))
+    }
+
+    fn set_ambient_temperature_calibration(&mut self, ambient_temp_c: f64) {
+        let clamped = ambient_temp_c
+            .max(
+                self.front_controller
+                    .min_temperature
+                    .get::<degree_celsius>(),
+            )
+            .min(
+                self.front_controller
+                    .max_temperature
+                    .get::<degree_celsius>(),
+            );
+        self.ambient_temperature_calibration =
+            ThermodynamicTemperature::new::<degree_celsius>(clamped);
+        self.emit_state();
+    }
+
     fn set_target_temperature(&mut self, temperature: f64, cooling_type: AquaPathSideType) {
-        let target_temp = ThermodynamicTemperature::new::<degree_celsius>(temperature);
+        let min_settable = self.get_min_settable_temperature().get::<degree_celsius>();
+        let max_settable = self
+            .front_controller
+            .max_temperature
+            .get::<degree_celsius>();
+        let clamped_target = temperature.max(min_settable).min(max_settable);
+        let target_temp = ThermodynamicTemperature::new::<degree_celsius>(clamped_target);
 
         match cooling_type {
             AquaPathSideType::Back => self.back_controller.set_target_temperature(target_temp),
