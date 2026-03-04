@@ -56,9 +56,9 @@ pub const WAGO_AI_TEST_MACHINE: u16 = 0x0036;
 pub const DIGITAL_INPUT_TEST_MACHINE: u16 = 0x0040;
 pub const WAGO_8CH_IO_TEST_MACHINE: u16 = 0x0041;
 pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
-
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
+
 use serde_json::Value;
 use smol::lock::RwLock;
 
