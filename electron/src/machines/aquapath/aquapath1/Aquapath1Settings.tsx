@@ -5,6 +5,7 @@ import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { useAquapath1 } from "./useAquapath";
 import React from "react";
+import { Button } from "@/components/ui/button";
 
 export function Aquapath1SettingsPage() {
   const {
@@ -17,6 +18,14 @@ export function Aquapath1SettingsPage() {
     setBackCoolingTolerance,
     setAmbientTemperatureCalibration,
   } = useAquapath1();
+  const frontTemp = state?.temperature_states.front.temperature;
+  const backTemp = state?.temperature_states.back.temperature;
+  const currentSensorAmbientCandidate =
+    frontTemp != null && backTemp != null
+      ? Math.min(frontTemp, backTemp)
+      : undefined;
+  const canApplySensorAmbient =
+    currentSensorAmbientCandidate != null && currentSensorAmbientCandidate < 30;
 
   return (
     <Page>
@@ -68,6 +77,25 @@ export function Aquapath1SettingsPage() {
               }}
             />
           </Label>
+          <div className="mt-3 flex items-center gap-3">
+            <Button
+              type="button"
+              size="sm"
+              disabled={!canApplySensorAmbient}
+              onClick={() => {
+                if (currentSensorAmbientCandidate == null) return;
+                setAmbientTemperatureCalibration(currentSensorAmbientCandidate);
+              }}
+            >
+              Use Current Sensor Temp
+            </Button>
+            <span className="text-muted-foreground text-sm">
+              Candidate:{" "}
+              {currentSensorAmbientCandidate != null
+                ? `${currentSensorAmbientCandidate.toFixed(1)} C`
+                : "N/A"}
+            </span>
+          </div>
         </ControlCard>
 
         <ControlCard title="Front Temperature Tolerances">

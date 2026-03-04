@@ -347,6 +347,28 @@ impl AquaPathV1 {
             );
         self.ambient_temperature_calibration =
             ThermodynamicTemperature::new::<degree_celsius>(clamped);
+
+        // Enforce the calibrated minimum immediately on already-configured targets.
+        let min_settable = self.get_min_settable_temperature();
+        let min_settable_c = min_settable.get::<degree_celsius>();
+
+        if self
+            .front_controller
+            .target_temperature
+            .get::<degree_celsius>()
+            < min_settable_c
+        {
+            self.front_controller.set_target_temperature(min_settable);
+        }
+        if self
+            .back_controller
+            .target_temperature
+            .get::<degree_celsius>()
+            < min_settable_c
+        {
+            self.back_controller.set_target_temperature(min_settable);
+        }
+
         self.emit_state();
     }
 
