@@ -147,7 +147,7 @@ export function Aquapath1ControlPage() {
         </ControlCard>
 
         <ControlCard title="Reservoir 2">
-          <div className="grid grid-rows-4 gap-4">
+          <div className="grid grid-rows-5 gap-4">
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Flow"

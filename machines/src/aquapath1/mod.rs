@@ -133,10 +133,10 @@ impl AquaPathV1 {
                 .back_controller
                 .current_revolutions
                 .get::<revolution_per_minute>(),
-            front_power: self.front_controller.get_current_power(),
-            back_power: self.back_controller.get_current_power(),
-            front_total_energy: self.front_controller.get_total_energy(),
-            back_total_energy: self.back_controller.get_total_energy(),
+            front_power: self.front_controller.current_power(),
+            back_power: self.back_controller.current_power(),
+            front_total_energy: self.front_controller.total_energy(),
+            back_total_energy: self.back_controller.total_energy(),
         }
     }
 
@@ -188,7 +188,7 @@ impl AquaPathV1 {
                 front: FanState {
                     revolutions: self
                         .front_controller
-                        .max_revolutions
+                        .current_revolutions
                         .get::<revolution_per_minute>(),
                     max_revolutions: self
                         .front_controller
@@ -326,8 +326,8 @@ impl AquaPathV1 {
 
     fn set_should_pump(&mut self, should_pump: bool, cooling_type: AquaPathSideType) {
         match cooling_type {
-            AquaPathSideType::Back => self.back_controller.set_should_pump(should_pump),
-            AquaPathSideType::Front => self.front_controller.set_should_pump(should_pump),
+            AquaPathSideType::Back => self.back_controller.should_pump = should_pump,
+            AquaPathSideType::Front => self.front_controller.should_pump = should_pump,
         }
         self.emit_state();
     }

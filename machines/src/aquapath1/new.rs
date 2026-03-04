@@ -7,6 +7,7 @@ use super::{
     AquaPathV1, AquaPathV1Mode, Flow, Temperature, api::AquaPathV1Namespace, controller::Controller,
 };
 use anyhow::Error;
+use control_core::controllers::pid::PidController;
 use ethercat_hal::{
     coe::ConfigurableDevice,
     devices::{
@@ -136,9 +137,7 @@ impl MachineNewTrait for AquaPathV1 {
             let ao2 = AnalogOutput::new(el4002.clone(), EL4002Port::AO2);
 
             let front_controller = Controller::new(
-                0.10,
-                0.0,
-                0.015,
+                PidController::new(0.10, 0.0, 0.015),
                 Temperature::default(),
                 ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao1,
@@ -153,9 +152,7 @@ impl MachineNewTrait for AquaPathV1 {
             );
 
             let back_controller = Controller::new(
-                0.10,
-                0.0,
-                0.015,
+                PidController::new(0.10, 0.0, 0.015),
                 Temperature::default(),
                 ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao2,
