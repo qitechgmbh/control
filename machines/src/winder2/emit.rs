@@ -262,11 +262,19 @@ impl Winder2 {
                     .adaptive
                     .speed_base()
                     .get::<meter_per_minute>(),
-                adaptive_deviation_limit: self
+                adaptive_max_speed_change_percent: self
                     .puller_speed_controller
                     .adaptive
-                    .deviation_limit()
-                    .get::<meter_per_minute>(),
+                    .max_speed_change_percent(),
+                adaptive_adjustment_interval_meters: self
+                    .puller_speed_controller
+                    .adaptive
+                    .adjustment_interval_meters(),
+                adaptive_step_percent: self.puller_speed_controller.adaptive.step_percent(),
+                adaptive_accepted_difference: self
+                    .puller_speed_controller
+                    .adaptive
+                    .accepted_difference(),
                 adaptive_reference_machine: self.puller_reference_machine,
             },
             mode_state: ModeState {
@@ -509,11 +517,31 @@ impl Winder2 {
         self.emit_state();
     }
 
-    pub fn puller_set_adaptive_deviation_limit(&mut self, value: f64) {
-        let speed = Velocity::new::<meter_per_minute>(value);
+    pub fn puller_set_adaptive_max_speed_change_percent(&mut self, value: f64) {
         self.puller_speed_controller
             .adaptive
-            .set_deviation_limit(speed);
+            .set_max_speed_change_percent(value);
+        self.emit_state();
+    }
+
+    pub fn puller_set_adaptive_adjustment_interval_meters(&mut self, value: f64) {
+        self.puller_speed_controller
+            .adaptive
+            .set_adjustment_interval_meters(value);
+        self.emit_state();
+    }
+
+    pub fn puller_set_adaptive_step_percent(&mut self, value: f64) {
+        self.puller_speed_controller
+            .adaptive
+            .set_step_percent(value);
+        self.emit_state();
+    }
+
+    pub fn puller_set_adaptive_accepted_difference(&mut self, value: f64) {
+        self.puller_speed_controller
+            .adaptive
+            .set_accepted_difference(value);
         self.emit_state();
     }
 

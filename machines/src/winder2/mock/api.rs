@@ -49,9 +49,10 @@ impl MachineApi for Winder2 {
 
             // puller adaptive speed algorithm
             Mutation::SetPullerAdaptiveSpeedBase(_) => self.emit_state(),
-            Mutation::SetPullerAdaptiveDeviationLimit(_) => {
-                self.emit_state(); // not implementing this...
-            }
+            Mutation::SetPullerAdaptiveMaxSpeedChangePercent(_) => self.emit_state(),
+            Mutation::SetPullerAdaptiveAdjustmentIntervalMeters(_) => self.emit_state(),
+            Mutation::SetPullerAdaptiveStepPercent(_) => self.emit_state(),
+            Mutation::SetPullerAdaptiveAcceptedDifference(_) => self.emit_state(),
             Mutation::SetPullerAdaptiveReferenceMachine(_) => {
                 self.emit_state(); // not implementing this...
             }

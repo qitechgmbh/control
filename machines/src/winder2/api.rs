@@ -132,9 +132,16 @@ pub enum Mutation {
     // Mode
     SetMode(Mode),
 
-    // Set puller adapative reference machine
+    // Set puller adaptive reference machine
     SetPullerAdaptiveSpeedBase(f64),
-    SetPullerAdaptiveDeviationLimit(f64),
+    /// Maximum speed change as a percentage of base speed (0.0–100.0)
+    SetPullerAdaptiveMaxSpeedChangePercent(f64),
+    /// Minimum meters between consecutive adjustments
+    SetPullerAdaptiveAdjustmentIntervalMeters(f64),
+    /// Step size per adjustment as a percentage of base speed (0.0–100.0)
+    SetPullerAdaptiveStepPercent(f64),
+    /// Inner deadzone: max deviation from target (mm) that requires no correction
+    SetPullerAdaptiveAcceptedDifference(f64),
     SetPullerAdaptiveReferenceMachine(Option<MachineIdentificationUnique>),
 }
 
@@ -223,7 +230,14 @@ pub struct PullerState {
     pub gear_ratio: GearRatio,
 
     pub adaptive_speed_base: f64,
-    pub adaptive_deviation_limit: f64,
+    /// Maximum speed change as a percentage of base speed (0.0–100.0)
+    pub adaptive_max_speed_change_percent: f64,
+    /// Minimum meters between consecutive adjustments
+    pub adaptive_adjustment_interval_meters: f64,
+    /// Step size per adjustment as a percentage of base speed (0.0–100.0)
+    pub adaptive_step_percent: f64,
+    /// Inner deadzone: max deviation from target (mm) that requires no correction
+    pub adaptive_accepted_difference: f64,
     pub adaptive_reference_machine: Option<MachineIdentificationUnique>,
 }
 
@@ -367,8 +381,15 @@ impl MachineApi for Winder2 {
 
             // puller adaptive speed algorithm
             Mutation::SetPullerAdaptiveSpeedBase(v) => self.puller_set_adaptive_speed_base(v),
-            Mutation::SetPullerAdaptiveDeviationLimit(v) => {
-                self.puller_set_adaptive_deviation_limit(v)
+            Mutation::SetPullerAdaptiveMaxSpeedChangePercent(v) => {
+                self.puller_set_adaptive_max_speed_change_percent(v)
+            }
+            Mutation::SetPullerAdaptiveAdjustmentIntervalMeters(v) => {
+                self.puller_set_adaptive_adjustment_interval_meters(v)
+            }
+            Mutation::SetPullerAdaptiveStepPercent(v) => self.puller_set_adaptive_step_percent(v),
+            Mutation::SetPullerAdaptiveAcceptedDifference(v) => {
+                self.puller_set_adaptive_accepted_difference(v)
             }
             Mutation::SetPullerAdaptiveReferenceMachine(v) => {
                 self.puller_set_adaptive_reference_machine(v)?

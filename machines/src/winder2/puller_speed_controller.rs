@@ -9,7 +9,7 @@ use units::ConstZero;
 use units::acceleration::meter_per_minute_per_second;
 use units::f64::*;
 use units::jerk::meter_per_minute_per_second_squared;
-use units::velocity::meter_per_minute;
+use units::velocity::{meter_per_minute, meter_per_second};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum GearRatio {
@@ -61,10 +61,14 @@ impl PullerSpeedController {
         let speed = Velocity::new::<meter_per_minute>(50.0);
 
         let adaptive = AdaptiveSpeedAlgorithm {
-            speed_max: speed,
             speed_base: target_speed,
-            deviation_limit: Velocity::ZERO,
+            max_speed_change_percent: 5.0,
+            adjustment_interval_meters: 20.0,
+            step_percent: 1.0,
+            accepted_difference: 0.03,
             modulation: 0.0,
+            meters_since_last_adjustment: 0.0,
+            last_update: Instant::now(),
         };
 
         Self {
@@ -155,17 +159,52 @@ pub enum PullerRegulationMode {
     Diameter,
 }
 
-#[derive(Debug, Clone, Copy)]
+/// Controls adaptive puller speed based on laser diameter feedback.
+///
+/// # Behaviour
+/// - **Inner deadzone** (`accepted_difference`): if `|current − target| ≤
+///   accepted_difference` (mm) the measurement is considered close enough to the
+///   target and no adjustment is made.  The meter accumulator is reset so the
+///   delay always restarts when re-entering this zone.
+/// - **Outer boundary** (`lower` / `upper` tolerances from the laser): if the
+///   diameter leaves the inner deadzone, meters are accumulated.  After
+///   `adjustment_interval_meters` have elapsed the modulation is nudged by
+///   ±`step_percent` in the direction that brings the diameter back toward
+///   target, and the accumulator is reset.
+/// - **Soft limit**: modulation is clamped so the output speed never deviates
+///   more than `max_speed_change_percent` % from the base speed.
+#[derive(Debug, Clone)]
 pub struct AdaptiveSpeedAlgorithm {
-    speed_max: Velocity,
-    speed_base: Velocity,
-    deviation_limit: Velocity,
-    modulation: f64, // (-1.0 to 1.0)
+    // --- Configurable (Control Page) ---
+    /// Base puller speed; all modulation is relative to this.
+    pub speed_base: Velocity,
+
+    // --- Configurable (Settings Page) ---
+    /// Maximum allowed speed change as a percentage of base speed (0.0–100.0).
+    pub max_speed_change_percent: f64,
+    /// Minimum meters the puller must travel between consecutive adjustments.
+    pub adjustment_interval_meters: f64,
+    /// Step size per adjustment as a percentage of base speed (0.0–100.0).
+    pub step_percent: f64,
+    /// Inner deadzone: maximum deviation from target (mm) that is considered
+    /// acceptable.  No adjustment is made while `|current − target| ≤ this`.
+    pub accepted_difference: f64,
+
+    // --- Internal state (not exposed to the frontend) ---
+    /// Current modulation in [-1.0, 1.0].
+    /// Output = speed_base × (1 + modulation × max_speed_change_percent / 100)
+    modulation: f64,
+    /// Meters accumulated while outside the inner deadzone since the last adjustment.
+    meters_since_last_adjustment: f64,
+    /// Timestamp of the previous `update_with_measurement` call for computing Δt.
+    last_update: Instant,
 }
 
 impl AdaptiveSpeedAlgorithm {
+    /// Compute the current target speed after applying the active modulation.
     pub fn compute(&self) -> Velocity {
-        self.speed_base + (self.deviation_limit * self.modulation)
+        let factor = 1.0 + self.modulation * self.max_speed_change_percent / 100.0;
+        (self.speed_base * factor).max(Velocity::ZERO)
     }
 
     pub fn speed_base(&self) -> Velocity {
@@ -173,36 +212,93 @@ impl AdaptiveSpeedAlgorithm {
     }
 
     pub fn set_speed_base(&mut self, speed: Velocity) {
-        self.speed_base = speed
-            .min(self.speed_max) // ensure < max
-            .max(Velocity::ZERO) // ensure > 0
-            ;
-
-        // update deviation limit as well
-        self.set_deviation_limit(self.deviation_limit);
+        self.speed_base = speed.max(Velocity::ZERO);
     }
 
-    pub fn deviation_limit(&self) -> Velocity {
-        self.deviation_limit
+    /// Current modulation level in [-1.0, 1.0].
+    pub fn modulation(&self) -> f64 {
+        self.modulation
     }
 
-    pub fn set_deviation_limit(&mut self, deviation_limit: Velocity) {
-        self.deviation_limit =
-            // ensure >= 0
-            if deviation_limit < Velocity::ZERO
-                { Velocity::ZERO }
-            // ensure base - deviation can't go below zero
-            else if deviation_limit > self.speed_base
-                { self.speed_base }
-            // ensure base + deviation can't exceed max
-            else if self.speed_base + deviation_limit > self.speed_max
-                { self.speed_max - self.speed_base }
-            // in valid range
-            else
-                { deviation_limit };
+    pub fn max_speed_change_percent(&self) -> f64 {
+        self.max_speed_change_percent
     }
 
-    pub fn set_modulation(&mut self, modulation: f64) {
-        self.modulation = modulation.clamp(-1.0, 1.0);
+    pub fn set_max_speed_change_percent(&mut self, percent: f64) {
+        self.max_speed_change_percent = percent.max(0.0);
+    }
+
+    pub fn adjustment_interval_meters(&self) -> f64 {
+        self.adjustment_interval_meters
+    }
+
+    pub fn set_adjustment_interval_meters(&mut self, meters: f64) {
+        self.adjustment_interval_meters = meters.max(0.0);
+    }
+
+    pub fn step_percent(&self) -> f64 {
+        self.step_percent
+    }
+
+    pub fn set_step_percent(&mut self, percent: f64) {
+        self.step_percent = percent.clamp(0.0, 100.0);
+    }
+
+    pub fn accepted_difference(&self) -> f64 {
+        self.accepted_difference
+    }
+
+    pub fn set_accepted_difference(&mut self, mm: f64) {
+        self.accepted_difference = mm.max(0.0);
+    }
+
+    /// Process a new laser diameter measurement.
+    ///
+    /// `current`    — measured diameter (mm)
+    /// `target`     — target diameter (mm)
+    /// `lower`      — lower tolerance relative to target (mm, positive value)
+    /// `upper`      — upper tolerance relative to target (mm, positive value)
+    /// `last_speed` — puller speed at the previous cycle, used to convert Δt → metres
+    /// `now`        — current instant (enables deterministic testing)
+    pub fn update_with_measurement(
+        &mut self,
+        current: f64,
+        target: f64,
+        lower: f64,
+        upper: f64,
+        last_speed: Velocity,
+        now: Instant,
+    ) {
+        let dt = now.duration_since(self.last_update).as_secs_f64();
+        self.last_update = now;
+
+        let lower_bound = target - lower;
+        let upper_bound = target + upper;
+        let _ = (lower_bound, upper_bound); // kept for future use (e.g. trend detection)
+
+        // ── Inner deadzone (accepted_difference) ────────────────────────────────
+        // If the diameter is within ±accepted_difference of the target it is
+        // acceptable.  Reset the accumulator so the delay always starts fresh.
+        if (current - target).abs() <= self.accepted_difference {
+            self.meters_since_last_adjustment = 0.0;
+            return;
+        }
+
+        // ── Accumulate metres ───────────────────────────────────────────────────
+        let meters_added = last_speed.abs().get::<meter_per_second>() * dt;
+        self.meters_since_last_adjustment += meters_added;
+
+        // ── Wait for the interval to elapse ─────────────────────────────────────
+        if self.meters_since_last_adjustment < self.adjustment_interval_meters {
+            return;
+        }
+
+        // ── Apply one step in the required direction ─────────────────────────────
+        // Diameter too large  → speed up the puller (positive modulation)
+        // Diameter too small  → slow down the puller (negative modulation)
+        let direction = if current > target { 1.0_f64 } else { -1.0_f64 };
+        let step = self.step_percent / 100.0;
+        self.modulation = (self.modulation + direction * step).clamp(-1.0, 1.0);
+        self.meters_since_last_adjustment = 0.0;
     }
 }
