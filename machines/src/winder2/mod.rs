@@ -94,10 +94,18 @@ impl Machine for Winder2 {
                 let target = state.laser_state.target_diameter;
                 let lower = state.laser_state.lower_tolerance;
                 let upper = state.laser_state.higher_tolerance;
-                let modulation = Self::compute_modulation(current, target, lower, upper);
+                let last_speed = self.puller_speed_controller.last_speed;
 
-                let algorithm = &mut self.puller_speed_controller.adaptive;
-                algorithm.set_modulation(modulation);
+                self.puller_speed_controller
+                    .adaptive
+                    .update_with_measurement(
+                        current,
+                        target,
+                        lower,
+                        upper,
+                        last_speed,
+                        Instant::now(),
+                    );
             }
             None => tracing::error!("Received MachineData::None"),
         };
@@ -116,37 +124,6 @@ impl Machine for Winder2 {
         }
 
         self.emit_state();
-    }
-}
-
-// utils
-impl Winder2 {
-    fn compute_modulation(current: f64, target: f64, lower: f64, upper: f64) -> f64 {
-        let lower_bound = target - lower;
-        let upper_bound = target + upper;
-
-        if current <= lower_bound {
-            return -1.0;
-        };
-        if current >= upper_bound {
-            return 1.0;
-        };
-
-        if current < target {
-            let min = lower_bound;
-            let max = target;
-            let normalized = (current - min) / (max - min);
-            // currently we reach 1.0 when closest to target
-            // but since we want to return 0 when closest and
-            // -1.0 when furthest we invert it from 0..1 to 1..0
-            let inverted = 1.0 - normalized;
-            // now flip sign
-            -inverted
-        } else {
-            let min = target;
-            let max = upper_bound;
-            (current - min) / (max - min)
-        }
     }
 }
 

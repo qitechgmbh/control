@@ -8,7 +8,7 @@ import { roundToDecimals } from "@/lib/decimal";
 import { Label } from "@/control/Label";
 import { SelectionGroupBoolean } from "@/control/SelectionGroup";
 import { SelectionGroup } from "@/control/SelectionGroup";
-import { MachineSelector } from "@/components/MachineConnectionDropdown";
+import { MachineSelector } from "../MachineSelector";
 import {
   getWinder2XLMode,
   setWinder2XLMode,
@@ -38,6 +38,13 @@ export function Winder2SettingPage() {
     setSpoolAdaptiveMaxSpeedMultiplier,
     setSpoolAdaptiveAccelerationFactor,
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
+    setPullerAdaptiveMaxSpeedChangePercent,
+    setPullerAdaptiveAdjustmentIntervalMeters,
+    setPullerAdaptiveStepPercent,
+    setPullerAdaptiveAcceptedDifference,
+    setPullerAdaptiveReferenceMachine,
+    filteredMachines,
+    selectedMachine,
     isLoading,
     isDisabled,
   } = useWinder2();
@@ -347,6 +354,85 @@ export function Winder2SettingPage() {
                   value as "OneToOne" | "OneToFive" | "OneToTen",
                 )
               }
+            />
+          </Label>
+
+          <Label label="Adaptive: Accepted Difference">
+            <EditValue
+              value={state?.puller_state?.adaptive_accepted_difference}
+              title={"Adaptive: Accepted Difference"}
+              unit="mm"
+              step={0.01}
+              min={0}
+              max={5}
+              defaultValue={
+                defaultState?.puller_state?.adaptive_accepted_difference
+              }
+              renderValue={(value) => roundToDecimals(value, 2)}
+              onChange={(value) => setPullerAdaptiveAcceptedDifference(value)}
+            />
+          </Label>
+          <Label label="Adaptive: Max Speed Change">
+            <EditValue
+              value={state?.puller_state?.adaptive_max_speed_change_percent}
+              title={"Adaptive: Max Speed Change"}
+              unit="%"
+              step={0.5}
+              min={0}
+              max={50}
+              defaultValue={
+                defaultState?.puller_state?.adaptive_max_speed_change_percent
+              }
+              renderValue={(value) => roundToDecimals(value, 1)}
+              onChange={(value) =>
+                setPullerAdaptiveMaxSpeedChangePercent(value)
+              }
+            />
+          </Label>
+          <Label label="Adaptive: Adjustment Interval">
+            <EditValue
+              value={state?.puller_state?.adaptive_adjustment_interval_meters}
+              title={"Adaptive: Adjustment Interval"}
+              unit="m"
+              step={0.5}
+              min={0}
+              max={100}
+              defaultValue={
+                defaultState?.puller_state?.adaptive_adjustment_interval_meters
+              }
+              renderValue={(value) => roundToDecimals(value, 1)}
+              onChange={(value) =>
+                setPullerAdaptiveAdjustmentIntervalMeters(value)
+              }
+            />
+          </Label>
+          <Label label="Adaptive: Step Size">
+            <EditValue
+              value={state?.puller_state?.adaptive_step_percent}
+              title={"Adaptive: Step Size"}
+              unit="%"
+              step={0.1}
+              min={0.1}
+              max={10}
+              defaultValue={defaultState?.puller_state?.adaptive_step_percent}
+              renderValue={(value) => roundToDecimals(value, 1)}
+              onChange={(value) => setPullerAdaptiveStepPercent(value)}
+            />
+          </Label>
+          <Label label="Adaptive: Reference Machine">
+            <MachineSelector
+              machines={filteredMachines}
+              selectedMachine={selectedMachine}
+              connectedMachineState={
+                state?.puller_state.adaptive_reference_machine
+              }
+              setConnectedMachine={(machine) => {
+                setPullerAdaptiveReferenceMachine(machine);
+              }}
+              clearConnectedMachine={() => {
+                if (!selectedMachine) return;
+                setPullerAdaptiveReferenceMachine(null);
+              }}
             />
           </Label>
         </ControlCard>

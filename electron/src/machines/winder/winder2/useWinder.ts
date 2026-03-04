@@ -532,10 +532,27 @@ export function useWinder2() {
       SetPullerAdaptiveSpeedBase: z.number(),
     }),
   );
-  const { request: requestPullerSetAdaptiveDeviationLimit } =
+  const { request: requestPullerSetAdaptiveMaxSpeedChangePercent } =
     useMachineMutation(
       z.object({
-        SetPullerAdaptiveDeviationLimit: z.number(),
+        SetPullerAdaptiveMaxSpeedChangePercent: z.number(),
+      }),
+    );
+  const { request: requestPullerSetAdaptiveAdjustmentIntervalMeters } =
+    useMachineMutation(
+      z.object({
+        SetPullerAdaptiveAdjustmentIntervalMeters: z.number(),
+      }),
+    );
+  const { request: requestPullerSetAdaptiveStepPercent } = useMachineMutation(
+    z.object({
+      SetPullerAdaptiveStepPercent: z.number(),
+    }),
+  );
+  const { request: requestPullerSetAdaptiveAcceptedDifference } =
+    useMachineMutation(
+      z.object({
+        SetPullerAdaptiveAcceptedDifference: z.number(),
       }),
     );
   const { request: requestPullerSetAdaptiveReferenceMachine } =
@@ -560,15 +577,54 @@ export function useWinder2() {
     );
   };
 
-  const setPullerAdaptiveDeviationLimit = (speed: number) => {
+  const setPullerAdaptiveMaxSpeedChangePercent = (percent: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.puller_state.adaptive_deviation_limit = speed;
+        current.data.puller_state.adaptive_max_speed_change_percent = percent;
       },
       () =>
-        requestPullerSetAdaptiveDeviationLimit({
+        requestPullerSetAdaptiveMaxSpeedChangePercent({
           machine_identification_unique: machineIdentification,
-          data: { SetPullerAdaptiveDeviationLimit: speed },
+          data: { SetPullerAdaptiveMaxSpeedChangePercent: percent },
+        }),
+    );
+  };
+
+  const setPullerAdaptiveAdjustmentIntervalMeters = (meters: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.adaptive_adjustment_interval_meters = meters;
+      },
+      () =>
+        requestPullerSetAdaptiveAdjustmentIntervalMeters({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerAdaptiveAdjustmentIntervalMeters: meters },
+        }),
+    );
+  };
+
+  const setPullerAdaptiveStepPercent = (percent: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.adaptive_step_percent = percent;
+      },
+      () =>
+        requestPullerSetAdaptiveStepPercent({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerAdaptiveStepPercent: percent },
+        }),
+    );
+  };
+
+  const setPullerAdaptiveAcceptedDifference = (mm: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.adaptive_accepted_difference = mm;
+      },
+      () =>
+        requestPullerSetAdaptiveAcceptedDifference({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerAdaptiveAcceptedDifference: mm },
         }),
     );
   };
@@ -676,7 +732,10 @@ export function useWinder2() {
 
     // new stuff
     setPullerAdaptiveBaseSpeed,
-    setPullerAdaptiveDeviationLimit,
+    setPullerAdaptiveMaxSpeedChangePercent,
+    setPullerAdaptiveAdjustmentIntervalMeters,
+    setPullerAdaptiveStepPercent,
+    setPullerAdaptiveAcceptedDifference,
     setPullerAdaptiveReferenceMachine,
   };
 }
