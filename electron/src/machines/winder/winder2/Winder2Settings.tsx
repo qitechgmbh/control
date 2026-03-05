@@ -415,7 +415,9 @@ export function Winder2SettingPage() {
                 step={0.1}
                 min={0.1}
                 max={10}
-                defaultValue={defaultState?.puller_state?.adaptive_increase_per_step}
+                defaultValue={
+                  defaultState?.puller_state?.adaptive_increase_per_step
+                }
                 renderValue={(value) => roundToDecimals(value, 1)}
                 onChange={(value) => setPullerAdaptiveStepPercent(value / 100)}
               />
