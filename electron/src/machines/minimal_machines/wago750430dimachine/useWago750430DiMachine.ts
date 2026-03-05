@@ -10,8 +10,7 @@ import { useEffect, useMemo } from "react";
 import { wago750430DiMachine } from "@/machines/properties";
 
 export function useWago750430DiMachine() {
-  const { serial: serialString } =
-    wago750430DiMachineSerialRoute.useParams();
+  const { serial: serialString } = wago750430DiMachineSerialRoute.useParams();
 
   const machineIdentification: MachineIdentificationUnique = useMemo(() => {
     const serial = parseInt(serialString);

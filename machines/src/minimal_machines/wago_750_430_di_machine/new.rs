@@ -59,8 +59,7 @@ impl MachineNewTrait for Wago750_430DiMachine {
 
             // Get the WAGO 750-430 8CH DI module at slot 0
             let dev = coupler.slot_devices.get(0).unwrap().clone().unwrap();
-            let wago750_430: Arc<RwLock<Wago750_430>> =
-                downcast_device::<Wago750_430>(dev).await?;
+            let wago750_430: Arc<RwLock<Wago750_430>> = downcast_device::<Wago750_430>(dev).await?;
 
             let di1 = DigitalInput::new(wago750_430.clone(), Wago750_430Port::Port1);
             let di2 = DigitalInput::new(wago750_430.clone(), Wago750_430Port::Port2);

@@ -189,9 +189,9 @@ use crate::MACHINE_WAGO_POWER_V1;
 use crate::MACHINE_WINDER_V1;
 use crate::TEST_MACHINE;
 use crate::VENDOR_QITECH;
+use crate::WAGO_750_430_DI_MACHINE;
 use crate::WAGO_AI_TEST_MACHINE;
 use crate::WAGO_DO_TEST_MACHINE;
-use crate::WAGO_750_430_DI_MACHINE;
 
 #[derive(Debug)]
 pub struct MachineIdentificationAddresses {
