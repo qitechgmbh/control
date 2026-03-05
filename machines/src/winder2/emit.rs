@@ -262,19 +262,21 @@ impl Winder2 {
                     .adaptive
                     .speed_base()
                     .get::<meter_per_minute>(),
-                adaptive_max_speed_change_percent: self
+                adaptive_speed_delta_max: self.puller_speed_controller.adaptive.speed_delta_max(),
+                adaptive_adjustment_distance: self
                     .puller_speed_controller
                     .adaptive
-                    .max_speed_change_percent(),
-                adaptive_adjustment_interval_meters: self
+                    .adjustment_distance()
+                    .get::<meter>(),
+                adaptive_increase_per_step: self
                     .puller_speed_controller
                     .adaptive
-                    .adjustment_interval_meters(),
-                adaptive_step_percent: self.puller_speed_controller.adaptive.step_percent(),
-                adaptive_accepted_difference: self
+                    .increase_per_step(),
+                adaptive_tolerance_limit: self
                     .puller_speed_controller
                     .adaptive
-                    .accepted_difference(),
+                    .tolerance_limit()
+                    .get::<millimeter>(),
                 adaptive_reference_machine: self.puller_reference_machine,
             },
             mode_state: ModeState {
@@ -520,28 +522,28 @@ impl Winder2 {
     pub fn puller_set_adaptive_max_speed_change_percent(&mut self, value: f64) {
         self.puller_speed_controller
             .adaptive
-            .set_max_speed_change_percent(value);
+            .set_speed_delta_max(value);
         self.emit_state();
     }
 
     pub fn puller_set_adaptive_adjustment_interval_meters(&mut self, value: f64) {
         self.puller_speed_controller
             .adaptive
-            .set_adjustment_interval_meters(value);
+            .set_adjustment_distance(Length::new::<meter>(value));
         self.emit_state();
     }
 
     pub fn puller_set_adaptive_step_percent(&mut self, value: f64) {
         self.puller_speed_controller
             .adaptive
-            .set_step_percent(value);
+            .set_increase_per_step(value);
         self.emit_state();
     }
 
     pub fn puller_set_adaptive_accepted_difference(&mut self, value: f64) {
         self.puller_speed_controller
             .adaptive
-            .set_accepted_difference(value);
+            .set_tolerance_limit(Length::new::<millimeter>(value));
         self.emit_state();
     }
 
