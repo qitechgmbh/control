@@ -140,10 +140,10 @@ export const pullerStateSchema = z.object({
 
   // properties of adaptive speed mode
   adaptive_speed_base: z.number(),
-  adaptive_max_speed_change_percent: z.number(),
-  adaptive_adjustment_interval_meters: z.number(),
-  adaptive_step_percent: z.number(),
-  adaptive_accepted_difference: z.number(),
+  adaptive_speed_delta_max: z.number(),
+  adaptive_adjustment_distance: z.number(),
+  adaptive_increase_per_step: z.number(),
+  adaptive_tolerance_limit: z.number(),
   adaptive_reference_machine: machineIdentificationUniqueSchema.nullable(),
 });
 

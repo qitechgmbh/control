@@ -93,19 +93,19 @@ const previewEntries: PresetPreviewEntries<Winder2> = [
     name: "Puller Adaptive Max Speed Change",
     unit: "%",
     renderValue: (data: Winder2) =>
-      data.puller_state?.adaptive_max_speed_change_percent?.toFixed(1),
+      data.puller_state?.adaptive_speed_delta_max?.toFixed(1),
   },
   {
     name: "Puller Adaptive Adjustment Interval",
     unit: "m",
     renderValue: (data: Winder2) =>
-      data.puller_state?.adaptive_adjustment_interval_meters?.toFixed(1),
+      data.puller_state?.adaptive_adjustment_distance?.toFixed(1),
   },
   {
     name: "Puller Adaptive Step Size",
     unit: "%",
     renderValue: (data: Winder2) =>
-      data.puller_state?.adaptive_step_percent?.toFixed(1),
+      data.puller_state?.adaptive_increase_per_step?.toFixed(1),
   },
   previewSeparator,
   {

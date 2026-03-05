@@ -7,8 +7,10 @@ use control_core::{
 use serde::{Deserialize, Serialize};
 use units::ConstZero;
 use units::acceleration::meter_per_minute_per_second;
+use units::f64::Length;
 use units::f64::*;
 use units::jerk::meter_per_minute_per_second_squared;
+use units::length::{meter, millimeter};
 use units::velocity::{meter_per_minute, meter_per_second};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -60,21 +62,17 @@ impl PullerSpeedController {
         let jerk = Jerk::new::<meter_per_minute_per_second_squared>(10.0);
         let speed = Velocity::new::<meter_per_minute>(50.0);
 
-        let adaptive = AdaptiveSpeedAlgorithm {
-            speed_base: target_speed,
-            max_speed_change_percent: 5.0,
-            adjustment_interval_meters: 20.0,
-            step_percent: 1.0,
-            accepted_difference: 0.03,
-            modulation: 0.0,
-            meters_since_last_adjustment: 0.0,
-            last_update: Instant::now(),
-        };
+        let mut adaptive = AdaptiveSpeedAlgorithm::default();
+        adaptive.set_speed_base(target_speed);
+        adaptive.set_speed_delta_max(20.0);
+        adaptive.set_increase_per_step(0.1);
+        adaptive.set_tolerance_limit(Length::new::<millimeter>(0.02));
+        adaptive.set_adjustment_distance(Length::new::<meter>(20.0));
 
         Self {
             enabled: false,
             target_speed,
-            adaptive,
+            adaptive: AdaptiveSpeedAlgorithm::default(),
             regulation_mode: PullerRegulationMode::Speed,
             forward: true,
             gear_ratio: GearRatio::default(),
@@ -175,91 +173,41 @@ pub enum PullerRegulationMode {
 ///   more than `max_speed_change_percent` % from the base speed.
 #[derive(Debug, Clone)]
 pub struct AdaptiveSpeedAlgorithm {
-    // --- Configurable (Control Page) ---
-    /// Base puller speed; all modulation is relative to this.
-    pub speed_base: Velocity,
+    // config
+    speed_base: Velocity,
+    speed_delta_max: f64,
+    increase_per_step: f64,
+    tolerance_limit: Length,
+    adjustment_distance: Length,
 
-    // --- Configurable (Settings Page) ---
-    /// Maximum allowed speed change as a percentage of base speed (0.0–100.0).
-    pub max_speed_change_percent: f64,
-    /// Minimum meters the puller must travel between consecutive adjustments.
-    pub adjustment_interval_meters: f64,
-    /// Step size per adjustment as a percentage of base speed (0.0–100.0).
-    pub step_percent: f64,
-    /// Inner deadzone: maximum deviation from target (mm) that is considered
-    /// acceptable.  No adjustment is made while `|current − target| ≤ this`.
-    pub accepted_difference: f64,
-
-    // --- Internal state (not exposed to the frontend) ---
-    /// Current modulation in [-1.0, 1.0].
-    /// Output = speed_base × (1 + modulation × max_speed_change_percent / 100)
+    // internal state
     modulation: f64,
-    /// Meters accumulated while outside the inner deadzone since the last adjustment.
-    meters_since_last_adjustment: f64,
-    /// Timestamp of the previous `update_with_measurement` call for computing Δt.
-    last_update: Instant,
+    distance_since_last_adjustment: Length,
+    time_since_last_update: Instant,
 }
 
+impl Default for AdaptiveSpeedAlgorithm {
+    fn default() -> Self {
+        Self {
+            speed_base: Velocity::ZERO,
+            speed_delta_max: 0.0,
+            increase_per_step: 0.0,
+            adjustment_distance: Length::ZERO,
+            tolerance_limit: Length::ZERO,
+            modulation: 0.0,
+            distance_since_last_adjustment: Length::ZERO,
+            time_since_last_update: Instant::now(),
+        }
+    }
+}
+
+// public interface
 impl AdaptiveSpeedAlgorithm {
-    /// Compute the current target speed after applying the active modulation.
     pub fn compute(&self) -> Velocity {
-        let factor = 1.0 + self.modulation * self.max_speed_change_percent / 100.0;
+        let factor = 1.0 + self.modulation * self.speed_delta_max;
         (self.speed_base * factor).max(Velocity::ZERO)
     }
 
-    pub fn speed_base(&self) -> Velocity {
-        self.speed_base
-    }
-
-    pub fn set_speed_base(&mut self, speed: Velocity) {
-        self.speed_base = speed.max(Velocity::ZERO);
-    }
-
-    /// Current modulation level in [-1.0, 1.0].
-    pub fn modulation(&self) -> f64 {
-        self.modulation
-    }
-
-    pub fn max_speed_change_percent(&self) -> f64 {
-        self.max_speed_change_percent
-    }
-
-    pub fn set_max_speed_change_percent(&mut self, percent: f64) {
-        self.max_speed_change_percent = percent.max(0.0);
-    }
-
-    pub fn adjustment_interval_meters(&self) -> f64 {
-        self.adjustment_interval_meters
-    }
-
-    pub fn set_adjustment_interval_meters(&mut self, meters: f64) {
-        self.adjustment_interval_meters = meters.max(0.0);
-    }
-
-    pub fn step_percent(&self) -> f64 {
-        self.step_percent
-    }
-
-    pub fn set_step_percent(&mut self, percent: f64) {
-        self.step_percent = percent.clamp(0.0, 100.0);
-    }
-
-    pub fn accepted_difference(&self) -> f64 {
-        self.accepted_difference
-    }
-
-    pub fn set_accepted_difference(&mut self, mm: f64) {
-        self.accepted_difference = mm.max(0.0);
-    }
-
-    /// Process a new laser diameter measurement.
-    ///
-    /// `current`    — measured diameter (mm)
-    /// `target`     — target diameter (mm)
-    /// `lower`      — lower tolerance relative to target (mm, positive value)
-    /// `upper`      — upper tolerance relative to target (mm, positive value)
-    /// `last_speed` — puller speed at the previous cycle, used to convert Δt → metres
-    /// `now`        — current instant (enables deterministic testing)
     pub fn update_with_measurement(
         &mut self,
         current: f64,
@@ -269,8 +217,10 @@ impl AdaptiveSpeedAlgorithm {
         last_speed: Velocity,
         now: Instant,
     ) {
-        let dt = now.duration_since(self.last_update).as_secs_f64();
-        self.last_update = now;
+        let dt = now
+            .duration_since(self.time_since_last_update)
+            .as_secs_f64();
+        self.time_since_last_update = now;
 
         let lower_bound = target - lower;
         let upper_bound = target + upper;
@@ -279,26 +229,74 @@ impl AdaptiveSpeedAlgorithm {
         // ── Inner deadzone (accepted_difference) ────────────────────────────────
         // If the diameter is within ±accepted_difference of the target it is
         // acceptable.  Reset the accumulator so the delay always starts fresh.
-        if (current - target).abs() <= self.accepted_difference {
-            self.meters_since_last_adjustment = 0.0;
+        if (current - target).abs() <= self.tolerance_limit.get::<millimeter>() {
+            self.distance_since_last_adjustment = Length::ZERO;
             return;
         }
 
         // ── Accumulate metres ───────────────────────────────────────────────────
         let meters_added = last_speed.abs().get::<meter_per_second>() * dt;
-        self.meters_since_last_adjustment += meters_added;
+        self.distance_since_last_adjustment += Length::new::<meter>(meters_added);
 
         // ── Wait for the interval to elapse ─────────────────────────────────────
-        if self.meters_since_last_adjustment < self.adjustment_interval_meters {
+        if self.distance_since_last_adjustment < self.adjustment_distance {
             return;
         }
 
         // ── Apply one step in the required direction ─────────────────────────────
         // Diameter too large  → speed up the puller (positive modulation)
         // Diameter too small  → slow down the puller (negative modulation)
-        let direction = if current > target { 1.0_f64 } else { -1.0_f64 };
-        let step = self.step_percent / 100.0;
-        self.modulation = (self.modulation + direction * step).clamp(-1.0, 1.0);
-        self.meters_since_last_adjustment = 0.0;
+        let correction_sign: f64 = if current > target { 1.0 } else { -1.0 };
+        let step = self.increase_per_step * correction_sign;
+        self.modulation = (self.modulation + step).clamp(-1.0, 1.0);
+        self.distance_since_last_adjustment = Length::ZERO;
+    }
+}
+
+// getters + setters
+impl AdaptiveSpeedAlgorithm {
+    pub fn speed_base(&self) -> Velocity {
+        self.speed_base
+    }
+
+    pub fn set_speed_base(&mut self, value: Velocity) {
+        self.speed_base = value.max(Velocity::ZERO);
+    }
+
+    pub fn speed_delta_max(&self) -> f64 {
+        self.speed_delta_max
+    }
+
+    pub fn set_speed_delta_max(&mut self, value: f64) {
+        self.speed_delta_max = value.max(0.0);
+    }
+
+    pub fn increase_per_step(&self) -> f64 {
+        self.increase_per_step
+    }
+
+    pub fn set_increase_per_step(&mut self, value: f64) {
+        self.increase_per_step = value.max(0.0).min(1.0);
+    }
+
+    pub fn adjustment_distance(&self) -> Length {
+        self.adjustment_distance
+    }
+
+    pub fn set_adjustment_distance(&mut self, value: Length) {
+        self.adjustment_distance = value.max(Length::ZERO);
+    }
+
+    pub fn tolerance_limit(&self) -> Length {
+        self.tolerance_limit
+    }
+
+    pub fn set_tolerance_limit(&mut self, value: Length) {
+        self.tolerance_limit = value.max(Length::ZERO);
+    }
+
+    /// Current modulation level in [-1.0, 1.0].
+    pub fn modulation(&self) -> f64 {
+        self.modulation
     }
 }

@@ -580,7 +580,7 @@ export function useWinder2() {
   const setPullerAdaptiveMaxSpeedChangePercent = (percent: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.puller_state.adaptive_max_speed_change_percent = percent;
+        current.data.puller_state.adaptive_speed_delta_max = percent;
       },
       () =>
         requestPullerSetAdaptiveMaxSpeedChangePercent({
@@ -593,7 +593,7 @@ export function useWinder2() {
   const setPullerAdaptiveAdjustmentIntervalMeters = (meters: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.puller_state.adaptive_adjustment_interval_meters = meters;
+        current.data.puller_state.adaptive_adjustment_distance = meters;
       },
       () =>
         requestPullerSetAdaptiveAdjustmentIntervalMeters({
@@ -606,7 +606,7 @@ export function useWinder2() {
   const setPullerAdaptiveStepPercent = (percent: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.puller_state.adaptive_step_percent = percent;
+        current.data.puller_state.adaptive_increase_per_step = percent;
       },
       () =>
         requestPullerSetAdaptiveStepPercent({
@@ -619,7 +619,7 @@ export function useWinder2() {
   const setPullerAdaptiveAcceptedDifference = (mm: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.puller_state.adaptive_accepted_difference = mm;
+        current.data.puller_state.adaptive_tolerance_limit = mm;
       },
       () =>
         requestPullerSetAdaptiveAcceptedDifference({
