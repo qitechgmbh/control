@@ -1,4 +1,5 @@
 import {
+  NIXOS_IS_AVAILABLE,
   NIXOS_LIST_GENERATIONS,
   NIXOS_SET_GENERATION,
   NIXOS_DELETE_GENERATION,
@@ -16,9 +17,12 @@ export type NixOSGeneration = {
   description?: string;
 };
 
-export function exposeNixOSContext() {
+export async function exposeNixOSContext() {
   const { contextBridge, ipcRenderer } = window.require("electron");
-  contextBridge.exposeInMainWorld("nixos", {
+  const isNixOSAvailable = await ipcRenderer.invoke(NIXOS_IS_AVAILABLE);
+
+  const context: NixOSContext = {
+    isNixOSAvailable,
     listGenerations: () => ipcRenderer.invoke(NIXOS_LIST_GENERATIONS),
     setGeneration: (generationId: string) =>
       ipcRenderer.invoke(NIXOS_SET_GENERATION, generationId),
@@ -26,5 +30,7 @@ export function exposeNixOSContext() {
       ipcRenderer.invoke(NIXOS_DELETE_GENERATION, generationId),
     deleteAllOldGenerations: () =>
       ipcRenderer.invoke(NIXOS_DELETE_ALL_OLD_GENERATIONS),
-  });
+  };
+
+  contextBridge.exposeInMainWorld("nixos", context);
 }
