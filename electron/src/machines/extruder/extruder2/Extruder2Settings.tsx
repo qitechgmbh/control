@@ -144,7 +144,7 @@ export function Extruder2SettingsPage() {
                   title="Target Pressure for Tuning"
                   description="The pressure setpoint around which the tuner will oscillate"
                   min={0}
-                  max={350}
+                  max={40}
                   renderValue={(v) => roundToDecimals(v, 1)}
                   onChange={setInverterTargetPressure}
                 />
@@ -157,7 +157,7 @@ export function Extruder2SettingsPage() {
                   title="Tune Delta"
                   description="Allowed pressure oscillation band around target"
                   min={0.1}
-                  max={10}
+                  max={5}
                   step={0.1}
                   renderValue={(v) => roundToDecimals(v, 1)}
                   onChange={setTuneDelta}
@@ -170,7 +170,7 @@ export function Extruder2SettingsPage() {
                   title="Frequency Step (Hz)"
                   description="Inverter frequency deviation around operating point"
                   min={1}
-                  max={20}
+                  max={5}
                   step={0.5}
                   renderValue={(v) => roundToDecimals(v, 1)}
                   onChange={setFrequencyStepHz}
