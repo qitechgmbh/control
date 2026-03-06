@@ -2,8 +2,12 @@ use crate::minimal_machines::analog_input_test_machine::AnalogInputTestMachine;
 use crate::minimal_machines::digital_input_test_machine::DigitalInputTestMachine;
 use crate::minimal_machines::ip20_test_machine::IP20TestMachine;
 use crate::minimal_machines::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine;
+use crate::minimal_machines::wago_750_430_di_machine::Wago750_430DiMachine;
+use crate::minimal_machines::wago_750_501_test_machine::Wago750_501TestMachine;
+use crate::minimal_machines::wago_750_553_machine::Wago750_553Machine;
 use crate::minimal_machines::wago_ai_test_machine::WagoAiTestMachine;
 use crate::minimal_machines::wago_do_test_machine::WagoDOTestMachine;
+use crate::wago_serial_machine::WagoSerialMachine;
 #[cfg(feature = "mock-machine")]
 use crate::{
     extruder1::mock::ExtruderV2 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
@@ -54,12 +58,12 @@ impl MachineRegistry {
 
     pub fn register<T: MachineNewTrait + 'static>(
         &mut self,
-        machine_identficiation: MachineIdentification,
+        machine_identification: MachineIdentification,
     ) {
         self.type_map.insert(
             TypeId::of::<T>(),
             (
-                machine_identficiation.clone(),
+                machine_identification.clone(),
                 // create a machine construction closure
                 Box::new(|machine_new_params| Ok(Box::new(T::new(machine_new_params)?))),
             ),
@@ -70,7 +74,7 @@ impl MachineRegistry {
         &self,
         machine_new_params: &MachineNewParams,
     ) -> Result<Box<dyn Machine>, anyhow::Error> {
-        // get machiine identification
+        // get machine identification
         let device_identification =
             &machine_new_params
                 .device_group
@@ -142,11 +146,18 @@ lazy_static! {
         mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<WagoDOTestMachine>(WagoDOTestMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<Wago750_501TestMachine>(Wago750_501TestMachine::MACHINE_IDENTIFICATION);
+
         mc.register::<Wago8chDigitalIOTestMachine>(
             Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION,
         );
 
+        mc.register::<WagoSerialMachine>(WagoSerialMachine::MACHINE_IDENTIFICATION);
+
         mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
+        mc.register::<Wago750_430DiMachine>(Wago750_430DiMachine::MACHINE_IDENTIFICATION);
+        mc.register::<Wago750_553Machine>(Wago750_553Machine::MACHINE_IDENTIFICATION);
         mc
     };
 }

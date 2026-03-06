@@ -5,6 +5,7 @@ pub mod wago_750_430;
 pub mod wago_750_455;
 pub mod wago_750_501;
 pub mod wago_750_530;
+pub mod wago_750_553;
 pub mod wago_750_652;
 pub mod wago_750_671;
 pub mod wago_750_672;
