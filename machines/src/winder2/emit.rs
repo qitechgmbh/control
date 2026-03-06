@@ -268,11 +268,11 @@ impl Winder2 {
                     .adaptive
                     .adjustment_distance()
                     .get::<meter>(),
-                adaptive_increase_per_step: self
+                adaptive_change_per_step: self
                     .puller_speed_controller
                     .adaptive
                     .increase_per_step(),
-                adaptive_tolerance_limit: self
+                allowed_diameter_deviation: self
                     .puller_speed_controller
                     .adaptive
                     .tolerance_limit()

@@ -606,7 +606,7 @@ export function useWinder2() {
   const setPullerAdaptiveStepPercent = (percent: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.puller_state.adaptive_increase_per_step = percent;
+        current.data.puller_state.adaptive_change_per_step = percent;
       },
       () =>
         requestPullerSetAdaptiveStepPercent({
@@ -619,7 +619,7 @@ export function useWinder2() {
   const setPullerAdaptiveAcceptedDifference = (mm: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.puller_state.adaptive_tolerance_limit = mm;
+        current.data.puller_state.allowed_diameter_deviation = mm;
       },
       () =>
         requestPullerSetAdaptiveAcceptedDifference({
