@@ -419,7 +419,10 @@ mod tests {
             }
         }
 
-        assert!(completed, "Auto-tuning should complete after sufficient oscillations");
+        assert!(
+            completed,
+            "Auto-tuning should complete after sufficient oscillations"
+        );
         assert!(tuner.is_completed(), "Should be in completed state");
         assert!(tuner.result.is_some(), "Should have a result");
 
@@ -458,7 +461,7 @@ mod tests {
     #[test]
     fn test_autotuner_pressure_oscillation() {
         let config = AutoTuneConfig {
-            tune_delta: 0.5,  // ±0.5 bar
+            tune_delta: 0.5, // ±0.5 bar
             max_power: 1.0,
             max_duration_secs: 3600.0,
         };
@@ -509,7 +512,11 @@ mod tests {
             }
 
             if cycle % 3 == 0 {
-                println!("Pressure cycle {}: progress {}%", cycle, tuner.get_progress_percent());
+                println!(
+                    "Pressure cycle {}: progress {}%",
+                    cycle,
+                    tuner.get_progress_percent()
+                );
             }
         }
 

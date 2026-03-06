@@ -350,7 +350,10 @@ export function useExtruder2() {
     });
   };
 
-  const startPressurePidAutoTune = (tuneDelta: number, frequencyStepHz: number) => {
+  const startPressurePidAutoTune = (
+    tuneDelta: number,
+    frequencyStepHz: number,
+  ) => {
     requestStartPressurePidAutoTune({
       machine_identification_unique: machineIdentification,
       data: {
