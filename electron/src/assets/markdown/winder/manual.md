@@ -518,9 +518,24 @@ All settings such as the position of the spool sides, the winding speed or the f
 
 <br><br>
 
-## 2.3.1 Puller Adaptive Mode
+## 2.3.1 Puller Adaptive Mode (Experimental)
+
+> **⚠ Experimental Feature**
+> The Puller Adaptive Mode is an experimental feature that is still in development. It may cause unexpected behavior and will be improved in future updates. You must explicitly enable it in the settings before it becomes available.
 
 The Puller Adaptive Mode automatically adjusts the puller speed based on live diameter measurements from a connected laser measurement device. This keeps the filament diameter close to the target value without manual speed adjustments.
+
+<br>
+
+**Enabling the feature**
+
+The adaptive puller speed mode is disabled by default. To enable it:
+
+1. Navigate to "Config" in the function bar
+2. Under "Puller", find the **"Adaptive Speed (Experimental)"** toggle
+3. Switch it to **"Enabled"**
+
+Once enabled, the adaptive speed settings and the "Adaptive" regulation mode option on the Control page become available. When disabled, the "Adaptive" option is hidden and only the "Fixed" speed regulation mode can be used.
 
 <br>
 
@@ -528,9 +543,9 @@ The Puller Adaptive Mode automatically adjusts the puller speed based on live di
 
 Before the adaptive mode can work correctly, two things must be set up:
 
-1. **Set the Puller Target Speed manually first.** Adjust the "Puller Target Speed" slider so that the filament diameter is approximately **1.75 mm** (or your desired target diameter). The adaptive algorithm uses this speed as its base and makes small corrections around it. If the base speed is far off, the adaptive mode cannot compensate enough and will not work properly.
+1. **Set the Puller Target Speed manually first.** While in "Fixed" regulation mode, adjust the "Puller Target Speed" slider so that the filament diameter is approximately **1.75 mm** (or your desired target diameter). When you switch to "Adaptive" mode, the current fixed target speed is automatically used as the base speed. The adaptive algorithm makes small corrections around this base speed. If the base speed is far off, the adaptive mode cannot compensate enough and will not work properly. **The base speed can only be changed by switching back to "Fixed" mode, setting a new target speed, and then switching to "Adaptive" mode again.**
 
-2. **Set a Reference Machine.** In the "Config" tab under "Puller → Adaptive Speed → Reference Machine", select the laser measurement machine that provides the diameter readings. Without a reference machine, the adaptive mode has no diameter data to work with and will not make any adjustments.
+2. **Set a Reference Machine.** In the "Config" tab under "Puller → Adaptive Speed → Reference Machine", select the laser measurement machine that provides the diameter readings. Without a reference machine, the adaptive mode has no diameter data to work with and the "Adaptive" option on the Control page will be disabled.
 
 <br>
 
@@ -548,26 +563,30 @@ Adjustments happen in small steps after a configurable distance of filament has 
 
 **Settings**
 
-The following settings can be found under "Config → Puller → Adaptive Speed":
+The following settings can be found under "Config → Puller → Adaptive Speed" (only visible when the experimental feature is enabled):
 
-| Setting                        | Description                                                                                                                                                                                                                   |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Allowed Diameter Deviation** | The acceptable deviation from the target diameter in mm. As long as the measured diameter is within this range, the algorithm considers it "good enough" and does not adjust the speed. A typical value is around 0.02 mm.    |
-| **Max Speed Deviation**        | The maximum percentage the puller speed can deviate from the base speed. This acts as a safety limit — e.g. 25% means the speed will never be adjusted more than 25% above or below the base speed.                          |
-| **Distance Between Steps**     | The minimum distance of filament (in meters) that must be pulled between consecutive speed adjustments. This prevents the algorithm from reacting too quickly and oscillating. A typical starting value is 0.5 m.             |
-| **Change Per Step**            | The size of each speed adjustment as a percentage of the base speed. Smaller values lead to finer, more gradual corrections. A typical starting value is 5%.                                                                 |
-| **Reference Machine**          | The laser measurement machine whose diameter readings are used as input. This must be set for the adaptive mode to function.                                                                                                  |
+| Setting                        | Description                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Allowed Diameter Deviation** | The acceptable deviation from the target diameter in mm. As long as the measured diameter is within this range, the algorithm considers it "good enough" and does not adjust the speed. A typical value is around 0.02 mm.                                                                                                                                                            |
+| **Max Speed Deviation**        | The maximum percentage the puller speed can deviate from the base speed. This acts as a safety limit — e.g. 25% means the speed will never be adjusted more than 25% above or below the base speed. **This setting can only be changed while in "Fixed" speed regulation mode.** When in "Adaptive" mode, the value is locked to prevent unintended changes during active regulation. |
+| **Distance Between Steps**     | The minimum distance of filament (in meters) that must be pulled between consecutive speed adjustments. This prevents the algorithm from reacting too quickly and oscillating. A typical starting value is about the distance between the extruder and the laser sensor.                                                                                                              |
+| **Change Per Step**            | The size of each speed adjustment as a percentage of the base speed. Smaller values lead to finer, more gradual corrections. A typical starting value is 3.5%.                                                                                                                                                                                                                        |
+| **Reference Machine**          | The laser measurement machine whose diameter readings are used as input. This must be set for the adaptive mode to function.                                                                                                                                                                                                                                                          |
 
 <br>
 
 **Step-by-step setup**
 
 1. Navigate to "Config" in the function bar
-2. Under "Puller → Adaptive Speed → Reference Machine", select the laser measurement machine
-3. Go to "Control" and set the "Puller Target Speed" so the filament diameter is approximately 1.75 mm
-4. Adjust the adaptive parameters (Allowed Diameter Deviation, Max Speed Deviation, Distance Between Steps, Change Per Step) to your needs, or keep the defaults
-5. Switch the puller regulation mode to "Diameter" to activate the adaptive mode
-6. Start pulling — the speed will now be adjusted automatically based on the laser measurements
+2. Under "Puller", enable the **"Adaptive Speed (Experimental)"** toggle
+3. Under "Puller → Adaptive Speed → Reference Machine", select the laser measurement machine
+4. Go to "Control" and ensure the regulation mode is set to "Fixed"
+5. Set the "Puller Target Speed" so the filament diameter is approximately 1.75 mm — this will become the base speed for the adaptive algorithm
+6. Optionally adjust the adaptive parameters (Allowed Diameter Deviation, Max Speed Deviation, Distance Between Steps, Change Per Step) to your needs, or keep the defaults. Note that **Max Speed Deviation must be configured while still in "Fixed" mode**
+7. Switch the puller regulation mode to "Adaptive" to activate the adaptive mode
+8. Start pulling — the speed will now be adjusted automatically based on the laser measurements
+
+> **Tip:** If the adaptive mode is not producing the desired results, switch back to "Fixed" mode, adjust the target speed to get closer to the desired diameter, then switch back to "Adaptive" mode. The new target speed will be used as the updated base speed.
 
 <br>
 

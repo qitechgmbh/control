@@ -1,6 +1,7 @@
 import React from "react";
 import { useWinder2 } from "./useWinder";
 import { winder2 } from "@/machines/properties";
+import { getWinder2AdaptivePullerSpeed } from "./winder2Config";
 
 import { PresetsPage } from "@/components/preset/PresetsPage";
 import { Preset } from "@/lib/preset/preset";
@@ -202,7 +203,13 @@ export function Winder2PresetsPage() {
     setTraverseStepSize(preset.data?.traverse_state?.step_size ?? 1.75);
     setTraversePadding(preset.data?.traverse_state?.padding ?? 0.88);
 
-    setPullerRegulationMode(preset.data?.puller_state?.regulation ?? "Speed");
+    const presetRegulation = preset.data?.puller_state?.regulation ?? "Speed";
+    const adaptivePullerEnabled = getWinder2AdaptivePullerSpeed();
+    setPullerRegulationMode(
+      presetRegulation === "Diameter" && !adaptivePullerEnabled
+        ? "Speed"
+        : presetRegulation,
+    );
     setPullerForward(preset.data?.puller_state?.forward ?? true);
     setPullerTargetSpeed(preset.data?.puller_state?.target_speed ?? 1.0);
     setPullerGearRatio(preset.data?.puller_state?.gear_ratio ?? "OneToOne");
