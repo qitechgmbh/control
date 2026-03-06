@@ -190,7 +190,7 @@ impl PidAutoTuner {
         }
 
         // Check if we have enough peaks to calculate PID parameters
-        if self.peaks.len() >= 12 {
+        if self.peaks.len() >= 20 {
             self.calculate_pid();
             if self.state == AutoTuneState::Completed {
                 return (0.0, true);
@@ -314,8 +314,8 @@ impl PidAutoTuner {
             AutoTuneState::Completed => 100.0,
             AutoTuneState::NotStarted | AutoTuneState::Failed => 0.0,
             AutoTuneState::Running => {
-                // Uses 12 peaks as the completion threshold
-                let progress = (self.peaks.len() as f64 / 12.0) * 100.0;
+                // Uses 20 peaks (10 full oscillation cycles) as the completion threshold
+                let progress = (self.peaks.len() as f64 / 20.0) * 100.0;
                 progress.min(99.0)
             }
         }

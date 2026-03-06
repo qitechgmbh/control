@@ -48,7 +48,7 @@ impl MachineApi for ExtruderV2 {
             Mutation::StartPressurePidAutoTune(_config) => {
                 tracing::info!("StartPressurePidAutoTune ignored on mock machine");
             }
-            Mutation::StopPressurePidAutoTune => {
+            Mutation::StopPressurePidAutoTune(_) => {
                 tracing::info!("StopPressurePidAutoTune ignored on mock machine");
             }
         }
