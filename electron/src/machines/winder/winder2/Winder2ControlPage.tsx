@@ -277,6 +277,8 @@ export function Winder2ControlPage() {
                 Diameter: {
                   children: "Adaptive",
                   icon: "lu:Brain",
+                  disabled:
+                    !state?.puller_state?.adaptive_reference_machine,
                 },
               }}
               onChange={(value) => {
@@ -288,6 +290,15 @@ export function Winder2ControlPage() {
                 ) {
                   const currentTarget = state?.puller_state?.target_speed ?? 0;
                   setPullerAdaptiveBaseSpeed(currentTarget);
+                }
+                // When switching back to fixed mode, seed the target speed from
+                // the current puller speed so there is no jump.
+                if (
+                  value === "Speed" &&
+                  state?.puller_state?.regulation !== "Speed"
+                ) {
+                  const currentSpeed = pullerSpeed.current?.value ?? 0;
+                  setPullerTargetSpeed(currentSpeed);
                 }
                 setPullerRegulationMode(value);
               }}
