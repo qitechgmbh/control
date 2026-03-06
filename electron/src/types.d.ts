@@ -73,19 +73,11 @@ interface NixOSGeneration {
 }
 
 interface NixOSContext {
-  listGenerations: () => Promise<{
-    success: boolean;
-    generations: NixOSGeneration[];
-    error?: string;
-  }>;
-  setGeneration: (
-    generationId: string,
-  ) => Promise<{ success: boolean; error?: string }>;
-  deleteGeneration: (
-    generationId: string,
-  ) => Promise<{ success: boolean; error?: string }>;
-    deleteAllOldGenerations: (
-  ) => Promise<{ success: boolean; error?: string }>;
+  isNixOSAvailable: bool;
+  listGenerations: () => Promise<NixOSGeneration[]>;
+  setGeneration: (generationId: string) => Promise<void>;
+  deleteGeneration: (generationId: string) => Promise<void>;
+  deleteAllOldGenerations: () => Promise<void>;
 }
 declare interface Window {
   themeMode: ThemeModeContext;
