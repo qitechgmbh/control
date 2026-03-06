@@ -560,17 +560,12 @@ export function ChooseVersionPage() {
       <SectionTitle title="Installed Versions"></SectionTitle>
 
       {nixosError && (
-        <span className="w-max">
+        <span className="w-full">
           <Alert title="Error" variant="error">
             {nixosError}
           </Alert>
         </span>
       )}
-
-      <DeleteAllButton
-        onDeleteAll={() => handleDeleteAllOldGeneration()}
-        isLoading={deleteAllActionLoading} //DOTO: Set the Variable to true when it ist loading
-      />
 
       {nixosGenerations !== undefined && nixosGenerations.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -589,6 +584,11 @@ export function ChooseVersionPage() {
         <LoadingSpinner />
       )}
       {nixosGenerations?.length === 0 && <>No NixOS generations found</>}
+
+      <DeleteAllButton
+        onDeleteAll={() => handleDeleteAllOldGeneration()}
+        isLoading={deleteAllActionLoading}
+      />
     </Page>
   );
 }
@@ -661,15 +661,14 @@ type DeleteAllButtonProps = {
 };
 function DeleteAllButton({ isLoading, onDeleteAll }: DeleteAllButtonProps) {
   return (
-    <div className="flex gap-2">
-      <TouchButton
-        variant="destructive"
-        disabled={isLoading}
-        onClick={onDeleteAll}
-      >
-        {isLoading ? <LoadingSpinner /> : "Delete All Versions"}
-      </TouchButton>
-    </div>
+    <TouchButton
+      className="w-full"
+      variant="destructive"
+      disabled={isLoading}
+      onClick={onDeleteAll}
+    >
+      {isLoading && <LoadingSpinner />} Delete All Versions
+    </TouchButton>
   );
 }
 
