@@ -364,14 +364,14 @@ export function Winder2SettingPage() {
           <ControlCard title="Adaptive Speed">
             <Label label="Allowed Diameter Deviation">
               <EditValue
-                value={state?.puller_state?.adaptive_tolerance_limit}
+                value={state?.puller_state?.allowed_diameter_deviation}
                 title={"Allowed Diameter Deviation"}
                 unit="mm"
                 step={0.01}
                 min={0}
                 max={5}
                 defaultValue={
-                  defaultState?.puller_state?.adaptive_tolerance_limit
+                  defaultState?.puller_state?.allowed_diameter_deviation
                 }
                 renderValue={(value) => roundToDecimals(value, 2)}
                 onChange={(value) => setPullerAdaptiveAcceptedDifference(value)}
@@ -415,10 +415,10 @@ export function Winder2SettingPage() {
                 }
               />
             </Label>
-            <Label label="Increase Per Step">
+            <Label label="Change Per Step">
               <EditValue
                 value={fractionToPercent(
-                  state?.puller_state?.adaptive_increase_per_step,
+                  state?.puller_state?.adaptive_change_per_step,
                 )}
                 title={"Increase Per Step"}
                 unit="%"
@@ -427,7 +427,7 @@ export function Winder2SettingPage() {
                 max={10}
                 defaultValue={
                   fractionToPercent(
-                    defaultState?.puller_state?.adaptive_increase_per_step,
+                    defaultState?.puller_state?.adaptive_change_per_step,
                   )
                 }
                 renderValue={(value) => roundToDecimals(value, 1)}

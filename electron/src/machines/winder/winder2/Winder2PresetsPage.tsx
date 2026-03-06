@@ -105,7 +105,7 @@ const previewEntries: PresetPreviewEntries<Winder2> = [
     name: "Puller Adaptive Step Size",
     unit: "%",
     renderValue: (data: Winder2) =>
-      data.puller_state?.adaptive_increase_per_step?.toFixed(1),
+      data.puller_state?.adaptive_change_per_step?.toFixed(1),
   },
   previewSeparator,
   {

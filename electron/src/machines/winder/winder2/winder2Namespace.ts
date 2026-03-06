@@ -142,8 +142,8 @@ export const pullerStateSchema = z.object({
   adaptive_speed_base: z.number(),
   adaptive_speed_delta_max: z.number(),
   adaptive_adjustment_distance: z.number(),
-  adaptive_increase_per_step: z.number(),
-  adaptive_tolerance_limit: z.number(),
+  adaptive_change_per_step: z.number(),
+  allowed_diameter_deviation: z.number(),
   adaptive_reference_machine: machineIdentificationUniqueSchema.nullable(),
 });
 

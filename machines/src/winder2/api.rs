@@ -235,9 +235,9 @@ pub struct PullerState {
     /// Minimum meters between consecutive adjustments
     pub adaptive_adjustment_distance: f64,
     /// Step size per adjustment as a percentage of base speed (0.0–100.0)
-    pub adaptive_increase_per_step: f64,
+    pub adaptive_change_per_step: f64,
     /// Inner deadzone: max deviation from target (mm) that requires no correction
-    pub adaptive_tolerance_limit: f64,
+    pub allowed_diameter_deviation: f64,
     pub adaptive_reference_machine: Option<MachineIdentificationUnique>,
 }
 
