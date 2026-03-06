@@ -18,7 +18,7 @@ use smol::block_on;
 
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait,
-    get_ethercat_device, validate_no_role_dublicates, validate_same_machine_identification_unique,
+    get_ethercat_device, validate_no_role_duplicates, validate_same_machine_identification_unique,
 };
 use super::{MyMachine, api::MyMachineNamespace};
 
@@ -47,7 +47,7 @@ impl MachineNewTrait for MyMachine {
             .map(|d| d.clone())
             .collect::<Vec<_>>();
         validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_dublicates(&device_identification)?;
+        validate_no_role_duplicates(&device_identification)?;
 
         // --- Require EtherCAT hardware (mandatory for EtherCAT machines) ----
         let hardware = match &params.hardware {
