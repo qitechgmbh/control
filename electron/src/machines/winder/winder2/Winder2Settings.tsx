@@ -16,6 +16,10 @@ import {
   WINDER2_TRAVERSE_MAX_XL,
 } from "./winder2Config";
 
+function fractionToPercent(value: number | null | undefined) {
+  return value == null ? undefined : value * 100;
+}
+
 export function Winder2SettingPage() {
   const [xlMode, setXlMode] = useState(getWinder2XLMode());
 
@@ -358,10 +362,10 @@ export function Winder2SettingPage() {
           </Label>
 
           <ControlCard title="Adaptive Speed">
-            <Label label="Diameter Tolerance">
+            <Label label="Allowed Diameter Deviation">
               <EditValue
                 value={state?.puller_state?.adaptive_tolerance_limit}
-                title={"Diameter Tolerance"}
+                title={"Allowed Diameter Deviation"}
                 unit="mm"
                 step={0.01}
                 min={0}
@@ -375,14 +379,18 @@ export function Winder2SettingPage() {
             </Label>
             <Label label="Max Speed Deviation">
               <EditValue
-                value={state?.puller_state?.adaptive_speed_delta_max}
+                value={fractionToPercent(
+                  state?.puller_state?.adaptive_speed_delta_max,
+                )}
                 title={"Max Speed Deviation"}
                 unit="%"
                 step={0.5}
                 min={0}
                 max={50}
                 defaultValue={
-                  defaultState?.puller_state?.adaptive_speed_delta_max
+                  fractionToPercent(
+                    defaultState?.puller_state?.adaptive_speed_delta_max,
+                  )
                 }
                 renderValue={(value) => roundToDecimals(value, 1)}
                 onChange={(value) =>
@@ -409,14 +417,18 @@ export function Winder2SettingPage() {
             </Label>
             <Label label="Increase Per Step">
               <EditValue
-                value={state?.puller_state?.adaptive_increase_per_step}
+                value={fractionToPercent(
+                  state?.puller_state?.adaptive_increase_per_step,
+                )}
                 title={"Increase Per Step"}
                 unit="%"
                 step={0.1}
                 min={0.1}
                 max={10}
                 defaultValue={
-                  defaultState?.puller_state?.adaptive_increase_per_step
+                  fractionToPercent(
+                    defaultState?.puller_state?.adaptive_increase_per_step,
+                  )
                 }
                 renderValue={(value) => roundToDecimals(value, 1)}
                 onChange={(value) => setPullerAdaptiveStepPercent(value / 100)}
