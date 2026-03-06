@@ -133,7 +133,6 @@ pub enum Mutation {
     SetMode(Mode),
 
     // Set puller adaptive reference machine
-    SetPullerAdaptiveSpeedBase(f64),
     /// Maximum speed change as a percentage of base speed (0.0–100.0)
     SetPullerAdaptiveMaxSpeedChangePercent(f64),
     /// Minimum meters between consecutive adjustments
@@ -229,7 +228,6 @@ pub struct PullerState {
     /// gear ratio for winding speed
     pub gear_ratio: GearRatio,
 
-    pub adaptive_speed_base: f64,
     /// Maximum speed change as a percentage of base speed (0.0–100.0)
     pub adaptive_speed_delta_max: f64,
     /// Minimum meters between consecutive adjustments
@@ -380,7 +378,6 @@ impl MachineApi for Winder2 {
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
 
             // puller adaptive speed algorithm
-            Mutation::SetPullerAdaptiveSpeedBase(v) => self.puller_set_adaptive_speed_base(v),
             Mutation::SetPullerAdaptiveMaxSpeedChangePercent(v) => {
                 self.puller_set_adaptive_max_speed_change_percent(v)
             }

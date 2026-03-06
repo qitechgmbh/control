@@ -48,7 +48,6 @@ impl MachineApi for Winder2 {
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
 
             // puller adaptive speed algorithm
-            Mutation::SetPullerAdaptiveSpeedBase(_) => self.emit_state(),
             Mutation::SetPullerAdaptiveMaxSpeedChangePercent(_) => self.emit_state(),
             Mutation::SetPullerAdaptiveAdjustmentIntervalMeters(_) => self.emit_state(),
             Mutation::SetPullerAdaptiveStepPercent(_) => self.emit_state(),

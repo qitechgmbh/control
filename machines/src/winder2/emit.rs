@@ -257,21 +257,13 @@ impl Winder2 {
                     .get::<meter_per_minute>(),
                 forward: self.puller_speed_controller.forward,
                 gear_ratio: self.puller_speed_controller.gear_ratio,
-                adaptive_speed_base: self
-                    .puller_speed_controller
-                    .adaptive
-                    .speed_base()
-                    .get::<meter_per_minute>(),
                 adaptive_speed_delta_max: self.puller_speed_controller.adaptive.speed_delta_max(),
                 adaptive_adjustment_distance: self
                     .puller_speed_controller
                     .adaptive
                     .adjustment_distance()
                     .get::<meter>(),
-                adaptive_change_per_step: self
-                    .puller_speed_controller
-                    .adaptive
-                    .increase_per_step(),
+                adaptive_change_per_step: self.puller_speed_controller.adaptive.increase_per_step(),
                 allowed_diameter_deviation: self
                     .puller_speed_controller
                     .adaptive
@@ -513,12 +505,6 @@ impl Winder2 {
 // Winder2 Extension
 #[cfg(not(feature = "mock-machine"))]
 impl Winder2 {
-    pub fn puller_set_adaptive_speed_base(&mut self, value: f64) {
-        let speed = Velocity::new::<meter_per_minute>(value);
-        self.puller_speed_controller.adaptive.set_speed_base(speed);
-        self.emit_state();
-    }
-
     pub fn puller_set_adaptive_max_speed_change_percent(&mut self, value: f64) {
         self.puller_speed_controller
             .adaptive

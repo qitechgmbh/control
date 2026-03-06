@@ -85,12 +85,6 @@ const previewEntries: PresetPreviewEntries<Winder2> = [
     renderValue: (data: Winder2) => data.puller_state?.target_speed?.toFixed(2),
   },
   {
-    name: "Puller Adaptive Algorithm Base Speed",
-    unit: "m/min",
-    renderValue: (data: Winder2) =>
-      data.puller_state?.adaptive_speed_base?.toFixed(1),
-  },
-  {
     name: "Puller Adaptive Max Speed Change",
     unit: "%",
     renderValue: (data: Winder2) =>

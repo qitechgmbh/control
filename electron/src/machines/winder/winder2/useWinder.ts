@@ -527,11 +527,6 @@ export function useWinder2() {
   };
 
   // more requests for puller
-  const { request: requestPullerSetAdaptiveSpeedBase } = useMachineMutation(
-    z.object({
-      SetPullerAdaptiveSpeedBase: z.number(),
-    }),
-  );
   const { request: requestPullerSetAdaptiveMaxSpeedChangePercent } =
     useMachineMutation(
       z.object({
@@ -564,19 +559,6 @@ export function useWinder2() {
     );
 
   // more boilerplate junk setters from requests
-  const setPullerAdaptiveBaseSpeed = (speed: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.puller_state.adaptive_speed_base = speed;
-      },
-      () =>
-        requestPullerSetAdaptiveSpeedBase({
-          machine_identification_unique: machineIdentification,
-          data: { SetPullerAdaptiveSpeedBase: speed },
-        }),
-    );
-  };
-
   const setPullerAdaptiveMaxSpeedChangePercent = (percent: number) => {
     updateStateOptimistically(
       (current) => {
@@ -731,7 +713,6 @@ export function useWinder2() {
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
 
     // new stuff
-    setPullerAdaptiveBaseSpeed,
     setPullerAdaptiveMaxSpeedChangePercent,
     setPullerAdaptiveAdjustmentIntervalMeters,
     setPullerAdaptiveStepPercent,
