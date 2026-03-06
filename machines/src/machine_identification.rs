@@ -5,7 +5,7 @@ use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTI
 use serde::Deserialize;
 use serde::Serialize;
 
-/// Identifies a spacifi machine
+/// Identifies a specific machine
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct MachineIdentificationUnique {
     pub machine_identification: MachineIdentification,
