@@ -64,15 +64,15 @@ impl PullerSpeedController {
 
         let mut adaptive = AdaptiveSpeedAlgorithm::default();
         adaptive.set_speed_base(target_speed);
-        adaptive.set_speed_delta_max(20.0);
-        adaptive.set_increase_per_step(0.1);
+        adaptive.set_speed_delta_max(0.25);
+        adaptive.set_increase_per_step(0.05);
         adaptive.set_tolerance_limit(Length::new::<millimeter>(0.02));
-        adaptive.set_adjustment_distance(Length::new::<meter>(20.0));
+        adaptive.set_adjustment_distance(Length::new::<meter>(0.5));
 
         Self {
             enabled: false,
             target_speed,
-            adaptive: AdaptiveSpeedAlgorithm::default(),
+            adaptive,
             regulation_mode: PullerRegulationMode::Speed,
             forward: true,
             gear_ratio: GearRatio::default(),
