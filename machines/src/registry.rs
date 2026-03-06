@@ -73,7 +73,7 @@ impl MachineRegistry {
         &self,
         machine_new_params: &MachineNewParams,
     ) -> Result<Box<dyn Machine>, anyhow::Error> {
-        // get machiine identification
+        // get machine identification
         let device_identification =
             &machine_new_params
                 .device_group
