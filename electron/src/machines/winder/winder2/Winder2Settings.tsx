@@ -378,6 +378,11 @@ export function Winder2SettingPage() {
               />
             </Label>
             <Label label="Max Speed Deviation">
+              {state?.puller_state?.regulation === "Diameter" && (
+                <span className="text-sm text-muted-foreground">
+                  Only changeable in fixed mode
+                </span>
+              )}
               <EditValue
                 value={fractionToPercent(
                   state?.puller_state?.adaptive_speed_delta_max,
@@ -396,6 +401,7 @@ export function Winder2SettingPage() {
                 onChange={(value) =>
                   setPullerAdaptiveMaxSpeedChangePercent(value / 100)
                 }
+                disabled={state?.puller_state?.regulation === "Diameter"}
               />
             </Label>
             <Label label="Distance Between Steps">

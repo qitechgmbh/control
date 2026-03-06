@@ -325,17 +325,17 @@ export function Winder2ControlPage() {
 
           {state?.puller_state?.regulation === "Diameter" && (
             <Label label="Base Speed">
-              <EditValue
-                value={state?.puller_state?.adaptive_speed_base}
-                title={"Base Speed"}
-                unit="m/min"
-                step={0.1}
-                min={0}
-                max={maxTargetSpeed}
-                defaultValue={defaultState?.puller_state?.adaptive_speed_base}
-                renderValue={(value) => roundToDecimals(value, 1)}
-                onChange={(value) => setPullerAdaptiveBaseSpeed(value)}
-              />
+              <div className="flex flex-row items-center gap-2 py-4">
+                <span className="font-mono text-4xl font-bold">
+                  {state?.puller_state?.adaptive_speed_base != null
+                    ? roundToDecimals(
+                        state.puller_state.adaptive_speed_base,
+                        1,
+                      )
+                    : "–"}
+                </span>
+                <span>m/min</span>
+              </div>
             </Label>
           )}
         </ControlCard>
