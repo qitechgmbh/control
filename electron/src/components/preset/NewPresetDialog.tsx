@@ -5,13 +5,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { TouchButton } from "../touch/TouchButton";
 import { DialogHeader } from "../ui/dialog";
 import { Icon } from "../Icon";
 import { Separator } from "../ui/separator";
 import { PresetPreviewEntries, PresetPreviewTable } from "./PresetPreviewTable";
 import { Input } from "../ui/input";
+import { TouchKeyboard } from "../touch/TouchKeyboard";
 
 export type NewPresetDialogProps<T> = {
   currentState?: T;
@@ -24,27 +25,120 @@ export function NewPresetDialog<T>({
   onSave,
   previewEntries,
 }: NewPresetDialogProps<T>) {
-  const KEYBOARD_ROWS = ["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [keyboardPosition, setKeyboardPosition] = useState({ left: 0, top: 0 });
+  const inputRef = useRef<HTMLInputElement>(null);
+  const inputContainerRef = useRef<HTMLDivElement>(null);
+  const keyboardRef = useRef<HTMLDivElement>(null);
 
   const handleSave = () => {
     setOpen(false);
+    setKeyboardOpen(false);
     setName("");
     onSave(name);
   };
 
-  const appendCharacter = (char: string) => {
-    setName((current) => current + char);
+  const ensureInputFocus = () => {
+    if (inputRef.current && document.activeElement !== inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
+  const updateCursorPosition = (position: number) => {
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.setSelectionRange(position, position);
+      }
+    }, 0);
+  };
+
+  const getSelection = () => {
+    const start = inputRef.current?.selectionStart ?? name.length;
+    const end = inputRef.current?.selectionEnd ?? name.length;
+    return { start, end };
+  };
+
+  const insertText = (value: string) => {
+    ensureInputFocus();
+    const { start, end } = getSelection();
+    const newValue = name.slice(0, start) + value + name.slice(end);
+    setName(newValue);
+    updateCursorPosition(start + value.length);
   };
 
   const deleteCharacter = () => {
-    setName((current) => current.slice(0, -1));
+    ensureInputFocus();
+    const { start, end } = getSelection();
+    if (start !== end) {
+      setName(name.slice(0, start) + name.slice(end));
+      updateCursorPosition(start);
+      return;
+    }
+    if (start === 0) return;
+    setName(name.slice(0, start - 1) + name.slice(end));
+    updateCursorPosition(start - 1);
   };
 
   const clearName = () => {
     setName("");
+    updateCursorPosition(0);
   };
+
+  const moveCursorLeft = () => {
+    ensureInputFocus();
+    const pos = inputRef.current?.selectionStart ?? 0;
+    updateCursorPosition(Math.max(0, pos - 1));
+  };
+
+  const moveCursorRight = () => {
+    ensureInputFocus();
+    const pos = inputRef.current?.selectionStart ?? 0;
+    updateCursorPosition(Math.min(name.length, pos + 1));
+  };
+
+  const updateKeyboardPosition = useCallback(() => {
+    if (!keyboardOpen || !inputContainerRef.current) return;
+    const rect = inputContainerRef.current.getBoundingClientRect();
+    setKeyboardPosition({
+      left: rect.right + 20,
+      top: rect.top + rect.height / 2,
+    });
+  }, [keyboardOpen]);
+
+  useEffect(() => {
+    if (!open) {
+      setKeyboardOpen(false);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    updateKeyboardPosition();
+  }, [keyboardOpen, updateKeyboardPosition]);
+
+  useEffect(() => {
+    window.addEventListener("resize", updateKeyboardPosition);
+    return () => {
+      window.removeEventListener("resize", updateKeyboardPosition);
+    };
+  }, [updateKeyboardPosition]);
+
+  useEffect(() => {
+    if (!keyboardOpen) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      const insideInput = inputContainerRef.current?.contains(target);
+      const insideKeyboard = keyboardRef.current?.contains(target);
+      if (!insideInput && !insideKeyboard) {
+        setKeyboardOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [keyboardOpen]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -66,42 +160,39 @@ export function NewPresetDialog<T>({
         </DialogHeader>
         <Separator />
 
-        <Input
-          placeholder="New Preset Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full"
-          autoFocus
-        />
-        <div className="flex flex-col gap-2">
-          {KEYBOARD_ROWS.map((row) => (
-            <div key={row} className="grid grid-cols-10 gap-2">
-              {row.split("").map((char) => (
-                <TouchButton
-                  key={char}
-                  className="h-16 py-2 text-lg"
-                  onClick={() => appendCharacter(char)}
-                >
-                  {char}
-                </TouchButton>
-              ))}
-            </div>
-          ))}
-          <div className="grid grid-cols-3 gap-2">
-            <TouchButton className="h-16 py-2 text-lg" onClick={clearName}>
-              Clear
-            </TouchButton>
-            <TouchButton
-              className="h-16 py-2 text-lg"
-              onClick={() => appendCharacter(" ")}
-            >
-              Space
-            </TouchButton>
-            <TouchButton className="h-16 py-2 text-lg" onClick={deleteCharacter}>
-              Backspace
-            </TouchButton>
-          </div>
+        <div ref={inputContainerRef}>
+          <Input
+            ref={inputRef}
+            placeholder="New Preset Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onFocus={() => setKeyboardOpen(true)}
+            className="w-full"
+            autoFocus
+          />
         </div>
+
+        {keyboardOpen && open && (
+          <div
+            ref={keyboardRef}
+            className="bg-background fixed z-[60] mx-8 flex w-min flex-col gap-6 rounded-2xl border p-6 shadow-2xl"
+            style={{
+              left: `${keyboardPosition.left}px`,
+              top: `${keyboardPosition.top}px`,
+              transform: "translateY(-50%)",
+            }}
+          >
+            <TouchKeyboard
+              onKey={insertText}
+              onSpace={() => insertText(" ")}
+              onDelete={deleteCharacter}
+              onClear={clearName}
+              onCursorLeft={moveCursorLeft}
+              onCursorRight={moveCursorRight}
+            />
+          </div>
+        )}
+
         <div className="flex flex-col gap-6 text-sm">
           <span>Current Settings:</span>
           <PresetPreviewTable entries={previewEntries} data={currentState} />
