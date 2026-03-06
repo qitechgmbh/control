@@ -139,7 +139,6 @@ export const pullerStateSchema = z.object({
   gear_ratio: gearRatioSchema,
 
   // properties of adaptive speed mode
-  adaptive_speed_base: z.number(),
   adaptive_speed_delta_max: z.number(),
   adaptive_adjustment_distance: z.number(),
   adaptive_change_per_step: z.number(),

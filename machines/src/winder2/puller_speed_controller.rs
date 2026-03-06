@@ -63,7 +63,6 @@ impl PullerSpeedController {
         let speed = Velocity::new::<meter_per_minute>(50.0);
 
         let mut adaptive = AdaptiveSpeedAlgorithm::default();
-        adaptive.set_speed_base(target_speed);
         adaptive.set_speed_delta_max(0.33);
         adaptive.set_increase_per_step(0.033);
         adaptive.set_tolerance_limit(Length::new::<millimeter>(0.01));
@@ -94,7 +93,12 @@ impl PullerSpeedController {
         self.target_speed = target;
     }
 
-    pub const fn set_regulation_mode(&mut self, regulation: PullerRegulationMode) {
+    pub fn set_regulation_mode(&mut self, regulation: PullerRegulationMode) {
+        // Reset adaptive modulation when switching to Diameter mode
+        // so it starts from the current target_speed without jumps
+        if matches!(regulation, PullerRegulationMode::Diameter) {
+            self.adaptive.reset_modulation();
+        }
         self.regulation_mode = regulation;
     }
 
@@ -114,7 +118,7 @@ impl PullerSpeedController {
         let base_speed = match self.enabled {
             true => match self.regulation_mode {
                 PullerRegulationMode::Speed => self.target_speed,
-                PullerRegulationMode::Diameter => self.adaptive.compute(),
+                PullerRegulationMode::Diameter => self.adaptive.compute(self.target_speed),
             },
             false => Velocity::ZERO,
         };
@@ -174,7 +178,6 @@ pub enum PullerRegulationMode {
 #[derive(Debug, Clone)]
 pub struct AdaptiveSpeedAlgorithm {
     // config
-    speed_base: Velocity,
     speed_delta_max: f64,
     increase_per_step: f64,
     tolerance_limit: Length,
@@ -189,7 +192,6 @@ pub struct AdaptiveSpeedAlgorithm {
 impl Default for AdaptiveSpeedAlgorithm {
     fn default() -> Self {
         Self {
-            speed_base: Velocity::ZERO,
             speed_delta_max: 0.0,
             increase_per_step: 0.0,
             adjustment_distance: Length::ZERO,
@@ -203,9 +205,9 @@ impl Default for AdaptiveSpeedAlgorithm {
 
 // public interface
 impl AdaptiveSpeedAlgorithm {
-    pub fn compute(&self) -> Velocity {
+    pub fn compute(&self, base_speed: Velocity) -> Velocity {
         let factor = 1.0 + self.modulation * self.speed_delta_max;
-        (self.speed_base * factor).max(Velocity::ZERO)
+        (base_speed * factor).max(Velocity::ZERO)
     }
 
     pub fn update_with_measurement(
@@ -255,14 +257,6 @@ impl AdaptiveSpeedAlgorithm {
 
 // getters + setters
 impl AdaptiveSpeedAlgorithm {
-    pub fn speed_base(&self) -> Velocity {
-        self.speed_base
-    }
-
-    pub fn set_speed_base(&mut self, value: Velocity) {
-        self.speed_base = value.max(Velocity::ZERO);
-    }
-
     pub fn speed_delta_max(&self) -> f64 {
         self.speed_delta_max
     }
@@ -298,5 +292,11 @@ impl AdaptiveSpeedAlgorithm {
     /// Current modulation level in [-1.0, 1.0].
     pub fn modulation(&self) -> f64 {
         self.modulation
+    }
+
+    /// Reset modulation to zero so the algorithm starts fresh from the base speed.
+    pub fn reset_modulation(&mut self) {
+        self.modulation = 0.0;
+        self.distance_since_last_adjustment = Length::ZERO;
     }
 }

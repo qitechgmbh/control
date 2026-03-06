@@ -61,9 +61,6 @@ export function Winder2ControlPage() {
     setSpoolAutomaticAction,
     isLoading,
     isDisabled,
-
-    // new stuff
-    setPullerAdaptiveBaseSpeed,
   } = useWinder2();
 
   // Calculate max speed based on gear ratio
@@ -283,21 +280,12 @@ export function Winder2ControlPage() {
                         children: "Adaptive",
                         icon: "lu:Brain",
                         disabled:
-                          !state?.puller_state?.adaptive_reference_machine,
+                          state?.puller_state?.adaptive_reference_machine,
                       },
                     }
                   : {}),
               }}
               onChange={(value) => {
-                // When switching to adaptive mode, seed the base speed from the
-                // current fixed target speed so there is no jump.
-                if (
-                  value === "Diameter" &&
-                  state?.puller_state?.regulation !== "Diameter"
-                ) {
-                  const currentTarget = state?.puller_state?.target_speed ?? 0;
-                  setPullerAdaptiveBaseSpeed(currentTarget);
-                }
                 // When switching back to fixed mode, seed the target speed from
                 // the current puller speed so there is no jump.
                 if (
@@ -334,8 +322,8 @@ export function Winder2ControlPage() {
             <Label label="Base Speed">
               <div className="flex flex-row items-center gap-2 py-4">
                 <span className="font-mono text-4xl font-bold">
-                  {state?.puller_state?.adaptive_speed_base != null
-                    ? roundToDecimals(state.puller_state.adaptive_speed_base, 1)
+                  {state?.puller_state?.target_speed != null
+                    ? roundToDecimals(state.puller_state.target_speed, 1)
                     : "–"}
                 </span>
                 <span>m/min</span>
