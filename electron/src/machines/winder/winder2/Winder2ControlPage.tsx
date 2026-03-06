@@ -15,6 +15,7 @@ import { StatusBadge } from "@/control/StatusBadge";
 import { useWinder2 } from "./useWinder";
 import {
   Mode,
+  PullerRegulation,
   SpoolAutomaticActionMode,
   getGearRatioMultiplier,
 } from "./winder2Namespace";
@@ -29,10 +30,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getWinder2TraverseMax } from "./winder2Config";
+import { getWinder2AdaptivePullerSpeed } from "./winder2Config";
 
 export function Winder2ControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
   const traverseMax = getWinder2TraverseMax();
+  const adaptivePullerEnabled = getWinder2AdaptivePullerSpeed();
 
   // use optimistic state
   const {
@@ -265,7 +268,7 @@ export function Winder2ControlPage() {
             renderValue={(value) => roundToDecimals(value, 1)}
           />
           <Label label="Speed Regulation">
-            <SelectionGroup
+            <SelectionGroup<string>
               value={state?.puller_state?.regulation}
               disabled={isDisabled}
               loading={isLoading}
@@ -274,12 +277,16 @@ export function Winder2ControlPage() {
                   children: "Fixed",
                   icon: "lu:Crosshair",
                 },
-                Diameter: {
-                  children: "Adaptive",
-                  icon: "lu:Brain",
-                  disabled:
-                    !state?.puller_state?.adaptive_reference_machine,
-                },
+                ...(adaptivePullerEnabled
+                  ? {
+                      Diameter: {
+                        children: "Adaptive",
+                        icon: "lu:Brain",
+                        disabled:
+                          !state?.puller_state?.adaptive_reference_machine,
+                      },
+                    }
+                  : {}),
               }}
               onChange={(value) => {
                 // When switching to adaptive mode, seed the base speed from the
@@ -300,7 +307,7 @@ export function Winder2ControlPage() {
                   const currentSpeed = pullerSpeed.current?.value ?? 0;
                   setPullerTargetSpeed(currentSpeed);
                 }
-                setPullerRegulationMode(value);
+                setPullerRegulationMode(value as PullerRegulation);
               }}
             />
           </Label>
@@ -328,10 +335,7 @@ export function Winder2ControlPage() {
               <div className="flex flex-row items-center gap-2 py-4">
                 <span className="font-mono text-4xl font-bold">
                   {state?.puller_state?.adaptive_speed_base != null
-                    ? roundToDecimals(
-                        state.puller_state.adaptive_speed_base,
-                        1,
-                      )
+                    ? roundToDecimals(state.puller_state.adaptive_speed_base, 1)
                     : "–"}
                 </span>
                 <span>m/min</span>

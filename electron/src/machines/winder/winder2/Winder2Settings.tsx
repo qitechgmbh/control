@@ -14,7 +14,10 @@ import {
   setWinder2XLMode,
   WINDER2_TRAVERSE_MAX_STANDARD,
   WINDER2_TRAVERSE_MAX_XL,
+  getWinder2AdaptivePullerSpeed,
+  setWinder2AdaptivePullerSpeed,
 } from "./winder2Config";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 function fractionToPercent(value: number | null | undefined) {
   return value == null ? undefined : value * 100;
@@ -22,6 +25,9 @@ function fractionToPercent(value: number | null | undefined) {
 
 export function Winder2SettingPage() {
   const [xlMode, setXlMode] = useState(getWinder2XLMode());
+  const [adaptivePullerSpeed, setAdaptivePullerSpeedState] = useState(
+    getWinder2AdaptivePullerSpeed(),
+  );
 
   const {
     state,
@@ -361,102 +367,137 @@ export function Winder2SettingPage() {
             />
           </Label>
 
-          <ControlCard title="Adaptive Speed">
-            <Label label="Allowed Diameter Deviation">
-              <EditValue
-                value={state?.puller_state?.allowed_diameter_deviation}
-                title={"Allowed Diameter Deviation"}
-                unit="mm"
-                step={0.01}
-                min={0}
-                max={5}
-                defaultValue={
-                  defaultState?.puller_state?.allowed_diameter_deviation
-                }
-                renderValue={(value) => roundToDecimals(value, 2)}
-                onChange={(value) => setPullerAdaptiveAcceptedDifference(value)}
-              />
-            </Label>
-            <Label label="Max Speed Deviation">
-              {state?.puller_state?.regulation === "Diameter" && (
-                <span className="text-sm text-muted-foreground">
-                  Only changeable in fixed mode
-                </span>
-              )}
-              <EditValue
-                value={fractionToPercent(
-                  state?.puller_state?.adaptive_speed_delta_max,
+          <Label label="Adaptive Speed (Experimental)">
+            <SelectionGroupBoolean
+              value={adaptivePullerSpeed}
+              disabled={isDisabled}
+              loading={isLoading}
+              optionFalse={{
+                children: "Disabled",
+                icon: "lu:X",
+              }}
+              optionTrue={{
+                children: "Enabled",
+                icon: "lu:FlaskConical",
+              }}
+              onChange={(value) => {
+                setWinder2AdaptivePullerSpeed(value);
+                setAdaptivePullerSpeedState(value);
+              }}
+            />
+            {adaptivePullerSpeed && (
+              <Alert className="mt-2 border-yellow-500/50 bg-yellow-500/10">
+                <AlertTitle className="text-yellow-600">
+                  Experimental Feature
+                </AlertTitle>
+                <AlertDescription>
+                  This feature is still in development and may cause unexpected
+                  behavior. It will be improved in future updates. Please read
+                  section 2.3.1 in the manual on how to use this feature and
+                  provide feedback to help us improve it.
+                </AlertDescription>
+              </Alert>
+            )}
+          </Label>
+
+          {adaptivePullerSpeed && (
+            <ControlCard title="Adaptive Speed">
+              <Label label="Allowed Diameter Deviation">
+                <EditValue
+                  value={state?.puller_state?.allowed_diameter_deviation}
+                  title={"Allowed Diameter Deviation"}
+                  unit="mm"
+                  step={0.01}
+                  min={0}
+                  max={5}
+                  defaultValue={
+                    defaultState?.puller_state?.allowed_diameter_deviation
+                  }
+                  renderValue={(value) => roundToDecimals(value, 2)}
+                  onChange={(value) =>
+                    setPullerAdaptiveAcceptedDifference(value)
+                  }
+                />
+              </Label>
+              <Label label="Max Speed Deviation">
+                {state?.puller_state?.regulation === "Diameter" && (
+                  <span className="text-muted-foreground text-sm">
+                    Only changeable in fixed mode
+                  </span>
                 )}
-                title={"Max Speed Deviation"}
-                unit="%"
-                step={0.5}
-                min={0}
-                max={50}
-                defaultValue={
-                  fractionToPercent(
+                <EditValue
+                  value={fractionToPercent(
+                    state?.puller_state?.adaptive_speed_delta_max,
+                  )}
+                  title={"Max Speed Deviation"}
+                  unit="%"
+                  step={0.5}
+                  min={0}
+                  max={50}
+                  defaultValue={fractionToPercent(
                     defaultState?.puller_state?.adaptive_speed_delta_max,
-                  )
-                }
-                renderValue={(value) => roundToDecimals(value, 1)}
-                onChange={(value) =>
-                  setPullerAdaptiveMaxSpeedChangePercent(value / 100)
-                }
-                disabled={state?.puller_state?.regulation === "Diameter"}
-              />
-            </Label>
-            <Label label="Distance Between Steps">
-              <EditValue
-                value={state?.puller_state?.adaptive_adjustment_distance}
-                title={"Distance Between Steps"}
-                unit="m"
-                step={0.1}
-                min={0}
-                max={200}
-                defaultValue={
-                  defaultState?.puller_state?.adaptive_adjustment_distance
-                }
-                renderValue={(value) => roundToDecimals(value, 1)}
-                onChange={(value) =>
-                  setPullerAdaptiveAdjustmentIntervalMeters(value)
-                }
-              />
-            </Label>
-            <Label label="Change Per Step">
-              <EditValue
-                value={fractionToPercent(
-                  state?.puller_state?.adaptive_change_per_step,
-                )}
-                title={"Increase Per Step"}
-                unit="%"
-                step={0.1}
-                min={0.1}
-                max={10}
-                defaultValue={
-                  fractionToPercent(
+                  )}
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) =>
+                    setPullerAdaptiveMaxSpeedChangePercent(value / 100)
+                  }
+                  disabled={state?.puller_state?.regulation === "Diameter"}
+                />
+              </Label>
+              <Label label="Distance Between Steps">
+                <EditValue
+                  value={state?.puller_state?.adaptive_adjustment_distance}
+                  title={"Distance Between Steps"}
+                  unit="m"
+                  step={0.1}
+                  min={0}
+                  max={200}
+                  defaultValue={
+                    defaultState?.puller_state?.adaptive_adjustment_distance
+                  }
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) =>
+                    setPullerAdaptiveAdjustmentIntervalMeters(value)
+                  }
+                />
+              </Label>
+              <Label label="Change Per Step">
+                <EditValue
+                  value={fractionToPercent(
+                    state?.puller_state?.adaptive_change_per_step,
+                  )}
+                  title={"Increase Per Step"}
+                  unit="%"
+                  step={0.1}
+                  min={0.1}
+                  max={10}
+                  defaultValue={fractionToPercent(
                     defaultState?.puller_state?.adaptive_change_per_step,
-                  )
-                }
-                renderValue={(value) => roundToDecimals(value, 1)}
-                onChange={(value) => setPullerAdaptiveStepPercent(value / 100)}
-              />
-            </Label>
-            <Label label="Reference Machine">
-              <MachineSelector
-                machines={filteredMachines}
-                selectedMachine={selectedMachine}
-                connectedMachineState={
-                  state?.puller_state.adaptive_reference_machine
-                }
-                setConnectedMachine={(machine) => {
-                  setPullerAdaptiveReferenceMachine(machine);
-                }}
-                clearConnectedMachine={() => {
-                  if (!selectedMachine) return;
-                  setPullerAdaptiveReferenceMachine(null);
-                }}
-              />
-            </Label>
-          </ControlCard>
+                  )}
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) =>
+                    setPullerAdaptiveStepPercent(value / 100)
+                  }
+                />
+              </Label>
+              <Label label="Reference Machine">
+                <MachineSelector
+                  machines={filteredMachines}
+                  selectedMachine={selectedMachine}
+                  connectedMachineState={
+                    state?.puller_state.adaptive_reference_machine
+                  }
+                  setConnectedMachine={(machine) => {
+                    setPullerAdaptiveReferenceMachine(machine);
+                  }}
+                  clearConnectedMachine={() => {
+                    if (!selectedMachine) return;
+                    setPullerAdaptiveReferenceMachine(null);
+                  }}
+                />
+              </Label>
+            </ControlCard>
+          )}
         </ControlCard>
       </ControlGrid>
     </Page>
