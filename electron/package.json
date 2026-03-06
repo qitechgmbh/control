@@ -1,7 +1,7 @@
 {
   "name": "qitech-control-electron",
   "productName": "QiTech Control",
-  "version": "2.4.1",
+  "version": "2.15.0",
   "description": "Next Generation Machine Interface ",
   "main": ".vite/build/main.js",
   "private": true,

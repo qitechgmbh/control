@@ -5,7 +5,7 @@ use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTI
 use serde::Deserialize;
 use serde::Serialize;
 
-/// Identifies a spacifi machine
+/// Identifies a specific machine
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct MachineIdentificationUnique {
     pub machine_identification: MachineIdentification,
@@ -64,6 +64,7 @@ impl MachineIdentification {
             x if x == ANALOG_INPUT_TEST_MACHINE => "analog_input_test_machine".to_string(),
             x if x == WAGO_AI_TEST_MACHINE => "wago_ai_test_machine".to_string(),
             x if x == WAGO_DO_TEST_MACHINE => "wago_do_test_machine".to_string(),
+            x if x == WAGO_750_430_DI_MACHINE => "wago_750_430_di_machine".to_string(),
 
             _ => unreachable!("Unknown machine id"),
         }
@@ -188,6 +189,7 @@ use crate::MACHINE_WAGO_POWER_V1;
 use crate::MACHINE_WINDER_V1;
 use crate::TEST_MACHINE;
 use crate::VENDOR_QITECH;
+use crate::WAGO_750_430_DI_MACHINE;
 use crate::WAGO_AI_TEST_MACHINE;
 use crate::WAGO_DO_TEST_MACHINE;
 

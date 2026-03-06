@@ -1,3 +1,15 @@
+# `2.15.0`
+_02.03.2026_
+
+## General
+- [#1161](https://github.com/qitechgmbh/control/pull/1161), [#1176](https://github.com/qitechgmbh/control/pull/1176),[#1149](https://github.com/qitechgmbh/control/pull/1149) Improved general system stability
+
+- [#1103](https://github.com/qitechgmbh/control/pull/1103) Aquapath now functions in conjunction with other machines
+
+- [#1146](https://github.com/qitechgmbh/control/pull/1146) Added password protection and HTTPS to API
+
+- [#1136](https://github.com/qitechgmbh/control/pull/1136) Improved Machine Initialization
+
 # `2.14.1`
 _26.01.2026_
 

@@ -43,6 +43,9 @@ import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
 import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 
+import { WagoSerialPage } from "@/machines/wago_serial/WagoSerialPage";
+import { WagoSerialControlPage } from "@/machines/wago_serial/WagoSerialControlPage";
+
 import { Mock1ControlPage } from "@/machines/minimal_machines/mock/mock1/Mock1ControlPage";
 import { Mock1GraphPage } from "@/machines/minimal_machines/mock/mock1/Mock1Graph";
 import { Mock1ManualPage } from "@/machines/minimal_machines/mock/mock1/Mock1Manual";
@@ -81,6 +84,10 @@ import { WagoDoTestMachinePage } from "@/machines/minimal_machines/wagodotestmac
 import { WagoDoTestMachineControlPage } from "@/machines/minimal_machines/wagodotestmachine/WagoDoTestMachineControlPage";
 import { Wago8chDioTestMachinePage } from "@/machines/minimal_machines/wago8chdiotestmachine/wago8chDioTestMachinePage";
 import { Wago8chDioTestMachineControlRoute } from "@/machines/minimal_machines/wago8chdiotestmachine/wago8chDioTestMachineControlPage";
+import { Wago750_501TestMachinePage } from "@/machines/minimal_machines/wago750501testmachine/Wago750_501TestMachinePage";
+import { Wago750_501TestMachineControlPage } from "@/machines/minimal_machines/wago750501testmachine/Wago750_501TestMachineControlPage";
+import { Wago750430DiMachinePage } from "@/machines/minimal_machines/wago750430dimachine/Wago750430DiMachinePage";
+import { Wago750430DiMachineControlPage } from "@/machines/minimal_machines/wago750430dimachine/Wago750430DiMachineControlPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -105,6 +112,18 @@ export const wago8chDioTestMachineControlRoute = createRoute({
   getParentRoute: () => wago8chDioTestMachineRoute,
   path: "control",
   component: () => <Wago8chDioTestMachineControlRoute />,
+});
+
+export const wago750430DiMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wago750430dimachine/$serial",
+  component: () => <Wago750430DiMachinePage />,
+});
+
+export const wago750430DiMachineControlRoute = createRoute({
+  getParentRoute: () => wago750430DiMachineSerialRoute,
+  path: "control",
+  component: () => <Wago750430DiMachineControlPage />,
 });
 
 // Leaf route: control page
@@ -426,6 +445,30 @@ export const wagoDoTestMachineControlRoute = createRoute({
   component: () => <WagoDoTestMachineControlPage />,
 });
 
+export const wagoSerialSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wago_serial/$serial",
+  component: () => <WagoSerialPage />,
+});
+
+export const wagoSerialControlRoute = createRoute({
+  getParentRoute: () => wagoSerialSerialRoute,
+  path: "control",
+  component: () => <WagoSerialControlPage />,
+});
+
+export const wago750_501TestMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wago750501testmachine/$serial",
+  component: () => <Wago750_501TestMachinePage />,
+});
+
+export const wago750_501TestMachineControlRoute = createRoute({
+  getParentRoute: () => wago750_501TestMachineSerialRoute,
+  path: "control",
+  component: () => <Wago750_501TestMachineControlPage />,
+});
+
 export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "setup",
@@ -544,6 +587,8 @@ export const rootTree = RootRoute.addChildren([
 
       wagoAiTestMachineSerialRoute.addChildren([wagoAiTestMachineControlRoute]),
 
+      wagoSerialSerialRoute.addChildren([wagoSerialControlRoute]),
+
       digitalInputTestMachineSerialRoute.addChildren([
         digitalInputTestMachineControlRoute,
       ]),
@@ -594,6 +639,14 @@ export const rootTree = RootRoute.addChildren([
       buffer1SerialRoute.addChildren([buffer1ControlRoute]),
 
       wagoDoTestMachineSerialRoute.addChildren([wagoDoTestMachineControlRoute]),
+
+      wago750_501TestMachineSerialRoute.addChildren([
+        wago750_501TestMachineControlRoute,
+      ]),
+
+      wago750430DiMachineSerialRoute.addChildren([
+        wago750430DiMachineControlRoute,
+      ]),
     ]),
   ]),
 ]);
