@@ -24,6 +24,7 @@ export function NewPresetDialog<T>({
   onSave,
   previewEntries,
 }: NewPresetDialogProps<T>) {
+  const KEYBOARD_ROWS = ["1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
 
@@ -31,6 +32,18 @@ export function NewPresetDialog<T>({
     setOpen(false);
     setName("");
     onSave(name);
+  };
+
+  const appendCharacter = (char: string) => {
+    setName((current) => current + char);
+  };
+
+  const deleteCharacter = () => {
+    setName((current) => current.slice(0, -1));
+  };
+
+  const clearName = () => {
+    setName("");
   };
 
   return (
@@ -55,9 +68,40 @@ export function NewPresetDialog<T>({
 
         <Input
           placeholder="New Preset Name"
+          value={name}
           onChange={(e) => setName(e.target.value)}
           className="w-full"
+          autoFocus
         />
+        <div className="flex flex-col gap-2">
+          {KEYBOARD_ROWS.map((row) => (
+            <div key={row} className="grid grid-cols-10 gap-2">
+              {row.split("").map((char) => (
+                <TouchButton
+                  key={char}
+                  className="h-16 py-2 text-lg"
+                  onClick={() => appendCharacter(char)}
+                >
+                  {char}
+                </TouchButton>
+              ))}
+            </div>
+          ))}
+          <div className="grid grid-cols-3 gap-2">
+            <TouchButton className="h-16 py-2 text-lg" onClick={clearName}>
+              Clear
+            </TouchButton>
+            <TouchButton
+              className="h-16 py-2 text-lg"
+              onClick={() => appendCharacter(" ")}
+            >
+              Space
+            </TouchButton>
+            <TouchButton className="h-16 py-2 text-lg" onClick={deleteCharacter}>
+              Backspace
+            </TouchButton>
+          </div>
+        </div>
         <div className="flex flex-col gap-6 text-sm">
           <span>Current Settings:</span>
           <PresetPreviewTable entries={previewEntries} data={currentState} />
