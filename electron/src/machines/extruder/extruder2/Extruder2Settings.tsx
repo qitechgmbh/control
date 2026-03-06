@@ -28,7 +28,7 @@ export function Extruder2SettingsPage() {
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [tuneDelta, setTuneDelta] = useState(1.0);
-  const [frequencyStepHz, setFrequencyStepHz] = useState(5.0);
+  const [frequencyStepHz, setFrequencyStepHz] = useState(2.5);
 
   return (
     <Page>
@@ -166,7 +166,7 @@ export function Extruder2SettingsPage() {
               <Label label="Frequency Step">
                 <EditValue
                   value={frequencyStepHz}
-                  defaultValue={5.0}
+                  defaultValue={2.5}
                   title="Frequency Step (Hz)"
                   description="Inverter frequency deviation around operating point"
                   min={1}
