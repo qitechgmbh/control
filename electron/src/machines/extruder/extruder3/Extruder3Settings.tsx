@@ -177,10 +177,15 @@ export function Extruder3SettingsPage() {
                 />
               </Label>
               <Label label="Actions">
+                {state?.regulation_state.uses_rpm !== false && (
+                  <p className="mb-2 text-sm text-amber-600">
+                    Pressure regulation mode must be active to start auto-tune.
+                  </p>
+                )}
                 <div className="flex gap-4">
                   <button
                     onClick={() => startPressurePidAutoTune(tuneDelta, frequencyStepHz)}
-                    disabled={state?.pid_autotune_state.state === "running"}
+                    disabled={state?.regulation_state.uses_rpm !== false || state?.pid_autotune_state.state === "running"}
                     className="inline-block w-fit rounded bg-blue-600 px-4 py-4 text-base text-white hover:bg-blue-700 disabled:opacity-50"
                   >
                     Start Auto-Tune
@@ -212,24 +217,11 @@ export function Extruder3SettingsPage() {
               </Label>
               {state?.pid_autotune_state.result && (
                 <Label label="Result">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-sm">
-                      Kp: {roundToDecimals(state.pid_autotune_state.result.kp, 4)}&nbsp;&nbsp;
-                      Ki: {roundToDecimals(state.pid_autotune_state.result.ki, 4)}&nbsp;&nbsp;
-                      Kd: {roundToDecimals(state.pid_autotune_state.result.kd, 4)}
-                    </span>
-                    <button
-                      onClick={() => {
-                        const r = state.pid_autotune_state.result!;
-                        setPressurePidKp(r.kp);
-                        setPressurePidKi(r.ki);
-                        setPressurePidKd(r.kd);
-                      }}
-                      className="inline-block w-fit rounded bg-green-600 px-4 py-4 text-base text-white hover:bg-green-700"
-                    >
-                      Apply to PID Settings
-                    </button>
-                  </div>
+                  <span className="text-sm">
+                    Kp: {roundToDecimals(state.pid_autotune_state.result.kp, 4)}&nbsp;&nbsp;
+                    Ki: {roundToDecimals(state.pid_autotune_state.result.ki, 4)}&nbsp;&nbsp;
+                    Kd: {roundToDecimals(state.pid_autotune_state.result.kd, 4)}
+                  </span>
                 </Label>
               )}
             </ControlCard>
