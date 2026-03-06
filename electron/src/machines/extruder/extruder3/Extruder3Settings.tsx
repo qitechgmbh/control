@@ -7,6 +7,7 @@ import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder3 } from "./useExtruder";
 import { ControlGrid } from "@/control/ControlGrid";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function Extruder3SettingsPage() {
   const {
@@ -136,6 +137,16 @@ export function Extruder3SettingsPage() {
               </Label>
             </ControlCard>
             <ControlCard title="Pressure PID Auto-Tune">
+              <Alert className="mt-2 border-yellow-500/50 bg-yellow-500/10">
+                <AlertTitle className="text-yellow-600">
+                  Read the Manual First
+                </AlertTitle>
+                <AlertDescription>
+                  Please read section 2.3.1 Adaptive Pressure PID Auto-Tuning in
+                  the manual for important prerequisites and step-by-step
+                  instructions before using this feature.
+                </AlertDescription>
+              </Alert>
               <Label label="Target Pressure">
                 <EditValue
                   value={state?.pressure_state.target_bar}
@@ -184,8 +195,13 @@ export function Extruder3SettingsPage() {
                 )}
                 <div className="flex gap-4">
                   <button
-                    onClick={() => startPressurePidAutoTune(tuneDelta, frequencyStepHz)}
-                    disabled={state?.regulation_state.uses_rpm !== false || state?.pid_autotune_state.state === "running"}
+                    onClick={() =>
+                      startPressurePidAutoTune(tuneDelta, frequencyStepHz)
+                    }
+                    disabled={
+                      state?.regulation_state.uses_rpm !== false ||
+                      state?.pid_autotune_state.state === "running"
+                    }
                     className="inline-block w-fit rounded bg-blue-600 px-4 py-4 text-base text-white hover:bg-blue-700 disabled:opacity-50"
                   >
                     Start Auto-Tune
@@ -202,25 +218,36 @@ export function Extruder3SettingsPage() {
               <Label label="Status">
                 <div className="flex flex-col gap-2">
                   <span className="text-base capitalize">
-                    {(state?.pid_autotune_state.state ?? "not_started").replace(/_/g, " ")}
+                    {(state?.pid_autotune_state.state ?? "not_started").replace(
+                      /_/g,
+                      " ",
+                    )}
                   </span>
                   <div className="h-3 w-full rounded bg-slate-200">
                     <div
                       className="h-3 rounded bg-blue-500 transition-all"
-                      style={{ width: `${state?.pid_autotune_state.progress ?? 0}%` }}
+                      style={{
+                        width: `${state?.pid_autotune_state.progress ?? 0}%`,
+                      }}
                     />
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    {roundToDecimals(state?.pid_autotune_state.progress ?? 0, 1)}%
+                  <span className="text-muted-foreground text-sm">
+                    {roundToDecimals(
+                      state?.pid_autotune_state.progress ?? 0,
+                      1,
+                    )}
+                    %
                   </span>
                 </div>
               </Label>
               {state?.pid_autotune_state.result && (
                 <Label label="Result">
                   <span className="text-sm">
-                    Kp: {roundToDecimals(state.pid_autotune_state.result.kp, 4)}&nbsp;&nbsp;
-                    Ki: {roundToDecimals(state.pid_autotune_state.result.ki, 4)}&nbsp;&nbsp;
-                    Kd: {roundToDecimals(state.pid_autotune_state.result.kd, 4)}
+                    Kp: {roundToDecimals(state.pid_autotune_state.result.kp, 4)}
+                    &nbsp;&nbsp; Ki:{" "}
+                    {roundToDecimals(state.pid_autotune_state.result.ki, 4)}
+                    &nbsp;&nbsp; Kd:{" "}
+                    {roundToDecimals(state.pid_autotune_state.result.kd, 4)}
                   </span>
                 </Label>
               )}
@@ -394,7 +421,6 @@ export function Extruder3SettingsPage() {
           </ControlGrid>
         </>
       )}
-
     </Page>
   );
 }

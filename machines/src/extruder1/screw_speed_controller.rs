@@ -16,8 +16,8 @@ use units::frequency::hertz;
 use units::pressure::bar;
 
 use crate::{
-    extruder1::{api::PressureAutoTuneConfig, mitsubishi_cs80::MitsubishiCS80Status},
     extruder1::mitsubishi_cs80::{MitsubishiCS80, MotorStatus},
+    extruder1::{api::PressureAutoTuneConfig, mitsubishi_cs80::MitsubishiCS80Status},
 };
 
 #[derive(Debug)]
@@ -260,8 +260,7 @@ impl ScrewSpeedController {
             // ── Auto-tuning (bang-bang relay control) ──────────────────────────
             if let Some(ref mut tuner) = self.pid_autotuner {
                 if tuner.is_running() {
-                    let (duty_cycle, done) =
-                        tuner.update(measured_pressure.get::<bar>(), now);
+                    let (duty_cycle, done) = tuner.update(measured_pressure.get::<bar>(), now);
 
                     if done && tuner.is_completed() {
                         // Automatically apply the tuned PID parameters
@@ -326,11 +325,7 @@ impl ScrewSpeedController {
     /// # Arguments
     /// * `now`    – current timestamp
     /// * `config` – see [`PressureAutoTuneConfig`]
-    pub fn start_pressure_autotune(
-        &mut self,
-        now: Instant,
-        config: PressureAutoTuneConfig,
-    ) {
+    pub fn start_pressure_autotune(&mut self, now: Instant, config: PressureAutoTuneConfig) {
         // Snapshot the current inverter frequency as the relay centre point
         let base_hz = self.inverter.motor_status.frequency.get::<hertz>();
         let step_hz = config.frequency_step_hz;
