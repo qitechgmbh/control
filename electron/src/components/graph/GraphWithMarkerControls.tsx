@@ -56,7 +56,7 @@ function unhighlightAllLabels(container: HTMLElement) {
   });
 }
 
-// Apply or restore overlay styles (avoids React Compiler "mutates immutable" on inline DOM writes)
+// Apply or restore overlay styles
 function setOverlayOverflow(
   container: HTMLElement,
   parent: HTMLElement | null,
@@ -148,7 +148,8 @@ function createMarkerElement(
   label.title = name;
   label.style.position = "absolute";
   label.style.left = `${half}px`;
-  label.style.top = "6px";
+
+  label.style.top = `${plotStartInWrapper + 6}px`;
   label.style.transform = "translateX(-50%)";
   label.style.color = "rgb(30 41 59)";
   label.style.padding = "4px 8px";
@@ -300,9 +301,7 @@ function GraphWithMarkerControlsContent({
       // (avoids "closest" flipping between adjacent points which causes jumping)
       const sorted = [...validValues].sort((a, b) => a.timestamp - b.timestamp);
       const after = sorted.find((p) => p.timestamp >= timestamp);
-      const before = [...sorted]
-        .reverse()
-        .find((p) => p.timestamp <= timestamp);
+      const before = [...sorted].reverse().find((p) => p.timestamp <= timestamp);
 
       if (after && before) {
         if (after.timestamp === before.timestamp) {
@@ -321,10 +320,7 @@ function GraphWithMarkerControlsContent({
       ({ timestamp, name, value, color }) => {
         // Always prefer per-graph interpolation so one shared machine marker
         // lands on the correct Y value in every graph.
-        let markerValue = interpolateValueAtTimestamp(
-          currentTimeSeries,
-          timestamp,
-        );
+        let markerValue = interpolateValueAtTimestamp(currentTimeSeries, timestamp);
 
         // Fallback for legacy markers that only have a stored value.
         if (markerValue === undefined) {
