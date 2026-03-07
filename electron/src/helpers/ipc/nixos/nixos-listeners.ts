@@ -4,56 +4,61 @@ import {
   NIXOS_LIST_GENERATIONS,
   NIXOS_SET_GENERATION,
   NIXOS_DELETE_GENERATION,
+  NIXOS_DELETE_ALL_OLD_GENERATIONS,
+  NIXOS_IS_AVAILABLE,
 } from "./nixos-channels";
 import { NixOSGeneration } from "./nixos-context";
 
 export function addNixOSEventListeners() {
+  ipcMain.handle(NIXOS_IS_AVAILABLE, () => {
+    return new Promise((resolve) => {
+      const process = spawn("nix", ["--version"]);
+      process.on("exit", (code) => resolve(code === 0));
+      process.on("error", (error) => {
+        console.warn("NixOS is not available:", error);
+        resolve(false);
+      });
+    });
+  });
+
   ipcMain.handle(NIXOS_LIST_GENERATIONS, async () => {
     try {
       return await listNixOSGenerations();
     } catch (error) {
       console.error("Failed to list NixOS generations:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        generations: [],
-      };
+      throw error;
     }
   });
 
   ipcMain.handle(NIXOS_SET_GENERATION, async (_, generationId: string) => {
     try {
-      const result = await setNixOSGeneration(generationId);
-      return result;
+      return await setNixOSGeneration(generationId);
     } catch (error) {
       console.error("Failed to set NixOS generation:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
+      throw error;
     }
   });
 
   ipcMain.handle(NIXOS_DELETE_GENERATION, async (_, generationId: string) => {
     try {
-      const result = await deleteNixOSGeneration(generationId);
-      return result;
+      return await deleteNixOSGeneration(generationId);
     } catch (error) {
       console.error("Failed to delete NixOS generation:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
+      throw error;
+    }
+  });
+  ipcMain.handle(NIXOS_DELETE_ALL_OLD_GENERATIONS, async () => {
+    try {
+      return await deleteAllOldNixOSGeneration();
+    } catch (error) {
+      console.error("Failed to delete all  NixOS generations:", error);
+      throw error;
     }
   });
 }
 
-async function listNixOSGenerations(): Promise<{
-  success: boolean;
-  generations: NixOSGeneration[];
-  error?: string;
-}> {
-  return new Promise((resolve) => {
+async function listNixOSGenerations(): Promise<NixOSGeneration[]> {
+  return new Promise((resolve, reject) => {
     // List all generations using nixos-rebuild
     const process = spawn("sudo", ["nixos-rebuild", "list-generations"]);
 
@@ -71,31 +76,18 @@ async function listNixOSGenerations(): Promise<{
     process.on("close", (code) => {
       if (code === 0) {
         const generations = parseNixOSGenerations(stdout);
-        resolve({ success: true, generations });
+        resolve(generations);
       } else {
-        resolve({
-          success: false,
-          generations: [],
-          error: stderr || `Process exited with code ${code}`,
-        });
+        reject(new Error(stderr || `Process exited with code ${code}`));
       }
     });
 
-    process.on("error", (error) => {
-      resolve({
-        success: false,
-        generations: [],
-        error: error instanceof Error ? error.message : String(error),
-      });
-    });
+    process.on("error", reject);
   });
 }
 
-async function setNixOSGeneration(generationId: string): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  return new Promise((resolve) => {
+async function setNixOSGeneration(generationId: string): Promise<void> {
+  return new Promise((resolve, reject) => {
     // Switch to the specified generation using nixos-rebuild
     // Set the generation to be used at next boot, then reboot immediately
     const process = spawn("sudo", [
@@ -117,29 +109,20 @@ async function setNixOSGeneration(generationId: string): Promise<{
 
     process.on("close", (code) => {
       if (code === 0) {
-        resolve({ success: true });
+        resolve();
       } else {
-        resolve({
-          success: false,
-          error: stderr || stdout || `Process exited with code ${code}`,
-        });
+        reject(
+          new Error(stderr || stdout || `Process exited with code ${code}`),
+        );
       }
     });
 
-    process.on("error", (error) => {
-      resolve({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    });
+    process.on("error", reject);
   });
 }
 
-async function deleteNixOSGeneration(generationId: string): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  return new Promise((resolve) => {
+async function deleteNixOSGeneration(generationId: string): Promise<void> {
+  return new Promise((resolve, reject) => {
     // Delete the specified generation using nix-env and update bootloader
     // This is the proper NixOS way to delete specific generations
     const process = spawn("sudo", [
@@ -161,21 +144,48 @@ async function deleteNixOSGeneration(generationId: string): Promise<{
 
     process.on("close", (code) => {
       if (code === 0) {
-        resolve({ success: true });
+        resolve();
       } else {
-        resolve({
-          success: false,
-          error: stderr || stdout || `Process exited with code ${code}`,
-        });
+        reject(
+          new Error(stderr || stdout || `Process exited with code ${code}`),
+        );
       }
     });
 
-    process.on("error", (error) => {
-      resolve({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
+    process.on("error", reject);
+  });
+}
+
+async function deleteAllOldNixOSGeneration(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const process = spawn("sudo", [
+      "sh",
+      "-c",
+      `nix-collect-garbage --delete-old`,
+    ]);
+
+    let stderr = "";
+    let stdout = "";
+
+    process.stdout?.on("data", (data) => {
+      stdout += data.toString();
     });
+
+    process.stderr?.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    process.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(
+          new Error(stderr || stdout || `Process exited with code ${code}`),
+        );
+      }
+    });
+
+    process.on("error", reject);
   });
 }
 
