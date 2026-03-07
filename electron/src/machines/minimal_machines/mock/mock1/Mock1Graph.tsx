@@ -1,6 +1,5 @@
 import { Page } from "@/components/Page";
 import {
-  AutoSyncedBigGraph,
   MarkerProvider,
   SyncedFloatingControlPanel,
   useGraphSync,
