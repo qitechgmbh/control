@@ -8,6 +8,12 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 
 export function Aquapath1SettingsPage() {
+  const DEFAULT_HEATING_TOLERANCE_C = 0.4;
+  const DEFAULT_COOLING_TOLERANCE_C = 0.8;
+  const DEFAULT_PID_KP = 0.16;
+  const DEFAULT_PID_KI = 0.02;
+  const DEFAULT_PID_KD = 0.0;
+
   const {
     state,
     setFrontRevolutions,
@@ -134,6 +140,18 @@ export function Aquapath1SettingsPage() {
               }}
             />
           </Label>
+          <div className="mt-3">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setFrontHeatingTolerance(DEFAULT_HEATING_TOLERANCE_C);
+                setFrontCoolingTolerance(DEFAULT_COOLING_TOLERANCE_C);
+              }}
+            >
+              Reset to Default
+            </Button>
+          </div>
         </ControlCard>
 
         <ControlCard title="Back Temperature Tolerances">
@@ -166,6 +184,18 @@ export function Aquapath1SettingsPage() {
               }}
             />
           </Label>
+          <div className="mt-3">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setBackHeatingTolerance(DEFAULT_HEATING_TOLERANCE_C);
+                setBackCoolingTolerance(DEFAULT_COOLING_TOLERANCE_C);
+              }}
+            >
+              Reset to Default
+            </Button>
+          </div>
         </ControlCard>
 
         <ControlCard title="Front PID Settings">
@@ -213,6 +243,19 @@ export function Aquapath1SettingsPage() {
               }}
             />
           </Label>
+          <div className="mt-3">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setFrontPidKp(DEFAULT_PID_KP);
+                setFrontPidKi(DEFAULT_PID_KI);
+                setFrontPidKd(DEFAULT_PID_KD);
+              }}
+            >
+              Reset to Default
+            </Button>
+          </div>
         </ControlCard>
 
         <ControlCard title="Back PID Settings">
@@ -260,6 +303,19 @@ export function Aquapath1SettingsPage() {
               }}
             />
           </Label>
+          <div className="mt-3">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setBackPidKp(DEFAULT_PID_KP);
+                setBackPidKi(DEFAULT_PID_KI);
+                setBackPidKd(DEFAULT_PID_KD);
+              }}
+            >
+              Reset to Default
+            </Button>
+          </div>
         </ControlCard>
       </ControlGrid>
     </Page>

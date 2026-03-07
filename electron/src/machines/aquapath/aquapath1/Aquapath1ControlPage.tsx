@@ -44,7 +44,7 @@ export function Aquapath1ControlPage() {
   return (
     <Page>
       <ControlGrid columns={2}>
-        <ControlCard title="Reservoir 1">
+        <ControlCard title="(Front) Reservoir 1">
           <div className="grid grid-rows-5 gap-4">
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
@@ -143,7 +143,7 @@ export function Aquapath1ControlPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Reservoir 2">
+        <ControlCard title="(Back) Reservoir 2">
           <div className="grid grid-rows-5 gap-4">
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
