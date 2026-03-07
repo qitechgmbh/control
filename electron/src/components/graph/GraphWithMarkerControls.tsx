@@ -300,7 +300,9 @@ function GraphWithMarkerControlsContent({
       // (avoids "closest" flipping between adjacent points which causes jumping)
       const sorted = [...validValues].sort((a, b) => a.timestamp - b.timestamp);
       const after = sorted.find((p) => p.timestamp >= timestamp);
-      const before = [...sorted].reverse().find((p) => p.timestamp <= timestamp);
+      const before = [...sorted]
+        .reverse()
+        .find((p) => p.timestamp <= timestamp);
 
       if (after && before) {
         if (after.timestamp === before.timestamp) {
@@ -319,7 +321,10 @@ function GraphWithMarkerControlsContent({
       ({ timestamp, name, value, color }) => {
         // Always prefer per-graph interpolation so one shared machine marker
         // lands on the correct Y value in every graph.
-        let markerValue = interpolateValueAtTimestamp(currentTimeSeries, timestamp);
+        let markerValue = interpolateValueAtTimestamp(
+          currentTimeSeries,
+          timestamp,
+        );
 
         // Fallback for legacy markers that only have a stored value.
         if (markerValue === undefined) {
