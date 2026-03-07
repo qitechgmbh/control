@@ -11,7 +11,7 @@ use ethercrab::subdevice_group::HasDc;
 use ethercrab::{MainDevice, SubDeviceGroup, subdevice_group::Op};
 use machines::machine_identification::{DeviceIdentification, MachineIdentificationUnique};
 use machines::serial::registry::SERIAL_DEVICE_REGISTRY;
-use machines::{Machine, MachineMessage};
+use machines::{Machine, MachineMessage, MachineSubscriptionRequest};
 use serde::{Deserialize, Serialize};
 use smol::channel::{Receiver, Sender};
 use smol::lock::{Mutex, RwLock};
@@ -45,6 +45,8 @@ pub enum HotThreadMessage {
     AddEtherCatSetup(EthercatSetup),
     WriteMachineDeviceInfo(MachineDeviceInfoRequest),
     DeleteMachine(MachineIdentificationUnique),
+    SubscriptionEstablish(MachineSubscriptionRequest),
+    SubscriptionTerminate(MachineSubscriptionRequest),
 }
 
 use crate::AsyncThreadMessage;

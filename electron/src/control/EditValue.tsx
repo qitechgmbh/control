@@ -38,6 +38,7 @@ type Props = {
   step?: number;
   inverted?: boolean;
   confirmation?: string;
+  disabled?: boolean;
   renderValue: (value: number) => string;
   onChange?: (value: number) => void;
 };
@@ -96,6 +97,7 @@ export function EditValue({
   minSlider,
   maxSlider,
   confirmation,
+  disabled,
   onChange,
 }: Props) {
   const defaultOrZero = defaultValue ?? 0;
@@ -475,7 +477,7 @@ export function EditValue({
         <TouchButton
           className={buttonStyle({ open, class: "py-4" })}
           variant="outline"
-          disabled={!valueIsDefined}
+          disabled={!valueIsDefined || disabled}
         >
           <div className="flex flex-row items-center gap-2">
             <span className="font-mono text-4xl font-bold">

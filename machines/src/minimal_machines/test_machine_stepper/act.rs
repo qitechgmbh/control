@@ -25,8 +25,6 @@ impl MachineAct for TestMachineStepper {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(_machine_connection) => {}
-            MachineMessage::DisconnectMachine(_machine_connection) => {}
             MachineMessage::RequestValues(_sender) => {}
         }
     }
