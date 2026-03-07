@@ -280,7 +280,7 @@ export function Winder2ControlPage() {
                         children: "Adaptive",
                         icon: "lu:Brain",
                         disabled:
-                          state?.puller_state?.adaptive_reference_machine,
+                          !state?.puller_state?.adaptive_reference_machine,
                       },
                     }
                   : {}),
