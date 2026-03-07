@@ -19,8 +19,8 @@ type ClipRect = {
   height: number;
 };
 
-function buildSteppedPathFull(
-  u: uPlot,
+function buildDashedLine(
+  plot: uPlot,
   xData: number[],
   yData: Array<number | null>,
 ): string {
@@ -40,8 +40,8 @@ function buildSteppedPathFull(
     const value = yData[i];
     if (value === null || value === undefined) continue;
 
-    const x = u.valToPos(xData[i], "x", false);
-    const y = u.valToPos(value, "y", false);
+    const x = plot.valToPos(xData[i], "x", false);
+    const y = plot.valToPos(value, "y", false);
 
     if (!started) {
       parts.push(`M ${x} ${y}`);
@@ -66,7 +66,7 @@ function buildSteppedPathFull(
   // reaches the same boundary as the data series drawn by uPlot.
   if (started) {
     const dpr = window.devicePixelRatio || 1;
-    const rightEdge = (u.bbox.left + u.bbox.width) / dpr;
+    const rightEdge = (plot.bbox.left + plot.bbox.width) / dpr;
     if (rightEdge > prevX) {
       parts.push(`L ${rightEdge} ${prevY}`);
     }
@@ -185,24 +185,24 @@ export function TargetDashOverlay({
 
     const recalc = () => {
       recalcScheduled = false;
-      const u = uplotRef.current;
-      if (!u || targetMeta.length === 0) {
+      const plot = uplotRef.current;
+      if (!plot || targetMeta.length === 0) {
         return;
       }
 
-      const xData = u.data[0] as number[] | undefined;
+      const xData = plot.data[0] as number[] | undefined;
       if (!xData || xData.length < 2) {
         return;
       }
 
       const nextLines = targetMeta
         .map((meta, index) => {
-          const yData = u.data[meta.dataIndex] as
+          const yData = plot.data[meta.dataIndex] as
             | Array<number | null>
             | undefined;
           if (!yData || yData.length < 2) return null;
 
-          const d = buildSteppedPathFull(u, xData, yData);
+          const d = buildDashedLine(plot, xData, yData);
           if (!d) return null;
 
           return {
@@ -223,10 +223,10 @@ export function TargetDashOverlay({
         // u.bbox is in device pixels; divide by DPR to get CSS pixels for the SVG clip rect.
         const dpr = window.devicePixelRatio || 1;
         const nextClipRect: ClipRect = {
-          x: u.bbox.left / dpr,
-          y: u.bbox.top / dpr,
-          width: u.bbox.width / dpr,
-          height: u.bbox.height / dpr,
+          x: plot.bbox.left / dpr,
+          y: plot.bbox.top / dpr,
+          width: plot.bbox.width / dpr,
+          height: plot.bbox.height / dpr,
         };
         setClipRect((prev) =>
           isSameClipRect(prev, nextClipRect) ? prev : nextClipRect,
@@ -246,8 +246,8 @@ export function TargetDashOverlay({
       return;
     }
 
-    const addHook = (u: any, hookName: string, fn: () => void) => {
-      const hooks = u.hooks?.[hookName];
+    const addHook = (plot: any, hookName: string, fn: () => void) => {
+      const hooks = plot.hooks?.[hookName];
       if (!Array.isArray(hooks)) return;
       hooks.push(fn);
       removeHookFns.push(() => {
@@ -261,13 +261,13 @@ export function TargetDashOverlay({
 
     const attachHooks = (): boolean => {
       if (hooksAttached) return true;
-      const u = uplotRef.current as any;
-      if (!u) return false;
+      const plot = uplotRef.current as any;
+      if (!plot) return false;
 
-      addHook(u, "setScale", scheduleRecalc);
-      addHook(u, "setData", scheduleRecalc);
+      addHook(plot, "setScale", scheduleRecalc);
+      addHook(plot, "setData", scheduleRecalc);
 
-      const rootElement = u.root as HTMLElement | undefined;
+      const rootElement = plot.root as HTMLElement | undefined;
       if (rootElement && typeof ResizeObserver !== "undefined") {
         resizeObserver = new ResizeObserver(() => scheduleRecalc());
         resizeObserver.observe(rootElement);

@@ -130,6 +130,10 @@ export type Aquapath1NamespaceStore = {
 
   front_total_energy: TimeSeries;
   back_total_energy: TimeSeries;
+
+  // Target value history (for graph target lines)
+  targetFrontTemperature: TimeSeries;
+  targetBackTemperature: TimeSeries;
 };
 
 const { initialTimeSeries: front_temperature, insert: addTemperature1 } =
@@ -154,6 +158,14 @@ const { initialTimeSeries: front_total_energy, insert: addFrontEnergy } =
   createTimeSeries();
 const { initialTimeSeries: back_total_energy, insert: addBackEnergy } =
   createTimeSeries();
+const {
+  initialTimeSeries: targetFrontTemperature,
+  insert: addTargetFrontTemperature,
+} = createTimeSeries();
+const {
+  initialTimeSeries: targetBackTemperature,
+  insert: addTargetBackTemperature,
+} = createTimeSeries();
 
 /**
  * Factory function to create a new Aquapath namespace store
@@ -177,6 +189,8 @@ export const createAquapath1NamespaceStore =
         front_power: front_power,
         front_total_energy: front_total_energy,
         back_total_energy: back_total_energy,
+        targetFrontTemperature: targetFrontTemperature,
+        targetBackTemperature: targetBackTemperature,
       };
     });
   };
@@ -205,6 +219,11 @@ export function aquapath1MessageHandler(
       // State events (latest only)
       if (eventName === "StateEvent") {
         const stateEvent = stateEventSchema.parse(event);
+        const timestamp = event.ts;
+        const nextTargetFrontTemperature =
+          stateEvent.data.temperature_states.front.target_temperature;
+        const nextTargetBackTemperature =
+          stateEvent.data.temperature_states.back.target_temperature;
         updateStore((state) => ({
           ...state,
           state: stateEvent,
@@ -212,6 +231,22 @@ export function aquapath1MessageHandler(
           defaultState: stateEvent.data.is_default_state
             ? stateEvent
             : state.defaultState,
+          targetFrontTemperature:
+            state.targetFrontTemperature.current?.value ===
+            nextTargetFrontTemperature
+              ? state.targetFrontTemperature
+              : addTargetFrontTemperature(state.targetFrontTemperature, {
+                  value: nextTargetFrontTemperature,
+                  timestamp,
+                }),
+          targetBackTemperature:
+            state.targetBackTemperature.current?.value ===
+            nextTargetBackTemperature
+              ? state.targetBackTemperature
+              : addTargetBackTemperature(state.targetBackTemperature, {
+                  value: nextTargetBackTemperature,
+                  timestamp,
+                }),
         }));
       }
       // Live values events (time-series data)
