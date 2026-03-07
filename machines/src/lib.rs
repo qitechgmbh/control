@@ -192,14 +192,14 @@ pub fn validate_same_machine_identification_unique(
 }
 
 /// validates that every role is unique
-pub fn validate_no_role_dublicates(
+pub fn validate_no_role_duplicates(
     identified_device_group: &Vec<DeviceIdentificationIdentified>,
 ) -> Result<(), Error> {
     let mut roles = vec![];
     for device in identified_device_group.iter() {
         if roles.contains(&device.device_machine_identification.role) {
             return Err(anyhow::anyhow!(
-                "[{}::validate_no_role_dublicates] Role dublicate",
+                "[{}::validate_no_role_duplicates] Role duplicate",
                 module_path!(),
             ));
         }

@@ -57,12 +57,12 @@ impl MachineRegistry {
 
     pub fn register<T: MachineNewTrait + 'static>(
         &mut self,
-        machine_identficiation: MachineIdentification,
+        machine_identification: MachineIdentification,
     ) {
         self.type_map.insert(
             TypeId::of::<T>(),
             (
-                machine_identficiation.clone(),
+                machine_identification.clone(),
                 // create a machine construction closure
                 Box::new(|machine_new_params| Ok(Box::new(T::new(machine_new_params)?))),
             ),
@@ -73,7 +73,7 @@ impl MachineRegistry {
         &self,
         machine_new_params: &MachineNewParams,
     ) -> Result<Box<dyn Machine>, anyhow::Error> {
-        // get machiine identification
+        // get machine identification
         let device_identification =
             &machine_new_params
                 .device_group
