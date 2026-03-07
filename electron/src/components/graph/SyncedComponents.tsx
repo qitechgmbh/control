@@ -65,11 +65,7 @@ function SyncedFloatingControlPanelInner({
 }) {
   const defaultSync = useGraphSync();
   const finalProps = controlProps || defaultSync.controlProps;
-  const {
-    machineId: machineIdContext,
-    currentTimestamp,
-    currentValue,
-  } = useMarkerContext();
+  const { machineId: machineIdContext, currentTimestamp } = useMarkerContext();
 
   // Prefer explicit prop so panel and graphs always use the same store
   const detectedMachineId = machineIdProp ?? machineIdContext ?? "default";
@@ -81,7 +77,8 @@ function SyncedFloatingControlPanelInner({
   const markerTimestamp = currentTimestamp || Date.now();
 
   const handleAddMarker = (name: string, timestamp: number, color?: string) => {
-    addMarker(name, timestamp, color, currentValue ?? undefined);
+    // Keep marker machine-wide by timestamp; each graph derives its own Y-value.
+    addMarker(name, timestamp, color);
   };
 
   return (

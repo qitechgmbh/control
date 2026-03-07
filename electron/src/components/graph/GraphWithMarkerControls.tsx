@@ -36,7 +36,7 @@ type GraphWithMarkerControlsProps = {
 
 const MARKER_HIT_WIDTH = 28;
 
-const LABEL_TOP_OFFSET = 30;
+const LABEL_TOP_OFFSET = 38;
 
 function applyLabelHighlight(label: HTMLDivElement, highlighted: boolean) {
   if (highlighted) {
@@ -115,7 +115,7 @@ function createMarkerElement(
   wrapper.style.height = `${plotHeight + 50 + plotStartInWrapper}px`;
   wrapper.style.cursor = "pointer";
   wrapper.style.touchAction = "manipulation";
-  wrapper.style.zIndex = "10";
+  wrapper.style.zIndex = "30";
   wrapper.className = "marker-wrapper";
 
   const line = document.createElement("div");
@@ -155,7 +155,7 @@ function createMarkerElement(
   label.style.fontSize = "12px";
   label.style.fontWeight = "600";
   label.style.whiteSpace = "nowrap";
-  label.style.maxWidth = "160px";
+  label.style.maxWidth = "220px";
   label.style.overflow = "hidden";
   label.style.textOverflow = "ellipsis";
   label.style.background = "rgba(255, 255, 255, 1)";
@@ -164,7 +164,7 @@ function createMarkerElement(
   label.style.border = "1px solid rgba(0,0,0,0.2)";
   label.style.pointerEvents = "none";
   label.style.transition = "box-shadow 0.15s ease, border-color 0.15s ease";
-  label.style.zIndex = "1";
+  label.style.zIndex = "40";
   label.className = "marker-label";
 
   const highlight = () => applyLabelHighlight(label, true);
@@ -285,39 +285,48 @@ function GraphWithMarkerControlsContent({
       (m) => m.timestamp >= xMin && m.timestamp <= xMax,
     );
 
+    const interpolateValueAtTimestamp = (
+      series: TimeSeries | null,
+      timestamp: number,
+    ): number | undefined => {
+      if (!series) return undefined;
+
+      const validValues = series.long.values.filter(
+        (v): v is TimeSeriesValue => v !== null,
+      );
+      if (validValues.length === 0) return undefined;
+
+      // Use linear interpolation between surrounding points for stable positioning
+      // (avoids "closest" flipping between adjacent points which causes jumping)
+      const sorted = [...validValues].sort((a, b) => a.timestamp - b.timestamp);
+      const after = sorted.find((p) => p.timestamp >= timestamp);
+      const before = [...sorted].reverse().find((p) => p.timestamp <= timestamp);
+
+      if (after && before) {
+        if (after.timestamp === before.timestamp) {
+          return after.value;
+        }
+        const t =
+          (timestamp - before.timestamp) / (after.timestamp - before.timestamp);
+        return before.value + t * (after.value - before.value);
+      }
+      if (after) return after.value;
+      if (before) return before.value;
+      return undefined;
+    };
+
     const wrappers: HTMLDivElement[] = visibleMarkers.map(
       ({ timestamp, name, value, color }) => {
-        let markerValue = value;
-        if (markerValue === undefined && currentTimeSeries) {
-          const validValues = currentTimeSeries.long.values.filter(
-            (v): v is TimeSeriesValue => v !== null,
-          );
-          if (validValues.length > 0) {
-            // Use linear interpolation between surrounding points for stable positioning
-            // (avoids "closest" flipping between adjacent points which causes jumping)
-            const sorted = [...validValues].sort(
-              (a, b) => a.timestamp - b.timestamp,
-            );
-            const after = sorted.find((p) => p.timestamp >= timestamp);
-            const before = [...sorted]
-              .reverse()
-              .find((p) => p.timestamp <= timestamp);
-            if (after && before) {
-              if (after.timestamp === before.timestamp) {
-                markerValue = after.value;
-              } else {
-                const t =
-                  (timestamp - before.timestamp) /
-                  (after.timestamp - before.timestamp);
-                markerValue = before.value + t * (after.value - before.value);
-              }
-            } else if (after) {
-              markerValue = after.value;
-            } else if (before) {
-              markerValue = before.value;
-            }
-          }
+        // Always prefer per-graph interpolation so one shared machine marker
+        // lands on the correct Y value in every graph.
+        let markerValue = interpolateValueAtTimestamp(currentTimeSeries, timestamp);
+
+        // Fallback for legacy markers that only have a stored value.
+        if (markerValue === undefined) {
+          markerValue = value;
         }
+
+        // Final fallback keeps marker visible even with missing data.
         if (markerValue === undefined) {
           const yScale = u.scales.y;
           markerValue =
