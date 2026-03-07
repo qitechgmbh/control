@@ -122,14 +122,14 @@ impl EthercatDevice for Wago750_430 {
         &mut self,
         input: &bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
-        self.txpdo.port1 = input[0];
-        self.txpdo.port2 = input[1];
-        self.txpdo.port3 = input[2];
-        self.txpdo.port4 = input[3];
-        self.txpdo.port5 = input[4];
-        self.txpdo.port6 = input[5];
-        self.txpdo.port7 = input[6];
-        self.txpdo.port8 = input[7];
+        self.txpdo.port1 = input[self.tx_bit_offset + 0];
+        self.txpdo.port2 = input[self.tx_bit_offset + 1];
+        self.txpdo.port3 = input[self.tx_bit_offset + 2];
+        self.txpdo.port4 = input[self.tx_bit_offset + 3];
+        self.txpdo.port5 = input[self.tx_bit_offset + 4];
+        self.txpdo.port6 = input[self.tx_bit_offset + 5];
+        self.txpdo.port7 = input[self.tx_bit_offset + 6];
+        self.txpdo.port8 = input[self.tx_bit_offset + 7];
         Ok(())
     }
 

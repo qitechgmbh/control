@@ -22,6 +22,7 @@ use socketio::{
 
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
+#[cfg(not(feature = "development-build"))]
 use utils::start_dnsmasq;
 
 use app_state::{HotThreadMessage, SharedState};
@@ -33,7 +34,6 @@ use rest::init::start_api_thread;
 use serialport::UsbPortInfo;
 use smol::{
     channel::{Receiver, Sender},
-    future,
     lock::RwLock,
 };
 use socketioxide::extract::SocketRef;
@@ -413,7 +413,7 @@ fn main() {
                     app_state.clone(),
                 ));
             }
-            future::yield_now().await;
+            smol::Timer::after(Duration::from_micros(150)).await;
         }
     });
 }
