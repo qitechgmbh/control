@@ -103,6 +103,11 @@ impl AquaPathV1 {
         vendor: VENDOR_QITECH,
         machine: MACHINE_AQUAPATH_V1,
     };
+    pub const DEFAULT_HEATING_TOLERANCE_C: f64 = 0.4;
+    pub const DEFAULT_COOLING_TOLERANCE_C: f64 = 0.8;
+    pub const DEFAULT_PID_KP: f64 = 0.16;
+    pub const DEFAULT_PID_KI: f64 = 0.02;
+    pub const DEFAULT_PID_KD: f64 = 0.0;
 }
 
 impl std::fmt::Display for AquaPathV1 {
@@ -157,6 +162,11 @@ impl AquaPathV1 {
             ambient_temperature_calibration: self
                 .ambient_temperature_calibration
                 .get::<degree_celsius>(),
+            default_heating_tolerance: Self::DEFAULT_HEATING_TOLERANCE_C,
+            default_cooling_tolerance: Self::DEFAULT_COOLING_TOLERANCE_C,
+            default_pid_kp: Self::DEFAULT_PID_KP,
+            default_pid_ki: Self::DEFAULT_PID_KI,
+            default_pid_kd: Self::DEFAULT_PID_KD,
             temperature_states: TempStates {
                 front: TempState {
                     temperature: self

@@ -139,9 +139,9 @@ impl MachineNewTrait for AquaPathV1 {
             let controller_config = ControllerConfig::default();
 
             let front_controller = Controller::new(
-                0.16,
-                0.02,
-                0.0,
+                AquaPathV1::DEFAULT_PID_KP,
+                AquaPathV1::DEFAULT_PID_KI,
+                AquaPathV1::DEFAULT_PID_KD,
                 Temperature::default(),
                 ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao2,
@@ -157,9 +157,9 @@ impl MachineNewTrait for AquaPathV1 {
             );
 
             let back_controller = Controller::new(
-                0.16,
-                0.02,
-                0.0,
+                AquaPathV1::DEFAULT_PID_KP,
+                AquaPathV1::DEFAULT_PID_KI,
+                AquaPathV1::DEFAULT_PID_KD,
                 Temperature::default(),
                 ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao1,

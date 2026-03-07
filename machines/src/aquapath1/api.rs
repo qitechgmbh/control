@@ -42,6 +42,11 @@ pub struct StateEvent {
     /// mode state
     pub mode_state: ModeState,
     pub ambient_temperature_calibration: f64,
+    pub default_heating_tolerance: f64,
+    pub default_cooling_tolerance: f64,
+    pub default_pid_kp: f64,
+    pub default_pid_ki: f64,
+    pub default_pid_kd: f64,
     pub flow_states: FlowStates,
     pub temperature_states: TempStates,
     pub fan_states: FanStates,
