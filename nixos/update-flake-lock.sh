@@ -30,6 +30,9 @@ docker run --rm \
     --workdir /workspace \
     nixos/nix:latest \
     sh -c "
+	whoami
+	ls -lh
+	cd /workspace
         echo 'Enabling flakes and nix-command...'
         mkdir -p ~/.config/nix
         echo 'experimental-features = nix-command flakes' > ~/.config/nix/nix.conf

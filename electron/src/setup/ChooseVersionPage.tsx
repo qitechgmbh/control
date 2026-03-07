@@ -18,6 +18,7 @@ import {
 } from "@/helpers/nixos_helpers";
 import { useUpdateStore } from "@/stores/updateStore";
 import { useGithubSourceStore } from "@/stores/githubSourceStore";
+import { Input } from "@/components/ui/input";
 
 export function ChooseVersionPage() {
   const navigate = useNavigate();
@@ -341,8 +342,29 @@ export function ChooseVersionPage() {
     }
   };
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const searchedBranches =
+    branches?.filter((b) =>
+      b.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    ) ?? [];
+
   return (
     <Page>
+      <div className="flex items-center justify-center">
+        <Alert title="Internet Access Needed" variant="info">
+          You must connect to the internet to fetch the latest versions and
+          update the system.
+        </Alert>
+      </div>
+
+      {!isNixOSAvailable() && (
+        <div className="flex items-center justify-center">
+          <Alert title="NixOS Not Available" variant="warning">
+            NixOS generation management is not available on this system.
+          </Alert>
+        </div>
+      )}
+
       <SectionTitle title="Current Version"></SectionTitle>
       <CurrentVersionCard />
 
@@ -408,10 +430,10 @@ export function ChooseVersionPage() {
         </>
       )}
 
-      <SectionTitle title="Update"></SectionTitle>
+      <SectionTitle title="Update source"></SectionTitle>
       <div className="flex flex-row items-center gap-4">
         <div className="flex flex-col">
-          Update source:
+          Getting updates from:
           <a className="font-mono text-blue-500">
             {`https://github.com/${githubSource.githubRepoOwner}/${
               githubSource.githubRepoName
@@ -420,12 +442,6 @@ export function ChooseVersionPage() {
         </div>
         <GithubSourceDialog value={githubSource} onChange={setGithubSource} />
       </div>
-      <span className="w-max">
-        <Alert title="Internet Access Needed" variant="info">
-          You must connect to the internet to fetch the latest versions and
-          update the system.
-        </Alert>
-      </span>
 
       <span className="text-xl">Choose a Version</span>
       {tags !== undefined && tags.length > 0 ? (
@@ -461,26 +477,37 @@ export function ChooseVersionPage() {
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-6">
+          <div className="mb-4 flex items-center">
+            <span>Search Branches:</span>
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
           {branches !== undefined && branches.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {branches.map((branch) => (
-                <UpdateButton
-                  time={branch.date ? new Date(branch.date) : undefined}
-                  key={branch.name}
-                  title={branch.name}
-                  kind="branch"
-                  isOlder={isOlderThanCurrent(branch.date)}
-                  onClick={() => {
-                    navigate({
-                      to: "/_sidebar/setup/update/changelog",
-                      search: {
-                        branch: branch.name,
-                        ...githubSource,
-                      },
-                    });
-                  }}
-                />
-              ))}
+              {searchedBranches.length === 0 ? (
+                <i>No branches with your search term</i>
+              ) : (
+                searchedBranches.map((branch) => (
+                  <UpdateButton
+                    time={branch.date ? new Date(branch.date) : undefined}
+                    key={branch.name}
+                    title={branch.name}
+                    kind="branch"
+                    isOlder={isOlderThanCurrent(branch.date)}
+                    onClick={() => {
+                      navigate({
+                        to: "/_sidebar/setup/update/changelog",
+                        search: {
+                          branch: branch.name,
+                          ...githubSource,
+                        },
+                      });
+                    }}
+                  />
+                ))
+              )}
             </div>
           ) : null}
           {branches === undefined && <LoadingSpinner />}
@@ -550,13 +577,6 @@ export function ChooseVersionPage() {
         <LoadingSpinner />
       )}
       {nixosGenerations?.length === 0 && <>No NixOS generations found</>}
-      {!isNixOSAvailable() && (
-        <span className="w-max">
-          <Alert title="NixOS Not Available" variant="warning">
-            NixOS generation management is not available on this system.
-          </Alert>
-        </span>
-      )}
     </Page>
   );
 }

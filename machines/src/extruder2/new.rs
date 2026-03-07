@@ -56,14 +56,14 @@ impl MachineNewTrait for ExtruderV3 {
         // validate general stuff
 
         use crate::{
-            MachineNewHardware, MachineNewHardwareEthercat, validate_no_role_dublicates,
+            MachineNewHardware, MachineNewHardwareEthercat, validate_no_role_duplicates,
             validate_same_machine_identification_unique,
         };
 
         let device_identification = params.device_group.to_vec();
 
         validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_dublicates(&device_identification)?;
+        validate_no_role_duplicates(&device_identification)?;
 
         let hardware: &&MachineNewHardwareEthercat<'_, '_, '_> = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,
@@ -213,12 +213,15 @@ impl MachineNewTrait for ExtruderV3 {
             let target_pressure = Pressure::new::<bar>(0.0);
             let target_rpm = AngularVelocity::new::<revolution_per_minute>(0.0);
 
+            let motor_poles = 2;
+
             let screw_speed_controller = ScrewSpeedController::new(
                 inverter,
                 target_pressure,
                 target_rpm,
                 pressure_sensor,
                 FixedTransmission::new(1.0 / 30.0),
+                motor_poles,
             );
             let (sender, receiver) = smol::channel::unbounded();
 

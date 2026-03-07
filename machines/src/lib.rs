@@ -17,26 +17,18 @@ use std::any::Any;
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Instant;
-pub mod analog_input_test_machine;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
-pub mod digital_input_test_machine;
 pub mod extruder1;
 pub mod extruder2;
-pub mod ip20_test_machine;
 pub mod laser;
 pub mod machine_identification;
-pub mod mock;
-pub mod motor_test_machine;
+pub mod minimal_machines;
 pub mod registry;
 pub mod serial;
-pub mod test_machine;
-pub mod test_machine_stepper;
-pub mod wago_8ch_dio_test_machine;
-pub mod wago_ai_test_machine;
-pub mod wago_do_test_machine;
 pub mod wago_power;
+pub mod wago_serial_machine;
 pub mod winder2;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
@@ -54,10 +46,12 @@ pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
 pub const WAGO_AI_TEST_MACHINE: u16 = 0x0036;
 pub const DIGITAL_INPUT_TEST_MACHINE: u16 = 0x0040;
 pub const WAGO_8CH_IO_TEST_MACHINE: u16 = 0x0041;
+pub const WAGO_750_430_DI_MACHINE: u16 = 0x0043;
 pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
 
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
+pub const WAGO_750_501_TEST_MACHINE: u16 = 0x0042;
 use serde_json::Value;
 use smol::lock::RwLock;
 
@@ -201,14 +195,14 @@ pub fn validate_same_machine_identification_unique(
 }
 
 /// validates that every role is unique
-pub fn validate_no_role_dublicates(
+pub fn validate_no_role_duplicates(
     identified_device_group: &Vec<DeviceIdentificationIdentified>,
 ) -> Result<(), Error> {
     let mut roles = vec![];
     for device in identified_device_group.iter() {
         if roles.contains(&device.device_machine_identification.role) {
             return Err(anyhow::anyhow!(
-                "[{}::validate_no_role_dublicates] Role dublicate",
+                "[{}::validate_no_role_duplicates] Role duplicate",
                 module_path!(),
             ));
         }

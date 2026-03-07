@@ -21,7 +21,7 @@ use crate::{
     MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams, MachineNewTrait,
     buffer1::BufferV1Mode, get_ethercat_device, validate_same_machine_identification_unique,
 };
-use crate::{buffer1::buffer_tower_controller::BufferTowerController, validate_no_role_dublicates};
+use crate::{buffer1::buffer_tower_controller::BufferTowerController, validate_no_role_duplicates};
 
 use super::{BufferV1, api::Buffer1Namespace};
 
@@ -32,7 +32,7 @@ impl MachineNewTrait for BufferV1 {
         // validate general stuff
         let device_identification = params.device_group.to_vec();
         validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_dublicates(&device_identification)?;
+        validate_no_role_duplicates(&device_identification)?;
 
         let hardware: &&MachineNewHardwareEthercat<'_, '_, '_> = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,

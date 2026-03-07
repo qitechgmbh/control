@@ -4,13 +4,13 @@ buildNpmPackage rec {
   pname = "qitech-control-electron";
   version = "1.0.0";
 
-  srcs = [ ../../electron ../../docs ];
+  src = ../../electron;
   sourceRoot = "electron";
 
   ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
 
   makeCacheWritable = true;
-  npmDepsHash = "sha256-N2kdS9IKkEMNOPPnRNQ9GvCenR/k88fVyAFzXMJyxs4=";
+  npmDepsHash = "sha256-1QAtF2Sp5jh1eUExWsCf2tsaRcAMhL/5QnkcrD3kva4=";
   npmFlags = [ "--no-audit" "--no-fund" ];
 
   installPhase = ''
@@ -44,7 +44,6 @@ buildNpmPackage rec {
       --enable-gpu \
       --ignore-gpu-blocklist \
       --enable-gpu-rasterization \
-      --disable-software-rasterizer \
       "$@"
     EOF
     chmod +x $out/bin/qitech-control-electron
