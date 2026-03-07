@@ -4,7 +4,8 @@ use crate::{
 };
 
 use super::{
-    AquaPathV1, AquaPathV1Mode, Flow, Temperature, api::AquaPathV1Namespace,
+    AquaPathV1, AquaPathV1Mode, Flow, Temperature,
+    api::AquaPathV1Namespace,
     controller::{Controller, ControllerConfig},
 };
 use anyhow::Error;

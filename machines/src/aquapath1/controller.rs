@@ -112,7 +112,8 @@ impl Controller {
 
         if temp_offset_k >= config.near_band_k {
             // Mid-range: ramp from 60% to 100% of max.
-            let t = (temp_offset_k - config.near_band_k) / (config.full_band_k - config.near_band_k);
+            let t =
+                (temp_offset_k - config.near_band_k) / (config.full_band_k - config.near_band_k);
             return (0.6 + 0.4 * t) * max_rpm;
         }
 
@@ -161,8 +162,12 @@ impl Controller {
             temperature: temp,
             cooling_controller: cooling_controller,
 
-            cooling_tolerance: ThermodynamicTemperature::new::<degree_celsius>(config.cooling.tolerance_c),
-            heating_tolerance: ThermodynamicTemperature::new::<degree_celsius>(config.heating_tolerance_c),
+            cooling_tolerance: ThermodynamicTemperature::new::<degree_celsius>(
+                config.cooling.tolerance_c,
+            ),
+            heating_tolerance: ThermodynamicTemperature::new::<degree_celsius>(
+                config.heating_tolerance_c,
+            ),
 
             current_revolutions: AngularVelocity::new::<revolution_per_minute>(0.0),
             max_revolutions: max_revolutions,
@@ -458,8 +463,8 @@ impl Controller {
             elapsed_in_window = Duration::ZERO;
         }
 
-        let has_flow_for_thermal =
-            current_flow >= VolumeRate::new::<liter_per_minute>(self.config.min_flow_for_thermal_lpm);
+        let has_flow_for_thermal = current_flow
+            >= VolumeRate::new::<liter_per_minute>(self.config.min_flow_for_thermal_lpm);
         let pump_is_running = self.flow.pump && self.should_pump;
         let thermal_interlock_ok = has_flow_for_thermal && pump_is_running;
 

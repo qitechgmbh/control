@@ -439,7 +439,10 @@ impl AquaPathV1 {
     fn set_heating_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
         match tolerance_type {
             AquaPathSideType::Back => {
-                let fallback = self.back_controller.heating_tolerance.get::<degree_celsius>();
+                let fallback = self
+                    .back_controller
+                    .heating_tolerance
+                    .get::<degree_celsius>();
                 let value = Self::sanitize_clamped(
                     tolerance,
                     Self::TOLERANCE_MIN_C,
@@ -450,7 +453,10 @@ impl AquaPathV1 {
                     .set_heating_tolerance(ThermodynamicTemperature::new::<degree_celsius>(value))
             }
             AquaPathSideType::Front => {
-                let fallback = self.front_controller.heating_tolerance.get::<degree_celsius>();
+                let fallback = self
+                    .front_controller
+                    .heating_tolerance
+                    .get::<degree_celsius>();
                 let value = Self::sanitize_clamped(
                     tolerance,
                     Self::TOLERANCE_MIN_C,
@@ -468,7 +474,10 @@ impl AquaPathV1 {
     fn set_cooling_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
         match tolerance_type {
             AquaPathSideType::Back => {
-                let fallback = self.back_controller.cooling_tolerance.get::<degree_celsius>();
+                let fallback = self
+                    .back_controller
+                    .cooling_tolerance
+                    .get::<degree_celsius>();
                 let value = Self::sanitize_clamped(
                     tolerance,
                     Self::TOLERANCE_MIN_C,
@@ -479,7 +488,10 @@ impl AquaPathV1 {
                     .set_cooling_tolerance(ThermodynamicTemperature::new::<degree_celsius>(value))
             }
             AquaPathSideType::Front => {
-                let fallback = self.front_controller.cooling_tolerance.get::<degree_celsius>();
+                let fallback = self
+                    .front_controller
+                    .cooling_tolerance
+                    .get::<degree_celsius>();
                 let value = Self::sanitize_clamped(
                     tolerance,
                     Self::TOLERANCE_MIN_C,
