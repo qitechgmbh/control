@@ -17,6 +17,12 @@ export function Aquapath1SettingsPage() {
     setBackHeatingTolerance,
     setBackCoolingTolerance,
     setAmbientTemperatureCalibration,
+    setFrontPidKp,
+    setFrontPidKi,
+    setFrontPidKd,
+    setBackPidKp,
+    setBackPidKi,
+    setBackPidKd,
   } = useAquapath1();
   const frontTemp = state?.temperature_states.front.temperature;
   const backTemp = state?.temperature_states.back.temperature;
@@ -157,6 +163,100 @@ export function Aquapath1SettingsPage() {
               renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
                 setBackCoolingTolerance(val);
+              }}
+            />
+          </Label>
+        </ControlCard>
+
+        <ControlCard title="Front PID Settings">
+          <Label label="Set Kp">
+            <EditValue
+              title="Set Front Kp"
+              min={0}
+              value={state?.pid_states.front.kp}
+              max={5}
+              step={0.01}
+              unit=""
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setFrontPidKp(val);
+              }}
+            />
+          </Label>
+
+          <Label label="Set Ki">
+            <EditValue
+              title="Set Front Ki"
+              min={0}
+              value={state?.pid_states.front.ki}
+              max={5}
+              step={0.01}
+              unit=""
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setFrontPidKi(val);
+              }}
+            />
+          </Label>
+
+          <Label label="Set Kd">
+            <EditValue
+              title="Set Front Kd"
+              min={0}
+              value={state?.pid_states.front.kd}
+              max={5}
+              step={0.01}
+              unit=""
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setFrontPidKd(val);
+              }}
+            />
+          </Label>
+        </ControlCard>
+
+        <ControlCard title="Back PID Settings">
+          <Label label="Set Kp">
+            <EditValue
+              title="Set Back Kp"
+              min={0}
+              value={state?.pid_states.back.kp}
+              max={5}
+              step={0.01}
+              unit=""
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setBackPidKp(val);
+              }}
+            />
+          </Label>
+
+          <Label label="Set Ki">
+            <EditValue
+              title="Set Back Ki"
+              min={0}
+              value={state?.pid_states.back.ki}
+              max={5}
+              step={0.01}
+              unit=""
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setBackPidKi(val);
+              }}
+            />
+          </Label>
+
+          <Label label="Set Kd">
+            <EditValue
+              title="Set Back Kd"
+              min={0}
+              value={state?.pid_states.back.kd}
+              max={5}
+              step={0.01}
+              unit=""
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setBackPidKd(val);
               }}
             />
           </Label>

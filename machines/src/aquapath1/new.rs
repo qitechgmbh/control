@@ -4,7 +4,8 @@ use crate::{
 };
 
 use super::{
-    AquaPathV1, AquaPathV1Mode, Flow, Temperature, api::AquaPathV1Namespace, controller::Controller,
+    AquaPathV1, AquaPathV1Mode, Flow, Temperature, api::AquaPathV1Namespace,
+    controller::{Controller, ControllerConfig},
 };
 use anyhow::Error;
 use ethercat_hal::{
@@ -134,6 +135,7 @@ impl MachineNewTrait for AquaPathV1 {
 
             let ao1 = AnalogOutput::new(el4002.clone(), EL4002Port::AO1);
             let ao2 = AnalogOutput::new(el4002.clone(), EL4002Port::AO2);
+            let controller_config = ControllerConfig::default();
 
             let front_controller = Controller::new(
                 0.16,
@@ -150,6 +152,7 @@ impl MachineNewTrait for AquaPathV1 {
                 Flow::default(),
                 do5,
                 enc2,
+                controller_config,
             );
 
             let back_controller = Controller::new(
@@ -167,6 +170,7 @@ impl MachineNewTrait for AquaPathV1 {
                 Flow::default(),
                 do1,
                 enc1,
+                controller_config,
             );
             let (sender, receiver) = smol::channel::unbounded();
             let mut water_cooling = Self {

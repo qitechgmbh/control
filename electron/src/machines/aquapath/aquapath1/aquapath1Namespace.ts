@@ -68,6 +68,17 @@ export const toleranceStatesSchema = z.object({
   back: toleranceStateSchema,
   front: toleranceStateSchema,
 });
+
+export const pidStateSchema = z.object({
+  kp: z.number(),
+  ki: z.number(),
+  kd: z.number(),
+});
+
+export const pidStatesSchema = z.object({
+  back: pidStateSchema,
+  front: pidStateSchema,
+});
 /**
  * Live values event schema (time-series data)
  */
@@ -99,6 +110,7 @@ export const stateEventDataSchema = z.object({
   temperature_states: tempStatesSchema,
   fan_states: fanStatesSchema,
   tolerance_states: toleranceStatesSchema,
+  pid_states: pidStatesSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========

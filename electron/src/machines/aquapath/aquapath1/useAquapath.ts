@@ -230,6 +230,90 @@ export function useAquapath1() {
     );
   };
 
+  const setFrontPidKp = (value: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_states.front.kp = value;
+      },
+      () => {
+        requestFrontPidKp({
+          machine_identification_unique: machineIdentification,
+          data: { SetFrontPidKp: value },
+        });
+      },
+    );
+  };
+
+  const setFrontPidKi = (value: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_states.front.ki = value;
+      },
+      () => {
+        requestFrontPidKi({
+          machine_identification_unique: machineIdentification,
+          data: { SetFrontPidKi: value },
+        });
+      },
+    );
+  };
+
+  const setFrontPidKd = (value: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_states.front.kd = value;
+      },
+      () => {
+        requestFrontPidKd({
+          machine_identification_unique: machineIdentification,
+          data: { SetFrontPidKd: value },
+        });
+      },
+    );
+  };
+
+  const setBackPidKp = (value: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_states.back.kp = value;
+      },
+      () => {
+        requestBackPidKp({
+          machine_identification_unique: machineIdentification,
+          data: { SetBackPidKp: value },
+        });
+      },
+    );
+  };
+
+  const setBackPidKi = (value: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_states.back.ki = value;
+      },
+      () => {
+        requestBackPidKi({
+          machine_identification_unique: machineIdentification,
+          data: { SetBackPidKi: value },
+        });
+      },
+    );
+  };
+
+  const setBackPidKd = (value: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_states.back.kd = value;
+      },
+      () => {
+        requestBackPidKd({
+          machine_identification_unique: machineIdentification,
+          data: { SetBackPidKd: value },
+        });
+      },
+    );
+  };
+
   // Mutation hooks
   const { request: requestAquapathMode } = useMachineMutation(
     z.object({ SetAquaPathMode: z.enum(["Standby", "Auto"]) }),
@@ -266,6 +350,24 @@ export function useAquapath1() {
   );
   const { request: requestAmbientTemperatureCalibration } = useMachineMutation(
     z.object({ SetAmbientTemperatureCalibration: z.number() }),
+  );
+  const { request: requestFrontPidKp } = useMachineMutation(
+    z.object({ SetFrontPidKp: z.number() }),
+  );
+  const { request: requestFrontPidKi } = useMachineMutation(
+    z.object({ SetFrontPidKi: z.number() }),
+  );
+  const { request: requestFrontPidKd } = useMachineMutation(
+    z.object({ SetFrontPidKd: z.number() }),
+  );
+  const { request: requestBackPidKp } = useMachineMutation(
+    z.object({ SetBackPidKp: z.number() }),
+  );
+  const { request: requestBackPidKi } = useMachineMutation(
+    z.object({ SetBackPidKi: z.number() }),
+  );
+  const { request: requestBackPidKd } = useMachineMutation(
+    z.object({ SetBackPidKd: z.number() }),
   );
 
   // Helper function for optimistic updates using produce
@@ -313,5 +415,11 @@ export function useAquapath1() {
     setFrontCoolingTolerance,
     setBackCoolingTolerance,
     setAmbientTemperatureCalibration,
+    setFrontPidKp,
+    setFrontPidKi,
+    setFrontPidKd,
+    setBackPidKp,
+    setBackPidKi,
+    setBackPidKd,
   };
 }

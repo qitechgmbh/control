@@ -11,8 +11,53 @@ use units::angular_velocity::revolution_per_minute;
 use units::f64::ThermodynamicTemperature;
 use units::thermodynamic_temperature::{degree_celsius, kelvin};
 use units::volume_rate::liter_per_minute;
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
+pub struct CoolingRampConfig {
+    pub tolerance_c: f64,
+    pub near_band_k: f64,
+    pub full_band_k: f64,
+    pub min_rpm: f64,
+}
 
+impl Default for CoolingRampConfig {
+    fn default() -> Self {
+        Self {
+            tolerance_c: 0.8,
+            near_band_k: 2.0,
+            full_band_k: 4.0,
+            min_rpm: 20.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ControllerConfig {
+    pub min_flow_for_thermal_lpm: f64,
+    pub heating_element_wattage: f64,
+    pub heating_pwm_period: Duration,
+    pub relay_min_on_time: Duration,
+    pub relay_min_off_time: Duration,
+    pub heating_full_power_error_c: f64,
+    pub heating_tolerance_c: f64,
+    pub cooling: CoolingRampConfig,
+}
+
+impl Default for ControllerConfig {
+    fn default() -> Self {
+        Self {
+            min_flow_for_thermal_lpm: 0.2,
+            heating_element_wattage: 700.0,
+            heating_pwm_period: Duration::from_secs(12),
+            relay_min_on_time: Duration::from_secs(5),
+            relay_min_off_time: Duration::from_secs(5),
+            heating_full_power_error_c: 4.0,
+            heating_tolerance_c: 0.4,
+            cooling: CoolingRampConfig::default(),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct Controller {
     pub pid: PidController,
     window_start: Instant,
@@ -38,7 +83,7 @@ pub struct Controller {
     pub current_revolutions: AngularVelocity,
     pub max_revolutions: AngularVelocity,
 
-    pub heating_relais_1: DigitalOutput,
+    pub heating_relais: DigitalOutput,
     pub temperature_sensor_in: TemperatureInput,
     pub temperature_sensor_out: TemperatureInput,
 
@@ -55,40 +100,27 @@ pub struct Controller {
     pub pump_allowed: bool,
     pub current_flow: VolumeRate,
     pub max_flow: VolumeRate,
+    config: ControllerConfig,
 }
 
 impl Controller {
-    const MIN_FLOW_FOR_THERMAL_LPM: f64 = 0.2;
-    const HEATING_ELEMENT_WATTAGE: f64 = 700.0;
-    const HEATING_PWM_PERIOD: Duration = Duration::from_secs(12);
-    const RELAY_MIN_ON_TIME: Duration = Duration::from_secs(5);
-    const RELAY_MIN_OFF_TIME: Duration = Duration::from_secs(5);
-    const HEATING_FULL_POWER_ERROR_C: f64 = 4.0;
-    const COOLING_TOLERANCE_C: f64 = 0.8;
-    const HEATING_TOLERANCE_C: f64 = 0.4;
-    const COOLING_NEAR_BAND_K: f64 = 2.0;
-    const COOLING_FULL_BAND_K: f64 = 4.0;
-    const COOLING_MIN_RPM: f64 = 20.0;
-
-    fn cooling_target_rpm(temp_offset_k: f64, max_rpm: f64) -> f64 {
-        if temp_offset_k >= Self::COOLING_FULL_BAND_K {
+    fn cooling_target_rpm(temp_offset_k: f64, max_rpm: f64, config: CoolingRampConfig) -> f64 {
+        if temp_offset_k >= config.full_band_k {
             // Far above target: cool aggressively.
             return max_rpm;
         }
 
-        if temp_offset_k >= Self::COOLING_NEAR_BAND_K {
+        if temp_offset_k >= config.near_band_k {
             // Mid-range: ramp from 60% to 100% of max.
-            let t = (temp_offset_k - Self::COOLING_NEAR_BAND_K)
-                / (Self::COOLING_FULL_BAND_K - Self::COOLING_NEAR_BAND_K);
+            let t = (temp_offset_k - config.near_band_k) / (config.full_band_k - config.near_band_k);
             return (0.6 + 0.4 * t) * max_rpm;
         }
 
         // Near target (but above cooling tolerance): low, smooth cooling.
         // Ramp from COOLING_MIN_RPM to 60% of max to reduce overshoot/chatter.
-        let t = ((temp_offset_k - Self::COOLING_TOLERANCE_C)
-            / (Self::COOLING_NEAR_BAND_K - Self::COOLING_TOLERANCE_C))
+        let t = ((temp_offset_k - config.tolerance_c) / (config.near_band_k - config.tolerance_c))
             .clamp(0.0, 1.0);
-        let lower = Self::COOLING_MIN_RPM.min(max_rpm);
+        let lower = config.min_rpm.min(max_rpm);
         let upper = 0.6 * max_rpm;
         lower + (upper - lower) * t
     }
@@ -101,7 +133,7 @@ impl Controller {
         target_tempetature: ThermodynamicTemperature,
         cooling_controller: AnalogOutput,
         cooling_relais: DigitalOutput,
-        heating_relais_1: DigitalOutput,
+        heating_relais: DigitalOutput,
         temp_sensor_in: TemperatureInput,
         temp_sensor_out: TemperatureInput,
         max_revolutions: AngularVelocity,
@@ -109,6 +141,7 @@ impl Controller {
         flow: Flow,
         pump_relais: DigitalOutput,
         flow_sensor: EncoderInput,
+        config: ControllerConfig,
     ) -> Self {
         let now = Instant::now();
         Self {
@@ -116,7 +149,7 @@ impl Controller {
             window_start: now,
             last_update: now,
             temperature_pid_output: 0.0,
-            pwm_period: Self::HEATING_PWM_PERIOD,
+            pwm_period: config.heating_pwm_period,
             last_heating_switch: now,
             last_cooling_switch: now,
             target_temperature: target_tempetature,
@@ -128,18 +161,14 @@ impl Controller {
             temperature: temp,
             cooling_controller: cooling_controller,
 
-            cooling_tolerance: ThermodynamicTemperature::new::<degree_celsius>(
-                Self::COOLING_TOLERANCE_C,
-            ),
-            heating_tolerance: ThermodynamicTemperature::new::<degree_celsius>(
-                Self::HEATING_TOLERANCE_C,
-            ),
+            cooling_tolerance: ThermodynamicTemperature::new::<degree_celsius>(config.cooling.tolerance_c),
+            heating_tolerance: ThermodynamicTemperature::new::<degree_celsius>(config.heating_tolerance_c),
 
             current_revolutions: AngularVelocity::new::<revolution_per_minute>(0.0),
             max_revolutions: max_revolutions,
 
             cooling_relais: cooling_relais,
-            heating_relais_1: heating_relais_1,
+            heating_relais: heating_relais,
 
             cooling_allowed: false,
             heating_allowed: false,
@@ -156,6 +185,7 @@ impl Controller {
             current_flow: VolumeRate::new::<liter_per_minute>(0.0),
             pump_allowed: false,
             max_flow: VolumeRate::new::<liter_per_minute>(10.0),
+            config,
         }
     }
 
@@ -253,13 +283,13 @@ impl Controller {
     }
 
     pub fn turn_heating_on(&mut self) {
-        self.heating_relais_1.set(true);
+        self.heating_relais.set(true);
         self.temperature.heating = true;
-        self.power = Self::HEATING_ELEMENT_WATTAGE;
+        self.power = self.config.heating_element_wattage;
     }
 
     pub fn turn_heating_off(&mut self) {
-        self.heating_relais_1.set(false);
+        self.heating_relais.set(false);
         self.temperature.heating = false;
         self.power = 0.0;
     }
@@ -315,6 +345,30 @@ impl Controller {
         self.heating_tolerance = tolerance;
     }
 
+    pub fn get_pid_kp(&self) -> f64 {
+        self.pid.get_kp()
+    }
+
+    pub fn get_pid_ki(&self) -> f64 {
+        self.pid.get_ki()
+    }
+
+    pub fn get_pid_kd(&self) -> f64 {
+        self.pid.get_kd()
+    }
+
+    pub fn set_pid_kp(&mut self, kp: f64) {
+        self.pid.configure(self.pid.get_ki(), kp, self.pid.get_kd());
+    }
+
+    pub fn set_pid_ki(&mut self, ki: f64) {
+        self.pid.configure(ki, self.pid.get_kp(), self.pid.get_kd());
+    }
+
+    pub fn set_pid_kd(&mut self, kd: f64) {
+        self.pid.configure(self.pid.get_ki(), self.pid.get_kp(), kd);
+    }
+
     // no power/energy unit implemented
     pub fn get_current_power(&self) -> f64 {
         self.power
@@ -324,11 +378,11 @@ impl Controller {
         self.total_energy
     }
 
-    fn can_switch_relay(currently_on: bool, last_switch: Instant, now: Instant) -> bool {
+    fn can_switch_relay(&self, currently_on: bool, last_switch: Instant, now: Instant) -> bool {
         let min_dwell = if currently_on {
-            Self::RELAY_MIN_ON_TIME
+            self.config.relay_min_on_time
         } else {
-            Self::RELAY_MIN_OFF_TIME
+            self.config.relay_min_off_time
         };
         now.duration_since(last_switch) >= min_dwell
     }
@@ -337,7 +391,7 @@ impl Controller {
         if on == self.temperature.heating {
             return;
         }
-        if !Self::can_switch_relay(self.temperature.heating, self.last_heating_switch, now) {
+        if !self.can_switch_relay(self.temperature.heating, self.last_heating_switch, now) {
             return;
         }
 
@@ -353,7 +407,7 @@ impl Controller {
         if on == self.temperature.cooling {
             return;
         }
-        if !Self::can_switch_relay(self.temperature.cooling, self.last_cooling_switch, now) {
+        if !self.can_switch_relay(self.temperature.cooling, self.last_cooling_switch, now) {
             return;
         }
 
@@ -405,7 +459,7 @@ impl Controller {
         }
 
         let has_flow_for_thermal =
-            current_flow >= VolumeRate::new::<liter_per_minute>(Self::MIN_FLOW_FOR_THERMAL_LPM);
+            current_flow >= VolumeRate::new::<liter_per_minute>(self.config.min_flow_for_thermal_lpm);
         let pump_is_running = self.flow.pump && self.should_pump;
         let thermal_interlock_ok = has_flow_for_thermal && pump_is_running;
 
@@ -417,7 +471,7 @@ impl Controller {
             }
 
             if self.heating_allowed && thermal_interlock_ok {
-                if error >= Self::HEATING_FULL_POWER_ERROR_C {
+                if error >= self.config.heating_full_power_error_c {
                     // Warmup phase: force full heating when far below target.
                     self.set_heating_state(true, now);
                 } else {
@@ -446,7 +500,8 @@ impl Controller {
                 let temp_offset_k = temp_offset.get::<kelvin>();
 
                 let target_revolutions =
-                    Self::cooling_target_rpm(temp_offset_k, max_rpm).clamp(0.0, max_rpm);
+                    Self::cooling_target_rpm(temp_offset_k, max_rpm, self.config.cooling)
+                        .clamp(0.0, max_rpm);
 
                 if self.temperature.cooling {
                     self.cooling_controller
