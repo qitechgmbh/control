@@ -13,6 +13,7 @@ import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder3 } from "./useExtruder";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { StatusBadge } from "@/control/StatusBadge";
+import { GlobalHeatingFaultToastManager } from "./GlobalHeatingFaultToastManager";
 
 export function Extruder3ControlPage() {
   const {
@@ -45,7 +46,16 @@ export function Extruder3ControlPage() {
 
     isLoading,
     isDisabled,
+    retryHeating,
+    acknowledgeHeatingFault,
   } = useExtruder3();
+
+  // Helper to check if a zone has a heating fault
+  const getZoneFault = (zone: "front" | "middle" | "back" | "nozzle") => {
+    const faultZone = state?.heating_fault_state?.fault_zone;
+    const faultAcknowledged = state?.heating_fault_state?.fault_acknowledged;
+    return faultZone === zone && !faultAcknowledged;
+  };
 
   function isZoneReadyForExtrusion(
     temperature: number,
@@ -80,6 +90,10 @@ export function Extruder3ControlPage() {
 
   return (
     <Page>
+      <GlobalHeatingFaultToastManager
+        state={state}
+        onAcknowledgeHeatingFault={acknowledgeHeatingFault}
+      />
       <ControlGrid>
         <HeatingZone
           title={"Heating Front"}
@@ -89,7 +103,9 @@ export function Extruder3ControlPage() {
           onChangeTargetTemp={setFrontHeatingTemperature}
           min={0}
           max={300}
-          targetTemperatureEnabled={true}
+          heatingFault={getZoneFault("front")}
+          onRetryHeating={retryHeating}
+          targetTemperatureEnabled
         />
         <HeatingZone
           title={"Heating Middle"}
@@ -99,7 +115,9 @@ export function Extruder3ControlPage() {
           onChangeTargetTemp={setMiddleHeatingTemperature}
           min={0}
           max={300}
-          targetTemperatureEnabled={true}
+          heatingFault={getZoneFault("middle")}
+          onRetryHeating={retryHeating}
+          targetTemperatureEnabled
         />
         <HeatingZone
           title={"Heating Back"}
@@ -109,7 +127,9 @@ export function Extruder3ControlPage() {
           onChangeTargetTemp={setBackHeatingTemperature}
           min={0}
           max={300}
-          targetTemperatureEnabled={true}
+          heatingFault={getZoneFault("back")}
+          onRetryHeating={retryHeating}
+          targetTemperatureEnabled
         />
         <HeatingZone
           title={"Heating Nozzle"}
@@ -119,6 +139,8 @@ export function Extruder3ControlPage() {
           onChangeTargetTemp={setNozzleHeatingTemperature}
           min={0}
           max={300}
+          heatingFault={getZoneFault("nozzle")}
+          onRetryHeating={retryHeating}
           targetTemperatureEnabled={
             state?.extruder_settings_state.nozzle_temperature_target_enabled ??
             true
