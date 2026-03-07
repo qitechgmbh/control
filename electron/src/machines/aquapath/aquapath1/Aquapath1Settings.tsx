@@ -206,7 +206,6 @@ export function Aquapath1SettingsPage() {
               value={state?.pid_states.front.kp}
               max={5}
               step={0.01}
-              unit=""
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => {
                 setFrontPidKp(val);
@@ -221,7 +220,6 @@ export function Aquapath1SettingsPage() {
               value={state?.pid_states.front.ki}
               max={5}
               step={0.01}
-              unit=""
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => {
                 setFrontPidKi(val);
@@ -236,7 +234,6 @@ export function Aquapath1SettingsPage() {
               value={state?.pid_states.front.kd}
               max={5}
               step={0.01}
-              unit=""
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => {
                 setFrontPidKd(val);
@@ -266,7 +263,6 @@ export function Aquapath1SettingsPage() {
               value={state?.pid_states.back.kp}
               max={5}
               step={0.01}
-              unit=""
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => {
                 setBackPidKp(val);
@@ -281,7 +277,6 @@ export function Aquapath1SettingsPage() {
               value={state?.pid_states.back.ki}
               max={5}
               step={0.01}
-              unit=""
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => {
                 setBackPidKi(val);
@@ -296,7 +291,6 @@ export function Aquapath1SettingsPage() {
               value={state?.pid_states.back.kd}
               max={5}
               step={0.01}
-              unit=""
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => {
                 setBackPidKd(val);
