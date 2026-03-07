@@ -19,6 +19,8 @@ export function Aquapath1GraphPage() {
     back_temperature,
     front_temp_reservoir,
     back_temp_reservoir,
+    targetFrontTemperature,
+    targetBackTemperature,
   } = useAquapath1();
 
   const syncHook = useGraphSync("aquapath-group");
@@ -47,6 +49,7 @@ export function Aquapath1GraphPage() {
           syncHook={syncHook}
           temp_in={front_temperature}
           temp_out={front_temp_reservoir}
+          targetSeries={targetFrontTemperature}
           targetTemp={front_temp_target}
           name={"Front Temperature"}
           id={"front_temp"}
@@ -55,6 +58,7 @@ export function Aquapath1GraphPage() {
           syncHook={syncHook}
           temp_in={back_temperature}
           temp_out={back_temp_reservoir}
+          targetSeries={targetBackTemperature}
           targetTemp={back_temp_target}
           name={"Back Temperature"}
           id={"back_temp"}
@@ -105,6 +109,7 @@ export function TemperatureGraph({
   syncHook,
   temp_in,
   temp_out,
+  targetSeries,
   targetTemp,
   name,
   id,
@@ -112,6 +117,7 @@ export function TemperatureGraph({
   syncHook: ReturnType<typeof useGraphSync>;
   temp_in: TimeSeries | null;
   temp_out: TimeSeries | null;
+  targetSeries: TimeSeries | null;
   targetTemp: number;
   name: string;
   id: string;
@@ -138,8 +144,9 @@ export function TemperatureGraph({
             color: "#3b82f6",
             lines: [
               {
-                type: "threshold" as const,
+                type: "target" as const,
                 value: targetTemp,
+                targetSeries: targetSeries ?? undefined,
                 label: "Target Temperature",
                 color: "#3b82f6",
                 show: true,
@@ -159,8 +166,9 @@ export function TemperatureGraph({
             color: "#f87171",
             lines: [
               {
-                type: "threshold" as const,
+                type: "target" as const,
                 value: targetTemp,
+                targetSeries: targetSeries ?? undefined,
                 label: "Target Temperature",
                 color: "#f87171",
                 show: true,
