@@ -7,8 +7,8 @@ import { useAquapath1 } from "./useAquapath";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/Icon";
 import { Label } from "@/control/Label";
-import { HeatingZone } from "../../extruder/HeatingZone";
 
 export function Aquapath1ControlPage() {
   const {
@@ -18,12 +18,10 @@ export function Aquapath1ControlPage() {
     back_flow,
     front_temperature,
     back_temperature,
+    front_heating,
+    back_heating,
     front_revolutions,
     back_revolutions,
-    front_power,
-    back_power,
-    front_total_energy,
-    back_total_energy,
     setAquapathMode,
     setFrontTemperature,
     setBackTemperature,
@@ -34,28 +32,19 @@ export function Aquapath1ControlPage() {
     state?.temperature_states?.front.target_temperature ?? 0;
   const backTargetTemperature =
     state?.temperature_states?.back.target_temperature ?? 0;
-
-  const frontCurrentTemperature =
-    state?.temperature_states?.front.temperature ?? 0;
-  const backCurrentTemperature =
-    state?.temperature_states?.back.temperature ?? 0;
-
-  const frontCoolingBoundary =
-    frontTargetTemperature + (state?.tolerance_states.front.cooling ?? 0);
-  const frontHeatingBoundary =
-    frontTargetTemperature - (state?.tolerance_states.front.heating ?? 0);
-  const backCoolingBoundary =
-    backTargetTemperature + (state?.tolerance_states.back.cooling ?? 0);
-  const backHeatingBoundary =
-    backTargetTemperature - (state?.tolerance_states.back.heating ?? 0);
+  const minSettableTemperature = state?.ambient_temperature_calibration ?? 22;
 
   const frontTargetFlow = state?.flow_states.front.should_flow ?? false;
   const backTargetFlow = state?.flow_states.back.should_flow ?? false;
+  const frontHeaterOn = front_heating;
+  const backHeaterOn = back_heating;
+  const frontFanOn = (front_revolutions.current?.value ?? 0) > 0;
+  const backFanOn = (back_revolutions.current?.value ?? 0) > 0;
 
   return (
     <Page>
       <ControlGrid columns={2}>
-        <ControlCard title="Reservoir 1">
+        <ControlCard title="Reservoir 1 (Front)">
           <div className="grid grid-rows-5 gap-4">
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
@@ -75,18 +64,19 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            <div className="flex flex-row gap-4">
+            <div className="flex flex-row items-end gap-4">
               <Label label="Set Target Temperature">
                 <EditValue
                   title="Set Target Temperature"
-                  min={0}
+                  min={minSettableTemperature}
                   value={frontTargetTemperature}
                   max={80}
                   unit="C"
                   step={0.1}
+                  triggerClassName="h-21"
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
-                    setFrontTemperature(val);
+                    setFrontTemperature(Math.max(val, minSettableTemperature));
                   }}
                   defaultValue={
                     defaultState?.temperature_states.front.target_temperature
@@ -94,18 +84,25 @@ export function Aquapath1ControlPage() {
                 />
               </Label>
 
-              {frontCurrentTemperature < frontHeatingBoundary &&
-                (state?.flow_states.front.flow ?? 0) > 0 && (
-                  <Badge variant="default">
-                    Power: {front_power.current?.value} W<br />
-                    Total: {front_total_energy.current?.value} kWh
-                  </Badge>
-                )}
-              {frontCurrentTemperature > frontCoolingBoundary &&
-                frontTargetFlow &&
-                (state?.flow_states.front.flow ?? 0) && (
-                  <Badge variant="secondary">Cooling</Badge>
-                )}
+              {frontHeaterOn && (
+                <Badge
+                  variant="hot"
+                  className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
+                >
+                  <Icon name="lu:Flame" className="size-5" />
+                  Heating
+                </Badge>
+              )}
+
+              {frontFanOn && (
+                <Badge
+                  variant="cold"
+                  className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
+                >
+                  <Icon name="lu:Fan" className="size-5" />
+                  Cooling
+                </Badge>
+              )}
             </div>
 
             <div className="flex flex-row">
@@ -146,8 +143,8 @@ export function Aquapath1ControlPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Reservoir 2">
-          <div className="grid grid-rows-4 gap-4">
+        <ControlCard title="Reservoir 2 (Back)">
+          <div className="grid grid-rows-5 gap-4">
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Flow"
@@ -166,18 +163,19 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            <div className="flex flex-row gap-4">
+            <div className="flex flex-row items-end gap-4">
               <Label label="Set Target Temperature">
                 <EditValue
                   title="Set Target Temperature"
-                  min={0}
+                  min={minSettableTemperature}
                   value={backTargetTemperature}
                   max={80}
                   unit="C"
                   step={0.1}
+                  triggerClassName="h-21"
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
-                    setBackTemperature(val);
+                    setBackTemperature(Math.max(val, minSettableTemperature));
                   }}
                   defaultValue={
                     defaultState?.temperature_states.back.target_temperature
@@ -185,19 +183,25 @@ export function Aquapath1ControlPage() {
                 />
               </Label>
 
-              {backCurrentTemperature < backHeatingBoundary &&
-                backTargetFlow &&
-                (state?.flow_states.front.flow ?? 0) && (
-                  <Badge variant="default">
-                    Power: {back_power.current?.value} W<br />
-                    Total: {back_total_energy.current?.value} kWh
-                  </Badge>
-                )}
-              {backCurrentTemperature > backCoolingBoundary &&
-                frontTargetFlow &&
-                (state?.flow_states.front.flow ?? 0) && (
-                  <Badge variant="secondary">Cooling</Badge>
-                )}
+              {backHeaterOn && (
+                <Badge
+                  variant="hot"
+                  className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
+                >
+                  <Icon name="lu:Flame" className="size-5" />
+                  Heating
+                </Badge>
+              )}
+
+              {backFanOn && (
+                <Badge
+                  variant="cold"
+                  className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
+                >
+                  <Icon name="lu:Fan" className="size-5" />
+                  Cooling
+                </Badge>
+              )}
             </div>
 
             <div className="flex flex-row">

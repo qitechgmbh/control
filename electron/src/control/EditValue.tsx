@@ -38,6 +38,7 @@ type Props = {
   step?: number;
   inverted?: boolean;
   confirmation?: string;
+  triggerClassName?: string;
   renderValue: (value: number) => string;
   onChange?: (value: number) => void;
 };
@@ -96,6 +97,7 @@ export function EditValue({
   minSlider,
   maxSlider,
   confirmation,
+  triggerClassName,
   onChange,
 }: Props) {
   const defaultOrZero = defaultValue ?? 0;
@@ -473,7 +475,10 @@ export function EditValue({
     >
       <PopoverTrigger className="w-min" asChild>
         <TouchButton
-          className={buttonStyle({ open, class: "py-4" })}
+          className={buttonStyle({
+            open,
+            class: `py-4 ${triggerClassName ?? ""}`,
+          })}
           variant="outline"
           disabled={!valueIsDefined}
         >

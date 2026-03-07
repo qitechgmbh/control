@@ -5,8 +5,15 @@ import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { useAquapath1 } from "./useAquapath";
 import React from "react";
+import { Button } from "@/components/ui/button";
 
 export function Aquapath1SettingsPage() {
+  const DEFAULT_HEATING_TOLERANCE_C = 0.4;
+  const DEFAULT_COOLING_TOLERANCE_C = 0.8;
+  const DEFAULT_PID_KP = 0.16;
+  const DEFAULT_PID_KI = 0.02;
+  const DEFAULT_PID_KD = 0.0;
+
   const {
     state,
     setFrontRevolutions,
@@ -15,7 +22,22 @@ export function Aquapath1SettingsPage() {
     setFrontCoolingTolerance,
     setBackHeatingTolerance,
     setBackCoolingTolerance,
+    setAmbientTemperatureCalibration,
+    setFrontPidKp,
+    setFrontPidKi,
+    setFrontPidKd,
+    setBackPidKp,
+    setBackPidKi,
+    setBackPidKd,
   } = useAquapath1();
+  const frontTemp = state?.temperature_states.front.temperature;
+  const backTemp = state?.temperature_states.back.temperature;
+  const currentSensorAmbientCandidate =
+    frontTemp != null && backTemp != null
+      ? Math.min(frontTemp, backTemp)
+      : undefined;
+  const canApplySensorAmbient =
+    currentSensorAmbientCandidate != null && currentSensorAmbientCandidate < 30;
 
   return (
     <Page>
@@ -52,6 +74,42 @@ export function Aquapath1SettingsPage() {
           </Label>
         </ControlCard>
 
+        <ControlCard title="Ambient Calibration">
+          <Label label="Set Ambient Temperature">
+            <EditValue
+              title="Set Ambient Temperature"
+              min={10}
+              value={state?.ambient_temperature_calibration ?? 22}
+              max={40}
+              step={0.1}
+              unit="C"
+              renderValue={(value) => value.toFixed(1)}
+              onChange={(val) => {
+                setAmbientTemperatureCalibration(val);
+              }}
+            />
+          </Label>
+          <div className="mt-3 flex items-center gap-3">
+            <Button
+              type="button"
+              size="sm"
+              disabled={!canApplySensorAmbient}
+              onClick={() => {
+                if (currentSensorAmbientCandidate == null) return;
+                setAmbientTemperatureCalibration(currentSensorAmbientCandidate);
+              }}
+            >
+              Use Current Sensor Temp
+            </Button>
+            <span className="text-muted-foreground text-sm">
+              Candidate:{" "}
+              {currentSensorAmbientCandidate != null
+                ? `${currentSensorAmbientCandidate.toFixed(1)} C`
+                : "N/A"}
+            </span>
+          </div>
+        </ControlCard>
+
         <ControlCard title="Front Temperature Tolerances">
           <Label label="Set Heating Tolerance">
             <EditValue
@@ -82,6 +140,18 @@ export function Aquapath1SettingsPage() {
               }}
             />
           </Label>
+          <div className="mt-3">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setFrontHeatingTolerance(DEFAULT_HEATING_TOLERANCE_C);
+                setFrontCoolingTolerance(DEFAULT_COOLING_TOLERANCE_C);
+              }}
+            >
+              Reset to Default
+            </Button>
+          </div>
         </ControlCard>
 
         <ControlCard title="Back Temperature Tolerances">
@@ -114,6 +184,132 @@ export function Aquapath1SettingsPage() {
               }}
             />
           </Label>
+          <div className="mt-3">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setBackHeatingTolerance(DEFAULT_HEATING_TOLERANCE_C);
+                setBackCoolingTolerance(DEFAULT_COOLING_TOLERANCE_C);
+              }}
+            >
+              Reset to Default
+            </Button>
+          </div>
+        </ControlCard>
+
+        <ControlCard title="Front PID Settings">
+          <Label label="Set Kp">
+            <EditValue
+              title="Set Front Kp"
+              min={0}
+              value={state?.pid_states.front.kp}
+              max={5}
+              step={0.01}
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setFrontPidKp(val);
+              }}
+            />
+          </Label>
+
+          <Label label="Set Ki">
+            <EditValue
+              title="Set Front Ki"
+              min={0}
+              value={state?.pid_states.front.ki}
+              max={5}
+              step={0.01}
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setFrontPidKi(val);
+              }}
+            />
+          </Label>
+
+          <Label label="Set Kd">
+            <EditValue
+              title="Set Front Kd"
+              min={0}
+              value={state?.pid_states.front.kd}
+              max={5}
+              step={0.01}
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setFrontPidKd(val);
+              }}
+            />
+          </Label>
+          <div className="mt-3">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setFrontPidKp(DEFAULT_PID_KP);
+                setFrontPidKi(DEFAULT_PID_KI);
+                setFrontPidKd(DEFAULT_PID_KD);
+              }}
+            >
+              Reset to Default
+            </Button>
+          </div>
+        </ControlCard>
+
+        <ControlCard title="Back PID Settings">
+          <Label label="Set Kp">
+            <EditValue
+              title="Set Back Kp"
+              min={0}
+              value={state?.pid_states.back.kp}
+              max={5}
+              step={0.01}
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setBackPidKp(val);
+              }}
+            />
+          </Label>
+
+          <Label label="Set Ki">
+            <EditValue
+              title="Set Back Ki"
+              min={0}
+              value={state?.pid_states.back.ki}
+              max={5}
+              step={0.01}
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setBackPidKi(val);
+              }}
+            />
+          </Label>
+
+          <Label label="Set Kd">
+            <EditValue
+              title="Set Back Kd"
+              min={0}
+              value={state?.pid_states.back.kd}
+              max={5}
+              step={0.01}
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setBackPidKd(val);
+              }}
+            />
+          </Label>
+          <div className="mt-3">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setBackPidKp(DEFAULT_PID_KP);
+                setBackPidKi(DEFAULT_PID_KI);
+                setBackPidKd(DEFAULT_PID_KD);
+              }}
+            >
+              Reset to Default
+            </Button>
+          </div>
         </ControlCard>
       </ControlGrid>
     </Page>

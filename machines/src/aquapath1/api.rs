@@ -24,6 +24,8 @@ pub struct LiveValuesEvent {
     pub back_revolutions: f64,
     pub front_power: f64,
     pub back_power: f64,
+    pub front_heating: bool,
+    pub back_heating: bool,
     pub front_total_energy: f64,
     pub back_total_energy: f64,
 }
@@ -39,10 +41,17 @@ pub struct StateEvent {
     pub is_default_state: bool,
     /// mode state
     pub mode_state: ModeState,
+    pub ambient_temperature_calibration: f64,
+    pub default_heating_tolerance: f64,
+    pub default_cooling_tolerance: f64,
+    pub default_pid_kp: f64,
+    pub default_pid_ki: f64,
+    pub default_pid_kd: f64,
     pub flow_states: FlowStates,
     pub temperature_states: TempStates,
     pub fan_states: FanStates,
     pub tolerance_states: ToleranceStates,
+    pub pid_states: PidStates,
 }
 
 impl StateEvent {
@@ -100,6 +109,19 @@ pub struct ToleranceStates {
     pub back: ToleranceState,
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct PidState {
+    pub kp: f64,
+    pub ki: f64,
+    pub kd: f64,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PidStates {
+    pub front: PidState,
+    pub back: PidState,
+}
+
 pub enum AquaPathV1Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
@@ -123,6 +145,13 @@ enum Mutation {
     SetBackHeatingTolerance(f64),
     SetFrontCoolingTolerance(f64),
     SetBackCoolingTolerance(f64),
+    SetFrontPidKp(f64),
+    SetFrontPidKi(f64),
+    SetFrontPidKd(f64),
+    SetBackPidKp(f64),
+    SetBackPidKi(f64),
+    SetBackPidKd(f64),
+    SetAmbientTemperatureCalibration(f64),
 }
 
 #[derive(Debug, Clone)]
@@ -200,6 +229,27 @@ impl MachineApi for AquaPathV1 {
             }
             Mutation::SetFrontCoolingTolerance(tolerance) => {
                 self.set_cooling_tolerance(tolerance, super::AquaPathSideType::Front);
+            }
+            Mutation::SetFrontPidKp(value) => {
+                self.set_pid_kp(value, super::AquaPathSideType::Front);
+            }
+            Mutation::SetFrontPidKi(value) => {
+                self.set_pid_ki(value, super::AquaPathSideType::Front);
+            }
+            Mutation::SetFrontPidKd(value) => {
+                self.set_pid_kd(value, super::AquaPathSideType::Front);
+            }
+            Mutation::SetBackPidKp(value) => {
+                self.set_pid_kp(value, super::AquaPathSideType::Back);
+            }
+            Mutation::SetBackPidKi(value) => {
+                self.set_pid_ki(value, super::AquaPathSideType::Back);
+            }
+            Mutation::SetBackPidKd(value) => {
+                self.set_pid_kd(value, super::AquaPathSideType::Back);
+            }
+            Mutation::SetAmbientTemperatureCalibration(ambient_temp) => {
+                self.set_ambient_temperature_calibration(ambient_temp);
             }
         }
         Ok(())
