@@ -1,0 +1,56 @@
+use super::WagoSerialMachine;
+use crate::{MachineAct, MachineMessage, MachineValues};
+use std::time::{Duration, Instant};
+
+impl MachineAct for WagoSerialMachine {
+    fn act(&mut self, now: Instant) {
+        if let Ok(msg) = self.api_receiver.try_recv() {
+            self.act_machine_message(msg);
+        }
+
+        if !self.serial_init_is_complete {
+            self.serial_init_is_complete = smol::block_on((self.serial_device.initialize)());
+            println!("trying Init");
+        }
+
+        if smol::block_on((self.serial_device.has_message)()) {
+            let msg = smol::block_on((self.serial_device.read_message)());
+            self.current_message = msg.map(|m| String::from_utf8(m).unwrap_or("".to_owned()));
+        }
+
+        if now.duration_since(self.last_state_emit) > Duration::from_secs_f64(1.0 / 30.0) {
+            self.emit_state();
+            self.last_state_emit = now;
+        }
+    }
+
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+            }
+            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
+            MachineMessage::HttpApiJsonRequest(value) => {
+                use crate::MachineApi;
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::ConnectToMachine(_machine_connection) => {
+                // Does not connect to any Machine; do nothing
+            }
+            MachineMessage::DisconnectMachine(_machine_connection) => {
+                // Does not connect to any Machine; do nothing
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send_blocking(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::Value::Null,
+                    })
+                    .expect("Failed to send values");
+                sender.close();
+            }
+        }
+    }
+}

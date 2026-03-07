@@ -278,7 +278,7 @@ impl ExtruderV3 {
             self.screw_speed_controller.set_target_screw_rpm(
                 self.screw_speed_controller.target_rpm,
                 AngularVelocity::new::<revolution_per_minute>(3000.0),
-                2,
+                self.screw_speed_controller.motor_poles,
             );
             self.screw_speed_controller.set_uses_rpm(uses_rpm);
         }
@@ -300,7 +300,7 @@ impl ExtruderV3 {
         self.screw_speed_controller.set_target_screw_rpm(
             AngularVelocity::new::<revolution_per_minute>(rpm),
             AngularVelocity::new::<revolution_per_minute>(3000.0),
-            2,
+            self.screw_speed_controller.motor_poles,
         );
         self.emit_state();
     }

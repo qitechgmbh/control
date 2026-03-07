@@ -4,7 +4,7 @@ use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitEx
 pub mod fmt;
 
 #[cfg(feature = "tracing-journald")]
-pub mod journald;
+mod throttle;
 
 /// Initialize the basic tracing system (without OpenTelemetry if enabled)
 /// OpenTelemetry layer is deferred until async runtime is available
@@ -45,7 +45,10 @@ pub fn init_tracing() {
     let subscriber = {
         #[cfg(feature = "tracing-journald")]
         {
-            subscriber.with(journald::init_journald_tracing())
+            use crate::logging::throttle::ThrottleLayer;
+
+            let layer = tracing_journald::layer().expect("Failed to create journald layer");
+            subscriber.with(ThrottleLayer::new(layer))
         }
         #[cfg(not(feature = "tracing-journald"))]
         {
