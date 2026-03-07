@@ -7,7 +7,7 @@ mod winder2_imports {
     pub use crate::winder2::spool_speed_controller::SpoolSpeedController;
     pub use crate::winder2::traverse_controller::TraverseController;
     pub use crate::{
-        MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_dublicates,
+        MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_duplicates,
         validate_same_machine_identification_unique,
     };
     pub use anyhow::Error;
@@ -60,7 +60,7 @@ impl MachineNewTrait for Winder2 {
         let device_identification = params.device_group.to_vec();
 
         validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_dublicates(&device_identification)?;
+        validate_no_role_duplicates(&device_identification)?;
 
         let hardware = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,
