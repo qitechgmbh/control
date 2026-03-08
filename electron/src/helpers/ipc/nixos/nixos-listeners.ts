@@ -51,7 +51,7 @@ export function addNixOSEventListeners() {
     try {
       return await deleteAllOldNixOSGeneration();
     } catch (error) {
-      console.error("Failed to delete all  NixOS generations:", error);
+      console.error("Failed to delete all NixOS generations:", error);
       throw error;
     }
   });
