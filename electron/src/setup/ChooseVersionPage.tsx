@@ -45,9 +45,7 @@ export function ChooseVersionPage() {
   const [generationActionLoading, setGenerationActionLoading] = useState<
     string | null
   >(null);
-  const [deleteAllActionLoading, setdeleteAllActionLoading] = useState<
-    boolean | false
-  >(false);
+  const [deleteAllActionLoading, setdeleteAllActionLoading] = useState(false);
 
   const { githubSource, setGithubSource } = useGithubSourceStore();
 
