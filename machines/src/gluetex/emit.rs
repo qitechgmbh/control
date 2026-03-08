@@ -2,6 +2,7 @@ mod gluetex_imports {
     pub use super::super::controllers::puller_speed_controller::PullerRegulationMode;
     pub use super::super::controllers::spool_speed_controller;
     pub use super::super::{Gluetex, GluetexMode, TraverseMode, api};
+    #[cfg(not(feature = "mock-machine"))]
     pub use crate::buffer1::BufferV1;
     pub use api::{
         GluetexEvents, LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode,

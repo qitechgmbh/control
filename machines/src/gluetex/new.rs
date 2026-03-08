@@ -9,7 +9,7 @@ mod gluetex_imports {
     pub use super::super::features::filament_tension::FilamentTensionCalculator;
     pub use super::super::{Gluetex, GluetexMode, PullerMode};
     pub use crate::{
-        MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_dublicates,
+        MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_duplicates,
         validate_same_machine_identification_unique,
     };
     pub use anyhow::Error;
@@ -69,7 +69,7 @@ impl MachineNewTrait for Gluetex {
         let device_identification = params.device_group.to_vec();
 
         validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_dublicates(&device_identification)?;
+        validate_no_role_duplicates(&device_identification)?;
 
         let hardware = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,

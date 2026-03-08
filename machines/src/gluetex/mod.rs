@@ -36,6 +36,7 @@ mod gluetex_imports {
     pub use smol::lock::RwLock;
     pub use std::{fmt::Debug, sync::Weak, time::Instant};
 
+    #[cfg(not(feature = "mock-machine"))]
     pub use crate::buffer1::BufferV1;
     pub use units::ConstZero;
     pub use units::{

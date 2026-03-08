@@ -23,7 +23,6 @@ pub mod buffer1;
 pub mod extruder1;
 pub mod extruder2;
 pub mod gluetex;
-pub mod ip20_test_machine;
 pub mod laser;
 pub mod machine_identification;
 pub mod minimal_machines;
