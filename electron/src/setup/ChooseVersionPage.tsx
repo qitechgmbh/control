@@ -283,7 +283,6 @@ export function ChooseVersionPage() {
     try {
       await window.nixos.setGeneration(generationId);
       // Refresh the generations list to show updated current generation
-      //
       const generations = await window.nixos.listGenerations();
       setNixosGenerations(generations);
 
