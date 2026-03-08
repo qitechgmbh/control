@@ -94,9 +94,9 @@ export function GluetexOverviewPage() {
   };
 
   return (
-    <Page>
+    <Page className="h-[calc(100vh-4.5rem)] overflow-hidden">
       <GluetexErrorBanner />
-      <ControlGrid>
+      <ControlGrid className="flex-1 min-h-0 auto-rows-fr">
         {/* Top Row: Speed (left) */}
         <ControlCard title="Speed">
           <TimeSeriesValueNumeric
@@ -124,21 +124,17 @@ export function GluetexOverviewPage() {
         </ControlCard>
 
         {/* Right Column: Tall tile spans two rows */}
-        <ControlCard
-          height={2}
-          width={1}
-          title="Motors, Temperatures & Heaters"
-        >
-          <div className="flex flex-col gap-4">
+        <ControlCard height={2} title="Motors, Temperatures & Heaters">
+          <div className="flex flex-col gap-3">
             {/* Addon Motors Status Grid */}
             <div>
-              <h3 className="mb-2 text-lg font-semibold">Addon Motors</h3>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
-                  <span className="text-sm font-medium">Stepper 3</span>
+              <h3 className="mb-1 text-sm font-semibold">Addon Motors</h3>
+              <div className="grid grid-cols-3 gap-1">
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Stepper 3</span>
                   <div
                     className={cn(
-                      "h-8 w-8 rounded-full",
+                      "h-5 w-5 rounded-full",
                       getStepperColor(state?.stepper_state?.stepper3_mode),
                     )}
                   />
@@ -146,11 +142,11 @@ export function GluetexOverviewPage() {
                     {state?.stepper_state?.stepper3_mode || "Standby"}
                   </span>
                 </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
-                  <span className="text-sm font-medium">Stepper 4</span>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Stepper 4</span>
                   <div
                     className={cn(
-                      "h-8 w-8 rounded-full",
+                      "h-5 w-5 rounded-full",
                       getStepperColor(state?.stepper_state?.stepper4_mode),
                     )}
                   />
@@ -158,11 +154,11 @@ export function GluetexOverviewPage() {
                     {state?.stepper_state?.stepper4_mode || "Standby"}
                   </span>
                 </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
-                  <span className="text-sm font-medium">Stepper 5</span>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Stepper 5</span>
                   <div
                     className={cn(
-                      "h-8 w-8 rounded-full",
+                      "h-5 w-5 rounded-full",
                       getStepperColor(state?.stepper_state?.stepper5_mode),
                     )}
                   />
@@ -175,13 +171,13 @@ export function GluetexOverviewPage() {
 
             {/* Temperature Status Grid */}
             <div>
-              <h3 className="mb-2 text-lg font-semibold">Temperatures</h3>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
-                  <span className="text-sm font-medium">Temp 1</span>
+              <h3 className="mb-1 text-sm font-semibold">Temperatures</h3>
+              <div className="grid grid-cols-3 gap-1">
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Temp 1</span>
                   <div
                     className={cn(
-                      "h-8 w-8 rounded-full",
+                      "h-5 w-5 rounded-full",
                       getTemperatureColor(
                         temperature1.current?.value,
                         state?.heating_states?.zone_1?.target_temperature,
@@ -195,11 +191,11 @@ export function GluetexOverviewPage() {
                     °C
                   </span>
                 </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
-                  <span className="text-sm font-medium">Temp 2</span>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Temp 2</span>
                   <div
                     className={cn(
-                      "h-8 w-8 rounded-full",
+                      "h-5 w-5 rounded-full",
                       getTemperatureColor(
                         temperature2.current?.value,
                         state?.heating_states?.zone_2?.target_temperature,
@@ -213,11 +209,11 @@ export function GluetexOverviewPage() {
                     °C
                   </span>
                 </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
-                  <span className="text-sm font-medium">Temp 3</span>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Temp 3</span>
                   <div
                     className={cn(
-                      "h-8 w-8 rounded-full",
+                      "h-5 w-5 rounded-full",
                       getTemperatureColor(
                         temperature3.current?.value,
                         state?.heating_states?.zone_3?.target_temperature,
@@ -231,11 +227,11 @@ export function GluetexOverviewPage() {
                     °C
                   </span>
                 </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
-                  <span className="text-sm font-medium">Temp 4</span>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Temp 4</span>
                   <div
                     className={cn(
-                      "h-8 w-8 rounded-full",
+                      "h-5 w-5 rounded-full",
                       getTemperatureColor(
                         temperature4.current?.value,
                         state?.heating_states?.zone_4?.target_temperature,
@@ -249,11 +245,11 @@ export function GluetexOverviewPage() {
                     °C
                   </span>
                 </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
-                  <span className="text-sm font-medium">Temp 5</span>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Temp 5</span>
                   <div
                     className={cn(
-                      "h-8 w-8 rounded-full",
+                      "h-5 w-5 rounded-full",
                       getTemperatureColor(
                         temperature5.current?.value,
                         state?.heating_states?.zone_5?.target_temperature,
@@ -267,11 +263,11 @@ export function GluetexOverviewPage() {
                     °C
                   </span>
                 </div>
-                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
-                  <span className="text-sm font-medium">Temp 6</span>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Temp 6</span>
                   <div
                     className={cn(
-                      "h-8 w-8 rounded-full",
+                      "h-5 w-5 rounded-full",
                       getTemperatureColor(
                         temperature6.current?.value,
                         state?.heating_states?.zone_6?.target_temperature,
@@ -290,10 +286,10 @@ export function GluetexOverviewPage() {
 
             {/* Heaters Power Draw */}
             <div>
-              <h3 className="mb-2 text-lg font-semibold">Heaters Power</h3>
-              <div className="flex flex-col items-center gap-2 rounded-lg border p-4">
-                <span className="text-sm font-medium">Total Power Draw</span>
-                <span className="text-3xl font-bold">
+              <h3 className="mb-1 text-sm font-semibold">Heaters Power</h3>
+              <div className="flex flex-row items-center justify-center gap-3 rounded-lg border px-4 py-2">
+                <span className="text-sm">Total Power Draw</span>
+                <span className="font-mono text-2xl font-bold">
                   {(() => {
                     const powers = [
                       heater1Power.current?.value,
@@ -309,14 +305,14 @@ export function GluetexOverviewPage() {
                     return roundToDecimals(total, 1);
                   })()}
                 </span>
-                <span className="text-muted-foreground text-sm">Watts</span>
+                <span className="text-muted-foreground text-sm">W</span>
               </div>
             </div>
           </div>
         </ControlCard>
 
-        {/* Second Row: Spool Autostop (left) */}
-        <ControlCard title="Spool Autostop">
+        {/* Second Row: Spool Autostop (left, height=2 to show all content) */}
+        <ControlCard title="Spool Autostop" height={2}>
           <TimeSeriesValueNumeric
             label="Pulled Distance"
             renderValue={(value) => roundToDecimals(value, 2)}
@@ -371,22 +367,20 @@ export function GluetexOverviewPage() {
               disabled={isDisabled}
               loading={isLoading}
               onChange={setSpoolAutomaticAction}
-              orientation="vertical"
+              orientation="horizontal"
+              className="grid grid-cols-3 gap-2"
               options={{
                 Hold: {
                   children: "Hold",
                   icon: "lu:CirclePause",
-                  className: "h-full",
                 },
                 Pull: {
                   children: "Pull",
                   icon: "lu:ChevronsLeft",
-                  className: "h-full",
                 },
                 NoAction: {
                   children: "No Action",
                   icon: "lu:RefreshCcw",
-                  className: "h-full",
                 },
               }}
             />
@@ -432,37 +426,81 @@ export function GluetexOverviewPage() {
           />
         </ControlCard>
 
-        {/* Bottom Row: Order Information (left, width 2) */}
-        <ControlCard width={2} title="Order Information">
-          <div className="grid gap-4">
-            <div className="grid grid-cols-3 gap-4">
-              <Label label="Machine Serial ID">
-                <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2 font-mono text-lg">
-                  {deviceSerialId}
-                </div>
-              </Label>
-              <Label label="Order Number">
-                <EditValue
-                  value={state?.order_info_state?.order_number ?? 0}
-                  title="Order Number"
-                  defaultValue={0}
-                  min={0}
-                  max={999999}
-                  renderValue={(value) => value.toString()}
-                  onChange={setOrderNumber}
-                />
-              </Label>
-              <Label label="Serial Number">
-                <EditValue
-                  value={state?.order_info_state?.serial_number ?? 0}
-                  title="Serial Number"
-                  defaultValue={0}
-                  min={0}
-                  max={999999}
-                  renderValue={(value) => value.toString()}
-                  onChange={setSerialNumber}
-                />
-              </Label>
+        {/* Row 3 col 2: Control Mode */}
+        <ControlCard title="Control Mode">
+          <div className="flex flex-col gap-4">
+            <TouchButton
+              variant={
+                state?.mode_state?.operation_mode === "Setup"
+                  ? "default"
+                  : "outline"
+              }
+              disabled={isDisabled}
+              className="h-20 text-lg"
+              icon="lu:Wrench"
+              onClick={() => setOperationMode("Setup")}
+            >
+              Setup Mode
+            </TouchButton>
+            <TouchButton
+              variant={
+                state?.mode_state?.operation_mode === "Production"
+                  ? "default"
+                  : "outline"
+              }
+              disabled={isDisabled || isAnyMonitoringTriggered()}
+              className="h-20 text-lg"
+              icon="lu:ShieldCheck"
+              onClick={() => setOperationMode("Production")}
+            >
+              Production Mode
+            </TouchButton>
+            {isAnyMonitoringTriggered() && (
+              <div className="rounded bg-orange-50 p-2 text-center text-sm text-orange-600">
+                Production mode is disabled because monitoring alert is
+                triggered
+              </div>
+            )}
+          </div>
+        </ControlCard>
+
+        {/* Row 3 col 3: Order Information */}
+        <ControlCard title="Order Information">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-row gap-4 overflow-x-auto">
+              <div className="shrink-0">
+                <Label label="Machine Serial ID">
+                  <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2 font-mono text-lg">
+                    {deviceSerialId}
+                  </div>
+                </Label>
+              </div>
+              <div className="shrink-0">
+                <Label label="Order Number">
+                  <EditValue
+                    value={state?.order_info_state?.order_number ?? 0}
+                    title="Order Number"
+                    defaultValue={0}
+                    min={0}
+                    max={999999}
+                    renderValue={(value) => value.toString()}
+                    onChange={setOrderNumber}
+                  />
+                </Label>
+              </div>
+              <div className="shrink-0">
+                <Label label="Serial Number">
+                  <EditValue
+                    value={state?.order_info_state?.serial_number ?? 0}
+                    title="Serial Number"
+                    defaultValue={0}
+                    min={0}
+                    max={999999}
+                    renderValue={(value) => value.toString()}
+                    onChange={setSerialNumber}
+                  />
+                </Label>
+              </div>
             </div>
             <Label label="Product Description">
               <Dialog
@@ -530,43 +568,6 @@ export function GluetexOverviewPage() {
           </div>
         </ControlCard>
 
-        {/* Bottom Row: Control Mode (right, width 1) */}
-        <ControlCard width={1} title="Control Mode">
-          <div className="flex flex-col gap-4">
-            <TouchButton
-              variant={
-                state?.mode_state?.operation_mode === "Setup"
-                  ? "default"
-                  : "outline"
-              }
-              disabled={isDisabled}
-              className="h-20 text-lg"
-              icon="lu:Wrench"
-              onClick={() => setOperationMode("Setup")}
-            >
-              Setup Mode
-            </TouchButton>
-            <TouchButton
-              variant={
-                state?.mode_state?.operation_mode === "Production"
-                  ? "default"
-                  : "outline"
-              }
-              disabled={isDisabled || isAnyMonitoringTriggered()}
-              className="h-20 text-lg"
-              icon="lu:ShieldCheck"
-              onClick={() => setOperationMode("Production")}
-            >
-              Production Mode
-            </TouchButton>
-            {isAnyMonitoringTriggered() && (
-              <div className="rounded bg-orange-50 p-2 text-center text-sm text-orange-600">
-                Production mode is disabled because monitoring alert is
-                triggered
-              </div>
-            )}
-          </div>
-        </ControlCard>
       </ControlGrid>
     </Page>
   );

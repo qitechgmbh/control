@@ -2,13 +2,14 @@ import React from "react";
 
 type Props = {
   degrees?: number;
+  className?: string;
 };
 
-export function TensionArm({ degrees }: Props) {
+export function TensionArm({ degrees, className = "h-32" }: Props) {
   return (
     <div className="flex w-full justify-center">
       <div
-        className={`aspect-square h-32`}
+        className={`aspect-square ${className}`}
         style={{
           transform: `rotate(${degrees ?? 0}deg)`,
         }}

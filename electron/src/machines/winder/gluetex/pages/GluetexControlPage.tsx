@@ -82,9 +82,9 @@ export function GluetexControlPage() {
   };
 
   return (
-    <Page>
+    <Page className="h-[calc(100vh-4.5rem)] overflow-hidden">
       <GluetexErrorBanner />
-      <ControlGrid>
+      <ControlGrid className="flex-1 min-h-0 auto-rows-fr">
         <ControlCard title="Spool">
           <Spool rpm={spoolRpm.current?.value} />
           <TimeSeriesValueNumeric
@@ -95,7 +95,7 @@ export function GluetexControlPage() {
           />
         </ControlCard>
 
-        <ControlCard className="bg-red" height={2} title="Traverse">
+        <ControlCard height={2} title="Traverse">
           <TimeSeriesValueNumeric
             label="Position"
             unit="mm"
@@ -111,7 +111,7 @@ export function GluetexControlPage() {
               current={traversePosition.current?.value ?? 0}
             />
           )}
-          <div className="flex flex-row flex-wrap gap-4">
+          <div className="grid grid-cols-2 gap-2">
             <Label label="Outer Limit">
               <EditValue
                 value={state?.traverse_state?.limit_outer}
@@ -195,7 +195,7 @@ export function GluetexControlPage() {
           </Label>
         </ControlCard>
 
-        <ControlCard title="Tension Arm">
+        <ControlCard title="Tension Arm" height={2}>
           <TensionArm degrees={tensionArmAngle.current?.value} />
           <TimeSeriesValueNumeric
             label="Tension Arm"
@@ -217,7 +217,7 @@ export function GluetexControlPage() {
           )}
         </ControlCard>
 
-        <ControlCard className="bg-red" title="Winder Mode">
+        <ControlCard title="Winder Mode">
           <SelectionGroup<Mode>
             value={state?.mode_state.mode}
             disabled={isDisabled}
@@ -255,7 +255,84 @@ export function GluetexControlPage() {
           />
         </ControlCard>
 
-        <ControlCard className="bg-red" title="Puller">
+        <ControlCard title="Spool Autostop" width={2}>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="flex flex-col gap-3">
+              <TimeSeriesValueNumeric
+                label="Pulled Distance"
+                renderValue={(value) => roundToDecimals(value, 2)}
+                unit="m"
+                timeseries={spoolProgress}
+              />
+              <Label label="Target Length">
+                <EditValue
+                  value={state?.spool_automatic_action_state.spool_required_meters}
+                  unit="m"
+                  title="Expected Meters"
+                  defaultValue={250}
+                  min={10}
+                  max={10000}
+                  step={10}
+                  renderValue={(value) => roundToDecimals(value, 2)}
+                  onChange={setSpoolAutomaticRequiredMeters}
+                />
+              </Label>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label label="Estimated Time Remaining">
+                <span className="font-mono text-lg">
+                  {(() => {
+                    const minutes =
+                      state?.spool_automatic_action_state
+                        .estimated_minutes_remaining || 0;
+                    if (minutes >= 60) {
+                      const hours = Math.floor(minutes / 60);
+                      const mins = Math.round(minutes % 60);
+                      return `${hours}h ${mins}min`;
+                    }
+                    return `${Math.round(minutes)} min`;
+                  })()}
+                </span>
+              </Label>
+              <TouchButton
+                variant="outline"
+                onClick={handleResetProgress}
+                disabled={isDisabled}
+                isLoading={isLoading || state?.traverse_state?.is_going_out}
+              >
+                Reset Progress
+              </TouchButton>
+              <Label label="After Target Reached">
+                <SelectionGroup<SpoolAutomaticActionMode>
+                  value={
+                    state?.spool_automatic_action_state.spool_automatic_action_mode
+                  }
+                  disabled={isDisabled}
+                  loading={isLoading}
+                  onChange={setSpoolAutomaticAction}
+                  orientation="horizontal"
+                  className="grid grid-cols-3 gap-2"
+                  options={{
+                    Hold: {
+                      children: "Hold",
+                      icon: "lu:CirclePause",
+                    },
+                    Pull: {
+                      children: "Pull",
+                      icon: "lu:ChevronsLeft",
+                    },
+                    NoAction: {
+                      children: "No Action",
+                      icon: "lu:RefreshCcw",
+                    },
+                  }}
+                />
+              </Label>
+            </div>
+          </div>
+        </ControlCard>
+
+        <ControlCard title="Puller">
           <TimeSeriesValueNumeric
             label="Speed"
             unit="m/min"
@@ -273,84 +350,6 @@ export function GluetexControlPage() {
               step={0.1}
               renderValue={(value) => roundToDecimals(value, 1)}
               onChange={setPullerTargetSpeed}
-            />
-          </Label>
-        </ControlCard>
-
-        <ControlCard className="bg-red" title="Spool Autostop">
-          <TimeSeriesValueNumeric
-            label="Pulled Distance"
-            renderValue={(value) => roundToDecimals(value, 2)}
-            unit="m"
-            timeseries={spoolProgress}
-          />
-
-          <Label label="Target Length">
-            <EditValue
-              value={state?.spool_automatic_action_state.spool_required_meters}
-              unit="m"
-              title="Expected Meters"
-              defaultValue={250}
-              min={10}
-              max={10000}
-              step={10}
-              renderValue={(value) => roundToDecimals(value, 2)}
-              onChange={setSpoolAutomaticRequiredMeters}
-            />
-          </Label>
-
-          <Label label="Estimated Time Remaining">
-            <span className="font-mono text-lg">
-              {(() => {
-                const minutes =
-                  state?.spool_automatic_action_state
-                    .estimated_minutes_remaining || 0;
-                if (minutes >= 60) {
-                  const hours = Math.floor(minutes / 60);
-                  const mins = Math.round(minutes % 60);
-                  return `${hours}h ${mins}min`;
-                }
-                return `${Math.round(minutes)} min`;
-              })()}
-            </span>
-          </Label>
-
-          <TouchButton
-            variant="outline"
-            onClick={handleResetProgress}
-            disabled={isDisabled}
-            isLoading={isLoading || state?.traverse_state?.is_going_out}
-          >
-            Reset Progress
-          </TouchButton>
-
-          <Label label="After Target Length Reached">
-            <SelectionGroup<SpoolAutomaticActionMode>
-              value={
-                state?.spool_automatic_action_state.spool_automatic_action_mode
-              }
-              disabled={isDisabled}
-              loading={isLoading}
-              onChange={setSpoolAutomaticAction}
-              orientation="vertical"
-              options={{
-                Hold: {
-                  children: "Hold",
-                  icon: "lu:CirclePause",
-                  className: "h-full",
-                },
-                Pull: {
-                  children: "Pull",
-                  icon: "lu:ChevronsLeft",
-                  className: "h-full",
-                },
-
-                NoAction: {
-                  children: "No Action",
-                  icon: "lu:RefreshCcw",
-                  className: "h-full",
-                },
-              }}
             />
           </Label>
         </ControlCard>

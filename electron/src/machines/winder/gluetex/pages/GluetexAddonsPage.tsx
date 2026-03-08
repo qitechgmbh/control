@@ -54,9 +54,9 @@ export function GluetexAddonsPage() {
   );
 
   return (
-    <Page>
+    <Page className="h-[calc(100vh-4.5rem)] overflow-hidden">
       <GluetexErrorBanner />
-      <ControlGrid>
+      <ControlGrid className="flex-1 min-h-0 auto-rows-fr">
         <ControlCard className="bg-red" title="Motors">
           <Label label="Stepper 3">
             <SelectionGroup<StepperMode>
@@ -127,7 +127,7 @@ export function GluetexAddonsPage() {
         </ControlCard>
 
         <ControlCard title="Slave Tension Arm">
-          <TensionArm degrees={slaveTensionArmAngle.current?.value} />
+          <TensionArm degrees={slaveTensionArmAngle.current?.value} className="h-24" />
           <TimeSeriesValueNumeric
             label="Slave Tension Arm"
             unit="deg"
@@ -154,7 +154,7 @@ export function GluetexAddonsPage() {
           )}
         </ControlCard>
 
-        <ControlCard className="bg-red" height={2} title="Quality Control">
+        <ControlCard title="Quality Control">
           <div className="space-y-6">
             {/* Optris 1 Voltage */}
             <div className="space-y-3">
@@ -215,125 +215,104 @@ export function GluetexAddonsPage() {
                 current={optris2Voltage.current?.value ?? 0}
               />
             </div>
+          </div>
+        </ControlCard>
 
-            {/* Heating Mode */}
-            <div className="mt-8 space-y-3">
-              <h3 className="text-lg font-semibold">Heating Mode</h3>
-              <SelectionGroup<HeatingMode>
-                value={state?.heating_state?.heating_mode}
-                disabled={isDisabled}
-                loading={isLoading}
-                onChange={setHeatingMode}
-                orientation="horizontal"
-                className="grid grid-cols-2 gap-2"
-                options={{
-                  Standby: {
-                    children: "Standby",
-                    icon: "lu:Power",
-                    isActiveClassName: "bg-green-600",
-                  },
-                  Heating: {
-                    children: "Heating",
-                    icon: "lu:Flame",
-                    isActiveClassName: "bg-green-600",
-                  },
-                }}
-              />
+        <ControlCard title="Motor Ratios" width={2}>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="flex flex-col gap-3">
+              <Label label="Stepper 3 Ratio">
+                <RatioInput
+                  master={state?.motor_ratios_state?.stepper3_master}
+                  slave={state?.motor_ratios_state?.stepper3_slave}
+                  title="Stepper 3 Motor Ratio"
+                  onRatioChange={(master, slave) => {
+                    setStepper3Master(master);
+                    setStepper3Slave(slave);
+                  }}
+                />
+              </Label>
+              <Label label="Stepper 4 Ratio">
+                <RatioInput
+                  master={state?.motor_ratios_state?.stepper4_master}
+                  slave={state?.motor_ratios_state?.stepper4_slave}
+                  title="Stepper 4 Motor Ratio"
+                  onRatioChange={(master, slave) => {
+                    setStepper4Master(master);
+                    setStepper4Slave(slave);
+                  }}
+                />
+              </Label>
+              <Label label="Stepper 5 Ratio">
+                <RatioInput
+                  master={state?.motor_ratios_state?.stepper5_master}
+                  slave={state?.motor_ratios_state?.stepper5_slave}
+                  title="Stepper 5 Motor Ratio"
+                  onRatioChange={(master, slave) => {
+                    setStepper5Master(master);
+                    setStepper5Slave(slave);
+                  }}
+                />
+              </Label>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Label label="Stepper 3: Contour Length">
+                <EditValue
+                  value={state?.addon_motor_3_state?.konturlaenge_mm}
+                  title="Contour Length"
+                  unit="mm"
+                  step={1}
+                  min={0}
+                  max={10000}
+                  defaultValue={0}
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) => setStepper3Konturlaenge(value)}
+                />
+              </Label>
+              <Label label="Pause">
+                <EditValue
+                  value={state?.addon_motor_3_state?.pause_mm}
+                  title="Pause"
+                  unit="mm"
+                  step={1}
+                  min={0}
+                  max={10000}
+                  defaultValue={0}
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) => setStepper3Pause(value)}
+                />
+              </Label>
+              {state?.addon_motor_3_state?.konturlaenge_mm !== undefined &&
+                state?.addon_motor_3_state?.konturlaenge_mm > 0 && (
+                  <Label label="Stepper 3 Pattern State">
+                    <StatusBadge
+                      variant={
+                        state?.addon_motor_3_state?.pattern_state === "Running"
+                          ? "success"
+                          : "error"
+                      }
+                    >
+                      {state?.addon_motor_3_state?.pattern_state || "Idle"}
+                    </StatusBadge>
+                  </Label>
+                )}
+              <Label label="Stepper 3 Homing">
+                <TouchButton
+                  variant="outline"
+                  icon="lu:House"
+                  onClick={homeAddonMotor3}
+                  disabled={isDisabled}
+                  isLoading={isLoading}
+                >
+                  Home Motor
+                </TouchButton>
+              </Label>
             </div>
           </div>
         </ControlCard>
 
-        <ControlCard className="bg-red" title="Motor Ratios">
-          <Label label="Stepper 3 Ratio">
-            <RatioInput
-              master={state?.motor_ratios_state?.stepper3_master}
-              slave={state?.motor_ratios_state?.stepper3_slave}
-              title="Stepper 3 Motor Ratio"
-              onRatioChange={(master, slave) => {
-                setStepper3Master(master);
-                setStepper3Slave(slave);
-              }}
-            />
-          </Label>
-          <Label label="Stepper 4 Ratio">
-            <RatioInput
-              master={state?.motor_ratios_state?.stepper4_master}
-              slave={state?.motor_ratios_state?.stepper4_slave}
-              title="Stepper 4 Motor Ratio"
-              onRatioChange={(master, slave) => {
-                setStepper4Master(master);
-                setStepper4Slave(slave);
-              }}
-            />
-          </Label>
-          <Label label="Stepper 5 Ratio">
-            <RatioInput
-              master={state?.motor_ratios_state?.stepper5_master}
-              slave={state?.motor_ratios_state?.stepper5_slave}
-              title="Stepper 5 Motor Ratio"
-              onRatioChange={(master, slave) => {
-                setStepper5Master(master);
-                setStepper5Slave(slave);
-              }}
-            />
-          </Label>
-          <div className="flex flex-col gap-4">
-            <Label label="Stepper 3: Contour Length">
-              <EditValue
-                value={state?.addon_motor_3_state?.konturlaenge_mm}
-                title="Contour Length"
-                unit="mm"
-                step={1}
-                min={0}
-                max={10000}
-                defaultValue={0}
-                renderValue={(value) => roundToDecimals(value, 1)}
-                onChange={(value) => setStepper3Konturlaenge(value)}
-              />
-            </Label>
-            <Label label="Pause">
-              <EditValue
-                value={state?.addon_motor_3_state?.pause_mm}
-                title="Pause"
-                unit="mm"
-                step={1}
-                min={0}
-                max={10000}
-                defaultValue={0}
-                renderValue={(value) => roundToDecimals(value, 1)}
-                onChange={(value) => setStepper3Pause(value)}
-              />
-            </Label>
-          </div>
-          {state?.addon_motor_3_state?.konturlaenge_mm !== undefined &&
-            state?.addon_motor_3_state?.konturlaenge_mm > 0 && (
-              <Label label="Stepper 3 Pattern State">
-                <StatusBadge
-                  variant={
-                    state?.addon_motor_3_state?.pattern_state === "Running"
-                      ? "success"
-                      : "error"
-                  }
-                >
-                  {state?.addon_motor_3_state?.pattern_state || "Idle"}
-                </StatusBadge>
-              </Label>
-            )}
-          <Label label="Stepper 3 Homing">
-            <TouchButton
-              variant="outline"
-              icon="lu:House"
-              onClick={homeAddonMotor3}
-              disabled={isDisabled}
-              isLoading={isLoading}
-            >
-              Home Motor
-            </TouchButton>
-          </Label>
-        </ControlCard>
-
         <ControlCard title="Addon Tension Arm">
-          <TensionArm degrees={addonTensionArmAngle.current?.value} />
+          <TensionArm degrees={addonTensionArmAngle.current?.value} className="h-24" />
           <TimeSeriesValueNumeric
             label="Angle"
             unit="deg"
