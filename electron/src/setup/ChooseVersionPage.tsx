@@ -326,7 +326,7 @@ export function ChooseVersionPage() {
   const handleDeleteAllOldGeneration = async () => {
     if (
       !confirm(
-        `Are you sure you want to delete all old generation This will also update the bootloader menu. This action cannot be undone.`,
+        `Are you sure you want to delete all old generations? This will also update the bootloader menu. This action cannot be undone.`,
       )
     ) {
       return;
