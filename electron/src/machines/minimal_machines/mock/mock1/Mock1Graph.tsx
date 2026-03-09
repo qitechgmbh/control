@@ -105,7 +105,7 @@ export function Mock1GraphPage() {
             syncHook={syncHook}
             newData={singleData}
             config={singleGraphConfig}
-            unit={"mm" as Unit}
+            unit="mm"
             renderValue={(value) => value.toFixed(3)}
             graphId="single-graph1"
             currentTimeSeries={sineWaveSum}
@@ -118,7 +118,7 @@ export function Mock1GraphPage() {
               ...config,
               title: "Combined Sine Waves",
             }}
-            unit={"mm" as Unit}
+            unit="mm"
             renderValue={(value) => value.toFixed(3)}
             graphId="combined-graph"
             currentTimeSeries={sineWaveSum}
@@ -128,7 +128,7 @@ export function Mock1GraphPage() {
             syncHook={syncHook}
             newData={singleData}
             config={singleGraphConfig}
-            unit={"mm" as Unit}
+            unit="mm"
             renderValue={(value) => value.toFixed(3)}
             graphId="single-graph2"
             currentTimeSeries={sineWaveSum}
@@ -138,7 +138,7 @@ export function Mock1GraphPage() {
             syncHook={syncHook}
             newData={singleData}
             config={singleGraphConfig}
-            unit={"mm" as Unit}
+            unit="mm"
             renderValue={(value) => value.toFixed(3)}
             graphId="single-graph"
             currentTimeSeries={sineWaveSum}

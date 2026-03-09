@@ -7,6 +7,7 @@ import {
 } from "@/components/graph";
 import { TimeSeries, TimeSeriesValue } from "@/lib/timeseries";
 import { Unit } from "@/control/units";
+import { GraphLine } from "./types";
 import { useMarkerManager } from "./useMarkerManager";
 import { useMarkerContext } from "./MarkerContext";
 
@@ -14,7 +15,7 @@ type TimeSeriesData = {
   newData: TimeSeries | null;
   title?: string;
   color?: string;
-  lines?: any[];
+  lines?: GraphLine[];
 };
 
 type GraphWithMarkerControlsProps = {
@@ -248,16 +249,30 @@ function GraphWithMarkerControlsContent({
   const markerManager = useMarkerManager(machineId);
   const markers = providedMarkers || markerManager.markers;
 
-  // Time Tick for forcing marker redraw
+  // Time tick for forcing marker redraw, updated via rAF loop (throttled)
   const [timeTick, setTimeTick] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const lastTickTimeRef = useRef<number>(0);
+  // Minimum ms between marker redraws; aligns with display frame rate without
+  // creating unnecessary React state updates on every animation frame.
+  const REDRAW_INTERVAL_MS = 100;
 
-  // Set interval to force redraw the marker effect frequently (e.g., every 50ms)
+  // Use a requestAnimationFrame loop to drive marker redraws so we stay
+  // aligned with the browser's paint cycle and can throttle easily.
   useEffect(() => {
     if (!currentTimeSeries?.current) return;
-    const intervalId = setInterval(() => {
-      setTimeTick((prev) => prev + 1);
-    }, 50);
-    return () => clearInterval(intervalId);
+
+    const loop = (now: number) => {
+      if (now - lastTickTimeRef.current >= REDRAW_INTERVAL_MS) {
+        lastTickTimeRef.current = now;
+        setTimeTick((t) => t + 1);
+      }
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
   }, [currentTimeSeries?.current]);
 
   // Marker Drawing Effect: use uPlot instance for exact valToPos so point sits on the curve
@@ -293,7 +308,7 @@ function GraphWithMarkerControlsContent({
       if (!series) return undefined;
 
       const validValues = series.long.values.filter(
-        (v): v is TimeSeriesValue => v !== null,
+        (v): v is TimeSeriesValue => v !== null && v.timestamp > 0,
       );
       if (validValues.length === 0) return undefined;
 
@@ -349,7 +364,7 @@ function GraphWithMarkerControlsContent({
           name,
           markerValue,
           color,
-          () => markerManager.removeMarker(timestamp),
+          () => markerManager.removeMarker(timestamp, name),
         );
       },
     );

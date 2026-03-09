@@ -44,7 +44,9 @@ export function AddMarkerDialog({
   useEffect(() => {
     if (open) {
       setName(defaultName);
-      setSelectedTimestamp(currentTimestamp ?? Date.now());
+      // Keep timestamp unset until the user explicitly chooses a time.
+      // handleAdd falls back to currentTimestamp / Date.now() on submit.
+      setSelectedTimestamp(null);
       setDuplicateNameError(false);
     } else {
       setName("");
@@ -127,9 +129,7 @@ export function AddMarkerDialog({
             <TimeInput
               timestamp={selectedTimestamp}
               onTimeChange={setSelectedTimestamp}
-              onClear={() =>
-                setSelectedTimestamp(currentTimestamp ?? Date.now())
-              }
+              onClear={() => setSelectedTimestamp(null)}
             />
             <p className="text-muted-foreground text-xs">
               Leave empty to use current time

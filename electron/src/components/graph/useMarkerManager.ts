@@ -22,8 +22,8 @@ export function useMarkerManager(machineId: string) {
   );
 
   const removeMarker = useCallback(
-    (timestamp: number) => {
-      removeMarkerAction(machineId, timestamp);
+    (timestamp: number, name: string) => {
+      removeMarkerAction(machineId, timestamp, name);
     },
     [machineId, removeMarkerAction],
   );

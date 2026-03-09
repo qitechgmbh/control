@@ -11,6 +11,17 @@ type MarkerContextType = {
 
 const MarkerContext = createContext<MarkerContextType | null>(null);
 
+// Stable fallback returned when useMarkerContext is called outside a provider.
+// Defined at module level so setters have stable identities across renders.
+const DEFAULT_CONTEXT: MarkerContextType = {
+  machineId: null,
+  setMachineId: () => {},
+  currentTimestamp: null,
+  setCurrentTimestamp: () => {},
+  currentValue: null,
+  setCurrentValue: () => {},
+};
+
 export function MarkerProvider({ children }: { children: React.ReactNode }) {
   const [machineId, setMachineId] = useState<string | null>(null);
   const [currentTimestamp, setCurrentTimestamp] = useState<number | null>(null);
@@ -34,16 +45,10 @@ export function MarkerProvider({ children }: { children: React.ReactNode }) {
 
 export function useMarkerContext() {
   const context = useContext(MarkerContext);
-  // Return a default context if not within a provider (for non-graph pages)
+  // Return stable module-level default when not within a provider so that
+  // effects depending on these setters don't re-run on every render.
   if (!context) {
-    return {
-      machineId: null,
-      setMachineId: () => {},
-      currentTimestamp: null,
-      setCurrentTimestamp: () => {},
-      currentValue: null,
-      setCurrentValue: () => {},
-    };
+    return DEFAULT_CONTEXT;
   }
   return context;
 }
