@@ -1,13 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import type uPlot from "uplot";
-import {
-  AutoSyncedBigGraph,
-  useGraphSync,
-  type GraphConfig,
-} from "@/components/graph";
+import { AutoSyncedBigGraph } from "../SyncedComponents";
+import { useGraphSync } from "../useGraphSync";
 import { TimeSeries, TimeSeriesValue } from "@/lib/timeseries";
 import { Unit } from "@/control/units";
-import { GraphLine } from "./types";
+import { type GraphConfig, GraphLine } from "../types";
 import { useMarkerManager } from "./useMarkerManager";
 import { useMarkerContext } from "./MarkerContext";
 

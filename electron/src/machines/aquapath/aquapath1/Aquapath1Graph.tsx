@@ -5,7 +5,7 @@ import {
   useGraphSync,
   type GraphConfig,
 } from "@/components/graph";
-import { GraphWithMarkerControls } from "@/components/graph/GraphWithMarkerControls";
+import { GraphWithMarkerControls } from "@/components/graph/marker/GraphWithMarkerControls";
 
 import React from "react";
 import { useAquapath1 } from "./useAquapath";

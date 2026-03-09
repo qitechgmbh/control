@@ -11,7 +11,7 @@ import { useWinder2 } from "./useWinder";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { TimeSeries } from "@/lib/timeseries";
 import { Unit } from "@/control/units";
-import { GraphWithMarkerControls } from "@/components/graph/GraphWithMarkerControls";
+import { GraphWithMarkerControls } from "@/components/graph/marker/GraphWithMarkerControls";
 
 export function Winder2GraphsPage() {
   const {

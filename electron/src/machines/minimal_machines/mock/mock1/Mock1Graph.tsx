@@ -8,7 +8,7 @@ import {
 import React from "react";
 import { useMock1 } from "./useMock";
 import { TimeSeriesValue, type Series, TimeSeries } from "@/lib/timeseries";
-import { GraphWithMarkerControls } from "@/components/graph/GraphWithMarkerControls";
+import { GraphWithMarkerControls } from "@/components/graph/marker/GraphWithMarkerControls";
 
 export function Mock1GraphPage() {
   const { sineWaveSum } = useMock1();
