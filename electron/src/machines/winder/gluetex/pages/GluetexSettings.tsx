@@ -14,6 +14,8 @@ import {
   setGluetexXLMode,
   GLUETEX_TRAVERSE_MAX_STANDARD,
   GLUETEX_TRAVERSE_MAX_XL,
+  DEFAULT_GRAPH_SAMPLE_INTERVAL,
+  DEFAULT_GRAPH_RETENTION,
 } from "../config/gluetexConfig";
 import {
   Collapsible,
@@ -21,6 +23,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Icon } from "@/components/Icon";
+import { Button } from "@/components/ui/button";
 
 export function GluetexSettingPage() {
   const [xlMode, setXlMode] = useState(getGluetexXLMode());
@@ -39,6 +42,7 @@ export function GluetexSettingPage() {
   const [addonsOpen, setAddonsOpen] = useState(false);
   const [tensionArmMonitorsOpen, setTensionArmMonitorsOpen] = useState(false);
   const [voltageMonitoringOpen, setVoltageMonitoringOpen] = useState(false);
+  const [graphOpen, setGraphOpen] = useState(false);
 
   const {
     state,
@@ -106,6 +110,9 @@ export function GluetexSettingPage() {
     setOptris2MonitorMinVoltage,
     setOptris2MonitorMaxVoltage,
     setOptris2MonitorDelay,
+    longBufferSampleInterval,
+    longBufferRetention,
+    setLongBufferConfig,
   } = useGluetex();
 
   const handleXlModeChange = (enabled: boolean) => {
@@ -1976,6 +1983,87 @@ export function GluetexSettingPage() {
                       />
                     </Label>
                   </div>
+                </ControlCard>
+              </ControlGrid>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* ========== GRAPH SETTINGS ========== */}
+        <Collapsible open={graphOpen} onOpenChange={setGraphOpen}>
+          <CollapsibleTrigger asChild>
+            <div className="dark:hover:bg-gray-750 cursor-pointer rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+              <div className="flex items-center justify-between">
+                <h2 className="flex items-center gap-2 text-xl font-semibold">
+                  <Icon name="lu:ChartSpline" className="h-5 w-5" />
+                  Graph Settings
+                </h2>
+                <Icon
+                  name={graphOpen ? "lu:ChevronUp" : "lu:ChevronDown"}
+                  className="h-5 w-5 transition-transform"
+                />
+              </div>
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-4">
+              <ControlGrid>
+                <ControlCard title="Long Buffer">
+                  <div className="text-muted-foreground mb-2 text-sm">
+                    Configure the long-term graph buffer. Changing these values
+                    will clear existing graph data. After updating any buffer
+                    settings, the page will need to be reloaded for changes to
+                    take effect, this will disconnect the machine. Warning: if
+                    the Buffer size gets too large, it may impact performance.
+                    If you increase the retention duration you should also
+                    increase the sample interval to keep the buffer size
+                    manageable. Buffer size:{" "}
+                    {Math.ceil(
+                      longBufferRetention / longBufferSampleInterval,
+                    ).toLocaleString()}{" "}
+                    data points.
+                  </div>
+                  <Label label="Sample Interval">
+                    <EditValue
+                      value={longBufferSampleInterval / 1000}
+                      title={"Sample Interval"}
+                      unit="s"
+                      step={0.1}
+                      min={0.1}
+                      max={240}
+                      defaultValue={DEFAULT_GRAPH_SAMPLE_INTERVAL / 1000}
+                      renderValue={(value) => roundToDecimals(value, 1)}
+                      onChange={(value) =>
+                        setLongBufferConfig(value * 1000, longBufferRetention)
+                      }
+                    />
+                  </Label>
+                  <Label label="Retention Duration">
+                    <EditValue
+                      value={longBufferRetention / 60000}
+                      title={"Retention Duration"}
+                      unit="min"
+                      step={1}
+                      min={1}
+                      max={2880}
+                      defaultValue={DEFAULT_GRAPH_RETENTION / 60000}
+                      renderValue={(value) => roundToDecimals(value, 0)}
+                      onChange={(value) =>
+                        setLongBufferConfig(
+                          longBufferSampleInterval,
+                          value * 60000,
+                        )
+                      }
+                    />
+                  </Label>
+                  <Button
+                    variant="outline"
+                    className="mt-2 flex items-center gap-2"
+                    onClick={() => window.location.reload()}
+                  >
+                    <Icon name="lu:RefreshCw" className="h-4 w-4" />
+                    Reload Page
+                  </Button>
                 </ControlCard>
               </ControlGrid>
             </div>

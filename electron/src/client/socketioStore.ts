@@ -80,13 +80,15 @@ export class ThrottledStoreUpdater<S> {
   }
 
   /**
-   * Force immediate sync of buffer to store
+   * Force immediate sync of buffer to store, cancelling any pending timer.
+   * Also syncs if no timer is pending (unlike the previous behaviour).
    */
   forceSync(): void {
     if (this.syncTimer) {
       clearTimeout(this.syncTimer);
-      this.syncToStore();
+      this.syncTimer = null;
     }
+    this.syncToStore();
   }
 
   /**

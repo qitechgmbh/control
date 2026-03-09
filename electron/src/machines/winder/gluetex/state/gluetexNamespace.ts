@@ -20,9 +20,11 @@ import { MachineIdentificationUnique } from "@/machines/types";
 import { useMemo } from "react";
 import {
   createTimeSeries,
+  reconfigureLongBuffer,
   TimeSeries,
   TimeSeriesValue,
 } from "@/lib/timeseries";
+import { getGluetexGraphConfig } from "../config/gluetexConfig";
 
 // ========== Event Schema Definitions (Backend) ==========
 
@@ -567,6 +569,11 @@ export type GluetexNamespaceStore = {
 
   // Addon motor 5 (TA tape feeder) rpm
   addonMotor5Rpm: TimeSeries;
+
+  // Long buffer configuration
+  longBufferSampleInterval: number;
+  longBufferRetention: number;
+  reconfigureLongBuffers: (sampleInterval: number, retention: number) => void;
 };
 
 // Constants for time durations
@@ -575,12 +582,16 @@ const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
 
+// Read persisted graph config (or defaults) for initial TimeSeries creation
+const persistedGraphConfig = getGluetexGraphConfig();
+
 // Time series configuration for 30Hz data from backend
-// sampleIntervalShort: 200ms to downsample 30Hz (~33ms) data to ~5Hz for short buffer
-// sampleIntervalLong: 1000ms to downsample to 1Hz for long buffer
+// sampleIntervalShort: 20ms to keep full resolution for short buffer
+// sampleIntervalLong & retentionDurationLong: from persisted user config
 const timeSeriesConfig = {
   sampleIntervalShort: 20,
-  sampleIntervalLong: 1000,
+  sampleIntervalLong: persistedGraphConfig.sampleInterval,
+  retentionDurationLong: persistedGraphConfig.retention,
 };
 
 // Create time series for backend values
@@ -920,6 +931,12 @@ export const createGluetexNamespaceStore =
 
         // Addon motor 5 rpm
         addonMotor5Rpm,
+
+        // Long buffer configuration
+        longBufferSampleInterval: persistedGraphConfig.sampleInterval,
+        longBufferRetention: persistedGraphConfig.retention,
+        // Placeholder — replaced by gluetexMessageHandler once throttledUpdater is available
+        reconfigureLongBuffers: () => {},
       };
     });
 
@@ -933,6 +950,51 @@ export function gluetexMessageHandler(
   store: StoreApi<GluetexNamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<GluetexNamespaceStore>,
 ): EventHandler {
+  // Wire up reconfigureLongBuffers through the throttledUpdater so the buffer
+  // is always kept in sync (avoids the 33ms flush overwriting direct set() calls).
+  store.setState({
+    reconfigureLongBuffers: (sampleInterval: number, retention: number) => {
+      throttledUpdater.updateWith((state) => {
+        const reconfigure = (ts: TimeSeries) =>
+          reconfigureLongBuffer(ts, sampleInterval, retention);
+        return {
+          ...state,
+          longBufferSampleInterval: sampleInterval,
+          longBufferRetention: retention,
+          traversePosition: reconfigure(state.traversePosition),
+          pullerSpeed: reconfigure(state.pullerSpeed),
+          spoolRpm: reconfigure(state.spoolRpm),
+          tensionArmAngle: reconfigure(state.tensionArmAngle),
+          spoolProgress: reconfigure(state.spoolProgress),
+          temperature1: reconfigure(state.temperature1),
+          temperature2: reconfigure(state.temperature2),
+          temperature3: reconfigure(state.temperature3),
+          temperature4: reconfigure(state.temperature4),
+          temperature5: reconfigure(state.temperature5),
+          temperature6: reconfigure(state.temperature6),
+          heater1Power: reconfigure(state.heater1Power),
+          heater2Power: reconfigure(state.heater2Power),
+          heater3Power: reconfigure(state.heater3Power),
+          heater4Power: reconfigure(state.heater4Power),
+          heater5Power: reconfigure(state.heater5Power),
+          heater6Power: reconfigure(state.heater6Power),
+          slavePullerSpeed: reconfigure(state.slavePullerSpeed),
+          inletFeederTensionArmAngle: reconfigure(
+            state.inletFeederTensionArmAngle,
+          ),
+          tapeFeederTensionArmAngle: reconfigure(
+            state.tapeFeederTensionArmAngle,
+          ),
+          optris1Voltage: reconfigure(state.optris1Voltage),
+          optris2Voltage: reconfigure(state.optris2Voltage),
+          addonMotor5Rpm: reconfigure(state.addonMotor5Rpm),
+        };
+      });
+      // Flush immediately so the store (and React) sees the new values right away.
+      throttledUpdater.forceSync();
+    },
+  });
+
   // Track already shown autotune completion toasts to prevent duplicates on event replay
   const shownAutotuneToasts = new Set<string>();
 

@@ -33,6 +33,7 @@ import {
   HeatingMode,
 } from "../state/gluetexNamespace";
 import { machineIdentificationUnique } from "@/machines/types";
+import { setGluetexGraphConfig } from "../config/gluetexConfig";
 
 export function useGluetex() {
   const { serial: serialString } = gluetexRoute.useParams();
@@ -89,6 +90,9 @@ export function useGluetex() {
     optris1Voltage,
     optris2Voltage,
     addonMotor5Rpm,
+    longBufferSampleInterval,
+    longBufferRetention,
+    reconfigureLongBuffers,
   } = useGluetexNamespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -1845,6 +1849,11 @@ export function useGluetex() {
   const isLoading = stateOptimistic.isOptimistic;
   const isDisabled = !stateOptimistic.isInitialized;
 
+  const setLongBufferConfig = (sampleInterval: number, retention: number) => {
+    setGluetexGraphConfig(sampleInterval, retention);
+    reconfigureLongBuffers(sampleInterval, retention);
+  };
+
   // ========== Return Hook Result ==========
 
   return {
@@ -2005,5 +2014,10 @@ export function useGluetex() {
     setAddonMotor5TensionSensitivity,
     setAddonMotor5TensionMinSpeedFactor,
     setAddonMotor5TensionMaxSpeedFactor,
+
+    // Graph buffer configuration
+    longBufferSampleInterval,
+    longBufferRetention,
+    setLongBufferConfig,
   };
 }
