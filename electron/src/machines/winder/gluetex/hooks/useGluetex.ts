@@ -88,6 +88,7 @@ export function useGluetex() {
     heater6Power,
     optris1Voltage,
     optris2Voltage,
+    addonMotor5Rpm,
   } = useGluetexNamespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -1878,6 +1879,7 @@ export function useGluetex() {
     heater6Power,
     optris1Voltage,
     optris2Voltage,
+    addonMotor5Rpm,
 
     // Loading states
     isLoading,

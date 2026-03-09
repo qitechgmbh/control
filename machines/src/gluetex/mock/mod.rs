@@ -109,8 +109,12 @@ impl Gluetex {
             slave_puller_state: self.slave_puller_state.clone(),
             tape_feeder_tension_arm_state: self.tape_feeder_tension_arm_state.clone(),
             winder_tension_arm_monitor_state: self.winder_tension_arm_monitor_state.clone(),
-            tape_feeder_tension_arm_monitor_state: self.tape_feeder_tension_arm_monitor_state.clone(),
-            inlet_feeder_tension_arm_monitor_state: self.inlet_feeder_tension_arm_monitor_state.clone(),
+            tape_feeder_tension_arm_monitor_state: self
+                .tape_feeder_tension_arm_monitor_state
+                .clone(),
+            inlet_feeder_tension_arm_monitor_state: self
+                .inlet_feeder_tension_arm_monitor_state
+                .clone(),
             optris_1_monitor_state: self.optris_1_monitor_state.clone(),
             optris_2_monitor_state: self.optris_2_monitor_state.clone(),
             sleep_timer_state: self.sleep_timer_state.clone(),

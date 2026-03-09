@@ -631,16 +631,18 @@ impl Gluetex {
         state_changed |= changed;
 
         // Check TA tape feeder
-        let (trigger, changed) = self
-            .tape_feeder_tension_arm_monitor
-            .check(self.tape_feeder_tension_arm.get_angle(), self.operation_mode);
+        let (trigger, changed) = self.tape_feeder_tension_arm_monitor.check(
+            self.tape_feeder_tension_arm.get_angle(),
+            self.operation_mode,
+        );
         any_trigger |= trigger;
         state_changed |= changed;
 
         // Check TA inlet feeder
-        let (trigger, changed) = self
-            .inlet_feeder_tension_arm_monitor
-            .check(self.inlet_feeder_tension_arm.get_angle(), self.operation_mode);
+        let (trigger, changed) = self.inlet_feeder_tension_arm_monitor.check(
+            self.inlet_feeder_tension_arm.get_angle(),
+            self.operation_mode,
+        );
         any_trigger |= trigger;
         state_changed |= changed;
 

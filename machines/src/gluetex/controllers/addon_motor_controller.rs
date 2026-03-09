@@ -1,6 +1,7 @@
 use control_core::converters::angular_step_converter::AngularStepConverter;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use units::Length;
+use units::angular_velocity::revolution_per_minute;
 use units::angular_velocity::revolution_per_second;
 use units::f64::AngularVelocity;
 use units::length::millimeter;
@@ -182,6 +183,14 @@ impl AddonMotorController {
         self.pattern_state = PatternControlState::Homing;
         self.accumulated_distance = 0.0;
         self.needs_homing = false;
+    }
+
+    /// Convert raw stepper steps/s to RPM for this motor
+    pub fn steps_to_rpm(&self, steps: i32) -> f64 {
+        self.converter
+            .steps_to_angular_velocity(steps as f64)
+            .get::<revolution_per_minute>()
+            .abs()
     }
 
     /// Calculate the motor angular velocity based on puller angular velocity and ratio

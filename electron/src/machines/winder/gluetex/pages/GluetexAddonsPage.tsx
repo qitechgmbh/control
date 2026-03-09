@@ -46,6 +46,7 @@ export function GluetexAddonsPage() {
     setStepper3Konturlaenge,
     setStepper3Pause,
     homeAddonMotor3,
+    addonMotor5Rpm,
   } = useGluetex();
 
   // Calculate max speed based on gear ratio (same as main puller)
@@ -324,6 +325,12 @@ export function GluetexAddonsPage() {
             unit="deg"
             timeseries={tapeFeederTensionArmAngle}
             renderValue={(value) => roundDegreesToDecimals(value, 0)}
+          />
+          <TimeSeriesValueNumeric
+            label="RPM"
+            unit="rpm"
+            timeseries={addonMotor5Rpm}
+            renderValue={(value) => roundToDecimals(value, 0)}
           />
           <TouchButton
             variant="outline"

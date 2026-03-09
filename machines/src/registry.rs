@@ -167,7 +167,7 @@ lazy_static! {
         mc.register::<Gluetex>(Gluetex::MACHINE_IDENTIFICATION);
 
         mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
-        
+
         mc.register::<Wago750_430DiMachine>(Wago750_430DiMachine::MACHINE_IDENTIFICATION);
         mc
     };

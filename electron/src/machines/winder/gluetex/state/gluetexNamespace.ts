@@ -52,6 +52,7 @@ export const liveValuesEventDataSchema = z.object({
   tape_feeder_tension_arm_angle: z.number(),
   optris_1_voltage: z.number(),
   optris_2_voltage: z.number(),
+  addon_motor_5_rpm: z.number(),
 });
 
 /**
@@ -563,6 +564,9 @@ export type GluetexNamespaceStore = {
   // Optris temperature sensor voltages
   optris1Voltage: TimeSeries;
   optris2Voltage: TimeSeries;
+
+  // Addon motor 5 (TA tape feeder) rpm
+  addonMotor5Rpm: TimeSeries;
 };
 
 // Constants for time durations
@@ -634,6 +638,8 @@ const {
 const { initialTimeSeries: optris1Voltage, insert: addOptris1Voltage } =
   createTimeSeries(timeSeriesConfig);
 const { initialTimeSeries: optris2Voltage, insert: addOptris2Voltage } =
+  createTimeSeries(timeSeriesConfig);
+const { initialTimeSeries: addonMotor5Rpm, insert: addAddonMotor5Rpm } =
   createTimeSeries(timeSeriesConfig);
 
 // Default addon state (local-only fields)
@@ -911,6 +917,9 @@ export const createGluetexNamespaceStore =
         // Optris sensor voltages
         optris1Voltage,
         optris2Voltage,
+
+        // Addon motor 5 rpm
+        addonMotor5Rpm,
       };
     });
 
@@ -1029,6 +1038,7 @@ export function gluetexMessageHandler(
           tape_feeder_tension_arm_angle,
           optris_1_voltage,
           optris_2_voltage,
+          addon_motor_5_rpm,
         } = liveValuesEvent.data;
         const timestamp = liveValuesEvent.ts;
 
@@ -1240,6 +1250,16 @@ export function gluetexMessageHandler(
           newState.optris2Voltage = addOptris2Voltage(
             state.optris2Voltage,
             optris2Value,
+          );
+
+          // Add addon motor 5 rpm
+          const addonMotor5RpmValue: TimeSeriesValue = {
+            value: addon_motor_5_rpm,
+            timestamp,
+          };
+          newState.addonMotor5Rpm = addAddonMotor5Rpm(
+            state.addonMotor5Rpm,
+            addonMotor5RpmValue,
           );
 
           return newState;

@@ -301,6 +301,9 @@ impl Gluetex {
             extra_analog_input_2: read_voltage(&self.extra_analog_inputs[1]),
             extra_analog_input_3: read_voltage(&self.extra_analog_inputs[2]),
             extra_analog_input_4: read_voltage(&self.extra_analog_inputs[3]),
+            addon_motor_5_rpm: self
+                .addon_motor_5_controller
+                .steps_to_rpm(self.addon_motor_5.get_speed()),
         };
 
         live_values

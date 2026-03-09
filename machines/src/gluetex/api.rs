@@ -319,6 +319,8 @@ pub struct LiveValuesEvent {
     pub extra_analog_input_3: f64,
     /// extra analog input 4 voltage (role 11 AI2)
     pub extra_analog_input_4: f64,
+    /// addon motor 5 (TA tape feeder) rpm
+    pub addon_motor_5_rpm: f64,
 }
 
 impl LiveValuesEvent {
@@ -959,11 +961,13 @@ impl MachineApi for Gluetex {
                 self.emit_state();
             }
             Mutation::SetTapeFeederTensionArmMonitorMinAngle(angle_deg) => {
-                self.tape_feeder_tension_arm_monitor.config.min_angle = Angle::new::<degree>(angle_deg);
+                self.tape_feeder_tension_arm_monitor.config.min_angle =
+                    Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
             Mutation::SetTapeFeederTensionArmMonitorMaxAngle(angle_deg) => {
-                self.tape_feeder_tension_arm_monitor.config.max_angle = Angle::new::<degree>(angle_deg);
+                self.tape_feeder_tension_arm_monitor.config.max_angle =
+                    Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
             // TA Inlet Feeder Monitor
@@ -976,11 +980,13 @@ impl MachineApi for Gluetex {
                 self.emit_state();
             }
             Mutation::SetInletFeederTensionArmMonitorMinAngle(angle_deg) => {
-                self.inlet_feeder_tension_arm_monitor.config.min_angle = Angle::new::<degree>(angle_deg);
+                self.inlet_feeder_tension_arm_monitor.config.min_angle =
+                    Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
             Mutation::SetInletFeederTensionArmMonitorMaxAngle(angle_deg) => {
-                self.inlet_feeder_tension_arm_monitor.config.max_angle = Angle::new::<degree>(angle_deg);
+                self.inlet_feeder_tension_arm_monitor.config.max_angle =
+                    Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
             // Optris 1 Voltage Monitor

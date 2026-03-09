@@ -1695,20 +1695,22 @@ export function GluetexPresetsPage() {
           max_angle: s.winder_tension_arm_monitor_state.max_angle,
         }
       : {},
-    tape_feeder_tension_arm_monitor_state: s?.tape_feeder_tension_arm_monitor_state
-      ? {
-          enabled: s.tape_feeder_tension_arm_monitor_state.enabled,
-          min_angle: s.tape_feeder_tension_arm_monitor_state.min_angle,
-          max_angle: s.tape_feeder_tension_arm_monitor_state.max_angle,
-        }
-      : {},
-    inlet_feeder_tension_arm_monitor_state: s?.inlet_feeder_tension_arm_monitor_state
-      ? {
-          enabled: s.inlet_feeder_tension_arm_monitor_state.enabled,
-          min_angle: s.inlet_feeder_tension_arm_monitor_state.min_angle,
-          max_angle: s.inlet_feeder_tension_arm_monitor_state.max_angle,
-        }
-      : {},
+    tape_feeder_tension_arm_monitor_state:
+      s?.tape_feeder_tension_arm_monitor_state
+        ? {
+            enabled: s.tape_feeder_tension_arm_monitor_state.enabled,
+            min_angle: s.tape_feeder_tension_arm_monitor_state.min_angle,
+            max_angle: s.tape_feeder_tension_arm_monitor_state.max_angle,
+          }
+        : {},
+    inlet_feeder_tension_arm_monitor_state:
+      s?.inlet_feeder_tension_arm_monitor_state
+        ? {
+            enabled: s.inlet_feeder_tension_arm_monitor_state.enabled,
+            min_angle: s.inlet_feeder_tension_arm_monitor_state.min_angle,
+            max_angle: s.inlet_feeder_tension_arm_monitor_state.max_angle,
+          }
+        : {},
     optris_1_monitor_state: s?.optris_1_monitor_state
       ? {
           enabled: s.optris_1_monitor_state.enabled,

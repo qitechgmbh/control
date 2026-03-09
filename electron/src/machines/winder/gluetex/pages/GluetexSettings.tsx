@@ -1623,7 +1623,9 @@ export function GluetexSettingPage() {
                 <ControlCard title="TA Tape Feeder Monitor">
                   <Label label="Enable Monitoring">
                     <SelectionGroupBoolean
-                      value={state?.tape_feeder_tension_arm_monitor_state?.enabled}
+                      value={
+                        state?.tape_feeder_tension_arm_monitor_state?.enabled
+                      }
                       disabled={isDisabled}
                       loading={isLoading}
                       optionFalse={{
@@ -1651,14 +1653,17 @@ export function GluetexSettingPage() {
                   )}
                   <Label label="Minimum Angle">
                     <EditValue
-                      value={state?.tape_feeder_tension_arm_monitor_state?.min_angle}
+                      value={
+                        state?.tape_feeder_tension_arm_monitor_state?.min_angle
+                      }
                       title={"Minimum Angle"}
                       unit="deg"
                       step={1}
                       min={0}
                       max={180}
                       defaultValue={
-                        defaultState?.tape_feeder_tension_arm_monitor_state?.min_angle
+                        defaultState?.tape_feeder_tension_arm_monitor_state
+                          ?.min_angle
                       }
                       renderValue={(value) => roundToDecimals(value, 1)}
                       onChange={(value) =>
@@ -1668,14 +1673,17 @@ export function GluetexSettingPage() {
                   </Label>
                   <Label label="Maximum Angle">
                     <EditValue
-                      value={state?.tape_feeder_tension_arm_monitor_state?.max_angle}
+                      value={
+                        state?.tape_feeder_tension_arm_monitor_state?.max_angle
+                      }
                       title={"Maximum Angle"}
                       unit="deg"
                       step={1}
                       min={0}
                       max={180}
                       defaultValue={
-                        defaultState?.tape_feeder_tension_arm_monitor_state?.max_angle
+                        defaultState?.tape_feeder_tension_arm_monitor_state
+                          ?.max_angle
                       }
                       renderValue={(value) => roundToDecimals(value, 1)}
                       onChange={(value) =>
@@ -1688,7 +1696,9 @@ export function GluetexSettingPage() {
                 <ControlCard title="TA Inlet Feeder Monitor">
                   <Label label="Enable Monitoring">
                     <SelectionGroupBoolean
-                      value={state?.inlet_feeder_tension_arm_monitor_state?.enabled}
+                      value={
+                        state?.inlet_feeder_tension_arm_monitor_state?.enabled
+                      }
                       disabled={isDisabled}
                       loading={isLoading}
                       optionFalse={{
@@ -1716,14 +1726,17 @@ export function GluetexSettingPage() {
                   )}
                   <Label label="Minimum Angle">
                     <EditValue
-                      value={state?.inlet_feeder_tension_arm_monitor_state?.min_angle}
+                      value={
+                        state?.inlet_feeder_tension_arm_monitor_state?.min_angle
+                      }
                       title={"Minimum Angle"}
                       unit="deg"
                       step={1}
                       min={0}
                       max={180}
                       defaultValue={
-                        defaultState?.inlet_feeder_tension_arm_monitor_state?.min_angle
+                        defaultState?.inlet_feeder_tension_arm_monitor_state
+                          ?.min_angle
                       }
                       renderValue={(value) => roundToDecimals(value, 1)}
                       onChange={(value) =>
@@ -1733,14 +1746,17 @@ export function GluetexSettingPage() {
                   </Label>
                   <Label label="Maximum Angle">
                     <EditValue
-                      value={state?.inlet_feeder_tension_arm_monitor_state?.max_angle}
+                      value={
+                        state?.inlet_feeder_tension_arm_monitor_state?.max_angle
+                      }
                       title={"Maximum Angle"}
                       unit="deg"
                       step={1}
                       min={0}
                       max={180}
                       defaultValue={
-                        defaultState?.inlet_feeder_tension_arm_monitor_state?.max_angle
+                        defaultState?.inlet_feeder_tension_arm_monitor_state
+                          ?.max_angle
                       }
                       renderValue={(value) => roundToDecimals(value, 1)}
                       onChange={(value) =>
