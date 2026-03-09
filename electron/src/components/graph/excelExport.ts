@@ -346,27 +346,43 @@ function createGraphLineMarkerReportSheet(graphLine: {
     (line) => line.type === "user_marker" && line.label,
   );
 
-  // Map Markers to Closest Data Point Index
+  if (userMarkers.length === 0) {
+    reportData.push(["No user-created markers found.", ""]);
+    return reportData;
+  }
+
+  /**
+   * Binary search: returns the index of the timestamp in `arr` closest to `target`.
+   * Assumes `arr` is sorted ascending.
+   */
+  const findClosestIndex = (arr: number[], target: number): number => {
+    if (arr.length === 0) return -1;
+    if (target <= arr[0]) return 0;
+    if (target >= arr[arr.length - 1]) return arr.length - 1;
+
+    let low = 0;
+    let high = arr.length - 1;
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      if (arr[mid] === target) return mid;
+      if (arr[mid] < target) low = mid + 1;
+      else high = mid - 1;
+    }
+    // `high` is the largest index with value < target, `low` is the smallest > target
+    return Math.abs(arr[low] - target) < Math.abs(arr[high] - target)
+      ? low
+      : high;
+  };
+
+  // Map each user marker to the closest data point index
   const markerIndexMap = new Map<
     number,
     { label: string; originalTimestamp: number }
   >();
 
   userMarkers.forEach((line) => {
-    const markerTime = line.markerTimestamp || line.value; // Use the correct high-precision timestamp
-    let closestDataPointIndex = -1;
-    let minTimeDifference = Infinity;
-
-    // Find the data point with the closest timestamp
-    timestamps.forEach((ts, index) => {
-      const difference = Math.abs(ts - markerTime);
-      if (difference < minTimeDifference) {
-        minTimeDifference = difference;
-        closestDataPointIndex = index;
-      }
-    });
-
-    // Store the marker data at the index of the closest data point
+    const markerTime = line.markerTimestamp ?? line.value;
+    const closestDataPointIndex = findClosestIndex(timestamps, markerTime);
     if (closestDataPointIndex !== -1) {
       markerIndexMap.set(closestDataPointIndex, {
         label: line.label || "User Marker",
@@ -375,49 +391,30 @@ function createGraphLineMarkerReportSheet(graphLine: {
     }
   });
 
-  // Add the final header before the timestamp report starts
+  // Add the final header before the marker rows start
   reportData.push(["--- BEGIN DETAILED REPORT ---", ""], ["", ""]);
 
-  // Handle case where no user markers were created
-  if (userMarkers.length === 0) {
-    reportData.push(["No user-created markers found.", ""]);
-  }
+  // Emit one block per marker (sorted by data-point index), not one per datapoint
+  const sortedEntries = Array.from(markerIndexMap.entries()).sort(
+    ([a], [b]) => a - b,
+  );
 
-  timestamps.forEach((dataPointTimestamp, index) => {
+  sortedEntries.forEach(([index, markerData]) => {
+    const dataPointTimestamp = timestamps[index];
+    if (dataPointTimestamp === undefined) return;
+
     const value = values[index];
-    const markerData = markerIndexMap.get(index);
+    const timeToDisplay = markerData.originalTimestamp;
 
-    let finalMarkerLabel = "";
-    let timeToDisplay = dataPointTimestamp; // Default to data sample time
+    // ISO string is sortable and unambiguous across day/locale boundaries
+    const formattedTime = new Date(timeToDisplay).toISOString();
 
-    if (markerData) {
-      finalMarkerLabel = `${markerData.label}`;
-      timeToDisplay = markerData.originalTimestamp;
-    }
-
-    // Format the time (using timeToDisplay)
-    const formattedTime = new Date(timeToDisplay)
-      .toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-      })
-      .replace(/ /g, "");
-
-    // Row 1: Timestamp
     reportData.push(["Timestamp", formattedTime]);
-
-    // Row 2: Value
     const formattedValue = graphLine.renderValue
       ? graphLine.renderValue(value)
       : value?.toFixed(3) || "";
     reportData.push([`Value (${unitSymbol})`, formattedValue]);
-
-    // Row 3: Marker Name
-    reportData.push(["Marker", finalMarkerLabel]);
-
-    // Separator
+    reportData.push(["Marker", markerData.label]);
     reportData.push(["", ""]);
   });
 
