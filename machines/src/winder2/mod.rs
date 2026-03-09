@@ -50,7 +50,7 @@ pub use winder2_imports::*;
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
-    MACHINE_WINDER_V1, MachineConnection, MachineMessage, VENDOR_QITECH,
+    MACHINE_WINDER_V1, MachineData, MachineMessage, VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
 
@@ -82,6 +82,49 @@ impl Machine for Winder2 {
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
         self.main_sender.clone()
     }
+
+    fn receive_machines_data(&mut self, data: &MachineData) {
+        use MachineData::*;
+
+        debug_assert!(self.puller_reference_machine.is_some());
+
+        match data {
+            Laser(state, live_values) => {
+                let current = live_values.diameter;
+                let target = state.laser_state.target_diameter;
+                let lower = state.laser_state.lower_tolerance;
+                let upper = state.laser_state.higher_tolerance;
+                let last_speed = self.puller_speed_controller.last_speed;
+
+                self.puller_speed_controller
+                    .adaptive
+                    .update_with_measurement(
+                        current,
+                        target,
+                        lower,
+                        upper,
+                        last_speed,
+                        Instant::now(),
+                    );
+            }
+            None => tracing::error!("Received MachineData::None"),
+        };
+    }
+
+    fn subscribed_to_machine(&mut self, uid: MachineIdentificationUnique) {
+        self.puller_reference_machine = Some(uid);
+        self.emit_state();
+    }
+
+    fn unsubscribed_from_machine(&mut self, uid: MachineIdentificationUnique) {
+        if let Some(current_uid) = self.puller_reference_machine {
+            if current_uid == uid {
+                self.puller_reference_machine = None;
+            }
+        }
+
+        self.emit_state();
+    }
 }
 
 #[cfg(not(feature = "mock-machine"))]
@@ -91,8 +134,6 @@ pub struct Winder2 {
     api_sender: Sender<MachineMessage>,
     main_sender: Option<Sender<AsyncThreadMessage>>,
 
-    connected_machines: Vec<MachineConnection>,
-    max_connected_machines: usize,
     // drivers
     pub traverse: StepperVelocityEL70x1,
     pub puller: StepperVelocityEL70x1,
@@ -124,6 +165,9 @@ pub struct Winder2 {
 
     // control circuit puller
     pub puller_speed_controller: PullerSpeedController,
+
+    // reference machine for adapative mode
+    puller_reference_machine: Option<MachineIdentificationUnique>,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
