@@ -82,6 +82,15 @@
           system = builtins.currentSystem;
           pkgs = import nixpkgs { inherit system; };
           gitInfo = import ./nixos/gitInfo.nix { inherit pkgs; };
+          qitechOverlay = final: prev: {
+            qitechPackages = {
+              server = final.callPackage ./nixos/packages/server.nix {
+                craneLib = crane.mkLib final;
+              };
+              electron =
+                final.callPackage ./nixos/packages/electron.nix { };
+            };
+          };
         in {
           # Replace "nixos" with your actual hostname
           nixos = nixpkgs.lib.nixosSystem {
@@ -91,20 +100,7 @@
             };
             modules = [
               # Apply the overlays to the system
-              {
-                nixpkgs.overlays = [
-                  # Add our own overlay for QiTech packages with commit hash support
-                  (final: prev: {
-                    qitechPackages = {
-                      server = final.callPackage ./nixos/packages/server.nix {
-                        craneLib = crane.mkLib final;
-                      };
-                      electron =
-                        final.callPackage ./nixos/packages/electron.nix { };
-                    };
-                  })
-                ];
-              }
+              { nixpkgs.overlays = [ qitechOverlay ]; }
 
               ./nixos/os/configuration.nix
 
@@ -118,6 +114,17 @@
                 home-manager.useUserPackages = true;
                 home-manager.users.qitech = import ./nixos/os/home.nix;
               }
+            ];
+          };
+
+          # Installer ISO image
+          installer = nixpkgs.lib.nixosSystem {
+            system = system;
+            specialArgs = {
+              gitInfo = gitInfo;
+            };
+            modules = [
+              ./nixos/installer.nix
             ];
           };
         };
