@@ -490,7 +490,7 @@ impl Gluetex {
     /// Sync addon motor 5 speed based on puller angular velocity and ratio
     /// called by `act`
     pub fn sync_addon_motor_5_speed(&mut self, t: Instant) {
-        let master_speed = self.puller_speed_controller.last_speed;
+        let master_speed = self.puller_speed_controller.get_target_speed(); 
         let adjusted_speed = self.addon_motor_5_tension_controller.update_speed(
             t,
             master_speed,
