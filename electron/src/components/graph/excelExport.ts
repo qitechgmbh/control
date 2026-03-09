@@ -3,6 +3,8 @@ import { TimeSeries, seriesToUPlotData } from "@/lib/timeseries";
 import { renderUnitSymbol, Unit } from "@/control/units";
 import { GraphConfig, SeriesData, GraphLine } from "./types";
 
+type UserMarkerLine = Extract<GraphLine, { type: "user_marker" }>;
+
 export type GraphExportData = {
   config: GraphConfig;
   data: SeriesData; // Always a single series
@@ -343,7 +345,7 @@ function createGraphLineMarkerReportSheet(graphLine: {
     (line) => line.show !== false,
   );
   const userMarkers = allTargetLines.filter(
-    (line) => line.type === "user_marker" && line.label,
+    (line): line is UserMarkerLine => line.type === "user_marker",
   );
 
   if (userMarkers.length === 0) {
@@ -381,11 +383,11 @@ function createGraphLineMarkerReportSheet(graphLine: {
   >();
 
   userMarkers.forEach((line) => {
-    const markerTime = line.markerTimestamp ?? line.value;
+    const markerTime = line.markerTimestamp;
     const closestDataPointIndex = findClosestIndex(timestamps, markerTime);
     if (closestDataPointIndex !== -1) {
       markerIndexMap.set(closestDataPointIndex, {
-        label: line.label || "User Marker",
+        label: line.label,
         originalTimestamp: markerTime,
       });
     }

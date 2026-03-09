@@ -99,7 +99,8 @@ function getHistoricalDashTargets(
     if (line.show === false) return;
 
     const dash = line.dash ?? (line.type === "threshold" ? [5, 5] : undefined);
-    const isHistoricalDashedTarget = !!line.targetSeries && !!dash?.length;
+    const isHistoricalDashedTarget =
+      line.type === "target" && !!line.targetSeries && !!dash?.length;
 
     if (isHistoricalDashedTarget) {
       targets.push({
