@@ -96,7 +96,7 @@ export function GluetexOverviewPage() {
   return (
     <Page className="h-[calc(100vh-4.5rem)] overflow-hidden">
       <GluetexErrorBanner />
-      <ControlGrid className="flex-1 min-h-0 auto-rows-fr">
+      <ControlGrid className="min-h-0 flex-1 auto-rows-fr">
         {/* Top Row: Speed (left) */}
         <ControlCard title="Speed">
           <TimeSeriesValueNumeric
@@ -567,7 +567,6 @@ export function GluetexOverviewPage() {
             </Label>
           </div>
         </ControlCard>
-
       </ControlGrid>
     </Page>
   );

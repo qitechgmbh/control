@@ -56,7 +56,7 @@ export function GluetexAddonsPage() {
   return (
     <Page className="h-[calc(100vh-4.5rem)] overflow-hidden">
       <GluetexErrorBanner />
-      <ControlGrid className="flex-1 min-h-0 auto-rows-fr">
+      <ControlGrid className="min-h-0 flex-1 auto-rows-fr">
         <ControlCard className="bg-red" title="Motors">
           <Label label="Stepper 3">
             <SelectionGroup<StepperMode>
@@ -127,7 +127,10 @@ export function GluetexAddonsPage() {
         </ControlCard>
 
         <ControlCard title="Slave Tension Arm">
-          <TensionArm degrees={slaveTensionArmAngle.current?.value} className="h-24" />
+          <TensionArm
+            degrees={slaveTensionArmAngle.current?.value}
+            className="h-24"
+          />
           <TimeSeriesValueNumeric
             label="Slave Tension Arm"
             unit="deg"
@@ -312,7 +315,10 @@ export function GluetexAddonsPage() {
         </ControlCard>
 
         <ControlCard title="Addon Tension Arm">
-          <TensionArm degrees={addonTensionArmAngle.current?.value} className="h-24" />
+          <TensionArm
+            degrees={addonTensionArmAngle.current?.value}
+            className="h-24"
+          />
           <TimeSeriesValueNumeric
             label="Angle"
             unit="deg"

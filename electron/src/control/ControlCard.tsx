@@ -7,6 +7,7 @@ type Props = {
   children?: React.ReactNode;
   className?: string;
   title?: string;
+  titleRight?: React.ReactNode;
 };
 
 export function ControlCard({
@@ -15,6 +16,7 @@ export function ControlCard({
   children,
   className,
   title,
+  titleRight,
 }: Props) {
   const cardStyle = cva(
     [
@@ -55,7 +57,12 @@ export function ControlCard({
         className,
       })}
     >
-      {title && <h2 className="text-2xl font-bold">{title}</h2>}
+      {title && (
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-2xl font-bold">{title}</h2>
+          {titleRight && <div>{titleRight}</div>}
+        </div>
+      )}
       {children}
     </div>
   );

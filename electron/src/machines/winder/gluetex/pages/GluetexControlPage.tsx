@@ -84,7 +84,7 @@ export function GluetexControlPage() {
   return (
     <Page className="h-[calc(100vh-4.5rem)] overflow-hidden">
       <GluetexErrorBanner />
-      <ControlGrid className="flex-1 min-h-0 auto-rows-fr">
+      <ControlGrid className="min-h-0 flex-1 auto-rows-fr">
         <ControlCard title="Spool">
           <Spool rpm={spoolRpm.current?.value} />
           <TimeSeriesValueNumeric
@@ -169,30 +169,32 @@ export function GluetexControlPage() {
               </TouchButton>
             </Label>
           </div>
-          <Label label="Laserpointer">
-            <SelectionGroupBoolean
-              value={state?.traverse_state.laserpointer}
-              disabled={isLoading || isDisabled}
-              loading={isLoading}
-              optionFalse={{ children: "Off", icon: "lu:LightbulbOff" }}
-              optionTrue={{ children: "On", icon: "lu:Lightbulb" }}
-              onChange={enableTraverseLaserpointer}
-            />
-          </Label>
-          <Label label="Home">
-            <TouchButton
-              variant="outline"
-              icon="lu:House"
-              onClick={() => gotoTraverseHome()}
-              disabled={isDisabled}
-              isLoading={isLoading}
-            >
-              Go to Home
-            </TouchButton>
-            {state?.traverse_state?.is_homed !== true ? (
-              <StatusBadge variant={"error"}>{"Not Homed"}</StatusBadge>
-            ) : null}
-          </Label>
+          <div className="grid grid-cols-2 gap-2">
+            <Label label="Laserpointer">
+              <SelectionGroupBoolean
+                value={state?.traverse_state.laserpointer}
+                disabled={isLoading || isDisabled}
+                loading={isLoading}
+                optionFalse={{ children: "Off", icon: "lu:LightbulbOff" }}
+                optionTrue={{ children: "On", icon: "lu:Lightbulb" }}
+                onChange={enableTraverseLaserpointer}
+              />
+            </Label>
+            <Label label="Home">
+              <TouchButton
+                variant="outline"
+                icon="lu:House"
+                onClick={() => gotoTraverseHome()}
+                disabled={isDisabled}
+                isLoading={isLoading}
+              >
+                Go to Home
+              </TouchButton>
+              {state?.traverse_state?.is_homed !== true ? (
+                <StatusBadge variant={"error"}>{"Not Homed"}</StatusBadge>
+              ) : null}
+            </Label>
+          </div>
         </ControlCard>
 
         <ControlCard title="Tension Arm" height={2}>
@@ -255,9 +257,32 @@ export function GluetexControlPage() {
           />
         </ControlCard>
 
-        <ControlCard title="Spool Autostop" width={2}>
+        <ControlCard
+          title="Spool Autostop"
+          width={2}
+          titleRight={
+            <div className="flex flex-col items-end">
+              <span className="text-sm text-gray-500">
+                Estimated Time Remaining
+              </span>
+              <span className="font-mono text-lg font-bold">
+                {(() => {
+                  const minutes =
+                    state?.spool_automatic_action_state
+                      .estimated_minutes_remaining || 0;
+                  if (minutes >= 60) {
+                    const hours = Math.floor(minutes / 60);
+                    const mins = Math.round(minutes % 60);
+                    return `${hours}h ${mins}min`;
+                  }
+                  return `${Math.round(minutes)} min`;
+                })()}
+              </span>
+            </div>
+          }
+        >
           <div className="grid grid-cols-2 gap-6">
-            <div className="flex flex-col gap-3">
+            <div className="flex min-w-0 flex-col gap-3">
               <TimeSeriesValueNumeric
                 label="Pulled Distance"
                 renderValue={(value) => roundToDecimals(value, 2)}
@@ -266,7 +291,9 @@ export function GluetexControlPage() {
               />
               <Label label="Target Length">
                 <EditValue
-                  value={state?.spool_automatic_action_state.spool_required_meters}
+                  value={
+                    state?.spool_automatic_action_state.spool_required_meters
+                  }
                   unit="m"
                   title="Expected Meters"
                   defaultValue={250}
@@ -278,22 +305,7 @@ export function GluetexControlPage() {
                 />
               </Label>
             </div>
-            <div className="flex flex-col gap-3">
-              <Label label="Estimated Time Remaining">
-                <span className="font-mono text-lg">
-                  {(() => {
-                    const minutes =
-                      state?.spool_automatic_action_state
-                        .estimated_minutes_remaining || 0;
-                    if (minutes >= 60) {
-                      const hours = Math.floor(minutes / 60);
-                      const mins = Math.round(minutes % 60);
-                      return `${hours}h ${mins}min`;
-                    }
-                    return `${Math.round(minutes)} min`;
-                  })()}
-                </span>
-              </Label>
+            <div className="flex min-w-0 flex-col gap-3">
               <TouchButton
                 variant="outline"
                 onClick={handleResetProgress}
@@ -305,7 +317,8 @@ export function GluetexControlPage() {
               <Label label="After Target Reached">
                 <SelectionGroup<SpoolAutomaticActionMode>
                   value={
-                    state?.spool_automatic_action_state.spool_automatic_action_mode
+                    state?.spool_automatic_action_state
+                      .spool_automatic_action_mode
                   }
                   disabled={isDisabled}
                   loading={isLoading}
