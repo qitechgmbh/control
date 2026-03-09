@@ -4,9 +4,9 @@ import { GraphControls, FloatingControlPanel } from "./GraphControls";
 import { useGraphSync } from "./useGraphSync";
 import { BigGraphProps, PropGraphSync, TimeWindowOption } from "./types";
 import { GraphExportData } from "./excelExport";
-import { useMarkerManager } from "./useMarkerManager";
-import { AddMarkerDialog } from "./AddMarkerDialog";
-import { useMarkerContext } from "./MarkerContext";
+import { useMarkerManager } from "./marker/useMarkerManager";
+import { AddMarkerDialog } from "./marker/AddMarkerDialog";
+import { useMarkerContext } from "./marker/MarkerContext";
 
 export function SyncedBigGraph({
   syncGraph: externalSyncGraph,

@@ -11,7 +11,7 @@ export {
 } from "./SyncedComponents";
 
 // Context
-export { MarkerProvider } from "./MarkerContext";
+export { MarkerProvider } from "./marker/MarkerContext";
 
 // Hooks
 export { useGraphSync } from "./useGraphSync";
