@@ -375,6 +375,9 @@ export function Winder2SettingPage() {
               optionFalse={{
                 children: "Disabled",
                 icon: "lu:X",
+                disabled:
+                  adaptivePullerSpeed &&
+                  state?.puller_state?.regulation === "Diameter",
               }}
               optionTrue={{
                 children: "Enabled",
