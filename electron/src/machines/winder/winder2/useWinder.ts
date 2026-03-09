@@ -112,9 +112,6 @@ export function useWinder2() {
   const { request: requestPullerSetTargetSpeed } = useMachineMutation(
     z.object({ SetPullerTargetSpeed: z.number() }),
   );
-  const { request: requestPullerSetTargetDiameter } = useMachineMutation(
-    z.object({ SetPullerTargetDiameter: z.number() }),
-  );
   const { request: requestPullerSetRegulationMode } = useMachineMutation(
     z.object({
       SetPullerRegulationMode: pullerRegulationSchema,
@@ -166,18 +163,6 @@ export function useWinder2() {
 
   const { request: requestSpoolAutomaticAction } = useMachineMutation(
     z.object({ SetSpoolAutomaticAction: spoolAutomaticActionModeSchema }),
-  );
-
-  const { request: requestConnectedMachine } = useMachineMutation(
-    z.object({
-      SetConnectedMachine: machineIdentificationUnique,
-    }),
-  );
-
-  const { request: requestDisconnectedMachine } = useMachineMutation(
-    z.object({
-      DisconnectMachine: machineIdentificationUnique,
-    }),
   );
 
   // Helper function for optimistic updates using produce
@@ -332,19 +317,6 @@ export function useWinder2() {
         requestPullerSetTargetSpeed({
           machine_identification_unique: machineIdentification,
           data: { SetPullerTargetSpeed: targetSpeed },
-        }),
-    );
-  };
-
-  const setPullerTargetDiameter = (targetDiameter: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.puller_state.target_diameter = targetDiameter;
-      },
-      () =>
-        requestPullerSetTargetDiameter({
-          machine_identification_unique: machineIdentification,
-          data: { SetPullerTargetDiameter: targetDiameter },
         }),
     );
   };
@@ -554,42 +526,108 @@ export function useWinder2() {
     );
   };
 
-  const setConnectedMachine = (machineIdentificationUnique: {
-    machine_identification: {
-      vendor: number;
-      machine: number;
-    };
-    serial: number;
-  }) => {
+  // more requests for puller
+  const { request: requestPullerSetAdaptiveMaxSpeedChangePercent } =
+    useMachineMutation(
+      z.object({
+        SetPullerAdaptiveMaxSpeedChangePercent: z.number(),
+      }),
+    );
+  const { request: requestPullerSetAdaptiveAdjustmentIntervalMeters } =
+    useMachineMutation(
+      z.object({
+        SetPullerAdaptiveAdjustmentIntervalMeters: z.number(),
+      }),
+    );
+  const { request: requestPullerSetAdaptiveStepPercent } = useMachineMutation(
+    z.object({
+      SetPullerAdaptiveStepPercent: z.number(),
+    }),
+  );
+  const { request: requestPullerSetAdaptiveAcceptedDifference } =
+    useMachineMutation(
+      z.object({
+        SetPullerAdaptiveAcceptedDifference: z.number(),
+      }),
+    );
+  const { request: requestPullerSetAdaptiveReferenceMachine } =
+    useMachineMutation(
+      z.object({
+        SetPullerAdaptiveReferenceMachine:
+          machineIdentificationUnique.nullable(),
+      }),
+    );
+
+  // more boilerplate junk setters from requests
+  const setPullerAdaptiveMaxSpeedChangePercent = (percent: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.connected_machine_state.machine_identification_unique =
-          machineIdentificationUnique;
+        current.data.puller_state.adaptive_speed_delta_max = percent;
       },
       () =>
-        requestConnectedMachine({
-          machine_identification_unique,
-          data: { SetConnectedMachine: machineIdentificationUnique },
+        requestPullerSetAdaptiveMaxSpeedChangePercent({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerAdaptiveMaxSpeedChangePercent: percent },
         }),
     );
   };
 
-  const disconnectMachine = (machineIdentificationUnique: {
-    machine_identification: {
-      vendor: number;
-      machine: number;
-    };
-    serial: number;
-  }) => {
+  const setPullerAdaptiveAdjustmentIntervalMeters = (meters: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.connected_machine_state.machine_identification_unique =
-          null;
+        current.data.puller_state.adaptive_adjustment_distance = meters;
       },
       () =>
-        requestDisconnectedMachine({
-          machine_identification_unique,
-          data: { DisconnectMachine: machineIdentificationUnique },
+        requestPullerSetAdaptiveAdjustmentIntervalMeters({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerAdaptiveAdjustmentIntervalMeters: meters },
+        }),
+    );
+  };
+
+  const setPullerAdaptiveStepPercent = (percent: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.adaptive_change_per_step = percent;
+      },
+      () =>
+        requestPullerSetAdaptiveStepPercent({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerAdaptiveStepPercent: percent },
+        }),
+    );
+  };
+
+  const setPullerAdaptiveAcceptedDifference = (mm: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.allowed_diameter_deviation = mm;
+      },
+      () =>
+        requestPullerSetAdaptiveAcceptedDifference({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerAdaptiveAcceptedDifference: mm },
+        }),
+    );
+  };
+
+  const setPullerAdaptiveReferenceMachine = (
+    machineUid: {
+      machine_identification: {
+        vendor: number;
+        machine: number;
+      };
+      serial: number;
+    } | null,
+  ) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.adaptive_reference_machine = machineUid;
+      },
+      () =>
+        requestPullerSetAdaptiveReferenceMachine({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerAdaptiveReferenceMachine: machineUid },
         }),
     );
   };
@@ -608,16 +646,14 @@ export function useWinder2() {
           m.machine_identification_unique.machine_identification.vendor ===
             VENDOR_QITECH &&
           m.machine_identification_unique.machine_identification.machine ===
-            0x0008,
+            0x0006,
       ),
     [machines, machineIdentification],
   );
 
   // Get selected machine by serial
   const selectedMachine = useMemo(() => {
-    const serial =
-      state?.data.connected_machine_state?.machine_identification_unique
-        ?.serial;
+    const serial = state?.data.puller_state.adaptive_reference_machine?.serial;
 
     return (
       filteredMachines.find(
@@ -661,7 +697,6 @@ export function useWinder2() {
     setTraverseStepSize,
     setTraversePadding,
     setPullerTargetSpeed,
-    setPullerTargetDiameter,
     setPullerRegulationMode,
     setPullerForward,
     setPullerGearRatio,
@@ -676,7 +711,12 @@ export function useWinder2() {
     setSpoolAdaptiveMaxSpeedMultiplier,
     setSpoolAdaptiveAccelerationFactor,
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
-    setConnectedMachine,
-    disconnectMachine,
+
+    // new stuff
+    setPullerAdaptiveMaxSpeedChangePercent,
+    setPullerAdaptiveAdjustmentIntervalMeters,
+    setPullerAdaptiveStepPercent,
+    setPullerAdaptiveAcceptedDifference,
+    setPullerAdaptiveReferenceMachine,
   };
 }

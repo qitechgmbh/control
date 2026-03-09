@@ -6,17 +6,18 @@ use control_core::realtime::set_core_affinity;
 use control_core::realtime::set_realtime_priority;
 use ethercrab::TxRxResponse;
 use ethercrab::subdevice_group::CycleInfo;
-use machines::Machine;
 use machines::machine_identification::write_machine_device_identification;
 use smol::channel::Receiver;
 use spin_sleep::SpinSleeper;
 use std::time::Duration;
 use std::time::Instant;
 
+use crate::MachineManager;
 use crate::metrics::jitter::record_machines_loop_jitter;
 use crate::metrics::preemption::set_rt_loop_tid;
+
 pub struct RtLoopInputs<'a> {
-    pub machines: &'a mut Vec<Box<dyn Machine>>,
+    pub machine_manager: MachineManager,
     pub ethercat_setup: Option<Box<EthercatSetup>>,
     pub ethercat_perf_metrics: Option<&'a mut EthercatPerformanceMetrics>,
     pub sleeper: SpinSleeper,
@@ -71,10 +72,9 @@ pub fn start_loop_thread(
             }
 
             let mut ethercat_perf = EthercatPerformanceMetrics::new();
-            let mut machines: Vec<Box<dyn Machine>> = vec![];
             let mut last_iter_start: Option<Instant> = None;
             let mut rt_loop_inputs = RtLoopInputs {
-                machines: &mut machines,
+                machine_manager: MachineManager::default(),
                 ethercat_setup: None,
                 sleeper,
                 cycle_target,
@@ -82,17 +82,19 @@ pub fn start_loop_thread(
             };
 
             loop {
+                use HotThreadMessage::*;
+
                 let msg = match rt_receiver.try_recv() {
                     Ok(msg) => msg,
-                    Err(_) => HotThreadMessage::NoMsg,
+                    Err(_) => NoMsg,
                 };
 
                 match msg {
-                    HotThreadMessage::NoMsg => {}
-                    HotThreadMessage::AddEtherCatSetup(ethercat_setup) => {
+                    NoMsg => {}
+                    AddEtherCatSetup(ethercat_setup) => {
                         rt_loop_inputs.ethercat_setup = Some(Box::new(ethercat_setup));
                     }
-                    HotThreadMessage::WriteMachineDeviceInfo(info_request) => {
+                    WriteMachineDeviceInfo(info_request) => {
                         if let Some(ethercat_setup) = &rt_loop_inputs.ethercat_setup {
                             if let Ok(subdevice) = ethercat_setup.group.subdevice(
                                 &ethercat_setup.maindevice,
@@ -108,23 +110,16 @@ pub fn start_loop_thread(
                             }
                         }
                     }
-                    HotThreadMessage::DeleteMachine(unique_id) => {
-                        rt_loop_inputs
-                            .machines
-                            .retain(|m| m.get_machine_identification_unique() != unique_id);
+                    DeleteMachine(uid) => rt_loop_inputs.machine_manager.remove_machine(uid),
+                    AddMachines(new_machines) => {
+                        rt_loop_inputs.machine_manager.add_machines(new_machines)
                     }
-                    HotThreadMessage::AddMachines(machine_vec) => {
-                        for new_machine in machine_vec {
-                            let id = new_machine.get_machine_identification_unique();
-                            if !rt_loop_inputs
-                                .machines
-                                .iter()
-                                .any(|m| m.get_machine_identification_unique() == id)
-                            {
-                                rt_loop_inputs.machines.push(new_machine);
-                            }
-                        }
-                    }
+                    SubscriptionEstablish(request) => rt_loop_inputs
+                        .machine_manager
+                        .subscription_establish(request),
+                    SubscriptionTerminate(request) => rt_loop_inputs
+                        .machine_manager
+                        .subscription_terminate(request),
                 }
                 let iter_start = Instant::now();
                 if let Some(prev) = last_iter_start {
@@ -284,12 +279,6 @@ pub async fn copy_ethercat_outputs(
     Ok(())
 }
 
-pub fn execute_machines(machines: &mut Vec<Box<dyn Machine>>) {
-    let now = Instant::now();
-    for machine in machines.iter_mut() {
-        machine.act(now);
-    }
-}
 // No more logging in loop_once
 pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyhow::Error> {
     let loop_once_start = std::time::Instant::now();
@@ -309,7 +298,7 @@ pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyho
         };
     }
 
-    execute_machines(&mut inputs.machines);
+    inputs.machine_manager.execute_machines();
 
     if inputs.ethercat_setup.is_some() && inputs.ethercat_perf_metrics.is_some() {
         let res = smol::block_on(copy_ethercat_outputs(inputs.ethercat_setup.as_deref()));

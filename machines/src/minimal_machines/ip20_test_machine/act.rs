@@ -36,12 +36,6 @@ impl MachineAct for IP20TestMachine {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(_machine_connection) => {
-                // Does not connect to any Machine; do nothing
-            }
-            MachineMessage::DisconnectMachine(_machine_connection) => {
-                // Does not connect to any Machine; do nothing
-            }
             MachineMessage::RequestValues(sender) => {
                 sender
                     .send_blocking(MachineValues {

@@ -96,6 +96,19 @@ export type SpoolAutomaticActionState = z.infer<
 >;
 
 /**
+ *  Connected machine state scheme
+ */
+export const machineIdentificationSchema = z.object({
+  vendor: z.number(),
+  machine: z.number(),
+});
+
+export const machineIdentificationUniqueSchema = z.object({
+  machine_identification: machineIdentificationSchema,
+  serial: z.number(),
+});
+
+/**
  * Traverse state schema
  */
 export const traverseStateSchema = z.object({
@@ -122,9 +135,15 @@ export const traverseStateSchema = z.object({
 export const pullerStateSchema = z.object({
   regulation: pullerRegulationSchema,
   target_speed: z.number(),
-  target_diameter: z.number(),
   forward: z.boolean(),
   gear_ratio: gearRatioSchema,
+
+  // properties of adaptive speed mode
+  adaptive_speed_delta_max: z.number(),
+  adaptive_adjustment_distance: z.number(),
+  adaptive_change_per_step: z.number(),
+  allowed_diameter_deviation: z.number(),
+  adaptive_reference_machine: machineIdentificationUniqueSchema.nullable(),
 });
 
 /**
@@ -133,24 +152,6 @@ export const pullerStateSchema = z.object({
 export const modeStateSchema = z.object({
   mode: modeSchema,
   can_wind: z.boolean(),
-});
-
-/**
- *  Connected machine state scheme
- */
-export const machineIdentificationSchema = z.object({
-  vendor: z.number(),
-  machine: z.number(),
-});
-
-export const machineIdentificationUniqueSchema = z.object({
-  machine_identification: machineIdentificationSchema,
-  serial: z.number(),
-});
-
-export const connectedMachineStateSchema = z.object({
-  machine_identification_unique: machineIdentificationUniqueSchema.nullable(),
-  is_available: z.boolean(),
 });
 
 /**
@@ -186,7 +187,6 @@ export const stateEventDataSchema = z.object({
   tension_arm_state: tensionArmStateSchema,
   spool_speed_controller_state: spoolSpeedControllerStateSchema,
   spool_automatic_action_state: spoolAutomaticActionStateSchema,
-  connected_machine_state: connectedMachineStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========

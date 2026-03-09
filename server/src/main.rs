@@ -2,18 +2,17 @@ use crate::{
     metrics::collector::{RuntimeMetricsConfig, spawn_runtime_metrics_sampler},
     socketio::main_namespace::machines_event::MachineObj,
 };
+use control_core::socketio::event::GenericEvent;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use machines::{
-    AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
-    MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
-    SerialDeviceNewParams,
+    AsyncThreadMessage, MachineNewHardware, MachineNewHardwareSerial, MachineNewParams,
+    SerialDevice, SerialDeviceIdentification, SerialDeviceNew, SerialDeviceNewParams,
     laser::LaserMachine,
     machine_identification::{
         DeviceIdentification, DeviceIdentificationIdentified, MachineIdentificationUnique,
     },
     registry::{MACHINE_REGISTRY, MachineRegistry},
     serial::{devices::laser::Laser, init::SerialDetection},
-    winder2::api::GenericEvent,
 };
 use socketio::{
     main_namespace::{MainNamespaceEvents, ethercat_devices_event::EthercatDevicesEventBuilder},
@@ -70,6 +69,9 @@ pub mod performance_metrics;
 pub mod rest;
 pub mod socketio;
 pub mod utils;
+
+mod machine_manager;
+pub use machine_manager::MachineManager;
 
 pub async fn send_empty_machines_event(shared_state: Arc<SharedState>) {
     shared_state.current_machines_meta.lock().await.clear();
@@ -253,69 +255,24 @@ pub async fn handle_serial_device_hotplug(
 }
 
 async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state: Arc<SharedState>) {
+    use AsyncThreadMessage::*;
+
     while let Ok(message) = recv.recv().await {
         match message {
-            AsyncThreadMessage::NoMsg => (),
-            AsyncThreadMessage::ConnectOneWayRequest(cross_connection) => {
-                let api_machines_guard = shared_state.api_machines.lock().await;
-                // The Src Connection is from the machine that recvs the request to connect
-                // The Dest Connection the machine to which should be connected
-                let src_ident = cross_connection.src;
-                let dest_ident = cross_connection.dest;
-                let src_sender = match api_machines_guard.get(&src_ident) {
-                    Some(sender) => sender,
-                    None => continue,
-                };
-
-                let dest_sender = match api_machines_guard.get(&dest_ident) {
-                    Some(sender) => sender,
-                    None => continue,
-                };
-                let connection = MachineConnection {
-                    ident: dest_ident,
-                    connection: dest_sender.clone(),
-                };
-                let res = src_sender
-                    .send(machines::MachineMessage::ConnectToMachine(connection))
-                    .await;
-                match res {
-                    Ok(_) => (),
-                    Err(_) => tracing::error!("Failed to send MachineConnection"),
-                }
+            NoMsg => (),
+            SubscribeToMachine(request) => {
+                shared_state
+                    .rt_machine_creation_channel
+                    .send(HotThreadMessage::SubscriptionEstablish(request))
+                    .await
+                    .expect("Could not send to real-time channel");
             }
-            AsyncThreadMessage::DisconnectMachines(cross_connection) => {
-                let api_machines_guard = shared_state.api_machines.lock().await;
-                // The Src Connection is from the machine that recvs the request to connect
-                // The Dest Connection the machine to which should be connected
-                let src_ident = cross_connection.src;
-                let dest_ident = cross_connection.dest;
-                let src_sender = match api_machines_guard.get(&src_ident) {
-                    Some(sender) => sender,
-                    None => continue,
-                };
-
-                let dest_sender = match api_machines_guard.get(&dest_ident) {
-                    Some(sender) => sender,
-                    None => continue,
-                };
-
-                let connection = MachineConnection {
-                    ident: dest_ident.clone(),
-                    connection: dest_sender.clone(),
-                };
-
-                let res = src_sender
-                    .send(machines::MachineMessage::DisconnectMachine(connection))
-                    .await;
-                match res {
-                    Ok(_) => (),
-                    Err(e) => tracing::error!(
-                        "AsyncThreadMessage::DisconnectMachines src:{:?} dest:{:?} error:{:?}",
-                        src_ident,
-                        dest_ident,
-                        e
-                    ),
-                }
+            UnsubscribeFromMachine(request) => {
+                shared_state
+                    .rt_machine_creation_channel
+                    .send(HotThreadMessage::SubscriptionTerminate(request))
+                    .await
+                    .expect("Could not send to real-time channel");
             }
         }
     }

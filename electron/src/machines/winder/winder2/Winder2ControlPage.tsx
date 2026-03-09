@@ -15,6 +15,7 @@ import { StatusBadge } from "@/control/StatusBadge";
 import { useWinder2 } from "./useWinder";
 import {
   Mode,
+  PullerRegulation,
   SpoolAutomaticActionMode,
   getGearRatioMultiplier,
 } from "./winder2Namespace";
@@ -29,10 +30,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getWinder2TraverseMax } from "./winder2Config";
+import { getWinder2AdaptivePullerSpeed } from "./winder2Config";
 
 export function Winder2ControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
   const traverseMax = getWinder2TraverseMax();
+  const adaptivePullerEnabled = getWinder2AdaptivePullerSpeed();
 
   // use optimistic state
   const {
@@ -64,7 +67,7 @@ export function Winder2ControlPage() {
   const gearRatioMultiplier = getGearRatioMultiplier(
     state?.puller_state?.gear_ratio,
   );
-  const maxMotorSpeed = 75; // Maximum motor speed in m/min
+  const maxMotorSpeed = 50; // Maximum motor speed in m/min
   const maxTargetSpeed = maxMotorSpeed / gearRatioMultiplier;
 
   const handleResetProgress = () => {
@@ -261,38 +264,72 @@ export function Winder2ControlPage() {
             timeseries={pullerSpeed}
             renderValue={(value) => roundToDecimals(value, 1)}
           />
-          <Label label="Regulation">
-            <SelectionGroup
+          <Label label="Speed Regulation">
+            <SelectionGroup<string>
               value={state?.puller_state?.regulation}
-              options={{
-                Speed: {
-                  children: "Speed",
-                  icon: "lu:Gauge",
-                },
-                Diameter: {
-                  children: "Diameter",
-                  icon: "lu:Sun",
-                  disabled: true,
-                },
-              }}
-              onChange={setPullerRegulationMode}
               disabled={isDisabled}
               loading={isLoading}
+              options={{
+                Speed: {
+                  children: "Fixed",
+                  icon: "lu:Crosshair",
+                },
+                ...(adaptivePullerEnabled
+                  ? {
+                      Diameter: {
+                        children: "Adaptive",
+                        icon: "lu:Brain",
+                        disabled:
+                          !state?.puller_state?.adaptive_reference_machine,
+                      },
+                    }
+                  : {}),
+              }}
+              onChange={(value) => {
+                // When switching back to fixed mode, seed the target speed from
+                // the current puller speed so there is no jump.
+                if (
+                  value === "Speed" &&
+                  state?.puller_state?.regulation !== "Speed"
+                ) {
+                  const currentSpeed = pullerSpeed.current?.value ?? 0;
+                  setPullerTargetSpeed(currentSpeed);
+                }
+                setPullerRegulationMode(value as PullerRegulation);
+              }}
             />
           </Label>
-          <Label label="Target Speed">
-            <EditValue
-              value={state?.puller_state?.target_speed}
-              unit="m/min"
-              title="Target Speed"
-              defaultValue={defaultState?.puller_state?.target_speed}
-              min={0}
-              max={maxTargetSpeed}
-              step={0.1}
-              renderValue={(value) => roundToDecimals(value, 1)}
-              onChange={setPullerTargetSpeed}
-            />
-          </Label>
+
+          {state?.puller_state?.regulation === "Speed" && (
+            <>
+              <Label label="Target Speed">
+                <EditValue
+                  value={state?.puller_state?.target_speed}
+                  title={"Target Speed"}
+                  unit="m/min"
+                  step={0.1}
+                  min={0}
+                  max={maxTargetSpeed}
+                  defaultValue={defaultState?.puller_state?.target_speed}
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) => setPullerTargetSpeed(value)}
+                />
+              </Label>
+            </>
+          )}
+
+          {state?.puller_state?.regulation === "Diameter" && (
+            <Label label="Base Speed">
+              <div className="flex flex-row items-center gap-2 py-4">
+                <span className="font-mono text-4xl font-bold">
+                  {state?.puller_state?.target_speed != null
+                    ? roundToDecimals(state.puller_state.target_speed, 1)
+                    : "–"}
+                </span>
+                <span>m/min</span>
+              </div>
+            </Label>
+          )}
         </ControlCard>
 
         <ControlCard className="bg-red" title="Spool Autostop">

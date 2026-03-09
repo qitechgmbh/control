@@ -84,20 +84,6 @@ impl Winder2 {
     }
 
     pub fn build_state_event(&mut self) -> StateEvent {
-        use crate::MachineCrossConnectionState;
-
-        let connected_machine = self.connected_machines.get(0);
-
-        let ident = match connected_machine {
-            Some(machine) => Some(machine.ident.clone()),
-            None => None,
-        };
-
-        let cross_conn = MachineCrossConnectionState {
-            machine_identification_unique: ident,
-            is_available: connected_machine.is_some(),
-        };
-
         StateEvent {
             is_default_state: self.is_default_state,
             traverse_state: self.traverse_state.clone(),
@@ -106,7 +92,7 @@ impl Winder2 {
             mode_state: self.mode_state.clone(),
             tension_arm_state: self.tension_arm_state.clone(),
             spool_speed_controller_state: self.spool_speed_controller_state.clone(),
-            connected_machine_state: cross_conn,
+            puller_reference_machine: None,
         }
     }
 
@@ -153,12 +139,6 @@ impl Winder2 {
     /// Set target speed in m/min
     pub fn puller_set_target_speed(&mut self, target_speed: f64) {
         self.puller_state.target_speed = target_speed;
-        self.emit_state();
-    }
-
-    /// Set target diameter in mm
-    pub fn puller_set_target_diameter(&mut self, target_diameter: f64) {
-        self.puller_state.target_diameter = target_diameter;
         self.emit_state();
     }
 
