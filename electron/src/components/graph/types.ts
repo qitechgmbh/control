@@ -28,17 +28,34 @@ export type PropGraphSync = {
 };
 
 // Configuration types for additional lines
-export type GraphLine = {
-  type: "threshold" | "target" | "user_marker"; // TODO: redundant or not?
-  value: number;
-  targetSeries?: TimeSeries;
+type BaseGraphLine = {
   color: string;
-  label?: string;
   width?: number;
   dash?: number[];
   show?: boolean;
-  markerTimestamp?: number;
 };
+
+type ThresholdLine = BaseGraphLine & {
+  type: "threshold";
+  value: number;
+  label?: string;
+};
+
+type TargetLine = BaseGraphLine & {
+  type: "target";
+  value: number;
+  label?: string;
+  targetSeries?: TimeSeries;
+};
+
+type UserMarkerLine = BaseGraphLine & {
+  type: "user_marker";
+  value: number;
+  label: string;
+  markerTimestamp: number;
+};
+
+export type GraphLine = ThresholdLine | TargetLine | UserMarkerLine;
 
 export type GraphConfig = {
   title: string;
