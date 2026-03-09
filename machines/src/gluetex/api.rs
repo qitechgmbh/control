@@ -217,8 +217,8 @@ pub enum Mutation {
     SetSlavePullerSensitivity(f64),
     SetSlavePullerMinSpeedFactor(f64),
     SetSlavePullerMaxSpeedFactor(f64),
-    ZeroSlaveTensionArm,
-    ZeroAddonTensionArm,
+    ZeroInletFeederTensionArm,
+    ZeroTapeFeederTensionArm,
 
     // Tension Arm Monitoring - Winder
     SetWinderTensionArmMonitorEnabled(bool),
@@ -226,14 +226,14 @@ pub enum Mutation {
     SetWinderTensionArmMonitorMaxAngle(f64),
 
     // Tension Arm Monitoring - Addon
-    SetAddonTensionArmMonitorEnabled(bool),
-    SetAddonTensionArmMonitorMinAngle(f64),
-    SetAddonTensionArmMonitorMaxAngle(f64),
+    SetTapeFeederTensionArmMonitorEnabled(bool),
+    SetTapeFeederTensionArmMonitorMinAngle(f64),
+    SetTapeFeederTensionArmMonitorMaxAngle(f64),
 
     // Tension Arm Monitoring - Slave
-    SetSlaveTensionArmMonitorEnabled(bool),
-    SetSlaveTensionArmMonitorMinAngle(f64),
-    SetSlaveTensionArmMonitorMaxAngle(f64),
+    SetInletFeederTensionArmMonitorEnabled(bool),
+    SetInletFeederTensionArmMonitorMinAngle(f64),
+    SetInletFeederTensionArmMonitorMaxAngle(f64),
 
     // Voltage Monitors
     SetOptris1MonitorEnabled(bool),
@@ -303,10 +303,10 @@ pub struct LiveValuesEvent {
     pub heater_6_power: f64,
     /// slave puller speed in m/min
     pub slave_puller_speed: f64,
-    /// slave tension arm angle in degrees
-    pub slave_tension_arm_angle: f64,
-    /// addon tension arm angle in degrees
-    pub addon_tension_arm_angle: f64,
+    /// TA inlet feeder angle in degrees
+    pub inlet_feeder_tension_arm_angle: f64,
+    /// TA tape feeder angle in degrees
+    pub tape_feeder_tension_arm_angle: f64,
     /// optris 1 voltage (role 9 AI2)
     pub optris_1_voltage: f64,
     /// optris 2 voltage (role 10 AI2)
@@ -360,14 +360,14 @@ pub struct StateEvent {
     pub addon_motor_5_tension_control_state: AddonMotorTensionControlState,
     /// slave puller state
     pub slave_puller_state: SlavePullerState,
-    /// addon tension arm state
-    pub addon_tension_arm_state: TensionArmState,
+    /// TA tape feeder state
+    pub tape_feeder_tension_arm_state: TensionArmState,
     /// winder tension arm monitor state
     pub winder_tension_arm_monitor_state: TensionArmMonitorState,
-    /// addon tension arm monitor state
-    pub addon_tension_arm_monitor_state: TensionArmMonitorState,
-    /// slave tension arm monitor state
-    pub slave_tension_arm_monitor_state: TensionArmMonitorState,
+    /// TA tape feeder monitor state
+    pub tape_feeder_tension_arm_monitor_state: TensionArmMonitorState,
+    /// TA inlet feeder monitor state
+    pub inlet_feeder_tension_arm_monitor_state: TensionArmMonitorState,
     /// optris 1 voltage monitor state
     pub optris_1_monitor_state: VoltageMonitorState,
     /// optris 2 voltage monitor state
@@ -542,12 +542,12 @@ pub struct SlavePullerState {
     pub min_speed_factor: Option<f64>,
     /// maximum speed factor for overspeed protection (optional)
     pub max_speed_factor: Option<f64>,
-    /// slave tension arm state
-    pub tension_arm: SlaveTensionArmState,
+    /// TA inlet feeder state
+    pub tension_arm: InletFeederTensionArmState,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
-pub struct SlaveTensionArmState {
+pub struct InletFeederTensionArmState {
     /// is zeroed
     pub zeroed: bool,
 }
@@ -924,12 +924,12 @@ impl MachineApi for Gluetex {
                     .set_max_speed_factor(Some(factor));
                 self.emit_state();
             }
-            Mutation::ZeroSlaveTensionArm => {
-                self.slave_tension_arm.zero();
+            Mutation::ZeroInletFeederTensionArm => {
+                self.inlet_feeder_tension_arm.zero();
                 self.emit_state();
             }
-            Mutation::ZeroAddonTensionArm => {
-                self.addon_tension_arm.zero();
+            Mutation::ZeroTapeFeederTensionArm => {
+                self.tape_feeder_tension_arm.zero();
                 self.emit_state();
             }
             // Winder Tension Arm Monitor
@@ -949,38 +949,38 @@ impl MachineApi for Gluetex {
                 self.winder_tension_arm_monitor.config.max_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
-            // Addon Tension Arm Monitor
-            Mutation::SetAddonTensionArmMonitorEnabled(enabled) => {
-                self.addon_tension_arm_monitor.config.enabled = enabled;
+            // TA Tape Feeder Monitor
+            Mutation::SetTapeFeederTensionArmMonitorEnabled(enabled) => {
+                self.tape_feeder_tension_arm_monitor.config.enabled = enabled;
                 // Clear triggered flag when disabling
                 if !enabled {
-                    self.addon_tension_arm_monitor.triggered = false;
+                    self.tape_feeder_tension_arm_monitor.triggered = false;
                 }
                 self.emit_state();
             }
-            Mutation::SetAddonTensionArmMonitorMinAngle(angle_deg) => {
-                self.addon_tension_arm_monitor.config.min_angle = Angle::new::<degree>(angle_deg);
+            Mutation::SetTapeFeederTensionArmMonitorMinAngle(angle_deg) => {
+                self.tape_feeder_tension_arm_monitor.config.min_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
-            Mutation::SetAddonTensionArmMonitorMaxAngle(angle_deg) => {
-                self.addon_tension_arm_monitor.config.max_angle = Angle::new::<degree>(angle_deg);
+            Mutation::SetTapeFeederTensionArmMonitorMaxAngle(angle_deg) => {
+                self.tape_feeder_tension_arm_monitor.config.max_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
-            // Slave Tension Arm Monitor
-            Mutation::SetSlaveTensionArmMonitorEnabled(enabled) => {
-                self.slave_tension_arm_monitor.config.enabled = enabled;
+            // TA Inlet Feeder Monitor
+            Mutation::SetInletFeederTensionArmMonitorEnabled(enabled) => {
+                self.inlet_feeder_tension_arm_monitor.config.enabled = enabled;
                 // Clear triggered flag when disabling
                 if !enabled {
-                    self.slave_tension_arm_monitor.triggered = false;
+                    self.inlet_feeder_tension_arm_monitor.triggered = false;
                 }
                 self.emit_state();
             }
-            Mutation::SetSlaveTensionArmMonitorMinAngle(angle_deg) => {
-                self.slave_tension_arm_monitor.config.min_angle = Angle::new::<degree>(angle_deg);
+            Mutation::SetInletFeederTensionArmMonitorMinAngle(angle_deg) => {
+                self.inlet_feeder_tension_arm_monitor.config.min_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
-            Mutation::SetSlaveTensionArmMonitorMaxAngle(angle_deg) => {
-                self.slave_tension_arm_monitor.config.max_angle = Angle::new::<degree>(angle_deg);
+            Mutation::SetInletFeederTensionArmMonitorMaxAngle(angle_deg) => {
+                self.inlet_feeder_tension_arm_monitor.config.max_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
             // Optris 1 Voltage Monitor

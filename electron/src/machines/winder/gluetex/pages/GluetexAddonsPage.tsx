@@ -33,10 +33,10 @@ export function GluetexAddonsPage() {
     optris1Voltage,
     optris2Voltage,
     slavePullerSpeed,
-    slaveTensionArmAngle,
-    addonTensionArmAngle,
-    zeroSlaveTensionArm,
-    zeroAddonTensionArm,
+    inletFeederTensionArmAngle,
+    tapeFeederTensionArmAngle,
+    zeroInletFeederTensionArm,
+    zeroTapeFeederTensionArm,
     setStepper3Master,
     setStepper3Slave,
     setStepper4Master,
@@ -126,15 +126,15 @@ export function GluetexAddonsPage() {
           </Label>
         </ControlCard>
 
-        <ControlCard title="Slave Tension Arm">
+        <ControlCard title="TA Inlet Feeder">
           <TensionArm
-            degrees={slaveTensionArmAngle.current?.value}
+            degrees={inletFeederTensionArmAngle.current?.value}
             className="h-24"
           />
           <TimeSeriesValueNumeric
-            label="Slave Tension Arm"
+            label="TA Inlet Feeder"
             unit="deg"
-            timeseries={slaveTensionArmAngle}
+            timeseries={inletFeederTensionArmAngle}
             renderValue={(value) => roundDegreesToDecimals(value, 0)}
           />
           <TimeSeriesValueNumeric
@@ -146,7 +146,7 @@ export function GluetexAddonsPage() {
           <TouchButton
             variant="outline"
             icon="lu:House"
-            onClick={zeroSlaveTensionArm}
+            onClick={zeroInletFeederTensionArm}
             disabled={isDisabled}
             isLoading={isLoading}
           >
@@ -314,27 +314,27 @@ export function GluetexAddonsPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Addon Tension Arm">
+        <ControlCard title="TA Tape Feeder">
           <TensionArm
-            degrees={addonTensionArmAngle.current?.value}
+            degrees={tapeFeederTensionArmAngle.current?.value}
             className="h-24"
           />
           <TimeSeriesValueNumeric
             label="Angle"
             unit="deg"
-            timeseries={addonTensionArmAngle}
+            timeseries={tapeFeederTensionArmAngle}
             renderValue={(value) => roundDegreesToDecimals(value, 0)}
           />
           <TouchButton
             variant="outline"
             icon="lu:House"
-            onClick={zeroAddonTensionArm}
+            onClick={zeroTapeFeederTensionArm}
             disabled={isDisabled}
             isLoading={isLoading}
           >
             Set Zero Point
           </TouchButton>
-          {!state?.addon_tension_arm_state?.zeroed && (
+          {!state?.tape_feeder_tension_arm_state?.zeroed && (
             <StatusBadge variant="error">Not Zeroed</StatusBadge>
           )}
         </ControlCard>

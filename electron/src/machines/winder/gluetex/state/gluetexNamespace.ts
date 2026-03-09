@@ -48,8 +48,8 @@ export const liveValuesEventDataSchema = z.object({
   heater_5_power: z.number(),
   heater_6_power: z.number(),
   slave_puller_speed: z.number(),
-  slave_tension_arm_angle: z.number(),
-  addon_tension_arm_angle: z.number(),
+  inlet_feeder_tension_arm_angle: z.number(),
+  tape_feeder_tension_arm_angle: z.number(),
   optris_1_voltage: z.number(),
   optris_2_voltage: z.number(),
 });
@@ -299,7 +299,7 @@ export const addonMotor5TensionControlStateSchema = z.object({
 /**
  * Slave tension arm state schema (from backend)
  */
-export const slaveTensionArmStateSchema = z.object({
+export const inletFeederTensionArmStateSchema = z.object({
   zeroed: z.boolean(),
 });
 
@@ -313,7 +313,7 @@ export const slavePullerStateSchema = z.object({
   sensitivity: z.number(),
   min_speed_factor: z.number().nullable(),
   max_speed_factor: z.number().nullable(),
-  tension_arm: slaveTensionArmStateSchema,
+  tension_arm: inletFeederTensionArmStateSchema,
 });
 
 /**
@@ -376,10 +376,10 @@ export const stateEventDataSchema = z.object({
   addon_motor_5_state: addonMotorStateSchema,
   addon_motor_5_tension_control_state: addonMotor5TensionControlStateSchema,
   slave_puller_state: slavePullerStateSchema,
-  addon_tension_arm_state: tensionArmStateSchema,
+  tape_feeder_tension_arm_state: tensionArmStateSchema,
   winder_tension_arm_monitor_state: tensionArmMonitorStateSchema,
-  addon_tension_arm_monitor_state: tensionArmMonitorStateSchema,
-  slave_tension_arm_monitor_state: tensionArmMonitorStateSchema,
+  tape_feeder_tension_arm_monitor_state: tensionArmMonitorStateSchema,
+  inlet_feeder_tension_arm_monitor_state: tensionArmMonitorStateSchema,
   optris_1_monitor_state: voltageMonitorStateSchema,
   optris_2_monitor_state: voltageMonitorStateSchema,
   sleep_timer_state: sleepTimerStateSchema,
@@ -557,8 +557,8 @@ export type GluetexNamespaceStore = {
 
   // Time series data for addons (local)
   slavePullerSpeed: TimeSeries;
-  slaveTensionArmAngle: TimeSeries;
-  addonTensionArmAngle: TimeSeries;
+  inletFeederTensionArmAngle: TimeSeries;
+  tapeFeederTensionArmAngle: TimeSeries;
 
   // Optris temperature sensor voltages
   optris1Voltage: TimeSeries;
@@ -622,12 +622,12 @@ const { initialTimeSeries: heater6Power, insert: addHeater6Power } =
 const { initialTimeSeries: slavePullerSpeed, insert: addSlavePullerSpeed } =
   createTimeSeries(timeSeriesConfig);
 const {
-  initialTimeSeries: slaveTensionArmAngle,
-  insert: addSlaveTensionArmAngle,
+  initialTimeSeries: inletFeederTensionArmAngle,
+  insert: addInletFeederTensionArmAngle,
 } = createTimeSeries(timeSeriesConfig);
 const {
-  initialTimeSeries: addonTensionArmAngle,
-  insert: addAddonTensionArmAngle,
+  initialTimeSeries: tapeFeederTensionArmAngle,
+  insert: addTapeFeederTensionArmAngle,
 } = createTimeSeries(timeSeriesConfig);
 
 // Create time series for optris sensors
@@ -815,20 +815,20 @@ const DEFAULT_BACKEND_EXTENDED_STATE: ExtendedStateEvent = {
       max_speed_factor: null,
       tension_arm: { zeroed: false },
     },
-    addon_tension_arm_state: { zeroed: false },
+    tape_feeder_tension_arm_state: { zeroed: false },
     winder_tension_arm_monitor_state: {
       enabled: false,
       min_angle: 20.0,
       max_angle: 90.0,
       triggered: false,
     },
-    addon_tension_arm_monitor_state: {
+    tape_feeder_tension_arm_monitor_state: {
       enabled: false,
       min_angle: 20.0,
       max_angle: 90.0,
       triggered: false,
     },
-    slave_tension_arm_monitor_state: {
+    inlet_feeder_tension_arm_monitor_state: {
       enabled: false,
       min_angle: 20.0,
       max_angle: 90.0,
@@ -905,8 +905,8 @@ export const createGluetexNamespaceStore =
 
         // Time series data for addons
         slavePullerSpeed,
-        slaveTensionArmAngle,
-        addonTensionArmAngle,
+        inletFeederTensionArmAngle,
+        tapeFeederTensionArmAngle,
 
         // Optris sensor voltages
         optris1Voltage,
@@ -1025,8 +1025,8 @@ export function gluetexMessageHandler(
           heater_5_power,
           heater_6_power,
           slave_puller_speed,
-          slave_tension_arm_angle,
-          addon_tension_arm_angle,
+          inlet_feeder_tension_arm_angle,
+          tape_feeder_tension_arm_angle,
           optris_1_voltage,
           optris_2_voltage,
         } = liveValuesEvent.data;
@@ -1205,22 +1205,22 @@ export function gluetexMessageHandler(
             slavePullerValue,
           );
 
-          const slaveTensionArmValue: TimeSeriesValue = {
-            value: slave_tension_arm_angle,
+          const inletFeederTensionArmValue: TimeSeriesValue = {
+            value: inlet_feeder_tension_arm_angle,
             timestamp,
           };
-          newState.slaveTensionArmAngle = addSlaveTensionArmAngle(
-            state.slaveTensionArmAngle,
-            slaveTensionArmValue,
+          newState.inletFeederTensionArmAngle = addInletFeederTensionArmAngle(
+            state.inletFeederTensionArmAngle,
+            inletFeederTensionArmValue,
           );
 
-          const addonTensionArmValue: TimeSeriesValue = {
-            value: addon_tension_arm_angle,
+          const tapeFeederTensionArmValue: TimeSeriesValue = {
+            value: tape_feeder_tension_arm_angle,
             timestamp,
           };
-          newState.addonTensionArmAngle = addAddonTensionArmAngle(
-            state.addonTensionArmAngle,
-            addonTensionArmValue,
+          newState.tapeFeederTensionArmAngle = addTapeFeederTensionArmAngle(
+            state.tapeFeederTensionArmAngle,
+            tapeFeederTensionArmValue,
           );
 
           // Add optris voltage readings

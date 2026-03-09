@@ -285,13 +285,13 @@ impl Gluetex {
                     .angular_velocity_to_velocity(angular_velocity);
                 speed.get::<meter_per_minute>().abs()
             },
-            slave_tension_arm_angle: {
-                let angle = self.slave_tension_arm.get_angle().get::<degree>();
+            inlet_feeder_tension_arm_angle: {
+                let angle = self.inlet_feeder_tension_arm.get_angle().get::<degree>();
                 // Wrap [270;<360] to [-90; 0]
                 if angle >= 270.0 { angle - 360.0 } else { angle }
             },
-            addon_tension_arm_angle: {
-                let angle = self.addon_tension_arm.get_angle().get::<degree>();
+            tape_feeder_tension_arm_angle: {
+                let angle = self.tape_feeder_tension_arm.get_angle().get::<degree>();
                 // Wrap [270;<360] to [-90; 0]
                 if angle >= 270.0 { angle - 360.0 } else { angle }
             },
@@ -571,12 +571,12 @@ impl Gluetex {
                     .get::<degree>(),
                 min_speed_factor: self.slave_puller_speed_controller.get_min_speed_factor(),
                 max_speed_factor: self.slave_puller_speed_controller.get_max_speed_factor(),
-                tension_arm: api::SlaveTensionArmState {
-                    zeroed: self.slave_tension_arm.zeroed,
+                tension_arm: api::InletFeederTensionArmState {
+                    zeroed: self.inlet_feeder_tension_arm.zeroed,
                 },
             },
-            addon_tension_arm_state: TensionArmState {
-                zeroed: self.addon_tension_arm.zeroed,
+            tape_feeder_tension_arm_state: TensionArmState {
+                zeroed: self.tape_feeder_tension_arm.zeroed,
             },
             winder_tension_arm_monitor_state: api::TensionArmMonitorState {
                 enabled: self.winder_tension_arm_monitor.config.enabled,
@@ -592,33 +592,33 @@ impl Gluetex {
                     .get::<degree>(),
                 triggered: self.winder_tension_arm_monitor.triggered,
             },
-            addon_tension_arm_monitor_state: api::TensionArmMonitorState {
-                enabled: self.addon_tension_arm_monitor.config.enabled,
+            tape_feeder_tension_arm_monitor_state: api::TensionArmMonitorState {
+                enabled: self.tape_feeder_tension_arm_monitor.config.enabled,
                 min_angle: self
-                    .addon_tension_arm_monitor
+                    .tape_feeder_tension_arm_monitor
                     .config
                     .min_angle
                     .get::<degree>(),
                 max_angle: self
-                    .addon_tension_arm_monitor
+                    .tape_feeder_tension_arm_monitor
                     .config
                     .max_angle
                     .get::<degree>(),
-                triggered: self.addon_tension_arm_monitor.triggered,
+                triggered: self.tape_feeder_tension_arm_monitor.triggered,
             },
-            slave_tension_arm_monitor_state: api::TensionArmMonitorState {
-                enabled: self.slave_tension_arm_monitor.config.enabled,
+            inlet_feeder_tension_arm_monitor_state: api::TensionArmMonitorState {
+                enabled: self.inlet_feeder_tension_arm_monitor.config.enabled,
                 min_angle: self
-                    .slave_tension_arm_monitor
+                    .inlet_feeder_tension_arm_monitor
                     .config
                     .min_angle
                     .get::<degree>(),
                 max_angle: self
-                    .slave_tension_arm_monitor
+                    .inlet_feeder_tension_arm_monitor
                     .config
                     .max_angle
                     .get::<degree>(),
-                triggered: self.slave_tension_arm_monitor.triggered,
+                triggered: self.inlet_feeder_tension_arm_monitor.triggered,
             },
             optris_1_monitor_state: api::VoltageMonitorState {
                 enabled: self.optris_1_monitor.config.enabled,

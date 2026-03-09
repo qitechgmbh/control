@@ -545,7 +545,7 @@ impl MachineNewTrait for Gluetex {
                     el7031_addon5,
                     EL7031_0030StepperPort::STM1,
                 ),
-                addon_tension_arm: TensionArm::new(AnalogInput::new(
+                tape_feeder_tension_arm: TensionArm::new(AnalogInput::new(
                     el7031_addon4.clone(),
                     EL7031_0030AnalogInputPort::AI1,
                 )),
@@ -612,7 +612,7 @@ impl MachineNewTrait for Gluetex {
                     el7031_0030_slave.clone(),
                     EL7031_0030StepperPort::STM1,
                 ),
-                slave_tension_arm: TensionArm::new(AnalogInput::new(
+                inlet_feeder_tension_arm: TensionArm::new(AnalogInput::new(
                     el7031_0030_slave,
                     EL7031_0030AnalogInputPort::AI1,
                 )),
@@ -646,8 +646,8 @@ impl MachineNewTrait for Gluetex {
                 machine_identification_unique: machine_id,
                 connected_machines: vec![],
                 winder_tension_arm_monitor: super::TensionArmMonitor::new("Winder"),
-                addon_tension_arm_monitor: super::TensionArmMonitor::new("Addon"),
-                slave_tension_arm_monitor: super::TensionArmMonitor::new("Slave"),
+                tape_feeder_tension_arm_monitor: super::TensionArmMonitor::new("TapeFeeder"),
+                inlet_feeder_tension_arm_monitor: super::TensionArmMonitor::new("InletFeeder"),
                 optris_1_monitor: super::VoltageMonitor::new("Optris 1"),
                 optris_2_monitor: super::VoltageMonitor::new("Optris 2"),
                 sleep_timer: super::SleepTimer::new(),

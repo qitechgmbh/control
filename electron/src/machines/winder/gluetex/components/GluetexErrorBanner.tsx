@@ -24,14 +24,14 @@ export function GluetexErrorBanner() {
   // Check for various error conditions - check each tension arm separately
   const winderTensionArmTriggered =
     state?.winder_tension_arm_monitor_state?.triggered;
-  const addonTensionArmTriggered =
-    state?.addon_tension_arm_monitor_state?.triggered;
-  const slaveTensionArmTriggered =
-    state?.slave_tension_arm_monitor_state?.triggered;
+  const tapeFeederTensionArmTriggered =
+    state?.tape_feeder_tension_arm_monitor_state?.triggered;
+  const inletFeederTensionArmTriggered =
+    state?.inlet_feeder_tension_arm_monitor_state?.triggered;
   const anyTensionArmTriggered =
     winderTensionArmTriggered ||
-    addonTensionArmTriggered ||
-    slaveTensionArmTriggered;
+    tapeFeederTensionArmTriggered ||
+    inletFeederTensionArmTriggered;
 
   // Check voltage monitors
   const optris1MonitorTriggered = state?.optris_1_monitor_state?.triggered;
@@ -152,8 +152,8 @@ export function GluetexErrorBanner() {
               </p>
               <ul className="list-inside list-disc space-y-1 text-red-600/90 dark:text-red-400/90">
                 {winderTensionArmTriggered && <li>Winder Tension Arm</li>}
-                {addonTensionArmTriggered && <li>Addon Tension Arm</li>}
-                {slaveTensionArmTriggered && <li>Slave Tension Arm</li>}
+                {tapeFeederTensionArmTriggered && <li>TA Tape Feeder</li>}
+                {inletFeederTensionArmTriggered && <li>TA Inlet Feeder</li>}
               </ul>
             </div>
 
@@ -162,7 +162,7 @@ export function GluetexErrorBanner() {
               configured limits before resuming operation.
             </p>
             <p className="text-sm text-red-600/80 dark:text-red-400/80">
-              Configure limits in Settings → Winder/Addon/Slave Tension Arm
+              Configure limits in Settings → Winder/Addon/TA Inlet Feeder
               Monitor
             </p>
           </DialogDescription>

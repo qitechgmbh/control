@@ -203,14 +203,14 @@ pub struct Gluetex {
     // slave puller (secondary puller with tension control)
     pub slave_puller: StepperVelocityEL70x1,
     pub slave_puller_speed_controller: SlavePullerSpeedController,
-    pub slave_tension_arm: TensionArm,
+    pub inlet_feeder_tension_arm: TensionArm,
     pub slave_puller_mode: PullerMode,
     /// User preference for whether slave puller feature is enabled
     /// This is independent of mode-based enabling
     pub slave_puller_user_enabled: bool,
 
-    // addon tension arm (independent tension arm on Role 9)
-    pub addon_tension_arm: TensionArm,
+    // TA tape feeder (independent tension arm on Role 9)
+    pub tape_feeder_tension_arm: TensionArm,
 
     // optris temperature sensors (analog voltage inputs)
     pub optris_1: AnalogInput,
@@ -220,8 +220,8 @@ pub struct Gluetex {
 
     // Monitoring systems
     pub winder_tension_arm_monitor: TensionArmMonitor,
-    pub addon_tension_arm_monitor: TensionArmMonitor,
-    pub slave_tension_arm_monitor: TensionArmMonitor,
+    pub tape_feeder_tension_arm_monitor: TensionArmMonitor,
+    pub inlet_feeder_tension_arm_monitor: TensionArmMonitor,
     pub optris_1_monitor: VoltageMonitor,
     pub optris_2_monitor: VoltageMonitor,
     pub sleep_timer: SleepTimer,
@@ -494,7 +494,7 @@ impl Gluetex {
         let adjusted_speed = self.addon_motor_5_tension_controller.update_speed(
             t,
             master_speed,
-            &self.addon_tension_arm,
+            &self.tape_feeder_tension_arm,
         );
         let puller_angular_velocity = self
             .puller_speed_controller
@@ -507,17 +507,17 @@ impl Gluetex {
         );
     }
 
-    /// Sync slave puller speed based on master puller speed and slave tension arm
+    /// Sync slave puller speed based on master puller speed and TA inlet feeder
     /// called by `act`
     pub fn sync_slave_puller_speed(&mut self, t: Instant) {
         // Get master puller speed as reference
         let master_speed = self.puller_speed_controller.get_target_speed();
 
-        // Calculate slave speed based on slave tension arm
+        // Calculate slave speed based on TA inlet feeder
         let slave_velocity = self.slave_puller_speed_controller.update_speed(
             t,
             master_speed,
-            &self.slave_tension_arm,
+            &self.inlet_feeder_tension_arm,
         );
 
         // Apply direction
@@ -630,17 +630,17 @@ impl Gluetex {
         any_trigger |= trigger;
         state_changed |= changed;
 
-        // Check addon tension arm
+        // Check TA tape feeder
         let (trigger, changed) = self
-            .addon_tension_arm_monitor
-            .check(self.addon_tension_arm.get_angle(), self.operation_mode);
+            .tape_feeder_tension_arm_monitor
+            .check(self.tape_feeder_tension_arm.get_angle(), self.operation_mode);
         any_trigger |= trigger;
         state_changed |= changed;
 
-        // Check slave tension arm
+        // Check TA inlet feeder
         let (trigger, changed) = self
-            .slave_tension_arm_monitor
-            .check(self.slave_tension_arm.get_angle(), self.operation_mode);
+            .inlet_feeder_tension_arm_monitor
+            .check(self.inlet_feeder_tension_arm.get_angle(), self.operation_mode);
         any_trigger |= trigger;
         state_changed |= changed;
 

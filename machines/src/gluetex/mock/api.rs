@@ -202,13 +202,13 @@ impl MachineApi for Gluetex {
             Mutation::SetSlavePullerMaxSpeedFactor(value) => {
                 self.slave_puller_state.max_speed_factor = Some(value);
             }
-            Mutation::ZeroSlaveTensionArm => {
+            Mutation::ZeroInletFeederTensionArm => {
                 self.slave_puller_state.tension_arm.zeroed = true;
-                self.live_values.slave_tension_arm_angle = 0.0;
+                self.live_values.inlet_feeder_tension_arm_angle = 0.0;
             }
-            Mutation::ZeroAddonTensionArm => {
-                self.addon_tension_arm_state.zeroed = true;
-                self.live_values.addon_tension_arm_angle = 0.0;
+            Mutation::ZeroTapeFeederTensionArm => {
+                self.tape_feeder_tension_arm_state.zeroed = true;
+                self.live_values.tape_feeder_tension_arm_angle = 0.0;
             }
             Mutation::SetWinderTensionArmMonitorEnabled(enabled) => {
                 self.winder_tension_arm_monitor_state.enabled = enabled;
@@ -219,23 +219,23 @@ impl MachineApi for Gluetex {
             Mutation::SetWinderTensionArmMonitorMaxAngle(value) => {
                 self.winder_tension_arm_monitor_state.max_angle = value;
             }
-            Mutation::SetAddonTensionArmMonitorEnabled(enabled) => {
-                self.addon_tension_arm_monitor_state.enabled = enabled;
+            Mutation::SetTapeFeederTensionArmMonitorEnabled(enabled) => {
+                self.tape_feeder_tension_arm_monitor_state.enabled = enabled;
             }
-            Mutation::SetAddonTensionArmMonitorMinAngle(value) => {
-                self.addon_tension_arm_monitor_state.min_angle = value;
+            Mutation::SetTapeFeederTensionArmMonitorMinAngle(value) => {
+                self.tape_feeder_tension_arm_monitor_state.min_angle = value;
             }
-            Mutation::SetAddonTensionArmMonitorMaxAngle(value) => {
-                self.addon_tension_arm_monitor_state.max_angle = value;
+            Mutation::SetTapeFeederTensionArmMonitorMaxAngle(value) => {
+                self.tape_feeder_tension_arm_monitor_state.max_angle = value;
             }
-            Mutation::SetSlaveTensionArmMonitorEnabled(enabled) => {
-                self.slave_tension_arm_monitor_state.enabled = enabled;
+            Mutation::SetInletFeederTensionArmMonitorEnabled(enabled) => {
+                self.inlet_feeder_tension_arm_monitor_state.enabled = enabled;
             }
-            Mutation::SetSlaveTensionArmMonitorMinAngle(value) => {
-                self.slave_tension_arm_monitor_state.min_angle = value;
+            Mutation::SetInletFeederTensionArmMonitorMinAngle(value) => {
+                self.inlet_feeder_tension_arm_monitor_state.min_angle = value;
             }
-            Mutation::SetSlaveTensionArmMonitorMaxAngle(value) => {
-                self.slave_tension_arm_monitor_state.max_angle = value;
+            Mutation::SetInletFeederTensionArmMonitorMaxAngle(value) => {
+                self.inlet_feeder_tension_arm_monitor_state.max_angle = value;
             }
             Mutation::SetOptris1MonitorEnabled(enabled) => {
                 self.optris_1_monitor_state.enabled = enabled;

@@ -69,8 +69,8 @@ export function useGluetex() {
     traversePosition,
     pullerSpeed,
     slavePullerSpeed,
-    slaveTensionArmAngle,
-    addonTensionArmAngle,
+    inletFeederTensionArmAngle,
+    tapeFeederTensionArmAngle,
     spoolRpm,
     tensionArmAngle,
     spoolProgress,
@@ -292,11 +292,11 @@ export function useGluetex() {
   const { request: requestSlavePullerSetMaxSpeedFactor } = useMachineMutation(
     z.object({ SetSlavePullerMaxSpeedFactor: z.number() }),
   );
-  const { request: requestZeroSlaveTensionArm } = useMachineMutation(
-    z.literal("ZeroSlaveTensionArm"),
+  const { request: requestZeroInletFeederTensionArm } = useMachineMutation(
+    z.literal("ZeroInletFeederTensionArm"),
   );
-  const { request: requestZeroAddonTensionArm } = useMachineMutation(
-    z.literal("ZeroAddonTensionArm"),
+  const { request: requestZeroTapeFeederTensionArm } = useMachineMutation(
+    z.literal("ZeroTapeFeederTensionArm"),
   );
 
   // Winder Tension Arm Monitor mutations
@@ -313,32 +313,32 @@ export function useGluetex() {
       z.object({ SetWinderTensionArmMonitorMaxAngle: z.number() }),
     );
 
-  // Addon Tension Arm Monitor mutations
-  const { request: requestSetAddonTensionArmMonitorEnabled } =
+  // TA Tape Feeder Monitor mutations
+  const { request: requestSetTapeFeederTensionArmMonitorEnabled } =
     useMachineMutation(
-      z.object({ SetAddonTensionArmMonitorEnabled: z.boolean() }),
+      z.object({ SetTapeFeederTensionArmMonitorEnabled: z.boolean() }),
     );
-  const { request: requestSetAddonTensionArmMonitorMinAngle } =
+  const { request: requestSetTapeFeederTensionArmMonitorMinAngle } =
     useMachineMutation(
-      z.object({ SetAddonTensionArmMonitorMinAngle: z.number() }),
+      z.object({ SetTapeFeederTensionArmMonitorMinAngle: z.number() }),
     );
-  const { request: requestSetAddonTensionArmMonitorMaxAngle } =
+  const { request: requestSetTapeFeederTensionArmMonitorMaxAngle } =
     useMachineMutation(
-      z.object({ SetAddonTensionArmMonitorMaxAngle: z.number() }),
+      z.object({ SetTapeFeederTensionArmMonitorMaxAngle: z.number() }),
     );
 
-  // Slave Tension Arm Monitor mutations
-  const { request: requestSetSlaveTensionArmMonitorEnabled } =
+  // TA Inlet Feeder Monitor mutations
+  const { request: requestSetInletFeederTensionArmMonitorEnabled } =
     useMachineMutation(
-      z.object({ SetSlaveTensionArmMonitorEnabled: z.boolean() }),
+      z.object({ SetInletFeederTensionArmMonitorEnabled: z.boolean() }),
     );
-  const { request: requestSetSlaveTensionArmMonitorMinAngle } =
+  const { request: requestSetInletFeederTensionArmMonitorMinAngle } =
     useMachineMutation(
-      z.object({ SetSlaveTensionArmMonitorMinAngle: z.number() }),
+      z.object({ SetInletFeederTensionArmMonitorMinAngle: z.number() }),
     );
-  const { request: requestSetSlaveTensionArmMonitorMaxAngle } =
+  const { request: requestSetInletFeederTensionArmMonitorMaxAngle } =
     useMachineMutation(
-      z.object({ SetSlaveTensionArmMonitorMaxAngle: z.number() }),
+      z.object({ SetInletFeederTensionArmMonitorMaxAngle: z.number() }),
     );
 
   // Voltage Monitor mutations
@@ -1254,28 +1254,28 @@ export function useGluetex() {
     );
   };
 
-  const zeroSlaveTensionArm = () => {
+  const zeroInletFeederTensionArm = () => {
     updateStateOptimistically(
       (current) => {
         current.data.slave_puller_state.tension_arm.zeroed = true;
       },
       () =>
-        requestZeroSlaveTensionArm({
+        requestZeroInletFeederTensionArm({
           machine_identification_unique: machineIdentification,
-          data: "ZeroSlaveTensionArm",
+          data: "ZeroInletFeederTensionArm",
         }),
     );
   };
 
-  const zeroAddonTensionArm = () => {
+  const zeroTapeFeederTensionArm = () => {
     updateStateOptimistically(
       (current) => {
-        current.data.addon_tension_arm_state.zeroed = true;
+        current.data.tape_feeder_tension_arm_state.zeroed = true;
       },
       () =>
-        requestZeroAddonTensionArm({
+        requestZeroTapeFeederTensionArm({
           machine_identification_unique: machineIdentification,
-          data: "ZeroAddonTensionArm",
+          data: "ZeroTapeFeederTensionArm",
         }),
     );
   };
@@ -1324,90 +1324,90 @@ export function useGluetex() {
     );
   };
 
-  // Addon Tension Arm Monitor action functions
-  const setAddonTensionArmMonitorEnabled = (enabled: boolean) => {
+  // TA Tape Feeder Monitor action functions
+  const setTapeFeederTensionArmMonitorEnabled = (enabled: boolean) => {
     updateStateOptimistically(
       (current) => {
-        current.data.addon_tension_arm_monitor_state.enabled = enabled;
+        current.data.tape_feeder_tension_arm_monitor_state.enabled = enabled;
         // Clear triggered flag when disabling
         if (!enabled) {
-          current.data.addon_tension_arm_monitor_state.triggered = false;
+          current.data.tape_feeder_tension_arm_monitor_state.triggered = false;
         }
       },
       () =>
-        requestSetAddonTensionArmMonitorEnabled({
+        requestSetTapeFeederTensionArmMonitorEnabled({
           machine_identification_unique: machineIdentification,
-          data: { SetAddonTensionArmMonitorEnabled: enabled },
+          data: { SetTapeFeederTensionArmMonitorEnabled: enabled },
         }),
     );
   };
 
-  const setAddonTensionArmMonitorMinAngle = (angle: number) => {
+  const setTapeFeederTensionArmMonitorMinAngle = (angle: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.addon_tension_arm_monitor_state.min_angle = angle;
+        current.data.tape_feeder_tension_arm_monitor_state.min_angle = angle;
       },
       () =>
-        requestSetAddonTensionArmMonitorMinAngle({
+        requestSetTapeFeederTensionArmMonitorMinAngle({
           machine_identification_unique: machineIdentification,
-          data: { SetAddonTensionArmMonitorMinAngle: angle },
+          data: { SetTapeFeederTensionArmMonitorMinAngle: angle },
         }),
     );
   };
 
-  const setAddonTensionArmMonitorMaxAngle = (angle: number) => {
+  const setTapeFeederTensionArmMonitorMaxAngle = (angle: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.addon_tension_arm_monitor_state.max_angle = angle;
+        current.data.tape_feeder_tension_arm_monitor_state.max_angle = angle;
       },
       () =>
-        requestSetAddonTensionArmMonitorMaxAngle({
+        requestSetTapeFeederTensionArmMonitorMaxAngle({
           machine_identification_unique: machineIdentification,
-          data: { SetAddonTensionArmMonitorMaxAngle: angle },
+          data: { SetTapeFeederTensionArmMonitorMaxAngle: angle },
         }),
     );
   };
 
-  // Slave Tension Arm Monitor action functions
-  const setSlaveTensionArmMonitorEnabled = (enabled: boolean) => {
+  // TA Inlet Feeder Monitor action functions
+  const setInletFeederTensionArmMonitorEnabled = (enabled: boolean) => {
     updateStateOptimistically(
       (current) => {
-        current.data.slave_tension_arm_monitor_state.enabled = enabled;
+        current.data.inlet_feeder_tension_arm_monitor_state.enabled = enabled;
         // Clear triggered flag when disabling
         if (!enabled) {
-          current.data.slave_tension_arm_monitor_state.triggered = false;
+          current.data.inlet_feeder_tension_arm_monitor_state.triggered = false;
         }
       },
       () =>
-        requestSetSlaveTensionArmMonitorEnabled({
+        requestSetInletFeederTensionArmMonitorEnabled({
           machine_identification_unique: machineIdentification,
-          data: { SetSlaveTensionArmMonitorEnabled: enabled },
+          data: { SetInletFeederTensionArmMonitorEnabled: enabled },
         }),
     );
   };
 
-  const setSlaveTensionArmMonitorMinAngle = (angle: number) => {
+  const setInletFeederTensionArmMonitorMinAngle = (angle: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.slave_tension_arm_monitor_state.min_angle = angle;
+        current.data.inlet_feeder_tension_arm_monitor_state.min_angle = angle;
       },
       () =>
-        requestSetSlaveTensionArmMonitorMinAngle({
+        requestSetInletFeederTensionArmMonitorMinAngle({
           machine_identification_unique: machineIdentification,
-          data: { SetSlaveTensionArmMonitorMinAngle: angle },
+          data: { SetInletFeederTensionArmMonitorMinAngle: angle },
         }),
     );
   };
 
-  const setSlaveTensionArmMonitorMaxAngle = (angle: number) => {
+  const setInletFeederTensionArmMonitorMaxAngle = (angle: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.slave_tension_arm_monitor_state.max_angle = angle;
+        current.data.inlet_feeder_tension_arm_monitor_state.max_angle = angle;
       },
       () =>
-        requestSetSlaveTensionArmMonitorMaxAngle({
+        requestSetInletFeederTensionArmMonitorMaxAngle({
           machine_identification_unique: machineIdentification,
-          data: { SetSlaveTensionArmMonitorMaxAngle: angle },
+          data: { SetInletFeederTensionArmMonitorMaxAngle: angle },
         }),
     );
   };
@@ -1859,8 +1859,8 @@ export function useGluetex() {
     traversePosition,
     pullerSpeed,
     slavePullerSpeed,
-    slaveTensionArmAngle,
-    addonTensionArmAngle,
+    inletFeederTensionArmAngle,
+    tapeFeederTensionArmAngle,
     spoolRpm,
     tensionArmAngle,
     spoolProgress,
@@ -1922,23 +1922,23 @@ export function useGluetex() {
     setSlavePullerSensitivity,
     setSlavePullerMinSpeedFactor,
     setSlavePullerMaxSpeedFactor,
-    zeroSlaveTensionArm,
-    zeroAddonTensionArm,
+    zeroInletFeederTensionArm,
+    zeroTapeFeederTensionArm,
 
     // Winder Tension Arm Monitor action functions
     setWinderTensionArmMonitorEnabled,
     setWinderTensionArmMonitorMinAngle,
     setWinderTensionArmMonitorMaxAngle,
 
-    // Addon Tension Arm Monitor action functions
-    setAddonTensionArmMonitorEnabled,
-    setAddonTensionArmMonitorMinAngle,
-    setAddonTensionArmMonitorMaxAngle,
+    // TA Tape Feeder Monitor action functions
+    setTapeFeederTensionArmMonitorEnabled,
+    setTapeFeederTensionArmMonitorMinAngle,
+    setTapeFeederTensionArmMonitorMaxAngle,
 
-    // Slave Tension Arm Monitor action functions
-    setSlaveTensionArmMonitorEnabled,
-    setSlaveTensionArmMonitorMinAngle,
-    setSlaveTensionArmMonitorMaxAngle,
+    // TA Inlet Feeder Monitor action functions
+    setInletFeederTensionArmMonitorEnabled,
+    setInletFeederTensionArmMonitorMinAngle,
+    setInletFeederTensionArmMonitorMaxAngle,
 
     // Voltage Monitor action functions
     setOptris1MonitorEnabled,

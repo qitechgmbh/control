@@ -114,7 +114,7 @@ impl SlavePullerSpeedController {
     /// # Arguments
     /// * `t` - Current timestamp
     /// * `master_speed` - Speed of the master puller
-    /// * `tension_arm` - Reference to the slave tension arm
+    /// * `tension_arm` - Reference to the TA inlet feeder
     ///
     /// # Returns
     /// Commanded velocity for the slave puller motor

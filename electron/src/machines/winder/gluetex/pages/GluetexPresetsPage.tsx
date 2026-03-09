@@ -79,10 +79,10 @@ const gluetexPresetDataSchema = z
     winder_tension_arm_monitor_state: tensionArmMonitorStateSchema
       .omit({ triggered: true })
       .partial(),
-    addon_tension_arm_monitor_state: tensionArmMonitorStateSchema
+    tape_feeder_tension_arm_monitor_state: tensionArmMonitorStateSchema
       .omit({ triggered: true })
       .partial(),
-    slave_tension_arm_monitor_state: tensionArmMonitorStateSchema
+    inlet_feeder_tension_arm_monitor_state: tensionArmMonitorStateSchema
       .omit({ triggered: true })
       .partial(),
     optris_1_monitor_state: voltageMonitorStateSchema
@@ -550,12 +550,12 @@ const previewEntries: PresetPreviewEntries<GluetexPresetData> = [
   },
   previewSeparator,
 
-  // ── Addon Tension Arm Monitor ──
+  // ── TA Tape Feeder Monitor ──
   {
     name: "Addon Tension Monitor",
     renderValue: (data) =>
-      data.addon_tension_arm_monitor_state?.enabled !== undefined
-        ? data.addon_tension_arm_monitor_state.enabled
+      data.tape_feeder_tension_arm_monitor_state?.enabled !== undefined
+        ? data.tape_feeder_tension_arm_monitor_state.enabled
           ? "Enabled"
           : "Disabled"
         : "N/A",
@@ -564,22 +564,22 @@ const previewEntries: PresetPreviewEntries<GluetexPresetData> = [
     name: "Addon Tension Min Angle",
     unit: "deg",
     renderValue: (data) =>
-      data.addon_tension_arm_monitor_state?.min_angle?.toFixed(1),
+      data.tape_feeder_tension_arm_monitor_state?.min_angle?.toFixed(1),
   },
   {
     name: "Addon Tension Max Angle",
     unit: "deg",
     renderValue: (data) =>
-      data.addon_tension_arm_monitor_state?.max_angle?.toFixed(1),
+      data.tape_feeder_tension_arm_monitor_state?.max_angle?.toFixed(1),
   },
   previewSeparator,
 
-  // ── Slave Tension Arm Monitor ──
+  // ── TA Inlet Feeder Monitor ──
   {
     name: "Slave Tension Monitor",
     renderValue: (data) =>
-      data.slave_tension_arm_monitor_state?.enabled !== undefined
-        ? data.slave_tension_arm_monitor_state.enabled
+      data.inlet_feeder_tension_arm_monitor_state?.enabled !== undefined
+        ? data.inlet_feeder_tension_arm_monitor_state.enabled
           ? "Enabled"
           : "Disabled"
         : "N/A",
@@ -588,13 +588,13 @@ const previewEntries: PresetPreviewEntries<GluetexPresetData> = [
     name: "Slave Tension Min Angle",
     unit: "deg",
     renderValue: (data) =>
-      data.slave_tension_arm_monitor_state?.min_angle?.toFixed(1),
+      data.inlet_feeder_tension_arm_monitor_state?.min_angle?.toFixed(1),
   },
   {
     name: "Slave Tension Max Angle",
     unit: "deg",
     renderValue: (data) =>
-      data.slave_tension_arm_monitor_state?.max_angle?.toFixed(1),
+      data.inlet_feeder_tension_arm_monitor_state?.max_angle?.toFixed(1),
   },
   previewSeparator,
 
@@ -785,12 +785,12 @@ export function GluetexPresetsPage() {
     setWinderTensionArmMonitorEnabled,
     setWinderTensionArmMonitorMinAngle,
     setWinderTensionArmMonitorMaxAngle,
-    setAddonTensionArmMonitorEnabled,
-    setAddonTensionArmMonitorMinAngle,
-    setAddonTensionArmMonitorMaxAngle,
-    setSlaveTensionArmMonitorEnabled,
-    setSlaveTensionArmMonitorMinAngle,
-    setSlaveTensionArmMonitorMaxAngle,
+    setTapeFeederTensionArmMonitorEnabled,
+    setTapeFeederTensionArmMonitorMinAngle,
+    setTapeFeederTensionArmMonitorMaxAngle,
+    setInletFeederTensionArmMonitorEnabled,
+    setInletFeederTensionArmMonitorMinAngle,
+    setInletFeederTensionArmMonitorMaxAngle,
 
     // Optris Monitors
     setOptris1MonitorEnabled,
@@ -1384,73 +1384,73 @@ export function GluetexPresetsPage() {
         ),
       );
 
-    // Addon Tension Arm Monitor
+    // TA Tape Feeder Monitor
     if (
       changed(
-        d?.addon_tension_arm_monitor_state?.enabled,
-        currentData.addon_tension_arm_monitor_state?.enabled,
+        d?.tape_feeder_tension_arm_monitor_state?.enabled,
+        currentData.tape_feeder_tension_arm_monitor_state?.enabled,
       )
     )
       actions.push(() =>
-        setAddonTensionArmMonitorEnabled(
-          d.addon_tension_arm_monitor_state!.enabled!,
+        setTapeFeederTensionArmMonitorEnabled(
+          d.tape_feeder_tension_arm_monitor_state!.enabled!,
         ),
       );
     if (
       changed(
-        d?.addon_tension_arm_monitor_state?.min_angle,
-        currentData.addon_tension_arm_monitor_state?.min_angle,
+        d?.tape_feeder_tension_arm_monitor_state?.min_angle,
+        currentData.tape_feeder_tension_arm_monitor_state?.min_angle,
       )
     )
       actions.push(() =>
-        setAddonTensionArmMonitorMinAngle(
-          d.addon_tension_arm_monitor_state!.min_angle!,
+        setTapeFeederTensionArmMonitorMinAngle(
+          d.tape_feeder_tension_arm_monitor_state!.min_angle!,
         ),
       );
     if (
       changed(
-        d?.addon_tension_arm_monitor_state?.max_angle,
-        currentData.addon_tension_arm_monitor_state?.max_angle,
+        d?.tape_feeder_tension_arm_monitor_state?.max_angle,
+        currentData.tape_feeder_tension_arm_monitor_state?.max_angle,
       )
     )
       actions.push(() =>
-        setAddonTensionArmMonitorMaxAngle(
-          d.addon_tension_arm_monitor_state!.max_angle!,
+        setTapeFeederTensionArmMonitorMaxAngle(
+          d.tape_feeder_tension_arm_monitor_state!.max_angle!,
         ),
       );
 
-    // Slave Tension Arm Monitor
+    // TA Inlet Feeder Monitor
     if (
       changed(
-        d?.slave_tension_arm_monitor_state?.enabled,
-        currentData.slave_tension_arm_monitor_state?.enabled,
+        d?.inlet_feeder_tension_arm_monitor_state?.enabled,
+        currentData.inlet_feeder_tension_arm_monitor_state?.enabled,
       )
     )
       actions.push(() =>
-        setSlaveTensionArmMonitorEnabled(
-          d.slave_tension_arm_monitor_state!.enabled!,
+        setInletFeederTensionArmMonitorEnabled(
+          d.inlet_feeder_tension_arm_monitor_state!.enabled!,
         ),
       );
     if (
       changed(
-        d?.slave_tension_arm_monitor_state?.min_angle,
-        currentData.slave_tension_arm_monitor_state?.min_angle,
+        d?.inlet_feeder_tension_arm_monitor_state?.min_angle,
+        currentData.inlet_feeder_tension_arm_monitor_state?.min_angle,
       )
     )
       actions.push(() =>
-        setSlaveTensionArmMonitorMinAngle(
-          d.slave_tension_arm_monitor_state!.min_angle!,
+        setInletFeederTensionArmMonitorMinAngle(
+          d.inlet_feeder_tension_arm_monitor_state!.min_angle!,
         ),
       );
     if (
       changed(
-        d?.slave_tension_arm_monitor_state?.max_angle,
-        currentData.slave_tension_arm_monitor_state?.max_angle,
+        d?.inlet_feeder_tension_arm_monitor_state?.max_angle,
+        currentData.inlet_feeder_tension_arm_monitor_state?.max_angle,
       )
     )
       actions.push(() =>
-        setSlaveTensionArmMonitorMaxAngle(
-          d.slave_tension_arm_monitor_state!.max_angle!,
+        setInletFeederTensionArmMonitorMaxAngle(
+          d.inlet_feeder_tension_arm_monitor_state!.max_angle!,
         ),
       );
 
@@ -1695,18 +1695,18 @@ export function GluetexPresetsPage() {
           max_angle: s.winder_tension_arm_monitor_state.max_angle,
         }
       : {},
-    addon_tension_arm_monitor_state: s?.addon_tension_arm_monitor_state
+    tape_feeder_tension_arm_monitor_state: s?.tape_feeder_tension_arm_monitor_state
       ? {
-          enabled: s.addon_tension_arm_monitor_state.enabled,
-          min_angle: s.addon_tension_arm_monitor_state.min_angle,
-          max_angle: s.addon_tension_arm_monitor_state.max_angle,
+          enabled: s.tape_feeder_tension_arm_monitor_state.enabled,
+          min_angle: s.tape_feeder_tension_arm_monitor_state.min_angle,
+          max_angle: s.tape_feeder_tension_arm_monitor_state.max_angle,
         }
       : {},
-    slave_tension_arm_monitor_state: s?.slave_tension_arm_monitor_state
+    inlet_feeder_tension_arm_monitor_state: s?.inlet_feeder_tension_arm_monitor_state
       ? {
-          enabled: s.slave_tension_arm_monitor_state.enabled,
-          min_angle: s.slave_tension_arm_monitor_state.min_angle,
-          max_angle: s.slave_tension_arm_monitor_state.max_angle,
+          enabled: s.inlet_feeder_tension_arm_monitor_state.enabled,
+          min_angle: s.inlet_feeder_tension_arm_monitor_state.min_angle,
+          max_angle: s.inlet_feeder_tension_arm_monitor_state.max_angle,
         }
       : {},
     optris_1_monitor_state: s?.optris_1_monitor_state

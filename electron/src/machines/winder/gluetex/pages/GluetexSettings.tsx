@@ -71,19 +71,19 @@ export function GluetexSettingPage() {
     setSlavePullerSensitivity,
     setSlavePullerMinSpeedFactor,
     setSlavePullerMaxSpeedFactor,
-    zeroSlaveTensionArm,
+    zeroInletFeederTensionArm,
     setHeatingPid,
     startHeatingAutoTune,
     stopHeatingAutoTune,
     setWinderTensionArmMonitorEnabled,
     setWinderTensionArmMonitorMinAngle,
     setWinderTensionArmMonitorMaxAngle,
-    setAddonTensionArmMonitorEnabled,
-    setAddonTensionArmMonitorMinAngle,
-    setAddonTensionArmMonitorMaxAngle,
-    setSlaveTensionArmMonitorEnabled,
-    setSlaveTensionArmMonitorMinAngle,
-    setSlaveTensionArmMonitorMaxAngle,
+    setTapeFeederTensionArmMonitorEnabled,
+    setTapeFeederTensionArmMonitorMinAngle,
+    setTapeFeederTensionArmMonitorMaxAngle,
+    setInletFeederTensionArmMonitorEnabled,
+    setInletFeederTensionArmMonitorMinAngle,
+    setInletFeederTensionArmMonitorMaxAngle,
     setSleepTimerEnabled,
     setSleepTimerTimeout,
     setStepper3Forward,
@@ -1620,10 +1620,10 @@ export function GluetexSettingPage() {
                   </Label>
                 </ControlCard>
 
-                <ControlCard title="Addon Tension Arm Monitor">
+                <ControlCard title="TA Tape Feeder Monitor">
                   <Label label="Enable Monitoring">
                     <SelectionGroupBoolean
-                      value={state?.addon_tension_arm_monitor_state?.enabled}
+                      value={state?.tape_feeder_tension_arm_monitor_state?.enabled}
                       disabled={isDisabled}
                       loading={isLoading}
                       optionFalse={{
@@ -1635,60 +1635,60 @@ export function GluetexSettingPage() {
                         icon: "lu:Shield",
                       }}
                       onChange={(value) =>
-                        setAddonTensionArmMonitorEnabled(value)
+                        setTapeFeederTensionArmMonitorEnabled(value)
                       }
                     />
                   </Label>
-                  {state?.addon_tension_arm_monitor_state?.triggered && (
+                  {state?.tape_feeder_tension_arm_monitor_state?.triggered && (
                     <div className="rounded-md bg-red-500/10 p-3 text-red-600 dark:text-red-400">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">⚠️</span>
                         <span className="font-semibold">
-                          Addon Tension Arm Limit Exceeded - Machine Stopped
+                          TA Tape Feeder Limit Exceeded - Machine Stopped
                         </span>
                       </div>
                     </div>
                   )}
                   <Label label="Minimum Angle">
                     <EditValue
-                      value={state?.addon_tension_arm_monitor_state?.min_angle}
+                      value={state?.tape_feeder_tension_arm_monitor_state?.min_angle}
                       title={"Minimum Angle"}
                       unit="deg"
                       step={1}
                       min={0}
                       max={180}
                       defaultValue={
-                        defaultState?.addon_tension_arm_monitor_state?.min_angle
+                        defaultState?.tape_feeder_tension_arm_monitor_state?.min_angle
                       }
                       renderValue={(value) => roundToDecimals(value, 1)}
                       onChange={(value) =>
-                        setAddonTensionArmMonitorMinAngle(value)
+                        setTapeFeederTensionArmMonitorMinAngle(value)
                       }
                     />
                   </Label>
                   <Label label="Maximum Angle">
                     <EditValue
-                      value={state?.addon_tension_arm_monitor_state?.max_angle}
+                      value={state?.tape_feeder_tension_arm_monitor_state?.max_angle}
                       title={"Maximum Angle"}
                       unit="deg"
                       step={1}
                       min={0}
                       max={180}
                       defaultValue={
-                        defaultState?.addon_tension_arm_monitor_state?.max_angle
+                        defaultState?.tape_feeder_tension_arm_monitor_state?.max_angle
                       }
                       renderValue={(value) => roundToDecimals(value, 1)}
                       onChange={(value) =>
-                        setAddonTensionArmMonitorMaxAngle(value)
+                        setTapeFeederTensionArmMonitorMaxAngle(value)
                       }
                     />
                   </Label>
                 </ControlCard>
 
-                <ControlCard title="Slave Tension Arm Monitor">
+                <ControlCard title="TA Inlet Feeder Monitor">
                   <Label label="Enable Monitoring">
                     <SelectionGroupBoolean
-                      value={state?.slave_tension_arm_monitor_state?.enabled}
+                      value={state?.inlet_feeder_tension_arm_monitor_state?.enabled}
                       disabled={isDisabled}
                       loading={isLoading}
                       optionFalse={{
@@ -1700,51 +1700,51 @@ export function GluetexSettingPage() {
                         icon: "lu:Shield",
                       }}
                       onChange={(value) =>
-                        setSlaveTensionArmMonitorEnabled(value)
+                        setInletFeederTensionArmMonitorEnabled(value)
                       }
                     />
                   </Label>
-                  {state?.slave_tension_arm_monitor_state?.triggered && (
+                  {state?.inlet_feeder_tension_arm_monitor_state?.triggered && (
                     <div className="rounded-md bg-red-500/10 p-3 text-red-600 dark:text-red-400">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">⚠️</span>
                         <span className="font-semibold">
-                          Slave Tension Arm Limit Exceeded - Machine Stopped
+                          TA Inlet Feeder Limit Exceeded - Machine Stopped
                         </span>
                       </div>
                     </div>
                   )}
                   <Label label="Minimum Angle">
                     <EditValue
-                      value={state?.slave_tension_arm_monitor_state?.min_angle}
+                      value={state?.inlet_feeder_tension_arm_monitor_state?.min_angle}
                       title={"Minimum Angle"}
                       unit="deg"
                       step={1}
                       min={0}
                       max={180}
                       defaultValue={
-                        defaultState?.slave_tension_arm_monitor_state?.min_angle
+                        defaultState?.inlet_feeder_tension_arm_monitor_state?.min_angle
                       }
                       renderValue={(value) => roundToDecimals(value, 1)}
                       onChange={(value) =>
-                        setSlaveTensionArmMonitorMinAngle(value)
+                        setInletFeederTensionArmMonitorMinAngle(value)
                       }
                     />
                   </Label>
                   <Label label="Maximum Angle">
                     <EditValue
-                      value={state?.slave_tension_arm_monitor_state?.max_angle}
+                      value={state?.inlet_feeder_tension_arm_monitor_state?.max_angle}
                       title={"Maximum Angle"}
                       unit="deg"
                       step={1}
                       min={0}
                       max={180}
                       defaultValue={
-                        defaultState?.slave_tension_arm_monitor_state?.max_angle
+                        defaultState?.inlet_feeder_tension_arm_monitor_state?.max_angle
                       }
                       renderValue={(value) => roundToDecimals(value, 1)}
                       onChange={(value) =>
-                        setSlaveTensionArmMonitorMaxAngle(value)
+                        setInletFeederTensionArmMonitorMaxAngle(value)
                       }
                     />
                   </Label>

@@ -80,8 +80,8 @@ export function GluetexOverviewPage() {
     if (!state) return false;
     return (
       state.winder_tension_arm_monitor_state?.triggered ||
-      state.addon_tension_arm_monitor_state?.triggered ||
-      state.slave_tension_arm_monitor_state?.triggered ||
+      state.tape_feeder_tension_arm_monitor_state?.triggered ||
+      state.inlet_feeder_tension_arm_monitor_state?.triggered ||
       state.optris_1_monitor_state?.triggered ||
       state.optris_2_monitor_state?.triggered ||
       state.sleep_timer_state?.triggered ||

@@ -19,8 +19,8 @@ export function GluetexGraphsPage() {
     spoolRpm,
     traversePosition,
     tensionArmAngle,
-    slaveTensionArmAngle,
-    addonTensionArmAngle,
+    inletFeederTensionArmAngle,
+    tapeFeederTensionArmAngle,
     pullerSpeed,
     slavePullerSpeed,
     spoolProgress,
@@ -53,8 +53,8 @@ export function GluetexGraphsPage() {
           <TensionArmAngleGraph
             syncHook={syncHook}
             newData={tensionArmAngle}
-            slaveTensionArmAngle={slaveTensionArmAngle}
-            addonTensionArmAngle={addonTensionArmAngle}
+            inletFeederTensionArmAngle={inletFeederTensionArmAngle}
+            tapeFeederTensionArmAngle={tapeFeederTensionArmAngle}
             unit="deg"
             renderValue={(value) => roundDegreesToDecimals(value, 0)}
           />
@@ -227,15 +227,15 @@ export function TraversePositionGraph({
 export function TensionArmAngleGraph({
   syncHook,
   newData,
-  slaveTensionArmAngle,
-  addonTensionArmAngle,
+  inletFeederTensionArmAngle,
+  tapeFeederTensionArmAngle,
   unit,
   renderValue,
 }: {
   syncHook: ReturnType<typeof useGraphSync>;
   newData: TimeSeries | null;
-  slaveTensionArmAngle: TimeSeries | null;
-  addonTensionArmAngle: TimeSeries | null;
+  inletFeederTensionArmAngle: TimeSeries | null;
+  tapeFeederTensionArmAngle: TimeSeries | null;
   unit?: Unit;
   renderValue?: (value: number) => string;
 }) {
@@ -249,20 +249,20 @@ export function TensionArmAngleGraph({
           },
         ]
       : []),
-    ...(addonTensionArmAngle
+    ...(tapeFeederTensionArmAngle
       ? [
           {
-            newData: addonTensionArmAngle,
-            title: "Addon Tension Arm",
+            newData: tapeFeederTensionArmAngle,
+            title: "TA Tape Feeder",
             color: "#f59e0b",
           },
         ]
       : []),
-    ...(slaveTensionArmAngle
+    ...(inletFeederTensionArmAngle
       ? [
           {
-            newData: slaveTensionArmAngle,
-            title: "Slave Tension Arm",
+            newData: inletFeederTensionArmAngle,
+            title: "TA Inlet Feeder",
             color: "#8b5cf6",
           },
         ]
