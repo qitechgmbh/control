@@ -19,7 +19,7 @@ export type MarkerStoreState = {
 export type MarkerStoreActions = {
   getMarkers: (machineId: string) => Marker[];
   addMarker: (machineId: string, marker: Marker) => void;
-  removeMarker: (machineId: string, timestamp: number) => void;
+  removeMarker: (machineId: string, timestamp: number, name: string) => void;
   clearMarkers: (machineId: string) => void;
 };
 
@@ -101,10 +101,15 @@ export const useMarkerStore = create<MarkerStore>()(
         });
       },
 
-      removeMarker: (machineId: string, timestamp: number) => {
+      removeMarker: (machineId: string, timestamp: number, name: string) => {
         set((state) => {
           const current = state.markersByMachine[machineId] ?? [];
-          const updated = current.filter((m) => m.timestamp !== timestamp);
+          const index = current.findIndex(
+            (m) => m.timestamp === timestamp && m.name === name,
+          );
+          if (index === -1) return state;
+          const updated = [...current];
+          updated.splice(index, 1);
           return {
             markersByMachine: {
               ...state.markersByMachine,
