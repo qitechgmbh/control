@@ -44,6 +44,9 @@ pub struct AddonMotorController {
     needs_homing: bool,
     /// Whether the motor is in manual homing mode (triggered by user button)
     manual_homing: bool,
+    /// Whether the sensor has been seen as false after kontur length was reached
+    /// (prevents stopping immediately if sensor is already true when kontur length is reached)
+    seen_sensor_clear_after_kontur: bool,
 }
 
 impl AddonMotorController {
@@ -64,6 +67,7 @@ impl AddonMotorController {
             accumulated_distance: 0.0,
             needs_homing: false,
             manual_homing: false,
+            seen_sensor_clear_after_kontur: false,
         }
     }
 
@@ -312,6 +316,7 @@ impl AddonMotorController {
                     let _ = motor.set_speed(0.0);
                     self.pattern_state = PatternControlState::Running;
                     self.accumulated_distance = 0.0;
+                    self.seen_sensor_clear_after_kontur = false;
                 } else {
                     // Keep moving towards endstop
                     let target_velocity = self.calculate_motor_velocity(puller_angular_velocity);
@@ -324,18 +329,24 @@ impl AddonMotorController {
                 self.accumulated_distance += distance_mm;
 
                 if self.accumulated_distance >= self.konturlaenge_mm {
-                    // Konturlänge reached - go back to endstop
+                    // Konturlänge reached - keep running until we see sensor go false,
+                    // then stop on the next true reading
                     let target_velocity = self.calculate_motor_velocity(puller_angular_velocity);
                     let steps_per_second =
                         self.converter.angular_velocity_to_steps(target_velocity);
                     let _ = motor.set_speed(steps_per_second);
 
-                    // Check if we've reached the endstop
-                    if endstop_hit {
+                    if !endstop_hit {
+                        // Sensor cleared - now we can accept the next true as a valid stop
+                        self.seen_sensor_clear_after_kontur = true;
+                    } else if self.seen_sensor_clear_after_kontur {
+                        // Sensor is true AND we already saw it go false - valid stop
                         let _ = motor.set_speed(0.0);
                         self.pattern_state = PatternControlState::Paused;
                         self.accumulated_distance = 0.0;
+                        self.seen_sensor_clear_after_kontur = false;
                     }
+                    // else: sensor is true but we haven't seen it go false yet - keep running
                 } else {
                     // Continue running
                     let target_velocity = self.calculate_motor_velocity(puller_angular_velocity);
@@ -353,6 +364,7 @@ impl AddonMotorController {
                     // Pause duration reached - start running again
                     self.pattern_state = PatternControlState::Running;
                     self.accumulated_distance = 0.0;
+                    self.seen_sensor_clear_after_kontur = false;
                 }
             }
             PatternControlState::Idle => {
