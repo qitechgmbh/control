@@ -7,7 +7,7 @@ import {
 } from "@/components/graph";
 import React from "react";
 import { useExtruder2 } from "./useExtruder";
-import { GraphWithMarkerControls } from "@/components/graph/GraphWithMarkerControls";
+import { GraphWithMarkerControls } from "@/components/graph/marker/GraphWithMarkerControls";
 
 export function Extruder2GraphsPage() {
   const {
