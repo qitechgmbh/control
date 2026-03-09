@@ -64,12 +64,10 @@ export function createChart({
   // Add config lines data
   config.lines?.forEach((line) => {
     if (line.show !== false) {
-      const lineData = line.targetSeries
-        ? alignTargetSeriesToTimestamps(
-            line.targetSeries,
-            timestamps,
-            line.value,
-          )
+      const targetSeries =
+        line.type === "target" ? line.targetSeries : undefined;
+      const lineData = targetSeries
+        ? alignTargetSeriesToTimestamps(targetSeries, timestamps, line.value)
         : new Array(timestamps.length).fill(line.value);
       uPlotData.push(lineData as any);
     }
@@ -182,7 +180,8 @@ export function createChart({
     if (line.show !== false) {
       const dash =
         line.dash ?? (line.type === "threshold" ? [5, 5] : undefined);
-      const isHistoricalDashedTarget = !!line.targetSeries && !!dash?.length;
+      const isHistoricalDashedTarget =
+        line.type === "target" && !!line.targetSeries && !!dash?.length;
 
       seriesConfig.push({
         label: line.label,
