@@ -32,7 +32,13 @@ function discoverLaser(
 
 // Toast UI
 
-function LaserErrorToast({ errorCount, onDismiss }: { errorCount: number, onDismiss: () => void }) {
+function LaserErrorToast({
+  errorCount,
+  onDismiss,
+}: {
+  errorCount: number;
+  onDismiss: () => void;
+}) {
   return (
     <div className="flex w-100 flex-col gap-3 rounded-xl border border-red-400 bg-red-600 p-4 text-white shadow-xl backdrop-blur-sm">
       <div className="flex items-center justify-between">
@@ -50,10 +56,9 @@ function LaserErrorToast({ errorCount, onDismiss }: { errorCount: number, onDism
         <button
           className="rounded-md p-1 text-2xl font-bold text-white/80 hover:bg-red-500 hover:text-white focus:ring-2 focus:ring-white/30 focus:outline-none"
           onClick={() => {
-              toast.dismiss(TOAST_ID)
-              onDismiss();
-            }
-          }
+            toast.dismiss(TOAST_ID);
+            onDismiss();
+          }}
           aria-label="Close"
         >
           ×
@@ -116,7 +121,6 @@ function LaserToastWatcher({
       errorCountRef.current = 0;
       lastSeenTs.current = null;
     };
-
 
     if (isDefault) return;
 

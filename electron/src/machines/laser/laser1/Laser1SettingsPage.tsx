@@ -6,13 +6,7 @@ import { ToggleButton } from "@/components/touch/TouchToggleButton";
 import { useLaser1 } from "./useLaser1";
 
 export function Laser1SettingsPage() {
-
-  const {
-    state,
-    toggleGlobalWarning,
-    isLoading,
-    isDisabled,
-  } = useLaser1();
+  const { state, toggleGlobalWarning, isLoading, isDisabled } = useLaser1();
 
   return (
     <Page>
