@@ -113,18 +113,16 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
     );
   };
 
-  const toggleGlobalWarning = () => {
+  const toggleGlobalWarning = (next: boolean) => {
     updateStateOptimistically(
       (current) => {
-        current.data.laser_state.global_warning =
-          !current.data.laser_state.global_warning;
+        current.data.laser_state.global_warning = next;
       },
       () =>
         requestGlobalWarning({
           machine_identification_unique,
           data: {
-            SetGlobalWarning:
-              !stateOptimistic.value?.data.laser_state.global_warning,
+            SetGlobalWarning: next,
           },
         }),
     );

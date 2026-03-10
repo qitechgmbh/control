@@ -99,14 +99,16 @@ function LaserToastWatcher({
   const errorCountRef = useRef(0);
   const lastSeenTs = useRef<number | string | null>(null);
 
-  // Dismiss toast and reset state when the component unmounts.
-  // This fires when global_warning is toggled off, cleanly removing any
-  // active toast without needing an extra effect in the guard below.
+  const resetRefs = () => {
+    errorCountRef.current = 0;
+    lastSeenTs.current = null;
+  };
+
+  // Dismiss any active toast when the component unmounts.
   useEffect(() => {
     return () => {
       toast.dismiss(TOAST_ID);
-      errorCountRef.current = 0;
-      lastSeenTs.current = null;
+      resetRefs();
     };
   }, []);
 
@@ -114,43 +116,27 @@ function LaserToastWatcher({
     if (!state) return;
 
     const ts: number | string | null = (state as any)?.ts ?? null;
-    const inTolerance: boolean = (state as any)?.data?.laser_state
-      ?.in_tolerance;
+    const inTolerance: boolean = (state as any)?.data?.laser_state?.in_tolerance;
     const isDefault: boolean = !!(state as any)?.data?.is_default_state;
-    const handleDismiss = () => {
-      errorCountRef.current = 0;
-      lastSeenTs.current = null;
-    };
+    const globalWarning: boolean = (state as any)?.data?.laser_state?.global_warning ?? false;
+
+    // If global warning is disabled, dismiss any active toast and bail.
+    if (!globalWarning) {
+      toast.dismiss(TOAST_ID);
+      resetRefs();
+      return;
+    }
 
     if (isDefault) return;
 
     if (!inTolerance && ts !== lastSeenTs.current) {
       lastSeenTs.current = ts;
       errorCountRef.current += 1;
-      showLaserErrorToast(errorCountRef.current, handleDismiss);
+      showLaserErrorToast(errorCountRef.current, resetRefs);
     }
   }, [state]);
 
   return null;
-}
-
-// Guard — reads global_warning setting before mounting the watcher
-
-function LaserToastGuard({
-  machineIdentification,
-}: {
-  machineIdentification: MachineIdentificationUnique;
-}) {
-  const { state } = useLaser1Namespace(machineIdentification);
-
-  const globalWarningEnabled: boolean =
-    (state as any)?.data?.laser_state?.global_warning ?? false;
-
-  // When false, LaserToastWatcher is unmounted and its cleanup effect fires,
-  // automatically dismissing any active toast.
-  if (!globalWarningEnabled) return null;
-
-  return <LaserToastWatcher machineIdentification={machineIdentification} />;
 }
 
 // Public export
@@ -160,8 +146,6 @@ export function GlobalLaserToastManager({
 }: {
   machineIdentification?: MachineIdentificationUnique;
 }) {
-  // Selector-scoped subscription: only re-renders when machines changes,
-  // not on ethercatDevices or ethercatInterfaceDiscovery updates.
   const machines = useMainNamespace((s) => s.machines);
   const [discovered, setDiscovered] =
     useState<MachineIdentificationUnique | null>(null);
@@ -174,6 +158,6 @@ export function GlobalLaserToastManager({
   const effectiveId = machineIdentification ?? discovered;
 
   return effectiveId ? (
-    <LaserToastGuard machineIdentification={effectiveId} />
+    <LaserToastWatcher machineIdentification={effectiveId} />
   ) : null;
 }

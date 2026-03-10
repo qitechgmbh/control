@@ -6,7 +6,7 @@ import { cva } from "class-variance-authority";
 
 type Props = {
   enabled: boolean;
-  onToggle: (next: boolean) => void;
+  onEnabledChange: (next: boolean) => void;
   label: string;
   iconOn?: IconName;
   iconOff?: IconName;
@@ -15,7 +15,7 @@ type Props = {
 
 export function ToggleButton({
   enabled,
-  onToggle,
+  onEnabledChange,
   label,
   iconOn,
   iconOff,
@@ -39,7 +39,7 @@ export function ToggleButton({
     <Button
       className={buttonStyle({ enabled, className })}
       disabled={isLoading || disabled}
-      onClick={() => onToggle(!enabled)}
+      onClick={() => onEnabledChange(!enabled)}
       {...props}
     >
       <div className="flex flex-row items-center gap-2 text-wrap">

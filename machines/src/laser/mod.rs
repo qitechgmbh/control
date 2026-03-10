@@ -207,6 +207,7 @@ impl LaserMachine {
 
     pub fn set_global_warning(&mut self, toggle: bool) {
         self.global_warning = toggle;
+        self.mutation_counter += 1;
         self.emit_state();
     }
 

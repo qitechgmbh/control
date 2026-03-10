@@ -14,7 +14,7 @@ export function Laser1SettingsPage() {
         <ControlCard title="Global Error Warning">
           <ToggleButton
             enabled={state?.laser_state.global_warning ?? false}
-            onToggle={toggleGlobalWarning}
+            onEnabledChange={toggleGlobalWarning}
             label="Global Warning"
             iconOn="lu:BellRing"
             iconOff="lu:BellOff"
