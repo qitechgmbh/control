@@ -31,14 +31,18 @@ impl MachineAct for Wago750_553Machine {
             MachineMessage::ConnectToMachine(_machine_connection) => {}
             MachineMessage::DisconnectMachine(_machine_connection) => {}
             MachineMessage::RequestValues(sender) => {
-                sender
-                    .send_blocking(MachineValues {
-                        state: serde_json::to_value(self.get_state())
-                            .expect("Failed to serialize state"),
-                        live_values: serde_json::Value::Null,
-                    })
-                    .expect("Failed to send values");
-                sender.close();
+                let state_json =
+                    serde_json::to_value(self.get_state()).expect("Failed to serialize state");
+                smol::spawn(async move {
+                    let _ = sender
+                        .send(MachineValues {
+                            state: state_json,
+                            live_values: serde_json::Value::Null,
+                        })
+                        .await;
+                    sender.close();
+                })
+                .detach();
             }
         }
     }
