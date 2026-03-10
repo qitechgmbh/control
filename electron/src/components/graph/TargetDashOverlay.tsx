@@ -8,6 +8,7 @@ type OverlayLine = {
   color: string;
   width: number;
   dash: number[];
+  dashOffset: number;
   d: string;
 };
 
@@ -18,61 +19,12 @@ type ClipRect = {
   height: number;
 };
 
-function findFirstGe(arr: number[], value: number): number {
-  let lo = 0;
-  let hi = arr.length - 1;
-  let ans = arr.length;
-
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    if (arr[mid] >= value) {
-      ans = mid;
-      hi = mid - 1;
-    } else {
-      lo = mid + 1;
-    }
-  }
-
-  return ans;
-}
-
-function findLastLe(arr: number[], value: number): number {
-  let lo = 0;
-  let hi = arr.length - 1;
-  let ans = -1;
-
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    if (arr[mid] <= value) {
-      ans = mid;
-      lo = mid + 1;
-    } else {
-      hi = mid - 1;
-    }
-  }
-
-  return ans;
-}
-
-function buildSteppedPath(
-  u: uPlot,
+function buildDashedLine(
+  plot: uPlot,
   xData: number[],
   yData: Array<number | null>,
 ): string {
-  const xMin = u.scales.x?.min;
-  const xMax = u.scales.x?.max;
-
-  if (xData.length < 2 || xMin === undefined || xMax === undefined) {
-    return "";
-  }
-
-  const firstVisibleIdx = Math.max(0, findFirstGe(xData, xMin) - 1);
-  const lastVisibleIdx = Math.min(
-    xData.length - 1,
-    findLastLe(xData, xMax) + 1,
-  );
-
-  if (lastVisibleIdx < firstVisibleIdx) {
+  if (xData.length < 2) {
     return "";
   }
 
@@ -81,12 +33,15 @@ function buildSteppedPath(
   let prevX = 0;
   let prevY = 0;
 
-  for (let i = firstVisibleIdx; i <= lastVisibleIdx; i++) {
+  // Use CSS pixels (canvasPixels=false) because the SVG overlay is in CSS pixel space.
+  // u.valToPos(..., true) returns device pixels (DPR-scaled) which would misplace
+  // everything by a factor of devicePixelRatio on high-DPI displays.
+  for (let i = 0; i < xData.length; i++) {
     const value = yData[i];
     if (value === null || value === undefined) continue;
 
-    const x = u.valToPos(xData[i], "x", true);
-    const y = u.valToPos(value, "y", true);
+    const x = plot.valToPos(xData[i], "x", false);
+    const y = plot.valToPos(value, "y", false);
 
     if (!started) {
       parts.push(`M ${x} ${y}`);
@@ -107,32 +62,17 @@ function buildSteppedPath(
     prevY = y;
   }
 
-  return parts.join(" ");
-}
-
-function buildFlatLatestValuePath(
-  u: uPlot,
-  yData: Array<number | null>,
-): string {
-  let latestValue: number | null = null;
-
-  for (let i = yData.length - 1; i >= 0; i--) {
-    const value = yData[i];
-    if (value !== null && value !== undefined) {
-      latestValue = value;
-      break;
+  // Extend the last step to the right edge of the plot area so the target line
+  // reaches the same boundary as the data series drawn by uPlot.
+  if (started) {
+    const dpr = window.devicePixelRatio || 1;
+    const rightEdge = (plot.bbox.left + plot.bbox.width) / dpr;
+    if (rightEdge > prevX) {
+      parts.push(`L ${rightEdge} ${prevY}`);
     }
   }
 
-  if (latestValue === null) {
-    return "";
-  }
-
-  const y = u.valToPos(latestValue, "y", true);
-  const left = u.bbox.left;
-  const right = u.bbox.left + u.bbox.width;
-
-  return `M ${left} ${y} L ${right} ${y}`;
+  return parts.join(" ");
 }
 
 function getHistoricalDashTargets(
@@ -214,14 +154,10 @@ export function TargetDashOverlay({
   uplotRef,
   newData,
   config,
-  selectedTimeWindow,
-  isLiveMode,
 }: {
   uplotRef: React.RefObject<uPlot | null>;
   newData: BigGraphProps["newData"];
   config: GraphConfig;
-  selectedTimeWindow: number | "all";
-  isLiveMode: boolean;
 }) {
   const targetMeta = useMemo(
     () => getHistoricalDashTargets(newData, config),
@@ -249,31 +185,24 @@ export function TargetDashOverlay({
 
     const recalc = () => {
       recalcScheduled = false;
-      const u = uplotRef.current;
-      if (!u || targetMeta.length === 0) {
+      const plot = uplotRef.current;
+      if (!plot || targetMeta.length === 0) {
         return;
       }
 
-      const xData = u.data[0] as number[] | undefined;
+      const xData = plot.data[0] as number[] | undefined;
       if (!xData || xData.length < 2) {
         return;
       }
 
       const nextLines = targetMeta
         .map((meta, index) => {
-          const yData = u.data[meta.dataIndex] as
+          const yData = plot.data[meta.dataIndex] as
             | Array<number | null>
             | undefined;
           if (!yData || yData.length < 2) return null;
 
-          const useFlatShortWindowPath =
-            isLiveMode &&
-            selectedTimeWindow !== "all" &&
-            selectedTimeWindow <= 60_000;
-
-          const d = useFlatShortWindowPath
-            ? buildFlatLatestValuePath(u, yData)
-            : buildSteppedPath(u, xData, yData);
+          const d = buildDashedLine(plot, xData, yData);
           if (!d) return null;
 
           return {
@@ -281,6 +210,7 @@ export function TargetDashOverlay({
             color: meta.color,
             width: meta.width,
             dash: meta.dash,
+            dashOffset: 0,
             d,
           } as OverlayLine;
         })
@@ -290,11 +220,13 @@ export function TargetDashOverlay({
         setLines((prev) =>
           areOverlayLinesEqual(prev, nextLines) ? prev : nextLines,
         );
+        // u.bbox is in device pixels; divide by DPR to get CSS pixels for the SVG clip rect.
+        const dpr = window.devicePixelRatio || 1;
         const nextClipRect: ClipRect = {
-          x: u.bbox.left,
-          y: u.bbox.top,
-          width: u.bbox.width,
-          height: u.bbox.height,
+          x: plot.bbox.left / dpr,
+          y: plot.bbox.top / dpr,
+          width: plot.bbox.width / dpr,
+          height: plot.bbox.height / dpr,
         };
         setClipRect((prev) =>
           isSameClipRect(prev, nextClipRect) ? prev : nextClipRect,
@@ -314,8 +246,8 @@ export function TargetDashOverlay({
       return;
     }
 
-    const addHook = (u: any, hookName: string, fn: () => void) => {
-      const hooks = u.hooks?.[hookName];
+    const addHook = (plot: any, hookName: string, fn: () => void) => {
+      const hooks = plot.hooks?.[hookName];
       if (!Array.isArray(hooks)) return;
       hooks.push(fn);
       removeHookFns.push(() => {
@@ -329,14 +261,13 @@ export function TargetDashOverlay({
 
     const attachHooks = (): boolean => {
       if (hooksAttached) return true;
-      const u = uplotRef.current as any;
-      if (!u) return false;
+      const plot = uplotRef.current as any;
+      if (!plot) return false;
 
-      addHook(u, "draw", scheduleRecalc);
-      addHook(u, "setScale", scheduleRecalc);
-      addHook(u, "setData", scheduleRecalc);
+      addHook(plot, "setScale", scheduleRecalc);
+      addHook(plot, "setData", scheduleRecalc);
 
-      const rootElement = u.root as HTMLElement | undefined;
+      const rootElement = plot.root as HTMLElement | undefined;
       if (rootElement && typeof ResizeObserver !== "undefined") {
         resizeObserver = new ResizeObserver(() => scheduleRecalc());
         resizeObserver.observe(rootElement);
@@ -366,7 +297,7 @@ export function TargetDashOverlay({
       window.removeEventListener("resize", onWindowResize);
       resizeObserver?.disconnect();
     };
-  }, [uplotRef, targetMeta, isLiveMode, selectedTimeWindow]);
+  }, [uplotRef, targetMeta]);
 
   if (lines.length === 0) {
     return null;
@@ -401,7 +332,7 @@ export function TargetDashOverlay({
               strokeWidth={line.width}
               strokeLinecap="butt"
               strokeDasharray={line.dash.join(" ")}
-              strokeDashoffset={0}
+              strokeDashoffset={line.dashOffset}
             />
           );
         })}

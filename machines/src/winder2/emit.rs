@@ -16,12 +16,20 @@ mod winder2_imports {
         angular_velocity::revolution_per_minute,
         f64::*,
         length::{meter, millimeter},
-        velocity::meter_per_minute,
     };
+
+    pub use units::Velocity;
+    pub use units::velocity::meter_per_minute;
 }
 
 #[cfg(not(feature = "mock-machine"))]
 pub use winder2_imports::*;
+
+#[cfg(not(feature = "mock-machine"))]
+use crate::{AsyncThreadMessage, MachineSubscriptionRequest};
+
+#[cfg(not(feature = "mock-machine"))]
+use crate::MachineIdentificationUnique;
 
 #[cfg(not(feature = "mock-machine"))]
 impl Winder2 {
@@ -210,18 +218,6 @@ impl Winder2 {
     }
 
     pub fn build_state_event(&mut self) -> StateEvent {
-        use crate::MachineCrossConnectionState;
-
-        let connected_machine = self.connected_machines.get(0);
-        let ident = match connected_machine {
-            Some(machine) => Some(machine.ident.clone()),
-            None => None,
-        };
-        let cross_conn = MachineCrossConnectionState {
-            machine_identification_unique: ident,
-            is_available: connected_machine.is_some(),
-        };
-
         StateEvent {
             is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
             traverse_state: TraverseState {
@@ -259,12 +255,21 @@ impl Winder2 {
                     .puller_speed_controller
                     .target_speed
                     .get::<meter_per_minute>(),
-                target_diameter: self
-                    .puller_speed_controller
-                    .target_diameter
-                    .get::<millimeter>(),
                 forward: self.puller_speed_controller.forward,
                 gear_ratio: self.puller_speed_controller.gear_ratio,
+                adaptive_speed_delta_max: self.puller_speed_controller.adaptive.speed_delta_max(),
+                adaptive_adjustment_distance: self
+                    .puller_speed_controller
+                    .adaptive
+                    .adjustment_distance()
+                    .get::<meter>(),
+                adaptive_change_per_step: self.puller_speed_controller.adaptive.increase_per_step(),
+                allowed_diameter_deviation: self
+                    .puller_speed_controller
+                    .adaptive
+                    .tolerance_limit()
+                    .get::<millimeter>(),
+                adaptive_reference_machine: self.puller_reference_machine,
             },
             mode_state: ModeState {
                 mode: self.mode.clone().into(),
@@ -302,7 +307,7 @@ impl Winder2 {
                 spool_required_meters: self.spool_automatic_action.target_length.get::<meter>(),
                 spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
             },
-            connected_machine_state: cross_conn,
+            puller_reference_machine: self.puller_reference_machine,
         }
     }
 
@@ -413,15 +418,6 @@ impl Winder2 {
         self.emit_state();
     }
 
-    /// Set target diameter in mm
-    pub fn puller_set_target_diameter(&mut self, target_diameter: f64) {
-        // Convert m/min to velocity
-        let target_diameter = Length::new::<millimeter>(target_diameter);
-        self.puller_speed_controller
-            .set_target_diameter(target_diameter);
-        self.emit_state();
-    }
-
     /// Set forward direction
     pub fn puller_set_forward(&mut self, forward: bool) {
         self.puller_speed_controller.set_forward(forward);
@@ -503,5 +499,95 @@ impl Winder2 {
     pub fn spool_set_forward(&mut self, forward: bool) {
         self.spool_speed_controller.set_forward(forward);
         self.emit_state();
+    }
+}
+
+// Winder2 Extension
+#[cfg(not(feature = "mock-machine"))]
+impl Winder2 {
+    pub fn puller_set_adaptive_max_speed_change_percent(&mut self, value: f64) {
+        self.puller_speed_controller
+            .adaptive
+            .set_speed_delta_max(value);
+        self.emit_state();
+    }
+
+    pub fn puller_set_adaptive_adjustment_interval_meters(&mut self, value: f64) {
+        self.puller_speed_controller
+            .adaptive
+            .set_adjustment_distance(Length::new::<meter>(value));
+        self.emit_state();
+    }
+
+    pub fn puller_set_adaptive_step_percent(&mut self, value: f64) {
+        self.puller_speed_controller
+            .adaptive
+            .set_increase_per_step(value);
+        self.emit_state();
+    }
+
+    pub fn puller_set_adaptive_accepted_difference(&mut self, value: f64) {
+        self.puller_speed_controller
+            .adaptive
+            .set_tolerance_limit(Length::new::<millimeter>(value));
+        self.emit_state();
+    }
+
+    pub fn puller_set_adaptive_reference_machine(
+        &mut self,
+        machine_uid: Option<MachineIdentificationUnique>,
+    ) -> Result<(), anyhow::Error> {
+        match machine_uid {
+            Some(machine_uid) => {
+                if self
+                    .puller_reference_machine
+                    .as_ref()
+                    .is_some_and(|x| *x == machine_uid)
+                {
+                    return Ok(());
+                }
+                let main_sender = match &self.main_sender {
+                    Some(v) => v,
+                    None => {
+                        return Err(anyhow::anyhow!(
+                            "{:?} Failed to connect to {:?}",
+                            self.machine_identification_unique,
+                            machine_uid,
+                        ));
+                    }
+                };
+                main_sender.try_send(AsyncThreadMessage::SubscribeToMachine(
+                    MachineSubscriptionRequest {
+                        subscriber: self.machine_identification_unique,
+                        publisher: machine_uid,
+                    },
+                ))?;
+            }
+            None => {
+                match self.puller_reference_machine.take() {
+                    Some(machine_uid) => {
+                        let main_sender = match &self.main_sender {
+                            Some(v) => v,
+                            None => {
+                                return Err(anyhow::anyhow!(
+                                    "{:?} Failed to connect to {:?}",
+                                    self.machine_identification_unique,
+                                    machine_uid,
+                                ));
+                            }
+                        };
+                        main_sender.try_send(AsyncThreadMessage::UnsubscribeFromMachine(
+                            MachineSubscriptionRequest {
+                                subscriber: self.machine_identification_unique,
+                                publisher: machine_uid,
+                            },
+                        ))?;
+                    }
+                    None => return Ok(()), // nothing to do
+                }
+            }
+        }
+        self.emit_state();
+        Ok(())
     }
 }

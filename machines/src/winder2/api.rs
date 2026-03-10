@@ -48,9 +48,9 @@ mod winder2_imports {
 use smol::channel::Sender;
 pub use winder2_imports::*;
 
+use crate::machine_identification::MachineIdentificationUnique;
 #[cfg(not(feature = "mock-machine"))]
 use crate::{MachineApi, MachineMessage};
-use crate::{MachineCrossConnectionState, machine_identification::MachineIdentificationUnique};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum Mode {
@@ -132,11 +132,16 @@ pub enum Mutation {
     // Mode
     SetMode(Mode),
 
-    // Connected Machine
-    SetConnectedMachine(MachineIdentificationUnique),
-
-    // Disconnect Machine
-    DisconnectMachine(MachineIdentificationUnique),
+    // Set puller adaptive reference machine
+    /// Maximum speed change as a percentage of base speed (0.0–100.0)
+    SetPullerAdaptiveMaxSpeedChangePercent(f64),
+    /// Minimum meters between consecutive adjustments
+    SetPullerAdaptiveAdjustmentIntervalMeters(f64),
+    /// Step size per adjustment as a percentage of base speed (0.0–100.0)
+    SetPullerAdaptiveStepPercent(f64),
+    /// Inner deadzone: max deviation from target (mm) that requires no correction
+    SetPullerAdaptiveAcceptedDifference(f64),
+    SetPullerAdaptiveReferenceMachine(Option<MachineIdentificationUnique>),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -175,7 +180,7 @@ pub struct StateEvent {
     /// spool speed controller state
     pub spool_speed_controller_state: SpoolSpeedControllerState,
     /// Is a Machine Connected?
-    pub connected_machine_state: MachineCrossConnectionState,
+    pub puller_reference_machine: Option<MachineIdentificationUnique>,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -218,12 +223,20 @@ pub struct PullerState {
     pub regulation: PullerRegulationMode,
     /// target speed in m/min
     pub target_speed: f64,
-    /// target diameter in mm
-    pub target_diameter: f64,
     /// forward rotation direction
     pub forward: bool,
     /// gear ratio for winding speed
     pub gear_ratio: GearRatio,
+
+    /// Maximum speed change as a percentage of base speed (0.0–100.0)
+    pub adaptive_speed_delta_max: f64,
+    /// Minimum meters between consecutive adjustments
+    pub adaptive_adjustment_distance: f64,
+    /// Step size per adjustment as a percentage of base speed (0.0–100.0)
+    pub adaptive_change_per_step: f64,
+    /// Inner deadzone: max deviation from target (mm) that requires no correction
+    pub allowed_diameter_deviation: f64,
+    pub adaptive_reference_machine: Option<MachineIdentificationUnique>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -322,8 +335,6 @@ impl MachineApi for Winder2 {
     }
 
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
-        use crate::Machine;
-
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
             Mutation::EnableTraverseLaserpointer(enable) => self.set_laser(enable),
@@ -365,32 +376,20 @@ impl MachineApi for Winder2 {
             Mutation::SetSpoolAutomaticAction(mode) => self.set_spool_automatic_mode(mode),
             Mutation::ResetSpoolProgress => self.stop_or_pull_spool_reset(Instant::now()),
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
-            Mutation::SetConnectedMachine(machine_identification_unique) => {
-                let main_sender = match &self.main_sender {
-                    Some(sender) => sender,
-                    None => {
-                        return Err(anyhow::anyhow!(
-                            "Machine cannot connect to others! {:?}",
-                            self.get_machine_identification_unique()
-                        ));
-                    }
-                };
-                main_sender.try_send(crate::AsyncThreadMessage::ConnectOneWayRequest(
-                    crate::CrossConnection {
-                        src: self.get_machine_identification_unique(),
-                        dest: machine_identification_unique,
-                    },
-                ))?;
-                self.emit_state();
+
+            // puller adaptive speed algorithm
+            Mutation::SetPullerAdaptiveMaxSpeedChangePercent(v) => {
+                self.puller_set_adaptive_max_speed_change_percent(v)
             }
-            Mutation::DisconnectMachine(_machine_identification_unique) => {
-                self.connected_machines.clear();
-                /*let main_sender = match &self.main_sender {
-                    Some(sender) => sender,
-                    None => return Err(anyhow::anyhow!("[DisconnectMachine] Machine cannot connect to others! {:?}", self.machine_identification_unique)),
-                };*/
-                //main_sender.try_send(crate::AsyncThreadMessage::ConnectOneWayRequest(crate::CrossConnection { src: self.get_machine_identification_unique(), dest: machine_identification_unique }))?;
-                self.emit_state();
+            Mutation::SetPullerAdaptiveAdjustmentIntervalMeters(v) => {
+                self.puller_set_adaptive_adjustment_interval_meters(v)
+            }
+            Mutation::SetPullerAdaptiveStepPercent(v) => self.puller_set_adaptive_step_percent(v),
+            Mutation::SetPullerAdaptiveAcceptedDifference(v) => {
+                self.puller_set_adaptive_accepted_difference(v)
+            }
+            Mutation::SetPullerAdaptiveReferenceMachine(v) => {
+                self.puller_set_adaptive_reference_machine(v)?
             }
         }
         Ok(())

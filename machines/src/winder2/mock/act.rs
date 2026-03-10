@@ -33,12 +33,6 @@ impl MachineAct for Winder2 {
 
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(_machine_connection) => (),
-            MachineMessage::DisconnectMachine(_machine_connection) =>
-            /*Doesnt connec to any Machine do nothing*/
-            {
-                ()
-            }
             MachineMessage::RequestValues(sender) => {
                 sender
                     .send_blocking(MachineValues {

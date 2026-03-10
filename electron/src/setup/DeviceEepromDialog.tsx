@@ -47,10 +47,11 @@ import { DeviceRoleComponent } from "@/components/DeviceRole";
 import { Alert } from "@/components/Alert";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/Icon";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { toast } from "sonner";
 import { Toast } from "@/components/Toast";
 import { EthercatDevicesEventData } from "@/client/mainNamespace";
-import { TouchNumpad } from "@/components/touch/TouchNumpad";
+import { restartBackend } from "@/helpers/troubleshoot_helpers";
 
 type Device = NonNullable<EthercatDevicesEventData["Done"]>["devices"][number];
 
@@ -78,19 +79,14 @@ export function DeviceEepromDialog({ device }: Props) {
   const onClose = () => setOpen(false);
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={setOpen}
-      // Prevent closing via Escape to keep numpad open while interacting
-      modal
-    >
+    <Dialog open={open} onOpenChange={setOpen} modal>
       <DialogTrigger asChild>
         <Button variant="outline">
           <Icon name="lu:Pencil" />
           Assign
         </Button>
       </DialogTrigger>
-      <DeviceEeepromDialogContent device={device} key={key} setOpen={onClose} />
+      <DeviceEepromDialogContent device={device} key={key} setOpen={onClose} />
     </Dialog>
   );
 }
@@ -101,20 +97,28 @@ type ContentProps = {
   setOpen: () => void;
 };
 
-export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
+export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   const client = useClient();
-  const serialInputRef = useRef<HTMLInputElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const numpadRef = useRef<HTMLDivElement>(null);
+  const [isApplying, setIsApplying] = useState(false);
+  const [writeSuccess, setWriteSuccess] = useState(false);
+
   const [numpadOpen, setNumpadOpen] = useState(false);
   const [numpadPosition, setNumpadPosition] = useState({ left: 0, top: 0 });
-  const serialContainerRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const serialInputRef = useRef<HTMLInputElement | null>(null);
+  const serialContainerRef = useRef<HTMLDivElement | null>(null);
+  const numpadRef = useRef<HTMLDivElement | null>(null);
+
+  const initialMachine = useMemo(
+    () =>
+      device.device_identification.device_machine_identification?.machine_identification_unique.machine_identification.machine.toString(),
+    [device],
+  );
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      machine:
-        device.device_identification.device_machine_identification?.machine_identification_unique.machine_identification.machine.toString(),
+      machine: initialMachine ?? "",
       serial:
         device.device_identification.device_machine_identification?.machine_identification_unique.serial.toString(),
       role: device.device_identification.device_machine_identification?.role.toString(),
@@ -123,37 +127,88 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   });
   const values = useFormValues(form);
 
-  // Removed unnecessary console.log statements.
+  const isChangingMachine =
+    initialMachine != null && values.machine !== initialMachine;
+
+  const performWrite = (values: FormSchema) =>
+    client.writeMachineDeviceIdentification({
+      hardware_identification_ethercat: {
+        subdevice_index:
+          device.device_identification.device_hardware_identification.Ethercat!
+            .subdevice_index,
+      },
+      device_machine_identification: {
+        machine_identification_unique: {
+          machine_identification: {
+            vendor: VENDOR_QITECH,
+            machine: parseInt(values.machine!),
+          },
+          serial: parseInt(values.serial!),
+        },
+        role: parseInt(values.role!),
+      },
+    });
+
+  const confirmIfChangingMachine = (): boolean => {
+    if (!isChangingMachine) return true;
+    return window.confirm(
+      "Changing this device to another machine will disconnect it from the current setup. A backend restart is required and terminals may need to be rediscovered (Setup → Troubleshoot → Restart backend). Continue?",
+    );
+  };
 
   const onSubmit = (values: FormSchema) => {
-    client
-      .writeMachineDeviceIdentification({
-        hardware_identification_ethercat: {
-          subdevice_index:
-            device.device_identification.device_hardware_identification
-              .Ethercat!.subdevice_index,
-        },
-        device_machine_identification: {
-          machine_identification_unique: {
-            machine_identification: {
-              vendor: VENDOR_QITECH,
-              machine: parseInt(values.machine!),
-            },
-            serial: parseInt(values.serial!),
-          },
-          role: parseInt(values.role!),
-        },
-      })
-      .then((res) => {
-        if (res.success) {
+    if (!confirmIfChangingMachine()) return;
+    performWrite(values).then((res) => {
+      if (res.success) {
+        setWriteSuccess(true);
+        toast(
+          <Toast title="Saved" icon="lu:CircleCheck">
+            Saved successfully. Restart required to apply changes.
+          </Toast>,
+        );
+      }
+    });
+  };
+
+  // Apply & restart: always save first; if save fails, block restart and show error
+  const handleApplyAndRestart = () => {
+    if (!confirmIfChangingMachine()) return;
+    form.handleSubmit((values) => {
+      setIsApplying(true);
+      performWrite(values)
+        .then(async (res) => {
+          if (!res.success) {
+            toast(
+              <Toast title="Save failed" icon="lu:CircleAlert">
+                Could not save assignment. Restart aborted.
+              </Toast>,
+            );
+            return;
+          }
+          setWriteSuccess(true);
           toast(
-            <Toast title={"Gespeichert"} icon="lu:CircleCheck">
-              Machine assignment written successfully.
+            <Toast title="Saved" icon="lu:CircleCheck">
+              Saved. Restarting backend…
             </Toast>,
           );
-          setOpen();
-        }
-      });
+          const result = await restartBackend();
+          if (result.success) {
+            toast(
+              <Toast title="Backend restart" icon="lu:RotateCcw">
+                Backend restart initiated.
+              </Toast>,
+            );
+            setOpen();
+          } else {
+            toast(
+              <Toast title="Backend restart failed" icon="lu:CircleAlert">
+                {result.error ?? "Unknown error"}
+              </Toast>,
+            );
+          }
+        })
+        .finally(() => setIsApplying(false));
+    })();
   };
 
   const updateNumpadPosition = useCallback(() => {
@@ -349,11 +404,9 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
       },
     };
   }, [form]);
-
   return (
     <>
       <DialogContent
-        ref={dialogRef}
         // Keep dialog open on any outside interaction; closing is manual via controls
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
@@ -409,31 +462,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
                 <FormItem>
                   <FormLabel>Serial</FormLabel>
                   <FormControl>
-                    <div
-                      ref={serialContainerRef}
-                      className="flex items-center gap-2"
-                    >
-                      <Input
-                        {...field}
-                        ref={(e) => {
-                          field.ref(e);
-                          serialInputRef.current = e;
-                        }}
-                        placeholder="1234"
-                        onFocus={() => setNumpadOpen(true)}
-                        onClick={() => setNumpadOpen(true)}
-                        onBlur={(event) => {
-                          const next = event.relatedTarget as Node | null;
-                          if (
-                            serialContainerRef.current?.contains(next) ||
-                            numpadRef.current?.contains(next)
-                          ) {
-                            return;
-                          }
-                          setNumpadOpen(false);
-                        }}
-                      />
-                    </div>
+                    <Input {...field} placeholder="1234" />
                   </FormControl>
                   <FormDescription>
                     Serial number of the machine.
@@ -473,58 +502,63 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
               )}
             />
             <Separator />
-            <Button type="submit" disabled={!form.formState.isValid}>
-              <Icon name="lu:Save" /> Write
-            </Button>
-            <Alert title="Restart mandatory" variant="info">
-              The device must be restarted for the changes to take effect
+            {isChangingMachine && (
+              <Alert title="Changing machine assignment" variant="warning">
+                This will disconnect the device from its current machine.
+                Restart required; if terminals disappear, use Setup →
+                Troubleshoot → Restart backend to rediscover.
+              </Alert>
+            )}
+            {form.formState.isDirty && !writeSuccess && (
+              <p className="text-muted-foreground text-sm">
+                Save or Apply & restart for assignment changes to apply.
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="submit"
+                disabled={!form.formState.isValid || isApplying}
+                onClick={() => setWriteSuccess(false)}
+              >
+                <Icon name="lu:Save" /> Save
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!form.formState.isValid || isApplying}
+                onClick={handleApplyAndRestart}
+                aria-busy={isApplying}
+                title="Saves assignment then restarts the backend. Restart is required for changes to take effect."
+              >
+                {isApplying ? (
+                  <>
+                    <LoadingSpinner />
+                    Saving & restarting…
+                  </>
+                ) : (
+                  <>
+                    <Icon name="lu:RotateCcw" />
+                    Apply & restart
+                  </>
+                )}
+              </Button>
+              {writeSuccess && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setOpen()}
+                >
+                  Close
+                </Button>
+              )}
+            </div>
+            <Alert title="Restart required" variant="info">
+              The backend must be restarted for assignment changes to take
+              effect.
             </Alert>
           </form>
         </Form>
       </DialogContent>
-      {/* Numpad as separate window right of dialog */}
-      {numpadOpen && (
-        <div
-          ref={numpadRef}
-          data-numpad
-          className="fixed z-[100] w-auto rounded-md border border-neutral-200 bg-white p-4 shadow-md dark:border-neutral-800 dark:bg-neutral-950"
-          style={{
-            left: `${numpadPosition.left}px`,
-            top: `${numpadPosition.top}px`,
-            transform: "translateY(-50%)",
-            pointerEvents: "auto",
-          }}
-          tabIndex={-1}
-          onMouseDown={(e) => {
-            // Prevent clicks on numpad from closing the dialog and stealing focus from input
-            e.preventDefault();
-            e.stopPropagation();
-            // Ensure input field keeps focus
-            if (serialInputRef.current) {
-              serialInputRef.current.focus();
-            }
-          }}
-          onClick={(e) => {
-            // Prevent clicks on numpad from closing the dialog
-            e.stopPropagation();
-            // Ensure input field keeps focus
-            if (serialInputRef.current) {
-              serialInputRef.current.focus();
-            }
-          }}
-          onKeyDown={(e) => {
-            // Prevent Escape or other keys from bubbling and closing the dialog
-            e.stopPropagation();
-          }}
-        >
-          <TouchNumpad
-            onDigit={numpadHandlers.appendDigit}
-            onDelete={numpadHandlers.deleteChar}
-            onCursorLeft={numpadHandlers.moveCursorLeft}
-            onCursorRight={numpadHandlers.moveCursorRight}
-          />
-        </div>
-      )}
     </>
   );
 }

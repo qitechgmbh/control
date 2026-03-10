@@ -30,7 +30,7 @@ if (!gotTheLock) {
 }
 
 function createWindow() {
-  const preload = path.join(DIR, "preload.js");
+  const preload = path.resolve(DIR, "preload.js");
   console.log("Setting preload.js to", preload);
 
   const mainWindow = new BrowserWindow({
@@ -46,7 +46,7 @@ function createWindow() {
       preload: preload,
     },
     // Add icon path for better integration
-    icon: path.join(DIR, "icon.png"),
+    icon: path.resolve(DIR, "icon.png"),
     // Set window class explicitly for Linux/GNOME integration
     title: "QiTech Control",
   });
@@ -59,7 +59,7 @@ function createWindow() {
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    const index = path.join(DIR, "index.html");
+    const index = path.resolve(DIR, "index.html");
     mainWindow.loadFile(index);
   }
 }

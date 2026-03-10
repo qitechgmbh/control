@@ -1,4 +1,5 @@
-![](./docs/assets/github-banner.png)
+<img width="1280" height="537" alt="grafik" src="https://github.com/user-attachments/assets/7fa67de4-772e-4528-bd6d-72b56380cad7" />
+
 
 # QiTech Control
 
