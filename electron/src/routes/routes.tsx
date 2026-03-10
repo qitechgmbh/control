@@ -576,6 +576,7 @@ export const rootTree = RootRoute.addChildren([
         laser1ControlRoute,
         laser1GraphsRoute,
         laser1PresetsRoute,
+        laser1SettingsRoute,
       ]),
 
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
