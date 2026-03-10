@@ -42,6 +42,7 @@ import { Laser1ControlPage } from "@/machines/laser/laser1/Laser1ControlPage";
 import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
 import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
+import { Laser1SettingsPage } from "@/machines/laser/laser1/Laser1SettingsPage";
 
 import { WagoSerialPage } from "@/machines/wago_serial/WagoSerialPage";
 import { WagoSerialControlPage } from "@/machines/wago_serial/WagoSerialControlPage";
@@ -349,6 +350,12 @@ export const laser1PresetsRoute = createRoute({
   component: () => <Laser1PresetsPage />,
 });
 
+export const laser1SettingsRoute = createRoute({
+  getParentRoute: () => laser1SerialRoute,
+  path: "settings",
+  component: () => <Laser1SettingsPage />,
+});
+
 export const mock1SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "mock1/$serial",
@@ -569,6 +576,7 @@ export const rootTree = RootRoute.addChildren([
         laser1ControlRoute,
         laser1GraphsRoute,
         laser1PresetsRoute,
+        laser1SettingsRoute,
       ]),
 
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
