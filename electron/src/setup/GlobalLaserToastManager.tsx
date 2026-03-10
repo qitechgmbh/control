@@ -116,9 +116,11 @@ function LaserToastWatcher({
     if (!state) return;
 
     const ts: number | string | null = (state as any)?.ts ?? null;
-    const inTolerance: boolean = (state as any)?.data?.laser_state?.in_tolerance;
+    const inTolerance: boolean = (state as any)?.data?.laser_state
+      ?.in_tolerance;
     const isDefault: boolean = !!(state as any)?.data?.is_default_state;
-    const globalWarning: boolean = (state as any)?.data?.laser_state?.global_warning ?? false;
+    const globalWarning: boolean =
+      (state as any)?.data?.laser_state?.global_warning ?? false;
 
     // If global warning is disabled, dismiss any active toast and bail.
     if (!globalWarning) {
