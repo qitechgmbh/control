@@ -48,6 +48,7 @@ pub struct LaserMachine {
     higher_tolerance: Length,
     lower_tolerance: Length,
     in_tolerance: bool,
+    global_warning: bool,
 
     //laser target configuration
     laser_target: LaserTarget,
@@ -154,6 +155,7 @@ impl LaserMachine {
             lower_tolerance: self.lower_tolerance.get::<millimeter>(),
             target_diameter: self.laser_target.diameter.get::<millimeter>(),
             in_tolerance: self.in_tolerance,
+            global_warning: self.global_warning,
         };
 
         StateEvent {
@@ -170,6 +172,7 @@ impl LaserMachine {
                 lower_tolerance: self.laser_target.lower_tolerance.get::<millimeter>(),
                 target_diameter: self.laser_target.diameter.get::<millimeter>(),
                 in_tolerance: self.in_tolerance,
+                global_warning: self.global_warning,
             },
         }
     }
@@ -198,6 +201,12 @@ impl LaserMachine {
     pub fn set_target_diameter(&mut self, target_diameter: f64) {
         self.target_diameter = Length::new::<millimeter>(target_diameter);
         self.laser_target.diameter = Length::new::<millimeter>(target_diameter);
+        self.mutation_counter += 1;
+        self.emit_state();
+    }
+
+    pub fn set_global_warning(&mut self, toggle: bool) {
+        self.global_warning = toggle;
         self.mutation_counter += 1;
         self.emit_state();
     }

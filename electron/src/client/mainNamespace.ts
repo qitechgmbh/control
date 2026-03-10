@@ -1,4 +1,4 @@
-import { StoreApi } from "zustand";
+import { StoreApi, useStore } from "zustand";
 import { create } from "zustand";
 import { z } from "zod";
 import {
@@ -163,7 +163,10 @@ const mainRoomImplementation = createNamespaceHookImplementation({
   createEventHandler: mainMessageHandler,
 });
 
-export function useMainNamespace(): MainNamespaceStore {
+export function useMainNamespace(): MainNamespaceStore;
+export function useMainNamespace<T>(selector: (s: MainNamespaceStore) => T): T;
+export function useMainNamespace<T>(selector?: (s: MainNamespaceStore) => T) {
   const namespaceId = useRef({ type: "main" } satisfies NamespaceId);
-  return mainRoomImplementation(namespaceId.current);
+  mainRoomImplementation(namespaceId.current); // keeps the socket subscription alive
+  return useStore(mainNamespaceStore, selector ?? ((s) => s as unknown as T));
 }
