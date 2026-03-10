@@ -61,6 +61,11 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   const { request: requestHigherTolerance } = useMachineMutation(
     schemaHigherTolerance,
   );
+  const schemaGlobalWarning = z.object({
+    SetGlobalWarning: z.boolean(),
+  });
+  const { request: requestGlobalWarning } =
+    useMachineMutation(schemaGlobalWarning);
 
   // Action functions with verb-first names
   const setTargetDiameter = (target_diameter: number) => {
@@ -108,6 +113,23 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
     );
   };
 
+  const toggleGlobalWarning = () => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.laser_state.global_warning =
+          !current.data.laser_state.global_warning;
+      },
+      () =>
+        requestGlobalWarning({
+          machine_identification_unique,
+          data: {
+            SetGlobalWarning:
+              !stateOptimistic.value?.data.laser_state.global_warning,
+          },
+        }),
+    );
+  };
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -130,6 +152,7 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
     setTargetDiameter,
     setLowerTolerance,
     setHigherTolerance,
+    toggleGlobalWarning,
   };
 }
 

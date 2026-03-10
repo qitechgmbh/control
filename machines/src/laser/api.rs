@@ -51,6 +51,8 @@ pub struct LaserState {
     pub target_diameter: f64,
     /// tolerance bool
     pub in_tolerance: bool,
+    /// global warning
+    pub global_warning: bool,
 }
 
 pub enum LaserEvents {
@@ -89,6 +91,7 @@ enum Mutation {
     SetTargetDiameter(f64),
     SetLowerTolerance(f64),
     SetHigherTolerance(f64),
+    SetGlobalWarning(bool),
 }
 
 impl NamespaceCacheingLogic<LaserEvents> for LaserMachineNamespace {
@@ -116,6 +119,9 @@ impl MachineApi for LaserMachine {
             }
             Mutation::SetTargetDiameter(target_diameter) => {
                 self.set_target_diameter(target_diameter);
+            }
+            Mutation::SetGlobalWarning(toggle) => {
+                self.set_global_warning(toggle);
             }
         }
         Ok(())
