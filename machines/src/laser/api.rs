@@ -49,9 +49,9 @@ pub struct LaserState {
     pub lower_tolerance: f64,
     /// target diameter in mm
     pub target_diameter: f64,
-    /// tolerance bool
+    /// filament is inside tolerance
     pub in_tolerance: bool,
-    /// global warning
+    /// out of tolerance warning toast enabled
     pub global_warning: bool,
 }
 
