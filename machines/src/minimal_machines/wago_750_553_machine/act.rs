@@ -28,8 +28,6 @@ impl MachineAct for Wago750_553Machine {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(_machine_connection) => {}
-            MachineMessage::DisconnectMachine(_machine_connection) => {}
             MachineMessage::RequestValues(sender) => {
                 let state_json =
                     serde_json::to_value(self.get_state()).expect("Failed to serialize state");
