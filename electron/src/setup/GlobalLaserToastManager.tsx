@@ -32,7 +32,7 @@ function discoverLaser(
 
 // Toast UI
 
-function LaserErrorToast({ errorCount }: { errorCount: number }) {
+function LaserErrorToast({ errorCount, onDismiss }: { errorCount: number, onDismiss: () => void }) {
   return (
     <div className="flex w-100 flex-col gap-3 rounded-xl border border-red-400 bg-red-600 p-4 text-white shadow-xl backdrop-blur-sm">
       <div className="flex items-center justify-between">
@@ -49,7 +49,11 @@ function LaserErrorToast({ errorCount }: { errorCount: number }) {
         </div>
         <button
           className="rounded-md p-1 text-2xl font-bold text-white/80 hover:bg-red-500 hover:text-white focus:ring-2 focus:ring-white/30 focus:outline-none"
-          onClick={() => toast.dismiss(TOAST_ID)}
+          onClick={() => {
+              toast.dismiss(TOAST_ID)
+              onDismiss();
+            }
+          }
           aria-label="Close"
         >
           ×
@@ -64,8 +68,8 @@ function LaserErrorToast({ errorCount }: { errorCount: number }) {
   );
 }
 
-function showLaserErrorToast(errorCount: number) {
-  toast(<LaserErrorToast errorCount={errorCount} />, {
+function showLaserErrorToast(errorCount: number, onDismiss: () => void) {
+  toast(<LaserErrorToast errorCount={errorCount} onDismiss={onDismiss} />, {
     id: TOAST_ID,
     duration: Infinity,
     position: "top-center",
@@ -108,19 +112,18 @@ function LaserToastWatcher({
     const inTolerance: boolean = (state as any)?.data?.laser_state
       ?.in_tolerance;
     const isDefault: boolean = !!(state as any)?.data?.is_default_state;
+    const handleDismiss = () => {
+      errorCountRef.current = 0;
+      lastSeenTs.current = null;
+    };
+
 
     if (isDefault) return;
 
     if (!inTolerance && ts !== lastSeenTs.current) {
       lastSeenTs.current = ts;
       errorCountRef.current += 1;
-      showLaserErrorToast(errorCountRef.current);
-    }
-
-    if (inTolerance) {
-      errorCountRef.current = 0;
-      lastSeenTs.current = null;
-      toast.dismiss(TOAST_ID);
+      showLaserErrorToast(errorCountRef.current, handleDismiss);
     }
   }, [state]);
 
