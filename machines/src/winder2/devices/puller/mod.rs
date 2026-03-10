@@ -18,6 +18,7 @@ use control_core::{ converters::linear_step_converter::LinearStepConverter };
 
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 
+use crate::speed_algorithms::{BoundedValue, FixedSpeedAlgorithm};
 use crate::types::Direction;
 
 use super::OperationState;
@@ -54,7 +55,11 @@ impl Puller
     // fixed
     const STEPS_PER_REVOLUTION:   i16 = 200;  // in steps
     const WHEEL_DIAMETER:         f64 = 8.0;  // in cm
+
+    const MOTOR_SPEED_MIN:        f64 =  0.0;  // in meters per minute
     const MOTOR_SPEED_MAX:        f64 = 50.0; // in meters per minute
+    const MOTOR_SPEED_DEFAULT:    f64 =  5.0; // in meters per minute
+
     const MOTOR_ACCELERATION_MAX: f64 = 5.0;  // in meters per minute per second
     const MOTOR_JERK_MAX:         f64 = 10.0; // in meters per minute per second squared
 }
@@ -62,8 +67,46 @@ impl Puller
 // public interface
 impl Puller
 {
+    fn create_fixed_speed_algorithm() -> FixedSpeedAlgorithm
+    {
+        let target_speed: BoundedValue<Velocity> = BoundedValue::new(
+            Velocity::new::<meter_per_minute>(Self::MOTOR_SPEED_MIN), 
+            Velocity::new::<meter_per_minute>(Self::MOTOR_SPEED_MAX), 
+            Velocity::new::<meter_per_minute>(Self::MOTOR_SPEED_DEFAULT),
+        );
+
+        FixedSpeedAlgorithm::new(target_speed)
+    }
+
+    fn create_fixed_speed_algorithm() -> FixedSpeedAlgorithm
+    {
+        let target_speed: BoundedValue<Velocity> = BoundedValue::new(
+            Velocity::new::<meter_per_minute>(Self::MOTOR_SPEED_MIN), 
+            Velocity::new::<meter_per_minute>(Self::MOTOR_SPEED_MAX), 
+            Velocity::new::<meter_per_minute>(Self::MOTOR_SPEED_DEFAULT),
+        );
+
+        FixedSpeedAlgorithm::new(target_speed)
+    }
+
     pub fn new(motor: StepperVelocityEL70x1) -> Self
     {
+        let speed_controller: SpeedController = {
+
+        
+            let target_speed = 
+            let fixed_speed_algorithm = FixedSpeedAlgorithm::new(speed_min, speed_max);
+
+            SpeedController::new(
+                fixed_speed_algorithm, 
+                adaptive_speed_algorithm,
+                acceleration_controller
+            );
+        };
+
+
+
+
         let speed_controller = {
             let speed_max = Velocity::new::<velocity_unit>(Self::MOTOR_SPEED_MAX);
             let acc_max   = Acceleration::new::<acceleration_unit>(Self::MOTOR_ACCELERATION_MAX);
@@ -166,8 +209,8 @@ impl Puller
         // require a reconfiguration of the machine
         let algorithms = self.speed_controller.algorithms_mut();
         algorithms.fixed.set_speed_target(Velocity::ZERO);
-        algorithms.adaptive.set_speed_base(Velocity::ZERO);
-        algorithms.adaptive.set_deviation_limit(Velocity::ZERO);
+        algorithms.diameter.set_speed_base(Velocity::ZERO);
+        algorithms.diameter.set_deviation_limit(Velocity::ZERO);
     }
 
     pub fn output_speed(&self) -> Velocity 
@@ -182,7 +225,7 @@ impl Puller
 
     pub fn select_speed_control_algorithm(&mut self, mode: SpeedControlAlgorithm)
     {
-        self.speed_controller.select_algorithm(mode);
+        self.speed_controller.set_speed_mode(mode);
     }
 
     pub fn speed_controller_algorithms(&self) -> &SpeedControllerAlgorithms

@@ -27,4 +27,15 @@ impl Direction
     {
         self != Self::Forward
     }
+
+    pub fn multiplier(self) -> f64
+    {
+        use Direction::*;
+
+        match self 
+        {
+            Forward => 1.0,
+            Reverse => -1.0,
+        }
+    }
 }

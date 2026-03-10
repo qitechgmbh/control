@@ -27,7 +27,7 @@ use units::length::millimeter;
 /// The struct of Laser Device
 #[derive(Debug)]
 pub struct Laser {
-    pub data: Option<LaserData>,
+    pub data: Option<DiameterData>,
     pub path: String,
     pub shutdown_flag: Arc<AtomicBool>,
 }
@@ -94,7 +94,7 @@ impl SerialDeviceNew for Laser {
     fn new_serial(
         params: &SerialDeviceNewParams,
     ) -> Result<(DeviceIdentification, Arc<RwLock<Self>>), anyhow::Error> {
-        let laser_data = Some(LaserData {
+        let laser_data = Some(DiameterData {
             diameter: Length::new::<millimeter>(0.0),
             x_axis: None,
             y_axis: None,
@@ -151,7 +151,7 @@ impl Drop for Laser {
 }
 
 #[derive(Debug, Clone)]
-pub struct LaserData {
+pub struct DiameterData {
     pub diameter: Length,
     pub x_axis: Option<Length>,
     pub y_axis: Option<Length>,
@@ -180,7 +180,7 @@ impl Laser {
         }
     }
 
-    pub async fn get_data(&self) -> Option<LaserData> {
+    pub async fn get_data(&self) -> Option<DiameterData> {
         self.data.clone()
     }
 
@@ -232,7 +232,7 @@ impl Laser {
                 let diameter_response = LaserDiameterResponse::try_from(diameter_response)?;
                 // save the diameter
                 let mut self_guard = _self.write().await;
-                self_guard.data = Some(LaserData {
+                self_guard.data = Some(DiameterData {
                     diameter: diameter_response.diameter,
                     x_axis: diameter_response.x_axis,
                     y_axis: diameter_response.y_axis,
