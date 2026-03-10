@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/dialog";
 import { getWinder2TraverseMax } from "./winder2Config";
 import { getWinder2AdaptivePullerSpeed } from "./winder2Config";
-import { Toggle } from "@/components/ui/toggle";
 
 export function Winder2ControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
@@ -394,7 +393,6 @@ export function Winder2ControlPage() {
             />
           </Label>
         </ControlCard>
-        <Toggle />
       </ControlGrid>
 
       {/* Reset Progress Confirmation Dialog */}
