@@ -278,15 +278,18 @@ export function aquapath1MessageHandler(
         const noticeEvent = noticeEventSchema.parse(event);
         toast.custom(
           () =>
-            React.createElement(Toast, {
-              title: noticeEvent.data.title,
-              icon: "lu:CircleAlert",
-              children: React.createElement(
+            React.createElement(
+              Toast,
+              {
+                title: noticeEvent.data.title,
+                icon: "lu:CircleAlert",
+              },
+              React.createElement(
                 "div",
                 { className: "text-zinc-500" },
                 noticeEvent.data.message,
               ),
-            }),
+            ),
           {
             duration: 7000,
           },
