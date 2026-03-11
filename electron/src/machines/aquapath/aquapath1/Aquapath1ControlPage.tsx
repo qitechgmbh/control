@@ -106,8 +106,8 @@ export function Aquapath1ControlPage() {
 
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
-                label="Revolution Speed"
-                unit="%"
+                label="Fan Speed"
+                unit="rpm"
                 timeseries={back_revolutions}
                 renderValue={(value) => value.toFixed(1)}
               />
@@ -204,8 +204,8 @@ export function Aquapath1ControlPage() {
 
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
-                label="Revolution Speed"
-                unit="%"
+                label="Fan Speed"
+                unit="rpm"
                 timeseries={front_revolutions}
                 renderValue={(value) => value.toFixed(1)}
               />
