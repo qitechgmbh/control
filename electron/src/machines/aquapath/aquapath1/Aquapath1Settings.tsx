@@ -43,13 +43,13 @@ export function Aquapath1SettingsPage() {
     <Page>
       <ControlGrid columns={2}>
         <ControlCard title="Reservoir 1 (Back) Fan Revolutions">
-          <Label label="Set Max Fan Speed">
+          <Label label="Set Max Revolution Speed">
             <EditValue
-              title="Set Max Fan Speed"
+              title="Set Max Revolution Speed"
               min={0}
-              value={state?.fan_states.back.revolutions}
+              value={state?.fan_states.back.max_revolutions}
               max={100}
-              unit="rpm"
+              unit="%"
               renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
                 setBackRevolutions(val);
@@ -59,13 +59,13 @@ export function Aquapath1SettingsPage() {
         </ControlCard>
 
         <ControlCard title="Reservoir 2 (Front) Fan Revolutions">
-          <Label label="Set Max Fan Speed">
+          <Label label="Set Max Revolution Speed">
             <EditValue
-              title="Set Max Fan Speed"
+              title="Set Max Revolution Speed"
               min={0}
-              value={state?.fan_states.front.revolutions}
+              value={state?.fan_states.front.max_revolutions}
               max={100}
-              unit="rpm"
+              unit="%"
               renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
                 setFrontRevolutions(val);
