@@ -11,9 +11,9 @@ use crate::{
     MACHINE_AQUAPATH_V1, VENDOR_QITECH,
     aquapath1::{
         api::{
-            AquaPathV1Events, AquaPathV1Namespace, FanState, FanStates, FlowState, FlowStates,
-            LiveValuesEvent, ModeState, NoticeEvent, PidState, PidStates, StateEvent, TempState,
-            TempStates,
+            AquaPathV1Events, AquaPathV1Namespace, CoolingModeState, CoolingModeStates, FanState,
+            FanStates, FlowState, FlowStates, LiveValuesEvent, ModeState, NoticeEvent, PidState,
+            PidStates, StateEvent, TempState, TempStates,
         },
         controller::{ControlResetReason, Controller, ControllerNotice},
     },
@@ -139,6 +139,8 @@ impl AquaPathV1 {
             back_power: self.back_controller.get_current_power(),
             front_heating: self.front_controller.temperature.heating,
             back_heating: self.back_controller.temperature.heating,
+            front_cooling_mode: self.front_controller.cooling_mode,
+            back_cooling_mode: self.back_controller.cooling_mode,
             front_total_energy: self.front_controller.get_total_energy(),
             back_total_energy: self.back_controller.get_total_energy(),
         }
@@ -216,6 +218,14 @@ impl AquaPathV1 {
                         .back_controller
                         .max_revolutions
                         .get::<revolution_per_minute>(),
+                },
+            },
+            cooling_mode_states: CoolingModeStates {
+                front: CoolingModeState {
+                    mode: self.front_controller.cooling_mode,
+                },
+                back: CoolingModeState {
+                    mode: self.back_controller.cooling_mode,
                 },
             },
             tolerance_states: ToleranceStates {

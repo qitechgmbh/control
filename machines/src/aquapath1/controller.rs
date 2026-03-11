@@ -4,6 +4,7 @@ use ethercat_hal::io::encoder_input::EncoderInput;
 use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
+use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 use units::AngularVelocity;
 use units::angular_velocity::revolution_per_minute;
@@ -24,6 +25,13 @@ pub enum ControlResetReason {
 pub enum ControllerNotice {
     ControlReset(ControlResetReason),
     PumpStoppedLowFlow,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum CoolingMode {
+    Low,
+    Ramp,
+    Max,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -99,6 +107,7 @@ pub struct Controller {
 
     pub current_revolutions: AngularVelocity,
     pub max_revolutions: AngularVelocity,
+    pub cooling_mode: Option<CoolingMode>,
 
     pub heating_relais: DigitalOutput,
     pub temperature_sensor_in: TemperatureInput,
@@ -133,20 +142,24 @@ impl Controller {
         }
     }
 
-    fn cooling_target_rpm(temp_offset_c: f64, max_rpm: f64, config: CoolingRampConfig) -> f64 {
+    fn cooling_target_rpm(
+        temp_offset_c: f64,
+        max_rpm: f64,
+        config: CoolingRampConfig,
+    ) -> (f64, CoolingMode) {
         let full_band = config.full_band.get::<degree_celsius>();
         let near_band = config.near_band.get::<degree_celsius>();
         let tolerance = config.tolerance.get::<degree_celsius>();
 
         if temp_offset_c >= full_band {
             // Far above target: cool aggressively.
-            return max_rpm;
+            return (max_rpm, CoolingMode::Max);
         }
 
         if temp_offset_c >= near_band {
             // Mid-range: ramp from 60% to 100% of max.
             let t = (temp_offset_c - near_band) / (full_band - near_band);
-            return (0.6 + 0.4 * t) * max_rpm;
+            return ((0.6 + 0.4 * t) * max_rpm, CoolingMode::Ramp);
         }
 
         // Near target (but above cooling tolerance): low, smooth cooling.
@@ -154,7 +167,7 @@ impl Controller {
         let t = ((temp_offset_c - tolerance) / (near_band - tolerance)).clamp(0.0, 1.0);
         let lower = config.min_rpm.min(max_rpm);
         let upper = 0.6 * max_rpm;
-        lower + (upper - lower) * t
+        (lower + (upper - lower) * t, CoolingMode::Low)
     }
 
     pub fn new(
@@ -198,6 +211,7 @@ impl Controller {
 
             current_revolutions: AngularVelocity::new::<revolution_per_minute>(0.0),
             max_revolutions: max_revolutions,
+            cooling_mode: None,
 
             cooling_relais: cooling_relais,
             heating_relais: heating_relais,
@@ -318,6 +332,7 @@ impl Controller {
         self.cooling_relais.set(false);
         self.cooling_controller.set(0.0);
         self.current_revolutions = AngularVelocity::new::<revolution_per_minute>(0.0);
+        self.cooling_mode = None;
         self.temperature.cooling = false;
     }
 
@@ -584,15 +599,16 @@ impl Controller {
                 let max_rpm = max_revolutions.get::<revolution_per_minute>();
                 let temp_offset_c = temp_offset.get::<degree_celsius>();
 
-                let target_revolutions =
-                    Self::cooling_target_rpm(temp_offset_c, max_rpm, self.config.cooling)
-                        .clamp(0.0, max_rpm);
+                let (target_revolutions, cooling_mode) =
+                    Self::cooling_target_rpm(temp_offset_c, max_rpm, self.config.cooling);
+                let target_revolutions = target_revolutions.clamp(0.0, max_rpm);
 
                 if self.temperature.cooling {
                     self.cooling_controller
                         .set(target_revolutions as f32 / 10.0);
                     self.current_revolutions =
                         AngularVelocity::new::<revolution_per_minute>(target_revolutions);
+                    self.cooling_mode = Some(cooling_mode);
                 }
             } else {
                 self.set_cooling_state(false, now);

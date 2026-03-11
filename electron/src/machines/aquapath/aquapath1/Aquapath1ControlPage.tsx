@@ -20,6 +20,7 @@ export function Aquapath1ControlPage() {
     back_temperature,
     front_heating,
     back_heating,
+    front_cooling_mode,
     front_revolutions,
     back_revolutions,
     setAquapathMode,
@@ -44,6 +45,20 @@ export function Aquapath1ControlPage() {
     state?.fan_states.back.max_revolutions ?? 100;
   const reservoir2MaxRevolutions =
     state?.fan_states.front.max_revolutions ?? 100;
+  const reservoir2CoolingMode = front_cooling_mode;
+
+  const renderCoolingModeLabel = (mode: "Low" | "Ramp" | "Max" | null | undefined) => {
+    switch (mode) {
+      case "Low":
+        return "Low";
+      case "Ramp":
+        return "Ramp";
+      case "Max":
+        return "Max";
+      default:
+        return null;
+    }
+  };
 
   return (
     <Page>
@@ -201,13 +216,23 @@ export function Aquapath1ControlPage() {
               )}
 
               {reservoir2FanOn && (
-                <Badge
-                  variant="secondary"
-                  className="h-21 min-w-28 justify-center self-end border-transparent bg-sky-100 px-4 text-base text-sky-800 [&>svg]:size-5"
-                >
-                  <Icon name="lu:Fan" className="size-5" />
-                  Cooling
-                </Badge>
+                <div className="flex items-center gap-2 self-end">
+                  <Badge
+                    variant="secondary"
+                    className="h-21 min-w-28 justify-center border-transparent bg-sky-100 px-4 text-base text-sky-800 [&>svg]:size-5"
+                  >
+                    <Icon name="lu:Fan" className="size-5" />
+                    Cooling
+                  </Badge>
+                  {renderCoolingModeLabel(reservoir2CoolingMode) && (
+                    <Badge
+                      variant="outline"
+                      className="h-21 border-sky-200 px-3 text-sm text-sky-700"
+                    >
+                      {renderCoolingModeLabel(reservoir2CoolingMode)}
+                    </Badge>
+                  )}
+                </div>
               )}
             </div>
 
