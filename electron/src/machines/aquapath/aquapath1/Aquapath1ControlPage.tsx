@@ -40,6 +40,10 @@ export function Aquapath1ControlPage() {
   const reservoir2HeaterOn = front_heating;
   const reservoir1FanOn = (back_revolutions.current?.value ?? 0) > 0;
   const reservoir2FanOn = (front_revolutions.current?.value ?? 0) > 0;
+  const reservoir1MaxRevolutions =
+    state?.fan_states.back.max_revolutions ?? 100;
+  const reservoir2MaxRevolutions =
+    state?.fan_states.front.max_revolutions ?? 100;
 
   return (
     <Page>
@@ -106,10 +110,15 @@ export function Aquapath1ControlPage() {
 
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
-                label="Fan Speed"
-                unit="rpm"
+                label="Revolution Speed"
+                unit="%"
                 timeseries={back_revolutions}
-                renderValue={(value) => value.toFixed(1)}
+                renderValue={(value) =>
+                  (
+                    (value / Math.max(reservoir1MaxRevolutions, 1)) *
+                    100
+                  ).toFixed(1)
+                }
               />
             </div>
 
@@ -204,10 +213,15 @@ export function Aquapath1ControlPage() {
 
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
-                label="Fan Speed"
-                unit="rpm"
+                label="Revolution Speed"
+                unit="%"
                 timeseries={front_revolutions}
-                renderValue={(value) => value.toFixed(1)}
+                renderValue={(value) =>
+                  (
+                    (value / Math.max(reservoir2MaxRevolutions, 1)) *
+                    100
+                  ).toFixed(1)
+                }
               />
             </div>
 
