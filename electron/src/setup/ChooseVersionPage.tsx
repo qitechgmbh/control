@@ -10,12 +10,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffectAsync } from "@/lib/useEffectAsync";
 import { Collapsible, CollapsibleTrigger } from "@radix-ui/react-collapsible";
 import { CollapsibleContent } from "@/components/ui/collapsible";
-import {
-  listNixOSGenerations,
-  setNixOSGeneration,
-  deleteNixOSGeneration,
-  isNixOSAvailable,
-} from "@/helpers/nixos_helpers";
 import { useUpdateStore } from "@/stores/updateStore";
 import { useGithubSourceStore } from "@/stores/githubSourceStore";
 import { Input } from "@/components/ui/input";
@@ -51,6 +45,7 @@ export function ChooseVersionPage() {
   const [generationActionLoading, setGenerationActionLoading] = useState<
     string | null
   >(null);
+  const [deleteAllActionLoading, setdeleteAllActionLoading] = useState(false);
 
   const { githubSource, setGithubSource } = useGithubSourceStore();
 
@@ -259,20 +254,15 @@ export function ChooseVersionPage() {
 
   // Fetch NixOS generations
   useEffectAsync(async () => {
-    if (!isNixOSAvailable()) {
+    if (!window.nixos.isNixOSAvailable) {
       setNixosGenerations([]);
       return;
     }
 
     try {
-      const result = await listNixOSGenerations();
-      if (result.success) {
-        setNixosGenerations(result.generations);
-        setNixosError(undefined);
-      } else {
-        setNixosError(result.error || "Failed to fetch NixOS generations");
-        setNixosGenerations([]);
-      }
+      const generations = await window.nixos.listGenerations();
+      setNixosGenerations(generations);
+      setNixosError(undefined);
     } catch (error) {
       setNixosError(error instanceof Error ? error.message : String(error));
       setNixosGenerations([]);
@@ -289,18 +279,12 @@ export function ChooseVersionPage() {
   const handleSetGeneration = async (generationId: string) => {
     setGenerationActionLoading(generationId);
     try {
-      const result = await setNixOSGeneration(generationId);
-      if (result.success) {
-        // Refresh the generations list to show updated current generation
-        const updatedResult = await listNixOSGenerations();
-        if (updatedResult.success) {
-          setNixosGenerations(updatedResult.generations);
-        }
-        console.log(`Successfully set generation ${generationId}`);
-      } else {
-        console.error(`Failed to set generation: ${result.error}`);
-        setNixosError(result.error || "Failed to set generation");
-      }
+      await window.nixos.setGeneration(generationId);
+      // Refresh the generations list to show updated current generation
+      const generations = await window.nixos.listGenerations();
+      setNixosGenerations(generations);
+
+      console.log(`Successfully set generation ${generationId}`);
     } catch (error) {
       console.error("Error setting generation:", error);
       setNixosError(error instanceof Error ? error.message : String(error));
@@ -320,25 +304,45 @@ export function ChooseVersionPage() {
 
     setGenerationActionLoading(generationId);
     try {
-      const result = await deleteNixOSGeneration(generationId);
-      if (result.success) {
-        // Refresh the generations list
-        const updatedResult = await listNixOSGenerations();
-        if (updatedResult.success) {
-          setNixosGenerations(updatedResult.generations);
-        }
-        console.log(
-          `Successfully deleted generation ${generationId} and updated bootloader`,
-        );
-      } else {
-        console.error(`Failed to delete generation: ${result.error}`);
-        setNixosError(result.error || "Failed to delete generation");
-      }
+      await window.nixos.deleteGeneration(generationId);
+
+      // Refresh the generations list
+      const generations = await window.nixos.listGenerations();
+      setNixosGenerations(generations);
+
+      console.log(
+        `Successfully deleted generation ${generationId} and updated bootloader`,
+      );
     } catch (error) {
       console.error("Error deleting generation:", error);
       setNixosError(error instanceof Error ? error.message : String(error));
     } finally {
       setGenerationActionLoading(null);
+    }
+  };
+
+  const handleDeleteAllOldGeneration = async () => {
+    if (
+      !confirm(
+        `Are you sure you want to delete all old generations? This will also update the bootloader menu. This action cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    setdeleteAllActionLoading(true);
+    try {
+      await window.nixos.deleteAllOldGenerations();
+
+      // Refresh the generations list
+      const generations = await window.nixos.listGenerations();
+      setNixosGenerations(generations);
+
+      console.log(`Successfully deleted all old generations`);
+    } catch (error) {
+      console.error("Error deleting generation:", error);
+      setNixosError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setdeleteAllActionLoading(false);
     }
   };
 
@@ -357,7 +361,7 @@ export function ChooseVersionPage() {
         </Alert>
       </div>
 
-      {!isNixOSAvailable() && (
+      {!window.nixos.isNixOSAvailable && (
         <div className="flex items-center justify-center">
           <Alert title="NixOS Not Available" variant="warning">
             NixOS generation management is not available on this system.
@@ -553,7 +557,7 @@ export function ChooseVersionPage() {
       <SectionTitle title="Installed Versions"></SectionTitle>
 
       {nixosError && (
-        <span className="w-max">
+        <span className="w-full">
           <Alert title="Error" variant="error">
             {nixosError}
           </Alert>
@@ -573,10 +577,15 @@ export function ChooseVersionPage() {
           ))}
         </div>
       ) : null}
-      {nixosGenerations === undefined && isNixOSAvailable() && (
+      {nixosGenerations === undefined && window.nixos.isNixOSAvailable && (
         <LoadingSpinner />
       )}
       {nixosGenerations?.length === 0 && <>No NixOS generations found</>}
+
+      <DeleteAllButton
+        onDeleteAll={() => handleDeleteAllOldGeneration()}
+        isLoading={deleteAllActionLoading}
+      />
     </Page>
   );
 }
@@ -640,6 +649,23 @@ function GenerationButton({
         </TouchButton>
       </div>
     </div>
+  );
+}
+
+type DeleteAllButtonProps = {
+  isLoading: boolean;
+  onDeleteAll: () => void;
+};
+function DeleteAllButton({ isLoading, onDeleteAll }: DeleteAllButtonProps) {
+  return (
+    <TouchButton
+      className="w-full"
+      variant="destructive"
+      disabled={isLoading}
+      onClick={onDeleteAll}
+    >
+      {isLoading && <LoadingSpinner />} Delete All Versions
+    </TouchButton>
   );
 }
 
