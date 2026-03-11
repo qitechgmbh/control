@@ -26,41 +26,41 @@ export function Aquapath1GraphPage() {
   const syncHook = useGraphSync("aquapath-group");
 
   const reservoir1TempTarget =
-    state?.temperature_states?.front.target_temperature ?? 0;
-  const reservoir2TempTarget =
     state?.temperature_states?.back.target_temperature ?? 0;
+  const reservoir2TempTarget =
+    state?.temperature_states?.front.target_temperature ?? 0;
 
   return (
     <Page className="pb-27">
       <div className="flex flex-col gap-4">
         <FlowGraph
           syncHook={syncHook}
-          flow={front_flow}
-          name={"Reservoir 1 (Front) Flow"}
+          flow={back_flow}
+          name={"Reservoir 1 (Back) Flow"}
           id={"reservoir_1_flow"}
         />
         <FlowGraph
           syncHook={syncHook}
-          flow={back_flow}
-          name={"Reservoir 2 (Back) Flow"}
+          flow={front_flow}
+          name={"Reservoir 2 (Front) Flow"}
           id={"reservoir_2_flow"}
-        />
-        <TemperatureGraph
-          syncHook={syncHook}
-          temp_in={front_temperature}
-          temp_out={front_temp_reservoir}
-          targetTemp={reservoir1TempTarget}
-          targetSeries={targetFrontTemperature}
-          name={"Reservoir 1 (Front) Temperature"}
-          id={"reservoir_1_temp"}
         />
         <TemperatureGraph
           syncHook={syncHook}
           temp_in={back_temperature}
           temp_out={back_temp_reservoir}
-          targetTemp={reservoir2TempTarget}
+          targetTemp={reservoir1TempTarget}
           targetSeries={targetBackTemperature}
-          name={"Reservoir 2 (Back) Temperature"}
+          name={"Reservoir 1 (Back) Temperature"}
+          id={"reservoir_1_temp"}
+        />
+        <TemperatureGraph
+          syncHook={syncHook}
+          temp_in={front_temperature}
+          temp_out={front_temp_reservoir}
+          targetTemp={reservoir2TempTarget}
+          targetSeries={targetFrontTemperature}
+          name={"Reservoir 2 (Front) Temperature"}
           id={"reservoir_2_temp"}
         />
       </div>
