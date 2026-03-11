@@ -86,7 +86,7 @@ export function Aquapath1ControlPage() {
               {reservoir1HeaterOn && (
                 <Badge
                   variant="default"
-                  className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
+                  className="h-21 min-w-28 justify-center self-end border-transparent bg-red-500 px-4 text-base text-white [&>svg]:size-5"
                 >
                   <Icon name="lu:Flame" className="size-5" />
                   Heating
@@ -96,7 +96,7 @@ export function Aquapath1ControlPage() {
               {reservoir1FanOn && (
                 <Badge
                   variant="secondary"
-                  className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
+                  className="h-21 min-w-28 justify-center self-end border-transparent bg-sky-100 px-4 text-base text-sky-800 [&>svg]:size-5"
                 >
                   <Icon name="lu:Fan" className="size-5" />
                   Cooling
@@ -184,7 +184,7 @@ export function Aquapath1ControlPage() {
               {reservoir2HeaterOn && (
                 <Badge
                   variant="default"
-                  className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
+                  className="h-21 min-w-28 justify-center self-end border-transparent bg-red-500 px-4 text-base text-white [&>svg]:size-5"
                 >
                   <Icon name="lu:Flame" className="size-5" />
                   Heating
@@ -194,7 +194,7 @@ export function Aquapath1ControlPage() {
               {reservoir2FanOn && (
                 <Badge
                   variant="secondary"
-                  className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
+                  className="h-21 min-w-28 justify-center self-end border-transparent bg-sky-100 px-4 text-base text-sky-800 [&>svg]:size-5"
                 >
                   <Icon name="lu:Fan" className="size-5" />
                   Cooling
