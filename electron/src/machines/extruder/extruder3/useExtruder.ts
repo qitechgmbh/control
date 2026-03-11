@@ -8,34 +8,31 @@ import { z } from "zod";
 import { StateEvent, Mode, useExtruder3Namespace } from "./extruder3Namespace";
 import { useEffect, useMemo } from "react";
 import { produce } from "immer";
+import { useMachines } from "@/client/useMachines";
+
 
 export function useExtruder3() {
   const { serial: serialString } = extruder3Route.useParams();
+  const machines = useMachines();
 
-  // Memoize the machine identification to keep it stable between renders
   const machineIdentification: MachineIdentificationUnique = useMemo(() => {
     const serial = parseInt(serialString);
-
     if (isNaN(serial)) {
-      toastError(
-        "Invalid Serial Number",
-        `"${serialString}" is not a valid serial number.`,
-      );
-
-      return {
-        machine_identification: {
-          vendor: 0,
-          machine: 0,
-        },
-        serial: 0,
-      };
+      toastError("Invalid Serial Number", `"${serialString}" is not a valid serial number.`);
+      return { machine_identification: { vendor: 0, machine: 0 }, serial: 0 };
     }
 
+    // Look up the actual machine identification from the connected device
+    const machine = machines.find(
+      (m) => m.machine_identification_unique.serial === serial
+    );
+
     return {
-      machine_identification: extruder3.machine_identification,
+      machine_identification: machine?.machine_identification_unique.machine_identification
+        ?? { vendor: 0, machine: 0 },
       serial,
     };
-  }, [serialString]);
+  }, [serialString, machines]);
 
   // Get consolidated state and live values from namespace
   const {

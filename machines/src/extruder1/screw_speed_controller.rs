@@ -49,6 +49,7 @@ pub struct ScrewSpeedController {
     autotune_high_frequency: Frequency,
     /// Bounded relay low output used during auto-tuning (current_freq - step, clamped)
     autotune_low_frequency: Frequency,
+    reversed: bool,
 }
 
 impl ScrewSpeedController {
@@ -59,6 +60,7 @@ impl ScrewSpeedController {
         pressure_sensor: AnalogInput,
         transmission: FixedTransmission,
         motor_poles: usize,
+        reversed: bool,
     ) -> Self {
         let now = Instant::now();
         Self {
@@ -83,6 +85,7 @@ impl ScrewSpeedController {
             pid_autotuner: None,
             autotune_high_frequency: Frequency::new::<hertz>(0.0),
             autotune_low_frequency: Frequency::new::<hertz>(0.0),
+            reversed,
         }
     }
 
@@ -121,7 +124,7 @@ impl ScrewSpeedController {
     pub fn set_rotation_direction(&mut self, forward: bool) {
         self.forward_rotation = forward;
         if self.motor_on {
-            self.inverter.set_rotation(self.forward_rotation);
+            self.inverter.set_rotation(forward ^ self.reversed);
         }
     }
 
@@ -165,7 +168,7 @@ impl ScrewSpeedController {
     }
 
     pub fn turn_motor_on(&mut self) {
-        self.inverter.set_rotation(self.forward_rotation);
+        self.inverter.set_rotation(self.forward_rotation ^ self.reversed);
         self.motor_on = true;
     }
 
