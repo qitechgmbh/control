@@ -47,7 +47,9 @@ export function Aquapath1ControlPage() {
     state?.fan_states.front.max_revolutions ?? 100;
   const reservoir2CoolingMode = front_cooling_mode;
 
-  const renderCoolingModeLabel = (mode: "Low" | "Ramp" | "Max" | null | undefined) => {
+  const renderCoolingModeLabel = (
+    mode: "Low" | "Ramp" | "Max" | null | undefined,
+  ) => {
     switch (mode) {
       case "Low":
         return "Low";
