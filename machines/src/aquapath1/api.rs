@@ -1,4 +1,4 @@
-use super::{AquaPathV1, AquaPathV1Mode};
+use super::{AquaPathV1, AquaPathV1Mode, controller::CoolingMode};
 use crate::{MachineApi, MachineMessage};
 use control_core::socketio::{
     event::{Event, GenericEvent},
@@ -26,6 +26,8 @@ pub struct LiveValuesEvent {
     pub back_power: f64,
     pub front_heating: bool,
     pub back_heating: bool,
+    pub front_cooling_mode: Option<CoolingMode>,
+    pub back_cooling_mode: Option<CoolingMode>,
     pub front_total_energy: f64,
     pub back_total_energy: f64,
 }
@@ -50,6 +52,7 @@ pub struct StateEvent {
     pub flow_states: FlowStates,
     pub temperature_states: TempStates,
     pub fan_states: FanStates,
+    pub cooling_mode_states: CoolingModeStates,
     pub tolerance_states: ToleranceStates,
     pub pid_states: PidStates,
 }
@@ -108,6 +111,17 @@ pub struct FanState {
 pub struct FanStates {
     pub front: FanState,
     pub back: FanState,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct CoolingModeState {
+    pub mode: Option<CoolingMode>,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct CoolingModeStates {
+    pub front: CoolingModeState,
+    pub back: CoolingModeState,
 }
 
 #[derive(Serialize, Debug, Clone)]

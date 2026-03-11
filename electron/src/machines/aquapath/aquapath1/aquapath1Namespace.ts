@@ -63,6 +63,15 @@ export const fanStatesSchema = z.object({
   front: fanStateSchema,
 });
 
+export const coolingModeSchema = z.enum(["Low", "Ramp", "Max"]);
+export const coolingModeStateSchema = z.object({
+  mode: coolingModeSchema.nullable(),
+});
+export const coolingModeStatesSchema = z.object({
+  back: coolingModeStateSchema,
+  front: coolingModeStateSchema,
+});
+
 export const toleranceStateSchema = z.object({
   heating: z.number(),
   cooling: z.number(),
@@ -98,6 +107,8 @@ export const liveValuesEventDataSchema = z.object({
   front_power: z.number(),
   front_heating: z.boolean().optional().default(false),
   back_heating: z.boolean().optional().default(false),
+  front_cooling_mode: coolingModeSchema.nullable().optional().default(null),
+  back_cooling_mode: coolingModeSchema.nullable().optional().default(null),
   front_total_energy: z.number(),
   back_total_energy: z.number(),
 });
@@ -112,6 +123,7 @@ export const stateEventDataSchema = z.object({
   flow_states: flowStatesSchema,
   temperature_states: tempStatesSchema,
   fan_states: fanStatesSchema,
+  cooling_mode_states: coolingModeStatesSchema,
   tolerance_states: toleranceStatesSchema,
   pid_states: pidStatesSchema,
 });
@@ -156,6 +168,8 @@ export type Aquapath1NamespaceStore = {
   back_total_energy: TimeSeries;
   front_heating: boolean;
   back_heating: boolean;
+  front_cooling_mode: "Low" | "Ramp" | "Max" | null;
+  back_cooling_mode: "Low" | "Ramp" | "Max" | null;
   targetFrontTemperature: TimeSeries;
   targetBackTemperature: TimeSeries;
 };
@@ -215,6 +229,8 @@ export const createAquapath1NamespaceStore =
         back_total_energy: back_total_energy,
         front_heating: false,
         back_heating: false,
+        front_cooling_mode: null,
+        back_cooling_mode: null,
         targetFrontTemperature: targetFrontTemperature,
         targetBackTemperature: targetBackTemperature,
       };
@@ -351,6 +367,8 @@ export function aquapath1MessageHandler(
           }),
           front_heating: liveValuesEvent.data.front_heating,
           back_heating: liveValuesEvent.data.back_heating,
+          front_cooling_mode: liveValuesEvent.data.front_cooling_mode,
+          back_cooling_mode: liveValuesEvent.data.back_cooling_mode,
         }));
       } else {
         handleUnhandledEventError(eventName);

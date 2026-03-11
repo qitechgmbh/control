@@ -56,6 +56,8 @@ export function useAquapath1() {
     back_total_energy,
     front_heating,
     back_heating,
+    front_cooling_mode,
+    back_cooling_mode,
     targetFrontTemperature,
     targetBackTemperature,
   } = useAquapath1Namespace(machineIdentification);
@@ -404,6 +406,8 @@ export function useAquapath1() {
     back_total_energy,
     front_heating,
     back_heating,
+    front_cooling_mode,
+    back_cooling_mode,
     targetFrontTemperature,
     targetBackTemperature,
 
