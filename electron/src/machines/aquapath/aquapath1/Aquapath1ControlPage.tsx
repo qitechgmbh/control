@@ -7,8 +7,8 @@ import { useAquapath1 } from "./useAquapath";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { Badge } from "@/components/ui/badge";
+import { Icon } from "@/components/Icon";
 import { Label } from "@/control/Label";
-import { HeatingZone } from "../../extruder/HeatingZone";
 
 export function Aquapath1ControlPage() {
   const {
@@ -18,44 +18,132 @@ export function Aquapath1ControlPage() {
     back_flow,
     front_temperature,
     back_temperature,
+    front_heating,
+    back_heating,
     front_revolutions,
     back_revolutions,
-    front_power,
-    back_power,
-    front_total_energy,
-    back_total_energy,
     setAquapathMode,
     setFrontTemperature,
     setBackTemperature,
     setFrontFlow,
     setBackFlow,
   } = useAquapath1();
-  const frontTargetTemperature =
-    state?.temperature_states?.front.target_temperature ?? 0;
-  const backTargetTemperature =
+  const reservoir1TargetTemperature =
     state?.temperature_states?.back.target_temperature ?? 0;
+  const reservoir2TargetTemperature =
+    state?.temperature_states?.front.target_temperature ?? 0;
+  const minSettableTemperature = state?.ambient_temperature_calibration ?? 22;
 
-  const frontCurrentTemperature =
-    state?.temperature_states?.front.temperature ?? 0;
-  const backCurrentTemperature =
-    state?.temperature_states?.back.temperature ?? 0;
-
-  const frontCoolingBoundary =
-    frontTargetTemperature + (state?.tolerance_states.front.cooling ?? 0);
-  const frontHeatingBoundary =
-    frontTargetTemperature - (state?.tolerance_states.front.heating ?? 0);
-  const backCoolingBoundary =
-    backTargetTemperature + (state?.tolerance_states.back.cooling ?? 0);
-  const backHeatingBoundary =
-    backTargetTemperature - (state?.tolerance_states.back.heating ?? 0);
-
-  const frontTargetFlow = state?.flow_states.front.should_flow ?? false;
-  const backTargetFlow = state?.flow_states.back.should_flow ?? false;
+  const reservoir1TargetFlow = state?.flow_states.back.should_flow ?? false;
+  const reservoir2TargetFlow = state?.flow_states.front.should_flow ?? false;
+  const reservoir1HeaterOn = back_heating;
+  const reservoir2HeaterOn = front_heating;
+  const reservoir1FanOn = (back_revolutions.current?.value ?? 0) > 0;
+  const reservoir2FanOn = (front_revolutions.current?.value ?? 0) > 0;
 
   return (
     <Page>
       <ControlGrid columns={2}>
-        <ControlCard title="Reservoir 1">
+        <ControlCard title="Reservoir 1 (Back)">
+          <div className="grid grid-rows-5 gap-4">
+            <div className="flex flex-row">
+              <TimeSeriesValueNumeric
+                label="Flow"
+                unit="l/min"
+                timeseries={back_flow}
+                renderValue={(value) => value.toFixed(1)}
+              />
+            </div>
+
+            <div className="flex flex-row">
+              <TimeSeriesValueNumeric
+                label="Temperature"
+                unit="C"
+                timeseries={back_temperature}
+                renderValue={(value) => value.toFixed(1)}
+              />
+            </div>
+
+            <div className="flex flex-row items-end gap-4">
+              <Label label="Set Target Temperature">
+                <EditValue
+                  title="Set Target Temperature"
+                  min={minSettableTemperature}
+                  value={reservoir1TargetTemperature}
+                  max={80}
+                  unit="C"
+                  step={0.1}
+                  triggerClassName="h-21"
+                  renderValue={(value) => value.toFixed(1)}
+                  onChange={(val) => {
+                    setBackTemperature(Math.max(val, minSettableTemperature));
+                  }}
+                  defaultValue={
+                    defaultState?.temperature_states.back.target_temperature
+                  }
+                />
+              </Label>
+
+              {reservoir1HeaterOn && (
+                <Badge
+                  variant="hot"
+                  className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
+                >
+                  <Icon name="lu:Flame" className="size-5" />
+                  Heating
+                </Badge>
+              )}
+
+              {reservoir1FanOn && (
+                <Badge
+                  variant="cold"
+                  className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
+                >
+                  <Icon name="lu:Fan" className="size-5" />
+                  Cooling
+                </Badge>
+              )}
+            </div>
+
+            <div className="flex flex-row">
+              <TimeSeriesValueNumeric
+                label="Revolution Speed"
+                unit="%"
+                timeseries={back_revolutions}
+                renderValue={(value) => value.toFixed(1)}
+              />
+            </div>
+
+            <div className="flex flex-row">
+              <Label label="Pump">
+                <SelectionGroup<"On" | "Off">
+                  value={reservoir1TargetFlow ? "On" : "Off"}
+                  orientation="vertical"
+                  className="grid h-full grid-cols-2 gap-2"
+                  options={{
+                    Off: {
+                      children: "Off",
+                      icon: "lu:CirclePause",
+                      isActiveClassName: "bg-green-600",
+                      className: "h-full",
+                    },
+                    On: {
+                      children: "On",
+                      icon: "lu:CirclePlay",
+                      isActiveClassName: "bg-green-600",
+                      className: "h-full",
+                    },
+                  }}
+                  onChange={(value) => {
+                    setBackFlow(value == "On");
+                  }}
+                />
+              </Label>
+            </div>
+          </div>
+        </ControlCard>
+
+        <ControlCard title="Reservoir 2 (Front)">
           <div className="grid grid-rows-5 gap-4">
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
@@ -75,18 +163,19 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            <div className="flex flex-row gap-4">
+            <div className="flex flex-row items-end gap-4">
               <Label label="Set Target Temperature">
                 <EditValue
                   title="Set Target Temperature"
-                  min={0}
-                  value={frontTargetTemperature}
+                  min={minSettableTemperature}
+                  value={reservoir2TargetTemperature}
                   max={80}
                   unit="C"
                   step={0.1}
+                  triggerClassName="h-21"
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
-                    setFrontTemperature(val);
+                    setFrontTemperature(Math.max(val, minSettableTemperature));
                   }}
                   defaultValue={
                     defaultState?.temperature_states.front.target_temperature
@@ -94,18 +183,25 @@ export function Aquapath1ControlPage() {
                 />
               </Label>
 
-              {frontCurrentTemperature < frontHeatingBoundary &&
-                (state?.flow_states.front.flow ?? 0) > 0 && (
-                  <Badge variant="default">
-                    Power: {front_power.current?.value} W<br />
-                    Total: {front_total_energy.current?.value} kWh
-                  </Badge>
-                )}
-              {frontCurrentTemperature > frontCoolingBoundary &&
-                frontTargetFlow &&
-                (state?.flow_states.front.flow ?? 0) && (
-                  <Badge variant="secondary">Cooling</Badge>
-                )}
+              {reservoir2HeaterOn && (
+                <Badge
+                  variant="hot"
+                  className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
+                >
+                  <Icon name="lu:Flame" className="size-5" />
+                  Heating
+                </Badge>
+              )}
+
+              {reservoir2FanOn && (
+                <Badge
+                  variant="cold"
+                  className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
+                >
+                  <Icon name="lu:Fan" className="size-5" />
+                  Cooling
+                </Badge>
+              )}
             </div>
 
             <div className="flex flex-row">
@@ -120,7 +216,7 @@ export function Aquapath1ControlPage() {
             <div className="flex flex-row">
               <Label label="Pump">
                 <SelectionGroup<"On" | "Off">
-                  value={frontTargetFlow ? "On" : "Off"}
+                  value={reservoir2TargetFlow ? "On" : "Off"}
                   orientation="vertical"
                   className="grid h-full grid-cols-2 gap-2"
                   options={{
@@ -139,98 +235,6 @@ export function Aquapath1ControlPage() {
                   }}
                   onChange={(value) => {
                     setFrontFlow(value == "On");
-                  }}
-                />
-              </Label>
-            </div>
-          </div>
-        </ControlCard>
-
-        <ControlCard title="Reservoir 2">
-          <div className="grid grid-rows-4 gap-4">
-            <div className="flex flex-row">
-              <TimeSeriesValueNumeric
-                label="Flow"
-                unit="l/min"
-                timeseries={back_flow}
-                renderValue={(value) => value.toFixed(1)}
-              />
-            </div>
-
-            <div className="flex flex-row">
-              <TimeSeriesValueNumeric
-                label="Temperature"
-                unit="C"
-                timeseries={back_temperature}
-                renderValue={(value) => value.toFixed(1)}
-              />
-            </div>
-
-            <div className="flex flex-row gap-4">
-              <Label label="Set Target Temperature">
-                <EditValue
-                  title="Set Target Temperature"
-                  min={0}
-                  value={backTargetTemperature}
-                  max={80}
-                  unit="C"
-                  step={0.1}
-                  renderValue={(value) => value.toFixed(1)}
-                  onChange={(val) => {
-                    setBackTemperature(val);
-                  }}
-                  defaultValue={
-                    defaultState?.temperature_states.back.target_temperature
-                  }
-                />
-              </Label>
-
-              {backCurrentTemperature < backHeatingBoundary &&
-                backTargetFlow &&
-                (state?.flow_states.front.flow ?? 0) && (
-                  <Badge variant="default">
-                    Power: {back_power.current?.value} W<br />
-                    Total: {back_total_energy.current?.value} kWh
-                  </Badge>
-                )}
-              {backCurrentTemperature > backCoolingBoundary &&
-                frontTargetFlow &&
-                (state?.flow_states.front.flow ?? 0) && (
-                  <Badge variant="secondary">Cooling</Badge>
-                )}
-            </div>
-
-            <div className="flex flex-row">
-              <TimeSeriesValueNumeric
-                label="Revolution Speed"
-                unit="%"
-                timeseries={back_revolutions}
-                renderValue={(value) => value.toFixed(1)}
-              />
-            </div>
-
-            <div className="flex flex-row">
-              <Label label="Pump">
-                <SelectionGroup<"On" | "Off">
-                  value={backTargetFlow ? "On" : "Off"}
-                  orientation="vertical"
-                  className="grid h-full grid-cols-2 gap-2"
-                  options={{
-                    Off: {
-                      children: "Off",
-                      icon: "lu:CirclePause",
-                      isActiveClassName: "bg-green-600",
-                      className: "h-full",
-                    },
-                    On: {
-                      children: "On",
-                      icon: "lu:CirclePlay",
-                      isActiveClassName: "bg-green-600",
-                      className: "h-full",
-                    },
-                  }}
-                  onChange={(value) => {
-                    setBackFlow(value == "On");
                   }}
                 />
               </Label>

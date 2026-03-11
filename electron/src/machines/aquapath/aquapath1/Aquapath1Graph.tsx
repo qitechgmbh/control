@@ -23,41 +23,41 @@ export function Aquapath1GraphPage() {
 
   const syncHook = useGraphSync("aquapath-group");
 
-  const front_temp_target =
-    state?.temperature_states?.front.target_temperature ?? 0;
-  const back_temp_target =
+  const reservoir1TempTarget =
     state?.temperature_states?.back.target_temperature ?? 0;
+  const reservoir2TempTarget =
+    state?.temperature_states?.front.target_temperature ?? 0;
 
   return (
     <Page className="pb-27">
       <div className="flex flex-col gap-4">
         <FlowGraph
           syncHook={syncHook}
-          flow={front_flow}
-          name={"Front Flow"}
-          id={"front_flow"}
+          flow={back_flow}
+          name={"Reservoir 1 (Back) Flow"}
+          id={"reservoir_1_flow"}
         />
         <FlowGraph
           syncHook={syncHook}
-          flow={back_flow}
-          name={"Back Flow"}
-          id={"back_flow"}
-        />
-        <TemperatureGraph
-          syncHook={syncHook}
-          temp_in={front_temperature}
-          temp_out={front_temp_reservoir}
-          targetTemp={front_temp_target}
-          name={"Front Temperature"}
-          id={"front_temp"}
+          flow={front_flow}
+          name={"Reservoir 2 (Front) Flow"}
+          id={"reservoir_2_flow"}
         />
         <TemperatureGraph
           syncHook={syncHook}
           temp_in={back_temperature}
           temp_out={back_temp_reservoir}
-          targetTemp={back_temp_target}
-          name={"Back Temperature"}
-          id={"back_temp"}
+          targetTemp={reservoir1TempTarget}
+          name={"Reservoir 1 (Back) Temperature"}
+          id={"reservoir_1_temp"}
+        />
+        <TemperatureGraph
+          syncHook={syncHook}
+          temp_in={front_temperature}
+          temp_out={front_temp_reservoir}
+          targetTemp={reservoir2TempTarget}
+          name={"Reservoir 2 (Front) Temperature"}
+          id={"reservoir_2_temp"}
         />
       </div>
       <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />

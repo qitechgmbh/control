@@ -1,10 +1,12 @@
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
-    validate_no_role_dublicates, validate_same_machine_identification_unique,
+    validate_no_role_duplicates, validate_same_machine_identification_unique,
 };
 
 use super::{
-    AquaPathV1, AquaPathV1Mode, Flow, Temperature, api::AquaPathV1Namespace, controller::Controller,
+    AquaPathV1, AquaPathV1Mode, Flow, Temperature,
+    api::AquaPathV1Namespace,
+    controller::{Controller, ControllerConfig},
 };
 use anyhow::Error;
 use ethercat_hal::{
@@ -40,7 +42,7 @@ impl MachineNewTrait for AquaPathV1 {
             .map(|device_identification| device_identification.clone())
             .collect::<Vec<_>>();
         validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_dublicates(&device_identification)?;
+        validate_no_role_duplicates(&device_identification)?;
 
         let hardware = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,
@@ -134,28 +136,12 @@ impl MachineNewTrait for AquaPathV1 {
 
             let ao1 = AnalogOutput::new(el4002.clone(), EL4002Port::AO1);
             let ao2 = AnalogOutput::new(el4002.clone(), EL4002Port::AO2);
-
-            let front_controller = Controller::new(
-                0.10,
-                0.0,
-                0.015,
-                Temperature::default(),
-                ThermodynamicTemperature::new::<degree_celsius>(25.0),
-                ao1,
-                do4,
-                do2,
-                t1,
-                t2,
-                AngularVelocity::new::<revolution_per_minute>(100.0),
-                Flow::default(),
-                do1,
-                enc1,
-            );
+            let controller_config = ControllerConfig::default();
 
             let back_controller = Controller::new(
-                0.10,
-                0.0,
-                0.015,
+                AquaPathV1::DEFAULT_PID_KP,
+                AquaPathV1::DEFAULT_PID_KI,
+                AquaPathV1::DEFAULT_PID_KD,
                 Temperature::default(),
                 ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao2,
@@ -167,6 +153,25 @@ impl MachineNewTrait for AquaPathV1 {
                 Flow::default(),
                 do5,
                 enc2,
+                controller_config,
+            );
+
+            let front_controller = Controller::new(
+                AquaPathV1::DEFAULT_PID_KP,
+                AquaPathV1::DEFAULT_PID_KI,
+                AquaPathV1::DEFAULT_PID_KD,
+                Temperature::default(),
+                ThermodynamicTemperature::new::<degree_celsius>(25.0),
+                ao1,
+                do4,
+                do2,
+                t1,
+                t2,
+                AngularVelocity::new::<revolution_per_minute>(100.0),
+                Flow::default(),
+                do1,
+                enc1,
+                controller_config,
             );
             let (sender, receiver) = smol::channel::unbounded();
             let mut water_cooling = Self {
@@ -178,6 +183,9 @@ impl MachineNewTrait for AquaPathV1 {
                     namespace: params.namespace.clone(),
                 },
                 mode: AquaPathV1Mode::Standby,
+                ambient_temperature_calibration: ThermodynamicTemperature::new::<degree_celsius>(
+                    22.0,
+                ),
                 last_measurement_emit: Instant::now(),
                 front_controller,
                 back_controller,
