@@ -12,9 +12,10 @@ use crate::{
     aquapath1::{
         api::{
             AquaPathV1Events, AquaPathV1Namespace, FanState, FanStates, FlowState, FlowStates,
-            LiveValuesEvent, ModeState, StateEvent, TempState, TempStates,
+            LiveValuesEvent, ModeState, NoticeEvent, PidState, PidStates, StateEvent, TempState,
+            TempStates,
         },
-        controller::Controller,
+        controller::{ControlResetReason, Controller, ControllerNotice},
     },
     machine_identification::MachineIdentification,
 };
@@ -91,6 +92,7 @@ pub struct AquaPathV1 {
     machine_identification_unique: MachineIdentificationUnique,
     namespace: AquaPathV1Namespace,
     mode: AquaPathV1Mode,
+    ambient_temperature_calibration: ThermodynamicTemperature,
     last_measurement_emit: Instant,
     front_controller: Controller,
     back_controller: Controller,
@@ -102,15 +104,15 @@ impl AquaPathV1 {
         vendor: VENDOR_QITECH,
         machine: MACHINE_AQUAPATH_V1,
     };
-}
 
-impl std::fmt::Display for AquaPathV1 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Aquapath")
-    }
-}
+    // in °C
+    pub const DEFAULT_HEATING_TOLERANCE: f64 = 0.4;
+    // in °C
+    pub const DEFAULT_COOLING_TOLERANCE: f64 = 0.8;
+    pub const DEFAULT_PID_KP: f64 = 0.16;
+    pub const DEFAULT_PID_KI: f64 = 0.02;
+    pub const DEFAULT_PID_KD: f64 = 0.0;
 
-impl AquaPathV1 {
     pub fn get_live_values(&self) -> LiveValuesEvent {
         LiveValuesEvent {
             front_temperature: self
@@ -135,6 +137,8 @@ impl AquaPathV1 {
                 .get::<revolution_per_minute>(),
             front_power: self.front_controller.get_current_power(),
             back_power: self.back_controller.get_current_power(),
+            front_heating: self.front_controller.temperature.heating,
+            back_heating: self.back_controller.temperature.heating,
             front_total_energy: self.front_controller.get_total_energy(),
             back_total_energy: self.back_controller.get_total_energy(),
         }
@@ -151,6 +155,14 @@ impl AquaPathV1 {
             mode_state: ModeState {
                 mode: self.mode.clone(),
             },
+            ambient_temperature_calibration: self
+                .ambient_temperature_calibration
+                .get::<degree_celsius>(),
+            default_heating_tolerance: Self::DEFAULT_HEATING_TOLERANCE,
+            default_cooling_tolerance: Self::DEFAULT_COOLING_TOLERANCE,
+            default_pid_kp: Self::DEFAULT_PID_KP,
+            default_pid_ki: Self::DEFAULT_PID_KI,
+            default_pid_kd: Self::DEFAULT_PID_KD,
             temperature_states: TempStates {
                 front: TempState {
                     temperature: self
@@ -228,12 +240,78 @@ impl AquaPathV1 {
                         .get::<degree_celsius>(),
                 },
             },
+            pid_states: PidStates {
+                front: PidState {
+                    kp: self.front_controller.get_pid_kp(),
+                    ki: self.front_controller.get_pid_ki(),
+                    kd: self.front_controller.get_pid_kd(),
+                },
+                back: PidState {
+                    kp: self.back_controller.get_pid_kp(),
+                    ki: self.back_controller.get_pid_ki(),
+                    kd: self.back_controller.get_pid_kd(),
+                },
+            },
         }
     }
 
     pub fn emit_state(&mut self) {
         let event = self.get_state().build();
         self.namespace.emit(AquaPathV1Events::State(event));
+    }
+
+    pub fn emit_notice(&mut self, title: impl Into<String>, message: impl Into<String>) {
+        let event = NoticeEvent {
+            title: title.into(),
+            message: message.into(),
+        }
+        .build();
+        self.namespace.emit(AquaPathV1Events::Notice(event));
+    }
+
+    fn emit_controller_notice(&mut self, side_label: &str, notice: ControllerNotice) {
+        match notice {
+            ControllerNotice::ControlReset(reason) => {
+                let message = match reason {
+                    ControlResetReason::TargetTemperatureChanged => {
+                        "Target temperature changed. PID control state and heater PWM timing were reset."
+                    }
+                    ControlResetReason::HeatingToleranceChanged => {
+                        "Heating tolerance changed. PID control state and heater PWM timing were reset."
+                    }
+                    ControlResetReason::CoolingToleranceChanged => {
+                        "Cooling tolerance changed. PID control state and heater PWM timing were reset."
+                    }
+                    ControlResetReason::PidParametersChanged => {
+                        "PID settings changed. PID control state and heater PWM timing were reset."
+                    }
+                    ControlResetReason::PumpCommandChanged => {
+                        "Pump command changed. PID control state and heater PWM timing were reset."
+                    }
+                };
+
+                self.emit_notice(format!("{side_label}: Thermal Control Reset"), message);
+            }
+            ControllerNotice::PumpStoppedLowFlow => {
+                self.emit_notice(
+                    format!("{side_label}: Pump Turned Off"),
+                    "Flow fell below the minimum thermal threshold while the pump was enabled. The pump was turned off and PID control state was reset.",
+                );
+            }
+        }
+    }
+
+    pub const PID_MIN: f64 = 0.0;
+    pub const PID_MAX: f64 = 5.0;
+    // in °C
+    pub const TOLERANCE_MIN: f64 = 0.0;
+    // in °C
+    pub const TOLERANCE_MAX: f64 = 10.0;
+}
+
+impl std::fmt::Display for AquaPathV1 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Aquapath")
     }
 }
 impl AquaPathV1 {
@@ -314,8 +392,66 @@ impl AquaPathV1 {
 }
 
 impl AquaPathV1 {
+    fn get_min_settable_temperature(&self) -> ThermodynamicTemperature {
+        let ambient_c = self.ambient_temperature_calibration.get::<degree_celsius>();
+        let min_c = self
+            .front_controller
+            .min_temperature
+            .get::<degree_celsius>();
+        let max_c = self
+            .front_controller
+            .max_temperature
+            .get::<degree_celsius>();
+        ThermodynamicTemperature::new::<degree_celsius>(ambient_c.max(min_c).min(max_c))
+    }
+
+    fn set_ambient_temperature_calibration(&mut self, ambient_temp_c: f64) {
+        let clamped = ambient_temp_c
+            .max(
+                self.front_controller
+                    .min_temperature
+                    .get::<degree_celsius>(),
+            )
+            .min(
+                self.front_controller
+                    .max_temperature
+                    .get::<degree_celsius>(),
+            );
+        self.ambient_temperature_calibration =
+            ThermodynamicTemperature::new::<degree_celsius>(clamped);
+
+        // Enforce the calibrated minimum immediately on already-configured targets.
+        let min_settable = self.get_min_settable_temperature();
+        let min_settable_c = min_settable.get::<degree_celsius>();
+
+        if self
+            .front_controller
+            .target_temperature
+            .get::<degree_celsius>()
+            < min_settable_c
+        {
+            self.front_controller.set_target_temperature(min_settable);
+        }
+        if self
+            .back_controller
+            .target_temperature
+            .get::<degree_celsius>()
+            < min_settable_c
+        {
+            self.back_controller.set_target_temperature(min_settable);
+        }
+
+        self.emit_state();
+    }
+
     fn set_target_temperature(&mut self, temperature: f64, cooling_type: AquaPathSideType) {
-        let target_temp = ThermodynamicTemperature::new::<degree_celsius>(temperature);
+        let min_settable = self.get_min_settable_temperature().get::<degree_celsius>();
+        let max_settable = self
+            .front_controller
+            .max_temperature
+            .get::<degree_celsius>();
+        let clamped_target = temperature.max(min_settable).min(max_settable);
+        let target_temp = ThermodynamicTemperature::new::<degree_celsius>(clamped_target);
 
         match cooling_type {
             AquaPathSideType::Back => self.back_controller.set_target_temperature(target_temp),
@@ -348,14 +484,43 @@ impl AquaPathV1 {
 }
 
 impl AquaPathV1 {
+    fn sanitize_clamped(value: f64, min: f64, max: f64, fallback: f64) -> f64 {
+        if !value.is_finite() {
+            return fallback;
+        }
+        value.clamp(min, max)
+    }
+
     fn set_heating_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
         match tolerance_type {
-            AquaPathSideType::Back => self
-                .back_controller
-                .set_heating_tolerance(ThermodynamicTemperature::new::<degree_celsius>(tolerance)),
-            AquaPathSideType::Front => self
-                .front_controller
-                .set_heating_tolerance(ThermodynamicTemperature::new::<degree_celsius>(tolerance)),
+            AquaPathSideType::Back => {
+                let fallback = self
+                    .back_controller
+                    .heating_tolerance
+                    .get::<degree_celsius>();
+                let value = Self::sanitize_clamped(
+                    tolerance,
+                    Self::TOLERANCE_MIN,
+                    Self::TOLERANCE_MAX,
+                    fallback,
+                );
+                self.back_controller
+                    .set_heating_tolerance(ThermodynamicTemperature::new::<degree_celsius>(value))
+            }
+            AquaPathSideType::Front => {
+                let fallback = self
+                    .front_controller
+                    .heating_tolerance
+                    .get::<degree_celsius>();
+                let value = Self::sanitize_clamped(
+                    tolerance,
+                    Self::TOLERANCE_MIN,
+                    Self::TOLERANCE_MAX,
+                    fallback,
+                );
+                self.front_controller
+                    .set_heating_tolerance(ThermodynamicTemperature::new::<degree_celsius>(value))
+            }
         }
 
         self.emit_state();
@@ -363,14 +528,75 @@ impl AquaPathV1 {
 
     fn set_cooling_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
         match tolerance_type {
-            AquaPathSideType::Back => self
-                .back_controller
-                .set_cooling_tolerance(ThermodynamicTemperature::new::<degree_celsius>(tolerance)),
-            AquaPathSideType::Front => self
-                .front_controller
-                .set_cooling_tolerance(ThermodynamicTemperature::new::<degree_celsius>(tolerance)),
+            AquaPathSideType::Back => {
+                let fallback = self
+                    .back_controller
+                    .cooling_tolerance
+                    .get::<degree_celsius>();
+                let value = Self::sanitize_clamped(
+                    tolerance,
+                    Self::TOLERANCE_MIN,
+                    Self::TOLERANCE_MAX,
+                    fallback,
+                );
+                self.back_controller
+                    .set_cooling_tolerance(ThermodynamicTemperature::new::<degree_celsius>(value))
+            }
+            AquaPathSideType::Front => {
+                let fallback = self
+                    .front_controller
+                    .cooling_tolerance
+                    .get::<degree_celsius>();
+                let value = Self::sanitize_clamped(
+                    tolerance,
+                    Self::TOLERANCE_MIN,
+                    Self::TOLERANCE_MAX,
+                    fallback,
+                );
+                self.front_controller
+                    .set_cooling_tolerance(ThermodynamicTemperature::new::<degree_celsius>(value))
+            }
         }
 
+        self.emit_state();
+    }
+
+    fn set_pid_kp(&mut self, value: f64, side: AquaPathSideType) {
+        let current = match side {
+            AquaPathSideType::Back => self.back_controller.get_pid_kp(),
+            AquaPathSideType::Front => self.front_controller.get_pid_kp(),
+        };
+        let value = Self::sanitize_clamped(value, Self::PID_MIN, Self::PID_MAX, current);
+        match side {
+            AquaPathSideType::Back => self.back_controller.set_pid_kp(value),
+            AquaPathSideType::Front => self.front_controller.set_pid_kp(value),
+        }
+        self.emit_state();
+    }
+
+    fn set_pid_ki(&mut self, value: f64, side: AquaPathSideType) {
+        let current = match side {
+            AquaPathSideType::Back => self.back_controller.get_pid_ki(),
+            AquaPathSideType::Front => self.front_controller.get_pid_ki(),
+        };
+        let value = Self::sanitize_clamped(value, Self::PID_MIN, Self::PID_MAX, current);
+        match side {
+            AquaPathSideType::Back => self.back_controller.set_pid_ki(value),
+            AquaPathSideType::Front => self.front_controller.set_pid_ki(value),
+        }
+        self.emit_state();
+    }
+
+    fn set_pid_kd(&mut self, value: f64, side: AquaPathSideType) {
+        let current = match side {
+            AquaPathSideType::Back => self.back_controller.get_pid_kd(),
+            AquaPathSideType::Front => self.front_controller.get_pid_kd(),
+        };
+        let value = Self::sanitize_clamped(value, Self::PID_MIN, Self::PID_MAX, current);
+        match side {
+            AquaPathSideType::Back => self.back_controller.set_pid_kd(value),
+            AquaPathSideType::Front => self.front_controller.set_pid_kd(value),
+        }
         self.emit_state();
     }
 }
