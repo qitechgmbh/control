@@ -10,7 +10,6 @@ import { useEffect, useMemo } from "react";
 import { produce } from "immer";
 import { useMachines } from "@/client/useMachines";
 
-
 export function useExtruder3() {
   const { serial: serialString } = extruder3Route.useParams();
   const machines = useMachines();
@@ -18,18 +17,21 @@ export function useExtruder3() {
   const machineIdentification: MachineIdentificationUnique = useMemo(() => {
     const serial = parseInt(serialString);
     if (isNaN(serial)) {
-      toastError("Invalid Serial Number", `"${serialString}" is not a valid serial number.`);
+      toastError(
+        "Invalid Serial Number",
+        `"${serialString}" is not a valid serial number.`,
+      );
       return { machine_identification: { vendor: 0, machine: 0 }, serial: 0 };
     }
 
     // Look up the actual machine identification from the connected device
     const machine = machines.find(
-      (m) => m.machine_identification_unique.serial === serial
+      (m) => m.machine_identification_unique.serial === serial,
     );
 
     return {
-      machine_identification: machine?.machine_identification_unique.machine_identification
-        ?? { vendor: 0, machine: 0 },
+      machine_identification: machine?.machine_identification_unique
+        .machine_identification ?? { vendor: 0, machine: 0 },
       serial,
     };
   }, [serialString, machines]);

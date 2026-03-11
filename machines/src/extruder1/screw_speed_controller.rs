@@ -168,7 +168,8 @@ impl ScrewSpeedController {
     }
 
     pub fn turn_motor_on(&mut self) {
-        self.inverter.set_rotation(self.forward_rotation ^ self.reversed);
+        self.inverter
+            .set_rotation(self.forward_rotation ^ self.reversed);
         self.motor_on = true;
     }
 
