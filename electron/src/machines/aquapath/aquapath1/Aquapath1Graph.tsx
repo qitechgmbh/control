@@ -1,11 +1,10 @@
 import { Page } from "@/components/Page";
 import {
-  MarkerProvider,
+  AutoSyncedBigGraph,
   SyncedFloatingControlPanel,
   useGraphSync,
   type GraphConfig,
 } from "@/components/graph";
-import { GraphWithMarkerControls } from "@/components/graph/marker/GraphWithMarkerControls";
 
 import React from "react";
 import { useAquapath1 } from "./useAquapath";
@@ -20,62 +19,48 @@ export function Aquapath1GraphPage() {
     back_temperature,
     front_temp_reservoir,
     back_temp_reservoir,
-    targetFrontTemperature,
-    targetBackTemperature,
   } = useAquapath1();
 
   const syncHook = useGraphSync("aquapath-group");
-  const markerMachineId = "aquapath1-graphs";
 
-  const front_temp_target =
-    state?.temperature_states?.front.target_temperature ?? 0;
-  const back_temp_target =
+  const reservoir1TempTarget =
     state?.temperature_states?.back.target_temperature ?? 0;
+  const reservoir2TempTarget =
+    state?.temperature_states?.front.target_temperature ?? 0;
 
   return (
     <Page className="pb-27">
-      <MarkerProvider>
-        <div className="flex flex-col gap-4">
-          <FlowGraph
-            syncHook={syncHook}
-            flow={front_flow}
-            name={"Front Flow"}
-            id={"front_flow"}
-            machineId={markerMachineId}
-          />
-          <FlowGraph
-            syncHook={syncHook}
-            flow={back_flow}
-            name={"Back Flow"}
-            id={"back_flow"}
-            machineId={markerMachineId}
-          />
-          <TemperatureGraph
-            syncHook={syncHook}
-            temp_in={front_temperature}
-            temp_out={front_temp_reservoir}
-            targetSeries={targetFrontTemperature}
-            targetTemp={front_temp_target}
-            name={"Front Temperature"}
-            id={"front_temp"}
-            machineId={markerMachineId}
-          />
-          <TemperatureGraph
-            syncHook={syncHook}
-            temp_in={back_temperature}
-            temp_out={back_temp_reservoir}
-            targetSeries={targetBackTemperature}
-            targetTemp={back_temp_target}
-            name={"Back Temperature"}
-            id={"back_temp"}
-            machineId={markerMachineId}
-          />
-        </div>
-        <SyncedFloatingControlPanel
-          controlProps={syncHook.controlProps}
-          machineId={markerMachineId}
+      <div className="flex flex-col gap-4">
+        <FlowGraph
+          syncHook={syncHook}
+          flow={back_flow}
+          name={"Reservoir 1 (Back) Flow"}
+          id={"reservoir_1_flow"}
         />
-      </MarkerProvider>
+        <FlowGraph
+          syncHook={syncHook}
+          flow={front_flow}
+          name={"Reservoir 2 (Front) Flow"}
+          id={"reservoir_2_flow"}
+        />
+        <TemperatureGraph
+          syncHook={syncHook}
+          temp_in={back_temperature}
+          temp_out={back_temp_reservoir}
+          targetTemp={reservoir1TempTarget}
+          name={"Reservoir 1 (Back) Temperature"}
+          id={"reservoir_1_temp"}
+        />
+        <TemperatureGraph
+          syncHook={syncHook}
+          temp_in={front_temperature}
+          temp_out={front_temp_reservoir}
+          targetTemp={reservoir2TempTarget}
+          name={"Reservoir 2 (Front) Temperature"}
+          id={"reservoir_2_temp"}
+        />
+      </div>
+      <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
     </Page>
   );
 }
@@ -85,13 +70,11 @@ export function FlowGraph({
   flow,
   name,
   id,
-  machineId,
 }: {
   syncHook: ReturnType<typeof useGraphSync>;
   flow: TimeSeries | null;
   name: string;
   id: string;
-  machineId: string;
 }) {
   const config: GraphConfig = {
     title: name,
@@ -105,7 +88,7 @@ export function FlowGraph({
   };
 
   return (
-    <GraphWithMarkerControls
+    <AutoSyncedBigGraph
       syncHook={syncHook}
       newData={{
         newData: flow,
@@ -115,8 +98,6 @@ export function FlowGraph({
       renderValue={(value) => value.toFixed(1)}
       config={config}
       graphId={id}
-      currentTimeSeries={flow}
-      machineId={machineId}
     />
   );
 }
@@ -124,20 +105,16 @@ export function TemperatureGraph({
   syncHook,
   temp_in,
   temp_out,
-  targetSeries,
   targetTemp,
   name,
   id,
-  machineId,
 }: {
   syncHook: ReturnType<typeof useGraphSync>;
   temp_in: TimeSeries | null;
   temp_out: TimeSeries | null;
-  targetSeries: TimeSeries | null;
   targetTemp: number;
   name: string;
   id: string;
-  machineId: string;
 }) {
   const config: GraphConfig = {
     title: name,
@@ -161,9 +138,8 @@ export function TemperatureGraph({
             color: "#3b82f6",
             lines: [
               {
-                type: "target" as const,
+                type: "threshold" as const,
                 value: targetTemp,
-                targetSeries: targetSeries ?? undefined,
                 label: "Target Temperature",
                 color: "#3b82f6",
                 show: true,
@@ -183,9 +159,8 @@ export function TemperatureGraph({
             color: "#f87171",
             lines: [
               {
-                type: "target" as const,
+                type: "threshold" as const,
                 value: targetTemp,
-                targetSeries: targetSeries ?? undefined,
                 label: "Target Temperature",
                 color: "#f87171",
                 show: true,
@@ -199,15 +174,13 @@ export function TemperatureGraph({
   ];
 
   return (
-    <GraphWithMarkerControls
+    <AutoSyncedBigGraph
       syncHook={syncHook}
       newData={combinedData}
       unit="C"
       renderValue={(value) => value.toFixed(1)}
       config={config}
       graphId={id}
-      currentTimeSeries={temp_in ?? temp_out}
-      machineId={machineId}
     />
   );
 }
