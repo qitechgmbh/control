@@ -3,7 +3,7 @@ use crate::{
     MACHINE_LASER_V1, VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
-use crate::{Machine, MachineMessage};
+use crate::{Machine, MachineData, MachineMessage};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use smol::{
@@ -28,6 +28,9 @@ pub struct LaserMachine {
     machine_identification_unique: MachineIdentificationUnique,
     main_sender: Option<Sender<AsyncThreadMessage>>,
 
+    // state
+    mutation_counter: u64,
+
     // drivers
     laser: Arc<RwLock<Laser>>,
 
@@ -45,6 +48,7 @@ pub struct LaserMachine {
     higher_tolerance: Length,
     lower_tolerance: Length,
     in_tolerance: bool,
+    global_warning: bool,
 
     //laser target configuration
     laser_target: LaserTarget,
@@ -62,6 +66,34 @@ impl Machine for LaserMachine {
 
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
         self.main_sender.clone()
+    }
+
+    fn mutation_counter(&self) -> u64 {
+        self.mutation_counter
+    }
+
+    fn update_machine_data(
+        &self,
+        data: &mut MachineData,
+        refresh_state: bool,
+        refresh_live_values: bool,
+    ) {
+        use MachineData::*;
+
+        match data {
+            Laser(state, live_values) => {
+                if refresh_state {
+                    *state = self.build_state_event();
+                }
+
+                if refresh_live_values {
+                    *live_values = self.get_live_values();
+                }
+            }
+            _ => {
+                *data = MachineData::Laser(self.build_state_event(), self.get_live_values());
+            }
+        };
     }
 }
 
@@ -123,6 +155,7 @@ impl LaserMachine {
             lower_tolerance: self.lower_tolerance.get::<millimeter>(),
             target_diameter: self.laser_target.diameter.get::<millimeter>(),
             in_tolerance: self.in_tolerance,
+            global_warning: self.global_warning,
         };
 
         StateEvent {
@@ -139,6 +172,7 @@ impl LaserMachine {
                 lower_tolerance: self.laser_target.lower_tolerance.get::<millimeter>(),
                 target_diameter: self.laser_target.diameter.get::<millimeter>(),
                 in_tolerance: self.in_tolerance,
+                global_warning: self.global_warning,
             },
         }
     }
@@ -153,18 +187,27 @@ impl LaserMachine {
     pub fn set_higher_tolerance(&mut self, higher_tolerance: f64) {
         self.higher_tolerance = Length::new::<millimeter>(higher_tolerance);
         self.laser_target.higher_tolerance = self.higher_tolerance;
+        self.mutation_counter += 1;
         self.emit_state();
     }
 
     pub fn set_lower_tolerance(&mut self, lower_tolerance: f64) {
         self.lower_tolerance = Length::new::<millimeter>(lower_tolerance);
         self.laser_target.lower_tolerance = self.lower_tolerance;
+        self.mutation_counter += 1;
         self.emit_state();
     }
 
     pub fn set_target_diameter(&mut self, target_diameter: f64) {
         self.target_diameter = Length::new::<millimeter>(target_diameter);
         self.laser_target.diameter = Length::new::<millimeter>(target_diameter);
+        self.mutation_counter += 1;
+        self.emit_state();
+    }
+
+    pub fn set_global_warning(&mut self, toggle: bool) {
+        self.global_warning = toggle;
+        self.mutation_counter += 1;
         self.emit_state();
     }
 

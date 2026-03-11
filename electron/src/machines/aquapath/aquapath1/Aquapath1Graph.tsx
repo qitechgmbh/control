@@ -109,6 +109,7 @@ export function TemperatureGraph({
   syncHook,
   temp_in,
   temp_out,
+  targetSeries,
   targetTemp,
   targetSeries,
   name,
@@ -117,6 +118,7 @@ export function TemperatureGraph({
   syncHook: ReturnType<typeof useGraphSync>;
   temp_in: TimeSeries | null;
   temp_out: TimeSeries | null;
+  targetSeries: TimeSeries | null;
   targetTemp: number;
   targetSeries: TimeSeries | null;
   name: string;
@@ -146,6 +148,7 @@ export function TemperatureGraph({
               {
                 type: "target" as const,
                 value: targetTemp,
+                targetSeries: targetSeries ?? undefined,
                 label: "Target Temperature",
                 targetSeries: targetSeries ?? undefined,
                 color: "#3b82f6",
@@ -168,6 +171,7 @@ export function TemperatureGraph({
               {
                 type: "target" as const,
                 value: targetTemp,
+                targetSeries: targetSeries ?? undefined,
                 label: "Target Temperature",
                 targetSeries: targetSeries ?? undefined,
                 color: "#f87171",

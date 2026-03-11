@@ -1,6 +1,7 @@
 import React from "react";
 import { useWinder2 } from "./useWinder";
 import { winder2 } from "@/machines/properties";
+import { getWinder2AdaptivePullerSpeed } from "./winder2Config";
 
 import { PresetsPage } from "@/components/preset/PresetsPage";
 import { Preset } from "@/lib/preset/preset";
@@ -79,21 +80,27 @@ const previewEntries: PresetPreviewEntries<Winder2> = [
     },
   },
   {
-    name: "Puller Target Speed",
+    name: "Puller Fixed Algorithm Base Speed",
     unit: "m/min",
     renderValue: (data: Winder2) => data.puller_state?.target_speed?.toFixed(2),
   },
   {
-    name: "Puller Target Diameter",
-    unit: "mm",
+    name: "Puller Adaptive Max Speed Change",
+    unit: "%",
     renderValue: (data: Winder2) =>
-      data.puller_state?.target_diameter?.toFixed(1),
+      data.puller_state?.adaptive_speed_delta_max?.toFixed(1),
   },
   {
-    name: "Puller Target Diameter",
-    unit: "mm",
+    name: "Puller Adaptive Adjustment Interval",
+    unit: "m",
     renderValue: (data: Winder2) =>
-      data.puller_state?.target_diameter?.toFixed(1),
+      data.puller_state?.adaptive_adjustment_distance?.toFixed(1),
+  },
+  {
+    name: "Puller Adaptive Step Size",
+    unit: "%",
+    renderValue: (data: Winder2) =>
+      data.puller_state?.adaptive_change_per_step?.toFixed(1),
   },
   previewSeparator,
   {
@@ -165,7 +172,6 @@ export function Winder2PresetsPage() {
     setTraverseLimitOuter,
 
     setPullerRegulationMode,
-    setPullerTargetDiameter,
     setPullerForward,
     setPullerTargetSpeed,
     setPullerGearRatio,
@@ -191,7 +197,13 @@ export function Winder2PresetsPage() {
     setTraverseStepSize(preset.data?.traverse_state?.step_size ?? 1.75);
     setTraversePadding(preset.data?.traverse_state?.padding ?? 0.88);
 
-    setPullerRegulationMode(preset.data?.puller_state?.regulation ?? "Speed");
+    const presetRegulation = preset.data?.puller_state?.regulation ?? "Speed";
+    const adaptivePullerEnabled = getWinder2AdaptivePullerSpeed();
+    setPullerRegulationMode(
+      presetRegulation === "Diameter" && !adaptivePullerEnabled
+        ? "Speed"
+        : presetRegulation,
+    );
     setPullerForward(preset.data?.puller_state?.forward ?? true);
     setPullerTargetSpeed(preset.data?.puller_state?.target_speed ?? 1.0);
     setPullerGearRatio(preset.data?.puller_state?.gear_ratio ?? "OneToOne");

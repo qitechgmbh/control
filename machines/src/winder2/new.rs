@@ -7,7 +7,7 @@ mod winder2_imports {
     pub use crate::winder2::spool_speed_controller::SpoolSpeedController;
     pub use crate::winder2::traverse_controller::TraverseController;
     pub use crate::{
-        MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_dublicates,
+        MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_duplicates,
         validate_same_machine_identification_unique,
     };
     pub use anyhow::Error;
@@ -60,7 +60,7 @@ impl MachineNewTrait for Winder2 {
         let device_identification = params.device_group.to_vec();
 
         validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_dublicates(&device_identification)?;
+        validate_no_role_duplicates(&device_identification)?;
 
         let hardware = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,
@@ -199,7 +199,6 @@ impl MachineNewTrait for Winder2 {
             let (sender, receiver) = smol::channel::unbounded();
             let mut new = Self {
                 main_sender: params.main_thread_channel.clone(),
-                max_connected_machines: 2,
                 api_receiver: receiver,
                 api_sender: sender,
                 traverse: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
@@ -226,12 +225,12 @@ impl MachineNewTrait for Winder2 {
                 puller_mode: mode.into(),
                 puller_speed_controller: PullerSpeedController::new(
                     Velocity::new::<meter_per_minute>(1.0),
-                    Length::new::<millimeter>(1.75),
                     LinearStepConverter::from_diameter(
                         200,                            // Assuming 200 steps per revolution for the puller stepper,
                         Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
                     ),
                 ),
+                puller_reference_machine: None,
                 traverse_controller: TraverseController::new(
                     Length::new::<millimeter>(22.0), // Default inner limit
                     Length::new::<millimeter>(92.0), // Default outer limit
@@ -245,7 +244,6 @@ impl MachineNewTrait for Winder2 {
                     mode: super::api::SpoolAutomaticActionMode::NoAction,
                 },
                 machine_identification_unique: machine_id,
-                connected_machines: vec![],
             };
 
             // initalize events

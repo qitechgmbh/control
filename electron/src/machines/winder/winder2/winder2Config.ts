@@ -33,3 +33,15 @@ export function getWinder2TraverseMax(): number {
     ? WINDER2_TRAVERSE_MAX_XL
     : WINDER2_TRAVERSE_MAX_STANDARD;
 }
+
+const WINDER2_ADAPTIVE_PULLER_SPEED_KEY =
+  "winder2_adaptive_puller_speed_enabled";
+
+export function getWinder2AdaptivePullerSpeed(): boolean {
+  const stored = localStorage.getItem(WINDER2_ADAPTIVE_PULLER_SPEED_KEY);
+  return stored === "true";
+}
+
+export function setWinder2AdaptivePullerSpeed(enabled: boolean): void {
+  localStorage.setItem(WINDER2_ADAPTIVE_PULLER_SPEED_KEY, enabled.toString());
+}
