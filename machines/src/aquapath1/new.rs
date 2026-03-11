@@ -138,7 +138,7 @@ impl MachineNewTrait for AquaPathV1 {
             let ao2 = AnalogOutput::new(el4002.clone(), EL4002Port::AO2);
             let controller_config = ControllerConfig::default();
 
-            let back_controller = Controller::new(
+            let front_controller = Controller::new(
                 AquaPathV1::DEFAULT_PID_KP,
                 AquaPathV1::DEFAULT_PID_KI,
                 AquaPathV1::DEFAULT_PID_KD,
@@ -156,7 +156,7 @@ impl MachineNewTrait for AquaPathV1 {
                 controller_config,
             );
 
-            let front_controller = Controller::new(
+            let back_controller = Controller::new(
                 AquaPathV1::DEFAULT_PID_KP,
                 AquaPathV1::DEFAULT_PID_KI,
                 AquaPathV1::DEFAULT_PID_KD,

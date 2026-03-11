@@ -30,11 +30,11 @@ impl MachineAct for AquaPathV1 {
         let back_notices = self.back_controller.drain_notices();
 
         for notice in front_notices.iter().copied() {
-            self.emit_controller_notice("Reservoir 2 (Front)", notice);
+            self.emit_controller_notice("Reservoir 1 (Front)", notice);
         }
 
         for notice in back_notices.iter().copied() {
-            self.emit_controller_notice("Reservoir 1 (Back)", notice);
+            self.emit_controller_notice("Reservoir 2 (Back)", notice);
         }
 
         if !front_notices.is_empty() || !back_notices.is_empty() {
