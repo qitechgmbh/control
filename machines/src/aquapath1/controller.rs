@@ -31,7 +31,7 @@ pub struct CoolingRampConfig {
     pub tolerance: ThermodynamicTemperature,
     pub near_band: ThermodynamicTemperature,
     pub full_band: ThermodynamicTemperature,
-    pub min_rpm: f64,
+    pub min_revolutions: AngularVelocity,
 }
 
 impl Default for CoolingRampConfig {
@@ -40,7 +40,7 @@ impl Default for CoolingRampConfig {
             tolerance: ThermodynamicTemperature::new::<degree_celsius>(0.8),
             near_band: ThermodynamicTemperature::new::<degree_celsius>(2.0),
             full_band: ThermodynamicTemperature::new::<degree_celsius>(4.0),
-            min_rpm: 20.0,
+            min_revolutions: AngularVelocity::new::<revolution_per_minute>(20.0),
         }
     }
 }
@@ -49,7 +49,7 @@ impl Default for CoolingRampConfig {
 pub struct ControllerConfig {
     pub min_flow_for_thermal: VolumeRate,
     pub pump_startup_grace_period: Duration,
-    pub heating_element_wattage: f64,
+    pub heating_element_power: f64,
     pub heating_pwm_period: Duration,
     pub relay_min_on_time: Duration,
     pub relay_min_off_time: Duration,
@@ -63,7 +63,7 @@ impl Default for ControllerConfig {
         Self {
             min_flow_for_thermal: VolumeRate::new::<liter_per_minute>(0.2),
             pump_startup_grace_period: Duration::from_secs(3),
-            heating_element_wattage: 700.0,
+            heating_element_power: 700.0,
             heating_pwm_period: Duration::from_secs(12),
             relay_min_on_time: Duration::from_secs(5),
             relay_min_off_time: Duration::from_secs(5),
@@ -133,28 +133,36 @@ impl Controller {
         }
     }
 
-    fn cooling_target_rpm(temp_offset_c: f64, max_rpm: f64, config: CoolingRampConfig) -> f64 {
+    fn cooling_target_revolutions(
+        temp_offset: ThermodynamicTemperature,
+        max_revolutions: AngularVelocity,
+        config: CoolingRampConfig,
+    ) -> AngularVelocity {
         let full_band = config.full_band.get::<degree_celsius>();
         let near_band = config.near_band.get::<degree_celsius>();
         let tolerance = config.tolerance.get::<degree_celsius>();
+        let temp_offset = temp_offset.get::<degree_celsius>();
+        let max_revolutions = max_revolutions.get::<revolution_per_minute>();
 
-        if temp_offset_c >= full_band {
+        if temp_offset >= full_band {
             // Far above target: cool aggressively.
-            return max_rpm;
+            return AngularVelocity::new::<revolution_per_minute>(max_revolutions);
         }
 
-        if temp_offset_c >= near_band {
+        if temp_offset >= near_band {
             // Mid-range: ramp from 60% to 100% of max.
-            let t = (temp_offset_c - near_band) / (full_band - near_band);
-            return (0.6 + 0.4 * t) * max_rpm;
+            let t = (temp_offset - near_band) / (full_band - near_band);
+            return AngularVelocity::new::<revolution_per_minute>(
+                (0.6 + 0.4 * t) * max_revolutions,
+            );
         }
 
         // Near target (but above cooling tolerance): low, smooth cooling.
         // Ramp from COOLING_MIN_RPM to 60% of max to reduce overshoot/chatter.
-        let t = ((temp_offset_c - tolerance) / (near_band - tolerance)).clamp(0.0, 1.0);
-        let lower = config.min_rpm.min(max_rpm);
-        let upper = 0.6 * max_rpm;
-        lower + (upper - lower) * t
+        let t = ((temp_offset - tolerance) / (near_band - tolerance)).clamp(0.0, 1.0);
+        let lower = config.min_revolutions.get::<revolution_per_minute>();
+        let upper = 0.6 * max_revolutions;
+        AngularVelocity::new::<revolution_per_minute>(lower + (upper - lower) * t)
     }
 
     pub fn new(
@@ -324,7 +332,7 @@ impl Controller {
     pub fn turn_heating_on(&mut self) {
         self.heating_relais.set(true);
         self.temperature.heating = true;
-        self.power = self.config.heating_element_wattage;
+        self.power = self.config.heating_element_power;
     }
 
     pub fn turn_heating_off(&mut self) {
@@ -581,18 +589,16 @@ impl Controller {
                 self.set_cooling_state(true, now);
                 let max_revolutions = self.get_max_revolutions();
                 let temp_offset = self.current_temperature - self.target_temperature;
-                let max_rpm = max_revolutions.get::<revolution_per_minute>();
-                let temp_offset_c = temp_offset.get::<degree_celsius>();
-
-                let target_revolutions =
-                    Self::cooling_target_rpm(temp_offset_c, max_rpm, self.config.cooling)
-                        .clamp(0.0, max_rpm);
+                let target_revolutions = Self::cooling_target_revolutions(
+                    temp_offset,
+                    max_revolutions,
+                    self.config.cooling,
+                );
 
                 if self.temperature.cooling {
                     self.cooling_controller
-                        .set(target_revolutions as f32 / 10.0);
-                    self.current_revolutions =
-                        AngularVelocity::new::<revolution_per_minute>(target_revolutions);
+                        .set(target_revolutions.get::<revolution_per_minute>() as f32 / 10.0);
+                    self.current_revolutions = target_revolutions;
                 }
             } else {
                 self.set_cooling_state(false, now);
