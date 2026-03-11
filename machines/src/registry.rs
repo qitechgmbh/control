@@ -33,13 +33,13 @@ use lazy_static::lazy_static;
 
 use crate::minimal_machines::motor_test_machine::MotorTestMachine;
 use anyhow::Error;
-use std::{any::TypeId, collections::HashMap};
+use std::collections::HashMap;
 
 pub type MachineNewClosure =
     Box<dyn Fn(&MachineNewParams) -> Result<Box<dyn Machine>, Error> + Send + Sync>;
 
 pub struct MachineRegistry {
-    type_map: HashMap<TypeId, (MachineIdentification, MachineNewClosure)>,
+    type_map: HashMap<MachineIdentification, MachineNewClosure>,
 }
 
 impl Default for MachineRegistry {
@@ -60,12 +60,8 @@ impl MachineRegistry {
         machine_identification: MachineIdentification,
     ) {
         self.type_map.insert(
-            TypeId::of::<T>(),
-            (
-                machine_identification.clone(),
-                // create a machine construction closure
-                Box::new(|machine_new_params| Ok(Box::new(T::new(machine_new_params)?))),
-            ),
+            machine_identification,
+            Box::new(|machine_new_params| Ok(Box::new(T::new(machine_new_params)?))),
         );
     }
 
@@ -73,32 +69,19 @@ impl MachineRegistry {
         &self,
         machine_new_params: &MachineNewParams,
     ) -> Result<Box<dyn Machine>, anyhow::Error> {
-        // get machine identification
-        let device_identification =
-            &machine_new_params
-                .device_group
-                .first()
-                .ok_or(anyhow::anyhow!(
-                    "[{}::MachineConstructor::new_machine] No device in group",
-                    module_path!()
-                ))?;
+        let machine_identification = &machine_new_params
+            .device_group
+            .first()
+            .ok_or(anyhow::anyhow!("[{}] No device in group", module_path!()))?
+            .device_machine_identification
+            .machine_identification_unique
+            .machine_identification;
 
-        // find machine new function by comparing MachineIdentification
-        let (_, machine_new_closure) = self
+        let machine_new_closure = self
             .type_map
-            .values()
-            .find(|(mi, _)| {
-                mi == &device_identification
-                    .device_machine_identification
-                    .machine_identification_unique
-                    .machine_identification
-            })
-            .ok_or(anyhow::anyhow!(
-                "[{}::MachineConstructor::new_machine] Machine not found",
-                module_path!()
-            ))?;
+            .get(machine_identification) // <-- direct lookup now
+            .ok_or(anyhow::anyhow!("[{}] Machine not found", module_path!()))?;
 
-        // call machine new function by reference
         (machine_new_closure)(machine_new_params)
     }
 }
@@ -116,6 +99,8 @@ lazy_static! {
 
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<ExtruderV2>(ExtruderV2::MACHINE_IDENTIFICATION);
+
+        mc.register::<ExtruderV3>(ExtruderV3::REVERSED_MACHINE_IDENTIFICATION);
 
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<ExtruderV3>(ExtruderV3::MACHINE_IDENTIFICATION);

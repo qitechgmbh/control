@@ -216,6 +216,8 @@ impl MachineNewTrait for ExtruderV2 {
 
             let motor_poles = 4;
 
+            let reversed = false;
+
             let screw_speed_controller = ScrewSpeedController::new(
                 inverter,
                 target_pressure,
@@ -223,6 +225,7 @@ impl MachineNewTrait for ExtruderV2 {
                 pressure_sensor,
                 FixedTransmission::new(1.0 / 34.0),
                 motor_poles,
+                reversed,
             );
             let (sender, receiver) = smol::channel::unbounded();
 

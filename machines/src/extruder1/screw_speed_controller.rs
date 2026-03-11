@@ -34,6 +34,7 @@ pub struct ScrewSpeedController {
     motor_on: bool,
     nozzle_pressure_limit: Pressure,
     nozzle_pressure_limit_enabled: bool,
+    reversed: bool,
 }
 
 impl ScrewSpeedController {
@@ -44,6 +45,7 @@ impl ScrewSpeedController {
         pressure_sensor: AnalogInput,
         transmission: FixedTransmission,
         motor_poles: usize,
+        reversed: bool,
     ) -> Self {
         let now = Instant::now();
         Self {
@@ -65,6 +67,7 @@ impl ScrewSpeedController {
             maximum_frequency: Frequency::new::<hertz>(60.0),
             minimum_frequency: Frequency::new::<hertz>(0.0),
             motor_poles,
+            reversed,
         }
     }
 
@@ -103,7 +106,7 @@ impl ScrewSpeedController {
     pub fn set_rotation_direction(&mut self, forward: bool) {
         self.forward_rotation = forward;
         if self.motor_on {
-            self.inverter.set_rotation(self.forward_rotation);
+            self.inverter.set_rotation(forward ^ self.reversed);
         }
     }
 
@@ -147,7 +150,7 @@ impl ScrewSpeedController {
     }
 
     pub fn turn_motor_on(&mut self) {
-        self.inverter.set_rotation(self.forward_rotation);
+        self.inverter.set_rotation(self.forward_rotation ^ self.reversed);
         self.motor_on = true;
     }
 
