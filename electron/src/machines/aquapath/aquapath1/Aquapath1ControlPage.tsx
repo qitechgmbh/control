@@ -73,7 +73,6 @@ export function Aquapath1ControlPage() {
                   max={80}
                   unit="C"
                   step={0.1}
-                  triggerClassName="h-21"
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
                     setBackTemperature(Math.max(val, minSettableTemperature));
@@ -86,7 +85,7 @@ export function Aquapath1ControlPage() {
 
               {reservoir1HeaterOn && (
                 <Badge
-                  variant="hot"
+                  variant="default"
                   className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
                 >
                   <Icon name="lu:Flame" className="size-5" />
@@ -96,7 +95,7 @@ export function Aquapath1ControlPage() {
 
               {reservoir1FanOn && (
                 <Badge
-                  variant="cold"
+                  variant="secondary"
                   className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
                 >
                   <Icon name="lu:Fan" className="size-5" />
@@ -172,7 +171,6 @@ export function Aquapath1ControlPage() {
                   max={80}
                   unit="C"
                   step={0.1}
-                  triggerClassName="h-21"
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
                     setFrontTemperature(Math.max(val, minSettableTemperature));
@@ -185,7 +183,7 @@ export function Aquapath1ControlPage() {
 
               {reservoir2HeaterOn && (
                 <Badge
-                  variant="hot"
+                  variant="default"
                   className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
                 >
                   <Icon name="lu:Flame" className="size-5" />
@@ -195,7 +193,7 @@ export function Aquapath1ControlPage() {
 
               {reservoir2FanOn && (
                 <Badge
-                  variant="cold"
+                  variant="secondary"
                   className="h-21 min-w-28 justify-center self-end px-4 text-base [&>svg]:size-5"
                 >
                   <Icon name="lu:Fan" className="size-5" />
