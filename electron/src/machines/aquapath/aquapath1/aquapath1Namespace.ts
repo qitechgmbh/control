@@ -17,6 +17,9 @@ import {
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
+import { Toast } from "@/components/Toast";
+import { toast } from "sonner";
+import React from "react";
 
 // ========== Event Schema Definitions ==========
 /**
@@ -68,6 +71,17 @@ export const toleranceStatesSchema = z.object({
   back: toleranceStateSchema,
   front: toleranceStateSchema,
 });
+
+export const pidStateSchema = z.object({
+  kp: z.number(),
+  ki: z.number(),
+  kd: z.number(),
+});
+
+export const pidStatesSchema = z.object({
+  back: pidStateSchema,
+  front: pidStateSchema,
+});
 /**
  * Live values event schema (time-series data)
  */
@@ -82,6 +96,8 @@ export const liveValuesEventDataSchema = z.object({
   back_revolutions: z.number(),
   back_power: z.number(),
   front_power: z.number(),
+  front_heating: z.boolean().optional().default(false),
+  back_heating: z.boolean().optional().default(false),
   front_total_energy: z.number(),
   back_total_energy: z.number(),
 });
@@ -92,15 +108,23 @@ export const liveValuesEventDataSchema = z.object({
 export const stateEventDataSchema = z.object({
   is_default_state: z.boolean(),
   mode_state: modeStateSchema,
+  ambient_temperature_calibration: z.number().optional().default(22),
   flow_states: flowStatesSchema,
   temperature_states: tempStatesSchema,
   fan_states: fanStatesSchema,
   tolerance_states: toleranceStatesSchema,
+  pid_states: pidStatesSchema,
+});
+
+export const noticeEventDataSchema = z.object({
+  title: z.string(),
+  message: z.string(),
 });
 
 // ========== Event Schemas with Wrappers ==========
 export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
 export const stateEventSchema = eventSchema(stateEventDataSchema);
+export const noticeEventSchema = eventSchema(noticeEventDataSchema);
 
 // ========== Type Inferences ==========
 export type Mode = z.infer<typeof modeSchema>;
@@ -130,10 +154,8 @@ export type Aquapath1NamespaceStore = {
 
   front_total_energy: TimeSeries;
   back_total_energy: TimeSeries;
-
-  // Target value history (for graph target lines)
-  targetFrontTemperature: TimeSeries;
-  targetBackTemperature: TimeSeries;
+  front_heating: boolean;
+  back_heating: boolean;
 };
 
 const { initialTimeSeries: front_temperature, insert: addTemperature1 } =
@@ -158,14 +180,6 @@ const { initialTimeSeries: front_total_energy, insert: addFrontEnergy } =
   createTimeSeries();
 const { initialTimeSeries: back_total_energy, insert: addBackEnergy } =
   createTimeSeries();
-const {
-  initialTimeSeries: targetFrontTemperature,
-  insert: addTargetFrontTemperature,
-} = createTimeSeries();
-const {
-  initialTimeSeries: targetBackTemperature,
-  insert: addTargetBackTemperature,
-} = createTimeSeries();
 
 /**
  * Factory function to create a new Aquapath namespace store
@@ -189,8 +203,8 @@ export const createAquapath1NamespaceStore =
         front_power: front_power,
         front_total_energy: front_total_energy,
         back_total_energy: back_total_energy,
-        targetFrontTemperature: targetFrontTemperature,
-        targetBackTemperature: targetBackTemperature,
+        front_heating: false,
+        back_heating: false,
       };
     });
   };
@@ -219,11 +233,6 @@ export function aquapath1MessageHandler(
       // State events (latest only)
       if (eventName === "StateEvent") {
         const stateEvent = stateEventSchema.parse(event);
-        const timestamp = event.ts;
-        const nextTargetFrontTemperature =
-          stateEvent.data.temperature_states.front.target_temperature;
-        const nextTargetBackTemperature =
-          stateEvent.data.temperature_states.back.target_temperature;
         updateStore((state) => ({
           ...state,
           state: stateEvent,
@@ -231,23 +240,27 @@ export function aquapath1MessageHandler(
           defaultState: stateEvent.data.is_default_state
             ? stateEvent
             : state.defaultState,
-          targetFrontTemperature:
-            state.targetFrontTemperature.current?.value ===
-            nextTargetFrontTemperature
-              ? state.targetFrontTemperature
-              : addTargetFrontTemperature(state.targetFrontTemperature, {
-                  value: nextTargetFrontTemperature,
-                  timestamp,
-                }),
-          targetBackTemperature:
-            state.targetBackTemperature.current?.value ===
-            nextTargetBackTemperature
-              ? state.targetBackTemperature
-              : addTargetBackTemperature(state.targetBackTemperature, {
-                  value: nextTargetBackTemperature,
-                  timestamp,
-                }),
         }));
+      } else if (eventName === "NoticeEvent") {
+        const noticeEvent = noticeEventSchema.parse(event);
+        toast.custom(
+          () =>
+            React.createElement(
+              Toast,
+              {
+                title: noticeEvent.data.title,
+                icon: "lu:CircleAlert",
+              },
+              React.createElement(
+                "div",
+                { className: "text-zinc-500" },
+                noticeEvent.data.message,
+              ),
+            ),
+          {
+            duration: 7000,
+          },
+        );
       }
       // Live values events (time-series data)
       else if (eventName === "LiveValuesEvent") {
@@ -303,6 +316,8 @@ export function aquapath1MessageHandler(
             value: liveValuesEvent.data.back_total_energy,
             timestamp: event.ts,
           }),
+          front_heating: liveValuesEvent.data.front_heating,
+          back_heating: liveValuesEvent.data.back_heating,
         }));
       } else {
         handleUnhandledEventError(eventName);
