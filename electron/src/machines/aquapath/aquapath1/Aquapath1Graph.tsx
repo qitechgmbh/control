@@ -19,6 +19,8 @@ export function Aquapath1GraphPage() {
     back_temperature,
     front_temp_reservoir,
     back_temp_reservoir,
+    targetFrontTemperature,
+    targetBackTemperature,
   } = useAquapath1();
 
   const syncHook = useGraphSync("aquapath-group");
@@ -48,6 +50,7 @@ export function Aquapath1GraphPage() {
           temp_in={back_temperature}
           temp_out={back_temp_reservoir}
           targetTemp={reservoir1TempTarget}
+          targetSeries={targetBackTemperature}
           name={"Reservoir 1 (Back) Temperature"}
           id={"reservoir_1_temp"}
         />
@@ -56,6 +59,7 @@ export function Aquapath1GraphPage() {
           temp_in={front_temperature}
           temp_out={front_temp_reservoir}
           targetTemp={reservoir2TempTarget}
+          targetSeries={targetFrontTemperature}
           name={"Reservoir 2 (Front) Temperature"}
           id={"reservoir_2_temp"}
         />
@@ -106,6 +110,7 @@ export function TemperatureGraph({
   temp_in,
   temp_out,
   targetTemp,
+  targetSeries,
   name,
   id,
 }: {
@@ -113,6 +118,7 @@ export function TemperatureGraph({
   temp_in: TimeSeries | null;
   temp_out: TimeSeries | null;
   targetTemp: number;
+  targetSeries: TimeSeries | null;
   name: string;
   id: string;
 }) {
@@ -138,9 +144,10 @@ export function TemperatureGraph({
             color: "#3b82f6",
             lines: [
               {
-                type: "threshold" as const,
+                type: "target" as const,
                 value: targetTemp,
                 label: "Target Temperature",
+                targetSeries: targetSeries ?? undefined,
                 color: "#3b82f6",
                 show: true,
                 width: 2,
@@ -159,9 +166,10 @@ export function TemperatureGraph({
             color: "#f87171",
             lines: [
               {
-                type: "threshold" as const,
+                type: "target" as const,
                 value: targetTemp,
                 label: "Target Temperature",
+                targetSeries: targetSeries ?? undefined,
                 color: "#f87171",
                 show: true,
                 width: 2,
