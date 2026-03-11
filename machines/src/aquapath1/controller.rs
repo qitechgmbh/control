@@ -595,9 +595,9 @@ impl Controller {
             if self.cooling_allowed && thermal_interlock_ok {
                 self.set_cooling_state(true, now);
                 let max_revolutions = self.get_max_revolutions();
-                let temp_offset = self.current_temperature - self.target_temperature;
                 let max_rpm = max_revolutions.get::<revolution_per_minute>();
-                let temp_offset_c = temp_offset.get::<degree_celsius>();
+                let temp_offset_c = self.current_temperature.get::<degree_celsius>()
+                    - self.target_temperature.get::<degree_celsius>();
 
                 let (target_revolutions, cooling_mode) =
                     Self::cooling_target_rpm(temp_offset_c, max_rpm, self.config.cooling);
