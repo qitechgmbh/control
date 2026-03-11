@@ -56,10 +56,6 @@ export function Aquapath1SettingsPage() {
               }}
             />
           </Label>
-          <div className="text-muted-foreground mt-3 text-sm">
-            Backend raw max value:{" "}
-            {state?.fan_states.back.max_revolutions?.toFixed(1) ?? "N/A"}
-          </div>
         </ControlCard>
 
         <ControlCard title="Reservoir 2 (Front) Fan Revolutions">
@@ -76,10 +72,6 @@ export function Aquapath1SettingsPage() {
               }}
             />
           </Label>
-          <div className="text-muted-foreground mt-3 text-sm">
-            Backend raw max value:{" "}
-            {state?.fan_states.front.max_revolutions?.toFixed(1) ?? "N/A"}
-          </div>
         </ControlCard>
 
         <ControlCard title="Ambient Calibration">
