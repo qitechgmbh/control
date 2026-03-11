@@ -220,14 +220,8 @@ impl MachineNewTrait for ExtruderV3 {
                 .machine_identification_unique
                 .machine_identification
             {
-                ExtruderV3::REVERSED_MACHINE_IDENTIFICATION => {
-                    tracing::warn!("=================Reversed Extruder");
-                    true
-                }
-                _ => {
-                    tracing::warn!("=================Normal Extruder");
-                    false
-                }
+                ExtruderV3::REVERSED_MACHINE_IDENTIFICATION => true,
+                _ => false,
             };
 
             let inverter = MitsubishiCS80::new(SerialInterface::new(el6021, EL6021Port::SI1));
