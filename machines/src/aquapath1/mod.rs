@@ -200,7 +200,7 @@ impl AquaPathV1 {
                 front: FanState {
                     revolutions: self
                         .front_controller
-                        .current_revolutions
+                        .max_revolutions
                         .get::<revolution_per_minute>(),
                     max_revolutions: self
                         .front_controller
@@ -210,7 +210,7 @@ impl AquaPathV1 {
                 back: FanState {
                     revolutions: self
                         .back_controller
-                        .current_revolutions
+                        .max_revolutions
                         .get::<revolution_per_minute>(),
                     max_revolutions: self
                         .back_controller
