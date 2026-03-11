@@ -121,9 +121,6 @@ export function Aquapath1ControlPage() {
                 }
               />
             </div>
-            <div className="text-muted-foreground text-sm">
-              Backend max value: {reservoir1MaxRevolutions.toFixed(1)}
-            </div>
 
             <div className="flex flex-row">
               <Label label="Pump">
@@ -226,9 +223,6 @@ export function Aquapath1ControlPage() {
                   ).toFixed(1)
                 }
               />
-            </div>
-            <div className="text-muted-foreground text-sm">
-              Backend max value: {reservoir2MaxRevolutions.toFixed(1)}
             </div>
 
             <div className="flex flex-row">
