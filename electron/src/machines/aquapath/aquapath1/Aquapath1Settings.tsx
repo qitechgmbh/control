@@ -42,23 +42,7 @@ export function Aquapath1SettingsPage() {
   return (
     <Page>
       <ControlGrid columns={2}>
-        <ControlCard title="Reservoir 1 (Front) Fan Revolutions">
-          <Label label="Set Max Revolution Speed">
-            <EditValue
-              title="Set Max Revolution Speed"
-              min={0}
-              value={state?.fan_states.front.max_revolutions}
-              max={100}
-              unit="%"
-              renderValue={(value) => value.toFixed(1)}
-              onChange={(val) => {
-                setFrontRevolutions(val);
-              }}
-            />
-          </Label>
-        </ControlCard>
-
-        <ControlCard title="Reservoir 2 (Back) Fan Revolutions">
+        <ControlCard title="Reservoir 1 (Back) Fan Revolutions">
           <Label label="Set Max Revolution Speed">
             <EditValue
               title="Set Max Revolution Speed"
@@ -69,6 +53,22 @@ export function Aquapath1SettingsPage() {
               renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
                 setBackRevolutions(val);
+              }}
+            />
+          </Label>
+        </ControlCard>
+
+        <ControlCard title="Reservoir 2 (Front) Fan Revolutions">
+          <Label label="Set Max Revolution Speed">
+            <EditValue
+              title="Set Max Revolution Speed"
+              min={0}
+              value={state?.fan_states.front.max_revolutions}
+              max={100}
+              unit="%"
+              renderValue={(value) => value.toFixed(1)}
+              onChange={(val) => {
+                setFrontRevolutions(val);
               }}
             />
           </Label>
@@ -110,51 +110,7 @@ export function Aquapath1SettingsPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Reservoir 1 (Front) Temperature Tolerances">
-          <Label label="Set Heating Tolerance">
-            <EditValue
-              title="Set Heating Tolerance"
-              min={0}
-              value={state?.tolerance_states.front.heating}
-              max={10}
-              step={0.1}
-              unit="C"
-              renderValue={(value) => value.toFixed(1)}
-              onChange={(val) => {
-                setFrontHeatingTolerance(val);
-              }}
-            />
-          </Label>
-
-          <Label label="Set Cooling Tolerance">
-            <EditValue
-              title="Set Cooling Tolerance"
-              min={0}
-              value={state?.tolerance_states.front.cooling}
-              max={10}
-              step={0.1}
-              unit="C"
-              renderValue={(value) => value.toFixed(1)}
-              onChange={(val) => {
-                setFrontCoolingTolerance(val);
-              }}
-            />
-          </Label>
-          <div className="mt-3">
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => {
-                setFrontHeatingTolerance(DEFAULT_HEATING_TOLERANCE_C);
-                setFrontCoolingTolerance(DEFAULT_COOLING_TOLERANCE_C);
-              }}
-            >
-              Reset to Default
-            </Button>
-          </div>
-        </ControlCard>
-
-        <ControlCard title="Reservoir 2 (Back) Temperature Tolerances">
+        <ControlCard title="Reservoir 1 (Back) Temperature Tolerances">
           <Label label="Set Heating Tolerance">
             <EditValue
               title="Set Heating Tolerance"
@@ -198,45 +154,33 @@ export function Aquapath1SettingsPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Reservoir 1 (Front) PID Settings">
-          <Label label="Set Kp">
+        <ControlCard title="Reservoir 2 (Front) Temperature Tolerances">
+          <Label label="Set Heating Tolerance">
             <EditValue
-              title="Set Reservoir 1 Kp"
+              title="Set Heating Tolerance"
               min={0}
-              value={state?.pid_states.front.kp}
-              max={5}
-              step={0.01}
-              renderValue={(value) => value.toFixed(2)}
+              value={state?.tolerance_states.front.heating}
+              max={10}
+              step={0.1}
+              unit="C"
+              renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
-                setFrontPidKp(val);
+                setFrontHeatingTolerance(val);
               }}
             />
           </Label>
 
-          <Label label="Set Ki">
+          <Label label="Set Cooling Tolerance">
             <EditValue
-              title="Set Reservoir 1 Ki"
+              title="Set Cooling Tolerance"
               min={0}
-              value={state?.pid_states.front.ki}
-              max={5}
-              step={0.01}
-              renderValue={(value) => value.toFixed(2)}
+              value={state?.tolerance_states.front.cooling}
+              max={10}
+              step={0.1}
+              unit="C"
+              renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
-                setFrontPidKi(val);
-              }}
-            />
-          </Label>
-
-          <Label label="Set Kd">
-            <EditValue
-              title="Set Reservoir 1 Kd"
-              min={0}
-              value={state?.pid_states.front.kd}
-              max={5}
-              step={0.01}
-              renderValue={(value) => value.toFixed(2)}
-              onChange={(val) => {
-                setFrontPidKd(val);
+                setFrontCoolingTolerance(val);
               }}
             />
           </Label>
@@ -245,9 +189,8 @@ export function Aquapath1SettingsPage() {
               type="button"
               size="sm"
               onClick={() => {
-                setFrontPidKp(DEFAULT_PID_KP);
-                setFrontPidKi(DEFAULT_PID_KI);
-                setFrontPidKd(DEFAULT_PID_KD);
+                setFrontHeatingTolerance(DEFAULT_HEATING_TOLERANCE_C);
+                setFrontCoolingTolerance(DEFAULT_COOLING_TOLERANCE_C);
               }}
             >
               Reset to Default
@@ -255,10 +198,10 @@ export function Aquapath1SettingsPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Reservoir 2 (Back) PID Settings">
+        <ControlCard title="Reservoir 1 (Back) PID Settings">
           <Label label="Set Kp">
             <EditValue
-              title="Set Reservoir 2 Kp"
+              title="Set Reservoir 1 Kp"
               min={0}
               value={state?.pid_states.back.kp}
               max={5}
@@ -272,7 +215,7 @@ export function Aquapath1SettingsPage() {
 
           <Label label="Set Ki">
             <EditValue
-              title="Set Reservoir 2 Ki"
+              title="Set Reservoir 1 Ki"
               min={0}
               value={state?.pid_states.back.ki}
               max={5}
@@ -286,7 +229,7 @@ export function Aquapath1SettingsPage() {
 
           <Label label="Set Kd">
             <EditValue
-              title="Set Reservoir 2 Kd"
+              title="Set Reservoir 1 Kd"
               min={0}
               value={state?.pid_states.back.kd}
               max={5}
@@ -305,6 +248,63 @@ export function Aquapath1SettingsPage() {
                 setBackPidKp(DEFAULT_PID_KP);
                 setBackPidKi(DEFAULT_PID_KI);
                 setBackPidKd(DEFAULT_PID_KD);
+              }}
+            >
+              Reset to Default
+            </Button>
+          </div>
+        </ControlCard>
+
+        <ControlCard title="Reservoir 2 (Front) PID Settings">
+          <Label label="Set Kp">
+            <EditValue
+              title="Set Reservoir 2 Kp"
+              min={0}
+              value={state?.pid_states.front.kp}
+              max={5}
+              step={0.01}
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setFrontPidKp(val);
+              }}
+            />
+          </Label>
+
+          <Label label="Set Ki">
+            <EditValue
+              title="Set Reservoir 2 Ki"
+              min={0}
+              value={state?.pid_states.front.ki}
+              max={5}
+              step={0.01}
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setFrontPidKi(val);
+              }}
+            />
+          </Label>
+
+          <Label label="Set Kd">
+            <EditValue
+              title="Set Reservoir 2 Kd"
+              min={0}
+              value={state?.pid_states.front.kd}
+              max={5}
+              step={0.01}
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => {
+                setFrontPidKd(val);
+              }}
+            />
+          </Label>
+          <div className="mt-3">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setFrontPidKp(DEFAULT_PID_KP);
+                setFrontPidKi(DEFAULT_PID_KI);
+                setFrontPidKd(DEFAULT_PID_KD);
               }}
             >
               Reset to Default

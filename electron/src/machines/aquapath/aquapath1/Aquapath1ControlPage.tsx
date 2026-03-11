@@ -30,26 +30,24 @@ export function Aquapath1ControlPage() {
     setBackFlow,
   } = useAquapath1();
   const reservoir1TargetTemperature =
-    state?.temperature_states?.front.target_temperature ?? 0;
-  const reservoir2TargetTemperature =
     state?.temperature_states?.back.target_temperature ?? 0;
+  const reservoir2TargetTemperature =
+    state?.temperature_states?.front.target_temperature ?? 0;
   const minSettableTemperature = state?.ambient_temperature_calibration ?? 22;
 
-  const reservoir1TargetFlow = state?.flow_states.front.should_flow ?? false;
-  const reservoir2TargetFlow = state?.flow_states.back.should_flow ?? false;
-  const reservoir1HeaterOn = front_heating;
-  const reservoir2HeaterOn = back_heating;
-  const reservoir1FanOn = (front_revolutions.current?.value ?? 0) > 0;
-  const reservoir2FanOn = (back_revolutions.current?.value ?? 0) > 0;
+  const reservoir1TargetFlow = state?.flow_states.back.should_flow ?? false;
+  const reservoir2TargetFlow = state?.flow_states.front.should_flow ?? false;
+  const reservoir1HeaterOn = back_heating;
+  const reservoir2HeaterOn = front_heating;
+  const reservoir1FanOn = (back_revolutions.current?.value ?? 0) > 0;
+  const reservoir2FanOn = (front_revolutions.current?.value ?? 0) > 0;
   const reservoir1MaxRevolutions =
-    state?.fan_states.front.max_revolutions ?? 100;
-  const reservoir2MaxRevolutions =
     state?.fan_states.back.max_revolutions ?? 100;
-  const reservoir2CoolingMode = state?.back_cooling_mode;
+  const reservoir2MaxRevolutions =
+    state?.fan_states.front.max_revolutions ?? 100;
+  const reservoir2CoolingMode = front_cooling_mode;
 
-  const renderCoolingModeLabel = (
-    mode: "Low" | "Ramp" | "Max" | null | undefined,
-  ) => {
+  const renderCoolingModeLabel = (mode: "Low" | "Ramp" | "Max" | null | undefined) => {
     switch (mode) {
       case "Low":
         return "Low";
@@ -65,13 +63,13 @@ export function Aquapath1ControlPage() {
   return (
     <Page>
       <ControlGrid columns={2}>
-        <ControlCard title="Reservoir 1 (Front)">
+        <ControlCard title="Reservoir 1 (Back)">
           <div className="grid grid-rows-5 gap-4">
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Flow"
                 unit="l/min"
-                timeseries={front_flow}
+                timeseries={back_flow}
                 renderValue={(value) => value.toFixed(1)}
               />
             </div>
@@ -80,7 +78,7 @@ export function Aquapath1ControlPage() {
               <TimeSeriesValueNumeric
                 label="Temperature"
                 unit="C"
-                timeseries={front_temperature}
+                timeseries={back_temperature}
                 renderValue={(value) => value.toFixed(1)}
               />
             </div>
@@ -96,10 +94,10 @@ export function Aquapath1ControlPage() {
                   step={0.1}
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
-                    setFrontTemperature(Math.max(val, minSettableTemperature));
+                    setBackTemperature(Math.max(val, minSettableTemperature));
                   }}
                   defaultValue={
-                    defaultState?.temperature_states.front.target_temperature
+                    defaultState?.temperature_states.back.target_temperature
                   }
                 />
               </Label>
@@ -129,7 +127,7 @@ export function Aquapath1ControlPage() {
               <TimeSeriesValueNumeric
                 label="Revolution Speed"
                 unit="%"
-                timeseries={front_revolutions}
+                timeseries={back_revolutions}
                 renderValue={(value) =>
                   (
                     (value / Math.max(reservoir1MaxRevolutions, 1)) *
@@ -160,7 +158,7 @@ export function Aquapath1ControlPage() {
                     },
                   }}
                   onChange={(value) => {
-                    setFrontFlow(value == "On");
+                    setBackFlow(value == "On");
                   }}
                 />
               </Label>
@@ -168,13 +166,13 @@ export function Aquapath1ControlPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Reservoir 2 (Back)">
+        <ControlCard title="Reservoir 2 (Front)">
           <div className="grid grid-rows-5 gap-4">
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Flow"
                 unit="l/min"
-                timeseries={back_flow}
+                timeseries={front_flow}
                 renderValue={(value) => value.toFixed(1)}
               />
             </div>
@@ -183,7 +181,7 @@ export function Aquapath1ControlPage() {
               <TimeSeriesValueNumeric
                 label="Temperature"
                 unit="C"
-                timeseries={back_temperature}
+                timeseries={front_temperature}
                 renderValue={(value) => value.toFixed(1)}
               />
             </div>
@@ -199,10 +197,10 @@ export function Aquapath1ControlPage() {
                   step={0.1}
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
-                    setBackTemperature(Math.max(val, minSettableTemperature));
+                    setFrontTemperature(Math.max(val, minSettableTemperature));
                   }}
                   defaultValue={
-                    defaultState?.temperature_states.back.target_temperature
+                    defaultState?.temperature_states.front.target_temperature
                   }
                 />
               </Label>
@@ -242,7 +240,7 @@ export function Aquapath1ControlPage() {
               <TimeSeriesValueNumeric
                 label="Revolution Speed"
                 unit="%"
-                timeseries={back_revolutions}
+                timeseries={front_revolutions}
                 renderValue={(value) =>
                   (
                     (value / Math.max(reservoir2MaxRevolutions, 1)) *
@@ -273,7 +271,7 @@ export function Aquapath1ControlPage() {
                     },
                   }}
                   onChange={(value) => {
-                    setBackFlow(value == "On");
+                    setFrontFlow(value == "On");
                   }}
                 />
               </Label>
