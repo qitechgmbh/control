@@ -19,7 +19,6 @@ export function TestMachineStepperControlPage() {
           <Label label="Target Speed">
             <EditValue
               value={state?.target_speed}
-              unit="rpm"
               title="Target Speed"
               defaultValue={0}
               min={-25000}
