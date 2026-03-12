@@ -152,6 +152,8 @@ pub struct HeatingState {
 pub struct ExtruderSettingsState {
     pub pressure_limit: f64,
     pub pressure_limit_enabled: bool,
+    /// Heating safeguard watchdog enabled (default: true)
+    pub heating_safeguard_enabled: bool,
     pub nozzle_temperature_target_enabled: bool,
 }
 
