@@ -131,7 +131,7 @@ export function FloatingControlPanel({
   showFromTimestamp,
   onShowFromChange,
 }: ControlProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const getSelectedTimeWindowLabel = () => {
     // If Show from Time is set, display "Show All" for the time window
