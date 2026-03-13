@@ -3,9 +3,9 @@
 use crate::extruder1::{
     HeatingType,
     api::{
-        ExtruderSettingsState, HeatingState, HeatingStates, InverterStatusState, PidSettings,
-        PidSettingsStates, PressureState, RegulationState, RotationState, ScrewState,
-        TemperaturePid,
+        ExtruderSettingsState, HeatingState, HeatingStates, InverterStatusState, PidAutoTuneState,
+        PidSettings, PidSettingsStates, PressureAutoTuneConfig, PressureState, RegulationState,
+        RotationState, ScrewState, TemperaturePid,
     },
 };
 #[cfg(not(feature = "mock-machine"))]
@@ -149,6 +149,14 @@ impl ExtruderV3 {
                     kp: self.screw_speed_controller.pid.get_kp(),
                     kd: self.screw_speed_controller.pid.get_kd(),
                 },
+            },
+            pid_autotune_state: {
+                let result = self.screw_speed_controller.get_autotune_result();
+                PidAutoTuneState {
+                    state: self.screw_speed_controller.get_autotune_state().to_string(),
+                    progress: self.screw_speed_controller.get_autotune_progress(),
+                    result: result.map(|(kp, ki, kd)| PidSettings { kp, ki, kd }),
+                }
             },
         }
     }
@@ -329,6 +337,24 @@ impl ExtruderV3 {
         self.screw_speed_controller
             .pid
             .configure(settings.ki, settings.kp, settings.kd);
+        self.emit_state();
+    }
+
+    /// Start pressure PID auto-tuning.
+    ///
+    /// The machine must be in `Extrude` mode and in pressure-regulation mode
+    /// (`uses_rpm == false`) for the tuner to drive the actuator.
+    pub fn start_pressure_pid_autotune(&mut self, config: PressureAutoTuneConfig) {
+        use std::time::Instant;
+        let now = Instant::now();
+        self.screw_speed_controller
+            .start_pressure_autotune(now, config);
+        self.emit_state();
+    }
+
+    /// Abort the current pressure PID auto-tune run
+    pub fn stop_pressure_pid_autotune(&mut self) {
+        self.screw_speed_controller.stop_autotune();
         self.emit_state();
     }
 
