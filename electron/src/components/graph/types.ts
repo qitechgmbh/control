@@ -1,3 +1,4 @@
+import type uPlot from "uplot";
 import { IconName } from "@/components/Icon";
 import { Unit } from "@/control/units";
 import { TimeSeries } from "@/lib/timeseries";
@@ -27,16 +28,34 @@ export type PropGraphSync = {
 };
 
 // Configuration types for additional lines
-export type GraphLine = {
-  type: "threshold" | "target";
-  value: number;
-  targetSeries?: TimeSeries;
+type BaseGraphLine = {
   color: string;
-  label?: string;
   width?: number;
   dash?: number[];
   show?: boolean;
 };
+
+type ThresholdLine = BaseGraphLine & {
+  type: "threshold";
+  value: number;
+  label?: string;
+};
+
+type TargetLine = BaseGraphLine & {
+  type: "target";
+  value: number;
+  label?: string;
+  targetSeries?: TimeSeries;
+};
+
+type UserMarkerLine = BaseGraphLine & {
+  type: "user_marker";
+  value: number;
+  label: string;
+  markerTimestamp: number;
+};
+
+export type GraphLine = ThresholdLine | TargetLine | UserMarkerLine;
 
 export type GraphConfig = {
   title: string;
@@ -75,6 +94,8 @@ export type BigGraphProps = {
   config: GraphConfig;
   graphId: string;
   syncGraph?: PropGraphSync;
+  /** Optional ref to receive the uPlot instance when chart is created (e.g. for marker positioning) */
+  uplotRefOut?: React.MutableRefObject<uPlot | null>;
 };
 
 export type TimeWindowOption = {
@@ -89,6 +110,7 @@ export type ControlProps = {
   onSwitchToLive: () => void;
   onSwitchToHistorical: (origin: SwitchOrigin) => void;
   onExport?: () => void;
+  onAddMarker?: () => void;
   timeWindowOptions?: TimeWindowOption[];
   showFromTimestamp?: number | null;
   onShowFromChange?: (timestamp: number | null) => void;
@@ -111,6 +133,8 @@ export interface HistoricalModeHandlers {
 export interface CreateChartParams {
   containerRef: React.RefObject<HTMLDivElement | null>;
   uplotRef: React.RefObject<uPlot | null>;
+  /** Optional ref to expose uPlot instance (e.g. for marker overlay positioning) */
+  uplotRefOut?: React.MutableRefObject<uPlot | null>;
   newData: BigGraphProps["newData"];
   config: BigGraphProps["config"];
   colors: {

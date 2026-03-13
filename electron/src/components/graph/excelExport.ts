@@ -3,6 +3,8 @@ import { TimeSeries, seriesToUPlotData } from "@/lib/timeseries";
 import { renderUnitSymbol, Unit } from "@/control/units";
 import { GraphConfig, SeriesData, GraphLine } from "./types";
 
+type UserMarkerLine = Extract<GraphLine, { type: "user_marker" }>;
+
 export type GraphExportData = {
   config: GraphConfig;
   data: SeriesData; // Always a single series
@@ -82,6 +84,27 @@ export function exportGraphsToExcel(
           usedSheetNames,
         );
         XLSX.utils.book_append_sheet(workbook, dataWorksheet, dataSheetName);
+      }
+
+      // Excel worksheet for timestamps and timestamp markers
+      if (graphLineData.targetLines.length > 0) {
+        const markerReportData =
+          createGraphLineMarkerReportSheet(graphLineData);
+        const markerReportWorksheet = XLSX.utils.aoa_to_sheet(markerReportData);
+        // Set column widths here (e.g., Column A = 15, Column B = 25)
+        markerReportWorksheet["!cols"] = [
+          { wch: 20 }, // Column A (Labels: 'Timestamp', 'Value', etc.)
+          { wch: 30 }, // Column B (Values, where the Date object resides)
+        ];
+        const markerReportSheetName = generateUniqueSheetName(
+          `${seriesTitle} Marker Report`,
+          usedSheetNames,
+        );
+        XLSX.utils.book_append_sheet(
+          workbook,
+          markerReportWorksheet,
+          markerReportSheetName,
+        );
       }
 
       processedCount++;
@@ -288,6 +311,116 @@ function createGraphLineDataSheet(graphLine: {
         : value?.toFixed(3) || "",
     };
   });
+}
+
+function createGraphLineMarkerReportSheet(graphLine: {
+  graphTitle: string;
+  lineTitle: string;
+  series: TimeSeries;
+  color?: string;
+  unit?: Unit;
+  renderValue?: (value: number) => string;
+  config: GraphConfig;
+  targetLines: GraphLine[];
+}): any[][] {
+  const [timestamps, values] = seriesToUPlotData(graphLine.series.long);
+  const unitSymbol = renderUnitSymbol(graphLine.unit) || "";
+  // Initialize Report Data and Header
+  const reportData: any[][] = [
+    [`Marker Report: ${graphLine.lineTitle}`],
+    ["Graph", graphLine.graphTitle],
+    ["Line Name", graphLine.lineTitle],
+    ["", ""],
+    ["--- Data Point Marker Status ---", ""],
+    ["", ""],
+  ];
+
+  if (timestamps.length === 0) {
+    reportData.push(["No data points to report"]);
+    return reportData;
+  }
+
+  // Filter User Markers
+  const allTargetLines = graphLine.targetLines.filter(
+    (line) => line.show !== false,
+  );
+  const userMarkers = allTargetLines.filter(
+    (line): line is UserMarkerLine => line.type === "user_marker",
+  );
+
+  if (userMarkers.length === 0) {
+    reportData.push(["No user-created markers found.", ""]);
+    return reportData;
+  }
+
+  /**
+   * Binary search: returns the index of the timestamp in `arr` closest to `target`.
+   * Assumes `arr` is sorted ascending.
+   */
+  const findClosestIndex = (arr: number[], target: number): number => {
+    if (arr.length === 0) return -1;
+    if (target <= arr[0]) return 0;
+    if (target >= arr[arr.length - 1]) return arr.length - 1;
+
+    let low = 0;
+    let high = arr.length - 1;
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      if (arr[mid] === target) return mid;
+      if (arr[mid] < target) low = mid + 1;
+      else high = mid - 1;
+    }
+    // `high` is the largest index with value < target, `low` is the smallest > target
+    return Math.abs(arr[low] - target) < Math.abs(arr[high] - target)
+      ? low
+      : high;
+  };
+
+  // Map each user marker to the closest data point index
+  const markerIndexMap = new Map<
+    number,
+    { label: string; originalTimestamp: number }
+  >();
+
+  userMarkers.forEach((line) => {
+    const markerTime = line.markerTimestamp;
+    const closestDataPointIndex = findClosestIndex(timestamps, markerTime);
+    if (closestDataPointIndex !== -1) {
+      markerIndexMap.set(closestDataPointIndex, {
+        label: line.label,
+        originalTimestamp: markerTime,
+      });
+    }
+  });
+
+  // Add the final header before the marker rows start
+  reportData.push(["--- BEGIN DETAILED REPORT ---", ""], ["", ""]);
+
+  // Emit one block per marker (sorted by data-point index), not one per datapoint
+  const sortedEntries = Array.from(markerIndexMap.entries()).sort(
+    ([a], [b]) => a - b,
+  );
+
+  sortedEntries.forEach(([index, markerData]) => {
+    const dataPointTimestamp = timestamps[index];
+    if (dataPointTimestamp === undefined) return;
+
+    const value = values[index];
+    const timeToDisplay = markerData.originalTimestamp;
+
+    // ISO string is sortable and unambiguous across day/locale boundaries
+    const formattedTime = new Date(timeToDisplay).toISOString();
+
+    reportData.push(["Timestamp", formattedTime]);
+    const formattedValue = graphLine.renderValue
+      ? graphLine.renderValue(value)
+      : value?.toFixed(3) || "";
+    reportData.push([`Value (${unitSymbol})`, formattedValue]);
+    reportData.push(["Marker", markerData.label]);
+    reportData.push(["", ""]);
+  });
+
+  return reportData;
 }
 
 // Ensure sheet names are unique and valid for Excel
