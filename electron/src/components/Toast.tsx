@@ -15,7 +15,7 @@ type ZodErrorToastProps = {
 type ToastContentProps = {
   title: string;
   icon?: IconName;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 };
 
 export function Toast({ title, children, icon }: ToastContentProps) {

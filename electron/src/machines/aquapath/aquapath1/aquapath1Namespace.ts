@@ -17,6 +17,9 @@ import {
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
+import { Toast } from "@/components/Toast";
+import { toast } from "sonner";
+import React from "react";
 
 // ========== Event Schema Definitions ==========
 /**
@@ -60,6 +63,15 @@ export const fanStatesSchema = z.object({
   front: fanStateSchema,
 });
 
+export const coolingModeSchema = z.enum(["Low", "Ramp", "Max"]);
+export const coolingModeStateSchema = z.object({
+  mode: coolingModeSchema.nullable(),
+});
+export const coolingModeStatesSchema = z.object({
+  back: coolingModeStateSchema,
+  front: coolingModeStateSchema,
+});
+
 export const toleranceStateSchema = z.object({
   heating: z.number(),
   cooling: z.number(),
@@ -67,6 +79,17 @@ export const toleranceStateSchema = z.object({
 export const toleranceStatesSchema = z.object({
   back: toleranceStateSchema,
   front: toleranceStateSchema,
+});
+
+export const pidStateSchema = z.object({
+  kp: z.number(),
+  ki: z.number(),
+  kd: z.number(),
+});
+
+export const pidStatesSchema = z.object({
+  back: pidStateSchema,
+  front: pidStateSchema,
 });
 /**
  * Live values event schema (time-series data)
@@ -82,6 +105,10 @@ export const liveValuesEventDataSchema = z.object({
   back_revolutions: z.number(),
   back_power: z.number(),
   front_power: z.number(),
+  front_heating: z.boolean().optional().default(false),
+  back_heating: z.boolean().optional().default(false),
+  front_cooling_mode: coolingModeSchema.nullable().optional().default(null),
+  back_cooling_mode: coolingModeSchema.nullable().optional().default(null),
   front_total_energy: z.number(),
   back_total_energy: z.number(),
 });
@@ -92,15 +119,24 @@ export const liveValuesEventDataSchema = z.object({
 export const stateEventDataSchema = z.object({
   is_default_state: z.boolean(),
   mode_state: modeStateSchema,
+  ambient_temperature_calibration: z.number().optional().default(22),
   flow_states: flowStatesSchema,
   temperature_states: tempStatesSchema,
   fan_states: fanStatesSchema,
+  cooling_mode_states: coolingModeStatesSchema,
   tolerance_states: toleranceStatesSchema,
+  pid_states: pidStatesSchema,
+});
+
+export const noticeEventDataSchema = z.object({
+  title: z.string(),
+  message: z.string(),
 });
 
 // ========== Event Schemas with Wrappers ==========
 export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
 export const stateEventSchema = eventSchema(stateEventDataSchema);
+export const noticeEventSchema = eventSchema(noticeEventDataSchema);
 
 // ========== Type Inferences ==========
 export type Mode = z.infer<typeof modeSchema>;
@@ -130,8 +166,10 @@ export type Aquapath1NamespaceStore = {
 
   front_total_energy: TimeSeries;
   back_total_energy: TimeSeries;
-
-  // Target value history (for graph target lines)
+  front_heating: boolean;
+  back_heating: boolean;
+  front_cooling_mode: "Low" | "Ramp" | "Max" | null;
+  back_cooling_mode: "Low" | "Ramp" | "Max" | null;
   targetFrontTemperature: TimeSeries;
   targetBackTemperature: TimeSeries;
 };
@@ -189,6 +227,10 @@ export const createAquapath1NamespaceStore =
         front_power: front_power,
         front_total_energy: front_total_energy,
         back_total_energy: back_total_energy,
+        front_heating: false,
+        back_heating: false,
+        front_cooling_mode: null,
+        back_cooling_mode: null,
         targetFrontTemperature: targetFrontTemperature,
         targetBackTemperature: targetBackTemperature,
       };
@@ -248,6 +290,26 @@ export function aquapath1MessageHandler(
                   timestamp,
                 }),
         }));
+      } else if (eventName === "NoticeEvent") {
+        const noticeEvent = noticeEventSchema.parse(event);
+        toast.custom(
+          () =>
+            React.createElement(
+              Toast,
+              {
+                title: noticeEvent.data.title,
+                icon: "lu:CircleAlert",
+              },
+              React.createElement(
+                "div",
+                { className: "text-zinc-500" },
+                noticeEvent.data.message,
+              ),
+            ),
+          {
+            duration: 7000,
+          },
+        );
       }
       // Live values events (time-series data)
       else if (eventName === "LiveValuesEvent") {
@@ -303,6 +365,10 @@ export function aquapath1MessageHandler(
             value: liveValuesEvent.data.back_total_energy,
             timestamp: event.ts,
           }),
+          front_heating: liveValuesEvent.data.front_heating,
+          back_heating: liveValuesEvent.data.back_heating,
+          front_cooling_mode: liveValuesEvent.data.front_cooling_mode,
+          back_cooling_mode: liveValuesEvent.data.back_cooling_mode,
         }));
       } else {
         handleUnhandledEventError(eventName);
