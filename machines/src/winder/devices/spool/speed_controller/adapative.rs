@@ -12,26 +12,23 @@ use units::f64::*;
 use units::length::{centimeter, meter};
 use units::velocity::meter_per_second;
 
-use crate::winder2::devices::{Puller, TensionArm};
+use crate::{
+    math::{self},
+    types::Clamp,
+    winder::devices::{Puller, TensionArm},
+};
 
+use super::FilamentTensionCalculator;
 use super::SpeedController;
-use super::helpers::{FilamentTensionCalculator, {Clamp, clamp_revolution_uom}};
 
 #[derive(Debug)]
 pub struct AdaptiveSpeedController {
-    /// Last commanded angular velocity sent to the spool motor
-    speed: AngularVelocity,
-    /// Whether the speed controller is enabled (false = always returns zero speed)
+    speed:   AngularVelocity,
     enabled: bool,
-    /// Acceleration controller to smooth speed transitions and prevent sudden changes
     acceleration_controller: AngularAccelerationSpeedController,
-    /// Calculator for converting tension arm angle to normalized filament tension
     filament_calc: FilamentTensionCalculator,
-    /// Moving window of recent speeds (in rad/s) used for dynamic acceleration limit calculation
     speed_time_window: MovingTimeWindow<f64>,
-    /// Factor to control/calculate the feed speed based on filament tension
     speed_factor: Length,
-    /// Timestamp of last max speed factor update, used for time-aware learning rate calculation
     last_max_speed_factor_update: Option<Instant>,
 
     /// Target normalized tension value (0.0-1.0) that the controller tries to maintain
@@ -47,8 +44,7 @@ pub struct AdaptiveSpeedController {
 }
 
 // Constants
-impl AdaptiveSpeedController 
-{
+impl AdaptiveSpeedController {
     /// Maximum speed limit (in RPM) used to initialize the acceleration controller
     const INITIAL_MAX_SPEED_RPM: f64 = 150.0;
 
@@ -91,8 +87,7 @@ impl AdaptiveSpeedController
 }
 
 // getter + setter
-impl AdaptiveSpeedController
-{
+impl AdaptiveSpeedController {
     pub const fn tension_target(&self) -> f64 {
         self.tension_target
     }
@@ -138,10 +133,8 @@ impl AdaptiveSpeedController
 }
 
 // public interface
-impl AdaptiveSpeedController
-{
-    pub fn new() -> Self 
-    {
+impl AdaptiveSpeedController {
+    pub fn new() -> Self {
         use revolution_per_minute as rpm;
 
         let max_speed = AngularVelocity::new::<rpm>(Self::INITIAL_MAX_SPEED_RPM);
@@ -156,10 +149,7 @@ impl AdaptiveSpeedController
                 AngularAcceleration::ZERO,  // Will be dynamically adjusted
                 AngularVelocity::ZERO,
             ),
-            filament_calc: FilamentTensionCalculator::new(
-                Angle::new::<degree>(Self::TENSION_ARM_MAX_ANGLE_DEG),
-                Angle::new::<degree>(Self::TENSION_ARM_MIN_ANGLE_DEG),
-            ),
+            filament_calc: FilamentTensionCalculator::new(),
             speed_time_window: MovingTimeWindow::new(
                 std::time::Duration::from_secs(Self::SPEED_WINDOW_DURATION_SECS),
                 Self::SPEED_WINDOW_MAX_SAMPLES,
@@ -176,8 +166,7 @@ impl AdaptiveSpeedController
 }
 
 // utils
-impl AdaptiveSpeedController 
-{
+impl AdaptiveSpeedController {
     fn calculate_speed(
         &mut self,
         t: Instant,
@@ -188,21 +177,22 @@ impl AdaptiveSpeedController
         let max_speed = self.max_speed(puller).abs();
 
         // Calculate filament tension from arm angle
-        let tension_arm_revolution = clamp_revolution_uom(
+        let tension_arm_revolution = math::revolution::clamp_uom(
             tension_arm.angle(),
             self.filament_calc.get_max_angle(), // Inverted because min angle = max tension
             self.filament_calc.get_min_angle(),
         );
 
         // Return minimum speed if tension arm is at limits
-        if matches!(tension_arm_revolution.clamp, Clamp::Min | Clamp::Max) 
-        {
+        if matches!(tension_arm_revolution.bounds, Clamp::Min | Clamp::Max) {
             return min_speed;
         }
 
         // 1.0 means maximum tension (high angle, low speed)
         // 0.0 means minimum tension (low angle, high speed)
-        let filament_tension = self.filament_calc.calc_filament_tension(tension_arm_revolution.value);
+        let filament_tension = self
+            .filament_calc
+            .compute(tension_arm_revolution.value);
 
         self.update_speed_factor(filament_tension, t);
 
@@ -220,8 +210,7 @@ impl AdaptiveSpeedController
         target_speed: AngularVelocity,
         puller: &Puller,
         t: Instant,
-    ) -> AngularVelocity 
-    {
+    ) -> AngularVelocity {
         let target_speed_rad_s = target_speed.get::<radian_per_second>();
         let current_max_speed = self.max_speed(puller);
         let max_speed_rad_s = current_max_speed.get::<radian_per_second>();
@@ -244,19 +233,21 @@ impl AdaptiveSpeedController
             AngularAcceleration::new::<radian_per_second_squared>(acceleration_limit);
 
         // Update acceleration controller limits
-        self.acceleration_controller.set_max_acceleration(acceleration);
-        self.acceleration_controller.set_min_acceleration(-acceleration);
+        self.acceleration_controller
+            .set_max_acceleration(acceleration);
+        self.acceleration_controller
+            .set_min_acceleration(-acceleration);
 
         let new_speed = self.acceleration_controller.update(target_speed, t);
 
         // Record for diagnostics
-        self.speed_time_window.update(new_speed.get::<radian_per_second>(), t);
+        self.speed_time_window
+            .update(new_speed.get::<radian_per_second>(), t);
 
         new_speed
     }
 
-    fn clamp_speed(&self, speed: AngularVelocity) -> AngularVelocity 
-    {
+    fn clamp_speed(&self, speed: AngularVelocity) -> AngularVelocity {
         use revolution_per_minute as rpm;
 
         let min_speed = AngularVelocity::ZERO;
@@ -265,10 +256,8 @@ impl AdaptiveSpeedController
         speed.max(min_speed).min(max_speed)
     }
 
-    fn update_speed_factor(&mut self, filament_tension: f64, t: Instant) 
-    {
-        let delta_t = match self.last_max_speed_factor_update 
-        {
+    fn update_speed_factor(&mut self, filament_tension: f64, t: Instant) {
+        let delta_t = match self.last_max_speed_factor_update {
             Some(last_update) => t.duration_since(last_update).as_secs_f64(),
             None => {
                 // First call, initialize and return early
@@ -294,8 +283,7 @@ impl AdaptiveSpeedController
         self.last_max_speed_factor_update = Some(t);
     }
 
-    fn max_speed(&self, puller: &Puller) -> AngularVelocity 
-    {
+    fn max_speed(&self, puller: &Puller) -> AngularVelocity {
         let puller_speed = puller.output_speed().get::<meter_per_second>();
         let speed_factor = self.speed_factor.get::<meter>();
 
@@ -305,38 +293,32 @@ impl AdaptiveSpeedController
     }
 }
 
-impl SpeedController for AdaptiveSpeedController
-{
-    fn speed(&self) -> AngularVelocity 
-    {
+impl SpeedController for AdaptiveSpeedController {
+    fn speed(&self) -> AngularVelocity {
         self.speed
     }
 
-    fn set_speed(&mut self, value: AngularVelocity) 
-    {
+    fn set_speed(&mut self, value: AngularVelocity) {
         self.speed = value;
         self.acceleration_controller.reset(value);
     }
 
-    fn set_enabled(&mut self, value: bool) 
-    {
+    fn set_enabled(&mut self, value: bool) {
         self.enabled = value;
     }
 
     fn update_speed(
-        &mut self, 
-        t: Instant, 
+        &mut self,
+        t: Instant,
         multiplier: f64,
-        tension_arm: &TensionArm, 
-        puller: &Puller
-    ) -> AngularVelocity 
-    {
-        let speed = match self.enabled
-        {
-            true  => self.calculate_speed(t, tension_arm, puller),
+        tension_arm: &TensionArm,
+        puller: &Puller,
+    ) -> AngularVelocity {
+        let speed = match self.enabled {
+            true => self.calculate_speed(t, tension_arm, puller),
             false => AngularVelocity::ZERO,
         };
-        
+
         let accelerated_speed = self.accelerate_speed(speed * multiplier, puller, t);
 
         // Store speed before clamping to preserve the actual commanded value
@@ -344,9 +326,8 @@ impl SpeedController for AdaptiveSpeedController
 
         self.clamp_speed(accelerated_speed)
     }
-    
-    fn reset(&mut self) 
-    {
+
+    fn reset(&mut self) {
         self.speed = AngularVelocity::ZERO;
         self.acceleration_controller.reset(AngularVelocity::ZERO);
         self.speed_factor = Length::new::<centimeter>(4.25);

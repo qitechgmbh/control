@@ -4,8 +4,8 @@ use serde::Serialize;
 use units::{angular_velocity::revolution_per_minute, length::{meter, millimeter}, velocity::meter_per_minute};
 
 use crate::{
-    machine_identification::MachineIdentificationUnique, types::Direction, winder2::{
-        Winder2, 
+    machine_identification::MachineIdentificationUnique, types::Direction, winder::{
+        Winder, 
         devices::{
             PullerGearRatio, PullerSpeedControlAlgorithm, SpoolSpeedControlMode
         }, types::{Mode, SpoolLengthTaskCompletedAction}
@@ -115,7 +115,7 @@ pub struct SpoolLengthTaskState
     pub on_completed_action: SpoolLengthTaskCompletedAction,
 }
 
-impl Winder2
+impl Winder
 {
     pub fn create_state(&self) -> State
     {

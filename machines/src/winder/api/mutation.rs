@@ -13,7 +13,7 @@ use units::{
 };
 
 use crate::{
-    AsyncThreadMessage, Machine, MachineSubscriptionRequest, machine_identification::MachineIdentificationUnique, types::Direction, winder2::{Winder2, devices::{
+    AsyncThreadMessage, Machine, MachineSubscriptionRequest, machine_identification::MachineIdentificationUnique, types::Direction, winder::{Winder, devices::{
         OperationState, 
         PullerGearRatio, 
         PullerSpeedControlAlgorithm,
@@ -80,7 +80,7 @@ pub enum Mutation
     SetOnSpoolLengthTaskCompletedAction(SpoolLengthTaskCompletedAction),
 }
 
-impl Winder2
+impl Winder
 {
     pub fn handle_mutation(&mut self, value: serde_json::Value) -> anyhow::Result<()>
     {
@@ -177,7 +177,7 @@ impl Winder2
 }
 
 // Machine
-impl Winder2 
+impl Winder 
 {
     pub fn set_mode(&mut self, mode: Mode) -> anyhow::Result<()>
     {
@@ -233,7 +233,7 @@ impl Winder2
 }
 
 // Spool
-impl Winder2
+impl Winder
 {
     pub fn spool_set_direction(&mut self, value: Direction) 
     {
@@ -314,7 +314,7 @@ impl Winder2
 }
 
 // Puller
-impl Winder2
+impl Winder
 {
     pub fn puller_set_speed_control_mode(&mut self, algorithm: PullerSpeedControlAlgorithm)
     {
@@ -427,7 +427,7 @@ impl Winder2
 }
 
 // Traverse
-impl Winder2
+impl Winder
 {
     pub fn traverse_set_laser_pointer_enabled(&mut self, value: bool) 
     {
@@ -483,7 +483,7 @@ impl Winder2
 }
 
 // Tension Arm
-impl Winder2
+impl Winder
 {
     pub fn tension_arm_calibrate(&mut self)
     {
@@ -494,7 +494,7 @@ impl Winder2
 }
 
 // Spool Length Task
-impl Winder2
+impl Winder
 {
     pub fn spool_length_task_set_target_length(&mut self, meters: f64) 
     {

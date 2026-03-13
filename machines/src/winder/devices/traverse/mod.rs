@@ -1,3 +1,4 @@
+use std::time::Duration;
 use std::time::Instant;
 
 use control_core::converters::linear_step_converter::LinearStepConverter;
@@ -12,16 +13,17 @@ use units::angular_velocity::revolution_per_second;
 use units::length::millimeter;
 use units::velocity::millimeter_per_second;
 
-use crate::winder2::devices::{Spool, OperationState};
+use crate::winder::devices::{OperationState, Spool};
 
 mod types;
-pub use types::State;
 pub use types::HomingState;
+pub use types::State;
 pub use types::TraversingState;
 
 #[derive(Debug)]
-pub struct Traverse
-{
+pub struct Traverse {
+    config: Config,
+
     // hardware
     motor: StepperVelocityEL70x1,
     laser_pointer: DigitalOutput,
@@ -29,67 +31,80 @@ pub struct Traverse
 
     // config
     operation_state: OperationState,
-    state:           State,
-    position:        Length,
-    limit_inner:     Length,
-    limit_outer:     Length,
-    step_size:       Length,
-    padding:         Length,
+    state: State,
+    position: Length,
+    limit_inner: Length,
+    limit_outer: Length,
+    step_size: Length,
+    padding: Length,
 
     // converters
-    fullstep_converter:  LinearStepConverter,
+    fullstep_converter: LinearStepConverter,
     microstep_converter: LinearStepConverter,
 }
 
-// constants
-impl Traverse
-{
+#[derive(Debug, Clone)]
+pub struct Config {
     // physical properties
-    const CIRCUMFERENCE:        f64 = 35.0; // in mm
-    const STEPS_PER_REVOLUTION: i16 = 200;
-    const MICRO_STEPS_COUNT:    i16 = 64;
+    pub circumference: Length,
+    pub steps_per_revolution: i16,
+    pub micro_steps_per_step: i16,
 
     // virtual properties
-    const LENGTH_TOLERANCE:     f64 = 0.01;
+    pub length_tolerance:    Length,
 
     // defaults
-    const DEFAULT_LIMIT_INNER:  f64 = 22.0; // in mm
-    const DEFAULT_LIMIT_OUTER:  f64 = 92.0; // in mm
-    const DEFAULT_PADDING:      f64 = 0.88; // in mm
-    const DEFAULT_STEP_SIZE:    f64 = 1.75; // in mm
+    pub limit_inner_default: Length,
+    pub limit_outer_default: Length,
+    pub padding_default:     Length,
+    pub step_size_default:   Length,
+
+    pub speed_config: SpeedConfig,
+
+    pub validation_delay: Duration,
+}
+
+#[derive(Debug, Clone)]
+pub struct SpeedConfig
+{
+    pub move_close:                          Velocity,
+    pub move_not_close:                      Velocity,
+    pub homing_escape_end_stop:              Velocity,
+    pub homing_find_endstop_fine_distancing: Velocity,
+    pub homing_find_endstop_coarse:          Velocity,
+    pub homing_find_endstop_fine:            Velocity,
+    pub traverse_going_out:                  Velocity,
 }
 
 // public interface
-impl Traverse
-{
+impl Traverse {
     pub fn new(
-        motor: StepperVelocityEL70x1, 
+        config: Config,
+        motor: StepperVelocityEL70x1,
         limit_switch: DigitalInput,
         laser_pointer: DigitalOutput,
-    ) -> Self
-    {
-        use millimeter as mm;
+    ) -> Self {
+        let limit_inner = config.limit_inner_default;
+        let limit_outer = config.limit_outer_default;
+        let circumference = config.circumference;
 
-        let limit_inner   = Length::new::<mm>(Self::DEFAULT_LIMIT_INNER);
-        let limit_outer   = Length::new::<mm>(Self::DEFAULT_LIMIT_OUTER);
-        let circumference = Length::new::<mm>(Self::CIRCUMFERENCE);
+        let step_size = config.step_size_default;
+        let padding = config.padding_default;
 
         let fullstep_converter = LinearStepConverter::from_circumference(
-            Self::STEPS_PER_REVOLUTION,
-            circumference,
+            config.steps_per_revolution, 
+            circumference
         );
 
         let microstep_converter = LinearStepConverter::from_circumference(
-            Self::STEPS_PER_REVOLUTION * Self::MICRO_STEPS_COUNT,
+            config.steps_per_revolution * config.micro_steps_per_step,
             circumference,
         );
 
-        let step_size = Length::new::<mm>(Self::DEFAULT_STEP_SIZE);
-        let padding   = Length::new::<mm>(Self::DEFAULT_PADDING);
-
         Self {
+            config,
             operation_state: OperationState::Disabled,
-            state:           State::NotHomed,
+            state: State::NotHomed,
             motor,
             laser_pointer,
             limit_switch,
@@ -97,15 +112,16 @@ impl Traverse
             microstep_converter,
             limit_inner,
             limit_outer,
-            step_size, 
+            step_size,
             padding,
             position: Length::ZERO,
         }
     }
 
-    pub fn update(&mut self, spool: &Spool)
-    {
-        if self.operation_state == OperationState::Disabled { return; }
+    pub fn update(&mut self, spool: &Spool) {
+        if self.operation_state == OperationState::Disabled {
+            return;
+        }
 
         self.update_position();
         self.update_state();
@@ -114,18 +130,17 @@ impl Traverse
 }
 
 // getters + setters
-impl Traverse
-{
-    pub fn set_operation_state(&mut self, operation_state: OperationState)
-    {
+impl Traverse {
+    pub fn set_operation_state(&mut self, operation_state: OperationState) {
         use OperationState::*;
 
         // No change, nothing to do
-        if self.operation_state == operation_state { return; }
+        if self.operation_state == operation_state {
+            return;
+        }
 
         // Leaving standby, enable motor
-        if self.operation_state == Disabled
-        {
+        if self.operation_state == Disabled {
             self.motor.set_enabled(true);
         }
 
@@ -139,21 +154,17 @@ impl Traverse
         self.operation_state = operation_state;
     }
 
-    pub fn state(&self) -> State
-    {
+    pub fn state(&self) -> State {
         self.state
     }
 
-    pub fn limit_inner(&self) -> Length 
-    { 
-        self.limit_inner 
+    pub fn limit_inner(&self) -> Length {
+        self.limit_inner
     }
 
-    pub fn try_set_limit_inner(&mut self, limit_inner: Length) -> Result<(), ()>
-    { 
+    pub fn try_set_limit_inner(&mut self, limit_inner: Length) -> Result<(), ()> {
         // validate the new inner limit against current outer limit
-        if !Self::validate_traverse_limits(limit_inner, self.limit_outer)
-        {
+        if !Self::validate_traverse_limits(limit_inner, self.limit_outer) {
             // don't update if validation fails - keep the current value
             return Err(());
         }
@@ -162,66 +173,63 @@ impl Traverse
         Ok(())
     }
 
-    pub fn limit_outer(&self) -> Length 
-    { 
-        self.limit_outer 
+    pub fn limit_outer(&self) -> Length {
+        self.limit_outer
     }
 
-    pub fn try_set_limit_outer(&mut self, limit_outer: Length) -> Result<(), ()>
-    { 
+    pub fn try_set_limit_outer(&mut self, limit_outer: Length) -> Result<(), ()> {
         // validate the new outer limit against current inner limit
-        if !Self::validate_traverse_limits(self.limit_inner, limit_outer)
-        {
+        if !Self::validate_traverse_limits(self.limit_inner, limit_outer) {
             // don't update if validation fails - keep the current value
             return Err(());
         }
 
-        self.limit_outer = limit_outer; 
+        self.limit_outer = limit_outer;
         Ok(())
     }
 
-    pub fn step_size(&self) -> Length { self.step_size }
-    pub fn set_step_size(&mut self, step_size: Length) { self.step_size = step_size; }
+    pub fn step_size(&self) -> Length {
+        self.step_size
+    }
+    pub fn set_step_size(&mut self, step_size: Length) {
+        self.step_size = step_size;
+    }
 
-    pub fn padding(&self) -> Length { self.padding }
-    pub fn set_padding(&mut self, padding: Length) { self.padding = padding; }
+    pub fn padding(&self) -> Length {
+        self.padding
+    }
+    pub fn set_padding(&mut self, padding: Length) {
+        self.padding = padding;
+    }
 
-    pub fn current_position(&self) -> Option<Length> 
-    {
-        match self.state.is_homed() 
-        {
-            true  => Some(self.position),
+    pub fn current_position(&self) -> Option<Length> {
+        match self.state.is_homed() {
+            true => Some(self.position),
             false => None,
         }
     }
 
-    pub fn laser_pointer_enabled(&self) -> bool
-    {
+    pub fn laser_pointer_enabled(&self) -> bool {
         self.laser_pointer.get()
     }
 
-    pub fn set_laser_pointer_enabled(&mut self, value: bool)
-    {
+    pub fn set_laser_pointer_enabled(&mut self, value: bool) {
         self.laser_pointer.set(value);
     }
 }
 
 // State management
-impl Traverse 
-{
-    pub fn can_goto_limit_inner(&self) -> bool
-    {
+impl Traverse {
+    pub fn can_goto_limit_inner(&self) -> bool {
         self.operation_state == OperationState::Disabled
-            || !self.state.is_homed() 
-            || self.state.is_going_in() 
+            || !self.state.is_homed()
+            || self.state.is_going_in()
             || self.state.is_going_home()
             || self.state.is_traversing()
     }
 
-    pub fn try_goto_limit_inner(&mut self) -> Result<(), ()>
-    {
-        if !self.can_goto_limit_inner()
-        {
+    pub fn try_goto_limit_inner(&mut self) -> Result<(), ()> {
+        if !self.can_goto_limit_inner() {
             return Err(());
         }
 
@@ -229,18 +237,16 @@ impl Traverse
         Ok(())
     }
 
-    pub fn can_goto_limit_outer(&self)-> bool
-    {
+    pub fn can_goto_limit_outer(&self) -> bool {
         let state = self.state;
         self.operation_state == OperationState::Disabled
-            || !state.is_homed() 
-            || state.is_going_out() 
+            || !state.is_homed()
+            || state.is_going_out()
             || state.is_going_home()
             || state.is_traversing()
     }
 
-    pub fn try_goto_limit_outer(&mut self) -> Result<(), ()>
-    {
+    pub fn try_goto_limit_outer(&mut self) -> Result<(), ()> {
         if !self.can_goto_limit_outer() {
             return Err(());
         }
@@ -249,17 +255,15 @@ impl Traverse
         Ok(())
     }
 
-    pub fn can_go_home(&self)-> bool
-    {
+    pub fn can_go_home(&self) -> bool {
         let state = self.state;
         self.operation_state == OperationState::Disabled
-            || state.is_going_out() 
+            || state.is_going_out()
             || state.is_going_home()
             || state.is_traversing()
     }
 
-    pub fn try_goto_home(&mut self) -> Result<(), ()>
-    {
+    pub fn try_goto_home(&mut self) -> Result<(), ()> {
         if !self.can_go_home() {
             return Err(());
         }
@@ -268,63 +272,52 @@ impl Traverse
         Ok(())
     }
 
-    fn goto_home(&mut self)
-    {
+    fn goto_home(&mut self) {
         self.state = State::Homing(HomingState::Initialize);
     }
 
-    fn start_traversing(&mut self) 
-    {
+    fn start_traversing(&mut self) {
         self.state = State::Traversing(TraversingState::GoingOut);
     }
 }
 
 // helpers
-impl Traverse 
-{
-    fn update_position(&mut self)
-    {
+impl Traverse {
+    fn update_position(&mut self) {
         let steps = self.motor.get_position() as f64;
         self.position = self.microstep_converter.steps_to_distance(steps);
     }
 
-    fn update_state(&mut self)
-    {
-        if let Some(next_state) = self.next_state()
-        {
+    fn update_state(&mut self) {
+        if let Some(next_state) = self.next_state() {
             self.state = next_state;
         }
     }
 
-    fn update_speed(&mut self, spool_speed: AngularVelocity)
-    {
+    fn update_speed(&mut self, spool_speed: AngularVelocity) {
         let steps_per_second = self.compute_output_steps(spool_speed);
         _ = self.motor.set_speed(steps_per_second);
     }
 
-    fn compute_output_steps(&self, spool_speed: AngularVelocity) -> f64
-    {
-        let speed = self.veloctity_from_state(spool_speed);
+    fn compute_output_steps(&self, spool_speed: AngularVelocity) -> f64 {
+        let speed = self.speed_from_state(spool_speed);
         self.fullstep_converter.velocity_to_steps(speed)
     }
 
-    fn endstop_triggered(&self) -> bool
-    {
+    fn endstop_triggered(&self) -> bool {
         self.limit_switch.get_value().unwrap_or(false)
     }
 
-    fn calculate_traverse_speed(spool_speed: AngularVelocity, step_size: Length) -> Velocity 
-    {
+    fn calculate_traverse_speed(spool_speed: AngularVelocity, step_size: Length) -> Velocity {
         let spool_speed = spool_speed.get::<revolution_per_second>();
-        let step_size   = step_size.get::<millimeter>();
+        let step_size = step_size.get::<millimeter>();
 
         // Calculate the traverse speed directly from spool speed and step size
         Velocity::new::<millimeter_per_second>(spool_speed * step_size)
     }
 
     // Changes the direction of the speed based on the current position and target position
-    fn speed_to_position(&self, target_position: Length, absolute_speed: Velocity) -> Velocity 
-    {
+    fn speed_to_position(&self, target_position: Length, absolute_speed: Velocity) -> Velocity {
         // If we are over the target position we need to move negative
         if self.position > target_position {
             -absolute_speed.abs()
@@ -336,14 +329,12 @@ impl Traverse
     }
 
     /// Calculate distance to position
-    fn distance_to_position(&self, target_position: Length) -> Length 
-    {
+    fn distance_to_position(&self, target_position: Length) -> Length {
         (self.position - target_position).abs()
     }
 
-    fn is_at_position(&self, target_position: Length) -> bool 
-    {
-        let tolerance = Length::new::<millimeter>(Self::LENGTH_TOLERANCE);
+    fn is_at_position(&self, target_position: Length) -> bool {
+        let tolerance = self.config.length_tolerance;
         let upper_tolerance = target_position + tolerance.abs();
         let lower_tolerance = target_position - tolerance.abs();
         lower_tolerance <= self.position && self.position <= upper_tolerance
@@ -352,29 +343,23 @@ impl Traverse
     /// Validates that traverse limits maintain proper constraints:
     /// - Inner limit must be smaller than outer limit
     /// - At least 0.9mm difference between inner and outer limits
-    fn validate_traverse_limits(inner: Length, outer: Length) -> bool 
-    {
+    fn validate_traverse_limits(inner: Length, outer: Length) -> bool {
         outer > inner + Length::new::<millimeter>(0.9)
     }
 
-    fn is_close_to_target(&self, target: Length) -> bool 
-    {
+    fn is_close_to_target(&self, target: Length) -> bool {
         self.distance_to_position(target).abs() <= Length::new::<millimeter>(1.0)
     }
 }
 
 // state updates
-impl Traverse
-{
-    fn next_state(&mut self) -> Option<State>
-    {
+impl Traverse {
+    fn next_state(&mut self) -> Option<State> {
         use State::*;
 
-        match self.state
-        {
+        match self.state {
             NotHomed | Idle => None,
-            GoingIn => 
-            {
+            GoingIn => {
                 // wait until we reach the inner limit
                 if !self.is_at_position(self.limit_inner) {
                     return None;
@@ -382,8 +367,7 @@ impl Traverse
 
                 Some(State::Idle)
             }
-            GoingOut => 
-            {
+            GoingOut => {
                 // wait until we reach the outer limit
                 if !self.is_at_position(self.limit_outer) {
                     return None;
@@ -396,14 +380,11 @@ impl Traverse
         }
     }
 
-    fn next_state_from_homing_state(&mut self, homing_state: HomingState) -> Option<State>
-    {
+    fn next_state_from_homing_state(&mut self, homing_state: HomingState) -> Option<State> {
         use HomingState::*;
 
-        match homing_state
-        {
-            Initialize => 
-            {
+        match homing_state {
+            Initialize => {
                 if self.endstop_triggered() {
                     // If endstop is triggered, escape the endstop
                     Some(State::Homing(EscapeEndstop))
@@ -412,25 +393,28 @@ impl Traverse
                     Some(State::Homing(FindEndstopCoarse))
                 }
             }
-            EscapeEndstop => 
-            {
+            EscapeEndstop => {
                 // move out until endstop is not triggered anymore
-                if self.endstop_triggered() { return None; }
+                if self.endstop_triggered() {
+                    return None;
+                }
 
                 // now start finding
                 Some(State::Homing(FindEndstopFineDistancing))
             }
-            FindEndstopFineDistancing => 
-            {
+            FindEndstopFineDistancing => {
                 // move out until endstop is not triggered anymore
-                if self.endstop_triggered() { return None; }
+                if self.endstop_triggered() {
+                    return None;
+                }
 
                 Some(State::Homing(FindEndstopFine))
             }
-            FindEndstopFine => 
-            {
+            FindEndstopFine => {
                 // move to endstop
-                if !self.endstop_triggered() { return None; }
+                if !self.endstop_triggered() {
+                    return None;
+                }
 
                 // set poition of traverse to 0
                 self.motor.set_position(0);
@@ -438,39 +422,37 @@ impl Traverse
                 // now validate
                 Some(State::Homing(Validate(Instant::now())))
             }
-            FindEndstopCoarse => 
-            {
+            FindEndstopCoarse => {
                 // move to endstop
-                if !self.endstop_triggered() { return None; }
+                if !self.endstop_triggered() {
+                    return None;
+                }
 
                 // now move away from endstop
                 Some(State::Homing(FindEndstopFineDistancing))
             }
-            Validate(instant) => 
-            {
-                const VALIDATION_DELAY_MS: u128 = 100;
-
-                if instant.elapsed().as_millis() <= VALIDATION_DELAY_MS {
+            Validate(instant) => {
+                if instant.elapsed() <= self.config.validation_delay {
                     return None;
                 }
 
                 // should be at zero now
-                if self.is_at_position(Length::ZERO)
-                    { Some(State::Idle) }
-                else // validation failed. retry
-                    { Some(State::Homing(Initialize)) }
+                if self.is_at_position(Length::ZERO) {
+                    Some(State::Idle)
+                } else
+                // validation failed. retry
+                {
+                    Some(State::Homing(Initialize))
+                }
             }
         }
     }
 
-    fn next_state_from_traversing_state(&mut self, state: TraversingState) -> Option<State>
-    {
+    fn next_state_from_traversing_state(&mut self, state: TraversingState) -> Option<State> {
         use TraversingState::*;
 
-        match state 
-        {
-            TraversingIn => 
-            {
+        match state {
+            TraversingIn => {
                 // inner limit not reached yet
                 if self.position > self.limit_inner + self.padding {
                     return None;
@@ -479,8 +461,7 @@ impl Traverse
                 // now traverse to out
                 Some(State::Traversing(TraversingOut))
             }
-            GoingOut | TraversingOut => 
-            {
+            GoingOut | TraversingOut => {
                 // outer limit not reached yet
                 if self.position < self.limit_outer - self.padding {
                     return None;
@@ -494,98 +475,75 @@ impl Traverse
 }
 
 // velocity computation
-impl Traverse 
-{
-    fn veloctity_from_state(&self, spool_speed: AngularVelocity) -> Velocity
-    {
-        use millimeter_per_second as mmps;
+impl Traverse {
+    fn speed_from_state(&self, spool_speed: AngularVelocity) -> Velocity {
         use State::*;
 
-        match self.state 
-        {
+        match self.state {
             // Not homed, no movement
             NotHomed => Velocity::ZERO,
             // No movement in idle state
             Idle => Velocity::ZERO,
-            GoingIn => 
-            {
+            GoingIn => {
                 let position = self.limit_inner;
-                // Move in at a speed of 10-100 mm/s
-                let speed = match self.is_close_to_target(position)
-                {
-                    true  => Velocity::new::<mmps>(10.0),
-                    false => Velocity::new::<mmps>(100.0),
+                let speed = match self.is_close_to_target(position) {
+                    true => self.config.speed_config.move_close,
+                    false => self.config.speed_config.move_not_close,
                 };
 
                 self.speed_to_position(position, speed)
             }
-            GoingOut => 
-            {
+            GoingOut => {
                 let position = self.limit_outer;
-                // Move in at a speed of 10-100 mm/s
-                let speed = match self.is_close_to_target(position)
-                {
-                    true  => Velocity::new::<mmps>(10.0),
-                    false => Velocity::new::<mmps>(100.0),
+                let speed = match self.is_close_to_target(position) {
+                    true => self.config.speed_config.move_close,
+                    false => self.config.speed_config.move_not_close,
                 };
 
                 self.speed_to_position(position, speed)
             }
-            Homing(state) => 
-                Self::velocity_from_homing_state(state),
-            Traversing(state) => 
-                self.velocity_from_traversing_state(state, spool_speed),
+            Homing(state) => self.speed_from_homing_state(state),
+            Traversing(state) => self.speed_from_traversing_state(state, spool_speed),
         }
     }
 
-    fn velocity_from_homing_state(homing_state: HomingState) -> Velocity
-    {
-        use millimeter_per_second as mmps;
+    fn speed_from_homing_state(&self, homing_state: HomingState) -> Velocity {
         use HomingState::*;
 
-        match homing_state 
-        {
+        let sc = &self.config.speed_config;
+
+        match homing_state {
             Initialize => Velocity::ZERO,
-            // Move out at a speed of 10 mm/s
-            EscapeEndstop => Velocity::new::<mmps>(10.0),
-            // Move out at a speed of 2 mm/s
-            FindEndstopFineDistancing => Velocity::new::<mmps>(2.0),
-            // Move in at a speed of -100 mm/s
-            FindEndstopCoarse => Velocity::new::<mmps>(-100.0),
-            // move into the endstop at 2 mm/s
-            FindEndstopFine => Velocity::new::<mmps>(-2.0),
-            // We stand still until the validation cooldown has passed
+            EscapeEndstop => sc.homing_escape_end_stop,
+            FindEndstopFineDistancing => sc.homing_find_endstop_fine_distancing,
+            FindEndstopCoarse => sc.homing_find_endstop_coarse,
+            FindEndstopFine => sc.homing_find_endstop_fine,
             Validate(_) => Velocity::ZERO,
         }
     }
 
-    fn velocity_from_traversing_state(
-        &self, 
-        traversing_state: TraversingState, 
-        spool_speed: AngularVelocity
-    ) -> Velocity
-    {
+    fn speed_from_traversing_state(
+        &self,
+        traversing_state: TraversingState,
+        spool_speed: AngularVelocity,
+    ) -> Velocity {
         use TraversingState::*;
 
         let offset = Length::new::<millimeter>(0.01);
 
-        let (target_position, speed) = match traversing_state 
-        {
+        let (target_position, speed) = match traversing_state {
             // Move out at a speed of 100 mm/s initially
-            GoingOut =>
-            {
+            GoingOut => {
                 let position = self.limit_outer - self.padding + offset;
-                let speed = Velocity::new::<millimeter_per_second>(100.0);
+                let speed = self.config.speed_config.traverse_going_out;
                 (position, speed)
             }
-            TraversingIn =>
-            {
+            TraversingIn => {
                 let position = self.limit_inner + self.padding - offset;
                 let speed = Self::calculate_traverse_speed(spool_speed, self.step_size);
                 (position, speed)
             }
-            TraversingOut =>
-            {
+            TraversingOut => {
                 let position = self.limit_outer - self.padding + offset;
                 let speed = Self::calculate_traverse_speed(spool_speed, self.step_size);
                 (position, speed)
@@ -597,14 +555,12 @@ impl Traverse
 }
 
 #[cfg(test)]
-mod tests 
-{
-    use approx::assert_relative_eq;
+mod tests {
     use super::*;
+    use approx::assert_relative_eq;
 
     #[test]
-    fn test_calculate_traverse_speed() 
-    {
+    fn test_calculate_traverse_speed() {
         let spool_speed = AngularVelocity::new::<revolution_per_second>(1.0); // 1 revolution per second
         let step_size = Length::new::<millimeter>(1.75); // 1.75 mm step size
 

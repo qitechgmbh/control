@@ -1,26 +1,23 @@
 use units::angle::revolution;
 use units::f64::*;
 
-use super::{Clamp, ClampedValue};
+use crate::types::{BoundedValue, ExceededBound, ClampResult};
 
-pub fn clamp_revolution_uom(value: Angle, min: Angle, max: Angle) -> ClampedValue<Angle>
-{
+pub fn clamp_uom(value: Angle, min: Angle, max: Angle) -> ClampResult<Angle> {
     let value = value.get::<revolution>();
     let min = min.get::<revolution>();
     let max = max.get::<revolution>();
 
-    // clamp
-    let clamped_value = clamp_revolution(value, min, max);
+    let clamped_value = clamp(value, min, max);
 
     // convert back to uom
-    ClampedValue { 
-        value: Angle::new::<revolution>(clamped_value.value), 
-        clamp: clamped_value.clamp 
+    ClampResult {
+        value: Angle::new::<revolution>(clamped_value.value),
+        bounds: clamped_value.bounds,
     }
 }
 
-fn clamp_revolution(value: f64, min: f64, max: f64) -> ClampedValue<f64>
-{
+pub fn clamp(value: f64, min: f64, max: f64) -> ClampResult<f64> {
     // normalize value from 0..1
     let value = wrap_revolution(value);
     let min = wrap_revolution(min);
@@ -28,7 +25,7 @@ fn clamp_revolution(value: f64, min: f64, max: f64) -> ClampedValue<f64>
 
     // check if in acceptable range
     if revolution_in_range(value, min, max) {
-        return ClampedValue::new(value, Clamp::None);
+        return ClampResult::new(value, None);
     }
 
     // calculates the distance between min and max
@@ -37,23 +34,23 @@ fn clamp_revolution(value: f64, min: f64, max: f64) -> ClampedValue<f64>
 
     // check if in min clamping  range
     if revolution_in_range(value, clamp_to_min_min, clamp_to_min_max) {
-        return ClampedValue::new(min, Clamp::Min);
+        return ClampResult::new(min, Some(ExceededBound::Min));
     }
+
     // check if in max clamping  range
     if revolution_in_range(value, clamp_to_max_min, clamp_to_max_max) {
-        return ClampedValue::new(max, Clamp::Max);
+        return ClampResult::new(max, Some(ExceededBound::Max));
     }
 
     // at this point our input value should be either retured (cause in spec) or clamped to min or max
     // so this point should never be reached
     // in case it does we just clamp to min
-    ClampedValue::new(min, Clamp::Min)
+    BoundedValue::new(min, Clamp::Min)
     //TODO: consider using unreachable!() if truly unreachable
 }
 
 #[allow(dead_code)]
-fn scale_revolution_to_range(value: f64, min: f64, max: f64) -> f64 
-{
+fn scale_revolution_to_range(value: f64, min: f64, max: f64) -> f64 {
     // we calculate the distance between min and max
     let distance = revolution_distance(min, max);
 
@@ -62,8 +59,7 @@ fn scale_revolution_to_range(value: f64, min: f64, max: f64) -> f64
     (value - min) / distance
 }
 
-fn clamping_ranges(min: f64, max: f64) -> (f64, f64, f64, f64) 
-{
+fn clamping_ranges(min: f64, max: f64) -> (f64, f64, f64, f64) {
     // normalize min and max
     let min = wrap_revolution(min);
     let max = wrap_revolution(max);
@@ -88,8 +84,7 @@ fn clamping_ranges(min: f64, max: f64) -> (f64, f64, f64, f64)
     )
 }
 
-fn revolution_distance(min: f64, max: f64) -> f64 
-{
+fn revolution_distance(min: f64, max: f64) -> f64 {
     // Normalize the values to ensure they're in the [0, 1) range
     let normalized_min = wrap_revolution(min);
     let normalized_max = wrap_revolution(max);
@@ -106,27 +101,24 @@ fn revolution_distance(min: f64, max: f64) -> f64
     }
 }
 
-fn wrap_revolution(value: f64) -> f64 
-{
+fn wrap_revolution(value: f64) -> f64 {
     debug_assert!(value.is_finite(), "value must be finite");
 
-    match value % 1.0 
-    {
+    match value % 1.0 {
         0.0 if value >= 1.0 => 1.0,
         n if n < 0.0 => n + 1.0,
         n => n,
     }
 }
 
-fn revolution_in_range(value: f64, min: f64, max: f64) -> bool 
-{
+fn revolution_in_range(value: f64, min: f64, max: f64) -> bool {
     debug_assert!(value.is_finite(), "value must be finite");
     debug_assert!(min.is_finite(), "min must be finite");
     debug_assert!(max.is_finite(), "max must be finite");
 
     debug_assert!(value >= 0.0 && value < 1.0, "value out of [0,1)");
-    debug_assert!(min   >= 0.0 && min   < 1.0, "min out of [0,1)");
-    debug_assert!(max   >= 0.0 && max   < 1.0, "max out of [0,1)");
+    debug_assert!(min >= 0.0 && min < 1.0, "min out of [0,1)");
+    debug_assert!(max >= 0.0 && max < 1.0, "max out of [0,1)");
 
     let wraps = min > max;
 

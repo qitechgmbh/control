@@ -6,24 +6,27 @@ use control_core::converters::angular_step_converter::AngularStepConverter;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 
 use crate::types::Direction;
-use crate::winder2::devices::{ Puller, TensionArm };
+use crate::winder::devices::{ Puller, TensionArm };
 
 use super::OperationState;
 
 mod speed_controller;
 use speed_controller::{SpeedController, AdaptiveSpeedController, MinMaxSpeedController};
 
-/// Represents the spool motor
 #[derive(Debug)]
 pub struct Spool
 {
-    motor:              StepperVelocityEL70x1,
-    operation_state:              OperationState,
+    // hardware
+    stepper_motor:      StepperVelocityEL70x1,
+
+    // state
+    operation_state:    OperationState,
     direction:          Direction,
     speed_control_mode: SpeedControlMode,
-    step_converter:     AngularStepConverter,
 
-    pub speed_controllers: SpeedControllers,
+    // computation
+    step_converter:     AngularStepConverter,
+    speed_controllers:  SpeedControllers,
 }
 
 // public interface
@@ -32,8 +35,8 @@ impl Spool
     pub fn new(motor: StepperVelocityEL70x1) -> Self
     {
         Self { 
-            motor, 
-            operation_state:              OperationState::Disabled,
+            stepper_motor: motor, 
+            operation_state:    OperationState::Disabled,
             direction:          Direction::Forward, 
             speed_controllers:  SpeedControllers::new(),
             speed_control_mode: SpeedControlMode::Adaptive,
@@ -51,7 +54,7 @@ impl Spool
 
         let steps_per_second = self.step_converter.angular_velocity_to_steps(velocity);
 
-        _ = self.motor.set_speed(steps_per_second);
+        _ = self.stepper_motor.set_speed(steps_per_second);
     }
 }
 
@@ -93,7 +96,7 @@ impl Spool
 
         // Leaving disabled state, enable motor
         if self.operation_state == Disabled {
-            self.motor.set_enabled(true);
+            self.stepper_motor.set_enabled(true);
         }
 
         self.active_controller_mut().set_enabled(operation_state == Running);

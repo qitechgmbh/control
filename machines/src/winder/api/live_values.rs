@@ -15,7 +15,7 @@ use units::{
     velocity::meter_per_minute
 };
 
-use crate::winder2::Winder2;
+use crate::winder::Winder;
 
 #[derive(Serialize, Debug, Clone, Default, BuildEvent)]
 pub struct LiveValues
@@ -45,7 +45,7 @@ impl CacheableEvents<Self> for LiveValues
     }
 }
 
-impl Winder2
+impl Winder
 {
     pub fn create_live_values(&self) -> LiveValues
     {

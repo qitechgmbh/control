@@ -23,6 +23,8 @@ mod machines_data;
 pub use machines_data::MachinesData;
 
 pub mod types;
+pub mod math;
+
 pub mod analog_input_test_machine;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
@@ -43,7 +45,7 @@ pub mod wago_8ch_dio_test_machine;
 pub mod wago_ai_test_machine;
 pub mod wago_do_test_machine;
 pub mod wago_power;
-pub mod winder2;
+pub mod winder;
 
 pub mod speed_algorithms;
 

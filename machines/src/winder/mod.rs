@@ -1,7 +1,8 @@
 use std::time::{Duration, Instant};
 
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use units::{Length, length::{meter, millimeter}};
+use ethercat_hal::io::{digital_input::DigitalInput, digital_output::DigitalOutput, stepper_velocity_el70x1::StepperVelocityEL70x1};
+use units::{Length, Velocity, length::{meter, millimeter}, velocity::millimeter_per_second};
 
 use crate::{
     MachineChannel, 
@@ -11,14 +12,14 @@ use crate::{
     machine_identification::{
         MachineIdentification, 
         MachineIdentificationUnique
-    }
+    }, 
 };
 
 mod types;
 use types::{Mode, Hardware, SpoolLengthTask, SpoolLengthTaskCompletedAction};
 
 mod devices;
-use devices::{Spool, Traverse, Puller, TensionArm};
+use devices::{Spool, traverse, Traverse, Puller, TensionArm};
 
 mod api;
 use api::{LiveValues, State};
@@ -26,7 +27,7 @@ use api::{LiveValues, State};
 mod new;
 
 #[derive(Debug)]
-pub struct Winder2
+pub struct Winder
 {
     // common machine fields
     channel:   MachineChannel,
@@ -50,8 +51,44 @@ pub struct Winder2
     puller_reference_machine: Option<MachineIdentificationUnique>,
 }
 
+// constants
+impl Winder
+{
+    pub fn traverse_config() -> traverse::Config
+    {
+        use millimeter_per_second as mmps;
+        use millimeter as mm;
+
+        let speed_config = traverse::SpeedConfig {
+            move_close:                          Velocity::new::<mmps>(10.0),
+            move_not_close:                      Velocity::new::<mmps>(100.0),
+            homing_escape_end_stop:              Velocity::new::<mmps>(10.0),
+            homing_find_endstop_fine_distancing: Velocity::new::<mmps>(2.0),
+            homing_find_endstop_coarse:          Velocity::new::<mmps>(-100.0),
+            homing_find_endstop_fine:            Velocity::new::<mmps>(-2.0),
+            traverse_going_out:                  Velocity::new::<mmps>(100.0),
+        };
+
+        traverse::Config {
+            circumference:        Length::new::<mm>(35.0),
+            steps_per_revolution: 200,
+            micro_steps_per_step: 64,
+            length_tolerance:     Length::new::<mm>(0.01),
+            // defaults
+            limit_inner_default:  Length::new::<mm>(22.0),
+            limit_outer_default:  Length::new::<mm>(92.0),
+            padding_default:      Length::new::<mm>(0.88),
+            step_size_default:    Length::new::<mm>(1.75),
+
+            validation_delay: Duration::from_millis(100),
+
+            speed_config,
+        }
+    }
+}
+
 // public interface
-impl Winder2
+impl Winder
 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification 
     {
@@ -62,6 +99,7 @@ impl Winder2
     pub fn new(channel: MachineChannel, hardware: Hardware) -> Self
     {
         let traverse = Traverse::new(
+            Self::traverse_config(),
             hardware.traverse_motor, 
             hardware.traverse_limit_switch,
             hardware.traverse_laser_pointer,
@@ -95,7 +133,7 @@ impl Winder2
 }
 
 // base machine trait
-impl MachineWithChannel for Winder2
+impl MachineWithChannel for Winder
 {
     type State = State;
     type LiveValues = LiveValues;
@@ -199,7 +237,7 @@ impl MachineWithChannel for Winder2
 }
 
 // utils
-impl Winder2
+impl Winder
 {
     fn compute_modulation(current: f64, target: f64, lower: f64, upper: f64) -> f64 
     {

@@ -7,7 +7,7 @@ use crate::wago_do_test_machine::WagoDOTestMachine;
 #[cfg(feature = "mock-machine")]
 use crate::{
     extruder1::mock::ExtruderV2 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
-    mock::MockMachine, winder2::mock::Winder2,
+    mock::MockMachine, winder::mock::Winder2,
 };
 
 use crate::{
@@ -19,7 +19,7 @@ use crate::extruder1::ExtruderV2;
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
     aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, laser::LaserMachine,
-    winder2::Winder2,
+    winder::Winder,
 };
 
 use crate::{test_machine::TestMachine, test_machine_stepper::TestMachineStepper};
@@ -101,7 +101,7 @@ impl MachineRegistry {
 lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
-        mc.register::<Winder2>(Winder2::MACHINE_IDENTIFICATION);
+        mc.register::<Winder>(Winder::MACHINE_IDENTIFICATION);
 
         #[cfg(feature = "mock-machine")]
         mc.register::<ExtruderV2Mock1>(ExtruderV2Mock1::MACHINE_IDENTIFICATION);

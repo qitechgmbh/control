@@ -22,10 +22,10 @@ use control_core::{
     },
 };
 
-use crate::winder2::devices::{Puller, TensionArm};
+use crate::{math, winder::devices::{Puller, TensionArm}};
 
 use super::SpeedController;
-use super::helpers::{FilamentTensionCalculator, {Clamp, clamp_revolution_uom}};
+use super::{FilamentTensionCalculator};
 
 #[derive(Debug)]
 pub struct MinMaxSpeedController
@@ -38,6 +38,7 @@ pub struct MinMaxSpeedController
     acceleration_controller: AngularAccelerationSpeedController,
     /// Filament tension calculator
     filament_calc: FilamentTensionCalculator,
+    
     /// Unit is angular velocity in rad/s
     speed_time_window: MovingTimeWindow<f64>,
 }
@@ -72,12 +73,14 @@ impl MinMaxSpeedController
 
 impl MinMaxSpeedController 
 {
-    fn speed_raw(&mut self, _t: Instant, tension_arm_angle: Angle) -> AngularVelocity
+    fn speed_raw(&mut self, t: Instant, tension_arm_angle: Angle) -> AngularVelocity
     {
+        _ = t;
+
         let min_speed = AngularVelocity::ZERO;
         let max_speed = self.max_speed();
 
-        let tension_arm_revolution = clamp_revolution_uom(
+        let tension_arm_revolution = math::revolution::clamp_uom(
             tension_arm_angle,
             // inverted because min angle is max tension
             self.filament_calc.get_max_angle(),
@@ -86,13 +89,13 @@ impl MinMaxSpeedController
 
         // if value was clamped return min speed.
         // why? Idk ask guy who left
-        if matches!(tension_arm_revolution.clamp, Clamp::Min | Clamp::Max) {
+        if matches!(tension_arm_revolution.bounds, Clamp::Min | Clamp::Max) {
             return min_speed;
         }
 
         let filament_tension = self
             .filament_calc
-            .calc_filament_tension(tension_arm_revolution.value);
+            .compute(tension_arm_revolution.value);
 
         let filament_tension_inverted = 1.0 - filament_tension;
 

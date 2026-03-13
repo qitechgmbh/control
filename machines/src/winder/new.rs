@@ -1,7 +1,7 @@
 use anyhow::Error;
 use ethercat_hal::{coe::ConfigurableDevice, devices::{ek1100::{EK1100, EK1100_IDENTITY_A}, el2002::{EL2002, EL2002_IDENTITY_A, EL2002_IDENTITY_B, EL2002Port}, el7031::{EL7031, EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031DigitalInputPort, EL7031StepperPort, coe::EL7031Configuration, pdo::EL7031PredefinedPdoAssignment}, el7031_0030::{self, EL7031_0030, EL7031_0030_IDENTITY_A, EL7031_0030AnalogInputPort, EL7031_0030StepperPort, coe::EL7031_0030Configuration, pdo::EL7031_0030PredefinedPdoAssignment}, el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port, coe::EL7041_0052Configuration}}, io::{analog_input::AnalogInput, digital_input::DigitalInput, digital_output::DigitalOutput, stepper_velocity_el70x1::StepperVelocityEL70x1}, shared_config::{self, el70x1::{EL70x1OperationMode, StmMotorConfiguration}}};
 
-use crate::{MachineChannel, get_ethercat_device, winder2::types::Hardware};
+use crate::{MachineChannel, get_ethercat_device, winder::types::Hardware};
 pub use crate::{
     MachineNewHardware, 
     MachineNewParams, 
@@ -10,9 +10,9 @@ pub use crate::{
     validate_same_machine_identification_unique,
 };
 
-use super::Winder2;
+use super::Winder;
 
-impl MachineNewTrait for Winder2
+impl MachineNewTrait for Winder
 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error>
     {

@@ -1,41 +1,11 @@
-use serde::{Deserialize, Serialize};
+mod bounds;
+pub use bounds::Bounds;
+pub use bounds::ExceededBound;
+pub use bounds::BoundedValue;
+pub use bounds::ClampResult;
 
-#[derive(Debug,Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
-pub enum Direction
-{
-    Forward,
-    Reverse,
-}
+mod direction;
+pub use direction::Direction;
 
-impl Direction
-{
-    pub fn from_bool(forward: bool) -> Self
-    {
-        match forward 
-        {
-            true  => Self::Forward,
-            false => Self::Reverse,
-        }
-    }
-
-    pub fn is_forward(self) -> bool
-    {
-        self == Self::Forward
-    }
-
-    pub fn is_reverse(self) -> bool
-    {
-        self != Self::Forward
-    }
-
-    pub fn multiplier(self) -> f64
-    {
-        use Direction::*;
-
-        match self 
-        {
-            Forward => 1.0,
-            Reverse => -1.0,
-        }
-    }
-}
+pub type Point2D<T> = euclid::Point2D<T, ()>;
+pub type Point3D<T> = euclid::Point3D<T, ()>;

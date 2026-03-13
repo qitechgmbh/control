@@ -10,7 +10,7 @@ pub use puller::SpeedControlAlgorithm as PullerSpeedControlAlgorithm;
 mod tension_arm;
 pub use tension_arm::TensionArm;
 
-mod traverse;
+pub mod traverse;
 pub use traverse::Traverse;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

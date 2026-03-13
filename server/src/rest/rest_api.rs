@@ -13,7 +13,7 @@ use machines::machine_identification::{MachineIdentification, MachineIdentificat
 use machines::mock::MockMachine;
 use machines::test_machine::TestMachine;
 use machines::wago_power::WagoPower;
-use machines::winder2::Winder2;
+use machines::winder::Winder;
 use serde::Serialize;
 
 use crate::app_state::SharedState;
@@ -153,7 +153,7 @@ pub fn rest_api_router() -> Router<Arc<SharedState>> {
     Router::new()
         .route("/machine", get(get_machines_handler))
         .merge(make_machine_router(LaserMachine::MACHINE_IDENTIFICATION))
-        .merge(make_machine_router(Winder2::MACHINE_IDENTIFICATION))
+        .merge(make_machine_router(Winder::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(MockMachine::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(ExtruderV2::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(AquaPathV1::MACHINE_IDENTIFICATION))

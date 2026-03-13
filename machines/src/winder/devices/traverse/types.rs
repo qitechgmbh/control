@@ -1,8 +1,7 @@
 use std::time::Instant;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum State 
-{
+pub enum State {
     /// Initial state
     NotHomed,
 
@@ -29,43 +28,35 @@ pub enum State
     Traversing(TraversingState),
 }
 
-impl State
-{
+impl State {
     #[allow(dead_code)]
-    pub const fn is_idle(self) -> bool 
-    {
-        matches!(self,State::Idle)
+    pub const fn is_idle(self) -> bool {
+        matches!(self, State::Idle)
     }
 
-    pub const fn is_homed(self) -> bool 
-    {
+    pub const fn is_homed(self) -> bool {
         !matches!(self, State::NotHomed)
     }
 
-    pub const fn is_going_in(self) -> bool 
-    {
-        matches!(self,State::GoingIn)
+    pub const fn is_going_in(self) -> bool {
+        matches!(self, State::GoingIn)
     }
 
-    pub const fn is_going_out(self) -> bool 
-    {
-        matches!(self,State::GoingOut)
+    pub const fn is_going_out(self) -> bool {
+        matches!(self, State::GoingOut)
     }
 
-    pub const fn is_going_home(self) -> bool 
-    {
+    pub const fn is_going_home(self) -> bool {
         matches!(self, State::Homing(_))
     }
 
-    pub const fn is_traversing(self) -> bool 
-    {
+    pub const fn is_traversing(self) -> bool {
         matches!(self, State::Traversing(_))
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum TraversingState 
-{
+pub enum TraversingState {
     /// Like [`State::GoingOut`] but
     /// - will go into [`State::GoingIn`] after reaching the outer limit
     GoingOut,
@@ -82,8 +73,7 @@ pub enum TraversingState
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum HomingState 
-{
+pub enum HomingState {
     /// In this state the traverse is not moving but checks if the endstop si triggered
     /// If the endstop is triggered we go into [`HomingState::EscapeEndstop`]
     /// If the endstop is not triggered we go into [`HomingState::FindEndstop`]
