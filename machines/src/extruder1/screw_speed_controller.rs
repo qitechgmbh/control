@@ -351,7 +351,7 @@ impl ScrewSpeedController {
         let auto_config = AutoTuneConfig {
             tune_delta: config.tune_delta,
             max_power: hz_swing,
-            max_duration_secs: 3600.0,
+            max_duration_secs: 60.0,
         };
         let mut tuner = PidAutoTuner::new(auto_config);
         let target_pressure = self.target_pressure.get::<bar>();
