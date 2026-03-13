@@ -4,6 +4,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+use units::AngularVelocity;
+
 /// A helper trait to handle division for averaging
 pub trait DivideByCount {
     fn divide_by_count(self, count: usize) -> Self;
@@ -42,6 +44,12 @@ impl DivideByCount for u32 {
 impl DivideByCount for u64 {
     fn divide_by_count(self, count: usize) -> Self {
         self / (count as Self)
+    }
+}
+
+impl DivideByCount for AngularVelocity {
+    fn divide_by_count(self, count: usize) -> Self {
+        self / (count as f64)
     }
 }
 
