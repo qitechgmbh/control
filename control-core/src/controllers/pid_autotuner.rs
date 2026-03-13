@@ -274,9 +274,9 @@ impl PidAutoTuner {
         let tu = time_diff;
 
         // Ziegler-Nichols rules
-        let ti = 0.5 * tu;
+        let ti = 1.0 * tu;
         let td = 0.125 * tu;
-        let kp = 0.4 * ku;
+        let kp = 0.25 * ku;
         let ki = kp / ti;
         let kd = kp * td;
 
