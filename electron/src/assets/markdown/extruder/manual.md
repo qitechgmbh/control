@@ -493,10 +493,10 @@ Auto-tuning should be performed **after an active filament production run** — 
 3. Set the **Target Pressure** to the operating pressure that gives the best results for this material.
 4. Navigate to **Settings → Advanced → Pressure PID Auto-Tune**.
 5. Configure the tuning parameters:
-   - **Tune Delta:** Allowed pressure oscillation band around the target (default: 1.0 bar). A smaller value gives finer excitation; increase it if the system does not oscillate.
-   - **Frequency Step:** Inverter frequency deviation used as the relay excitation (default: 2.5 Hz). Lower values result in smaller pressure swings; increase if oscillations are too weak.
+   - **Tune Delta:** Pressure oscillation band around the target (default: 1.0 bar). A smaller value gives finer excitation; increase it if the system does not oscillate.
+   - **Frequency Step:** Inverter frequency deviation used as the relay excitation (default: 2.5 Hz). Lower values result in smaller pressure swings; **Only increase if oscillations are too weak and only by a small amount, for every retry.**
 6. Press **Start Auto-Tune**. The controller will switch to the tuning control and begins oscillating the screw speed around the current operating frequency.
-7. Monitor the **Status** progress bar. The tuner records 20 oscillation peaks (~10 full cycles) to ensure a clean and representative identification. This typically takes a dozen seconds.
+7. Monitor the **Status** progress bar. The tuner records 20 oscillation peaks (~10 full cycles) to ensure a clean and representative identification. This typically takes 10 seconds.
 8. Once the status shows **Completed**, the tuned Kp, Ki, and Kd values are displayed and have already been applied to the pressure PID controller. Verify the pressure response is stable and satisfactory.
 9. To abort a running tuning session at any time, press **Stop**. The controller will revert to the previous PID values.
 
