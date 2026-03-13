@@ -12,6 +12,8 @@ pub use min_max::MinMaxSpeedAlgorithm;
 mod adapative;
 pub use adapative::AdaptiveSpeedController;
 
+mod adaptive_2;
+
 use crate::{types::Bounds, winder::devices::{Puller, TensionArm}};
 
 pub trait SpeedController
