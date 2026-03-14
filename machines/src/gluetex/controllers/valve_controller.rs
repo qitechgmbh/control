@@ -159,3 +159,93 @@ impl Default for ValveController {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ethercat_hal::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput};
+    use smol::lock::RwLock;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+
+    #[derive(Clone, Copy)]
+    struct TestPort;
+
+    struct TestDigitalOutputDevice {
+        state: Arc<AtomicBool>,
+    }
+
+    impl DigitalOutputDevice<TestPort> for TestDigitalOutputDevice {
+        fn set_output(&mut self, _port: TestPort, value: DigitalOutputOutput) {
+            self.state.store(value.0, Ordering::SeqCst);
+        }
+
+        fn get_output(&self, _port: TestPort) -> DigitalOutputOutput {
+            DigitalOutputOutput(self.state.load(Ordering::SeqCst))
+        }
+    }
+
+    fn create_digital_output() -> (DigitalOutput, Arc<AtomicBool>) {
+        let shared_state = Arc::new(AtomicBool::new(false));
+        let device: Arc<RwLock<dyn DigitalOutputDevice<TestPort>>> =
+            Arc::new(RwLock::new(TestDigitalOutputDevice {
+                state: shared_state.clone(),
+            }));
+        (DigitalOutput::new(device, TestPort), shared_state)
+    }
+
+    #[test]
+    fn manual_override_has_priority() {
+        let mut controller = ValveController::new();
+        controller.set_enabled(false);
+        controller.set_manual_override(Some(true));
+
+        let (mut valve, shared_state) = create_digital_output();
+        controller.update_valve(&mut valve, Length::new::<millimeter>(100.0));
+
+        assert!(shared_state.load(Ordering::SeqCst));
+        assert!(controller.get_desired_state());
+    }
+
+    #[test]
+    fn pattern_switches_between_off_and_on_phases_by_distance() {
+        let mut controller = ValveController::new();
+        controller.set_enabled(true);
+        controller.set_on_distance_mm(2.0);
+        controller.set_off_distance_mm(3.0);
+
+        let (mut valve, shared_state) = create_digital_output();
+
+        // OFF phase, below threshold
+        controller.update_valve(&mut valve, Length::new::<millimeter>(1.0));
+        assert!(!shared_state.load(Ordering::SeqCst));
+
+        // OFF phase reaches threshold -> switch to ON
+        controller.update_valve(&mut valve, Length::new::<millimeter>(2.0));
+        assert!(shared_state.load(Ordering::SeqCst));
+
+        // ON phase reaches threshold -> switch to OFF
+        controller.update_valve(&mut valve, Length::new::<millimeter>(2.0));
+        assert!(!shared_state.load(Ordering::SeqCst));
+    }
+
+    #[test]
+    fn disabling_resets_pattern_state() {
+        let mut controller = ValveController::new();
+        controller.set_enabled(true);
+        controller.set_on_distance_mm(1.0);
+        controller.set_off_distance_mm(1.0);
+
+        let (mut valve, shared_state) = create_digital_output();
+        controller.update_valve(&mut valve, Length::new::<millimeter>(1.0));
+        assert!(shared_state.load(Ordering::SeqCst));
+
+        controller.set_enabled(false);
+        controller.update_valve(&mut valve, Length::new::<millimeter>(1.0));
+        assert!(!shared_state.load(Ordering::SeqCst));
+        assert!(!controller.get_pattern_state());
+        assert_eq!(controller.get_accumulated_distance(), 0.0);
+    }
+}

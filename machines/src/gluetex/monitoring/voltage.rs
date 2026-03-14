@@ -154,3 +154,60 @@ impl VoltageMonitor {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn delayed_voltage_uses_history_at_configured_distance() {
+        let mut monitor = VoltageMonitor::new("optris");
+        monitor.config.delay_mm = 10.0;
+
+        monitor.record_voltage(2.0, 5.0); // distance 5
+        monitor.record_voltage(3.0, 5.0); // distance 10
+        monitor.record_voltage(7.0, 5.0); // distance 15
+
+        // Current accumulated distance is 15, target is 5 -> expects first sample (2.0V).
+        assert_eq!(monitor.get_delayed_voltage(), 2.0);
+    }
+
+    #[test]
+    fn triggers_after_debounce_when_delayed_voltage_out_of_limits() {
+        let mut monitor = VoltageMonitor::new("optris");
+        monitor.config.enabled = true;
+        monitor.config.min_voltage = 2.0;
+        monitor.config.max_voltage = 8.0;
+        monitor.config.delay_mm = 0.0;
+
+        monitor.record_voltage(9.0, 0.0);
+
+        // First check starts debounce.
+        let (triggered, changed) = monitor.check(9.0, OperationMode::Production);
+        assert!(!triggered);
+        assert!(!changed);
+        assert!(monitor.out_of_range_since.is_some());
+
+        // Force debounce elapsed and check again.
+        monitor.out_of_range_since = Some(Instant::now() - Duration::from_millis(250));
+        let (triggered, changed) = monitor.check(9.0, OperationMode::Production);
+        assert!(triggered);
+        assert!(changed);
+        assert!(monitor.triggered);
+    }
+
+    #[test]
+    fn non_production_mode_clears_trigger_state() {
+        let mut monitor = VoltageMonitor::new("optris");
+        monitor.config.enabled = true;
+        monitor.triggered = true;
+        monitor.out_of_range_since = Some(Instant::now());
+
+        let (triggered, changed) = monitor.check(9.0, OperationMode::Setup);
+        assert!(!triggered);
+        assert!(changed);
+        assert!(!monitor.triggered);
+        assert!(monitor.out_of_range_since.is_none());
+    }
+}

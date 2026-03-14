@@ -206,8 +206,37 @@ impl SlavePullerSpeedController {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ethercat_hal::io::{
+        analog_input::{AnalogInputInput, physical::AnalogInputRange},
+        analog_input_dummy::AnalogInputDummy,
+    };
+    use std::i16;
+    use std::time::Instant;
     use units::angle::degree;
+    use units::electric_potential::volt;
+    use units::f64::ElectricPotential;
     use units::length::millimeter;
+    use units::velocity::meter_per_second;
+
+    fn create_tension_arm() -> (AnalogInputDummy, TensionArm) {
+        let analog_input_dummy = AnalogInputDummy::new(AnalogInputRange::Potential {
+            min: ElectricPotential::new::<volt>(0.0),
+            max: ElectricPotential::new::<volt>(10.0),
+            min_raw: 0,
+            max_raw: i16::MAX,
+        });
+        let tension_arm = TensionArm::new(analog_input_dummy.analog_input());
+        (analog_input_dummy, tension_arm)
+    }
+
+    fn set_tension_arm_angle_degrees(analog_input_dummy: &mut AnalogInputDummy, angle_deg: f64) {
+        // TensionArm conversion: 0V -> 0°, 5V -> 360°
+        let volts = (angle_deg / 360.0) * 5.0;
+        analog_input_dummy.set_input(AnalogInputInput {
+            normalized: (volts / 10.0) as f32,
+            wiring_error: false,
+        });
+    }
 
     #[test]
     fn test_slave_puller_angles() {
@@ -272,5 +301,96 @@ mod tests {
 
         assert_eq!(controller.get_min_speed_factor(), Some(0.7));
         assert_eq!(controller.get_max_speed_factor(), Some(1.5));
+    }
+
+    #[test]
+    fn test_tension_arm_above_target_speeds_up_and_below_target_slows_down() {
+        let converter =
+            LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0));
+        let filament_calc =
+            FilamentTensionCalculator::new(Angle::new::<degree>(20.0), Angle::new::<degree>(90.0));
+        let mut controller = SlavePullerSpeedController::new(
+            Angle::new::<degree>(55.0),
+            Angle::new::<degree>(35.0),
+            converter,
+            filament_calc,
+        );
+        controller.set_enabled(true);
+
+        let master_speed = Velocity::new::<meter_per_second>(1.0);
+        let (mut analog_input_dummy, tension_arm) = create_tension_arm();
+
+        // Above target -> should speed up
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 80.0);
+        let above_target = controller.update_speed(Instant::now(), master_speed, &tension_arm);
+
+        // Below target -> should slow down
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 30.0);
+        let below_target = controller.update_speed(Instant::now(), master_speed, &tension_arm);
+
+        assert!(
+            above_target > master_speed,
+            "speed should increase when tension arm is over target"
+        );
+        assert!(
+            below_target < master_speed,
+            "speed should decrease when tension arm is under target"
+        );
+        assert!(
+            above_target > below_target,
+            "over-target speed should be greater than under-target speed"
+        );
+    }
+
+    #[test]
+    fn test_disabled_controller_outputs_zero_speed() {
+        let converter =
+            LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0));
+        let filament_calc =
+            FilamentTensionCalculator::new(Angle::new::<degree>(20.0), Angle::new::<degree>(90.0));
+        let mut controller = SlavePullerSpeedController::new(
+            Angle::new::<degree>(55.0),
+            Angle::new::<degree>(35.0),
+            converter,
+            filament_calc,
+        );
+        controller.set_enabled(false);
+
+        let master_speed = Velocity::new::<meter_per_second>(1.2);
+        let (mut analog_input_dummy, tension_arm) = create_tension_arm();
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 80.0);
+
+        let out = controller.update_speed(Instant::now(), master_speed, &tension_arm);
+        assert_eq!(out, Velocity::ZERO);
+    }
+
+    #[test]
+    fn test_speed_factor_limits_are_applied() {
+        let converter =
+            LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0));
+        let filament_calc =
+            FilamentTensionCalculator::new(Angle::new::<degree>(20.0), Angle::new::<degree>(90.0));
+        let mut controller = SlavePullerSpeedController::new(
+            Angle::new::<degree>(55.0),
+            Angle::new::<degree>(35.0),
+            converter,
+            filament_calc,
+        );
+        controller.set_enabled(true);
+        controller.set_min_speed_factor(Some(0.8));
+        controller.set_max_speed_factor(Some(1.2));
+
+        let master_speed = Velocity::new::<meter_per_second>(2.0);
+        let (mut analog_input_dummy, tension_arm) = create_tension_arm();
+
+        // Far below target would request 0.5x, but should clamp to min 0.8x
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 0.0);
+        let min_limited = controller.update_speed(Instant::now(), master_speed, &tension_arm);
+        assert_eq!(min_limited.get::<meter_per_second>(), 1.6);
+
+        // Far above target would request 1.5x, but should clamp to max 1.2x
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 170.0);
+        let max_limited = controller.update_speed(Instant::now(), master_speed, &tension_arm);
+        assert_eq!(max_limited.get::<meter_per_second>(), 2.4);
     }
 }

@@ -153,3 +153,72 @@ pub enum PullerRegulationMode {
     Speed,
     Diameter,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+    use units::length::millimeter;
+    use units::velocity::meter_per_minute;
+
+    fn test_converter() -> LinearStepConverter {
+        LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0))
+    }
+
+    #[test]
+    fn gear_ratio_multiplier_matches_expected_values() {
+        assert_eq!(GearRatio::OneToOne.multiplier(), 1.0);
+        assert_eq!(GearRatio::OneToFive.multiplier(), 5.0);
+        assert_eq!(GearRatio::OneToTen.multiplier(), 10.0);
+    }
+
+    #[test]
+    fn disabled_controller_outputs_zero_speed() {
+        let mut controller = PullerSpeedController::new(
+            Velocity::new::<meter_per_minute>(10.0),
+            Length::new::<millimeter>(30.0),
+            test_converter(),
+        );
+
+        controller.set_enabled(false);
+        let t0 = Instant::now();
+        let out = controller.calc_angular_velocity(t0);
+        assert_eq!(out, AngularVelocity::ZERO);
+    }
+
+    #[test]
+    fn gear_ratio_and_direction_affect_output_sign_and_magnitude() {
+        let mut controller = PullerSpeedController::new(
+            Velocity::new::<meter_per_minute>(10.0),
+            Length::new::<millimeter>(30.0),
+            test_converter(),
+        );
+        controller.set_enabled(true);
+        controller.set_gear_ratio(GearRatio::OneToTen);
+
+        let t0 = Instant::now();
+        let _ = controller.calc_angular_velocity(t0);
+
+        let forward = controller.calc_angular_velocity(t0 + Duration::from_secs(1));
+        assert!(forward > AngularVelocity::ZERO);
+
+        controller.set_forward(false);
+        let backward = controller.calc_angular_velocity(t0 + Duration::from_secs(30));
+        assert!(backward < AngularVelocity::ZERO);
+    }
+
+    #[test]
+    fn speed_and_angular_velocity_conversion_roundtrip() {
+        let controller = PullerSpeedController::new(
+            Velocity::new::<meter_per_minute>(10.0),
+            Length::new::<millimeter>(30.0),
+            test_converter(),
+        );
+
+        let speed = Velocity::new::<meter_per_minute>(42.0);
+        let angular = controller.speed_to_angular_velocity(speed);
+        let speed_back = controller.angular_velocity_to_speed(angular);
+
+        assert!((speed_back - speed).abs() < Velocity::new::<meter_per_minute>(1e-9));
+    }
+}

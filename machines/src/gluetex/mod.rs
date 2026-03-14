@@ -674,6 +674,9 @@ impl Gluetex {
 
     /// Emergency stop: stops all motors, heating, and sets machine to hold
     fn emergency_stop(&mut self) {
+        // Safety transitions are backend-owned; force setup monitoring context on stop.
+        self.operation_mode = Self::safety_stop_operation_mode();
+
         // Stop all motors by setting mode to hold
         self.set_mode(&GluetexMode::Hold);
 
@@ -700,6 +703,9 @@ impl Gluetex {
     /// Emergency stop without heaters: stops all motors but keeps heaters enabled
     /// Used when tension arm or voltage monitors are triggered
     fn emergency_stop_no_heaters(&mut self) {
+        // Safety transitions are backend-owned; force setup monitoring context on stop.
+        self.operation_mode = Self::safety_stop_operation_mode();
+
         // Stop all motors by setting mode to hold
         self.set_mode(&GluetexMode::Hold);
 
@@ -826,6 +832,11 @@ impl Gluetex {
         // Use emergency_stop to safely shut down everything
         self.emergency_stop();
         tracing::info!("Entered sleep mode due to inactivity");
+    }
+
+    #[inline]
+    fn safety_stop_operation_mode() -> OperationMode {
+        OperationMode::Setup
     }
 
     /// Get remaining seconds on sleep timer
@@ -960,5 +971,10 @@ mod tests {
         let inner = Length::new::<millimeter>(15.0);
         let outer = Length::new::<millimeter>(15.89);
         assert!(!Gluetex::validate_traverse_limits(inner, outer));
+    }
+
+    #[test]
+    fn safety_stop_forces_setup_operation_mode() {
+        assert_eq!(Gluetex::safety_stop_operation_mode(), OperationMode::Setup);
     }
 }

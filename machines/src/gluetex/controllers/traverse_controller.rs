@@ -529,4 +529,46 @@ mod tests {
             epsilon = f64::EPSILON
         );
     }
+
+    #[test]
+    fn test_calculate_traverse_speed_respects_spool_direction() {
+        let spool_speed = AngularVelocity::new::<revolution_per_second>(-2.0);
+        let step_size = Length::new::<millimeter>(1.5);
+
+        let traverse_speed = TraverseController::calculate_traverse_speed(spool_speed, step_size);
+        assert_relative_eq!(
+            traverse_speed.get::<millimeter_per_second>(),
+            -3.0,
+            epsilon = f64::EPSILON
+        );
+    }
+
+    #[test]
+    fn test_start_traversing_from_position_selects_direction_by_midpoint() {
+        let mut controller = TraverseController::new(
+            Length::new::<millimeter>(0.0),
+            Length::new::<millimeter>(100.0),
+            16,
+        );
+
+        controller.start_traversing_from_position(Length::new::<millimeter>(10.0));
+        assert!(controller.is_traversing());
+
+        controller.start_traversing_from_position(Length::new::<millimeter>(90.0));
+        assert!(controller.is_traversing());
+    }
+
+    #[test]
+    fn test_homing_state_helpers_follow_state_changes() {
+        let mut controller = TraverseController::new(
+            Length::new::<millimeter>(0.0),
+            Length::new::<millimeter>(100.0),
+            16,
+        );
+
+        assert!(!controller.is_homed());
+        controller.goto_home();
+        assert!(controller.is_going_home());
+        assert!(controller.is_homed());
+    }
 }

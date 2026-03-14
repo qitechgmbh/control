@@ -1115,3 +1115,45 @@ impl MachineApi for Gluetex {
         self.namespace.namespace.clone()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mode_roundtrip_conversion_preserves_value() {
+        let modes = [Mode::Standby, Mode::Hold, Mode::Pull, Mode::Wind];
+        for mode in modes {
+            let internal: GluetexMode = mode.clone().into();
+            let api_mode: Mode = internal.into();
+            assert!(std::mem::discriminant(&mode) == std::mem::discriminant(&api_mode));
+        }
+    }
+
+    #[test]
+    fn operation_mode_roundtrip_conversion_preserves_value() {
+        let modes = [OperationMode::Setup, OperationMode::Production];
+        for mode in modes {
+            let internal: super::OperationMode = mode.clone().into();
+            let api_mode: OperationMode = internal.into();
+            assert!(std::mem::discriminant(&mode) == std::mem::discriminant(&api_mode));
+        }
+    }
+
+    #[test]
+    fn live_values_event_build_uses_expected_name() {
+        let event = LiveValuesEvent::default().build();
+        assert_eq!(event.name, "LiveValuesEvent");
+    }
+
+    #[test]
+    fn valve_manual_override_mutation_deserializes() {
+        let mutation: Mutation =
+            serde_json::from_value(serde_json::json!({"SetValveManualOverride": true}))
+                .expect("mutation should deserialize");
+        match mutation {
+            Mutation::SetValveManualOverride(value) => assert_eq!(value, Some(true)),
+            _ => panic!("unexpected mutation variant"),
+        }
+    }
+}

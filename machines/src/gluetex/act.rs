@@ -2,6 +2,23 @@ use super::Gluetex;
 use crate::{MachineAct, MachineMessage, MachineValues};
 use std::time::{Duration, Instant};
 
+const LIVE_VALUES_EMIT_INTERVAL: Duration = Duration::from_micros(33_333);
+const STATE_EMIT_INTERVAL: Duration = Duration::from_millis(500);
+
+fn should_emit_state_periodically(
+    now: Instant,
+    last_state_emit: Instant,
+    autotuning_active: bool,
+    sleep_timer_enabled: bool,
+) -> bool {
+    let should_emit_state = autotuning_active || sleep_timer_enabled;
+    should_emit_state && now.duration_since(last_state_emit) > STATE_EMIT_INTERVAL
+}
+
+fn should_emit_live_values(now: Instant, last_measurement_emit: Instant) -> bool {
+    now.duration_since(last_measurement_emit) > LIVE_VALUES_EMIT_INTERVAL
+}
+
 impl MachineAct for Gluetex {
     fn act(&mut self, now: Instant) {
         let machine_message = self.api_receiver.try_recv();
@@ -70,18 +87,18 @@ impl MachineAct for Gluetex {
             || self.temperature_controller_5.is_autotuning()
             || self.temperature_controller_6.is_autotuning();
 
-        // Emit state regularly when autotuning or when sleep timer is enabled
-        let should_emit_state = autotuning_active || self.sleep_timer.config.enabled;
-
-        if should_emit_state
-            && now.duration_since(self.last_state_emit) > Duration::from_millis(500)
-        {
+        if should_emit_state_periodically(
+            now,
+            self.last_state_emit,
+            autotuning_active,
+            self.sleep_timer.config.enabled,
+        ) {
             self.emit_state();
             self.last_state_emit = now;
         }
 
         // more than 33ms have passed since last emit (30 "fps" target)
-        if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
+        if should_emit_live_values(now, self.last_measurement_emit) {
             self.emit_live_values();
             self.last_measurement_emit = now;
         }
@@ -110,5 +127,56 @@ impl MachineAct for Gluetex {
                 sender.close();
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        LIVE_VALUES_EMIT_INTERVAL, STATE_EMIT_INTERVAL, should_emit_live_values,
+        should_emit_state_periodically,
+    };
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn periodic_state_emit_requires_autotune_or_sleep_timer() {
+        let last = Instant::now();
+        let now = last + STATE_EMIT_INTERVAL + Duration::from_millis(1);
+
+        assert!(!should_emit_state_periodically(now, last, false, false));
+        assert!(should_emit_state_periodically(now, last, true, false));
+        assert!(should_emit_state_periodically(now, last, false, true));
+    }
+
+    #[test]
+    fn periodic_state_emit_is_strictly_greater_than_interval() {
+        let last = Instant::now();
+
+        assert!(!should_emit_state_periodically(
+            last + STATE_EMIT_INTERVAL,
+            last,
+            true,
+            false
+        ));
+        assert!(should_emit_state_periodically(
+            last + STATE_EMIT_INTERVAL + Duration::from_millis(1),
+            last,
+            true,
+            false
+        ));
+    }
+
+    #[test]
+    fn live_values_emit_is_strictly_greater_than_interval() {
+        let last = Instant::now();
+
+        assert!(!should_emit_live_values(
+            last + LIVE_VALUES_EMIT_INTERVAL,
+            last
+        ));
+        assert!(should_emit_live_values(
+            last + LIVE_VALUES_EMIT_INTERVAL + Duration::from_nanos(1),
+            last
+        ));
     }
 }

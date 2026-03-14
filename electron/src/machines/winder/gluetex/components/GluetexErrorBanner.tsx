@@ -17,7 +17,7 @@ import { gluetexRoute } from "@/routes/routes";
  * User must explicitly dismiss each error before continuing
  */
 export function GluetexErrorBanner() {
-  const { state, setOperationMode } = useGluetex();
+  const { state } = useGluetex();
   const router = useRouter();
   const { serial } = gluetexRoute.useParams();
 
@@ -55,37 +55,27 @@ export function GluetexErrorBanner() {
   const [prevSleepTimerTriggered, setPrevSleepTimerTriggered] = useState(false);
 
   // Show dialog when error is triggered (transition from false to true)
-  // Also immediately switch to Setup mode
+  // Operation mode changes remain backend-owned safety behavior.
   useEffect(() => {
     if (anyTensionArmTriggered && !prevAnyTensionArmTriggered) {
       setShowTensionArmDialog(true);
-      // Immediately switch to Setup mode when error is detected
-      setOperationMode("Setup");
     }
     setPrevAnyTensionArmTriggered(anyTensionArmTriggered ?? false);
-  }, [anyTensionArmTriggered, prevAnyTensionArmTriggered, setOperationMode]);
+  }, [anyTensionArmTriggered, prevAnyTensionArmTriggered]);
 
   useEffect(() => {
     if (anyVoltageMonitorTriggered && !prevAnyVoltageMonitorTriggered) {
       setShowVoltageMonitorDialog(true);
-      // Immediately switch to Setup mode when error is detected
-      setOperationMode("Setup");
     }
     setPrevAnyVoltageMonitorTriggered(anyVoltageMonitorTriggered ?? false);
-  }, [
-    anyVoltageMonitorTriggered,
-    prevAnyVoltageMonitorTriggered,
-    setOperationMode,
-  ]);
+  }, [anyVoltageMonitorTriggered, prevAnyVoltageMonitorTriggered]);
 
   useEffect(() => {
     if (sleepTimerTriggered && !prevSleepTimerTriggered) {
       setShowSleepTimerDialog(true);
-      // Immediately switch to Setup mode when timer expires
-      setOperationMode("Setup");
     }
     setPrevSleepTimerTriggered(sleepTimerTriggered ?? false);
-  }, [sleepTimerTriggered, prevSleepTimerTriggered, setOperationMode]);
+  }, [sleepTimerTriggered, prevSleepTimerTriggered]);
 
   // Handler to dismiss tension arm dialog (mode already switched to Setup)
   const dismissTensionArmDialog = () => {

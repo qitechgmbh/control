@@ -1290,10 +1290,6 @@ export function useGluetex() {
     updateStateOptimistically(
       (current) => {
         current.data.winder_tension_arm_monitor_state.enabled = enabled;
-        // Clear triggered flag when disabling
-        if (!enabled) {
-          current.data.winder_tension_arm_monitor_state.triggered = false;
-        }
       },
       () =>
         requestSetWinderTensionArmMonitorEnabled({
@@ -1334,10 +1330,6 @@ export function useGluetex() {
     updateStateOptimistically(
       (current) => {
         current.data.tape_feeder_tension_arm_monitor_state.enabled = enabled;
-        // Clear triggered flag when disabling
-        if (!enabled) {
-          current.data.tape_feeder_tension_arm_monitor_state.triggered = false;
-        }
       },
       () =>
         requestSetTapeFeederTensionArmMonitorEnabled({
@@ -1378,10 +1370,6 @@ export function useGluetex() {
     updateStateOptimistically(
       (current) => {
         current.data.inlet_feeder_tension_arm_monitor_state.enabled = enabled;
-        // Clear triggered flag when disabling
-        if (!enabled) {
-          current.data.inlet_feeder_tension_arm_monitor_state.triggered = false;
-        }
       },
       () =>
         requestSetInletFeederTensionArmMonitorEnabled({
@@ -1422,10 +1410,6 @@ export function useGluetex() {
     updateStateOptimistically(
       (current) => {
         current.data.optris_1_monitor_state.enabled = enabled;
-        // Clear triggered flag when disabling
-        if (!enabled) {
-          current.data.optris_1_monitor_state.triggered = false;
-        }
       },
       () =>
         requestSetOptris1MonitorEnabled({
@@ -1465,10 +1449,6 @@ export function useGluetex() {
     updateStateOptimistically(
       (current) => {
         current.data.optris_2_monitor_state.enabled = enabled;
-        // Clear triggered flag when disabling
-        if (!enabled) {
-          current.data.optris_2_monitor_state.triggered = false;
-        }
       },
       () =>
         requestSetOptris2MonitorEnabled({

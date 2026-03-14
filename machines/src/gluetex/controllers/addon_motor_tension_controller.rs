@@ -166,6 +166,26 @@ mod tests {
     use units::electric_potential::volt;
     use units::f64::ElectricPotential;
 
+    fn create_tension_arm() -> (AnalogInputDummy, TensionArm) {
+        let analog_input_dummy = AnalogInputDummy::new(AnalogInputRange::Potential {
+            min: ElectricPotential::new::<volt>(0.0),
+            max: ElectricPotential::new::<volt>(10.0),
+            min_raw: 0,
+            max_raw: i16::MAX,
+        });
+        let tension_arm = TensionArm::new(analog_input_dummy.analog_input());
+        (analog_input_dummy, tension_arm)
+    }
+
+    fn set_tension_arm_angle_degrees(analog_input_dummy: &mut AnalogInputDummy, angle_deg: f64) {
+        // TensionArm conversion: 0V -> 0°, 5V -> 360°
+        let volts = (angle_deg / 360.0) * 5.0;
+        analog_input_dummy.set_input(AnalogInputInput {
+            normalized: (volts / 10.0) as f32,
+            wiring_error: false,
+        });
+    }
+
     #[test]
     fn test_addon_tension_controller_defaults() {
         let controller = AddonMotorTensionController::new(
@@ -233,5 +253,75 @@ mod tests {
 
         // Max speed factor should clamp to 1.5x
         assert_eq!(output.get::<meter_per_second>(), 3.0);
+    }
+
+    #[test]
+    fn test_addon_motor_5_over_target_speeds_up_and_under_target_slows_down() {
+        let mut controller = AddonMotorTensionController::new(
+            Angle::new::<degree>(55.0),
+            Angle::new::<degree>(35.0),
+        );
+        controller.set_enabled(true);
+
+        let master_speed = Velocity::new::<meter_per_second>(1.0);
+        let (mut analog_input_dummy, tension_arm) = create_tension_arm();
+
+        // Above target -> should speed up
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 85.0);
+        let above_target = controller.update_speed(Instant::now(), master_speed, &tension_arm);
+
+        // Below target -> should slow down
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 30.0);
+        let below_target = controller.update_speed(Instant::now(), master_speed, &tension_arm);
+
+        assert!(
+            above_target > master_speed,
+            "addon motor 5 should speed up when over target angle"
+        );
+        assert!(
+            below_target < master_speed,
+            "addon motor 5 should slow down when under target angle"
+        );
+        assert!(
+            above_target > below_target,
+            "over-target speed should exceed under-target speed"
+        );
+    }
+
+    #[test]
+    fn test_addon_tension_controller_preserves_negative_master_direction() {
+        let mut controller = AddonMotorTensionController::new(
+            Angle::new::<degree>(55.0),
+            Angle::new::<degree>(35.0),
+        );
+        controller.set_enabled(true);
+
+        let (mut analog_input_dummy, tension_arm) = create_tension_arm();
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 85.0);
+
+        let output = controller.update_speed(
+            Instant::now(),
+            Velocity::new::<meter_per_second>(-1.0),
+            &tension_arm,
+        );
+
+        assert!(
+            output.get::<meter_per_second>() < 0.0,
+            "negative master speed direction must be preserved"
+        );
+    }
+
+    #[test]
+    fn test_zero_sensitivity_returns_master_speed() {
+        let mut controller =
+            AddonMotorTensionController::new(Angle::new::<degree>(55.0), Angle::new::<degree>(0.0));
+        controller.set_enabled(true);
+
+        let (mut analog_input_dummy, tension_arm) = create_tension_arm();
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 85.0);
+
+        let master_speed = Velocity::new::<meter_per_second>(1.23);
+        let output = controller.update_speed(Instant::now(), master_speed, &tension_arm);
+        assert_eq!(output, master_speed);
     }
 }

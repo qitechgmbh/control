@@ -380,7 +380,77 @@ impl AddonMotorController {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ethercat_hal::io::stepper_velocity_el70x1::{
+        StepperVelocityEL70x1Device, StepperVelocityEL70x1Input, StepperVelocityEL70x1Output,
+    };
+    use ethercat_hal::shared_config::el70x1::EL70x1SpeedRange;
+    use smol::lock::RwLock;
+    use std::sync::Arc;
     use units::angular_velocity::revolution_per_second;
+    use units::length::millimeter;
+
+    #[derive(Clone, Copy)]
+    struct TestPort;
+
+    struct TestStepperDevice {
+        output: StepperVelocityEL70x1Output,
+        input: StepperVelocityEL70x1Input,
+    }
+
+    impl TestStepperDevice {
+        fn new() -> Self {
+            Self {
+                output: StepperVelocityEL70x1Output {
+                    velocity: 0,
+                    enable: false,
+                    reduce_torque: false,
+                    reset: false,
+                    set_counter: None,
+                },
+                input: StepperVelocityEL70x1Input {
+                    counter_value: 0,
+                    ready_to_enable: true,
+                    ready: true,
+                    warning: false,
+                    error: false,
+                    moving_positive: false,
+                    moving_negative: false,
+                    torque_reduced: false,
+                },
+            }
+        }
+    }
+
+    impl StepperVelocityEL70x1Device<TestPort> for TestStepperDevice {
+        fn set_output(
+            &mut self,
+            _port: TestPort,
+            value: StepperVelocityEL70x1Output,
+        ) -> Result<(), anyhow::Error> {
+            self.output = value;
+            Ok(())
+        }
+
+        fn get_input(&self, _port: TestPort) -> Result<StepperVelocityEL70x1Input, anyhow::Error> {
+            Ok(self.input.clone())
+        }
+
+        fn get_output(
+            &self,
+            _port: TestPort,
+        ) -> Result<StepperVelocityEL70x1Output, anyhow::Error> {
+            Ok(self.output.clone())
+        }
+
+        fn get_speed_range(&self, _port: TestPort) -> EL70x1SpeedRange {
+            EL70x1SpeedRange::Steps1000
+        }
+    }
+
+    fn make_test_motor() -> StepperVelocityEL70x1 {
+        let device = Arc::new(RwLock::new(TestStepperDevice::new()));
+        StepperVelocityEL70x1::new(device, TestPort)
+    }
 
     #[test]
     fn test_addon_motor_controller_disabled() {
@@ -470,5 +540,133 @@ mod tests {
             10.0,
             "Motor should run at same speed with 1:1 ratio"
         );
+    }
+
+    #[test]
+    fn test_manual_homing_stops_and_disables_on_endstop() {
+        let mut controller = AddonMotorController::new(200);
+        let mut motor = make_test_motor();
+        let puller_velocity = AngularVelocity::new::<revolution_per_second>(10.0);
+
+        controller.start_manual_homing();
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(false),
+            Length::new::<millimeter>(0.0),
+        );
+        assert!(motor.is_enabled());
+        assert!(motor.get_speed() > 0);
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Homing);
+
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(true),
+            Length::new::<millimeter>(0.0),
+        );
+        assert!(!motor.is_enabled());
+        assert!(!controller.is_enabled());
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Idle);
+    }
+
+    #[test]
+    fn test_pattern_requires_sensor_clear_before_pausing_after_kontur() {
+        let mut controller = AddonMotorController::new(200);
+        let mut motor = make_test_motor();
+        let puller_velocity = AngularVelocity::new::<revolution_per_second>(10.0);
+        controller.set_konturlaenge_mm(5.0);
+        controller.set_pause_mm(3.0);
+        controller.set_enabled(true);
+
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Homing);
+
+        // Homing completes when endstop is hit once.
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(true),
+            Length::new::<millimeter>(0.0),
+        );
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Running);
+
+        // Reaching kontur while sensor stays true does not pause immediately.
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(true),
+            Length::new::<millimeter>(6.0),
+        );
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Running);
+
+        // Once sensor clears after kontur, next true transitions to Paused.
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(false),
+            Length::new::<millimeter>(0.1),
+        );
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Running);
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(true),
+            Length::new::<millimeter>(0.1),
+        );
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Paused);
+        assert_eq!(motor.get_speed(), 0);
+    }
+
+    #[test]
+    fn test_pattern_paused_transitions_back_to_running_after_pause_distance() {
+        let mut controller = AddonMotorController::new(200);
+        let mut motor = make_test_motor();
+        let puller_velocity = AngularVelocity::new::<revolution_per_second>(10.0);
+        controller.set_konturlaenge_mm(2.0);
+        controller.set_pause_mm(3.0);
+        controller.set_enabled(true);
+
+        // Reach Paused deterministically.
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(true),
+            Length::new::<millimeter>(0.0),
+        ); // Homing -> Running
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(true),
+            Length::new::<millimeter>(2.1),
+        );
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(false),
+            Length::new::<millimeter>(0.1),
+        );
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(true),
+            Length::new::<millimeter>(0.1),
+        ); // Running -> Paused
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Paused);
+
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(true),
+            Length::new::<millimeter>(2.0),
+        );
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Paused);
+
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(true),
+            Length::new::<millimeter>(1.1),
+        );
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Running);
     }
 }

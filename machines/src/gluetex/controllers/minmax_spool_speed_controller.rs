@@ -296,3 +296,103 @@ impl MinMaxSpoolSpeedController {
         Length::new::<meter>(radius)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use control_core::converters::linear_step_converter::LinearStepConverter;
+    use ethercat_hal::io::{
+        analog_input::{AnalogInputInput, physical::AnalogInputRange},
+        analog_input_dummy::AnalogInputDummy,
+    };
+    use std::i16;
+    use std::time::Duration;
+    use units::electric_potential::volt;
+    use units::f64::ElectricPotential;
+    use units::length::millimeter;
+    use units::velocity::meter_per_minute;
+
+    fn create_tension_arm() -> (AnalogInputDummy, TensionArm) {
+        let analog_input_dummy = AnalogInputDummy::new(AnalogInputRange::Potential {
+            min: ElectricPotential::new::<volt>(0.0),
+            max: ElectricPotential::new::<volt>(10.0),
+            min_raw: 0,
+            max_raw: i16::MAX,
+        });
+        let tension_arm = TensionArm::new(analog_input_dummy.analog_input());
+        (analog_input_dummy, tension_arm)
+    }
+
+    fn set_tension_arm_angle_degrees(analog_input_dummy: &mut AnalogInputDummy, angle_deg: f64) {
+        // TensionArm conversion: 0V -> 0°, 5V -> 360°
+        let volts = (angle_deg / 360.0) * 5.0;
+        analog_input_dummy.set_input(AnalogInputInput {
+            normalized: (volts / 10.0) as f32,
+            wiring_error: false,
+        });
+    }
+
+    #[test]
+    fn disabled_controller_returns_zero_speed() {
+        let mut controller = MinMaxSpoolSpeedController::new();
+        controller.set_enabled(false);
+
+        let (mut analog_input_dummy, tension_arm) = create_tension_arm();
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 45.0);
+
+        let t0 = Instant::now();
+        let _ = controller.update_speed(t0, &tension_arm);
+        let speed = controller.update_speed(t0 + Duration::from_secs(1), &tension_arm);
+
+        assert_eq!(speed, AngularVelocity::ZERO);
+    }
+
+    #[test]
+    fn min_and_max_speed_configuration_is_applied() {
+        let mut controller = MinMaxSpoolSpeedController::new();
+
+        controller
+            .set_min_speed(AngularVelocity::new::<revolution_per_minute>(10.0))
+            .expect("min speed should be accepted");
+        controller
+            .set_max_speed(AngularVelocity::new::<revolution_per_minute>(120.0))
+            .expect("max speed should be accepted");
+
+        assert_eq!(
+            controller.get_min_speed().get::<revolution_per_minute>(),
+            10.0
+        );
+        assert_eq!(
+            controller.get_max_speed().get::<revolution_per_minute>(),
+            120.0
+        );
+    }
+
+    #[test]
+    fn get_radius_returns_zero_if_spool_speed_is_zero() {
+        let controller = MinMaxSpoolSpeedController::new();
+        let puller = PullerSpeedController::new(
+            Velocity::new::<meter_per_minute>(10.0),
+            Length::new::<millimeter>(30.0),
+            LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0)),
+        );
+
+        let radius = controller.get_radius(&puller);
+        assert_eq!(radius.get::<meter>(), 0.0);
+    }
+
+    #[test]
+    fn clamped_tension_arm_limits_force_minimum_speed() {
+        let mut controller = MinMaxSpoolSpeedController::new();
+        controller.set_enabled(true);
+        let (mut analog_input_dummy, tension_arm) = create_tension_arm();
+
+        // 0° is outside configured 20°..90° arm range and should clamp to min output.
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 0.0);
+
+        let t0 = Instant::now();
+        let _ = controller.update_speed(t0, &tension_arm);
+        let speed = controller.update_speed(t0 + Duration::from_secs(1), &tension_arm);
+        assert_eq!(speed, AngularVelocity::ZERO);
+    }
+}

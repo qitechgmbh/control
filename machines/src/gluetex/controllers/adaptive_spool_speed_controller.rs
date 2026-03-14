@@ -459,3 +459,110 @@ impl AdaptiveSpoolSpeedController {
         self.deacceleration_urgency_multiplier = deacceleration_urgency_multiplier.max(1.0);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use control_core::converters::linear_step_converter::LinearStepConverter;
+    use ethercat_hal::io::{
+        analog_input::{AnalogInputInput, physical::AnalogInputRange},
+        analog_input_dummy::AnalogInputDummy,
+    };
+    use std::i16;
+    use std::time::Duration;
+    use units::angular_velocity::revolution_per_minute;
+    use units::electric_potential::volt;
+    use units::f64::ElectricPotential;
+    use units::length::centimeter;
+    use units::length::millimeter;
+    use units::velocity::meter_per_second;
+
+    fn create_tension_arm() -> (AnalogInputDummy, TensionArm) {
+        let analog_input_dummy = AnalogInputDummy::new(AnalogInputRange::Potential {
+            min: ElectricPotential::new::<volt>(0.0),
+            max: ElectricPotential::new::<volt>(10.0),
+            min_raw: 0,
+            max_raw: i16::MAX,
+        });
+        let tension_arm = TensionArm::new(analog_input_dummy.analog_input());
+        (analog_input_dummy, tension_arm)
+    }
+
+    fn set_tension_arm_angle_degrees(analog_input_dummy: &mut AnalogInputDummy, angle_deg: f64) {
+        // TensionArm conversion: 0V -> 0°, 5V -> 360°
+        let volts = (angle_deg / 360.0) * 5.0;
+        analog_input_dummy.set_input(AnalogInputInput {
+            normalized: (volts / 10.0) as f32,
+            wiring_error: false,
+        });
+    }
+
+    fn puller_with_speed(last_speed_mps: f64) -> PullerSpeedController {
+        let mut puller = PullerSpeedController::new(
+            Velocity::new::<units::velocity::meter_per_minute>(50.0),
+            Length::new::<millimeter>(30.0),
+            LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0)),
+        );
+        puller.last_speed = Velocity::new::<meter_per_second>(last_speed_mps);
+        puller
+    }
+
+    #[test]
+    fn disabled_controller_outputs_zero_speed() {
+        let mut controller = AdaptiveSpoolSpeedController::new();
+        controller.set_enabled(false);
+
+        let (mut analog_input_dummy, tension_arm) = create_tension_arm();
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 45.0);
+        let puller = puller_with_speed(2.0);
+
+        let t0 = Instant::now();
+        let _ = controller.update_speed(t0, &tension_arm, &puller);
+        let speed = controller.update_speed(t0 + Duration::from_secs(1), &tension_arm, &puller);
+
+        assert_eq!(speed, AngularVelocity::ZERO);
+    }
+
+    #[test]
+    fn safety_speed_limit_is_enforced() {
+        let mut controller = AdaptiveSpoolSpeedController::new();
+        controller.set_enabled(true);
+
+        let (mut analog_input_dummy, tension_arm) = create_tension_arm();
+        // In-range angle with low filament tension -> high speed request.
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 30.0);
+
+        // Extremely high puller speed to provoke an oversized target speed.
+        let puller = puller_with_speed(100.0);
+
+        let t0 = Instant::now();
+        let _ = controller.update_speed(t0, &tension_arm, &puller);
+        let speed = controller.update_speed(t0 + Duration::from_secs(2), &tension_arm, &puller);
+
+        assert!(
+            speed <= AngularVelocity::new::<revolution_per_minute>(600.0),
+            "speed must be safety-clamped to backend max limit"
+        );
+        assert!(speed > AngularVelocity::ZERO);
+    }
+
+    #[test]
+    fn adaptive_factor_learns_and_stays_within_bounds() {
+        let mut controller = AdaptiveSpoolSpeedController::new();
+        controller.set_enabled(true);
+        let (mut analog_input_dummy, tension_arm) = create_tension_arm();
+        let puller = puller_with_speed(2.0);
+
+        let initial = controller.get_speed_factor();
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 85.0);
+
+        let t0 = Instant::now();
+        let _ = controller.update_speed(t0, &tension_arm, &puller);
+        let _ = controller.update_speed(t0 + Duration::from_secs(5), &tension_arm, &puller);
+        let learned = controller.get_speed_factor();
+
+        assert!(learned != initial);
+        assert!(learned.get::<centimeter>() >= AdaptiveSpoolSpeedController::FACTOR_MIN);
+        assert!(learned.get::<centimeter>() <= AdaptiveSpoolSpeedController::FACTOR_MAX);
+    }
+}

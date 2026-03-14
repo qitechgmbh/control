@@ -664,3 +664,129 @@ impl MachineNewTrait for Gluetex {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::machine_identification::{
+        DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat,
+        DeviceIdentificationIdentified, DeviceMachineIdentification, MachineIdentification,
+        MachineIdentificationUnique,
+    };
+    use crate::{GenericEvent, MACHINE_GLUETEX_V1, MachineNewHardwareEthercat, VENDOR_QITECH};
+    use smol::lock::RwLock;
+    use socketioxide::extract::SocketRef;
+    use std::sync::Arc;
+
+    fn machine_uid(serial: u16) -> MachineIdentificationUnique {
+        MachineIdentificationUnique {
+            machine_identification: MachineIdentification {
+                vendor: VENDOR_QITECH,
+                machine: MACHINE_GLUETEX_V1,
+            },
+            serial,
+        }
+    }
+
+    fn identified_device(
+        machine_identification_unique: MachineIdentificationUnique,
+        role: u16,
+    ) -> DeviceIdentificationIdentified {
+        DeviceIdentificationIdentified {
+            device_machine_identification: DeviceMachineIdentification {
+                machine_identification_unique,
+                role,
+            },
+            device_hardware_identification: DeviceHardwareIdentification::Ethercat(
+                DeviceHardwareIdentificationEthercat {
+                    subdevice_index: role as usize,
+                },
+            ),
+        }
+    }
+
+    #[test]
+    fn new_fails_for_empty_device_group_before_hardware_access() {
+        let device_group: Vec<DeviceIdentificationIdentified> = vec![];
+        let subdevices = Vec::new();
+        let ethercat_devices: Vec<Arc<RwLock<dyn ethercat_hal::devices::EthercatDevice>>> =
+            Vec::new();
+        let hardware_ethercat = MachineNewHardwareEthercat {
+            subdevices: &subdevices,
+            ethercat_devices: &ethercat_devices,
+        };
+        let hardware = MachineNewHardware::Ethercat(&hardware_ethercat);
+        let (socket_queue_tx, _socket_queue_rx) =
+            smol::channel::unbounded::<(SocketRef, Arc<GenericEvent>)>();
+
+        let params = MachineNewParams {
+            device_group: &device_group,
+            hardware: &hardware,
+            socket_queue_tx,
+            main_thread_channel: None,
+            namespace: None,
+        };
+
+        let err = <Gluetex as MachineNewTrait>::new(&params).expect_err("must fail");
+        assert!(err.to_string().contains("No devices in group"));
+    }
+
+    #[test]
+    fn new_fails_for_mismatched_machine_identification_unique() {
+        let device_group = vec![
+            identified_device(machine_uid(1), 0),
+            identified_device(machine_uid(2), 1),
+        ];
+        let subdevices = Vec::new();
+        let ethercat_devices: Vec<Arc<RwLock<dyn ethercat_hal::devices::EthercatDevice>>> =
+            Vec::new();
+        let hardware_ethercat = MachineNewHardwareEthercat {
+            subdevices: &subdevices,
+            ethercat_devices: &ethercat_devices,
+        };
+        let hardware = MachineNewHardware::Ethercat(&hardware_ethercat);
+        let (socket_queue_tx, _socket_queue_rx) =
+            smol::channel::unbounded::<(SocketRef, Arc<GenericEvent>)>();
+
+        let params = MachineNewParams {
+            device_group: &device_group,
+            hardware: &hardware,
+            socket_queue_tx,
+            main_thread_channel: None,
+            namespace: None,
+        };
+
+        let err = <Gluetex as MachineNewTrait>::new(&params).expect_err("must fail");
+        assert!(
+            err.to_string()
+                .contains("Different machine identifications")
+        );
+    }
+
+    #[test]
+    fn new_fails_for_duplicate_roles() {
+        let uid = machine_uid(7);
+        let device_group = vec![identified_device(uid, 3), identified_device(uid, 3)];
+        let subdevices = Vec::new();
+        let ethercat_devices: Vec<Arc<RwLock<dyn ethercat_hal::devices::EthercatDevice>>> =
+            Vec::new();
+        let hardware_ethercat = MachineNewHardwareEthercat {
+            subdevices: &subdevices,
+            ethercat_devices: &ethercat_devices,
+        };
+        let hardware = MachineNewHardware::Ethercat(&hardware_ethercat);
+        let (socket_queue_tx, _socket_queue_rx) =
+            smol::channel::unbounded::<(SocketRef, Arc<GenericEvent>)>();
+
+        let params = MachineNewParams {
+            device_group: &device_group,
+            hardware: &hardware,
+            socket_queue_tx,
+            main_thread_channel: None,
+            namespace: None,
+        };
+
+        let err = <Gluetex as MachineNewTrait>::new(&params).expect_err("must fail");
+        assert!(err.to_string().contains("Role duplicate"));
+    }
+}

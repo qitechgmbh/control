@@ -232,3 +232,154 @@ impl TemperatureController {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ethercat_hal::io::{
+        digital_output::{DigitalOutputDevice, DigitalOutputOutput},
+        temperature_input::{TemperatureInputDevice, TemperatureInputInput},
+    };
+    use ethercat_hal::pdo::basic::Limit;
+    use smol::lock::RwLock;
+    use std::sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    };
+    use std::time::Duration;
+    use units::thermodynamic_temperature::degree_celsius;
+
+    #[derive(Clone, Copy)]
+    struct TestPort;
+
+    struct TestDigitalOutputDevice {
+        state: Arc<AtomicBool>,
+    }
+
+    impl DigitalOutputDevice<TestPort> for TestDigitalOutputDevice {
+        fn set_output(&mut self, _port: TestPort, value: DigitalOutputOutput) {
+            self.state.store(value.0, Ordering::SeqCst);
+        }
+
+        fn get_output(&self, _port: TestPort) -> DigitalOutputOutput {
+            DigitalOutputOutput(self.state.load(Ordering::SeqCst))
+        }
+    }
+
+    struct TestTemperatureInputDevice {
+        input: Arc<Mutex<TemperatureInputInput>>,
+    }
+
+    impl TemperatureInputDevice<TestPort> for TestTemperatureInputDevice {
+        fn get_input(&self, _port: TestPort) -> TemperatureInputInput {
+            self.input
+                .lock()
+                .expect("temperature lock poisoned")
+                .clone()
+        }
+    }
+
+    fn make_temperature_input_input(temp_c: f32) -> TemperatureInputInput {
+        TemperatureInputInput {
+            temperature: temp_c,
+            undervoltage: false,
+            overvoltage: false,
+            limit1: Limit::NotActive,
+            limit2: Limit::NotActive,
+            error: false,
+            txpdo_state: true,
+            txpdo_toggle: false,
+        }
+    }
+
+    fn build_controller(
+        initial_temp_c: f32,
+    ) -> (
+        TemperatureController,
+        Arc<AtomicBool>,
+        Arc<Mutex<TemperatureInputInput>>,
+    ) {
+        let ssr_state = Arc::new(AtomicBool::new(false));
+        let output_device: Arc<RwLock<dyn DigitalOutputDevice<TestPort>>> =
+            Arc::new(RwLock::new(TestDigitalOutputDevice {
+                state: ssr_state.clone(),
+            }));
+
+        let temp_input = Arc::new(Mutex::new(make_temperature_input_input(initial_temp_c)));
+        let temp_device: Arc<RwLock<dyn TemperatureInputDevice<TestPort>>> =
+            Arc::new(RwLock::new(TestTemperatureInputDevice {
+                input: temp_input.clone(),
+            }));
+
+        let controller = TemperatureController::new(
+            10.0,
+            0.0,
+            0.0,
+            ThermodynamicTemperature::new::<degree_celsius>(150.0),
+            ThermodynamicTemperature::new::<degree_celsius>(200.0),
+            TemperatureInput::new(temp_device, TestPort),
+            DigitalOutput::new(output_device, TestPort),
+            Heating::default(),
+            Duration::from_millis(100),
+            500.0,
+            1.0,
+        );
+
+        (controller, ssr_state, temp_input)
+    }
+
+    #[test]
+    fn overtemperature_forces_ssr_off() {
+        let (mut controller, ssr_state, _temp) = build_controller(250.0);
+        controller.allow_heating();
+        controller.heating.target_temperature =
+            ThermodynamicTemperature::new::<degree_celsius>(300.0);
+
+        controller.update(Instant::now());
+
+        assert!(!ssr_state.load(Ordering::SeqCst));
+        assert!(!controller.heating.heating);
+    }
+
+    #[test]
+    fn sensor_fault_sets_wiring_error() {
+        let (mut controller, _ssr_state, temp) = build_controller(100.0);
+        {
+            let mut input = temp.lock().expect("temperature lock poisoned");
+            input.overvoltage = true;
+        }
+
+        controller.allow_heating();
+        controller.update(Instant::now());
+
+        assert!(controller.heating.wiring_error);
+        assert_eq!(controller.heating.temperature.get::<degree_celsius>(), 0.0);
+    }
+
+    #[test]
+    fn heating_allowed_and_below_target_turns_ssr_on() {
+        let (mut controller, ssr_state, _temp) = build_controller(20.0);
+        controller.allow_heating();
+        controller.heating.target_temperature =
+            ThermodynamicTemperature::new::<degree_celsius>(120.0);
+
+        controller.update(Instant::now());
+
+        assert!(ssr_state.load(Ordering::SeqCst));
+        assert!(controller.heating.heating);
+        assert!(controller.get_heating_element_wattage() > 0.0);
+    }
+
+    #[test]
+    fn disallow_heating_keeps_ssr_off_even_with_large_error() {
+        let (mut controller, ssr_state, _temp) = build_controller(20.0);
+        controller.disallow_heating();
+        controller.heating.target_temperature =
+            ThermodynamicTemperature::new::<degree_celsius>(200.0);
+
+        controller.update(Instant::now());
+
+        assert!(!ssr_state.load(Ordering::SeqCst));
+        assert!(!controller.heating.heating);
+    }
+}

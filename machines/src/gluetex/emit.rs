@@ -24,6 +24,28 @@ mod gluetex_imports {
 
 pub use gluetex_imports::*;
 
+fn wrap_graph_angle(angle_deg: f64) -> f64 {
+    if angle_deg >= 270.0 {
+        angle_deg - 360.0
+    } else {
+        angle_deg
+    }
+}
+
+fn estimate_spool_minutes_remaining(
+    target_length: Length,
+    progress: Length,
+    puller_speed: Velocity,
+) -> f64 {
+    let remaining_distance = (target_length - progress).max(Length::ZERO);
+    let puller_speed_m_per_min = puller_speed.abs().get::<meter_per_minute>();
+    if puller_speed_m_per_min > 0.0 {
+        remaining_distance.get::<meter>() / puller_speed_m_per_min
+    } else {
+        0.0
+    }
+}
+
 impl Gluetex {
     /// Implement Spool
     /// called by `act`
@@ -197,13 +219,8 @@ impl Gluetex {
     fn build_live_values_event(&mut self) -> LiveValuesEvent {
         let angle_deg = self.tension_arm.get_angle().get::<degree>();
 
-        // Wrap [270;<360] to [-90; 0]
-        // This is done to reduce flicker in the graphs around the zero point
-        let angle_deg = if angle_deg >= 270.0 {
-            angle_deg - 360.0
-        } else {
-            angle_deg
-        };
+        // Wrap [270;<360] to [-90; 0] to reduce flicker around zero point
+        let angle_deg = wrap_graph_angle(angle_deg);
 
         // Calculate puller speed from current motor steps
         let steps_per_second = self.puller.get_speed();
@@ -287,13 +304,11 @@ impl Gluetex {
             },
             inlet_feeder_tension_arm_angle: {
                 let angle = self.inlet_feeder_tension_arm.get_angle().get::<degree>();
-                // Wrap [270;<360] to [-90; 0]
-                if angle >= 270.0 { angle - 360.0 } else { angle }
+                wrap_graph_angle(angle)
             },
             tape_feeder_tension_arm_angle: {
                 let angle = self.tape_feeder_tension_arm.get_angle().get::<degree>();
-                // Wrap [270;<360] to [-90; 0]
-                if angle >= 270.0 { angle - 360.0 } else { angle }
+                wrap_graph_angle(angle)
             },
             optris_1_voltage: self.optris_1_monitor.get_delayed_voltage(),
             optris_2_voltage: self.optris_2_monitor.get_delayed_voltage(),
@@ -404,21 +419,11 @@ impl Gluetex {
             spool_automatic_action_state: SpoolAutomaticActionState {
                 spool_required_meters: self.spool_automatic_action.target_length.get::<meter>(),
                 spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
-                estimated_minutes_remaining: {
-                    let remaining_distance = (self.spool_automatic_action.target_length
-                        - self.spool_automatic_action.progress)
-                        .max(Length::ZERO);
-                    let puller_speed_m_per_min = self
-                        .puller_speed_controller
-                        .last_speed
-                        .abs()
-                        .get::<meter_per_minute>();
-                    if puller_speed_m_per_min > 0.0 {
-                        remaining_distance.get::<meter>() / puller_speed_m_per_min
-                    } else {
-                        0.0
-                    }
-                },
+                estimated_minutes_remaining: estimate_spool_minutes_remaining(
+                    self.spool_automatic_action.target_length,
+                    self.spool_automatic_action.progress,
+                    self.puller_speed_controller.last_speed,
+                ),
             },
             heating_states: api::HeatingStates {
                 enabled: self.heating_enabled,
@@ -1147,5 +1152,53 @@ impl Gluetex {
     pub fn spool_set_forward(&mut self, forward: bool) {
         self.spool_speed_controller.set_forward(forward);
         self.emit_state();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{estimate_spool_minutes_remaining, wrap_graph_angle};
+    use units::f64::{Length, Velocity};
+    use units::length::meter;
+    use units::velocity::meter_per_minute;
+
+    #[test]
+    fn wrap_graph_angle_keeps_low_angles_unchanged() {
+        assert_eq!(wrap_graph_angle(0.0), 0.0);
+        assert_eq!(wrap_graph_angle(120.0), 120.0);
+        assert_eq!(wrap_graph_angle(269.99), 269.99);
+    }
+
+    #[test]
+    fn wrap_graph_angle_wraps_upper_quadrant() {
+        assert_eq!(wrap_graph_angle(270.0), -90.0);
+        assert_eq!(wrap_graph_angle(315.0), -45.0);
+        assert_eq!(wrap_graph_angle(359.0), -1.0);
+    }
+
+    #[test]
+    fn estimate_minutes_remaining_handles_positive_zero_and_overrun_progress() {
+        let ten_m = Length::new::<meter>(10.0);
+        let four_m = Length::new::<meter>(4.0);
+        let two_m_per_min = Velocity::new::<meter_per_minute>(2.0);
+
+        assert_eq!(
+            estimate_spool_minutes_remaining(ten_m, four_m, two_m_per_min),
+            3.0
+        );
+
+        assert_eq!(
+            estimate_spool_minutes_remaining(ten_m, four_m, Velocity::new::<meter_per_minute>(0.0)),
+            0.0
+        );
+
+        assert_eq!(
+            estimate_spool_minutes_remaining(
+                Length::new::<meter>(1.0),
+                Length::new::<meter>(2.0),
+                two_m_per_min
+            ),
+            0.0
+        );
     }
 }

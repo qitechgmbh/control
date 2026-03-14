@@ -192,3 +192,55 @@ impl SpoolSpeedController {
         self.forward = forward;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use units::angular_velocity::revolution_per_minute;
+
+    #[test]
+    fn switching_controller_type_preserves_current_speed() {
+        let mut controller = SpoolSpeedController::new();
+        let speed = AngularVelocity::new::<revolution_per_minute>(42.0);
+        controller.set_speed(speed);
+
+        controller.set_type(SpoolSpeedControllerType::MinMax);
+        assert_eq!(controller.get_speed(), speed);
+
+        controller.set_type(SpoolSpeedControllerType::Adaptive);
+        assert_eq!(controller.get_speed(), speed);
+    }
+
+    #[test]
+    fn adaptive_parameter_setters_apply_safety_clamps() {
+        let mut controller = SpoolSpeedController::new();
+
+        controller.set_adaptive_tension_target(2.0);
+        assert_eq!(controller.get_adaptive_tension_target(), 1.0);
+
+        controller.set_adaptive_radius_learning_rate(-1.0);
+        assert_eq!(controller.get_adaptive_radius_learning_rate(), 0.0);
+
+        controller.set_adaptive_max_speed_multiplier(0.0);
+        assert_eq!(controller.get_adaptive_max_speed_multiplier(), 0.1);
+
+        controller.set_adaptive_acceleration_factor(5.0);
+        assert_eq!(controller.get_adaptive_acceleration_factor(), 1.0);
+        controller.set_adaptive_acceleration_factor(0.0);
+        assert_eq!(controller.get_adaptive_acceleration_factor(), 0.01);
+
+        controller.set_adaptive_deacceleration_urgency_multiplier(0.5);
+        assert_eq!(
+            controller.get_adaptive_deacceleration_urgency_multiplier(),
+            1.0
+        );
+    }
+
+    #[test]
+    fn forward_flag_roundtrip() {
+        let mut controller = SpoolSpeedController::new();
+        assert!(controller.get_forward());
+        controller.set_forward(false);
+        assert!(!controller.get_forward());
+    }
+}

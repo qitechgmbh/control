@@ -93,3 +93,63 @@ impl TensionArmMonitor {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn triggers_after_debounce_when_out_of_limits_in_production() {
+        let mut monitor = TensionArmMonitor::new("test");
+        monitor.config.enabled = true;
+        monitor.config.min_angle = Angle::new::<degree>(10.0);
+        monitor.config.max_angle = Angle::new::<degree>(170.0);
+
+        // First out-of-range check starts debounce timer.
+        let (triggered, changed) =
+            monitor.check(Angle::new::<degree>(180.0), OperationMode::Production);
+        assert!(!triggered);
+        assert!(!changed);
+        assert!(monitor.out_of_range_since.is_some());
+
+        // Simulate elapsed debounce period deterministically.
+        monitor.out_of_range_since = Some(Instant::now() - Duration::from_millis(250));
+        let (triggered, changed) =
+            monitor.check(Angle::new::<degree>(180.0), OperationMode::Production);
+        assert!(triggered);
+        assert!(changed);
+        assert!(monitor.triggered);
+    }
+
+    #[test]
+    fn clears_trigger_when_back_in_range() {
+        let mut monitor = TensionArmMonitor::new("test");
+        monitor.config.enabled = true;
+        monitor.triggered = true;
+        monitor.out_of_range_since = Some(Instant::now());
+
+        let (triggered, changed) =
+            monitor.check(Angle::new::<degree>(90.0), OperationMode::Production);
+        assert!(!triggered);
+        assert!(changed);
+        assert!(!monitor.triggered);
+        assert!(monitor.out_of_range_since.is_none());
+    }
+
+    #[test]
+    fn disabled_or_setup_mode_prevents_triggering() {
+        let mut monitor = TensionArmMonitor::new("test");
+        monitor.config.enabled = false;
+
+        let (triggered, changed) =
+            monitor.check(Angle::new::<degree>(180.0), OperationMode::Production);
+        assert!(!triggered);
+        assert!(!changed);
+
+        monitor.config.enabled = true;
+        let (triggered, changed) = monitor.check(Angle::new::<degree>(180.0), OperationMode::Setup);
+        assert!(!triggered);
+        assert!(!changed);
+    }
+}
