@@ -24,8 +24,10 @@ mod gluetex_imports {
 pub use gluetex_imports::*;
 use smol::channel::Sender;
 
-use crate::{MachineApi, MachineMessage};
-use crate::{MachineCrossConnectionState, machine_identification::MachineIdentificationUnique};
+use crate::{
+    AsyncThreadMessage, MachineApi, MachineMessage, MachineSubscriptionRequest,
+    machine_identification::MachineIdentificationUnique,
+};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum HeatingZone {
@@ -351,7 +353,7 @@ pub struct StateEvent {
     /// PID settings for heating zones
     pub heating_pid_settings: HeatingPidStates,
     /// Is a Machine Connected?
-    pub connected_machine_state: MachineCrossConnectionState,
+    pub connected_machine_state: ConnectedMachineState,
     /// addon motor 3 state (konturrad with endstop)
     pub addon_motor_3_state: AddonMotor5State,
     /// addon motor 4 state
@@ -382,6 +384,12 @@ pub struct StateEvent {
     pub extra_outputs_state: ExtraOutputsState,
     /// valve control state
     pub valve_state: ValveState,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct ConnectedMachineState {
+    pub machine_identification_unique: Option<MachineIdentificationUnique>,
+    pub is_available: bool,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -784,6 +792,10 @@ impl MachineApi for Gluetex {
             }
             Mutation::StopHeatingAutoTune(zone) => self.stop_heating_autotune(zone),
             Mutation::SetConnectedMachine(machine_identification_unique) => {
+                if self.connected_machine == Some(machine_identification_unique.clone()) {
+                    return Ok(());
+                }
+
                 let main_sender = match &self.main_sender {
                     Some(sender) => sender,
                     None => {
@@ -793,21 +805,36 @@ impl MachineApi for Gluetex {
                         ));
                     }
                 };
-                main_sender.try_send(crate::AsyncThreadMessage::ConnectOneWayRequest(
-                    crate::CrossConnection {
-                        src: self.get_machine_identification_unique(),
-                        dest: machine_identification_unique,
+                main_sender.try_send(AsyncThreadMessage::SubscribeToMachine(
+                    MachineSubscriptionRequest {
+                        subscriber: self.get_machine_identification_unique(),
+                        publisher: machine_identification_unique,
                     },
                 ))?;
                 self.emit_state();
             }
             Mutation::DisconnectMachine(_machine_identification_unique) => {
-                self.connected_machines.clear();
-                /*let main_sender = match &self.main_sender {
+                let connected_machine = match self.connected_machine.clone() {
+                    Some(machine_uid) => machine_uid,
+                    None => return Ok(()),
+                };
+
+                let main_sender = match &self.main_sender {
                     Some(sender) => sender,
-                    None => return Err(anyhow::anyhow!("[DisconnectMachine] Machine cannot connect to others! {:?}", self.machine_identification_unique)),
-                };*/
-                //main_sender.try_send(crate::AsyncThreadMessage::ConnectOneWayRequest(crate::CrossConnection { src: self.get_machine_identification_unique(), dest: machine_identification_unique }))?;
+                    None => {
+                        return Err(anyhow::anyhow!(
+                            "Machine cannot disconnect from others! {:?}",
+                            self.get_machine_identification_unique()
+                        ));
+                    }
+                };
+
+                main_sender.try_send(AsyncThreadMessage::UnsubscribeFromMachine(
+                    MachineSubscriptionRequest {
+                        subscriber: self.get_machine_identification_unique(),
+                        publisher: connected_machine,
+                    },
+                ))?;
                 self.emit_state();
             }
             Mutation::SetAddonMotor3Enabled(enabled) => {

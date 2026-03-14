@@ -9,17 +9,17 @@ pub mod new;
 
 #[cfg(feature = "gluetex-mock")]
 use super::api::{
-    AddonMotor5State, AddonMotorState, AddonMotorTensionControlState, ExtraOutputsState,
-    GluetexNamespace, HeatingPidStates, HeatingStates, LiveValuesEvent, ModeState, OrderInfoState,
-    PullerState, SleepTimerState, SpoolAutomaticActionState, SpoolSpeedControllerState, StateEvent,
-    TensionArmMonitorState, TensionArmState, TraverseState, ValveState, VoltageMonitorState,
+    AddonMotor5State, AddonMotorState, AddonMotorTensionControlState, ConnectedMachineState,
+    ExtraOutputsState, GluetexNamespace, HeatingPidStates, HeatingStates, LiveValuesEvent,
+    ModeState, OrderInfoState, PullerState, SleepTimerState, SpoolAutomaticActionState,
+    SpoolSpeedControllerState, StateEvent, TensionArmMonitorState, TensionArmState, TraverseState,
+    ValveState, VoltageMonitorState,
 };
 #[cfg(feature = "gluetex-mock")]
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
 #[cfg(feature = "gluetex-mock")]
 use crate::{
-    AsyncThreadMessage, MACHINE_GLUETEX_V1, Machine, MachineConnection,
-    MachineCrossConnectionState, MachineMessage, VENDOR_QITECH,
+    AsyncThreadMessage, MACHINE_GLUETEX_V1, Machine, MachineData, MachineMessage, VENDOR_QITECH,
 };
 #[cfg(feature = "gluetex-mock")]
 use smol::channel::{Receiver, Sender};
@@ -43,7 +43,7 @@ pub struct Gluetex {
     spool_speed_controller_state: SpoolSpeedControllerState,
     heating_states: HeatingStates,
     heating_pid_settings: HeatingPidStates,
-    connected_machine_state: MachineCrossConnectionState,
+    connected_machine_state: ConnectedMachineState,
     addon_motor_3_state: AddonMotor5State,
     addon_motor_4_state: AddonMotorState,
     addon_motor_5_state: AddonMotorState,
@@ -65,9 +65,6 @@ pub struct Gluetex {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
     main_sender: Option<Sender<AsyncThreadMessage>>,
-
-    connected_machines: Vec<MachineConnection>,
-    max_connected_machines: usize,
 }
 
 #[cfg(feature = "gluetex-mock")]
@@ -78,6 +75,28 @@ impl Machine for Gluetex {
 
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
         self.main_sender.clone()
+    }
+
+    fn subscribed_to_machine(&mut self, uid: MachineIdentificationUnique) {
+        self.connected_machine_state = ConnectedMachineState {
+            machine_identification_unique: Some(uid),
+            is_available: true,
+        };
+        self.emit_state();
+    }
+
+    fn unsubscribed_from_machine(&mut self, uid: MachineIdentificationUnique) {
+        if self.connected_machine_state.machine_identification_unique == Some(uid) {
+            self.connected_machine_state = ConnectedMachineState {
+                machine_identification_unique: None,
+                is_available: false,
+            };
+            self.emit_state();
+        }
+    }
+
+    fn receive_machines_data(&mut self, data: &MachineData) {
+        _ = data;
     }
 }
 

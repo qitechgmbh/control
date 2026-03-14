@@ -508,7 +508,7 @@ impl MachineNewTrait for Gluetex {
             let (sender, receiver) = smol::channel::unbounded();
             let mut new = Self {
                 main_sender: params.main_thread_channel.clone(),
-                max_connected_machines: 2,
+                connected_machine: None,
                 api_receiver: receiver,
                 api_sender: sender,
                 traverse: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
@@ -644,7 +644,6 @@ impl MachineNewTrait for Gluetex {
                     mode: super::api::SpoolAutomaticActionMode::NoAction,
                 },
                 machine_identification_unique: machine_id,
-                connected_machines: vec![],
                 winder_tension_arm_monitor: super::TensionArmMonitor::new("Winder"),
                 tape_feeder_tension_arm_monitor: super::TensionArmMonitor::new("TapeFeeder"),
                 inlet_feeder_tension_arm_monitor: super::TensionArmMonitor::new("InletFeeder"),

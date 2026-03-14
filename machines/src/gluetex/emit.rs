@@ -316,16 +316,11 @@ impl Gluetex {
     }
 
     pub fn build_state_event(&mut self) -> StateEvent {
-        use crate::MachineCrossConnectionState;
+        use super::api::ConnectedMachineState;
 
-        let connected_machine = self.connected_machines.get(0);
-        let ident = match connected_machine {
-            Some(machine) => Some(machine.ident.clone()),
-            None => None,
-        };
-        let cross_conn = MachineCrossConnectionState {
-            machine_identification_unique: ident,
-            is_available: connected_machine.is_some(),
+        let cross_conn = ConnectedMachineState {
+            machine_identification_unique: self.connected_machine.clone(),
+            is_available: self.connected_machine.is_some(),
         };
 
         StateEvent {

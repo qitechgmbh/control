@@ -98,20 +98,6 @@ impl MachineAct for Gluetex {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(machine_connection) => {
-                if self.connected_machines.len() >= self.max_connected_machines {
-                    tracing::debug!(
-                        "Refusing to add Machine Connection {:?}, since self.connected_machines would be over the limit of {:?}",
-                        machine_connection,
-                        self.max_connected_machines
-                    );
-                    return;
-                }
-                self.connected_machines.push(machine_connection);
-            }
-            MachineMessage::DisconnectMachine(_machine_connection) => {
-                self.connected_machines.clear();
-            }
             MachineMessage::RequestValues(sender) => {
                 sender
                     .send_blocking(MachineValues {

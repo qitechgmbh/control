@@ -90,7 +90,7 @@ use smol::channel::{Receiver, Sender};
 
 use crate::{AsyncThreadMessage, Machine};
 use crate::{
-    MACHINE_GLUETEX_V1, MachineConnection, MachineMessage, VENDOR_QITECH,
+    MACHINE_GLUETEX_V1, MachineData, MachineMessage, VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
 
@@ -121,6 +121,22 @@ impl Machine for Gluetex {
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
         self.main_sender.clone()
     }
+
+    fn subscribed_to_machine(&mut self, uid: MachineIdentificationUnique) {
+        self.connected_machine = Some(uid);
+        self.emit_state();
+    }
+
+    fn unsubscribed_from_machine(&mut self, uid: MachineIdentificationUnique) {
+        if self.connected_machine == Some(uid) {
+            self.connected_machine = None;
+            self.emit_state();
+        }
+    }
+
+    fn receive_machines_data(&mut self, data: &MachineData) {
+        _ = data;
+    }
 }
 
 #[derive(Debug)]
@@ -129,8 +145,7 @@ pub struct Gluetex {
     api_sender: Sender<MachineMessage>,
     main_sender: Option<Sender<AsyncThreadMessage>>,
 
-    connected_machines: Vec<MachineConnection>,
-    max_connected_machines: usize,
+    connected_machine: Option<MachineIdentificationUnique>,
     // drivers
     pub traverse: StepperVelocityEL70x1,
     pub puller: StepperVelocityEL70x1,
@@ -490,7 +505,7 @@ impl Gluetex {
     /// Sync addon motor 5 speed based on puller angular velocity and ratio
     /// called by `act`
     pub fn sync_addon_motor_5_speed(&mut self, t: Instant) {
-        let master_speed = self.puller_speed_controller.get_target_speed(); 
+        let master_speed = self.puller_speed_controller.get_target_speed();
         let adjusted_speed = self.addon_motor_5_tension_controller.update_speed(
             t,
             master_speed,

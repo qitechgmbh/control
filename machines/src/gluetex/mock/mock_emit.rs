@@ -1,7 +1,7 @@
 use super::Gluetex;
-use crate::MachineCrossConnectionState;
 use crate::gluetex::api::{
-    GluetexEvents, HeatingPidSettings, HeatingZone, LiveValuesEvent, SpoolAutomaticActionMode,
+    ConnectedMachineState, GluetexEvents, HeatingPidSettings, HeatingZone, LiveValuesEvent,
+    SpoolAutomaticActionMode,
 };
 use crate::machine_identification::MachineIdentificationUnique;
 use control_core::socketio::event::BuildEvent;
@@ -23,7 +23,7 @@ impl Gluetex {
     }
 
     pub fn set_connected_machine(&mut self, ident: MachineIdentificationUnique) {
-        self.connected_machine_state = MachineCrossConnectionState {
+        self.connected_machine_state = ConnectedMachineState {
             machine_identification_unique: Some(ident),
             is_available: true,
         };
@@ -36,7 +36,7 @@ impl Gluetex {
             .as_ref()
             == Some(&ident)
         {
-            self.connected_machine_state = MachineCrossConnectionState {
+            self.connected_machine_state = ConnectedMachineState {
                 machine_identification_unique: None,
                 is_available: false,
             };

@@ -28,24 +28,6 @@ impl MachineAct for Gluetex {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(machine_connection) => {
-                if self.connected_machines.len() < self.max_connected_machines {
-                    self.connected_machine_state.machine_identification_unique =
-                        Some(machine_connection.ident.clone());
-                    self.connected_machine_state.is_available = true;
-                    self.connected_machines.push(machine_connection);
-                }
-                self.emit_state();
-            }
-            MachineMessage::DisconnectMachine(machine_connection) => {
-                self.connected_machines
-                    .retain(|connection| connection.ident != machine_connection.ident);
-                if self.connected_machines.is_empty() {
-                    self.connected_machine_state.machine_identification_unique = None;
-                    self.connected_machine_state.is_available = false;
-                }
-                self.emit_state();
-            }
             MachineMessage::RequestValues(sender) => {
                 sender
                     .send_blocking(MachineValues {

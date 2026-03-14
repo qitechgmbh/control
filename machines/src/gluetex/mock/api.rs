@@ -1,6 +1,6 @@
 use super::Gluetex;
 use crate::gluetex::api::Mutation;
-use crate::{MachineApi, MachineMessage};
+use crate::{AsyncThreadMessage, Machine, MachineApi, MachineMessage, MachineSubscriptionRequest};
 use serde_json::Value;
 
 impl MachineApi for Gluetex {
@@ -119,10 +119,54 @@ impl MachineApi for Gluetex {
                 self.set_heating_autotune(zone, false);
             }
             Mutation::SetConnectedMachine(ident) => {
-                self.set_connected_machine(ident);
+                if self.connected_machine_state.machine_identification_unique == Some(ident.clone())
+                {
+                    return Ok(());
+                }
+
+                let main_sender = match &self.main_sender {
+                    Some(sender) => sender,
+                    None => {
+                        return Err(anyhow::anyhow!(
+                            "Machine cannot connect to others! {:?}",
+                            self.get_machine_identification_unique()
+                        ));
+                    }
+                };
+
+                main_sender.try_send(AsyncThreadMessage::SubscribeToMachine(
+                    MachineSubscriptionRequest {
+                        subscriber: self.get_machine_identification_unique(),
+                        publisher: ident,
+                    },
+                ))?;
             }
-            Mutation::DisconnectMachine(ident) => {
-                self.disconnect_machine(ident);
+            Mutation::DisconnectMachine(_ident) => {
+                let connected_machine = match self
+                    .connected_machine_state
+                    .machine_identification_unique
+                    .clone()
+                {
+                    Some(machine_uid) => machine_uid,
+                    None => return Ok(()),
+                };
+
+                let main_sender = match &self.main_sender {
+                    Some(sender) => sender,
+                    None => {
+                        return Err(anyhow::anyhow!(
+                            "Machine cannot disconnect from others! {:?}",
+                            self.get_machine_identification_unique()
+                        ));
+                    }
+                };
+
+                main_sender.try_send(AsyncThreadMessage::UnsubscribeFromMachine(
+                    MachineSubscriptionRequest {
+                        subscriber: self.get_machine_identification_unique(),
+                        publisher: connected_machine,
+                    },
+                ))?;
             }
             Mutation::SetAddonMotor3Enabled(enabled) => {
                 self.addon_motor_3_state.enabled = enabled;

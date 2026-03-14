@@ -1,9 +1,8 @@
 use super::Gluetex;
-use crate::MachineCrossConnectionState;
 use crate::gluetex::api::{
-    AddonMotor5State, AddonMotorState, AddonMotorTensionControlState, ExtraOutputsState,
-    GluetexNamespace, HeatingPidSettings, HeatingPidStates, HeatingStates, LiveValuesEvent,
-    ModeState, OrderInfoState, PullerState, SlavePullerState, SleepTimerState,
+    AddonMotor5State, AddonMotorState, AddonMotorTensionControlState, ConnectedMachineState,
+    ExtraOutputsState, GluetexNamespace, HeatingPidSettings, HeatingPidStates, HeatingStates,
+    LiveValuesEvent, ModeState, OrderInfoState, PullerState, SlavePullerState, SleepTimerState,
     SpoolAutomaticActionState, SpoolSpeedControllerState, TensionArmMonitorState, TensionArmState,
     TraverseState, ValveState, VoltageMonitorState,
 };
@@ -53,7 +52,7 @@ impl MachineNewTrait for Gluetex {
             addon_motor_5_rpm: 0.0,
         };
 
-        let connected_machine_state = MachineCrossConnectionState {
+        let connected_machine_state = ConnectedMachineState {
             machine_identification_unique: None,
             is_available: false,
         };
@@ -133,8 +132,6 @@ impl MachineNewTrait for Gluetex {
             api_receiver: receiver,
             api_sender: sender,
             main_sender: params.main_thread_channel.clone(),
-            connected_machines: Vec::new(),
-            max_connected_machines: 2,
         };
 
         gluetex_mock_machine.emit_state();
