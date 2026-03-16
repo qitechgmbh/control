@@ -189,6 +189,25 @@ impl AddonMotorController {
         self.needs_homing = false;
     }
 
+    /// Reset runtime state after a safety stop while preserving user configuration.
+    ///
+    /// If the controller is still user-enabled and pattern mode is active, this re-arms
+    /// homing so restart transitions cannot resume from stale `Paused`/`Running` state.
+    pub fn on_safety_stop(&mut self) {
+        self.manual_homing = false;
+        self.accumulated_distance = 0.0;
+        self.seen_sensor_clear_after_kontur = false;
+
+        let pattern_mode = self.konturlaenge_mm > 0.0 || self.pause_mm > 0.0;
+        if self.enabled && pattern_mode {
+            self.needs_homing = true;
+            self.pattern_state = PatternControlState::Homing;
+        } else {
+            self.needs_homing = false;
+            self.pattern_state = PatternControlState::Idle;
+        }
+    }
+
     /// Convert raw stepper steps/s to RPM for this motor
     pub fn steps_to_rpm(&self, steps: i32) -> f64 {
         self.converter
@@ -668,5 +687,57 @@ mod tests {
             Length::new::<millimeter>(1.1),
         );
         assert_eq!(controller.get_pattern_state(), PatternControlState::Running);
+    }
+
+    #[test]
+    fn test_on_safety_stop_rearms_homing_when_pattern_mode_enabled() {
+        let mut controller = AddonMotorController::new(200);
+        let mut motor = make_test_motor();
+        let puller_velocity = AngularVelocity::new::<revolution_per_second>(10.0);
+        controller.set_konturlaenge_mm(2.0);
+        controller.set_pause_mm(3.0);
+        controller.set_enabled(true);
+
+        // Reach Paused so safety-stop reset has meaningful state to clear.
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(true),
+            Length::new::<millimeter>(0.0),
+        ); // Homing -> Running
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(true),
+            Length::new::<millimeter>(2.1),
+        );
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(false),
+            Length::new::<millimeter>(0.1),
+        );
+        controller.sync_motor_speed(
+            &mut motor,
+            puller_velocity,
+            Some(true),
+            Length::new::<millimeter>(0.1),
+        ); // Running -> Paused
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Paused);
+
+        controller.on_safety_stop();
+        assert!(controller.is_enabled());
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Homing);
+    }
+
+    #[test]
+    fn test_on_safety_stop_keeps_constant_mode_idle() {
+        let mut controller = AddonMotorController::new(200);
+        controller.set_enabled(true);
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Idle);
+
+        controller.on_safety_stop();
+        assert!(controller.is_enabled());
+        assert_eq!(controller.get_pattern_state(), PatternControlState::Idle);
     }
 }

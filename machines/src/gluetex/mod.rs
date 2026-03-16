@@ -693,6 +693,9 @@ impl Gluetex {
         self.traverse.set_enabled(false);
         self.addon_motor_3.set_enabled(false);
         self.addon_motor_4.set_enabled(false);
+        self.addon_motor_3_controller.on_safety_stop();
+        self.addon_motor_4_controller.on_safety_stop();
+        self.addon_motor_5_controller.on_safety_stop();
 
         // Disable all controllers
         self.spool_speed_controller.set_enabled(false);
@@ -721,6 +724,9 @@ impl Gluetex {
         self.traverse.set_enabled(false);
         self.addon_motor_3.set_enabled(false);
         self.addon_motor_4.set_enabled(false);
+        self.addon_motor_3_controller.on_safety_stop();
+        self.addon_motor_4_controller.on_safety_stop();
+        self.addon_motor_5_controller.on_safety_stop();
 
         // Disable all controllers
         self.spool_speed_controller.set_enabled(false);
