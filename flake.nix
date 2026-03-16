@@ -95,6 +95,8 @@
               electron
               nixfmt
               nixd
+              rust-analyzer
+              rustfmt
             ];
 
             ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
