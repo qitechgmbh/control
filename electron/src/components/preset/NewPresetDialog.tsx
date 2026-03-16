@@ -72,7 +72,7 @@ export function NewPresetDialog<T>({
       </DialogTrigger>
 
       <DialogContent
-        className="max-h-[90vh] overflow-y-auto sm:max-w-3xl"
+        className="max-h-[90vh] overflow-y-auto sm:max-w-4xl"
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           showKeyboard();
@@ -123,16 +123,12 @@ export function NewPresetDialog<T>({
               {keyboardVisible ? "Hide" : "Edit"}
             </TouchButton>
           </div>
-          <span className="text-muted-foreground text-sm">
-            The touch keyboard appears only while you are naming the preset.
-          </span>
         </div>
 
         <TouchKeyboard
           value={name}
           onChange={setName}
           onEnter={handleSave}
-          onClose={() => setKeyboardVisible(false)}
           visible={keyboardVisible}
         />
 

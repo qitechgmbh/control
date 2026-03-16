@@ -357,6 +357,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   return (
     <>
       <DialogContent
+        className="sm:max-w-xl"
         // Keep dialog open on any outside interaction; closing is manual via controls
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}

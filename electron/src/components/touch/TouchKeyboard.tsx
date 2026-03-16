@@ -23,7 +23,6 @@ interface TouchKeyboardProps {
   value: string;
   onChange: (value: string) => void;
   onEnter?: () => void;
-  onClose?: () => void;
   visible: boolean;
   className?: string;
 }
@@ -31,17 +30,16 @@ interface TouchKeyboardProps {
 const SPECIAL_KEYS = new Set(["⌫", "↵", "⇧", "⎵"]);
 
 const KEY_WIDTH: Record<string, string> = {
-  "⌫": "w-16",
-  "↵": "w-16",
-  "⇧": "w-14",
-  "⎵": "w-64",
+  "⌫": "flex-[1.4]",
+  "↵": "flex-[1.4]",
+  "⇧": "flex-[1.3]",
+  "⎵": "flex-[5]",
 };
 
 const TouchKeyboard: React.FC<TouchKeyboardProps> = ({
   value,
   onChange,
   onEnter,
-  onClose,
   visible,
   className,
 }) => {
@@ -83,30 +81,15 @@ const TouchKeyboard: React.FC<TouchKeyboardProps> = ({
   return (
     <div
       className={cn(
-        "border-border bg-card flex flex-col gap-2 rounded-xl border p-3 shadow-lg select-none",
+        "border-border bg-card flex w-full flex-col gap-2 rounded-xl border p-4 shadow-lg select-none",
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-muted-foreground text-sm font-medium">
-          Touch Keyboard
-        </span>
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground rounded-md px-3 py-1 text-sm"
-          >
-            Hide
-          </button>
-        )}
-      </div>
-
       {layout.map((row, rowIndex) => (
-        <div key={rowIndex} className="flex justify-center gap-1">
+        <div key={rowIndex} className="flex w-full justify-center gap-1.5">
           {row.map((key, keyIndex) => {
             const isSpecial = SPECIAL_KEYS.has(key);
-            const widthClass = KEY_WIDTH[key] ?? "w-10";
+            const widthClass = KEY_WIDTH[key] ?? "flex-1";
             const isShiftActive = key === "⇧" && shift;
 
             return (
@@ -118,7 +101,7 @@ const TouchKeyboard: React.FC<TouchKeyboardProps> = ({
                   handleKey(key);
                 }}
                 className={cn(
-                  "h-12 rounded-md border text-sm font-medium transition-transform duration-75 focus:outline-none active:scale-95",
+                  "h-14 min-w-0 rounded-md border px-2 text-base font-medium transition-transform duration-75 focus:outline-none active:scale-95",
                   widthClass,
                   isSpecial
                     ? isShiftActive

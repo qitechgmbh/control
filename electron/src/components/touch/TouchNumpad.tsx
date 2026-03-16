@@ -86,7 +86,7 @@ function TouchNumpadButton({
 }: TouchNumpadButtonProps) {
   return (
     <Button
-      className={`h-full font-mono text-2xl font-normal ${className?.includes("col-span-2") ? "w-full" : "w-22"} ${className || ""}`}
+      className={`font-mono text-[1.7rem] font-normal ${className?.includes("col-span-2") ? "w-full" : "w-24"} min-h-24 ${className || ""}`}
       variant="outline"
       onMouseDown={(e) => {
         // Prevent the button from stealing focus from the input
