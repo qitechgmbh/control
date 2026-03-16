@@ -17,8 +17,6 @@ impl MachineAct for AnalogInputTestMachine {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
-            crate::MachineMessage::ConnectToMachine(_machine_connection) => {}
-            MachineMessage::DisconnectMachine(_machine_connection) => {}
             MachineMessage::RequestValues(sender) => {
                 sender
                     .send_blocking(MachineValues {
