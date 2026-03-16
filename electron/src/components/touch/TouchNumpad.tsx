@@ -11,7 +11,7 @@ export type TouchNumpadProps = {
 export function TouchNumpadPopover({ isOpen, setIsOpen }: TouchNumpadProps) {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverContent className="mx-8 flex w-min flex-col gap-6 rounded-2xl p-6 shadow-2xl">
+      <PopoverContent className="mx-6 flex w-min flex-col gap-4 rounded-2xl p-4 shadow-2xl">
         <TouchNumpad />
       </PopoverContent>
     </Popover>
@@ -36,7 +36,7 @@ export function TouchNumpad({
   onCursorRight,
 }: TouchNumpadInputProps = {}) {
   return (
-    <div className="grid h-full w-max grid-cols-4 gap-4">
+    <div className="grid h-full w-max grid-cols-4 gap-3">
       {/* Row 1: 7 8 9 DEL */}
       <TouchNumpadButton onClick={() => onDigit?.("7")}>7</TouchNumpadButton>
       <TouchNumpadButton onClick={() => onDigit?.("8")}>8</TouchNumpadButton>
@@ -86,7 +86,8 @@ function TouchNumpadButton({
 }: TouchNumpadButtonProps) {
   return (
     <Button
-      className={`h-full font-mono text-2xl font-normal ${className?.includes("col-span-2") ? "w-full" : "w-22"} ${className || ""}`}
+      type="button"
+      className={`font-mono text-2xl font-normal ${className?.includes("col-span-2") ? "w-full" : "w-20"} min-h-20 ${className || ""}`}
       variant="outline"
       onMouseDown={(e) => {
         // Prevent the button from stealing focus from the input
