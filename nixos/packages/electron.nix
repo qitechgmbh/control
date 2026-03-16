@@ -4,7 +4,7 @@ buildNpmPackage rec {
   pname = "qitech-control-electron";
   version = "1.0.0";
 
-  srcs = [ ../../electron ../../docs ];
+  srcs = ../../electron;
   sourceRoot = "electron";
 
   ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
@@ -44,7 +44,6 @@ buildNpmPackage rec {
       --enable-gpu \
       --ignore-gpu-blocklist \
       --enable-gpu-rasterization \
-      --disable-software-rasterizer \
       "$@"
     EOF
     chmod +x $out/bin/qitech-control-electron
