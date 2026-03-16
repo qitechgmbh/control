@@ -4,6 +4,7 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { Terminal } from "@/components/Terminal";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { UpdateProgressBar } from "@/components/UpdateProgressBar";
+import { Icon } from "@/components/Icon";
 import { updateExecute, updateCancelWithStore } from "@/helpers/update_helpers";
 import { useUpdateStore } from "@/stores/updateStore";
 import { useSearch } from "@tanstack/react-router";
@@ -88,7 +89,7 @@ export function UpdateExecutePage() {
     <Page>
       <SectionTitle title="Apply Update" />
 
-      <div className="flex flex-row gap-4">
+      <div className="flex flex-row items-center gap-4">
         <TouchButton
           className="w-max"
           icon="lu:CircleFadingArrowUp"
@@ -107,6 +108,14 @@ export function UpdateExecutePage() {
           >
             Cancel Update
           </TouchButton>
+        )}
+        {isUpdating && (
+          <div className="ml-auto flex items-center gap-2 rounded-xl border border-blue-400 bg-blue-600 px-4 py-2.5 text-white shadow-xl backdrop-blur-sm transition-all duration-300">
+            <Icon name="lu:Info" className="h-5 w-5 text-blue-100" />
+            <span className="text-base leading-snug text-blue-50">
+              Updates typically take approximately <strong>5 minutes</strong>
+            </span>
+          </div>
         )}
       </div>
       {currentUpdateInfo && (
@@ -136,8 +145,7 @@ export function UpdateExecutePage() {
             </div>
             <div className="text-sm">
               Please stay connected to the internet and leave the power on. The
-              update procedure takes a couple of minutes and reboots the machine
-              afterwards.
+              machine will reboot after the update completes.
             </div>
           </div>
         </Alert>
