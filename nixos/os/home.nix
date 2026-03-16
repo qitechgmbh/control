@@ -1,31 +1,40 @@
-{ config, pkgs, lib, ... }: {
+{
+  inputs,
+  pkgs,
+  lib,
+  ...
+}:
+{
   home.stateVersion = "24.11";
 
-  home.packages = with pkgs; [ pkgs.qitechPackages.electron ];
+  home.packages = [ pkgs.qitechPackages.electron ];
 
-  xdg.configFile."autostart/de.qitech.control-electron.desktop".source = 
+  nix.channels.nixpkgs = lib.mkDefault inputs.nixpkgs;
+
+  xdg.configFile."autostart/de.qitech.control-electron.desktop".source =
     "${pkgs.qitechPackages.electron}/share/applications/de.qitech.control-electron.desktop";
 
   dconf.settings = {
     # Set GNOME wallpaper
     "org/gnome/desktop/background" = {
-      picture-uri =
-        "https://i.postimg.cc/Z5XJtNMW/qitech-industries-wallpaper.jpg";
-      picture-uri-dark =
-        "https://i.postimg.cc/Z5XJtNMW/qitech-industries-wallpaper.jpg";
+      picture-uri = "https://i.postimg.cc/Z5XJtNMW/qitech-industries-wallpaper.jpg";
+      picture-uri-dark = "https://i.postimg.cc/Z5XJtNMW/qitech-industries-wallpaper.jpg";
       picture-options = "zoom";
     };
 
-    # Enable on-screen keyboard 
-    "org/gnome/desktop/a11y/applications" = { screen-keyboard-enabled = true; };
+    # Enable on-screen keyboard
+    "org/gnome/desktop/a11y/applications" = {
+      screen-keyboard-enabled = true;
+    };
 
     # Configure on-screen keyboard (optional)
-    "org/gnome/desktop/a11y" = { always-show-universal-access-status = true; };
+    "org/gnome/desktop/a11y" = {
+      always-show-universal-access-status = true;
+    };
 
     # Disable screen blanking/timeout
     "org/gnome/desktop/session" = {
-      idle-delay =
-        lib.gvariant.mkUint32 0; # Use uint32 format to ensure proper type
+      idle-delay = lib.gvariant.mkUint32 0; # Use uint32 format to ensure proper type
     };
 
     # Disable automatic suspend and screen dimming
@@ -50,8 +59,7 @@
     "org/gnome/desktop/interface" = {
       enable-animations = true;
       show-battery-percentage = true;
-      enable-hot-corners =
-        false; # Prevent activities from opening with hot corners
+      enable-hot-corners = false; # Prevent activities from opening with hot corners
     };
 
     # Show dock on all monitors and always visible
@@ -78,8 +86,7 @@
 
     "org/gnome/desktop/lockdown" = {
       disable-lock-screen = true; # Disable lock screen
-      disable-log-out =
-        false; # Enable logout option (To be able to reboot manually)
+      disable-log-out = false; # Enable logout option (To be able to reboot manually)
       disable-user-switching = true; # Disable user switching
       disable-screensaver = true; # Disable screensaver
       user-adminstration-disabled = true; # Disable user administration
@@ -87,23 +94,25 @@
 
     "org/gnome/shell" = {
       always-show-log-out = true;
-      enabled-extensions =
-        [ "dash-to-dock@micxgx.gmail.com" "no-overview@fthx" ];
+      enabled-extensions = [
+        "dash-to-dock@micxgx.gmail.com"
+        "no-overview@fthx"
+      ];
       favorite-apps = [
+        # Note: items only show if installed
         "de.qitech.control-electron.desktop" # The desktop entry from the QiTech app
         "org.gnome.Settings.desktop"
+        "qitech-setup.desktop" # Installer, only present on iso
       ];
       disable-user-extensions = false;
       disable-extension-version-validation = true;
-      welcome-dialog-last-shown-version =
-        "999.999.999"; # Prevents welcome screen
+      welcome-dialog-last-shown-version = "999.999.999"; # Prevents welcome screen
       looking-glass-history = [ ];
     };
 
     # Disable automatic Activities overview on startup
     "org/gnome/shell/extensions/ding" = {
-      start-corner =
-        "top-left"; # This can help with preventing Activities from opening
+      start-corner = "top-left"; # This can help with preventing Activities from opening
     };
   };
 }

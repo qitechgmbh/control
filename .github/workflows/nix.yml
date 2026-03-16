@@ -38,7 +38,7 @@ jobs:
           purge-prefixes: nix-electron-${{ runner.os }}-
 
       - name: Build Electron in Nix
-        run: nix build ".#packages.x86_64-linux.electron"
+        run: nix build -L .#packages.x86_64-linux.electron
 
   rust:
     runs-on: ubuntu-latest
@@ -55,7 +55,7 @@ jobs:
           purge-prefixes: nix-server-${{ runner.os }}-
 
       - name: Build Server in Nix
-        run: nix build ".#packages.x86_64-linux.server"
+        run: nix build -L .#packages.x86_64-linux.server
 
   build:
     runs-on: ubuntu-latest
@@ -75,8 +75,16 @@ jobs:
             nix-electron-${{ runner.os }}-
             nix-server-${{ runner.os }}-
 
+      - name: Save commit short hash
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Build Flake and System Configuration
-        run: nix build ".#nixosConfigurations.nixos.config.system.build.toplevel" --impure
+        run: ./nixos-build-iso.sh
+
+      - uses: actions/upload-artifact@v7.0.0
+        with:
+          name: nixos-qitech-x86_64-${{ steps.vars.outputs.sha_short }}.iso
+          path: result/iso/*.iso
 
   format:
     runs-on: ubuntu-latest
@@ -86,7 +94,7 @@ jobs:
       - *nix-install
 
       - name: Format
-        run: nix run 'nixpkgs#nixfmt-classic' $(find . nixos -name '*.nix')
+        run: nix fmt -- --fail-on-change
 
   check:
     runs-on: ubuntu-latest
@@ -96,4 +104,4 @@ jobs:
       - *nix-install
 
       - name: Build Flake and Configuration.nix
-        run: nix flake check "." --impure
+        run: nix flake check --impure

@@ -9,3 +9,7 @@ runtime_metrics.csv
 compile_metrics.csv
 .idea/
 electron/dist-electron/
+
+# nix
+result*
+.direnv/
