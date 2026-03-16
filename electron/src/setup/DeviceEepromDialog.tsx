@@ -357,19 +357,19 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   return (
     <>
       <DialogContent
-        className="sm:max-w-xl"
+        className="sm:max-w-2xl"
         // Keep dialog open on any outside interaction; closing is manual via controls
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>Machine Assignment</DialogTitle>
-          <p>
+          <DialogTitle className="text-xl">Machine Assignment</DialogTitle>
+          <p className="text-base">
             for {device.name}
             <Hex value={device.configured_address} />
           </p>
-          <DialogDescription>
+          <DialogDescription className="text-base">
             To assign the device to a machine, select the machine, serial number
             & device role.
           </DialogDescription>
@@ -383,10 +383,10 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
               name="machine"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Maschine</FormLabel>
+                  <FormLabel className="text-base">Maschine</FormLabel>
                   <FormControl>
                     <Select {...field} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-min">
+                      <SelectTrigger className="h-12 min-w-48 text-base">
                         <SelectValue placeholder="Machine" />
                       </SelectTrigger>
                       <SelectContent>
@@ -411,7 +411,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
               name="serial"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Serial</FormLabel>
+                  <FormLabel className="text-base">Serial</FormLabel>
                   <FormControl>
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-2">
@@ -424,10 +424,12 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                           placeholder="1234"
                           inputMode="numeric"
                           onFocus={() => setNumpadOpen(true)}
+                          className="h-12 text-lg"
                         />
                         <Button
                           type="button"
                           variant="outline"
+                          className="h-12 px-4 text-base"
                           onClick={() =>
                             setNumpadOpen((currentOpen) => !currentOpen)
                           }
@@ -440,7 +442,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                       </div>
 
                       {numpadOpen && (
-                        <div className="border-border bg-card rounded-xl border p-4 shadow-sm">
+                        <div className="border-border bg-card rounded-xl border p-3 shadow-sm">
                           <TouchNumpad
                             onDigit={numpadHandlers.appendDigit}
                             onDelete={numpadHandlers.deleteChar}
@@ -465,10 +467,10 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
               disabled={!machinePreset}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Device Role</FormLabel>
+                  <FormLabel className="text-base">Device Role</FormLabel>
                   <FormControl>
                     <Select {...field}>
-                      <SelectTrigger className="w-min">
+                      <SelectTrigger className="h-12 min-w-48 text-base">
                         <SelectValue placeholder="Device Role" />
                       </SelectTrigger>
                       <SelectContent>
