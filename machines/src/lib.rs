@@ -367,7 +367,8 @@ async fn get_device_ident<
         .device_machine_identification
         .machine_identification_unique
         .machine_identification
-        .slug();
+        .slug()
+        .to_uppercase();
     let device_hardware_identification_ethercat =
         match &device_identification.device_hardware_identification {
             DeviceHardwareIdentification::Ethercat(device_hardware_identification_ethercat) => {
@@ -437,7 +438,8 @@ where
         .device_machine_identification
         .machine_identification_unique
         .machine_identification
-        .slug();
+        .slug()
+        .to_uppercase();
 
     if !matched_any_identity {
         return Err(anyhow::anyhow!(
