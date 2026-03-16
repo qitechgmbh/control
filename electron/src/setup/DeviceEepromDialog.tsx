@@ -442,7 +442,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                       </div>
 
                       {numpadOpen && (
-                        <div className="border-border bg-card rounded-xl border p-3 shadow-sm">
+                        <div className="border-border bg-card flex justify-center rounded-xl border p-3 shadow-sm">
                           <TouchNumpad
                             onDigit={numpadHandlers.appendDigit}
                             onDelete={numpadHandlers.deleteChar}

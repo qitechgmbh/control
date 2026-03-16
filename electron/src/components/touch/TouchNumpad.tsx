@@ -86,6 +86,7 @@ function TouchNumpadButton({
 }: TouchNumpadButtonProps) {
   return (
     <Button
+      type="button"
       className={`font-mono text-2xl font-normal ${className?.includes("col-span-2") ? "w-full" : "w-20"} min-h-20 ${className || ""}`}
       variant="outline"
       onMouseDown={(e) => {
