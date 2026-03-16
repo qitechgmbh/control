@@ -15,13 +15,7 @@ import {
   machineProperties,
   VENDOR_QITECH,
 } from "@/machines/properties";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -52,6 +46,7 @@ import { toast } from "sonner";
 import { Toast } from "@/components/Toast";
 import { EthercatDevicesEventData } from "@/client/mainNamespace";
 import { restartBackend } from "@/helpers/troubleshoot_helpers";
+import { TouchNumpad } from "@/components/touch/TouchNumpad";
 
 type Device = NonNullable<EthercatDevicesEventData["Done"]>["devices"][number];
 
@@ -103,11 +98,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   const [writeSuccess, setWriteSuccess] = useState(false);
 
   const [numpadOpen, setNumpadOpen] = useState(false);
-  const [numpadPosition, setNumpadPosition] = useState({ left: 0, top: 0 });
-  const dialogRef = useRef<HTMLDivElement | null>(null);
   const serialInputRef = useRef<HTMLInputElement | null>(null);
-  const serialContainerRef = useRef<HTMLDivElement | null>(null);
-  const numpadRef = useRef<HTMLDivElement | null>(null);
 
   const initialMachine = useMemo(
     () =>
@@ -211,15 +202,6 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
     })();
   };
 
-  const updateNumpadPosition = useCallback(() => {
-    if (!numpadOpen || !dialogRef.current) return;
-    const rect = dialogRef.current.getBoundingClientRect();
-    setNumpadPosition({
-      left: rect.right + 20,
-      top: rect.top + rect.height / 2,
-    });
-  }, [numpadOpen]);
-
   const machinePreset = useMemo(() => {
     if (!values.machine) return;
     return getMachineProperties({
@@ -255,30 +237,6 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
     }
   }, [filteredAllowedDevices]);
 
-  // Position numpad once when it opens
-  useEffect(() => {
-    updateNumpadPosition();
-  }, [numpadOpen]);
-
-  // Close numpad when clicking outside input/numpad
-  useEffect(() => {
-    if (!numpadOpen) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null;
-      const insideSerial = serialContainerRef.current?.contains(target);
-      const insideNumpad = numpadRef.current?.contains(target);
-      if (!insideSerial && !insideNumpad) {
-        setNumpadOpen(false);
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown, true);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown, true);
-    };
-  }, [numpadOpen]);
-
   // Keep focus on input field when numpad is opened
   useEffect(() => {
     if (numpadOpen && serialInputRef.current) {
@@ -290,14 +248,6 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
       }, 0);
     }
   }, [numpadOpen]);
-
-  // Update numpad position whenever the window resizes
-  useEffect(() => {
-    window.addEventListener("resize", updateNumpadPosition);
-    return () => {
-      window.removeEventListener("resize", updateNumpadPosition);
-    };
-  }, [updateNumpadPosition]);
 
   // Numpad handlers for serial input
   const numpadHandlers = useMemo(() => {
@@ -462,7 +412,43 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                 <FormItem>
                   <FormLabel>Serial</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="1234" />
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          {...field}
+                          ref={(element) => {
+                            field.ref(element);
+                            serialInputRef.current = element;
+                          }}
+                          placeholder="1234"
+                          inputMode="numeric"
+                          onFocus={() => setNumpadOpen(true)}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() =>
+                            setNumpadOpen((currentOpen) => !currentOpen)
+                          }
+                        >
+                          <Icon
+                            name={numpadOpen ? "lu:TouchpadOff" : "lu:Touchpad"}
+                          />
+                          {numpadOpen ? "Hide" : "Numpad"}
+                        </Button>
+                      </div>
+
+                      {numpadOpen && (
+                        <div className="border-border bg-card rounded-xl border p-4 shadow-sm">
+                          <TouchNumpad
+                            onDigit={numpadHandlers.appendDigit}
+                            onDelete={numpadHandlers.deleteChar}
+                            onCursorLeft={numpadHandlers.moveCursorLeft}
+                            onCursorRight={numpadHandlers.moveCursorRight}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormDescription>
                     Serial number of the machine.
