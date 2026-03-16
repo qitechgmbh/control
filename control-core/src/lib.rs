@@ -11,6 +11,7 @@ pub mod realtime;
 pub mod serial;
 pub mod socketio;
 pub mod transmission;
+pub mod xtrem_protocol;
 
 #[cfg(feature = "video-streaming")]
 pub mod video_streaming;

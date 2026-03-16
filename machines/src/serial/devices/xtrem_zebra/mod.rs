@@ -1,0 +1,307 @@
+use anyhow::{Result, anyhow};
+use control_core::helpers::hashing::{byte_folding_u16, hash_djb2};
+use smol::Timer;
+use smol::lock::RwLock;
+use std::net::UdpSocket;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::thread;
+use std::time::{Duration, Instant};
+
+use anyhow::Ok;
+use control_core::xtrem_protocol::xtrem_serial_interface::{DataAddress, Function, XtremFrame};
+
+use crate::machine_identification::{
+    DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification,
+    DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique,
+};
+use crate::{MACHINE_FF01, VENDOR_QITECH};
+
+#[derive(Debug)]
+pub struct XtremSerial {
+    /// Optional cached measurement data
+    pub data: Option<XtremData>,
+
+    /// The serial/UDP “path” used to identify this device (e.g. IP, interface, etc.)
+    pub path: String,
+
+    /// Flag used by the background thread to know when to shut down
+    pub shutdown_flag: Arc<AtomicBool>,
+}
+
+struct XtremResponse {
+    pub raw: Vec<u8>,
+}
+
+impl TryFrom<XtremResponse> for XtremFrame {
+    type Error = anyhow::Error;
+
+    fn try_from(value: XtremResponse) -> Result<Self, Self::Error> {
+        let ascii = String::from_utf8_lossy(&value.raw);
+
+        if ascii.len() < 10 {
+            return Err(anyhow!("Too short ASCII frame"));
+        }
+
+        let id_origin = ascii[0..2].parse::<u8>().unwrap_or(0);
+        let id_dest = ascii[2..4].parse::<u8>().unwrap_or(0);
+        let func_char = ascii.chars().nth(4).unwrap_or('r');
+        let function = Function::from_char(func_char)
+            .ok_or_else(|| anyhow!("Invalid function char '{}'", func_char))?;
+
+        let data_address = u16::from_str_radix(&ascii[5..9], 16).unwrap_or(0);
+        let data_length = 0;
+        let payload = Vec::new();
+
+        Ok(Self {
+            stx: 0x02,
+            id_origin,
+            id_dest,
+            function,
+            data_address,
+            data_length,
+            data: payload,
+            lrc: 0,
+            etx: 0x03,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+struct XtremRequest {
+    pub id_origin: u8,
+    pub id_dest: u8,
+    pub data_address: DataAddress,
+    pub function: Function,
+    pub data: Vec<u8>,
+}
+
+impl From<XtremRequest> for XtremFrame {
+    fn from(request: XtremRequest) -> Self {
+        let id_origin = request.id_origin;
+        let id_dest = request.id_dest;
+        let data_address = request.data_address.as_hex();
+        let data_length = request.data.len() as u8;
+
+        // Build frame body (everything between STX and ETX)
+        let mut frame_body = Vec::new();
+        frame_body.push(id_origin);
+        frame_body.push(id_dest);
+        frame_body.push(request.function.as_char() as u8);
+        frame_body.extend_from_slice(&data_address.to_be_bytes());
+        frame_body.push(data_length);
+        frame_body.extend_from_slice(&request.data);
+
+        let lrc = XtremFrame::compute_lrc(&frame_body);
+
+        Self {
+            stx: 0x02,
+            id_origin,
+            id_dest,
+            function: request.function,
+            data_address,
+            data_length,
+            data: request.data,
+            lrc,
+            etx: 0x03,
+        }
+    }
+}
+
+impl XtremSerial {
+    pub fn new_serial() -> Result<(DeviceIdentification, Arc<RwLock<Self>>)> {
+        let xtrem_data = Some(XtremData {
+            current_weight: 0.0,
+            last_timestamp: Instant::now(),
+        });
+
+        let path = String::from("192.168.4.1");
+
+        let hash = hash_djb2(path.as_bytes());
+        let serial = byte_folding_u16(&hash.to_le_bytes());
+        let device_identification = DeviceIdentification {
+            device_machine_identification: Some(DeviceMachineIdentification {
+                machine_identification_unique: MachineIdentificationUnique {
+                    machine_identification: MachineIdentification {
+                        vendor: VENDOR_QITECH,
+                        machine: MACHINE_FF01,
+                    },
+                    serial,
+                },
+                role: 0,
+            }),
+            device_hardware_identification: DeviceHardwareIdentification::Serial(
+                DeviceHardwareIdentificationSerial { path: path.clone() },
+            ),
+        };
+
+        let shutdown_flag: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+
+        let _self = Arc::new(RwLock::new(Self {
+            data: xtrem_data,
+            path: path.clone(),
+            shutdown_flag: shutdown_flag.clone(),
+        }));
+
+        let _self_clone = _self.clone();
+        let path = path.clone();
+
+        // Spawn the XTREM communication thread
+        thread::Builder::new()
+            .name("xtrem_zebra".to_owned())
+            .spawn(move || {
+                smol::block_on(async move {
+                    if let Err(e) = Self::process_udp(_self_clone, path, shutdown_flag).await {
+                        eprintln!("[XTREM] Error: {:?}", e);
+                    }
+                });
+            })?;
+
+        Ok((device_identification, _self))
+    }
+}
+
+impl Drop for XtremSerial {
+    fn drop(&mut self) {
+        // Signal shutdown
+        self.shutdown_flag.store(true, Ordering::SeqCst);
+        println!("Laser struct dropped, thread stopped");
+    }
+}
+
+impl XtremSerial {
+    pub async fn get_data(&self) -> Option<XtremData> {
+        self.data.clone()
+    }
+    /// Asynchronous UDP communication handler for the XTREM Zebra device.
+    pub async fn process_udp(
+        this: Arc<RwLock<Self>>,
+        _path: String,
+        shutdown: Arc<AtomicBool>,
+    ) -> std::result::Result<(), anyhow::Error> {
+        // Setup sockets
+        let (sock_rx, sock_tx) = Self::setup_sockets(5555, "192.168.4.255:4444")?;
+
+        // Prepare request frames for known device IDs
+        let device_ids = [0x01, 0x02];
+        let cmds: Vec<Vec<u8>> = device_ids
+            .iter()
+            .map(|&id| Self::build_request(id))
+            .collect();
+
+        // Main loop
+        while !shutdown.load(Ordering::Relaxed) {
+            // Send requests
+            Self::send_requests(&sock_tx, &cmds).await?;
+
+            // Gather replies
+            let (total_weight, _) = Self::collect_responses(&sock_rx, &device_ids).await?;
+
+            // Update shared state
+            {
+                let mut device = this.write().await;
+                device.data = Some(XtremData {
+                    current_weight: total_weight,
+                    last_timestamp: Instant::now(),
+                });
+            }
+
+            // Wait before next poll
+            Timer::after(Duration::from_millis(300)).await;
+        }
+
+        std::result::Result::Ok(())
+    }
+
+    /// Helper: Socket setup
+    fn setup_sockets(rx_port: u16, tx_addr: &str) -> Result<(UdpSocket, UdpSocket)> {
+        let sock_rx = UdpSocket::bind(("0.0.0.0", rx_port))?;
+        let _ = sock_rx.set_nonblocking(true);
+
+        let sock_tx = UdpSocket::bind("0.0.0.0:0")?;
+        sock_tx.set_broadcast(true)?;
+        sock_tx.connect(tx_addr)?;
+
+        Ok((sock_rx, sock_tx))
+    }
+
+    /// Helper: Build frame for a device ID
+    fn build_request(dest_id: u8) -> Vec<u8> {
+        let request = XtremRequest {
+            id_origin: 0x00,
+            id_dest: dest_id,
+            data_address: DataAddress::Weight,
+            function: Function::ReadRequest,
+            data: Vec::new(),
+        };
+        let frame: XtremFrame = request.into();
+        frame.as_bytes()
+    }
+
+    /// Helper: Send requests
+    async fn send_requests(sock_tx: &UdpSocket, cmds: &[Vec<u8>]) -> Result<()> {
+        for cmd in cmds {
+            sock_tx.send(cmd)?;
+            Timer::after(Duration::from_millis(10));
+        }
+        Ok(())
+    }
+
+    /// Helper: Collect and parse responses
+    async fn collect_responses(sock_rx: &UdpSocket, device_ids: &[u8]) -> Result<(f64, usize)> {
+        let start = Instant::now();
+        let timeout = Duration::from_millis(300);
+
+        let mut buf = [0u8; 2048];
+        let mut total_weight = 0.0;
+        let mut received_count = 0;
+
+        while start.elapsed() < timeout && received_count < device_ids.len() {
+            match sock_rx.recv(&mut buf) {
+                std::result::Result::Ok(n) => {
+                    if let Some((id, weight)) = Self::parse_response(&buf[..n]) {
+                        tracing::debug!("Received weight {weight} from ID {id}");
+                        total_weight += weight;
+                        received_count += 1;
+                    }
+                }
+                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    Timer::after(Duration::from_millis(10));
+                }
+                Err(e) => {
+                    tracing::error!("[XTREM] Socket error: {:?}", e);
+                    break;
+                }
+            }
+        }
+        Ok((total_weight, received_count))
+    }
+
+    /// Helper: Parse a single response
+    fn parse_response(buf: &[u8]) -> Option<(u8, f64)> {
+        let clean: String = buf
+            .iter()
+            .filter(|b| b.is_ascii_graphic() || **b == b' ')
+            .map(|&b| b as char)
+            .collect();
+
+        if clean.len() < 2 {
+            return None;
+        }
+
+        let id_str = &clean[0..2];
+        if let std::result::Result::Ok(id) = id_str.parse::<u8>() {
+            let weight = XtremFrame::parse_weight_from_response(buf);
+            Some((id, weight))
+        } else {
+            tracing::warn!("[XTREM] Failed to parse ID from '{id_str}'");
+            None
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct XtremData {
+    pub current_weight: f64,
+    pub last_timestamp: Instant,
+}

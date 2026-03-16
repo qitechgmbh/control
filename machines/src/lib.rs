@@ -38,6 +38,7 @@ pub mod wago_ai_test_machine;
 pub mod wago_do_test_machine;
 pub mod wago_power;
 pub mod winder2;
+pub mod stahlwerk;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
@@ -58,6 +59,10 @@ pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
 
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
+pub const WAGO_750_501_TEST_MACHINE: u16 = 0x0042;
+
+pub const MACHINE_FF01: u16 = 0x0010;
+
 use serde_json::Value;
 use smol::lock::RwLock;
 

@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"name": "beas-bsl",
+			"path": "../../../../../beas-bsl"
+		},
+		{
+			"name": "stahlwerk-extension",
+			"path": "../../../../../stahlwerk-extension"
+		},
+		{
+			"name": "control-stahlwerk",
+			"path": "../../../.."
+		}
+	]
+}
