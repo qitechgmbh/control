@@ -6,7 +6,7 @@ import {
   UPDATE_LOG,
   UPDATE_STEP,
 } from "./update-channels";
-import { spawn, ChildProcess } from "child_process";
+import { exec,spawn, ChildProcess } from "child_process";
 import tkill from "@jub3i/tree-kill";
 import { existsSync, rmSync } from "fs";
 
