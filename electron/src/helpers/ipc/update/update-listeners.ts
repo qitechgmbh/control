@@ -6,9 +6,10 @@ import {
   UPDATE_LOG,
   UPDATE_STEP,
 } from "./update-channels";
-import { spawn, ChildProcess } from "child_process";
+import { exec,spawn, ChildProcess } from "child_process";
 import tkill from "@jub3i/tree-kill";
 import { existsSync, rmSync } from "fs";
+import os from 'os';
 
 type UpdateExecuteListenerParams = {
   githubRepoOwner: string;
@@ -189,6 +190,20 @@ async function update(
           return;
         }
 
+        /*const command = 'sudo systemctl stop qitech-control-server';
+        exec(command, (error, stdout, stderr) => {
+          if (error) {
+            console.error(`Execution error: ${error.message}`);
+            return;
+          }
+        
+          if (stderr) {
+            console.error(`stderr: ${stderr}`);
+            return;
+          }
+          console.log(`stdout: ${stdout}`);
+        });
+*/
         // 4. run the nixos-install.sh script
         // This script will handle rust-build, electron-build, and system-install
         // Start with rust-build (cargo builds)
@@ -197,13 +212,21 @@ async function update(
           status: "in-progress",
         });
 
+
+        // 0-$(($(nproc --all) - 1)) constructs a range of all of your cpu cores
+        // For example on a 4 cpu system nproc --all returns 4, so the range for taskset needs to be 0-3 
+        const cpuCount = os.cpus().length;
+        const cpuRange = `0-${cpuCount - 1}`;
+
         const installResult = await runCommandWithStepTracking(
-          "./nixos-install.sh",
-          [],
+          "taskset",
+          ["-c", cpuRange, "./nixos-install.sh"],
           repoDir,
           event,
         );
 
+        console.log(installResult);
+        
         if (!installResult.success) {
           // Mark current and remaining steps as error
           event.sender.send(UPDATE_STEP, {
