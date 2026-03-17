@@ -31,7 +31,7 @@ serialport = "4.7.3"
 tracing = { version = "0.1.44", features = ["attributes"] }
 tonic = { version = "0.13.1", optional = true }
 
-chrono = "0.4.44"
+chrono = "0.4.0"
 
 stahlwerk_extension = { git = "https://github.com/qitechgmbh/stahlwerk-extension.git", branch = "main" }
 
