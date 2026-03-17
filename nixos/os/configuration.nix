@@ -104,7 +104,7 @@ in {
     }
   ];
 
-  networking.hostName = "nixos";
+  networking.hostName = "qitech01";
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
