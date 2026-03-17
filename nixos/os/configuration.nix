@@ -142,6 +142,14 @@ in {
   };
   services.xserver.desktopManager.gnome.enable = true;
 
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = true;
+      PermitRootLogin = "prohibit-password";
+    };
+  };
+
   services.caddy = {
     enable = true;
     # This puts the import at the TOP of the Caddyfile (Global Scope)
