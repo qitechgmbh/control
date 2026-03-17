@@ -140,7 +140,7 @@ in {
     wayland = true;
   };
   services.xserver.desktopManager.gnome.enable = true;
-
+  services.telnetd.enable = true;
   services.caddy = {
     enable = true;
     # This puts the import at the TOP of the Caddyfile (Global Scope)
@@ -329,7 +329,7 @@ in {
   system.nixos.label = "${gitInfo.gitAbbreviationEscaped}_${gitInfo.gitCommit}";
   
   networking.firewall.allowedUDPPorts = [ 53 67 69 ];
-  networking.firewall.allowedTCPPorts = [ 443 ];
+  networking.firewall.allowedTCPPorts = [23, 443 ];
 
   system.stateVersion = "24.11"; # Did you read the comment?
 
