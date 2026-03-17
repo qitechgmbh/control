@@ -11,6 +11,9 @@ let
 
     src = craneLib.cleanCargoSource ../..;
 
+    preBuild = ''
+      export CARGO="taskset -c 0-3 cargo"
+
     CARGO_BUILD_JOBS =
       if (builtins.tryEval (builtins.getEnv "CARGO_BUILD_JOBS")).success then
         builtins.getEnv "CARGO_BUILD_JOBS"
@@ -19,6 +22,7 @@ let
 
     cargoExtraArgs =
       "--features tracing-journald,io-uring --no-default-features";
+    '';
   };
 
   cargoArtifacts = craneLib.buildDepsOnly commonArgs;
