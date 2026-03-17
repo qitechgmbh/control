@@ -140,7 +140,20 @@ in {
     wayland = true;
   };
   services.xserver.desktopManager.gnome.enable = true;
-  services.telnetd.enable = true;
+
+  # 2. Define the telnetd service
+  systemd.services.telnetd = {
+    description = "Telnet Server";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+    serviceConfig = {
+      # -F keeps it in the foreground for systemd
+      # -l specifies the login program
+      ExecStart = "${pkgs.inetutils}/bin/telnetd -F -l ${pkgs.shadow}/bin/login";
+      Restart = "always";
+    };
+  };
+
   services.caddy = {
     enable = true;
     # This puts the import at the TOP of the Caddyfile (Global Scope)
@@ -273,6 +286,7 @@ in {
   environment.systemPackages = with pkgs; [
     #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     #  wget
+    inetutils
     gnome-tweaks
     gnome-extension-manager
     gnomeExtensions.dash-to-dock
