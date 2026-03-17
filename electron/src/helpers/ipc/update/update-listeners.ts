@@ -211,15 +211,21 @@ async function update(
           status: "in-progress",
         });
 
+
         // 0-$(($(nproc --all) - 1)) constructs a range of all of your cpu cores
         // For example on a 4 cpu system nproc --all returns 4, so the range for taskset needs to be 0-3 
+        const cpuCount = os.cpus().length;
+        const cpuRange = `0-${cpuCount - 1}`;
+
         const installResult = await runCommandWithStepTracking(
           "taskset",
-          ["-c","0-$(($(nproc --all) - 1))","./nixos-install.sh",],
+          ["-c", cpuRange, "./nixos-install.sh"],
           repoDir,
           event,
         );
 
+        console.log(installResult);
+        
         if (!installResult.success) {
           // Mark current and remaining steps as error
           event.sender.send(UPDATE_STEP, {

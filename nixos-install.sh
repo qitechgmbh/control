@@ -1,5 +1,5 @@
 #!/bin/sh
-
+touch /tmp/hello_its_me
 set -euo pipefail
 
 # Capture all git information

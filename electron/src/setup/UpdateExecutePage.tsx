@@ -57,7 +57,6 @@ export function UpdateExecutePage() {
 
     initializeSteps();
     startUpdate();
-    // Perhaps we just need to clear the logs ?
     const res = await updateExecute(updateInfo, addTerminalLine);
     stopUpdate();
 
