@@ -1,7 +1,7 @@
 use super::{MotorState, MotorTestMachine, api::BeckhoffNamespace};
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
-    validate_no_role_dublicates, validate_same_machine_identification_unique,
+    validate_no_role_duplicates, validate_same_machine_identification_unique,
 };
 use anyhow::Error;
 
@@ -21,7 +21,7 @@ impl MachineNewTrait for MotorTestMachine {
         println!("[{}::new] Creating new MotorTestMachine", module_path!());
         let device_identification = params.device_group.iter().cloned().collect::<Vec<_>>();
         validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_dublicates(&device_identification)?;
+        validate_no_role_duplicates(&device_identification)?;
 
         let hardware = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,

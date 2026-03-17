@@ -82,6 +82,8 @@ import { WagoDoTestMachineControlPage } from "@/machines/wagodotestmachine/WagoD
 import { Wago8chDioTestMachinePage } from "@/machines/wago8chdiotestmachine/wago8chDioTestMachinePage";
 import { Wago8chDioTestMachineControlRoute } from "@/machines/wago8chdiotestmachine/wago8chDioTestMachineControlPage";
 
+import { trees as stahlwerkTrees } from "@/machines/stahlwerk/routes"
+
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
 // _mainNavigation/configuration/a
@@ -594,6 +596,8 @@ export const rootTree = RootRoute.addChildren([
       buffer1SerialRoute.addChildren([buffer1ControlRoute]),
 
       wagoDoTestMachineSerialRoute.addChildren([wagoDoTestMachineControlRoute]),
+
+      ...stahlwerkTrees,
     ]),
   ]),
 ]);

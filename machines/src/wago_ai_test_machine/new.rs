@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
-    validate_no_role_dublicates, validate_same_machine_identification_unique,
+    validate_no_role_duplicates, validate_same_machine_identification_unique,
     wago_ai_test_machine::{WagoAiTestMachine, api::WagoAiTestMachineNamespace},
 };
 
@@ -27,7 +27,7 @@ impl MachineNewTrait for WagoAiTestMachine {
             .map(|device_identification| device_identification.clone())
             .collect::<Vec<_>>();
         validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_dublicates(&device_identification)?;
+        validate_no_role_duplicates(&device_identification)?;
 
         let hardware = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,

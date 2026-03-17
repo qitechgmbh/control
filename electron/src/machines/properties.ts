@@ -690,6 +690,8 @@ export const testmachinestepper: MachineProperties = {
   ],
 };
 
+import { properties as stahlwerkProperties } from "./stahlwerk/properties"
+
 export const machineProperties: MachineProperties[] = [
   winder2,
   extruder3,
@@ -708,6 +710,7 @@ export const machineProperties: MachineProperties[] = [
   wagoDoTestMachine,
   TestMotor,
   testmachinestepper,
+  ...stahlwerkProperties
 ];
 
 export const getMachineProperties = (

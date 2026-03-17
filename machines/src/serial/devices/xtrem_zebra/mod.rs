@@ -15,7 +15,7 @@ use crate::machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification,
     DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique,
 };
-use crate::{MACHINE_FF01, VENDOR_QITECH};
+use crate::{stahlwerk::machine_registry::FF01, VENDOR_QITECH};
 
 #[derive(Debug)]
 pub struct XtremSerial {
@@ -124,7 +124,7 @@ impl XtremSerial {
                 machine_identification_unique: MachineIdentificationUnique {
                     machine_identification: MachineIdentification {
                         vendor: VENDOR_QITECH,
-                        machine: MACHINE_FF01,
+                        machine: FF01,
                     },
                     serial,
                 },

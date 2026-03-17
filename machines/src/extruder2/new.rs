@@ -56,14 +56,14 @@ impl MachineNewTrait for ExtruderV3 {
         // validate general stuff
 
         use crate::{
-            MachineNewHardware, MachineNewHardwareEthercat, validate_no_role_dublicates,
+            MachineNewHardware, MachineNewHardwareEthercat, validate_no_role_duplicates,
             validate_same_machine_identification_unique,
         };
 
         let device_identification = params.device_group.to_vec();
 
         validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_dublicates(&device_identification)?;
+        validate_no_role_duplicates(&device_identification)?;
 
         let hardware: &&MachineNewHardwareEthercat<'_, '_, '_> = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,

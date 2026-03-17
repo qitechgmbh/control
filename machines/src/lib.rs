@@ -8,7 +8,7 @@ use ethercat_hal::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use ethercrab::{SubDevice, SubDeviceRef};
 use machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
-    DeviceIdentificationIdentified, MachineIdentificationUnique,
+    DeviceIdentificationIdentified, MachineIdentificationUnique, MachineIdentification
 };
 use serde::Serialize;
 use smol::channel::{Receiver, Sender};
@@ -38,6 +38,8 @@ pub mod wago_ai_test_machine;
 pub mod wago_do_test_machine;
 pub mod wago_power;
 pub mod winder2;
+
+// extensions
 pub mod stahlwerk;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
@@ -60,8 +62,6 @@ pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
 pub const WAGO_750_501_TEST_MACHINE: u16 = 0x0042;
-
-pub const MACHINE_FF01: u16 = 0x0010;
 
 use serde_json::Value;
 use smol::lock::RwLock;
@@ -206,7 +206,7 @@ pub fn validate_same_machine_identification_unique(
 }
 
 /// validates that every role is unique
-pub fn validate_no_role_dublicates(
+pub fn validate_no_role_duplicates(
     identified_device_group: &Vec<DeviceIdentificationIdentified>,
 ) -> Result<(), Error> {
     let mut roles = vec![];
