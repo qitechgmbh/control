@@ -329,7 +329,7 @@ in {
   system.nixos.label = "${gitInfo.gitAbbreviationEscaped}_${gitInfo.gitCommit}";
   
   networking.firewall.allowedUDPPorts = [ 53 67 69 ];
-  networking.firewall.allowedTCPPorts = [23, 443 ];
+  networking.firewall.allowedTCPPorts = [ 23 443 ];
 
   system.stateVersion = "24.11"; # Did you read the comment?
 
