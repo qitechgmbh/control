@@ -15,7 +15,7 @@ let
       if (builtins.tryEval (builtins.getEnv "CARGO_BUILD_JOBS")).success then
         builtins.getEnv "CARGO_BUILD_JOBS"
       else
-        "2";
+        "4";
 
     cargoExtraArgs =
       "--features tracing-journald,io-uring --no-default-features";
