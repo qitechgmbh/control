@@ -44,9 +44,13 @@ impl MachineNewTrait for FF01
         let machine_uid = params.get_machine_identification_unique();
         let channel = MachineChannel::new(machine_uid);
 
+        tracing::error!("Created channel");
+
         // create scale
         let (_, serial_interface) = XtremSerial::new_serial()?;
         let scale = Scale::new(serial_interface);
+
+        tracing::error!("Created scale");
 
         // create lights
         let el2004 = smol::block_on(async {
@@ -68,11 +72,19 @@ impl MachineNewTrait for FF01
             DigitalOutput::new(el2004.clone(), EL2004Port::DO4)
         );
 
+        tracing::error!("Created lights");
+
+        let res = std::fs::read_to_string("/home/qitech/config.json");
+
+        tracing::error!("res of read: {:?}", res);
+
         // create service
         let config_path = "/home/qitech/config.json";
         let config = ClientConfig::from_file(config_path).map_err(|e| anyhow!("{:?}", e))?;
         let client = ProxyClient::new(config).map_err(|e| anyhow!("{:?}", e))?;
         let service = WorkorderService::new(client, Duration::from_millis(1000));
+
+        tracing::error!("Created service");
 
         // create instance
         let instance = Self::new(scale, lights, service, channel);
