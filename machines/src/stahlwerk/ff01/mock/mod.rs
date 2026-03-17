@@ -7,23 +7,12 @@ use super::machine_registry::FF01;
 
 mod new;
 
-mod api;
-use api::{LiveValues, Mutation, State};
-
-mod devices;
-use devices::{Light, Scale, SignalLights};
-
-mod services;
-use services::WorkorderService;
-
 #[derive(Debug)]
-pub struct FF01 {
-    // devices
-    scale: Scale,
-    lights: SignalLights,
-
-    // services
-    service: WorkorderService,
+pub struct FF01Mock 
+{
+    weight_tare: f64,
+    weight_peak: f64,
+    weight_prev: f64,
 
     // repeating machine junk
     state_changed: bool,
@@ -81,13 +70,6 @@ impl FF01 {
 // utils
 impl FF01 {
     fn handle_mutation(&mut self, mutation: Mutation) {
-        use Mutation::*;
-
-        match mutation {
-            SetTare => self.scale.tare(),
-            ClearLights => self.lights.lights_disable_all(),
-        }
-
         self.state_changed = true;
     }
 }

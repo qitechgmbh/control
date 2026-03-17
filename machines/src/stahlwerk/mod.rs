@@ -3,8 +3,8 @@ use crate::registry::MachineRegistry;
 mod ff01;
 use ff01::FF01;
 
-#[cfg(feature = "mock-machine")]
-use ff01::FF01;
+// #[cfg(feature = "mock-machine")]
+// use ff01::mock;
 
 pub mod machine_registry
 {
