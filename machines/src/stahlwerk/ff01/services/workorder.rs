@@ -1,7 +1,8 @@
 use std::time::{Duration, Instant};
 
 use anyhow::anyhow;
-use stahlwerk_extension::ff01::{Entry, ProxyClient, Request, Response};
+use chrono::{Datelike, Local, Timelike};
+use stahlwerk_extension::{Date, Time, ff01::{Entry, FinalizeRequest, ProxyClient, Request, Response}};
 
 #[derive(Debug)]
 pub struct WorkorderService 
@@ -14,6 +15,12 @@ pub struct WorkorderService
     entry: Option<Entry>,
     plates_counted: u32,
     last_request_ts: Instant,
+
+    // quantity_scrap, personnel_id
+    worker_submission: Option<(String, f64)>,
+
+    start_date: Date,
+    from_time:  Time,
 }
 
 // public interface
@@ -26,6 +33,10 @@ impl WorkorderService
             entry: None, 
             plates_counted: 0, 
             last_request_ts: Instant::now(),
+            worker_submission: None,
+
+            start_date: Date { year: 0, month: 0, day: 0 },
+            from_time: Time { hour: 0, minute: 0 },
         }
     }   
 
@@ -43,20 +54,33 @@ impl WorkorderService
     }
 
     pub fn update(&mut self, now: Instant) -> anyhow::Result<()> {
-        let Some(mut entry) = self.get_entry(now)? else {
+
+        let was_none = self.entry.is_none();
+
+        let Some(entry) = self.get_entry(now)? else {
             return Ok(());
         };
 
-        if entry.scrap_quantity > 0.0 {
-            self.finalize_workorder(now, entry)?;
+        if was_none {
+            let now = Local::now();
+            self.start_date = Date { year: now.year(), month: now.month(), day: now.day() };
+            self.from_time = Time { hour: now.hour(), minute: now.minute() };
+        }
+
+        let Some((personnel_id, quantity_scrap)) = self.get_submission(now, &entry)? else {
+            return Ok(());
+        };
+
+        let finished = self.finalize_workorder(now, &entry, &personnel_id, quantity_scrap)?;
+
+        if finished {
+            self.entry = None;
+            self.worker_submission = None;
             return Ok(());
         }
 
-        entry.scrap_quantity = self.fetch_scrap_quantity(now, &entry)?.unwrap_or(0.0);
-
-        // move entry back into self.entry
         self.entry = Some(entry);
-
+        self.worker_submission = Some((personnel_id, quantity_scrap));
         Ok(())
     }
 
@@ -81,6 +105,15 @@ impl WorkorderService
         self.fetch_next_entry(now)
     }
 
+    fn get_submission(&mut self, now: Instant, entry: &Entry) -> anyhow::Result<Option<(String, f64)>>
+    {
+        if let Some(v) = self.worker_submission.take() {
+            return Ok(Some(v));
+        }
+
+        self.fetch_worker_submission(now, entry)
+    }
+
     fn fetch_next_entry(&mut self, now: Instant) -> anyhow::Result<Option<Entry>> {
         // awaiting pending request
         if self.client.has_pending_request() {
@@ -97,37 +130,51 @@ impl WorkorderService
         Ok(None)
     }
 
-    fn fetch_scrap_quantity(&mut self, now: Instant, entry: &Entry) -> anyhow::Result<Option<f64>> {
+    fn fetch_worker_submission(&mut self, now: Instant, entry: &Entry) -> anyhow::Result<Option<(String, f64)>> {
         // awaiting pending request
         if self.client.has_pending_request() {
-            if let Response::GetScrapQuantity(scrap_quantity) = self.poll_response()? {
-                return Ok(scrap_quantity);
+            if let Response::GetWorkerSubmission(workorder_submission) = self.poll_response()? {
+                return Ok(workorder_submission);
             } 
 
             return Err(anyhow!("Tag Mismatch"));
         }
 
         // no pending requests, so submit new request
-        let request = Request::GetScrapQuantity(entry);
+        let request = Request::GetWorkerSubmission(entry);
         self.submit_request(now, request);
         Ok(None)
     }
 
-    fn finalize_workorder(&mut self, now: Instant, entry: Entry) -> anyhow::Result<()> {
+    fn finalize_workorder(&mut self, now: Instant, entry: &Entry, personnel_id: &String, quantity_scrap: f64) -> anyhow::Result<bool> {
         // awaiting pending request
         if self.client.has_pending_request() {
             if let Response::Finalize = self.poll_response()? {
-                return Ok(());
+                return Ok(true);
             } 
 
             return Err(anyhow!("Tag Mismatch"));
         }
 
+        let chrono_now = Local::now();
+        let end_date = Date { year: chrono_now.year(), month: chrono_now.month(), day: chrono_now.day() };
+        let to_time = Time { hour: chrono_now.hour(), minute: chrono_now.minute() };
+
+        let request_data = FinalizeRequest {
+            doc_entry: entry.doc_entry,
+            personnel_id: personnel_id.clone(),
+            start_date: self.start_date,
+            end_date,
+            from_time: self.from_time,
+            to_time,
+            quantity_scrap,
+            quantity_counted: self.plates_counted,
+        };
+
         // no pending requests, so submit new request
-        let request = Request::Finalize(&entry, self.plates_counted);
+        let request = Request::Finalize(request_data);
         self.submit_request(now, request);
-        self.entry = Some(entry);
-        Ok(())
+        Ok(false)
     }
 
     fn poll_response(&mut self) -> anyhow::Result<Response> {
