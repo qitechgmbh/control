@@ -9,6 +9,7 @@ import {
 import { exec,spawn, ChildProcess } from "child_process";
 import tkill from "@jub3i/tree-kill";
 import { existsSync, rmSync } from "fs";
+import os from 'os';
 
 type UpdateExecuteListenerParams = {
   githubRepoOwner: string;
@@ -189,7 +190,7 @@ async function update(
           return;
         }
 
-        const command = 'sudo systemctl stop qitech-control-server';
+        /*const command = 'sudo systemctl stop qitech-control-server';
         exec(command, (error, stdout, stderr) => {
           if (error) {
             console.error(`Execution error: ${error.message}`);
@@ -202,7 +203,7 @@ async function update(
           }
           console.log(`stdout: ${stdout}`);
         });
-
+*/
         // 4. run the nixos-install.sh script
         // This script will handle rust-build, electron-build, and system-install
         // Start with rust-build (cargo builds)
