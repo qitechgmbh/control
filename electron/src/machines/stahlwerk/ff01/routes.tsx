@@ -29,5 +29,4 @@ export const graphRoute = createRoute({
 export const tree = serialRoute.addChildren([
     controlRoute,
     graphRoute,
-    graphRoute
 ]);

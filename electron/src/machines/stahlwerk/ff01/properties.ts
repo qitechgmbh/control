@@ -1,4 +1,3 @@
-import { VENDOR_QITECH } from "../../properties";
 import { MachineProperties } from "../../types";
 
 export const properties: MachineProperties = {
@@ -7,7 +6,7 @@ export const properties: MachineProperties = {
   slug: "ff01",
   icon: "lu:Scale",
   machine_identification: {
-    vendor: VENDOR_QITECH,
+    vendor: 1, // QiTeh#ch
     machine: 0x0100,
   },
   device_roles: [
