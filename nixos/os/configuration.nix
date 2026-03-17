@@ -141,16 +141,14 @@ in {
   };
   services.xserver.desktopManager.gnome.enable = true;
 
-  # 2. Define the telnetd service
-  systemd.services.telnetd = {
-    description = "Telnet Server";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network.target" ];
-    serviceConfig = {
-      # -F keeps it in the foreground for systemd
-      # -l specifies the login program
-      ExecStart = "${pkgs.inetutils}/bin/telnetd -F -l ${pkgs.shadow}/bin/login";
-      Restart = "always";
+  # Enable the OpenSSH daemon.
+  services.openssh = {
+    enable = true;
+    settings = {
+      # Explicitly allow password authentication
+      PasswordAuthentication = true;
+      # Recommended: Disable root login via password for security
+      PermitRootLogin = "prohibit-password"; 
     };
   };
 
@@ -343,7 +341,7 @@ in {
   system.nixos.label = "${gitInfo.gitAbbreviationEscaped}_${gitInfo.gitCommit}";
   
   networking.firewall.allowedUDPPorts = [ 53 67 69 ];
-  networking.firewall.allowedTCPPorts = [ 23 443 ];
+  networking.firewall.allowedTCPPorts = [ 22 443 ];
 
   system.stateVersion = "24.11"; # Did you read the comment?
 
