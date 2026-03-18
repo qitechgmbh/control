@@ -1,13 +1,10 @@
 [workspace]
 members = [
     "server",
-    "ethercat-hal",
-    "ethercat-hal-derive",
+    "qitech_lib",
     "control-core",
     "machines",
-    #"ethercat-eeprom-dump",
     "control-core-derive",
-    "units",
     "utils",
 ]
 exclude = []

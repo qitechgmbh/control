@@ -21,7 +21,7 @@
 //! let angular_velocity = converter.linear_to_angular_velocity(velocity);
 //! ```
 
-use units::{
+use qitech_lib::units::{
     acceleration::meter_per_second_squared,
     angle::radian,
     angular_acceleration::radian_per_second_squared,
