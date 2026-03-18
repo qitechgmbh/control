@@ -74,10 +74,6 @@ impl MachineNewTrait for FF01
 
         tracing::error!("Created lights");
 
-        let res = std::fs::read_to_string("/home/qitech/config.json");
-
-        tracing::error!("res of read: {:?}", res);
-
         // create service
         let config_path = "/home/qitech/config.json";
         let config = ClientConfig::from_file(config_path).map_err(|e| anyhow!("{:?}", e))?;

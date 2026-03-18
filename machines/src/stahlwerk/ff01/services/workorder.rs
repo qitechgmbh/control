@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::anyhow;
 use chrono::{Datelike, Local, Timelike};
-use stahlwerk_extension::{Date, Time, ff01::{Entry, FinalizeRequest, ProxyClient, Request, Response}};
+use stahlwerk_extension::{Date, Time, ff01::{Entry, FinalizeRequest, ProxyClient, ProxyTransactionError, Request, Response}};
 
 #[derive(Debug)]
 pub struct WorkorderService 
@@ -117,7 +117,13 @@ impl WorkorderService
     fn fetch_next_entry(&mut self, now: Instant) -> anyhow::Result<Option<Entry>> {
         // awaiting pending request
         if self.client.has_pending_request() {
-            if let Response::GetNextEntry(entry) = self.poll_response()? {
+            let maybe_response = self.poll_response()?;
+
+            if maybe_response.is_none() {
+                return Ok(None)
+            }
+
+            if let Some(Response::GetNextEntry(entry)) = maybe_response {
                 return Ok(entry);
             } 
 
@@ -133,7 +139,13 @@ impl WorkorderService
     fn fetch_worker_submission(&mut self, now: Instant, entry: &Entry) -> anyhow::Result<Option<(String, f64)>> {
         // awaiting pending request
         if self.client.has_pending_request() {
-            if let Response::GetWorkerSubmission(workorder_submission) = self.poll_response()? {
+            let maybe_response = self.poll_response()?;
+
+            if maybe_response.is_none() {
+                return Ok(None)
+            }
+
+            if let Some(Response::GetWorkerSubmission(workorder_submission)) = maybe_response {
                 return Ok(workorder_submission);
             } 
 
@@ -149,7 +161,14 @@ impl WorkorderService
     fn finalize_workorder(&mut self, now: Instant, entry: &Entry, personnel_id: &String, quantity_scrap: f64) -> anyhow::Result<bool> {
         // awaiting pending request
         if self.client.has_pending_request() {
-            if let Response::Finalize = self.poll_response()? {
+
+            let maybe_response = self.poll_response()?;
+
+            if maybe_response.is_none() {
+                return Ok(false)
+            }
+
+            if let Some(Response::Finalize) = maybe_response {
                 return Ok(true);
             } 
 
@@ -177,13 +196,21 @@ impl WorkorderService
         Ok(false)
     }
 
-    fn poll_response(&mut self) -> anyhow::Result<Response> {
-        let response = self
-            .client
-            .poll_response()
-            .map_err(|e| anyhow::anyhow!("{:?}", e))?;
+    fn poll_response(&mut self) -> anyhow::Result<Option<Response>> {
 
-        Ok(response)
+        let result = self
+            .client
+            .poll_response();
+
+        match result {
+            Ok(v) => Ok(Some(v)),
+            Err(e) => {
+                match e {
+                    ProxyTransactionError::Pending => Ok(None),
+                    e => Err(anyhow!("PollResponseErr: {:?}", e)) 
+                }
+            },
+        }
     }
 
     fn submit_request(&mut self, now: Instant, request: Request)
