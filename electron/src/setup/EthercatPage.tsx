@@ -8,7 +8,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { DeviceEepromDialog } from "./DeviceEepromDialog";
 import { getMachineProperties } from "@/machines/properties";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
@@ -16,6 +16,9 @@ import {
   EthercatDevicesEventData,
   useMainNamespace,
 } from "@/client/mainNamespace";
+import { restartBackendIntoPreop } from "@/helpers/troubleshoot_helpers";
+import { toast } from "sonner";
+import { TouchButton } from "@/components/touch/TouchButton";
 
 export const columns: ColumnDef<
   NonNullable<EthercatDevicesEventData["Done"]>["devices"][number]
@@ -121,6 +124,7 @@ export const columns: ColumnDef<
 
 export function EthercatPage() {
   const { ethercatDevices, ethercatInterfaceDiscovery } = useMainNamespace();
+  const [isRestartPreopLoading, setIsRestartPreopLoading] = useState(false);
 
   const data = useMemo(() => {
     return ethercatDevices?.data?.Done?.devices || [];
@@ -131,6 +135,22 @@ export function EthercatPage() {
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  const handleRestartBackendIntoPreop = async () => {
+    setIsRestartPreopLoading(true);
+    try {
+      const result = await restartBackendIntoPreop();
+      if (result.success) {
+        toast.success("Backend restarted into Preop mode");
+      } else {
+        toast.error(`Failed to restart into Preop: ${result.error}`);
+      }
+    } catch (error) {
+      toast.error(`Failed to restart into Preop: ${error}`);
+    } finally {
+      setIsRestartPreopLoading(false);
+    }
+  };
 
   return (
     <Page>
@@ -152,6 +172,23 @@ export function EthercatPage() {
         Machine, Machine Serial Number, Role are QiTech specific values that are
         written to the EEPROM to identify machines as a unit.
       </p>
+
+      <SectionTitle title="Prepare SubDevices"></SectionTitle>
+
+      <p>
+        SubDevices have to be put into preop before writing to the EEPROM is
+        allowed.
+      </p>
+
+      <TouchButton
+        variant="default"
+        icon="lu:RotateCcw"
+        isLoading={isRestartPreopLoading}
+        onClick={handleRestartBackendIntoPreop}
+        className="w-max"
+      >
+        Restart Backend Process Into Preop
+      </TouchButton>
 
       <MyTable table={table} key={data.toString()} />
     </Page>

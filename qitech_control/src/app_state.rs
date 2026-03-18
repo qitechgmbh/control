@@ -12,38 +12,18 @@ use control_core::socketio::{
     namespace::NamespaceCacheingLogic,
 };
 use machine_implementations::{
-    Hardware, IdentifiedEthercat, IdentifiedModbus, MachineHardware, MachineMessage, QiTechMachine,
-    laser::LaserMachine,
-    machine_identification::{
+    Hardware, IdentifiedEthercat, IdentifiedModbus, MachineHardware, MachineMessage, QiTechMachine, laser::LaserMachine, machine_identification::{
         DeviceHardwareIdentificationEthercat, DeviceIdentification, DeviceMachineIdentification,
         QiTechMachineIdentificationUnique,
-    },
+    }
 };
-use qitech_lib::{
-    ethercat_hal::{
-        Consumer, EtherCATThreadChannel, MetaSubdevice, Producer,
-        controller::EtherCATController, devices::EthercatDevice,
-        machine_ident_read::MachineDeviceInfo,
-    },
-    machines::{MachineDataRegistry, MachineIdentification, MachineIdentificationUnique},
-    modbus::{
-        ModbusDevice, devices::qitech_laser::LaserDevice
-    },
-};
+use qitech_lib::{ethercat_hal::{Consumer, EtherCATThreadChannel, MetaSubdevice, Producer, StandardEtherCATController, controller::EtherCATController, devices::EthercatDevice, machine_ident_read::MachineDeviceInfo}, machines::{MachineDataRegistry, MachineIdentification, MachineIdentificationUnique}, modbus::{devices::qitech_laser::LaserDevice, managers::{ExampleDeviceManager, example_manager::ExampleScheduler}}};
 use socketioxide::{SocketIo, extract::SocketRef};
-use std::{
-    cell::RefCell,
-    collections::HashMap,
-    rc::Rc,
-    sync::{Arc, OnceLock},
-};
-use tokio::{
-    runtime::Runtime,
-    sync::{
-        RwLock,
-        mpsc::{Receiver, Sender},
-    }, task::JoinHandle,
-};
+use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::{Arc, OnceLock}};
+use tokio::{runtime::Runtime, sync::{
+    RwLock,
+    mpsc::{Receiver, Sender},
+}};
 
 static RUNTIME: OnceLock<Runtime> = OnceLock::new();
 pub fn get_async_runtime() -> &'static Runtime {
@@ -73,19 +53,19 @@ pub struct SharedAppState {
         RwLock<HashMap<QiTechMachineIdentificationUnique, Sender<MachineMessage>>>,
     pub ethercat_meta_datas: RwLock<Vec<EtherCatDeviceMetaData>>,
     pub socketio_setup: SocketioSetup,
+    pub ethercat_thread_channel: Option<EtherCATThreadChannel>,
 }
 
 impl SharedAppState {
-    pub fn fill_ethercat_metadata<C: Consumer, P: Producer>(
+        pub fn fill_ethercat_metadata<C : Consumer,P : Producer>(
         &self,
-        controller: Arc<EtherCATController<C, P>>,
+        controller: Arc<EtherCATController<C,P>>,
         infos: Vec<MachineDeviceInfo>,
     ) -> Result<(), anyhow::Error> {
         let mut guard = self.ethercat_meta_datas.try_write()?;
         for i in 0..controller.subdevice_count {
             let dev = controller.subdevices[i];
-            let device_machine_identification = infos
-                .iter()
+            let device_machine_identification = infos.iter()
                 .find(|info| info.device_address == dev.device_address)
                 .map(|info| DeviceMachineIdentification::from(*info));
 
@@ -216,16 +196,18 @@ impl SharedAppState {
                 socket_queue_rx: RwLock::new(socket_queue_rx),
             },
             ethercat_meta_datas: RwLock::new(vec![]),
+            ethercat_thread_channel: None,
         }
     }
 }
 
 pub struct MainState {
-    pub subdevices: Vec<(MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)>,
+    pub subdevices: Vec<(MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>) >,
     pub hardware: HashMap<MachineIdentificationUnique, MachineHardware>,
     pub machines: Vec<Box<dyn QiTechMachine>>,
     pub machine_errors: HashMap<MachineIdentificationUnique, String>,
     pub machine_data_reg: MachineDataRegistry,
+    pub modbus_mgrs: Vec<Rc<RefCell<ExampleDeviceManager>>>
 }
 
 impl MainState {
@@ -237,36 +219,31 @@ impl MainState {
         MainState {
             machines,
             machine_data_reg,
-            subdevices: vec![],            
+            subdevices: vec![],
+            modbus_mgrs: vec![],
             hardware: HashMap::new(),
             machine_errors: HashMap::new(),
         }
     }
 
     pub fn generate_machine_hardware_from_serial(
-        &mut self,
-        path : &str,
-    ) -> Result<(),anyhow::Error> {
-        let laser_device: Rc<RefCell<LaserDevice>> =
-           Rc::new(RefCell::new(LaserDevice::new(path.to_owned(), 1, None)?));
-        let id_modbus: IdentifiedModbus = IdentifiedModbus {
-            hw: laser_device,
-        };
-        let ident = MachineIdentificationUnique {
-            machine_ident: LaserMachine::MACHINE_IDENTIFICATION,
-            serial: 1,
-        };
-        let mut hw = MachineHardware {
+        &mut self, mgr: Rc<RefCell<ExampleDeviceManager>>,
+    ){
+        let laser_device:
+            Rc<RefCell<LaserDevice<ExampleScheduler>>> = ExampleDeviceManager::register_device(mgr.clone(), 1);
+        let id_modbus : IdentifiedModbus = IdentifiedModbus { hw: laser_device,manager:mgr.clone() };
+        let ident = MachineIdentificationUnique { machine_ident: LaserMachine::MACHINE_IDENTIFICATION, serial: 1 };
+        let mut hw = MachineHardware{
             hw: vec![],
-            identification: ident,
+            identification:  ident,
             ethercat_interface: None,
         };
-        hw.hw.push(Hardware::Modbus(id_modbus));        
+        hw.hw.push(Hardware::Modbus(  id_modbus ));
+        self.modbus_mgrs.push(mgr.clone());
         self.hardware.insert(ident, hw);
-        Ok(())
     }
 
-    pub fn generate_machine_hardware_from_ethercat(
+      pub fn generate_machine_hardware_from_ethercat(
         &mut self,
         device_infos: &Vec<MachineDeviceInfo>,
         mapped_ecat_devices: Vec<(MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)>,
@@ -282,11 +259,9 @@ impl MainState {
             .into_iter()
             .filter_map(|info| {
                 let address = info.device_address;
-                let f = mapped_ecat_devices
-                    .iter()
-                    .find(|f| f.0.device_address == address)
-                    .unwrap();
+                let f = mapped_ecat_devices.iter().find(|f| f.0.device_address == address).unwrap();
                 Some((info.clone(), f.0, f.1.clone())) // This is a 3-tuple
+
             })
             .collect();
 

@@ -81,6 +81,7 @@ in
       description = "QiTech Control Server";
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
+      conflicts = [ "qitech-control-server.service" ];
 
       serviceConfig = {
         Type = "simple";
@@ -118,6 +119,44 @@ in
         StandardOutput = "journal";
         StandardError = "journal";
         SyslogIdentifier = "qitech-control-server";
+      };
+
+      environment = {
+        RUST_BACKTRACE = "full";
+        RUST_LOG = "info";
+      };
+    };
+
+    systemd.services.qitech-control-server-preop = {
+      description = "QiTech Control Server (PreOp)";
+      after = [ "network.target" ];
+      conflicts = [ "qitech-control-server.service" ];
+
+      serviceConfig = {
+        Type = "simple";
+        User = cfg.user;
+        Group = cfg.group;
+        ExecStart = "${cfg.package}/bin/qitech_control enp1s0 preop";
+        Restart = "no"; # don't restart automatically, it's temporary
+
+        CapabilityBoundingSet = "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
+        AmbientCapabilities = "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
+        NoNewPrivileges = true;
+        ProtectSystem = "strict";
+        StateDirectory = "qitech";
+        ReadWritePaths = [ "/proc/irq" ];
+        ProtectHome = true;
+        PrivateTmp = true;
+        PrivateDevices = false;
+        ProtectKernelTunables = false;
+        ProtectControlGroups = true;
+        RestrictAddressFamilies = "AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET";
+        RestrictNamespaces = true;
+        LockPersonality = true;
+        MemoryDenyWriteExecute = false;
+        StandardOutput = "journal";
+        StandardError = "journal";
+        SyslogIdentifier = "qitech-control-server-preop";
       };
 
       environment = {

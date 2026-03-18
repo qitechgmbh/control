@@ -39,6 +39,20 @@ export async function restartBackend(): Promise<{
   }
 }
 
+export async function restartBackendIntoPreop(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    return await window.troubleshoot.restartBackendIntoPreop();
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 export async function exportLogs(): Promise<{
   success: boolean;
   error?: string;

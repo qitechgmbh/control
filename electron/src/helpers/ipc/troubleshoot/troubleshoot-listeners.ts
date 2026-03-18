@@ -3,6 +3,7 @@ import { spawn, exec, ChildProcess } from "child_process";
 import {
   TROUBLESHOOT_REBOOT_HMI,
   TROUBLESHOOT_RESTART_BACKEND,
+  TROUBLESHOOT_RESTART_BACKEND_INTO_PREOP,
   TROUBLESHOOT_EXPORT_LOGS,
 } from "./troubleshoot-channels";
 
@@ -28,7 +29,38 @@ export function addTroubleshootEventListeners() {
       const process = spawn(
         "sudo",
         ["systemctl", "restart", "qitech-control-server"],
-        { shell: true },
+        { shell: false },
+      );
+      return new Promise<{ success: boolean; error?: string }>((resolve) => {
+        process.on("close", (code) => {
+          if (code === 0) {
+            resolve({ success: true });
+          } else {
+            resolve({
+              success: false,
+              error: `Process exited with code ${code}`,
+            });
+          }
+        });
+        process.on("error", (error) => {
+          resolve({ success: false, error: error.message });
+        });
+      });
+    } catch (error) {
+      console.error("Failed to restart backend:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  });
+
+  ipcMain.handle(TROUBLESHOOT_RESTART_BACKEND_INTO_PREOP, async () => {
+    try {
+      const process = spawn(
+        "sudo",
+        ["systemctl", "start", "qitech-control-server-preop"],
+        { shell: false },
       );
 
       return new Promise<{ success: boolean; error?: string }>((resolve) => {
@@ -42,16 +74,11 @@ export function addTroubleshootEventListeners() {
             });
           }
         });
-
         process.on("error", (error) => {
-          resolve({
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-          });
+          resolve({ success: false, error: error.message });
         });
       });
     } catch (error) {
-      console.error("Failed to restart backend:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),

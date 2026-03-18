@@ -467,6 +467,11 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
+<<<<<<< HEAD
+=======
+ "anyhow",
+ "libc",
+>>>>>>> b63ca2e2 (added in code/config for preop configuration)
  "tokio",
 ]
 
@@ -895,6 +900,10 @@ dependencies = [
  "anyhow",
  "approx",
  "bitvec",
+<<<<<<< HEAD
+=======
+ "common",
+>>>>>>> b63ca2e2 (added in code/config for preop configuration)
  "core_affinity",
  "ethercat_hal_derive",
  "ethercrab",

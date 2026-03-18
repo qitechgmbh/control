@@ -116,6 +116,7 @@ export function mainMessageHandler(
     const eventName = event.name;
 
     try {
+      console.log(event);
       // Apply appropriate caching strategy based on event type
       if (eventName === "EthercatDevicesEvent") {
         const validatedEvent = event;
