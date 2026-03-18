@@ -56,7 +56,7 @@ impl FF01 {
         }
     }
 
-    pub fn update(&mut self, now: Instant) -> anyhow::Result<()> {
+    pub fn update_impl(&mut self, now: Instant) -> anyhow::Result<()> {
         // check if done measuring a plate
         if let Some(weight) = self.scale.update() {
             use services::PlateSubmitResult::*;
@@ -136,15 +136,16 @@ impl MachineWithChannel for FF01 {
     }
 
     fn update(&mut self, now: Instant) -> anyhow::Result<()> {
-        self.update(now)?;
+        self.update_impl(now)?;
 
         if self.state_changed {
-            self.emit_state();
+            // self.emit_state();
             self.state_changed = false;
         }
 
         if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             self.emit_live_values();
+            self.emit_state();
             self.last_measurement_emit = now;
         }
 
