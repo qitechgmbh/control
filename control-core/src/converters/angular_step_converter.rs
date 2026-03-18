@@ -1,4 +1,4 @@
-use units::{
+use qitech_lib::units::{
     angle::revolution,
     angular_acceleration::radian_per_second_squared,
     angular_velocity::revolution_per_second,
