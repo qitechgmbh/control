@@ -7,19 +7,20 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@ui": path.resolve(__dirname, "../ui/src"),
     },
   },
   test: {
-    dir: "./src/tests/unit",
+    dir: "../ui/src/tests/unit",
     globals: true,
     environment: "jsdom",
-    setupFiles: "./src/tests/unit/setup.ts",
+    setupFiles: "../ui/src/tests/unit/setup.ts",
     css: true,
     reporters: ["verbose"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
-      include: ["src/**/*"],
+      include: ["src/**/*", "../ui/src/**/*"],
       exclude: [],
     },
   },

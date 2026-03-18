@@ -9,7 +9,13 @@ export default {
     preserveSymlinks: true,
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@ui": path.resolve(__dirname, "../ui/src"),
       "@root": path.resolve(__dirname, ".."),
+    },
+  },
+  server: {
+    fs: {
+      allow: [path.resolve(__dirname), path.resolve(__dirname, "../ui")],
     },
   },
   clearScreen: false,
@@ -18,7 +24,11 @@ export default {
       main: {
         entry: "src/main.ts",
         onstart: ({ startup }) => {
-          startup(["./dist-electron/main.js"]);
+          const args = ["./dist-electron/main.js"];
+          if (process.env.ELECTRON_NO_SANDBOX) {
+            args.push("--no-sandbox");
+          }
+          startup(args);
         },
       },
       preload: {

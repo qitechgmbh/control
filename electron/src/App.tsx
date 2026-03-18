@@ -1,14 +1,14 @@
 import React, { useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { syncThemeWithLocal } from "./helpers/theme_helpers";
+import { syncThemeWithLocal } from "@ui/helpers/theme_helpers";
 import { useTranslation } from "react-i18next";
-import "./localization/i18n";
-import { updateAppLanguage } from "./helpers/language_helpers";
-import { router } from "./routes/router";
+import "@ui/localization/i18n";
+import { updateAppLanguage } from "@ui/helpers/language_helpers";
+import { router } from "@ui/routes/router";
 import { RouterProvider } from "@tanstack/react-router";
-import { Toaster } from "./components/ui/sonner";
+import { Toaster } from "@ui/components/ui/sonner";
 import { enableMapSet } from "immer";
-import { GlobalLaserToastManager } from "./setup/GlobalLaserToastManager";
+import { GlobalLaserToastManager } from "@ui/setup/GlobalLaserToastManager";
 
 export default function App() {
   const { i18n } = useTranslation();

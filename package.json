@@ -1,5 +1,7 @@
 {
-  "devDependencies": {
-    "electron": "^38.8.4"
-  }
+  "private": true,
+  "workspaces": [
+    "ui",
+    "electron"
+  ]
 }

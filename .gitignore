@@ -1,5 +1,6 @@
 target/
 dist/
+dist-electron/
 .DS_Store
 dhat-heap.json
 build.sh
@@ -8,4 +9,33 @@ node_modules/
 runtime_metrics.csv
 compile_metrics.csv
 .idea/
-electron/dist-electron/
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+*.lcov
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Environment
+.env
+.env.test
+
+# Vite
+.vite/
+
+# Electron Forge
+out/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Misc
+*.tgz
+.eslintcache

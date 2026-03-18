@@ -1,5 +1,5 @@
 import { app, BrowserWindow } from "electron";
-import registerListeners from "./helpers/ipc/listeners-register";
+import registerListeners from "./ipc/listeners-register";
 import path from "path";
 import {
   installExtension,

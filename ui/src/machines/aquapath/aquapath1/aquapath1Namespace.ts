@@ -1,0 +1,337 @@
+/**
+ * @file Aquapath1Namespace.ts
+ * @description TypeScript implementation of Aquapath1 namespace with Zod schema validation.
+ */
+
+import { StoreApi } from "zustand";
+import { create } from "zustand";
+import { z } from "zod";
+import {
+  EventHandler,
+  eventSchema,
+  Event,
+  handleUnhandledEventError,
+  NamespaceId,
+  createNamespaceHookImplementation,
+  ThrottledStoreUpdater,
+} from "../../../client/socketioStore";
+import { MachineIdentificationUnique } from "@ui/machines/types";
+import { createTimeSeries, TimeSeries } from "@ui/lib/timeseries";
+
+// ========== Event Schema Definitions ==========
+/**
+ * Mode enum for Aquapath Machine
+ */
+export const modeSchema = z.enum(["Standby", "Auto"]);
+
+/**
+ * Mode state schema
+ */
+export const modeStateSchema = z.object({
+  mode: modeSchema,
+});
+export const tempStateSchema = z.object({
+  temperature: z.number(),
+  target_temperature: z.number(),
+});
+/**
+ * Cooling states schema
+ */
+export const tempStatesSchema = z.object({
+  front: tempStateSchema,
+  back: tempStateSchema,
+});
+
+export const flowStateSchema = z.object({
+  flow: z.number(),
+  should_flow: z.boolean(),
+});
+export const flowStatesSchema = z.object({
+  front: flowStateSchema,
+  back: flowStateSchema,
+});
+
+export const fanStateSchema = z.object({
+  revolutions: z.number(),
+  max_revolutions: z.number(),
+});
+export const fanStatesSchema = z.object({
+  back: fanStateSchema,
+  front: fanStateSchema,
+});
+
+export const toleranceStateSchema = z.object({
+  heating: z.number(),
+  cooling: z.number(),
+});
+export const toleranceStatesSchema = z.object({
+  back: toleranceStateSchema,
+  front: toleranceStateSchema,
+});
+/**
+ * Live values event schema (time-series data)
+ */
+export const liveValuesEventDataSchema = z.object({
+  front_flow: z.number(),
+  back_flow: z.number(),
+  front_temperature: z.number(),
+  back_temperature: z.number(),
+  front_temp_reservoir: z.number(),
+  back_temp_reservoir: z.number(),
+  front_revolutions: z.number(),
+  back_revolutions: z.number(),
+  back_power: z.number(),
+  front_power: z.number(),
+  front_total_energy: z.number(),
+  back_total_energy: z.number(),
+});
+
+/**
+ * State event schema (consolidated state)
+ */
+export const stateEventDataSchema = z.object({
+  is_default_state: z.boolean(),
+  mode_state: modeStateSchema,
+  flow_states: flowStatesSchema,
+  temperature_states: tempStatesSchema,
+  fan_states: fanStatesSchema,
+  tolerance_states: toleranceStatesSchema,
+});
+
+// ========== Event Schemas with Wrappers ==========
+export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
+export const stateEventSchema = eventSchema(stateEventDataSchema);
+
+// ========== Type Inferences ==========
+export type Mode = z.infer<typeof modeSchema>;
+export type ModeState = z.infer<typeof modeStateSchema>;
+export type LiveValuesEvent = z.infer<typeof liveValuesEventSchema>;
+export type StateEvent = z.infer<typeof stateEventSchema>;
+
+export type Aquapath1NamespaceStore = {
+  // Single state event from server
+  state: StateEvent | null;
+  defaultState: StateEvent | null;
+
+  front_flow: TimeSeries;
+  back_flow: TimeSeries;
+
+  front_temperature: TimeSeries;
+  back_temperature: TimeSeries;
+
+  front_temp_reservoir: TimeSeries;
+  back_temp_reservoir: TimeSeries;
+
+  front_revolutions: TimeSeries;
+  back_revolutions: TimeSeries;
+
+  front_power: TimeSeries;
+  back_power: TimeSeries;
+
+  front_total_energy: TimeSeries;
+  back_total_energy: TimeSeries;
+
+  // Target value history (for graph target lines)
+  targetFrontTemperature: TimeSeries;
+  targetBackTemperature: TimeSeries;
+};
+
+const { initialTimeSeries: front_temperature, insert: addTemperature1 } =
+  createTimeSeries();
+const { initialTimeSeries: back_temperature, insert: addTemperature2 } =
+  createTimeSeries();
+const { initialTimeSeries: front_temp_reservoir, insert: addTempReserv1 } =
+  createTimeSeries();
+const { initialTimeSeries: back_temp_reservoir, insert: addTempReserv2 } =
+  createTimeSeries();
+const { initialTimeSeries: front_flow, insert: addFlow1 } = createTimeSeries();
+const { initialTimeSeries: back_flow, insert: addFlow2 } = createTimeSeries();
+const { initialTimeSeries: front_revolutions, insert: addFan1 } =
+  createTimeSeries();
+const { initialTimeSeries: back_revolutions, insert: addFan2 } =
+  createTimeSeries();
+const { initialTimeSeries: front_power, insert: addFrontPower } =
+  createTimeSeries();
+const { initialTimeSeries: back_power, insert: addBackPower } =
+  createTimeSeries();
+const { initialTimeSeries: front_total_energy, insert: addFrontEnergy } =
+  createTimeSeries();
+const { initialTimeSeries: back_total_energy, insert: addBackEnergy } =
+  createTimeSeries();
+const {
+  initialTimeSeries: targetFrontTemperature,
+  insert: addTargetFrontTemperature,
+} = createTimeSeries();
+const {
+  initialTimeSeries: targetBackTemperature,
+  insert: addTargetBackTemperature,
+} = createTimeSeries();
+
+/**
+ * Factory function to create a new Aquapath namespace store
+ * @returns A new Zustand store instance for Aquapath namespace
+ */
+export const createAquapath1NamespaceStore =
+  (): StoreApi<Aquapath1NamespaceStore> => {
+    return create<Aquapath1NamespaceStore>(() => {
+      return {
+        state: null,
+        defaultState: null,
+        front_temperature: front_temperature,
+        back_temperature: back_temperature,
+        front_flow: front_flow,
+        back_flow: back_flow,
+        front_temp_reservoir: front_temp_reservoir,
+        back_temp_reservoir: back_temp_reservoir,
+        front_revolutions: front_revolutions,
+        back_revolutions: back_revolutions,
+        back_power: back_power,
+        front_power: front_power,
+        front_total_energy: front_total_energy,
+        back_total_energy: back_total_energy,
+        targetFrontTemperature: targetFrontTemperature,
+        targetBackTemperature: targetBackTemperature,
+      };
+    });
+  };
+
+/**
+ * Creates a message handler for Mock1 namespace events with validation and appropriate caching strategies
+ * @param store The store to update when messages are received
+ * @param throttledUpdater Throttled updater for batching updates at 60 FPS
+ * @returns A message handler function
+ */
+export function aquapath1MessageHandler(
+  store: StoreApi<Aquapath1NamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<Aquapath1NamespaceStore>,
+): EventHandler {
+  return (event: Event<any>) => {
+    const eventName = event.name;
+
+    // Helper function to update store through buffer
+    const updateStore = (
+      updater: (state: Aquapath1NamespaceStore) => Aquapath1NamespaceStore,
+    ) => {
+      throttledUpdater.updateWith(updater);
+    };
+
+    try {
+      // State events (latest only)
+      if (eventName === "StateEvent") {
+        const stateEvent = stateEventSchema.parse(event);
+        const timestamp = event.ts;
+        const nextTargetFrontTemperature =
+          stateEvent.data.temperature_states.front.target_temperature;
+        const nextTargetBackTemperature =
+          stateEvent.data.temperature_states.back.target_temperature;
+        updateStore((state) => ({
+          ...state,
+          state: stateEvent,
+          // only set default state if is_default_state is true
+          defaultState: stateEvent.data.is_default_state
+            ? stateEvent
+            : state.defaultState,
+          targetFrontTemperature:
+            state.targetFrontTemperature.current?.value ===
+            nextTargetFrontTemperature
+              ? state.targetFrontTemperature
+              : addTargetFrontTemperature(state.targetFrontTemperature, {
+                  value: nextTargetFrontTemperature,
+                  timestamp,
+                }),
+          targetBackTemperature:
+            state.targetBackTemperature.current?.value ===
+            nextTargetBackTemperature
+              ? state.targetBackTemperature
+              : addTargetBackTemperature(state.targetBackTemperature, {
+                  value: nextTargetBackTemperature,
+                  timestamp,
+                }),
+        }));
+      }
+      // Live values events (time-series data)
+      else if (eventName === "LiveValuesEvent") {
+        const liveValuesEvent = liveValuesEventSchema.parse(event);
+
+        updateStore((state) => ({
+          ...state,
+          front_temperature: addTemperature1(state.front_temperature, {
+            value: liveValuesEvent.data.front_temperature,
+            timestamp: event.ts,
+          }),
+          back_temperature: addTemperature2(state.back_temperature, {
+            value: liveValuesEvent.data.back_temperature,
+            timestamp: event.ts,
+          }),
+          front_flow: addFlow1(state.front_flow, {
+            value: liveValuesEvent.data.front_flow,
+            timestamp: event.ts,
+          }),
+          back_flow: addFlow2(state.back_flow, {
+            value: liveValuesEvent.data.back_flow,
+            timestamp: event.ts,
+          }),
+          front_temp_reservoir: addTempReserv1(state.front_temp_reservoir, {
+            value: liveValuesEvent.data.front_temp_reservoir,
+            timestamp: event.ts,
+          }),
+          back_temp_reservoir: addTempReserv2(state.back_temp_reservoir, {
+            value: liveValuesEvent.data.back_temp_reservoir,
+            timestamp: event.ts,
+          }),
+          front_revolutions: addFan1(state.front_revolutions, {
+            value: liveValuesEvent.data.front_revolutions,
+            timestamp: event.ts,
+          }),
+          back_revolutions: addFan2(state.back_revolutions, {
+            value: liveValuesEvent.data.back_revolutions,
+            timestamp: event.ts,
+          }),
+          front_power: addFrontPower(state.front_power, {
+            value: liveValuesEvent.data.front_power,
+            timestamp: event.ts,
+          }),
+          back_power: addBackPower(state.back_power, {
+            value: liveValuesEvent.data.back_power,
+            timestamp: event.ts,
+          }),
+          front_total_energy: addFrontEnergy(state.front_total_energy, {
+            value: liveValuesEvent.data.front_total_energy,
+            timestamp: event.ts,
+          }),
+          back_total_energy: addBackEnergy(state.back_total_energy, {
+            value: liveValuesEvent.data.back_total_energy,
+            timestamp: event.ts,
+          }),
+        }));
+      } else {
+        handleUnhandledEventError(eventName);
+      }
+    } catch (error) {
+      console.error(`Unexpected error processing ${eventName} event:`, error);
+      throw error;
+    }
+  };
+}
+
+/**
+ * Create the Aquapath1 namespace implementation
+ */
+const useAquapath1NamespaceImplementation =
+  createNamespaceHookImplementation<Aquapath1NamespaceStore>({
+    createStore: createAquapath1NamespaceStore,
+    createEventHandler: aquapath1MessageHandler,
+  });
+
+export function useAquapath1Namespace(
+  machine_identification_unique: MachineIdentificationUnique,
+): Aquapath1NamespaceStore {
+  // Generate namespace ID from validated machine ID
+  const namespaceId: NamespaceId = {
+    type: "machine",
+    machine_identification_unique,
+  };
+
+  // Use the implementation with validated namespace ID
+  return useAquapath1NamespaceImplementation(namespaceId);
+}

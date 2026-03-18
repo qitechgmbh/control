@@ -63,7 +63,9 @@
             electron
           ];
 
-          ELECTON_SKIP_BINARY_DOWNLOAD = 1;
+          ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
+          ELECTRON_OVERRIDE_DIST_PATH = "${pkgs.electron}/libexec/electron";
+          ELECTRON_NO_SANDBOX = 1;
 
           hardeningDisable = [ "fortify" ];
 

@@ -14,13 +14,15 @@
     "noImplicitAny": false,
     "sourceMap": true,
     "strict": true,
+    "rootDir": "..",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@ui/*": ["../ui/src/*"],
     },
     "outDir": "dist",
     "moduleResolution": "node",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "../ui/src/**/*"],
 }
