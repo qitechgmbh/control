@@ -33,6 +33,7 @@ export function ControlPage() {
             unit="kg"
             renderValue={(v) => v.toFixed(0)}
             timeseries={weightPrev}
+            
           />
           <TimeSeriesValueNumeric
             label="Peak Weight"
@@ -72,12 +73,18 @@ export function ControlPage() {
               variant="outline"
               icon="lu:RotateCcw"
               onClick={clearLights}
+              isLoading={isLoading}
             >
               Clear Lights
             </TouchButton>
           </Label>
           <Label label="Tare">
-            <TouchButton variant="outline" icon="lu:Scale" onClick={tare}>
+            <TouchButton 
+            variant="outline" 
+            icon="lu:Scale" 
+            onClick={tare}
+            isLoading={isLoading}
+            >
               Tare Scales
             </TouchButton>
           </Label>
