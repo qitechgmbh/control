@@ -37,7 +37,7 @@ export const liveValuesEventDataSchema = z.object({
 export const stateEventDataSchema = z.object({
   is_default_state: z.boolean(),
   plates_counted: z.number(),
-  current_workorder: z.number(),
+  current_workorder: z.number().nullable(),
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -99,7 +99,7 @@ export function MessageHandler(
 
     try {
       // Apply appropriate caching strategy based on event type
-      if (eventName === "StateEvent") {
+      if (eventName === "State") {
         const stateEvent = stateEventSchema.parse(event);
         updateStore((state) => ({
           ...state,
@@ -111,7 +111,7 @@ export function MessageHandler(
         }));
       }
       // Live values events (keep for 1 hour)
-      else if (eventName === "LiveValuesEvent") {
+      else if (eventName === "LiveValues") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
         const weightPeakValue: TimeSeriesValue = {
           value: liveValuesEvent.data.weight_peak,
