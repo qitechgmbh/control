@@ -52,7 +52,7 @@ export function ControlPage() {
             icon="lu:Tally1"
             unit="pcs"
             value={state?.plates_counted}
-            renderValue={(v) => v.toFixed(1)}
+            renderValue={(v) => v.toFixed(0)}
           />
         </ControlCard>
 

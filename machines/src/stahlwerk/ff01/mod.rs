@@ -23,7 +23,7 @@ pub struct FF01 {
     lights: SignalLights,
 
     // services
-    service: WorkorderService,
+    // service: WorkorderService,
 
     // repeating machine junk
     state_changed: bool,
@@ -42,13 +42,13 @@ impl FF01 {
     pub fn new(
         scale: Scale, 
         lights: SignalLights, 
-        service: WorkorderService,
+        // service: WorkorderService,
         channel: MachineChannel,
     ) -> Self {
         Self { 
             scale, 
             lights, 
-            service, 
+            // service, 
             state_changed: false, 
             channel, 
             emitted_default_state: false, 
@@ -63,17 +63,17 @@ impl FF01 {
 
             let expiry = now + Self::EXPIRY_DURATION;
 
-            match self.service.submit_plate(weight) {
-                InBounds => self.lights.enable_light(Light::Green, Some(expiry)),
-                OutOufBOunds => self.lights.enable_light(Light::Red, Some(expiry)),
-                NotCounting => self.lights.enable_light(Light::Yellow, Some(expiry)),
-            }
+            // match self.service.submit_plate(weight) {
+            //     InBounds => self.lights.enable_light(Light::Green, Some(expiry)),
+            //     OutOufBOunds => self.lights.enable_light(Light::Red, Some(expiry)),
+            //     NotCounting => self.lights.enable_light(Light::Yellow, Some(expiry)),
+            // }
 
             self.state_changed = true;
         }
 
         self.lights.update(now);
-        self.service.update(now)?;
+        // dself.service.update(now)?;
         Ok(())
     }
 }
@@ -152,12 +152,12 @@ impl MachineWithChannel for FF01 {
     }
 
     fn get_state(&self) -> State {
-        let current_workorder = self.service.current_entry().as_ref().map(|x| x.doc_entry);
+        //let current_workorder = self.service.current_entry().as_ref().map(|x| x.doc_entry);
 
         State {
             is_default_state: self.emitted_default_state,
-            plates_counted: self.service.plates_counted(),
-            current_workorder,
+            plates_counted: 0, // self.service.plates_counted(),
+            current_workorder: Some(99999),
         }
     }
 
