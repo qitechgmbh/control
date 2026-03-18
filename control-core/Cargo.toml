@@ -11,8 +11,7 @@ anyhow = "1.0.102"
 
 axum = "0.8.8"
 
-ethercat_hal = { path = "../ethercat-hal" }
-units = { path = "../units" }
+qitech_lib = { path = "../qitech_lib" }
 ethercrab = { git = "https://github.com/v-morlock/ethercrab", branch = "main" }
 interfaces = "0.0.9"
 serde = "1.0.219"

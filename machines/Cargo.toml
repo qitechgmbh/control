@@ -4,29 +4,22 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-ethercrab = { git = "https://github.com/v-morlock/ethercrab", branch = "main" }
-ethercat_hal = { path = "../ethercat-hal" }
+qitech_lib = { path = "../qitech_lib" }
 control_core = { path = "../control-core" }
 control_core_derive = { path = "../control-core-derive" }
-units = { path = "../units" }
 
 serde = "1.0.217"
 anyhow = "1.0.102"
-
 bitvec = "1.0.1"
 lazy_static = "1.5.0"
 euclid = "0.22.13"
-
 # concurrency
 smol = "2.0.2"
-
 # web
 serde_json = "1.0.149"
 socketioxide = { version = "0.17.2", features = ["msgpack"] }
-
 # serial
 serialport = "4.7.3"
-
 #tracing
 tracing = { version = "0.1.44", features = ["attributes"] }
 tonic = { version = "0.13.1", optional = true }
@@ -43,10 +36,6 @@ mock-machine = []
 memory-locking = []
 io-uring = []
 development-build = []
-
-
-
-
 
 [package.metadata.cargo-machete]
 ignored =  ["tonic"]

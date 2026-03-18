@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use units::{
+use qitech_lib::units::{
     angular_acceleration::radian_per_second_squared,
     angular_jerk::radian_per_second_cubed,
     angular_velocity::radian_per_second,
