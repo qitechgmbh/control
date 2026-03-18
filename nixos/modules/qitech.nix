@@ -90,7 +90,7 @@ in {
 
         # Open only /proc/irq explicitly
         ReadWritePaths = [ "/proc/irq" ];
-        ProtectHome = true;
+        ProtectHome = false;
         PrivateTmp = true;
         PrivateDevices = false;
 

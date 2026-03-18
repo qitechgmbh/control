@@ -79,15 +79,15 @@ impl MachineNewTrait for FF01
         tracing::error!("res of read: {:?}", res);
 
         // create service
-        // let config_path = "/home/qitech/config.json";
-        // let config = ClientConfig::from_file(config_path).map_err(|e| anyhow!("{:?}", e))?;
-        // let client = ProxyClient::new(config).map_err(|e| anyhow!("{:?}", e))?;
-        // let service = WorkorderService::new(client, Duration::from_millis(1000));
+        let config_path = "/home/qitech/config.json";
+        let config = ClientConfig::from_file(config_path).map_err(|e| anyhow!("{:?}", e))?;
+        let client = ProxyClient::new(config).map_err(|e| anyhow!("{:?}", e))?;
+        let service = WorkorderService::new(client, Duration::from_millis(1000));
 
         tracing::error!("Created service");
 
         // create instance
-        let instance = Self::new(scale, lights, channel);
+        let instance = Self::new(scale, lights, service, channel);
         Ok(instance)
     }
 }
