@@ -39,6 +39,10 @@ impl Scale
             None => 999.0, 
         };
 
+        self.weight_prev = weight_raw;
+
+        return None;
+
         let weight = (weight_raw - self.weight_tare).max(0.0);
         let weight_prev = self.weight_prev;
 
