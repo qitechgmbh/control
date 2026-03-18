@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::{SystemTime, UNIX_EPOCH}};
 
 use smol::lock::RwLock;
 
@@ -32,6 +32,20 @@ impl Scale
     ///
     /// Returns the peak weight when an item is removed, otherwise `None`.
     pub fn update(&mut self) -> Option<f64> {
+
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .subsec_nanos();
+
+        let random = (nanos % 100) as f64; // 0–99
+
+        // testing: REMOVE LATER
+        self.weight_prev = random;
+
+        return None;
+
+
         let weight_raw: f64 = match self.read_data() {
             Some(data) => data.current_weight,
             //TODO: consider returning if no data available
