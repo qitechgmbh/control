@@ -2692,7 +2692,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 [[package]]
 name = "stahlwerk_extension"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/stahlwerk-extension.git?branch=main#acfec6227be48fed01268ef76b36b96487f5e5dc"
+source = "git+https://github.com/qitechgmbh/stahlwerk-extension.git?rev=fe2da5a#fe2da5afacac486f23665e0f3523a56ac4c915cc"
 dependencies = [
  "beas_bsl",
  "serde",

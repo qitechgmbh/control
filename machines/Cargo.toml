@@ -33,7 +33,7 @@ tonic = { version = "0.13.1", optional = true }
 
 chrono = "0.4.0"
 
-stahlwerk_extension = { git = "https://github.com/qitechgmbh/stahlwerk-extension.git", branch = "main" }
+stahlwerk_extension = { git = "https://github.com/qitechgmbh/stahlwerk-extension.git", rev = "fe2da5a" }
 
 [dev-dependencies]
 approx = "0.5.1"
