@@ -4,13 +4,13 @@ buildNpmPackage rec {
   pname = "qitech-control-electron";
   version = "1.0.0";
 
-  src = ../../electron;
+  srcs = ../../electron;
   sourceRoot = "electron";
 
   ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
 
   makeCacheWritable = true;
-  npmDepsHash = "sha256-NlRsQE1+Ssr/L09W5ztHUxsIrADlyJp/SQn7WSY3enY=";
+  npmDepsHash = "sha256-30p1Z9lCd1GLC/VpbbovJtjRJtGh5E4bKjrxXCbj9l0=";
   npmFlags = [ "--no-audit" "--no-fund" ];
 
   installPhase = ''

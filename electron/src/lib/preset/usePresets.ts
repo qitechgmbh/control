@@ -132,7 +132,7 @@ export function usePresets<T>({
     if (latestPresetId === undefined) {
       const preset = store.insert({
         id: undefined,
-        name: "Latest Machine Stettings",
+        name: "Latest Machine Settings",
         machineIdentification: machine_identification,
         lastModified: new Date(),
         schemaVersion,

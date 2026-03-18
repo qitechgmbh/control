@@ -83,12 +83,14 @@ import { WagoPower1Page } from "@/machines/wago_power/wago_power1/WagoPower1Page
 import { WagoPower1ControlPage } from "@/machines/wago_power/wago_power1/WagoPower1ControlPage";
 import { WagoDoTestMachinePage } from "@/machines/minimal_machines/wagodotestmachine/WagoDoTestMachinePage";
 import { WagoDoTestMachineControlPage } from "@/machines/minimal_machines/wagodotestmachine/WagoDoTestMachineControlPage";
-import { Wago750_501TestMachinePage } from "@/machines/minimal_machines/wago750501testmachine/Wago750_501TestMachinePage";
-import { Wago750_501TestMachineControlPage } from "@/machines/minimal_machines/wago750501testmachine/Wago750_501TestMachineControlPage";
 import { Wago8chDioTestMachinePage } from "@/machines/minimal_machines/wago8chdiotestmachine/wago8chDioTestMachinePage";
 import { Wago8chDioTestMachineControlRoute } from "@/machines/minimal_machines/wago8chdiotestmachine/wago8chDioTestMachineControlPage";
+import { Wago750_501TestMachinePage } from "@/machines/minimal_machines/wago750501testmachine/Wago750_501TestMachinePage";
+import { Wago750_501TestMachineControlPage } from "@/machines/minimal_machines/wago750501testmachine/Wago750_501TestMachineControlPage";
 import { Wago750430DiMachinePage } from "@/machines/minimal_machines/wago750430dimachine/Wago750430DiMachinePage";
 import { Wago750430DiMachineControlPage } from "@/machines/minimal_machines/wago750430dimachine/Wago750430DiMachineControlPage";
+import { Wago750_553MachinePage } from "@/machines/minimal_machines/wago750553machine/Wago750_553MachinePage";
+import { Wago750_553MachineControlPage } from "@/machines/minimal_machines/wago750553machine/Wago750_553MachineControlPage";
 
 import { Wago750460MachinePage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachinePage";
 import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachineControlPage";
@@ -140,6 +142,16 @@ export const wago750460MachineControlRoute = createRoute({
   getParentRoute: () => wago750460MachineSerialRoute,
   path: "control",
   component: () => <Wago750460MachineControlPage />,
+export const wago750_553MachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wago750553machine/$serial",
+  component: () => <Wago750_553MachinePage />,
+});
+
+export const wago750_553MachineControlRoute = createRoute({
+  getParentRoute: () => wago750_553MachineSerialRoute,
+  path: "control",
+  component: () => <Wago750_553MachineControlPage />,
 });
 
 // Leaf route: control page
@@ -672,6 +684,9 @@ export const rootTree = RootRoute.addChildren([
       ]),
 
       wago750460MachineSerialRoute.addChildren([wago750460MachineControlRoute]),
+      wago750_553MachineSerialRoute.addChildren([
+        wago750_553MachineControlRoute,
+      ]),
     ]),
   ]),
 ]);
