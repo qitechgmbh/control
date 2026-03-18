@@ -20,12 +20,6 @@ export function Page() {
           title: "Graphs",
           icon: "lu:ChartSpline",
         },
-        {
-          link: "presets",
-          activeLink: "presets",
-          title: "Presets",
-          icon: "lu:Save",
-        },
       ]}
     />
   );
