@@ -142,6 +142,8 @@ export const wago750460MachineControlRoute = createRoute({
   getParentRoute: () => wago750460MachineSerialRoute,
   path: "control",
   component: () => <Wago750460MachineControlPage />,
+});
+
 export const wago750_553MachineSerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "wago750553machine/$serial",
