@@ -28,27 +28,37 @@ export function ControlPage() {
     <Page>
       <ControlGrid columns={2}>
         <ControlCard title="Measurements">
-          <Label label="Current Weight">
-            <TimeSeriesValueNumeric
-              label="Current Weight"
-              unit="kg"
-              renderValue={(v) => v.toFixed(0)}
-              timeseries={weightPrev}
-            />
-          </Label>
-          <Label label="Peak Weight">
-            <TimeSeriesValueNumeric
-              label="Peak Weight"
-              unit="kg"
-              renderValue={(v) => v.toFixed(0)}
-              timeseries={weightPeak}
-            />
-          </Label>      
+          <TimeSeriesValueNumeric
+            label="Current Weight"
+            unit="kg"
+            renderValue={(v) => v.toFixed(0)}
+            timeseries={weightPrev}
+          />
+          <TimeSeriesValueNumeric
+            label="Peak Weight"
+            unit="kg"
+            renderValue={(v) => v.toFixed(0)}
+            timeseries={weightPeak}
+          />    
         </ControlCard>
 
-        <ControlCard title="Plate Counter">
+        <ControlCard title="Service Info">
           <DisplayValue
             title="Target Quantity"
+            icon="lu:Tally1"
+            unit="pcs"
+            value={state?.plates_counted}
+            renderValue={(v) => v.toFixed(0)}
+          />
+
+          (
+            <div className="flex flex-col gap-1">
+              <span>{"Active Workorder: " + state?.current_workorder }</span>
+            </div>
+          )
+
+          <DisplayValue
+            title="Active Workorder"
             icon="lu:Tally1"
             unit="pcs"
             value={state?.plates_counted}

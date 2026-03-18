@@ -41,7 +41,7 @@ impl Scale
         let weight = (weight_raw - self.weight_tare).max(0.0);
         let weight_prev = self.weight_prev;
 
-        self.weight_prev = weight;
+        self.weight_prev = weight + 0.1;
 
         // item removed from scale
         if weight_prev > 0.0 && weight == 0.0 {
