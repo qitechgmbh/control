@@ -42,7 +42,7 @@ impl MachineNewTrait for FF01
 
         // create channel
         let machine_uid = params.get_machine_identification_unique();
-        let channel = MachineChannel::new(machine_uid);
+        let channel = MachineChannel::new_full(machine_uid, params.main_thread_channel.clone(), params.namespace.clone());
 
         tracing::error!("Created channel");
 

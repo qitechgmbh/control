@@ -455,6 +455,22 @@ impl MachineChannel {
             namespace: None,
         }
     }
+
+    pub fn new_full(
+        machine_identification_unique: MachineIdentificationUnique,
+        main_sender: Option<Sender<AsyncThreadMessage>>,
+        namespace: Option<Namespace>,
+    ) -> Self {
+        let (sender, receiver) = smol::channel::unbounded();
+
+        Self {
+            api_sender: sender,
+            api_receiver: receiver,
+            machine_identification_unique,
+            main_sender,
+            namespace,
+        }
+    }
 }
 
 impl<E> NamespaceCacheingLogic<E> for MachineChannel
