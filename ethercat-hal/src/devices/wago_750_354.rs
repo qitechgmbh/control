@@ -5,6 +5,9 @@ use super::{
 use crate::devices::wago_modules::wago_750_430::{
     WAGO_750_430_MODULE_IDENT, WAGO_750_430_PRODUCT_ID,
 };
+use crate::devices::wago_modules::wago_750_553::{
+    WAGO_750_553_MODULE_IDENT, WAGO_750_553_PRODUCT_ID,
+};
 use crate::devices::wago_modules::*;
 use crate::{
     devices::{
@@ -316,6 +319,11 @@ impl Wago750_354 {
                     module.has_rx = true;
                     module.name = "750-672".to_string();
                 }
+                WAGO_750_553_PRODUCT_ID => {
+                    module.has_tx = true;
+                    module.has_rx = true;
+                    module.name = "750-553".to_string();
+                }
                 _ => println!(
                     "Wago-750-354 found Unknown/Unimplemented Module: {}",
                     ident_iom
@@ -398,6 +406,9 @@ impl Wago750_354 {
                         }
                         WAGO_750_672_MODULE_IDENT => {
                             Arc::new(RwLock::new(wago_750_672::Wago750_672::new()))
+                        }
+                        WAGO_750_553_MODULE_IDENT => {
+                            Arc::new(RwLock::new(wago_750_553::Wago750_553::new()))
                         }
                         _ => {
                             println!(

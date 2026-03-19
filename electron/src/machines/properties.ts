@@ -597,6 +597,30 @@ export const ip20TestMachine: MachineProperties = {
   ],
 };
 
+export const testmachinestepper: MachineProperties = {
+  name: "TestMachineStepper",
+  version: "V1",
+  slug: "testmachinestepper",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0037,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x00000021,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+
 export const TestMotor: MachineProperties = {
   name: "TestMotor",
   version: "V1",
@@ -679,41 +703,6 @@ export const wagoAiTestMachine: MachineProperties = {
   ],
 };
 
-export const testmachinestepper: MachineProperties = {
-  name: "TestMachineStepper",
-  version: "V1",
-  slug: "testmachinestepper",
-  icon: "lu:Disc3",
-  machine_identification: {
-    vendor: VENDOR_QITECH,
-    machine: 0x0037,
-  },
-  device_roles: [
-    {
-      role: 0,
-      role_label: "Bus Coupler",
-      allowed_devices: [
-        {
-          vendor_id: 0x00000021,
-          product_id: 0x07500354,
-          revision: 0x2,
-        },
-      ],
-    },
-    {
-      role: 1,
-      role_label: "Stepper Motor",
-      allowed_devices: [
-        {
-          vendor_id: 0x00000021,
-          product_id: 0x67214e8,
-          revision: 0x2,
-        },
-      ],
-    },
-  ],
-};
-
 export const wagoSerial: MachineProperties = {
   name: "WagoSerial",
   version: "V1",
@@ -742,6 +731,30 @@ export const wagoSerial: MachineProperties = {
         {
           vendor_id: 0x00000021,
           product_id: 0x6521772,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+
+export const wago750_553Machine: MachineProperties = {
+  name: "Wago 750-553 AO",
+  version: "V1",
+  slug: "wago750553machine",
+  icon: "lu:SlidersHorizontal",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0044,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Wago 750-354 Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x21,
+          product_id: 0x07500354,
           revision: 0x2,
         },
       ],
@@ -791,6 +804,7 @@ export const machineProperties: MachineProperties[] = [
   ip20TestMachine,
   wagoDoTestMachine,
   wago750_501TestMachine,
+  wago750_553Machine,
   TestMotor,
   testmachinestepper,
   wagoSerial,

@@ -5,13 +5,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { TouchButton } from "../touch/TouchButton";
 import { DialogHeader } from "../ui/dialog";
 import { Icon } from "../Icon";
 import { Separator } from "../ui/separator";
 import { PresetPreviewEntries, PresetPreviewTable } from "./PresetPreviewTable";
 import { Input } from "../ui/input";
+import { TouchKeyboard } from "../touch/TouchKeyboard";
 
 export type NewPresetDialogProps<T> = {
   currentState?: T;
@@ -26,22 +27,57 @@ export function NewPresetDialog<T>({
 }: NewPresetDialogProps<T>) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleSave = () => {
+  const resetDialog = () => {
     setOpen(false);
     setName("");
-    onSave(name);
+    setKeyboardVisible(false);
+  };
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+
+    if (!nextOpen) {
+      setName("");
+      setKeyboardVisible(false);
+      return;
+    }
+
+    setKeyboardVisible(true);
+  };
+
+  const handleSave = () => {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return;
+    }
+
+    onSave(trimmedName);
+    resetDialog();
+  };
+
+  const showKeyboard = () => {
+    setKeyboardVisible(true);
+    inputRef.current?.focus();
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <TouchButton disabled={!currentState} icon="lu:SquarePlus">
           Create New Preset
         </TouchButton>
       </DialogTrigger>
 
-      <DialogContent>
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto sm:max-w-4xl"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          showKeyboard();
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex flex-row items-center gap-2">
             <Icon name="lu:SquarePlus" />
@@ -53,11 +89,49 @@ export function NewPresetDialog<T>({
         </DialogHeader>
         <Separator />
 
-        <Input
-          placeholder="New Preset Name"
-          onChange={(e) => setName(e.target.value)}
-          className="w-full"
+        <div className="flex flex-col gap-3">
+          <label
+            htmlFor="new-preset-name"
+            className="text-sm font-medium tracking-wide"
+          >
+            Preset Name
+          </label>
+          <div className="flex gap-3">
+            <Input
+              id="new-preset-name"
+              ref={inputRef}
+              readOnly
+              value={name}
+              placeholder="Tap to enter preset name"
+              onFocus={showKeyboard}
+              onClick={showKeyboard}
+              className="h-14 text-lg"
+            />
+            <TouchButton
+              type="button"
+              variant="outline"
+              icon={keyboardVisible ? "lu:KeyboardOff" : "lu:Keyboard"}
+              onClick={() => {
+                if (keyboardVisible) {
+                  setKeyboardVisible(false);
+                  return;
+                }
+
+                showKeyboard();
+              }}
+            >
+              {keyboardVisible ? "Hide" : "Edit"}
+            </TouchButton>
+          </div>
+        </div>
+
+        <TouchKeyboard
+          value={name}
+          onChange={setName}
+          onEnter={handleSave}
+          visible={keyboardVisible}
         />
+
         <div className="flex flex-col gap-6 text-sm">
           <span>Current Settings:</span>
           <PresetPreviewTable entries={previewEntries} data={currentState} />
@@ -69,7 +143,7 @@ export function NewPresetDialog<T>({
             variant="outline"
             icon="lu:X"
             className="h-21 flex-1"
-            onClick={() => setOpen(false)}
+            onClick={resetDialog}
           >
             Abort
           </TouchButton>
@@ -78,7 +152,7 @@ export function NewPresetDialog<T>({
             className="h-21 flex-1 flex-shrink-0"
             onClick={handleSave}
             icon="lu:Save"
-            disabled={!name}
+            disabled={!name.trim()}
           >
             Save
           </TouchButton>
