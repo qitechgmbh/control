@@ -199,9 +199,6 @@ impl XtremSerial {
 
             // Update shared state
             {
-                
-                tracing::info!("data: {:?}", total_weight);
-
                 let mut device = this.write().await;
                 device.data = Some(XtremData {
                     current_weight: total_weight,

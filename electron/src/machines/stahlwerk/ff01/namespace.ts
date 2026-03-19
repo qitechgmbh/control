@@ -34,7 +34,7 @@ export const liveValuesEventDataSchema = z.object({
 export const targetRangeDataSchema = z.object({
   min: z.number(),
   max: z.number(),
-  desirec: z.number(),
+  desired: z.number(),
 });
 
 export const entryDataSchema = z.object({
