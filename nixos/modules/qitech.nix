@@ -15,7 +15,11 @@ in {
         "Whether to open ports in the firewall for the QiTech server";
     };
     
-    networking.firewall = mkIf cfg.openFirewall { allowedTCPPorts = [ 443 ]; };
+    networking.firewall = mkIf cfg.openFirewall {
+      allowedTCPPorts = [ 3001 53 ];
+      allowedUDPPorts = [ 4444 5555 53 67 68 ];
+    };
+
 
     user = mkOption {
       type = types.str;
@@ -136,6 +140,7 @@ in {
         value = "-20";
       }
     ];
+
     # needed so dnsmasq can get managed by server
     security.polkit.extraConfig = ''
       polkit.addRule(function(action, subject) {
