@@ -91,6 +91,16 @@ export const pidStatesSchema = z.object({
   back: pidStateSchema,
   front: pidStateSchema,
 });
+
+export const thermalSafetyStateSchema = z.object({
+  shared_delay: z.number(),
+  cooldown_min_temperature: z.number(),
+});
+
+export const thermalSafetyStatesSchema = z.object({
+  back: thermalSafetyStateSchema,
+  front: thermalSafetyStateSchema,
+});
 /**
  * Live values event schema (time-series data)
  */
@@ -109,6 +119,10 @@ export const liveValuesEventDataSchema = z.object({
   back_heating: z.boolean().optional().default(false),
   front_cooling_mode: coolingModeSchema.nullable().optional().default(null),
   back_cooling_mode: coolingModeSchema.nullable().optional().default(null),
+  front_pump_cooldown_active: z.boolean().optional().default(false),
+  back_pump_cooldown_active: z.boolean().optional().default(false),
+  front_pump_cooldown_remaining: z.number().optional().default(0),
+  back_pump_cooldown_remaining: z.number().optional().default(0),
   front_total_energy: z.number(),
   back_total_energy: z.number(),
 });
@@ -126,6 +140,7 @@ export const stateEventDataSchema = z.object({
   cooling_mode_states: coolingModeStatesSchema,
   tolerance_states: toleranceStatesSchema,
   pid_states: pidStatesSchema,
+  thermal_safety_states: thermalSafetyStatesSchema,
 });
 
 export const noticeEventDataSchema = z.object({
@@ -170,6 +185,10 @@ export type Aquapath1NamespaceStore = {
   back_heating: boolean;
   front_cooling_mode: "Low" | "Ramp" | "Max" | null;
   back_cooling_mode: "Low" | "Ramp" | "Max" | null;
+  front_pump_cooldown_active: boolean;
+  back_pump_cooldown_active: boolean;
+  front_pump_cooldown_remaining: number;
+  back_pump_cooldown_remaining: number;
   targetFrontTemperature: TimeSeries;
   targetBackTemperature: TimeSeries;
 };
@@ -231,6 +250,10 @@ export const createAquapath1NamespaceStore =
         back_heating: false,
         front_cooling_mode: null,
         back_cooling_mode: null,
+        front_pump_cooldown_active: false,
+        back_pump_cooldown_active: false,
+        front_pump_cooldown_remaining: 0,
+        back_pump_cooldown_remaining: 0,
         targetFrontTemperature: targetFrontTemperature,
         targetBackTemperature: targetBackTemperature,
       };
@@ -369,6 +392,14 @@ export function aquapath1MessageHandler(
           back_heating: liveValuesEvent.data.back_heating,
           front_cooling_mode: liveValuesEvent.data.front_cooling_mode,
           back_cooling_mode: liveValuesEvent.data.back_cooling_mode,
+          front_pump_cooldown_active:
+            liveValuesEvent.data.front_pump_cooldown_active,
+          back_pump_cooldown_active:
+            liveValuesEvent.data.back_pump_cooldown_active,
+          front_pump_cooldown_remaining:
+            liveValuesEvent.data.front_pump_cooldown_remaining,
+          back_pump_cooldown_remaining:
+            liveValuesEvent.data.back_pump_cooldown_remaining,
         }));
       } else {
         handleUnhandledEventError(eventName);

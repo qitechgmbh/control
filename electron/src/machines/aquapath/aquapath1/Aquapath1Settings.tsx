@@ -29,9 +29,14 @@ export function Aquapath1SettingsPage() {
     setBackPidKp,
     setBackPidKi,
     setBackPidKd,
+    setFrontThermalFlowSettleDuration,
+    setBackThermalFlowSettleDuration,
+    setFrontPumpCooldownMinTemperature,
+    setBackPumpCooldownMinTemperature,
   } = useAquapath1();
   const frontTemp = state?.temperature_states.front.temperature;
   const backTemp = state?.temperature_states.back.temperature;
+  const isStandby = state?.mode_state.mode === "Standby";
   const currentSensorAmbientCandidate =
     frontTemp != null && backTemp != null
       ? Math.min(frontTemp, backTemp)
@@ -154,6 +159,40 @@ export function Aquapath1SettingsPage() {
           </div>
         </ControlCard>
 
+        <ControlCard title="Reservoir 1 (Back) Thermal Flow Safety">
+          <Label label="Shared Flow Delay">
+            <EditValue
+              title="Set Reservoir 1 Shared Flow Delay"
+              min={0}
+              value={state?.thermal_safety_states.back.shared_delay}
+              max={30}
+              step={0.5}
+              unit="s"
+              renderValue={(value) => value.toFixed(1)}
+              disabled={!isStandby}
+              onChange={(val) => {
+                setBackThermalFlowSettleDuration(val);
+              }}
+            />
+          </Label>
+
+          <Label label="Pump Cooldown Min Temperature">
+            <EditValue
+              title="Set Reservoir 1 Pump Cooldown Min Temperature"
+              min={10}
+              value={state?.thermal_safety_states.back.cooldown_min_temperature}
+              max={80}
+              step={0.5}
+              unit="C"
+              renderValue={(value) => value.toFixed(1)}
+              disabled={!isStandby}
+              onChange={(val) => {
+                setBackPumpCooldownMinTemperature(val);
+              }}
+            />
+          </Label>
+        </ControlCard>
+
         <ControlCard title="Reservoir 2 (Front) Temperature Tolerances">
           <Label label="Set Heating Tolerance">
             <EditValue
@@ -196,6 +235,42 @@ export function Aquapath1SettingsPage() {
               Reset to Default
             </Button>
           </div>
+        </ControlCard>
+
+        <ControlCard title="Reservoir 2 (Front) Thermal Flow Safety">
+          <Label label="Shared Flow Delay">
+            <EditValue
+              title="Set Reservoir 2 Shared Flow Delay"
+              min={0}
+              value={state?.thermal_safety_states.front.shared_delay}
+              max={30}
+              step={0.5}
+              unit="s"
+              renderValue={(value) => value.toFixed(1)}
+              disabled={!isStandby}
+              onChange={(val) => {
+                setFrontThermalFlowSettleDuration(val);
+              }}
+            />
+          </Label>
+
+          <Label label="Pump Cooldown Min Temperature">
+            <EditValue
+              title="Set Reservoir 2 Pump Cooldown Min Temperature"
+              min={10}
+              value={
+                state?.thermal_safety_states.front.cooldown_min_temperature
+              }
+              max={80}
+              step={0.5}
+              unit="C"
+              renderValue={(value) => value.toFixed(1)}
+              disabled={!isStandby}
+              onChange={(val) => {
+                setFrontPumpCooldownMinTemperature(val);
+              }}
+            />
+          </Label>
         </ControlCard>
 
         <ControlCard title="Reservoir 1 (Back) PID Settings">
