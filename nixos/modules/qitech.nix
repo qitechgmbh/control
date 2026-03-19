@@ -7,6 +7,13 @@ in {
   options.services.qitech = {
     enable = mkEnableOption "QiTech Control";
 
+    openFirewall = mkOption {
+      type = types.bool;
+      default = false;
+      description =
+        "Whether to open ports in the firewall for the QiTech server";
+    };
+
     user = mkOption {
       type = types.str;
       default = "qitech-service";
