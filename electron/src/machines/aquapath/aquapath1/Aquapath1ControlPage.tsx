@@ -26,6 +26,10 @@ export function Aquapath1ControlPage() {
     back_pump_cooldown_active,
     front_pump_cooldown_remaining,
     back_pump_cooldown_remaining,
+    front_heating_startup_wait_active,
+    back_heating_startup_wait_active,
+    front_heating_startup_wait_remaining,
+    back_heating_startup_wait_remaining,
     setAquapathMode,
     setFrontTemperature,
     setBackTemperature,
@@ -48,6 +52,12 @@ export function Aquapath1ControlPage() {
   const reservoir2PumpCooldownActive = front_pump_cooldown_active;
   const reservoir1PumpCooldownRemaining = back_pump_cooldown_remaining;
   const reservoir2PumpCooldownRemaining = front_pump_cooldown_remaining;
+  const reservoir1HeatingStartupWaitActive = back_heating_startup_wait_active;
+  const reservoir2HeatingStartupWaitActive = front_heating_startup_wait_active;
+  const reservoir1HeatingStartupWaitRemaining =
+    back_heating_startup_wait_remaining;
+  const reservoir2HeatingStartupWaitRemaining =
+    front_heating_startup_wait_remaining;
   const reservoir1MaxRevolutions =
     state?.fan_states.back.max_revolutions ?? 100;
   const reservoir2MaxRevolutions =
@@ -124,6 +134,16 @@ export function Aquapath1ControlPage() {
                 >
                   <Icon name="lu:Waves" className="size-5" />
                   {renderCooldown(reservoir1PumpCooldownRemaining)}
+                </Badge>
+              )}
+
+              {reservoir1HeatingStartupWaitActive && (
+                <Badge
+                  variant="secondary"
+                  className="h-18 min-w-28 justify-center self-end border-transparent bg-emerald-100 px-4 text-base text-emerald-900 [&>svg]:size-5"
+                >
+                  <Icon name="lu:Droplets" className="size-5" />
+                  {renderCooldown(reservoir1HeatingStartupWaitRemaining)}
                 </Badge>
               )}
             </div>
@@ -237,6 +257,16 @@ export function Aquapath1ControlPage() {
                 >
                   <Icon name="lu:Waves" className="size-5" />
                   {renderCooldown(reservoir2PumpCooldownRemaining)}
+                </Badge>
+              )}
+
+              {reservoir2HeatingStartupWaitActive && (
+                <Badge
+                  variant="secondary"
+                  className="h-18 min-w-28 justify-center self-end border-transparent bg-emerald-100 px-4 text-base text-emerald-900 [&>svg]:size-5"
+                >
+                  <Icon name="lu:Droplets" className="size-5" />
+                  {renderCooldown(reservoir2HeatingStartupWaitRemaining)}
                 </Badge>
               )}
             </div>

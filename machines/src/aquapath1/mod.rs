@@ -160,6 +160,20 @@ impl AquaPathV1 {
                 .back_controller
                 .get_pump_cooldown_remaining(now)
                 .as_secs_f64(),
+            front_heating_startup_wait_active: self
+                .front_controller
+                .is_heating_startup_wait_active(now),
+            back_heating_startup_wait_active: self
+                .back_controller
+                .is_heating_startup_wait_active(now),
+            front_heating_startup_wait_remaining: self
+                .front_controller
+                .get_heating_startup_wait_remaining(now)
+                .as_secs_f64(),
+            back_heating_startup_wait_remaining: self
+                .back_controller
+                .get_heating_startup_wait_remaining(now)
+                .as_secs_f64(),
             front_total_energy: self.front_controller.get_total_energy(),
             back_total_energy: self.back_controller.get_total_energy(),
         }
@@ -283,7 +297,7 @@ impl AquaPathV1 {
             },
             thermal_safety_states: ThermalSafetyStates {
                 front: ThermalSafetyState {
-                    shared_delay: self
+                    thermal_delay: self
                         .front_controller
                         .get_thermal_flow_settle_duration()
                         .as_secs_f64(),
@@ -293,7 +307,7 @@ impl AquaPathV1 {
                         .get::<degree_celsius>(),
                 },
                 back: ThermalSafetyState {
-                    shared_delay: self
+                    thermal_delay: self
                         .back_controller
                         .get_thermal_flow_settle_duration()
                         .as_secs_f64(),
