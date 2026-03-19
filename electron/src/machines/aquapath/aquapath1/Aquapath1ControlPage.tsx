@@ -9,6 +9,7 @@ import { EditValue } from "@/control/EditValue";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/Icon";
 import { Label } from "@/control/Label";
+import { roundToDecimals } from "@/lib/decimal";
 
 export function Aquapath1ControlPage() {
   const {
@@ -18,6 +19,10 @@ export function Aquapath1ControlPage() {
     back_flow,
     front_temperature,
     back_temperature,
+    front_power,
+    back_power,
+    combinedPower,
+    totalEnergyKWh,
     front_heating,
     back_heating,
     front_revolutions,
@@ -163,6 +168,15 @@ export function Aquapath1ControlPage() {
             </div>
 
             <div className="flex flex-row">
+              <TimeSeriesValueNumeric
+                label="Heating Wattage"
+                unit="W"
+                timeseries={back_power}
+                renderValue={(value) => roundToDecimals(value, 0)}
+              />
+            </div>
+
+            <div className="flex flex-row">
               <Label label="Pump">
                 <SelectionGroup<"On" | "Off">
                   value={reservoir1TargetFlow ? "On" : "Off"}
@@ -286,6 +300,15 @@ export function Aquapath1ControlPage() {
             </div>
 
             <div className="flex flex-row">
+              <TimeSeriesValueNumeric
+                label="Heating Wattage"
+                unit="W"
+                timeseries={front_power}
+                renderValue={(value) => roundToDecimals(value, 0)}
+              />
+            </div>
+
+            <div className="flex flex-row">
               <Label label="Pump">
                 <SelectionGroup<"On" | "Off">
                   value={reservoir2TargetFlow ? "On" : "Off"}
@@ -334,6 +357,21 @@ export function Aquapath1ControlPage() {
               },
             }}
             onChange={(value) => setAquapathMode(value)}
+          />
+        </ControlCard>
+
+        <ControlCard className="bg-blue" title="Power Consumption">
+          <TimeSeriesValueNumeric
+            label="Total Power"
+            unit="W"
+            renderValue={(value) => roundToDecimals(value, 0)}
+            timeseries={combinedPower}
+          />
+          <TimeSeriesValueNumeric
+            label="Total Energy Consumption"
+            unit="kWh"
+            renderValue={(value) => roundToDecimals(value, 3)}
+            timeseries={totalEnergyKWh}
           />
         </ControlCard>
       </ControlGrid>

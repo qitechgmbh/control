@@ -182,9 +182,11 @@ export type Aquapath1NamespaceStore = {
 
   front_power: TimeSeries;
   back_power: TimeSeries;
+  combinedPower: TimeSeries;
 
   front_total_energy: TimeSeries;
   back_total_energy: TimeSeries;
+  totalEnergyKWh: TimeSeries;
   front_heating: boolean;
   back_heating: boolean;
   front_cooling_mode: "Low" | "Ramp" | "Max" | null;
@@ -219,9 +221,13 @@ const { initialTimeSeries: front_power, insert: addFrontPower } =
   createTimeSeries();
 const { initialTimeSeries: back_power, insert: addBackPower } =
   createTimeSeries();
+const { initialTimeSeries: combinedPower, insert: addCombinedPower } =
+  createTimeSeries();
 const { initialTimeSeries: front_total_energy, insert: addFrontEnergy } =
   createTimeSeries();
 const { initialTimeSeries: back_total_energy, insert: addBackEnergy } =
+  createTimeSeries();
+const { initialTimeSeries: totalEnergyKWh, insert: addTotalEnergyKWh } =
   createTimeSeries();
 const {
   initialTimeSeries: targetFrontTemperature,
@@ -252,8 +258,10 @@ export const createAquapath1NamespaceStore =
         back_revolutions: back_revolutions,
         back_power: back_power,
         front_power: front_power,
+        combinedPower: combinedPower,
         front_total_energy: front_total_energy,
         back_total_energy: back_total_energy,
+        totalEnergyKWh: totalEnergyKWh,
         front_heating: false,
         back_heating: false,
         front_cooling_mode: null,
@@ -392,12 +400,25 @@ export function aquapath1MessageHandler(
             value: liveValuesEvent.data.back_power,
             timestamp: event.ts,
           }),
+          combinedPower: addCombinedPower(state.combinedPower, {
+            value:
+              liveValuesEvent.data.front_power +
+              liveValuesEvent.data.back_power,
+            timestamp: event.ts,
+          }),
           front_total_energy: addFrontEnergy(state.front_total_energy, {
             value: liveValuesEvent.data.front_total_energy,
             timestamp: event.ts,
           }),
           back_total_energy: addBackEnergy(state.back_total_energy, {
             value: liveValuesEvent.data.back_total_energy,
+            timestamp: event.ts,
+          }),
+          totalEnergyKWh: addTotalEnergyKWh(state.totalEnergyKWh, {
+            value:
+              (liveValuesEvent.data.front_total_energy +
+                liveValuesEvent.data.back_total_energy) /
+              1000,
             timestamp: event.ts,
           }),
           front_heating: liveValuesEvent.data.front_heating,
