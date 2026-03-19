@@ -384,6 +384,11 @@ impl std::fmt::Display for AquaPathV1 {
     }
 }
 impl AquaPathV1 {
+    fn request_pump_off(&mut self) {
+        self.front_controller.set_should_pump(false);
+        self.back_controller.set_should_pump(false);
+    }
+
     fn turn_cooling_off(&mut self) {
         self.front_controller.disable_cooling();
         self.back_controller.disable_cooling();
@@ -409,15 +414,10 @@ impl AquaPathV1 {
         self.back_controller.allow_pump();
     }
 
-    fn turn_pump_off(&mut self) {
-        self.front_controller.disallow_pump();
-        self.back_controller.disallow_pump();
-    }
-
     fn turn_off_all(&mut self) {
         self.turn_cooling_off();
         self.turn_heating_off();
-        self.turn_pump_off();
+        self.request_pump_off();
     }
 
     fn turn_on_all(&mut self) {

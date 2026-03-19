@@ -176,6 +176,13 @@ export function Aquapath1SettingsPage() {
             />
           </Label>
 
+          {!isStandby && (
+            <p className="text-muted-foreground mt-3 text-sm">
+              Thermal safety settings cannot be modified unless the controller
+              is in standby.
+            </p>
+          )}
+
           <Label label="Pump Cooldown Min Temperature">
             <EditValue
               title="Set Reservoir 1 Pump Cooldown Min Temperature"
@@ -253,6 +260,13 @@ export function Aquapath1SettingsPage() {
               }}
             />
           </Label>
+
+          {!isStandby && (
+            <p className="text-muted-foreground mt-3 text-sm">
+              Thermal safety settings cannot be modified unless the controller
+              is in standby.
+            </p>
+          )}
 
           <Label label="Pump Cooldown Min Temperature">
             <EditValue
