@@ -28,6 +28,10 @@ pub struct LiveValuesEvent {
     pub back_heating: bool,
     pub front_cooling_mode: Option<CoolingMode>,
     pub back_cooling_mode: Option<CoolingMode>,
+    pub front_pump_cooldown_active: bool,
+    pub back_pump_cooldown_active: bool,
+    pub front_pump_cooldown_remaining: f64,
+    pub back_pump_cooldown_remaining: f64,
     pub front_total_energy: f64,
     pub back_total_energy: f64,
 }
@@ -55,6 +59,7 @@ pub struct StateEvent {
     pub cooling_mode_states: CoolingModeStates,
     pub tolerance_states: ToleranceStates,
     pub pid_states: PidStates,
+    pub thermal_safety_states: ThermalSafetyStates,
 }
 
 impl StateEvent {
@@ -148,6 +153,18 @@ pub struct PidStates {
     pub back: PidState,
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct ThermalSafetyState {
+    pub shared_delay: f64,
+    pub cooldown_min_temperature: f64,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ThermalSafetyStates {
+    pub front: ThermalSafetyState,
+    pub back: ThermalSafetyState,
+}
+
 pub enum AquaPathV1Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
@@ -178,6 +195,10 @@ enum Mutation {
     SetBackPidKp(f64),
     SetBackPidKi(f64),
     SetBackPidKd(f64),
+    SetFrontThermalFlowSettleDuration(f64),
+    SetBackThermalFlowSettleDuration(f64),
+    SetFrontPumpCooldownMinTemperature(f64),
+    SetBackPumpCooldownMinTemperature(f64),
     SetAmbientTemperatureCalibration(f64),
 }
 
@@ -276,6 +297,18 @@ impl MachineApi for AquaPathV1 {
             }
             Mutation::SetBackPidKd(value) => {
                 self.set_pid_kd(value, super::AquaPathSideType::Back);
+            }
+            Mutation::SetFrontThermalFlowSettleDuration(value) => {
+                self.set_thermal_flow_settle_duration(value, super::AquaPathSideType::Front);
+            }
+            Mutation::SetBackThermalFlowSettleDuration(value) => {
+                self.set_thermal_flow_settle_duration(value, super::AquaPathSideType::Back);
+            }
+            Mutation::SetFrontPumpCooldownMinTemperature(value) => {
+                self.set_pump_cooldown_min_temperature(value, super::AquaPathSideType::Front);
+            }
+            Mutation::SetBackPumpCooldownMinTemperature(value) => {
+                self.set_pump_cooldown_min_temperature(value, super::AquaPathSideType::Back);
             }
             Mutation::SetAmbientTemperatureCalibration(ambient_temp) => {
                 self.set_ambient_temperature_calibration(ambient_temp);

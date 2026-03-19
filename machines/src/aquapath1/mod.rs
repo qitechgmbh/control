@@ -13,7 +13,7 @@ use crate::{
         api::{
             AquaPathV1Events, AquaPathV1Namespace, CoolingModeState, CoolingModeStates, FanState,
             FanStates, FlowState, FlowStates, LiveValuesEvent, ModeState, NoticeEvent, PidState,
-            PidStates, StateEvent, TempState, TempStates,
+            PidStates, StateEvent, TempState, TempStates, ThermalSafetyState, ThermalSafetyStates,
         },
         controller::{ControlResetReason, Controller, ControllerNotice},
     },
@@ -112,8 +112,17 @@ impl AquaPathV1 {
     pub const DEFAULT_PID_KP: f64 = 0.16;
     pub const DEFAULT_PID_KI: f64 = 0.02;
     pub const DEFAULT_PID_KD: f64 = 0.0;
+    // in s
+    pub const THERMAL_FLOW_SETTLE_DURATION_MIN: f64 = 0.0;
+    // in s
+    pub const THERMAL_FLOW_SETTLE_DURATION_MAX: f64 = 30.0;
+    // in °C
+    pub const PUMP_COOLDOWN_MIN_TEMPERATURE_MIN: f64 = 10.0;
+    // in °C
+    pub const PUMP_COOLDOWN_MIN_TEMPERATURE_MAX: f64 = 80.0;
 
     pub fn get_live_values(&self) -> LiveValuesEvent {
+        let now = Instant::now();
         LiveValuesEvent {
             front_temperature: self
                 .front_controller
@@ -141,6 +150,16 @@ impl AquaPathV1 {
             back_heating: self.back_controller.temperature.heating,
             front_cooling_mode: self.front_controller.cooling_mode,
             back_cooling_mode: self.back_controller.cooling_mode,
+            front_pump_cooldown_active: self.front_controller.is_pump_cooldown_active(now),
+            back_pump_cooldown_active: self.back_controller.is_pump_cooldown_active(now),
+            front_pump_cooldown_remaining: self
+                .front_controller
+                .get_pump_cooldown_remaining(now)
+                .as_secs_f64(),
+            back_pump_cooldown_remaining: self
+                .back_controller
+                .get_pump_cooldown_remaining(now)
+                .as_secs_f64(),
             front_total_energy: self.front_controller.get_total_energy(),
             back_total_energy: self.back_controller.get_total_energy(),
         }
@@ -262,6 +281,28 @@ impl AquaPathV1 {
                     kd: self.back_controller.get_pid_kd(),
                 },
             },
+            thermal_safety_states: ThermalSafetyStates {
+                front: ThermalSafetyState {
+                    shared_delay: self
+                        .front_controller
+                        .get_thermal_flow_settle_duration()
+                        .as_secs_f64(),
+                    cooldown_min_temperature: self
+                        .front_controller
+                        .get_pump_cooldown_min_temperature()
+                        .get::<degree_celsius>(),
+                },
+                back: ThermalSafetyState {
+                    shared_delay: self
+                        .back_controller
+                        .get_thermal_flow_settle_duration()
+                        .as_secs_f64(),
+                    cooldown_min_temperature: self
+                        .back_controller
+                        .get_pump_cooldown_min_temperature()
+                        .get::<degree_celsius>(),
+                },
+            },
         }
     }
 
@@ -317,6 +358,10 @@ impl AquaPathV1 {
     pub const TOLERANCE_MIN: f64 = 0.0;
     // in °C
     pub const TOLERANCE_MAX: f64 = 10.0;
+
+    fn mode_allows_standby_only_config(&self) -> bool {
+        self.mode == AquaPathV1Mode::Standby
+    }
 }
 
 impl std::fmt::Display for AquaPathV1 {
@@ -403,20 +448,20 @@ impl AquaPathV1 {
 
 impl AquaPathV1 {
     fn get_min_settable_temperature(&self) -> ThermodynamicTemperature {
-        let ambient_c = self.ambient_temperature_calibration.get::<degree_celsius>();
-        let min_c = self
+        let ambient = self.ambient_temperature_calibration.get::<degree_celsius>();
+        let min = self
             .front_controller
             .min_temperature
             .get::<degree_celsius>();
-        let max_c = self
+        let max = self
             .front_controller
             .max_temperature
             .get::<degree_celsius>();
-        ThermodynamicTemperature::new::<degree_celsius>(ambient_c.max(min_c).min(max_c))
+        ThermodynamicTemperature::new::<degree_celsius>(ambient.max(min).min(max))
     }
 
-    fn set_ambient_temperature_calibration(&mut self, ambient_temp_c: f64) {
-        let clamped = ambient_temp_c
+    fn set_ambient_temperature_calibration(&mut self, ambient_temperature: f64) {
+        let clamped = ambient_temperature
             .max(
                 self.front_controller
                     .min_temperature
@@ -432,13 +477,13 @@ impl AquaPathV1 {
 
         // Enforce the calibrated minimum immediately on already-configured targets.
         let min_settable = self.get_min_settable_temperature();
-        let min_settable_c = min_settable.get::<degree_celsius>();
+        let min_settable_temperature = min_settable.get::<degree_celsius>();
 
         if self
             .front_controller
             .target_temperature
             .get::<degree_celsius>()
-            < min_settable_c
+            < min_settable_temperature
         {
             self.front_controller.set_target_temperature(min_settable);
         }
@@ -446,7 +491,7 @@ impl AquaPathV1 {
             .back_controller
             .target_temperature
             .get::<degree_celsius>()
-            < min_settable_c
+            < min_settable_temperature
         {
             self.back_controller.set_target_temperature(min_settable);
         }
@@ -606,6 +651,74 @@ impl AquaPathV1 {
         match side {
             AquaPathSideType::Back => self.back_controller.set_pid_kd(value),
             AquaPathSideType::Front => self.front_controller.set_pid_kd(value),
+        }
+        self.emit_state();
+    }
+
+    fn set_thermal_flow_settle_duration(&mut self, duration: f64, side: AquaPathSideType) {
+        if !self.mode_allows_standby_only_config() {
+            return;
+        }
+
+        let current = match side {
+            AquaPathSideType::Back => self
+                .back_controller
+                .get_thermal_flow_settle_duration()
+                .as_secs_f64(),
+            AquaPathSideType::Front => self
+                .front_controller
+                .get_thermal_flow_settle_duration()
+                .as_secs_f64(),
+        };
+        let value = Self::sanitize_clamped(
+            duration,
+            Self::THERMAL_FLOW_SETTLE_DURATION_MIN,
+            Self::THERMAL_FLOW_SETTLE_DURATION_MAX,
+            current,
+        );
+        let duration = std::time::Duration::from_secs_f64(value);
+
+        match side {
+            AquaPathSideType::Back => self
+                .back_controller
+                .set_thermal_flow_settle_duration(duration),
+            AquaPathSideType::Front => self
+                .front_controller
+                .set_thermal_flow_settle_duration(duration),
+        }
+        self.emit_state();
+    }
+
+    fn set_pump_cooldown_min_temperature(&mut self, temperature: f64, side: AquaPathSideType) {
+        if !self.mode_allows_standby_only_config() {
+            return;
+        }
+
+        let current = match side {
+            AquaPathSideType::Back => self
+                .back_controller
+                .get_pump_cooldown_min_temperature()
+                .get::<degree_celsius>(),
+            AquaPathSideType::Front => self
+                .front_controller
+                .get_pump_cooldown_min_temperature()
+                .get::<degree_celsius>(),
+        };
+        let value = Self::sanitize_clamped(
+            temperature,
+            Self::PUMP_COOLDOWN_MIN_TEMPERATURE_MIN,
+            Self::PUMP_COOLDOWN_MIN_TEMPERATURE_MAX,
+            current,
+        );
+        let temperature = ThermodynamicTemperature::new::<degree_celsius>(value);
+
+        match side {
+            AquaPathSideType::Back => self
+                .back_controller
+                .set_pump_cooldown_min_temperature(temperature),
+            AquaPathSideType::Front => self
+                .front_controller
+                .set_pump_cooldown_min_temperature(temperature),
         }
         self.emit_state();
     }

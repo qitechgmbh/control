@@ -22,6 +22,10 @@ export function Aquapath1ControlPage() {
     back_heating,
     front_revolutions,
     back_revolutions,
+    front_pump_cooldown_active,
+    back_pump_cooldown_active,
+    front_pump_cooldown_remaining,
+    back_pump_cooldown_remaining,
     setAquapathMode,
     setFrontTemperature,
     setBackTemperature,
@@ -40,10 +44,16 @@ export function Aquapath1ControlPage() {
   const reservoir2HeaterOn = front_heating;
   const reservoir1FanOn = (back_revolutions.current?.value ?? 0) > 0;
   const reservoir2FanOn = (front_revolutions.current?.value ?? 0) > 0;
+  const reservoir1PumpCooldownActive = back_pump_cooldown_active;
+  const reservoir2PumpCooldownActive = front_pump_cooldown_active;
+  const reservoir1PumpCooldownRemaining = back_pump_cooldown_remaining;
+  const reservoir2PumpCooldownRemaining = front_pump_cooldown_remaining;
   const reservoir1MaxRevolutions =
     state?.fan_states.back.max_revolutions ?? 100;
   const reservoir2MaxRevolutions =
     state?.fan_states.front.max_revolutions ?? 100;
+
+  const renderCooldown = (value: number) => `${Math.max(value, 0).toFixed(1)}s`;
 
   return (
     <Page>
@@ -104,6 +114,16 @@ export function Aquapath1ControlPage() {
                 >
                   <Icon name="lu:Fan" className="size-5" />
                   Cooling
+                </Badge>
+              )}
+
+              {reservoir1PumpCooldownActive && (
+                <Badge
+                  variant="secondary"
+                  className="h-18 min-w-28 justify-center self-end border-transparent bg-cyan-100 px-4 text-base text-cyan-900 [&>svg]:size-5"
+                >
+                  <Icon name="lu:Waves" className="size-5" />
+                  {renderCooldown(reservoir1PumpCooldownRemaining)}
                 </Badge>
               )}
             </div>
@@ -207,6 +227,16 @@ export function Aquapath1ControlPage() {
                 >
                   <Icon name="lu:Fan" className="size-5" />
                   Cooling
+                </Badge>
+              )}
+
+              {reservoir2PumpCooldownActive && (
+                <Badge
+                  variant="secondary"
+                  className="h-18 min-w-28 justify-center self-end border-transparent bg-cyan-100 px-4 text-base text-cyan-900 [&>svg]:size-5"
+                >
+                  <Icon name="lu:Waves" className="size-5" />
+                  {renderCooldown(reservoir2PumpCooldownRemaining)}
                 </Badge>
               )}
             </div>
