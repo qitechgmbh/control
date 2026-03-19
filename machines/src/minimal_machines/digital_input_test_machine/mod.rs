@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use ethercat_hal::io::digital_input::DigitalInput;
+use qitech_lib::ethercat_hal::{devices::wago_modules::wago_750_402::Wago750_402InputPort, io::digital_input::DigitalInputDevice};
 use smol::channel::{Receiver, Sender};
 
 use self::api::{DigitalInputTestMachineEvents, DigitalInputTestMachineNamespace, StateEvent};
@@ -23,7 +23,7 @@ pub struct DigitalInputTestMachine {
     pub namespace: DigitalInputTestMachineNamespace,
     pub last_state_emit: Instant,
     pub led_on: [bool; 4],
-    pub digital_input: [DigitalInput; 4],
+    digital_input_device: Box<dyn DigitalInputDevice<Wago750_402InputPort>>,
 }
 
 impl Machine for DigitalInputTestMachine {

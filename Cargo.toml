@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "server",
+    "qitech_control",
     "qitech_lib",
     "control-core",
     "machines",

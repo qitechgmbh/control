@@ -1,0 +1,10 @@
+[package]
+name = "qitech_control"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1.50.0", features = ["rt", "rt-multi-thread", "macros", "time"] }
+qitech_lib = { path = "../qitech_lib" }
+machines = { path = "../machines" }
+

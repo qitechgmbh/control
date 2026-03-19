@@ -2,14 +2,14 @@ use anyhow::{Error, Result};
 use control_core::socketio::event::GenericEvent;
 use control_core::socketio::namespace::{CacheableEvents, Namespace, NamespaceCacheingLogic};
 use ethercat_hal::devices::{
-    EthercatDevice, SubDeviceIdentityTuple, downcast_device, subdevice_identity_to_tuple,
+    EthercatDevice, SubDeviceIdentityTuple, subdevice_identity_to_tuple,
 };
 use ethercat_hal::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
-use ethercrab::{SubDevice, SubDeviceRef};
 use machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
     DeviceIdentificationIdentified, MachineIdentificationUnique,
 };
+use qitech_lib::ethercat_hal::{self, EtherCATThreadChannel};
 use serde::Serialize;
 use smol::channel::{Receiver, Sender};
 use socketioxide::extract::SocketRef;
@@ -17,7 +17,10 @@ use std::any::Any;
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Instant;
-pub mod aquapath1;
+pub mod machine_identification;
+pub mod minimal_machines;
+
+/*pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
 pub mod extruder1;
@@ -27,9 +30,9 @@ pub mod machine_identification;
 pub mod minimal_machines;
 pub mod registry;
 pub mod serial;
-pub mod wago_power;
-pub mod wago_serial_machine;
-pub mod winder2;
+pub mod wago_power;*/
+/*pub mod wago_serial_machine;*/
+/*pub mod winder2;*/
 
 mod machine_data;
 pub use machine_data::MachineData;
@@ -50,9 +53,7 @@ pub const WAGO_AI_TEST_MACHINE: u16 = 0x0036;
 pub const DIGITAL_INPUT_TEST_MACHINE: u16 = 0x0040;
 pub const WAGO_8CH_IO_TEST_MACHINE: u16 = 0x0041;
 pub const WAGO_750_430_DI_MACHINE: u16 = 0x0043;
-pub const WAGO_750_460_MACHINE: u16 = 0x0044;
-pub const WAGO_750_553_MACHINE: u16 = 0x0046;
-pub const WAGO_750_531_MACHINE: u16 = 0x0047;
+pub const WAGO_750_553_MACHINE: u16 = 0x0044;
 pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
@@ -72,34 +73,17 @@ pub enum AsyncThreadMessage {
     UnsubscribeFromMachine(MachineSubscriptionRequest),
 }
 
-pub struct MachineNewParams<
-    'maindevice,
-    'subdevices,
-    'device_identifications_identified,
-    'ethercat_devices,
-    'machine_new_hardware_etehrcat,
-    'machine_new_hardware_serial,
-    'machine_new_hardware,
-> where
-    'maindevice: 'machine_new_hardware,
-    'subdevices: 'machine_new_hardware,
-    'ethercat_devices: 'machine_new_hardware,
-    'machine_new_hardware_etehrcat: 'machine_new_hardware,
+pub struct MachineNewParams
 {
-    pub device_group: &'device_identifications_identified Vec<DeviceIdentificationIdentified>,
-    pub hardware: &'machine_new_hardware MachineNewHardware<
-        'maindevice,
-        'subdevices,
-        'ethercat_devices,
-        'machine_new_hardware_etehrcat,
-        'machine_new_hardware_serial,
-    >,
+    pub device_group: Vec<DeviceIdentificationIdentified>,
+    pub hardware: MachineNewHardware,
     pub socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
     pub main_thread_channel: Option<Sender<AsyncThreadMessage>>,
+    pub ethercat_thread_channel: Option<EtherCATThreadChannel>,
     pub namespace: Option<Namespace>,
 }
 
-impl MachineNewParams<'_, '_, '_, '_, '_, '_, '_> {
+impl MachineNewParams {
     pub fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
         self.device_group
             .first()
@@ -110,31 +94,16 @@ impl MachineNewParams<'_, '_, '_, '_, '_, '_, '_> {
     }
 }
 
-pub enum MachineNewHardware<
-    'maindevice,
-    'subdevices,
-    'ethercat_devices,
-    'machine_new_hardware_etehrcat,
-    'machine_new_hardware_serial,
-> where
-    'maindevice: 'machine_new_hardware_etehrcat,
-    'subdevices: 'machine_new_hardware_etehrcat,
-    'ethercat_devices: 'machine_new_hardware_etehrcat,
+pub enum MachineNewHardware
 {
     Ethercat(
-        &'machine_new_hardware_etehrcat MachineNewHardwareEthercat<
-            'maindevice,
-            'subdevices,
-            'ethercat_devices,
-        >,
+        MachineNewHardwareEthercat,
     ),
-    Serial(&'machine_new_hardware_serial MachineNewHardwareSerial),
+    Serial(MachineNewHardwareSerial),
 }
 
-pub struct MachineNewHardwareEthercat<'maindevice, 'subdevices, 'ethercat_devices> {
-    pub subdevices:
-        &'subdevices Vec<&'subdevices SubDeviceRef<'maindevice, &'subdevices SubDevice>>,
-    pub ethercat_devices: &'ethercat_devices Vec<Arc<RwLock<dyn EthercatDevice>>>,
+pub struct MachineNewHardwareEthercat { 
+    pub ethercat_devices: Vec<Arc<Box<dyn EthercatDevice>>>,
 }
 
 pub trait SerialDevice: Any + Send + Sync + SerialDeviceNew + Debug {}
@@ -267,7 +236,7 @@ pub fn get_ethercat_device_by_index<'maindevice>(
 }
 
 pub trait MachineNewTrait: Machine {
-    fn new(params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, anyhow::Error>
+    fn new(params: &MachineNewParams) -> Result<Self, anyhow::Error>
     where
         Self: Sized;
 }
@@ -307,14 +276,12 @@ pub trait MachineApi {
     fn api_event_namespace(&mut self) -> Option<Namespace>;
 }
 
-pub trait Machine: MachineAct + MachineApi + Any + Debug + Send + Sync {
+pub trait Machine: MachineAct + MachineApi + Any + Debug {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique;
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>>;
-
     fn mutation_counter(&self) -> u64 {
         0
     }
-
     fn update_machine_data(
         &self,
         data: &mut MachineData,
@@ -344,33 +311,11 @@ pub trait AnyGetters: Any {
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
-async fn get_device_ident<
-    'maindevice,
-    'subdevices,
-    'device_identifications_identified,
-    'ethercat_devices,
-    'machine_new_hardware_etehrcat,
-    'machine_new_hardware_serial,
-    'machine_new_hardware,
->(
-    params: &MachineNewParams<
-        'maindevice,
-        'subdevices,
-        'device_identifications_identified,
-        'ethercat_devices,
-        'machine_new_hardware_etehrcat,
-        'machine_new_hardware_serial,
-        'machine_new_hardware,
-    >,
+fn get_device_ident(
+    params: &MachineNewParams,
     role: u16,
 ) -> Result<DeviceHardwareIdentificationEthercat, anyhow::Error> {
-    let device_identification = get_device_identification_by_role(params.device_group, role)?;
-    let slug = device_identification
-        .device_machine_identification
-        .machine_identification_unique
-        .machine_identification
-        .slug()
-        .to_uppercase();
+    let device_identification = get_device_identification_by_role(&params.device_group, role)?;
     let device_hardware_identification_ethercat =
         match &device_identification.device_hardware_identification {
             DeviceHardwareIdentification::Ethercat(device_hardware_identification_ethercat) => {
@@ -378,90 +323,25 @@ async fn get_device_ident<
             }
             _ => {
                 return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/{}::new] Device with role {} is not Ethercat",
+                    "[{}::MachineNewTrait/ExtruderV2::new] Device with role {} is not Ethercat",
                     module_path!(),
-                    slug,
-                    role,
+                    role
                 ));
             }
         };
     return Ok(device_hardware_identification_ethercat.clone());
 }
 
-async fn get_ethercat_device<
-    'maindevice,
-    'subdevices,
-    'device_identifications_identified,
-    'ethercat_devices,
-    'machine_new_hardware_etehrcat,
-    'machine_new_hardware_serial,
-    'machine_new_hardware,
-    T,
->(
-    hardware: &&MachineNewHardwareEthercat<'maindevice, 'subdevices, 'ethercat_devices>,
-    params: &MachineNewParams<
-        'maindevice,
-        'subdevices,
-        'device_identifications_identified,
-        'ethercat_devices,
-        'machine_new_hardware_etehrcat,
-        'machine_new_hardware_serial,
-        'machine_new_hardware,
-    >,
+fn get_ethercat_device<T>(
+    hardware: &MachineNewHardwareEthercat,
     role: u16,
     expected_identities: Vec<SubDeviceIdentityTuple>,
-) -> Result<
-    (
-        Arc<RwLock<T>>,
-        &'subdevices SubDeviceRef<'subdevices, &'subdevices SubDevice>,
-    ),
-    anyhow::Error,
->
+) -> Result<Box<T>,anyhow::Error>
 where
-    T: 'static + Send + Sync + EthercatDevice,
+    T: EthercatDevice
 {
-    let device_hardware_identification_ethercat = get_device_ident(params, role).await?;
-    let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
-
-    let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
-    let subdevice_identity = subdevice.identity();
-
-    let actual_identity = subdevice_identity_to_tuple(&subdevice_identity);
-
-    let mut matched_any_identity = false;
-    for identity in expected_identities.clone() {
-        if actual_identity == identity {
-            matched_any_identity = true;
-        }
-    }
-
-    let device_identification = get_device_identification_by_role(params.device_group, role)?;
-    let slug = device_identification
-        .device_machine_identification
-        .machine_identification_unique
-        .machine_identification
-        .slug()
-        .to_uppercase();
-
-    if !matched_any_identity {
-        return Err(anyhow::anyhow!(
-            "[{}::MachineNewTrait/{}::new] Device identity mismatch: expected {:?}",
-            module_path!(),
-            slug,
-            expected_identities
-        ));
-    }
-
-    let ethercat_device =
-        get_ethercat_device_by_index(&hardware.ethercat_devices, subdevice_index)?;
-    let device = downcast_device::<T>(ethercat_device).await?;
-
-    {
-        let mut device_guard = device.write().await;
-        device_guard.set_used(true);
-    }
-
-    Ok((device, subdevice))
+/**/
+    todo!();
 }
 
 #[derive(Debug)]
