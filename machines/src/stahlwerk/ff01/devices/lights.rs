@@ -41,9 +41,9 @@ impl SignalLights {
     }
 
     #[allow(dead_code)]
-    pub fn lights_enable_all(&mut self, expiry: Option<Instant>) {
+    pub fn lights_enable_all(&mut self, expires_at: Option<Instant>) {
         for light in self.lights_mut() {
-            light.enable(expiry);
+            light.enable(expires_at);
         }
     }
 
@@ -52,8 +52,8 @@ impl SignalLights {
         self.get_light(light).enabled()
     }
 
-    pub fn enable_light(&mut self, light: Light, expiry: Option<Instant>) {
-        self.get_light_mut(light).enable(expiry);
+    pub fn enable_light(&mut self, light: Light, expires_at: Option<Instant>) {
+        self.get_light_mut(light).enable(expires_at);
     }
 
     #[allow(dead_code)]
@@ -92,14 +92,14 @@ impl SignalLights {
 #[derive(Debug)]
 pub struct SignalLight {
     output: DigitalOutput,
-    expiry: Option<Instant>,
+    expires_at: Option<Instant>,
 }
 
 impl SignalLight {
     pub fn new(output: DigitalOutput) -> Self {
         Self {
             output,
-            expiry: None,
+            expires_at: None,
         }
     }
 
@@ -107,23 +107,23 @@ impl SignalLight {
         self.output.get()
     }
 
-    pub fn enable(&mut self, expiry: Option<Instant>) {
+    pub fn enable(&mut self, expires_at: Option<Instant>) {
         self.output.set(true);
 
-        // Set the expiry if a duration is provided
-        self.expiry = expiry;
+        // Set the expires_at if a duration is provided
+        self.expires_at = expires_at;
     }
 
     pub fn disable(&mut self) {
         self.output.set(false);
-        self.expiry = None;
+        self.expires_at = None;
     }
 
     #[allow(clippy::collapsible_if)]
     pub fn update(&mut self, now: Instant) {
-        if let Some(expiry) = self.expiry {
-            if now >= expiry {
-                // exceeded expiry, disable
+        if let Some(expires_at) = self.expires_at {
+            if now >= expires_at {
+                // exceeded expires_at, disable
                 self.disable();
             }
         }

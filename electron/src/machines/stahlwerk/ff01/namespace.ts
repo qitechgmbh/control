@@ -27,8 +27,22 @@ import {
  * Live values from  (30 FPS)
  */
 export const liveValuesEventDataSchema = z.object({
-  weight_peak: z.number(),
-  weight_prev: z.number(),
+  weight_peak: z.number().nullable(),
+  weight_prev: z.number().nullable(),
+});
+
+export const targetRangeDataSchema = z.object({
+  min: z.number(),
+  max: z.number(),
+  desirec: z.number(),
+});
+
+export const entryDataSchema = z.object({
+  doc_entry:   z.number(),
+  line_number: z.number(),
+  item_code:   z.string(),
+  whs_code:    z.string(),
+  weight_bounds: targetRangeDataSchema
 });
 
 /**
@@ -37,7 +51,7 @@ export const liveValuesEventDataSchema = z.object({
 export const stateEventDataSchema = z.object({
   is_default_state: z.boolean(),
   plates_counted: z.number(),
-  current_workorder: z.number().nullable(),
+  current_entry: entryDataSchema.nullable(),
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -114,11 +128,11 @@ export function MessageHandler(
       else if (eventName === "LiveValues") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
         const weightPeakValue: TimeSeriesValue = {
-          value: liveValuesEvent.data.weight_peak,
+          value: liveValuesEvent.data.weight_peak ?? 0.0,
           timestamp: event.ts,
         };
         const weightPrevValue: TimeSeriesValue = {
-          value: liveValuesEvent.data.weight_prev,
+          value: liveValuesEvent.data.weight_prev ?? 0.0,
           timestamp: event.ts,
         };
         updateStore((state) => ({

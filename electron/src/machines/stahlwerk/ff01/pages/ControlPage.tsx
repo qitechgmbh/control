@@ -19,6 +19,7 @@ export function ControlPage() {
     weightPeak,
     weightPrev,
     tare,
+    clearTare,
     clearLights,
     isDisabled,
     isLoading,
@@ -44,22 +45,17 @@ export function ControlPage() {
         </ControlCard>
 
         <ControlCard title="Service Info">
-          <DisplayValue
-            title="Target Quantity"
-            icon="lu:Tally1"
-            unit="pcs"
-            value={state?.plates_counted}
-            renderValue={(v) => v.toFixed(0)}
-          />
-
-          (
-            <div className="flex flex-col gap-1">
-              <span>{"Active Workorder: " + state?.current_workorder }</span>
-            </div>
-          )
+          <span>{"Workorder:      " + state?.current_entry?.doc_entry }</span>
+          <span>{"Line Number:    " + state?.current_entry?.line_number }</span>
+          <span>{"Item Code:      " + state?.current_entry?.item_code }</span>
+          <span>{"Warehouse Code: " + state?.current_entry?.whs_code }</span>
+          <span>Weight Bounds:</span>
+          <span>{" - Minimum:     " + state?.current_entry?.weight_bounds.min }</span>
+          <span>{" - Maximum:     " + state?.current_entry?.weight_bounds.max }</span>
+          <span>{" - Desired:     " + state?.current_entry?.weight_bounds.desirec }</span>
 
           <DisplayValue
-            title="Active Workorder"
+            title="Counted Plates"
             icon="lu:Tally1"
             unit="pcs"
             value={state?.plates_counted}
@@ -74,18 +70,29 @@ export function ControlPage() {
               icon="lu:RotateCcw"
               onClick={clearLights}
               isLoading={isLoading}
+              disabled={isDisabled}
             >
               Clear Lights
             </TouchButton>
           </Label>
-          <Label label="Tare">
+          <Label label="Scales">
             <TouchButton 
             variant="outline" 
             icon="lu:Scale" 
             onClick={tare}
             isLoading={isLoading}
+            disabled={isDisabled}
             >
-              Tare Scales
+              Tare
+            </TouchButton>
+            <TouchButton 
+              variant="outline" 
+              icon="lu:RotateCcw" 
+              onClick={clearTare}
+              isLoading={isLoading}
+              disabled={isDisabled}
+              >
+                Clear Tare
             </TouchButton>
           </Label>
         </ControlCard>

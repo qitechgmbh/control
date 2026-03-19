@@ -6,11 +6,12 @@ use control_core::socketio::{
 };
 use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
+use stahlwerk_extension::ff01::Entry;
 
 #[derive(Serialize, Debug, Clone, Default, BuildEvent)]
 pub struct LiveValues {
-    pub weight_peak: f64,
-    pub weight_prev: f64,
+    pub weight_peak: Option<f64>,
+    pub weight_prev: Option<f64>,
 }
 
 impl CacheableEvents<Self> for LiveValues {
@@ -23,11 +24,11 @@ impl CacheableEvents<Self> for LiveValues {
     }
 }
 
-#[derive(Serialize, Debug, Clone, BuildEvent)]
+#[derive(Debug, Clone, BuildEvent, Serialize)]
 pub struct State {
     pub is_default_state: bool,
     pub plates_counted: u32,
-    pub current_workorder: Option<i32>,
+    pub current_entry: Option<Entry>,
 }
 
 impl CacheableEvents<Self> for State {
@@ -42,6 +43,7 @@ impl CacheableEvents<Self> for State {
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub enum Mutation {
-    SetTare,
+    Tare,
+    ClearTare,
     ClearLights,
 }

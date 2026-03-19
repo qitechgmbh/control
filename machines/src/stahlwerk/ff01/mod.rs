@@ -1,5 +1,6 @@
 use std::time::{Duration, Instant};
 
+use anyhow::anyhow;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 
 use crate::{ MachineChannel, MachineIdentification, MachineWithChannel, VENDOR_QITECH };
@@ -11,7 +12,10 @@ mod api;
 use api::{LiveValues, Mutation, State};
 
 mod devices;
-use devices::{Light, Scale, SignalLights};
+use devices::{Light, Scales, SignalLights};
+
+mod tasks;
+use tasks::PlateDetectTask;
 
 mod services;
 use services::WorkorderService;
@@ -19,11 +23,17 @@ use services::WorkorderService;
 #[derive(Debug)]
 pub struct FF01 {
     // devices
-    scale: Scale,
+    scale: Scales,
     lights: SignalLights,
+
+    // tasks
+    plate_detect_task: PlateDetectTask,
 
     // services
     service: WorkorderService,
+
+    // state
+    plates_counted: u32,
 
     // repeating machine junk
     state_changed: bool,
@@ -40,7 +50,7 @@ impl FF01 {
 // public interface
 impl FF01 {
     pub fn new(
-        scale: Scale, 
+        scale: Scales, 
         lights: SignalLights, 
         service: WorkorderService,
         channel: MachineChannel,
@@ -49,6 +59,9 @@ impl FF01 {
             scale, 
             lights, 
             service, 
+            plate_detect_task: PlateDetectTask::new(),
+            plates_counted: 0,
+            // junk
             state_changed: false, 
             channel, 
             emitted_default_state: false, 
@@ -57,27 +70,47 @@ impl FF01 {
     }
 
     pub fn update_impl(&mut self, now: Instant) -> anyhow::Result<()> {
-        // check if done measuring a plate
-
-        _  = self.scale.update();
-
-        /*
-        if let Some(weight) = self.scale.update() {
-            use services::PlateSubmitResult::*;
-
-            let expiry = now + Self::EXPIRY_DURATION;
-
-            match self.service.submit_plate(weight) {
-                InBounds => self.lights.enable_light(Light::Green, Some(expiry)),
-                OutOufBOunds => self.lights.enable_light(Light::Red, Some(expiry)),
-                NotCounting => self.lights.enable_light(Light::Yellow, Some(expiry)),
-            }
-
-            self.state_changed = true;
-        }*/
-
-        // self.lights.update(now);
+        
+        self.scale.update();
+        self.lights.update(now);
         // self.service.update(now)?;
+
+        let Some(weight) = self.scale.weight() else {
+            // received no data from scales
+            self.plate_detect_task.reset();
+            return Ok(());
+        };
+
+        if !self.plate_detect_task.check(weight) {
+            // no plate detected
+            return Ok(());
+        }
+
+        let Some(weight_peak) = self.scale.weight_peak() else {
+            // unreachable
+            return Err(anyhow!("No weight_peak but should have"));
+        };
+
+        // current peak is the plate measurement, so reset it
+        self.scale.weight_peak_reset();
+
+        let Some(entry) = self.service.current_entry() else {
+            // no active entry
+            return Ok(());
+        };
+
+        let bounds = &entry.weight_bounds;
+        let expires_at = now + Self::EXPIRY_DURATION;
+
+        if weight_peak < bounds.min || bounds.max < weight_peak {
+            // out of bounds
+            self.lights.enable_light(Light::Red, Some(expires_at));
+            return Ok(());
+        }
+
+        self.lights.enable_light(Light::Green, Some(expires_at));
+        self.plates_counted += 1;
+
         Ok(())
     }
 }
@@ -88,7 +121,8 @@ impl FF01 {
         use Mutation::*;
 
         match mutation {
-            SetTare => self.scale.tare(),
+            Tare => self.scale.tare(),
+            ClearTare => self.scale.tare_clear(),
             ClearLights => self.lights.lights_disable_all(),
         }
 
@@ -157,19 +191,17 @@ impl MachineWithChannel for FF01 {
     }
 
     fn get_state(&self) -> State {
-        let current_workorder = self.service.current_entry().as_ref().map(|x| x.doc_entry);
-
         State {
             is_default_state: self.emitted_default_state,
-            plates_counted: self.service.plates_counted(),
-            current_workorder,
+            plates_counted: self.plates_counted,
+            current_entry: self.service.current_entry().clone(),
         }
     }
 
     fn get_live_values(&self) -> Option<LiveValues> {
         let live_values = LiveValues {
             weight_peak: self.scale.weight_peak(),
-            weight_prev: self.scale.weight_prev(),
+            weight_prev: self.scale.weight(),
         };
 
         Some(live_values)

@@ -38,13 +38,21 @@ function useFF01(
   };
 
   // Mutation schemas
-  const { request: requestSetTare } = useMachineMutation(z.literal("SetTare"));
+  const { request: requestTare } = useMachineMutation(z.literal("Tare"));
+  const { request: requestClearTare } = useMachineMutation(z.literal("ClearTare"));
   const { request: requestClearLights } = useMachineMutation(z.literal("ClearLights"));
 
   const tare = () => {
-    requestSetTare({
+    requestTare({
       machine_identification_unique,
-      data: "SetTare",
+      data: "Tare",
+    });
+  };
+
+  const clearTare = () => {
+    requestClearTare({
+      machine_identification_unique,
+      data: "ClearTare",
     });
   };
 
@@ -70,8 +78,9 @@ function useFF01(
     isLoading: stateOptimistic.isOptimistic,
     isDisabled: !stateOptimistic.isInitialized,
 
-    // Action functions (verb-first)
+    // Action functions
     tare,
+    clearTare,
     clearLights,
   };
 }

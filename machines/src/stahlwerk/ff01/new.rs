@@ -21,7 +21,7 @@ use crate::{
 };
 
 use super::FF01;
-use super::devices::{Scale, SignalLights};
+use super::devices::{Scales, SignalLights};
 use super::services::WorkorderService;
 
 impl MachineNewTrait for FF01 
@@ -48,7 +48,7 @@ impl MachineNewTrait for FF01
 
         // create scale
         let (_, serial_interface) = XtremSerial::new_serial()?;
-        let scale = Scale::new(serial_interface);
+        let scale = Scales::new(serial_interface);
 
         tracing::error!("Created scale");
 

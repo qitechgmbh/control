@@ -1,5 +1,5 @@
 mod scale;
-pub use scale::Scale;
+pub use scale::Scales;
 
 mod lights;
 pub use lights::SignalLights;
