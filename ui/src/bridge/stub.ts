@@ -1,9 +1,11 @@
 import type { NativeBridge } from "./types";
 
-const notAvailable = (name: string) => () => {
-  console.warn(`[bridge] ${name} is not available in this environment`);
-  return Promise.resolve() as any;
-};
+const notAvailable =
+  <T = void>(name: string, fallback?: T) =>
+  (): Promise<T> => {
+    console.warn(`[bridge] ${name} is not available in this environment`);
+    return Promise.resolve(fallback as T);
+  };
 
 export const stubBridge: NativeBridge = {
   theme: {

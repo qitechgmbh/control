@@ -61,6 +61,13 @@
             nodePackages.npm
             lldb
             electron
+            # Tauri dependencies
+            webkitgtk_4_1
+            libsoup_3
+            glib
+            gtk3
+            openssl
+            at-spi2-atk
           ];
 
           ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
