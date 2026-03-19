@@ -488,7 +488,7 @@ Auto-tuning should be performed **after an active filament production run** — 
 
 **Step-by-step procedure**
 
-1. Run the extruder normally with the target material until stable filament production at the desired temperatures and pressure is established. Do not start a new heat-up cycle specifically for tuning — carry out auto-tuning after an production run.
+1. Run the extruder normally with the target material until stable filament production at the desired temperatures and pressure is established. Do not start a new heat-up cycle specifically for tuning — carry out auto-tuning after a production run.
 2. Once temperatures are stable and good filament quality is being produced, switch to **Pressure Regulation** mode via the "Regulation" selector on the Control page.
 3. Set the **Target Pressure** to the operating pressure that gives the best results for this material.
 4. Navigate to **Settings → Advanced → Pressure PID Auto-Tune**.
@@ -508,12 +508,12 @@ Auto-tuning should be performed **after an active filament production run** — 
 
 <br>
 
-**Set the srew direction**
+**Set the screw direction**
 
-- Go to "Config" in the funktion bar
+- Go to "Config" in the function bar
 - To set the screw direction click on "Forward" or "Backward" in the "Invert settings" box
 
-![Changing screrw direction](images/manuals/extruder/screenshot_config.png)
+![Changing screw direction](images/manuals/extruder/screenshot_config.png)
 
 <br>
 

@@ -376,7 +376,7 @@ export function useExtruder3() {
   const stopPressurePidAutoTune = () => {
     requestStopPressurePidAutoTune({
       machine_identification_unique: machineIdentification,
-      data: { StopPressurePidAutoTune: true },
+      data: { StopPressurePidAutoTune: {} },
     });
   };
 
@@ -464,7 +464,7 @@ export function useExtruder3() {
   );
 
   const { request: requestStopPressurePidAutoTune } = useMachineMutation(
-    z.object({ StopPressurePidAutoTune: z.boolean() }),
+    z.object({ StopPressurePidAutoTune: z.object({}) }),
   );
 
   return {

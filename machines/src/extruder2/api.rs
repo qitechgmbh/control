@@ -156,7 +156,7 @@ pub enum Mutation {
     // Pressure PID Auto-Tune
     /// Start pressure PID auto-tuning with bounded frequency excitation.
     StartPressurePidAutoTune(PressureAutoTuneConfig),
-    StopPressurePidAutoTune(bool),
+    StopPressurePidAutoTune {},
 
     // Reset
     ResetInverter(bool),
@@ -244,7 +244,7 @@ impl MachineApi for ExtruderV3 {
             Mutation::StartPressurePidAutoTune(config) => {
                 self.start_pressure_pid_autotune(config);
             }
-            Mutation::StopPressurePidAutoTune(_) => {
+            Mutation::StopPressurePidAutoTune {} => {
                 self.stop_pressure_pid_autotune();
             }
         }

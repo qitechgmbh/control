@@ -15,7 +15,11 @@
 //! bar, temperature in °C, etc.).  The caller is responsible for mapping the
 //! returned duty-cycle (0.0 … max_power) to the actual actuator output.
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
+
+const REQUIRED_PEAK_COUNT: usize = 20;
+const MIN_PEAKS_FOR_PID: usize = 4;
+const MIN_PEAKS_FOR_CYCLE_SELECTION: usize = 5;
 
 /// Configuration for PID auto-tuning
 #[derive(Debug, Clone)]
@@ -25,8 +29,8 @@ pub struct AutoTuneConfig {
     /// Maximum output fraction (0.0 … 1.0).  Maps to "full on" in bang-bang
     /// control during the tuning phase.
     pub max_power: f64,
-    /// Maximum duration for auto-tuning in seconds before the run is aborted
-    pub max_duration_secs: f64,
+    /// Maximum duration for auto-tuning before the run is aborted
+    pub max_duration: Duration,
 }
 
 impl Default for AutoTuneConfig {
@@ -34,7 +38,7 @@ impl Default for AutoTuneConfig {
         Self {
             tune_delta: 5.0,
             max_power: 1.0,
-            max_duration_secs: 3600.0, // 60 minutes
+            max_duration: Duration::from_secs(3600),
         }
     }
 }
@@ -60,6 +64,13 @@ enum AutoTuneState {
     Failed,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AutoTuneError {
+    NotStarted,
+    Running,
+    Failed,
+}
+
 /// Generic PID auto-tuner implementation
 ///
 /// # Usage
@@ -67,19 +78,17 @@ enum AutoTuneState {
 /// let config = AutoTuneConfig {
 ///     tune_delta: 0.5,   // ±0.5 bar
 ///     max_power: 1.0,
-///     max_duration_secs: 600.0,
+///     max_duration: std::time::Duration::from_secs(600),
 /// };
 /// let mut tuner = PidAutoTuner::new(config);
 /// let now = std::time::Instant::now();
 /// tuner.start(now, 5.0);  // target = 5 bar
 ///
 /// // In the control loop:
-/// let (duty_cycle, done) = tuner.update(measured_value, now);
+/// let duty_cycle = tuner.update(measured_value, now);
 /// // map duty_cycle → actuator output
-/// if done {
-///     if let Some(result) = &tuner.result {
-///         // apply result.kp / result.ki / result.kd
-///     }
+/// if let Ok(result) = tuner.result() {
+///     // apply result.kp / result.ki / result.kd
 /// }
 /// ```
 #[derive(Debug)]
@@ -90,19 +99,18 @@ pub struct PidAutoTuner {
     /// Target setpoint (e.g. bar or °C)
     target_value: f64,
 
-    /// `true` while the output is driven to `max_power` (increasing phase)
-    pub heating: bool,
+    /// `true` while the output is driven to `max_power`
+    driving_high_output: bool,
 
-    // Peak tracking
-    peak_value: f64,
-    peak_time: Instant,
+    // Peak tracking (contains both peaks and valleys)
+    tracked_peak_value: f64,
+    tracked_peak_time: Instant,
     peaks: Vec<(f64, Instant)>,
 
     // Timing
     start_time: Option<Instant>,
 
-    /// Computed tuning result (available after `is_completed()` returns `true`)
-    pub result: Option<AutoTuneResult>,
+    result: Option<AutoTuneResult>,
 }
 
 impl PidAutoTuner {
@@ -112,9 +120,9 @@ impl PidAutoTuner {
             config,
             state: AutoTuneState::NotStarted,
             target_value: 0.0,
-            heating: false,
-            peak_value: 0.0,
-            peak_time: Instant::now(),
+            driving_high_output: false,
+            tracked_peak_value: 0.0,
+            tracked_peak_time: Instant::now(),
             peaks: Vec::new(),
             start_time: None,
             result: None,
@@ -129,9 +137,9 @@ impl PidAutoTuner {
     pub fn start(&mut self, now: Instant, target_value: f64) {
         self.state = AutoTuneState::Running;
         self.target_value = target_value;
-        self.heating = true;
-        self.peak_value = f64::MAX; // when driving up, track the minimum (valley)
-        self.peak_time = now;
+        self.driving_high_output = true;
+        self.tracked_peak_value = f64::MAX; // while driving high, track the minimum
+        self.tracked_peak_time = now;
         self.peaks.clear();
         self.start_time = Some(now);
         self.result = None;
@@ -146,19 +154,17 @@ impl PidAutoTuner {
 
     /// Feed the current measurement and advance the state machine.
     ///
-    /// Returns `(duty_cycle, finished)`:
-    /// * `duty_cycle` – 0.0 or `config.max_power`; map this to your actuator
-    /// * `finished`   – `true` when the run is done (completed **or** failed)
-    pub fn update(&mut self, current_value: f64, now: Instant) -> (f64, bool) {
+    /// Returns the actuator output command (`0.0` or `config.max_power`).
+    pub fn update(&mut self, current_value: f64, now: Instant) -> f64 {
         if self.state != AutoTuneState::Running {
-            return (0.0, true);
+            return 0.0;
         }
 
         // Check timeout
         if let Some(start) = self.start_time {
-            if now.duration_since(start).as_secs_f64() > self.config.max_duration_secs {
+            if now.duration_since(start) > self.config.max_duration {
                 self.state = AutoTuneState::Failed;
-                return (0.0, true);
+                return 0.0;
             }
         }
 
@@ -166,61 +172,65 @@ impl PidAutoTuner {
         let lower_target = self.target_value - self.config.tune_delta;
 
         // Track peak values BEFORE checking for crossing
-        if self.heating {
+        if self.driving_high_output {
             // Driving up → we want to capture the minimum (valley)
-            if current_value < self.peak_value {
-                self.peak_value = current_value;
-                self.peak_time = now;
+            if current_value < self.tracked_peak_value {
+                self.tracked_peak_value = current_value;
+                self.tracked_peak_time = now;
             }
         } else {
             // Driving down → we want to capture the maximum (peak)
-            if current_value > self.peak_value {
-                self.peak_value = current_value;
-                self.peak_time = now;
+            if current_value > self.tracked_peak_value {
+                self.tracked_peak_value = current_value;
+                self.tracked_peak_time = now;
             }
         }
 
         // Check if we've crossed a boundary and should switch direction
-        if self.heating && current_value >= upper_target {
-            self.heating = false;
+        if self.driving_high_output && current_value >= upper_target {
+            self.driving_high_output = false;
             self.record_peak();
-        } else if !self.heating && current_value <= lower_target {
-            self.heating = true;
+        } else if !self.driving_high_output && current_value <= lower_target {
+            self.driving_high_output = true;
             self.record_peak();
         }
 
         // Check if we have enough peaks to calculate PID parameters
-        if self.peaks.len() >= 20 {
+        if self.peaks.len() >= REQUIRED_PEAK_COUNT {
             self.calculate_pid();
             if self.state == AutoTuneState::Completed {
-                return (0.0, true);
+                return 0.0;
             }
         }
 
-        let duty_cycle = if self.heating {
+        if self.driving_high_output {
             self.config.max_power
         } else {
             0.0
-        };
-
-        (duty_cycle, false)
+        }
     }
 
     /// Record the current tracked peak and reset tracking for the next half-cycle
     fn record_peak(&mut self) {
-        self.peaks.push((self.peak_value, self.peak_time));
+        self.peaks
+            .push((self.tracked_peak_value, self.tracked_peak_time));
 
         // Reset peak tracking for next cycle (following Klipper's logic)
-        if self.heating {
-            self.peak_value = f64::MAX; // driving up → find valley
+        if self.driving_high_output {
+            self.tracked_peak_value = f64::MAX; // driving high → find valley
         } else {
-            self.peak_value = f64::MIN; // driving down → find peak
+            self.tracked_peak_value = f64::MIN; // driving low → find peak
         }
     }
 
     /// Calculate PID parameters from the recorded oscillation peaks
     fn calculate_pid(&mut self) {
-        if self.peaks.len() < 4 {
+        if self.peaks.len() < MIN_PEAKS_FOR_PID {
+            self.state = AutoTuneState::Failed;
+            return;
+        }
+
+        if self.peaks.len() < MIN_PEAKS_FOR_CYCLE_SELECTION {
             self.state = AutoTuneState::Failed;
             return;
         }
@@ -235,14 +245,14 @@ impl PidAutoTuner {
             cycle_times.push((time_diff, pos));
         }
 
-        // Sort by time and pick the median cycle
-        cycle_times.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-        let midpoint_pos = if cycle_times.is_empty() {
+        if cycle_times.is_empty() {
             self.state = AutoTuneState::Failed;
             return;
-        } else {
-            cycle_times[cycle_times.len() / 2].1
-        };
+        }
+
+        // Sort by time and pick the median cycle
+        cycle_times.sort_by(|a, b| a.0.total_cmp(&b.0));
+        let midpoint_pos = cycle_times[cycle_times.len() / 2].1;
 
         if let Some(result) = self.calculate_pid_at_position(midpoint_pos) {
             self.result = Some(result);
@@ -298,6 +308,11 @@ impl PidAutoTuner {
         self.state == AutoTuneState::Running
     }
 
+    /// Returns `true` while the tuner drives the actuator at high output.
+    pub fn is_driving_high_output(&self) -> bool {
+        self.driving_high_output
+    }
+
     /// Current state as a static string slice
     pub fn state(&self) -> &str {
         match self.state {
@@ -308,6 +323,15 @@ impl PidAutoTuner {
         }
     }
 
+    pub fn result(&self) -> Result<&AutoTuneResult, AutoTuneError> {
+        match self.state {
+            AutoTuneState::Completed => self.result.as_ref().ok_or(AutoTuneError::Failed),
+            AutoTuneState::Failed => Err(AutoTuneError::Failed),
+            AutoTuneState::Running => Err(AutoTuneError::Running),
+            AutoTuneState::NotStarted => Err(AutoTuneError::NotStarted),
+        }
+    }
+
     /// Progress as a percentage in the range 0 – 100
     pub fn get_progress_percent(&self) -> f64 {
         match self.state {
@@ -315,7 +339,7 @@ impl PidAutoTuner {
             AutoTuneState::NotStarted | AutoTuneState::Failed => 0.0,
             AutoTuneState::Running => {
                 // Uses 20 peaks (10 full oscillation cycles) as the completion threshold
-                let progress = (self.peaks.len() as f64 / 20.0) * 100.0;
+                let progress = (self.peaks.len() as f64 / REQUIRED_PEAK_COUNT as f64) * 100.0;
                 progress.min(99.0)
             }
         }
@@ -363,7 +387,7 @@ mod tests {
         let config = AutoTuneConfig {
             tune_delta: 5.0,
             max_power: 1.0,
-            max_duration_secs: 3600.0,
+            max_duration: Duration::from_secs(3600),
         };
         let mut tuner = PidAutoTuner::new(config);
         let mut now = Instant::now();
@@ -379,10 +403,10 @@ mod tests {
             while temp < 155.0 && !completed && iterations < 1000 {
                 temp += 0.5;
                 now += Duration::from_millis(100);
-                let (_duty_cycle, done) = tuner.update(temp, now);
-                completed = done;
+                let _duty_cycle = tuner.update(temp, now);
+                completed = tuner.is_completed() || tuner.is_failed();
                 iterations += 1;
-                if !completed && !tuner.heating {
+                if !completed && !tuner.is_driving_high_output() {
                     break;
                 }
                 if completed || temp >= 155.0 {
@@ -398,10 +422,10 @@ mod tests {
             while temp > 145.0 && !completed && iterations < 1000 {
                 temp -= 0.3;
                 now += Duration::from_millis(100);
-                let (_duty_cycle, done) = tuner.update(temp, now);
-                completed = done;
+                let _duty_cycle = tuner.update(temp, now);
+                completed = tuner.is_completed() || tuner.is_failed();
                 iterations += 1;
-                if !completed && tuner.heating {
+                if !completed && tuner.is_driving_high_output() {
                     break;
                 }
                 if completed || temp <= 145.0 {
@@ -424,9 +448,9 @@ mod tests {
             "Auto-tuning should complete after sufficient oscillations"
         );
         assert!(tuner.is_completed(), "Should be in completed state");
-        assert!(tuner.result.is_some(), "Should have a result");
+        assert!(tuner.result().is_ok(), "Should have a result");
 
-        let result = tuner.result.as_ref().unwrap();
+        let result = tuner.result().unwrap();
         println!(
             "Auto-tune result: Kp={:.3}, Ki={:.3}, Kd={:.3}",
             result.kp, result.ki, result.kd
@@ -443,7 +467,7 @@ mod tests {
         let config = AutoTuneConfig {
             tune_delta: 5.0,
             max_power: 1.0,
-            max_duration_secs: 1.0, // Very short timeout
+            max_duration: Duration::from_secs(1),
         };
         let mut tuner = PidAutoTuner::new(config);
         let mut now = Instant::now();
@@ -451,9 +475,8 @@ mod tests {
         tuner.start(now, 150.0);
 
         now += Duration::from_secs(2);
-        let (_, completed) = tuner.update(150.0, now);
+        let _ = tuner.update(150.0, now);
 
-        assert!(completed, "Should timeout");
         assert!(tuner.is_failed(), "Should fail on timeout");
     }
 
@@ -463,7 +486,7 @@ mod tests {
         let config = AutoTuneConfig {
             tune_delta: 0.5, // ±0.5 bar
             max_power: 1.0,
-            max_duration_secs: 3600.0,
+            max_duration: Duration::from_secs(3600),
         };
         let mut tuner = PidAutoTuner::new(config);
         let mut now = Instant::now();
@@ -478,10 +501,10 @@ mod tests {
             while pressure < 5.5 && !completed && iterations < 1000 {
                 pressure += 0.05;
                 now += Duration::from_millis(100);
-                let (_duty_cycle, done) = tuner.update(pressure, now);
-                completed = done;
+                let _duty_cycle = tuner.update(pressure, now);
+                completed = tuner.is_completed() || tuner.is_failed();
                 iterations += 1;
-                if !completed && !tuner.heating {
+                if !completed && !tuner.is_driving_high_output() {
                     break;
                 }
                 if completed || pressure >= 5.5 {
@@ -496,10 +519,10 @@ mod tests {
             while pressure > 4.5 && !completed && iterations < 1000 {
                 pressure -= 0.03;
                 now += Duration::from_millis(100);
-                let (_duty_cycle, done) = tuner.update(pressure, now);
-                completed = done;
+                let _duty_cycle = tuner.update(pressure, now);
+                completed = tuner.is_completed() || tuner.is_failed();
                 iterations += 1;
-                if !completed && tuner.heating {
+                if !completed && tuner.is_driving_high_output() {
                     break;
                 }
                 if completed || pressure <= 4.5 {
@@ -522,7 +545,7 @@ mod tests {
 
         assert!(completed, "Pressure auto-tuning should complete");
         assert!(tuner.is_completed());
-        let result = tuner.result.as_ref().unwrap();
+        let result = tuner.result().unwrap();
         println!(
             "Pressure PID: Kp={:.4}, Ki={:.4}, Kd={:.4}",
             result.kp, result.ki, result.kd

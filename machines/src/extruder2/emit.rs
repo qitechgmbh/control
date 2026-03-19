@@ -155,7 +155,7 @@ impl ExtruderV3 {
                 PidAutoTuneState {
                     state: self.screw_speed_controller.get_autotune_state().to_string(),
                     progress: self.screw_speed_controller.get_autotune_progress(),
-                    result: result.map(|(kp, ki, kd)| PidSettings { kp, ki, kd }),
+                    result,
                 }
             },
         }

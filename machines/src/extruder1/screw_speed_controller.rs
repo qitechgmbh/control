@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use control_core::{
     controllers::{
@@ -17,8 +17,13 @@ use units::pressure::bar;
 
 use crate::{
     extruder1::mitsubishi_cs80::{MitsubishiCS80, MotorStatus},
-    extruder1::{api::PressureAutoTuneConfig, mitsubishi_cs80::MitsubishiCS80Status},
+    extruder1::{
+        api::{PidSettings, PressureAutoTuneConfig},
+        mitsubishi_cs80::MitsubishiCS80Status,
+    },
 };
+
+const AUTOTUNE_MAX_DURATION: Duration = Duration::from_secs(30);
 
 #[derive(Debug)]
 pub struct ScrewSpeedController {
@@ -260,11 +265,11 @@ impl ScrewSpeedController {
             // ── Auto-tuning (bang-bang relay control) ──────────────────────────
             if let Some(ref mut tuner) = self.pid_autotuner {
                 if tuner.is_running() {
-                    let (duty_cycle, done) = tuner.update(measured_pressure.get::<bar>(), now);
+                    let duty_cycle = tuner.update(measured_pressure.get::<bar>(), now);
 
-                    if done && tuner.is_completed() {
+                    if tuner.is_completed() {
                         // Automatically apply the tuned PID parameters
-                        if let Some(result) = tuner.result.clone() {
+                        if let Ok(result) = tuner.result() {
                             self.pid.configure(result.ki, result.kp, result.kd);
                             tracing::info!(
                                 "Pressure PID auto-tune completed: Kp={:.4}, Ki={:.4}, Kd={:.4}",
@@ -351,7 +356,7 @@ impl ScrewSpeedController {
         let auto_config = AutoTuneConfig {
             tune_delta: config.tune_delta,
             max_power: hz_swing,
-            max_duration_secs: 60.0,
+            max_duration: AUTOTUNE_MAX_DURATION,
         };
         let mut tuner = PidAutoTuner::new(auto_config);
         let target_pressure = self.target_pressure.get::<bar>();
@@ -394,11 +399,16 @@ impl ScrewSpeedController {
         }
     }
 
-    /// Returns `(kp, ki, kd)` from the last completed auto-tune run, if any
-    pub fn get_autotune_result(&self) -> Option<(f64, f64, f64)> {
+    /// Returns PID values from the last completed auto-tune run, if any
+    pub fn get_autotune_result(&self) -> Option<PidSettings> {
         self.pid_autotuner
             .as_ref()
-            .and_then(|t| t.result.as_ref().map(|r| (r.kp, r.ki, r.kd)))
+            .and_then(|t| t.result().ok())
+            .map(|result| PidSettings {
+                ki: result.ki,
+                kp: result.kp,
+                kd: result.kd,
+            })
     }
 
     pub fn reset(&mut self) {
