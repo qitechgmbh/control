@@ -360,7 +360,7 @@ export function Aquapath1ControlPage() {
           />
         </ControlCard>
 
-        <ControlCard className="bg-blue" title="Power Consumption">
+        <ControlCard className="bg-blue" title="Heating Power Consumption">
           <TimeSeriesValueNumeric
             label="Total Power"
             unit="W"
