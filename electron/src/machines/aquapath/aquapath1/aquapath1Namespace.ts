@@ -93,7 +93,7 @@ export const pidStatesSchema = z.object({
 });
 
 export const thermalSafetyStateSchema = z.object({
-  shared_delay: z.number(),
+  thermal_delay: z.number(),
   cooldown_min_temperature: z.number(),
 });
 
@@ -123,6 +123,10 @@ export const liveValuesEventDataSchema = z.object({
   back_pump_cooldown_active: z.boolean().optional().default(false),
   front_pump_cooldown_remaining: z.number().optional().default(0),
   back_pump_cooldown_remaining: z.number().optional().default(0),
+  front_heating_startup_wait_active: z.boolean().optional().default(false),
+  back_heating_startup_wait_active: z.boolean().optional().default(false),
+  front_heating_startup_wait_remaining: z.number().optional().default(0),
+  back_heating_startup_wait_remaining: z.number().optional().default(0),
   front_total_energy: z.number(),
   back_total_energy: z.number(),
 });
@@ -189,6 +193,10 @@ export type Aquapath1NamespaceStore = {
   back_pump_cooldown_active: boolean;
   front_pump_cooldown_remaining: number;
   back_pump_cooldown_remaining: number;
+  front_heating_startup_wait_active: boolean;
+  back_heating_startup_wait_active: boolean;
+  front_heating_startup_wait_remaining: number;
+  back_heating_startup_wait_remaining: number;
   targetFrontTemperature: TimeSeries;
   targetBackTemperature: TimeSeries;
 };
@@ -254,6 +262,10 @@ export const createAquapath1NamespaceStore =
         back_pump_cooldown_active: false,
         front_pump_cooldown_remaining: 0,
         back_pump_cooldown_remaining: 0,
+        front_heating_startup_wait_active: false,
+        back_heating_startup_wait_active: false,
+        front_heating_startup_wait_remaining: 0,
+        back_heating_startup_wait_remaining: 0,
         targetFrontTemperature: targetFrontTemperature,
         targetBackTemperature: targetBackTemperature,
       };
@@ -400,6 +412,14 @@ export function aquapath1MessageHandler(
             liveValuesEvent.data.front_pump_cooldown_remaining,
           back_pump_cooldown_remaining:
             liveValuesEvent.data.back_pump_cooldown_remaining,
+          front_heating_startup_wait_active:
+            liveValuesEvent.data.front_heating_startup_wait_active,
+          back_heating_startup_wait_active:
+            liveValuesEvent.data.back_heating_startup_wait_active,
+          front_heating_startup_wait_remaining:
+            liveValuesEvent.data.front_heating_startup_wait_remaining,
+          back_heating_startup_wait_remaining:
+            liveValuesEvent.data.back_heating_startup_wait_remaining,
         }));
       } else {
         handleUnhandledEventError(eventName);

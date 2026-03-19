@@ -160,11 +160,11 @@ export function Aquapath1SettingsPage() {
         </ControlCard>
 
         <ControlCard title="Reservoir 1 (Back) Thermal Flow Safety">
-          <Label label="Shared Flow Delay">
+          <Label label="Thermal Safety Delay">
             <EditValue
-              title="Set Reservoir 1 Shared Flow Delay"
+              title="Set Reservoir 1 Thermal Safety Delay"
               min={0}
-              value={state?.thermal_safety_states.back.shared_delay}
+              value={state?.thermal_safety_states.back.thermal_delay}
               max={30}
               step={0.5}
               unit="s"
@@ -238,11 +238,11 @@ export function Aquapath1SettingsPage() {
         </ControlCard>
 
         <ControlCard title="Reservoir 2 (Front) Thermal Flow Safety">
-          <Label label="Shared Flow Delay">
+          <Label label="Thermal Safety Delay">
             <EditValue
-              title="Set Reservoir 2 Shared Flow Delay"
+              title="Set Reservoir 2 Thermal Safety Delay"
               min={0}
-              value={state?.thermal_safety_states.front.shared_delay}
+              value={state?.thermal_safety_states.front.thermal_delay}
               max={30}
               step={0.5}
               unit="s"

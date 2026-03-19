@@ -73,7 +73,7 @@ impl Default for ControllerConfig {
         Self {
             min_flow_for_thermal: VolumeRate::new::<liter_per_minute>(0.2),
             pump_startup_grace_period: Duration::from_secs(3),
-            thermal_flow_settle_duration: Duration::from_secs(5),
+            thermal_flow_settle_duration: Duration::from_secs(10),
             heating_element_power: 700.0,
             heating_pwm_period: Duration::from_secs(12),
             relay_min_on_time: Duration::from_secs(5),
@@ -466,6 +466,30 @@ impl Controller {
                     .pump_cooldown_min_temperature
                     .get::<degree_celsius>()
             && !self.shared_thermal_delay_elapsed(self.pump_cooldown_started_at, now)
+    }
+
+    pub fn get_heating_startup_wait_remaining(&self, now: Instant) -> Duration {
+        match self.flow_became_valid_at {
+            Some(started_at) => self
+                .config
+                .thermal_flow_settle_duration
+                .saturating_sub(now.duration_since(started_at)),
+            None => self.config.thermal_flow_settle_duration,
+        }
+    }
+
+    pub fn is_heating_startup_wait_active(&self, now: Instant) -> bool {
+        let error = self.target_temperature.get::<degree_celsius>()
+            - self.current_temperature.get::<degree_celsius>();
+        let pump_is_running = self.flow.pump && self.should_pump;
+        let has_flow_for_thermal = self.current_flow >= self.config.min_flow_for_thermal;
+
+        self.heating_allowed
+            && !self.temperature.heating
+            && error > self.heating_tolerance.get::<degree_celsius>()
+            && pump_is_running
+            && has_flow_for_thermal
+            && !self.shared_thermal_delay_elapsed(self.flow_became_valid_at, now)
     }
 
     pub fn set_pid_kp(&mut self, kp: f64) {

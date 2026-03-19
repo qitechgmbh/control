@@ -32,6 +32,10 @@ pub struct LiveValuesEvent {
     pub back_pump_cooldown_active: bool,
     pub front_pump_cooldown_remaining: f64,
     pub back_pump_cooldown_remaining: f64,
+    pub front_heating_startup_wait_active: bool,
+    pub back_heating_startup_wait_active: bool,
+    pub front_heating_startup_wait_remaining: f64,
+    pub back_heating_startup_wait_remaining: f64,
     pub front_total_energy: f64,
     pub back_total_energy: f64,
 }
@@ -155,7 +159,7 @@ pub struct PidStates {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct ThermalSafetyState {
-    pub shared_delay: f64,
+    pub thermal_delay: f64,
     pub cooldown_min_temperature: f64,
 }
 

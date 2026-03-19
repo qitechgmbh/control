@@ -62,6 +62,10 @@ export function useAquapath1() {
     back_pump_cooldown_active,
     front_pump_cooldown_remaining,
     back_pump_cooldown_remaining,
+    front_heating_startup_wait_active,
+    back_heating_startup_wait_active,
+    front_heating_startup_wait_remaining,
+    back_heating_startup_wait_remaining,
     targetFrontTemperature,
     targetBackTemperature,
   } = useAquapath1Namespace(machineIdentification);
@@ -325,7 +329,7 @@ export function useAquapath1() {
   const setFrontThermalFlowSettleDuration = (value: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.thermal_safety_states.front.shared_delay = value;
+        current.data.thermal_safety_states.front.thermal_delay = value;
       },
       () => {
         requestFrontThermalFlowSettleDuration({
@@ -339,7 +343,7 @@ export function useAquapath1() {
   const setBackThermalFlowSettleDuration = (value: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.thermal_safety_states.back.shared_delay = value;
+        current.data.thermal_safety_states.back.thermal_delay = value;
       },
       () => {
         requestBackThermalFlowSettleDuration({
@@ -487,6 +491,10 @@ export function useAquapath1() {
     back_pump_cooldown_active,
     front_pump_cooldown_remaining,
     back_pump_cooldown_remaining,
+    front_heating_startup_wait_active,
+    back_heating_startup_wait_active,
+    front_heating_startup_wait_remaining,
+    back_heating_startup_wait_remaining,
     targetFrontTemperature,
     targetBackTemperature,
 
