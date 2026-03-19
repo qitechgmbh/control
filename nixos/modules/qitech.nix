@@ -7,20 +7,6 @@ in {
   options.services.qitech = {
     enable = mkEnableOption "QiTech Control";
 
-
-    openFirewall = mkOption {
-      type = types.bool;
-      default = false;
-      description =
-        "Whether to open ports in the firewall for the QiTech server";
-    };
-    
-    networking.firewall = mkIf cfg.openFirewall {
-      allowedTCPPorts = [ 3001 53 ];
-      allowedUDPPorts = [ 4444 5555 53 67 68 ];
-    };
-
-
     user = mkOption {
       type = types.str;
       default = "qitech-service";
@@ -151,6 +137,12 @@ in {
         }
       });
     '';
+
+    # Open firewall if requested
+    networking.firewall = mkIf cfg.openFirewall {
+      allowedTCPPorts = [ 3001 53 ];
+      allowedUDPPorts = [ 4444 5555 53 67 68 ];
+    };
 
     # Desktop integration
     xdg.mime.enable = true;
