@@ -4,6 +4,7 @@ mod types;
 
 mod atomic_f64;
 use atomic_f64::AtomicF64;
+use smol::net::UdpSocket;
 
 #[derive(Debug)]
 pub struct XtremZebra {
@@ -22,4 +23,13 @@ impl XtremZebra {
 
 
     }
+}
+
+// helpers
+impl XtremZebra {
+
+    pub fn establish_connection() -> anyhow::Result<(UdpSocket, UdpSocket)> {
+        
+    }
+
 }
