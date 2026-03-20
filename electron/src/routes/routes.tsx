@@ -92,6 +92,9 @@ import { Wago750430DiMachineControlPage } from "@/machines/minimal_machines/wago
 import { Wago750_553MachinePage } from "@/machines/minimal_machines/wago750553machine/Wago750_553MachinePage";
 import { Wago750_553MachineControlPage } from "@/machines/minimal_machines/wago750553machine/Wago750_553MachineControlPage";
 
+import { Wago750460MachinePage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachinePage";
+import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachineControlPage";
+
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
 // _mainNavigation/configuration/a
@@ -127,6 +130,18 @@ export const wago750430DiMachineControlRoute = createRoute({
   getParentRoute: () => wago750430DiMachineSerialRoute,
   path: "control",
   component: () => <Wago750430DiMachineControlPage />,
+});
+
+export const wago750460MachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wago750460machine/$serial",
+  component: () => <Wago750460MachinePage />,
+});
+
+export const wago750460MachineControlRoute = createRoute({
+  getParentRoute: () => wago750460MachineSerialRoute,
+  path: "control",
+  component: () => <Wago750460MachineControlPage />,
 });
 
 export const wago750_553MachineSerialRoute = createRoute({
@@ -670,6 +685,7 @@ export const rootTree = RootRoute.addChildren([
         wago750430DiMachineControlRoute,
       ]),
 
+      wago750460MachineSerialRoute.addChildren([wago750460MachineControlRoute]),
       wago750_553MachineSerialRoute.addChildren([
         wago750_553MachineControlRoute,
       ]),
