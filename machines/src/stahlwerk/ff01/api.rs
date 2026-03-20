@@ -34,15 +34,10 @@ pub struct State {
 
 impl FF01 {
     pub fn state(&self) -> State {
-        let current_entry: Option<Entry> = match &self.workorder_service {
-            Some(v) => v.current_entry().clone(),
-            None => None,
-        };
-
         State { 
             is_default_state: self.base.emitted_default_state, 
             plates_counted:   0, 
-            current_entry:    current_entry, 
+            current_entry:    self.workorder_service.current_entry().cloned(), 
         }
     }
 }

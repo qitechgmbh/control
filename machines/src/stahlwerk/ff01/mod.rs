@@ -2,8 +2,6 @@ use std::time::{Duration, Instant};
 
 use anyhow::anyhow;
 
-use stahlwerk_extension::ff01::Entry;
-
 use crate::MachineChannel;
 
 mod base;
@@ -18,8 +16,8 @@ use devices::{Light, Scales, SignalLights};
 mod tasks;
 use tasks::PlateDetectTask;
 
-mod services;
-use services::WorkorderService;
+mod workorder_service;
+use workorder_service::WorkorderService;
 
 #[derive(Debug)]
 pub struct FF01 {
@@ -34,10 +32,10 @@ pub struct FF01 {
     plate_detect_task: PlateDetectTask,
 
     // services
-    workorder_service: Option<WorkorderService>,
+    workorder_service: WorkorderService,
 
     // state
-    plates_counted: u32,
+    plate_count: u32,
 }
 
 // constants
@@ -51,25 +49,34 @@ impl FF01 {
 // public interface
 impl FF01 {
     pub fn new(channel: MachineChannel, scales: Scales, lights: SignalLights) -> Self {
-        let instance = Self { 
+        let mut instance = Self { 
             base: Base::new(channel),
             scales, 
             lights, 
-            workorder_service: None, 
+            workorder_service: WorkorderService::new(Self::SERVICE_REQUEST_TIMEOUT), 
             plate_detect_task: PlateDetectTask::new(),
-            plates_counted: 0,
+            plate_count: 0,
         };
 
-        // instance.enable_workorder_service();
+        instance.workorder_service.set_enabled(true);
+        if let Err(e) = instance.workorder_service.connect(Self::SERVICE_CONFIG_PATH) {
+            tracing::error!("Failed to connect client: {}", e);
+        }
         instance
     }
 
-    fn update(&mut self, now: Instant) -> anyhow::Result<()> {
-        
+    fn update(&mut self, now: Instant) -> anyhow::Result<()>  {
         self.scales.update();
         self.lights.update(now);
-        // self.service.update(now)?;
+        // check for response to update entry
+        self.workorder_service.update_recv()?;
+        self.update_plate_count(now)?;
+        // send with updated plate count
+        self.workorder_service.update_send(now, self.plate_count)?;
+        Ok(())
+    }
 
+    fn update_plate_count(&mut self, now: Instant) -> anyhow::Result<()> {
         let Some(weight) = self.scales.weight() else {
             // received no data from scales
             self.plate_detect_task.reset();
@@ -89,30 +96,10 @@ impl FF01 {
         // current peak is the plate measurement, so reset it
         self.scales.weight_peak_reset();
 
-        //TODO: REMOVE LATER
-        let entry = Entry {
-            doc_entry:     69420,
-            line_number:   10,
-            item_code:     "ZURO-NaN".to_string(),
-            whs_code:      "01".to_string(),
-            weight_bounds: stahlwerk_extension::TargetRange {
-                min: 10.5,
-                max: 12.5,
-                desired: 11.0,
-            },
-        };
-
-        /* 
-        let Some(service) = &self.service else {
-            // service not active
-            return Ok(());
-        };
-
-        let Some(entry) = service.current_entry() else {
+        let Some(entry) = self.workorder_service.current_entry() else {
             // no active entry
             return Ok(());
         };
-        */
 
         let bounds = &entry.weight_bounds;
         let expires_at = now + Self::LIGHT_EXPIRY_DURATION;
@@ -124,34 +111,7 @@ impl FF01 {
         }
 
         self.lights.enable_light(Light::Green, Some(expires_at));
-        self.plates_counted += 1;
-
+        self.plate_count += 1;
         Ok(())
-    }
-}
-
-// mutations
-impl FF01 {
-    fn disable_workorder_service(&mut self) {
-        self.workorder_service = None;
-    }
-
-    fn enable_workorder_service(&mut self) {
-        if self.workorder_service.is_some() {
-            return;
-        }
-
-        let config_path = Self::SERVICE_CONFIG_PATH;
-        let request_timeout =  Self::SERVICE_REQUEST_TIMEOUT;
-
-        let service = match WorkorderService::new(config_path, request_timeout) {
-            Ok(v) => v,
-            Err(e) => {
-                tracing::error!("{}", e);
-                return;
-            },
-        };
-
-        self.workorder_service = Some(service);
     }
 }
