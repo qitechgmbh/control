@@ -216,6 +216,21 @@ impl AddonMotorController {
             .abs()
     }
 
+    /// Convert raw stepper steps/s to reference RPM without addon ratio scaling.
+    ///
+    /// This is used for UI display when RPM should reflect the base puller-referenced
+    /// speed instead of the ratio-scaled motor speed.
+    pub fn steps_to_reference_rpm(&self, steps: i32) -> f64 {
+        let motor_rpm = self.steps_to_rpm(steps);
+        let ratio = (self.slave_ratio / self.master_ratio).abs();
+
+        if ratio > f64::EPSILON {
+            motor_rpm / ratio
+        } else {
+            motor_rpm
+        }
+    }
+
     /// Calculate the motor angular velocity based on puller angular velocity and ratio
     ///
     /// # Arguments
@@ -739,5 +754,27 @@ mod tests {
         controller.on_safety_stop();
         assert!(controller.is_enabled());
         assert_eq!(controller.get_pattern_state(), PatternControlState::Idle);
+    }
+
+    #[test]
+    fn test_steps_to_reference_rpm_removes_ratio_scaling() {
+        let mut controller = AddonMotorController::new(200);
+        controller.set_master_ratio(2.0);
+        controller.set_slave_ratio(1.0);
+
+        // 1000 steps/s @ 200 steps/rev = 5 rev/s = 300 rpm motor speed.
+        assert_eq!(controller.steps_to_rpm(1000), 300.0);
+        // Ratio 2:1 => motor runs at 0.5x base speed, so reference rpm is 600.
+        assert_eq!(controller.steps_to_reference_rpm(1000), 600.0);
+    }
+
+    #[test]
+    fn test_steps_to_reference_rpm_with_higher_slave_ratio() {
+        let mut controller = AddonMotorController::new(200);
+        controller.set_master_ratio(1.0);
+        controller.set_slave_ratio(2.0);
+
+        // Ratio 1:2 => motor runs at 2x base speed, so reference rpm is halved.
+        assert_eq!(controller.steps_to_reference_rpm(1000), 150.0);
     }
 }
