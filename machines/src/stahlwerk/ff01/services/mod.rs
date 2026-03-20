@@ -25,31 +25,29 @@ pub struct WorkorderService
 // public interface
 impl WorkorderService 
 {
-    pub fn new(client: ProxyClient, request_timeout: Duration) -> Self {
-        
-        let debug_entry = Entry {
-            doc_entry:     69420,
-            line_number:   10,
-            item_code:     "ZURO-NaN".to_string(),
-            whs_code:      "01".to_string(),
-            weight_bounds: TargetRange {
-                min: 10.5,
-                max: 12.5,
-                desired: 11.0,
-            },
-        };
-        
-        Self { 
+    pub fn new(config_path: &str, request_timeout: Duration) -> anyhow::Result<Self> {
+        use stahlwerk_extension::ff01::ProxyClient;
+        use stahlwerk_extension::ClientConfig;
+
+        let config = ClientConfig::from_file(config_path)
+            .map_err(|e| anyhow!("[FF01] Failed to read Config: {:?}", e))?;
+
+        let client = ProxyClient::new(config)
+            .map_err(|e| anyhow!("[FF01] Failed to create Client: {:?}", e))?;
+   
+        let instance = Self { 
             client, 
             request_timeout, 
-            entry: Some(debug_entry), 
+            entry: None, 
             last_request_ts: Instant::now(),
             worker_submission: None,
 
             start_date: Date { year: 0, month: 0, day: 0 },
-            from_time: Time { hour: 0, minute: 0 },
-        }
-    }   
+            from_time:  Time { hour: 0, minute: 0 },
+        };
+
+        Ok(instance)
+    }
 
     pub fn update(&mut self, now: Instant, plates_counted: u64) -> anyhow::Result<()> {
 

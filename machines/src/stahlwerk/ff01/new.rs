@@ -1,14 +1,10 @@
-use std::time::{Duration};
-
-use anyhow::{Error, anyhow};
-
-use stahlwerk_extension::ClientConfig;
-use stahlwerk_extension::ff01::ProxyClient;
+use anyhow::Error;
 
 use ethercat_hal::devices::ek1100::{EK1100, EK1100_IDENTITY_A};
 use ethercat_hal::devices::el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port};
 use ethercat_hal::io::digital_output::DigitalOutput;
 
+use crate::MachineNewParams;
 use crate::{
     MachineChannel, 
     MachineNewHardware, 
@@ -22,68 +18,85 @@ use crate::{
 
 use super::FF01;
 use super::devices::{Scales, SignalLights};
-use super::services::WorkorderService;
 
 impl MachineNewTrait for FF01 
 {
     fn new<'maindevice>(params: &crate::MachineNewParams) -> Result<Self, Error> {
-        let device_identification = params.device_group.to_vec();
-        validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_duplicates(&device_identification)?;
-        let hardware: &&MachineNewHardwareEthercat<'_, '_, '_> = match &params.hardware {
-            MachineNewHardware::Ethercat(x) => x,
-            _ => {
-                return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/XtremZebra::new] MachineNewHardware is not Ethercat",
-                    module_path!()
-                ));
-            }
-        };
+        validate_params(params)?;
 
-        // create channel
-        let machine_uid = params.get_machine_identification_unique();
-        let channel = MachineChannel::new_full(machine_uid, params.main_thread_channel.clone(), params.namespace.clone());
+        let hardware = get_hardware(params)?;
 
-        tracing::error!("Created channel");
+        let channel = create_channel(params);
+        let scales  = create_scales()?;
+        let lights  = create_lights(hardware, params)?;
 
-        // create scale
-        let (_, serial_interface) = XtremSerial::new_serial()?;
-        let scale = Scales::new(serial_interface);
-
-        tracing::error!("Created scale");
-
-        // create lights
-        let el2004 = smol::block_on(async {
-            let _ek1100 =
-                get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
-
-            let el2004 =
-                get_ethercat_device::<EL2004>(hardware, params, 1, [EL2004_IDENTITY_A].to_vec())
-                    .await?
-                    .0;
-
-            Ok::<_, anyhow::Error>(el2004)
-        })?;
-
-        let lights = SignalLights::new(
-            DigitalOutput::new(el2004.clone(), EL2004Port::DO1), 
-            DigitalOutput::new(el2004.clone(), EL2004Port::DO2), 
-            DigitalOutput::new(el2004.clone(), EL2004Port::DO3), 
-            DigitalOutput::new(el2004.clone(), EL2004Port::DO4)
-        );
-
-        tracing::error!("Created lights");
-
-        // create service
-        let config_path = "/home/qitech/config.json";
-        let config = ClientConfig::from_file(config_path).map_err(|e| anyhow!("{:?}", e))?;
-        let client = ProxyClient::new(config).map_err(|e| anyhow!("{:?}", e))?;
-        let service = WorkorderService::new(client, Duration::from_millis(1000));
-
-        tracing::error!("Created service");
-
-        // create instance
-        let instance = Self::new(scale, lights, service, channel);
+        let instance = Self::new(channel, scales, lights);
         Ok(instance)
     }
+}
+
+// utils
+fn validate_params(
+    params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>
+) -> anyhow::Result<()> {
+    let device_identification = params.device_group.to_vec();
+    validate_same_machine_identification_unique(&device_identification)?;
+    validate_no_role_duplicates(&device_identification)?;
+    Ok(())
+}
+
+fn get_hardware<'a, 'b, 'c, 'd, 'e>(
+    params: &MachineNewParams<'a, 'b, '_, 'c, '_, '_, 'd>
+) -> anyhow::Result<&'e &'d MachineNewHardwareEthercat<'a, 'b, 'c>> {
+    match &params.hardware {
+        MachineNewHardware::Ethercat(v) => Ok(v),
+        _ => {
+            return Err(anyhow::anyhow!(
+                "[{}::MachineNewTrait/XtremZebra::new] MachineNewHardware is not Ethercat",
+                module_path!()
+            ));
+        }
+    }
+}
+
+fn create_channel(
+    params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>
+) -> MachineChannel {
+    let machine_uid = params.get_machine_identification_unique();
+    let main_sender = params.main_thread_channel.clone();
+    let namespace = params.namespace.clone();
+
+    MachineChannel::new_full(machine_uid, main_sender, namespace)
+}
+
+fn create_scales() -> anyhow::Result<Scales> {
+    let (_, serial_interface) = XtremSerial::new_serial()?;
+    let instance = Scales::new(serial_interface);
+    Ok(instance)
+}
+
+fn create_lights(
+    hardware: &&MachineNewHardwareEthercat<'_, '_, '_>, 
+    params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>
+) -> anyhow::Result<SignalLights> {
+    let el2004 = smol::block_on(async {
+        let _ek1100 =
+            get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
+
+        let el2004 =
+            get_ethercat_device::<EL2004>(hardware, params, 1, [EL2004_IDENTITY_A].to_vec())
+                .await?
+                .0;
+
+        Ok::<_, anyhow::Error>(el2004)
+    })?;
+
+    let instance = SignalLights::new(
+        DigitalOutput::new(el2004.clone(), EL2004Port::DO1), 
+        DigitalOutput::new(el2004.clone(), EL2004Port::DO2), 
+        DigitalOutput::new(el2004.clone(), EL2004Port::DO3), 
+        DigitalOutput::new(el2004.clone(), EL2004Port::DO4)
+    );
+
+    Ok(instance)
 }

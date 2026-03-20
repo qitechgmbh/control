@@ -32,31 +32,30 @@ export function ControlPage() {
           <TimeSeriesValueNumeric
             label="Current Weight"
             unit="kg"
-            renderValue={(v) => v.toFixed(0)}
+            renderValue={(v) => v.toFixed(2)}
             timeseries={weightPrev}
-            
           />
           <TimeSeriesValueNumeric
             label="Peak Weight"
             unit="kg"
-            renderValue={(v) => v.toFixed(0)}
+            renderValue={(v) => v.toFixed(2)}
             timeseries={weightPeak}
           />    
         </ControlCard>
 
-        <ControlCard title="Service Info">
-          <span>{"Workorder:      " + state?.current_entry?.doc_entry }</span>
-          <span>{"Line Number:    " + state?.current_entry?.line_number }</span>
-          <span>{"Item Code:      " + state?.current_entry?.item_code }</span>
+        <ControlCard title="Service Information">
+          <span>{"Workorder: " + state?.current_entry?.doc_entry }</span>
+          <span>{"Line Number: " + state?.current_entry?.line_number }</span>
+          <span>{"Item Code: " + state?.current_entry?.item_code }</span>
           <span>{"Warehouse Code: " + state?.current_entry?.whs_code }</span>
           <span>Weight Bounds:</span>
-          <span>{" - Minimum:     " + state?.current_entry?.weight_bounds.min }</span>
-          <span>{" - Maximum:     " + state?.current_entry?.weight_bounds.max }</span>
-          <span>{" - Desired:     " + state?.current_entry?.weight_bounds.desirec }</span>
+          <span>{" - Minimum: " + state?.current_entry?.weight_bounds.min }</span>
+          <span>{" - Maximum: " + state?.current_entry?.weight_bounds.max }</span>
+          <span>{" - Desired: " + state?.current_entry?.weight_bounds.desired }</span>
 
           <DisplayValue
             title="Counted Plates"
-            icon="lu:Tally1"
+            icon="lu:Cuboid"
             unit="pcs"
             value={state?.plates_counted}
             renderValue={(v) => v.toFixed(0)}
