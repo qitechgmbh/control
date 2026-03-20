@@ -350,7 +350,7 @@ in
 
       # Recommended: Disable root login via password for security
       PermitRootLogin = "prohibit-password";
-    }
+    };
   };
 
   # Open ports in the firewall.
