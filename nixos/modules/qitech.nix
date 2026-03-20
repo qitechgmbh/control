@@ -147,10 +147,10 @@ in {
 
     # Open firewall if requested
     networking.firewall = mkIf cfg.openFirewall {
-      allowedTCPPorts = [ 3001 53 ];
+      allowedTCPPorts = [ 22 3001 53 ];
       allowedUDPPorts = [ 4444 5555 53 67 68 ];
     };
-
+    
     # Desktop integration
     xdg.mime.enable = true;
     xdg.icons.enable = true;

@@ -51,7 +51,7 @@ impl DataAddress {
 }
 
 #[derive(Debug, Clone)]
-pub struct XtremFrame {
+pub struct Frame {
     pub stx: u8,
     pub id_origin: u8,
     pub id_dest: u8,
@@ -63,7 +63,7 @@ pub struct XtremFrame {
     pub etx: u8,
 }
 
-impl XtremFrame {
+impl Frame {
     /// Compute XOR LRC
     pub fn compute_lrc(data: &[u8]) -> u8 {
         data.iter().fold(0u8, |acc, &b| acc ^ b)

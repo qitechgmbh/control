@@ -35,7 +35,7 @@ impl MachineNewTrait for FF01
     }
 }
 
-// utils
+// helpers
 fn validate_params(
     params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>
 ) -> anyhow::Result<()> {

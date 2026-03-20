@@ -9,7 +9,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use anyhow::Ok;
-use control_core::xtrem_protocol::xtrem_serial_interface::{DataAddress, Function, XtremFrame};
+use control_core::xtrem_protocol::xtrem_serial_interface::{DataAddress, Function, Frame};
 
 use crate::machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification,
@@ -33,7 +33,7 @@ struct XtremResponse {
     pub raw: Vec<u8>,
 }
 
-impl TryFrom<XtremResponse> for XtremFrame {
+impl TryFrom<XtremResponse> for Frame {
     type Error = anyhow::Error;
 
     fn try_from(value: XtremResponse) -> Result<Self, Self::Error> {
@@ -76,7 +76,7 @@ struct XtremRequest {
     pub data: Vec<u8>,
 }
 
-impl From<XtremRequest> for XtremFrame {
+impl From<XtremRequest> for Frame {
     fn from(request: XtremRequest) -> Self {
         let id_origin = request.id_origin;
         let id_dest = request.id_dest;
@@ -92,7 +92,7 @@ impl From<XtremRequest> for XtremFrame {
         frame_body.push(data_length);
         frame_body.extend_from_slice(&request.data);
 
-        let lrc = XtremFrame::compute_lrc(&frame_body);
+        let lrc = Frame::compute_lrc(&frame_body);
 
         Self {
             stx: 0x02,
@@ -234,7 +234,7 @@ impl XtremSerial {
             function: Function::ReadRequest,
             data: Vec::new(),
         };
-        let frame: XtremFrame = request.into();
+        let frame: Frame = request.into();
         frame.as_bytes()
     }
 
@@ -291,7 +291,7 @@ impl XtremSerial {
 
         let id_str = &clean[0..2];
         if let std::result::Result::Ok(id) = id_str.parse::<u8>() {
-            let weight = XtremFrame::parse_weight_from_response(buf);
+            let weight = Frame::parse_weight_from_response(buf);
             Some((id, weight))
         } else {
             tracing::warn!("[XTREM] Failed to parse ID from '{id_str}'");

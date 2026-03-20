@@ -342,7 +342,16 @@ in
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
-  # services.openssh.enable = true;
+  services.openssh = {
+    enable = true;
+    settings = {
+      # Explicitly allow password authentication
+      PasswordAuthentication = true;
+
+      # Recommended: Disable root login via password for security
+      PermitRootLogin = "prohibit-password";
+    }
+  };
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
