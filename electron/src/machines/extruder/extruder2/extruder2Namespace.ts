@@ -13,6 +13,7 @@ import {
 import { MachineIdentificationUnique } from "@/machines/types";
 import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 import { useMemo } from "react";
+import { pidAutoTuneStateSchema } from "../pidAutoTuneSchema";
 
 // ========== Event Schema Definitions ==========
 
@@ -178,6 +179,7 @@ export const stateEventDataSchema = z.object({
   extruder_settings_state: extruderSettingsStateSchema,
   inverter_status_state: inverterStatusStateSchema,
   pid_settings: pidSettingsSchema,
+  pid_autotune_state: pidAutoTuneStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
