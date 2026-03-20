@@ -37,6 +37,17 @@ pub struct SlavePullerSpeedController {
 }
 
 impl SlavePullerSpeedController {
+    fn normalized_tension_arm_angle_deg(tension_arm: &TensionArm) -> f64 {
+        let angle_deg = tension_arm.get_angle().get::<units::angle::degree>();
+
+        // Treat 360° wraparound as a small negative angle around the zero point.
+        if angle_deg >= 270.0 {
+            angle_deg - 360.0
+        } else {
+            angle_deg
+        }
+    }
+
     /// Create a new slave puller speed controller
     ///
     /// # Arguments
@@ -72,8 +83,10 @@ impl SlavePullerSpeedController {
     /// # Returns
     /// Target velocity for the slave puller
     fn speed_raw(&self, master_speed: Velocity, tension_arm: &TensionArm) -> Velocity {
-        // Get tension arm angle
-        let current_angle = tension_arm.get_angle().abs();
+        // Get tension arm angle normalized around zero crossing.
+        let current_angle =
+            Angle::new::<units::angle::degree>(Self::normalized_tension_arm_angle_deg(tension_arm))
+                .abs();
 
         // Calculate deviation from target angle
         let deviation = current_angle - self.target_angle;
@@ -174,7 +187,7 @@ impl SlavePullerSpeedController {
     }
 
     pub fn set_min_speed_factor(&mut self, factor: Option<f64>) {
-        self.min_speed_factor = factor.map(|f| f.clamp(0.1, 5.0));
+        self.min_speed_factor = factor.map(|f| f.clamp(0.0, 5.0));
     }
 
     pub const fn get_min_speed_factor(&self) -> Option<f64> {
@@ -392,5 +405,50 @@ mod tests {
         set_tension_arm_angle_degrees(&mut analog_input_dummy, 170.0);
         let max_limited = controller.update_speed(Instant::now(), master_speed, &tension_arm);
         assert_eq!(max_limited.get::<meter_per_second>(), 2.4);
+    }
+
+    #[test]
+    fn test_wraparound_zero_angle_stays_slow() {
+        let converter =
+            LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0));
+        let filament_calc =
+            FilamentTensionCalculator::new(Angle::new::<degree>(20.0), Angle::new::<degree>(90.0));
+        let mut controller = SlavePullerSpeedController::new(
+            Angle::new::<degree>(55.0),
+            Angle::new::<degree>(35.0),
+            converter,
+            filament_calc,
+        );
+        controller.set_enabled(true);
+
+        let master_speed = Velocity::new::<meter_per_second>(1.0);
+        let (mut analog_input_dummy, tension_arm) = create_tension_arm();
+
+        // 359° should be treated like a small negative angle around zero,
+        // not as a high positive angle that speeds up the motor.
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 359.0);
+        let out = controller.update_speed(Instant::now(), master_speed, &tension_arm);
+
+        assert!(
+            out < master_speed,
+            "wraparound angle near 360° should slow down, not speed up"
+        );
+    }
+
+    #[test]
+    fn test_min_speed_factor_allows_zero() {
+        let converter =
+            LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0));
+        let filament_calc =
+            FilamentTensionCalculator::new(Angle::new::<degree>(20.0), Angle::new::<degree>(90.0));
+        let mut controller = SlavePullerSpeedController::new(
+            Angle::new::<degree>(55.0),
+            Angle::new::<degree>(35.0),
+            converter,
+            filament_calc,
+        );
+
+        controller.set_min_speed_factor(Some(0.0));
+        assert_eq!(controller.get_min_speed_factor(), Some(0.0));
     }
 }

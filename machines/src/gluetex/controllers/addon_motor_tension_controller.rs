@@ -28,6 +28,17 @@ pub struct AddonMotorTensionController {
 }
 
 impl AddonMotorTensionController {
+    fn normalized_tension_arm_angle_deg(tension_arm: &TensionArm) -> f64 {
+        let angle_deg = tension_arm.get_angle().get::<degree>();
+
+        // Treat 360° wraparound as a small negative angle around the zero point.
+        if angle_deg >= 270.0 {
+            angle_deg - 360.0
+        } else {
+            angle_deg
+        }
+    }
+
     /// Create a new addon motor tension controller
     pub fn new(target_angle: Angle, sensitivity: Angle) -> Self {
         Self {
@@ -49,8 +60,9 @@ impl AddonMotorTensionController {
             return master_speed;
         }
 
-        // Get tension arm angle
-        let current_angle = tension_arm.get_angle().abs();
+        // Get tension arm angle normalized around zero crossing.
+        let current_angle =
+            Angle::new::<degree>(Self::normalized_tension_arm_angle_deg(tension_arm)).abs();
 
         // Calculate deviation from target angle
         let deviation = current_angle - self.target_angle;
@@ -129,7 +141,7 @@ impl AddonMotorTensionController {
     }
 
     pub fn set_min_speed_factor(&mut self, factor: Option<f64>) {
-        self.min_speed_factor = factor.map(|f| f.clamp(0.1, 5.0));
+        self.min_speed_factor = factor.map(|f| f.clamp(0.0, 5.0));
     }
 
     pub const fn get_min_speed_factor(&self) -> Option<f64> {
@@ -241,9 +253,9 @@ mod tests {
             min_raw: 0,
             max_raw: i16::MAX,
         });
-        // 3.75V = 0.75 revolution -> 270deg
+        // 2.36V ~= 0.4722 revolution -> 170deg (above target, non-wraparound)
         analog_input_dummy.set_input(AnalogInputInput {
-            normalized: 3.75 / 10.0,
+            normalized: 2.36 / 10.0,
             wiring_error: false,
         });
         let tension_arm = TensionArm::new(analog_input_dummy.analog_input());
@@ -323,5 +335,38 @@ mod tests {
         let master_speed = Velocity::new::<meter_per_second>(1.23);
         let output = controller.update_speed(Instant::now(), master_speed, &tension_arm);
         assert_eq!(output, master_speed);
+    }
+
+    #[test]
+    fn test_wraparound_zero_angle_stays_slow() {
+        let mut controller = AddonMotorTensionController::new(
+            Angle::new::<degree>(55.0),
+            Angle::new::<degree>(35.0),
+        );
+        controller.set_enabled(true);
+
+        let master_speed = Velocity::new::<meter_per_second>(1.0);
+        let (mut analog_input_dummy, tension_arm) = create_tension_arm();
+
+        // 359° should be treated like a small negative angle around zero,
+        // not as a high positive angle that speeds up the motor.
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 359.0);
+        let out = controller.update_speed(Instant::now(), master_speed, &tension_arm);
+
+        assert!(
+            out < master_speed,
+            "wraparound angle near 360° should slow down, not speed up"
+        );
+    }
+
+    #[test]
+    fn test_min_speed_factor_allows_zero() {
+        let mut controller = AddonMotorTensionController::new(
+            Angle::new::<degree>(55.0),
+            Angle::new::<degree>(35.0),
+        );
+
+        controller.set_min_speed_factor(Some(0.0));
+        assert_eq!(controller.get_min_speed_factor(), Some(0.0));
     }
 }

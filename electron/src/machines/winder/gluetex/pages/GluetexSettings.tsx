@@ -551,7 +551,7 @@ export function GluetexSettingPage() {
                         title={"Minimum Speed Factor"}
                         unit={undefined}
                         step={0.05}
-                        min={0.1}
+                        min={0}
                         max={
                           state?.slave_puller_state?.max_speed_factor
                             ? state.slave_puller_state.max_speed_factor - 0.1
@@ -574,9 +574,9 @@ export function GluetexSettingPage() {
                         unit={undefined}
                         step={0.05}
                         min={
-                          state?.slave_puller_state?.min_speed_factor
+                          state?.slave_puller_state?.min_speed_factor != null
                             ? state.slave_puller_state.min_speed_factor + 0.1
-                            : 0.2
+                            : 0.1
                         }
                         max={3}
                         defaultValue={0}
@@ -659,7 +659,7 @@ export function GluetexSettingPage() {
                         title={"Minimum Speed Factor"}
                         unit={undefined}
                         step={0.05}
-                        min={0.1}
+                        min={0}
                         max={
                           state?.addon_motor_5_tension_control_state
                             ?.max_speed_factor
@@ -688,10 +688,10 @@ export function GluetexSettingPage() {
                         step={0.05}
                         min={
                           state?.addon_motor_5_tension_control_state
-                            ?.min_speed_factor
+                            ?.min_speed_factor != null
                             ? state.addon_motor_5_tension_control_state
                                 .min_speed_factor + 0.1
-                            : 0.2
+                            : 0.1
                         }
                         max={3}
                         defaultValue={0}
