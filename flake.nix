@@ -63,7 +63,8 @@
             electron
           ];
 
-          ELECTON_SKIP_BINARY_DOWNLOAD = 1;
+          ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
+          ELECTRON_OVERRIDE_DIST_PATH = "${pkgs.electron}/bin/";
 
           hardeningDisable = [ "fortify" ];
 
