@@ -505,7 +505,9 @@ impl Gluetex {
     /// Sync addon motor 5 speed based on puller angular velocity and ratio
     /// called by `act`
     pub fn sync_addon_motor_5_speed(&mut self, t: Instant) {
-        let master_speed = self.puller_speed_controller.get_target_speed();
+        // Follow the actual commanded puller speed, not the static target.
+        // This keeps addon motor 5 stopped when the puller controller is disabled.
+        let master_speed = self.puller_speed_controller.last_speed;
         let adjusted_speed = self.addon_motor_5_tension_controller.update_speed(
             t,
             master_speed,
@@ -525,8 +527,9 @@ impl Gluetex {
     /// Sync slave puller speed based on master puller speed and TA inlet feeder
     /// called by `act`
     pub fn sync_slave_puller_speed(&mut self, t: Instant) {
-        // Get master puller speed as reference
-        let master_speed = self.puller_speed_controller.get_target_speed();
+        // Use the actual commanded master puller speed as reference.
+        // Using the target speed here could move the slave while master is disabled.
+        let master_speed = self.puller_speed_controller.last_speed;
 
         // Calculate slave speed based on TA inlet feeder
         let slave_velocity = self.slave_puller_speed_controller.update_speed(
