@@ -3,6 +3,10 @@ import uPlot from "uplot";
 import { TimeSeries, TimeSeriesValue } from "@/lib/timeseries";
 import type { Marker } from "@/stores/markerStore";
 
+const MARKER_BOTTOM_EXTENSION_PX = 94;
+const MARKER_TOP_OFFSET_PX = 96;
+const MARKER_LABEL_OFFSET_PX = 12;
+
 type MarkerPosition = {
   key: string;
   name: string;
@@ -21,6 +25,46 @@ type ClipRect = {
   width: number;
   height: number;
 };
+
+type PlotBounds = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  bottom: number;
+};
+
+function getPlotBounds(plot: uPlot): PlotBounds {
+  const dpr = window.devicePixelRatio || 1;
+  const left = plot.bbox.left / dpr;
+  const top = plot.bbox.top / dpr;
+  const width = plot.bbox.width / dpr;
+  const height = plot.bbox.height / dpr;
+
+  return {
+    left,
+    top,
+    width,
+    height,
+    bottom: top + height,
+  };
+}
+
+function getMarkerBottom(bounds: PlotBounds): number {
+  return bounds.bottom + MARKER_BOTTOM_EXTENSION_PX;
+}
+
+function buildClipRect(plot: uPlot): ClipRect {
+  const bounds = getPlotBounds(plot);
+  const clipBottom = getMarkerBottom(bounds);
+
+  return {
+    x: bounds.left,
+    y: bounds.top,
+    width: bounds.width,
+    height: clipBottom - bounds.top,
+  };
+}
 
 function isSameClipRect(a: ClipRect | null, b: ClipRect): boolean {
   return (
@@ -96,15 +140,10 @@ function buildMarkerPositions(
   markers: Marker[],
   currentTimeSeries: TimeSeries | null,
 ): MarkerPosition[] {
-  const dpr = window.devicePixelRatio || 1;
-  const clipLeft = plot.bbox.left / dpr;
-  const clipTop = plot.bbox.top / dpr;
-  const clipWidth = plot.bbox.width / dpr;
-  const clipHeight = plot.bbox.height / dpr;
-  const clipBottom = clipTop + clipHeight + 94;
-  const lineBottom = clipTop + clipHeight + 94;
-  const lineTop = clipTop + 96;
-  const labelY = lineTop - 12;
+  const bounds = getPlotBounds(plot);
+  const markerBottom = getMarkerBottom(bounds);
+  const lineTop = bounds.top + MARKER_TOP_OFFSET_PX;
+  const labelY = lineTop - MARKER_LABEL_OFFSET_PX;
   const xMin = plot.scales.x?.min ?? -Infinity;
   const xMax = plot.scales.x?.max ?? Infinity;
   const yScale = plot.scales.y;
@@ -133,19 +172,19 @@ function buildMarkerPositions(
         name: marker.name,
         color: marker.color || "rgba(0, 0, 0, 0.7)",
         x: Math.max(
-          clipLeft,
+          bounds.left,
           Math.min(
-            clipLeft + clipWidth,
+            bounds.left + bounds.width,
             plot.valToPos(marker.timestamp, "x", false),
           ),
         ),
         y: Math.max(
-          clipTop,
-          Math.min(clipBottom, plot.valToPos(value, "y", false)),
+          bounds.top,
+          Math.min(markerBottom, plot.valToPos(value, "y", false)),
         ),
         lineTop,
-        plotTop: clipTop,
-        plotBottom: lineBottom,
+        plotTop: bounds.top,
+        plotBottom: markerBottom,
         labelY,
       };
     });
@@ -198,15 +237,7 @@ export function MarkerOverlay({
         areMarkerPositionsEqual(prev, nextPositions) ? prev : nextPositions,
       );
 
-      const dpr = window.devicePixelRatio || 1;
-      const clipTop = plot.bbox.top / dpr;
-      const clipBottom = clipTop + plot.bbox.height / dpr + 94;
-      const nextClipRect: ClipRect = {
-        x: plot.bbox.left / dpr,
-        y: clipTop,
-        width: plot.bbox.width / dpr,
-        height: clipBottom - clipTop,
-      };
+      const nextClipRect = buildClipRect(plot);
 
       setClipRect((prev) =>
         isSameClipRect(prev, nextClipRect) ? prev : nextClipRect,
