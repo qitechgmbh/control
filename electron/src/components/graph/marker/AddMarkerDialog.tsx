@@ -95,7 +95,7 @@ export function AddMarkerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-md"
+        className="max-h-[90vh] overflow-y-auto sm:max-w-4xl"
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           showKeyboard();
