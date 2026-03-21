@@ -6,6 +6,7 @@ import { BigGraphProps, PropGraphSync, TimeWindowOption } from "./types";
 import { GraphExportData } from "./excelExport";
 import { useMarkerManager } from "./marker/useMarkerManager";
 import { AddMarkerDialog } from "./marker/AddMarkerDialog";
+import { ManageMarkersDialog } from "./marker/ManageMarkersDialog";
 import { useMarkerContext } from "./marker/MarkerContext";
 
 export function SyncedBigGraph({
@@ -69,8 +70,10 @@ function SyncedFloatingControlPanelInner({
 
   // Prefer explicit prop so panel and graphs always use the same store
   const detectedMachineId = machineIdProp ?? machineIdContext ?? "default";
-  const { addMarker, markers } = useMarkerManager(detectedMachineId);
+  const { addMarker, markers, removeMarker, clearMarkers } =
+    useMarkerManager(detectedMachineId);
   const [isMarkerDialogOpen, setIsMarkerDialogOpen] = useState(false);
+  const [isManageMarkersOpen, setIsManageMarkersOpen] = useState(false);
 
   // Always use current timestamp from context (live time from graphs) or current time
   // As per requirement: "always use the current time"
@@ -87,6 +90,7 @@ function SyncedFloatingControlPanelInner({
         {...finalProps}
         timeWindowOptions={timeWindowOptions}
         onAddMarker={() => setIsMarkerDialogOpen(true)}
+        onManageMarkers={() => setIsManageMarkersOpen(true)}
         {...props}
       />
       <AddMarkerDialog
@@ -95,6 +99,13 @@ function SyncedFloatingControlPanelInner({
         onAddMarker={handleAddMarker}
         currentTimestamp={markerTimestamp}
         existingNames={markers.map((m) => m.name)}
+      />
+      <ManageMarkersDialog
+        open={isManageMarkersOpen}
+        onOpenChange={setIsManageMarkersOpen}
+        markers={markers}
+        onRemoveMarker={(marker) => removeMarker(marker.timestamp, marker.name)}
+        onClearMarkers={clearMarkers}
       />
     </>
   );
