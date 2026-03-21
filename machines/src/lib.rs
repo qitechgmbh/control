@@ -363,6 +363,12 @@ async fn get_device_ident<
     role: u16,
 ) -> Result<DeviceHardwareIdentificationEthercat, anyhow::Error> {
     let device_identification = get_device_identification_by_role(params.device_group, role)?;
+    let slug = device_identification
+        .device_machine_identification
+        .machine_identification_unique
+        .machine_identification
+        .slug()
+        .to_uppercase();
     let device_hardware_identification_ethercat =
         match &device_identification.device_hardware_identification {
             DeviceHardwareIdentification::Ethercat(device_hardware_identification_ethercat) => {
@@ -370,9 +376,10 @@ async fn get_device_ident<
             }
             _ => {
                 return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/ExtruderV2::new] Device with role {} is not Ethercat",
+                    "[{}::MachineNewTrait/{}::new] Device with role {} is not Ethercat",
                     module_path!(),
-                    role
+                    slug,
+                    role,
                 ));
             }
         };
@@ -426,10 +433,19 @@ where
         }
     }
 
+    let device_identification = get_device_identification_by_role(params.device_group, role)?;
+    let slug = device_identification
+        .device_machine_identification
+        .machine_identification_unique
+        .machine_identification
+        .slug()
+        .to_uppercase();
+
     if !matched_any_identity {
         return Err(anyhow::anyhow!(
-            "[{}::MachineNewTrait/ExtruderV2::new] Device identity mismatch: expected {:?}",
+            "[{}::MachineNewTrait/{}::new] Device identity mismatch: expected {:?}",
             module_path!(),
+            slug,
             expected_identities
         ));
     }
