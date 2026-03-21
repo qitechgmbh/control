@@ -621,19 +621,22 @@ impl Controller {
             || self.heating_last_active_at.is_some_and(|started_at| {
                 now.duration_since(started_at) < self.config.thermal_flow_settle_duration
             });
-        let cooldown_window_still_open = self
-            .pump_cooldown_started_at
-            .is_some_and(|started_at| !self.shared_thermal_delay_elapsed(Some(started_at), now));
-
         if !should_flow && self.flow.pump && heater_was_recently_active && pump_is_still_hot {
             if self.pump_cooldown_started_at.is_none() {
                 self.pump_cooldown_started_at = Some(now);
             }
         } else if !self.flow.pump
-            || (should_flow && !(cooldown_window_still_open && pump_is_still_hot))
+            || (should_flow
+                && !(self.pump_cooldown_started_at.is_some_and(|started_at| {
+                    !self.shared_thermal_delay_elapsed(Some(started_at), now)
+                }) && pump_is_still_hot))
         {
             self.pump_cooldown_started_at = None;
         }
+
+        let cooldown_window_still_open = self
+            .pump_cooldown_started_at
+            .is_some_and(|started_at| !self.shared_thermal_delay_elapsed(Some(started_at), now));
 
         let pump_cooldown_active = self.pump_cooldown_started_at.is_some()
             && pump_is_still_hot
