@@ -615,28 +615,29 @@ impl Controller {
         self.temp_reservoir = self.get_temp_out();
 
         let pump_cooldown_min_temperature = self.config.pump_cooldown_min_temperature;
+        let pump_is_still_hot = self.current_temperature.get::<degree_celsius>()
+            > pump_cooldown_min_temperature.get::<degree_celsius>();
         let heater_was_recently_active = self.temperature.heating
             || self.heating_last_active_at.is_some_and(|started_at| {
                 now.duration_since(started_at) < self.config.thermal_flow_settle_duration
             });
+        let cooldown_window_still_open = self
+            .pump_cooldown_started_at
+            .is_some_and(|started_at| !self.shared_thermal_delay_elapsed(Some(started_at), now));
 
-        if !should_flow
-            && self.flow.pump
-            && heater_was_recently_active
-            && self.current_temperature.get::<degree_celsius>()
-                > pump_cooldown_min_temperature.get::<degree_celsius>()
-        {
+        if !should_flow && self.flow.pump && heater_was_recently_active && pump_is_still_hot {
             if self.pump_cooldown_started_at.is_none() {
                 self.pump_cooldown_started_at = Some(now);
             }
-        } else if should_flow || !self.flow.pump {
+        } else if !self.flow.pump
+            || (should_flow && !(cooldown_window_still_open && pump_is_still_hot))
+        {
             self.pump_cooldown_started_at = None;
         }
 
         let pump_cooldown_active = self.pump_cooldown_started_at.is_some()
-            && self.current_temperature.get::<degree_celsius>()
-                > pump_cooldown_min_temperature.get::<degree_celsius>()
-            && !self.shared_thermal_delay_elapsed(self.pump_cooldown_started_at, now);
+            && pump_is_still_hot
+            && cooldown_window_still_open;
         let should_keep_pump_running = should_flow || pump_cooldown_active;
 
         if !self.flow.pump && self.get_pump() && should_keep_pump_running {

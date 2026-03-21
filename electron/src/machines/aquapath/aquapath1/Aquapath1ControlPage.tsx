@@ -68,7 +68,8 @@ export function Aquapath1ControlPage() {
   const reservoir2MaxRevolutions =
     state?.fan_states.front.max_revolutions ?? 100;
 
-  const renderCooldown = (value: number) => `${Math.max(value, 0).toFixed(1)}s`;
+  const renderThermalDelay = (value: number) =>
+    `Thermal Delay ${Math.max(value, 0).toFixed(1)}s`;
 
   return (
     <Page>
@@ -132,23 +133,18 @@ export function Aquapath1ControlPage() {
                 </Badge>
               )}
 
-              {reservoir1PumpCooldownActive && (
+              {(reservoir1PumpCooldownActive ||
+                reservoir1HeatingStartupWaitActive) && (
                 <Badge
                   variant="secondary"
-                  className="h-18 min-w-28 justify-center self-end border-transparent bg-cyan-100 px-4 text-base text-cyan-900 [&>svg]:size-5"
+                  className="h-18 min-w-40 justify-center self-end border-transparent bg-cyan-100 px-4 text-base text-cyan-900 [&>svg]:size-5"
                 >
                   <Icon name="lu:Waves" className="size-5" />
-                  {renderCooldown(reservoir1PumpCooldownRemaining)}
-                </Badge>
-              )}
-
-              {reservoir1HeatingStartupWaitActive && (
-                <Badge
-                  variant="secondary"
-                  className="h-18 min-w-28 justify-center self-end border-transparent bg-emerald-100 px-4 text-base text-emerald-900 [&>svg]:size-5"
-                >
-                  <Icon name="lu:Droplets" className="size-5" />
-                  {renderCooldown(reservoir1HeatingStartupWaitRemaining)}
+                  {renderThermalDelay(
+                    reservoir1PumpCooldownActive
+                      ? reservoir1PumpCooldownRemaining
+                      : reservoir1HeatingStartupWaitRemaining,
+                  )}
                 </Badge>
               )}
             </div>
@@ -264,23 +260,18 @@ export function Aquapath1ControlPage() {
                 </Badge>
               )}
 
-              {reservoir2PumpCooldownActive && (
+              {(reservoir2PumpCooldownActive ||
+                reservoir2HeatingStartupWaitActive) && (
                 <Badge
                   variant="secondary"
-                  className="h-18 min-w-28 justify-center self-end border-transparent bg-cyan-100 px-4 text-base text-cyan-900 [&>svg]:size-5"
+                  className="h-18 min-w-40 justify-center self-end border-transparent bg-cyan-100 px-4 text-base text-cyan-900 [&>svg]:size-5"
                 >
                   <Icon name="lu:Waves" className="size-5" />
-                  {renderCooldown(reservoir2PumpCooldownRemaining)}
-                </Badge>
-              )}
-
-              {reservoir2HeatingStartupWaitActive && (
-                <Badge
-                  variant="secondary"
-                  className="h-18 min-w-28 justify-center self-end border-transparent bg-emerald-100 px-4 text-base text-emerald-900 [&>svg]:size-5"
-                >
-                  <Icon name="lu:Droplets" className="size-5" />
-                  {renderCooldown(reservoir2HeatingStartupWaitRemaining)}
+                  {renderThermalDelay(
+                    reservoir2PumpCooldownActive
+                      ? reservoir2PumpCooldownRemaining
+                      : reservoir2HeatingStartupWaitRemaining,
+                  )}
                 </Badge>
               )}
             </div>
