@@ -111,6 +111,7 @@ export type ControlProps = {
   onSwitchToHistorical: (origin: SwitchOrigin) => void;
   onExport?: () => void;
   onAddMarker?: () => void;
+  onManageMarkers?: () => void;
   timeWindowOptions?: TimeWindowOption[];
   showFromTimestamp?: number | null;
   onShowFromChange?: (timestamp: number | null) => void;
