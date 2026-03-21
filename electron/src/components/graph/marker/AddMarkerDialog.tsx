@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/Icon";
+import { TouchKeyboard } from "@/components/touch/TouchKeyboard";
 
 type AddMarkerDialogProps = {
   open: boolean;
@@ -32,10 +33,12 @@ export function AddMarkerDialog({
   existingNames = [],
 }: AddMarkerDialogProps) {
   const [name, setName] = useState(defaultName);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [selectedTimestamp, setSelectedTimestamp] = useState<number | null>(
     null,
   );
   const [color, setColor] = useState("#000000");
+  const inputRef = useRef<HTMLInputElement>(null);
   // Shown when user tries to add a marker whose name already exists
   const [duplicateNameError, setDuplicateNameError] = useState(false);
 
@@ -44,16 +47,23 @@ export function AddMarkerDialog({
   useEffect(() => {
     if (open) {
       setName(defaultName);
+      setKeyboardVisible(true);
       // Keep timestamp unset until the user explicitly chooses a time.
       // handleAdd falls back to currentTimestamp / Date.now() on submit.
       setSelectedTimestamp(null);
       setDuplicateNameError(false);
     } else {
       setName("");
+      setKeyboardVisible(false);
       setSelectedTimestamp(null);
       setDuplicateNameError(false);
     }
   }, [open]);
+
+  const showKeyboard = () => {
+    setKeyboardVisible(true);
+    inputRef.current?.focus();
+  };
 
   const handleAdd = () => {
     if (!name.trim()) return;
@@ -84,7 +94,13 @@ export function AddMarkerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          showKeyboard();
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex flex-row items-center gap-2">
             <Icon name="lu:Bookmark" />
@@ -100,22 +116,33 @@ export function AddMarkerDialog({
           {/* Name Input */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="marker-name">Marker Name</Label>
-            <Input
-              id="marker-name"
-              type="text"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setDuplicateNameError(false);
-              }}
-              placeholder="Enter marker name"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleAdd();
-                }
-              }}
-            />
+            <div className="flex gap-3">
+              <Input
+                id="marker-name"
+                ref={inputRef}
+                readOnly
+                value={name}
+                placeholder="Tap to enter marker name"
+                onFocus={showKeyboard}
+                onClick={showKeyboard}
+                className="h-14 text-lg"
+              />
+              <TouchButton
+                type="button"
+                variant="outline"
+                icon={keyboardVisible ? "lu:KeyboardOff" : "lu:Keyboard"}
+                onClick={() => {
+                  if (keyboardVisible) {
+                    setKeyboardVisible(false);
+                    return;
+                  }
+
+                  showKeyboard();
+                }}
+              >
+                {keyboardVisible ? "Hide" : "Edit"}
+              </TouchButton>
+            </div>
             {duplicateNameError && (
               <p className="text-destructive text-sm">
                 A marker with this name already exists.
@@ -156,6 +183,16 @@ export function AddMarkerDialog({
             </div>
           </div>
         </div>
+
+        <TouchKeyboard
+          value={name}
+          onChange={(value) => {
+            setName(value);
+            setDuplicateNameError(false);
+          }}
+          onEnter={handleAdd}
+          visible={keyboardVisible}
+        />
 
         <Separator />
         <div className="flex flex-row gap-4">
