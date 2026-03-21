@@ -17,6 +17,9 @@ import {
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
+import { Toast } from "@/components/Toast";
+import { toast } from "sonner";
+import React from "react";
 
 // ========== Event Schema Definitions ==========
 /**
@@ -60,6 +63,15 @@ export const fanStatesSchema = z.object({
   front: fanStateSchema,
 });
 
+export const coolingModeSchema = z.enum(["Low", "Ramp", "Max"]);
+export const coolingModeStateSchema = z.object({
+  mode: coolingModeSchema.nullable(),
+});
+export const coolingModeStatesSchema = z.object({
+  back: coolingModeStateSchema,
+  front: coolingModeStateSchema,
+});
+
 export const toleranceStateSchema = z.object({
   heating: z.number(),
   cooling: z.number(),
@@ -67,6 +79,27 @@ export const toleranceStateSchema = z.object({
 export const toleranceStatesSchema = z.object({
   back: toleranceStateSchema,
   front: toleranceStateSchema,
+});
+
+export const pidStateSchema = z.object({
+  kp: z.number(),
+  ki: z.number(),
+  kd: z.number(),
+});
+
+export const pidStatesSchema = z.object({
+  back: pidStateSchema,
+  front: pidStateSchema,
+});
+
+export const thermalSafetyStateSchema = z.object({
+  thermal_delay: z.number(),
+  cooldown_min_temperature: z.number(),
+});
+
+export const thermalSafetyStatesSchema = z.object({
+  back: thermalSafetyStateSchema,
+  front: thermalSafetyStateSchema,
 });
 /**
  * Live values event schema (time-series data)
@@ -82,6 +115,18 @@ export const liveValuesEventDataSchema = z.object({
   back_revolutions: z.number(),
   back_power: z.number(),
   front_power: z.number(),
+  front_heating: z.boolean().optional().default(false),
+  back_heating: z.boolean().optional().default(false),
+  front_cooling_mode: coolingModeSchema.nullable().optional().default(null),
+  back_cooling_mode: coolingModeSchema.nullable().optional().default(null),
+  front_pump_cooldown_active: z.boolean().optional().default(false),
+  back_pump_cooldown_active: z.boolean().optional().default(false),
+  front_pump_cooldown_remaining: z.number().optional().default(0),
+  back_pump_cooldown_remaining: z.number().optional().default(0),
+  front_heating_startup_wait_active: z.boolean().optional().default(false),
+  back_heating_startup_wait_active: z.boolean().optional().default(false),
+  front_heating_startup_wait_remaining: z.number().optional().default(0),
+  back_heating_startup_wait_remaining: z.number().optional().default(0),
   front_total_energy: z.number(),
   back_total_energy: z.number(),
 });
@@ -92,15 +137,25 @@ export const liveValuesEventDataSchema = z.object({
 export const stateEventDataSchema = z.object({
   is_default_state: z.boolean(),
   mode_state: modeStateSchema,
+  ambient_temperature_calibration: z.number().optional().default(22),
   flow_states: flowStatesSchema,
   temperature_states: tempStatesSchema,
   fan_states: fanStatesSchema,
+  cooling_mode_states: coolingModeStatesSchema,
   tolerance_states: toleranceStatesSchema,
+  pid_states: pidStatesSchema,
+  thermal_safety_states: thermalSafetyStatesSchema,
+});
+
+export const noticeEventDataSchema = z.object({
+  title: z.string(),
+  message: z.string(),
 });
 
 // ========== Event Schemas with Wrappers ==========
 export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
 export const stateEventSchema = eventSchema(stateEventDataSchema);
+export const noticeEventSchema = eventSchema(noticeEventDataSchema);
 
 // ========== Type Inferences ==========
 export type Mode = z.infer<typeof modeSchema>;
@@ -127,11 +182,23 @@ export type Aquapath1NamespaceStore = {
 
   front_power: TimeSeries;
   back_power: TimeSeries;
+  combinedPower: TimeSeries;
 
   front_total_energy: TimeSeries;
   back_total_energy: TimeSeries;
-
-  // Target value history (for graph target lines)
+  totalEnergyKWh: TimeSeries;
+  front_heating: boolean;
+  back_heating: boolean;
+  front_cooling_mode: "Low" | "Ramp" | "Max" | null;
+  back_cooling_mode: "Low" | "Ramp" | "Max" | null;
+  front_pump_cooldown_active: boolean;
+  back_pump_cooldown_active: boolean;
+  front_pump_cooldown_remaining: number;
+  back_pump_cooldown_remaining: number;
+  front_heating_startup_wait_active: boolean;
+  back_heating_startup_wait_active: boolean;
+  front_heating_startup_wait_remaining: number;
+  back_heating_startup_wait_remaining: number;
   targetFrontTemperature: TimeSeries;
   targetBackTemperature: TimeSeries;
 };
@@ -154,9 +221,13 @@ const { initialTimeSeries: front_power, insert: addFrontPower } =
   createTimeSeries();
 const { initialTimeSeries: back_power, insert: addBackPower } =
   createTimeSeries();
+const { initialTimeSeries: combinedPower, insert: addCombinedPower } =
+  createTimeSeries();
 const { initialTimeSeries: front_total_energy, insert: addFrontEnergy } =
   createTimeSeries();
 const { initialTimeSeries: back_total_energy, insert: addBackEnergy } =
+  createTimeSeries();
+const { initialTimeSeries: totalEnergyKWh, insert: addTotalEnergyKWh } =
   createTimeSeries();
 const {
   initialTimeSeries: targetFrontTemperature,
@@ -187,8 +258,22 @@ export const createAquapath1NamespaceStore =
         back_revolutions: back_revolutions,
         back_power: back_power,
         front_power: front_power,
+        combinedPower: combinedPower,
         front_total_energy: front_total_energy,
         back_total_energy: back_total_energy,
+        totalEnergyKWh: totalEnergyKWh,
+        front_heating: false,
+        back_heating: false,
+        front_cooling_mode: null,
+        back_cooling_mode: null,
+        front_pump_cooldown_active: false,
+        back_pump_cooldown_active: false,
+        front_pump_cooldown_remaining: 0,
+        back_pump_cooldown_remaining: 0,
+        front_heating_startup_wait_active: false,
+        back_heating_startup_wait_active: false,
+        front_heating_startup_wait_remaining: 0,
+        back_heating_startup_wait_remaining: 0,
         targetFrontTemperature: targetFrontTemperature,
         targetBackTemperature: targetBackTemperature,
       };
@@ -248,6 +333,26 @@ export function aquapath1MessageHandler(
                   timestamp,
                 }),
         }));
+      } else if (eventName === "NoticeEvent") {
+        const noticeEvent = noticeEventSchema.parse(event);
+        toast.custom(
+          () =>
+            React.createElement(
+              Toast,
+              {
+                title: noticeEvent.data.title,
+                icon: "lu:CircleAlert",
+              },
+              React.createElement(
+                "div",
+                { className: "text-zinc-500" },
+                noticeEvent.data.message,
+              ),
+            ),
+          {
+            duration: 7000,
+          },
+        );
       }
       // Live values events (time-series data)
       else if (eventName === "LiveValuesEvent") {
@@ -295,6 +400,12 @@ export function aquapath1MessageHandler(
             value: liveValuesEvent.data.back_power,
             timestamp: event.ts,
           }),
+          combinedPower: addCombinedPower(state.combinedPower, {
+            value:
+              liveValuesEvent.data.front_power +
+              liveValuesEvent.data.back_power,
+            timestamp: event.ts,
+          }),
           front_total_energy: addFrontEnergy(state.front_total_energy, {
             value: liveValuesEvent.data.front_total_energy,
             timestamp: event.ts,
@@ -303,6 +414,33 @@ export function aquapath1MessageHandler(
             value: liveValuesEvent.data.back_total_energy,
             timestamp: event.ts,
           }),
+          totalEnergyKWh: addTotalEnergyKWh(state.totalEnergyKWh, {
+            value:
+              (liveValuesEvent.data.front_total_energy +
+                liveValuesEvent.data.back_total_energy) /
+              1000,
+            timestamp: event.ts,
+          }),
+          front_heating: liveValuesEvent.data.front_heating,
+          back_heating: liveValuesEvent.data.back_heating,
+          front_cooling_mode: liveValuesEvent.data.front_cooling_mode,
+          back_cooling_mode: liveValuesEvent.data.back_cooling_mode,
+          front_pump_cooldown_active:
+            liveValuesEvent.data.front_pump_cooldown_active,
+          back_pump_cooldown_active:
+            liveValuesEvent.data.back_pump_cooldown_active,
+          front_pump_cooldown_remaining:
+            liveValuesEvent.data.front_pump_cooldown_remaining,
+          back_pump_cooldown_remaining:
+            liveValuesEvent.data.back_pump_cooldown_remaining,
+          front_heating_startup_wait_active:
+            liveValuesEvent.data.front_heating_startup_wait_active,
+          back_heating_startup_wait_active:
+            liveValuesEvent.data.back_heating_startup_wait_active,
+          front_heating_startup_wait_remaining:
+            liveValuesEvent.data.front_heating_startup_wait_remaining,
+          back_heating_startup_wait_remaining:
+            liveValuesEvent.data.back_heating_startup_wait_remaining,
         }));
       } else {
         handleUnhandledEventError(eventName);
