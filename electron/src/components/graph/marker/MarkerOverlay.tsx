@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useMemo, useState } from "react";
 import uPlot from "uplot";
-import { TimeSeries, TimeSeriesValue } from "@/lib/timeseries";
+import { TimeSeries } from "@/lib/timeseries";
 import type { Marker } from "@/stores/markerStore";
 
 const MARKER_BOTTOM_EXTENSION_PX = 94;
@@ -99,46 +99,10 @@ function areMarkerPositionsEqual(
   return true;
 }
 
-function interpolateValueAtTimestamp(
-  series: TimeSeries | null,
-  timestamp: number,
-): number | undefined {
-  if (!series) return undefined;
-
-  const validValues = series.long.values.filter(
-    (value): value is TimeSeriesValue => value !== null && value.timestamp > 0,
-  );
-  if (validValues.length === 0) return undefined;
-
-  let before: TimeSeriesValue | undefined;
-  let after: TimeSeriesValue | undefined;
-
-  for (const point of validValues) {
-    if (point.timestamp <= timestamp) {
-      before = point;
-    }
-    if (point.timestamp >= timestamp) {
-      after = point;
-      break;
-    }
-  }
-
-  if (before && after) {
-    if (before.timestamp === after.timestamp) {
-      return before.value;
-    }
-    const t =
-      (timestamp - before.timestamp) / (after.timestamp - before.timestamp);
-    return before.value + t * (after.value - before.value);
-  }
-
-  return before?.value ?? after?.value;
-}
-
 function buildMarkerPositions(
   plot: uPlot,
   markers: Marker[],
-  currentTimeSeries: TimeSeries | null,
+  _currentTimeSeries: TimeSeries | null,
 ): MarkerPosition[] {
   const bounds = getPlotBounds(plot);
   const markerBottom = getMarkerBottom(bounds);
@@ -146,26 +110,11 @@ function buildMarkerPositions(
   const labelY = lineTop - MARKER_LABEL_OFFSET_PX;
   const xMin = plot.scales.x?.min ?? -Infinity;
   const xMax = plot.scales.x?.max ?? Infinity;
-  const yScale = plot.scales.y;
 
   return markers
     .filter((marker) => marker.timestamp >= xMin && marker.timestamp <= xMax)
     .map((marker) => {
-      let value = interpolateValueAtTimestamp(
-        currentTimeSeries,
-        marker.timestamp,
-      );
-
-      if (value === undefined) {
-        value = marker.value;
-      }
-
-      if (value === undefined) {
-        value =
-          yScale?.min != null && yScale?.max != null
-            ? (yScale.min + yScale.max) / 2
-            : 0;
-      }
+      const markerCenterY = lineTop + (markerBottom - lineTop) / 2;
 
       return {
         key: `${marker.timestamp}-${marker.name}`,
@@ -178,10 +127,7 @@ function buildMarkerPositions(
             plot.valToPos(marker.timestamp, "x", false),
           ),
         ),
-        y: Math.max(
-          bounds.top,
-          Math.min(markerBottom, plot.valToPos(value, "y", false)),
-        ),
+        y: markerCenterY,
         lineTop,
         plotTop: bounds.top,
         plotBottom: markerBottom,
