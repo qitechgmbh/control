@@ -5,6 +5,7 @@
   ...
 }:
 
+# FIXME: bad practice
 with lib;
 
 let
@@ -154,9 +155,5 @@ in
         }
       });
     '';
-
-    # Desktop integration
-    xdg.mime.enable = true;
-    xdg.icons.enable = true;
   };
 }

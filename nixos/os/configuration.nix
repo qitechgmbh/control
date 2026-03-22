@@ -99,10 +99,6 @@ in
 
   networking.hostName = "nixos";
 
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
   # Enable networking
   networking.networkmanager.enable = true;
   networking.wireless.enable = lib.mkImageMediaOverride false;
@@ -253,58 +249,28 @@ in
 
   # Enable Wireshark with proper permissions
   programs.wireshark.enable = true;
-  programs.wireshark.package = pkgs.wireshark;
 
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
+  documentation.doc.enable = false;
+  services.gnome.core-apps.enable = false;
+  environment.gnome.excludePackages = [ pkgs.gnome-tour ];
   environment.systemPackages = with pkgs; [
-    #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-    #  wget
+    # Bare minimum gnome desktop
     gnome-tweaks
-    gnome-extension-manager
-    gnomeExtensions.dash-to-dock
-    # Extension to disable activities overview on login
+    loupe
+    mpv
+    nautilus
     gnomeExtensions.no-overview
+    # Utilities
     git
-    pkgs.qitechPackages.electron
+    btop
     htop
     wireshark
     pciutils
     neofetch
     caddy
+    # QiTech Frontend
+    pkgs.qitechPackages.electron
   ];
-
-  xdg.portal.enable = true;
-  xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
-
-  environment.gnome.excludePackages = (
-    with pkgs;
-    [
-      atomix # puzzle game
-      baobab # disk usage analyzer
-      cheese # webcam tool
-      eog # image viewer
-      epiphany # web browser
-      evince # document viewer
-      geary # email reader
-      simple-scan # document scanner
-      gnome-characters
-      gnome-music
-      gnome-photos
-      gnome-terminal
-      gnome-tour
-      gnome-calculator
-      gnome-calendar
-      gnome-contacts
-      gnome-maps
-      gnome-weather
-      hitori # sudoku game
-      iagno # go game
-      tali # poker game
-      totem # video player
-      seahorse # password manager
-    ]
-  );
 
   # Set system wide env variables
   environment.variables = {
@@ -325,6 +291,6 @@ in
   ];
   networking.firewall.allowedTCPPorts = [ 443 ];
 
-  system.stateVersion = "24.11"; # Did you read the comment?
-
+  # Dont edit
+  system.stateVersion = "24.11";
 }
