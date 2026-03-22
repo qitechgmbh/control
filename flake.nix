@@ -97,7 +97,9 @@
               nixd
             ];
 
-            ELECTON_SKIP_BINARY_DOWNLOAD = 1;
+            ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
+            # TODO: There's probably a better solution
+            ELECTRON_OVERRIDE_DIST_PATH = "${electron}/bin/";
 
             hardeningDisable = [ "fortify" ];
 
