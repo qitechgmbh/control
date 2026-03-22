@@ -1,4 +1,11 @@
-{ lib, pkgs, pkg-config, libudev-zero, libpcap, craneLib }:
+{
+  lib,
+  pkgs,
+  pkg-config,
+  libudev-zero,
+  libpcap,
+  craneLib,
+}:
 
 let
   commonArgs = {
@@ -7,7 +14,10 @@ let
     strictDeps = true;
 
     nativeBuildInputs = [ pkg-config ];
-    buildInputs = [ libpcap libudev-zero ];
+    buildInputs = [
+      libpcap
+      libudev-zero
+    ];
 
     src = craneLib.cleanCargoSource ../..;
 
@@ -17,12 +27,15 @@ let
       else
         "2";
 
-    cargoExtraArgs =
-      "--features tracing-journald,io-uring --no-default-features";
+    cargoExtraArgs = "--features tracing-journald,io-uring --no-default-features";
   };
 
   cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-in craneLib.buildPackage (commonArgs // {
+in
+craneLib.buildPackage (
+  commonArgs
+  // {
 
-  inherit cargoArtifacts;
-})
+    inherit cargoArtifacts;
+  }
+)

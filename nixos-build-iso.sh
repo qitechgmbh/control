@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -eu
 
 # Capture all git information
 export GIT_TIMESTAMP=$(git --no-pager show -s --format=%cI HEAD)  # e.g., "2025-06-10T14:30:45+02:00"
@@ -23,18 +23,4 @@ fi
 # Create escaped version for system.nixos.label
 export GIT_ABBREVIATION_ESCAPED=$(echo "$GIT_ABBREVIATION" | sed -e 's/+/-/g' -e 's/[^a-zA-Z0-9:_\.-]//g')  # e.g., "2-0-0", "main", "b2c7f6e"
 
-sudo \
-    --preserve-env=GIT_TIMESTAMP \
-    --preserve-env=GIT_COMMIT \
-    --preserve-env=GIT_URL \
-    --preserve-env=GIT_ABBREVIATION \
-    --preserve-env=GIT_ABBREVIATION_ESCAPED \
-    nixos-rebuild boot \
-    	--flake .#nixos \
-    	--show-trace \
-    	--impure \
-    	--option sandbox false \
-    	--option eval-cache false \
-    	-L
-
-sudo reboot
+nix build -L --impure .#iso-x86_64
