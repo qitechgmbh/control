@@ -2,6 +2,9 @@ use anyhow::{Result, anyhow};
 use control_core::helpers::hashing::{byte_folding_u16, hash_djb2};
 use smol::Timer;
 use smol::lock::RwLock;
+use units::Velocity;
+use units::velocity::meter_per_second;
+use std::any::TypeId;
 use std::net::UdpSocket;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -109,6 +112,7 @@ impl From<XtremRequest> for Frame {
 }
 
 impl XtremSerial {
+
     pub fn new_serial() -> Result<(DeviceIdentification, Arc<RwLock<Self>>)> {
         let xtrem_data = Some(XtremData {
             current_weight: 0.0,

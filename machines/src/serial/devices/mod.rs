@@ -8,4 +8,4 @@ pub mod winder_mock;
 
 pub mod xtrem_zebra;
 
-// mod zebra;
+mod zebra;

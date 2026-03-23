@@ -45,36 +45,3 @@ impl Request {
         }
     }
 }
-
-pub fn decode_frame(data: &[u8]) -> anyhow::Result<Frame> {
-
-    let ascii = String::from_utf8_lossy(&data);
-
-    if ascii.len() < 10 {
-        return Err(anyhow!("Too short ASCII frame"));
-    }
-
-    let id_origin = ascii[0..2].parse::<u8>().unwrap_or(0);
-    let id_dest = ascii[2..4].parse::<u8>().unwrap_or(0);
-    let func_char = ascii.chars().nth(4).unwrap_or('r');
-    let function = Function::from_char(func_char)
-        .ok_or_else(|| anyhow!("Invalid function char '{}'", func_char))?;
-
-    let data_address = u16::from_str_radix(&ascii[5..9], 16).unwrap_or(0);
-    let data_length = 0;
-    let payload = Vec::new();
-
-    let frame = Frame {
-        stx: 0x02,
-        id_origin,
-        id_dest,
-        function,
-        data_address,
-        data_length,
-        data: payload,
-        lrc: 0,
-        etx: 0x03,
-    };
-
-    Ok(frame)
-}

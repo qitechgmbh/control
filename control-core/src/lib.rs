@@ -13,5 +13,9 @@ pub mod socketio;
 pub mod transmission;
 pub mod xtrem_protocol;
 
+pub mod xtrem;
+
+
+
 #[cfg(feature = "video-streaming")]
 pub mod video_streaming;
