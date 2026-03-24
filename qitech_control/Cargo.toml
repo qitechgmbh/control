@@ -6,5 +6,5 @@ edition = "2024"
 [dependencies]
 tokio = { version = "1.50.0", features = ["rt", "rt-multi-thread", "macros", "time"] }
 qitech_lib = { path = "../qitech_lib" }
-machines = { path = "../machines" }
+machine_implementations = { path = "../machine_implementations" }
 

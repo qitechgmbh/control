@@ -1,9 +1,7 @@
 use anyhow::{Error, Result};
 use control_core::socketio::event::GenericEvent;
 use control_core::socketio::namespace::{CacheableEvents, Namespace, NamespaceCacheingLogic};
-use ethercat_hal::devices::{
-    EthercatDevice, SubDeviceIdentityTuple, subdevice_identity_to_tuple,
-};
+use ethercat_hal::devices::{EthercatDevice, SubDeviceIdentityTuple};
 use ethercat_hal::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
@@ -58,7 +56,7 @@ pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
 pub const WAGO_750_501_TEST_MACHINE: u16 = 0x0042;
-
+/*
 use serde_json::Value;
 use smol::lock::RwLock;
 
@@ -102,7 +100,7 @@ pub enum MachineNewHardware
     Serial(MachineNewHardwareSerial),
 }
 
-pub struct MachineNewHardwareEthercat { 
+pub struct MachineNewHardwareEthercat {
     pub ethercat_devices: Vec<Arc<Box<dyn EthercatDevice>>>,
 }
 
@@ -275,7 +273,7 @@ pub trait MachineApi {
     fn api_mutate(&mut self, value: Value) -> Result<(), anyhow::Error>;
     fn api_event_namespace(&mut self) -> Option<Namespace>;
 }
-
+/*
 pub trait Machine: MachineAct + MachineApi + Any + Debug {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique;
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>>;
@@ -305,7 +303,7 @@ pub trait Machine: MachineAct + MachineApi + Any + Debug {
         _ = uid;
     }
 }
-
+*/
 pub trait AnyGetters: Any {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
@@ -333,7 +331,7 @@ fn get_device_ident(
 }
 
 fn get_ethercat_device<T>(
-    hardware: &MachineNewHardwareEthercat,
+    hardware: &Vec<Box<dyn EthercatDevice>>,
     role: u16,
     expected_identities: Vec<SubDeviceIdentityTuple>,
 ) -> Result<Box<T>,anyhow::Error>
@@ -479,3 +477,4 @@ where
         self.get_machine_channel().main_sender.clone()
     }
 }
+*/

@@ -1495,7 +1495,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "machines"
+name = "machine_implementations"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -1515,6 +1515,10 @@ dependencies = [
  "tonic",
  "tracing",
 ]
+
+[[package]]
+name = "machines"
+version = "0.1.0"
 
 [[package]]
 name = "matchit"
@@ -1923,7 +1927,7 @@ dependencies = [
 name = "qitech_control"
 version = "0.1.0"
 dependencies = [
- "machines",
+ "machine_implementations",
  "qitech_lib",
  "tokio",
 ]
@@ -1935,6 +1939,7 @@ dependencies = [
  "bitvec",
  "ethercat_hal",
  "ethercat_hal_derive",
+ "machines",
  "modbus",
  "tokio",
  "units",

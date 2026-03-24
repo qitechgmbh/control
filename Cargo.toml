@@ -3,7 +3,7 @@ members = [
     "qitech_control",
     "qitech_lib",
     "control-core",
-    "machines",
+    "machine_implementations",
     "control-core-derive",
     "utils",
 ]
