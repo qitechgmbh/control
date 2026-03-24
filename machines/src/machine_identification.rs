@@ -68,7 +68,7 @@ impl MachineIdentification {
             x if x == WAGO_DO_TEST_MACHINE => "wago_do_test_machine".to_string(),
             x if x == WAGO_750_430_DI_MACHINE => "wago_750_430_di_machine".to_string(),
             x if x == WAGO_750_531_MACHINE => "wago_750_531_machine".to_string(),
-            x if x == TEST_MACHINE_BOTTLECAPS => "bottlecaps_test_machine".to_string(),
+            x if x == TEST_MACHINE_BOTTLECAPS => "bottlecaps_test_machine".to_string(),            x if x == MACHINE_WAGO_DIO_SEPARATE_V1 => "wago_dio_separate".to_string(),
             _ => unreachable!("Unknown machine id {}", self.machine),
         }
     }
@@ -199,7 +199,7 @@ use crate::WAGO_750_430_DI_MACHINE;
 use crate::WAGO_750_531_MACHINE;
 use crate::WAGO_AI_TEST_MACHINE;
 use crate::WAGO_DO_TEST_MACHINE;
-
+use crate::MACHINE_WAGO_DIO_SEPARATE_V1;
 #[derive(Debug)]
 pub struct MachineIdentificationAddresses {
     pub vendor_word: u16,
