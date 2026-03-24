@@ -1,4 +1,4 @@
-use std::sync::Arc;
+/*use std::sync::Arc;
 
 use control_core::socketio::{
     event::{Event, GenericEvent},
@@ -7,7 +7,6 @@ use control_core::socketio::{
     },
 };
 use serde::{Deserialize, Serialize};
-
 use crate::{MachineApi, minimal_machines::digital_input_test_machine::DigitalInputTestMachine};
 
 #[derive(Serialize, Debug, Clone)]
@@ -75,3 +74,4 @@ impl MachineApi for DigitalInputTestMachine {
         self.namespace.namespace.clone()
     }
 }
+*/
