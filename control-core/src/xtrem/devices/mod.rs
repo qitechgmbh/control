@@ -1,3 +1,5 @@
+use crate::xtrem::protocol::{Request, request::RegisterData};
+
 mod zebra;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -27,7 +29,7 @@ pub enum ParseError
 pub enum HandleResponseError
 {
     ParseError(ParseError),
-    InvalidFunction,
+    InvalidAddress,
     NoResponseExpected,
 }
 
@@ -37,5 +39,5 @@ pub trait Device<S: Scheduler>
 
     fn next_request(&mut self) -> Option<(Request, bool)>;
 
-    fn handle_response(&mut self, response: Response) -> Result<(), HandleResponseError>;
+    fn recv_register_data(&mut self, data: RegisterData) -> Result<(), HandleResponseError>;
 }

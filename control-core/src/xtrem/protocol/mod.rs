@@ -1,5 +1,4 @@
-mod frame;
-pub use frame::Frame;
+pub mod frame;
 
 mod function;
 pub use function::RequestFunction;
@@ -9,6 +8,6 @@ pub use function::Function;
 mod data_address;
 pub use data_address::DataAddress;
 
-mod request;
+pub mod request;
 pub use request::Request;
 pub use request::Response;

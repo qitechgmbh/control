@@ -1,19 +1,29 @@
-use crate::xtrem::protocol::Function;
+use crate::xtrem::protocol::{Function, Request};
 
-#[derive(Debug, Clone)]
-pub struct Frame<'a> {
-    pub stx: u8,
-    pub id_origin: u8,
-    pub id_dest: u8,
-    pub function: Function,
-    pub data_address: u16,
-    pub data_length: u8,
-    pub data: &'a [u8],
-    pub lrc: u8,
-    pub etx: u8,
+pub fn encode<'a>(
+    id_origin: u8,
+    id_dest:   u8,
+    request: Request<'_>,
+    buf: &'a mut [u8]
+) -> &'a [u8] {
+
+
+    true
 }
 
 impl Frame {
+
+    pub fn encode_frame(
+        id_origin: u8,
+        id_dest:   u8,
+        request: Request<'_>,
+        buf: &mut [u8]
+    ) -> bool {
+
+
+        true
+    }
+
     /// Compute XOR LRC
     pub fn compute_lrc(data: &[u8]) -> u8 {
         data.iter().fold(0u8, |acc, &b| acc ^ b)

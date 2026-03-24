@@ -1,4 +1,10 @@
-use crate::xtrem::{devices::{Device, HandleResponseError, Priority, Scheduler}, protocol::{DataAddress, Request, Response}};
+use crate::xtrem::{
+    devices::{Device, HandleResponseError, Priority, Scheduler},
+    protocol::{
+        Request,
+        request::{self, RegisterData},
+    },
+};
 
 #[derive(Debug)]
 pub struct XtremZebra<S: Scheduler> {
@@ -17,26 +23,30 @@ impl<S: Scheduler> XtremZebra<S> {
 }
 
 impl<S: Scheduler> Device<S> for XtremZebra<S> {
-    fn new(scheduler: S) -> Self where Self: Sized {
-        Self { scheduler, weight: None }
+    fn new(scheduler: S) -> Self
+    where
+        Self: Sized,
+    {
+        Self {
+            scheduler,
+            weight: None,
+        }
     }
 
     fn next_request(&mut self) -> Option<(Request, bool)> {
-        let request = Request {
-            address: todo!(),
-            function: todo!(),
-        };
+        let request = request::weight_value::read();
         let has_next = false;
         Some((request, has_next))
     }
 
-    fn handle_response(&mut self, response: Response) -> Result<(), HandleResponseError> {
-        use Response::*;
-        match response {
-            Read(data) => {
+    fn recv_register_data(&mut self, data: RegisterData) -> Result<(), HandleResponseError> {
+        use RegisterData::*;
 
-            },
-            _ => return Err(HandleResponseError::InvalidFunction),
-        }
+        match data {
+            WeightValue(weight) => self.weight = Some(weight),
+            _ => return Err(HandleResponseError::InvalidAddress),
+        };
+
+        Ok(())
     }
 }

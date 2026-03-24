@@ -11,6 +11,8 @@ anyhow = "1.0.100"
 
 axum = "0.8.8"
 
+heapless = "0.9.2"
+
 ethercat_hal = { path = "../ethercat-hal" }
 units = { path = "../units" }
 ethercrab = { git = "https://github.com/v-morlock/ethercrab", branch = "main" }
@@ -27,6 +29,7 @@ core_affinity = "0.8.3"
 control_core_derive = { version = "0.1.0", path = "../control-core-derive" }
 tokio = { version = "1.45.1", features = ["sync"], optional = true }
 
+crossbeam = "0.8.4"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.176"
