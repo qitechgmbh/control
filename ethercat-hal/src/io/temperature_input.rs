@@ -54,6 +54,8 @@ pub enum TemperatureInputError {
 
     /// Under-voltage error
     UnderVoltage,
+
+    WireBreak,
 }
 
 #[derive(Debug, Clone)]
