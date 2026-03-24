@@ -1,21 +1,25 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
+# FIXME: bad practice
 with lib;
 
-let cfg = config.services.qitech;
-in {
+let
+  cfg = config.services.qitech;
+in
+{
   options.services.qitech = {
     enable = mkEnableOption "QiTech Control";
-
 
     openFirewall = mkOption {
       type = types.bool;
       default = false;
-      description =
-        "Whether to open ports in the firewall for the QiTech server";
+      description = "Whether to open ports in the firewall for the QiTech server";
     };
-    
-    networking.firewall = mkIf cfg.openFirewall { allowedTCPPorts = [ 443 ]; };
 
     user = mkOption {
       type = types.str;
@@ -37,17 +41,25 @@ in {
   };
 
   config = mkIf cfg.enable {
-    assertions = [{
-      assertion = cfg.package != null;
-      message =
-        "No QiTech server package available. Please add it to your pkgs or explicitly set services.qitech.package.";
-    }];
+    assertions = [
+      {
+        assertion = cfg.package != null;
+        message = "No QiTech server package available. Please add it to your pkgs or explicitly set services.qitech.package.";
+      }
+    ];
+
+    networking.firewall = mkIf cfg.openFirewall { allowedTCPPorts = [ 443 ]; };
 
     users.users.${cfg.user} = {
       isSystemUser = true;
       group = cfg.group;
       description = "QiTech service user";
-      extraGroups = [ "realtime" "plugdev" "dialout" "uucp" ];
+      extraGroups = [
+        "realtime"
+        "plugdev"
+        "dialout"
+        "uucp"
+      ];
     };
 
     users.groups.${cfg.group} = { };
@@ -79,10 +91,8 @@ in {
         RestartSec = "10s";
 
         # Capabilities
-        CapabilityBoundingSet =
-          "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
-        AmbientCapabilities =
-          "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
+        CapabilityBoundingSet = "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
+        AmbientCapabilities = "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
 
         # Hardening options
         NoNewPrivileges = true;
@@ -97,8 +107,7 @@ in {
         # Must disable this to allow /proc/irq writes
         ProtectKernelTunables = false;
         ProtectControlGroups = true;
-        RestrictAddressFamilies =
-          "AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET";
+        RestrictAddressFamilies = "AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET";
         RestrictNamespaces = true;
         LockPersonality = true;
         MemoryDenyWriteExecute = false;
@@ -146,9 +155,5 @@ in {
         }
       });
     '';
-
-    # Desktop integration
-    xdg.mime.enable = true;
-    xdg.icons.enable = true;
   };
 }

@@ -466,12 +466,54 @@ Then start the machine as follows:
 
 <br>
 
-**Set the srew direction**
+### 2.3.1 Adaptive Pressure PID Auto-Tuning
 
-- Go to "Config" in the funktion bar
+The extruder features an **automatic PID tuning** function for the pressure regulation mode. Once tuning completes, the new parameters are applied to the pressure controller immediately and automatically — no manual confirmation is required.
+
+> **Important:** The PID parameters are specific to the **material, target pressure, and set temperatures** in use at the time of tuning. The system is optimised for one operating point. It is therefore strongly recommended to run auto-tuning separately for each material you use regularly and save the values per material profile in a preset.
+
+<br>
+
+**When to perform auto-tuning**
+
+Auto-tuning should be performed **after an active filament production run** — not as a standalone procedure where the machine is heated up specifically for tuning. The best results are obtained when the extruder has already been running at its normal operating point for the chosen material for an extended period and consistent filament quality is being produced. The following conditions must be met before starting:
+
+- The extruder is in **Pressure Regulation** mode (not RPM mode). The "Start Auto-Tune" button is disabled if this condition is not met.
+- All heating zones have reached their **target temperatures** and have been stable for at least **15 minutes**. Unstable temperatures will lead to inconsistent melt viscosity and unreliable tuning results.
+- The nozzle pressure is at or near the **intended target pressure** for the material. The target pressure should represent the ideal operating window for best filament quality with that material.
+- The extruder has been **actively extruding** and producing good filament long enough that a steady, representative melt flow is established — not just purged.
+- The hopper contains **enough material** to sustain extrusion throughout the entire tuning procedure. In most cases the auto-tune consumes less than **100 g** of material, but ensure the hopper is sufficiently filled before starting so the run is not interrupted.
+
+<br>
+
+**Step-by-step procedure**
+
+1. Run the extruder normally with the target material until stable filament production at the desired temperatures and pressure is established. Do not start a new heat-up cycle specifically for tuning — carry out auto-tuning after a production run.
+2. Once temperatures are stable and good filament quality is being produced, switch to **Pressure Regulation** mode via the "Regulation" selector on the Control page.
+3. Set the **Target Pressure** to the operating pressure that gives the best results for this material.
+4. Navigate to **Settings → Advanced → Pressure PID Auto-Tune**.
+5. Configure the tuning parameters:
+   - **Tune Delta:** Pressure oscillation band around the target (default: 1.0 bar). A smaller value gives finer excitation; increase it if the system does not oscillate.
+   - **Frequency Step:** Inverter frequency deviation used as the relay excitation (default: 2.5 Hz). Lower values result in smaller pressure swings; **Only increase if oscillations are too weak and only by a small amount, for every retry.**
+6. Press **Start Auto-Tune**. The controller will switch to the tuning control and begins oscillating the screw speed around the current operating frequency.
+7. Monitor the **Status** progress bar. The tuner records 20 oscillation peaks (~10 full cycles) to ensure a clean and representative identification. This typically takes 10 seconds.
+8. Once the status shows **Completed**, the tuned Kp, Ki, and Kd values are displayed and have already been applied to the pressure PID controller. Verify the pressure response is stable and satisfactory.
+9. To abort a running tuning session at any time, press **Stop**. The controller will revert to the previous PID values.
+
+<br>
+
+> **Note:** If the status shows **Failed**, the system either timed out or could not detect consistent oscillations. Check that the target pressure is reachable, the Tune Delta is appropriate for the material, and that temperatures are stable, then retry.
+
+<br>
+
+<br>
+
+**Set the screw direction**
+
+- Go to "Config" in the function bar
 - To set the screw direction click on "Forward" or "Backward" in the "Invert settings" box
 
-![Changing screrw direction](images/manuals/extruder/screenshot_config.png)
+![Changing screw direction](images/manuals/extruder/screenshot_config.png)
 
 <br>
 

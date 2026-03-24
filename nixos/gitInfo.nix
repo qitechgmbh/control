@@ -1,5 +1,9 @@
 { pkgs, ... }:
 
+## Alternative implementation without using env
+# gitTimestamp="date --date='@${src.lastModified}' --iso-8601=seconds"
+# gitCommit="${src.rev or src.dirtyRev}"
+
 let
   # Generate Git info in the store
   gitInfoDerivation = pkgs.runCommand "git-info" { } ''
@@ -21,4 +25,5 @@ let
       }
     EOF
   '';
-in builtins.fromJSON (builtins.readFile "${gitInfoDerivation}/git-info.json")
+in
+builtins.fromJSON (builtins.readFile "${gitInfoDerivation}/git-info.json")

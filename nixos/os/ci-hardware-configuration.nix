@@ -1,5 +1,4 @@
-{ config, pkgs, ... }:
-
+{ ... }:
 {
   fileSystems."/" = {
     device = "/dev/null";

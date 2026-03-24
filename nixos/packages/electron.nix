@@ -1,4 +1,8 @@
-{ lib, buildNpmPackage, electron }:
+{
+  lib,
+  buildNpmPackage,
+  electron,
+}:
 
 buildNpmPackage rec {
   pname = "qitech-control-electron";
@@ -11,7 +15,10 @@ buildNpmPackage rec {
 
   makeCacheWritable = true;
   npmDepsHash = "sha256-p6KkgSX38FtReOmvT+vyWBMqxfn8hqD8dvCK3vpkm2k=";
-  npmFlags = [ "--no-audit" "--no-fund" ];
+  npmFlags = [
+    "--no-audit"
+    "--no-fund"
+  ];
 
   installPhase = ''
     runHook preInstall

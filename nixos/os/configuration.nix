@@ -1,23 +1,17 @@
-{ config, pkgs, ... }:
-
-let gitInfo = import ../gitInfo.nix { inherit pkgs; };
-in {
-  imports = [
-    (if builtins.pathExists "/etc/nixos/hardware-configuration.nix" then
-      /etc/nixos/hardware-configuration.nix
-    else
-      ./ci-hardware-configuration.nix)
-  ];
-
-  # Bootloader.
-  boot.loader.systemd-boot = {
-    enable = true;
-    consoleMode = "max"; # Use the highest available resolution
-  };
-  boot.loader.efi.canTouchEfiVariables = true;
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
+let
+  gitInfo = import ../gitInfo.nix { inherit pkgs; };
+in
+{
   boot.kernelPackages = pkgs.linuxPackages_6_18;
-  boot.kernelModules = [ "i915" ];
-
+  # Disable filesystems with Out-of-tree kernel modules
+  boot.supportedFilesystems.zfs = lib.mkForce false;
+  boot.supportedFilesystems.bcachefs = lib.mkForce false;
   boot.kernelParams = [
     # Realtime Preemption
     "preempt=full"
@@ -73,10 +67,9 @@ in {
 
   nix = {
     package = pkgs.nixVersions.stable;
-    extraOptions = ''
-      experimental-features = nix-command flakes
-    '';
-    settings = { sandbox = false; };
+    settings = {
+      experimental-features = "nix-command flakes";
+    };
   };
 
   # Create a realtime group
@@ -106,12 +99,9 @@ in {
 
   networking.hostName = "nixos";
 
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
   # Enable networking
   networking.networkmanager.enable = true;
+  networking.wireless.enable = lib.mkImageMediaOverride false;
 
   # Set your time zone.
   time.timeZone = "UTC";
@@ -119,27 +109,15 @@ in {
   # Select internationalisation properties.
   # we use en_DK for english texts but metric units and 24h time
   i18n.defaultLocale = "en_DK.UTF-8";
-
-  i18n.extraLocaleSettings = {
-    LC_ADDRESS = "en_DK.UTF-8";
-    LC_IDENTIFICATION = "en_DK.UTF-8";
-    LC_MEASUREMENT = "en_DK.UTF-8";
-    LC_MONETARY = "en_DK.UTF-8";
-    LC_NAME = "en_DK.UTF-8";
-    LC_NUMERIC = "en_DK.UTF-8";
-    LC_PAPER = "en_DK.UTF-8";
-    LC_TELEPHONE = "en_DK.UTF-8";
-    LC_TIME = "en_DK.UTF-8";
-  };
+  i18n.supportedLocales = [ "all" ];
 
   # Enable the X11 windowing system.
-  services.xserver.enable = true;
-  services.xserver.displayManager.gdm = {
+  services.displayManager.gdm = {
     enable = true;
     autoSuspend = false;
     wayland = true;
   };
-  services.xserver.desktopManager.gnome.enable = true;
+  services.desktopManager.gnome.enable = true;
 
   services.caddy = {
     enable = true;
@@ -149,11 +127,11 @@ in {
     '';
 
     virtualHosts.":443" = {
-      extraConfig = ''       
+      extraConfig = ''
         import machine_basic_auth
-        
+
         reverse_proxy localhost:3001
-        
+
         tls internal {
           on_demand
         }
@@ -161,7 +139,7 @@ in {
       '';
     };
   };
-  
+
   systemd.services.caddy.serviceConfig.ReadOnlyPaths = [ "/var/lib/caddy/auth_snippet.conf" ];
   #services.caddy = {
   #  enable = true;
@@ -169,7 +147,6 @@ in {
   #    respond "Hello, world!"
   #  '';
   #};
-
 
   # Disable sleep/suspend
   systemd.targets.sleep.enable = false;
@@ -185,11 +162,7 @@ in {
     powertop.enable = false;
   };
 
-
   services.logind = {
-    # This remains for backward compatibility/high-level override
-    lidSwitch = "ignore";
-
     # Structured settings for logind.conf
     settings = {
       Login = {
@@ -202,8 +175,6 @@ in {
     };
   };
 
-
-
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "de";
@@ -213,11 +184,7 @@ in {
   # Configure console keymap
   console.keyMap = "de";
 
-  # Enable CUPS to print documents.
-  services.printing.enable = false;
-
   # Enable sound with pipewire.
-  services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -227,10 +194,7 @@ in {
   };
 
   # Enable graphics acceleration
-  hardware.graphics = {
-    enable = true;
-    extraPackages = with pkgs; [ mesa ];
-  };
+  hardware.graphics.enable = true;
 
   services.libinput.enable = true;
   services.libinput.touchpad.tapping = true;
@@ -247,11 +211,30 @@ in {
   users.users.qitech = {
     isNormalUser = true;
     description = "QiTech HMI";
-    extraGroups = [ "networkmanager" "wheel" "realtime" "wireshark" ];
-    packages = with pkgs; [ ];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+      "realtime"
+      "wireshark"
+    ];
+  };
+
+  home-manager.useGlobalPkgs = true;
+  home-manager.useUserPackages = true;
+  home-manager.users.qitech = import ./home.nix;
+  home-manager.extraSpecialArgs = {
+    inherit inputs;
   };
 
   security.sudo.wheelNeedsPassword = false;
+  # The equivalent for pkexec (graphical sudo)
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if (subject.isInGroup("wheel")) {
+        return polkit.Result.YES;
+      }
+    });
+  '';
 
   # Enable automatic login for the user.
   services.displayManager.autoLogin.enable = true;
@@ -266,55 +249,29 @@ in {
 
   # Enable Wireshark with proper permissions
   programs.wireshark.enable = true;
-  programs.wireshark.package = pkgs.wireshark;
 
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
+  documentation.doc.enable = false;
+  services.gnome.core-apps.enable = false;
+  environment.gnome.excludePackages = [ pkgs.gnome-tour ];
   environment.systemPackages = with pkgs; [
-    #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-    #  wget
+    # Bare minimum gnome desktop
+    gnome-console
     gnome-tweaks
-    gnome-extension-manager
-    gnomeExtensions.dash-to-dock
-    # Extension to disable activities overview on login
+    loupe
+    mpv
+    nautilus
     gnomeExtensions.no-overview
+    # Utilities
     git
-    pkgs.qitechPackages.electron
+    btop
     htop
     wireshark
     pciutils
     neofetch
     caddy
+    # QiTech Frontend
+    pkgs.qitechPackages.electron
   ];
-
-  xdg.portal.enable = true;
-  xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
-
-  environment.gnome.excludePackages = (with pkgs; [
-    atomix # puzzle game
-    baobab # disk usage analyzer
-    cheese # webcam tool
-    eog # image viewer
-    epiphany # web browser
-    evince # document viewer
-    geary # email reader
-    simple-scan # document scanner
-    gnome-characters
-    gnome-music
-    gnome-photos
-    gnome-terminal
-    gnome-tour
-    gnome-calculator
-    gnome-calendar
-    gnome-contacts
-    gnome-maps
-    gnome-weather
-    hitori # sudoku game
-    iagno # go game
-    tali # poker game
-    totem # video player
-    seahorse # password manager
-  ]);
 
   # Set system wide env variables
   environment.variables = {
@@ -327,10 +284,14 @@ in {
 
   # Set revision label
   system.nixos.label = "${gitInfo.gitAbbreviationEscaped}_${gitInfo.gitCommit}";
-  
-  networking.firewall.allowedUDPPorts = [ 53 67 69 ];
+
+  networking.firewall.allowedUDPPorts = [
+    53
+    67
+    69
+  ];
   networking.firewall.allowedTCPPorts = [ 443 ];
 
-  system.stateVersion = "24.11"; # Did you read the comment?
-
+  # Dont edit
+  system.stateVersion = "24.11";
 }
