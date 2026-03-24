@@ -94,6 +94,8 @@ import { Wago750_553MachineControlPage } from "@/machines/minimal_machines/wago7
 
 import { Wago750460MachinePage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachinePage";
 import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachineControlPage";
+import { WagoDioSeparatePage } from "@/machines/minimal_machines/wagodioseparate/WagoDioSeparatePage";
+import { WagoDioSeparateControlPage } from "@/machines/minimal_machines/wagodioseparate/WagoDioSeparateControlPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -102,6 +104,17 @@ import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago75
 // the mainNavigation has a custom layout
 // the winder2 winder2 and configuration also have a custom layout
 // the leaf routes are just pages
+export const wagoDioSeparateSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wagodioseparate/$serial",
+  component: () => <WagoDioSeparatePage />,
+});
+
+export const wagoDioSeparateControlRoute = createRoute({
+  getParentRoute: () => wagoDioSeparateSerialRoute,
+  path: "control",
+  component: () => <WagoDioSeparateControlPage />,
+});
 export const testMachineSerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "testmachine/$serial",
