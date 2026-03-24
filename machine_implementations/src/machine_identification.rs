@@ -1,9 +1,9 @@
-use std::fmt::Display;
 use qitech_lib::ethercat_hal::EtherCATThreadChannel;
 use qitech_lib::ethercat_hal::devices::wago_750_354::WAGO_750_354_IDENTITY_A;
 use qitech_lib::ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTITY;
 use serde::Deserialize;
 use serde::Serialize;
+use std::fmt::Display;
 
 /// Identifies a specific machine
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -149,7 +149,7 @@ use anyhow::anyhow;
 use qitech_lib::ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
 use qitech_lib::ethercat_hal::devices::el1002::EL1002_IDENTITY_A;
 use qitech_lib::ethercat_hal::devices::el1008::EL1008_IDENTITY_A;
-use qitech_lib:: ethercat_hal::devices::el2002::EL2002_IDENTITY_A;
+use qitech_lib::ethercat_hal::devices::el2002::EL2002_IDENTITY_A;
 use qitech_lib::ethercat_hal::devices::el2002::EL2002_IDENTITY_B;
 use qitech_lib::ethercat_hal::devices::el2004::EL2004_IDENTITY_A;
 use qitech_lib::ethercat_hal::devices::el2008::EL2008_IDENTITY_A;
@@ -172,10 +172,6 @@ use qitech_lib::ethercat_hal::devices::el6021::{
 use qitech_lib::ethercat_hal::devices::el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
 use qitech_lib::ethercat_hal::devices::el7031_0030::EL7031_0030_IDENTITY_A;
 use qitech_lib::ethercat_hal::devices::el7041_0052::EL7041_0052_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::subdevice_identity_to_tuple;
-use qitech_lib::ethercat_hal::helpers::ethercrab_types::{
-    EthercrabSubDeviceOperational, EthercrabSubDevicePreoperational,
-};
 
 use crate::ANALOG_INPUT_TEST_MACHINE;
 use crate::IP20_TEST_MACHINE;
@@ -234,29 +230,29 @@ impl Default for MachineIdentificationAddresses {
 ///
 /// Returns a vector of MachineDeviceIdentification for all subdevices
 pub fn read_device_identifications(
-    channel : EtherCATThreadChannel,
-) -> Vec<Result<DeviceMachineIdentification, Error>> {    
+    channel: EtherCATThreadChannel,
+) -> Vec<Result<DeviceMachineIdentification, Error>> {
     vec![]
 }
 
 /// Reads the machine device identification from the EEPROM
 pub async fn machine_device_identification(
-    channel : EtherCATThreadChannel,
-) -> Result<DeviceMachineIdentification, Error> {    
+    channel: EtherCATThreadChannel,
+) -> Result<DeviceMachineIdentification, Error> {
     todo!()
 }
 
 /// Writes the machine device identification to the EEPROM
 pub async fn write_machine_device_identification<'maindevice, const MAX_PDI: usize>(
-    channel : EtherCATThreadChannel,
-) -> Result<(), Error> {   
+    channel: EtherCATThreadChannel,
+) -> Result<(), Error> {
     Ok(())
 }
 
 /// Returns the EEPROM addresses for the machine device identification
 /// based on the subdevice's identity
 pub fn get_identification_addresses(
-    subdevice_identity: (u32,u32,u32),
+    subdevice_identity: (u32, u32, u32),
     subdevice_name: &str,
 ) -> Result<MachineIdentificationAddresses, Error> {
     Ok(match subdevice_identity {
