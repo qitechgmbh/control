@@ -816,7 +816,7 @@ export const wagoDioSeparate: MachineProperties = {
   icon: "lu:ToggleRight",
   machine_identification: {
     vendor: VENDOR_QITECH,
-    machine: 0x0044,
+    machine: 0x0045,
   },
   device_roles: [
     {
@@ -836,8 +836,8 @@ export const wagoDioSeparate: MachineProperties = {
       allowed_devices: [
         {
           vendor_id: 0x21,
-          product_id: 0x07500430,
-          revision: 0x2,
+          product_id: 0x80000081,
+          revision: 0x02,
         },
       ],
     },
@@ -847,8 +847,8 @@ export const wagoDioSeparate: MachineProperties = {
       allowed_devices: [
         {
           vendor_id: 0x21,
-          product_id: 0x07500530,
-          revision: 0x2,
+          product_id: 0x80000082,
+          revision: 0x02,
         },
       ],
     },
