@@ -63,13 +63,14 @@ impl MachineNewTrait for WagoDioSeparate {
 
             coupler.init_slot_modules(_wago_750_354.1);
 
-            // Get the WAGO 750-430 8CH DI module at slot 0
+            // Get the WAGO 750-530 8CH DO module at slot 0
             let dev = coupler.slot_devices.get(0).unwrap().clone().unwrap();
+            let wago750_530: Arc<RwLock<Wago750_530>> = downcast_device::<Wago750_530>(dev).await?;
+
+            // Get the WAGO 750-430 8CH DI module at slot 1
+            let dev = coupler.slot_devices.get(1).unwrap().clone().unwrap();
             let wago750_430: Arc<RwLock<Wago750_430>> = downcast_device::<Wago750_430>(dev).await?;
 
-            // Get the WAGO 750-530 8CH DO module at slot 1
-            let dev = coupler.slot_devices.get(1).unwrap().clone().unwrap();
-            let wago750_530: Arc<RwLock<Wago750_530>> = downcast_device::<Wago750_530>(dev).await?;
 
             let di1 = DigitalInput::new(wago750_430.clone(), Wago750_430Port::Port1);
             let di2 = DigitalInput::new(wago750_430.clone(), Wago750_430Port::Port2);
