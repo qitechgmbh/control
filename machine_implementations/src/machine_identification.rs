@@ -1,5 +1,4 @@
 use qitech_lib::ethercat_hal::EtherCATThreadChannel;
-use qitech_lib::ethercat_hal::devices::EthercatDevice;
 use qitech_lib::ethercat_hal::devices::wago_750_354::WAGO_750_354_IDENTITY_A;
 use qitech_lib::ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTITY;
 use serde::Deserialize;
@@ -8,19 +7,19 @@ use std::fmt::Display;
 
 /// Identifies a specific machine
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct MachineIdentificationUnique {
+pub struct QiTechMachineIdentificationUnique {
     pub machine_identification: MachineIdentification,
     pub serial: u16,
 }
 
-impl MachineIdentificationUnique {
+impl QiTechMachineIdentificationUnique {
     /// Check if values are non-zero
     pub const fn is_valid(&self) -> bool {
         self.machine_identification.is_valid() && self.serial != 0
     }
 }
 
-impl Display for MachineIdentificationUnique {
+impl Display for QiTechMachineIdentificationUnique {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -35,11 +34,6 @@ impl Display for MachineIdentificationUnique {
 pub struct MachineIdentification {
     pub vendor: u16,
     pub machine: u16,
-}
-
-pub struct IdentifiedEtherCatDevice {
-    pub machine_ident : MachineIdentificationUnique,
-    pub ethercat_device : Box<dyn EthercatDevice>
 }
 
 impl MachineIdentification {
@@ -81,7 +75,7 @@ impl MachineIdentification {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DeviceMachineIdentification {
-    pub machine_identification_unique: MachineIdentificationUnique,
+    pub machine_identification_unique: QiTechMachineIdentificationUnique,
     pub role: u16,
 }
 

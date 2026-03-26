@@ -1,4 +1,4 @@
-/*use std::sync::Arc;
+use std::sync::Arc;
 
 use control_core::socketio::{
     event::{Event, GenericEvent},
@@ -7,7 +7,7 @@ use control_core::socketio::{
     },
 };
 use serde::{Deserialize, Serialize};
-use crate::{MachineApi, minimal_machines::digital_input_test_machine::DigitalInputTestMachine};
+use crate::{minimal_machines::digital_input_test_machine::DigitalInputTestMachine};
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
@@ -32,6 +32,7 @@ pub enum Mutation {
 pub struct DigitalInputTestMachineNamespace {
     pub namespace: Option<Namespace>,
 }
+use crate::MachineApi;
 
 impl NamespaceCacheingLogic<DigitalInputTestMachineEvents> for DigitalInputTestMachineNamespace {
     fn emit(&mut self, events: DigitalInputTestMachineEvents) {
@@ -57,12 +58,12 @@ impl CacheableEvents<DigitalInputTestMachineEvents> for DigitalInputTestMachineE
 
 impl MachineApi for DigitalInputTestMachine {
     fn api_get_sender(&self) -> smol::channel::Sender<crate::MachineMessage> {
-        self.api_sender.clone()
+        todo!()
     }
 
     fn api_mutate(&mut self, _value: serde_json::Value) -> Result<(), anyhow::Error> {
-        //Digital Input Test Machine does not Set Values
-        // let mutation: Mutation = serde_json::from_value(value)?;
+        
+       //let mutation: Mutation = serde_json::from_value(value)?;
         // match mutation {
         //     Mutation::SetLed { index, on } => self.set_led(index, on),
         // }
@@ -73,5 +74,9 @@ impl MachineApi for DigitalInputTestMachine {
     fn api_event_namespace(&mut self) -> Option<Namespace> {
         self.namespace.namespace.clone()
     }
+
+    fn act_machine_message(&mut self, msg: crate::MachineMessage) {
+        todo!()
+    }
 }
-*/
+

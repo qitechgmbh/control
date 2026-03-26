@@ -237,7 +237,7 @@ dependencies = [
  "hyper",
  "hyper-util",
  "itoa",
- "matchit",
+ "matchit 0.8.4",
  "memchr",
  "mime",
  "percent-encoding",
@@ -479,7 +479,7 @@ dependencies = [
  "serde",
  "serialport",
  "smol",
- "socketioxide",
+ "socketioxide 0.18.2",
  "textplots",
  "tokio",
  "tracing",
@@ -1221,12 +1221,11 @@ checksum = "fc0fef456e4baa96da950455cd02c081ca953b141298e41db3fc7e36b1da849c"
 
 [[package]]
 name = "http"
-version = "1.3.1"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4a85d31aea989eead29a3aaf9e1115a180df8282431156e533de47660892565"
+checksum = "e3ba2a386d7f85a81f119ad7498ebe444d2e22c2af0b86b069416ace48b3311a"
 dependencies = [
  "bytes",
- "fnv",
  "itoa",
 ]
 
@@ -1510,7 +1509,7 @@ dependencies = [
  "serde_json",
  "serialport",
  "smol",
- "socketioxide",
+ "socketioxide 0.17.2",
  "textplots",
  "tonic",
  "tracing",
@@ -1525,6 +1524,12 @@ name = "matchit"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
+
+[[package]]
+name = "matchit"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3eede3bdf92f3b4f9dc04072a9ce5ab557d5ec9038773bf9ffcd5588b3cc05b"
 
 [[package]]
 name = "memchr"
@@ -1927,9 +1932,19 @@ dependencies = [
 name = "qitech_control"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "axum",
+ "bitvec",
+ "control_core",
+ "erased-serde",
  "machine_implementations",
  "qitech_lib",
+ "serde",
+ "serde_json",
+ "socketioxide 0.18.2",
  "tokio",
+ "tower-http",
+ "tracing",
 ]
 
 [[package]]
@@ -2349,12 +2364,36 @@ dependencies = [
  "http",
  "http-body",
  "hyper",
- "matchit",
+ "matchit 0.8.4",
  "pin-project-lite",
  "serde",
  "socketioxide-core",
  "socketioxide-parser-common",
  "socketioxide-parser-msgpack",
+ "thiserror",
+ "tokio",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "socketioxide"
+version = "0.18.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6029712903ab8849c63f19482fd837f2f8b4a33d0221b9ec612c4db910053da1"
+dependencies = [
+ "bytes",
+ "engineioxide",
+ "futures-core",
+ "futures-util",
+ "http",
+ "http-body",
+ "hyper",
+ "matchit 0.9.1",
+ "pin-project-lite",
+ "serde",
+ "socketioxide-core",
+ "socketioxide-parser-common",
  "thiserror",
  "tokio",
  "tower-layer",
@@ -2678,6 +2717,22 @@ dependencies = [
  "sync_wrapper",
  "tokio",
  "tokio-util",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
+name = "tower-http"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4e6559d53cc268e5031cd8429d05415bc4cb4aefc4aa5d6cc35fbf5b924a1f8"
+dependencies = [
+ "bitflags 2.10.0",
+ "bytes",
+ "http",
+ "http-body",
+ "pin-project-lite",
  "tower-layer",
  "tower-service",
  "tracing",
