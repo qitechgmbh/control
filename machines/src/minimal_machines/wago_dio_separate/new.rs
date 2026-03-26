@@ -44,7 +44,8 @@ impl MachineNewTrait for WagoDioSeparate {
         };
 
         block_on(async {
-            let wago_750_354 = get_ethercat_device::<Wago750_354>(
+            // Get the WAGO 750-354 coupler at role 0
+            let _wago_750_354 = get_ethercat_device::<Wago750_354>(
                 hardware,
                 params,
                 0,
@@ -52,43 +53,23 @@ impl MachineNewTrait for WagoDioSeparate {
             )
             .await?;
 
-            let modules = Wago750_354::initialize_modules(wago_750_354.1).await?;
-            let mut coupler = wago_750_354.0.write().await;
+            let modules = Wago750_354::initialize_modules(_wago_750_354.1).await?;
+
+            let mut coupler = _wago_750_354.0.write().await;
 
             for module in modules {
                 coupler.set_module(module);
             }
-            coupler.init_slot_modules(wago_750_354.1);
 
-            let dev_input = coupler
-                .slot_devices
-                .get(0)
-                .ok_or_else(|| anyhow::anyhow!(
-                    "[{}::WagoDioSeparate::new] Expected 750-430 in slot 0",
-                    module_path!()
-                ))?
-                .clone()
-                .ok_or_else(|| anyhow::anyhow!(
-                    "[{}::WagoDioSeparate::new] Slot 0 is empty",
-                    module_path!()
-                ))?;
-            let wago750_430: Arc<RwLock<Wago750_430>> =
-                downcast_device::<Wago750_430>(dev_input).await?;
+            coupler.init_slot_modules(_wago_750_354.1);
 
-            let dev_output = coupler
-                .slot_devices
-                .get(1)
-                .ok_or_else(|| anyhow::anyhow!(
-                    "[{}::WagoDioSeparate::new] Expected 750-530 in slot 1",
-                    module_path!()
-                ))?
-                .clone()
-                .ok_or_else(|| anyhow::anyhow!(
-                    "[{}::WagoDioSeparate::new] Slot 1 is empty",
-                    module_path!()
-                ))?;
-            let wago750_530: Arc<RwLock<Wago750_530>> =
-                downcast_device::<Wago750_530>(dev_output).await?;
+            // Get the WAGO 750-430 8CH DI module at slot 0
+            let dev = coupler.slot_devices.get(0).unwrap().clone().unwrap();
+            let wago750_430: Arc<RwLock<Wago750_430>> = downcast_device::<Wago750_430>(dev).await?;
+
+            // Get the WAGO 750-530 8CH DO module at slot 1
+            let dev = coupler.slot_devices.get(1).unwrap().clone().unwrap();
+            let wago750_530: Arc<RwLock<Wago750_530>> = downcast_device::<Wago750_530>(dev).await?;
 
             let di1 = DigitalInput::new(wago750_430.clone(), Wago750_430Port::Port1);
             let di2 = DigitalInput::new(wago750_430.clone(), Wago750_430Port::Port2);
