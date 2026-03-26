@@ -89,7 +89,7 @@ impl ExtruderV2 {
         self.back_heating_allowed = true;
         self.front_heating_allowed = true;
         self.nozzle_heating_allowed = true;
-        self.back_heating_allowed = true;
+        self.middle_heating_allowed = true;
         self.emit_state();
     }
 
