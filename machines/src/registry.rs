@@ -102,6 +102,7 @@ lazy_static! {
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<ExtruderV2>(ExtruderV2::MACHINE_IDENTIFICATION);
 
+        #[cfg(not(feature = "mock-machine"))]
         mc.register::<ExtruderV3>(ExtruderV3::REVERSED_MACHINE_IDENTIFICATION);
 
         #[cfg(not(feature = "mock-machine"))]

@@ -208,16 +208,8 @@ impl MachineNewTrait for ExtruderV3 {
                 0.95,
             );
 
-            let reversed: bool = match device_identification
-                .first()
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "[{}::could not detect extruder identification] No devices in group",
-                        module_path!()
-                    )
-                })?
-                .device_machine_identification
-                .machine_identification_unique
+            let reversed: bool = match params
+                .get_machine_identification_unique()
                 .machine_identification
             {
                 ExtruderV3::REVERSED_MACHINE_IDENTIFICATION => true,

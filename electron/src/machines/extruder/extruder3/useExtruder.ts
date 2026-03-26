@@ -2,7 +2,6 @@ import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { extruder3 } from "@/machines/properties";
 import { extruder3Route } from "@/routes/routes";
 import { z } from "zod";
 import { StateEvent, Mode, useExtruder3Namespace } from "./extruder3Namespace";
@@ -26,7 +25,9 @@ export function useExtruder3() {
 
     // Look up the actual machine identification from the connected device
     const machine = machines.find(
-      (m) => m.machine_identification_unique.serial === serial,
+      (m) =>
+        m.slug === "extruder3" &&
+        m.machine_identification_unique.serial === serial,
     );
 
     return {
