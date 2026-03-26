@@ -830,28 +830,6 @@ export const wagoDioSeparate: MachineProperties = {
         },
       ],
     },
-    {
-      role: 1,
-      role_label: "Wago 750-430 8CH DI",
-      allowed_devices: [
-        {
-          vendor_id: 0x21,
-          product_id: 0x80000081,
-          revision: 0x02,
-        },
-      ],
-    },
-    {
-      role: 2,
-      role_label: "Wago 750-530 8CH DO",
-      allowed_devices: [
-        {
-          vendor_id: 0x21,
-          product_id: 0x80000082,
-          revision: 0x02,
-        },
-      ],
-    },
   ],
 };
 
