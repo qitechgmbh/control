@@ -65,6 +65,7 @@ impl MachineIdentification {
             x if x == WAGO_AI_TEST_MACHINE => "wago_ai_test_machine".to_string(),
             x if x == WAGO_DO_TEST_MACHINE => "wago_do_test_machine".to_string(),
             x if x == WAGO_750_430_DI_MACHINE => "wago_750_430_di_machine".to_string(),
+            x if x == WAGO_750_460_MACHINE => "wago_750_460_machine".to_string(),
             x if x == MACHINE_WAGO_DIO_SEPARATE_V1 => "wago_dio_separate".to_string(),
             _ => unreachable!("Unknown machine id"),
         }
@@ -190,6 +191,7 @@ use crate::MACHINE_WINDER_V1;
 use crate::TEST_MACHINE;
 use crate::VENDOR_QITECH;
 use crate::WAGO_750_430_DI_MACHINE;
+use crate::WAGO_750_460_MACHINE;
 use crate::WAGO_AI_TEST_MACHINE;
 use crate::WAGO_DO_TEST_MACHINE;
 use crate::MACHINE_WAGO_DIO_SEPARATE_V1;
