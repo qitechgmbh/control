@@ -1,21 +1,10 @@
-use anyhow::{Error, Result};
-use control_core::socketio::event::GenericEvent;
-use control_core::socketio::namespace::{CacheableEvents, Namespace, NamespaceCacheingLogic};
-use ethercat_hal::devices::{EthercatDevice, SubDeviceIdentityTuple};
-use ethercat_hal::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
-use machine_identification::{
-    DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
-    DeviceIdentificationIdentified, MachineIdentificationUnique,
-};
-use qitech_lib::ethercat_hal::{self, EtherCATThreadChannel};
+use anyhow::{Result};
+
+
+use qitech_lib::machines::Machine;
 use serde::Serialize;
-use smol::channel::{Receiver, Sender};
-use socketioxide::extract::SocketRef;
-use std::any::Any;
-use std::fmt::Debug;
-use std::sync::Arc;
-use std::time::Instant;
-pub mod machine_identification;
+use smol::channel::{Sender};
+use control_core::socketio::namespace::Namespace;
 pub mod minimal_machines;
 
 /*pub mod aquapath1;
@@ -33,6 +22,7 @@ pub mod wago_power;*/
 /*pub mod winder2;*/
 
 mod machine_data;
+pub mod machine_identification;
 pub use machine_data::MachineData;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
@@ -56,6 +46,35 @@ pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
 pub const WAGO_750_501_TEST_MACHINE: u16 = 0x0042;
+
+
+#[derive(Serialize, Debug, Clone)]
+pub struct MachineValues {
+    pub state: serde_json::Value,
+    pub live_values: serde_json::Value,
+}
+
+pub enum MachineMessage {
+    SubscribeNamespace(Namespace),
+    UnsubscribeNamespace,
+    HttpApiJsonRequest(serde_json::Value),
+    RequestValues(Sender<MachineValues>),
+}
+
+pub trait MachineApi  {
+    fn act_machine_message(&mut self, msg: MachineMessage);
+    fn api_get_sender(&self) -> Sender<MachineMessage>;
+    fn api_mutate(&mut self, value: serde_json::Value) -> Result<(), anyhow::Error>;
+    fn api_event_namespace(&mut self) -> Option<Namespace>;
+}
+
+// Generic Machine Init For us
+pub trait MachineNew {
+
+}
+
+pub trait QiTechMachine : Machine + MachineApi {}
+
 /*
 use serde_json::Value;
 use smol::lock::RwLock;

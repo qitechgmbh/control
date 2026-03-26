@@ -1,30 +1,35 @@
-use super::DigitalInputTestMachine;
+use std::{cell::RefCell, rc::Rc};
+
+use super::{DigitalInputTestMachine, api::DigitalInputTestMachineNamespace};
 use qitech_lib::{
-    ethercat_hal::{
-        EtherCATThreadChannel,
-        devices::{EthercatDevice, downcast_subdevice, el1008::{self, EL1008}},
+    ethercat_hal::devices::{
+        EthercatDevice, downcast_rc_refcell, el1008::EL1008, el2004::EL2004
     },
     machines::{MachineIdentification, MachineIdentificationUnique},
 };
 
+
+
 impl DigitalInputTestMachine {
     pub fn new(
-        hw: &Vec<Box<dyn EthercatDevice>>,
-        _eth_channel: EtherCATThreadChannel,
+        hw: Vec<Rc<RefCell<dyn EthercatDevice>>>,
     ) -> Result<DigitalInputTestMachine, anyhow::Error> {
+        let dev = hw.get(1).cloned();
+        let dev_1 = hw.get(2).cloned();
+        let el1008: Rc<RefCell<EL1008>> = downcast_rc_refcell(dev.unwrap())?;
+        let el2004: Rc<RefCell<EL2004>> = downcast_rc_refcell(dev_1.unwrap())?;
 
-        let el1008 : EL1008 = downcast_subdevice::<EL1008>(*hw.get(1).unwrap())?;
         let my_test = Self {
             machine_identification_unique: MachineIdentificationUnique {
-                machine_ident: MachineIdentification {
-                    vendor: 0,
-                    machine: 67,
-                },
+                machine_ident: DigitalInputTestMachine::MACHINE_IDENTIFICATION,
                 serial: 420,
             },
             led_on: [false; 4],
-            digital_input_device: Box::new(res),
+            digital_input_device: el1008,
+            el2004,
+            namespace: DigitalInputTestMachineNamespace{ namespace: None },
         };
+
         Ok(my_test)
     }
 }
