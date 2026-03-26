@@ -790,6 +790,7 @@ export const rootTree = RootRoute.addChildren([
       wago750_553MachineSerialRoute.addChildren([
         wago750_553MachineControlRoute,
       ]),
+      wagoDioSeparateSerialRoute.addChildren([wagoDioSeparateControlRoute]),
     ]),
   ]),
 ]);
