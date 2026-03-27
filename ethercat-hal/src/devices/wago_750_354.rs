@@ -112,8 +112,6 @@ impl EthercatDevice for Wago750_354 {
     fn set_module(&mut self, module: Module) {
         self.slots[self.module_count] = Some(module.clone());
         self.module_count += 1;
-        self.tx_size += module.tx_offset;
-        self.rx_size += module.rx_offset;
     }
 }
 
@@ -180,8 +178,6 @@ impl Wago750_354 {
     ) -> Result<(), Error> {
         let mut vec: Vec<ModulePdoMapping> = vec![];
         let mut bit_offset = 0;
-
-        let mut module_i;
         let start_subindex = 0x2;
 
         let index = match get_tx {
@@ -199,32 +195,32 @@ impl Wago750_354 {
             bit_offset += bit_length as usize;
         }
 
-        let mut mappings_without_coupler: Vec<u32> = vec![];
         for i in start_subindex..=count_mappings {
             let pdo_index = device.sdo_read(index.0, i).await?;
             let pdo_map_count = device.sdo_read::<u8>(pdo_index, 0).await?;
             for j in 0..pdo_map_count {
                 let pdo_mapping: u32 = device.sdo_read(pdo_index, 1 + j).await?;
-                mappings_without_coupler.push(pdo_mapping);
+                let pdo_index_hi = (pdo_mapping & 0xFFFF0000) >> 16;
+                let bit_length = (pdo_mapping & 0xFF) as usize;
+
+                // Preserve the original coupler assignment order. Padding/alignment
+                // entries still consume bits, but must not be assigned to a module.
+                let start_index = if get_tx { 0x6000 } else { 0x7000 };
+                if pdo_index_hi >= start_index {
+                    let module_i = Wago750_354::calculate_module_index(pdo_mapping, get_tx);
+                    if module_i < 64 && !vec.iter().any(|map| map.module_i == module_i) {
+                        vec.push(ModulePdoMapping {
+                            offset: bit_offset,
+                            module_i,
+                        });
+                    }
+                }
+
+                bit_offset += bit_length;
             }
         }
-        mappings_without_coupler.sort();
 
-        for pdo_mapping in mappings_without_coupler {
-            module_i = Wago750_354::calculate_module_index(pdo_mapping, get_tx);
-            let bit_length = (pdo_mapping & 0xFF) as u8;
-            if module_i < 64 {
-                vec.push(ModulePdoMapping {
-                    offset: bit_offset,
-                    module_i,
-                });
-            }
-            bit_offset += bit_length as usize;
-        }
-
-        vec.sort_by_key(|e| (e.module_i, e.offset));
-        // deduplicate by module_i, so we only have the offset to the start of inputs/outputs
-        vec.dedup_by(|a, b| a.module_i == b.module_i);
+        vec.sort_by_key(|e| e.module_i);
 
         if get_tx {
             self.tx_pdo_mappings = vec;
@@ -435,12 +431,23 @@ impl Wago750_354 {
                         }
                     };
                     let mut dev_guard = dev.write_blocking();
-                    //println!("For {:?} setting tx: {} rx: {}",m.name,m.tx_offset,m.rx_offset);
-                    dev_guard.set_tx_offset(m.tx_offset);
-                    dev_guard.set_rx_offset(m.rx_offset);
+                    dev_guard.set_module(m.clone());
                     drop(dev_guard);
                     self.slot_devices[self.dev_count] = Some(dev);
                     self.dev_count += 1;
+                }
+                None => break,
+            }
+        }
+
+        self.tx_size = 0;
+        self.rx_size = 0;
+        for slot_device in &self.slot_devices {
+            match slot_device {
+                Some(device) => {
+                    let d = device.read_blocking();
+                    self.tx_size = self.tx_size.max(d.get_tx_offset() + d.input_len());
+                    self.rx_size = self.rx_size.max(d.get_rx_offset() + d.output_len());
                 }
                 None => break,
             }
