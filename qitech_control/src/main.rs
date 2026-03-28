@@ -1,110 +1,77 @@
-use std::{cell::RefCell, collections::{HashMap, HashSet}, rc::Rc, sync::{Arc, mpsc::Sender}, time::Duration};
+use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::Arc, time::Duration};
 use anyhow::bail;
-use apis::socketio::main_namespace::{MainNamespaceEvents, machines_event::{MachineObj, MachinesEventBuilder}};
+use apis::socketio::main_namespace::{MainNamespaceEvents, ethercat_devices_event::EtherCatDeviceMetaData, machines_event::{MachineObj, MachinesEventBuilder}};
 use bitvec::{order::Lsb0, slice::BitSlice};
-use machine_implementations::{MachineMessage, minimal_machines::digital_input_test_machine::DigitalInputTestMachine};
-use qitech_lib::{ethercat_hal::{EtherCATThreadChannel, MetaSubdevice, controller::EtherCATController, devices::{EthercatDevice, device_from_subdevice_identity_rc}, start_ethercat_thread}, machines::{Machine, MachineDataRegistry, MachineIdentificationUnique}};
+use control_core::socketio::{event::GenericEvent, namespace::NamespaceCacheingLogic};
+use machine_implementations::{MachineMessage, machine_identification::QiTechMachineIdentificationUnique, minimal_machines::digital_input_test_machine::DigitalInputTestMachine};
+use qitech_lib::{ethercat_hal::{EtherCATThreadChannel, controller::EtherCATController, devices::{EthercatDevice, device_from_subdevice_identity_rc}, start_ethercat_thread}, machines::{Machine, MachineDataRegistry}};
+use socketioxide::{SocketIo, extract::SocketRef};
+use tokio::sync::{RwLock, mpsc::{Sender,Receiver}};
+use crate::apis::socketio::namespaces::Namespaces;
 pub mod apis;
+
+pub struct SocketioSetup {
+    pub socketio: RwLock<Option<SocketIo>>,
+    pub namespaces: RwLock<Namespaces>,
+    pub socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
+    pub socket_queue_rx: RwLock<Receiver<(SocketRef, Arc<GenericEvent>)>>,
+}
 
 /*
     This struct is only written in the main machine loop or during initialization,
     Otherwise it is simply read.
 */
 pub struct SharedAppState {
-    pub machines : Vec<MachineIdentificationUnique>,
-    pub machines_with_channel : HashMap<MachineIdentificationUnique,Sender<MachineMessage>>,
-    pub machine_subdevices : Vec<(MachineIdentificationUnique,MetaSubdevice)>    
+    pub machines : Vec<QiTechMachineIdentificationUnique>,
+    pub machines_with_channel : HashMap<QiTechMachineIdentificationUnique,Sender<MachineMessage>>,
+    pub ethercat_meta_datas : Vec<EtherCatDeviceMetaData>,
+    pub socketio_setup : SocketioSetup,
 }
 
 
 impl SharedAppState {
-    pub async fn send_machines_event(&self) {
+    pub async fn send_machines_event(&self) -> Result<(),anyhow::Error>{
         let event = MachinesEventBuilder().build(self.get_machines_meta().await);
-        let main_namespace = &mut self.socketio_setup.namespaces.write().await.main_namespace;
+        let mut guard =  self.socketio_setup.namespaces.write().await;
+        let main_namespace = &mut guard.main_namespace;
         main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
+        drop(guard);            
+
+        Ok(())
     }
 
     pub async fn get_machines_meta(&self) -> Vec<MachineObj> {
-        self.current_machines_meta.lock().await.clone()
+        vec![]
     }
 
     pub async fn message_machine(
         &self,
-        machine_identification_unique: &MachineIdentificationUnique,
+        machine_identification_unique: &QiTechMachineIdentificationUnique,
         message: MachineMessage,
-    ) -> Result<()> {
-        let machines = self.api_machines.lock().await;
-        let sender = machines.get(machine_identification_unique);
-
+    ) -> Result<(),anyhow::Error> {
+        let sender = self.machines_with_channel.get(machine_identification_unique);
         if let Some(sender) = sender {
-            sender.send(message).await?;
+            sender.send(message);
             return Ok(());
         }
         // why does a macro for return Err() exist bro ...
         bail!("Unknown machine!")
     }
 
-    /// Removes a machine by its unique identifier
-    pub async fn remove_machine(&self, machine_id: &MachineIdentificationUnique) {
-        let mut current_machines = self.current_machines_meta.lock().await;
-        // Retain only machines that do not match the given ID
-        current_machines.retain(|m| &m.machine_identification_unique != machine_id);
-        drop(current_machines);
-
-        tracing::info!(
-            "remove_machine {:?} {:?}",
-            self.current_machines_meta,
-            self.api_machines
-        );
-    }
-
-    pub async fn add_machines_if_not_exists(&self, machines: Vec<MachineObj>) {
-        let mut current_machines = self.current_machines_meta.lock().await;
-        tracing::info!("add_machines_if_not_exists: {:?}", current_machines);
-        // Track existing machine identifiers for quick lookup
-        let existing_ids: HashSet<_> = current_machines
-            .iter()
-            .map(|m| m.machine_identification_unique.clone())
-            .collect();
-
-        for machine in machines {
-            if !existing_ids.contains(&machine.machine_identification_unique) {
-                current_machines.push(machine);
-            }
-        }
-        drop(current_machines);
-
-        self.send_machines_event().await;
-    }
-
-    pub async fn report_machine_error(
-        &self,
-        machine_identification_unique: MachineIdentificationUnique,
-        error: String,
-    ) {
-        let mut current_machines = self.current_machines_meta.lock().await;
-
-        for machine in current_machines.iter_mut() {
-            if machine.machine_identification_unique == machine_identification_unique {
-                machine.error = Some(error);
-                return;
-            }
-        }
-
-        current_machines.push(MachineObj {
-            machine_identification_unique,
-            error: Some(error),
-        });
-    }
-
-
     pub fn new(
     ) -> Self {
-        let (socket_queue_tx, socket_queue_rx) = std::sync::mpsc::channel();
+        let (socket_queue_tx, socket_queue_rx) = tokio::sync::mpsc::channel(1024);
         Self {
             machines: vec![],
             machines_with_channel: HashMap::new(),
-            machine_subdevices: vec![],
+            socketio_setup: 
+                SocketioSetup{
+                socketio: RwLock::new(None),
+                namespaces: RwLock::new(Namespaces::new(socket_queue_tx.clone())),
+                socket_queue_tx,
+                socket_queue_rx: RwLock::new(socket_queue_rx),
+            },
+            ethercat_meta_datas: vec![],
         }
     }
 }

@@ -1,10 +1,9 @@
 use anyhow::{Result};
 
 
+use control_core::socketio::namespace::Namespace;
 use qitech_lib::machines::Machine;
 use serde::Serialize;
-use smol::channel::{Sender};
-use control_core::socketio::namespace::Namespace;
 pub mod minimal_machines;
 
 /*pub mod aquapath1;
@@ -24,6 +23,7 @@ pub mod wago_power;*/
 mod machine_data;
 pub mod machine_identification;
 pub use machine_data::MachineData;
+use tokio::sync::oneshot::Sender;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
