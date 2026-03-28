@@ -7,7 +7,7 @@ use control_core::socketio::{
     },
 };
 use serde::{Deserialize, Serialize};
-use crate::{minimal_machines::digital_input_test_machine::DigitalInputTestMachine};
+use crate::{MachineMessage, minimal_machines::digital_input_test_machine::DigitalInputTestMachine};
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
@@ -57,7 +57,7 @@ impl CacheableEvents<DigitalInputTestMachineEvents> for DigitalInputTestMachineE
 }
 
 impl MachineApi for DigitalInputTestMachine {
-    fn api_get_sender(&self) -> smol::channel::Sender<crate::MachineMessage> {
+    fn api_get_sender(&self) -> tokio::sync::oneshot::Sender<MachineMessage> {
         todo!()
     }
 

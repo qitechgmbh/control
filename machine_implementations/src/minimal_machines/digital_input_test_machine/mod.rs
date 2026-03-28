@@ -6,7 +6,7 @@ use api::DigitalInputTestMachineNamespace;
 use qitech_lib::ethercat_hal::devices::el2004::EL2004;
 use qitech_lib::ethercat_hal::io::digital_input::DigitalInputDevice;
 use qitech_lib::machines::{
-    Machine, MachineDataRegistry, MachineIdentification, MachineIdentificationUnique,
+    Machine, MachineDataRegistry, MachineIdentification, MachineIdentificationUnique
 };
 
 pub mod api;
@@ -52,7 +52,7 @@ impl Machine for DigitalInputTestMachine {
     }
 
     fn get_identification(&self) -> qitech_lib::machines::MachineIdentificationUnique {
-        self.machine_identification_unique
+        return self.machine_identification_unique.into();
     }
 }
 

@@ -4,17 +4,17 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tokio = { version = "1.50.0", features = ["rt", "rt-multi-thread", "macros", "time"] }
+tokio = { version = "1.50.0", features = ["rt", "rt-multi-thread", "macros", "time","sync"] }
 qitech_lib = { path = "../qitech_lib" }
 machine_implementations = { path = "../machine_implementations" }
 control_core = { path = "../control-core" }
 bitvec = "1.0.1"
-axum = "0.8.8"
 tracing = "0.1.44"
 anyhow = "1.0.102"
 serde = "1.0.228"
 tower-http = {version = "0.6.8" ,features = ["cors","trace"]} 
 serde_json = "1.0.149"
-socketioxide = "0.18.2"
+socketioxide = { version = "0.18.2", features = ["msgpack"] }
 erased-serde = "0.4.10"
 
+axum = { version = "0.8.8", features = ["macros"] }

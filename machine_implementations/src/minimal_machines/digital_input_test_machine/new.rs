@@ -1,14 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
-
 use super::{DigitalInputTestMachine, api::DigitalInputTestMachineNamespace};
 use qitech_lib::{
     ethercat_hal::devices::{
         EthercatDevice, downcast_rc_refcell, el1008::EL1008, el2004::EL2004
-    },
-    machines::{MachineIdentification, MachineIdentificationUnique},
+    }, machines::MachineIdentificationUnique,
 };
-
-
 
 impl DigitalInputTestMachine {
     pub fn new(

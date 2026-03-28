@@ -1,6 +1,7 @@
 use qitech_lib::ethercat_hal::EtherCATThreadChannel;
 use qitech_lib::ethercat_hal::devices::wago_750_354::WAGO_750_354_IDENTITY_A;
 use qitech_lib::ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTITY;
+use qitech_lib::machines::MachineIdentificationUnique;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fmt::Display;
@@ -10,6 +11,24 @@ use std::fmt::Display;
 pub struct QiTechMachineIdentificationUnique {
     pub machine_identification: MachineIdentification,
     pub serial: u16,
+}
+
+impl From<MachineIdentificationUnique> for QiTechMachineIdentificationUnique {
+    fn from(value: MachineIdentificationUnique) -> Self {
+        QiTechMachineIdentificationUnique { 
+            machine_identification: MachineIdentification { vendor: value.machine_ident.vendor, machine: value.machine_ident.machine }, 
+            serial: value.serial as u16, 
+        }
+    }
+}
+
+impl From<QiTechMachineIdentificationUnique> for MachineIdentificationUnique {
+    fn from(value: QiTechMachineIdentificationUnique) -> Self {
+        MachineIdentificationUnique {  
+            serial: value.serial as u32,
+            machine_ident: qitech_lib::machines::MachineIdentification { vendor: value.machine_identification.vendor, machine: value.machine_identification.machine }, 
+        }
+    }
 }
 
 impl QiTechMachineIdentificationUnique {
@@ -34,6 +53,18 @@ impl Display for QiTechMachineIdentificationUnique {
 pub struct MachineIdentification {
     pub vendor: u16,
     pub machine: u16,
+}
+
+impl From<qitech_lib::machines::MachineIdentification> for MachineIdentification {
+    fn from(value: qitech_lib::machines::MachineIdentification) -> Self {
+        MachineIdentification { vendor: value.vendor, machine: value.machine }
+    }
+}
+
+impl From<MachineIdentification> for qitech_lib::machines::MachineIdentification {
+    fn from(value: MachineIdentification) -> Self {
+        qitech_lib::machines::MachineIdentification { vendor: value.vendor, machine: value.machine }
+    }
 }
 
 impl MachineIdentification {
