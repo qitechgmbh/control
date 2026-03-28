@@ -1,6 +1,7 @@
 use super::namespace_id::NamespaceId;
 use crate::SharedAppState;
-use crate::apis::socketio::namespaces::Namespace;
+use control_core::socketio::namespace::Namespace;
+//use crate::apis::socketio::namespaces::Namespace;
 use machine_implementations::MachineMessage;
 use socketioxide::ParserConfig;
 use socketioxide::extract::SocketRef;
@@ -19,7 +20,7 @@ pub async fn init_socketio(app_state: Arc<SharedAppState>) -> SocketIoLayer {
     let app_state_main = app_state.clone();
 
     // set the on connect handler for main namespace
-    io.ns("/main", move |socket: SocketRef| {
+    io.ns("/main", move |socket: SocketRef| async move {
         handle_socket_connection(socket, app_state_main.clone());
     });
 
@@ -28,7 +29,7 @@ pub async fn init_socketio(app_state: Arc<SharedAppState>) -> SocketIoLayer {
 
     if let Err(err) = io.dyn_ns(
         "/machine/{vendor}/{machine}/{serial}",
-        move |socket: SocketRef| {
+        move |socket: SocketRef| async move {
             handle_socket_connection(socket, app_state_machine.clone());
         },
     ) {
@@ -59,7 +60,7 @@ fn handle_socket_connection(socket: SocketRef, app_state: Arc<SharedAppState>) {
 }
 
 fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc<SharedAppState>) {
-    socket.on_disconnect(move |socket: SocketRef| {
+    socket.on_disconnect(move |socket: SocketRef| async move {
         let namespace_id = namespace_id.clone();
         let app_state = app_state.clone();
 
@@ -93,7 +94,7 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
                 }
             }
             if let NamespaceId::Machine(ident) = namespace_id.clone() {
-                    match app_state.clone().api_machines.lock().await.get(&ident) {
+                    match app_state.machines_with_channel.get(&ident) {
                         Some(sender) => {
                             let _ = sender.send(MachineMessage::UnsubscribeNamespace).await;
                         },
@@ -101,15 +102,15 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
                     };
                 }else{
                 }
-        })
-        .detach();
-    });
+        });
+    })
 }
 
 fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc<SharedAppState>) {
     let socket_clone = socket.clone();
     let namespace_id_clone = namespace_id.clone();
     let app_state_clone = app_state.clone();
+
     tokio::spawn(async move {
         let guard = app_state_clone.socketio_setup.namespaces.read().await;
         let socket_queue_tx =  guard.main_namespace.namespace.socket_queue_tx.clone();
@@ -141,7 +142,7 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
                 namespace.reemit(socket_clone);
 
                 if let NamespaceId::Machine(ident) = namespace_id_clone {
-                    match app_state.clone().api_machines.lock().await.get(&ident) {
+                    match app_state.clone().machines_with_channel.get(&ident) {
                         Some(sender) => {
                             tracing::info!("subscribing namespace to {}",ident);
                             let _ = sender.send(MachineMessage::SubscribeNamespace(namespace.clone())).await;
@@ -162,7 +163,7 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
                 }
             }
         }
-    ).detach();
+    );
 
     tracing::info!(
         "Socket connected to namespace socket={:?} namespace={}",

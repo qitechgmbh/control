@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use control_core::socketio::event::GenericEvent;
+use socketioxide::socket;
 use tracing::{error, info, instrument, trace};
 use crate::SharedAppState;
 
@@ -63,11 +64,12 @@ async fn send_event_with_retry(
 pub async fn start_socketio_queue(app_state: Arc<SharedAppState>) {
     let app_state = app_state.as_ref();
     loop {
-        let res = app_state.socketio_setup.socket_queue_rx.recv().await;
+        let queue = &mut app_state.socketio_setup.socket_queue_rx.write().await;      
+        let res = queue.recv().await; 
         match res {
-            Ok((socket, event)) => send_event_with_retry(&socket, &event).await,
-            Err(e) => {
-                error!("SocketIO global queue listener stopped: {:?}", e);
+            Some((socket, event)) => send_event_with_retry(&socket, &event).await,
+            None => {
+                error!("SocketIO global queue listener stopped");
                 break;
             }
         }

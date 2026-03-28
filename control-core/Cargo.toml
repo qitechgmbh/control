@@ -18,14 +18,13 @@ serde = "1.0.219"
 serialport = "4.7.3"
 smol = "2.0.2"
 socketioxide = "0.18.2"
-
+tokio = { version = "1.50.0", features = ["sync"] }
 bitvec = { version = "1.0.1", features = ["alloc"] }
 crc = "3.3.0"
 tracing = "0.1.44"
 erased-serde = "0.4.10"
 core_affinity = "0.8.3"
 control_core_derive = { version = "0.1.0", path = "../control-core-derive" }
-tokio = { version = "1.45.1", features = ["sync"], optional = true }
 
 
 [target.'cfg(unix)'.dependencies]
@@ -34,12 +33,9 @@ libc = "0.2.183"
 [dev-dependencies]
 approx = "0.5.1"
 textplots = "0.8"
-tokio = { version = "1.45.1", features = ["rt-multi-thread", "macros", "time"] }
-
 
 [features]
 default = []
-video-streaming = ["dep:tokio"]
 
 [package.metadata.cargo-machete]
 ignored =  ["axum","bitvec","control_core_derive"]

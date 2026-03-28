@@ -1,16 +1,16 @@
 use std::sync::Arc;
 use axum::extract::{Path, State};
 use axum::routing::{get, post};
-use axum::{Extension, Json, Router};
+use axum::{Extension, Json, Router, debug_handler};
 
 use machine_implementations::MachineMessage;
+use machine_implementations::machine_identification::{MachineIdentification, QiTechMachineIdentificationUnique};
 use machine_implementations::minimal_machines::digital_input_test_machine::DigitalInputTestMachine;
-use qitech_lib::machines::{MachineIdentificationUnique};
 use serde::Serialize;
 
 use crate::SharedAppState;
 
-use super::response::{internal_error, json, not_found};
+use super::response::*;
 
 #[derive(Serialize, Debug, PartialEq)]
 struct MachineResponce {
@@ -44,7 +44,7 @@ struct GetMachinesResponce {
     machines: Vec<MachineResponce>,
 }
 
-//#[debug_handler]
+#[debug_handler]
 async fn get_machines_handler(
     State(shared_state): State<Arc<SharedAppState>>,
 ) -> Result<GetMachinesResponce> {
@@ -83,24 +83,24 @@ struct GetMachineResponce {
     live_values: serde_json::Value,
 }
 
-//#[debug_handler]
+#[debug_handler]
 async fn get_machine_handler(
     Extension(id): Extension<MachineIdentification>,
     State(shared_state): State<Arc<SharedAppState>>,
     Path(serial): Path<u16>,
 ) -> Result<GetMachineResponce> {
     let id = QiTechMachineIdentificationUnique {
-        serial : serial as u32,
+        serial : serial,
         machine_identification: id,
     };
 
-    let (sender, receiver) = smol::channel::bounded(1);
+    let (sender, mut receiver) = tokio::sync::oneshot::channel();
     shared_state
         .message_machine(&id, MachineMessage::RequestValues(sender))
         .await
         .map_err(not_found)?;
 
-    let values = receiver.recv().await.map_err(internal_error)?;
+    let values = receiver.try_recv().map_err(internal_error)?;
 
     json(GetMachineResponce {
         machine: MachineResponce::from(id),
@@ -111,16 +111,16 @@ async fn get_machine_handler(
 
 type PostMachineRequest = Vec<serde_json::Value>;
 
-//#[debug_handler]
+#[debug_handler]
 async fn post_machine_handler(
     Extension(id): Extension<MachineIdentification>,
     State(shared_state): State<Arc<SharedAppState>>,
     Path(serial): Path<u16>,
     Json(request): Json<PostMachineRequest>,
 ) -> Result<()> {
-    let id = MachineIdentificationUnique {
-        machine_ident: id,
-        serial : serial as u32,
+    let id = QiTechMachineIdentificationUnique {
+        serial : serial as u16,
+        machine_identification: id,
     };
 
     for value in request {
@@ -145,7 +145,7 @@ fn make_machine_router(id: MachineIdentification) -> Router<Arc<SharedAppState>>
 pub fn rest_api_router() -> Router<Arc<SharedAppState>> {
     Router::new()
         .route("/machine", get(get_machines_handler))
-        .merge(make_machine_router(DigitalInputTestMachine::MACHINE_IDENTIFICATION))
+        .merge(make_machine_router(DigitalInputTestMachine::MACHINE_IDENTIFICATION.into()))
         /*.merge(make_machine_router(LaserMachine::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(Winder2::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(MockMachine::MACHINE_IDENTIFICATION))

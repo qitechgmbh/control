@@ -1,17 +1,17 @@
 use anyhow::Result;
 use axum::Json;
+use axum::body::Body;
 use axum::extract::State;
 use axum::http::Response;
 use axum::routing::post;
 use machine_implementations::MachineMessage;
 use machine_implementations::machine_identification::{DeviceHardwareIdentificationEthercat, DeviceMachineIdentification, QiTechMachineIdentificationUnique};
-use response_util::ResponseUtil;
+use response_util::{ResponseUtil, ResponseUtilError};
 use rest_api::rest_api_router;
 use serde::Serialize;
 use serde_json::Value;
 use socketio::init::init_socketio;
 use std::sync::Arc;
-use std::thread;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::Level;
@@ -66,6 +66,7 @@ pub async fn post_write_machine_device_identification(
     State(app_state): State<Arc<SharedAppState>>,
     Json(body): Json<MachineDeviceInfoRequest>,
 ) -> Response<axum::body::Body> {
+    /*
     let res = app_state
         .rt_machine_creation_channel
         .send(HotThreadMessage::WriteMachineDeviceInfo(
@@ -79,7 +80,7 @@ pub async fn post_write_machine_device_identification(
             "Failed to send HotThreadMessage::WriteMachineDeviceInfo {}",
             e
         ),
-    }
+    }*/
 
     ResponseUtil::ok(MutationResponse::success())
 }
@@ -88,7 +89,7 @@ pub async fn post_write_machine_device_identification(
 async fn post_machine_mutate(
     State(app_state): State<Arc<SharedAppState>>,
     Json(body): Json<MachineMutationBody<Value>>,
-) -> Result<(), anyhow::Error> {
+) -> Response<Body> {
     tracing::info!(
         "Mutating machine machine={} data={:?}",
         body.machine_identification_unique,
@@ -98,10 +99,8 @@ async fn post_machine_mutate(
     let span = tracing::info_span!("machine_mutate", machine = %body.machine_identification_unique);
     let _span = span.enter();
 
-    match app_state
-        .api_machines
-        .lock()
-        .await
+    let res = match app_state
+        .machines_with_channel
         .get(&body.machine_identification_unique)
     {
         Some(sender) => {
@@ -129,6 +128,11 @@ async fn post_machine_mutate(
             "No Machine found with id: ",
             body.machine_identification_unique
         )),
+    };
+
+    match res {
+        Ok(_) => ResponseUtil::ok(MutationResponse::success()),
+        Err(e) => ResponseUtilError::Error(e).into(),
     }
 }
 
@@ -163,18 +167,4 @@ async fn init_api(app_state: Arc<SharedAppState>) -> Result<()> {
     axum::serve(listener, app)
         .await
         .map_err(|e| anyhow::anyhow!("Server error: {}", e))
-}
-
-/// Starts the API server in its own thread with a single-threaded Tokio runtime
-pub fn start_api_thread(app_state: Arc<SharedAppState>) -> std::thread::JoinHandle<()> {
-    thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("Failed to create Tokio runtime");
-
-        if let Err(err) = rt.block_on(init_api(app_state)) {
-            eprintln!("API server exited with error: {err:?}");
-        }
-    })
 }
