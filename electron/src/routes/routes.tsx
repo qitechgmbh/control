@@ -94,6 +94,8 @@ import { Wago750_553MachineControlPage } from "@/machines/minimal_machines/wago7
 
 import { Wago750460MachinePage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachinePage";
 import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachineControlPage";
+import { WagoWinderSmokeTestMachinePage } from "@/machines/minimal_machines/wagowindersmoketestmachine/WagoWinderSmokeTestMachinePage";
+import { WagoWinderSmokeTestMachineControlPage } from "@/machines/minimal_machines/wagowindersmoketestmachine/WagoWinderSmokeTestMachineControlPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -233,6 +235,18 @@ export const testMachineStepperControlRoute = createRoute({
   getParentRoute: () => testMachineStepperSerialRoute,
   path: "control",
   component: () => <TestMachineStepperControlPage />,
+});
+
+export const wagoWinderSmokeTestMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "steppercontrollertester/$serial",
+  component: () => <WagoWinderSmokeTestMachinePage />,
+});
+
+export const wagoWinderSmokeTestMachineControlRoute = createRoute({
+  getParentRoute: () => wagoWinderSmokeTestMachineSerialRoute,
+  path: "control",
+  component: () => <WagoWinderSmokeTestMachineControlPage />,
 });
 
 // Leaf route: control page
@@ -612,6 +626,10 @@ export const rootTree = RootRoute.addChildren([
 
       testMachineStepperSerialRoute.addChildren([
         testMachineStepperControlRoute,
+      ]),
+
+      wagoWinderSmokeTestMachineSerialRoute.addChildren([
+        wagoWinderSmokeTestMachineControlRoute,
       ]),
 
       analogInputTestMachineSerialRoute.addChildren([

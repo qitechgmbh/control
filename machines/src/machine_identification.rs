@@ -65,6 +65,11 @@ impl MachineIdentification {
             x if x == WAGO_AI_TEST_MACHINE => "wago_ai_test_machine".to_string(),
             x if x == WAGO_DO_TEST_MACHINE => "wago_do_test_machine".to_string(),
             x if x == WAGO_750_430_DI_MACHINE => "wago_750_430_di_machine".to_string(),
+            x if x == WAGO_750_501_TEST_MACHINE => "wago_750_501_test_machine".to_string(),
+            x if x == WAGO_750_460_MACHINE => "wago_750_460_machine".to_string(),
+            x if x == WAGO_750_553_MACHINE => "wago_750_553_machine".to_string(),
+            x if x == TEST_MACHINE_STEPPER => "test_machine_stepper".to_string(),
+            x if x == WAGO_WINDER_SMOKE_TEST_MACHINE => "stepper_controller_tester".to_string(),
 
             _ => unreachable!("Unknown machine id"),
         }
@@ -188,10 +193,15 @@ use crate::MACHINE_MOCK;
 use crate::MACHINE_WAGO_POWER_V1;
 use crate::MACHINE_WINDER_V1;
 use crate::TEST_MACHINE;
+use crate::TEST_MACHINE_STEPPER;
 use crate::VENDOR_QITECH;
 use crate::WAGO_750_430_DI_MACHINE;
+use crate::WAGO_750_460_MACHINE;
+use crate::WAGO_750_501_TEST_MACHINE;
+use crate::WAGO_750_553_MACHINE;
 use crate::WAGO_AI_TEST_MACHINE;
 use crate::WAGO_DO_TEST_MACHINE;
+use crate::WAGO_WINDER_SMOKE_TEST_MACHINE;
 
 #[derive(Debug)]
 pub struct MachineIdentificationAddresses {

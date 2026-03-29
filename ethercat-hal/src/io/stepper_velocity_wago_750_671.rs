@@ -19,6 +19,15 @@ pub struct StepperVelocityWago750671 {
     pub acc_range_sel: u8,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum Wago750671Mode {
+    PrimaryApplication,
+    Program,
+    Reference,
+    Jog,
+    Mailbox,
+}
+
 impl StepperVelocityWago750671 {
     pub fn new(device: Arc<RwLock<Wago750_671>>) -> Self {
         Self {
@@ -95,6 +104,8 @@ impl StepperVelocityWago750671 {
         dev.rxpdo.control_byte2 = c2;
     }
 
+    pub fn tick(&mut self) {}
+
     fn change_init_state(&mut self, state: InitState) {
         self.state = state.clone();
         let mut dev = block_on(self.device.write());
@@ -110,6 +121,47 @@ impl StepperVelocityWago750671 {
             ControlByte::C2 => dev.rxpdo.control_byte2 = value,
             ControlByte::C3 => dev.rxpdo.control_byte3 = value,
         }
+    }
+
+    pub fn get_s3_bit0(&self) -> bool {
+        let dev = block_on(self.device.read());
+        StatusByteS3::from_bits(dev.txpdo.status_byte3).has_flag(S3Flag::Input1)
+    }
+
+    pub fn get_status_byte1(&self) -> u8 {
+        self.read_status_byte(StatusByte::S1)
+    }
+
+    pub fn get_status_byte2(&self) -> u8 {
+        self.read_status_byte(StatusByte::S2)
+    }
+
+    pub fn get_status_byte3(&self) -> u8 {
+        self.read_status_byte(StatusByte::S3)
+    }
+
+    pub fn get_mode(&self) -> Option<Wago750671Mode> {
+        let s1 = StatusByteS1::from_bits(self.get_status_byte1());
+        let bits = s1.bits();
+
+        if (bits & 0b0000_1000) != 0 {
+            Some(Wago750671Mode::PrimaryApplication)
+        } else if (bits & 0b0001_0000) != 0 {
+            Some(Wago750671Mode::Program)
+        } else if (bits & 0b0010_0000) != 0 {
+            Some(Wago750671Mode::Reference)
+        } else if (bits & 0b0100_0000) != 0 {
+            Some(Wago750671Mode::Jog)
+        } else if (bits & 0b1000_0000) != 0 {
+            Some(Wago750671Mode::Mailbox)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_s1_bit3_speed_mode_ack(&self) -> bool {
+        let s1 = StatusByteS1::from_bits(self.get_status_byte1());
+        (s1.bits() & 0b0000_1000) != 0
     }
 
     #[allow(dead_code)]
