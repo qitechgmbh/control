@@ -19,7 +19,6 @@ use std::fmt::Debug;
 
 use crate::SharedAppState;
 pub mod socketio;
-
 pub mod rest_api;
 pub mod response;
 pub mod response_util;
@@ -137,7 +136,7 @@ async fn post_machine_mutate(
 }
 
 
-async fn init_api(app_state: Arc<SharedAppState>) -> Result<()> {
+pub async fn init_api(app_state: Arc<SharedAppState>) -> Result<()> {
     let cors = CorsLayer::permissive();
     let socketio_layer = init_socketio(app_state.clone()).await;
 
