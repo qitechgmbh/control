@@ -5,23 +5,26 @@ use axum::extract::State;
 use axum::http::Response;
 use axum::routing::post;
 use machine_implementations::MachineMessage;
-use machine_implementations::machine_identification::{DeviceHardwareIdentificationEthercat, DeviceMachineIdentification, QiTechMachineIdentificationUnique};
+use machine_implementations::machine_identification::{
+    DeviceHardwareIdentificationEthercat, DeviceMachineIdentification,
+    QiTechMachineIdentificationUnique,
+};
 use response_util::{ResponseUtil, ResponseUtilError};
 use rest_api::rest_api_router;
 use serde::Serialize;
 use serde_json::Value;
 use socketio::init::init_socketio;
+use std::fmt::Debug;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::Level;
-use std::fmt::Debug;
 
 use crate::SharedAppState;
-pub mod socketio;
-pub mod rest_api;
 pub mod response;
 pub mod response_util;
+pub mod rest_api;
+pub mod socketio;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct MutationResponse {
@@ -53,8 +56,6 @@ where
     pub data: T,
 }
 
-
-
 #[derive(serde::Deserialize, Debug)]
 pub struct MachineDeviceInfoRequest {
     pub device_machine_identification: DeviceMachineIdentification,
@@ -84,7 +85,6 @@ pub async fn post_write_machine_device_identification(
     ResponseUtil::ok(MutationResponse::success())
 }
 
-
 async fn post_machine_mutate(
     State(app_state): State<Arc<SharedAppState>>,
     Json(body): Json<MachineMutationBody<Value>>,
@@ -100,14 +100,14 @@ async fn post_machine_mutate(
 
     let res = match app_state
         .machines_with_channel
+        .read()
+        .await
         .get(&body.machine_identification_unique)
     {
         Some(sender) => {
             let res = sender
                 .clone()
-                .send(MachineMessage::HttpApiJsonRequest(
-                    body.data.clone(),
-                ))
+                .send(MachineMessage::HttpApiJsonRequest(body.data.clone()))
                 .await;
             match res {
                 Ok(_) => (),
@@ -134,7 +134,6 @@ async fn post_machine_mutate(
         Err(e) => ResponseUtilError::Error(e).into(),
     }
 }
-
 
 pub async fn init_api(app_state: Arc<SharedAppState>) -> Result<()> {
     let cors = CorsLayer::permissive();

@@ -5,7 +5,6 @@ use axum::{
 use serde_json::json;
 
 pub struct ResponseUtil {}
-
 impl ResponseUtil {
     pub fn error(message: &str) -> Response<Body> {
         let json = match serde_json::to_string(&json!({ "error": message })) {

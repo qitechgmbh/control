@@ -1,6 +1,6 @@
+use crate::apis::socketio::main_namespace::Event;
 use machine_implementations::machine_identification::QiTechMachineIdentificationUnique;
 use serde::{Deserialize, Serialize};
-use crate::apis::socketio::main_namespace::Event;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MachinesEvent {
