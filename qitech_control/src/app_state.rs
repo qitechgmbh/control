@@ -1,13 +1,13 @@
 use crate::apis::socketio::{
     main_namespace::{
         MainNamespaceEvents,
-        ethercat_devices_event::EtherCatDeviceMetaData,
+        ethercat_devices_event::{EtherCatDeviceMetaData, EthercatDevicesEvent, EthercatSetupDone},
         machines_event::{MachineObj, MachinesEventBuilder},
     },
     namespaces::Namespaces,
 };
 use anyhow::bail;
-use control_core::socketio::{event::GenericEvent, namespace::NamespaceCacheingLogic};
+use control_core::socketio::{event::{Event, GenericEvent}, namespace::NamespaceCacheingLogic};
 use machine_implementations::{
     MachineMessage, machine_identification::QiTechMachineIdentificationUnique,
 };
@@ -40,6 +40,27 @@ pub struct SharedAppState {
 }
 
 impl SharedAppState {
+    pub async fn send_ethercat_setup_init(&self){
+        let event = Event::new("EthercatDevicesEvent", EthercatDevicesEvent::Initializing(true));
+        let mut guard = self.socketio_setup.namespaces.write().await;
+        let main_namespace = &mut guard.main_namespace;
+        main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
+        drop(guard);
+    }
+
+    pub async fn send_ethercat_setup_done(&self) {
+        let event = Event::new(
+            "EthercatDevicesEvent",
+            EthercatDevicesEvent::Done(EthercatSetupDone {
+                devices: self.ethercat_meta_datas.clone(),
+            }),
+        );
+        let mut guard = self.socketio_setup.namespaces.write().await;
+        let main_namespace = &mut guard.main_namespace;
+        main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
+        drop(guard);
+    }
+
     pub async fn send_machines_event(&self) -> Result<(), anyhow::Error> {
         let event = MachinesEventBuilder().build(self.get_machines_meta().await);
         let mut guard = self.socketio_setup.namespaces.write().await;
