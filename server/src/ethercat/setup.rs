@@ -299,6 +299,9 @@ pub async fn setup_loop(
         // 0x2 vendor id is Beckhoff
         if subdevice.identity().vendor_id == 0x2 {
             let _res = set_mut_beckhoff_eeprom_lock_active(&subdevice).await;
+        } else {
+            tracing::info!("Vendor is Wago. Continue...");
+            continue;
         }
 
         if subdevice.name() == "EL4002" {
