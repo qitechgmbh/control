@@ -9,9 +9,9 @@ use crate::minimal_machines::wago_750_501_test_machine::Wago750_501TestMachine;
 use crate::minimal_machines::wago_750_531_machine::Wago750_531Machine;
 use crate::minimal_machines::wago_750_553_machine::Wago750_553Machine;
 use crate::minimal_machines::wago_ai_test_machine::WagoAiTestMachine;
+use crate::minimal_machines::wago_dio_separate::WagoDioSeparate;
 use crate::minimal_machines::wago_do_test_machine::WagoDOTestMachine;
 use crate::wago_serial_machine::WagoSerialMachine;
-use crate::minimal_machines::wago_dio_separate::WagoDioSeparate;
 #[cfg(feature = "mock-machine")]
 use crate::{
     extruder1::mock::ExtruderV2 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
