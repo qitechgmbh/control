@@ -59,7 +59,11 @@ fn handle_socket_connection(socket: SocketRef, app_state: Arc<SharedAppState>) {
     setup_connection(socket, namespace_id, app_state);
 }
 
-fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc<SharedAppState>) {
+fn setup_disconnection(
+    socket: SocketRef,
+    namespace_id: NamespaceId,
+    app_state: Arc<SharedAppState>,
+) {
     socket.on_disconnect(move |socket: SocketRef| async move {
         let namespace_id = namespace_id.clone();
         let app_state = app_state.clone();
@@ -94,7 +98,7 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
                 }
             }
             if let NamespaceId::Machine(ident) = namespace_id.clone() {
-                    match app_state.machines_with_channel.get(&ident) {
+                    match app_state.machines_with_channel.read().await.get(&ident) {
                         Some(sender) => {
                             let _ = sender.send(MachineMessage::UnsubscribeNamespace).await;
                         },
@@ -113,7 +117,7 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
 
     tokio::spawn(async move {
         let guard = app_state_clone.socketio_setup.namespaces.read().await;
-        let socket_queue_tx =  guard.main_namespace.namespace.socket_queue_tx.clone();
+        let socket_queue_tx = guard.main_namespace.namespace.socket_queue_tx.clone();
         drop(guard);
 
         let mut namespaces_guard = app_state_clone.socketio_setup.namespaces.write().await;
@@ -121,10 +125,7 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
         if let NamespaceId::Machine(_) = namespace_id_clone {
             let map = &mut namespaces_guard.machine_namespaces;
             if !map.contains_key(&namespace_id_clone) {
-                tracing::info!(
-                    "Registering new machine namespace: {}",
-                    namespace_id_clone
-                );
+                tracing::info!("Registering new machine namespace: {}", namespace_id_clone);
                 // Clone the sender from your main namespace
                 // Now create the namespace
                 let ns = Namespace::new(socket_queue_tx);
@@ -133,37 +134,40 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
         }
 
         // Apply and subscribe the socket
-        match  namespaces_guard
-            .apply_mut(namespace_id_clone.clone())
-            .await
-        {
+        match namespaces_guard.apply_mut(namespace_id_clone.clone()).await {
             Ok(namespace) => {
                 namespace.subscribe(socket_clone.clone());
                 namespace.reemit(socket_clone);
 
                 if let NamespaceId::Machine(ident) = namespace_id_clone {
-                    match app_state.clone().machines_with_channel.get(&ident) {
+                    match app_state
+                        .clone()
+                        .machines_with_channel
+                        .read()
+                        .await
+                        .get(&ident)
+                    {
                         Some(sender) => {
-                            tracing::info!("subscribing namespace to {}",ident);
-                            let _ = sender.send(MachineMessage::SubscribeNamespace(namespace.clone())).await;
-                        },
-                        None => tracing::info!("sender doesnt exist for: {}",ident),
+                            tracing::info!("subscribing namespace to {}", ident);
+                            let _ = sender
+                                .send(MachineMessage::SubscribeNamespace(namespace.clone()))
+                                .await;
+                        }
+                        None => tracing::info!("sender doesnt exist for: {}", ident),
                     };
                 }
-
             }
             Err(err) => {
-                    tracing::warn!(
-                        "Couldn't subscribe socket to namespace, disconnecting socket={:?} namespace={} error={:?}",
-                        socket_clone.id,
-                        namespace_id_clone,
-                        err
-                    );
-                    let _ = socket_clone.disconnect();
-                }
+                tracing::warn!(
+                    "Couldn't subscribe socket to namespace, disconnecting socket={:?} namespace={} error={:?}",
+                    socket_clone.id,
+                    namespace_id_clone,
+                    err
+                );
+                let _ = socket_clone.disconnect();
             }
         }
-    );
+    });
 
     tracing::info!(
         "Socket connected to namespace socket={:?} namespace={}",

@@ -1,7 +1,7 @@
 use crate::socketio::event::GenericEvent;
-use tokio::sync::mpsc::Sender;
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
+use tokio::sync::mpsc::Sender;
 use tracing::instrument;
 
 #[derive(Debug, Clone)]

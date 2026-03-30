@@ -1,8 +1,8 @@
 use super::{main_namespace::MainRoom, namespace_id::NamespaceId};
 use control_core::socketio::event::GenericEvent;
 use socketioxide::extract::SocketRef;
-use tokio::sync::mpsc::Sender;
 use std::{collections::HashMap, sync::Arc};
+use tokio::sync::mpsc::Sender;
 
 pub struct Namespaces {
     pub main_namespace: MainRoom,

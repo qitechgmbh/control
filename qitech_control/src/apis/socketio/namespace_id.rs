@@ -1,8 +1,10 @@
+use machine_implementations::machine_identification::{
+    MachineIdentification, QiTechMachineIdentificationUnique,
+};
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::str::FromStr;
-use machine_implementations::machine_identification::{MachineIdentification, QiTechMachineIdentificationUnique};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum NamespaceId {

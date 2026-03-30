@@ -1,11 +1,14 @@
-use std::sync::{Arc};
+use control_core::socketio::{
+    event::{Event, GenericEvent},
+    namespace::{CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_one_event},
+};
 use ethercat_devices_event::EthercatDevicesEvent;
 use ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent;
 use machines_event::MachinesEvent;
 use socketioxide::extract::SocketRef;
+use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use tracing::instrument;
-use control_core::socketio::{event::{Event, GenericEvent}, namespace::{CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_one_event}};
 
 pub mod ethercat_devices_event;
 pub mod ethercat_interface_discovery_event;

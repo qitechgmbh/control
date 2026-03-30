@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use control_core::socketio::event::Event;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum EthercatInterfaceDiscoveryEvent {

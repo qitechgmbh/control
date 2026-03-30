@@ -1,13 +1,14 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::{DIGITAL_INPUT_TEST_MACHINE, QiTechMachine, VENDOR_QITECH};
+use crate::{DIGITAL_INPUT_TEST_MACHINE, MachineMessage, QiTechMachine, VENDOR_QITECH};
 use api::DigitalInputTestMachineNamespace;
 use qitech_lib::ethercat_hal::devices::el2004::EL2004;
 use qitech_lib::ethercat_hal::io::digital_input::DigitalInputDevice;
 use qitech_lib::machines::{
-    Machine, MachineDataRegistry, MachineIdentification, MachineIdentificationUnique
+    Machine, MachineDataRegistry, MachineIdentification, MachineIdentificationUnique,
 };
+use tokio::sync::mpsc::{Receiver, Sender};
 
 pub mod api;
 pub mod new;
@@ -17,8 +18,10 @@ pub struct DigitalInputTestMachine {
     pub machine_identification_unique: MachineIdentificationUnique,
     pub led_on: [bool; 4],
     pub namespace: DigitalInputTestMachineNamespace,
+    sender: Sender<MachineMessage>,
+    receiver: Receiver<MachineMessage>,
     digital_input_device: Rc<RefCell<dyn DigitalInputDevice>>,
-    el2004 : Rc<RefCell<EL2004>>,
+    el2004: Rc<RefCell<EL2004>>,
 }
 
 impl DigitalInputTestMachine {
@@ -31,7 +34,8 @@ impl DigitalInputTestMachine {
 impl Machine for DigitalInputTestMachine {
     fn act(&mut self, _registry: Option<&mut MachineDataRegistry>) {
         let mut el2004 = self.el2004.borrow_mut();
-        el2004.rxpdo.channel2 = Some(qitech_lib::ethercat_hal::pdo::basic::BoolPdoObject { value: true });
+        el2004.rxpdo.channel2 =
+            Some(qitech_lib::ethercat_hal::pdo::basic::BoolPdoObject { value: true });
 
         let digital_input_device = self.digital_input_device.borrow_mut();
         let port_count = digital_input_device.get_port_count();
@@ -57,4 +61,3 @@ impl Machine for DigitalInputTestMachine {
 }
 
 impl QiTechMachine for DigitalInputTestMachine {}
-

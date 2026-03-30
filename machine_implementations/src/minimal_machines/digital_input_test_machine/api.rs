@@ -1,13 +1,17 @@
-use std::sync::Arc;
-
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
         CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
     },
 };
+use std::sync::Arc;
+
+use crate::MachineApi;
+use crate::{
+    MachineMessage, minimal_machines::digital_input_test_machine::DigitalInputTestMachine,
+};
 use serde::{Deserialize, Serialize};
-use crate::{MachineMessage, minimal_machines::digital_input_test_machine::DigitalInputTestMachine};
+use tokio::sync::mpsc::Sender;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
@@ -32,7 +36,6 @@ pub enum Mutation {
 pub struct DigitalInputTestMachineNamespace {
     pub namespace: Option<Namespace>,
 }
-use crate::MachineApi;
 
 impl NamespaceCacheingLogic<DigitalInputTestMachineEvents> for DigitalInputTestMachineNamespace {
     fn emit(&mut self, events: DigitalInputTestMachineEvents) {
@@ -57,13 +60,12 @@ impl CacheableEvents<DigitalInputTestMachineEvents> for DigitalInputTestMachineE
 }
 
 impl MachineApi for DigitalInputTestMachine {
-    fn api_get_sender(&self) -> tokio::sync::oneshot::Sender<MachineMessage> {
-        todo!()
+    fn get_api_sender(&self) -> Sender<MachineMessage> {
+        self.sender.clone()
     }
 
     fn api_mutate(&mut self, _value: serde_json::Value) -> Result<(), anyhow::Error> {
-        
-       //let mutation: Mutation = serde_json::from_value(value)?;
+        //let mutation: Mutation = serde_json::from_value(value)?;
         // match mutation {
         //     Mutation::SetLed { index, on } => self.set_led(index, on),
         // }
@@ -76,7 +78,17 @@ impl MachineApi for DigitalInputTestMachine {
     }
 
     fn act_machine_message(&mut self, msg: crate::MachineMessage) {
-        todo!()
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace = DigitalInputTestMachineNamespace {
+                    namespace: Some(namespace),
+                }
+            }
+            MachineMessage::UnsubscribeNamespace => {
+                self.namespace.namespace = None;
+            }
+            MachineMessage::HttpApiJsonRequest(value) => (),
+            MachineMessage::RequestValues(sender) => (),
+        }
     }
 }
-
