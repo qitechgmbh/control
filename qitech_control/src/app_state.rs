@@ -10,7 +10,7 @@ use crate::apis::socketio::{
 use anyhow::bail;
 use control_core::socketio::{event::{Event, GenericEvent}, namespace::NamespaceCacheingLogic};
 use machine_implementations::{
-    MachineMessage, machine_identification::{DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification, DeviceMachineIdentification, QiTechMachineIdentificationUnique},
+    MachineMessage, machine_identification::{DeviceHardwareIdentificationEthercat, DeviceIdentification, QiTechMachineIdentificationUnique},
 };
 use qitech_lib::ethercat_hal::controller::EtherCATController;
 use socketioxide::{SocketIo, extract::SocketRef};

@@ -4,6 +4,7 @@ use machine_implementations::{MachineApi, QiTechMachine};
 use machine_implementations::minimal_machines::digital_input_test_machine::DigitalInputTestMachine;
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
 
+use qitech_lib::ethercat_hal::machine_ident_read::read_device_identifications;
 use qitech_lib::machines::Machine;
 use qitech_lib::{
     ethercat_hal::{
@@ -52,6 +53,8 @@ impl MainState {
     }
 }
 
+
+
 fn main() {
     let rt = get_async_runtime();
     let state = Arc::new(SharedAppState::new());
@@ -70,6 +73,12 @@ fn main() {
     let _res = ecat_channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
     std::thread::sleep(Duration::from_millis(1000));
 
+    let res = ecat_channel.read_device_identifications();
+    match res {
+        Ok(idents) => println!("{:?}",idents),
+        Err(e) => println!("{:?}",e),
+    };
+
     let _res = ecat_channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
     std::thread::sleep(Duration::from_millis(1000));
 
@@ -78,8 +87,10 @@ fn main() {
         main_state.subdevices.push(dev.clone());
     }
 
-    let _res = state.fill_ethercat_metadata(ecat_controller.clone());
+    
+ 
 
+    let _res = state.fill_ethercat_metadata(ecat_controller.clone());
     let di_machine: DigitalInputTestMachine =
         DigitalInputTestMachine::new(main_state.subdevices.clone()).unwrap();
 
