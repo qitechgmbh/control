@@ -14,8 +14,8 @@ import { MachineIdentificationUnique } from "@/machines/types";
 
 // ========== Event Schema ==========
 export const stateEventDataSchema = z.object({
-  inputs: z.array(z.boolean()).length(8),  // from 750-430
-  led_on: z.array(z.boolean()).length(8),  // from 750-530
+  inputs: z.array(z.boolean()).length(8), // from 750-430
+  led_on: z.array(z.boolean()).length(8), // from 750-530
 });
 
 export const stateEventSchema = eventSchema(stateEventDataSchema);

@@ -1,15 +1,13 @@
 use std::time::Instant;
 
-use control_core::socketio::namespace::NamespaceCacheingLogic;
-use ethercat_hal::io::{digital_input::DigitalInput,digital_output::DigitalOutput,
-};
-use smol::channel::{Receiver, Sender};
 use self::api::{StateEvent, WagoDioSeparateEvents, WagoDioSeparateNamespace};
 use crate::{
-    AsyncThreadMessage, Machine, MachineMessage,
-    VENDOR_QITECH, MACHINE_WAGO_DIO_SEPARATE_V1,
+    AsyncThreadMessage, MACHINE_WAGO_DIO_SEPARATE_V1, Machine, MachineMessage, VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
+use control_core::socketio::namespace::NamespaceCacheingLogic;
+use ethercat_hal::io::{digital_input::DigitalInput, digital_output::DigitalOutput};
+use smol::channel::{Receiver, Sender};
 
 pub mod act;
 pub mod api;
@@ -25,8 +23,8 @@ pub struct WagoDioSeparate {
     pub last_state_emit: Instant,
     pub inputs: [bool; 8],
     pub led_on: [bool; 8],
-    pub digital_input: [DigitalInput; 8], 
-    pub digital_output: [DigitalOutput; 8], 
+    pub digital_input: [DigitalInput; 8],
+    pub digital_output: [DigitalOutput; 8],
 }
 
 impl Machine for WagoDioSeparate {
