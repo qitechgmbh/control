@@ -1,4 +1,3 @@
-use qitech_lib::ethercat_hal::EtherCATThreadChannel;
 use qitech_lib::ethercat_hal::devices::wago_750_354::WAGO_750_354_IDENTITY_A;
 use qitech_lib::ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTITY;
 use qitech_lib::machines::MachineIdentificationUnique;
@@ -264,29 +263,6 @@ impl Default for MachineIdentificationAddresses {
             role_word: 0x002b,
         }
     }
-}
-
-/// Reads the EEPROM of all subdevices to get their machine device identifications
-///
-/// Returns a vector of MachineDeviceIdentification for all subdevices
-pub fn read_device_identifications(
-    channel: EtherCATThreadChannel,
-) -> Vec<Result<DeviceMachineIdentification, Error>> {
-    vec![]
-}
-
-/// Reads the machine device identification from the EEPROM
-pub async fn machine_device_identification(
-    channel: EtherCATThreadChannel,
-) -> Result<DeviceMachineIdentification, Error> {
-    todo!()
-}
-
-/// Writes the machine device identification to the EEPROM
-pub async fn write_machine_device_identification<'maindevice, const MAX_PDI: usize>(
-    channel: EtherCATThreadChannel,
-) -> Result<(), Error> {
-    Ok(())
 }
 
 /// Returns the EEPROM addresses for the machine device identification

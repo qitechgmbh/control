@@ -4,7 +4,6 @@ use machine_implementations::MachineApi;
 use machine_implementations::minimal_machines::digital_input_test_machine::DigitalInputTestMachine;
 use qitech_lib::{
     ethercat_hal::{
-        EtherCATThreadChannel,
         controller::{EtherCATAppHandle, EtherCATController},
         devices::{EthercatDevice, device_from_subdevice_identity_rc},
         start_ethercat_thread,
@@ -75,12 +74,11 @@ fn main() {
     let rt = get_async_runtime();
     let state = Arc::new(SharedAppState::new());
     let _api = rt.spawn(apis::init_api(state.clone()));
-
-    let res = start_ethercat_thread("enp101s0f4u1u2");
-    let result = res.0;
-    let ecat_controller = result.0;
-    let mut ecat_handle = result.1;
-    let ecat_channel: EtherCATThreadChannel = result.2;
+    let eth_control = start_ethercat_thread("enp101s0f4u1u2");
+    
+    let mut ecat_handle = eth_control.app_handle;
+    let ecat_channel = eth_control.channel;
+    let ecat_controller = eth_control.controller;
 
     let _res = ecat_channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
     std::thread::sleep(Duration::from_millis(1000));
@@ -102,7 +100,9 @@ fn main() {
         DigitalInputTestMachine::new(subdevices.clone()).unwrap();
     let sender = di_machine.get_api_sender();
     let state_clone = Arc::clone(&state);
+    
     rt.spawn(async move {
+        let _res = state.send_ethercat_setup_done();
         state_clone
             .add_machine(
                 di_machine.machine_identification_unique.into(),
@@ -110,7 +110,12 @@ fn main() {
                 sender,
             )
             .await; // Assuming add_machine is async
+        let _res = state.send_machines_event().await;
+        
     });
+
+
+
 
     loop {
         write_ecat_inputs(

@@ -1,9 +1,10 @@
 use anyhow::Result;
-
 use control_core::socketio::namespace::Namespace;
 use qitech_lib::machines::Machine;
 use serde::Serialize;
+use tokio::sync::mpsc::Sender;
 pub mod minimal_machines;
+pub mod machine_identification;
 
 /*pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
@@ -19,10 +20,7 @@ pub mod wago_power;*/
 /*pub mod wago_serial_machine;*/
 /*pub mod winder2;*/
 
-mod machine_data;
-pub mod machine_identification;
-pub use machine_data::MachineData;
-use tokio::sync::mpsc::Sender;
+
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
