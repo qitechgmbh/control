@@ -43,7 +43,7 @@ export function WagoDioSeparateControlPage() {
             </Label>
           ))}
         </div>
-        <div className="flex gap-2 mt-4">
+        <div className="mt-4 flex gap-2">
           <Button onClick={() => setAllLeds(true)}>All ON</Button>
           <Button variant="outline" onClick={() => setAllLeds(false)}>
             All OFF

@@ -1,4 +1,8 @@
-use std::{sync::Arc, time::Instant};
+use super::{WagoDioSeparate, api::WagoDioSeparateNamespace};
+use crate::{
+    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
+    validate_no_role_duplicates, validate_same_machine_identification_unique,
+};
 use anyhow::Error;
 use ethercat_hal::devices::EthercatDevice;
 use ethercat_hal::{
@@ -10,18 +14,10 @@ use ethercat_hal::{
             wago_750_530::{Wago750_530, Wago750_530Port},
         },
     },
-    io::{
-        digital_input::DigitalInput,
-        digital_output::DigitalOutput,
-    },
+    io::{digital_input::DigitalInput, digital_output::DigitalOutput},
 };
 use smol::{block_on, lock::RwLock};
-use super::{WagoDioSeparate, api::WagoDioSeparateNamespace};
-use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait,
-    get_ethercat_device, validate_no_role_duplicates,
-    validate_same_machine_identification_unique,
-};
+use std::{sync::Arc, time::Instant};
 
 impl MachineNewTrait for WagoDioSeparate {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -71,7 +67,6 @@ impl MachineNewTrait for WagoDioSeparate {
             let dev = coupler.slot_devices.get(1).unwrap().clone().unwrap();
             let wago750_430: Arc<RwLock<Wago750_430>> = downcast_device::<Wago750_430>(dev).await?;
 
-
             let di1 = DigitalInput::new(wago750_430.clone(), Wago750_430Port::Port1);
             let di2 = DigitalInput::new(wago750_430.clone(), Wago750_430Port::Port2);
             let di3 = DigitalInput::new(wago750_430.clone(), Wago750_430Port::Port3);
@@ -104,7 +99,7 @@ impl MachineNewTrait for WagoDioSeparate {
                 inputs: [false; 8],
                 led_on: [false; 8],
                 main_sender: params.main_thread_channel.clone(),
-                digital_input:  [di1, di2, di3, di4, di5, di6, di7, di8],
+                digital_input: [di1, di2, di3, di4, di5, di6, di7, di8],
                 digital_output: [do1, do2, do3, do4, do5, do6, do7, do8],
             };
             machine.emit_state();
