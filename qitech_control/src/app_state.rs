@@ -6,11 +6,13 @@ use crate::apis::socketio::{
     },
     namespaces::Namespaces,
 };
+
 use anyhow::bail;
 use control_core::socketio::{event::{Event, GenericEvent}, namespace::NamespaceCacheingLogic};
 use machine_implementations::{
-    MachineMessage, machine_identification::QiTechMachineIdentificationUnique,
+    MachineMessage, machine_identification::{DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification, DeviceMachineIdentification, QiTechMachineIdentificationUnique},
 };
+use qitech_lib::ethercat_hal::controller::EtherCATController;
 use socketioxide::{SocketIo, extract::SocketRef};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{
@@ -35,11 +37,33 @@ pub struct SharedAppState {
     pub machines: RwLock<Vec<MachineObj>>,
     pub machines_with_channel:
         RwLock<HashMap<QiTechMachineIdentificationUnique, Sender<MachineMessage>>>,
-    pub ethercat_meta_datas: Vec<EtherCatDeviceMetaData>,
+    pub ethercat_meta_datas: RwLock<Vec<EtherCatDeviceMetaData>>,
     pub socketio_setup: SocketioSetup,
 }
 
 impl SharedAppState {
+    pub fn fill_ethercat_metadata(&self,controller : Arc<EtherCATController>) -> Result<(),anyhow::Error>{
+        let mut guard = self.ethercat_meta_datas.try_write()?;
+        for i in 0..controller.subdevice_count {
+            let dev = controller.subdevices[i];
+            guard.push(
+                EtherCatDeviceMetaData { 
+                    configured_address: dev.device_address, 
+                    name: dev.get_name()?, 
+                    vendor_id: dev.vendor, 
+                    product_id: dev.product_id, 
+                    revision: dev.revision, 
+                    device_identification: DeviceIdentification
+                    {
+                        device_machine_identification: None,
+                        device_hardware_identification: machine_implementations::machine_identification::DeviceHardwareIdentification::Ethercat(DeviceHardwareIdentificationEthercat{ subdevice_index: dev.device_address as usize })
+                    } 
+            });
+        }
+        drop(guard);
+        Ok(())
+    }
+
     pub async fn send_ethercat_setup_init(&self){
         let event = Event::new("EthercatDevicesEvent", EthercatDevicesEvent::Initializing(true));
         let mut guard = self.socketio_setup.namespaces.write().await;
@@ -52,7 +76,7 @@ impl SharedAppState {
         let event = Event::new(
             "EthercatDevicesEvent",
             EthercatDevicesEvent::Done(EthercatSetupDone {
-                devices: self.ethercat_meta_datas.clone(),
+                devices: self.ethercat_meta_datas.read().await.clone(),
             }),
         );
         let mut guard = self.socketio_setup.namespaces.write().await;
@@ -119,7 +143,7 @@ impl SharedAppState {
                 socket_queue_tx,
                 socket_queue_rx: RwLock::new(socket_queue_rx),
             },
-            ethercat_meta_datas: vec![],
+            ethercat_meta_datas: RwLock::new(vec![]),
         }
     }
 }

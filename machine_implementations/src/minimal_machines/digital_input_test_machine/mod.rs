@@ -1,8 +1,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::Instant;
 
-use crate::{DIGITAL_INPUT_TEST_MACHINE, MachineMessage, QiTechMachine, VENDOR_QITECH};
-use api::DigitalInputTestMachineNamespace;
+use crate::{DIGITAL_INPUT_TEST_MACHINE, MachineApi, MachineMessage, QiTechMachine, VENDOR_QITECH};
+use api::{DigitalInputTestMachineNamespace, StateEvent};
+use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::ethercat_hal::devices::el2004::EL2004;
 use qitech_lib::ethercat_hal::io::digital_input::DigitalInputDevice;
 use qitech_lib::machines::{
@@ -17,11 +19,12 @@ pub mod new;
 pub struct DigitalInputTestMachine {
     pub machine_identification_unique: MachineIdentificationUnique,
     pub led_on: [bool; 4],
-    pub namespace: DigitalInputTestMachineNamespace,
+    pub namespace: DigitalInputTestMachineNamespace,    
     sender: Sender<MachineMessage>,
     receiver: Receiver<MachineMessage>,
     digital_input_device: Rc<RefCell<dyn DigitalInputDevice>>,
     el2004: Rc<RefCell<EL2004>>,
+    last_state_emit: Instant,
 }
 
 impl DigitalInputTestMachine {
@@ -33,6 +36,14 @@ impl DigitalInputTestMachine {
 
 impl Machine for DigitalInputTestMachine {
     fn act(&mut self, _registry: Option<&mut MachineDataRegistry>) {
+        let now = std::time::Instant::now();
+
+        let res = self.receiver.try_recv();
+        match res {
+            Ok(msg) =>  self.act_machine_message(msg),
+            Err(_) => (),
+        };
+
         let mut el2004 = self.el2004.borrow_mut();
         el2004.rxpdo.channel2 =
             Some(qitech_lib::ethercat_hal::pdo::basic::BoolPdoObject { value: true });
@@ -49,6 +60,12 @@ impl Machine for DigitalInputTestMachine {
                 self.led_on[i] = value;
             }
         }
+        
+        if now.duration_since(self.last_state_emit) > std::time::Duration::from_secs_f64(1.0 / 30.0) {
+            self.namespace.emit(api::DigitalInputTestMachineEvents::State( StateEvent{ led_on: self.led_on }.build() ));       
+            self.last_state_emit = now; 
+        }
+        
     }
 
     fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {

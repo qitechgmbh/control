@@ -16,6 +16,7 @@ impl DigitalInputTestMachine {
         let el1008: Rc<RefCell<EL1008>> = downcast_rc_refcell(dev.unwrap())?;
         let el2004: Rc<RefCell<EL2004>> = downcast_rc_refcell(dev_1.unwrap())?;
         let (tx, rx) = tokio::sync::mpsc::channel::<MachineMessage>(1);
+        
         let my_test = Self {
             machine_identification_unique: MachineIdentificationUnique {
                 machine_ident: DigitalInputTestMachine::MACHINE_IDENTIFICATION,
@@ -27,7 +28,9 @@ impl DigitalInputTestMachine {
             namespace: DigitalInputTestMachineNamespace { namespace: None },
             sender: tx,
             receiver: rx,
+            last_state_emit: std::time::Instant::now(),
         };
+        
 
         Ok(my_test)
     }

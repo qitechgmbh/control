@@ -35,7 +35,7 @@ impl EthercatDevicesEventBuilder {
         Event::new(
             Self::NAME,
             EthercatDevicesEvent::Done(EthercatSetupDone {
-                devices: app_state.ethercat_meta_datas.clone(),
+                devices: app_state.ethercat_meta_datas.read().await.clone(),
             }),
         )
     }
