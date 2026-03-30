@@ -1,9 +1,8 @@
+use crate::SharedAppState;
 use control_core::socketio::event::Event;
-use machine_implementations::machine_identification::{DeviceIdentification};
+use machine_implementations::machine_identification::DeviceIdentification;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use crate::{SharedAppState};
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EtherCatDeviceMetaData {

@@ -1,16 +1,15 @@
-use std::sync::Arc;
+use super::response::*;
+use crate::SharedAppState;
 use axum::extract::{Path, State};
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router, debug_handler};
-
 use machine_implementations::MachineMessage;
-use machine_implementations::machine_identification::{MachineIdentification, QiTechMachineIdentificationUnique};
+use machine_implementations::machine_identification::{
+    MachineIdentification, QiTechMachineIdentificationUnique,
+};
 use machine_implementations::minimal_machines::digital_input_test_machine::DigitalInputTestMachine;
 use serde::Serialize;
-
-use crate::SharedAppState;
-
-use super::response::*;
+use std::sync::Arc;
 
 #[derive(Serialize, Debug, PartialEq)]
 struct MachineResponce {
@@ -31,7 +30,7 @@ impl From<QiTechMachineIdentificationUnique> for MachineResponce {
 
         Self {
             legacy_id: machine_identification_unique,
-            serial : serial as u16,
+            serial: serial as u16,
             vendor,
             slug,
             error: None,
@@ -90,7 +89,7 @@ async fn get_machine_handler(
     Path(serial): Path<u16>,
 ) -> Result<GetMachineResponce> {
     let id = QiTechMachineIdentificationUnique {
-        serial : serial,
+        serial: serial,
         machine_identification: id,
     };
 
@@ -119,7 +118,7 @@ async fn post_machine_handler(
     Json(request): Json<PostMachineRequest>,
 ) -> Result<()> {
     let id = QiTechMachineIdentificationUnique {
-        serial : serial as u16,
+        serial: serial as u16,
         machine_identification: id,
     };
 
@@ -145,16 +144,18 @@ fn make_machine_router(id: MachineIdentification) -> Router<Arc<SharedAppState>>
 pub fn rest_api_router() -> Router<Arc<SharedAppState>> {
     Router::new()
         .route("/machine", get(get_machines_handler))
-        .merge(make_machine_router(DigitalInputTestMachine::MACHINE_IDENTIFICATION.into()))
-        /*.merge(make_machine_router(LaserMachine::MACHINE_IDENTIFICATION))
-        .merge(make_machine_router(Winder2::MACHINE_IDENTIFICATION))
-        .merge(make_machine_router(MockMachine::MACHINE_IDENTIFICATION))
-        .merge(make_machine_router(ExtruderV2::MACHINE_IDENTIFICATION))
-        .merge(make_machine_router(AquaPathV1::MACHINE_IDENTIFICATION))
-        .merge(make_machine_router(TestMachine::MACHINE_IDENTIFICATION))
-        .merge(make_machine_router(WagoPower::MACHINE_IDENTIFICATION))
-        .merge(make_machine_router(IP20TestMachine::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(
-            AnalogInputTestMachine::MACHINE_IDENTIFICATION,
-        )*/
+            DigitalInputTestMachine::MACHINE_IDENTIFICATION.into(),
+        ))
+    /*.merge(make_machine_router(LaserMachine::MACHINE_IDENTIFICATION))
+    .merge(make_machine_router(Winder2::MACHINE_IDENTIFICATION))
+    .merge(make_machine_router(MockMachine::MACHINE_IDENTIFICATION))
+    .merge(make_machine_router(ExtruderV2::MACHINE_IDENTIFICATION))
+    .merge(make_machine_router(AquaPathV1::MACHINE_IDENTIFICATION))
+    .merge(make_machine_router(TestMachine::MACHINE_IDENTIFICATION))
+    .merge(make_machine_router(WagoPower::MACHINE_IDENTIFICATION))
+    .merge(make_machine_router(IP20TestMachine::MACHINE_IDENTIFICATION))
+    .merge(make_machine_router(
+        AnalogInputTestMachine::MACHINE_IDENTIFICATION,
+    )*/
 }

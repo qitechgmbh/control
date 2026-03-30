@@ -15,18 +15,24 @@ pub struct QiTechMachineIdentificationUnique {
 
 impl From<MachineIdentificationUnique> for QiTechMachineIdentificationUnique {
     fn from(value: MachineIdentificationUnique) -> Self {
-        QiTechMachineIdentificationUnique { 
-            machine_identification: MachineIdentification { vendor: value.machine_ident.vendor, machine: value.machine_ident.machine }, 
-            serial: value.serial as u16, 
+        QiTechMachineIdentificationUnique {
+            machine_identification: MachineIdentification {
+                vendor: value.machine_ident.vendor,
+                machine: value.machine_ident.machine,
+            },
+            serial: value.serial as u16,
         }
     }
 }
 
 impl From<QiTechMachineIdentificationUnique> for MachineIdentificationUnique {
     fn from(value: QiTechMachineIdentificationUnique) -> Self {
-        MachineIdentificationUnique {  
+        MachineIdentificationUnique {
             serial: value.serial as u32,
-            machine_ident: qitech_lib::machines::MachineIdentification { vendor: value.machine_identification.vendor, machine: value.machine_identification.machine }, 
+            machine_ident: qitech_lib::machines::MachineIdentification {
+                vendor: value.machine_identification.vendor,
+                machine: value.machine_identification.machine,
+            },
         }
     }
 }
@@ -57,13 +63,19 @@ pub struct MachineIdentification {
 
 impl From<qitech_lib::machines::MachineIdentification> for MachineIdentification {
     fn from(value: qitech_lib::machines::MachineIdentification) -> Self {
-        MachineIdentification { vendor: value.vendor, machine: value.machine }
+        MachineIdentification {
+            vendor: value.vendor,
+            machine: value.machine,
+        }
     }
 }
 
 impl From<MachineIdentification> for qitech_lib::machines::MachineIdentification {
     fn from(value: MachineIdentification) -> Self {
-        qitech_lib::machines::MachineIdentification { vendor: value.vendor, machine: value.machine }
+        qitech_lib::machines::MachineIdentification {
+            vendor: value.vendor,
+            machine: value.machine,
+        }
     }
 }
 

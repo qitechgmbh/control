@@ -1,26 +1,21 @@
-use std::sync::Arc;
-use control_core::socketio::event::GenericEvent;
-use socketioxide::socket;
-use tracing::{error, info, instrument, trace};
 use crate::SharedAppState;
+use control_core::socketio::event::GenericEvent;
+use std::sync::Arc;
+use tracing::{error, info, instrument, trace};
 
-
-/// Send a single event with retry logic
 #[instrument(skip_all)]
 async fn send_event_with_retry(
     socket: &socketioxide::extract::SocketRef,
     event: &Arc<GenericEvent>,
 ) {
-    // retry loop for each event
     loop {
-        // check if socket is still connected
         if !socket.connected() {
             info!(
                 socket_id = ?socket.id,
                 event = %event.name,
                 "Socket disconnected, skipping event"
             );
-            break; 
+            break;
         }
 
         match socket.emit("event", event.as_ref()) {
@@ -64,8 +59,8 @@ async fn send_event_with_retry(
 pub async fn start_socketio_queue(app_state: Arc<SharedAppState>) {
     let app_state = app_state.as_ref();
     loop {
-        let queue = &mut app_state.socketio_setup.socket_queue_rx.write().await;      
-        let res = queue.recv().await; 
+        let queue = &mut app_state.socketio_setup.socket_queue_rx.write().await;
+        let res = queue.recv().await;
         match res {
             Some((socket, event)) => send_event_with_retry(&socket, &event).await,
             None => {
