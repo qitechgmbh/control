@@ -1,12 +1,13 @@
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
-use machine_implementations::{Hardware, IdentifiedEthercat, MachineApi, MachineHardware, MachineNew, QiTechMachine};
+use machine_implementations::registry::{MACHINE_REGISTRY, MachineRegistry};
+use machine_implementations::{Hardware, IdentifiedEthercat, MACHINE_WINDER_V1, MachineApi, MachineHardware, MachineNew, QiTechMachine};
 use machine_implementations::minimal_machines::digital_input_test_machine::DigitalInputTestMachine;
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
 
 use qitech_lib::ethercat_hal::MetaSubdevice;
 use qitech_lib::ethercat_hal::machine_ident_read::{MachineDeviceInfo, read_device_identifications};
-use qitech_lib::machines::Machine;
+use qitech_lib::machines::{Machine, MachineIdentification, MachineIdentificationUnique};
 use qitech_lib::{
     ethercat_hal::{
         devices::{EthercatDevice, device_from_subdevice_identity_rc},
@@ -42,7 +43,7 @@ fn get_async_runtime() -> &'static Runtime {
 
 struct MainState {
     pub subdevices: Vec<Rc<RefCell<dyn EthercatDevice>>>,    
-    pub hardware : Vec<MachineHardware>,
+    pub hardware : HashMap<MachineIdentificationUnique,MachineHardware>,
     pub machines : Vec<Box<dyn QiTechMachine>>,
     pub machine_data_reg : MachineDataRegistry,
 }
@@ -51,19 +52,17 @@ impl MainState {
     pub fn new() -> Self {
         let machines = vec![];
         let machine_data_reg = MachineDataRegistry{ storage: HashMap::new() };
-        MainState { machines, machine_data_reg, subdevices : vec![],hardware : vec![]}
+        MainState { machines, machine_data_reg, subdevices : vec![],hardware : HashMap::new() }
     }
     
-    pub fn initialize_machines_by_identified_hw(&mut self, device_infos : Vec<MachineDeviceInfo>, mut ethercat_devices_mapped : Vec<(MetaSubdevice,Rc<RefCell<dyn EthercatDevice>>)>) {            
-        println!("lol");
+    pub fn generate_machine_hardware_from_ethercat(&mut self, device_infos : Vec<MachineDeviceInfo>, mut ethercat_devices_mapped : Vec<(MetaSubdevice,Rc<RefCell<dyn EthercatDevice>>)>) {            
         let mut hw_map: HashMap<u16, (MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)> = 
             ethercat_devices_mapped
                 .drain(..)
                 .map(|(meta, device)| (meta.device_address, (meta, device)))
                 .collect();
-
     
-       let combined_list: Vec<(MachineDeviceInfo, MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)> = 
+        let mut combined_list: Vec<(MachineDeviceInfo, MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)> =         
         device_infos
             .into_iter()
             .filter_map(|info| {
@@ -71,12 +70,29 @@ impl MainState {
                 hw_map.remove(&address).map(|hw| {
                     (info, hw.0, hw.1) // This is a 3-tuple
                 })
-            })
+            }) 
             .collect();
+
+        combined_list.sort_by_key( |f| (f.0.machine_id,f.0.machine_serial));
         
-        for (i,v,g) in combined_list {
-            println!("{:?} {:?} {:?}",i,v,g);
+        for (dev_info,meta,eth) in combined_list.drain(0..combined_list.len()) {
+            let identification = MachineIdentificationUnique{ machine_ident: MachineIdentification { vendor: dev_info.machine_vendor, machine:dev_info.machine_id }, serial: dev_info.machine_serial as u32 };
+            if self.hardware.get(&identification).is_none() {
+                self.hardware.insert(identification, MachineHardware{ hw: vec![] });
+            }            
+            let ethercat_hw = Hardware::Ethercat(IdentifiedEthercat{hw: eth,ident: dev_info } );        
+            let hw = self.hardware.get_mut(&identification).unwrap();
+            hw.hw.push(ethercat_hw);            
         }
+
+        for key in self.hardware.keys() {
+            if key.machine_ident == DigitalInputTestMachine::MACHINE_IDENTIFICATION {
+                MACHINE_REGISTRY.new_machine(key.clone(), self.hardware.get(key).unwrap().clone());
+            }            
+        }
+
+
+        
 
     }
 }
@@ -125,7 +141,7 @@ fn main() {
     let _res = state.fill_ethercat_metadata(ecat_controller.clone());
 
     match idents {
-        Some(idents) => main_state.initialize_machines_by_identified_hw(idents,mapped_ecat_devices),
+        Some(idents) => main_state.generate_machine_hardware_from_ethercat(idents,mapped_ecat_devices),
         None => (),
     }
 
