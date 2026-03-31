@@ -223,9 +223,9 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "axum"
-version = "0.8.8"
+version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b52af3cb4058c895d37317bb27508dccc8e5f2d39454016b297bf4a400597b8"
+checksum = "31b698c5f9a010f6573133b09e0de5408834d0c82f8d7475a89fc1867a71cd90"
 dependencies = [
  "axum-core",
  "axum-macros",
@@ -276,9 +276,9 @@ dependencies = [
 
 [[package]]
 name = "axum-macros"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "604fde5e028fea851ce1d8570bbdc034bec850d157f7569d10f347d06808c05c"
+checksum = "7aa268c23bfbbd2c4363b9cd302a4f504fb2a9dfe7e3451d66f35dd392e20aca"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -461,6 +461,13 @@ checksum = "117725a109d387c937a1533ce01b450cbde6b88abceea8473c4d7a85853cda3c"
 dependencies = [
  "lazy_static",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "common"
+version = "0.1.0"
+dependencies = [
+ "tokio",
 ]
 
 [[package]]
@@ -888,8 +895,10 @@ dependencies = [
  "anyhow",
  "approx",
  "bitvec",
+ "core_affinity",
  "ethercat_hal_derive",
  "ethercrab",
+ "libc",
  "rand",
  "smol",
  "ta",
@@ -1430,9 +1439,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
-version = "0.2.183"
+version = "0.2.186"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5b646652bf6661599e1da8901b3b9522896f01e736bad5f723fe7a3a27f899d"
+checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
 
 [[package]]
 name = "libloading"
@@ -1618,6 +1627,8 @@ dependencies = [
 name = "modbus"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "common",
  "tokio",
  "tokio-modbus",
  "tokio-serial",
@@ -1965,10 +1976,12 @@ name = "qitech_lib"
 version = "0.1.0"
 dependencies = [
  "bitvec",
+ "common",
  "ethercat_hal",
  "ethercat_hal_derive",
  "machines",
  "modbus",
+ "serial",
  "tokio",
  "units",
 ]
@@ -2232,6 +2245,16 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "serial"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "tokio",
+ "tokio-modbus",
+ "tokio-serial",
 ]
 
 [[package]]
@@ -2584,6 +2607,7 @@ dependencies = [
  "libc",
  "mio",
  "pin-project-lite",
+ "signal-hook-registry",
  "socket2 0.6.1",
  "tokio-macros",
  "windows-sys 0.61.2",
