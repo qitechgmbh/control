@@ -11,7 +11,6 @@ use qitech_lib::machines::{
     Machine, MachineDataRegistry, MachineIdentification, MachineIdentificationUnique,
 };
 use tokio::sync::mpsc::{Receiver, Sender};
-
 pub mod api;
 pub mod new;
 

@@ -1,22 +1,24 @@
-use crate::MachineMessage;
+use crate::{MachineHardware, MachineMessage, MachineNew};
 use std::{cell::RefCell, rc::Rc};
 
 use super::{DigitalInputTestMachine, api::DigitalInputTestMachineNamespace};
 use qitech_lib::{
-    ethercat_hal::devices::{EthercatDevice, downcast_rc_refcell, el1008::EL1008, el2004::EL2004},
+    ethercat_hal::devices::{ek1100::EK1100, el1008::EL1008, el2004::EL2004},
     machines::MachineIdentificationUnique,
 };
 
-impl DigitalInputTestMachine {
-    pub fn new(
-        hw: Vec<Rc<RefCell<dyn EthercatDevice>>>,
+
+
+impl MachineNew for DigitalInputTestMachine {
+    fn new(
+        hw: MachineHardware,
     ) -> Result<DigitalInputTestMachine, anyhow::Error> {
-        let dev = hw.get(1).cloned();
-        let dev_1 = hw.get(2).cloned();
-        let el1008: Rc<RefCell<EL1008>> = downcast_rc_refcell(dev.unwrap())?;
-        let el2004: Rc<RefCell<EL2004>> = downcast_rc_refcell(dev_1.unwrap())?;
-        let (tx, rx) = tokio::sync::mpsc::channel::<MachineMessage>(1);
+        let _ek1100 : Rc<RefCell<EK1100>> = hw.try_get_ethercat_device_by_index(0)?;
+        let el1008 : Rc<RefCell<EL1008>> = hw.try_get_ethercat_device_by_index(1)?;
+        let el2004 : Rc<RefCell<EL2004>> = hw.try_get_ethercat_device_by_index(2)?;        
         
+        
+        let (tx, rx) = tokio::sync::mpsc::channel::<MachineMessage>(10);
         let my_test = Self {
             machine_identification_unique: MachineIdentificationUnique {
                 machine_ident: DigitalInputTestMachine::MACHINE_IDENTIFICATION,

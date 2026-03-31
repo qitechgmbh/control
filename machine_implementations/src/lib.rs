@@ -1,11 +1,13 @@
+use std::{cell::RefCell, rc::Rc};
+
 use anyhow::Result;
 use control_core::socketio::namespace::Namespace;
-use qitech_lib::machines::Machine;
+use qitech_lib::{ethercat_hal::{devices::{EthercatDevice, downcast_rc_refcell}, machine_ident_read::MachineDeviceInfo}, machines::{Machine, MachineIdentificationUnique}};
 use serde::Serialize;
 use tokio::sync::mpsc::Sender;
 pub mod minimal_machines;
 pub mod machine_identification;
-
+pub mod registry;
 /*pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
@@ -64,7 +66,51 @@ pub trait MachineApi {
     fn api_event_namespace(&mut self) -> Option<Namespace>;
 }
 
-// Generic Machine Init For us
-pub trait MachineNew {}
 
-pub trait QiTechMachine: Machine + MachineApi {}
+pub struct IdentifiedHardware {
+    pub hw : Hardware,
+    pub machine_ident : MachineIdentificationUnique,
+}
+
+pub struct IdentifiedEthercat {
+    pub hw : Rc<RefCell<dyn EthercatDevice>>,
+    pub ident : MachineDeviceInfo
+}
+
+pub enum Hardware {
+    Ethercat(IdentifiedEthercat),
+    Serial(),
+    Usb(),
+    ModbusTcp(),
+    ModbusRtu(),
+    ModbusAscii(),
+}
+
+pub struct MachineHardware {
+    pub hw : Vec<Hardware>,
+    pub machine_ident : MachineIdentificationUnique
+}
+
+impl MachineHardware {
+    pub fn try_get_ethercat_device_by_index<T>(&self, index : usize) -> Result<Rc<RefCell<T>>,anyhow::Error> 
+        where T : EthercatDevice 
+    {
+        let hw = self.hw.get(index);
+        let hw = match hw {
+            Some(hw) => hw,
+            None => return Err(anyhow::anyhow!("index {} not found in hardware", index)),
+        };
+
+        let identified_ethercat = match hw {
+            Hardware::Ethercat(rc_ecat) => rc_ecat,
+            _ => return Err(anyhow::anyhow!("index {} not an ethercat device in hardware", index)),
+        };
+        Ok(downcast_rc_refcell::<T>(identified_ethercat.hw.clone())?)
+    }
+}
+
+pub trait MachineNew: Sized {
+    fn new(hw: MachineHardware) -> Result<Self>;
+}
+
+pub trait QiTechMachine: Machine + MachineApi  {}

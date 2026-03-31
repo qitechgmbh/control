@@ -1,45 +1,11 @@
-use crate::minimal_machines::analog_input_test_machine::AnalogInputTestMachine;
-use crate::minimal_machines::digital_input_test_machine::DigitalInputTestMachine;
-use crate::minimal_machines::ip20_test_machine::IP20TestMachine;
-use crate::minimal_machines::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine;
-use crate::minimal_machines::wago_750_430_di_machine::Wago750_430DiMachine;
-use crate::minimal_machines::wago_750_460_machine::Wago750_460Machine;
-use crate::minimal_machines::wago_750_501_test_machine::Wago750_501TestMachine;
-use crate::minimal_machines::wago_750_531_machine::Wago750_531Machine;
-use crate::minimal_machines::wago_750_553_machine::Wago750_553Machine;
-use crate::minimal_machines::wago_ai_test_machine::WagoAiTestMachine;
-use crate::minimal_machines::wago_do_test_machine::WagoDOTestMachine;
-use crate::wago_serial_machine::WagoSerialMachine;
-#[cfg(feature = "mock-machine")]
-use crate::{
-    extruder1::mock::ExtruderV2 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
-    minimal_machines::mock::MockMachine, winder2::mock::Winder2,
-};
-
-use crate::{
-    Machine, MachineNewParams, MachineNewTrait, machine_identification::MachineIdentification,
-};
-
-#[cfg(not(feature = "mock-machine"))]
-use crate::extruder1::ExtruderV2;
-#[cfg(not(feature = "mock-machine"))]
-use crate::{
-    aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, laser::LaserMachine,
-    winder2::Winder2,
-};
-
-use crate::minimal_machines::{
-    test_machine::TestMachine, test_machine_stepper::TestMachineStepper,
-};
-
+use std::{any::TypeId, collections::HashMap};
+use anyhow::Error;
+use qitech_lib::machines::MachineIdentification;
+use crate::{IdentifiedHardware, MachineHardware, MachineNew, QiTechMachine, minimal_machines::digital_input_test_machine::DigitalInputTestMachine};
 use lazy_static::lazy_static;
 
-use crate::minimal_machines::motor_test_machine::MotorTestMachine;
-use anyhow::Error;
-use std::{any::TypeId, collections::HashMap};
-
 pub type MachineNewClosure =
-    Box<dyn Fn(&MachineNewParams) -> Result<Box<dyn Machine>, Error> + Send + Sync>;
+    Box<dyn Fn(MachineHardware) -> Result<Box<dyn QiTechMachine>, Error> + Send + Sync>;
 
 pub struct MachineRegistry {
     type_map: HashMap<TypeId, (MachineIdentification, MachineNewClosure)>,
@@ -58,43 +24,29 @@ impl MachineRegistry {
         }
     }
 
-    pub fn register<T: MachineNewTrait + 'static>(
-        &mut self,
-        machine_identification: MachineIdentification,
-    ) {
+    pub fn register<T: MachineNew + 'static + QiTechMachine>(&mut self,machine_identification: MachineIdentification) 
+    {
         self.type_map.insert(
             TypeId::of::<T>(),
             (
                 machine_identification.clone(),
                 // create a machine construction closure
-                Box::new(|machine_new_params| Ok(Box::new(T::new(machine_new_params)?))),
+                Box::new(|hardware : MachineHardware| Ok(Box::new(T::new(hardware)?))),
             ),
         );
     }
 
     pub fn new_machine(
         &self,
-        machine_new_params: &MachineNewParams,
-    ) -> Result<Box<dyn Machine>, anyhow::Error> {
-        // get machine identification
-        let device_identification =
-            &machine_new_params
-                .device_group
-                .first()
-                .ok_or(anyhow::anyhow!(
-                    "[{}::MachineConstructor::new_machine] No device in group",
-                    module_path!()
-                ))?;
-
+        hardware: MachineHardware,
+    ) -> Result<Box<dyn QiTechMachine>, anyhow::Error> {
+        let ident = hardware.machine_ident;
         // find machine new function by comparing MachineIdentification
         let (_, machine_new_closure) = self
             .type_map
             .values()
             .find(|(mi, _)| {
-                mi == &device_identification
-                    .device_machine_identification
-                    .machine_identification_unique
-                    .machine_identification
+                mi == &ident.machine_ident
             })
             .ok_or(anyhow::anyhow!(
                 "[{}::MachineConstructor::new_machine] Machine not found",
@@ -102,13 +54,17 @@ impl MachineRegistry {
             ))?;
 
         // call machine new function by reference
-        (machine_new_closure)(machine_new_params)
+        (machine_new_closure)(hardware)
     }
 }
 
 lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
+        mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
+/*
+
+
         mc.register::<Winder2>(Winder2::MACHINE_IDENTIFICATION);
 
         #[cfg(feature = "mock-machine")]
@@ -145,11 +101,8 @@ lazy_static! {
 
         mc.register::<MotorTestMachine>(MotorTestMachine::MACHINE_IDENTIFICATION);
 
-        mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<WagoDOTestMachine>(WagoDOTestMachine::MACHINE_IDENTIFICATION);
-
-        mc.register::<Wago750_531Machine>(Wago750_531Machine::MACHINE_IDENTIFICATION);
 
         mc.register::<Wago750_501TestMachine>(Wago750_501TestMachine::MACHINE_IDENTIFICATION);
 
@@ -160,12 +113,8 @@ lazy_static! {
         mc.register::<WagoSerialMachine>(WagoSerialMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
-
         mc.register::<Wago750_430DiMachine>(Wago750_430DiMachine::MACHINE_IDENTIFICATION);
-
-        mc.register::<Wago750_460Machine>(Wago750_460Machine::MACHINE_IDENTIFICATION);
-
-        mc.register::<Wago750_553Machine>(Wago750_553Machine::MACHINE_IDENTIFICATION);
+        mc.register::<Wago750_553Machine>(Wago750_553Machine::MACHINE_IDENTIFICATION);*/
         mc
     };
 }
