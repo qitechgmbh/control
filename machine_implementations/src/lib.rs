@@ -22,8 +22,6 @@ pub mod wago_power;*/
 /*pub mod wago_serial_machine;*/
 /*pub mod winder2;*/
 
-
-
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
 pub const MACHINE_EXTRUDER_V1: u16 = 0x0004;
@@ -66,17 +64,13 @@ pub trait MachineApi {
     fn api_event_namespace(&mut self) -> Option<Namespace>;
 }
 
-
-pub struct IdentifiedHardware {
-    pub hw : Hardware,
-    pub machine_ident : MachineIdentificationUnique,
-}
-
+#[derive( Debug, Clone)]
 pub struct IdentifiedEthercat {
     pub hw : Rc<RefCell<dyn EthercatDevice>>,
     pub ident : MachineDeviceInfo
 }
 
+#[derive( Debug, Clone)]
 pub enum Hardware {
     Ethercat(IdentifiedEthercat),
     Serial(),
@@ -86,9 +80,9 @@ pub enum Hardware {
     ModbusAscii(),
 }
 
+#[derive( Debug, Clone)]
 pub struct MachineHardware {
     pub hw : Vec<Hardware>,
-    pub machine_ident : MachineIdentificationUnique
 }
 
 impl MachineHardware {
