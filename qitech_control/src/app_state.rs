@@ -8,11 +8,20 @@ use crate::apis::socketio::{
 };
 
 use anyhow::bail;
-use control_core::socketio::{event::{Event, GenericEvent}, namespace::NamespaceCacheingLogic};
-use machine_implementations::{
-    MachineMessage, machine_identification::{DeviceHardwareIdentificationEthercat, DeviceIdentification, QiTechMachineIdentificationUnique},
+use control_core::socketio::{
+    event::{Event, GenericEvent},
+    namespace::NamespaceCacheingLogic,
 };
-use qitech_lib::ethercat_hal::controller::EtherCATController;
+use machine_implementations::{
+    MachineMessage,
+    machine_identification::{
+        DeviceHardwareIdentificationEthercat, DeviceIdentification, DeviceMachineIdentification,
+        QiTechMachineIdentificationUnique,
+    },
+};
+use qitech_lib::ethercat_hal::{
+    controller::EtherCATController, machine_ident_read::MachineDeviceInfo,
+};
 use socketioxide::{SocketIo, extract::SocketRef};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{
@@ -42,30 +51,55 @@ pub struct SharedAppState {
 }
 
 impl SharedAppState {
-    pub fn fill_ethercat_metadata(&self,controller : Arc<EtherCATController>) -> Result<(),anyhow::Error>{
+    pub fn fill_ethercat_metadata(
+        &self,
+        controller: Arc<EtherCATController>,
+        infos: Option<Vec<MachineDeviceInfo>>,
+    ) -> Result<(), anyhow::Error> {
         let mut guard = self.ethercat_meta_datas.try_write()?;
         for i in 0..controller.subdevice_count {
             let dev = controller.subdevices[i];
+            let mut device_machine_identification: Option<DeviceMachineIdentification> = None;
+
+            match infos {
+                Some(ref infos) => {
+                    let info = infos
+                        .iter()
+                        .find(|info| info.device_address == dev.device_address)
+                        .cloned();
+                    match info {
+                        Some(info) => {
+                            device_machine_identification = Some(info.into());
+                        }
+                        None => (),
+                    }
+                }
+                None => (),
+            };
+
             guard.push(
-                EtherCatDeviceMetaData { 
-                    configured_address: dev.device_address, 
-                    name: dev.get_name()?, 
-                    vendor_id: dev.vendor, 
-                    product_id: dev.product_id, 
-                    revision: dev.revision, 
-                    device_identification: DeviceIdentification
-                    {
-                        device_machine_identification: None,
-                        device_hardware_identification: machine_implementations::machine_identification::DeviceHardwareIdentification::Ethercat(DeviceHardwareIdentificationEthercat{ subdevice_index: dev.device_address as usize })
-                    } 
+                EtherCatDeviceMetaData {
+                    configured_address: dev.device_address,
+                    name: dev.get_name()?,
+                    vendor_id: dev.vendor,
+                    product_id: dev.product_id,
+                    revision: dev.revision,
+                    device_identification: DeviceIdentification{
+                            device_machine_identification: device_machine_identification,
+                            device_hardware_identification:
+                                machine_implementations::machine_identification::DeviceHardwareIdentification::Ethercat(DeviceHardwareIdentificationEthercat{ subdevice_index: dev.device_address as usize })
+                    }
             });
         }
         drop(guard);
         Ok(())
     }
 
-    pub async fn send_ethercat_setup_init(&self){
-        let event = Event::new("EthercatDevicesEvent", EthercatDevicesEvent::Initializing(true));
+    pub async fn send_ethercat_setup_init(&self) {
+        let event = Event::new(
+            "EthercatDevicesEvent",
+            EthercatDevicesEvent::Initializing(true),
+        );
         let mut guard = self.socketio_setup.namespaces.write().await;
         let main_namespace = &mut guard.main_namespace;
         main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
@@ -111,6 +145,32 @@ impl SharedAppState {
         drop(guard);
         // why does a macro for return Err() exist bro ...
         bail!("Unknown machine!")
+    }
+
+    pub fn add_machine_sync(
+        &self,
+        ident: QiTechMachineIdentificationUnique,
+        err: Option<String>,
+        sender: Option<Sender<MachineMessage>>,
+    ) -> Result<(), anyhow::Error> {
+        let mut guard = self.machines.try_write()?;
+        let machine_obj = MachineObj {
+            machine_identification_unique: ident,
+            error: err,
+        };
+        guard.push(machine_obj);
+        drop(guard);
+
+        match sender {
+            Some(sender) => {
+                let mut guard = self.machines_with_channel.try_write()?;
+                guard.insert(ident, sender);
+                drop(guard);
+            }
+            None => {}
+        };
+
+        Ok(())
     }
 
     pub async fn add_machine(

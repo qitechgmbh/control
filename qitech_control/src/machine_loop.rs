@@ -1,7 +1,13 @@
-use std::{cell::RefCell, rc::Rc, sync::Arc};
 use bitvec::{order::Lsb0, slice::BitSlice};
 use machine_implementations::QiTechMachine;
-use qitech_lib::{ethercat_hal::{controller::{EtherCATAppHandle, EtherCATController}, devices::EthercatDevice}, machines::MachineDataRegistry};
+use qitech_lib::{
+    ethercat_hal::{
+        controller::{EtherCATAppHandle, EtherCATController},
+        devices::EthercatDevice,
+    },
+    machines::MachineDataRegistry,
+};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 pub fn write_ecat_inputs(
     ecat: &mut EtherCATAppHandle,
@@ -40,15 +46,17 @@ pub fn write_ecat_outputs(
     ecat.send_outputs();
 }
 
-pub fn run_machines(machines : &mut Vec<Box<dyn QiTechMachine>>, reg : &mut MachineDataRegistry) {
-	let machine_count = machines.len();
-	for i in 0..machine_count {
-		let machine = machines.get_mut(i).expect("Machine should NEVER be NONE here (run_machines)!!"); 
-		reg.zero_entry(machine.get_identification());
-		machine.act(Some(reg));
-	}
+pub fn run_machines(machines: &mut Vec<Box<dyn QiTechMachine>>, reg: &mut MachineDataRegistry) {
+    let machine_count = machines.len();
+    for i in 0..machine_count {
+        let machine = machines
+            .get_mut(i)
+            .expect("Machine should NEVER be NONE here (run_machines)!!");
+        reg.zero_entry(machine.get_identification());
+        machine.act(Some(reg));
+    }
 
-	for machine in machines {
-		machine.react(reg);
-	}
+    for machine in machines {
+        machine.react(reg);
+    }
 }
