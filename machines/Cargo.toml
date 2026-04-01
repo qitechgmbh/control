@@ -15,7 +15,7 @@ anyhow = "1.0.102"
 
 bitvec = "1.0.1"
 lazy_static = "1.5.0"
-euclid = "0.22.13"
+euclid = "0.22.14"
 
 # concurrency
 smol = "2.0.2"
