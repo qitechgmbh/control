@@ -1,8 +1,11 @@
-use std::{any::TypeId, collections::HashMap};
+use crate::{
+    MachineHardware, MachineNew, QiTechMachine,
+    minimal_machines::digital_input_test_machine::DigitalInputTestMachine,
+};
 use anyhow::Error;
-use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
-use crate::{MachineHardware, MachineNew, QiTechMachine, minimal_machines::digital_input_test_machine::DigitalInputTestMachine};
 use lazy_static::lazy_static;
+use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
+use std::{any::TypeId, collections::HashMap};
 
 pub type MachineNewClosure =
     Box<dyn Fn(MachineHardware) -> Result<Box<dyn QiTechMachine>, Error> + Send + Sync>;
@@ -24,35 +27,35 @@ impl MachineRegistry {
         }
     }
 
-    pub fn register<T: MachineNew + 'static + QiTechMachine>(&mut self,machine_identification: MachineIdentification) 
-    {
+    pub fn register<T: MachineNew + 'static + QiTechMachine>(
+        &mut self,
+        machine_identification: MachineIdentification,
+    ) {
         self.type_map.insert(
             TypeId::of::<T>(),
             (
                 machine_identification.clone(),
                 // create a machine construction closure
-                Box::new(|hardware : MachineHardware| Ok(Box::new(T::new(hardware)?))),
+                Box::new(|hardware: MachineHardware| Ok(Box::new(T::new(hardware)?))),
             ),
         );
     }
 
     pub fn new_machine(
         &self,
-        ident : MachineIdentificationUnique,
+        ident: MachineIdentificationUnique,
         hardware: MachineHardware,
     ) -> Result<Box<dyn QiTechMachine>, anyhow::Error> {
         let ident = ident.machine_ident;
         // find machine new function by comparing MachineIdentification
-        let (_, machine_new_closure) = self
-            .type_map
-            .values()
-            .find(|(mi, _)| {
-                mi == &ident
-            })
-            .ok_or(anyhow::anyhow!(
-                "[{}::MachineConstructor::new_machine] Machine not found",
-                module_path!()
-            ))?;
+        let (_, machine_new_closure) =
+            self.type_map
+                .values()
+                .find(|(mi, _)| mi == &ident)
+                .ok_or(anyhow::anyhow!(
+                    "[{}::MachineConstructor::new_machine] Machine not found",
+                    module_path!()
+                ))?;
 
         // call machine new function by reference
         (machine_new_closure)(hardware)

@@ -18,7 +18,7 @@ pub mod new;
 pub struct DigitalInputTestMachine {
     pub machine_identification_unique: MachineIdentificationUnique,
     pub led_on: [bool; 4],
-    pub namespace: DigitalInputTestMachineNamespace,    
+    pub namespace: DigitalInputTestMachineNamespace,
     sender: Sender<MachineMessage>,
     receiver: Receiver<MachineMessage>,
     digital_input_device: Rc<RefCell<dyn DigitalInputDevice>>,
@@ -39,7 +39,7 @@ impl Machine for DigitalInputTestMachine {
 
         let res = self.receiver.try_recv();
         match res {
-            Ok(msg) =>  self.act_machine_message(msg),
+            Ok(msg) => self.act_machine_message(msg),
             Err(_) => (),
         };
 
@@ -59,12 +59,18 @@ impl Machine for DigitalInputTestMachine {
                 self.led_on[i] = value;
             }
         }
-        
-        if now.duration_since(self.last_state_emit) > std::time::Duration::from_secs_f64(1.0 / 30.0) {
-            self.namespace.emit(api::DigitalInputTestMachineEvents::State( StateEvent{ led_on: self.led_on }.build() ));       
-            self.last_state_emit = now; 
+
+        if now.duration_since(self.last_state_emit) > std::time::Duration::from_secs_f64(1.0 / 30.0)
+        {
+            self.namespace
+                .emit(api::DigitalInputTestMachineEvents::State(
+                    StateEvent {
+                        led_on: self.led_on,
+                    }
+                    .build(),
+                ));
+            self.last_state_emit = now;
         }
-        
     }
 
     fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {

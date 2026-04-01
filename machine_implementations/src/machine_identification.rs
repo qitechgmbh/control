@@ -1,5 +1,6 @@
-use qitech_lib::ethercat_hal::devices::wago_750_354::WAGO_750_354_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTITY;
+use qitech_lib::ethercat_hal::machine_ident_read::MachineDeviceInfo;
+//use qitech_lib::ethercat_hal::devices::wago_750_354::WAGO_750_354_IDENTITY_A;
+//use qitech_lib::ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTITY;
 use qitech_lib::machines::MachineIdentificationUnique;
 use serde::Deserialize;
 use serde::Serialize;
@@ -117,6 +118,21 @@ impl MachineIdentification {
 pub struct DeviceMachineIdentification {
     pub machine_identification_unique: QiTechMachineIdentificationUnique,
     pub role: u16,
+}
+
+impl From<MachineDeviceInfo> for DeviceMachineIdentification {
+    fn from(value: MachineDeviceInfo) -> Self {
+        DeviceMachineIdentification {
+            machine_identification_unique: QiTechMachineIdentificationUnique {
+                machine_identification: MachineIdentification {
+                    vendor: value.machine_vendor,
+                    machine: value.machine_id,
+                },
+                serial: value.machine_serial,
+            },
+            role: value.role,
+        }
+    }
 }
 
 impl DeviceMachineIdentification {
