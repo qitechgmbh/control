@@ -1,32 +1,11 @@
-#[cfg(not(feature = "mock-machine"))]
-// Contains Implementations for All functions that use emit_state
-use crate::extruder1::{
-    HeatingType,
-    api::{
-        ExtruderSettingsState, HeatingState, HeatingStates, InverterStatusState, PidAutoTuneState,
-        PidSettings, PidSettingsStates, PressureAutoTuneConfig, PressureState, RegulationState,
-        RotationState, ScrewState, TemperaturePid,
-    },
-};
-#[cfg(not(feature = "mock-machine"))]
-use crate::extruder2::api::{LiveValuesEvent, StateEvent};
+
 #[cfg(not(feature = "mock-machine"))]
 use control_core::helpers::hasher_serializer::hash_with_serde_model;
 #[cfg(not(feature = "mock-machine"))]
-use control_core::socketio::event::BuildEvent;
-#[cfg(not(feature = "mock-machine"))]
-use control_core::socketio::namespace::NamespaceCacheingLogic;
-#[cfg(not(feature = "mock-machine"))]
-use units::angular_velocity::AngularVelocity;
-#[cfg(not(feature = "mock-machine"))]
-use units::pressure::{Pressure, bar};
-#[cfg(not(feature = "mock-machine"))]
-use units::thermodynamic_temperature::ThermodynamicTemperature;
-#[cfg(not(feature = "mock-machine"))]
-use units::{angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius};
+use qitech_lib::units::{AngularVelocity, Pressure, ThermodynamicTemperature, angular_velocity::revolution_per_minute, pressure::bar, thermodynamic_temperature::degree_celsius};
 
 #[cfg(not(feature = "mock-machine"))]
-use super::{ExtruderV3, ExtruderV3Mode};
+use super::{ExtruderV3, ExtruderV3Mode, HeatingType, api::{LiveValuesEvent, StateEvent}};
 
 #[cfg(not(feature = "mock-machine"))]
 impl ExtruderV3 {
@@ -149,14 +128,6 @@ impl ExtruderV3 {
                     kp: self.screw_speed_controller.pid.get_kp(),
                     kd: self.screw_speed_controller.pid.get_kd(),
                 },
-            },
-            pid_autotune_state: {
-                let result = self.screw_speed_controller.get_autotune_result();
-                PidAutoTuneState {
-                    state: self.screw_speed_controller.get_autotune_state().to_string(),
-                    progress: self.screw_speed_controller.get_autotune_progress(),
-                    result,
-                }
             },
         }
     }
@@ -337,24 +308,6 @@ impl ExtruderV3 {
         self.screw_speed_controller
             .pid
             .configure(settings.ki, settings.kp, settings.kd);
-        self.emit_state();
-    }
-
-    /// Start pressure PID auto-tuning.
-    ///
-    /// The machine must be in `Extrude` mode and in pressure-regulation mode
-    /// (`uses_rpm == false`) for the tuner to drive the actuator.
-    pub fn start_pressure_pid_autotune(&mut self, config: PressureAutoTuneConfig) {
-        use std::time::Instant;
-        let now = Instant::now();
-        self.screw_speed_controller
-            .start_pressure_autotune(now, config);
-        self.emit_state();
-    }
-
-    /// Abort the current pressure PID auto-tune run
-    pub fn stop_pressure_pid_autotune(&mut self) {
-        self.screw_speed_controller.stop_autotune();
         self.emit_state();
     }
 
