@@ -20,10 +20,8 @@ use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 #[cfg(not(feature = "mock-machine"))]
 use serde_json::Value;
-#[cfg(not(feature = "mock-machine"))]
-use smol::channel::Sender;
 use tracing::instrument;
-use units::{
+use qitech_lib::units::{
     angular_velocity::revolution_per_minute, electric_current::ampere, electric_potential::volt,
     frequency::hertz,
 };
@@ -199,9 +197,7 @@ impl CacheableEvents<Self> for ExtruderV3Events {
 
 #[cfg(not(feature = "mock-machine"))]
 impl MachineApi for ExtruderV3 {
-    fn api_get_sender(&self) -> Sender<MachineMessage> {
-        self.api_sender.clone()
-    }
+
 
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         // there are multiple Modbus Frames that are "prebuilt"
@@ -253,5 +249,13 @@ impl MachineApi for ExtruderV3 {
 
     fn api_event_namespace(&mut self) -> Option<Namespace> {
         self.namespace.namespace.clone()
+    }
+
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        
+    }
+
+    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {
+        self.sender.clone()
     }
 }

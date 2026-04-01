@@ -7,13 +7,16 @@ use qitech_lib::{
         devices::{EthercatDevice, downcast_rc_refcell},
         machine_ident_read::MachineDeviceInfo,
     },
-    machines::{Machine, MachineIdentificationUnique},
+    machines::{Machine},
 };
 use serde::Serialize;
 use tokio::sync::mpsc::Sender;
 pub mod machine_identification;
 pub mod minimal_machines;
 pub mod registry;
+pub mod extruder2;
+pub mod extruder1;
+
 /*pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;

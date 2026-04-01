@@ -1,17 +1,11 @@
-#[cfg(not(feature = "mock-machine"))]
-use std::time::Instant;
-
-#[cfg(not(feature = "mock-machine"))]
-use crate::{MachineAct, MachineMessage, MachineValues};
-
-#[cfg(not(feature = "mock-machine"))]
+use std::time::Duration;
+use qitech_lib::machines::Machine;
+use qitech_lib::machines::MachineDataRegistry;
 use super::ExtruderV3;
 
-#[cfg(not(feature = "mock-machine"))]
-impl MachineAct for ExtruderV3 {
-    fn act(&mut self, now: Instant) {
-        use std::time::Duration;
-
+impl Machine for ExtruderV3 {
+    fn act(&mut self, reg : Option<&mut MachineDataRegistry>) {
+        let now = std::time::Instant::now();
         let msg = self.api_receiver.try_recv();
         match msg {
             Ok(msg) => {
@@ -41,7 +35,6 @@ impl MachineAct for ExtruderV3 {
             self.switch_to_heat();
         }
 
-        let now = Instant::now();
 
         // more than 33ms have passed since last emit (30 "fps" target)
         if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
@@ -52,30 +45,11 @@ impl MachineAct for ExtruderV3 {
         }
     }
 
-    fn act_machine_message(&mut self, msg: MachineMessage) {
-        match msg {
-            MachineMessage::SubscribeNamespace(namespace) => {
-                self.namespace.namespace = Some(namespace);
-                self.emit_state();
-                tracing::info!("extruder1 received subscribe");
-            }
-            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
-            MachineMessage::HttpApiJsonRequest(value) => {
-                use crate::MachineApi;
+    fn react(&mut self, _registry: &MachineDataRegistry) {
+        // Extruder currently does not react to anything
+    }
 
-                let _res = self.api_mutate(value);
-            }
-            MachineMessage::RequestValues(sender) => {
-                sender
-                    .send_blocking(MachineValues {
-                        state: serde_json::to_value(self.build_state_event())
-                            .expect("Failed to serialize state"),
-                        live_values: serde_json::to_value(self.get_live_values())
-                            .expect("Failed to serialize live values"),
-                    })
-                    .expect("Failed to send values");
-                sender.close();
-            }
-        }
+    fn get_identification(&self) -> qitech_lib::machines::MachineIdentificationUnique {
+        self.identification
     }
 }
