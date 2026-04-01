@@ -2,11 +2,17 @@ use std::{cell::RefCell, rc::Rc};
 
 use anyhow::Result;
 use control_core::socketio::namespace::Namespace;
-use qitech_lib::{ethercat_hal::{devices::{EthercatDevice, downcast_rc_refcell}, machine_ident_read::MachineDeviceInfo}, machines::{Machine, MachineIdentificationUnique}};
+use qitech_lib::{
+    ethercat_hal::{
+        devices::{EthercatDevice, downcast_rc_refcell},
+        machine_ident_read::MachineDeviceInfo,
+    },
+    machines::{Machine, MachineIdentificationUnique},
+};
 use serde::Serialize;
 use tokio::sync::mpsc::Sender;
-pub mod minimal_machines;
 pub mod machine_identification;
+pub mod minimal_machines;
 pub mod registry;
 /*pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
@@ -64,13 +70,13 @@ pub trait MachineApi {
     fn api_event_namespace(&mut self) -> Option<Namespace>;
 }
 
-#[derive( Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct IdentifiedEthercat {
-    pub hw : Rc<RefCell<dyn EthercatDevice>>,
-    pub ident : MachineDeviceInfo
+    pub hw: Rc<RefCell<dyn EthercatDevice>>,
+    pub ident: MachineDeviceInfo,
 }
 
-#[derive( Debug, Clone)]
+#[derive(Debug, Clone)]
 pub enum Hardware {
     Ethercat(IdentifiedEthercat),
     Serial(),
@@ -80,14 +86,19 @@ pub enum Hardware {
     ModbusAscii(),
 }
 
-#[derive( Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct MachineHardware {
-    pub hw : Vec<Hardware>,
+    pub hw: Vec<Hardware>,
+    pub serial: u32,
 }
 
 impl MachineHardware {
-    pub fn try_get_ethercat_device_by_index<T>(&self, index : usize) -> Result<Rc<RefCell<T>>,anyhow::Error> 
-        where T : EthercatDevice 
+    pub fn try_get_ethercat_device_by_index<T>(
+        &self,
+        index: usize,
+    ) -> Result<Rc<RefCell<T>>, anyhow::Error>
+    where
+        T: EthercatDevice,
     {
         let hw = self.hw.get(index);
         let hw = match hw {
@@ -97,9 +108,39 @@ impl MachineHardware {
 
         let identified_ethercat = match hw {
             Hardware::Ethercat(rc_ecat) => rc_ecat,
-            _ => return Err(anyhow::anyhow!("index {} not an ethercat device in hardware", index)),
+            _ => {
+                return Err(anyhow::anyhow!(
+                    "index {} not an ethercat device in hardware",
+                    index
+                ));
+            }
         };
         Ok(downcast_rc_refcell::<T>(identified_ethercat.hw.clone())?)
+    }
+
+    pub fn try_get_ethercat_device_by_role<T>(
+        &self,
+        role: u16,
+    ) -> Result<Rc<RefCell<T>>, anyhow::Error>
+    where
+        T: EthercatDevice,
+    {
+        for i in 0..self.hw.len() {
+            let hardware = self.hw.get(i).expect("try_get_ethercat_device_by_role failed to get hardware even though i is in range of len??????");
+            match hardware {
+                Hardware::Ethercat(identified_ethercat) => {
+                    if identified_ethercat.ident.role == role {
+                        return Ok(downcast_rc_refcell::<T>(identified_ethercat.hw.clone())?);
+                    }
+                    continue;
+                }
+                _ => continue,
+            }
+        }
+        Err(anyhow::anyhow!(
+            "index {} not an ethercat device in hardware",
+            role
+        ))
     }
 }
 
@@ -107,4 +148,4 @@ pub trait MachineNew: Sized {
     fn new(hw: MachineHardware) -> Result<Self>;
 }
 
-pub trait QiTechMachine: Machine + MachineApi  {}
+pub trait QiTechMachine: Machine + MachineApi {}
