@@ -26,6 +26,21 @@ impl MachineAct for AquaPathV1 {
         self.front_controller.update(now_ts);
         self.back_controller.update(now_ts);
 
+        let front_notices = self.front_controller.drain_notices();
+        let back_notices = self.back_controller.drain_notices();
+
+        for notice in front_notices.iter().copied() {
+            self.emit_controller_notice("Reservoir 2 (Front)", notice);
+        }
+
+        for notice in back_notices.iter().copied() {
+            self.emit_controller_notice("Reservoir 1 (Back)", notice);
+        }
+
+        if !front_notices.is_empty() || !back_notices.is_empty() {
+            self.emit_state();
+        }
+
         if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             self.emit_live_values();
             self.last_measurement_emit = now;
