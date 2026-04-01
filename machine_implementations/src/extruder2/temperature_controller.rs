@@ -1,9 +1,7 @@
 use crate::extruder1::Heating;
 use control_core::controllers::pid::PidController;
-use ethercat_hal::io::{digital_output::DigitalOutput, temperature_input::TemperatureInput};
+use qitech_lib::{ethercat_hal::io::{digital_output::DigitalOutput, temperature_input::TemperatureInput}, units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius}};
 use std::time::{Duration, Instant};
-use units::f64::*;
-use units::thermodynamic_temperature::degree_celsius;
 
 #[derive(Debug)]
 

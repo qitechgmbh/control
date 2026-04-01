@@ -1,42 +1,21 @@
-#[cfg(not(feature = "mock-machine"))]
 use std::time::Instant;
-
-#[cfg(not(feature = "mock-machine"))]
 use api::ExtruderV3Namespace;
-#[cfg(not(feature = "mock-machine"))]
-use smol::channel::Receiver;
-#[cfg(not(feature = "mock-machine"))]
-use smol::channel::Sender;
-
-use serde::{Deserialize, Serialize};
-
-#[cfg(not(feature = "mock-machine"))]
-use units::electric_current::ampere;
-
-#[cfg(not(feature = "mock-machine"))]
-use units::electric_potential::volt;
-
-#[cfg(not(feature = "mock-machine"))]
-use crate::MACHINE_EXTRUDER_V2;
-
-#[cfg(not(feature = "mock-machine"))]
-use crate::{AsyncThreadMessage, Machine};
-
-#[cfg(not(feature = "mock-machine"))]
-use crate::{
-    MachineMessage, VENDOR_QITECH,
-    extruder1::{
-        screw_speed_controller::ScrewSpeedController, temperature_controller::TemperatureController,
-    },
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
-};
+use qitech_lib::{machines::MachineIdentificationUnique, units::{electric_current::ampere, electric_potential::volt}};
+use serde::Deserialize;
+use temperature_controller::TemperatureController;
+use crate::{MACHINE_EXTRUDER_V2, MachineMessage, VENDOR_QITECH, extruder1::screw_speed_controller::ScrewSpeedController};
 
 pub mod act;
 pub mod api;
 pub mod emit;
-pub mod mock;
 pub mod new;
 pub mod temperature_controller;
+
+use qitech_lib::machines::{
+    MachineIdentification,
+};
+use tokio::sync::mpsc::Sender;
+use serde::Serialize;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub enum ExtruderV3Mode {
@@ -54,17 +33,13 @@ pub enum HeatingType {
 
 #[cfg(not(feature = "mock-machine"))]
 #[derive(Debug)]
-pub struct ExtruderV3 {
-    api_receiver: Receiver<MachineMessage>,
-    api_sender: Sender<MachineMessage>,
-    main_sender: Option<Sender<AsyncThreadMessage>>,
-
-    machine_identification_unique: MachineIdentificationUnique,
+pub struct ExtruderV3 {    
+    identification : MachineIdentificationUnique,
     namespace: ExtruderV3Namespace,
-
     last_measurement_emit: Instant,
     last_status_hash: Option<u64>,
     mode: ExtruderV3Mode,
+    sender : Sender<MachineMessage>,
 
     screw_speed_controller: ScrewSpeedController,
     temperature_controller_front: TemperatureController,
@@ -81,16 +56,7 @@ pub struct ExtruderV3 {
     emitted_default_state: bool,
 }
 
-#[cfg(not(feature = "mock-machine"))]
-impl Machine for ExtruderV3 {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
 
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
-}
 
 #[cfg(not(feature = "mock-machine"))]
 impl std::fmt::Display for ExtruderV3 {

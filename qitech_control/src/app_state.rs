@@ -77,7 +77,7 @@ impl SharedAppState {
                 None => (),
             };
 
-            guard.push(
+            guard.push(                 
                 EtherCatDeviceMetaData {
                     configured_address: dev.device_address,
                     name: dev.get_name()?,

@@ -8,12 +8,7 @@ use control_core::{
     helpers::interpolation::normalize,
     transmission::{Transmission, fixed::FixedTransmission},
 };
-use ethercat_hal::io::analog_input::AnalogInput;
-use units::angular_velocity::revolution_per_minute;
-use units::electric_current::milliampere;
-use units::f64::*;
-use units::frequency::hertz;
-use units::pressure::bar;
+use qitech_lib::{ethercat_hal::io::analog_input::AnalogInput, units::{AngularVelocity, ElectricCurrent, Frequency, Pressure, angular_velocity::revolution_per_minute, frequency::hertz, pressure::bar}};
 
 use crate::{
     extruder1::mitsubishi_cs80::{MitsubishiCS80, MotorStatus},
@@ -204,6 +199,8 @@ impl ScrewSpeedController {
     }
 
     pub fn get_sensor_current(&self) -> Result<ElectricCurrent, anyhow::Error> {
+        /*
+        */
         let phys: ethercat_hal::io::analog_input::physical::AnalogInputValue =
             self.pressure_sensor.get_physical();
 
