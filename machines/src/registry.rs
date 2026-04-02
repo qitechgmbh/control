@@ -7,6 +7,7 @@ use crate::minimal_machines::wago_750_460_machine::Wago750_460Machine;
 use crate::minimal_machines::wago_750_501_test_machine::Wago750_501TestMachine;
 use crate::minimal_machines::wago_750_553_machine::Wago750_553Machine;
 use crate::minimal_machines::wago_ai_test_machine::WagoAiTestMachine;
+use crate::minimal_machines::wago_dio_separate::WagoDioSeparate;
 use crate::minimal_machines::wago_do_test_machine::WagoDOTestMachine;
 use crate::wago_serial_machine::WagoSerialMachine;
 #[cfg(feature = "mock-machine")]
@@ -163,6 +164,7 @@ lazy_static! {
         mc.register::<Wago750_460Machine>(Wago750_460Machine::MACHINE_IDENTIFICATION);
 
         mc.register::<Wago750_553Machine>(Wago750_553Machine::MACHINE_IDENTIFICATION);
+        mc.register::<WagoDioSeparate>(WagoDioSeparate::MACHINE_IDENTIFICATION);
         mc
     };
 }

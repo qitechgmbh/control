@@ -809,6 +809,29 @@ export const wago750460Machine: MachineProperties = {
     },
   ],
 };
+export const wagoDioSeparate: MachineProperties = {
+  name: "Wago DIO Separate",
+  version: "V1",
+  slug: "wagodioseparate",
+  icon: "lu:ToggleRight",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0045,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Wago 750-354 Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x21,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
 
 export const machineProperties: MachineProperties[] = [
   winder2,
@@ -833,6 +856,7 @@ export const machineProperties: MachineProperties[] = [
   testmachinestepper,
   wagoSerial,
   wago750460Machine,
+  wagoDioSeparate,
 ];
 
 export const getMachineProperties = (
