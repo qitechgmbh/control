@@ -1,13 +1,10 @@
-#[cfg(not(feature = "mock-machine"))]
-use crate::extruder1::ExtruderV2;
-#[cfg(not(feature = "mock-machine"))]
-use crate::{MachineAct, MachineMessage, MachineValues};
-#[cfg(not(feature = "mock-machine"))]
+use qitech_lib::machines::{Machine, MachineDataRegistry, MachineIdentificationUnique};
+use crate::{MachineApi, extruder1::ExtruderV2};
 use std::time::{Duration, Instant};
 
-#[cfg(not(feature = "mock-machine"))]
-impl MachineAct for ExtruderV2 {
-    fn act(&mut self, now: Instant) {
+impl Machine for ExtruderV2 {
+    fn act(&mut self, registry : Option<&mut MachineDataRegistry>) {
+        let now = Instant::now();
         let msg = self.api_receiver.try_recv();
         match msg {
             Ok(msg) => {
@@ -16,7 +13,7 @@ impl MachineAct for ExtruderV2 {
             Err(_) => (),
         };
 
-        self.temperature_controller_back.update(now);
+        self.temperature_controller_back.update(now,self.temperature_controller_back);
         self.temperature_controller_nozzle.update(now);
         self.temperature_controller_front.update(now);
         self.temperature_controller_middle.update(now);
@@ -49,30 +46,11 @@ impl MachineAct for ExtruderV2 {
         }
     }
 
-    fn act_machine_message(&mut self, msg: MachineMessage) {
-        match msg {
-            MachineMessage::SubscribeNamespace(namespace) => {
-                self.namespace.namespace = Some(namespace);
-                self.emit_state();
-                tracing::info!("extruder1 received subscribe");
-            }
-            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
-            MachineMessage::HttpApiJsonRequest(value) => {
-                use crate::MachineApi;
+    fn get_identification(&self) ->  MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
+    }
 
-                let _res = self.api_mutate(value);
-            }
-            MachineMessage::RequestValues(sender) => {
-                sender
-                    .send_blocking(MachineValues {
-                        state: serde_json::to_value(self.get_state())
-                            .expect("Failed to serialize state"),
-                        live_values: serde_json::to_value(self.get_live_values())
-                            .expect("Failed to serialize live values"),
-                    })
-                    .expect("Failed to send values");
-                sender.close();
-            }
-        }
+    fn react(&mut self, registry: &MachineDataRegistry) {
+        
     }
 }
