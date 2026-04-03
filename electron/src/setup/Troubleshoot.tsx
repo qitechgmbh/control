@@ -2,11 +2,6 @@ import { Alert } from "@/components/Alert";
 import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import { TouchButton } from "@/components/touch/TouchButton";
-import {
-  rebootHmi,
-  restartBackend,
-  exportLogs,
-} from "@/helpers/troubleshoot_helpers";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
@@ -18,12 +13,7 @@ export function TroubleshootPage() {
   const handleRebootHmi = async () => {
     setIsRebootLoading(true);
     try {
-      const result = await rebootHmi();
-      if (result.success) {
-        toast.success("HMI Panel reboot initiated");
-      } else {
-        toast.error(`Failed to reboot HMI: ${result.error}`);
-      }
+      await window.troubleshoot.rebootHmi();
     } catch (error) {
       toast.error(`Failed to reboot HMI: ${error}`);
     } finally {
@@ -34,12 +24,7 @@ export function TroubleshootPage() {
   const handleRestartBackend = async () => {
     setIsRestartLoading(true);
     try {
-      const result = await restartBackend();
-      if (result.success) {
-        toast.success("Backend service restart initiated");
-      } else {
-        toast.error(`Failed to restart backend: ${result.error}`);
-      }
+      await window.troubleshoot.restartBackend();
     } catch (error) {
       toast.error(`Failed to restart backend: ${error}`);
     } finally {
@@ -50,12 +35,7 @@ export function TroubleshootPage() {
   const handleExportLogs = async () => {
     setIsExportLoading(true);
     try {
-      const result = await exportLogs();
-      if (result.success) {
-        toast.success("Export Logs initiated");
-      } else {
-        toast.error(`Failed to export Logs: ${result.error}`);
-      }
+      await window.troubleshoot.exportLogs();
     } catch (error) {
       toast.error(`Failed to export Logs: ${error}`);
     } finally {
@@ -98,7 +78,7 @@ export function TroubleshootPage() {
           variant="outline"
           icon="lu:FileDown"
           isLoading={isExportLoading}
-          onClick={exportLogs}
+          onClick={handleExportLogs}
           className="w-max"
         >
           Export Backend Service Logs
