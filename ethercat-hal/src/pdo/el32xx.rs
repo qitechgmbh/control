@@ -3,7 +3,7 @@ use ethercat_hal_derive::PdoObject;
 
 use super::{TxPdoObject, basic::Limit};
 
-/// PDO Object for EL32xx (temperature sensing) devices
+/// PDO Object for `EL32xx` (temperature sensing) devices
 ///
 /// The "RTD Input" holds the value of a temperature sensor accompanied by some metadata.
 #[derive(Debug, Clone, Default, PdoObject, PartialEq)]
@@ -42,7 +42,7 @@ impl TxPdoObject for RtdInput {
             return;
         }
 
-        self.temperature = (bits[16..16 + 16].load_le::<i16>() as f32) / 10.0;
+        self.temperature = f32::from(bits[16..16 + 16].load_le::<i16>()) / 10.0;
         self.undervoltage = bits[0];
         self.overvoltage = bits[1];
         self.limit1 = bits[2..4].load_le::<u8>().into();

@@ -94,8 +94,7 @@ pub async fn add_serial_device(
 
     let machine_identification: MachineIdentificationUnique = device_identification_identified
         .device_machine_identification
-        .machine_identification_unique
-        .clone();
+        .machine_identification_unique;
 
     let new_machine = machine_registry.new_machine(&MachineNewParams {
         device_group: &vec![device_identification_identified],
@@ -115,7 +114,7 @@ pub async fn add_serial_device(
 
     shared_state
         .add_machines_if_not_exists(vec![MachineObj {
-            machine_identification_unique: machine_identification.clone(),
+            machine_identification_unique: machine_identification,
             error: None,
         }])
         .await;
@@ -175,7 +174,7 @@ pub async fn start_interface_discovery(
                 match res {
                     Ok(o) => o,
                     Err(e) => tracing::error!("Failed to start dnsmasq: {:?}", e),
-                };
+                }
             }
         }
         Err(e) => {
@@ -210,7 +209,7 @@ pub async fn handle_serial_device_hotplug(
             if machine.machine_identification_unique.machine_identification
                 == LaserMachine::MACHINE_IDENTIFICATION
             {
-                unique_ident = Some(machine.machine_identification_unique.clone());
+                unique_ident = Some(machine.machine_identification_unique);
                 break;
             }
         }
@@ -221,19 +220,16 @@ pub async fn handle_serial_device_hotplug(
         let serial_params = SerialDeviceNewParams {
             path: laser.unwrap(),
         };
-        match Laser::new_serial(&serial_params) {
-            Ok((device_identification, serial_device)) => {
-                add_serial_device(
-                    app_state.clone(),
-                    &device_identification,
-                    serial_device,
-                    &MACHINE_REGISTRY,
-                    app_state.socketio_setup.socket_queue_tx.clone(),
-                )
-                .await;
-            }
-            _ => (),
-        };
+        if let Ok((device_identification, serial_device)) = Laser::new_serial(&serial_params) {
+            add_serial_device(
+                app_state.clone(),
+                &device_identification,
+                serial_device,
+                &MACHINE_REGISTRY,
+                app_state.socketio_setup.socket_queue_tx.clone(),
+            )
+            .await;
+        }
     } else if laser.is_none() && unique_ident.is_some() {
         let unique_ident = unique_ident.unwrap();
         app_state
@@ -255,7 +251,7 @@ pub async fn handle_serial_device_hotplug(
 }
 
 async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state: Arc<SharedState>) {
-    use AsyncThreadMessage::*;
+    use AsyncThreadMessage::{NoMsg, SubscribeToMachine, UnsubscribeFromMachine};
 
     while let Ok(message) = recv.recv().await {
         match message {

@@ -76,7 +76,7 @@ impl Default for SpoolAutomaticAction {
 #[cfg(not(feature = "mock-machine"))]
 impl Machine for Winder2 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
+        self.machine_identification_unique
     }
 
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
@@ -117,10 +117,10 @@ impl Machine for Winder2 {
     }
 
     fn unsubscribed_from_machine(&mut self, uid: MachineIdentificationUnique) {
-        if let Some(current_uid) = self.puller_reference_machine {
-            if current_uid == uid {
-                self.puller_reference_machine = None;
-            }
+        if let Some(current_uid) = self.puller_reference_machine
+            && current_uid == uid
+        {
+            self.puller_reference_machine = None;
         }
 
         self.emit_state();

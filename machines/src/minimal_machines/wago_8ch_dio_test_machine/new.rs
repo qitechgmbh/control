@@ -22,11 +22,7 @@ use crate::{
 impl MachineNewTrait for Wago8chDigitalIOTestMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
-        let device_identification = params
-            .device_group
-            .iter()
-            .map(|device_identification| device_identification.clone())
-            .collect::<Vec<_>>();
+        let device_identification = params.device_group.to_vec();
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_duplicates(&device_identification)?;
 
@@ -59,7 +55,7 @@ impl MachineNewTrait for Wago8chDigitalIOTestMachine {
             }
 
             coupler.init_slot_modules(_wago_750_354.1);
-            let dev = coupler.slot_devices.get(0).unwrap().clone().unwrap();
+            let dev = coupler.slot_devices.first().unwrap().clone().unwrap();
             let wago750_1506: Arc<RwLock<Wago750_1506>> =
                 downcast_device::<Wago750_1506>(dev).await?;
 

@@ -93,11 +93,11 @@ impl EthercatDynamicPDO for Wago750_652 {
     }
 
     fn set_tx_offset(&mut self, offset: usize) {
-        self.tx_bit_offset = offset
+        self.tx_bit_offset = offset;
     }
 
     fn set_rx_offset(&mut self, offset: usize) {
-        self.rx_bit_offset = offset
+        self.rx_bit_offset = offset;
     }
 }
 
@@ -112,7 +112,7 @@ impl EthercatDevice for Wago750_652 {
         self.tx_pdo.in_buffer.fill(0u8);
         let base = self.tx_bit_offset;
 
-        self.tx_pdo.status.transmit_ack = *input.get(base + 0).expect("Missing buf_empty bit");
+        self.tx_pdo.status.transmit_ack = *input.get(base).expect("Missing buf_empty bit");
         self.tx_pdo.status.receive_request = *input.get(base + 1).expect("Missing buf_empty bit");
         self.tx_pdo.status.init_ack = *input.get(base + 2).expect("Missing buf_empty bit");
         self.tx_pdo.status.buf_full = *input.get(base + 6).expect("Missing buf_empty bit");
@@ -121,14 +121,14 @@ impl EthercatDevice for Wago750_652 {
         self.tx_pdo.status.error_framing = *input.get(base + 14).expect("Missing buf_empty bit");
         self.tx_pdo.status.error_overrun = *input.get(base + 15).expect("Missing buf_empty bit");
         // Im sorry but this is what you get by splitting the len across different bytes ...
-        self.tx_pdo.status.input_length = ((*input.get(base + 3).expect("Missing buf_empty bit")
-            as u8)
-            ^ ((*input.get(base + 4).expect("Missing buf_empty bit") as u8) << 1)
-            ^ ((*input.get(base + 5).expect("Missing buf_empty bit") as u8) << 2)
-            ^ ((*input.get(base + 8).expect("Missing buf_empty bit") as u8) << 3)
-            ^ ((*input.get(base + 9).expect("Missing buf_empty bit") as u8) << 4)
-            ^ ((*input.get(base + 10).expect("Missing buf_empty bit") as u8) << 5))
-            as usize;
+        self.tx_pdo.status.input_length =
+            (u8::from(*input.get(base + 3).expect("Missing buf_empty bit"))
+                ^ (u8::from(*input.get(base + 4).expect("Missing buf_empty bit")) << 1)
+                ^ (u8::from(*input.get(base + 5).expect("Missing buf_empty bit")) << 2)
+                ^ (u8::from(*input.get(base + 8).expect("Missing buf_empty bit")) << 3)
+                ^ (u8::from(*input.get(base + 9).expect("Missing buf_empty bit")) << 4)
+                ^ (u8::from(*input.get(base + 10).expect("Missing buf_empty bit")) << 5))
+                as usize;
 
         // the serial bytes start at bit 16,
         // then we calculate the offset of when the serial bytes buffer is over, which for the 24byte pdo is 22bytes
@@ -152,7 +152,7 @@ impl EthercatDevice for Wago750_652 {
         let mut ol0_i = 5; // Ol0 starts at bit 5 and goes to bit 7 (inclusive) 
         let mut ol1_i = 8;
 
-        output.set(base + 0, self.rx_pdo.control.transmit_request);
+        output.set(base, self.rx_pdo.control.transmit_request);
         output.set(base + 1, self.rx_pdo.control.receive_ack);
         output.set(base + 2, self.rx_pdo.control.init_request);
         output.set(base + 3, self.rx_pdo.control.send_continuous);
@@ -252,9 +252,7 @@ pub enum Wago750_652Port {
 
 impl SerialInterfaceDevice<Wago750_652Port> for Wago750_652 {
     fn serial_interface_read_message(&mut self, port: Wago750_652Port) -> Option<Vec<u8>> {
-        if !self.serial_interface_has_messages(port) {
-            return None;
-        } else {
+        if self.serial_interface_has_messages(port) {
             let in_len = self.tx_pdo.status.input_length;
             let received_data = self.tx_pdo.in_buffer[0..in_len].to_vec();
 
@@ -266,6 +264,8 @@ impl SerialInterfaceDevice<Wago750_652Port> for Wago750_652 {
             self.rx_pdo.control.receive_ack = !self.rx_pdo.control.receive_ack;
 
             Some(received_data)
+        } else {
+            None
         }
     }
 
@@ -293,7 +293,7 @@ impl SerialInterfaceDevice<Wago750_652Port> for Wago750_652 {
     }
 
     fn serial_interface_has_messages(&mut self, _port: Wago750_652Port) -> bool {
-        return self.tx_pdo.status.receive_request != self.has_messages_last_toggle;
+        self.tx_pdo.status.receive_request != self.has_messages_last_toggle
     }
 
     fn get_serial_encoding(

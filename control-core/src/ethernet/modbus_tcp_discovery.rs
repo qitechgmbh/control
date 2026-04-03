@@ -53,7 +53,7 @@ async fn probe_modbus_tcp_addresses(interface: Interface) -> Vec<ModbusTcpProbe>
         .join_all()
         .await
         .into_iter()
-        .filter_map(|x| x.ok())
+        .filter_map(std::result::Result::ok)
         .collect();
 
     out

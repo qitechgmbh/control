@@ -20,7 +20,7 @@ pub struct StepperVelocityWago750672 {
 }
 
 impl StepperVelocityWago750672 {
-    pub fn new(device: Arc<RwLock<Wago750_672>>) -> Self {
+    pub const fn new(device: Arc<RwLock<Wago750_672>>) -> Self {
         Self {
             device,
             state: InitState::Off,
@@ -169,20 +169,24 @@ pub enum C1Command {
 }
 
 impl ControlByteC1 {
+    #[must_use]
     pub const fn new() -> Self {
         Self(0)
     }
 
+    #[must_use]
     pub const fn with_flag(mut self, flag: C1Flag) -> Self {
         self.0 |= flag as u8;
         self
     }
 
+    #[must_use]
     pub const fn with_command(mut self, cmd: C1Command) -> Self {
         self.0 = (self.0 & 0b0000_0111) | (cmd as u8);
         self
     }
 
+    #[must_use]
     pub const fn bits(self) -> u8 {
         self.0
     }
@@ -204,29 +208,35 @@ pub enum C2Flag {
 }
 
 impl ControlByteC2 {
+    #[must_use]
     pub const fn new() -> Self {
         Self(0)
     }
 
+    #[must_use]
     pub const fn from_bits(bits: u8) -> Self {
         Self(bits)
     }
 
+    #[must_use]
     pub const fn with_freq_range(mut self, sel: u8) -> Self {
         self.0 = (self.0 & 0b1111_1100) | (sel & 0b0000_0011);
         self
     }
 
+    #[must_use]
     pub const fn with_acc_range(mut self, sel: u8) -> Self {
         self.0 = (self.0 & 0b1111_0011) | ((sel & 0b0000_0011) << 2);
         self
     }
 
+    #[must_use]
     pub const fn with_flag(mut self, flag: C2Flag) -> Self {
         self.0 |= flag as u8;
         self
     }
 
+    #[must_use]
     pub const fn bits(self) -> u8 {
         self.0
     }
@@ -246,15 +256,18 @@ pub enum C3Flag {
 }
 
 impl ControlByteC3 {
+    #[must_use]
     pub const fn new() -> Self {
         Self(0)
     }
 
+    #[must_use]
     pub const fn with_flag(mut self, flag: C3Flag) -> Self {
         self.0 |= flag as u8;
         self
     }
 
+    #[must_use]
     pub const fn bits(self) -> u8 {
         self.0
     }
@@ -292,14 +305,17 @@ pub enum S1CommandAck {
 }
 
 impl StatusByteS1 {
+    #[must_use]
     pub const fn from_bits(bits: u8) -> Self {
         Self(bits)
     }
 
+    #[must_use]
     pub const fn has_flag(self, flag: S1Flag) -> bool {
         (self.0 & flag as u8) != 0
     }
 
+    #[must_use]
     pub const fn bits(self) -> u8 {
         self.0
     }
@@ -323,10 +339,12 @@ pub enum S2Flag {
 }
 
 impl StatusByteS2 {
+    #[must_use]
     pub const fn from_bits(bits: u8) -> Self {
         Self(bits)
     }
 
+    #[must_use]
     pub const fn has_flag(self, flag: S2Flag) -> bool {
         (self.0 & flag as u8) != 0
     }
@@ -350,10 +368,12 @@ pub enum S3Flag {
 }
 
 impl StatusByteS3 {
+    #[must_use]
     pub const fn from_bits(bits: u8) -> Self {
         Self(bits)
     }
 
+    #[must_use]
     pub const fn has_flag(self, flag: S3Flag) -> bool {
         (self.0 & flag as u8) != 0
     }

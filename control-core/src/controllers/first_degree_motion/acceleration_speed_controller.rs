@@ -22,6 +22,7 @@ pub struct AccelerationSpeedController {
 }
 
 impl AccelerationSpeedController {
+    #[must_use]
     pub const fn new(
         min_speed: Option<f64>,
         max_speed: Option<f64>,
@@ -40,8 +41,9 @@ impl AccelerationSpeedController {
     }
 
     /// Creates a new acceleration speed controller with simplified parameters.
-    /// Sets min_acceleration to -max_acceleration for symmetric behavior.
+    /// Sets `min_acceleration` to -`max_acceleration` for symmetric behavior.
     /// No speed limits are applied.
+    #[must_use]
     pub fn new_simple(max_acceleration: f64, initial_speed: f64) -> Self {
         Self::new(
             None,              // min_speed
@@ -121,10 +123,12 @@ impl AccelerationSpeedController {
         limited_speed
     }
 
+    #[must_use]
     pub const fn get_min_speed(&self) -> Option<f64> {
         self.min_speed
     }
 
+    #[must_use]
     pub const fn get_max_speed(&self) -> Option<f64> {
         self.max_speed
     }
@@ -205,7 +209,7 @@ mod tests {
         let dt = 0.1;
         let t2 = future_instant(t1, dt);
 
-        let expected_speed = (10.0 + (-15.0 * dt)).max(5.0); // Should decelerate by max_deceleration * dt, floored at target
+        let expected_speed = (-15.0f64).mul_add(dt, 10.0).max(5.0); // Should decelerate by max_deceleration * dt, floored at target
 
         let actual_speed = controller.update(5.0, t2);
 

@@ -170,6 +170,7 @@ pub enum SerialEncoding {
 
 impl SerialEncoding {
     /// Get the number of data bits
+    #[must_use]
     pub const fn data_bits(&self) -> u8 {
         match self {
             Self::Coding7E1 | Self::Coding7O1 | Self::Coding7E2 | Self::Coding7O2 => 7,
@@ -178,6 +179,7 @@ impl SerialEncoding {
     }
 
     /// Get the number of parity bits (0 or 1)
+    #[must_use]
     pub const fn parity_bits(&self) -> u8 {
         match self {
             Self::Coding8N1 | Self::Coding8N2 => 0,
@@ -186,6 +188,7 @@ impl SerialEncoding {
     }
 
     /// Get the parity type
+    #[must_use]
     pub const fn parity_type(&self) -> Option<ParityType> {
         match self {
             Self::Coding7E1 | Self::Coding7E2 | Self::Coding8E1 | Self::Coding8E2 => {
@@ -201,6 +204,7 @@ impl SerialEncoding {
     }
 
     /// Get the number of stop bits
+    #[must_use]
     pub const fn stop_bits(&self) -> u8 {
         match self {
             Self::Coding7E1
@@ -218,8 +222,9 @@ impl SerialEncoding {
         }
     }
 
-    /// Get the total number of bits sent per byte according to the SerialEncoding (including start bit)
+    /// Get the total number of bits sent per byte according to the `SerialEncoding` (including start bit)
     /// For Example: With 8n1 transferring 1 byte over Serial actually transfers 10 bits -> 8 data bits, 0 parity, 1 start bit and 1 stop bit
+    #[must_use]
     pub const fn total_bits(&self) -> u8 {
         // We always have 1 start bit
         1 + self.data_bits() + self.parity_bits() + self.stop_bits()

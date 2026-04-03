@@ -21,11 +21,8 @@ use std::time::{Duration, Instant};
 impl MachineAct for MockMachine {
     fn act(&mut self, now: Instant) {
         let msg = self.api_receiver.try_recv();
-        match msg {
-            Ok(msg) => {
-                let _res = self.act_machine_message(msg);
-            }
-            Err(_) => (),
+        if let Ok(msg) = msg {
+            self.act_machine_message(msg);
         };
         // Only emit live values if machine is in Running mode
         // The live values are updated approximately 30 times per second

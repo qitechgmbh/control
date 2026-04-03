@@ -1,0 +1,7 @@
+#!/bin/sh
+cargo fmt
+# Fail if fmt modified any staged files, so you can review and re-stage them
+if ! git diff --quiet -- $(git diff --name-only --cached); then
+    echo "cargo fmt made changes to staged files. Review and re-stage them."
+    exit 1
+fi

@@ -31,12 +31,6 @@ impl std::fmt::Debug for EL3001 {
     }
 }
 
-impl Default for EL3001PredefinedPdoAssignment {
-    fn default() -> Self {
-        Self::Standard
-    }
-}
-
 impl NewEthercatDevice for EL3001 {
     fn new() -> Self {
         let configuration: EL3001Configuration = EL3001Configuration::default();
@@ -146,8 +140,9 @@ impl Configuration for EL3001Configuration {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum EL3001PredefinedPdoAssignment {
+    #[default]
     Standard,
     Compact,
 }

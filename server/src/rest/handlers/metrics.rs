@@ -20,7 +20,7 @@ pub struct ProcessMetricsResponse {
 
 /// Snapshot of runtime metrics for the frontend.
 ///
-/// This is a thin view over the latest RuntimeSample.
+/// This is a thin view over the latest `RuntimeSample`.
 #[derive(Debug, Serialize)]
 pub struct RuntimeMetricsResponse {
     pub timestamp_ms: u128,

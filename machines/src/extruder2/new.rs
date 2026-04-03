@@ -106,7 +106,7 @@ impl MachineNewTrait for ExtruderV3 {
                     .0
                     .write()
                     .await
-                    .write_config(&device.1, &EL6021Configuration::default())
+                    .write_config(device.1, &EL6021Configuration::default())
                     .await?;
                 {
                     let mut device_guard = device.0.write().await;

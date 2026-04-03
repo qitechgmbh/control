@@ -5,11 +5,8 @@ use std::time::{Duration, Instant};
 impl MachineAct for AquaPathV1 {
     fn act(&mut self, now_ts: Instant) {
         let msg = self.api_receiver.try_recv();
-        match msg {
-            Ok(msg) => {
-                let _res = self.act_machine_message(msg);
-            }
-            Err(_) => (),
+        if let Ok(msg) = msg {
+            self.act_machine_message(msg);
         };
 
         match self.mode {

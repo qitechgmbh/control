@@ -51,7 +51,7 @@ impl TemperatureInputDevice<Wago750_460Port> for Wago750_460 {
         };
         // Full 16-bit signed value, 0.1 °C per LSB — no status bits in the word.
         let temp_raw = raw as i16;
-        let temperature = temp_raw as f32 / 10.0;
+        let temperature = f32::from(temp_raw) / 10.0;
         let overrange = temp_raw >= 8500;
         let underrange = temp_raw <= -2000;
         TemperatureInputInput {
@@ -88,11 +88,11 @@ impl EthercatDynamicPDO for Wago750_460 {
     }
 
     fn set_tx_offset(&mut self, offset: usize) {
-        self.tx_bit_offset = offset
+        self.tx_bit_offset = offset;
     }
 
     fn set_rx_offset(&mut self, offset: usize) {
-        self.rx_bit_offset = offset
+        self.rx_bit_offset = offset;
     }
 }
 

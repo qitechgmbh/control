@@ -60,7 +60,7 @@ impl AnalogOutputDevice<Wago750_553Port> for Wago750_553 {
             Wago750_553Port::AO3 => self.rx_pdo.ao3,
             Wago750_553Port::AO4 => self.rx_pdo.ao4,
         };
-        AnalogOutputOutput(raw as f32 / 0x7FFF as f32)
+        AnalogOutputOutput(f32::from(raw) / 0x7FFF as f32)
     }
 }
 
@@ -76,11 +76,11 @@ impl EthercatDynamicPDO for Wago750_553 {
     }
 
     fn set_tx_offset(&mut self, offset: usize) {
-        self.tx_bit_offset = offset
+        self.tx_bit_offset = offset;
     }
 
     fn set_rx_offset(&mut self, offset: usize) {
-        self.rx_bit_offset = offset
+        self.rx_bit_offset = offset;
     }
 }
 

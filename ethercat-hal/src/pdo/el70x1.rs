@@ -36,7 +36,7 @@ pub struct EncStatusCompact {
     pub sync_error: bool,
 
     /// # 6000:10
-    /// The TxPDO toggle is toggled by the slave when the data of the associated TxPDO is updated.
+    /// The `TxPDO` toggle is toggled by the slave when the data of the associated `TxPDO` is updated.
     pub txpdo_toggle: bool,
 
     /// # 6000:11
@@ -110,7 +110,7 @@ pub struct EncStatus {
     pub sync_error: bool,
 
     /// # 6000:10
-    /// The TxPDO toggle is toggled by the slave when the data of the associated TxPDO is updated.
+    /// The `TxPDO` toggle is toggled by the slave when the data of the associated `TxPDO` is updated.
     pub txpdo_toggle: bool,
 
     /// # 6000:11
@@ -212,7 +212,7 @@ pub struct StmStatus {
     pub sync_error: bool,
 
     /// # 6010:10
-    /// The TxPDO toggle is toggled by the slave when the data of the associated TxPDO is updated.
+    /// The `TxPDO` toggle is toggled by the slave when the data of the associated `TxPDO` is updated.
     pub txpdo_toggle: bool,
 }
 

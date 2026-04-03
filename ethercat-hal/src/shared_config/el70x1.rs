@@ -578,7 +578,7 @@ impl TryFrom<u16> for StartType {
             28416 => Ok(Self::CalibrationClearManual),
             28160 => Ok(Self::CalibrationSetManual),
             28161 => Ok(Self::CalibrationSetManualAuto),
-            _ => Err(anyhow::anyhow!("Invalid value for StartType: {}", value)),
+            _ => Err(anyhow::anyhow!("Invalid value for StartType: {value}")),
         }
     }
 }
@@ -714,8 +714,7 @@ impl TryFrom<u8> for EL70x1OperationMode {
             2 => Ok(Self::VelocityController),
             3 => Ok(Self::PositionController),
             _ => Err(anyhow::anyhow!(
-                "Invalid value for EL7031OperationMode: {}",
-                value
+                "Invalid value for EL7031OperationMode: {value}"
             )),
         }
     }
@@ -769,8 +768,7 @@ impl TryFrom<u8> for EL70x1SpeedRange {
             4 => Ok(Self::Steps16000),
             5 => Ok(Self::Steps32000),
             _ => Err(anyhow::anyhow!(
-                "Invalid value for EL7031SpeedRange: {}",
-                value
+                "Invalid value for EL7031SpeedRange: {value}"
             )),
         }
     }
@@ -859,10 +857,7 @@ impl TryFrom<u8> for EL70x1InfoData {
             151 => Ok(Self::DriveState),
             152 => Ok(Self::DrivePositionLagLow),
             153 => Ok(Self::DrivePositionLagHigh),
-            _ => Err(anyhow::anyhow!(
-                "Invalid value for EL7031InfoData: {}",
-                value
-            )),
+            _ => Err(anyhow::anyhow!("Invalid value for EL7031InfoData: {value}")),
         }
     }
 }
@@ -907,8 +902,7 @@ impl TryFrom<u8> for EL70x1InputFunction {
             2 => Ok(Self::PlcCam),
             3 => Ok(Self::AutoStart),
             _ => Err(anyhow::anyhow!(
-                "Invalid value for EL7031InputFunction: {}",
-                value
+                "Invalid value for EL7031InputFunction: {value}"
             )),
         }
     }

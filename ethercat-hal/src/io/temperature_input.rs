@@ -43,7 +43,7 @@ impl TemperatureInput {
         } else if input.undervoltage {
             Err(TemperatureInputError::UnderVoltage)
         } else {
-            Ok(input.temperature as f64)
+            Ok(f64::from(input.temperature))
         }
     }
 }
@@ -84,10 +84,10 @@ pub struct TemperatureInputInput {
     /// Error flag
     pub error: bool,
 
-    /// if the TxPdo state is valid
+    /// if the `TxPdo` state is valid
     pub txpdo_state: bool,
 
-    /// if the TxPdo is toggled
+    /// if the `TxPdo` is toggled
     pub txpdo_toggle: bool,
 }
 

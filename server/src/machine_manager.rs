@@ -72,7 +72,7 @@ impl MachineManager {
     pub fn execute_machines(&mut self) {
         let now = Instant::now();
 
-        for entry in self.machine_entries.iter_mut() {
+        for entry in &mut self.machine_entries {
             // Fuck you rust - jsentity
             let (refresh_state, refresh_live_values) = {
                 let data_entry = self

@@ -27,6 +27,7 @@ impl Namespaces {
         }
     }
 
+    #[must_use]
     pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
         Self {
             main_namespace: MainRoom::new(socket_queue_tx),

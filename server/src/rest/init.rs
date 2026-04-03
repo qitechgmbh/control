@@ -44,7 +44,7 @@ async fn init_api(app_state: Arc<SharedState>) -> Result<()> {
 
     axum::serve(listener, app)
         .await
-        .map_err(|e| anyhow::anyhow!("Server error: {}", e))
+        .map_err(|e| anyhow::anyhow!("Server error: {e}"))
 }
 
 /// Starts the API server in its own thread with a single-threaded Tokio runtime

@@ -8,6 +8,7 @@ pub enum EthercatInterfaceDiscoveryEvent {
 }
 
 impl EthercatInterfaceDiscoveryEvent {
+    #[must_use]
     pub fn build(&self) -> Event<Self> {
         Event::new("EthercatInterfaceDiscoveryEvent", self.clone())
     }

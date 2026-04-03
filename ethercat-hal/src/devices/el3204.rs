@@ -65,6 +65,7 @@ pub enum EL3204Port {
 }
 
 impl EL3204Port {
+    #[must_use]
     pub const fn to_byte_offset(&self) -> usize {
         match self {
             Self::T1 => 0,

@@ -154,6 +154,7 @@ pub fn receive_data_modbus(port: &mut dyn SerialPort) -> Result<Option<Vec<u8>>,
 }
 
 /// Computes Modbus CRC-16 using `crc` crate.
+#[must_use]
 pub const fn modbus_crc16(data: &[u8]) -> u16 {
     let modbus: Crc<u16> = Crc::<u16>::new(&CRC_16_MODBUS);
     modbus.checksum(data)
@@ -220,13 +221,14 @@ impl TryFrom<Vec<u8>> for ModbusResponse {
     }
 }
 
-/// Modbus RTU has silent time between frames that needs to be adhered to, if you send before silent_time is over between frames, then there will be lost frames
+/// Modbus RTU has silent time between frames that needs to be adhered to, if you send before `silent_time` is over between frames, then there will be lost frames
 /// This silent time is needed to identify the start and end of messages
 /// This function also takes into account the time that the slave we are talking to needs to process our request
 /// bits: amount of bits sent for a 8n1 coding: 8 data bits, 0 parity, 1 stop bit (1 start,1 stop) -> 10 bits
-/// machine_operation_delay_nano: Delay for the given operation in nanoseconds as specified by the slaves datasheet (example: mitsubishi csfr84 has 12ms for read write in RAM)
+/// `machine_operation_delay_nano`: Delay for the given operation in nanoseconds as specified by the slaves datasheet (example: mitsubishi csfr84 has 12ms for read write in RAM)
 /// baudrate: bits per second
-/// message_size: size of original message in bytes
+/// `message_size`: size of original message in bytes
+#[must_use]
 pub const fn calculate_modbus_rtu_timeout(
     bits: u8,
     machine_operation_delay_nano: Duration,
@@ -261,7 +263,7 @@ mod tests {
             0x11, 0x03, 0x06, 0x17, 0x70, 0x0b, 0xb8, 0x03, 0xe8, 0x2c, 0xe6,
         ];
 
-        let response = ModbusResponse::try_from(response_raw.clone());
+        let response = ModbusResponse::try_from(response_raw);
 
         // Expected result based on provided test data
         let expected = ModbusResponse {
@@ -310,8 +312,7 @@ mod tests {
 
         assert_eq!(
             result, expected,
-            "ModbusRequest conversion failed. Expected: {:?}, Got: {:?}",
-            expected, result
+            "ModbusRequest conversion failed. Expected: {expected:?}, Got: {result:?}"
         );
     }
 

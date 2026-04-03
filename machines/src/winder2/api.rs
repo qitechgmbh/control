@@ -304,9 +304,8 @@ impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
     fn emit(&mut self, events: Winder2Events) {
         let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
-        match &mut self.namespace {
-            Some(ns) => ns.emit(event, &buffer_fn),
-            None => (),
+        if let Some(ns) = &mut self.namespace {
+            ns.emit(event, &buffer_fn)
         }
     }
 }

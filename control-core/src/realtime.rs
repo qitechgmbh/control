@@ -2,11 +2,11 @@ use tracing::debug;
 use tracing::error;
 
 #[cfg(target_os = "linux")]
-/// Makes the current thread a real-time thread using the PREEMPT_RT capabilities of Linux.
+/// Makes the current thread a real-time thread using the `PREEMPT_RT` capabilities of Linux.
 ///
 /// This function configures the current thread with real-time scheduling properties by:
 ///
-/// 1. Setting the scheduling policy to SCHED_FIFO (First-In-First-Out), which is a real-time
+/// 1. Setting the scheduling policy to `SCHED_FIFO` (First-In-First-Out), which is a real-time
 ///    scheduling policy that allows the thread to run until it voluntarily yields, blocks on I/O,
 ///    or is preempted by a higher-priority real-time thread.
 ///
@@ -14,7 +14,7 @@ use tracing::error;
 ///    higher priority). This priority level is chosen to be higher than most IRQ handlers
 ///    (typically priority 50) but lower than critical kernel tasks (priority 99).
 ///
-/// When running on a PREEMPT_RT patched Linux kernel, this combination provides deterministic
+/// When running on a `PREEMPT_RT` patched Linux kernel, this combination provides deterministic
 /// scheduling with minimal latency, which is essential for real-time applications.
 ///
 /// # Requirements
@@ -24,7 +24,7 @@ use tracing::error;
 ///   - Running as root
 ///   - Configuring `/etc/security/limits.conf` to allow the user to set real-time priorities
 ///
-/// - The system should be running a Linux kernel with PREEMPT_RT patch applied for
+/// - The system should be running a Linux kernel with `PREEMPT_RT` patch applied for
 ///   optimal real-time performance.
 ///
 /// # Example
@@ -62,7 +62,7 @@ pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
         param.sched_priority = 95;
 
         // Set the thread to use SCHED_FIFO scheduling policy with our priority
-        let result = pthread_setschedparam(pthread_self, SCHED_FIFO, &param);
+        let result = pthread_setschedparam(pthread_self, SCHED_FIFO, &raw const param);
 
         if result != 0 {
             error!(
@@ -74,12 +74,11 @@ pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
                 "Failed to set real-time priority: {}",
                 std::io::Error::last_os_error()
             ));
-        } else {
-            debug!(
-                "Successfully set real-time priority for the thread \"{:?}\"",
-                std::thread::current().name().unwrap_or("unknown")
-            );
         }
+        debug!(
+            "Successfully set real-time priority for the thread \"{:?}\"",
+            std::thread::current().name().unwrap_or("unknown")
+        );
     }
     Ok(())
 }
@@ -147,9 +146,8 @@ pub fn lock_memory() -> Result<(), Box<dyn std::error::Error>> {
             return Err(
                 format!("Failed to lock memory: {}", std::io::Error::last_os_error()).into(),
             );
-        } else {
-            debug!("Successfully locked memory for the process");
         }
+        debug!("Successfully locked memory for the process");
     }
     Ok(())
 }

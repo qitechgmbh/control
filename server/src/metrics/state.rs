@@ -16,13 +16,14 @@ fn latest_slot() -> &'static Mutex<Option<RuntimeSample>> {
 /// Clones `sample` into the global slot.
 pub fn set_latest_runtime_sample(sample: &RuntimeSample) {
     let mut guard = latest_slot().lock().unwrap();
-    *guard = Some(sample.clone());
+    *guard = Some(*sample);
 }
 
 /// Get the latest runtime metrics sample, if any.
 ///
 /// Returns a cloned `RuntimeSample`.
+#[must_use]
 pub fn get_latest_runtime_sample() -> Option<RuntimeSample> {
     let guard = latest_slot().lock().unwrap();
-    guard.clone()
+    *guard
 }

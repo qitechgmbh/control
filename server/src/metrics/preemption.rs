@@ -26,6 +26,7 @@ pub struct ThreadSchedStats {
 /// Read basic scheduling stats for a thread (by TID) from /proc/<tid>/sched.
 ///
 /// Returns None if the file can't be read or parsed.
+#[must_use]
 pub fn read_thread_sched_stats(tid: libc::pid_t) -> Option<ThreadSchedStats> {
     // /proc/<tid>/sched is a shortcut for /proc/self/task/<tid>/sched
     let path = format!("/proc/self/task/{tid}/sched");

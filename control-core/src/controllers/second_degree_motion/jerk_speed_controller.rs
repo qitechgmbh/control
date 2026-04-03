@@ -6,7 +6,7 @@ use super::acceleration_position_controller::{
 ///
 /// This controller manages motion profiles where speed is the primary controlled variable,
 /// with constraints on acceleration (rate of change of speed) and jerk (rate of change of acceleration).
-/// It wraps an AccelerationPositionController but remaps the parameters to represent one higher
+/// It wraps an `AccelerationPositionController` but remaps the parameters to represent one higher
 /// degree of derivation in the motion hierarchy.
 ///
 /// The control hierarchy is:
@@ -50,10 +50,10 @@ impl JerkSpeedController {
     /// * `max_jerk` - Maximum jerk for increasing acceleration (typically positive)
     ///
     /// # Returns
-    /// A new JerkSpeedController instance
+    /// A new `JerkSpeedController` instance
     ///
     /// # Panics
-    /// Panics if the underlying AccelerationPositionController cannot be created with the given parameters
+    /// Panics if the underlying `AccelerationPositionController` cannot be created with the given parameters
     ///
     /// # Example
     /// ```ignore
@@ -67,6 +67,7 @@ impl JerkSpeedController {
     ///     25.0,         // Max jerk: +25 units/s³
     /// );
     /// ```
+    #[must_use]
     pub fn new(
         min_speed: Option<f64>,
         max_speed: Option<f64>,
@@ -108,7 +109,7 @@ impl JerkSpeedController {
     /// * `jerk` - Maximum jerk magnitude (creates limits [-jerk, +jerk])
     ///
     /// # Returns
-    /// A new JerkSpeedController instance
+    /// A new `JerkSpeedController` instance
     ///
     /// # Panics
     /// Panics if acceleration or jerk values are negative or zero
@@ -129,10 +130,12 @@ impl JerkSpeedController {
     ///     15.0,    // Jerk limits: [-15, +15] units/s³
     /// );
     /// ```
+    #[must_use]
     pub fn new_simple(speed: Option<f64>, acceleration: f64, jerk: f64) -> Self {
-        if acceleration <= 0.0 || jerk <= 0.0 {
-            panic!("Acceleration and jerk must be positive values");
-        }
+        assert!(
+            !(acceleration <= 0.0 || jerk <= 0.0),
+            "Acceleration and jerk must be positive values"
+        );
 
         Self::new(
             speed.map(|s| -s), // min_speed
@@ -183,6 +186,7 @@ impl JerkSpeedController {
     ///
     /// # Returns
     /// Current speed as a floating-point value
+    #[must_use]
     pub const fn get_speed(&self) -> f64 {
         self.base_controller.get_position()
     }
@@ -193,6 +197,7 @@ impl JerkSpeedController {
     ///
     /// # Returns
     /// Current acceleration as a floating-point value
+    #[must_use]
     pub const fn get_acceleration(&self) -> f64 {
         self.base_controller.get_speed()
     }
@@ -203,6 +208,7 @@ impl JerkSpeedController {
     ///
     /// # Returns
     /// Current jerk as a floating-point value
+    #[must_use]
     pub const fn get_jerk(&self) -> f64 {
         self.base_controller.get_acceleration()
     }
@@ -213,6 +219,7 @@ impl JerkSpeedController {
     ///
     /// # Returns
     /// Target speed as a floating-point value
+    #[must_use]
     pub const fn get_target_speed(&self) -> f64 {
         self.base_controller.get_target_position()
     }
@@ -223,6 +230,7 @@ impl JerkSpeedController {
     ///
     /// # Returns
     /// Minimum speed limit as an Option<f64>, None if no limit is set
+    #[must_use]
     pub const fn get_min_speed(&self) -> Option<f64> {
         self.base_controller.get_min_position()
     }
@@ -233,6 +241,7 @@ impl JerkSpeedController {
     ///
     /// # Returns
     /// Maximum speed limit as an Option<f64>, None if no limit is set
+    #[must_use]
     pub const fn get_max_speed(&self) -> Option<f64> {
         self.base_controller.get_max_position()
     }
@@ -248,7 +257,7 @@ impl JerkSpeedController {
     /// Result indicating success or failure of the operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the new limit would be invalid
+    /// Returns `MotionControllerError` if the new limit would be invalid
     /// (e.g., greater than the maximum speed limit)
     pub fn set_min_speed(&mut self, min_speed: Option<f64>) -> Result<(), MotionControllerError> {
         self.base_controller.set_min_position(min_speed)
@@ -265,7 +274,7 @@ impl JerkSpeedController {
     /// Result indicating success or failure of the operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the new limit would be invalid
+    /// Returns `MotionControllerError` if the new limit would be invalid
     /// (e.g., less than the minimum speed limit)
     pub fn set_max_speed(&mut self, max_speed: Option<f64>) -> Result<(), MotionControllerError> {
         self.base_controller.set_max_position(max_speed)
@@ -282,7 +291,7 @@ impl JerkSpeedController {
     /// Result indicating success or failure of the operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the new limit would be invalid
+    /// Returns `MotionControllerError` if the new limit would be invalid
     /// (e.g., greater than the maximum acceleration limit)
     pub fn set_min_acceleration(
         &mut self,
@@ -302,7 +311,7 @@ impl JerkSpeedController {
     /// Result indicating success or failure of the operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the new limit would be invalid
+    /// Returns `MotionControllerError` if the new limit would be invalid
     /// (e.g., less than the minimum acceleration limit or negative/zero value)
     pub fn set_max_acceleration(
         &mut self,
@@ -322,7 +331,7 @@ impl JerkSpeedController {
     /// Result indicating success or failure of the operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the new limit would be invalid
+    /// Returns `MotionControllerError` if the new limit would be invalid
     /// (e.g., greater than the maximum jerk limit)
     pub fn set_min_jerk(&mut self, min_jerk: f64) -> Result<(), MotionControllerError> {
         self.base_controller.set_min_acceleration(min_jerk)
@@ -339,7 +348,7 @@ impl JerkSpeedController {
     /// Result indicating success or failure of the operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the new limit would be invalid
+    /// Returns `MotionControllerError` if the new limit would be invalid
     /// (e.g., less than the minimum jerk limit or negative/zero value)
     pub fn set_max_jerk(&mut self, max_jerk: f64) -> Result<(), MotionControllerError> {
         self.base_controller.set_max_acceleration(max_jerk)
@@ -358,7 +367,7 @@ impl JerkSpeedController {
     /// Result indicating success or failure of the reset operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the speed is outside the configured limits
+    /// Returns `MotionControllerError` if the speed is outside the configured limits
     ///
     /// # Example
     /// ```ignore

@@ -64,7 +64,7 @@ impl MachineRegistry {
         self.type_map.insert(
             TypeId::of::<T>(),
             (
-                machine_identification.clone(),
+                machine_identification,
                 // create a machine construction closure
                 Box::new(|machine_new_params| Ok(Box::new(T::new(machine_new_params)?))),
             ),

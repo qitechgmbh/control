@@ -4,7 +4,7 @@ const U16_MAX: i128 = std::u16::MAX as i128;
 ///
 /// We convert the overflows and underflows to an i128 value for easier calculations.
 ///
-/// When overriding the counter we don't set the valeu direclty but schedula it wiht the [`push_override`] so it can be synced with [`pop_override`] to an EtherCAT device.
+/// When overriding the counter we don't set the valeu direclty but schedula it wiht the [`push_override`] so it can be synced with [`pop_override`] to an `EtherCAT` device.
 #[derive(Clone, Debug)]
 pub struct CounterWrapperU16U128 {
     counter: i128,
@@ -21,6 +21,7 @@ impl Default for CounterWrapperU16U128 {
 }
 
 impl CounterWrapperU16U128 {
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             counter: 0,
@@ -48,6 +49,7 @@ impl CounterWrapperU16U128 {
         self.last_counter_overflow = counter_overflow;
     }
 
+    #[must_use]
     pub const fn current(&self) -> i128 {
         self.counter
     }
@@ -79,6 +81,7 @@ impl CounterWrapperU16U128 {
     }
 
     /// Returns the override value as an i128
+    #[must_use]
     pub const fn get_override(&self) -> Option<i128> {
         self.set_counter
     }
@@ -241,25 +244,25 @@ mod tests {
 
         // Increment to 65530
         raw_counter = 65530;
-        position += counter_change(0, raw_counter, false, false) as i128;
+        position += i128::from(counter_change(0, raw_counter, false, false));
         assert_eq!(position, 65530);
 
         // Increment to 65535
         let mut prev = raw_counter;
         raw_counter = 65535;
-        position += counter_change(prev, raw_counter, false, false) as i128;
+        position += i128::from(counter_change(prev, raw_counter, false, false));
         assert_eq!(position, 65535);
 
         // Overflow to 5
         prev = raw_counter;
         raw_counter = 5;
-        position += counter_change(prev, raw_counter, false, true) as i128;
+        position += i128::from(counter_change(prev, raw_counter, false, true));
         assert_eq!(position, 65541); // 65535 + 6
 
         // Normal decrement to 65530 (no underflow)
         prev = raw_counter;
         raw_counter = 65530;
-        position += counter_change(prev, raw_counter, false, false) as i128;
+        position += i128::from(counter_change(prev, raw_counter, false, false));
         assert_eq!(position, 131066); // 65541 + (65530 - 5) = 65541 + 65525 = 131066
 
         // Now test a true underflow: position 5 -> 65535
@@ -267,7 +270,7 @@ mod tests {
         raw_counter = 5; // Set raw counter to match
         prev = raw_counter;
         raw_counter = 65535;
-        position += counter_change(prev, raw_counter, true, false) as i128;
+        position += i128::from(counter_change(prev, raw_counter, true, false));
         assert_eq!(position, -1); // 5 + (65535 - 5 - 65536) = 5 - 6 = -1
     }
 }

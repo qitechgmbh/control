@@ -21,6 +21,7 @@ pub struct LinearStepConverter {
 // Constructor and basic getters
 impl LinearStepConverter {
     /// Create a new converter from radius and steps per revolution
+    #[must_use]
     pub fn from_radius(steps_per_revolution: i16, radius: Length) -> Self {
         Self {
             angular_step_converter: AngularStepConverter::new(steps_per_revolution),
@@ -29,6 +30,7 @@ impl LinearStepConverter {
     }
 
     /// Create a new converter from diameter and steps per revolution
+    #[must_use]
     pub fn from_diameter(steps_per_revolution: i16, diameter: Length) -> Self {
         Self {
             angular_step_converter: AngularStepConverter::new(steps_per_revolution),
@@ -37,6 +39,7 @@ impl LinearStepConverter {
     }
 
     /// Create a new converter from circumference and steps per revolution
+    #[must_use]
     pub fn from_circumference(steps_per_revolution: i16, circumference: Length) -> Self {
         Self {
             angular_step_converter: AngularStepConverter::new(steps_per_revolution),
@@ -45,21 +48,25 @@ impl LinearStepConverter {
     }
 
     /// Get the radius used by the converter
+    #[must_use]
     pub fn radius(&self) -> Length {
         self.circular_converter.radius()
     }
 
     /// Get the diameter of the system
+    #[must_use]
     pub fn diameter(&self) -> Length {
         self.circular_converter.diameter()
     }
 
     /// Get the circumference of the system
+    #[must_use]
     pub fn circumference(&self) -> Length {
         self.circular_converter.circumference()
     }
 
     /// Get the steps per revolution
+    #[must_use]
     pub const fn steps_per_revolution(&self) -> i16 {
         self.angular_step_converter.steps_per_revolution
     }
@@ -69,7 +76,8 @@ impl LinearStepConverter {
 impl LinearStepConverter {
     /// Convert linear distance to steps
     ///
-    /// Formula: steps = (distance / circumference) * steps_per_revolution
+    /// Formula: steps = (distance / circumference) * `steps_per_revolution`
+    #[must_use]
     pub fn distance_to_steps(&self, distance: Length) -> f64 {
         // Convert distance to revolutions using CircularConverter
         let revolutions = self
@@ -83,7 +91,8 @@ impl LinearStepConverter {
 
     /// Convert steps to linear distance
     ///
-    /// Formula: distance = (steps / steps_per_revolution) * circumference
+    /// Formula: distance = (steps / `steps_per_revolution`) * circumference
+    #[must_use]
     pub fn steps_to_distance(&self, steps: f64) -> Length {
         // Convert steps to angle
         let angle = self.angular_step_converter.steps_to_angle(steps);
@@ -96,7 +105,8 @@ impl LinearStepConverter {
 
     /// Convert linear velocity to steps/second
     ///
-    /// Formula: steps/second = (velocity / circumference) * steps_per_revolution
+    /// Formula: steps/second = (velocity / circumference) * `steps_per_revolution`
+    #[must_use]
     pub fn velocity_to_steps(&self, velocity: Velocity) -> f64 {
         // Convert linear velocity to revolutions per second using CircularConverter
         let rps = self.circular_converter.linear_velocity_to_rps(velocity);
@@ -109,7 +119,8 @@ impl LinearStepConverter {
 
     /// Convert steps/second to linear velocity
     ///
-    /// Formula: velocity = (steps_per_second / steps_per_revolution) * circumference
+    /// Formula: velocity = (`steps_per_second` / `steps_per_revolution`) * circumference
+    #[must_use]
     pub fn steps_to_velocity(&self, steps_per_second: f64) -> Velocity {
         // Convert steps/second to angular velocity
         let angular_velocity = self
@@ -123,7 +134,8 @@ impl LinearStepConverter {
 
     /// Convert linear acceleration to steps/second²
     ///
-    /// Formula: steps/second² = (acceleration / radius) * (steps_per_revolution / (2π))
+    /// Formula: steps/second² = (acceleration / radius) * (`steps_per_revolution` / (2π))
+    #[must_use]
     pub fn acceleration_to_steps(&self, acceleration: Acceleration) -> f64 {
         // Convert linear acceleration to angular acceleration using CircularConverter
         let angular_acceleration = self
@@ -137,7 +149,8 @@ impl LinearStepConverter {
 
     /// Convert steps/second² to linear acceleration
     ///
-    /// Formula: acceleration = (steps_per_second² / steps_per_revolution) * (2π) * radius
+    /// Formula: acceleration = (`steps_per_second²` / `steps_per_revolution`) * (2π) * radius
+    #[must_use]
     pub fn steps_to_acceleration(&self, steps_per_second_squared: f64) -> Acceleration {
         // Convert steps/second² to angular acceleration
         let angular_acceleration = self
@@ -155,6 +168,7 @@ impl LinearStepConverter {
     /// Convert linear distance to angle
     ///
     /// Formula: angle (in revolutions) = distance / circumference
+    #[must_use]
     pub fn distance_to_angle(&self, distance: Length) -> Angle {
         let revolutions = self
             .circular_converter
@@ -165,6 +179,7 @@ impl LinearStepConverter {
     /// Convert angle to linear distance
     ///
     /// Formula: distance = angle (in revolutions) * circumference
+    #[must_use]
     pub fn angle_to_distance(&self, angle: Angle) -> Length {
         let revolutions = angle.get::<revolution>();
         self.circular_converter
@@ -174,6 +189,7 @@ impl LinearStepConverter {
     /// Convert linear velocity to angular velocity
     ///
     /// Formula: angular velocity (in rev/s) = velocity / circumference
+    #[must_use]
     pub fn velocity_to_angular_velocity(&self, velocity: Velocity) -> AngularVelocity {
         let rps = self.circular_converter.linear_velocity_to_rps(velocity);
         AngularVelocity::new::<revolution_per_second>(rps)
@@ -182,6 +198,7 @@ impl LinearStepConverter {
     /// Convert angular velocity to linear velocity
     ///
     /// Formula: velocity = angular velocity (in rev/s) * circumference
+    #[must_use]
     pub fn angular_velocity_to_velocity(&self, angular_velocity: AngularVelocity) -> Velocity {
         let rps = angular_velocity.get::<revolution_per_second>();
         self.circular_converter.rps_to_linear_velocity(rps)
@@ -190,6 +207,7 @@ impl LinearStepConverter {
     /// Convert linear acceleration to angular acceleration
     ///
     /// Formula: angular acceleration (in rad/s²) = acceleration / radius
+    #[must_use]
     pub fn acceleration_to_angular_acceleration(
         &self,
         acceleration: Acceleration,
@@ -201,6 +219,7 @@ impl LinearStepConverter {
     /// Convert angular acceleration to linear acceleration
     ///
     /// Formula: acceleration = angular acceleration (in rad/s²) * radius
+    #[must_use]
     pub fn angular_acceleration_to_acceleration(
         &self,
         angular_acceleration: AngularAcceleration,
@@ -213,33 +232,39 @@ impl LinearStepConverter {
 // Forward angular to/from steps conversions from StepConverter
 impl LinearStepConverter {
     /// Convert steps to angle
+    #[must_use]
     pub fn steps_to_angle(&self, steps: f64) -> Angle {
         self.angular_step_converter.steps_to_angle(steps)
     }
 
     /// Convert angle to steps
+    #[must_use]
     pub fn angle_to_steps(&self, angle: Angle) -> f64 {
         self.angular_step_converter.angle_to_steps(angle)
     }
 
     /// Convert steps/second to angular velocity
+    #[must_use]
     pub fn steps_to_angular_velocity(&self, steps: f64) -> AngularVelocity {
         self.angular_step_converter.steps_to_angular_velocity(steps)
     }
 
     /// Convert angular velocity to steps/second
+    #[must_use]
     pub fn angular_velocity_to_steps(&self, angular_velocity: AngularVelocity) -> f64 {
         self.angular_step_converter
             .angular_velocity_to_steps(angular_velocity)
     }
 
     /// Convert steps/second² to angular acceleration
+    #[must_use]
     pub fn steps_to_angular_acceleration(&self, steps: f64) -> AngularAcceleration {
         self.angular_step_converter
             .steps_to_angular_acceleration(steps)
     }
 
     /// Convert angular acceleration to steps/second²
+    #[must_use]
     pub fn angular_acceleration_to_steps(&self, angular_acceleration: AngularAcceleration) -> f64 {
         self.angular_step_converter
             .angular_acceleration_to_steps(angular_acceleration)

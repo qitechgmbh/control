@@ -18,6 +18,7 @@ pub struct AngularStepConverter {
 
 impl AngularStepConverter {
     /// Create a new converter with the specified steps per revolution
+    #[must_use]
     pub const fn new(steps_per_revolution: i16) -> Self {
         Self {
             steps_per_revolution,
@@ -26,47 +27,52 @@ impl AngularStepConverter {
 
     /// Convert steps to angle
     ///
-    /// Formula: angle (in revolutions) = steps / steps_per_revolution
+    /// Formula: angle (in revolutions) = steps / `steps_per_revolution`
+    #[must_use]
     pub fn steps_to_angle(&self, steps: f64) -> Angle {
-        let revolutions = steps / self.steps_per_revolution as f64;
+        let revolutions = steps / f64::from(self.steps_per_revolution);
         Angle::new::<revolution>(revolutions)
     }
 
     /// Convert angle to steps
     ///
-    /// Formula: steps = angle (in revolutions) * steps_per_revolution
+    /// Formula: steps = angle (in revolutions) * `steps_per_revolution`
+    #[must_use]
     pub fn angle_to_steps(&self, angle: Angle) -> f64 {
         let revolutions = angle.get::<revolution>();
-        revolutions * self.steps_per_revolution as f64
+        revolutions * f64::from(self.steps_per_revolution)
     }
 
     /// Convert steps/second to angular velocity
     ///
-    /// Formula: angular velocity (in rev/s) = steps_per_second / steps_per_revolution
+    /// Formula: angular velocity (in rev/s) = `steps_per_second` / `steps_per_revolution`
+    #[must_use]
     pub fn steps_to_angular_velocity(&self, steps_per_second: f64) -> AngularVelocity {
-        let revolutions_per_second = steps_per_second / self.steps_per_revolution as f64;
+        let revolutions_per_second = steps_per_second / f64::from(self.steps_per_revolution);
         AngularVelocity::new::<revolution_per_second>(revolutions_per_second)
     }
 
     /// Convert angular velocity to steps/second
     ///
-    /// Formula: steps_per_second = angular velocity (in rev/s) * steps_per_revolution
+    /// Formula: `steps_per_second` = angular velocity (in rev/s) * `steps_per_revolution`
+    #[must_use]
     pub fn angular_velocity_to_steps(&self, angular_velocity: AngularVelocity) -> f64 {
         let revolutions_per_second = angular_velocity.get::<revolution_per_second>();
-        revolutions_per_second * self.steps_per_revolution as f64
+        revolutions_per_second * f64::from(self.steps_per_revolution)
     }
 
     /// Convert steps/second² to angular acceleration
     ///
     /// Formula:
-    /// - revolutions_per_second² = steps_per_second² / steps_per_revolution
-    /// - angular acceleration (in rad/s²) = revolutions_per_second² * 2π
+    /// - `revolutions_per_second²` = `steps_per_second²` / `steps_per_revolution`
+    /// - angular acceleration (in rad/s²) = `revolutions_per_second²` * 2π
+    #[must_use]
     pub fn steps_to_angular_acceleration(
         &self,
         steps_per_second_squared: f64,
     ) -> AngularAcceleration {
         let revolutions_per_second_squared =
-            steps_per_second_squared / self.steps_per_revolution as f64;
+            steps_per_second_squared / f64::from(self.steps_per_revolution);
         let radians_per_second_squared =
             revolutions_per_second_squared * 2.0 * std::f64::consts::PI;
         AngularAcceleration::new::<radian_per_second_squared>(radians_per_second_squared)
@@ -75,13 +81,14 @@ impl AngularStepConverter {
     /// Convert angular acceleration to steps/second²
     ///
     /// Formula:
-    /// - revolutions_per_second² = angular acceleration (in rad/s²) / 2π
-    /// - steps_per_second² = revolutions_per_second² * steps_per_revolution
+    /// - `revolutions_per_second²` = angular acceleration (in rad/s²) / 2π
+    /// - `steps_per_second²` = `revolutions_per_second²` * `steps_per_revolution`
+    #[must_use]
     pub fn angular_acceleration_to_steps(&self, angular_acceleration: AngularAcceleration) -> f64 {
         let radians_per_second_squared = angular_acceleration.get::<radian_per_second_squared>();
         let revolutions_per_second_squared =
             radians_per_second_squared / (2.0 * std::f64::consts::PI);
-        revolutions_per_second_squared * self.steps_per_revolution as f64
+        revolutions_per_second_squared * f64::from(self.steps_per_revolution)
     }
 }
 

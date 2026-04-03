@@ -109,11 +109,11 @@ impl EthercatDynamicPDO for Wago750_430 {
     }
 
     fn set_tx_offset(&mut self, offset: usize) {
-        self.tx_bit_offset = offset
+        self.tx_bit_offset = offset;
     }
 
     fn set_rx_offset(&mut self, offset: usize) {
-        self.rx_bit_offset = offset
+        self.rx_bit_offset = offset;
     }
 }
 
@@ -122,7 +122,7 @@ impl EthercatDevice for Wago750_430 {
         &mut self,
         input: &bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
-        self.txpdo.port1 = input[self.tx_bit_offset + 0];
+        self.txpdo.port1 = input[self.tx_bit_offset];
         self.txpdo.port2 = input[self.tx_bit_offset + 1];
         self.txpdo.port3 = input[self.tx_bit_offset + 2];
         self.txpdo.port4 = input[self.tx_bit_offset + 3];
@@ -181,7 +181,7 @@ impl EthercatDevice for Wago750_430 {
     fn set_module(&mut self, module: crate::devices::Module) {
         self.tx_bit_offset = module.tx_offset;
         self.rx_bit_offset = module.rx_offset;
-        self.module = Some(module)
+        self.module = Some(module);
     }
 }
 

@@ -13,8 +13,9 @@ use units::jerk::meter_per_minute_per_second_squared;
 use units::length::{meter, millimeter};
 use units::velocity::{meter_per_minute, meter_per_second};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Default)]
 pub enum GearRatio {
+    #[default]
     OneToOne,
     OneToFive,
     OneToTen,
@@ -28,12 +29,6 @@ impl GearRatio {
             GearRatio::OneToFive => 5.0,
             GearRatio::OneToTen => 10.0,
         }
-    }
-}
-
-impl Default for GearRatio {
-    fn default() -> Self {
-        GearRatio::OneToOne
     }
 }
 

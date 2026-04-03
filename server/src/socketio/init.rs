@@ -91,13 +91,9 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
                 }
             }
             if let NamespaceId::Machine(ident) = namespace_id.clone() {
-                    match app_state.clone().api_machines.lock().await.get(&ident) {
-                        Some(sender) => {
-                            let _ = sender.send(machines::MachineMessage::UnsubscribeNamespace).await;
-                        },
-                        None => tracing::info!("sender doesnt exist for: {}",ident),
-                    };
-                }else{
+                    if let Some(sender) = app_state.clone().api_machines.lock().await.get(&ident) {
+                        let _ = sender.send(machines::MachineMessage::UnsubscribeNamespace).await;
+                    } else { tracing::info!("sender doesnt exist for: {}",ident) }
                 }
         })
         .detach();
@@ -139,13 +135,10 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
                 namespace.reemit(socket_clone);
 
                 if let NamespaceId::Machine(ident) = namespace_id_clone {
-                    match app_state.clone().api_machines.lock().await.get(&ident) {
-                        Some(sender) => {
-                            tracing::info!("subscribing namespace to {}",ident);
-                            let _ = sender.send(machines::MachineMessage::SubscribeNamespace(namespace.clone())).await;
-                        },
-                        None => tracing::info!("sender doesnt exist for: {}",ident),
-                    };
+                    if let Some(sender) = app_state.clone().api_machines.lock().await.get(&ident) {
+                        tracing::info!("subscribing namespace to {}",ident);
+                        let _ = sender.send(machines::MachineMessage::SubscribeNamespace(namespace.clone())).await;
+                    } else { tracing::info!("sender doesnt exist for: {}",ident) }
                 }
 
             }

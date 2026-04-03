@@ -35,7 +35,8 @@ pub struct RuntimeSample {
 }
 
 impl RuntimeSample {
-    pub fn from_process_metrics(
+    #[must_use]
+    pub const fn from_process_metrics(
         m: ProcessMetrics,
         mfaults_per_second: u64,
         timestamp_ms: u128,
@@ -89,7 +90,7 @@ fn opt_u64(v: Option<u64>) -> String {
 }
 
 fn opt_f64(v: Option<f64>) -> String {
-    v.map(|x| format!("{:.6}", x)).unwrap_or_default()
+    v.map(|x| format!("{x:.6}")).unwrap_or_default()
 }
 
 pub fn append_runtime_sample_csv<P: AsRef<Path>>(

@@ -3,7 +3,7 @@ use ethercat_hal_derive::PdoObject;
 
 use super::{TxPdoObject, basic::Limit};
 
-/// PDO Object for EL30xx devices
+/// PDO Object for `EL30xx` devices
 ///
 /// The value is accompanied by some metadata.
 #[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
@@ -51,7 +51,7 @@ impl TxPdoObject for AiStandard {
     }
 }
 
-/// PDO Object for EL30xx devices
+/// PDO Object for `EL30xx` devices
 ///
 /// The value without metadata.
 #[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]

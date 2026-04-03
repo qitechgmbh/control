@@ -6,6 +6,7 @@ pub struct EL70x1VelocityConverter {
 }
 
 impl EL70x1VelocityConverter {
+    #[must_use]
     pub const fn new(speed_range: &EL70x1SpeedRange) -> Self {
         let speed_range_value = match speed_range {
             EL70x1SpeedRange::Steps1000 => 1000,
@@ -21,26 +22,30 @@ impl EL70x1VelocityConverter {
     }
 
     /// Convert steps per second to the i16 velocity value used by the EL7031
+    #[must_use]
     pub fn steps_to_velocity(&self, steps_per_second: f64, propability_rounding: bool) -> i16 {
         // Calculate the velocity value (10000 = 100% of max speed)
         let velocity_f64 =
-            (steps_per_second / self.max_steps_per_seconds as f64) * std::i16::MAX as f64;
+            (steps_per_second / f64::from(self.max_steps_per_seconds)) * f64::from(std::i16::MAX);
 
-        match propability_rounding {
-            true => round_propabilistic(velocity_f64),
-            false => velocity_f64.round() as i16,
+        if propability_rounding {
+            round_propabilistic(velocity_f64)
+        } else {
+            velocity_f64.round() as i16
         }
     }
 
     /// Convert i16 velocity value back to steps per second
+    #[must_use]
     pub fn velocity_to_steps(&self, velocity: i16, propability_rounding: bool) -> i16 {
         // Calculate steps per second from velocity value
-        let steps_per_second =
-            (velocity as f64 / std::i16::MAX as f64) * self.max_steps_per_seconds as f64;
+        let steps_per_second = (f64::from(velocity) / f64::from(std::i16::MAX))
+            * f64::from(self.max_steps_per_seconds);
 
-        match propability_rounding {
-            true => round_propabilistic(steps_per_second),
-            false => steps_per_second.round() as i16,
+        if propability_rounding {
+            round_propabilistic(steps_per_second)
+        } else {
+            steps_per_second.round() as i16
         }
     }
 }
@@ -59,9 +64,10 @@ impl EL70x1VelocityConverter {
 fn round_propabilistic(value: f64) -> i16 {
     let propability = value - value.floor();
     // make a random decision to add 1 based on the propability
-    match rand::random_bool(propability) {
-        true => value.ceil() as i16,
-        false => value.floor() as i16,
+    if rand::random_bool(propability) {
+        value.ceil() as i16
+    } else {
+        value.floor() as i16
     }
 }
 
@@ -79,16 +85,16 @@ mod tests {
         assert_eq!(calc.steps_to_velocity(0.0, false), 0);
         // 1000 sps = 25% velocity = 8192 (25% of 32767)
         let v1 = calc.steps_to_velocity(1000.0, false);
-        assert!((v1 - 8192i16).abs() <= 1, "Expected 8192±1, got {}", v1);
+        assert!((v1 - 8192i16).abs() <= 1, "Expected 8192±1, got {v1}");
         // 2000 sps = 50% velocity = 16384 (50% of 32767)
         let v2 = calc.steps_to_velocity(2000.0, false);
-        assert!((v2 - 16384i16).abs() <= 1, "Expected 16384±1, got {}", v2);
+        assert!((v2 - 16384i16).abs() <= 1, "Expected 16384±1, got {v2}");
         // 3000 sps = 75% velocity = 24575 (75% of 32767)
         let v3 = calc.steps_to_velocity(3000.0, false);
-        assert!((v3 - 24575i16).abs() <= 1, "Expected 24575±1, got {}", v3);
+        assert!((v3 - 24575i16).abs() <= 1, "Expected 24575±1, got {v3}");
         // 4000 sps = 100% velocity = 32767 (100% of 32767)
         let v4 = calc.steps_to_velocity(4000.0, false);
-        assert!((v4 - 32767i16).abs() <= 1, "Expected 32767±1, got {}", v4);
+        assert!((v4 - 32767i16).abs() <= 1, "Expected 32767±1, got {v4}");
     }
 
     #[test]
@@ -99,16 +105,16 @@ mod tests {
         assert_eq!(calc.velocity_to_steps(0, false), 0);
         // 25% velocity = 8192i16 = 1000 sps
         let s1 = calc.velocity_to_steps(8192, false);
-        assert_eq!((s1 - 1000i16).abs(), 0, "Expected 1000±0, got {}", s1);
+        assert_eq!((s1 - 1000i16).abs(), 0, "Expected 1000±0, got {s1}");
         // 50% velocity = 16384i16 = 2000 sps
         let s2 = calc.velocity_to_steps(16384, false);
-        assert_eq!((s2 - 2000i16).abs(), 0, "Expected 2000±0, got {}", s2);
+        assert_eq!((s2 - 2000i16).abs(), 0, "Expected 2000±0, got {s2}");
         // 75% velocity = 24575i16 = 3000 sps
         let s3 = calc.velocity_to_steps(24575, false);
-        assert_eq!((s3 - 3000i16).abs(), 0, "Expected 3000±0, got {}", s3);
+        assert_eq!((s3 - 3000i16).abs(), 0, "Expected 3000±0, got {s3}");
         // 100% velocity = 32767i16 = 4000 sps
         let s4 = calc.velocity_to_steps(32767, false);
-        assert_eq!((s4 - 4000i16).abs(), 0, "Expected 4000±0, got {}", s4);
+        assert_eq!((s4 - 4000i16).abs(), 0, "Expected 4000±0, got {s4}");
     }
 
     #[test]
@@ -117,7 +123,7 @@ mod tests {
         let mut sum = 0.0;
         for _ in 0..100000 {
             let rounded = round_propabilistic(0.5);
-            sum += rounded as f64;
+            sum += f64::from(rounded);
         }
         // Check that the average is close to 0.5
         let average = sum / 100000.0;

@@ -75,7 +75,7 @@ impl MachineNewTrait for BufferV1 {
             el7041
                 .write()
                 .await
-                .write_config(&subdevice, &el7041_config)
+                .write_config(subdevice, &el7041_config)
                 .await?;
             {
                 let mut device_guard = el7041.write().await;
@@ -110,7 +110,7 @@ impl MachineNewTrait for BufferV1 {
             el7031
                 .write()
                 .await
-                .write_config(&subdevice, &el7031_config)
+                .write_config(subdevice, &el7031_config)
                 .await?;
             {
                 let mut device_guard = el7031.write().await;
@@ -137,7 +137,7 @@ impl MachineNewTrait for BufferV1 {
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
                 buffer_tower_controller,
-                machine_identification_unique: machine_identification_unique.clone(),
+                machine_identification_unique,
             };
             buffer.emit_state();
             Ok(buffer)

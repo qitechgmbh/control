@@ -13,8 +13,8 @@ use super::jerk_speed_controller::JerkSpeedController;
 /// Angular Jerk Speed Controller with proper physical units
 ///
 /// This controller provides angular motion control with proper SI units for rotational systems.
-/// It wraps the core JerkSpeedController and provides unit-typed interfaces for angular velocity
-/// (AngularVelocity), angular acceleration (AngularAcceleration), and angular jerk (AngularJerk).
+/// It wraps the core `JerkSpeedController` and provides unit-typed interfaces for angular velocity
+/// (`AngularVelocity`), angular acceleration (`AngularAcceleration`), and angular jerk (`AngularJerk`).
 ///
 /// The controller manages smooth rotational speed profiles with configurable limits and tolerances,
 /// ensuring that angular velocity, acceleration, and jerk constraints are respected during motion.
@@ -61,7 +61,7 @@ impl AngularJerkSpeedController {
     /// * `max_jerk` - Maximum angular jerk for increasing acceleration (typically positive)
     ///
     /// # Returns
-    /// A new AngularJerkSpeedController instance
+    /// A new `AngularJerkSpeedController` instance
     ///
     /// # Example
     /// ```ignore
@@ -82,6 +82,7 @@ impl AngularJerkSpeedController {
     ///     AngularJerk::new::<revolution_per_minute_per_second_squared>(600.0),  // Max jerk
     /// );
     /// ```
+    #[must_use]
     pub fn new(
         min_speed: Option<AngularVelocity>,
         max_speed: Option<AngularVelocity>,
@@ -120,7 +121,7 @@ impl AngularJerkSpeedController {
     /// * `jerk` - Maximum angular jerk magnitude (creates limits [-jerk, +jerk])
     ///
     /// # Returns
-    /// A new AngularJerkSpeedController instance
+    /// A new `AngularJerkSpeedController` instance
     ///
     /// # Panics
     /// Panics if acceleration or jerk values are negative or zero
@@ -152,6 +153,7 @@ impl AngularJerkSpeedController {
     ///     max_jerk,   // Angular jerk limits: [-500, +500] RPM/s²
     /// );
     /// ```
+    #[must_use]
     pub fn new_simple(
         speed: Option<AngularVelocity>,
         acceleration: AngularAcceleration,
@@ -212,7 +214,8 @@ impl AngularJerkSpeedController {
     /// Returns the controller's current angular velocity in the motion profile.
     ///
     /// # Returns
-    /// Current angular velocity as an AngularVelocity value
+    /// Current angular velocity as an `AngularVelocity` value
+    #[must_use]
     pub fn get_speed(&self) -> AngularVelocity {
         AngularVelocity::new::<radian_per_second>(self.controller.get_speed())
     }
@@ -222,7 +225,8 @@ impl AngularJerkSpeedController {
     /// Returns the current target angular velocity that the controller is trying to reach.
     ///
     /// # Returns
-    /// Target angular velocity as an AngularVelocity value
+    /// Target angular velocity as an `AngularVelocity` value
+    #[must_use]
     pub fn get_target_speed(&self) -> AngularVelocity {
         AngularVelocity::new::<radian_per_second>(self.controller.get_target_speed())
     }
@@ -270,6 +274,7 @@ impl AngularJerkSpeedController {
     }
 
     /// Get the current angular acceleration
+    #[must_use]
     pub fn get_acceleration(&self) -> AngularAcceleration {
         AngularAcceleration::new::<radian_per_second_squared>(self.controller.get_acceleration())
     }
@@ -293,6 +298,7 @@ impl AngularJerkSpeedController {
     }
 
     /// Get the current angular jerk
+    #[must_use]
     pub fn get_jerk(&self) -> AngularJerk {
         AngularJerk::new::<radian_per_second_cubed>(self.controller.get_jerk())
     }

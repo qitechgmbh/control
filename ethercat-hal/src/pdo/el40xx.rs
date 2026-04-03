@@ -2,7 +2,7 @@ use super::RxPdoObject;
 use bitvec::prelude::*;
 use ethercat_hal_derive::PdoObject;
 
-/// PDO Object for EL40xx (analog output) devices
+/// PDO Object for `EL40xx` (analog output) devices
 ///
 /// The "Analog Output" holds the output value and status information.
 #[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
@@ -167,8 +167,7 @@ mod tests {
             let read_value: i16 = bits[0..16].load_le();
             assert_eq!(
                 read_value, test_value,
-                "Failed round-trip for value: {}",
-                test_value
+                "Failed round-trip for value: {test_value}"
             );
         }
     }
@@ -226,7 +225,7 @@ mod tests {
     #[test]
     fn test_analog_output_debug() {
         let analog_output = AnalogOutput { value: 42 };
-        let debug_string = format!("{:?}", analog_output);
+        let debug_string = format!("{analog_output:?}");
 
         // Should contain the struct name and value
         assert!(debug_string.contains("AnalogOutput"));

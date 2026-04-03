@@ -2,11 +2,12 @@
 ///
 /// Takes a slice of bytes and XORs them together in chunks to produce a u128.
 /// If there are fewer than 16 bytes, the remaining bytes are padded with zeros.
+#[must_use]
 pub fn byte_folding_u128(bytes: &[u8]) -> u128 {
     let mut result = 0u128;
     for (i, &byte) in bytes.iter().enumerate() {
         let shift = (i % 16) * 8;
-        result ^= (byte as u128) << shift;
+        result ^= u128::from(byte) << shift;
     }
     result
 }
@@ -15,11 +16,12 @@ pub fn byte_folding_u128(bytes: &[u8]) -> u128 {
 ///
 /// Takes a slice of bytes and XORs them together in chunks to produce a u64.
 /// If there are fewer than 8 bytes, the remaining bytes are padded with zeros.
+#[must_use]
 pub fn byte_folding_u64(bytes: &[u8]) -> u64 {
     let mut result = 0u64;
     for (i, &byte) in bytes.iter().enumerate() {
         let shift = (i % 8) * 8;
-        result ^= (byte as u64) << shift;
+        result ^= u64::from(byte) << shift;
     }
     result
 }
@@ -28,11 +30,12 @@ pub fn byte_folding_u64(bytes: &[u8]) -> u64 {
 ///
 /// Takes a slice of bytes and XORs them together in chunks to produce a u32.
 /// If there are fewer than 4 bytes, the remaining bytes are padded with zeros.
+#[must_use]
 pub fn byte_folding_u32(bytes: &[u8]) -> u32 {
     let mut result = 0u32;
     for (i, &byte) in bytes.iter().enumerate() {
         let shift = (i % 4) * 8;
-        result ^= (byte as u32) << shift;
+        result ^= u32::from(byte) << shift;
     }
     result
 }
@@ -41,11 +44,12 @@ pub fn byte_folding_u32(bytes: &[u8]) -> u32 {
 ///
 /// Takes a slice of bytes and XORs them together in chunks to produce a u16.
 /// If there are fewer than 2 bytes, the remaining bytes are padded with zeros.
+#[must_use]
 pub fn byte_folding_u16(bytes: &[u8]) -> u16 {
     let mut result = 0u16;
     for (i, &byte) in bytes.iter().enumerate() {
         let shift = (i % 2) * 8;
-        result ^= (byte as u16) << shift;
+        result ^= u16::from(byte) << shift;
     }
     result
 }
@@ -53,6 +57,7 @@ pub fn byte_folding_u16(bytes: &[u8]) -> u16 {
 /// Folds bytes using XOR to produce a u8 value.
 ///
 /// Takes a slice of bytes and XORs them all together to produce a u8.
+#[must_use]
 pub fn byte_folding_u8(bytes: &[u8]) -> u8 {
     bytes.iter().fold(0u8, |acc, &byte| acc ^ byte)
 }
@@ -87,11 +92,12 @@ pub fn byte_folding_u8(bytes: &[u8]) -> u8 {
 /// - Initial hash value: 5381 (djb2 magic number)
 /// - For each byte: `hash = hash * 33 + byte`
 /// - Uses wrapping arithmetic to prevent overflow panics
+#[must_use]
 pub fn hash_djb2(bytes: &[u8]) -> u32 {
     let mut hash: u32 = 5381;
 
     for byte in bytes {
-        hash = hash.wrapping_mul(33).wrapping_add(*byte as u32);
+        hash = hash.wrapping_mul(33).wrapping_add(u32::from(*byte));
     }
     hash
 }

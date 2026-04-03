@@ -64,6 +64,17 @@ QiTech Control powers 10+ production machines for filament extrusion, winding, m
 
 This is an open-source project. Contributions are welcome! Please see the [wiki](https://github.com/qitechgmbh/control/wiki) for development guidelines.
 
+### Development Setup
+
+After cloning the repo, enable the git hooks:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+This installs two hooks:
+- **pre-commit** — runs `cargo fmt --check` (commit is blocked if code is not formatted)
+- **pre-push** — runs `cargo clippy -- -D warnings` (push is blocked if there are clippy warnings)
 
 
 ## Additional Videos

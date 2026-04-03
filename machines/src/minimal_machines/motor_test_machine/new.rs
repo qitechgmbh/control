@@ -19,7 +19,7 @@ use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfigura
 impl MachineNewTrait for MotorTestMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         println!("[{}::new] Creating new MotorTestMachine", module_path!());
-        let device_identification = params.device_group.iter().cloned().collect::<Vec<_>>();
+        let device_identification = params.device_group.to_vec();
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_duplicates(&device_identification)?;
 
@@ -61,7 +61,7 @@ impl MachineNewTrait for MotorTestMachine {
                     .0
                     .write()
                     .await
-                    .write_config(&device.1, &el7031_config)
+                    .write_config(device.1, &el7031_config)
                     .await?;
 
                 device.0

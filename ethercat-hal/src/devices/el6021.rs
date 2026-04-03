@@ -19,19 +19,19 @@ impl std::fmt::Debug for EL6021 {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EL6021Baudrate {
-    /// 2400 baud (CoE Value: 4)
+    /// 2400 baud (`CoE` Value: 4)
     B2400 = 4,
-    /// 4800 baud (CoE Value: 5)
+    /// 4800 baud (`CoE` Value: 5)
     B4800 = 5,
-    /// 9600 baud (CoE Value: 6) DEFAULT
+    /// 9600 baud (`CoE` Value: 6) DEFAULT
     B9600 = 6,
-    /// 19200 baud (CoE Value: 7)
+    /// 19200 baud (`CoE` Value: 7)
     B19200 = 7,
-    /// 38400 baud (CoE Value: 8)
+    /// 38400 baud (`CoE` Value: 8)
     B38400 = 8,
-    /// 57600 baud (CoE Value: 9)
+    /// 57600 baud (`CoE` Value: 9)
     B57600 = 9,
-    /// 115200 baud (CoE Value: 10)
+    /// 115200 baud (`CoE` Value: 10)
     B115200 = 10,
 }
 
@@ -508,8 +508,8 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
     }
 
     /// For el6021 this returns false for as long as the Initialization takes
-    /// When its finished it returns true    
-    /// Every step of the init has to be done in an EtherCatCycle
+    /// When its finished it returns true\\
+    /// Every step of the init has to be done in an `EtherCatCycle`
     fn serial_interface_initialize(&mut self, port: EL6021Port) -> bool {
         match port {
             EL6021Port::SI1 => {
@@ -576,6 +576,26 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
     }
 }
 
+pub const EL6021_VENDOR_ID: u32 = 2;
+pub const EL6021_PRODUCT_ID: u32 = 0x17853052;
+
+pub const EL6021_REVISION_A: u32 = 0x150000;
+pub const EL6021_REVISION_B: u32 = 0x140000;
+pub const EL6021_REVISION_C: u32 = 0x160000;
+pub const EL6021_REVISION_D: u32 = 0x100000;
+
+pub const EL6021_IDENTITY_A: SubDeviceIdentityTuple =
+    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_A);
+
+pub const EL6021_IDENTITY_B: SubDeviceIdentityTuple =
+    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_B);
+
+pub const EL6021_IDENTITY_C: SubDeviceIdentityTuple =
+    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_C);
+
+pub const EL6021_IDENTITY_D: SubDeviceIdentityTuple =
+    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_D);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -594,12 +614,12 @@ mod tests {
         let mut input = Standard22ByteMdp600Input::default();
 
         input.read(bits.as_bitslice());
-        assert_eq!(input.status.transmit_accepted, true);
-        assert_eq!(input.status.receive_request, false);
-        assert_eq!(input.status.init_accepted, true);
-        assert_eq!(input.status.buffer_full, false);
-        assert_eq!(input.status.parity_error, true);
-        assert_eq!(input.status.receive_request, false);
+        assert!(input.status.transmit_accepted);
+        assert!(!input.status.receive_request);
+        assert!(input.status.init_accepted);
+        assert!(!input.status.buffer_full);
+        assert!(input.status.parity_error);
+        assert!(!input.status.receive_request);
         assert_eq!(input.length, 0x16);
         for i in 0..22 {
             assert_eq!(input.data[i], (i + 1) as u8);
@@ -615,7 +635,7 @@ mod tests {
         };
 
         let output = Standard22ByteMdp600Output {
-            control: control,
+            control,
             length: 0x16,
             data: [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
@@ -636,23 +656,3 @@ mod tests {
         }
     }
 }
-
-pub const EL6021_VENDOR_ID: u32 = 2;
-pub const EL6021_PRODUCT_ID: u32 = 0x17853052;
-
-pub const EL6021_REVISION_A: u32 = 0x150000;
-pub const EL6021_REVISION_B: u32 = 0x140000;
-pub const EL6021_REVISION_C: u32 = 0x160000;
-pub const EL6021_REVISION_D: u32 = 0x100000;
-
-pub const EL6021_IDENTITY_A: SubDeviceIdentityTuple =
-    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_A);
-
-pub const EL6021_IDENTITY_B: SubDeviceIdentityTuple =
-    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_B);
-
-pub const EL6021_IDENTITY_C: SubDeviceIdentityTuple =
-    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_C);
-
-pub const EL6021_IDENTITY_D: SubDeviceIdentityTuple =
-    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_D);

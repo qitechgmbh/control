@@ -12,7 +12,7 @@ pub struct HashSerializerError {}
 
 impl std::fmt::Display for HashSerializerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!("{:?}", self))
+        f.write_str(&format!("{self:?}"))
         // f.debug_struct("HashSerialiyerError")
         // .finish()
     }
@@ -164,7 +164,7 @@ impl<H: Hasher> Serializer for HashSerializer<'_, H> {
     type SerializeStructVariant = Self;
 
     fn serialize_bool(self, v: bool) -> Result<(), Self::Error> {
-        self.0.write_u8(v as u8);
+        self.0.write_u8(u8::from(v));
         Ok(())
     }
 

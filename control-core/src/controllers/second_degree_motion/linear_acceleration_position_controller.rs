@@ -14,7 +14,7 @@ use super::acceleration_position_controller::{
 /// Linear Acceleration Position Controller with proper physical units
 ///
 /// This controller provides linear motion control with proper SI units (meters, m/s, m/s²).
-/// It wraps the core AccelerationPositionController and provides unit-typed interfaces
+/// It wraps the core `AccelerationPositionController` and provides unit-typed interfaces
 /// for position (Length), velocity (Velocity), and acceleration (Acceleration).
 ///
 /// The controller manages smooth motion profiles with configurable limits and tolerances,
@@ -53,10 +53,11 @@ impl LinearAccelerationPositionController {
     /// * `max_acceleration` - Maximum acceleration limit (typically positive)
     ///
     /// # Returns
-    /// A new LinearAccelerationPositionController instance
+    /// A new `LinearAccelerationPositionController` instance
     ///
     /// # Panics
-    /// Panics if the underlying AccelerationPositionController cannot be created with the given parameters
+    /// Panics if the underlying `AccelerationPositionController` cannot be created with the given parameters
+    #[must_use]
     pub fn new(
         min_position: Option<Length>,
         max_position: Option<Length>,
@@ -92,10 +93,10 @@ impl LinearAccelerationPositionController {
     /// * `acceleration` - Maximum acceleration limit (creates [-acceleration, +acceleration] range)
     ///
     /// # Returns
-    /// A Result containing the new controller or a MotionControllerError
+    /// A Result containing the new controller or a `MotionControllerError`
     ///
     /// # Errors
-    /// Returns MotionControllerError if:
+    /// Returns `MotionControllerError` if:
     /// - Speed or acceleration values are negative or zero
     /// - The underlying controller cannot be created with the calculated limits
     ///
@@ -184,6 +185,7 @@ impl LinearAccelerationPositionController {
     ///
     /// # Returns
     /// Current position as a Length value
+    #[must_use]
     pub fn get_position(&self) -> Length {
         Length::new::<meter>(self.controller.get_position())
     }
@@ -194,6 +196,7 @@ impl LinearAccelerationPositionController {
     ///
     /// # Returns
     /// Target position as a Length value
+    #[must_use]
     pub fn get_target_position(&self) -> Length {
         Length::new::<meter>(self.controller.get_target_position())
     }
@@ -229,7 +232,7 @@ impl LinearAccelerationPositionController {
     /// Result indicating success or failure of the operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the new limit would be invalid
+    /// Returns `MotionControllerError` if the new limit would be invalid
     /// (e.g., greater than the maximum position limit)
     pub fn set_min_position(
         &mut self,
@@ -250,7 +253,7 @@ impl LinearAccelerationPositionController {
     /// Result indicating success or failure of the operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the new limit would be invalid
+    /// Returns `MotionControllerError` if the new limit would be invalid
     /// (e.g., less than the minimum position limit)
     pub fn set_max_position(
         &mut self,
@@ -266,6 +269,7 @@ impl LinearAccelerationPositionController {
     ///
     /// # Returns
     /// Current velocity as a Velocity value
+    #[must_use]
     pub fn get_speed(&self) -> Velocity {
         Velocity::new::<meter_per_second>(self.controller.get_speed())
     }
@@ -281,7 +285,7 @@ impl LinearAccelerationPositionController {
     /// Result indicating success or failure of the operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the new limit would be invalid
+    /// Returns `MotionControllerError` if the new limit would be invalid
     /// (e.g., greater than the maximum speed limit)
     pub fn set_min_speed(&mut self, min_speed: Velocity) -> Result<(), MotionControllerError> {
         self.controller
@@ -299,7 +303,7 @@ impl LinearAccelerationPositionController {
     /// Result indicating success or failure of the operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the new limit would be invalid
+    /// Returns `MotionControllerError` if the new limit would be invalid
     /// (e.g., less than the minimum speed limit or negative/zero value)
     pub fn set_max_speed(&mut self, max_speed: Velocity) -> Result<(), MotionControllerError> {
         self.controller
@@ -312,6 +316,7 @@ impl LinearAccelerationPositionController {
     ///
     /// # Returns
     /// Current acceleration as an Acceleration value
+    #[must_use]
     pub fn get_acceleration(&self) -> Acceleration {
         Acceleration::new::<meter_per_second_squared>(self.controller.get_acceleration())
     }
@@ -327,7 +332,7 @@ impl LinearAccelerationPositionController {
     /// Result indicating success or failure of the operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the new limit would be invalid
+    /// Returns `MotionControllerError` if the new limit would be invalid
     /// (e.g., greater than the maximum acceleration limit)
     pub fn set_min_acceleration(
         &mut self,
@@ -348,7 +353,7 @@ impl LinearAccelerationPositionController {
     /// Result indicating success or failure of the operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the new limit would be invalid
+    /// Returns `MotionControllerError` if the new limit would be invalid
     /// (e.g., less than the minimum acceleration limit or negative/zero value)
     pub fn set_max_acceleration(
         &mut self,
@@ -371,7 +376,7 @@ impl LinearAccelerationPositionController {
     /// Result indicating success or failure of the reset operation
     ///
     /// # Errors
-    /// Returns MotionControllerError if the position is outside the configured limits
+    /// Returns `MotionControllerError` if the position is outside the configured limits
     ///
     /// # Example
     /// ```ignore

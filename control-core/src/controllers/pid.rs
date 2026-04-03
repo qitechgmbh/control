@@ -21,6 +21,7 @@ pub struct PidController {
 }
 
 impl PidController {
+    #[must_use]
     pub const fn new(kp: f64, ki: f64, kd: f64) -> Self {
         Self {
             kp,
@@ -40,14 +41,17 @@ impl PidController {
         self.kd = kd;
     }
 
+    #[must_use]
     pub const fn get_kp(&self) -> f64 {
         self.kp
     }
 
+    #[must_use]
     pub const fn get_ki(&self) -> f64 {
         self.ki
     }
 
+    #[must_use]
     pub const fn get_kd(&self) -> f64 {
         self.kd
     }

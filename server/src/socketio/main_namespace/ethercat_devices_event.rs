@@ -29,6 +29,7 @@ impl EthercatDevicesEventBuilder {
         )
     }
 
+    #[must_use]
     pub fn initializing(&self) -> Event<EthercatDevicesEvent> {
         Event::new(Self::NAME, EthercatDevicesEvent::Initializing(true))
     }

@@ -1,4 +1,4 @@
-use super::*;
+use super::{wago_750_402, wago_750_501, wago_750_652, wago_750_1506};
 use crate::devices::{
     EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed, NewEthercatDevice,
     SubDeviceIdentityTuple,
@@ -313,9 +313,10 @@ impl IP20EcDi8Do8 {
         let mut vec: Vec<usize> = vec![];
         let mut bit_offset = 0;
         let start_subindex = 0x1;
-        let index = match get_tx {
-            true => (TX_MAPPING_INDEX.0, TX_MAPPING_INDEX.1),
-            false => (RX_MAPPING_INDEX.0, RX_MAPPING_INDEX.1),
+        let index = if get_tx {
+            (TX_MAPPING_INDEX.0, TX_MAPPING_INDEX.1)
+        } else {
+            (RX_MAPPING_INDEX.0, RX_MAPPING_INDEX.1)
         };
         let count = device.sdo_read::<u8>(index.0, index.1).await?;
 
@@ -378,7 +379,7 @@ impl IP20EcDi8Do8 {
                 has_rx: false,
                 tx_offset: 0,
                 rx_offset: 0,
-                name: "".to_string(),
+                name: String::new(),
             };
 
             match ident_iom {
@@ -403,7 +404,7 @@ impl IP20EcDi8Do8 {
     }
 
     /// Call after all modules have been added
-    pub fn init_slot_modules<'a>(&mut self, device: &EthercrabSubDevicePreoperational<'a>) {
+    pub fn init_slot_modules(&mut self, device: &EthercrabSubDevicePreoperational<'_>) {
         // Already initialized
         if self.dev_count != 0 {
             return;
@@ -450,14 +451,12 @@ impl IP20EcDi8Do8 {
                     }
 
                     let mut dev_guard = dev.write_blocking();
-                    match tx_pdo_offset {
-                        Some(offset) => dev_guard.set_tx_offset(*offset),
-                        None => (),
+                    if let Some(offset) = tx_pdo_offset {
+                        dev_guard.set_tx_offset(*offset);
                     }
 
-                    match rx_pdo_offset {
-                        Some(offset) => dev_guard.set_rx_offset(*offset),
-                        None => (),
+                    if let Some(offset) = rx_pdo_offset {
+                        dev_guard.set_rx_offset(*offset);
                     }
                     drop(dev_guard);
                     self.slot_devices[self.dev_count] = Some(dev);
@@ -471,14 +470,14 @@ impl IP20EcDi8Do8 {
     pub async fn initialize_modules<'a>(
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<Vec<Module>, Error> {
-        let count = match IP20EcDi8Do8::get_module_count(device).await {
+        let count = match Self::get_module_count(device).await {
             Ok(count) => count,
             Err(e) => return Err(e),
         };
         if count == 0 {
             return Ok(vec![]);
         }
-        let modules = IP20EcDi8Do8::get_modules(device, count).await?;
+        let modules = Self::get_modules(device, count).await?;
         Ok(modules)
     }
 }

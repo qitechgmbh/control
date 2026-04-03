@@ -40,25 +40,26 @@ impl SerialDetection {
     /// Returns a clone of the map for quick access.
     pub fn detect_devices() -> HashMap<String, UsbPortInfo> {
         let ports = Self::get_ports();
-        let usb_devices = Self::extract_usb_serial_devices(ports);
-        usb_devices
+
+        Self::extract_usb_serial_devices(ports)
     }
 
     pub fn device_port_exists(device_path: &str) -> bool {
         let ports = Self::get_ports();
-        return ports.iter().any(|p| p.port_name == device_path);
+        ports.iter().any(|p| p.port_name == device_path)
     }
 
     pub fn device_id_exists(sdevid: SerialDeviceIdentification) -> bool {
         let ports = Self::get_ports();
         for port in ports {
-            if let SerialPortType::UsbPort(usb_info) = port.port_type {
-                if usb_info.vid == sdevid.vendor_id && usb_info.pid == sdevid.product_id {
-                    return true;
-                }
+            if let SerialPortType::UsbPort(usb_info) = port.port_type
+                && usb_info.vid == sdevid.vendor_id
+                && usb_info.pid == sdevid.product_id
+            {
+                return true;
             }
         }
-        return false;
+        false
     }
 
     pub fn get_path_by_id(
@@ -70,7 +71,7 @@ impl SerialDetection {
                 return Some(port.clone());
             }
         }
-        return None;
+        None
     }
 }
 

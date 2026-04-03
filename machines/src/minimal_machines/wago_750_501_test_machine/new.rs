@@ -18,11 +18,7 @@ use std::sync::Arc;
 
 impl MachineNewTrait for Wago750_501TestMachine {
     fn new(params: &MachineNewParams) -> Result<Self, Error> {
-        let device_identification = params
-            .device_group
-            .iter()
-            .map(|device_identification| device_identification.clone())
-            .collect::<Vec<_>>();
+        let device_identification = params.device_group.to_vec();
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_duplicates(&device_identification)?;
 
@@ -54,8 +50,7 @@ impl MachineNewTrait for Wago750_501TestMachine {
 
             coupler.init_slot_modules(_wago_750_354.1);
             let dev = coupler
-                .slot_devices
-                .get(0)
+                .slot_devices.first()
                 .ok_or_else(|| {
                     anyhow::anyhow!(
                         "[{}::MachineNewTrait/Wago750_501TestMachine::new] Expected Wago 750-501 module in slot 0, but slot 0 is not configured",

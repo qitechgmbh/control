@@ -1,5 +1,6 @@
 use tracing_subscriber::Layer;
 
+#[must_use]
 pub fn init_fmt_tracing<S>() -> Box<dyn Layer<S> + Send + Sync + 'static>
 where
     S: tracing::Subscriber + for<'lookup> tracing_subscriber::registry::LookupSpan<'lookup>,

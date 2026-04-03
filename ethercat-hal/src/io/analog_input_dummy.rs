@@ -25,6 +25,7 @@ impl AnalogInputDevice<AnalogInputDummyPort> for AnalogInputDummy {
 }
 
 impl AnalogInputDummy {
+    #[must_use]
     pub fn new(range: AnalogInputRange) -> Self {
         let state = Arc::new(Mutex::new(AnalogInputInput {
             normalized: 0.0,
@@ -33,6 +34,7 @@ impl AnalogInputDummy {
         Self { state, range }
     }
 
+    #[must_use]
     pub fn analog_input(&self) -> AnalogInput {
         let device: Arc<RwLock<dyn AnalogInputDevice<AnalogInputDummyPort>>> =
             Arc::new(RwLock::new(Self {
@@ -49,6 +51,7 @@ impl AnalogInputDummy {
         }
     }
 
+    #[must_use]
     pub fn get_input(&self) -> AnalogInputInput {
         let input_guard = self.state.lock().unwrap();
         input_guard.clone()
@@ -73,7 +76,7 @@ mod tests {
             normalized: 0.5,
             wiring_error: false,
         };
-        dummy.set_input(input.clone());
+        dummy.set_input(input);
 
         let analog_input = dummy.analog_input();
         let normalized = analog_input.get_normalized();

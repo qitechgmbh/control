@@ -11,13 +11,10 @@ const IFACE_DISCOVERY_MAX_PDU_DATA: usize = PduStorage::element_size(1100);
 const IFACE_DISCOVERY_MAX_FRAMES: usize = 16;
 const IFACE_DISCOVERY_MAX_PDI_LEN: usize = 128;
 
-/// Sets a network interface to unmanaged by NetworkManager.
+/// Sets a network interface to unmanaged by `NetworkManager`.
 /// Returns true if the command succeeded.
 pub fn set_interface_managed(interface: &str, managed: bool) -> bool {
-    let managed_str = match managed {
-        true => "yes",
-        false => "no",
-    };
+    let managed_str = if managed { "yes" } else { "no" };
     tracing::info!(
         "set_interface_managed for {} managed was set to: {}",
         interface,
@@ -35,7 +32,7 @@ pub fn set_interface_managed(interface: &str, managed: bool) -> bool {
 fn is_ethernet(interface: &str) -> std::io::Result<bool> {
     #[cfg(target_os = "linux")]
     {
-        let base_path = format!("/sys/class/net/{}", interface);
+        let base_path = format!("/sys/class/net/{interface}");
         let type_path = std::path::Path::new(&base_path).join("type");
         let iface_type = std::fs::read_to_string(&type_path)?.trim().to_string();
         // 1 means Ethernet
@@ -45,7 +42,7 @@ fn is_ethernet(interface: &str) -> std::io::Result<bool> {
         let uevent = std::fs::read_to_string(&uevent_path).unwrap_or_default();
         // If "DEVTYPE=wlan" appears, it's lying
         let actually_wifi = uevent.contains("DEVTYPE=wlan");
-        return Ok(reports_as_ethernet && !actually_wifi);
+        Ok(reports_as_ethernet && !actually_wifi)
     }
     #[cfg(not(target_os = "linux"))]
     return Ok(true);
@@ -72,7 +69,7 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
 
     // Get eligible interfaces
     let mut interfaces = Interface::get_all()
-        .map_err(|e| anyhow::anyhow!("Failed to get network interfaces: {}", e))?
+        .map_err(|e| anyhow::anyhow!("Failed to get network interfaces: {e}"))?
         .into_iter()
         .filter(|iface| {
             iface.is_up()
@@ -91,18 +88,15 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
     let mut interface: Option<&str> = None;
 
     for i in 0..interfaces.len() {
-        match test_interface(&interfaces[i].name) {
-            Ok(_) => {
-                // if interface found with ethercat Exit early, we expect only one interface with ethercat
-                interface = Some(&interfaces[i].name);
-                break;
-            }
-            Err(_) => (),
+        if matches!(test_interface(&interfaces[i].name), Ok(())) {
+            // if interface found with ethercat Exit early, we expect only one interface with ethercat
+            interface = Some(&interfaces[i].name);
+            break;
         }
     }
 
     for i in 0..interfaces.len() {
-        if interface.is_some() && interface.unwrap() == &interfaces[i].name {
+        if interface.is_some() && interface.unwrap() == interfaces[i].name {
             set_interface_managed(&interfaces[i].name, false);
         } else {
             set_interface_managed(&interfaces[i].name, true);
@@ -113,8 +107,8 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
     std::panic::set_hook(default_hook);
 
     match interface {
-        Some(interface) => return Ok(interface.to_string()),
-        None => return Err(anyhow::anyhow!("No suitable EtherCAT interface found")),
+        Some(interface) => Ok(interface.to_string()),
+        None => Err(anyhow::anyhow!("No suitable EtherCAT interface found")),
     }
 }
 
@@ -127,14 +121,14 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
     >::new()));
     let (tx, rx, pdu_loop) = pdu_storage
         .try_split()
-        .map_err(|e| anyhow::anyhow!("Failed to split PDU storage: {:?}", e))?;
+        .map_err(|e| anyhow::anyhow!("Failed to split PDU storage: {e:?}"))?;
 
     let rt = smol::LocalExecutor::new();
 
     let result = rt.run(async {
         let tx_rx_handle = rt.spawn(
             tx_rx_task(interface, tx, rx)
-                .map_err(|e| anyhow::anyhow!("Failed to spawn TX/RX task: {}", e))?,
+                .map_err(|e| anyhow::anyhow!("Failed to spawn TX/RX task: {e}"))?,
         );
 
         let maindevice = Arc::new(MainDevice::new(
@@ -167,7 +161,7 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
             )
             .await
             .map(|_| ())
-            .map_err(|e| anyhow::anyhow!("Failed to initialize group: {}", e));
+            .map_err(|e| anyhow::anyhow!("Failed to initialize group: {e}"));
 
         tx_rx_handle.cancel().await;
 
@@ -179,9 +173,7 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
 
     if let Err(e) = result {
         return Err(anyhow::anyhow!(
-            "Failed to initialize EtherCAT on interface {}: {:?}",
-            interface,
-            e
+            "Failed to initialize EtherCAT on interface {interface}: {e:?}"
         ));
     }
 

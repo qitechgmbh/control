@@ -20,11 +20,7 @@ use crate::{
 
 impl MachineNewTrait for Wago750_460Machine {
     fn new(params: &MachineNewParams) -> Result<Self, Error> {
-        let device_identification = params
-            .device_group
-            .iter()
-            .map(|d| d.clone())
-            .collect::<Vec<_>>();
+        let device_identification = params.device_group.to_vec();
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_duplicates(&device_identification)?;
 
@@ -59,7 +55,7 @@ impl MachineNewTrait for Wago750_460Machine {
             // Retrieve the 750-460 module from slot 0.
             let dev = coupler
                 .slot_devices
-                .get(0)
+                .first()
                 .ok_or_else(|| {
                     anyhow::anyhow!(
                         "[{}::Wago750_460Machine::new] No device in slot 0",
