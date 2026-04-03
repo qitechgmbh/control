@@ -36,7 +36,7 @@ impl axum::response::IntoResponse for ApiError {
 
 pub type Result<T> = axum::response::Result<Json<T>, ApiError>;
 
-pub fn json<T>(t: T) -> Result<T> {
+pub const fn json<T>(t: T) -> Result<T> {
     Result::Ok(Json(t))
 }
 

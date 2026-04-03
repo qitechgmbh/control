@@ -16,6 +16,7 @@ pub struct AngularAccelerationSpeedController {
 }
 
 impl AngularAccelerationSpeedController {
+    #[must_use]
     pub fn new(
         min_speed: Option<AngularVelocity>,
         max_speed: Option<AngularVelocity>,
@@ -35,8 +36,9 @@ impl AngularAccelerationSpeedController {
     }
 
     /// Creates a new angular acceleration speed controller with simplified parameters.
-    /// Sets min_acceleration to -max_acceleration for symmetric behavior.
+    /// Sets `min_acceleration` to -`max_acceleration` for symmetric behavior.
     /// No speed limits are applied.
+    #[must_use]
     pub fn new_simple(
         max_acceleration: AngularAcceleration,
         initial_speed: AngularVelocity,

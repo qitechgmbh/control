@@ -25,7 +25,7 @@ impl<T: 'static, U: Any + 'static> Downcast<Arc<Mutex<T>>> for Arc<Mutex<U>> {
 
             // Transmute the Arc to the desired type
             unsafe {
-                let arc = Arc::from_raw(Arc::into_raw(cloned) as *const Mutex<T>);
+                let arc = Arc::from_raw(Arc::into_raw(cloned).cast::<Mutex<T>>());
 
                 Ok(arc)
             }

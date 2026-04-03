@@ -17,6 +17,7 @@ pub struct MachinesEventBuilder();
 impl MachinesEventBuilder {
     const NAME: &'static str = "MachinesEvent";
 
+    #[must_use]
     pub fn build(&self, machine_objs: Vec<MachineObj>) -> Event<MachinesEvent> {
         Event::new(
             Self::NAME,

@@ -21,11 +21,7 @@ use crate::{
 impl MachineNewTrait for WagoAiTestMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
-        let device_identification = params
-            .device_group
-            .iter()
-            .map(|device_identification| device_identification.clone())
-            .collect::<Vec<_>>();
+        let device_identification = params.device_group.to_vec();
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_duplicates(&device_identification)?;
 
@@ -63,7 +59,7 @@ impl MachineNewTrait for WagoAiTestMachine {
             // Get the 750-455 analog input module from slot 0 (first module)
             let dev = coupler
                 .slot_devices
-                .get(0)
+                .first()
                 .ok_or_else(|| anyhow::anyhow!("No device in slot 0"))?
                 .clone()
                 .ok_or_else(|| anyhow::anyhow!("Slot 0 is empty"))?;

@@ -43,24 +43,27 @@ pub struct CircularConverter {
 
 impl CircularConverter {
     /// Create a new converter from radius
+    #[must_use]
     pub fn from_radius(radius: Length) -> Self {
         let diameter = radius * 2.0;
         let circumference =
             Length::new::<meter>(2.0 * std::f64::consts::PI * radius.get::<meter>());
         Self {
             radius,
-            diameter,
             circumference,
+            diameter,
         }
     }
 
     /// Create a new converter from diameter
+    #[must_use]
     pub fn from_diameter(diameter: Length) -> Self {
         let radius = diameter / 2.0;
         Self::from_radius(radius)
     }
 
     /// Create a new converter from circumference
+    #[must_use]
     pub fn from_circumference(circumference: Length) -> Self {
         let radius =
             Length::new::<meter>(circumference.get::<meter>() / (2.0 * std::f64::consts::PI));
@@ -68,16 +71,19 @@ impl CircularConverter {
     }
 
     /// Get the radius
+    #[must_use]
     pub fn radius(&self) -> Length {
         self.radius
     }
 
     /// Get the diameter
+    #[must_use]
     pub fn diameter(&self) -> Length {
         self.diameter
     }
 
     /// Get the circumference
+    #[must_use]
     pub fn circumference(&self) -> Length {
         self.circumference
     }
@@ -86,6 +92,7 @@ impl CircularConverter {
 
     /// Convert linear distance to angular position
     /// Formula: angle = distance / radius
+    #[must_use]
     pub fn linear_to_angular_position(&self, distance: Length) -> Angle {
         let angle_rad = distance.get::<meter>() / self.radius.get::<meter>();
         Angle::new::<radian>(angle_rad)
@@ -93,6 +100,7 @@ impl CircularConverter {
 
     /// Convert angular position to linear distance
     /// Formula: distance = angle * radius
+    #[must_use]
     pub fn angular_to_linear_position(&self, angle: Angle) -> Length {
         let distance = angle.get::<radian>() * self.radius.get::<meter>();
         Length::new::<meter>(distance)
@@ -101,7 +109,8 @@ impl CircularConverter {
     // Linear to Angular Velocity Conversions
 
     /// Convert linear velocity to angular velocity
-    /// Formula: angular_velocity = linear_velocity / radius
+    /// Formula: `angular_velocity` = `linear_velocity` / radius
+    #[must_use]
     pub fn linear_to_angular_velocity(&self, velocity: Velocity) -> AngularVelocity {
         let angular_velocity_rad_per_s =
             velocity.get::<meter_per_second>() / self.radius.get::<meter>();
@@ -109,7 +118,8 @@ impl CircularConverter {
     }
 
     /// Convert angular velocity to linear velocity
-    /// Formula: linear_velocity = angular_velocity * radius
+    /// Formula: `linear_velocity` = `angular_velocity` * radius
+    #[must_use]
     pub fn angular_to_linear_velocity(&self, angular_velocity: AngularVelocity) -> Velocity {
         let velocity = angular_velocity.get::<radian_per_second>() * self.radius.get::<meter>();
         Velocity::new::<meter_per_second>(velocity)
@@ -118,7 +128,8 @@ impl CircularConverter {
     // Linear to Angular Acceleration Conversions
 
     /// Convert linear acceleration to angular acceleration
-    /// Formula: angular_acceleration = linear_acceleration / radius
+    /// Formula: `angular_acceleration` = `linear_acceleration` / radius
+    #[must_use]
     pub fn linear_to_angular_acceleration(
         &self,
         acceleration: Acceleration,
@@ -129,7 +140,8 @@ impl CircularConverter {
     }
 
     /// Convert angular acceleration to linear acceleration
-    /// Formula: linear_acceleration = angular_acceleration * radius
+    /// Formula: `linear_acceleration` = `angular_acceleration` * radius
+    #[must_use]
     pub fn angular_to_linear_acceleration(
         &self,
         angular_acceleration: AngularAcceleration,
@@ -142,15 +154,17 @@ impl CircularConverter {
     // Jerk Conversions (using f64 for now since UOM may not have jerk units)
 
     /// Convert linear jerk to angular jerk
-    /// Formula: angular_jerk = linear_jerk / radius
+    /// Formula: `angular_jerk` = `linear_jerk` / radius
     /// Units: rad/s³ = (m/s³) / m
+    #[must_use]
     pub fn linear_to_angular_jerk(&self, linear_jerk: f64) -> f64 {
         linear_jerk / self.radius.get::<meter>()
     }
 
     /// Convert angular jerk to linear jerk
-    /// Formula: linear_jerk = angular_jerk * radius
+    /// Formula: `linear_jerk` = `angular_jerk` * radius
     /// Units: m/s³ = (rad/s³) * m
+    #[must_use]
     pub fn angular_to_linear_jerk(&self, angular_jerk: f64) -> f64 {
         angular_jerk * self.radius.get::<meter>()
     }
@@ -158,13 +172,15 @@ impl CircularConverter {
     // Arc Length Calculations
 
     /// Calculate arc length from angle
-    /// Formula: arc_length = angle * radius
+    /// Formula: `arc_length` = angle * radius
+    #[must_use]
     pub fn angle_to_arc_length(&self, angle: Angle) -> Length {
         self.angular_to_linear_position(angle)
     }
 
     /// Calculate angle from arc length
-    /// Formula: angle = arc_length / radius
+    /// Formula: angle = `arc_length` / radius
+    #[must_use]
     pub fn arc_length_to_angle(&self, arc_length: Length) -> Angle {
         self.linear_to_angular_position(arc_length)
     }
@@ -173,24 +189,28 @@ impl CircularConverter {
 
     /// Convert linear distance to number of revolutions
     /// Formula: revolutions = distance / circumference
+    #[must_use]
     pub fn linear_distance_to_revolutions(&self, distance: Length) -> f64 {
         distance.get::<meter>() / self.circumference.get::<meter>()
     }
 
     /// Convert number of revolutions to linear distance
     /// Formula: distance = revolutions * circumference
+    #[must_use]
     pub fn revolutions_to_linear_distance(&self, revolutions: f64) -> Length {
         Length::new::<meter>(revolutions * self.circumference.get::<meter>())
     }
 
     /// Convert linear velocity to revolutions per second
     /// Formula: rps = velocity / circumference
+    #[must_use]
     pub fn linear_velocity_to_rps(&self, velocity: Velocity) -> f64 {
         velocity.get::<meter_per_second>() / self.circumference.get::<meter>()
     }
 
     /// Convert revolutions per second to linear velocity
     /// Formula: velocity = rps * circumference
+    #[must_use]
     pub fn rps_to_linear_velocity(&self, rps: f64) -> Velocity {
         Velocity::new::<meter_per_second>(rps * self.circumference.get::<meter>())
     }

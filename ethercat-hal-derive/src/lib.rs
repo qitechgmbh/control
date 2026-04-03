@@ -13,12 +13,8 @@ fn extract_metedata_field_attributes(
     let mut field_names = Vec::new();
     let mut pdo_indices = Vec::new();
     if let Data::Struct(s) = &mut ast.data {
-        for field in s.fields.iter_mut() {
-            let field_name = field
-                .ident
-                .as_ref()
-                .cloned()
-                .expect("Field must have a name");
+        for field in &mut s.fields {
+            let field_name = field.ident.clone().expect("Field must have a name");
             let attrs: PdoObjectIndexAttribute = deluxe::extract_attributes(field)?;
             field_names.push(field_name);
             pdo_indices.push(attrs.0);
@@ -182,7 +178,7 @@ pub fn ethercat_device_derive(input: TokenStream) -> TokenStream {
     let mut has_txpdo = false;
 
     if let Data::Struct(data_struct) = input.data {
-        for field in data_struct.fields.iter() {
+        for field in &data_struct.fields {
             if let Some(ident) = &field.ident {
                 if ident == "rxpdo" {
                     has_rxpdo = true;

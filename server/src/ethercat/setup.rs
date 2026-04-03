@@ -56,6 +56,7 @@ pub struct DeviceGroupingResult {
     pub unidentified_devices: Vec<DeviceIdentification>,
 }
 
+#[must_use]
 pub fn group_devices_by_identification(
     device_identifications: &Vec<DeviceIdentification>,
 ) -> DeviceGroupingResult {
@@ -81,7 +82,7 @@ pub fn group_devices_by_identification(
         // get the first DeviceMachineIdentification
         // compare and append to the group
         let mut found = false;
-        for check_group in device_groups.iter_mut() {
+        for check_group in &mut device_groups {
             // get first device in group
             let first_device = check_group.first().expect("group to not be empty");
             let first_device_machine_identification = &first_device
@@ -135,13 +136,14 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
     let mut machines: Vec<Box<dyn Machine>> = vec![];
     let mut machine_objs: Vec<MachineObj> = vec![];
 
-    for device_group in device_grouping_result.device_groups.iter() {
+    for device_group in &device_grouping_result.device_groups {
         let machine_identification_unique: MachineIdentificationUnique = match device_group.first()
         {
-            Some(device_identification) => device_identification
-                .device_machine_identification
-                .machine_identification_unique
-                .clone(),
+            Some(device_identification) => {
+                device_identification
+                    .device_machine_identification
+                    .machine_identification_unique
+            }
             None => continue, // Skip this group if empty
         };
 
@@ -155,10 +157,12 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
 
         match new_machine {
             Ok(machine) => {
-                shared_state.clone().api_machines.lock().await.insert(
-                    machine_identification_unique.clone(),
-                    machine.api_get_sender(),
-                );
+                shared_state
+                    .clone()
+                    .api_machines
+                    .lock()
+                    .await
+                    .insert(machine_identification_unique, machine.api_get_sender());
                 machine_objs.push(MachineObj {
                     machine_identification_unique,
                     error: None,
@@ -192,9 +196,9 @@ pub async fn setup_loop(
     {
         let res = stop_dnsmasq();
         match res {
-            Ok(_) => tracing::info!("Stopped dnsmasq"),
+            Ok(()) => tracing::info!("Stopped dnsmasq"),
             Err(e) => tracing::error!("Failed to stop dnsmasq: {:?}", e),
-        };
+        }
         // Small Timeout to ensure interfaces get released
         smol::Timer::after(Duration::from_millis(1500)).await;
     }
@@ -209,7 +213,7 @@ pub async fn setup_loop(
         .spawn(move || {
             #[cfg(all(target_os = "linux", not(feature = "development-build")))]
             match set_irq_affinity(&interface, 3) {
-                Ok(_) => tracing::info!("ethernet interrupt handler now runs on cpu:{}", 3),
+                Ok(()) => tracing::info!("ethernet interrupt handler now runs on cpu:{}", 3),
                 Err(e) => tracing::error!("set_irq_handler_affinity failed: {:?}", e),
             }
 
@@ -402,7 +406,7 @@ pub async fn setup_loop(
         );
 
     // We always need to have atleast one subdevice anyways
-    let coupler = subdevices.get(0).unwrap();
+    let coupler = subdevices.first().unwrap();
     let _resp = get_most_recent_diagnosis_message(coupler).await;
 
     /*
@@ -416,7 +420,7 @@ pub async fn setup_loop(
             let r = Wago750_354::initialize_modules(coupler).await?;
             for module in r {
                 if coupler.configured_address() == module.belongs_to_addr {
-                    match ethercat_meta_devices.get(0) {
+                    match ethercat_meta_devices.first() {
                         Some(meta) => {
                             let meta_data = EtherCatDeviceMetaData {
                                 configured_address: module.slot,
@@ -439,7 +443,7 @@ pub async fn setup_loop(
             let r = IP20EcDi8Do8::initialize_modules(coupler).await?;
             for module in r {
                 if coupler.configured_address() == module.belongs_to_addr {
-                    match ethercat_meta_devices.get(0) {
+                    match ethercat_meta_devices.first() {
                         Some(meta) => {
                             let meta_data = EtherCatDeviceMetaData {
                                 configured_address: module.slot,
@@ -459,7 +463,7 @@ pub async fn setup_loop(
             }
         }
         _ => (),
-    };
+    }
     drop(ethercat_meta_devices);
 
     // remove subdevice from devices tuple
@@ -526,11 +530,11 @@ pub async fn setup_loop(
                     }
                     Err(Error::WorkingCounter { .. }) => 0,
                     Err(e) => {
-                        return Err(anyhow::anyhow!("Failed to read DC system time: {:?}", e));
+                        return Err(anyhow::anyhow!("Failed to read DC system time: {e:?}"));
                     }
                 };
 
-                let ema_next = ema.next(diff as f64);
+                let ema_next = ema.next(f64::from(diff));
                 max_deviation = max_deviation.max(ema_next.abs() as u32);
             }
             if max_deviation < 100 {
@@ -585,9 +589,8 @@ pub async fn setup_loop(
                 if res.all_safe_op() {
                     tracing::info!("SAFE-OP");
                     break group;
-                } else {
-                    group_container = Some(GroupState::SafeOp(group));
                 }
+                group_container = Some(GroupState::SafeOp(group));
                 smol::Timer::at(now + res.extra.next_cycle_wait).await;
             }
         }

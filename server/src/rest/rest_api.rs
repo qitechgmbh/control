@@ -17,7 +17,7 @@ use machines::winder2::Winder2;
 use serde::Serialize;
 
 use crate::app_state::SharedState;
-use crate::rest::response::*;
+use crate::rest::response::{Result, internal_error, json, not_found};
 
 #[derive(Serialize, Debug, PartialEq)]
 struct MachineResponce {

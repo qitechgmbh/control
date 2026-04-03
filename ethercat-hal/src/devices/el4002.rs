@@ -81,12 +81,12 @@ impl AnalogOutputDevice<EL4002Port> for EL4002 {
         match port {
             EL4002Port::AO1 => {
                 if let Some(channel) = self.rxpdo.ao_channel1.as_mut() {
-                    channel.value = value
+                    channel.value = value;
                 }
             }
             EL4002Port::AO2 => {
                 if let Some(channel) = self.rxpdo.ao_channel2.as_mut() {
-                    channel.value = value
+                    channel.value = value;
                 }
             }
         }

@@ -11,7 +11,7 @@ use crate::{
 
 use super::{EL7031_0030, pdo::EL7031_0030PredefinedPdoAssignment};
 
-/// Configuration for EL7031_0030 Stepper Motor Terminal
+/// Configuration for `EL7031_0030` Stepper Motor Terminal
 #[derive(Debug, Clone)]
 pub struct EL7031_0030Configuration {
     /// Encoder configuration
@@ -110,7 +110,7 @@ impl ConfigurableDevice<EL7031_0030Configuration> for EL7031_0030 {
     }
 }
 
-/// StmFeatures for the EL7031-0030
+/// `StmFeatures` for the EL7031-0030
 ///
 /// Has two extra fields over the [`crate::shared_config::el70x1::StmFeatures`]
 /// for digital input emulation
@@ -313,8 +313,7 @@ impl TryFrom<u8> for EL7031_0030DigitalInputEmulation {
             5 => Ok(Self::Hysteresis1),
             6 => Ok(Self::Hysteresis2),
             _ => Err(anyhow::anyhow!(
-                "Invalid value for EL7031_0030DigitalInputEmulation: {}",
-                value
+                "Invalid value for EL7031_0030DigitalInputEmulation: {value}"
             )),
         }
     }

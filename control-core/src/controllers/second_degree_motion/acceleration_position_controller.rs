@@ -156,7 +156,7 @@ pub enum MotionPhase {
     DecreasingSpeed,
 }
 
-/// Builder for creating AccelerationPositionController with validation
+/// Builder for creating `AccelerationPositionController` with validation
 pub struct ControllerBuilder {
     min_speed: Option<f64>,
     max_speed: Option<f64>,
@@ -170,6 +170,7 @@ pub struct ControllerBuilder {
 
 impl ControllerBuilder {
     /// Create a new builder
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             min_speed: None,
@@ -183,14 +184,16 @@ impl ControllerBuilder {
         }
     }
 
-    /// Set speed limits (min_speed ≤ 0, max_speed ≥ 0)
+    /// Set speed limits (`min_speed` ≤ 0, `max_speed` ≥ 0)
+    #[must_use]
     pub const fn speed_limits(mut self, min_speed: f64, max_speed: f64) -> Self {
         self.min_speed = Some(min_speed);
         self.max_speed = Some(max_speed);
         self
     }
 
-    /// Set acceleration limits (min_acceleration < 0, max_acceleration > 0)
+    /// Set acceleration limits (`min_acceleration` < 0, `max_acceleration` > 0)
+    #[must_use]
     pub const fn acceleration_limits(
         mut self,
         min_acceleration: f64,
@@ -202,6 +205,7 @@ impl ControllerBuilder {
     }
 
     /// Set position limits (optional)
+    #[must_use]
     pub const fn position_limits(
         mut self,
         min_position: Option<f64>,
@@ -213,6 +217,7 @@ impl ControllerBuilder {
     }
 
     /// Set tolerances for position and speed comparisons
+    #[must_use]
     pub const fn tolerances(mut self, position_tolerance: f64, speed_tolerance: f64) -> Self {
         self.position_tolerance = position_tolerance;
         self.speed_tolerance = speed_tolerance;
@@ -273,9 +278,9 @@ impl AccelerationPositionController {
     /// Returns `Ok(AccelerationPositionController)` on success, or `Err(MotionControllerError)` if parameters are invalid.
     ///
     /// # Errors
-    /// - `InvalidSpeedLimits`: If min_speed > 0 or max_speed < 0
-    /// - `InvalidAccelerationLimits`: If min_acceleration ≥ 0 or max_acceleration ≤ 0  
-    /// - `InvalidPositionLimits`: If min_position > max_position
+    /// - `InvalidSpeedLimits`: If `min_speed` > 0 or `max_speed` < 0
+    /// - `InvalidAccelerationLimits`: If `min_acceleration` ≥ 0 or `max_acceleration` ≤ 0  
+    /// - `InvalidPositionLimits`: If `min_position` > `max_position`
     ///
     /// # Example
     /// ```ignore
@@ -379,13 +384,14 @@ impl AccelerationPositionController {
             -acceleration,              // min_acceleration
             acceleration,               // max_acceleration
             position.map(|p| -p.abs()), // min_position
-            position.map(|p| p.abs()),  // max_position
+            position.map(f64::abs),     // max_position
             1e-6,                       // position_tolerance (default)
             1e-6,                       // speed_tolerance (default)
         )
     }
 
     /// Create a new builder for the controller
+    #[must_use]
     pub const fn builder() -> ControllerBuilder {
         ControllerBuilder::new()
     }
@@ -555,7 +561,7 @@ impl AccelerationPositionController {
         let abs_position_change = position_change.abs();
 
         // Calculate current speed in the direction of motion
-        let current_speed_in_direction = self.current_speed * direction as f64;
+        let current_speed_in_direction = self.current_speed * f64::from(direction);
 
         // Calculate stopping distance from current speed
         if current_speed_in_direction > 0.0 {
@@ -643,7 +649,8 @@ impl AccelerationPositionController {
         match self.motion_phase {
             MotionPhase::IncreasingSpeed => {
                 // Apply acceleration to increase speed
-                self.current_acceleration = self.config.max_acceleration * self.direction as f64;
+                self.current_acceleration =
+                    self.config.max_acceleration * f64::from(self.direction);
 
                 // Update speed
                 let new_speed = self.current_acceleration.mul_add(dt, self.current_speed);
@@ -674,7 +681,8 @@ impl AccelerationPositionController {
 
             MotionPhase::DecreasingSpeed => {
                 // Apply deceleration
-                self.current_acceleration = self.config.min_acceleration * self.direction as f64;
+                self.current_acceleration =
+                    self.config.min_acceleration * f64::from(self.direction);
 
                 // Update speed
                 let new_speed = self.current_acceleration.mul_add(dt, self.current_speed);
@@ -754,6 +762,7 @@ impl AccelerationPositionController {
     ///
     /// Returns the current position of the controlled object.
     /// This value is updated with each call to `update()`.
+    #[must_use]
     pub const fn get_position(&self) -> f64 {
         self.current_position
     }
@@ -763,6 +772,7 @@ impl AccelerationPositionController {
     /// Returns the current speed (velocity) of the controlled object.
     /// Positive values indicate motion towards increasing position,
     /// negative values indicate motion towards decreasing position.
+    #[must_use]
     pub const fn get_speed(&self) -> f64 {
         self.current_speed
     }
@@ -771,41 +781,49 @@ impl AccelerationPositionController {
     ///
     /// Returns the current acceleration of the controlled object.
     /// Positive values indicate increasing speed, negative values indicate decreasing speed.
+    #[must_use]
     pub const fn get_acceleration(&self) -> f64 {
         self.current_acceleration
     }
 
     /// Get the target position
+    #[must_use]
     pub const fn get_target_position(&self) -> f64 {
         self.target_position
     }
 
     /// Get the current motion phase
+    #[must_use]
     pub const fn get_motion_phase(&self) -> MotionPhase {
         self.motion_phase
     }
 
     /// Get the direction of motion
+    #[must_use]
     pub const fn get_direction(&self) -> i8 {
         self.direction
     }
 
     /// Get the calculated peak speed for current motion
+    #[must_use]
     pub const fn get_peak_speed(&self) -> f64 {
         self.peak_speed
     }
 
     /// Get the position at which deceleration will begin
+    #[must_use]
     pub const fn get_deceleration_position(&self) -> f64 {
         self.deceleration_position
     }
 
     /// Calculate remaining distance to target
+    #[must_use]
     pub fn get_remaining_distance(&self) -> f64 {
         (self.target_position - self.current_position).abs()
     }
 
     /// Calculate estimated time to reach target (approximate)
+    #[must_use]
     pub fn get_estimated_time_to_target(&self) -> f64 {
         if self.motion_phase == MotionPhase::Idle {
             return 0.0;
@@ -832,12 +850,14 @@ impl AccelerationPositionController {
     }
 
     /// Check if the controller is currently moving
+    #[must_use]
     pub fn is_moving(&self) -> bool {
         self.motion_phase != MotionPhase::Idle
             || !self.approx_equal(self.current_speed.abs(), 0.0, self.config.speed_tolerance)
     }
 
     /// Check if the controller has reached the target
+    #[must_use]
     pub fn is_at_target(&self) -> bool {
         self.motion_phase == MotionPhase::Idle
             && self.approx_equal(
@@ -1018,31 +1038,37 @@ impl AccelerationPositionController {
     }
 
     /// Get the minimum speed limit
+    #[must_use]
     pub const fn get_min_speed(&self) -> f64 {
         self.config.min_speed
     }
 
     /// Get the maximum speed limit
+    #[must_use]
     pub const fn get_max_speed(&self) -> f64 {
         self.config.max_speed
     }
 
     /// Get the minimum acceleration limit
+    #[must_use]
     pub const fn get_min_acceleration(&self) -> f64 {
         self.config.min_acceleration
     }
 
     /// Get the maximum acceleration limit
+    #[must_use]
     pub const fn get_max_acceleration(&self) -> f64 {
         self.config.max_acceleration
     }
 
     /// Get the minimum position limit
+    #[must_use]
     pub const fn get_min_position(&self) -> Option<f64> {
         self.config.min_position
     }
 
     /// Get the maximum position limit
+    #[must_use]
     pub const fn get_max_position(&self) -> Option<f64> {
         self.config.max_position
     }
@@ -1080,11 +1106,13 @@ impl AccelerationPositionController {
     }
 
     /// Get the position tolerance
+    #[must_use]
     pub const fn get_position_tolerance(&self) -> f64 {
         self.config.position_tolerance
     }
 
     /// Get the speed tolerance
+    #[must_use]
     pub const fn get_speed_tolerance(&self) -> f64 {
         self.config.speed_tolerance
     }

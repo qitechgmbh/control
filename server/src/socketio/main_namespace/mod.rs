@@ -20,6 +20,7 @@ pub struct MainRoom {
 }
 
 impl MainRoom {
+    #[must_use]
     pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
         Self {
             namespace: Namespace::new(socket_queue_tx),

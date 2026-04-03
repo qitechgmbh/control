@@ -154,6 +154,7 @@ pub fn receive_data_modbus(port: &mut dyn SerialPort) -> Result<Option<Vec<u8>>,
 }
 
 /// Computes Modbus CRC-16 using `crc` crate.
+#[must_use]
 pub const fn modbus_crc16(data: &[u8]) -> u16 {
     let modbus: Crc<u16> = Crc::<u16>::new(&CRC_16_MODBUS);
     modbus.checksum(data)
@@ -220,13 +221,14 @@ impl TryFrom<Vec<u8>> for ModbusResponse {
     }
 }
 
-/// Modbus RTU has silent time between frames that needs to be adhered to, if you send before silent_time is over between frames, then there will be lost frames
+/// Modbus RTU has silent time between frames that needs to be adhered to, if you send before `silent_time` is over between frames, then there will be lost frames
 /// This silent time is needed to identify the start and end of messages
 /// This function also takes into account the time that the slave we are talking to needs to process our request
 /// bits: amount of bits sent for a 8n1 coding: 8 data bits, 0 parity, 1 stop bit (1 start,1 stop) -> 10 bits
-/// machine_operation_delay_nano: Delay for the given operation in nanoseconds as specified by the slaves datasheet (example: mitsubishi csfr84 has 12ms for read write in RAM)
+/// `machine_operation_delay_nano`: Delay for the given operation in nanoseconds as specified by the slaves datasheet (example: mitsubishi csfr84 has 12ms for read write in RAM)
 /// baudrate: bits per second
-/// message_size: size of original message in bytes
+/// `message_size`: size of original message in bytes
+#[must_use]
 pub const fn calculate_modbus_rtu_timeout(
     bits: u8,
     machine_operation_delay_nano: Duration,

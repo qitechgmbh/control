@@ -65,6 +65,7 @@ pub struct EtherCatDeviceMetaData {
 }
 
 impl EtherCatDeviceMetaData {
+    #[must_use]
     pub fn from_subdevice(
         subdevice: &SubDeviceRef<'_, &ethercrab::SubDevice>,
         device_identification: DeviceIdentification,
@@ -100,7 +101,7 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 pub struct EthercatSetup {
     /// All Ethercat devices
     /// Device-Specific interface for all devices
-    /// Same length and order as SubDevices inside `group` (index = subdevice_index)
+    /// Same length and order as `SubDevices` inside `group` (index = `subdevice_index`)
     pub devices: Vec<(DeviceIdentification, Arc<RwLock<dyn EthercatDevice>>)>,
     /// All Ethercat devices
     /// Generic interface for all devices
@@ -175,7 +176,7 @@ impl SharedState {
         // Track existing machine identifiers for quick lookup
         let existing_ids: HashSet<_> = current_machines
             .iter()
-            .map(|m| m.machine_identification_unique.clone())
+            .map(|m| m.machine_identification_unique)
             .collect();
 
         for machine in machines {
@@ -210,7 +211,7 @@ impl SharedState {
 
     pub async fn add_machines(&self, machines: Vec<Box<dyn Machine>>) {
         let mut api_machines = self.api_machines.lock().await;
-        for machine in machines.iter() {
+        for machine in &machines {
             api_machines.insert(
                 machine.get_machine_identification_unique(),
                 machine.api_get_sender(),
@@ -235,6 +236,7 @@ impl SharedState {
         self.send_machines_event().await;
     }
 
+    #[must_use]
     pub fn new(
         sender: Sender<HotThreadMessage>,
         main_async_channel: Sender<AsyncThreadMessage>,

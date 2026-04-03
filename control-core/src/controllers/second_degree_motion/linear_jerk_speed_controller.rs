@@ -13,7 +13,7 @@ use super::jerk_speed_controller::JerkSpeedController;
 /// Linear Jerk Speed Controller with proper physical units
 ///
 /// This controller provides linear motion control with proper SI units for translational systems.
-/// It wraps the core JerkSpeedController and provides unit-typed interfaces for velocity (Velocity),
+/// It wraps the core `JerkSpeedController` and provides unit-typed interfaces for velocity (Velocity),
 /// acceleration (Acceleration), and jerk (Jerk).
 ///
 /// The controller manages smooth linear speed profiles with configurable limits and tolerances,
@@ -61,7 +61,7 @@ impl LinearJerkSpeedController {
     /// * `max_jerk` - Maximum jerk for increasing acceleration (typically positive)
     ///
     /// # Returns
-    /// A new LinearJerkSpeedController instance
+    /// A new `LinearJerkSpeedController` instance
     ///
     /// # Example
     /// ```ignore
@@ -82,6 +82,7 @@ impl LinearJerkSpeedController {
     ///     Jerk::new::<meter_per_second_cubed>(3.0),  // Max jerk
     /// );
     /// ```
+    #[must_use]
     pub fn new(
         min_speed: Option<Velocity>,
         max_speed: Option<Velocity>,
@@ -120,7 +121,7 @@ impl LinearJerkSpeedController {
     /// * `jerk` - Maximum jerk magnitude (creates limits [-jerk, +jerk])
     ///
     /// # Returns
-    /// A new LinearJerkSpeedController instance
+    /// A new `LinearJerkSpeedController` instance
     ///
     /// # Panics
     /// Panics if acceleration or jerk values are negative or zero
@@ -152,6 +153,7 @@ impl LinearJerkSpeedController {
     ///     max_jerk,   // Jerk limits: [-1.5, +1.5] m/s³
     /// );
     /// ```
+    #[must_use]
     pub fn new_simple(speed: Option<Velocity>, acceleration: Acceleration, jerk: Jerk) -> Self {
         let controller = JerkSpeedController::new_simple(
             speed.map(|s| s.get::<meter_per_second>()),
@@ -182,11 +184,13 @@ impl LinearJerkSpeedController {
     }
 
     /// Get the current speed
+    #[must_use]
     pub fn get_speed(&self) -> Velocity {
         Velocity::new::<meter_per_second>(self.controller.get_speed())
     }
 
     /// Get the target speed
+    #[must_use]
     pub fn get_target_speed(&self) -> Velocity {
         Velocity::new::<meter_per_second>(self.controller.get_target_speed())
     }
@@ -224,6 +228,7 @@ impl LinearJerkSpeedController {
     }
 
     /// Get the current acceleration
+    #[must_use]
     pub fn get_acceleration(&self) -> Acceleration {
         Acceleration::new::<meter_per_second_squared>(self.controller.get_acceleration())
     }
@@ -247,6 +252,7 @@ impl LinearJerkSpeedController {
     }
 
     /// Get the current jerk
+    #[must_use]
     pub fn get_jerk(&self) -> Jerk {
         Jerk::new::<meter_per_second_cubed>(self.controller.get_jerk())
     }

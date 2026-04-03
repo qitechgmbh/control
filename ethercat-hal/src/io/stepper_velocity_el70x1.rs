@@ -73,8 +73,8 @@ impl<'device> StepperVelocityEL70x1 {
 
         Self {
             set_output,
-            get_input,
             get_output,
+            get_input,
             get_speed_range,
         }
     }
@@ -96,12 +96,13 @@ impl<'device> StepperVelocityEL70x1 {
     }
 
     /// Get the speed in steps per second
+    #[must_use]
     pub fn get_speed(&self) -> i32 {
         let output = (self.get_output)().unwrap();
 
         let speed_range = (self.get_speed_range)();
         let converter = EL70x1VelocityConverter::new(&speed_range.unwrap());
-        converter.velocity_to_steps(output.velocity, true) as i32
+        i32::from(converter.velocity_to_steps(output.velocity, true))
     }
 
     /// Enable or disable the stepper
@@ -116,12 +117,14 @@ impl<'device> StepperVelocityEL70x1 {
     }
 
     /// Get the enabled state of the stepper
+    #[must_use]
     pub fn is_enabled(&self) -> bool {
         let output = (self.get_output)().unwrap();
         output.enable
     }
 
     /// Get the current position of the stepper
+    #[must_use]
     pub fn get_position(&self) -> i128 {
         let input = (self.get_input)().unwrap();
         input.counter_value

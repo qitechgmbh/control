@@ -79,15 +79,12 @@ impl EthercatDeviceProcessing for EL7031 {
         }
 
         // set counter
-        match self.counter_wrapper.pop_override() {
-            Some(new_counter) => {
-                enc_control_compact.set_counter = true;
-                enc_control_compact.set_counter_value = new_counter;
-            }
-            None => {
-                enc_control_compact.set_counter = false;
-                enc_control_compact.set_counter_value = 0;
-            }
+        if let Some(new_counter) = self.counter_wrapper.pop_override() {
+            enc_control_compact.set_counter = true;
+            enc_control_compact.set_counter_value = new_counter;
+        } else {
+            enc_control_compact.set_counter = false;
+            enc_control_compact.set_counter_value = 0;
         }
 
         Ok(())
@@ -114,12 +111,11 @@ impl StepperVelocityEL70x1Device<EL7031StepperPort> for EL7031 {
         value: StepperVelocityEL70x1Output,
     ) -> Result<(), anyhow::Error> {
         // check if operating mode is velocity
-        if self.configuration.stm_features.operation_mode != EL70x1OperationMode::DirectVelocity {
-            panic!(
-                "Operation mode is not velocity, but {:?}",
-                self.configuration.stm_features.operation_mode
-            );
-        }
+        assert!(
+            self.configuration.stm_features.operation_mode == EL70x1OperationMode::DirectVelocity,
+            "Operation mode is not velocity, but {:?}",
+            self.configuration.stm_features.operation_mode
+        );
 
         match port {
             EL7031StepperPort::STM1 => {

@@ -16,6 +16,7 @@ pub struct LinearAccelerationLimitingController {
 }
 
 impl LinearAccelerationLimitingController {
+    #[must_use]
     pub fn new(
         min_speed: Option<Velocity>,
         max_speed: Option<Velocity>,
@@ -36,6 +37,7 @@ impl LinearAccelerationLimitingController {
     /// Creates a new linear acceleration speed controller with simplified parameters.
     /// Sets deceleration to -acceleration for symmetric behavior.
     /// No speed limits are applied.
+    #[must_use]
     pub fn new_simple(acceleration: Acceleration, initial_speed: Velocity) -> Self {
         Self::new(
             None,          // min_speed

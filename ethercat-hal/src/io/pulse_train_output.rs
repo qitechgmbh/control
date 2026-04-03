@@ -61,12 +61,14 @@ impl<'device> PulseTrainOutput {
     }
 
     /// Get the current frequency value
+    #[must_use]
     pub fn get_frequency(&self) -> i32 {
         let output = (self.get_output)();
         output.frequency_value
     }
 
     /// Get the current encoder position (counter value)
+    #[must_use]
     pub fn get_position(&self) -> u32 {
         let input = (self.get_input)();
         input.counter_value

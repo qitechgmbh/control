@@ -150,26 +150,26 @@ pub struct EL3062_0030TxPdo {
 }
 
 impl crate::coe::Configuration for EL3062_0030TxPdo {
-    ///Implemented by the ethercat_hal_derive::TxPdo derive macro
+    ///Implemented by the `ethercat_hal_derive::TxPdo` derive macro
     async fn write_config<'a>(
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
         device.sdo_write(0x1C13, 0, 0u8).await?;
         let mut len = 0;
-        if let Some(_) = &self.ai_standard_channel1 {
+        if self.ai_standard_channel1.is_some() {
             len += 1;
             device.sdo_write(0x1C13, len, 0x1A00u16).await?;
         }
-        if let Some(_) = &self.ai_compact_channel1 {
+        if self.ai_compact_channel1.is_some() {
             len += 1;
             device.sdo_write(0x1C13, len, 0x1A01u16).await?;
         }
-        if let Some(_) = &self.ai_standard_channel2 {
+        if self.ai_standard_channel2.is_some() {
             len += 1;
             device.sdo_write(0x1C13, len, 0x1A02u16).await?;
         }
-        if let Some(_) = &self.ai_compact_channel2 {
+        if self.ai_compact_channel2.is_some() {
             len += 1;
             device.sdo_write(0x1C13, len, 0x1A03u16).await?;
         }
@@ -178,7 +178,7 @@ impl crate::coe::Configuration for EL3062_0030TxPdo {
     }
 }
 impl crate::pdo::TxPdo for EL3062_0030TxPdo {
-    ///Implemented by the ethercat_hal_derive::TxPdo derive macro
+    ///Implemented by the `ethercat_hal_derive::TxPdo` derive macro
     fn get_objects(&self) -> Box<[Option<&dyn crate::pdo::TxPdoObject>]> {
         Box::new([
             self.ai_standard_channel1
@@ -195,7 +195,7 @@ impl crate::pdo::TxPdo for EL3062_0030TxPdo {
                 .map(|o| o as &dyn crate::pdo::TxPdoObject),
         ])
     }
-    ///Implemented by the ethercat_hal_derive::TxPdo derive macro
+    ///Implemented by the `ethercat_hal_derive::TxPdo` derive macro
     fn get_objects_mut(&mut self) -> Box<[Option<&mut dyn crate::pdo::TxPdoObject>]> {
         Box::new([
             self.ai_standard_channel1
@@ -217,7 +217,7 @@ impl crate::pdo::TxPdo for EL3062_0030TxPdo {
 #[derive(Debug, Clone)]
 pub struct EL3062_0030RxPdo {}
 impl crate::coe::Configuration for EL3062_0030RxPdo {
-    ///Implemented by the ethercat_hal_derive::RxPdo derive macro
+    ///Implemented by the `ethercat_hal_derive::RxPdo` derive macro
     async fn write_config<'a>(
         &self,
         _device: &EthercrabSubDevicePreoperational<'a>,
@@ -226,7 +226,7 @@ impl crate::coe::Configuration for EL3062_0030RxPdo {
     }
 }
 impl crate::pdo::RxPdo for EL3062_0030RxPdo {
-    ///Implemented by the ethercat_hal_derive::RxPdo derive macro
+    ///Implemented by the `ethercat_hal_derive::RxPdo` derive macro
     fn get_objects(&self) -> Box<[Option<&dyn crate::pdo::RxPdoObject>]> {
         Box::new([])
     }

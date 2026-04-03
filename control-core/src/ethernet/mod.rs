@@ -10,7 +10,7 @@ pub mod modbus_tcp_discovery;
 fn is_ethernet(interface: &str) -> std::io::Result<bool> {
     #[cfg(target_os = "linux")]
     {
-        let base_path = format!("/sys/class/net/{}", interface);
+        let base_path = format!("/sys/class/net/{interface}");
         let type_path = std::path::Path::new(&base_path).join("type");
         let iface_type = std::fs::read_to_string(&type_path)?.trim().to_string();
         // 1 means Ethernet
@@ -28,7 +28,7 @@ fn is_ethernet(interface: &str) -> std::io::Result<bool> {
 
 pub fn get_interfaces() -> Result<Vec<Interface>> {
     let vec = Interface::get_all()
-        .map_err(|e| anyhow::anyhow!("Failed to get network interfaces: {}", e))?
+        .map_err(|e| anyhow::anyhow!("Failed to get network interfaces: {e}"))?
         .into_iter()
         .filter(|iface| {
             iface.is_up()
@@ -45,13 +45,10 @@ pub fn get_interfaces() -> Result<Vec<Interface>> {
     Ok(vec)
 }
 
-/// Sets a network interface to unmanaged by NetworkManager.
+/// Sets a network interface to unmanaged by `NetworkManager`.
 /// Returns true if the command succeeded.
 pub fn set_interface_managed(interface: &str, managed: bool) -> bool {
-    let managed_str = match managed {
-        true => "yes",
-        false => "no",
-    };
+    let managed_str = if managed { "yes" } else { "no" };
     tracing::info!(
         "set_interface_managed for {} managed was set to: {}",
         interface,

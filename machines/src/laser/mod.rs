@@ -61,7 +61,7 @@ pub struct LaserMachine {
 
 impl Machine for LaserMachine {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
+        self.machine_identification_unique
     }
 
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
@@ -108,8 +108,8 @@ impl LaserMachineNamespace {
         if self.namespace.is_none() {
             return vec![];
         }
-        let sockets = self.namespace.clone().unwrap().sockets.clone();
-        sockets
+
+        self.namespace.clone().unwrap().sockets.clone()
     }
 }
 
@@ -247,11 +247,7 @@ impl LaserMachine {
         let top = self.target_diameter + self.higher_tolerance;
         let bottom = self.target_diameter - self.lower_tolerance;
 
-        if self.diameter > top || self.diameter < bottom {
-            self.in_tolerance = false;
-        } else {
-            self.in_tolerance = true;
-        }
+        self.in_tolerance = !(self.diameter > top || self.diameter < bottom);
 
         self.in_tolerance
     }

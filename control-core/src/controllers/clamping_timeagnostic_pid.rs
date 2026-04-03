@@ -33,6 +33,7 @@ pub struct ClampingTimeagnosticPidController {
 }
 
 impl ClampingTimeagnosticPidController {
+    #[must_use]
     pub const fn new(
         kp: f64,
         ki: f64,
@@ -65,6 +66,7 @@ impl ClampingTimeagnosticPidController {
         }
     }
 
+    #[must_use]
     pub const fn simple_new(kp: f64, ki: f64, kd: f64) -> Self {
         Self {
             kp,
@@ -85,14 +87,17 @@ impl ClampingTimeagnosticPidController {
         }
     }
 
+    #[must_use]
     pub const fn get_kp(&self) -> f64 {
         self.kp
     }
 
+    #[must_use]
     pub const fn get_ki(&self) -> f64 {
         self.ki
     }
 
+    #[must_use]
     pub const fn get_kd(&self) -> f64 {
         self.kd
     }
@@ -104,6 +109,7 @@ impl ClampingTimeagnosticPidController {
         self.kd = kd;
     }
 
+    #[must_use]
     pub const fn optional_clamp(value: f64, min: Option<f64>, max: Option<f64>) -> f64 {
         match (min, max) {
             (Some(min), Some(max)) => value.clamp(min, max),

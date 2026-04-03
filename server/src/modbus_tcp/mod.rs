@@ -14,7 +14,7 @@ mod imports {
 }
 
 #[cfg(not(feature = "mock-machine"))]
-use imports::*;
+use imports::{Duration, FutureIteratorExt, Timer, probe_modbus_tcp};
 
 #[cfg(not(feature = "mock-machine"))]
 pub async fn start_modbus_tcp_discovery(shared_state: Arc<SharedState>) {

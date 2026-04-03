@@ -22,8 +22,8 @@ fn panic_hook(panic_info: &PanicHookInfo) {
         .unwrap_or_else(|| "<unknown>".to_string());
 
     tracing::error!("thread '{}' panicked at {}:", thread, locataion);
-    eprintln!("{}\n", message);
-    eprintln!("Backtrace:\n{}", backtrace);
+    eprintln!("{message}\n");
+    eprintln!("Backtrace:\n{backtrace}");
 
     std::process::exit(1);
 }

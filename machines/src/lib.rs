@@ -105,7 +105,6 @@ impl MachineNewParams<'_, '_, '_, '_, '_, '_, '_> {
             .expect("device group must have at least one device")
             .device_machine_identification
             .machine_identification_unique
-            .clone()
     }
 }
 
@@ -384,7 +383,7 @@ async fn get_device_ident<
                 ));
             }
         };
-    return Ok(device_hardware_identification_ethercat.clone());
+    Ok(device_hardware_identification_ethercat.clone())
 }
 
 async fn get_ethercat_device<
@@ -451,8 +450,7 @@ where
         ));
     }
 
-    let ethercat_device =
-        get_ethercat_device_by_index(&hardware.ethercat_devices, subdevice_index)?;
+    let ethercat_device = get_ethercat_device_by_index(hardware.ethercat_devices, subdevice_index)?;
     let device = downcast_device::<T>(ethercat_device).await?;
 
     {
@@ -589,9 +587,7 @@ where
     C: MachineWithChannel + 'static,
 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.get_machine_channel()
-            .machine_identification_unique
-            .clone()
+        self.get_machine_channel().machine_identification_unique
     }
 
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {

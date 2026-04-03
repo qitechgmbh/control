@@ -19,19 +19,19 @@ impl std::fmt::Debug for EL6021 {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EL6021Baudrate {
-    /// 2400 baud (CoE Value: 4)
+    /// 2400 baud (`CoE` Value: 4)
     B2400 = 4,
-    /// 4800 baud (CoE Value: 5)
+    /// 4800 baud (`CoE` Value: 5)
     B4800 = 5,
-    /// 9600 baud (CoE Value: 6) DEFAULT
+    /// 9600 baud (`CoE` Value: 6) DEFAULT
     B9600 = 6,
-    /// 19200 baud (CoE Value: 7)
+    /// 19200 baud (`CoE` Value: 7)
     B19200 = 7,
-    /// 38400 baud (CoE Value: 8)
+    /// 38400 baud (`CoE` Value: 8)
     B38400 = 8,
-    /// 57600 baud (CoE Value: 9)
+    /// 57600 baud (`CoE` Value: 9)
     B57600 = 9,
-    /// 115200 baud (CoE Value: 10)
+    /// 115200 baud (`CoE` Value: 10)
     B115200 = 10,
 }
 
@@ -508,8 +508,8 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
     }
 
     /// For el6021 this returns false for as long as the Initialization takes
-    /// When its finished it returns true    
-    /// Every step of the init has to be done in an EtherCatCycle
+    /// When its finished it returns true\\
+    /// Every step of the init has to be done in an `EtherCatCycle`
     fn serial_interface_initialize(&mut self, port: EL6021Port) -> bool {
         match port {
             EL6021Port::SI1 => {

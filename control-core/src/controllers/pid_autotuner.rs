@@ -13,7 +13,7 @@
 //!
 //! This tuner is generic and can be used for any physical quantity (pressure in
 //! bar, temperature in °C, etc.).  The caller is responsible for mapping the
-//! returned duty-cycle (0.0 … max_power) to the actual actuator output.
+//! returned duty-cycle (0.0 … `max_power`) to the actual actuator output.
 
 use std::time::{Duration, Instant};
 
@@ -115,6 +115,7 @@ pub struct PidAutoTuner {
 
 impl PidAutoTuner {
     /// Create a new PID auto-tuner with the given configuration
+    #[must_use]
     pub fn new(config: AutoTuneConfig) -> Self {
         Self {
             config,
@@ -294,27 +295,32 @@ impl PidAutoTuner {
     }
 
     /// Returns `true` when auto-tuning completed successfully
+    #[must_use]
     pub fn is_completed(&self) -> bool {
         self.state == AutoTuneState::Completed
     }
 
     /// Returns `true` when auto-tuning failed (timeout or insufficient data)
+    #[must_use]
     pub fn is_failed(&self) -> bool {
         self.state == AutoTuneState::Failed
     }
 
     /// Returns `true` when auto-tuning is currently running
+    #[must_use]
     pub fn is_running(&self) -> bool {
         self.state == AutoTuneState::Running
     }
 
     /// Returns `true` while the tuner drives the actuator at high output.
-    pub fn is_driving_high_output(&self) -> bool {
+    #[must_use]
+    pub const fn is_driving_high_output(&self) -> bool {
         self.driving_high_output
     }
 
     /// Current state as a static string slice
-    pub fn state(&self) -> &str {
+    #[must_use]
+    pub const fn state(&self) -> &str {
         match self.state {
             AutoTuneState::NotStarted => "not_started",
             AutoTuneState::Running => "running",
@@ -333,6 +339,7 @@ impl PidAutoTuner {
     }
 
     /// Progress as a percentage in the range 0 – 100
+    #[must_use]
     pub fn get_progress_percent(&self) -> f64 {
         match self.state {
             AutoTuneState::Completed => 100.0,

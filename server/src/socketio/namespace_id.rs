@@ -71,7 +71,7 @@ impl<'de> Deserialize<'de> for NamespaceId {
                     }
                 }
 
-                Err(E::custom(format!("Invalid namespace path: {}", value)))
+                Err(E::custom(format!("Invalid namespace path: {value}")))
             }
         }
 
@@ -108,7 +108,7 @@ impl FromStr for NamespaceId {
             }
         }
 
-        Err(format!("Invalid namespace path: {}", s))
+        Err(format!("Invalid namespace path: {s}"))
     }
 }
 

@@ -7,6 +7,7 @@ where
     pub same: Vec<&'t T>,
 }
 
+#[must_use]
 pub fn compare_lists<'oldlist, 'newlist, 't, T: PartialEq>(
     old_list: &'oldlist Vec<T>,
     new_list: &'newlist Vec<T>,
@@ -20,15 +21,15 @@ where
     let mut removed = Vec::new();
     let mut same = Vec::new();
 
-    for item in new_list.iter() {
-        if !old_list.iter().any(|x| x == item) {
-            added.push(item);
-        } else {
+    for item in new_list {
+        if old_list.iter().any(|x| x == item) {
             same.push(item);
+        } else {
+            added.push(item);
         }
     }
 
-    for item in old_list.iter() {
+    for item in old_list {
         if !new_list.iter().any(|x| x == item) {
             removed.push(item);
         }

@@ -29,7 +29,8 @@ impl ProcessMetrics {
     /// Collect current process metrics from /proc.
     ///
     /// Linux-specific; on other platforms returns zeroed metrics.
-    pub fn collect() -> ProcessMetrics {
+    #[must_use]
+    pub fn collect() -> Self {
         #[cfg(target_os = "linux")]
         {
             let mut rss_bytes = 0;
@@ -69,7 +70,7 @@ impl ProcessMetrics {
                 }
             }
 
-            ProcessMetrics {
+            Self {
                 rss_bytes,
                 cpu_time_seconds,
                 minor_faults,

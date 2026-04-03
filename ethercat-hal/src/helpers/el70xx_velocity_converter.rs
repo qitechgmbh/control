@@ -6,6 +6,7 @@ pub struct EL70x1VelocityConverter {
 }
 
 impl EL70x1VelocityConverter {
+    #[must_use]
     pub const fn new(speed_range: &EL70x1SpeedRange) -> Self {
         let speed_range_value = match speed_range {
             EL70x1SpeedRange::Steps1000 => 1000,
@@ -21,26 +22,30 @@ impl EL70x1VelocityConverter {
     }
 
     /// Convert steps per second to the i16 velocity value used by the EL7031
+    #[must_use]
     pub fn steps_to_velocity(&self, steps_per_second: f64, propability_rounding: bool) -> i16 {
         // Calculate the velocity value (10000 = 100% of max speed)
         let velocity_f64 =
-            (steps_per_second / self.max_steps_per_seconds as f64) * std::i16::MAX as f64;
+            (steps_per_second / f64::from(self.max_steps_per_seconds)) * f64::from(std::i16::MAX);
 
-        match propability_rounding {
-            true => round_propabilistic(velocity_f64),
-            false => velocity_f64.round() as i16,
+        if propability_rounding {
+            round_propabilistic(velocity_f64)
+        } else {
+            velocity_f64.round() as i16
         }
     }
 
     /// Convert i16 velocity value back to steps per second
+    #[must_use]
     pub fn velocity_to_steps(&self, velocity: i16, propability_rounding: bool) -> i16 {
         // Calculate steps per second from velocity value
-        let steps_per_second =
-            (velocity as f64 / std::i16::MAX as f64) * self.max_steps_per_seconds as f64;
+        let steps_per_second = (f64::from(velocity) / f64::from(std::i16::MAX))
+            * f64::from(self.max_steps_per_seconds);
 
-        match propability_rounding {
-            true => round_propabilistic(steps_per_second),
-            false => steps_per_second.round() as i16,
+        if propability_rounding {
+            round_propabilistic(steps_per_second)
+        } else {
+            steps_per_second.round() as i16
         }
     }
 }
@@ -59,9 +64,10 @@ impl EL70x1VelocityConverter {
 fn round_propabilistic(value: f64) -> i16 {
     let propability = value - value.floor();
     // make a random decision to add 1 based on the propability
-    match rand::random_bool(propability) {
-        true => value.ceil() as i16,
-        false => value.floor() as i16,
+    if rand::random_bool(propability) {
+        value.ceil() as i16
+    } else {
+        value.floor() as i16
     }
 }
 

@@ -17,16 +17,16 @@ struct RequestMetaData {
 
 #[derive(Debug)]
 pub enum State {
-    /// WaitingForResponse is set after sending a request through the serial_interface
+    /// `WaitingForResponse` is set after sending a request through the `serial_interface`
     WaitingForResponse,
     /// After Sending a Request we need to wait atleast one ethercat cycle
     /// After one Cycle we check if el6021 status has transmit accepted toggled
-    /// Then we can set state = ReadyToSend
+    /// Then we can set state = `ReadyToSend`
     WaitingForRequestAccept,
     /// After Receiving a Response we need to wait atleast one ethercat cycle
     /// After one Cycle we check if el6021 status has received accepted toggled
     WaitingForReceiveAccept,
-    /// ReadyToSend is set after receiving the response from the serial_interface
+    /// `ReadyToSend` is set after receiving the response from the `serial_interface`
     ReadyToSend,
     /// Initial State
     Uninitialized,
@@ -49,6 +49,7 @@ pub struct ModbusSerialInterface {
 }
 
 impl ModbusSerialInterface {
+    #[must_use]
     pub fn new(serial_interface: SerialInterface) -> Self {
         Self {
             serial_interface,
@@ -66,6 +67,7 @@ impl ModbusSerialInterface {
         }
     }
 
+    #[must_use]
     pub const fn is_initialized(&self) -> bool {
         !matches!(self.state, State::Uninitialized)
     }
@@ -103,7 +105,7 @@ impl ModbusSerialInterface {
 
     /// This is used internally to fill the write buffer of the el6021 with the modbus request
     /// Decides what requests to send first by finding the one with the highest priority
-    /// For example Highest Priority requests: ResetInverter StopMotor
+    /// For example Highest Priority requests: `ResetInverter` `StopMotor`
     async fn send_modbus_request(&mut self) {
         if self.request_map.is_empty() {
             return;
@@ -173,13 +175,14 @@ impl ModbusSerialInterface {
         }
     }
 
-    /// Modbus RTU has silent time between frames that needs to be adhered to, if you send before silent_time is over between frames, then there will be lost frames
+    /// Modbus RTU has silent time between frames that needs to be adhered to, if you send before `silent_time` is over between frames, then there will be lost frames
     /// This silent time is needed to identify the start and end of messages
     /// This function also takes into account the time that the slave we are talking to needs to process our request
     /// bits: amount of bits sent per byte -> for a 8n1 coding: 8 data bits, 0 parity, 1 stop bit (1 start,1 stop) -> 10 bits
-    /// machine_operation_delay_nano: Delay for the given operation in nanoseconds as specified by the slaves datasheet (example: mitsubishi csfr84 has 12ms for read write in RAM)
+    /// `machine_operation_delay_nano`: Delay for the given operation in nanoseconds as specified by the slaves datasheet (example: mitsubishi csfr84 has 12ms for read write in RAM)
     /// baudrate: bits per second
-    /// message_size: size of original message in bytes
+    /// `message_size`: size of original message in bytes
+    #[must_use]
     pub fn calculate_modbus_rtu_timeout(
         &self,
         machine_operation_delay: Duration,
@@ -188,8 +191,8 @@ impl ModbusSerialInterface {
         let baudrate = self.baudrate?;
         let encoding = self.encoding?;
 
-        let nanoseconds_per_bit = 1_000_000_000 / baudrate as u64;
-        let nanoseconds_per_byte = encoding.total_bits() as u64 * nanoseconds_per_bit;
+        let nanoseconds_per_bit = 1_000_000_000 / u64::from(baudrate);
+        let nanoseconds_per_byte = u64::from(encoding.total_bits()) * nanoseconds_per_bit;
 
         let transmission_timeout = nanoseconds_per_byte * message_size as u64;
         let silent_time = (nanoseconds_per_byte * 35) / 10; // silent_time is 3.5x of character length
@@ -199,6 +202,7 @@ impl ModbusSerialInterface {
         Some(Duration::from_nanos(total_timeout))
     }
 
+    #[must_use]
     pub const fn get_response(&self) -> Option<&ModbusResponse> {
         self.response.as_ref()
     }
@@ -207,7 +211,7 @@ impl ModbusSerialInterface {
         let elapsed = now_ts.duration_since(self.last_ts);
 
         let timeout = self.calculate_modbus_rtu_timeout(
-            Duration::from_nanos(self.last_message_delay as u64),
+            Duration::from_nanos(u64::from(self.last_message_delay)),
             self.last_message_size,
         );
 
@@ -226,17 +230,16 @@ impl ModbusSerialInterface {
         self.response = None;
 
         match self.state {
-            State::WaitingForResponse => match self.read_modbus_response().await {
-                Ok(response) => {
+            State::WaitingForResponse => {
+                if let Ok(response) = self.read_modbus_response().await {
                     self.response = Some(response);
-                }
-                Err(_) => {
+                } else {
                     self.response = None;
                     if self.no_response_expected {
                         self.state = State::ReadyToSend;
                     }
                 }
-            },
+            }
             State::ReadyToSend => {
                 self.send_modbus_request().await;
 

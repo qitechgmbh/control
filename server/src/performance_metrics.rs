@@ -6,7 +6,7 @@ use tracing::info;
 const METRICS_WINDOW_SIZE: usize = 1000 * 30; // Keep last 30k measurements
 const METRICS_LOG_INTERVAL_SECS: u64 = 30; // Log every 30 seconds
 
-/// Collects and manages EtherCAT performance metrics
+/// Collects and manages `EtherCAT` performance metrics
 pub struct EthercatPerformanceMetrics {
     txrx_times: VecDeque<Duration>,
     loop_times: VecDeque<Duration>,
@@ -22,6 +22,7 @@ impl Default for EthercatPerformanceMetrics {
 
 impl EthercatPerformanceMetrics {
     /// Creates a new metrics collector
+    #[must_use]
     pub fn new() -> Self {
         Self {
             txrx_times: VecDeque::with_capacity(METRICS_WINDOW_SIZE),
@@ -44,7 +45,7 @@ impl EthercatPerformanceMetrics {
         self.last_loop_start = Some(now);
     }
 
-    /// Adds a tx_rx time measurement
+    /// Adds a `tx_rx` time measurement
     pub fn add_txrx_time(&mut self, duration: Duration) {
         if self.txrx_times.len() >= METRICS_WINDOW_SIZE {
             self.txrx_times.pop_front();

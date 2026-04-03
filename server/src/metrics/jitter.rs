@@ -53,12 +53,13 @@ fn machines_ring() -> &'static JitterRing {
     MACHINES_JITTER_RING.get_or_init(JitterRing::new)
 }
 
-/// Record one jitter sample for the main RT loop (machines + EtherCAT).
+/// Record one jitter sample for the main RT loop (machines + `EtherCAT`).
 pub fn record_machines_loop_jitter(jitter_ns: i128) {
     machines_ring().push(JitterSample { jitter_ns });
 }
 
 /// Get a snapshot of recent jitter samples for the machines loop.
+#[must_use]
 pub fn snapshot_machines_jitter() -> Vec<JitterSample> {
     machines_ring().snapshot()
 }

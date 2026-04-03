@@ -23,11 +23,7 @@ use std::sync::Arc;
 impl MachineNewTrait for TestMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
-        let device_identification = params
-            .device_group
-            .iter()
-            .map(|device_identification| device_identification.clone())
-            .collect::<Vec<_>>();
+        let device_identification = params.device_group.to_vec();
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_duplicates(&device_identification)?;
 

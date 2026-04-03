@@ -2,7 +2,7 @@ use super::{RxPdoObject, TxPdoObject};
 use bitvec::prelude::*;
 use ethercat_hal_derive::PdoObject;
 
-/// PDO Object for EL5152 encoder control (RxPDO)
+/// PDO Object for EL5152 encoder control (`RxPDO`)
 /// Based on 1600/1602 mapping: Set counter (1 bit) + alignment + Set counter value (32/16 bit)
 #[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 48)] // Total 48 bits for full mapping
@@ -22,7 +22,7 @@ impl RxPdoObject for El5152EncoderControl {
     }
 }
 
-/// PDO Object for EL5152 encoder status (TxPDO)
+/// PDO Object for EL5152 encoder status (`TxPDO`)
 /// Based on 1A00/1A04 mapping: Status bits + Counter value (32-bit)
 #[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 48)] // 16 bits status + 32 bits counter
@@ -37,7 +37,7 @@ pub struct El5152EncoderStatus {
     pub status_input_b: bool,
     /// Sync Error - synchronization error occurred (1 bit) - 0x1C32:20
     pub sync_error: bool,
-    /// TxPDO Toggle - toggled when TxPDO data is updated (1 bit) - 0x1800:09
+    /// `TxPDO` Toggle - toggled when `TxPDO` data is updated (1 bit) - 0x1800:09
     pub txpdo_toggle: bool,
     /// Counter value (32-bit) - 0x6000:11
     pub counter_value: u32,
@@ -63,7 +63,7 @@ impl TxPdoObject for El5152EncoderStatus {
     }
 }
 
-/// PDO Object for EL5152 encoder frequency measurement (TxPDO)
+/// PDO Object for EL5152 encoder frequency measurement (`TxPDO`)
 /// Based on 1A03/1A07 mapping: 32-bit frequency value only
 #[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 32)]
@@ -79,7 +79,7 @@ impl TxPdoObject for El5152EncoderFrequency {
     }
 }
 
-/// PDO Object for EL5152 encoder period measurement (TxPDO)
+/// PDO Object for EL5152 encoder period measurement (`TxPDO`)
 /// Based on 1A02/1A06 mapping: 32-bit period value only
 #[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 32)]

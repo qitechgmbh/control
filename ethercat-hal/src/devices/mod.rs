@@ -199,7 +199,7 @@ pub async fn downcast_device<T: EthercatDevice>(
         // Transmute the Arc to the desired type
         unsafe {
             Ok(Arc::from_raw(
-                Arc::into_raw(cloned_device) as *const RwLock<T>
+                Arc::into_raw(cloned_device).cast::<RwLock<T>>(),
             ))
         }
     } else {
@@ -291,7 +291,8 @@ pub type SubDeviceIdentityTuple = (u32, u32, u32);
 // Is vendor id at 0, and prodid at 1
 pub type SubDeviceProductTuple = (u32, u32);
 
-/// function that converts SubDeviceIdentity to tuple
+/// function that converts `SubDeviceIdentity` to tuple
+#[must_use]
 pub const fn subdevice_identity_to_tuple(identity: &SubDeviceIdentity) -> SubDeviceIdentityTuple {
     (identity.vendor_id, identity.product_id, identity.revision)
 }

@@ -2,7 +2,10 @@ use super::{
     EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed, NewEthercatDevice,
     SubDeviceIdentityTuple,
 };
-use crate::devices::wago_modules::*;
+use crate::devices::wago_modules::{
+    wago_750_402, wago_750_430, wago_750_455, wago_750_460, wago_750_501, wago_750_530,
+    wago_750_553, wago_750_652, wago_750_671, wago_750_672, wago_750_1506,
+};
 use crate::{
     devices::{
         DynamicEthercatDevice, Module,
@@ -110,7 +113,7 @@ impl EthercatDevice for Wago750_354 {
     }
 
     fn set_module(&mut self, module: Module) {
-        self.slots[self.module_count] = Some(module.clone());
+        self.slots[self.module_count] = Some(module);
         self.module_count += 1;
     }
 }
@@ -150,11 +153,9 @@ impl std::fmt::Debug for Wago750_354 {
 }
 
 impl Wago750_354 {
-    pub fn calculate_module_index(pdo_mapping: u32, is_tx: bool) -> u32 {
-        let start_index = match is_tx {
-            true => 0x6000,
-            false => 0x7000,
-        };
+    #[must_use]
+    pub const fn calculate_module_index(pdo_mapping: u32, is_tx: bool) -> u32 {
+        let start_index = if is_tx { 0x6000 } else { 0x7000 };
         let pdo_index = (pdo_mapping & 0xFFFF0000) >> 16;
 
         if pdo_index < start_index {
@@ -180,9 +181,10 @@ impl Wago750_354 {
         let mut bit_offset = 0;
         let start_subindex = 0x2;
 
-        let index = match get_tx {
-            true => (TX_MAPPING_INDEX.0, TX_MAPPING_INDEX.1),
-            false => (RX_MAPPING_INDEX.0, RX_MAPPING_INDEX.1),
+        let index = if get_tx {
+            (TX_MAPPING_INDEX.0, TX_MAPPING_INDEX.1)
+        } else {
+            (RX_MAPPING_INDEX.0, RX_MAPPING_INDEX.1)
         };
 
         let count_mappings = device.sdo_read::<u8>(index.0, index.1).await?;
@@ -207,7 +209,7 @@ impl Wago750_354 {
                 // entries still consume bits, but must not be assigned to a module.
                 let start_index = if get_tx { 0x6000 } else { 0x7000 };
                 if pdo_index_hi >= start_index {
-                    let module_i = Wago750_354::calculate_module_index(pdo_mapping, get_tx);
+                    let module_i = Self::calculate_module_index(pdo_mapping, get_tx);
                     if module_i < 64 && !vec.iter().any(|map| map.module_i == module_i) {
                         vec.push(ModulePdoMapping {
                             offset: bit_offset,
@@ -239,8 +241,7 @@ impl Wago750_354 {
         {
             Ok(value) => Ok(value as usize),
             Err(e) => Err(anyhow::anyhow!(
-                "Failed to read Module Count for Wago750_354: {:?}",
-                e
+                "Failed to read Module Count for Wago750_354: {e:?}"
             )),
         }
     }
@@ -268,7 +269,7 @@ impl Wago750_354 {
                 has_rx: false,
                 tx_offset: 0,
                 rx_offset: 0,
-                name: "".to_string(),
+                name: String::new(),
             };
 
             match ident_iom {
@@ -328,10 +329,7 @@ impl Wago750_354 {
                     module.has_rx = true;
                     module.name = "750-553".to_string();
                 }
-                _ => println!(
-                    "Wago-750-354 found Unknown/Unimplemented Module: {}",
-                    ident_iom
-                ),
+                _ => println!("Wago-750-354 found Unknown/Unimplemented Module: {ident_iom}"),
             }
             modules.push(module);
         }
@@ -339,7 +337,7 @@ impl Wago750_354 {
     }
 
     /// Call after all modules have been added
-    pub fn init_slot_modules<'a>(&mut self, device: &EthercrabSubDevicePreoperational<'a>) {
+    pub fn init_slot_modules(&mut self, device: &EthercrabSubDevicePreoperational<'_>) {
         // Already initialized
         if self.dev_count != 0 {
             return;
@@ -457,14 +455,14 @@ impl Wago750_354 {
     pub async fn initialize_modules<'a>(
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<Vec<Module>, Error> {
-        let count = match Wago750_354::get_module_count(device).await {
+        let count = match Self::get_module_count(device).await {
             Ok(count) => count,
             Err(e) => return Err(e),
         };
         if count == 0 {
             return Ok(vec![]);
         }
-        let modules = Wago750_354::get_modules(device, count).await?;
+        let modules = Self::get_modules(device, count).await?;
         Ok(modules)
     }
 }

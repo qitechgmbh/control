@@ -49,16 +49,19 @@ impl AnalogInput {
     }
 
     /// Value from -1.0 to 1.0
+    #[must_use]
     pub fn get_normalized(&self) -> f32 {
         let input = (self.get_input)();
         input.normalized
     }
 
+    #[must_use]
     pub fn get_physical(&self) -> AnalogInputValue {
         let normalized = self.get_normalized();
         self.range.normalized_to_physical(normalized)
     }
 
+    #[must_use]
     pub fn get_wiring_error(&self) -> bool {
         let input = (self.get_input)();
         input.wiring_error
@@ -74,6 +77,7 @@ pub struct AnalogInputInput {
 
 impl AnalogInputInput {
     /// Convert to physical value
+    #[must_use]
     pub fn get_physical(&self, range: &AnalogInputRange) -> AnalogInputValue {
         range.normalized_to_physical(self.normalized)
     }

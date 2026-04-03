@@ -71,7 +71,7 @@ impl ScrewSpeedController {
             pressure_sensor,
             uses_rpm: true,
             forward_rotation: true,
-            transmission: transmission,
+            transmission,
             //FixedTransmission::new(1.0 / 34.0),
             motor_on: false,
             nozzle_pressure_limit: Pressure::new::<bar>(100.0),
@@ -144,7 +144,7 @@ impl ScrewSpeedController {
         self.target_rpm = target_rpm;
 
         let target_frequency: Frequency = Frequency::new::<hertz>(
-            target_motor_rpm.get::<revolution_per_minute>() as f64 / 120.0 * motor_poles as f64,
+            target_motor_rpm.get::<revolution_per_minute>() / 120.0 * motor_poles as f64,
         );
 
         self.inverter.set_frequency_target(target_frequency);
@@ -263,33 +263,33 @@ impl ScrewSpeedController {
 
         if !self.uses_rpm && is_extruding {
             // ── Auto-tuning (bang-bang relay control) ──────────────────────────
-            if let Some(ref mut tuner) = self.pid_autotuner {
-                if tuner.is_running() {
-                    let duty_cycle = tuner.update(measured_pressure.get::<bar>(), now);
+            if let Some(ref mut tuner) = self.pid_autotuner
+                && tuner.is_running()
+            {
+                let duty_cycle = tuner.update(measured_pressure.get::<bar>(), now);
 
-                    if tuner.is_completed() {
-                        // Automatically apply the tuned PID parameters
-                        if let Ok(result) = tuner.result() {
-                            self.pid.configure(result.ki, result.kp, result.kd);
-                            tracing::info!(
-                                "Pressure PID auto-tune completed: Kp={:.4}, Ki={:.4}, Kd={:.4}",
-                                result.kp,
-                                result.ki,
-                                result.kd
-                            );
-                        }
+                if tuner.is_completed() {
+                    // Automatically apply the tuned PID parameters
+                    if let Ok(result) = tuner.result() {
+                        self.pid.configure(result.ki, result.kp, result.kd);
+                        tracing::info!(
+                            "Pressure PID auto-tune completed: Kp={:.4}, Ki={:.4}, Kd={:.4}",
+                            result.kp,
+                            result.ki,
+                            result.kd
+                        );
                     }
-
-                    let target_freq = if duty_cycle > 0.0 {
-                        self.autotune_high_frequency
-                    } else {
-                        self.autotune_low_frequency
-                    };
-                    self.frequency = target_freq;
-                    self.inverter.set_frequency_target(target_freq);
-                    self.last_update = now;
-                    return;
                 }
+
+                let target_freq = if duty_cycle > 0.0 {
+                    self.autotune_high_frequency
+                } else {
+                    self.autotune_low_frequency
+                };
+                self.frequency = target_freq;
+                self.inverter.set_frequency_target(target_freq);
+                self.last_update = now;
+                return;
             }
 
             // ── Normal PID pressure control ────────────────────────────────────

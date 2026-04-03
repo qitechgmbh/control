@@ -21,7 +21,7 @@ async fn send_event_with_retry(
         }
 
         match socket.emit("event", event.as_ref()) {
-            Ok(_) => {
+            Ok(()) => {
                 trace!(
                     socket_id = ?socket.id,
                     event = %event.name,

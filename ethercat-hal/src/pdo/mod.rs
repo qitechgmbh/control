@@ -222,7 +222,7 @@ pub trait TxPdo: Configuration {
     /// Will give the PDU bit array to the PDO objects to decode the data
     fn read(&mut self, buffer: &BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error> {
         let mut bit_offset = 0;
-        for object in self.get_objects_mut().iter_mut() {
+        for object in &mut self.get_objects_mut() {
             if let Some(object) = object {
                 let end_bit_index = bit_offset + object.size();
 

@@ -12,7 +12,7 @@ impl Transmission for FixedTransmission {
 }
 
 impl FixedTransmission {
-    /// Creates a new FixedTransmission with the specified ratio.
+    /// Creates a new `FixedTransmission` with the specified ratio.
     ///
     /// # Arguments
     ///
@@ -20,7 +20,8 @@ impl FixedTransmission {
     ///
     /// # Returns
     ///
-    /// A new instance of FixedTransmission.
+    /// A new instance of `FixedTransmission`.
+    #[must_use]
     pub const fn new(ratio: f64) -> Self {
         Self { ratio }
     }

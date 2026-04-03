@@ -214,7 +214,7 @@ pub struct EL2522ChannelConfiguration {
 
     /// # 0x8000:0E (Ch.1) / 0x8010:0E (Ch.2)
     /// 0: Frequency mod., 1: Pulse-dir, 2: Incremental enc.
-    /// Default: FrequencyModulation (0x00)
+    /// Default: `FrequencyModulation` (0x00)
     pub operating_mode: EL2522OperatingMode,
 
     /// # 0x8000:10 (Ch.1) / 0x8010:10 (Ch.2)

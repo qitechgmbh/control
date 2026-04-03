@@ -211,17 +211,17 @@ impl Controller {
             max_temperature: ThermodynamicTemperature::new::<degree_celsius>(80.0),
 
             temperature: temp,
-            cooling_controller: cooling_controller,
+            cooling_controller,
 
             cooling_tolerance: config.cooling.tolerance,
             heating_tolerance: config.heating_tolerance,
 
             current_revolutions: AngularVelocity::new::<revolution_per_minute>(0.0),
-            max_revolutions: max_revolutions,
+            max_revolutions,
             cooling_mode: None,
 
-            cooling_relais: cooling_relais,
-            heating_relais: heating_relais,
+            cooling_relais,
+            heating_relais,
 
             cooling_allowed: false,
             heating_allowed: false,
@@ -231,9 +231,9 @@ impl Controller {
             power: 0.0,
             total_energy: 0.0,
 
-            flow: flow,
-            pump_relais: pump_relais,
-            flow_sensor: flow_sensor,
+            flow,
+            pump_relais,
+            flow_sensor,
             should_pump: false,
             pump_started_at: None,
             flow_became_valid_at: None,
@@ -386,9 +386,7 @@ impl Controller {
                 let actual_flow = ((val / 100) as f32 + 3.0) / 8.1;
                 VolumeRate::new::<liter_per_minute>(actual_flow.into())
             }
-            None => {
-                return VolumeRate::new::<liter_per_minute>(0.0);
-            }
+            None => VolumeRate::new::<liter_per_minute>(0.0),
         }
     }
 
@@ -588,7 +586,7 @@ impl Controller {
         self.last_cooling_switch = now;
     }
 
-    pub fn update(&mut self, now: Instant) -> () {
+    pub fn update(&mut self, now: Instant) {
         let dt = now.duration_since(self.last_update).as_secs_f64();
         self.last_update = now;
 

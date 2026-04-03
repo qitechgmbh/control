@@ -67,7 +67,7 @@ impl EthercatDynamicPDO for Wago750_402 {
     }
 
     fn set_tx_offset(&mut self, offset: usize) {
-        self.tx_bit_offset = offset
+        self.tx_bit_offset = offset;
     }
 
     fn set_rx_offset(&mut self, _offset: usize) {

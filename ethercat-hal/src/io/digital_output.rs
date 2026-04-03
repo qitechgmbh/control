@@ -52,6 +52,7 @@ impl DigitalOutput {
     }
 
     /// Get the current output value
+    #[must_use]
     pub fn get(&self) -> bool {
         let output = (self.get_output)();
         output.into()

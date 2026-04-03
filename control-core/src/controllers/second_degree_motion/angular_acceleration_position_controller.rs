@@ -20,6 +20,7 @@ pub struct AngularAccelerationPositionController {
 
 impl AngularAccelerationPositionController {
     /// Create a new angular position controller with acceleration limits
+    #[must_use]
     pub fn new(
         min_position: Option<Angle>,
         max_position: Option<Angle>,
@@ -56,6 +57,7 @@ impl AngularAccelerationPositionController {
     /// - `position`: Optional maximum position magnitude (None for no limits, Some(x) creates [-x, +x])
     /// - `speed`: Maximum angular velocity magnitude (creates limits [-speed, +speed])
     /// - `acceleration`: Maximum angular acceleration magnitude (creates limits [-acceleration, +acceleration])
+    #[must_use]
     pub fn new_simple(
         position: Option<Angle>,
         speed: AngularVelocity,
@@ -91,11 +93,13 @@ impl AngularAccelerationPositionController {
     }
 
     /// Get the current angle position
+    #[must_use]
     pub fn get_position(&self) -> Angle {
         Angle::new::<radian>(self.controller.get_position())
     }
 
     /// Get the target angle
+    #[must_use]
     pub fn get_target_position(&self) -> Angle {
         Angle::new::<radian>(self.controller.get_target_position())
     }
@@ -129,6 +133,7 @@ impl AngularAccelerationPositionController {
     }
 
     /// Get the current angular velocity
+    #[must_use]
     pub fn get_speed(&self) -> AngularVelocity {
         AngularVelocity::new::<radian_per_second>(self.controller.get_speed())
     }
@@ -152,6 +157,7 @@ impl AngularAccelerationPositionController {
     }
 
     /// Get the current angular acceleration
+    #[must_use]
     pub fn get_acceleration(&self) -> AngularAcceleration {
         AngularAcceleration::new::<radian_per_second_squared>(self.controller.get_acceleration())
     }

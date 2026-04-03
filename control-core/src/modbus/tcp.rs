@@ -52,7 +52,7 @@ pub struct ModbusTcpDevice {
 impl Debug for ModbusTcpDevice {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.stream.peer_addr() {
-            Ok(addr) => write!(f, "ModbusTcpDevice({:?})", addr),
+            Ok(addr) => write!(f, "ModbusTcpDevice({addr:?})"),
             Err(_) => std::fmt::Result::Err(std::fmt::Error),
         }
     }
@@ -98,9 +98,7 @@ impl ModbusTcpDevice {
         if func_code != func_code_res {
             let error_code = self.read_u8().await?;
             bail!(
-                "Modbus device sent unexpected function code 0x{:x}! It probably encountered an error. Error code: 0x{:x}",
-                func_code_res,
-                error_code
+                "Modbus device sent unexpected function code 0x{func_code_res:x}! It probably encountered an error. Error code: 0x{error_code:x}"
             );
         }
 
@@ -125,7 +123,7 @@ impl ModbusTcpDevice {
         self.read_and_check_responce_header(READ_HOLDING_FUNCTION_CODE)
             .await?;
 
-        let num_data_bytes = self.read_u8().await? as u16;
+        let num_data_bytes = u16::from(self.read_u8().await?);
         if count * 2 != num_data_bytes {
             bail!(
                 "Modbus device wants to send only a portion of the requested range - UNIMPLEMENTED!"
@@ -151,8 +149,7 @@ impl ModbusTcpDevice {
         let num_bytes = count * 2;
         assert!(
             count <= 128,
-            "Cannot send that many bytes to modbus device in one go! Trying to send {} bytes of data.",
-            num_bytes
+            "Cannot send that many bytes to modbus device in one go! Trying to send {num_bytes} bytes of data."
         );
 
         let mut packet = Packet::new();
@@ -190,7 +187,7 @@ impl ModbusTcpDevice {
     }
 
     pub async fn get_string<const N: usize>(&mut self, addr: u16) -> Result<String> {
-        assert!(N % 2 == 0, "Strings are always of even length!");
+        assert!(N.is_multiple_of(2), "Strings are always of even length!");
         assert!(N <= 256, "Cannot read long strings in a single swoop!");
         let count = N / 2;
 

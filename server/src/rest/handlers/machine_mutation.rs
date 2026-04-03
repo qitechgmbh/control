@@ -15,7 +15,7 @@ pub async fn post_machine_mutate(
 ) -> Response<Body> {
     let result = _post_machine_mutate(State(app_state), Json(body)).await;
     match result {
-        Ok(_) => ResponseUtil::ok(MutationResponse::success()),
+        Ok(()) => ResponseUtil::ok(MutationResponse::success()),
         Err(e) => ResponseUtilError::Error(e).into(),
     }
 }
@@ -47,14 +47,14 @@ async fn _post_machine_mutate(
                 ))
                 .await;
             match res {
-                Ok(_) => (),
+                Ok(()) => (),
                 Err(e) => tracing::error!(
                     "[{}::_post_machine_mutate] Sending MachineMessage::HttpApiJsonRequest to {} failed {}",
                     module_path!(),
                     body.machine_identification_unique,
                     e
                 ),
-            };
+            }
             Ok(())
         }
 

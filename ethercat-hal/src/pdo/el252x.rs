@@ -2,7 +2,7 @@ use super::{RxPdoObject, TxPdoObject};
 use bitvec::{field::BitField, order::Lsb0, slice::BitSlice};
 use ethercat_hal_derive::PdoObject;
 
-/// PDO Object for EL252x devices
+/// PDO Object for `EL252x` devices
 ///
 /// "PTO Status" contains status information about the pulse train output.
 #[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
@@ -45,7 +45,7 @@ impl TxPdoObject for PtoStatus {
     }
 }
 
-/// PDO Object for EL252x devices
+/// PDO Object for `EL252x` devices
 ///
 /// "Encoder Status" contains the encoder status information.
 #[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
@@ -85,7 +85,7 @@ impl TxPdoObject for EncStatus {
     }
 }
 
-/// PDO Object for EL252x devices
+/// PDO Object for `EL252x` devices
 ///
 /// "PTO Control" is used to control the pulse train output.
 #[derive(Debug, Clone, Default, PdoObject)]
@@ -112,7 +112,7 @@ impl RxPdoObject for PtoControl {
     }
 }
 
-/// PDO Object for EL252x devices
+/// PDO Object for `EL252x` devices
 ///
 /// "PTO Target" is used to set the target position of the pulse train output.
 #[derive(Debug, Clone, Default, PdoObject)]
@@ -130,7 +130,7 @@ impl RxPdoObject for PtoTarget {
     }
 }
 
-/// PDO Object for EL252x devices
+/// PDO Object for `EL252x` devices
 ///
 /// "Encoder Control" is used to control the encoder.
 #[derive(Debug, Clone, Default, PdoObject)]

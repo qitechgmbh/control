@@ -84,6 +84,7 @@ where
     /// # Returns
     ///
     /// A new `MovingTimeWindow` instance with empty sample collection and initialized cache
+    #[must_use]
     pub fn new(duration: Duration, max_samples: usize) -> Self {
         Self {
             max_samples,
@@ -139,7 +140,7 @@ where
     ///
     /// # Returns
     ///
-    /// The arithmetic mean of all current samples, or T::default() if the window is empty
+    /// The arithmetic mean of all current samples, or `T::default()` if the window is empty
     pub fn average(&mut self) -> T {
         // Return cached value if available
         if let Some(cached) = self.cached_average {
@@ -167,7 +168,7 @@ where
     ///
     /// # Returns
     ///
-    /// The maximum value of all current samples, or T::default() if the window is empty
+    /// The maximum value of all current samples, or `T::default()` if the window is empty
     pub fn max(&mut self) -> T {
         // Return cached value if available
         if let Some(cached) = self.cached_max {
@@ -201,7 +202,7 @@ where
     ///
     /// # Returns
     ///
-    /// The minimum value of all current samples, or T::default() if the window is empty
+    /// The minimum value of all current samples, or `T::default()` if the window is empty
     pub fn min(&mut self) -> T {
         // Return cached value if available
         if let Some(cached) = self.cached_min {

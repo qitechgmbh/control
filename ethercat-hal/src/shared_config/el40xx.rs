@@ -8,7 +8,7 @@ pub struct EL40XXChannelConfiguration {
     /// Presentation mode (0x80n0:02) - Default: Signed (0x00)
     pub presentation: EL40XXPresentation,
 
-    /// Watchdog behavior (0x80n0:05) - Default: DefaultValue (0x00)
+    /// Watchdog behavior (0x80n0:05) - Default: `DefaultValue` (0x00)
     pub watchdog: EL40XXWatchdog,
 
     /// Enable user calibration (0x80n0:07) - Default: false (0x00)
@@ -117,7 +117,7 @@ impl EL40XXChannelConfiguration {
 
         // Write all configuration parameters according to the documentation table
         device
-            .sdo_write(base_index, 0x01, self.enable_user_scale as u8)
+            .sdo_write(base_index, 0x01, u8::from(self.enable_user_scale))
             .await?;
         device
             .sdo_write(base_index, 0x02, self.presentation.clone() as u8)
@@ -126,10 +126,10 @@ impl EL40XXChannelConfiguration {
             .sdo_write(base_index, 0x05, self.watchdog.clone() as u8)
             .await?;
         device
-            .sdo_write(base_index, 0x07, self.enable_user_calibration as u8)
+            .sdo_write(base_index, 0x07, u8::from(self.enable_user_calibration))
             .await?;
         device
-            .sdo_write(base_index, 0x08, self.enable_vendor_calibration as u8)
+            .sdo_write(base_index, 0x08, u8::from(self.enable_vendor_calibration))
             .await?;
         device.sdo_write(base_index, 0x11, self.offset).await?;
         device.sdo_write(base_index, 0x12, self.gain).await?;

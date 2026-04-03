@@ -10,7 +10,7 @@ use crate::{
 
 use super::{EL7041_0052, pdo::EL7041_0052PredefinedPdoAssignment};
 
-/// Configuration for EL7041_0052 Stepper Motor Terminal
+/// Configuration for `EL7041_0052` Stepper Motor Terminal
 #[derive(Debug, Clone)]
 pub struct EL7041_0052Configuration {
     /// Encoder configuration

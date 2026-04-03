@@ -103,7 +103,7 @@ pub enum EL2521Port {
     PTO1,
 }
 
-/// 0x8000 CoE
+/// 0x8000 `CoE`
 #[derive(Debug, Clone)]
 pub struct EL2521Configuration {
     /// # 0x8010:02

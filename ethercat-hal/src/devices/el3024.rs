@@ -49,12 +49,6 @@ impl std::fmt::Debug for EL3024 {
     }
 }
 
-impl Default for EL3024PredefinedPdoAssignment {
-    fn default() -> Self {
-        Self::Standard
-    }
-}
-
 impl Default for EL3024Configuration {
     fn default() -> Self {
         Self {
@@ -237,8 +231,9 @@ impl Configuration for EL3024Configuration {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum EL3024PredefinedPdoAssignment {
+    #[default]
     Standard,
     Compact,
 }

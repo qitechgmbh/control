@@ -35,18 +35,12 @@ pub fn spawn_runtime_metrics_sampler(cfg: RuntimeMetricsConfig) {
 
             // naively expects values for every second
             let faults_since_last = match last_proc {
-                Some(last) => {
-                    if proc.minor_faults > last.minor_faults {
-                        proc.minor_faults - last.minor_faults
-                    } else {
-                        0
-                    }
-                }
+                Some(last) => proc.minor_faults.saturating_sub(last.minor_faults),
                 None => 0,
             };
 
             let mut sample = RuntimeSample::from_process_metrics(
-                last_proc.unwrap_or(ProcessMetrics::default()),
+                last_proc.unwrap_or_default(),
                 faults_since_last,
                 now_ms,
             );
@@ -64,7 +58,7 @@ pub fn spawn_runtime_metrics_sampler(cfg: RuntimeMetricsConfig) {
                     let j = s.jitter_ns as i64;
                     min = min.min(j);
                     max = max.max(j);
-                    sum += j as i128;
+                    sum += i128::from(j);
                     count += 1;
                 }
 
@@ -79,7 +73,7 @@ pub fn spawn_runtime_metrics_sampler(cfg: RuntimeMetricsConfig) {
             let iface_name = cfg
                 .ethercat_iface
                 .clone()
-                .or_else(|| get_ethercat_iface().map(|s| s.to_string()));
+                .or_else(|| get_ethercat_iface().map(std::string::ToString::to_string));
 
             if let Some(iface) = iface_name.as_deref() {
                 let now_inst = Instant::now();

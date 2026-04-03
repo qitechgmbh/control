@@ -35,6 +35,7 @@ impl fmt::Display for SubdeviceDiagnosisEntry {
 }
 
 impl SubdeviceDiagnosisEntry {
+    #[must_use]
     pub fn to_pretty_string(&self) -> String {
         // Decode message type
         let msg_type = match self.flags {
@@ -57,7 +58,7 @@ impl SubdeviceDiagnosisEntry {
         };
 
         // Format P2 bytes as hex list
-        let p2_hex: Vec<String> = self.p2.iter().map(|b| format!("0x{:02X}", b)).collect();
+        let p2_hex: Vec<String> = self.p2.iter().map(|b| format!("0x{b:02X}")).collect();
 
         format!(
             "Diagnosis Entry:\n\
@@ -129,8 +130,7 @@ pub fn convert_raw_diagnosis_bytes(
 
     if p1 == 0 {
         return Err(anyhow::anyhow!(
-            "convert_raw_diagnosis_bytes: Datatype_p1 is unknown {:?}",
-            data_type_p1
+            "convert_raw_diagnosis_bytes: Datatype_p1 is unknown {data_type_p1:?}"
         ));
     }
 
@@ -145,7 +145,7 @@ pub fn convert_raw_diagnosis_bytes(
         message[24],
         message[25],
     ];
-    return Ok(SubdeviceDiagnosisEntry {
+    Ok(SubdeviceDiagnosisEntry {
         diag_code,
         flags,
         text_id,
@@ -154,10 +154,10 @@ pub fn convert_raw_diagnosis_bytes(
         p1,
         flags_p2,
         p2,
-    });
+    })
 }
 
-/// Expects the SubdeviceRef to be the Coupler or any other device with a diag history index
+/// Expects the `SubdeviceRef` to be the Coupler or any other device with a diag history index
 pub async fn get_most_recent_diagnosis_message(
     device: &SubDeviceRef<'_, &SubDevice>,
 ) -> Option<String> {
@@ -202,12 +202,11 @@ pub async fn get_most_recent_diagnosis_message(
     let res = device
         .sdo_read::<[u8; DIAG_MESSAGE_LENGTH]>(DIAGNOSIS_HISTORY_INDEX, newest_message_index)
         .await;
-    let message: [u8; DIAG_MESSAGE_LENGTH] = match res {
-        Ok(res) => res,
-        Err(_) => {
-            tracing::error!("get_most_recent_diagnosis_message: Failed to read Diagnosis Message");
-            return None;
-        }
+    let message: [u8; DIAG_MESSAGE_LENGTH] = if let Ok(res) = res {
+        res
+    } else {
+        tracing::error!("get_most_recent_diagnosis_message: Failed to read Diagnosis Message");
+        return None;
     };
     let message = convert_raw_diagnosis_bytes(message);
     let message = match message {
@@ -225,5 +224,5 @@ pub async fn get_most_recent_diagnosis_message(
         "get_most_recent_diagnosis_message: {}",
         message.to_pretty_string()
     );
-    return Some(message.to_pretty_string());
+    Some(message.to_pretty_string())
 }

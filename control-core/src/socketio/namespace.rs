@@ -12,6 +12,7 @@ pub struct Namespace {
 }
 
 impl Namespace {
+    #[must_use]
     pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
         Self {
             sockets: vec![],
@@ -144,7 +145,7 @@ impl Namespace {
             .socket_queue_tx
             .try_send((socket.clone(), event.clone()))
         {
-            Ok(_) => {
+            Ok(()) => {
                 tracing::trace!(
                     socket_id = ?socket.id,
                     event = %event.name,
@@ -190,6 +191,7 @@ pub trait CacheableEvents<Events> {
 pub type CacheFn = Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>)>;
 
 /// [`BufferFn`] that stores the last n events
+#[must_use]
 pub fn cache_n_events(n: usize) -> CacheFn {
     Box::new(move |events, event| {
         if events.len() >= n {
@@ -200,6 +202,7 @@ pub fn cache_n_events(n: usize) -> CacheFn {
 }
 
 /// [`BufferFn`] that stores only one event
+#[must_use]
 pub fn cache_one_event() -> CacheFn {
     cache_n_events(1)
 }
@@ -208,6 +211,7 @@ pub fn cache_one_event() -> CacheFn {
 ///
 /// The primary use case of this function is to cache both the default state of a machine, which should be emitted first,
 /// and the last event, which is the most recent state of the machine.
+#[must_use]
 pub fn cache_first_and_last_event() -> CacheFn {
     Box::new(move |events, event| {
         // if the events length 0 or 1, we just push the event
@@ -224,16 +228,17 @@ pub fn cache_first_and_last_event() -> CacheFn {
 }
 
 /// [`BufferFn`] that stores events for a certain duration
+#[must_use]
 pub fn cache_duration(duration: Duration, bucket_size: Duration) -> CacheFn {
     Box::new(move |events, event| {
         // Use event.ts instead of system time
-        let current_time = event.ts as u128;
+        let current_time = u128::from(event.ts);
 
         // calculate current bucket & last bucket
         let bucket_size_ms = bucket_size.as_millis().max(1);
         let bucket = current_time / bucket_size_ms; // Avoid division by zero
         let last_bucket = match events.last() {
-            Some(last_event) => last_event.ts as u128 / bucket_size_ms,
+            Some(last_event) => u128::from(last_event.ts) / bucket_size_ms,
             None => 0,
         };
 

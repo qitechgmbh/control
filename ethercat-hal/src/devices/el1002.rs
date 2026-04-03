@@ -52,6 +52,7 @@ pub enum EL1002Port {
 }
 
 impl EL1002Port {
+    #[must_use]
     pub const fn to_bit_index(&self) -> usize {
         match self {
             Self::DI1 => 0,

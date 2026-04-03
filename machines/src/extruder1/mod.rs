@@ -106,7 +106,7 @@ pub use mock::ExtruderV2;
 #[cfg(not(feature = "mock-machine"))]
 impl Machine for ExtruderV2 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
+        self.machine_identification_unique
     }
 
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {

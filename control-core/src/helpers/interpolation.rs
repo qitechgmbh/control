@@ -29,9 +29,7 @@ where
     let min: f64 = min.into();
     let max: f64 = max.into();
 
-    if min >= max {
-        panic!("min must be less than max");
-    }
+    assert!(min < max, "min must be less than max");
     if value < min {
         return 0.0;
     } else if value > max {
@@ -40,7 +38,7 @@ where
     (value - min) / (max - min)
 }
 
-/// Scales a normalized value from the range [0, 1] to a new range [new_min, new_max].
+/// Scales a normalized value from the range [0, 1] to a new range [`new_min`, `new_max`].
 ///
 /// This function takes a normalized value (typically from 0 to 1) and maps it
 /// to a new target range. It's the inverse operation of normalization.
@@ -51,7 +49,7 @@ where
 /// * `new_max` - The maximum value of the target range
 ///
 /// # Returns
-/// * Scaled value in the range [new_min, new_max]
+/// * Scaled value in the range [`new_min`, `new_max`]
 ///
 /// # Example
 /// ```rust
@@ -267,6 +265,7 @@ where
 /// ⠉⠉⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁ 0.0
 /// 0.0                        1.0
 /// ```
+#[must_use]
 pub fn interpolate_exponential(normalized_value: f64, steepness: f64) -> f64 {
     if steepness.abs() < 1e-10 {
         // When a is very close to zero, the function becomes linear
@@ -390,6 +389,7 @@ pub fn interpolate_exponential(normalized_value: f64, steepness: f64) -> f64 {
 /// ⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁ 0.0
 /// 0.0                        1.0
 /// ```
+#[must_use]
 pub fn interpolate_inflected_exponential(x: f64, steepness: f64) -> f64 {
     debug_assert!((0.0..=1.0).contains(&x), "x must be in range [0.0, 1.0]");
     debug_assert!(steepness >= 0.0, "steepness must be non-negative");
@@ -436,6 +436,7 @@ pub fn interpolate_inflected_exponential(x: f64, steepness: f64) -> f64 {
 /// let boundary = invert(0.0); // Returns 1.0
 /// let clamped = invert(1.5);  // Returns 0.0 (input clamped to 1.0 first)
 /// ```
+#[must_use]
 pub fn invert(value: f64) -> f64 {
     let value = clip(value);
     1.0 - value
@@ -460,6 +461,7 @@ pub fn invert(value: f64) -> f64 {
 /// let low = clip(-0.3);    // Returns 0.0
 /// let high = clip(1.7);    // Returns 1.0
 /// ```
+#[must_use]
 pub fn clip(value: f64) -> f64 {
     if value < 0.0 {
         return 0.0;

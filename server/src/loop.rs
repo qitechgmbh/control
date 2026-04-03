@@ -34,7 +34,7 @@ pub fn start_loop_thread(
     let res = std::thread::Builder::new()
         .name("loop".to_owned())
         .spawn(move || {
-            let rt_receiver = rt_receiver.to_owned();
+            let rt_receiver = rt_receiver.clone();
             let sleeper =
                 SpinSleeper::new(3_333_333) // frequency in Hz ~ 1 / 300µs, Basically specifies the accuracy of our sleep
                     .with_spin_strategy(spin_sleep::SpinStrategy::YieldThread);
@@ -82,7 +82,10 @@ pub fn start_loop_thread(
             };
 
             loop {
-                use HotThreadMessage::*;
+                use HotThreadMessage::{
+                    AddEtherCatSetup, AddMachines, DeleteMachine, NoMsg, SubscriptionEstablish,
+                    SubscriptionTerminate, WriteMachineDeviceInfo,
+                };
 
                 let msg = match rt_receiver.try_recv() {
                     Ok(msg) => msg,
@@ -112,7 +115,7 @@ pub fn start_loop_thread(
                     }
                     DeleteMachine(uid) => rt_loop_inputs.machine_manager.remove_machine(uid),
                     AddMachines(new_machines) => {
-                        rt_loop_inputs.machine_manager.add_machines(new_machines)
+                        rt_loop_inputs.machine_manager.add_machines(new_machines);
                     }
                     SubscriptionEstablish(request) => rt_loop_inputs
                         .machine_manager
@@ -150,7 +153,7 @@ pub fn start_loop_thread(
             // gets restarted by systemd if running on NixOS, or different distro wtih the same sysd service
             std::process::exit(1);
         });
-    return res;
+    res
 }
 
 pub async fn copy_ethercat_inputs(
@@ -206,27 +209,25 @@ pub async fn copy_ethercat_inputs(
                 })?;
             }
             return Ok(());
-        } else {
-            loop {
-                let now = Instant::now();
-                let response @ TxRxResponse {
-                    working_counter: _wkc,
-                    extra:
-                        CycleInfo {
-                            next_cycle_wait, ..
-                        },
-                    ..
-                } = ethercat_setup
-                    .group
-                    .tx_rx_dc(&ethercat_setup.maindevice)
-                    .await
-                    .expect("TX/RX");
-                if response.all_op() {
-                    ethercat_setup.all_operational = true;
-                    break;
-                }
-                smol::Timer::at(now + next_cycle_wait).await;
+        }
+        loop {
+            let now = Instant::now();
+            let response @ TxRxResponse {
+                working_counter: _wkc,
+                extra: CycleInfo {
+                    next_cycle_wait, ..
+                },
+                ..
+            } = ethercat_setup
+                .group
+                .tx_rx_dc(&ethercat_setup.maindevice)
+                .await
+                .expect("TX/RX");
+            if response.all_op() {
+                ethercat_setup.all_operational = true;
+                break;
             }
+            smol::Timer::at(now + next_cycle_wait).await;
         }
     }
     Ok(())
@@ -291,11 +292,11 @@ pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyho
 
         let res = smol::block_on(copy_ethercat_inputs(inputs.ethercat_setup.as_deref_mut()));
         match res {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(e) => {
-                return Err(anyhow::anyhow!("copy_ethercat_inputs failed: {:?}", e));
+                return Err(anyhow::anyhow!("copy_ethercat_inputs failed: {e:?}"));
             }
-        };
+        }
     }
 
     inputs.machine_manager.execute_machines();
@@ -303,11 +304,11 @@ pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyho
     if inputs.ethercat_setup.is_some() && inputs.ethercat_perf_metrics.is_some() {
         let res = smol::block_on(copy_ethercat_outputs(inputs.ethercat_setup.as_deref()));
         match res {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(e) => {
-                return Err(anyhow::anyhow!("copy_ethercat_outputs failed: {:?}", e));
+                return Err(anyhow::anyhow!("copy_ethercat_outputs failed: {e:?}"));
             }
-        };
+        }
     }
 
     if inputs.ethercat_setup.is_some() {
@@ -321,7 +322,9 @@ pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyho
         // We do this, so that when no rt relevant code runs the cpu doesnt spin at 100% for no reason
         let loop_duration = loop_once_start.elapsed();
         if inputs.cycle_target > loop_once_start.elapsed() {
-            smol::block_on(smol::Timer::after(inputs.cycle_target - loop_duration));
+            smol::block_on(smol::Timer::after(
+                inputs.cycle_target.checked_sub(loop_duration).unwrap(),
+            ));
         }
     }
 

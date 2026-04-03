@@ -2,7 +2,7 @@ use super::RxPdoObject;
 use bitvec::prelude::*;
 use ethercat_hal_derive::PdoObject;
 
-/// PDO Object for EL40xx (analog output) devices
+/// PDO Object for `EL40xx` (analog output) devices
 ///
 /// The "Analog Output" holds the output value and status information.
 #[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]

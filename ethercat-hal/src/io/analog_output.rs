@@ -55,6 +55,7 @@ impl AnalogOutput {
     }
 
     /// Get the current output value
+    #[must_use]
     pub fn get(&self) -> f32 {
         let output = (self.get_output)();
         output.into()

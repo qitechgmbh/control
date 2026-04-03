@@ -116,7 +116,7 @@ impl MachineNewTrait for Winder2 {
                     .0
                     .write()
                     .await
-                    .write_config(&device.1, &el7041_config)
+                    .write_config(device.1, &el7041_config)
                     .await?;
                 device.0
             };
@@ -149,7 +149,7 @@ impl MachineNewTrait for Winder2 {
                     .0
                     .write()
                     .await
-                    .write_config(&device.1, &el7031_config)
+                    .write_config(device.1, &el7031_config)
                     .await?;
 
                 device.0
@@ -182,7 +182,7 @@ impl MachineNewTrait for Winder2 {
                     .0
                     .write()
                     .await
-                    .write_config(&device.1, &el7031_0030_config)
+                    .write_config(device.1, &el7031_0030_config)
                     .await?;
                 device.0
             };
@@ -194,8 +194,7 @@ impl MachineNewTrait for Winder2 {
                 .first()
                 .expect("device group must have at least one device")
                 .device_machine_identification
-                .machine_identification_unique
-                .clone();
+                .machine_identification_unique;
             let (sender, receiver) = smol::channel::unbounded();
             let mut new = Self {
                 main_sender: params.main_thread_channel.clone(),
