@@ -34,7 +34,7 @@ jobs:
           toolchain: ${{ env.RUST_VERSION }}
           profile: minimal
           override: true
-          components: rustfmt
+          components: rustfmt, clippy
 
       - &cargo-cache
         name: Cache Rust dependencies
@@ -65,7 +65,7 @@ jobs:
       - name: Format
         run: cargo fmt --check --verbose
 
-  test:
+  lint-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -74,7 +74,10 @@ jobs:
       - *setup-rust
       - *cargo-cache
 
-      - name: Run tests
+      - name: Linting
+        run: cargo clippy -- -D warnings
+
+      - name: Tests
         run: cargo test --verbose
 
   mock:
