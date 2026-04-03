@@ -66,6 +66,11 @@ lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
         mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<ExtruderV2>(ExtruderV2::MACHINE_IDENTIFICATION);
+
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<ExtruderV3>(ExtruderV3::MACHINE_IDENTIFICATION);
 /*
 
 
