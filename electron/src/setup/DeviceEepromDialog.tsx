@@ -45,7 +45,6 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { toast } from "sonner";
 import { Toast } from "@/components/Toast";
 import { EthercatDevicesEventData } from "@/client/mainNamespace";
-import { restartBackend } from "@/helpers/troubleshoot_helpers";
 import { TouchNumpad } from "@/components/touch/TouchNumpad";
 
 type Device = NonNullable<EthercatDevicesEventData["Done"]>["devices"][number];
@@ -182,18 +181,18 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
               Saved. Restarting backend…
             </Toast>,
           );
-          const result = await restartBackend();
-          if (result.success) {
+          try {
+            await window.troubleshoot.restartBackend();
             toast(
               <Toast title="Backend restart" icon="lu:RotateCcw">
                 Backend restart initiated.
               </Toast>,
             );
             setOpen();
-          } else {
+          } catch (error) {
             toast(
               <Toast title="Backend restart failed" icon="lu:CircleAlert">
-                {result.error ?? "Unknown error"}
+                {`${error}`}
               </Toast>,
             );
           }
