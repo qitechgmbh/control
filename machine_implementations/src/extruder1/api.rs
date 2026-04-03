@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use super::{ExtruderV2Mode, mitsubishi_cs80::MotorStatus};
 
 #[cfg(not(feature = "mock-machine"))]
@@ -7,7 +9,7 @@ use super::ExtruderV2;
 use crate::{MachineMessage, extruder1::HeatingType};
 
 #[cfg(not(feature = "mock-machine"))]
-use crate::MachineApi;
+use crate::{MachineApi, MachineValues};
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
@@ -15,17 +17,15 @@ use control_core::socketio::{
     },
 };
 use control_core_derive::BuildEvent;
+use qitech_lib::units::angular_velocity::revolution_per_minute;
+use qitech_lib::units::electric_current::ampere;
+use qitech_lib::units::electric_potential::volt;
+use qitech_lib::units::frequency::hertz;
 use serde::{Deserialize, Serialize};
-#[cfg(not(feature = "mock-machine"))]
 use serde_json::Value;
-#[cfg(not(feature = "mock-machine"))]
-use smol::channel::Sender;
-use std::sync::Arc;
 use tracing::instrument;
-use units::angular_velocity::revolution_per_minute;
-use units::electric_current::ampere;
-use units::electric_potential::volt;
-use units::frequency::hertz;
+
+
 
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct MotorStatusValues {
@@ -322,10 +322,30 @@ impl CacheableEvents<Self> for ExtruderV2Events {
 
 #[cfg(not(feature = "mock-machine"))]
 impl MachineApi for ExtruderV2 {
-    fn api_get_sender(&self) -> Sender<MachineMessage> {
-        self.api_sender.clone()
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+                tracing::info!("extruder1 received subscribe");
+            }
+            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::to_value(self.get_live_values())
+                            .expect("Failed to serialize live values"),
+                    })
+                    .expect("Failed to send values");
+            }
+        }
     }
-
+    
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         // there are multiple Modbus Frames that are "prebuilt"
         let control: Mutation = serde_json::from_value(request_body)?;
@@ -378,5 +398,9 @@ impl MachineApi for ExtruderV2 {
 
     fn api_event_namespace(&mut self) -> Option<Namespace> {
         self.namespace.namespace.clone()
+    }
+
+    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {
+        self.api_sender.clone()
     }
 }

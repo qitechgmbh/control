@@ -1,5 +1,3 @@
-#[cfg(not(feature = "mock-machine"))]
-// Contains Implementations for All functions that use emit_state
 use crate::extruder1::{
     ExtruderV2, ExtruderV2Mode, HeatingType,
     api::{
@@ -9,24 +7,12 @@ use crate::extruder1::{
         StateEvent, TemperaturePid,
     },
 };
-#[cfg(not(feature = "mock-machine"))]
-use control_core::helpers::hasher_serializer::hash_with_serde_model;
-#[cfg(not(feature = "mock-machine"))]
-use control_core::socketio::event::BuildEvent;
-#[cfg(not(feature = "mock-machine"))]
-use control_core::socketio::namespace::NamespaceCacheingLogic;
-#[cfg(not(feature = "mock-machine"))]
-use units::angular_velocity::AngularVelocity;
-#[cfg(not(feature = "mock-machine"))]
-use units::pressure::{Pressure, bar};
-#[cfg(not(feature = "mock-machine"))]
-use units::thermodynamic_temperature::ThermodynamicTemperature;
-#[cfg(not(feature = "mock-machine"))]
-use units::{angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius};
 
 #[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {
     pub fn get_state(&self) -> StateEvent {
+        use qitech_lib::units::{angular_velocity::revolution_per_minute, pressure::bar, thermodynamic_temperature::degree_celsius};
+
         use crate::extruder1::api::TemperaturePidStates;
 
         StateEvent {
@@ -155,6 +141,8 @@ impl ExtruderV2 {
     }
 
     pub fn emit_state(&mut self) {
+        use control_core::{helpers::hasher_serializer::hash_with_serde_model, socketio::{event::BuildEvent, namespace::NamespaceCacheingLogic}};
+
         let state = self.get_state();
         let hash = hash_with_serde_model(self.screw_speed_controller.get_inverter_status());
         self.last_status_hash = Some(hash);
@@ -164,6 +152,8 @@ impl ExtruderV2 {
     }
 
     pub fn maybe_emit_state_event(&mut self) {
+        use control_core::helpers::hasher_serializer::hash_with_serde_model;
+
         let old_status_hash = match self.last_status_hash {
             Some(event) => event,
             None => {
@@ -179,6 +169,8 @@ impl ExtruderV2 {
     }
 
     pub fn get_live_values(&self) -> LiveValuesEvent {
+        use qitech_lib::units::{pressure::bar, thermodynamic_temperature::degree_celsius};
+
         LiveValuesEvent {
             motor_status: self.screw_speed_controller.get_motor_status().into(),
             pressure: self.screw_speed_controller.get_pressure().get::<bar>(),
@@ -220,6 +212,8 @@ impl ExtruderV2 {
     }
 
     pub fn emit_live_values(&mut self) {
+        use control_core::socketio::namespace::NamespaceCacheingLogic;
+
         let event = self.get_live_values().build();
         self.namespace.emit(ExtruderV2Events::LiveValues(event));
     }
@@ -233,6 +227,8 @@ impl ExtruderV2 {
     }
 
     pub fn set_nozzle_pressure_limit(&mut self, pressure: f64) {
+        use qitech_lib::units::{Pressure, pressure::bar};
+
         self.screw_speed_controller
             .set_nozzle_pressure_limit(Pressure::new::<bar>(pressure));
         self.emit_state();
@@ -258,6 +254,8 @@ impl ExtruderV2 {
 
     pub fn set_regulation(&mut self, uses_rpm: bool) {
         if !self.screw_speed_controller.get_uses_rpm() && uses_rpm {
+            use qitech_lib::units::{AngularVelocity, angular_velocity::revolution_per_minute};
+
             self.screw_speed_controller.set_target_screw_rpm(
                 self.screw_speed_controller.target_rpm,
                 AngularVelocity::new::<revolution_per_minute>(1500.0),
@@ -274,12 +272,16 @@ impl ExtruderV2 {
     }
 
     pub fn set_target_pressure(&mut self, pressure: f64) {
+        use qitech_lib::units::{Pressure, pressure::bar};
+
         self.screw_speed_controller
             .set_target_pressure(Pressure::new::<bar>(pressure));
         self.emit_state();
     }
 
     pub fn set_target_rpm(&mut self, rpm: f64) {
+        use qitech_lib::units::{AngularVelocity, angular_velocity::revolution_per_minute};
+
         self.screw_speed_controller.set_target_screw_rpm(
             AngularVelocity::new::<revolution_per_minute>(rpm),
             AngularVelocity::new::<revolution_per_minute>(1500.0),
@@ -289,6 +291,8 @@ impl ExtruderV2 {
     }
 
     pub fn set_target_temperature(&mut self, target_temperature: f64, heating_type: HeatingType) {
+        use qitech_lib::units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
+
         let target_temp = ThermodynamicTemperature::new::<degree_celsius>(target_temperature);
 
         match heating_type {

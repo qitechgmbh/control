@@ -1,34 +1,3 @@
-#[cfg(not(feature = "mock-machine"))]
-use std::time::Instant;
-
-#[cfg(not(feature = "mock-machine"))]
-use smol::channel::Receiver;
-#[cfg(not(feature = "mock-machine"))]
-use smol::channel::Sender;
-
-use serde::{Deserialize, Serialize};
-
-#[cfg(not(feature = "mock-machine"))]
-use units::electric_current::ampere;
-
-#[cfg(not(feature = "mock-machine"))]
-use units::electric_potential::volt;
-
-#[cfg(not(feature = "mock-machine"))]
-use crate::{AsyncThreadMessage, Machine};
-use units::f64::*;
-use units::thermodynamic_temperature::degree_celsius;
-
-#[cfg(not(feature = "mock-machine"))]
-use crate::{
-    MACHINE_EXTRUDER_V1, MachineMessage, VENDOR_QITECH,
-    extruder1::{
-        api::ExtruderV2Namespace, screw_speed_controller::ScrewSpeedController,
-        temperature_controller::TemperatureController,
-    },
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
-};
-
 pub mod act;
 pub mod api;
 pub mod emit;
@@ -37,6 +6,24 @@ pub mod mock;
 pub mod new;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
+
+#[cfg(not(feature = "mock-machine"))]
+use std::{cell::RefCell, rc::Rc};
+use std::time::Instant;
+use api::ExtruderV2Namespace;
+use qitech_lib::machines::MachineIdentificationUnique;
+#[cfg(not(feature = "mock-machine"))]
+use qitech_lib::{ethercat_hal::io::{digital_output::DigitalOutputDevice, serial_interface::SerialInterfaceDevice, temperature_input::TemperatureInputDevice}, units::{electric_current::ampere, electric_potential::volt}};
+use qitech_lib::units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
+use screw_speed_controller::ScrewSpeedController;
+use serde::Serialize;
+use temperature_controller::TemperatureController;
+use tokio::sync::mpsc::{Sender,Receiver};
+use crate::MachineMessage;
+#[cfg(not(feature = "mock-machine"))]
+use crate::{MACHINE_EXTRUDER_V1, VENDOR_QITECH};
+use serde::Deserialize;
+use qitech_lib::machines::MachineIdentification;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub enum ExtruderV2Mode {
@@ -72,11 +59,9 @@ pub enum HeatingType {
 }
 
 #[cfg(not(feature = "mock-machine"))]
-#[derive(Debug)]
 pub struct ExtruderV2 {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
-    main_sender: Option<Sender<AsyncThreadMessage>>,
 
     machine_identification_unique: MachineIdentificationUnique,
     namespace: ExtruderV2Namespace,
@@ -84,6 +69,10 @@ pub struct ExtruderV2 {
     last_measurement_emit: Instant,
     last_status_hash: Option<u64>,
     mode: ExtruderV2Mode,
+
+    relais_output : Rc<RefCell<dyn DigitalOutputDevice>>,
+    temperature_input : Rc<RefCell<dyn TemperatureInputDevice>>,
+    serial_interface : Rc<RefCell<dyn SerialInterfaceDevice>>,
 
     screw_speed_controller: ScrewSpeedController,
     temperature_controller_front: TemperatureController,
@@ -100,19 +89,6 @@ pub struct ExtruderV2 {
     emitted_default_state: bool,
 }
 
-#[cfg(feature = "mock-machine")]
-pub use mock::ExtruderV2;
-
-#[cfg(not(feature = "mock-machine"))]
-impl Machine for ExtruderV2 {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
-
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
-}
 
 #[cfg(not(feature = "mock-machine"))]
 impl std::fmt::Display for ExtruderV2 {

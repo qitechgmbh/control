@@ -1,15 +1,12 @@
 use bitvec::{order::Lsb0, slice::BitSlice};
-use control_core::modbus::{
-    ModbusFunctionCode, ModbusRequest, ModbusResponse,
-    modbus_serial_interface::ModbusSerialInterface,
-};
-use ethercat_hal::io::serial_interface::SerialInterface;
+use qitech_lib::ethercat_hal::io::serial_interface::SerialInterface;
+use qitech_lib::units::Frequency;
 use serde::Serialize;
 use std::time::{Duration, Instant};
-use units::electric_current::centiampere;
-use units::electric_potential::centivolt;
-use units::f64::*;
-use units::frequency::centihertz;
+use qitech_lib::units::electric_current::centiampere;
+use qitech_lib::units::electric_potential::centivolt;
+use qitech_lib::units::f64::*;
+use qitech_lib::units::frequency::centihertz;
 
 /// Specifies all System environment Variables
 /// Register addresses are calculated as follows: Register-value 40002 -> address: 40002-40001 -> actual address in request:0x1
