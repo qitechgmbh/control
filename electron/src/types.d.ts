@@ -56,9 +56,9 @@ interface UpdateContext {
 }
 
 interface TroubleshootContext {
-  rebootHmi: () => Promise<{ success: boolean; error?: string }>;
-  restartBackend: () => Promise<{ success: boolean; error?: string }>;
-  exportLogs: () => Promise<{ success: boolean; error?: string }>;
+  rebootHmi: () => Promise<void>;
+  restartBackend: () => Promise<void>;
+  exportLogs: () => Promise<void>;
 }
 
 interface NixOSGeneration {
