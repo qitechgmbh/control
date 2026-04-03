@@ -1,22 +1,16 @@
 use std::{cell::RefCell, rc::Rc, time::{Duration, Instant}};
 use control_core::transmission::fixed::FixedTransmission;
-use qitech_lib::{ethercat_hal::{devices::{ek1100::EK1100, el2004::{EL2004},el3021::EL3021, el3204::EL3204, el6021::EL6021}, io::{analog_input::{ AnalogInputDevice}, digital_output::{ DigitalOutputDevice}, serial_interface::SerialInterface, temperature_input::TemperatureInputDevice}}, units::{AngularVelocity, Pressure, ThermodynamicTemperature, angular_velocity::revolution_per_minute, pressure::bar, thermodynamic_temperature::degree_celsius}};
+use qitech_lib::{ethercat_hal::{devices::{ek1100::EK1100, el2004::EL2004,el3021::EL3021, el3204::EL3204, el6021::EL6021}, io::{analog_input::AnalogInputDevice, digital_output::DigitalOutputDevice, serial_interface::{SerialInterface, SerialInterfaceDevice}, temperature_input::TemperatureInputDevice}}, units::{AngularVelocity, Pressure, ThermodynamicTemperature, angular_velocity::revolution_per_minute, pressure::bar, thermodynamic_temperature::degree_celsius}};
 use crate::{MachineHardware, MachineMessage, MachineNew};
 use super::{ExtruderV2, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80, screw_speed_controller::ScrewSpeedController, temperature_controller::TemperatureController};
 
 impl MachineNew for ExtruderV2 {
     fn new(hw: MachineHardware) -> Result<Self, anyhow::Error> {
         let ek1100 : Rc<RefCell<EK1100>> = hw.try_get_ethercat_device_by_role(0)?;
-        
-        let el6021 : Rc<RefCell<EL6021>> = hw.try_get_ethercat_device_by_role(1)?;
-        let el2004 : Rc<RefCell<EL2004>> = hw.try_get_ethercat_device_by_role(2)?;
-        let el3021 : Rc<RefCell<EL3021>> = hw.try_get_ethercat_device_by_role(3)?;
-        let el3204 : Rc<RefCell<EL3204>> = hw.try_get_ethercat_device_by_role(4)?;
-        let el3204 : Rc<RefCell<EL3204>> = hw.try_get_ethercat_device_by_role(5)?;
-        
-        let temperature_device : Rc<RefCell<dyn TemperatureInputDevice>> = el3204;
-        let pressure_sensor : Rc<RefCell<dyn AnalogInputDevice>> = el3021;
-        let digital_out_device : Rc<RefCell<dyn DigitalOutputDevice>> = el2004;
+        let temperature_device : Rc<RefCell<dyn TemperatureInputDevice>> = hw.try_get_ethercat_device_by_role(4)?;
+        let pressure_sensor : Rc<RefCell<dyn AnalogInputDevice>> =  hw.try_get_ethercat_device_by_role(3)?;
+        let digital_out_device : Rc<RefCell<dyn DigitalOutputDevice>> = hw.try_get_ethercat_device_by_role(2)?;
+        let serial_device : Rc<RefCell<dyn SerialInterfaceDevice>> = hw.try_get_ethercat_device_by_role(1)?;
 
         // The Extruders temparature Controllers should disable the relais when the max_temperature is reached
         let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
@@ -111,6 +105,11 @@ impl MachineNew for ExtruderV2 {
                 screw_speed_controller,
                 emitted_default_state: false,
                 last_status_hash: None,
+
+                relais_output: digital_out_device,
+                temperature_input: temperature_device,
+                serial_interface: serial_device,
+                pressure_sensor,
             };
             extruder.emit_state();
             Ok(extruder)        
