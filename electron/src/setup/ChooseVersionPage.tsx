@@ -664,7 +664,7 @@ function DeleteAllButton({ isLoading, onDeleteAll }: DeleteAllButtonProps) {
       disabled={isLoading}
       onClick={onDeleteAll}
     >
-      {isLoading && <LoadingSpinner />} Delete All Versions
+      {isLoading && <LoadingSpinner />} Delete Old Versions
     </TouchButton>
   );
 }

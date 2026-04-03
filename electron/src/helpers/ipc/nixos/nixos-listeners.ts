@@ -82,6 +82,15 @@ async function deleteNixOSGeneration(generationId: string): Promise<void> {
 }
 
 async function deleteAllOldNixOSGeneration(): Promise<void> {
+  const generations = await listNixOSGenerations();
+
+  // We will always keep the latest three generation.
+  generations.splice(0, 3);
+
+  for (const generation of generations) {
+      await deleteNixOSGeneration(generation.id);
+  }
+
   await run(`nix-collect-garbage --delete-old`);
 }
 
