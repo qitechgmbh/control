@@ -334,7 +334,7 @@ mod tests {
     }
 
     #[test]
-    /// duration: 10 seconds, bucket_size: 1 second
+    /// duration: 10 seconds, `bucket_size`: 1 second
     /// use a for loop that tries to add an event every 100ms
     fn test_cache_duration() {
         // Create a cache function that stores events for 10 seconds

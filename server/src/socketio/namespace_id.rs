@@ -227,7 +227,7 @@ mod tests {
     #[test]
     fn test_display_main() {
         let namespace_id = NamespaceId::Main;
-        assert_eq!(format!("{}", namespace_id), "/main");
+        assert_eq!(format!("{namespace_id}"), "/main");
     }
 
     #[test]
@@ -240,7 +240,7 @@ mod tests {
             serial: 789,
         };
         let namespace_id = NamespaceId::Machine(machine_id);
-        assert_eq!(format!("{}", namespace_id), "/machine/123/456/789");
+        assert_eq!(format!("{namespace_id}"), "/machine/123/456/789");
     }
 
     #[test]
@@ -285,7 +285,7 @@ mod tests {
             serial: 789,
         });
 
-        let string_repr = format!("{}", original);
+        let string_repr = format!("{original}");
         let parsed = NamespaceId::from_str(&string_repr).unwrap();
 
         match parsed {

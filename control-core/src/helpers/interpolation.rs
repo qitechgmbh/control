@@ -512,15 +512,15 @@ mod tests {
         let normalized_value = 0.5;
         let new_min_f32 = 0.0f32;
         let new_max_f32 = 10.0f32;
-        let expected_f32 = (normalized_value * (new_max_f32 as f64 - new_min_f32 as f64)
-            + new_min_f32 as f64) as f32;
+        let expected_f32 = (normalized_value * (f64::from(new_max_f32) - f64::from(new_min_f32))
+            + f64::from(new_min_f32)) as f32;
         assert_relative_eq!(expected_f32, 5.0f32, epsilon = EPSILON as f32);
 
         // Testing i32 return type with direct calculation
         let new_min_i32 = 0i32;
         let new_max_i32 = 10i32;
-        let expected_i32 = (normalized_value * (new_max_i32 as f64 - new_min_i32 as f64)
-            + new_min_i32 as f64) as i32;
+        let expected_i32 = (normalized_value * (f64::from(new_max_i32) - f64::from(new_min_i32))
+            + f64::from(new_min_i32)) as i32;
         assert_eq!(expected_i32, 5i32);
 
         // Edge cases
@@ -535,7 +535,7 @@ mod tests {
     #[test]
     fn test_interpolate_exponential() {
         // Test boundary points (0,0) and (1,1) for various values of a
-        for a in [-10.0, -5.0, -1.0, -0.1, 0.1, 1.0, 5.0, 10.0].iter() {
+        for a in &[-10.0, -5.0, -1.0, -0.1, 0.1, 1.0, 5.0, 10.0] {
             assert_relative_eq!(interpolate_exponential(0.0, *a), 0.0, epsilon = EPSILON);
             assert_relative_eq!(interpolate_exponential(1.0, *a), 1.0, epsilon = EPSILON);
         }
@@ -546,24 +546,19 @@ mod tests {
         assert_relative_eq!(interpolate_exponential(1.1, a), 1.0, epsilon = EPSILON);
 
         // Test monotonicity - function should be strictly increasing for any a
-        for a in [-10.0, -1.0, 0.0, 1.0, 10.0].iter() {
+        for a in &[-10.0, -1.0, 0.0, 1.0, 10.0] {
             let mut prev = interpolate_exponential(0.0, *a);
             for i in 1..=10 {
-                let x = i as f64 / 10.0;
+                let x = f64::from(i) / 10.0;
                 let current = interpolate_exponential(x, *a);
-                assert!(
-                    current > prev,
-                    "Failed monotonicity test at x={}, a={}",
-                    x,
-                    a
-                );
+                assert!(current > prev, "Failed monotonicity test at x={x}, a={a}");
                 prev = current;
             }
         }
 
         // Test symmetry property: f(x, a) + f(1-x, -a) ≈ 1
-        for x in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].iter() {
-            for a in [0.5, 1.0, 2.0, 5.0].iter() {
+        for x in &[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] {
+            for a in &[0.5, 1.0, 2.0, 5.0] {
                 let sum = interpolate_exponential(*x, *a) + interpolate_exponential(1.0 - *x, -*a);
                 assert_relative_eq!(sum, 1.0, epsilon = 1e-8);
             }
@@ -594,7 +589,7 @@ mod tests {
     #[test]
     fn test_interpolate_inflected_exponential() {
         // Test boundary points (0,0), (0.5,0.5), and (1,1) for various steepness values
-        for steepness in [0.0, 0.5, 1.0, 2.0, 5.0].iter() {
+        for steepness in &[0.0, 0.5, 1.0, 2.0, 5.0] {
             assert_relative_eq!(
                 interpolate_inflected_exponential(0.0, *steepness),
                 0.0,
@@ -613,7 +608,7 @@ mod tests {
         }
 
         // Test linear case (steepness = 0)
-        for x in [0.0, 0.25, 0.5, 0.75, 1.0].iter() {
+        for x in &[0.0, 0.25, 0.5, 0.75, 1.0] {
             assert_relative_eq!(
                 interpolate_inflected_exponential(*x, 0.0),
                 *x,
@@ -622,18 +617,14 @@ mod tests {
         }
 
         // Test monotonicity - function should be strictly increasing
-        for steepness in [0.5, 1.0, 2.0, 5.0].iter() {
+        for steepness in &[0.5, 1.0, 2.0, 5.0] {
             let mut prev = interpolate_inflected_exponential(0.0, *steepness);
             for i in 1..=20 {
-                let x = i as f64 / 20.0;
+                let x = f64::from(i) / 20.0;
                 let current = interpolate_inflected_exponential(x, *steepness);
                 assert!(
                     current >= prev,
-                    "Failed monotonicity test at x={}, steepness={}, prev={}, current={}",
-                    x,
-                    steepness,
-                    prev,
-                    current
+                    "Failed monotonicity test at x={x}, steepness={steepness}, prev={prev}, current={current}"
                 );
                 prev = current;
             }
@@ -673,16 +664,13 @@ mod tests {
         );
 
         // Test that output is always in [0, 1] range
-        for steepness in [0.0, 1.0, 5.0, 10.0].iter() {
+        for steepness in &[0.0, 1.0, 5.0, 10.0] {
             for i in 0..=100 {
-                let x = i as f64 / 100.0;
+                let x = f64::from(i) / 100.0;
                 let y = interpolate_inflected_exponential(x, *steepness);
                 assert!(
-                    y >= 0.0 && y <= 1.0,
-                    "Output {} out of range [0,1] for x={}, steepness={}",
-                    y,
-                    x,
-                    steepness
+                    (0.0..=1.0).contains(&y),
+                    "Output {y} out of range [0,1] for x={x}, steepness={steepness}"
                 );
             }
         }
@@ -777,16 +765,11 @@ mod tests {
         let mut prev = interpolate_hinge(0.0, test_x, test_y);
 
         for i in 1..=20 {
-            let value = i as f64 / 20.0;
+            let value = f64::from(i) / 20.0;
             let current = interpolate_hinge(value, test_x, test_y);
             assert!(
                 current >= prev,
-                "Failed monotonicity test at value={}, x={}, y={}, prev={}, current={}",
-                value,
-                test_x,
-                test_y,
-                prev,
-                current
+                "Failed monotonicity test at value={value}, x={test_x}, y={test_y}, prev={prev}, current={current}"
             );
             prev = current;
         }
@@ -801,13 +784,13 @@ mod tests {
         // Test different steepness values (both positive and negative)
         let steepness_values = [-3.0, -1.0, 0.0, 1.0, 3.0];
 
-        for steepness in steepness_values.iter() {
-            println!("\nSteepness = {}", steepness);
+        for steepness in &steepness_values {
+            println!("\nSteepness = {steepness}");
 
             // Generate data points
             let points: Vec<(f32, f32)> = (0..=50)
                 .map(|i| {
-                    let x = i as f64 / 50.0;
+                    let x = f64::from(i) / 50.0;
                     let y = interpolate_exponential(x, *steepness);
                     (x as f32, y as f32)
                 })
@@ -829,13 +812,13 @@ mod tests {
         // Test different hinge points
         let hinges = [(0.3, 0.7), (0.5, 0.5), (0.2, 0.9), (0.8, 0.2)];
 
-        for &(x_hinge, y_hinge) in hinges.iter() {
-            println!("\nHinge at ({}, {})", x_hinge, y_hinge);
+        for &(x_hinge, y_hinge) in &hinges {
+            println!("\nHinge at ({x_hinge}, {y_hinge})");
 
             // Generate data points
             let points: Vec<(f32, f32)> = (0..=50)
                 .map(|i| {
-                    let x = i as f64 / 50.0;
+                    let x = f64::from(i) / 50.0;
                     let y = interpolate_hinge(x, x_hinge, y_hinge);
                     (x as f32, y as f32)
                 })
@@ -855,13 +838,13 @@ mod tests {
         // Test different steepness values
         let steepness_values = [0.5, 1.0, 2.0, 5.0];
 
-        for steepness in steepness_values.iter() {
-            println!("\nSteepness = {}", steepness);
+        for steepness in &steepness_values {
+            println!("\nSteepness = {steepness}");
 
             // Generate data points
             let points: Vec<(f32, f32)> = (0..=50)
                 .map(|i| {
-                    let x = i as f64 / 50.0;
+                    let x = f64::from(i) / 50.0;
                     let y = interpolate_inflected_exponential(x, *steepness);
                     (x as f32, y as f32)
                 })

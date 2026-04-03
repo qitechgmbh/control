@@ -432,6 +432,4 @@ pub fn get_identification_addresses(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-}
+mod tests {}

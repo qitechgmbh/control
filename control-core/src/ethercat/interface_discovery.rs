@@ -88,7 +88,7 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
     let mut interface: Option<&str> = None;
 
     for i in 0..interfaces.len() {
-        if let Ok(()) = test_interface(&interfaces[i].name) {
+        if matches!(test_interface(&interfaces[i].name), Ok(())) {
             // if interface found with ethercat Exit early, we expect only one interface with ethercat
             interface = Some(&interfaces[i].name);
             break;

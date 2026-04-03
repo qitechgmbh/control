@@ -452,11 +452,11 @@ impl IP20EcDi8Do8 {
 
                     let mut dev_guard = dev.write_blocking();
                     if let Some(offset) = tx_pdo_offset {
-                        dev_guard.set_tx_offset(*offset)
+                        dev_guard.set_tx_offset(*offset);
                     }
 
                     if let Some(offset) = rx_pdo_offset {
-                        dev_guard.set_rx_offset(*offset)
+                        dev_guard.set_rx_offset(*offset);
                     }
                     drop(dev_guard);
                     self.slot_devices[self.dev_count] = Some(dev);

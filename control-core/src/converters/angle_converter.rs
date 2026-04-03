@@ -246,14 +246,14 @@ mod tests {
     #[test]
     fn test_constructors() {
         let math = AngleConverter::mathematical();
-        assert_eq!(math.flip_x, false);
-        assert_eq!(math.flip_y, false);
-        assert_eq!(math.is_cw, false);
+        assert!(!math.flip_x);
+        assert!(!math.flip_y);
+        assert!(!math.is_cw);
 
         let screen = AngleConverter::screen();
-        assert_eq!(screen.flip_x, false);
-        assert_eq!(screen.flip_y, true);
-        assert_eq!(screen.is_cw, false);
+        assert!(!screen.flip_x);
+        assert!(screen.flip_y);
+        assert!(!screen.is_cw);
     }
 
     #[test]
@@ -300,8 +300,8 @@ mod tests {
         let converter = AngleConverter::screen();
 
         // Test radians_encode
-        let result = converter.radians_encode(PI as f64 / 2.0) as f64; // 90° in radians
-        let expected: f64 = 270.0f64 * PI as f64 / 180.0f64; // 270° in radians
+        let result = converter.radians_encode(f64::from(PI) / 2.0); // 90° in radians
+        let expected: f64 = 270.0f64 * f64::from(PI) / 180.0f64; // 270° in radians
         assert!((result - expected).abs() < 1e-6);
     }
 
@@ -313,6 +313,6 @@ mod tests {
         let converted = converter.degrees_encode(original);
         let roundtrip = converter.degrees_decode(converted);
 
-        assert!((original - roundtrip as f64).abs() < 1e-6);
+        assert!((original - roundtrip).abs() < 1e-6);
     }
 }

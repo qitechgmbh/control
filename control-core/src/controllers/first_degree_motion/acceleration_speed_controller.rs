@@ -209,7 +209,7 @@ mod tests {
         let dt = 0.1;
         let t2 = future_instant(t1, dt);
 
-        let expected_speed = (10.0 + (-15.0 * dt)).max(5.0); // Should decelerate by max_deceleration * dt, floored at target
+        let expected_speed = (-15.0f64).mul_add(dt, 10.0).max(5.0); // Should decelerate by max_deceleration * dt, floored at target
 
         let actual_speed = controller.update(5.0, t2);
 

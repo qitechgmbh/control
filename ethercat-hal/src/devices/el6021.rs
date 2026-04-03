@@ -576,6 +576,26 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
     }
 }
 
+pub const EL6021_VENDOR_ID: u32 = 2;
+pub const EL6021_PRODUCT_ID: u32 = 0x17853052;
+
+pub const EL6021_REVISION_A: u32 = 0x150000;
+pub const EL6021_REVISION_B: u32 = 0x140000;
+pub const EL6021_REVISION_C: u32 = 0x160000;
+pub const EL6021_REVISION_D: u32 = 0x100000;
+
+pub const EL6021_IDENTITY_A: SubDeviceIdentityTuple =
+    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_A);
+
+pub const EL6021_IDENTITY_B: SubDeviceIdentityTuple =
+    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_B);
+
+pub const EL6021_IDENTITY_C: SubDeviceIdentityTuple =
+    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_C);
+
+pub const EL6021_IDENTITY_D: SubDeviceIdentityTuple =
+    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_D);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -594,12 +614,12 @@ mod tests {
         let mut input = Standard22ByteMdp600Input::default();
 
         input.read(bits.as_bitslice());
-        assert_eq!(input.status.transmit_accepted, true);
-        assert_eq!(input.status.receive_request, false);
-        assert_eq!(input.status.init_accepted, true);
-        assert_eq!(input.status.buffer_full, false);
-        assert_eq!(input.status.parity_error, true);
-        assert_eq!(input.status.receive_request, false);
+        assert!(input.status.transmit_accepted);
+        assert!(!input.status.receive_request);
+        assert!(input.status.init_accepted);
+        assert!(!input.status.buffer_full);
+        assert!(input.status.parity_error);
+        assert!(!input.status.receive_request);
         assert_eq!(input.length, 0x16);
         for i in 0..22 {
             assert_eq!(input.data[i], (i + 1) as u8);
@@ -615,7 +635,7 @@ mod tests {
         };
 
         let output = Standard22ByteMdp600Output {
-            control: control,
+            control,
             length: 0x16,
             data: [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
@@ -636,23 +656,3 @@ mod tests {
         }
     }
 }
-
-pub const EL6021_VENDOR_ID: u32 = 2;
-pub const EL6021_PRODUCT_ID: u32 = 0x17853052;
-
-pub const EL6021_REVISION_A: u32 = 0x150000;
-pub const EL6021_REVISION_B: u32 = 0x140000;
-pub const EL6021_REVISION_C: u32 = 0x160000;
-pub const EL6021_REVISION_D: u32 = 0x100000;
-
-pub const EL6021_IDENTITY_A: SubDeviceIdentityTuple =
-    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_A);
-
-pub const EL6021_IDENTITY_B: SubDeviceIdentityTuple =
-    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_B);
-
-pub const EL6021_IDENTITY_C: SubDeviceIdentityTuple =
-    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_C);
-
-pub const EL6021_IDENTITY_D: SubDeviceIdentityTuple =
-    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_D);

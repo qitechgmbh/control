@@ -76,7 +76,7 @@ mod tests {
             normalized: 0.5,
             wiring_error: false,
         };
-        dummy.set_input(input.clone());
+        dummy.set_input(input);
 
         let analog_input = dummy.analog_input();
         let normalized = analog_input.get_normalized();

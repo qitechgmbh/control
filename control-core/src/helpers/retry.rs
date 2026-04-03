@@ -340,7 +340,7 @@ mod tests {
             || {
                 attempt += 1;
                 if attempt < 3 {
-                    Err(format!("failed attempt {}", attempt))
+                    Err(format!("failed attempt {attempt}"))
                 } else {
                     Ok(42)
                 }
@@ -361,7 +361,7 @@ mod tests {
         let result: Result<i32, String> = retry_conditionally(
             || {
                 attempt += 1;
-                Err(format!("failed attempt {}", attempt))
+                Err(format!("failed attempt {attempt}"))
             },
             |_err| {
                 // Stop after first failure

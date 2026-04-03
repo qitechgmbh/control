@@ -263,7 +263,7 @@ mod tests {
             0x11, 0x03, 0x06, 0x17, 0x70, 0x0b, 0xb8, 0x03, 0xe8, 0x2c, 0xe6,
         ];
 
-        let response = ModbusResponse::try_from(response_raw.clone());
+        let response = ModbusResponse::try_from(response_raw);
 
         // Expected result based on provided test data
         let expected = ModbusResponse {
@@ -312,8 +312,7 @@ mod tests {
 
         assert_eq!(
             result, expected,
-            "ModbusRequest conversion failed. Expected: {:?}, Got: {:?}",
-            expected, result
+            "ModbusRequest conversion failed. Expected: {expected:?}, Got: {result:?}"
         );
     }
 

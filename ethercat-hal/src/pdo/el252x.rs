@@ -158,10 +158,10 @@ mod tests {
     #[test]
     fn test_pto_status() {
         // set all flags
-        let buffer = vec![0b0111_0011u8, 0b1010_0000u8];
+        let buffer = [0b0111_0011u8, 0b1010_0000u8];
         let bits = buffer.view_bits::<Lsb0>();
         let mut pdo_status = PtoStatus::default();
-        pdo_status.read(&bits);
+        pdo_status.read(bits);
         assert_eq!(
             pdo_status,
             PtoStatus {
@@ -173,17 +173,17 @@ mod tests {
                 sync_error: true,
                 txpdo_toggle: true
             }
-        )
+        );
     }
 
     #[test]
     fn test_enc_status() {
         // set all flags
         // set counter value to 0x12345678
-        let buffer = vec![0b0001_1100u8, 0b1010_0000u8, 0x78u8, 0x56u8, 0x34u8, 0x12u8];
+        let buffer = [0b0001_1100u8, 0b1010_0000u8, 0x78u8, 0x56u8, 0x34u8, 0x12u8];
         let bits = buffer.view_bits::<Lsb0>();
         let mut enc_status = EncStatus::default();
-        enc_status.read(&bits);
+        enc_status.read(bits);
 
         assert_eq!(
             enc_status,
@@ -195,7 +195,7 @@ mod tests {
                 txpdo_toggle: true,
                 counter_value: 0x12345678
             }
-        )
+        );
     }
 
     #[test]
@@ -210,8 +210,8 @@ mod tests {
             go_counter: true,
             frequency_value: 0x1234,
         };
-        pto_control.write(&mut bits);
-        assert_eq!(buffer, vec![0b0000_0111u8, 0u8, 0x34u8, 0x12u8])
+        pto_control.write(bits);
+        assert_eq!(buffer, vec![0b0000_0111u8, 0u8, 0x34u8, 0x12u8]);
     }
 
     #[test]
@@ -222,8 +222,8 @@ mod tests {
         let pto_target = PtoTarget {
             target_counter_value: 0x12345678,
         };
-        pto_target.write(&mut bits);
-        assert_eq!(buffer, vec![0x78u8, 0x56u8, 0x34u8, 0x12u8])
+        pto_target.write(bits);
+        assert_eq!(buffer, vec![0x78u8, 0x56u8, 0x34u8, 0x12u8]);
     }
 
     #[test]
@@ -236,10 +236,10 @@ mod tests {
             set_counter: true,
             set_counter_value: 0x12345678,
         };
-        enc_control.write(&mut bits);
+        enc_control.write(bits);
         assert_eq!(
             buffer,
             vec![0b0000_0100u8, 0u8, 0x78u8, 0x56u8, 0x34u8, 0x12u8]
-        )
+        );
     }
 }

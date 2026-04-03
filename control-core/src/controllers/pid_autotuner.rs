@@ -446,7 +446,7 @@ mod tests {
 
             if cycle % 3 == 0 {
                 let progress = tuner.get_progress_percent();
-                println!("Cycle {}: Progress {}%", cycle, progress);
+                println!("Cycle {cycle}: Progress {progress}%");
             }
         }
 

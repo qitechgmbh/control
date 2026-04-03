@@ -31,7 +31,8 @@ pub fn start_loop_thread(
     cycle_target: Duration,
 ) -> Result<std::thread::JoinHandle<()>, std::io::Error> {
     // Start control loop
-    let res = std::thread::Builder::new()
+
+    std::thread::Builder::new()
         .name("loop".to_owned())
         .spawn(move || {
             let rt_receiver = rt_receiver.clone();
@@ -152,8 +153,7 @@ pub fn start_loop_thread(
             // Exit the entire program if the Loop fails
             // gets restarted by systemd if running on NixOS, or different distro wtih the same sysd service
             std::process::exit(1);
-        });
-    res
+        })
 }
 
 pub async fn copy_ethercat_inputs(

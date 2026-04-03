@@ -83,7 +83,7 @@ mod tests {
         object.value = true;
 
         let mut bits = BitSlice::<_, Lsb0>::from_slice_mut(&mut buffer);
-        object.write(&mut bits);
+        object.write(bits);
 
         assert_eq!(buffer[0], 1);
     }
