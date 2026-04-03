@@ -109,8 +109,6 @@ impl ExtruderV3 {
         self.last_energy_calculation_time = Some(now);
     }
 
-    // Funktionen ohne emit_state bleiben hier
-
     // Set all relais to ZERO
     // We dont need a function to enable again though, as the act Loop will detect the mode
     fn turn_heating_off(&mut self) {

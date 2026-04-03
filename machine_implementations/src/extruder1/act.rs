@@ -13,10 +13,14 @@ impl Machine for ExtruderV2 {
             Err(_) => (),
         };
 
-        self.temperature_controller_back.update(now,self.temperature_controller_back);
-        self.temperature_controller_nozzle.update(now);
-        self.temperature_controller_front.update(now);
-        self.temperature_controller_middle.update(now);
+        let mut relais = self.relais_output.borrow_mut();
+        let mut temp_sensor = self.temperature_input.borrow();
+        self.temperature_controller_back.update(now,&mut relais,&temp_sensor);
+        self.temperature_controller_nozzle.update(now,&mut relais,&temp_sensor);
+        self.temperature_controller_front.update(now,&mut relais,&temp_sensor);
+        self.temperature_controller_middle.update(now,&mut relais,&temp_sensor);
+        drop(relais);
+        drop(temp_sensor);
 
         if self.mode == super::ExtruderV2Mode::Extrude {
             self.screw_speed_controller.update(now, true);
@@ -36,7 +40,6 @@ impl Machine for ExtruderV2 {
 
         let now = Instant::now();
 
-        // more than 33ms have passed since last emit (30 "fps" target)
         if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             self.update_total_energy(now);
             self.maybe_emit_state_event();

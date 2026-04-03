@@ -13,7 +13,7 @@ use std::time::Instant;
 use api::ExtruderV2Namespace;
 use qitech_lib::machines::MachineIdentificationUnique;
 #[cfg(not(feature = "mock-machine"))]
-use qitech_lib::{ethercat_hal::io::{digital_output::DigitalOutputDevice, serial_interface::SerialInterfaceDevice, temperature_input::TemperatureInputDevice}, units::{electric_current::ampere, electric_potential::volt}};
+use qitech_lib::{ethercat_hal::io::{analog_input::AnalogInputDevice, digital_output::DigitalOutputDevice, serial_interface::SerialInterfaceDevice, temperature_input::TemperatureInputDevice}, units::{electric_current::ampere, electric_potential::volt}};
 use qitech_lib::units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
 use screw_speed_controller::ScrewSpeedController;
 use serde::Serialize;
@@ -73,6 +73,7 @@ pub struct ExtruderV2 {
     relais_output : Rc<RefCell<dyn DigitalOutputDevice>>,
     temperature_input : Rc<RefCell<dyn TemperatureInputDevice>>,
     serial_interface : Rc<RefCell<dyn SerialInterfaceDevice>>,
+    pressure_sensor : Rc<RefCell<dyn AnalogInputDevice>>,
 
     screw_speed_controller: ScrewSpeedController,
     temperature_controller_front: TemperatureController,
