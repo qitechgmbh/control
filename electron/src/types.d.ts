@@ -32,27 +32,28 @@ interface EnvironmentContext {
   getInfo: () => Promise<EnvironmentInfo>;
 }
 
+type UpdateInfo = {
+  githubRepoOwner: string;
+  githubRepoName: string;
+  githubToken?: string;
+  tag?: string;
+  branch?: string;
+  commit?: string;
+};
+
+type UpdateProgressReport = {
+  stepId: string;
+  status: "pending" | "in-progress" | "completed" | "error";
+  progress?: number;
+};
+
 interface UpdateContext {
-  execute: (params: {
-    githubRepoOwner: string;
-    githubRepoName: string;
-    githubToken?: string;
-    tag?: string;
-    branch?: string;
-    commit?: string;
-  }) => Promise<void>;
-  cancel: () => Promise<{ success: boolean; error?: string }>;
+  execute: (info: UpdateInfo) => Promise<void>;
+  cancel: () => Promise<void>;
   onLog: (callback: (log: string) => void) => void;
-  onEnd: (
-    callback: (params: { success: boolean; error?: string }) => void,
-  ) => void;
-  onStep: (
-    callback: (params: {
-      stepId: string;
-      status: "pending" | "in-progress" | "completed" | "error";
-      progress?: number;
-    }) => void,
-  ) => void;
+  onStart: (callback: () => void) => void;
+  onEnd: (callback: () => void) => void;
+  onStep: (callback: (report: UpdateProgressReport) => void) => void;
 }
 
 interface TroubleshootContext {

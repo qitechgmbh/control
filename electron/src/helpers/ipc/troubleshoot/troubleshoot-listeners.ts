@@ -9,11 +9,11 @@ import { run } from "../commands";
 
 export function addTroubleshootEventListeners() {
   ipcMain.handle(TROUBLESHOOT_REBOOT_HMI, async () => {
-    run("sudo reboot");
+    await run("sudo reboot").result;
   });
 
   ipcMain.handle(TROUBLESHOOT_RESTART_BACKEND, async () => {
-    run("sudo systemctl restart qitech-control-server");
+    await run("sudo systemctl restart qitech-control-server").result;
   });
 
   ipcMain.handle(TROUBLESHOOT_EXPORT_LOGS, async () => {
@@ -32,6 +32,6 @@ export function addTroubleshootEventListeners() {
       throw new Error("Export cancelled by user");
     }
 
-    run(`journalctl -xb > "${filePath}"`);
+    await run(`journalctl -xb > "${filePath}"`).result;
   });
 }

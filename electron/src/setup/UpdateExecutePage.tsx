@@ -5,14 +5,12 @@ import { Terminal } from "@/components/Terminal";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { UpdateProgressBar } from "@/components/UpdateProgressBar";
 import { Icon } from "@/components/Icon";
-import { updateExecute, updateCancelWithStore } from "@/helpers/update_helpers";
-import { useUpdateStore } from "@/stores/updateStore";
 import { useSearch } from "@tanstack/react-router";
-import React, { useEffect } from "react";
-import { toast } from "sonner";
+import React from "react";
+import { useUpdate } from "@/lib/update/useUpdate";
 
 export function UpdateExecutePage() {
-  const search = useSearch({
+  const updateInfo = useSearch({
     from: "/_sidebar/setup/update/execute",
   });
 
@@ -22,68 +20,9 @@ export function UpdateExecutePage() {
     currentUpdateInfo,
     steps,
     overallProgress,
-    setUpdateInfo,
-    startUpdate,
-    stopUpdate,
-    addTerminalLine,
-    clearTerminalLines,
-    resetUpdateState,
-    initializeSteps,
-  } = useUpdateStore();
-
-  // Set update info from search params when component mounts or search changes
-  useEffect(() => {
-    if (!isUpdating && search) {
-      setUpdateInfo({
-        githubRepoOwner: search.githubRepoOwner,
-        githubRepoName: search.githubRepoName,
-        githubToken: search.githubToken || undefined,
-        tag: search.tag,
-        branch: search.branch,
-        commit: search.commit,
-      });
-    }
-  }, [search, isUpdating, setUpdateInfo]);
-
-  const handleClick = async () => {
-    const updateInfo = currentUpdateInfo || {
-      githubRepoOwner: search.githubRepoOwner,
-      githubRepoName: search.githubRepoName,
-      githubToken: search.githubToken || undefined,
-      tag: search.tag,
-      branch: search.branch,
-      commit: search.commit,
-    };
-
-    initializeSteps();
-    startUpdate();
-    // Perhaps we just need to clear the logs ?
-    const res = await updateExecute(updateInfo, addTerminalLine);
-    stopUpdate();
-
-    if (res.success) {
-      toast.success("Update applied successfully");
-    } else {
-      toast.error("Update failed: " + res.error);
-    }
-  };
-
-  const handleCancel = async () => {
-    if (!isUpdating) return;
-
-    try {
-      const res = await updateCancelWithStore();
-      if (res.success) {
-        toast.info("Update cancelled successfully");
-        clearTerminalLines();
-      } else {
-        toast.error("Failed to cancel update: " + res.error);
-      }
-    } catch (error: any) {
-      toast.error("Failed to cancel update: " + error.message);
-    }
-    resetUpdateState();
-  };
+    start,
+    cancel,
+  } = useUpdate();
 
   return (
     <Page>
@@ -93,7 +32,7 @@ export function UpdateExecutePage() {
         <TouchButton
           className="w-max"
           icon="lu:CircleFadingArrowUp"
-          onClick={handleClick}
+          onClick={() => start(updateInfo)}
           disabled={isUpdating}
           isLoading={isUpdating}
         >
@@ -103,7 +42,7 @@ export function UpdateExecutePage() {
           <TouchButton
             className="w-max"
             icon="lu:X"
-            onClick={handleCancel}
+            onClick={cancel}
             variant="destructive"
           >
             Cancel Update

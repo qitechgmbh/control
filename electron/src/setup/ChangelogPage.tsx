@@ -6,11 +6,11 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert } from "@/components/Alert";
 import { Markdown } from "@/components/Markdown";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { useUpdateStore } from "@/stores/updateStore";
+import { useUpdate } from "@/lib/update/useUpdate";
 
 export function ChangelogPage() {
   const navigate = useNavigate();
-  const { isUpdating } = useUpdateStore();
+  const { isUpdating } = useUpdate();
   const search = useSearch({
     from: "/_sidebar/setup/update/changelog",
   });

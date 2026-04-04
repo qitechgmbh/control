@@ -1,7 +1,7 @@
 import React from "react";
 import { Icon } from "./Icon";
 import { cn } from "@/lib/utils";
-import type { UpdateStep } from "@/stores/updateStore";
+import { UpdateStep } from "@/lib/update/updateStore";
 
 interface UpdateProgressBarProps {
   steps: UpdateStep[];
