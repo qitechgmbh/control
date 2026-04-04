@@ -12,7 +12,7 @@ import { run } from "../commands";
 export function addNixOSEventListeners() {
   ipcMain.handle(NIXOS_IS_AVAILABLE, async () => {
     try {
-      await run("nix --version");
+      await run("nix --version").result;
       return true;
     } catch (error) {
       console.warn("NixOS is not available:", error);
@@ -57,28 +57,28 @@ export function addNixOSEventListeners() {
 }
 
 async function listNixOSGenerations(): Promise<NixOSGeneration[]> {
-  const { stdout } = await run("sudo nixos-rebuild list-generations");
+  const { stdout } = await run("sudo nixos-rebuild list-generations").result;
   return parseNixOSGenerations(stdout);
 }
 
 async function setNixOSGeneration(generationId: string): Promise<void> {
   await run(
     `sudo nix-env --switch-generation ${generationId} -p /nix/var/nix/profiles/system`,
-  );
+  ).result;
   await run(
     "sudo /nix/var/nix/profiles/system/bin/switch-to-configuration boot",
-  );
-  await run("sudo reboot");
+  ).result;
+  await run("sudo reboot").result;
 }
 
 async function deleteNixOSGeneration(generationId: string): Promise<void> {
   await run(
     `sudo nix-env --delete-generations ${generationId} -p /nix/var/nix/profiles/system`,
-  );
-  await run(`sudo nix store gc`);
+  ).result;
+  await run(`sudo nix store gc`).result;
   await run(
     `sudo /nix/var/nix/profiles/system/bin/switch-to-configuration boot`,
-  );
+  ).result;
 }
 
 async function deleteAllOldNixOSGeneration(): Promise<void> {
@@ -88,10 +88,10 @@ async function deleteAllOldNixOSGeneration(): Promise<void> {
   generations.splice(0, 3);
 
   for (const generation of generations) {
-      await deleteNixOSGeneration(generation.id);
+    await deleteNixOSGeneration(generation.id);
   }
 
-  await run(`nix-collect-garbage --delete-old`);
+  await run(`nix-collect-garbage --delete-old`).result;
 }
 
 function parseNixOSGenerations(output: string): NixOSGeneration[] {

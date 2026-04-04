@@ -10,8 +10,11 @@ buildNpmPackage rec {
   ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
 
   makeCacheWritable = true;
-  npmDepsHash = "sha256-1QAtF2Sp5jh1eUExWsCf2tsaRcAMhL/5QnkcrD3kva4=";
-  npmFlags = [ "--no-audit" "--no-fund" ];
+  npmDepsHash = "sha256-2dGqzS15hu+YHsIkiGllp8aHtJ6QVwGf4YmOPOOqeKQ=";
+  npmFlags = [
+    "--no-audit"
+    "--no-fund"
+  ];
 
   installPhase = ''
     runHook preInstall

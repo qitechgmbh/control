@@ -10,13 +10,13 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffectAsync } from "@/lib/useEffectAsync";
 import { Collapsible, CollapsibleTrigger } from "@radix-ui/react-collapsible";
 import { CollapsibleContent } from "@/components/ui/collapsible";
-import { useUpdateStore } from "@/stores/updateStore";
 import { useGithubSourceStore } from "@/stores/githubSourceStore";
 import { Input } from "@/components/ui/input";
+import { useUpdate } from "@/lib/update/useUpdate";
 
 export function ChooseVersionPage() {
   const navigate = useNavigate();
-  const { isUpdating, currentUpdateInfo } = useUpdateStore();
+  const { isUpdating, currentUpdateInfo } = useUpdate();
 
   // load environment info
   const [environmentInfo, setEnvironmentInfo] = useState<
