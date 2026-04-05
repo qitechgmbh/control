@@ -33,7 +33,7 @@ export function run(
     child.stdout?.on("data", (data) => stdout.onData(data));
     child.stderr?.on("data", (data) => stderr.onData(data));
 
-    const onExit = (code: number) => {
+    const onExit = (code: number, signal?: NodeJS.Signals) => {
       stdout.onClose();
       stderr.onClose();
 
@@ -43,6 +43,8 @@ export function run(
           stdout: stdout.total,
           stderr: stderr.total,
         });
+      } else if (signal === "SIGTERM" || signal === "SIGKILL") {
+        reject(new Error("Process was killed"));
       } else {
         reject(new Error(stderr.total || `Process exited with code ${code}`));
       }
@@ -93,6 +95,6 @@ export async function killWithDescendants(
   pid: number,
   signal: NodeJS.Signals = "SIGTERM",
 ): Promise<void> {
-  const stipped = signal.replace("SIG", "");
-  await run(`kill -s ${stipped} $(ps -s ${pid} -o pid=)`).result;
+  const stripped = signal.replace("SIG", "");
+  await run(`kill -s ${stripped} ${pid} $(ps -s ${pid} -o pid=)`).result;
 }
