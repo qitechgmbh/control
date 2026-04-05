@@ -20,6 +20,8 @@ use units::electric_potential::volt;
 use crate::MACHINE_EXTRUDER_V2;
 
 #[cfg(not(feature = "mock-machine"))]
+use crate::MACHINE_EXTRUDER_V2_REVERSED;
+#[cfg(not(feature = "mock-machine"))]
 use crate::{AsyncThreadMessage, Machine};
 
 #[cfg(not(feature = "mock-machine"))]
@@ -104,6 +106,10 @@ impl ExtruderV3 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_EXTRUDER_V2,
+    };
+    pub const REVERSED_MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_EXTRUDER_V2_REVERSED,
     };
 }
 

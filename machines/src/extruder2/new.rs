@@ -208,6 +208,14 @@ impl MachineNewTrait for ExtruderV3 {
                 0.95,
             );
 
+            let reversed: bool = match params
+                .get_machine_identification_unique()
+                .machine_identification
+            {
+                ExtruderV3::REVERSED_MACHINE_IDENTIFICATION => true,
+                _ => false,
+            };
+
             let inverter = MitsubishiCS80::new(SerialInterface::new(el6021, EL6021Port::SI1));
 
             let target_pressure = Pressure::new::<bar>(0.0);
@@ -222,6 +230,7 @@ impl MachineNewTrait for ExtruderV3 {
                 pressure_sensor,
                 FixedTransmission::new(1.0 / 30.0),
                 motor_poles,
+                reversed,
             );
             let (sender, receiver) = smol::channel::unbounded();
 
