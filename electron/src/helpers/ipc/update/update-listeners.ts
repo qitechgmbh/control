@@ -51,6 +51,9 @@ export function addUpdateEventListeners() {
     } finally {
       event.sender.send(UPDATE_END);
       updating = false;
+
+      // restart the backend if the user canceled or something went wrong
+      await runWithTerminal("sudo systemctl start qitech-control-server");
     }
   });
 
@@ -109,11 +112,16 @@ async function update(info: UpdateInfo): Promise<void> {
   checkCanceled();
 
   // 3. make the nixos-install.sh script executable (not tracked in progress UI)
-  await runCommand("chmod +x nixos-install.sh", { workingDir: repoDir });
+  await runWithTerminal("chmod +x nixos-install.sh", { workingDir: repoDir });
 
   checkCanceled();
 
-  // 4. run the nixos-install.sh script
+  // 4. stop backend for maximal build capacity (not tracked in progress UI)
+  await runWithTerminal("sudo systemctl stop qitech-control-server");
+
+  checkCanceled();
+
+  // 5. run the nixos-install.sh script
   // This script will handle rust-build, electron-build, and system-install
   // Start with rust-build (cargo builds)
   reportProgress({
@@ -122,7 +130,8 @@ async function update(info: UpdateInfo): Promise<void> {
   });
 
   try {
-    await runCommand("./nixos-install.sh", {
+    // We use taskset here to also use the isolated cpu cores.
+    await runWithTerminal("taskset --cpu-list 0-3 ./nixos-install.sh", {
       workingDir: repoDir,
       onStdout: parseInstallProgress,
       onStderr: parseInstallProgress,
@@ -193,7 +202,7 @@ async function cloneRepository({
   }
 
   // Git outputs progress to stderr
-  await runCommand(cloneCmd, {
+  await runWithTerminal(cloneCmd, {
     workingDir: homeDir,
     onStderr: (line) => {
       const status = parseGitProgress(line);
@@ -204,7 +213,7 @@ async function cloneRepository({
   // If commit is specified, checkout the specific commit
   if (commit) {
     const repoDir = `${homeDir}/${githubRepoName}`;
-    await runCommand(`git checkout ${commit}`, { workingDir: repoDir });
+    await runWithTerminal(`git checkout ${commit}`, { workingDir: repoDir });
     log(terminalSuccess(`Successfully checked out commit: ${commit}`));
   }
 
@@ -251,9 +260,9 @@ function parseInstallProgress(log: string) {
   }
 }
 
-async function runCommand(
+async function runWithTerminal(
   cmd: string,
-  { workingDir, onStdout, onStderr }: RunOptions,
+  { workingDir, onStdout, onStderr }: RunOptions = {},
 ): Promise<void> {
   log(`🚀 ${terminalGray(workingDir ?? "./")} ${terminalColor("blue", cmd)}`);
 

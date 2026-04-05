@@ -48,14 +48,22 @@ export function UpdateExecutePage() {
             Cancel Update
           </TouchButton>
         )}
-        {isUpdating && (
-          <div className="ml-auto flex items-center gap-2 rounded-xl border border-blue-400 bg-blue-600 px-4 py-2.5 text-white shadow-xl backdrop-blur-sm transition-all duration-300">
+        <div className="ml-auto flex flex-col gap-2">
+          <div role="alert" className="flex w-max gap-2 rounded-xl border border-amber-400 bg-amber-500 px-4 py-2.5 text-white shadow-xl backdrop-blur-sm transition-all duration-300">
             <Icon name="lu:Info" className="h-5 w-5 text-blue-100" />
             <span className="text-base leading-snug text-blue-50">
-              Updates typically take approximately <strong>5 minutes</strong>
+              Make sure machine is <strong>not</strong> in use when updating!
             </span>
           </div>
-        )}
+          {isUpdating && (
+            <div role="alert" className="flex w-max gap-2 rounded-xl border border-blue-400 bg-blue-500 px-4 py-2.5 text-white shadow-xl backdrop-blur-sm transition-all duration-300">
+              <Icon name="lu:Info" className="h-5 w-5 text-blue-100" />
+              <span className="text-base leading-snug text-blue-50">
+                Updates typically take approximately <strong>5 minutes</strong>
+              </span>
+            </div>
+          )}
+        </div>
       </div>
       {currentUpdateInfo && (
         <Alert title="Update Information" variant="info">
