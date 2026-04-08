@@ -1,7 +1,5 @@
-use units::angle::revolution;
-use units::f64::*;
-
-// Comments are just a little excessive here ...
+use qitech_lib::units::angle::revolution;
+use qitech_lib::units::f64::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Clamping {
@@ -10,32 +8,8 @@ pub enum Clamping {
     Max,
 }
 
-/// Clamps a UOM angle value to be within the specified range [min, max].
-///
-/// This is a wrapper around [`clamp_revolution`] that works with UOM Angle types.
-///
-/// # Arguments
-///
-/// * `value` - The angle value to clamp
-/// * `min` - The minimum acceptable angle
-/// * `max` - The maximum acceptable angle
-///
-/// # Returns
-///
-/// A clamped angle value according to the same rules as [`clamp_revolution`].
-///
-/// # Examples
-///
-/// ```ignore
-/// units::angle::{revolution, Angle};
-///
-/// let value = Angle::new::<revolution>(0.15);
-/// let min = Angle::new::<revolution>(0.1);
-/// let max = Angle::new::<revolution>(0.2);
-///
-/// let clamped = clamp_revolution_uom(value, min, max);
-/// assert_eq!(clamped.get::<revolution>(), 0.15); // Value within range stays the same
-/// ```
+// Clamps a UOM angle value to be within the specified range [min, max].
+// This is a wrapper around [`clamp_revolution`] that works with UOM Angle types.
 pub fn clamp_revolution_uom(value: Angle, min: Angle, max: Angle) -> (Angle, Clamping) {
     let value = value.get::<revolution>();
     let min = min.get::<revolution>();
@@ -48,35 +22,8 @@ pub fn clamp_revolution_uom(value: Angle, min: Angle, max: Angle) -> (Angle, Cla
     (Angle::new::<revolution>(clamped_value.0), clamped_value.1)
 }
 
-/// Linearly scales a value relative to a specified range.
-///
-/// This function maps the [min, max] range to [0, 1], with min mapping to 0
-/// and max mapping to 1. Values outside the range will map to values outside [0, 1].
-///
-/// Note: Unlike [`clamp_revolution`], this function doesn't clamp values; it performs
-/// a linear scaling even for values outside the range.
-///
-/// # Arguments
-///
-/// * `value` - The value to scale
-/// * `min` - The value that should map to 0
-/// * `max` - The value that should map to 1
-///
-/// # Returns
-///
-/// A linearly scaled value where:
-/// * `value = min` returns 0
-/// * `value = max` returns 1
-/// * Values in between are linearly interpolated
-/// * Values outside the range extrapolate to values outside [0, 1]
-///
-/// # Examples
-///
-/// ```ignore
-/// assert_eq!(scale_revolution_to_range(0.3, 0.2, 0.6), 0.25); // 25% between min and max
-/// assert_eq!(scale_revolution_to_range(0.5, 0.4, 0.6), 0.5);  // Midpoint
-/// assert_eq!(scale_revolution_to_range(0.1, 0.2, 0.6), -0.25); // Value below min
-/// ```
+// Note: Unlike [`clamp_revolution`], this function doesn't clamp values; it performs
+// a linear scaling even for values outside the range.
 pub fn scale_revolution_to_range(value: f64, min: f64, max: f64) -> f64 {
     // we calculate the distance between min and max
     let distance = revolution_distance(min, max);
@@ -86,39 +33,9 @@ pub fn scale_revolution_to_range(value: f64, min: f64, max: f64) -> f64 {
     (value - min) / distance
 }
 
-/// Clamps a revolution value to be within the specified range [min, max].
-///
-/// If the value is outside the range, it will be clamped to either min or max,
-/// depending on which one it's closer to in the circular context.
-///
-/// # Arguments
-///
-/// * `value` - The value to clamp
-/// * `min` - The minimum acceptable value
-/// * `max` - The maximum acceptable value
-///
-/// # Returns
-///
-/// * The original value if it's within the range + false, false
-/// * The min value if it's closer to min + true, false
-/// * The max value if it's closer to max + false, true
-///
-/// The first bool indicates if the value was clamped to min,
-/// and the second bool indicates if it was clamped to max.
-///
-/// # Examples
-///
-/// ```ignore
-/// // Value within range stays the same
-/// assert_eq!(clamp_revolution(0.15, 0.1, 0.2), 0.15);
-///
-/// // Value outside range gets clamped
-/// assert_eq!(clamp_revolution(0.05, 0.1, 0.2), 0.1);  // Clamped to min
-/// assert_eq!(clamp_revolution(0.25, 0.1, 0.2), 0.2);  // Clamped to max
-///
-/// // With a range that crosses zero
-/// assert_eq!(clamp_revolution(0.5, 0.9, 0.1), 0.9);   // Clamped to min
-/// ```
+// Clamps a revolution value to be within the specified range [min, max].
+// If the value is outside the range, it will be clamped to either min or max,
+// depending on which one it's closer to in the circular context.
 pub fn clamp_revolution(value: f64, min: f64, max: f64) -> (f64, Clamping) {
     // normalize value from 0..1
     let value = wrap_revolution(value);
@@ -149,29 +66,19 @@ pub fn clamp_revolution(value: f64, min: f64, max: f64) -> (f64, Clamping) {
     (min, Clamping::Min)
 }
 
-/// Calculates the clamping ranges for min and max values in a circular context.
-///
-/// This is used internally by `clamp_revolution` to determine whether out-of-range
-/// values should be clamped to the min or max value.
-///
-/// # Returns
-///
-/// A tuple containing:
-/// * `clamp_to_min_min` - Lower bound of the range for values that should clamp to min
-/// * `clamp_to_min_max` - Upper bound of the range for values that should clamp to min
-/// * `clamp_to_max_min` - Lower bound of the range for values that should clamp to max
-/// * `clamp_to_max_max` - Upper bound of the range for values that should clamp to max
-///
-/// The clamping strategy divides the out-of-range space into two regions:
-/// values closer to min are clamped to min, and values closer to max are clamped to max.
+/* 
+    Calculates the clamping ranges for min and max values in a circular context.
+    This is used internally by `clamp_revolution` to determine whether out-of-range
+    values should be clamped to the min or max value.
+    The clamping strategy divides the out-of-range space into two regions:
+    values closer to min are clamped to min, and values closer to max are clamped to max.
+*/
 fn clamping_ranges(min: f64, max: f64) -> (f64, f64, f64, f64) {
     // normalize min and max
     let min = wrap_revolution(min);
     let max = wrap_revolution(max);
-
     // calculates the distance between min and max (distance A in the test)
     let in_spec_distance = revolution_distance(min, max);
-
     // calculate distance B and clamping distance as per the test comment
     let out_spec_distance = 1.0 - in_spec_distance;
     let clamping_distance = out_spec_distance / 2.0;
@@ -189,24 +96,8 @@ fn clamping_ranges(min: f64, max: f64) -> (f64, f64, f64, f64) {
     )
 }
 
-/// Calculates the shortest distance between two points in a circular [0,1) range.
-///
-/// This function properly handles cases where the shortest path crosses the 0/1 boundary.
-///
-/// # Arguments
-///
-/// * `min` - The first point in the range [0,1)
-/// * `max` - The second point in the range [0,1)
-///
-/// # Examples
-///
-/// ```ignore
-/// // Regular distance
-/// assert_eq!(revolution_distance(0.1, 0.3), 0.2);
-///
-/// // Distance that crosses the 0/1 boundary
-/// assert_eq!(revolution_distance(0.9, 0.1), 0.2); // The shortest path crosses zero
-/// ```
+// Calculates the shortest distance between two points in a circular [0,1) range.
+// This function properly handles cases where the shortest path crosses the 0/1 boundary.
 fn revolution_distance(min: f64, max: f64) -> f64 {
     // Normalize the values to ensure they're in the [0, 1) range
     let normalized_min = wrap_revolution(min);
@@ -224,19 +115,9 @@ fn revolution_distance(min: f64, max: f64) -> f64 {
     }
 }
 
-/// Wraps any floating-point value to the [0,1) range, handling the circular nature of revolutions.
-///
-/// This is useful for normalizing angles or other periodic values that represent
-/// a full revolution when they reach 1.0.
-///
-/// # Examples
-///
-/// ```ignore
-/// assert_eq!(wrap_revolution(0.5), 0.5);    // Value within range stays the same
-/// assert_eq!(wrap_revolution(1.5), 0.5);    // 1.5 revolutions = 0.5 of a revolution
-/// assert_eq!(wrap_revolution(-0.25), 0.75); // -0.25 revolutions = 0.75 of a revolution
-/// assert_eq!(wrap_revolution(1.0), 1.0);    // Exactly 1.0 stays as 1.0
-/// ```
+// Wraps any floating-point value to the [0,1) range, handling the circular nature of revolutions.
+// This is useful for normalizing angles or other periodic values that represent
+// a full revolution when they reach 1.0.
 fn wrap_revolution(value: f64) -> f64 {
     let mut normalized = value % 1.0;
     if normalized == 0.0 && value >= 1.0 {
@@ -248,32 +129,8 @@ fn wrap_revolution(value: f64) -> f64 {
     normalized
 }
 
-/// Checks if a value is within a specified range in a circular [0,1) context.
-///
-/// This function properly handles ranges that cross the 0/1 boundary.
-///
-/// # Arguments
-///
-/// * `value` - The value to check
-/// * `min` - The lower bound of the range
-/// * `max` - The upper bound of the range
-///
-/// # Returns
-///
-/// * `true` if the value is within the range
-/// * `false` otherwise
-///
-/// # Examples
-///
-/// ```ignore
-/// // Regular range
-/// assert_eq!(revolution_in_range(0.15, 0.1, 0.2), true);
-///
-/// // Range that crosses zero
-/// assert_eq!(revolution_in_range(0.95, 0.9, 0.1), true);
-/// assert_eq!(revolution_in_range(0.05, 0.9, 0.1), true);
-/// assert_eq!(revolution_in_range(0.5, 0.9, 0.1), false);
-/// ```
+// Checks if a value is within a specified range in a circular [0,1) context.
+// This function properly handles ranges that cross the 0/1 boundary.
 fn revolution_in_range(value: f64, min: f64, max: f64) -> bool {
     // check if cross 0 boundary
     let cross_zero = min > max;

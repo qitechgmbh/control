@@ -1,6 +1,6 @@
 use crate::{
     MachineHardware, MachineNew, QiTechMachine,
-    minimal_machines::digital_input_test_machine::DigitalInputTestMachine,
+    minimal_machines::digital_input_test_machine::DigitalInputTestMachine, winder2::Winder2,
 };
 use anyhow::Error;
 use lazy_static::lazy_static;
@@ -68,13 +68,10 @@ lazy_static! {
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<ExtruderV2>(vec![ExtruderV2::MACHINE_IDENTIFICATION,ExtruderV2::MACHINE_IDENTIFICATION_V3 ]);
 
-       // #[cfg(not(feature = "mock-machine"))]
-       // mc.register::<ExtruderV3>(ExtruderV3::MACHINE_IDENTIFICATION);
+
+
+        mc.register::<Winder2>(vec![Winder2::MACHINE_IDENTIFICATION]);
 /*
-
-
-        mc.register::<Winder2>(Winder2::MACHINE_IDENTIFICATION);
-
         #[cfg(feature = "mock-machine")]
         mc.register::<ExtruderV2Mock1>(ExtruderV2Mock1::MACHINE_IDENTIFICATION);
 

@@ -1,27 +1,3 @@
-#[cfg(feature = "mock-machine")]
-mod winder2_imports {
-    pub use super::super::Winder2Mode;
-    pub use super::super::puller_speed_controller::{GearRatio, PullerRegulationMode};
-    pub use control_core::socketio::{
-        event::{Event, GenericEvent},
-        namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_first_and_last_event,
-        },
-    };
-
-    pub use control_core_derive::BuildEvent;
-    pub use serde::{Deserialize, Serialize};
-    pub use serde_json::Value;
-    pub use smol::lock::Mutex;
-    pub use std::{
-        sync::Arc,
-        time::{Duration, Instant},
-    };
-    pub use tracing::instrument;
-}
-
-#[cfg(not(feature = "mock-machine"))]
 mod winder2_imports {
     pub use super::super::puller_speed_controller::{GearRatio, PullerRegulationMode};
     pub use super::super::{Winder2, Winder2Mode};
@@ -36,21 +12,14 @@ mod winder2_imports {
     pub use control_core_derive::BuildEvent;
     pub use serde::{Deserialize, Serialize};
     pub use serde_json::Value;
-    pub use smol::lock::Mutex;
     pub use std::{
         sync::Arc,
         time::{Duration, Instant},
     };
     pub use tracing::instrument;
 }
-
-#[cfg(not(feature = "mock-machine"))]
-use smol::channel::Sender;
 pub use winder2_imports::*;
-
-use crate::machine_identification::MachineIdentificationUnique;
-#[cfg(not(feature = "mock-machine"))]
-use crate::{MachineApi, MachineMessage};
+use crate::{MachineApi, MachineMessage, MachineValues, machine_identification::QiTechMachineIdentificationUnique};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum Mode {
@@ -141,7 +110,7 @@ pub enum Mutation {
     SetPullerAdaptiveStepPercent(f64),
     /// Inner deadzone: max deviation from target (mm) that requires no correction
     SetPullerAdaptiveAcceptedDifference(f64),
-    SetPullerAdaptiveReferenceMachine(Option<MachineIdentificationUnique>),
+    SetPullerAdaptiveReferenceMachine(Option<QiTechMachineIdentificationUnique>),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -180,7 +149,7 @@ pub struct StateEvent {
     /// spool speed controller state
     pub spool_speed_controller_state: SpoolSpeedControllerState,
     /// Is a Machine Connected?
-    pub puller_reference_machine: Option<MachineIdentificationUnique>,
+    pub puller_reference_machine: Option<QiTechMachineIdentificationUnique>,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -236,7 +205,7 @@ pub struct PullerState {
     pub adaptive_change_per_step: f64,
     /// Inner deadzone: max deviation from target (mm) that requires no correction
     pub allowed_diameter_deviation: f64,
-    pub adaptive_reference_machine: Option<MachineIdentificationUnique>,
+    pub adaptive_reference_machine: Option<QiTechMachineIdentificationUnique>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -328,9 +297,8 @@ impl CacheableEvents<Self> for Winder2Events {
     }
 }
 
-#[cfg(not(feature = "mock-machine"))]
 impl MachineApi for Winder2 {
-    fn api_get_sender(&self) -> Sender<MachineMessage> {
+    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {        
         self.api_sender.clone()
     }
 
@@ -389,7 +357,6 @@ impl MachineApi for Winder2 {
                 self.puller_set_adaptive_accepted_difference(v)
             }
             Mutation::SetPullerAdaptiveReferenceMachine(v) => {
-                self.puller_set_adaptive_reference_machine(v)?
             }
         }
         Ok(())
@@ -397,5 +364,28 @@ impl MachineApi for Winder2 {
 
     fn api_event_namespace(&mut self) -> Option<Namespace> {
         self.namespace.namespace.clone()
+    }
+
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+            }
+            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send(MachineValues {
+                        state: serde_json::to_value(self.build_state_event())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::to_value(self.get_live_values())
+                            .expect("Failed to serialize live values"),
+                    })
+                    .expect("Failed to send values");
+            }
+        }
     }
 }

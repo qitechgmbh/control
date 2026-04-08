@@ -11,48 +11,31 @@ pub mod spool_speed_controller;
 pub mod tension_arm;
 pub mod traverse_controller;
 
-#[cfg(feature = "mock-machine")]
-pub mod mock;
-
-#[cfg(feature = "mock-machine")]
-mod winder2_imports {
-    pub use super::api::SpoolAutomaticActionMode;
-    pub use std::time::Instant;
-    pub use units::f64::Length;
-    pub use units::length::meter;
-}
-
+use api::SpoolAutomaticActionMode;
+use api::Winder2Namespace;
+use control_core::converters::angular_step_converter::AngularStepConverter;
+use new::{PullerSpeedController, SpoolSpeedController, TensionArm, TraverseController};
 #[cfg(not(feature = "mock-machine"))]
-mod winder2_imports {
-    pub use super::api::SpoolAutomaticActionMode;
-    pub use super::api::Winder2Namespace;
-    pub use super::puller_speed_controller::PullerSpeedController;
-    pub use super::spool_speed_controller::SpoolSpeedController;
-    pub use super::tension_arm::TensionArm;
-    pub use super::traverse_controller::TraverseController;
-    pub use control_core::converters::angular_step_converter::AngularStepConverter;
-    pub use ethercat_hal::io::{
-        digital_input::DigitalInput, digital_output::DigitalOutput,
-        stepper_velocity_el70x1::StepperVelocityEL70x1,
-    };
-    pub use smol::channel::{Receiver, Sender};
-    pub use smol::lock::RwLock;
-    pub use std::{fmt::Debug, sync::Weak, time::Instant};
-
-    pub use crate::buffer1::BufferV1;
-    pub use crate::{AsyncThreadMessage, Machine};
-    pub use units::ConstZero;
-    pub use units::f64::Length;
-    pub use units::{length::meter, length::millimeter, velocity::meter_per_second};
-}
-
-pub use winder2_imports::*;
-
+use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
+use qitech_lib::units::ConstZero;
+use qitech_lib::{ethercat_hal::io::{digital_output::DigitalOutputDevice}, machines::{MachineIdentificationUnique}};
+use qitech_lib::{machines::{MachineIdentification}, units::{Length, length::{meter, millimeter}, velocity::meter_per_second}};
 #[cfg(not(feature = "mock-machine"))]
+use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::Sender;
+use std::{cell::RefCell, rc::Rc};
+use std::time::Instant;
+use crate::MachineMessage;
+use crate::QiTechMachine;
 use crate::{
-    MACHINE_WINDER_V1, MachineData, MachineMessage, VENDOR_QITECH,
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
+    MACHINE_WINDER_V1, VENDOR_QITECH,
 };
+
+pub const TRAVERSE_PORT : usize = 0;
+pub const LASER_PORT : usize = 0;
+pub const PULLER_PORT : usize = 0;
+pub const SPOOL_PORT : usize = 0;
+
 
 #[derive(Debug)]
 pub struct SpoolAutomaticAction {
@@ -73,77 +56,20 @@ impl Default for SpoolAutomaticAction {
     }
 }
 
-#[cfg(not(feature = "mock-machine"))]
-impl Machine for Winder2 {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
+impl QiTechMachine for Winder2 {}
 
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
-
-    fn receive_machines_data(&mut self, data: &MachineData) {
-        use MachineData::*;
-
-        debug_assert!(self.puller_reference_machine.is_some());
-
-        match data {
-            Laser(state, live_values) => {
-                let current = live_values.diameter;
-                let target = state.laser_state.target_diameter;
-                let lower = state.laser_state.lower_tolerance;
-                let upper = state.laser_state.higher_tolerance;
-                let last_speed = self.puller_speed_controller.last_speed;
-
-                self.puller_speed_controller
-                    .adaptive
-                    .update_with_measurement(
-                        current,
-                        target,
-                        lower,
-                        upper,
-                        last_speed,
-                        Instant::now(),
-                    );
-            }
-            None => tracing::error!("Received MachineData::None"),
-        };
-    }
-
-    fn subscribed_to_machine(&mut self, uid: MachineIdentificationUnique) {
-        self.puller_reference_machine = Some(uid);
-        self.emit_state();
-    }
-
-    fn unsubscribed_from_machine(&mut self, uid: MachineIdentificationUnique) {
-        if let Some(current_uid) = self.puller_reference_machine {
-            if current_uid == uid {
-                self.puller_reference_machine = None;
-            }
-        }
-
-        self.emit_state();
-    }
-}
-
-#[cfg(not(feature = "mock-machine"))]
-#[derive(Debug)]
 pub struct Winder2 {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
-    main_sender: Option<Sender<AsyncThreadMessage>>,
-
     // drivers
-    pub traverse: StepperVelocityEL70x1,
-    pub puller: StepperVelocityEL70x1,
-    pub spool: StepperVelocityEL70x1,
+    pub traverse: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+    pub puller: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+    pub spool: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
     pub tension_arm: TensionArm,
-    pub laser: DigitalOutput,
-
-    // controllers
+    
+    pub laser: Rc<RefCell< dyn DigitalOutputDevice>>,
+    pub laser_enabled : bool,
     pub traverse_controller: TraverseController,
-    pub traverse_end_stop: DigitalInput,
 
     // socketio
     namespace: Winder2Namespace,
@@ -174,7 +100,6 @@ pub struct Winder2 {
     emitted_default_state: bool,
 }
 
-#[cfg(not(feature = "mock-machine"))]
 impl Winder2 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
@@ -247,17 +172,17 @@ impl Winder2 {
     fn set_spool_mode(&mut self, mode: &Winder2Mode) {
         // Convert to `Winder2Mode` to `SpoolMode`
         let mode: SpoolMode = mode.clone().into();
-
+        let spool = &mut* self.spool.borrow_mut();
         // Transition matrix
         match self.spool_mode {
             SpoolMode::Standby => match mode {
                 SpoolMode::Standby => {}
                 SpoolMode::Hold => {
                     // From [`SpoolMode::Standby`] to [`SpoolMode::Hold`]
-                    self.spool.set_enabled(true);
+                    spool.set_enabled(SPOOL_PORT,true);
                 }
                 SpoolMode::Wind => {
-                    self.spool.set_enabled(true);
+                    spool.set_enabled(SPOOL_PORT,true);
                     // self.spool_speed_controller.reset();
                     self.spool_speed_controller.set_enabled(true);
                 }
@@ -265,7 +190,7 @@ impl Winder2 {
             SpoolMode::Hold => match mode {
                 SpoolMode::Standby => {
                     // From [`SpoolMode::Hold`] to [`SpoolMode::Standby`]
-                    self.spool.set_enabled(false);
+                    spool.set_enabled(SPOOL_PORT,false);
                 }
                 SpoolMode::Hold => {}
                 SpoolMode::Wind => {
@@ -277,7 +202,7 @@ impl Winder2 {
             SpoolMode::Wind => match mode {
                 SpoolMode::Standby => {
                     // From [`SpoolMode::Wind`] to [`SpoolMode::Standby`]
-                    self.spool.set_enabled(false);
+                    spool.set_enabled(SPOOL_PORT,false);
                     self.spool_speed_controller.set_enabled(false);
                 }
                 SpoolMode::Hold => {
@@ -299,25 +224,26 @@ impl Winder2 {
     fn set_puller_mode(&mut self, mode: &Winder2Mode) {
         // Convert to `Winder2Mode` to `PullerMode`
         let mode: PullerMode = mode.clone().into();
-
+        let puller = &mut *self.puller.borrow_mut();
+        
         // Transition matrix
         match self.puller_mode {
             PullerMode::Standby => match mode {
                 PullerMode::Standby => {}
                 PullerMode::Hold => {
                     // From [`PullerMode::Standby`] to [`PullerMode::Hold`]
-                    self.puller.set_enabled(true);
+                    puller.set_enabled(PULLER_PORT,true);
                 }
                 PullerMode::Pull => {
                     // From [`PullerMode::Standby`] to [`PullerMode::Pull`]
-                    self.puller.set_enabled(true);
+                    puller.set_enabled(PULLER_PORT,true);
                     self.puller_speed_controller.set_enabled(true);
                 }
             },
             PullerMode::Hold => match mode {
                 PullerMode::Standby => {
                     // From [`PullerMode::Hold`] to [`PullerMode::Standby`]
-                    self.puller.set_enabled(false);
+                    puller.set_enabled(PULLER_PORT,false);
                 }
                 PullerMode::Hold => {}
                 PullerMode::Pull => {
@@ -328,7 +254,7 @@ impl Winder2 {
             PullerMode::Pull => match mode {
                 PullerMode::Standby => {
                     // From [`PullerMode::Pull`] to [`PullerMode::Standby`]
-                    self.puller.set_enabled(false);
+                    puller.set_enabled(PULLER_PORT,false);
                     self.puller_speed_controller.set_enabled(false);
                 }
                 PullerMode::Hold => {
@@ -349,13 +275,10 @@ impl Winder2 {
     }
 
     pub fn calculate_spool_auto_progress_(&mut self, now: Instant) {
-        // Calculate time elapsed since last progress check (in minutes)
-
         let dt = now
             .duration_since(self.spool_automatic_action.progress_last_check)
             .as_secs_f64();
 
-        // Calculate distance pulled during this time interval
         let meters_pulled_this_interval = Length::new::<meter>(
             self.puller_speed_controller
                 .last_speed
@@ -363,13 +286,10 @@ impl Winder2 {
                 * dt,
         );
 
-        // Update total meters pulled
         self.spool_automatic_action.progress += meters_pulled_this_interval.abs();
         self.spool_automatic_action.progress_last_check = now;
     }
 
-    /// Implement Puller
-    /// called by `act`
     pub fn sync_puller_speed(&mut self, t: Instant) {
         let angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
         let steps_per_second = self
@@ -379,9 +299,6 @@ impl Winder2 {
         let _ = self.puller.set_speed(steps_per_second);
     }
 }
-
-#[cfg(feature = "mock-machine")]
-pub use mock::Winder2;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Winder2Mode {

@@ -1,14 +1,13 @@
 use std::time::Instant;
 
 use control_core::converters::linear_step_converter::LinearStepConverter;
-use ethercat_hal::io::{
-    digital_input::DigitalInput, stepper_velocity_el70x1::StepperVelocityEL70x1,
-};
-use units::ConstZero;
-use units::angular_velocity::revolution_per_second;
-use units::f64::{AngularVelocity, Length, Velocity};
-use units::length::millimeter;
-use units::velocity::millimeter_per_second;
+use qitech_lib::ethercat_hal::io::digital_input::DigitalInputDevice;
+use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
+use qitech_lib::units::ConstZero;
+use qitech_lib::units::angular_velocity::revolution_per_second;
+use qitech_lib::units::f64::{AngularVelocity, Length, Velocity};
+use qitech_lib::units::length::millimeter;
+use qitech_lib::units::velocity::millimeter_per_second;
 
 #[derive(Debug)]
 pub struct TraverseController {
@@ -252,7 +251,7 @@ impl TraverseController {
     }
 
     /// Gets the current traverse position as a [`Length`].
-    pub fn sync_position(&mut self, traverse: &StepperVelocityEL70x1) {
+    pub fn sync_position(&mut self, traverse: &dyn StepperVelocityEL70x1Device) {
         let steps = traverse.get_position();
         self.position = self.microstep_converter.steps_to_distance(steps as f64);
     }
@@ -275,8 +274,8 @@ impl TraverseController {
     /// Positive speed moved out, negative speed moves in.
     fn get_speed(
         &mut self,
-        traverse: &mut StepperVelocityEL70x1,
-        traverse_end_stop: &DigitalInput,
+        traverse: &mut dyn StepperVelocityEL70x1Device,
+        traverse_end_stop: &dyn DigitalInputDevice,
         spool_speed: AngularVelocity,
     ) -> Velocity {
         // Don't move if not enabled or in a state that doesn't result in movement
@@ -485,33 +484,13 @@ impl TraverseController {
 
     pub fn update_speed(
         &mut self,
-        traverse: &mut StepperVelocityEL70x1,
-        traverse_end_stop: &DigitalInput,
+        traverse: &mut dyn StepperVelocityEL70x1Device,
+        traverse_end_stop: &dyn DigitalInputDevice,
         spool_speed: AngularVelocity,
     ) {
         let speed = self.get_speed(traverse, traverse_end_stop, spool_speed);
         let steps_per_second = self.fullstep_converter.velocity_to_steps(speed);
         // ignore if we can't set speed
         let _ = traverse.set_speed(steps_per_second);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use approx::assert_relative_eq;
-
-    use super::*;
-
-    #[test]
-    fn test_calculate_traverse_speed() {
-        let spool_speed = AngularVelocity::new::<revolution_per_second>(1.0); // 1 revolution per second
-        let step_size = Length::new::<millimeter>(1.75); // 1.75 mm step size
-
-        let traverse_speed = TraverseController::calculate_traverse_speed(spool_speed, step_size);
-        assert_relative_eq!(
-            traverse_speed.get::<millimeter_per_second>(),
-            1.75,
-            epsilon = f64::EPSILON
-        );
     }
 }

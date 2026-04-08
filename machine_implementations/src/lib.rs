@@ -10,11 +10,12 @@ use qitech_lib::{
 };
 use serde::Serialize;
 use tokio::sync::mpsc::Sender;
+
 pub mod machine_identification;
 pub mod minimal_machines;
 pub mod registry;
-//pub mod extruder2;
 pub mod extruder1;
+pub mod winder2;
 
 /*pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]

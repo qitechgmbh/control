@@ -201,34 +201,6 @@ pub struct DeviceHardwareIdentificationSerial {
 }
 
 use anyhow::Error;
-use anyhow::anyhow;
-use qitech_lib::ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el1002::EL1002_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el1008::EL1008_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el2002::EL2002_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el2002::EL2002_IDENTITY_B;
-use qitech_lib::ethercat_hal::devices::el2004::EL2004_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el2008::EL2008_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el2008::EL2008_IDENTITY_B;
-use qitech_lib::ethercat_hal::devices::el2521::{
-    EL2521_IDENTITY_0000_A, EL2521_IDENTITY_0000_B, EL2521_IDENTITY_0024_A,
-};
-use qitech_lib::ethercat_hal::devices::el2522::EL2522_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el3001::EL3001_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el3021::EL3021_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el3024::EL3024_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el3062_0030::EL3062_0030_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el3204::EL3204_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el3204::EL3204_IDENTITY_B;
-use qitech_lib::ethercat_hal::devices::el4002::EL4002_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el5152::EL5152_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el6021::{
-    EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D,
-};
-use qitech_lib::ethercat_hal::devices::el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
-use qitech_lib::ethercat_hal::devices::el7031_0030::EL7031_0030_IDENTITY_A;
-use qitech_lib::ethercat_hal::devices::el7041_0052::EL7041_0052_IDENTITY_A;
-
 use crate::ANALOG_INPUT_TEST_MACHINE;
 use crate::DIGITAL_INPUT_TEST_MACHINE;
 use crate::IP20_TEST_MACHINE;
@@ -285,36 +257,11 @@ impl Default for MachineIdentificationAddresses {
 /// based on the subdevice's identity
 pub fn get_identification_addresses(
     subdevice_identity: (u32, u32, u32),
-    subdevice_name: &str,
+    _subdevice_name: &str,
 ) -> Result<MachineIdentificationAddresses, Error> {
     Ok(match subdevice_identity {
-        WAGO_750_354_IDENTITY_A => MachineIdentificationAddresses::default(),
-        IP20_EC_DI8_DO8_IDENTITY => MachineIdentificationAddresses::default(),
-        EK1100_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL1002_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL1008_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL2002_IDENTITY_A | EL2002_IDENTITY_B => MachineIdentificationAddresses::default(),
-        EL2004_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL2008_IDENTITY_A | EL2008_IDENTITY_B => MachineIdentificationAddresses::default(),
-        EL2521_IDENTITY_0000_A | EL2521_IDENTITY_0000_B | EL2521_IDENTITY_0024_A => {
-            MachineIdentificationAddresses::default()
-        }
-        EL2522_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL3001_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL3021_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL3024_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL3062_0030_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL3204_IDENTITY_A | EL3204_IDENTITY_B => MachineIdentificationAddresses::default(),
-        EL4002_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL5152_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C | EL6021_IDENTITY_D => {
-            MachineIdentificationAddresses::default()
-        }
-        EL7031_IDENTITY_A | EL7031_IDENTITY_B => MachineIdentificationAddresses::default(),
-        EL7031_0030_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL7041_0052_IDENTITY_A => MachineIdentificationAddresses::default(),
-
-        _ => {
+        _ => MachineIdentificationAddresses::default()
+        /* {
             // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
             Err(anyhow!(
                 "[{}::get_identification_addresses] Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
@@ -324,6 +271,6 @@ pub fn get_identification_addresses(
                 subdevice_identity.1,
                 subdevice_identity.2
             ))?
-        }
+        }*/
     })
 }

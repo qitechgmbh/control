@@ -1,37 +1,27 @@
-#[cfg(not(feature = "mock-machine"))]
-mod winder2_imports {
-    pub use super::super::puller_speed_controller::PullerRegulationMode;
-    pub use super::super::{TraverseMode, Winder2, Winder2Mode, api, spool_speed_controller};
-    pub use crate::buffer1::BufferV1;
-    pub use api::{
-        LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode,
-        SpoolAutomaticActionState, SpoolSpeedControllerState, StateEvent, TensionArmState,
-        TraverseState, Winder2Events,
-    };
-    pub use control_core::socketio::event::BuildEvent;
-    pub use control_core::socketio::namespace::NamespaceCacheingLogic;
-    pub use std::time::Instant;
-    pub use units::{
-        angle::degree,
-        angular_velocity::revolution_per_minute,
-        f64::*,
-        length::{meter, millimeter},
-    };
+use crate::winder2::Winder2Mode;
 
-    pub use units::Velocity;
-    pub use units::velocity::meter_per_minute;
-}
+use super::{LASER_PORT, PULLER_PORT, SPOOL_PORT, TRAVERSE_PORT, TraverseMode, Winder2, api::PullerRegulationMode, spool_speed_controller};
+pub use super::api::{
+    LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode,
+    SpoolAutomaticActionState, SpoolSpeedControllerState, StateEvent, TensionArmState,
+    TraverseState, Winder2Events,
+};
+pub use control_core::socketio::event::BuildEvent;
+pub use control_core::socketio::namespace::NamespaceCacheingLogic;
+use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
+use std::cell::RefMut;
+pub use std::time::Instant;
+pub use qitech_lib::units::{
+    angle::degree,
+    angular_velocity::revolution_per_minute,
+    f64::*,
+    length::{meter, millimeter},
+};
 
-#[cfg(not(feature = "mock-machine"))]
-pub use winder2_imports::*;
+pub use qitech_lib::units::Velocity;
+pub use qitech_lib::units::velocity::meter_per_minute;
 
-#[cfg(not(feature = "mock-machine"))]
-use crate::{AsyncThreadMessage, MachineSubscriptionRequest};
 
-#[cfg(not(feature = "mock-machine"))]
-use crate::MachineIdentificationUnique;
-
-#[cfg(not(feature = "mock-machine"))]
 impl Winder2 {
     /// Implement Spool
     /// called by `act`
@@ -52,7 +42,8 @@ impl Winder2 {
         let steps_per_second = self
             .spool_step_converter
             .angular_velocity_to_steps(directed_angular_velocity);
-        let _ = self.spool.set_speed(steps_per_second);
+        let spool_ref = &mut * self.spool.borrow_mut();
+        let _ = spool_ref.set_speed(SPOOL_PORT,steps_per_second);
     }
 
     pub fn stop_or_pull_spool(&mut self, now: Instant) {
@@ -103,9 +94,16 @@ impl Winder2 {
         self.emit_state();
     }
 
+    fn get_laser(&mut self) -> RefMut<'_,dyn DigitalOutputDevice > {
+        self.laser.borrow_mut()
+    }
+
     /// Implement Traverse
     pub fn set_laser(&mut self, value: bool) {
-        self.laser.set(value);
+        self.laser_enabled = value;
+        let mut laser = self.get_laser();        
+        laser.set_output(LASER_PORT,value);     
+        drop(laser);   
         self.emit_state();
     }
 
@@ -170,7 +168,7 @@ impl Winder2 {
     }
 
     pub fn get_live_values(&self) -> LiveValuesEvent {
-        let angle_deg = self.tension_arm.get_angle().get::<degree>();
+        let angle_deg = self.tension_arm.get_angle().unwrap().get::<degree>();
 
         // Wrap [270;<360] to [-90; 0]
         // This is done to reduce flicker in the graphs around the zero point
@@ -180,8 +178,10 @@ impl Winder2 {
             angle_deg
         };
 
+        let puller_ref = &mut *self.puller.borrow_mut();
+
         // Calculate puller speed from current motor steps
-        let steps_per_second = self.puller.get_speed();
+        let steps_per_second = puller_ref.get_speed(PULLER_PORT);
         let angular_velocity = self
             .puller_speed_controller
             .converter
@@ -192,11 +192,11 @@ impl Winder2 {
 
         // Divide by gear ratio to get actual puller/material speed
         let puller_speed = motor_speed / self.puller_speed_controller.get_gear_ratio().multiplier();
-
+        let spool_ref = &mut *self.spool.borrow_mut();
         // Calculate spool RPM from current motor steps (always positive regardless of direction)
         let spool_rpm = self
             .spool_step_converter
-            .steps_to_angular_velocity(self.spool.get_speed() as f64)
+            .steps_to_angular_velocity(spool_ref.get_speed(SPOOL_PORT) as f64)
             .get::<revolution_per_minute>()
             .abs();
 
@@ -242,7 +242,7 @@ impl Winder2 {
                 is_homed: self.traverse_controller.is_homed(),
                 is_going_home: self.traverse_controller.is_going_home(),
                 is_traversing: self.traverse_controller.is_traversing(),
-                laserpointer: self.laser.get(),
+                laserpointer: self.laser_enabled,
                 step_size: self.traverse_controller.get_step_size().get::<millimeter>(),
                 padding: self.traverse_controller.get_padding().get::<millimeter>(),
                 can_go_in: self.can_go_in(),
@@ -269,7 +269,7 @@ impl Winder2 {
                     .adaptive
                     .tolerance_limit()
                     .get::<millimeter>(),
-                adaptive_reference_machine: self.puller_reference_machine,
+                adaptive_reference_machine: None,
             },
             mode_state: ModeState {
                 mode: self.mode.clone().into(),
@@ -307,7 +307,7 @@ impl Winder2 {
                 spool_required_meters: self.spool_automatic_action.target_length.get::<meter>(),
                 spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
             },
-            puller_reference_machine: self.puller_reference_machine,
+            puller_reference_machine: None,
         }
     }
 
@@ -317,6 +317,7 @@ impl Winder2 {
         self.namespace.emit(Winder2Events::State(event));
     }
 
+
     /// Apply the mode changes to the spool
     ///
     /// It contains a transition matrix for atomic changes.
@@ -324,62 +325,72 @@ impl Winder2 {
     fn set_traverse_mode(&mut self, mode: &Winder2Mode) {
         // Convert to `Winder2Mode` to `TraverseMode`
         let mode: TraverseMode = mode.clone().into();
-
-        // If coming out of standby
+          // If coming out of standby
         if self.traverse_mode == TraverseMode::Standby && mode != TraverseMode::Standby {
-            self.traverse.set_enabled(true);
+            let mut traverse = self.traverse.borrow_mut();
+            let traverse_ref = &mut * traverse;
+            traverse_ref.set_enabled(TRAVERSE_PORT,true);
             self.traverse_controller.set_enabled(true);
+            drop(traverse);
         }
 
         // If going into standby
         if mode == TraverseMode::Standby && self.traverse_mode != TraverseMode::Standby {
+            let mut traverse = self.traverse.borrow_mut();
+            let traverse_ref = &mut * traverse;
             // If we are going into standby, we need to stop the traverse
-            self.traverse.set_enabled(false);
+            traverse_ref.set_enabled(TRAVERSE_PORT,false);
             self.traverse_controller.set_enabled(false);
+            drop(traverse);
         }
 
-        // Transition matrix
-        match self.traverse_mode {
-            TraverseMode::Standby => match mode {
-                TraverseMode::Standby => {}
-                TraverseMode::Hold => {
-                    // From [`TraverseMode::Standby`] to [`TraverseMode::Hold`]
-                    self.traverse.set_enabled(true);
-                    self.traverse_controller.set_enabled(true);
-                    self.traverse_controller.goto_home();
-                }
-                TraverseMode::Traverse => {
-                    // From [`TraverseMode::Standby`] to [`TraverseMode::Wind`]
-                    self.traverse.set_enabled(true);
-                    self.traverse_controller.set_enabled(true);
-                    self.traverse_controller.start_traversing();
-                }
-            },
-            TraverseMode::Hold => match mode {
-                TraverseMode::Standby => {
-                    // From [`TraverseMode::Hold`] to [`TraverseMode::Standby`]
-                    self.traverse.set_enabled(false);
-                    self.traverse_controller.set_enabled(false);
-                }
-                TraverseMode::Hold => {}
-                TraverseMode::Traverse => {
-                    // From [`TraverseMode::Hold`] to [`TraverseMode::Wind`]
-                    self.traverse_controller.start_traversing();
-                }
-            },
-            TraverseMode::Traverse => match mode {
-                TraverseMode::Standby => {
-                    // From [`TraverseMode::Wind`] to [`TraverseMode::Standby`]
-                    self.traverse.set_enabled(false);
-                    self.traverse_controller.set_enabled(false);
-                }
-                TraverseMode::Hold => {
-                    // From [`TraverseMode::Wind`] to [`TraverseMode::Hold`]
-                    self.traverse_controller.goto_home();
-                }
-                TraverseMode::Traverse => {}
-            },
+        {
+            let mut traverse = self.traverse.borrow_mut();
+            let traverse_ref = &mut * traverse;
+            // Transition matrix
+            match self.traverse_mode {
+                TraverseMode::Standby => match mode {
+                    TraverseMode::Standby => {}
+                    TraverseMode::Hold => {
+                        // From [`TraverseMode::Standby`] to [`TraverseMode::Hold`]
+                        traverse_ref.set_enabled(TRAVERSE_PORT,true);
+                        self.traverse_controller.set_enabled(true);
+                        self.traverse_controller.goto_home();
+                    }
+                    TraverseMode::Traverse => {
+                        // From [`TraverseMode::Standby`] to [`TraverseMode::Wind`]
+                        traverse_ref.set_enabled(TRAVERSE_PORT,true);
+                        self.traverse_controller.set_enabled(true);
+                        self.traverse_controller.start_traversing();
+                    }
+                },
+                TraverseMode::Hold => match mode {
+                    TraverseMode::Standby => {
+                        // From [`TraverseMode::Hold`] to [`TraverseMode::Standby`]
+                        traverse_ref.set_enabled(TRAVERSE_PORT,false);
+                        self.traverse_controller.set_enabled(false);
+                    }
+                    TraverseMode::Hold => {}
+                    TraverseMode::Traverse => {
+                        // From [`TraverseMode::Hold`] to [`TraverseMode::Wind`]
+                        self.traverse_controller.start_traversing();
+                    }
+                },
+                TraverseMode::Traverse => match mode {
+                    TraverseMode::Standby => {
+                        // From [`TraverseMode::Wind`] to [`TraverseMode::Standby`]
+                        traverse_ref.set_enabled(TRAVERSE_PORT,false);
+                        self.traverse_controller.set_enabled(false);
+                    }
+                    TraverseMode::Hold => {
+                        // From [`TraverseMode::Wind`] to [`TraverseMode::Hold`]
+                        self.traverse_controller.goto_home();
+                    }
+                    TraverseMode::Traverse => {}
+                },
+            }
         }
+       
 
         // Update the internal state
         self.traverse_mode = mode;
@@ -532,7 +543,7 @@ impl Winder2 {
             .set_tolerance_limit(Length::new::<millimeter>(value));
         self.emit_state();
     }
-
+    /*
     pub fn puller_set_adaptive_reference_machine(
         &mut self,
         machine_uid: Option<MachineIdentificationUnique>,
@@ -589,5 +600,5 @@ impl Winder2 {
         }
         self.emit_state();
         Ok(())
-    }
+    }*/
 }
