@@ -45,7 +45,7 @@ export function Topbar({ items, pathname }: TopbarProps) {
       <div
         className="fixed top-0 flex h-18 gap-2 bg-neutral-200 pt-2 pr-2"
         // 50 is below popup dialogs
-        style={{ zIndex: 47, width: sidebarlessWidth }}
+        style={{ zIndex: 50, width: sidebarlessWidth }}
       >
         <div className="flexflex-col z-10 pb-2">
           <BackButton />
