@@ -1,5 +1,4 @@
 use std::time::Instant;
-
 use control_core::converters::linear_step_converter::LinearStepConverter;
 use qitech_lib::ethercat_hal::io::digital_input::DigitalInputDevice;
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
@@ -8,6 +7,7 @@ use qitech_lib::units::angular_velocity::revolution_per_second;
 use qitech_lib::units::f64::{AngularVelocity, Length, Velocity};
 use qitech_lib::units::length::millimeter;
 use qitech_lib::units::velocity::millimeter_per_second;
+use super::{TRAVERSE_END_STOP_PORT, TRAVERSE_PORT};
 
 #[derive(Debug)]
 pub struct TraverseController {
@@ -252,7 +252,7 @@ impl TraverseController {
 
     /// Gets the current traverse position as a [`Length`].
     pub fn sync_position(&mut self, traverse: &dyn StepperVelocityEL70x1Device) {
-        let steps = traverse.get_position();
+        let steps = traverse.get_position(TRAVERSE_PORT);
         self.position = self.microstep_converter.steps_to_distance(steps as f64);
     }
 
@@ -275,7 +275,6 @@ impl TraverseController {
     fn get_speed(
         &mut self,
         traverse: &mut dyn StepperVelocityEL70x1Device,
-        traverse_end_stop: &dyn DigitalInputDevice,
         spool_speed: AngularVelocity,
     ) -> Velocity {
         // Don't move if not enabled or in a state that doesn't result in movement
@@ -309,7 +308,7 @@ impl TraverseController {
             State::Homing(homing_state) => match homing_state {
                 HomingState::Initialize => {
                     // If endstop is triggered, escape the endstop
-                    if traverse_end_stop.get_value().unwrap_or(false) {
+                    if traverse.get_digital_input(TRAVERSE_END_STOP_PORT).unwrap_or(false) {
                         self.state = State::Homing(HomingState::EscapeEndstop);
                     } else {
                         // If endstop is not triggered, move to the endstop
@@ -318,29 +317,29 @@ impl TraverseController {
                 }
                 HomingState::EscapeEndstop => {
                     // Move out until endstop is not triggered anymore
-                    if !traverse_end_stop.get_value().unwrap_or(false) {
+                    if !traverse.get_digital_input(TRAVERSE_END_STOP_PORT).unwrap_or(false) {
                         self.state = State::Homing(HomingState::FindEndstopFineDistancing);
                     }
                 }
                 HomingState::FindEndstopFineDistancing => {
                     // Move out until endstop is not triggered anymore
-                    if !traverse_end_stop.get_value().unwrap_or(false) {
+                    if !traverse.get_digital_input(TRAVERSE_END_STOP_PORT).unwrap_or(false) {
                         // Find endstop fine
                         self.state = State::Homing(HomingState::FindEndtopFine);
                     }
                 }
                 HomingState::FindEndtopFine => {
                     // If endstop is reached change to idle
-                    if traverse_end_stop.get_value().unwrap_or(false) {
+                    if traverse.get_digital_input(TRAVERSE_END_STOP_PORT).unwrap_or(false) {
                         // Set poition of traverse to 0
-                        traverse.set_position(0);
+                        traverse.set_position(TRAVERSE_PORT,0);
                         // Put Into Idle
                         self.state = State::Homing(HomingState::Validate(Instant::now()));
                     }
                 }
                 HomingState::FindEndstopCoarse => {
                     // Move to endstop
-                    if traverse_end_stop.get_value().unwrap_or(false) {
+                    if traverse.get_digital_input(TRAVERSE_END_STOP_PORT).unwrap_or(false) {
                         // Move awaiy from endstop
                         self.state = State::Homing(HomingState::FindEndstopFineDistancing);
                     }
@@ -485,12 +484,11 @@ impl TraverseController {
     pub fn update_speed(
         &mut self,
         traverse: &mut dyn StepperVelocityEL70x1Device,
-        traverse_end_stop: &dyn DigitalInputDevice,
         spool_speed: AngularVelocity,
     ) {
-        let speed = self.get_speed(traverse, traverse_end_stop, spool_speed);
+        let speed = self.get_speed(traverse, spool_speed);
         let steps_per_second = self.fullstep_converter.velocity_to_steps(speed);
         // ignore if we can't set speed
-        let _ = traverse.set_speed(steps_per_second);
+        let _ = traverse.set_speed(TRAVERSE_PORT,steps_per_second);
     }
 }

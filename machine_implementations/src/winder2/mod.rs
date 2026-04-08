@@ -35,6 +35,7 @@ pub const TRAVERSE_PORT : usize = 0;
 pub const LASER_PORT : usize = 0;
 pub const PULLER_PORT : usize = 0;
 pub const SPOOL_PORT : usize = 0;
+pub const TRAVERSE_END_STOP_PORT : usize =0;
 
 
 #[derive(Debug)]
@@ -114,9 +115,10 @@ impl Winder2 {
     }
 
     pub fn sync_traverse_speed(&mut self) {
+        let traverse = &mut *self.traverse.borrow_mut();
+        
         self.traverse_controller.update_speed(
-            &mut self.traverse,
-            &self.traverse_end_stop,
+            traverse,
             self.spool_speed_controller.get_speed(),
         )
     }
@@ -296,7 +298,8 @@ impl Winder2 {
             .puller_speed_controller
             .converter
             .angular_velocity_to_steps(angular_velocity);
-        let _ = self.puller.set_speed(steps_per_second);
+        let puller = &mut *self.puller.borrow_mut();
+        let _ = puller.set_speed(PULLER_PORT,steps_per_second);
     }
 }
 
