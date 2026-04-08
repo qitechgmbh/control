@@ -656,6 +656,30 @@ export const TestMotor: MachineProperties = {
   ],
 };
 
+export const wago750_531Machine: MachineProperties = {
+  name: "Wago 750-531 4CH DO",
+  version: "V1",
+  slug: "wago750531machine",
+  icon: "lu:ToggleRight",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0047,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Wago 750-354 Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x21,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+
 export const wagoDoTestMachine: MachineProperties = {
   name: "Wago DO Test",
   version: "V1",
@@ -827,6 +851,7 @@ export const machineProperties: MachineProperties[] = [
   wago750430DiMachine,
   ip20TestMachine,
   wagoDoTestMachine,
+  wago750_531Machine,
   wago750_501TestMachine,
   wago750_553Machine,
   TestMotor,

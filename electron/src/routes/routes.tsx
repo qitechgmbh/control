@@ -83,6 +83,8 @@ import { WagoPower1Page } from "@/machines/wago_power/wago_power1/WagoPower1Page
 import { WagoPower1ControlPage } from "@/machines/wago_power/wago_power1/WagoPower1ControlPage";
 import { WagoDoTestMachinePage } from "@/machines/minimal_machines/wagodotestmachine/WagoDoTestMachinePage";
 import { WagoDoTestMachineControlPage } from "@/machines/minimal_machines/wagodotestmachine/WagoDoTestMachineControlPage";
+import { Wago750_531MachinePage } from "@/machines/minimal_machines/wago750531machine/Wago750_531MachinePage";
+import { Wago750_531MachineControlPage } from "@/machines/minimal_machines/wago750531machine/Wago750_531MachineControlPage";
 import { Wago8chDioTestMachinePage } from "@/machines/minimal_machines/wago8chdiotestmachine/wago8chDioTestMachinePage";
 import { Wago8chDioTestMachineControlRoute } from "@/machines/minimal_machines/wago8chdiotestmachine/wago8chDioTestMachineControlPage";
 import { Wago750_501TestMachinePage } from "@/machines/minimal_machines/wago750501testmachine/Wago750_501TestMachinePage";
@@ -481,6 +483,18 @@ export const wagoDoTestMachineControlRoute = createRoute({
   component: () => <WagoDoTestMachineControlPage />,
 });
 
+export const wago750_531MachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wago750531machine/$serial",
+  component: () => <Wago750_531MachinePage />,
+});
+
+export const wago750_531MachineControlRoute = createRoute({
+  getParentRoute: () => wago750_531MachineSerialRoute,
+  path: "control",
+  component: () => <Wago750_531MachineControlPage />,
+});
+
 export const wagoSerialSerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "wago_serial/$serial",
@@ -676,6 +690,10 @@ export const rootTree = RootRoute.addChildren([
       buffer1SerialRoute.addChildren([buffer1ControlRoute]),
 
       wagoDoTestMachineSerialRoute.addChildren([wagoDoTestMachineControlRoute]),
+
+      wago750_531MachineSerialRoute.addChildren([
+        wago750_531MachineControlRoute,
+      ]),
 
       wago750_501TestMachineSerialRoute.addChildren([
         wago750_501TestMachineControlRoute,

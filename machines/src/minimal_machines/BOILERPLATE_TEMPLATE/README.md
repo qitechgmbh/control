@@ -79,7 +79,24 @@ use crate::minimal_machines::my_new_machine::YourMachineName;
 mc.register::<YourMachineName>(YourMachineName::MACHINE_IDENTIFICATION);
 ```
 
-### 10 — Verify it compiles
+### 10 — Add the machine slug in `machines/src/machine_identification.rs`
+
+This step is **required** — omitting it causes a runtime panic ("Unknown machine id")
+when the machine is first instantiated.
+
+Open `machine_identification.rs` and make TWO additions:
+
+```rust
+// 1. At the bottom of the file, add a use statement alongside the others:
+use crate::MY_MACHINE_ID;
+
+// 2. Inside the `slug()` match block, add a new arm:
+x if x == MY_MACHINE_ID => "my_new_machine".to_string(),
+```
+
+The slug string must match the directory name of your machine module.
+
+### 12 — Verify it compiles
 
 ```
 cargo check -p machines
