@@ -13,6 +13,7 @@ use crate::{
             wago_750_460::{WAGO_750_460_MODULE_IDENT, WAGO_750_460_PRODUCT_ID},
             wago_750_501::{WAGO_750_501_MODULE_IDENT, WAGO_750_501_PRODUCT_ID},
             wago_750_530::{WAGO_750_530_MODULE_IDENT, WAGO_750_530_PRODUCT_ID},
+            wago_750_531::{WAGO_750_531_MODULE_IDENT, WAGO_750_531_PRODUCT_ID},
             wago_750_553::{WAGO_750_553_MODULE_IDENT, WAGO_750_553_PRODUCT_ID},
             wago_750_652::{WAGO_750_652_MODULE_IDENT, WAGO_750_652_PRODUCT_ID},
             wago_750_671::{WAGO_750_671_MODULE_IDENT, WAGO_750_671_PRODUCT_ID},
@@ -293,6 +294,11 @@ impl Wago750_354 {
                     module.has_rx = true;
                     module.name = "750-530".to_string();
                 }
+                WAGO_750_531_PRODUCT_ID => {
+                    module.has_tx = false;
+                    module.has_rx = true;
+                    module.name = "750-531".to_string();
+                }
                 WAGO_750_652_PRODUCT_ID => {
                     module.has_tx = true;
                     module.has_rx = true;
@@ -395,6 +401,9 @@ impl Wago750_354 {
                         }
                         WAGO_750_530_MODULE_IDENT => {
                             Arc::new(RwLock::new(wago_750_530::Wago750_530::new()))
+                        }
+                        WAGO_750_531_MODULE_IDENT => {
+                            Arc::new(RwLock::new(wago_750_531::Wago750_531::new()))
                         }
                         WAGO_750_1506_MODULE_IDENT => {
                             Arc::new(RwLock::new(wago_750_1506::Wago750_1506::new()))
