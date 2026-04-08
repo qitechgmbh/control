@@ -1531,7 +1531,6 @@ dependencies = [
  "serde_json",
  "serialport",
  "socketioxide 0.17.2",
- "textplots",
  "tokio",
  "tonic",
  "tracing",

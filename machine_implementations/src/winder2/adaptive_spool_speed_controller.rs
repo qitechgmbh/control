@@ -10,13 +10,13 @@ use control_core::{
 };
 use core::f64;
 use std::time::Instant;
-use units::ConstZero;
-use units::angle::degree;
-use units::angular_acceleration::radian_per_second_squared;
-use units::angular_velocity::{radian_per_second, revolution_per_minute};
-use units::f64::*;
-use units::length::{centimeter, meter};
-use units::velocity::meter_per_second;
+use qitech_lib::units::ConstZero;
+use qitech_lib::units::angle::degree;
+use qitech_lib::units::angular_acceleration::radian_per_second_squared;
+use qitech_lib::units::angular_velocity::{radian_per_second, revolution_per_minute};
+use qitech_lib::units::f64::*;
+use qitech_lib::units::length::{centimeter, meter};
+use qitech_lib::units::velocity::meter_per_second;
 
 /// Adaptive spool speed controller that automatically adjusts to maintain optimal filament tension.
 ///
@@ -164,17 +164,8 @@ impl AdaptiveSpoolSpeedController {
     }
 
     /// Calculates the desired spool speed based on filament tension feedback.
-    ///
-    /// Reads the tension arm angle, converts it to normalized tension, and calculates
-    /// the appropriate speed. Also updates the learned maximum speed based on tension error.
-    ///
-    /// # Parameters
-    /// - `t`: Current timestamp for learning updates
-    /// - `tension_arm`: Reference to tension arm for angle measurements
-    /// - `puller_speed_controller`: Reference to puller for baseline speed calculations
-    ///
-    /// # Returns
-    /// The calculated target angular velocity for the spool motor
+    // Reads the tension arm angle, converts it to normalized tension, and calculates
+    // the appropriate speed. Also updates the learned maximum speed based on tension error.
     fn calculate_speed(
         &mut self,
         t: Instant,
@@ -185,7 +176,7 @@ impl AdaptiveSpoolSpeedController {
         let max_speed = self.get_max_speed(puller_speed_controller).abs();
 
         // Calculate filament tension from arm angle
-        let tension_arm_angle = tension_arm.get_angle();
+        let tension_arm_angle = tension_arm.get_angle().unwrap();
         let (clamped_angle, clamping_state) = clamp_revolution_uom(
             tension_arm_angle,
             self.filament_calc.get_max_angle(), // Inverted because min angle = max tension
@@ -213,18 +204,9 @@ impl AdaptiveSpoolSpeedController {
     }
 
     /// Simplified urgency-weighted acceleration that adapts to current operating conditions.
-    ///
     /// This approach uses the current max speed (calculated from puller speed and learned diameter)
     /// as the basis for acceleration limits, ensuring smooth operation across all speed ranges
     /// while providing instant deceleration capability when approaching zero.
-    ///
-    /// # Parameters
-    /// - `target_speed`: Target speed to accelerate towards
-    /// - `puller_speed_controller`: Reference to puller for current max speed calculation
-    /// - `t`: Current timestamp for the acceleration controller
-    ///
-    /// # Returns
-    /// Smoothly accelerated speed with urgency-weighted limits
     fn accelerate_speed(
         &mut self,
         target_speed: AngularVelocity,
