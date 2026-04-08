@@ -15,11 +15,11 @@
     "sourceMap": true,
     "strict": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
     },
     "outDir": "dist",
-    "moduleResolution": "node",
-    "resolveJsonModule": true
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
 }
