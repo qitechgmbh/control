@@ -691,7 +691,9 @@ export const rootTree = RootRoute.addChildren([
 
       wagoDoTestMachineSerialRoute.addChildren([wagoDoTestMachineControlRoute]),
 
-      wago750_531MachineSerialRoute.addChildren([wago750_531MachineControlRoute]),
+      wago750_531MachineSerialRoute.addChildren([
+        wago750_531MachineControlRoute,
+      ]),
 
       wago750_501TestMachineSerialRoute.addChildren([
         wago750_501TestMachineControlRoute,

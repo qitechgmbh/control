@@ -68,8 +68,7 @@ impl MachineNewTrait for Wago750_531Machine {
                         module_path!()
                     )
                 })?;
-            let wago750_531: Arc<RwLock<Wago750_531>> =
-                downcast_device::<Wago750_531>(dev).await?;
+            let wago750_531: Arc<RwLock<Wago750_531>> = downcast_device::<Wago750_531>(dev).await?;
 
             let do1 = DigitalOutput::new(wago750_531.clone(), Wago750_531OutputPort::DO1);
             let do2 = DigitalOutput::new(wago750_531.clone(), Wago750_531OutputPort::DO2);
