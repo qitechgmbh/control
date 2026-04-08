@@ -503,6 +503,30 @@ export const wago750430DiMachine: MachineProperties = {
   ],
 };
 
+export const wago750430UfmMachine: MachineProperties = {
+  name: "WAGO 750-430 Ultrasonic Flow Meter",
+  version: "V1",
+  slug: "wago750430ufmmachine",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0048,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Wago 750-354 Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x21,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+
 export const wago8chDioTestMachine: MachineProperties = {
   name: "WAGO 8ch DIO Test",
   version: "V1",

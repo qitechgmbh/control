@@ -6,6 +6,7 @@ pub mod motor_test_machine;
 pub mod test_machine;
 pub mod test_machine_stepper;
 pub mod wago_750_430_di_machine;
+pub mod wago_750_430_ultrasonic_flow_meter;
 pub mod wago_750_460_machine;
 pub mod wago_750_501_test_machine;
 pub mod wago_750_553_machine;
