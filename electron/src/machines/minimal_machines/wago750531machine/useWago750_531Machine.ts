@@ -42,7 +42,7 @@ export function useWago750_531Machine() {
 
   useEffect(() => {
     if (state) stateOptimistic.setReal(state);
-  }, [state, stateOptimistic]);
+  }, [state, stateOptimistic.setReal]);
 
   const { request: sendMutation } = useMachineMutate(
     z.object({
@@ -53,12 +53,12 @@ export function useWago750_531Machine() {
 
   const updateStateOptimistically = (
     producer: (current: StateEvent) => void,
-    serverRequest?: () => void,
+    serverRequest: () => void,
   ) => {
     const currentState = stateOptimistic.value;
-    if (currentState)
-      stateOptimistic.setOptimistic(produce(currentState, producer));
-    serverRequest?.();
+    if (!currentState) return;
+    stateOptimistic.setOptimistic(produce(currentState, producer));
+    serverRequest();
   };
 
   const setOutput = (index: number, on: boolean) => {

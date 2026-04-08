@@ -49,7 +49,13 @@ export function Wago750_531MachineControlPage() {
         {/* Master Output Control */}
         <ControlCard title="Master Output Control">
           <SelectionGroup<"On" | "Off">
-            value={safeState.outputs_on.every(Boolean) ? "On" : "Off"}
+            value={
+              safeState.outputs_on.every(Boolean)
+                ? "On"
+                : safeState.outputs_on.every((v) => !v)
+                  ? "Off"
+                  : undefined
+            }
             orientation="horizontal"
             options={{
               Off: { children: "Turn All Off" },
