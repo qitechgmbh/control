@@ -2,7 +2,6 @@ pub mod act;
 pub mod api;
 pub mod emit;
 pub mod mitsubishi_cs80;
-pub mod mock;
 pub mod new;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
@@ -19,9 +18,9 @@ use screw_speed_controller::ScrewSpeedController;
 use serde::Serialize;
 use temperature_controller::TemperatureController;
 use tokio::sync::mpsc::{Sender,Receiver};
-use crate::MachineMessage;
+use crate::{MachineMessage, QiTechMachine};
 #[cfg(not(feature = "mock-machine"))]
-use crate::{MACHINE_EXTRUDER_V1, VENDOR_QITECH};
+use crate::{MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, VENDOR_QITECH};
 use serde::Deserialize;
 use qitech_lib::machines::MachineIdentification;
 
@@ -104,6 +103,11 @@ impl ExtruderV2 {
         vendor: VENDOR_QITECH,
         machine: MACHINE_EXTRUDER_V1,
     };
+
+    pub const MACHINE_IDENTIFICATION_V3: MachineIdentification = MachineIdentification {
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_EXTRUDER_V2,
+    };
 }
 
 #[cfg(not(feature = "mock-machine"))]
@@ -143,31 +147,38 @@ impl ExtruderV2 {
         self.last_energy_calculation_time = Some(now);
     }
 
-    // Funktionen ohne emit_state bleiben hier
-
-    // Set all relais to ZERO
-    // We dont need a function to enable again though, as the act Loop will detect the mode
-    fn turn_heating_off(&mut self) {
-        self.temperature_controller_back.disable();
-        self.temperature_controller_front.disable();
-        self.temperature_controller_middle.disable();
-        self.temperature_controller_nozzle.disable();
+    fn turn_heating_off(&mut self, digital_out : &mut dyn DigitalOutputDevice) {
+        self.temperature_controller_back.disable(digital_out);
+        self.temperature_controller_front.disable(digital_out);
+        self.temperature_controller_middle.disable(digital_out);
+        self.temperature_controller_nozzle.disable(digital_out);
     }
 
-    fn switch_to_standby(&mut self) {
+    fn switch_to_standby(&mut self,digital_out : &mut dyn DigitalOutputDevice) {
         match self.mode {
             ExtruderV2Mode::Standby => (),
             ExtruderV2Mode::Heat => {
-                self.turn_heating_off();
+                self.turn_heating_off(digital_out);
                 self.screw_speed_controller.reset_pid();
             }
             ExtruderV2Mode::Extrude => {
-                self.turn_heating_off();
+                self.turn_heating_off(digital_out);
                 self.screw_speed_controller.turn_motor_off();
                 self.screw_speed_controller.reset_pid();
             }
         };
         self.mode = ExtruderV2Mode::Standby;
+    }
+
+    fn get_temperature_device(){
+
+    }
+
+    fn get_serial_device(){
+    }
+
+    fn get_relais(&mut self) -> Rc<RefCell<dyn DigitalOutputDevice>>{
+        self.relais_output.clone()
     }
 
     fn switch_to_heat(&mut self) {
@@ -199,13 +210,13 @@ impl ExtruderV2 {
         self.mode = ExtruderV2Mode::Extrude;
     }
 
-    fn switch_mode(&mut self, mode: ExtruderV2Mode) {
+    fn switch_mode(&mut self, mode: ExtruderV2Mode,digital_out : &mut dyn DigitalOutputDevice) {
         if self.mode == mode {
             return;
         }
 
         match mode {
-            ExtruderV2Mode::Standby => self.switch_to_standby(),
+            ExtruderV2Mode::Standby => self.switch_to_standby(digital_out),
             ExtruderV2Mode::Heat => self.switch_to_heat(),
             ExtruderV2Mode::Extrude => self.switch_to_extrude(),
         }
@@ -215,3 +226,5 @@ impl ExtruderV2 {
         self.screw_speed_controller.inverter.reset_inverter();
     }
 }
+
+impl QiTechMachine for ExtruderV2 {}

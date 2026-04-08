@@ -6,10 +6,7 @@ pub mod downcast;
 pub mod futures;
 pub mod helpers;
 pub mod irq_handling;
-//pub mod modbus;
+pub mod modbus;
 pub mod realtime;
 pub mod socketio;
 pub mod transmission;
-
-#[cfg(feature = "video-streaming")]
-pub mod video_streaming;
