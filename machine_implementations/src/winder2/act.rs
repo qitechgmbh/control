@@ -1,18 +1,22 @@
-#[cfg(not(feature = "mock-machine"))]
-use super::Winder2;
-#[cfg(not(feature = "mock-machine"))]
-use crate::{MachineAct, MachineMessage, MachineValues};
-#[cfg(not(feature = "mock-machine"))]
-use std::time::{Duration, Instant};
+use qitech_lib::machines::{Machine, MachineIdentificationUnique};
 
-#[cfg(not(feature = "mock-machine"))]
-impl MachineAct for Winder2 {
-    fn act(&mut self, now: Instant) {
+use super::Winder2;
+use crate::{MachineApi};
+use std::time::{Duration};
+
+
+impl Machine for Winder2 {
+    fn get_identification(&self) -> MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
+    }
+
+    fn act(&mut self, machine_data: Option<&mut qitech_lib::machines::MachineDataRegistry>) {
+        let now = std::time::Instant::now();
         let machine_message = self.api_receiver.try_recv();
-        match machine_message {
-            Ok(machine_message) => self.act_machine_message(machine_message),
-            Err(_e) => (),
-        };
+            match machine_message {
+                Ok(machine_message) => self.act_machine_message(machine_message),
+                Err(_e) => (),
+            };
         // sync the spool speed
         self.sync_spool_speed(now);
 
@@ -36,28 +40,7 @@ impl MachineAct for Winder2 {
         }
     }
 
-    fn act_machine_message(&mut self, msg: MachineMessage) {
-        match msg {
-            MachineMessage::SubscribeNamespace(namespace) => {
-                self.namespace.namespace = Some(namespace);
-                self.emit_state();
-            }
-            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
-            MachineMessage::HttpApiJsonRequest(value) => {
-                use crate::MachineApi;
-                let _res = self.api_mutate(value);
-            }
-            MachineMessage::RequestValues(sender) => {
-                sender
-                    .send_blocking(MachineValues {
-                        state: serde_json::to_value(self.build_state_event())
-                            .expect("Failed to serialize state"),
-                        live_values: serde_json::to_value(self.get_live_values())
-                            .expect("Failed to serialize live values"),
-                    })
-                    .expect("Failed to send values");
-                sender.close();
-            }
-        }
+    fn react(&mut self, registry: &qitech_lib::machines::MachineDataRegistry) {
+
     }
 }

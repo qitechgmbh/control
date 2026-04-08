@@ -2,7 +2,6 @@ use crate::winder2::{
     clamp_revolution::clamp_revolution_uom, filament_tension::FilamentTensionCalculator,
     puller_speed_controller::PullerSpeedController,
 };
-
 use super::{clamp_revolution::Clamping, tension_arm::TensionArm};
 use control_core::{
     controllers::{
@@ -16,13 +15,13 @@ use control_core::{
 };
 use std::time::Instant;
 
-use units::ConstZero;
-use units::angle::degree;
-use units::angular_acceleration::{radian_per_second_squared, revolution_per_minute_per_second};
-use units::angular_velocity::{radian_per_second, revolution_per_minute, revolution_per_second};
-use units::f64::*;
-use units::length::meter;
-use units::velocity::meter_per_second;
+use qitech_lib::units::ConstZero;
+use qitech_lib::units::angle::degree;
+use qitech_lib::units::angular_acceleration::{radian_per_second_squared, revolution_per_minute_per_second};
+use qitech_lib::units::angular_velocity::{radian_per_second, revolution_per_minute, revolution_per_second};
+use qitech_lib::units::f64::*;
+use qitech_lib::units::length::meter;
+use qitech_lib::units::velocity::meter_per_second;
 
 #[derive(Debug)]
 pub struct MinMaxSpoolSpeedController {
@@ -45,11 +44,6 @@ impl Default for MinMaxSpoolSpeedController {
 }
 
 impl MinMaxSpoolSpeedController {
-    /// Parameters:
-    /// - `min_speed`: Minimum speed
-    /// - `max_speed`: Maximum speed  
-    /// - `acceleration`: Acceleration
-    /// - `deceleration`: Deceleration (preferably negative)
     pub fn new() -> Self {
         let max_speed = AngularVelocity::new::<revolution_per_minute>(150.0);
 
@@ -91,17 +85,9 @@ impl MinMaxSpoolSpeedController {
     }
 
     /// Calculates the desired speed based on the tension arm angle.
-    ///
     /// If the arm is over it's maximum angle, the speed is set to the minimum speed.
     /// If the arm is under it's minimum angle, the speed is set to the maximum speed.
     /// If the arm is within the range, the speed is interpolated between the minimum and maximum speed based on the tension arm angle.
-    ///
-    /// Parameters:
-    /// - `t`: The current time.
-    /// - `tension_arm`: A reference to the `TensionArm` instance that provides the angle of the tension arm.
-    ///
-    /// Returns:
-    /// - speed
     fn speed_raw(&mut self, _t: Instant, tension_arm: &TensionArm) -> AngularVelocity {
         let min_speed = AngularVelocity::ZERO;
 
@@ -112,7 +98,7 @@ impl MinMaxSpoolSpeedController {
         let max_speed = self.max_speed();
 
         // calculate filament tension
-        let tension_arm_angle = tension_arm.get_angle();
+        let tension_arm_angle = tension_arm.get_angle().unwrap();
         let tension_arm_revolution = clamp_revolution_uom(
             tension_arm_angle,
             // inverted because min angle is max tension
