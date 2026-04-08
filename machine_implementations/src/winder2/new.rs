@@ -98,6 +98,7 @@ impl MachineNew for Winder2 {
                 mode: super::api::SpoolAutomaticActionMode::NoAction,
             },
             machine_identification_unique: hw.identification,
+            laser_enabled: false,
         };
 
         // initalize events
