@@ -3,7 +3,7 @@ use app_state::SharedAppState;
 use machine_implementations::registry::MACHINE_REGISTRY;
 use machine_implementations::{Hardware, IdentifiedEthercat, MachineHardware, QiTechMachine};
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
-use qitech_lib::ethercat_hal::MetaSubdevice;
+use qitech_lib::ethercat_hal::{EtherCATThreadChannel, MetaSubdevice};
 use qitech_lib::ethercat_hal::machine_ident_read::MachineDeviceInfo;
 use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
 use qitech_lib::{
@@ -65,6 +65,7 @@ impl MainState {
         &mut self,
         device_infos: Vec<MachineDeviceInfo>,
         mut ethercat_devices_mapped: Vec<(MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)>,
+        ethercat_interface : EtherCATThreadChannel,
     ) {
         let mut hw_map: HashMap<u16, (MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)> =
             ethercat_devices_mapped
@@ -100,7 +101,8 @@ impl MainState {
                     identification,
                     MachineHardware {
                         hw: vec![],
-                        serial: dev_info.machine_serial as u32,
+                        identification,
+                        ethercat_interface: Some(ethercat_interface.clone()),
                     },
                 );
             }
@@ -119,7 +121,7 @@ fn main() {
     let state = Arc::new(SharedAppState::new());
     let _api = rt.spawn(apis::init_api(state.clone()));
     let mut main_state = MainState::new();
-    let eth_control = start_ethercat_thread("enp101s0f3u1u2");
+    let eth_control = start_ethercat_thread("enp101s0f4u1u2");
 
     let mut ecat_handle = eth_control.app_handle;
     let ecat_channel = eth_control.channel;
@@ -129,16 +131,20 @@ fn main() {
     rt.spawn(start_socketio_queue(state_clone));
 
     let _res = ecat_channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
-    std::thread::sleep(Duration::from_millis(1000));
+    std::thread::sleep(Duration::from_millis(5000));
 
     let res = ecat_channel.read_device_identifications();
+    println!("{:?}",res);
     let idents = match res {
         Ok(idents) => Some(idents),
-        Err(_e) => None,
+        Err(_e) => {
+            println!("{:?}",_e);
+            None
+        },
     };
 
-    let _res = ecat_channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
     let mut mapped_ecat_devices = vec![];
+    println!("Initialized {} subdevices",ecat_controller.subdevice_count);
 
     for i in 0..ecat_controller.subdevice_count {
         let meta = ecat_controller.subdevices[i];
@@ -146,8 +152,19 @@ fn main() {
         main_state.subdevices.push(dev.clone());
         mapped_ecat_devices.push((meta, dev));
     }
+    
+    match idents.clone() {
+        Some(idents) => {
+            main_state.generate_machine_hardware_from_ethercat(idents, mapped_ecat_devices,ecat_channel.clone())
+        }
+        None => (),
+    }
+    let _res = state.fill_ethercat_metadata(ecat_controller.clone(), idents);
+
+    println!("Initialized {} hw",main_state.hardware.keys().len());
 
     for key in main_state.hardware.keys() {
+        println!("{:?}",key);
         let result = MACHINE_REGISTRY
             .new_machine(key.clone(), main_state.hardware.get(key).unwrap().clone());
         match result {
@@ -166,13 +183,7 @@ fn main() {
         };
     }
 
-    match idents.clone() {
-        Some(idents) => {
-            main_state.generate_machine_hardware_from_ethercat(idents, mapped_ecat_devices)
-        }
-        None => (),
-    }
-    let _res = state.fill_ethercat_metadata(ecat_controller.clone(), idents);
+    let _res = ecat_channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
 
     let state_clone = state.clone();
     rt.spawn(async move {

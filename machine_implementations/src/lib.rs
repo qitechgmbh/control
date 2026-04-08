@@ -4,17 +4,16 @@ use anyhow::Result;
 use control_core::socketio::namespace::Namespace;
 use qitech_lib::{
     ethercat_hal::{
-        devices::{EthercatDevice, downcast_rc_refcell},
-        machine_ident_read::MachineDeviceInfo,
+        EtherCATThreadChannel, devices::{EthercatDevice, downcast_rc_refcell}, machine_ident_read::MachineDeviceInfo
     },
-    machines::{Machine},
+    machines::{Machine, MachineIdentificationUnique},
 };
 use serde::Serialize;
 use tokio::sync::mpsc::Sender;
 pub mod machine_identification;
 pub mod minimal_machines;
 pub mod registry;
-pub mod extruder2;
+//pub mod extruder2;
 pub mod extruder1;
 
 /*pub mod aquapath1;
@@ -89,10 +88,11 @@ pub enum Hardware {
     ModbusAscii(),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct MachineHardware {
     pub hw: Vec<Hardware>,
-    pub serial: u32,
+    pub identification : MachineIdentificationUnique,
+    pub ethercat_interface : Option<EtherCATThreadChannel>
 }
 
 impl MachineHardware {
@@ -120,6 +120,32 @@ impl MachineHardware {
         };
         Ok(downcast_rc_refcell::<T>(identified_ethercat.hw.clone())?)
     }
+
+
+     pub fn try_get_ethercat_meta_by_role(
+        &self,
+        role: u16,
+    ) -> Result<u16, anyhow::Error>    
+    {
+        for i in 0..self.hw.len() {
+            let hardware = self.hw.get(i).expect("try_get_ethercat_device_by_role failed to get hardware even though i is in range of len??????");
+            match hardware {
+                Hardware::Ethercat(identified_ethercat) => {
+                    if identified_ethercat.ident.role == role {
+                        return Ok(identified_ethercat.ident.device_address);
+                    }
+                    continue;
+                }
+                _ => continue,
+            }
+        }
+        Err(anyhow::anyhow!(
+            "index {} not an ethercat device in hardware",
+            role
+        ))
+    }
+
+
 
     pub fn try_get_ethercat_device_by_role<T>(
         &self,

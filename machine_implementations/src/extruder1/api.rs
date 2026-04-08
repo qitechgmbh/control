@@ -345,12 +345,18 @@ impl MachineApi for ExtruderV2 {
             }
         }
     }
-    
+
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         // there are multiple Modbus Frames that are "prebuilt"
         let control: Mutation = serde_json::from_value(request_body)?;
         match control {
-            Mutation::SetExtruderMode(mode) => self.set_mode_state(mode),
+            Mutation::SetExtruderMode(mode) => 
+            {
+                // This might look like an inconvenient borrow, however remember that the machines 
+                // Have full control over when the api_mutate is actually executed!                
+                let relais_out = self.get_relais();
+                self.set_mode_state(mode,&mut *relais_out.borrow_mut());                
+            },
             Mutation::SetInverterRotationDirection(forward) => self.set_rotation_state(forward),
             Mutation::SetInverterRegulation(uses_rpm) => self.set_regulation(uses_rpm),
             Mutation::SetInverterTargetPressure(bar) => self.set_target_pressure(bar),

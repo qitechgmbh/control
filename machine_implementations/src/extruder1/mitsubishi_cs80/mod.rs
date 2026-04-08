@@ -1,5 +1,7 @@
 use bitvec::{order::Lsb0, slice::BitSlice};
-use qitech_lib::ethercat_hal::io::serial_interface::SerialInterface;
+use control_core::modbus::modbus_serial_interface::ModbusSerialInterface;
+use control_core::modbus::{ModbusFunctionCode, ModbusRequest, ModbusResponse};
+use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
 use qitech_lib::units::Frequency;
 use serde::Serialize;
 use std::time::{Duration, Instant};
@@ -283,8 +285,8 @@ pub struct MitsubishiCS80 {
     // Communication
     pub status: MitsubishiCS80Status,
     pub motor_status: MotorStatus,
-    pub modbus_serial_interface: ModbusSerialInterface,
     pub last_ts: Instant,
+    modbus_serial_interface: ModbusSerialInterface,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -338,12 +340,12 @@ impl MitsubishiCS80Request {
 }
 
 impl MitsubishiCS80 {
-    pub fn new(serial_interface: SerialInterface) -> Self {
+    pub fn new() -> Self {
         Self {
-            modbus_serial_interface: ModbusSerialInterface::new(serial_interface),
             last_ts: Instant::now(),
             motor_status: MotorStatus::default(),
             status: MitsubishiCS80Status::default(),
+            modbus_serial_interface:ModbusSerialInterface::new(),
         }
     }
 
@@ -462,9 +464,10 @@ impl MitsubishiCS80 {
         self.add_request(MitsubishiCS80Requests::ResetInverter.into());
     }
 
-    pub async fn act(&mut self, now: Instant) {
+    pub fn act(&mut self, now: Instant,serial_interface_device : &mut dyn SerialInterfaceDevice) {
         if !self.modbus_serial_interface.is_initialized() {
-            if self.modbus_serial_interface.initialize().await {
+            if self.modbus_serial_interface.initialize(serial_interface_device) {
+                println!("is_initialized now reset inverter");
                 self.add_request(MitsubishiCS80Requests::ResetInverter.into());
             }
             return;
@@ -472,7 +475,7 @@ impl MitsubishiCS80 {
 
         self.add_request(MitsubishiCS80Requests::ReadInverterStatus.into());
         self.add_request(MitsubishiCS80Requests::ReadMotorStatus.into());
-        self.modbus_serial_interface.act(now).await;
+        self.modbus_serial_interface.act(now,serial_interface_device);
         self.handle_response(self.modbus_serial_interface.last_message_id);
     }
 }

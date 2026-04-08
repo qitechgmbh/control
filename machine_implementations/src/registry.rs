@@ -6,12 +6,12 @@ use anyhow::Error;
 use lazy_static::lazy_static;
 use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
 use std::{any::TypeId, collections::HashMap};
-
+use crate::extruder1::ExtruderV2;
 pub type MachineNewClosure =
     Box<dyn Fn(MachineHardware) -> Result<Box<dyn QiTechMachine>, Error> + Send + Sync>;
 
 pub struct MachineRegistry {
-    type_map: HashMap<TypeId, (MachineIdentification, MachineNewClosure)>,
+    type_map: HashMap<TypeId, (Vec<MachineIdentification>, MachineNewClosure)>,
 }
 
 impl Default for MachineRegistry {
@@ -29,7 +29,7 @@ impl MachineRegistry {
 
     pub fn register<T: MachineNew + 'static + QiTechMachine>(
         &mut self,
-        machine_identification: MachineIdentification,
+        machine_identification: Vec<MachineIdentification>,
     ) {
         self.type_map.insert(
             TypeId::of::<T>(),
@@ -47,16 +47,15 @@ impl MachineRegistry {
         hardware: MachineHardware,
     ) -> Result<Box<dyn QiTechMachine>, anyhow::Error> {
         let ident = ident.machine_ident;
-        // find machine new function by comparing MachineIdentification
-        let (_, machine_new_closure) =
-            self.type_map
-                .values()
-                .find(|(mi, _)| mi == &ident)
-                .ok_or(anyhow::anyhow!(
-                    "[{}::MachineConstructor::new_machine] Machine not found",
-                    module_path!()
-                ))?;
 
+
+        let (_, machine_new_closure) = self.type_map
+            .values()
+            .find(|(ids, _)| ids.contains(&ident)) // 'ids' is the Vec<MachineIdentification>
+            .ok_or(anyhow::anyhow!(
+                "[{}::MachineConstructor::new_machine] Machine not found",
+                module_path!()
+            ))?;
         // call machine new function by reference
         (machine_new_closure)(hardware)
     }
@@ -65,12 +64,12 @@ impl MachineRegistry {
 lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
-        mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<DigitalInputTestMachine>(vec![DigitalInputTestMachine::MACHINE_IDENTIFICATION]);
         #[cfg(not(feature = "mock-machine"))]
-        mc.register::<ExtruderV2>(ExtruderV2::MACHINE_IDENTIFICATION);
+        mc.register::<ExtruderV2>(vec![ExtruderV2::MACHINE_IDENTIFICATION,ExtruderV2::MACHINE_IDENTIFICATION_V3 ]);
 
-        #[cfg(not(feature = "mock-machine"))]
-        mc.register::<ExtruderV3>(ExtruderV3::MACHINE_IDENTIFICATION);
+       // #[cfg(not(feature = "mock-machine"))]
+       // mc.register::<ExtruderV3>(ExtruderV3::MACHINE_IDENTIFICATION);
 /*
 
 

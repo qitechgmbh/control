@@ -6,7 +6,6 @@ use crate::apis::socketio::{
     },
     namespaces::Namespaces,
 };
-
 use anyhow::bail;
 use control_core::socketio::{
     event::{Event, GenericEvent},

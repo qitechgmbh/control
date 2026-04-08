@@ -1,3 +1,6 @@
+#[cfg(not(feature = "mock-machine"))]
+use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
+
 use crate::extruder1::{
     ExtruderV2, ExtruderV2Mode, HeatingType,
     api::{
@@ -31,7 +34,7 @@ impl ExtruderV2 {
                     .screw_speed_controller
                     .get_target_pressure()
                     .get::<bar>(),
-                wiring_error: self.screw_speed_controller.get_wiring_error(),
+                wiring_error: self.screw_speed_controller.wiring_error,
             },
             screw_state: ScrewState {
                 target_rpm: self
@@ -173,7 +176,7 @@ impl ExtruderV2 {
 
         LiveValuesEvent {
             motor_status: self.screw_speed_controller.get_motor_status().into(),
-            pressure: self.screw_speed_controller.get_pressure().get::<bar>(),
+            pressure: self.screw_speed_controller.pressure.get::<bar>(),
             nozzle_temperature: self
                 .temperature_controller_nozzle
                 .heating
@@ -247,8 +250,8 @@ impl ExtruderV2 {
         self.emit_state();
     }
 
-    pub fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
-        self.switch_mode(mode);
+    pub fn set_mode_state(&mut self, mode: ExtruderV2Mode,digital_out : &mut dyn DigitalOutputDevice) {
+        self.switch_mode(mode,digital_out);
         self.emit_state();
     }
 
