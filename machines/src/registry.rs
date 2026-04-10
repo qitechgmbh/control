@@ -3,6 +3,7 @@ use crate::minimal_machines::digital_input_test_machine::DigitalInputTestMachine
 use crate::minimal_machines::ip20_test_machine::IP20TestMachine;
 use crate::minimal_machines::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine;
 use crate::minimal_machines::wago_750_430_di_machine::Wago750_430DiMachine;
+use crate::minimal_machines::wago_750_430_ultrasonic_flow_meter::Wago750_430UfmMachine;
 use crate::minimal_machines::wago_750_460_machine::Wago750_460Machine;
 use crate::minimal_machines::wago_750_501_test_machine::Wago750_501TestMachine;
 use crate::minimal_machines::wago_750_553_machine::Wago750_553Machine;
@@ -159,6 +160,8 @@ lazy_static! {
         mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
 
         mc.register::<Wago750_430DiMachine>(Wago750_430DiMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<Wago750_430UfmMachine>(Wago750_430UfmMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<Wago750_460Machine>(Wago750_460Machine::MACHINE_IDENTIFICATION);
 

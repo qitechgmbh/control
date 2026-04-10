@@ -849,6 +849,7 @@ export const machineProperties: MachineProperties[] = [
   digitalInputTestMachine,
   wago8chDioTestMachine,
   wago750430DiMachine,
+  wago750430UfmMachine,
   ip20TestMachine,
   wagoDoTestMachine,
   wago750_501TestMachine,

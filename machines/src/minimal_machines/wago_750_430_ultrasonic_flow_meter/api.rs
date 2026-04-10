@@ -8,7 +8,7 @@ use control_core::socketio::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::Wago750_430Ufm;
+use super::Wago750_430UfmMachine;
 use crate::MachineApi;
 
 #[derive(Serialize, Debug, Clone)]
@@ -57,7 +57,7 @@ impl CacheableEvents<Wago750_430UfmEvents> for Wago750_430UfmEvents {
     }
 }
 
-impl MachineApi for Wago750_430Ufm {
+impl MachineApi for Wago750_430UfmMachine {
     fn api_get_sender(&self) -> smol::channel::Sender<crate::MachineMessage> {
         self.api_sender.clone()
     }

@@ -15,7 +15,7 @@ pub mod api;
 pub mod new;
 
 #[derive(Debug)]
-pub struct Wago750_430Ufm {
+pub struct Wago750_430UfmMachine {
     pub api_receiver: Receiver<MachineMessage>,
     pub api_sender: Sender<MachineMessage>,
     pub machine_identification_unique: MachineIdentificationUnique,
@@ -24,9 +24,11 @@ pub struct Wago750_430Ufm {
     pub last_state_emit: Instant,
     pub inputs: [bool; 8],
     pub digital_input: [DigitalInput; 8],
+    pub pulse_count: u8,
+    pub last_measurement: [bool; 8],
 }
 
-impl Machine for Wago750_430Ufm {
+impl Machine for Wago750_430UfmMachine {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique.clone()
     }
@@ -36,7 +38,7 @@ impl Machine for Wago750_430Ufm {
     }
 }
 
-impl Wago750_430Ufm {
+impl Wago750_430UfmMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: WAGO_750_430_UFM,
@@ -55,9 +57,6 @@ impl Wago750_430Ufm {
                 Err(_) => false,
             };
         }
-
-        // let aaah = self.inputs;
-        // println!("{aaah:?}");
 
         let event = StateEvent {
             inputs: self.inputs,

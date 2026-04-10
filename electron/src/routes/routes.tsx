@@ -136,12 +136,12 @@ export const wago750430DiMachineControlRoute = createRoute({
 
 export const wago750430UfmMachineSerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
-  path: "wago750430dimachine/$serial",
+  path: "wago750430ufmmachine/$serial",
   component: () => <Wago750430UfmMachinePage />,
 });
 
 export const wago750430UfmMachineControlRoute = createRoute({
-  getParentRoute: () => wago750430DiMachineSerialRoute,
+  getParentRoute: () => wago750430UfmMachineSerialRoute,
   path: "control",
   component: () => <Wago750430UfmMachineControlPage />,
 });
@@ -697,6 +697,10 @@ export const rootTree = RootRoute.addChildren([
 
       wago750430DiMachineSerialRoute.addChildren([
         wago750430DiMachineControlRoute,
+      ]),
+
+      wago750430UfmMachineSerialRoute.addChildren([
+        wago750430UfmMachineControlRoute,
       ]),
 
       wago750460MachineSerialRoute.addChildren([wago750460MachineControlRoute]),

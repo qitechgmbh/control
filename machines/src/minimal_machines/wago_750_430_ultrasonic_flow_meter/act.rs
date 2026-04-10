@@ -1,9 +1,23 @@
-use super::Wago750_430Ufm;
+use super::Wago750_430UfmMachine;
 use crate::{MachineAct, MachineMessage, MachineValues};
 use std::time::{Duration, Instant};
 
-impl MachineAct for Wago750_430Ufm {
+impl MachineAct for Wago750_430UfmMachine {
     fn act(&mut self, now: Instant) {
+        if self
+            .last_measurement
+            .iter()
+            .zip(self.inputs.iter())
+            .any(|(a, b)| a != b)
+        {
+            println!(
+                "Current Inputs: {:?}\nLast Measurement: {:?}",
+                self.inputs, self.last_measurement,
+            );
+        }
+
+        self.last_measurement = self.inputs;
+
         if let Ok(msg) = self.api_receiver.try_recv() {
             self.act_machine_message(msg);
         }

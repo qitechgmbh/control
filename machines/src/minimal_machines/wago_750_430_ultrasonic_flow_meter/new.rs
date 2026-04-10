@@ -11,13 +11,13 @@ use ethercat_hal::{
 };
 use smol::{block_on, lock::RwLock};
 
-use super::{Wago750_430Ufm, api::Wago750_430UfmNamespace};
+use super::{Wago750_430UfmMachine, api::Wago750_430UfmNamespace};
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
     validate_no_role_duplicates, validate_same_machine_identification_unique,
 };
 
-impl MachineNewTrait for Wago750_430Ufm {
+impl MachineNewTrait for Wago750_430UfmMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         let device_identification = params
             .device_group
@@ -84,6 +84,8 @@ impl MachineNewTrait for Wago750_430Ufm {
                 inputs: [false; 8],
                 main_sender: params.main_thread_channel.clone(),
                 digital_input: [di1, di2, di3, di4, di5, di6, di7, di8],
+                pulse_count: 0,
+                last_measurement: [false; 8],
             };
             machine.emit_state();
             Ok(machine)
