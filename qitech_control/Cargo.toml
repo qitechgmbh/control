@@ -18,3 +18,10 @@ socketioxide = { version = "0.18.2", features = ["msgpack"] }
 erased-serde = "0.4.10"
 
 axum = { version = "0.8.8", features = ["macros"] }
+
+[features]
+# By default, no features are enabled
+default = []
+
+# Define your custom feature
+mock = []

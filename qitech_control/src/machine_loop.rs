@@ -2,16 +2,15 @@ use bitvec::{order::Lsb0, slice::BitSlice};
 use machine_implementations::QiTechMachine;
 use qitech_lib::{
     ethercat_hal::{
-        controller::{EtherCATAppHandle, EtherCATController},
-        devices::EthercatDevice,
+        StandardEtherCATAppHandle, StandardEtherCATController, devices::EthercatDevice
     },
     machines::MachineDataRegistry,
 };
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 pub fn write_ecat_inputs(
-    ecat: &mut EtherCATAppHandle,
-    ecat_controller: Arc<EtherCATController>,
+    ecat: &mut StandardEtherCATAppHandle,
+    ecat_controller: Arc<StandardEtherCATController>,
     subdevices: Vec<Rc<RefCell<dyn EthercatDevice>>>,
 ) {
     assert!(ecat_controller.subdevice_count == subdevices.len());
@@ -29,8 +28,8 @@ pub fn write_ecat_inputs(
 }
 
 pub fn write_ecat_outputs(
-    ecat: &mut EtherCATAppHandle,
-    ecat_controller: Arc<EtherCATController>,
+    ecat: &mut StandardEtherCATAppHandle,
+    ecat_controller: Arc<StandardEtherCATController>,
     subdevices: Vec<Rc<RefCell<dyn EthercatDevice>>>,
 ) {
     assert!(ecat_controller.subdevice_count == subdevices.len());

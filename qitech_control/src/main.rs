@@ -3,14 +3,11 @@ use app_state::SharedAppState;
 use machine_implementations::registry::MACHINE_REGISTRY;
 use machine_implementations::{Hardware, IdentifiedEthercat, MachineHardware, QiTechMachine};
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
-use qitech_lib::ethercat_hal::{EtherCATThreadChannel, MetaSubdevice};
+use qitech_lib::ethercat_hal::{EtherCATThreadChannel, MetaSubdevice, init_ethercat};
 use qitech_lib::ethercat_hal::machine_ident_read::MachineDeviceInfo;
 use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
 use qitech_lib::{
-    ethercat_hal::{
-        devices::{EthercatDevice, device_from_subdevice_identity_rc},
-        start_ethercat_thread,
-    },
+    ethercat_hal::devices::{EthercatDevice, device_from_subdevice_identity_rc},
     machines::MachineDataRegistry,
 };
 
@@ -116,12 +113,16 @@ impl MainState {
     }
 }
 
-fn main() {
-    let rt = get_async_runtime();
+fn mock_logic(){
+
+}
+
+fn main_logic(){
+let rt = get_async_runtime();
     let state = Arc::new(SharedAppState::new());
     let _api = rt.spawn(apis::init_api(state.clone()));
     let mut main_state = MainState::new();
-    let eth_control = start_ethercat_thread("enp101s0f4u1u2");
+    let eth_control = init_ethercat("enp101s0f4u1u2");
 
     let mut ecat_handle = eth_control.app_handle;
     let ecat_channel = eth_control.channel;
@@ -207,4 +208,12 @@ fn main() {
         );
         std::thread::sleep(Duration::from_micros(100));
     }
+}
+
+fn main() {
+    #[cfg(feature = "mock")]
+    mock_logic();
+
+    #[cfg(not(feature = "mock"))]
+    main_logic();
 }
