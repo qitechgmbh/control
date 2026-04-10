@@ -19,7 +19,7 @@ use machine_implementations::{
     },
 };
 use qitech_lib::ethercat_hal::{
-    controller::EtherCATController, machine_ident_read::MachineDeviceInfo,
+    StandardEtherCATController, controller::EtherCATController, machine_ident_read::MachineDeviceInfo
 };
 use socketioxide::{SocketIo, extract::SocketRef};
 use std::{collections::HashMap, sync::Arc};
@@ -52,7 +52,7 @@ pub struct SharedAppState {
 impl SharedAppState {
     pub fn fill_ethercat_metadata(
         &self,
-        controller: Arc<EtherCATController>,
+        controller: Arc<StandardEtherCATController>,
         infos: Option<Vec<MachineDeviceInfo>>,
     ) -> Result<(), anyhow::Error> {
         let mut guard = self.ethercat_meta_datas.try_write()?;
