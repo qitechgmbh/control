@@ -6,9 +6,8 @@ use ethercat_hal::{
         EthercatDevice, downcast_device,
         wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
         wago_modules::wago_750_671::Wago750_671,
-        wago_modules::wago_750_501::Wago750_501,
     },
-    io::{digital_output::DigitalOutput, stepper_velocity_wago_750_671::StepperVelocityWago750671},
+    io::stepper_velocity_wago_750_671::StepperVelocityWago750671,
 };
 use smol::{block_on, lock::RwLock};
 
@@ -18,12 +17,11 @@ use crate::{
     validate_no_role_duplicates, validate_same_machine_identification_unique,
 };
 
-async fn get_first_n_671_slots(
-    coupler: &Wago750_354,
-    count: usize,
-) -> Result<Vec<Arc<RwLock<Wago750_671>>>, Error> {
-    let mut steppers = Vec::with_capacity(count);
+async fn get_first_671_slot(coupler: &Wago750_354) -> Result<Arc<RwLock<Wago750_671>>, Error> {
+    let mut stepper: Option<Arc<RwLock<Wago750_671>>> = None;
 
+    // Allow bench stacks that contain helper modules such as a 750-501 before the
+    // stepper controller. This tester only cares about the first 750-671 it finds.
     for dev in coupler.slot_devices.iter().flatten() {
         let is_671 = {
             let guard = dev.read().await;
@@ -31,40 +29,16 @@ async fn get_first_n_671_slots(
         };
 
         if is_671 {
-            steppers.push(downcast_device::<Wago750_671>(dev.clone()).await?);
-            if steppers.len() == count {
-                break;
-            }
+            stepper = Some(downcast_device::<Wago750_671>(dev.clone()).await?);
+            break;
         }
     }
 
-    if steppers.len() != count {
-        return Err(anyhow::anyhow!(
-            "expected {} Wago 750-671 modules, found {}",
-            count,
-            steppers.len()
-        ));
-    }
-
-    Ok(steppers)
-}
-
-async fn get_first_device<T: EthercatDevice>(
-    coupler: &Wago750_354,
-    device_name: &str,
-) -> Result<Arc<RwLock<T>>, Error> {
-    for dev in coupler.slot_devices.iter().flatten() {
-        let is_target = {
-            let guard = dev.read().await;
-            guard.as_any().is::<T>()
-        };
-
-        if is_target {
-            return downcast_device::<T>(dev.clone()).await;
-        }
-    }
-
-    Err(anyhow::anyhow!("no {} module found", device_name))
+    stepper.ok_or_else(|| {
+        anyhow::anyhow!(
+            "expected at least one Wago 750-671 module; other modules such as 750-501 are allowed"
+        )
+    })
 }
 
 impl MachineNewTrait for WagoWinderSmokeTestMachine {
@@ -105,20 +79,15 @@ impl MachineNewTrait for WagoWinderSmokeTestMachine {
 
             coupler.init_slot_modules(wago_750_354.1);
 
-            let steppers = get_first_n_671_slots(&coupler, 1).await?;
-            let wago_750_501 = get_first_device::<Wago750_501>(&coupler, "Wago 750-501").await?;
+            let stepper = get_first_671_slot(&coupler).await?;
 
             drop(coupler);
 
-            let steppers = [StepperVelocityWago750671::new(steppers[0].clone())];
-            let digital_output1 = DigitalOutput::new(
-                wago_750_501.clone(),
-                ethercat_hal::devices::wago_modules::wago_750_501::Wago750_501Port::Port1,
-            );
-            let digital_output2 = DigitalOutput::new(
-                wago_750_501.clone(),
-                ethercat_hal::devices::wago_modules::wago_750_501::Wago750_501Port::Port2,
-            );
+            let mut stepper = StepperVelocityWago750671::new(stepper);
+            stepper.set_freq_range_sel(3);
+            stepper.set_acc_range_sel(2);
+            stepper.set_acceleration(1000);
+            stepper.request_speed_mode();
 
             let (sender, receiver) = smol::channel::unbounded();
             let mut machine = Self {
@@ -130,9 +99,8 @@ impl MachineNewTrait for WagoWinderSmokeTestMachine {
                     namespace: params.namespace.clone(),
                 },
                 last_state_emit: Instant::now(),
-                steppers,
-                digital_output1,
-                digital_output2,
+                stepper,
+                last_debug_snapshot: None,
             };
             machine.emit_state();
             Ok(machine)

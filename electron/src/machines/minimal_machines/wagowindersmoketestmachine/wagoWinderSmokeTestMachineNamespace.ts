@@ -12,25 +12,33 @@ import {
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 
-const axisStateSchema = z.object({
+export const stateEventDataSchema = z.object({
   enabled: z.boolean(),
   target_velocity: z.number(),
+  actual_velocity: z.number(),
   target_acceleration: z.number(),
   freq_range_sel: z.number(),
   acc_range_sel: z.number(),
   mode: z.string().nullable(),
+  ready: z.boolean(),
+  stop2n_ack: z.boolean(),
+  start_ack: z.boolean(),
   speed_mode_ack: z.boolean(),
+  standstill: z.boolean(),
+  on_speed: z.boolean(),
+  direction_positive: z.boolean(),
+  error: z.boolean(),
+  reset: z.boolean(),
+  position: z.number(),
+  raw_position: z.number(),
   di1: z.boolean(),
   di2: z.boolean(),
   status_byte1: z.number(),
   status_byte2: z.number(),
   status_byte3: z.number(),
-});
-
-export const stateEventDataSchema = z.object({
-  axes: z.array(axisStateSchema).length(1),
-  digital_output1: z.boolean(),
-  digital_output2: z.boolean(),
+  control_byte1: z.number(),
+  control_byte2: z.number(),
+  control_byte3: z.number(),
 });
 
 export const stateEventSchema = eventSchema(stateEventDataSchema);

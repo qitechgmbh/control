@@ -11,26 +11,33 @@ use serde_json::Value;
 use std::sync::Arc;
 
 #[derive(Serialize, Debug, Clone)]
-pub struct AxisState {
+pub struct StateEvent {
     pub enabled: bool,
     pub target_velocity: i16,
+    pub actual_velocity: i16,
     pub target_acceleration: u16,
     pub freq_range_sel: u8,
     pub acc_range_sel: u8,
     pub mode: Option<String>,
+    pub ready: bool,
+    pub stop2n_ack: bool,
+    pub start_ack: bool,
     pub speed_mode_ack: bool,
+    pub standstill: bool,
+    pub on_speed: bool,
+    pub direction_positive: bool,
+    pub error: bool,
+    pub reset: bool,
+    pub position: i64,
+    pub raw_position: i64,
     pub di1: bool,
     pub di2: bool,
     pub status_byte1: u8,
     pub status_byte2: u8,
     pub status_byte3: u8,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct StateEvent {
-    pub axes: [AxisState; 1],
-    pub digital_output1: bool,
-    pub digital_output2: bool,
+    pub control_byte1: u8,
+    pub control_byte2: u8,
+    pub control_byte3: u8,
 }
 
 impl StateEvent {
@@ -46,11 +53,15 @@ pub enum WagoWinderSmokeTestMachineEvents {
 #[derive(Deserialize)]
 #[serde(tag = "action", content = "value")]
 pub enum Mutation {
-    SetStepperEnabled { axis: usize, enabled: bool },
-    SetStepperVelocity { axis: usize, velocity: i16 },
-    SetStepperFreqRange { axis: usize, factor: u8 },
-    SetStepperAccRange { axis: usize, factor: u8 },
-    SetDigitalOutput { port: usize, value: bool },
+    SetStepperEnabled(bool),
+    SetStepperVelocity(i16),
+    SetStepperPosition(i64),
+    SetStepperFreqRange(u8),
+    SetStepperAccRange(u8),
+    StartCoarseSeek,
+    StopByZeroVelocity,
+    StopByStop2N,
+    ReleaseStop2N,
 }
 
 #[derive(Debug, Clone)]
@@ -90,19 +101,15 @@ impl MachineApi for WagoWinderSmokeTestMachine {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
-            Mutation::SetStepperEnabled { axis, enabled } => {
-                self.set_stepper_enabled(axis, enabled)
-            }
-            Mutation::SetStepperVelocity { axis, velocity } => {
-                self.set_stepper_velocity(axis, velocity)
-            }
-            Mutation::SetStepperFreqRange { axis, factor } => {
-                self.set_stepper_freq_range(axis, factor)
-            }
-            Mutation::SetStepperAccRange { axis, factor } => {
-                self.set_stepper_acc_range(axis, factor)
-            }
-            Mutation::SetDigitalOutput { port, value } => self.set_digital_output(port, value),
+            Mutation::SetStepperEnabled(enabled) => self.set_stepper_enabled(enabled),
+            Mutation::SetStepperVelocity(velocity) => self.set_stepper_velocity(velocity),
+            Mutation::SetStepperPosition(position) => self.set_stepper_position(position),
+            Mutation::SetStepperFreqRange(factor) => self.set_stepper_freq_range(factor),
+            Mutation::SetStepperAccRange(factor) => self.set_stepper_acc_range(factor),
+            Mutation::StartCoarseSeek => self.start_coarse_seek(),
+            Mutation::StopByZeroVelocity => self.stop_by_zero_velocity(),
+            Mutation::StopByStop2N => self.stop_by_stop2n(),
+            Mutation::ReleaseStop2N => self.release_stop2n(),
         }
         Ok(())
     }

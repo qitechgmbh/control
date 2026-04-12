@@ -703,6 +703,30 @@ export const wagoAiTestMachine: MachineProperties = {
   ],
 };
 
+export const wago750467Machine: MachineProperties = {
+  name: "Wago 750-467 AI",
+  version: "V1",
+  slug: "wago750467machine",
+  icon: "lu:Activity",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0049,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Wago 750-354 Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x21,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+
 export const wagoSerial: MachineProperties = {
   name: "WagoSerial",
   version: "V1",
@@ -834,6 +858,30 @@ export const wagoWinderSmokeTestMachine: MachineProperties = {
   ],
 };
 
+export const wagoTraverseTestMachine: MachineProperties = {
+  name: "Wago Traverse Test",
+  version: "V1",
+  slug: "wagotraversetestmachine",
+  icon: "lu:MoveHorizontal",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x004a,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Wago 750-354 Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x21,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+
 export const wagoWinder: MachineProperties = {
   name: "Wago Winder",
   version: "V1",
@@ -871,6 +919,7 @@ export const machineProperties: MachineProperties[] = [
   testmachine,
   analogInputTestMachine,
   wagoAiTestMachine,
+  wago750467Machine,
   digitalInputTestMachine,
   wago8chDioTestMachine,
   wago750430DiMachine,
@@ -883,6 +932,7 @@ export const machineProperties: MachineProperties[] = [
   wagoSerial,
   wago750460Machine,
   wagoWinderSmokeTestMachine,
+  wagoTraverseTestMachine,
 ];
 
 export const getMachineProperties = (

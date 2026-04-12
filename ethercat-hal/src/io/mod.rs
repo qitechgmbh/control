@@ -6,6 +6,8 @@ pub mod digital_output;
 pub mod encoder_input;
 pub mod pulse_train_output;
 pub mod serial_interface;
+pub mod stepper_jog_wago_750_671;
+pub mod stepper_positioning_wago_750_671;
 pub mod stepper_reference_wago_750_671;
 pub mod stepper_velocity_el70x1;
 pub mod stepper_velocity_wago_750_671;

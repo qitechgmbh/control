@@ -37,7 +37,9 @@ export function useWagoWinderSmokeTestMachine() {
     };
   }, [serialString]);
 
-  const { state } = useWagoWinderSmokeTestMachineNamespace(machineIdentification);
+  const { state } = useWagoWinderSmokeTestMachineNamespace(
+    machineIdentification,
+  );
   const stateOptimistic = useStateOptimistic<StateEvent>();
 
   useEffect(() => {
@@ -62,78 +64,94 @@ export function useWagoWinderSmokeTestMachine() {
     serverRequest?.();
   };
 
-  const setStepperEnabled = (axis: number, enabled: boolean) => {
+  const setStepperEnabled = (enabled: boolean) => {
     updateStateOptimistically(
       (current) => {
-        current.axes[axis].enabled = enabled;
+        current.enabled = enabled;
       },
       () =>
         sendMutation({
           machine_identification_unique: machineIdentification,
-          data: { action: "SetStepperEnabled", value: { axis, enabled } },
+          data: { action: "SetStepperEnabled", value: enabled },
         }),
     );
   };
 
-  const setStepperVelocity = (axis: number, velocity: number) => {
+  const setStepperVelocity = (velocity: number) => {
     updateStateOptimistically(
       (current) => {
-        current.axes[axis].target_velocity = velocity;
+        current.target_velocity = velocity;
       },
       () =>
         sendMutation({
           machine_identification_unique: machineIdentification,
-          data: { action: "SetStepperVelocity", value: { axis, velocity } },
+          data: { action: "SetStepperVelocity", value: velocity },
         }),
     );
   };
 
-  const setStepperFreqRange = (axis: number, factor: number) => {
+  const setStepperPosition = (position: number) => {
     updateStateOptimistically(
       (current) => {
-        current.axes[axis].freq_range_sel = factor;
+        current.position = position;
       },
       () =>
         sendMutation({
           machine_identification_unique: machineIdentification,
-          data: { action: "SetStepperFreqRange", value: { axis, factor } },
+          data: { action: "SetStepperPosition", value: position },
         }),
     );
   };
 
-  const setStepperAccRange = (axis: number, factor: number) => {
+  const setStepperFreqRange = (factor: number) => {
     updateStateOptimistically(
       (current) => {
-        current.axes[axis].acc_range_sel = factor;
+        current.freq_range_sel = factor;
       },
       () =>
         sendMutation({
           machine_identification_unique: machineIdentification,
-          data: { action: "SetStepperAccRange", value: { axis, factor } },
+          data: { action: "SetStepperFreqRange", value: factor },
         }),
     );
   };
 
-  const setDigitalOutput = (port: number, value: boolean) => {
+  const setStepperAccRange = (factor: number) => {
     updateStateOptimistically(
       (current) => {
-        if (port === 1) current.digital_output1 = value;
-        if (port === 2) current.digital_output2 = value;
+        current.acc_range_sel = factor;
       },
       () =>
         sendMutation({
           machine_identification_unique: machineIdentification,
-          data: { action: "SetDigitalOutput", value: { port, value } },
+          data: { action: "SetStepperAccRange", value: factor },
         }),
     );
+  };
+
+  const sendSimpleAction = (
+    action:
+      | "StartCoarseSeek"
+      | "StopByZeroVelocity"
+      | "StopByStop2N"
+      | "ReleaseStop2N",
+  ) => {
+    sendMutation({
+      machine_identification_unique: machineIdentification,
+      data: { action },
+    });
   };
 
   return {
     state: stateOptimistic.value,
     setStepperEnabled,
     setStepperVelocity,
+    setStepperPosition,
     setStepperFreqRange,
     setStepperAccRange,
-    setDigitalOutput,
+    startCoarseSeek: () => sendSimpleAction("StartCoarseSeek"),
+    stopByZeroVelocity: () => sendSimpleAction("StopByZeroVelocity"),
+    stopByStop2N: () => sendSimpleAction("StopByStop2N"),
+    releaseStop2N: () => sendSimpleAction("ReleaseStop2N"),
   };
 }

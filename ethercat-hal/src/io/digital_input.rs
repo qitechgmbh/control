@@ -2,6 +2,8 @@ use std::{fmt, sync::Arc};
 
 use smol::lock::RwLock;
 
+use crate::io::traverse_axis::TraverseEndstop;
+
 /// Digital Input (DI) device
 ///
 /// Reads digital values (true or false) from the device.
@@ -37,6 +39,12 @@ impl DigitalInput {
     pub fn get_value(&self) -> Result<bool, anyhow::Error> {
         let input = (self.get_input)()?;
         Ok(input.value)
+    }
+}
+
+impl TraverseEndstop for DigitalInput {
+    fn is_active(&self) -> bool {
+        self.get_value().unwrap_or(false)
     }
 }
 

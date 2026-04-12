@@ -1,16 +1,17 @@
-use super::WagoWinderSmokeTestMachine;
+use super::WagoTraverseTestMachine;
 use crate::{MachineAct, MachineMessage, MachineValues};
 use std::time::{Duration, Instant};
 
-impl MachineAct for WagoWinderSmokeTestMachine {
+impl MachineAct for WagoTraverseTestMachine {
     fn act(&mut self, now: Instant) {
-        self.stepper.tick();
+        self.traverse.tick();
+        self.act_drive_mode();
 
         if let Ok(msg) = self.api_receiver.try_recv() {
             self.act_machine_message(msg);
         }
 
-        if now.duration_since(self.last_state_emit) > Duration::from_secs_f64(1.0 / 10.0) {
+        if now.duration_since(self.last_state_emit) > Duration::from_secs_f64(1.0 / 20.0) {
             self.emit_state();
             self.last_state_emit = now;
         }

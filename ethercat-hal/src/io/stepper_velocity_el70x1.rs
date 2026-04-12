@@ -1,6 +1,7 @@
 use std::{fmt, sync::Arc};
 
 use crate::helpers::el70xx_velocity_converter::EL70x1VelocityConverter;
+use crate::io::traverse_axis::TraverseStepperAxis;
 use anyhow::Error;
 use smol::lock::RwLock;
 
@@ -136,6 +137,28 @@ impl<'device> StepperVelocityEL70x1 {
 
         // Write to device
         (self.set_output)(output).unwrap();
+    }
+}
+
+impl TraverseStepperAxis for StepperVelocityEL70x1 {
+    fn set_speed(&mut self, steps_per_second: f64) -> Result<(), Error> {
+        Self::set_speed(self, steps_per_second)
+    }
+
+    fn set_enabled(&mut self, enabled: bool) {
+        Self::set_enabled(self, enabled);
+    }
+
+    fn is_enabled(&self) -> bool {
+        Self::is_enabled(self)
+    }
+
+    fn get_position(&self) -> i128 {
+        Self::get_position(self)
+    }
+
+    fn set_position(&mut self, position: i128) {
+        Self::set_position(self, position);
     }
 }
 

@@ -3,155 +3,223 @@ import { ControlGrid } from "@/control/ControlGrid";
 import { ControlCard } from "@/control/ControlCard";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { Label } from "@/control/Label";
-import { EditValue } from "@/control/EditValue";
-import { roundToDecimals } from "@/lib/decimal";
 import React from "react";
 import { useWagoWinderSmokeTestMachine } from "./useWagoWinderSmokeTestMachine";
 
+const WINDER2_SPEED_PRESETS = [
+  {
+    key: "stop",
+    label: "Validate / Stop",
+    mmPerSecond: 0,
+    velocity: 0,
+  },
+  {
+    key: "escape",
+    label: "EscapeEndstop",
+    mmPerSecond: 10,
+    velocity: 183,
+  },
+  {
+    key: "fineDistance",
+    label: "FindEndstopFineDistancing",
+    mmPerSecond: 2,
+    velocity: 37,
+  },
+  {
+    key: "coarse",
+    label: "FindEndstopCoarse",
+    mmPerSecond: -100,
+    velocity: -1829,
+  },
+  {
+    key: "fineSeek",
+    label: "FindEndtopFine",
+    mmPerSecond: -2,
+    velocity: -37,
+  },
+] as const;
+
+type VelocityPresetKey = (typeof WINDER2_SPEED_PRESETS)[number]["key"];
+type CoordinateJogKey = "Stop" | "+X Slow" | "-X Slow";
+
+const COORDINATE_JOG_PRESETS: Record<CoordinateJogKey, number> = {
+  Stop: 0,
+  "+X Slow": 37,
+  "-X Slow": -37,
+};
+
 const defaultState = {
-  axes: [
-    {
-      enabled: false,
-      target_velocity: 0,
-      target_acceleration: 10000,
-      freq_range_sel: 0,
-      acc_range_sel: 0,
-      mode: null,
-      speed_mode_ack: false,
-      di1: false,
-      di2: false,
-      status_byte1: 0,
-      status_byte2: 0,
-      status_byte3: 0,
-    },
-  ],
-  digital_output1: false,
-  digital_output2: false,
+  enabled: false,
+  target_velocity: 0,
+  actual_velocity: 0,
+  target_acceleration: 10000,
+  freq_range_sel: 0,
+  acc_range_sel: 0,
+  mode: null,
+  ready: false,
+  stop2n_ack: false,
+  start_ack: false,
+  speed_mode_ack: false,
+  standstill: false,
+  on_speed: false,
+  direction_positive: false,
+  error: false,
+  reset: false,
+  position: 0,
+  raw_position: 0,
+  di1: false,
+  di2: false,
+  status_byte1: 0,
+  status_byte2: 0,
+  status_byte3: 0,
+  control_byte1: 0,
+  control_byte2: 0,
+  control_byte3: 0,
 };
 
 export function WagoWinderSmokeTestMachineControlPage() {
-  const {
-    state,
-    setStepperEnabled,
-    setStepperVelocity,
-    setStepperFreqRange,
-    setStepperAccRange,
-    setDigitalOutput,
-  } = useWagoWinderSmokeTestMachine();
+  const { state, setStepperEnabled, setStepperVelocity, setStepperPosition } =
+    useWagoWinderSmokeTestMachine();
 
   const safeState = state ?? defaultState;
+  const velocityPreset =
+    WINDER2_SPEED_PRESETS.find(
+      (preset) => preset.velocity === safeState.target_velocity,
+    )?.key ?? "stop";
+
+  const statusBoxes = [
+    { label: "Ready", active: safeState.ready },
+    { label: "Stop2N Ack", active: safeState.stop2n_ack },
+    { label: "Start Ack", active: safeState.start_ack },
+    { label: "Speed Ack", active: safeState.speed_mode_ack },
+    { label: "Standstill", active: safeState.standstill },
+    { label: "On Speed", active: safeState.on_speed },
+    { label: "Dir Pos", active: safeState.direction_positive },
+    { label: "Error", active: safeState.error },
+    { label: "Reset", active: safeState.reset },
+    { label: "DI1", active: safeState.di1 },
+    { label: "DI2", active: safeState.di2 },
+  ];
 
   return (
     <Page>
       <ControlGrid columns={2}>
-        {safeState.axes.map((axis, index) => (
-          <ControlCard key={index} title="671 Stepper">
-            <div className="space-y-4">
-              <Label label="Enable">
-                <SelectionGroup<"Enabled" | "Disabled">
-                  value={axis.enabled ? "Enabled" : "Disabled"}
+        <ControlCard title="671 Stepper">
+          <div className="space-y-4">
+            <Label label="Enable">
+              <SelectionGroup<"Enabled" | "Disabled">
+                value={safeState.enabled ? "Enabled" : "Disabled"}
+                orientation="horizontal"
+                options={{
+                  Disabled: { children: "Disabled" },
+                  Enabled: { children: "Enabled" },
+                }}
+                onChange={(value) => setStepperEnabled(value === "Enabled")}
+              />
+            </Label>
+
+            <Label label="Velocity Preset">
+              <SelectionGroup<VelocityPresetKey>
+                value={velocityPreset}
+                orientation="horizontal"
+                options={Object.fromEntries(
+                  WINDER2_SPEED_PRESETS.map((preset) => [
+                    preset.key,
+                    {
+                      children: `${preset.label} (${preset.velocity}, ${preset.mmPerSecond} mm/s)`,
+                    },
+                  ]),
+                )}
+                onChange={(value) =>
+                  setStepperVelocity(
+                    WINDER2_SPEED_PRESETS.find((preset) => preset.key === value)
+                      ?.velocity ?? 0,
+                  )
+                }
+              />
+            </Label>
+
+            <Label label="X Coordinate Test">
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>Logical X: {safeState.position}</div>
+                  <div>Raw X: {safeState.raw_position}</div>
+                </div>
+
+                <SelectionGroup<CoordinateJogKey>
+                  value={
+                    (Object.entries(COORDINATE_JOG_PRESETS).find(
+                      ([, velocity]) => velocity === safeState.target_velocity,
+                    )?.[0] as CoordinateJogKey | undefined) ?? "Stop"
+                  }
                   orientation="horizontal"
                   options={{
-                    Disabled: { children: "Disabled" },
-                    Enabled: { children: "Enabled" },
+                    Stop: { children: "Stop (0)" },
+                    "+X Slow": { children: "+X Slow (37)" },
+                    "-X Slow": { children: "-X Slow (-37)" },
                   }}
                   onChange={(value) =>
-                    setStepperEnabled(index, value === "Enabled")
+                    setStepperVelocity(COORDINATE_JOG_PRESETS[value])
                   }
                 />
-              </Label>
 
-              <Label label="Velocity">
-                <EditValue
-                  value={axis.target_velocity}
-                  title={`Axis ${index + 1} Velocity`}
-                  defaultValue={0}
-                  min={-25000}
-                  max={25000}
-                  step={1}
-                  renderValue={(value) => roundToDecimals(value, 0)}
-                  onChange={(value) => setStepperVelocity(index, value)}
-                />
-              </Label>
-
-              <Label label="Frequency Range">
-                <SelectionGroup<"0" | "1" | "2" | "3">
-                  value={String(axis.freq_range_sel) as "0" | "1" | "2" | "3"}
+                <SelectionGroup<"Keep" | "Zero Here">
+                  value="Keep"
                   orientation="horizontal"
                   options={{
-                    "0": { children: "0" },
-                    "1": { children: "1" },
-                    "2": { children: "2" },
-                    "3": { children: "3" },
+                    Keep: { children: "Keep Offset" },
+                    "Zero Here": { children: "Zero Here" },
                   }}
-                  onChange={(value) =>
-                    setStepperFreqRange(index, Number(value))
-                  }
-                />
-              </Label>
-
-              <Label label="Acceleration Range">
-                <SelectionGroup<"0" | "1" | "2" | "3">
-                  value={String(axis.acc_range_sel) as "0" | "1" | "2" | "3"}
-                  orientation="horizontal"
-                  options={{
-                    "0": { children: "0" },
-                    "1": { children: "1" },
-                    "2": { children: "2" },
-                    "3": { children: "3" },
+                  onChange={(value) => {
+                    if (value === "Zero Here") {
+                      setStepperPosition(0);
+                    }
                   }}
-                  onChange={(value) =>
-                    setStepperAccRange(index, Number(value))
-                  }
                 />
-              </Label>
+              </div>
+            </Label>
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>Mode: {axis.mode ?? "None"}</div>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              {statusBoxes.map((item) => (
                 <div
-                  className={`rounded px-3 py-2 text-white ${axis.speed_mode_ack ? "bg-green-600" : "bg-red-600"}`}
+                  key={item.label}
+                  className={`rounded border px-2 py-2 text-center ${
+                    item.active
+                      ? "border-green-500 bg-green-50 text-green-900"
+                      : "border-zinc-300 bg-zinc-50 text-zinc-700"
+                  }`}
                 >
-                  S1.3 Speed Ack: {axis.speed_mode_ack ? "On" : "Off"}
+                  <div className="font-medium">{item.label}</div>
+                  <div>{item.active ? "1" : "0"}</div>
                 </div>
-                <div className={`rounded px-3 py-2 text-white ${axis.di1 ? "bg-green-600" : "bg-red-600"}`}>
-                  S3.0: {axis.di1 ? "On" : "Off"}
-                </div>
-                <div>DI2: {axis.di2 ? "On" : "Off"}</div>
-                <div>S1: 0x{axis.status_byte1.toString(16).padStart(2, "0")}</div>
-                <div>S2: 0x{axis.status_byte2.toString(16).padStart(2, "0")}</div>
-                <div>S3: 0x{axis.status_byte3.toString(16).padStart(2, "0")}</div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>Target Vel: {safeState.target_velocity}</div>
+              <div>Actual Vel: {safeState.actual_velocity}</div>
+              <div>Mode: {safeState.mode ?? "None"}</div>
+              <div>Logical Position: {safeState.position}</div>
+              <div>Raw Position: {safeState.raw_position}</div>
+              <div>
+                C1: 0x{safeState.control_byte1.toString(16).padStart(2, "0")}
+              </div>
+              <div>
+                C2: 0x{safeState.control_byte2.toString(16).padStart(2, "0")}
+              </div>
+              <div>
+                C3: 0x{safeState.control_byte3.toString(16).padStart(2, "0")}
+              </div>
+              <div>
+                S1: 0x{safeState.status_byte1.toString(16).padStart(2, "0")}
+              </div>
+              <div>
+                S2: 0x{safeState.status_byte2.toString(16).padStart(2, "0")}
+              </div>
+              <div>
+                S3: 0x{safeState.status_byte3.toString(16).padStart(2, "0")}
               </div>
             </div>
-          </ControlCard>
-        ))}
-
-        <ControlCard title="750-501 Digital Outputs">
-          <div className="grid grid-cols-2 gap-6">
-            {[
-              { label: "DO1", value: safeState.digital_output1, port: 1 },
-              { label: "DO2", value: safeState.digital_output2, port: 2 },
-            ].map((output) => (
-              <Label key={output.port} label={output.label}>
-                <SelectionGroup<"On" | "Off">
-                  value={output.value ? "On" : "Off"}
-                  orientation="vertical"
-                  className="flex flex-col gap-3"
-                  options={{
-                    Off: {
-                      children: "Off",
-                      isActiveClassName: "bg-red-600",
-                      className: "flex-1",
-                    },
-                    On: {
-                      children: "On",
-                      isActiveClassName: "bg-green-600",
-                      className: "flex-1",
-                    },
-                  }}
-                  onChange={(value) => setDigitalOutput(output.port, value === "On")}
-                />
-              </Label>
-            ))}
           </div>
         </ControlCard>
       </ControlGrid>

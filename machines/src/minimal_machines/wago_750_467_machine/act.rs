@@ -1,16 +1,15 @@
-use super::WagoWinderSmokeTestMachine;
-use crate::{MachineAct, MachineMessage, MachineValues};
 use std::time::{Duration, Instant};
 
-impl MachineAct for WagoWinderSmokeTestMachine {
-    fn act(&mut self, now: Instant) {
-        self.stepper.tick();
+use super::Wago750_467Machine;
+use crate::{MachineAct, MachineMessage, MachineValues};
 
+impl MachineAct for Wago750_467Machine {
+    fn act(&mut self, now: Instant) {
         if let Ok(msg) = self.api_receiver.try_recv() {
             self.act_machine_message(msg);
         }
 
-        if now.duration_since(self.last_state_emit) > Duration::from_secs_f64(1.0 / 10.0) {
+        if now.duration_since(self.last_state_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             self.emit_state();
             self.last_state_emit = now;
         }
@@ -22,7 +21,9 @@ impl MachineAct for WagoWinderSmokeTestMachine {
                 self.namespace.namespace = Some(namespace);
                 self.emit_state();
             }
-            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
+            MachineMessage::UnsubscribeNamespace => {
+                self.namespace.namespace = None;
+            }
             MachineMessage::HttpApiJsonRequest(value) => {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);

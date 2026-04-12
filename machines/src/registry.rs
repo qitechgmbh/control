@@ -4,10 +4,12 @@ use crate::minimal_machines::ip20_test_machine::IP20TestMachine;
 use crate::minimal_machines::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine;
 use crate::minimal_machines::wago_750_430_di_machine::Wago750_430DiMachine;
 use crate::minimal_machines::wago_750_460_machine::Wago750_460Machine;
+use crate::minimal_machines::wago_750_467_machine::Wago750_467Machine;
 use crate::minimal_machines::wago_750_501_test_machine::Wago750_501TestMachine;
 use crate::minimal_machines::wago_750_553_machine::Wago750_553Machine;
 use crate::minimal_machines::wago_ai_test_machine::WagoAiTestMachine;
 use crate::minimal_machines::wago_do_test_machine::WagoDOTestMachine;
+use crate::minimal_machines::wago_traverse_test_machine::WagoTraverseTestMachine;
 use crate::minimal_machines::wago_winder_smoke_test_machine::WagoWinderSmokeTestMachine;
 use crate::wago_serial_machine::WagoSerialMachine;
 use crate::wago_winder::WagoWinder;
@@ -150,6 +152,7 @@ lazy_static! {
         mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<WagoDOTestMachine>(WagoDOTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<WagoTraverseTestMachine>(WagoTraverseTestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<Wago750_501TestMachine>(Wago750_501TestMachine::MACHINE_IDENTIFICATION);
 
@@ -165,6 +168,8 @@ lazy_static! {
         );
 
         mc.register::<Wago750_430DiMachine>(Wago750_430DiMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<Wago750_467Machine>(Wago750_467Machine::MACHINE_IDENTIFICATION);
 
         mc.register::<Wago750_460Machine>(Wago750_460Machine::MACHINE_IDENTIFICATION);
 

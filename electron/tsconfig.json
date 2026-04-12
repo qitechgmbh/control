@@ -20,6 +20,7 @@
     },
     "outDir": "dist",
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "resolveJsonModule": true
   },
   "include": ["src/**/*"]

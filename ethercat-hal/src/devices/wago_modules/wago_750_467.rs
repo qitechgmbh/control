@@ -174,6 +174,16 @@ impl NewEthercatDevice for Wago750_467 {
     }
 }
 
+impl Wago750_467 {
+    pub fn get_raw_ai1(&self) -> u16 {
+        self.tx_pdo.ai1
+    }
+
+    pub fn get_raw_ai2(&self) -> u16 {
+        self.tx_pdo.ai2
+    }
+}
+
 impl std::fmt::Debug for Wago750_467 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Wago750_467")
