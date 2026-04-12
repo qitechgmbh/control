@@ -10,6 +10,7 @@ use crate::minimal_machines::wago_ai_test_machine::WagoAiTestMachine;
 use crate::minimal_machines::wago_do_test_machine::WagoDOTestMachine;
 use crate::minimal_machines::wago_winder_smoke_test_machine::WagoWinderSmokeTestMachine;
 use crate::wago_serial_machine::WagoSerialMachine;
+use crate::wago_winder::WagoWinder;
 #[cfg(feature = "mock-machine")]
 use crate::{
     extruder1::mock::ExtruderV2 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
@@ -110,6 +111,7 @@ lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
         mc.register::<Winder2>(Winder2::MACHINE_IDENTIFICATION);
+        mc.register::<WagoWinder>(WagoWinder::MACHINE_IDENTIFICATION);
 
         #[cfg(feature = "mock-machine")]
         mc.register::<ExtruderV2Mock1>(ExtruderV2Mock1::MACHINE_IDENTIFICATION);

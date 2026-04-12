@@ -70,6 +70,7 @@ impl MachineIdentification {
             x if x == WAGO_750_553_MACHINE => "wago_750_553_machine".to_string(),
             x if x == TEST_MACHINE_STEPPER => "test_machine_stepper".to_string(),
             x if x == WAGO_WINDER_SMOKE_TEST_MACHINE => "stepper_controller_tester".to_string(),
+            x if x == MACHINE_WAGO_WINDER_V1 => "wago_winder".to_string(),
 
             _ => unreachable!("Unknown machine id"),
         }
@@ -191,6 +192,7 @@ use crate::MACHINE_EXTRUDER_V2;
 use crate::MACHINE_LASER_V1;
 use crate::MACHINE_MOCK;
 use crate::MACHINE_WAGO_POWER_V1;
+use crate::MACHINE_WAGO_WINDER_V1;
 use crate::MACHINE_WINDER_V1;
 use crate::TEST_MACHINE;
 use crate::TEST_MACHINE_STEPPER;

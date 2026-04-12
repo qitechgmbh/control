@@ -19,6 +19,12 @@ import { Winder2ManualPage } from "@/machines/winder/winder2/Winder2Manual";
 import { Winder2SettingPage } from "@/machines/winder/winder2/Winder2Settings";
 import { Winder2GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
 import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
+import { Winder2Page as WagoWinderPage } from "@/machines/winder/wago_winder/Winder2Page";
+import { Winder2ControlPage as WagoWinderControlPage } from "@/machines/winder/wago_winder/Winder2ControlPage";
+import { Winder2ManualPage as WagoWinderManualPage } from "@/machines/winder/wago_winder/Winder2Manual";
+import { Winder2SettingPage as WagoWinderSettingPage } from "@/machines/winder/wago_winder/Winder2Settings";
+import { Winder2GraphsPage as WagoWinderGraphsPage } from "@/machines/winder/wago_winder/Winder2Graphs";
+import { Winder2PresetsPage as WagoWinderPresetsPage } from "@/machines/winder/wago_winder/Winder2PresetsPage";
 
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
@@ -339,10 +345,22 @@ export const winder2SerialRoute = createRoute({
   component: () => <Winder2Page />,
 });
 
+export const wagoWinderSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wago_winder/$serial",
+  component: () => <WagoWinderPage />,
+});
+
 export const winder2ControlRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "control",
   component: () => <Winder2ControlPage />,
+});
+
+export const wagoWinderControlRoute = createRoute({
+  getParentRoute: () => wagoWinderSerialRoute,
+  path: "control",
+  component: () => <WagoWinderControlPage />,
 });
 
 export const winder2ManualRoute = createRoute({
@@ -351,10 +369,22 @@ export const winder2ManualRoute = createRoute({
   component: () => <Winder2ManualPage />,
 });
 
+export const wagoWinderManualRoute = createRoute({
+  getParentRoute: () => wagoWinderSerialRoute,
+  path: "manual",
+  component: () => <WagoWinderManualPage />,
+});
+
 export const winder2SettingsRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "settings",
   component: () => <Winder2SettingPage />,
+});
+
+export const wagoWinderSettingsRoute = createRoute({
+  getParentRoute: () => wagoWinderSerialRoute,
+  path: "settings",
+  component: () => <WagoWinderSettingPage />,
 });
 
 export const winder2GraphsRoute = createRoute({
@@ -363,10 +393,22 @@ export const winder2GraphsRoute = createRoute({
   component: () => <Winder2GraphsPage />,
 });
 
+export const wagoWinderGraphsRoute = createRoute({
+  getParentRoute: () => wagoWinderSerialRoute,
+  path: "graphs",
+  component: () => <WagoWinderGraphsPage />,
+});
+
 export const winder2PresetsRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "presets",
   component: () => <Winder2PresetsPage />,
+});
+
+export const wagoWinderPresetsRoute = createRoute({
+  getParentRoute: () => wagoWinderSerialRoute,
+  path: "presets",
+  component: () => <WagoWinderPresetsPage />,
 });
 
 export const laser1SerialRoute = createRoute({
@@ -664,6 +706,14 @@ export const rootTree = RootRoute.addChildren([
         winder2SettingsRoute,
         winder2GraphsRoute,
         winder2PresetsRoute,
+      ]),
+
+      wagoWinderSerialRoute.addChildren([
+        wagoWinderControlRoute,
+        wagoWinderManualRoute,
+        wagoWinderSettingsRoute,
+        wagoWinderGraphsRoute,
+        wagoWinderPresetsRoute,
       ]),
 
       extruder2Route.addChildren([

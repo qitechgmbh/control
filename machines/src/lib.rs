@@ -29,6 +29,7 @@ pub mod registry;
 pub mod serial;
 pub mod wago_power;
 pub mod wago_serial_machine;
+pub mod wago_winder;
 pub mod winder2;
 
 mod machine_data;
@@ -53,6 +54,7 @@ pub const WAGO_750_430_DI_MACHINE: u16 = 0x0043;
 pub const WAGO_750_460_MACHINE: u16 = 0x0044;
 pub const WAGO_750_553_MACHINE: u16 = 0x0046;
 pub const WAGO_WINDER_SMOKE_TEST_MACHINE: u16 = 0x0047;
+pub const MACHINE_WAGO_WINDER_V1: u16 = 0x0048;
 pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;

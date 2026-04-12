@@ -834,8 +834,33 @@ export const wagoWinderSmokeTestMachine: MachineProperties = {
   ],
 };
 
+export const wagoWinder: MachineProperties = {
+  name: "Wago Winder",
+  version: "V1",
+  slug: "wago_winder",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0048,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Wago 750-354 Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x21,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+
 export const machineProperties: MachineProperties[] = [
   winder2,
+  wagoWinder,
   extruder3,
   extruder2,
   laser1,
