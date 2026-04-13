@@ -5,12 +5,15 @@ use ethercat_hal::{
     devices::{
         EthercatDevice, downcast_device,
         wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
-        wago_modules::wago_750_672::Wago750_672,
+        wago_modules::{wago_750_671::Wago750_671, wago_750_672::Wago750_672},
     },
-    io::stepper_velocity_wago_750_672::StepperVelocityWago750672,
+    io::{
+        stepper_velocity_wago_750_671::StepperVelocityWago750671,
+        stepper_velocity_wago_750_672::StepperVelocityWago750672,
+    },
 };
-use smol::{block_on, lock::RwLock};
-use std::{sync::Arc, time::Instant};
+use smol::block_on;
+use std::time::Instant;
 
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
@@ -59,30 +62,49 @@ impl MachineNewTrait for TestMachineStepper {
             coupler.init_slot_modules(_wago_750_354.1);
             let dev = coupler.slot_devices.first().unwrap().clone().unwrap();
 
-            // change uncomment this to change to different stepper driver
-            //
-            // let wago_750_671: Arc<RwLock<Wago750_671>> =
-            //     downcast_device::<Wago750_671>(dev).await?;
-            let wago_750_672: Arc<RwLock<Wago750_672>> =
-                downcast_device::<Wago750_672>(dev).await?;
-            drop(coupler);
-
-            let stepper = StepperVelocityWago750672::new(wago_750_672);
-
-            let (sender, receiver) = smol::channel::unbounded();
-            let mut my_test = Self {
-                api_receiver: receiver,
-                api_sender: sender,
-                machine_identification_unique: params.get_machine_identification_unique(),
-                namespace: TestMachineStepperNamespace {
-                    namespace: params.namespace.clone(),
-                },
-                last_state_emit: Instant::now(),
-                main_sender: params.main_thread_channel.clone(),
-                stepper,
-            };
-            my_test.emit_state();
-            Ok(my_test)
+            // A little quick and dirty, but  this allows 750_671 and 672
+            let res = downcast_device::<Wago750_672>(dev).await;
+            if res.is_ok() {
+                let dev = coupler.slot_devices.first().unwrap().clone().unwrap();
+                let wago_750_672 = downcast_device::<Wago750_672>(dev).await?;
+                let stepper =
+                    super::Stepper::Wago750_672(StepperVelocityWago750672::new(wago_750_672));
+                let (sender, receiver) = smol::channel::unbounded();
+                let mut my_test = Self {
+                    api_receiver: receiver,
+                    api_sender: sender,
+                    machine_identification_unique: params.get_machine_identification_unique(),
+                    namespace: TestMachineStepperNamespace {
+                        namespace: params.namespace.clone(),
+                    },
+                    last_state_emit: Instant::now(),
+                    main_sender: params.main_thread_channel.clone(),
+                    stepper,
+                };
+                my_test.emit_state();
+                drop(coupler);
+                return Ok(my_test);
+            } else {
+                let dev = coupler.slot_devices.first().unwrap().clone().unwrap();
+                let wago_750_671 = downcast_device::<Wago750_671>(dev).await?;
+                let stepper =
+                    super::Stepper::Wago750_671(StepperVelocityWago750671::new(wago_750_671));
+                let (sender, receiver) = smol::channel::unbounded();
+                let mut my_test = Self {
+                    api_receiver: receiver,
+                    api_sender: sender,
+                    machine_identification_unique: params.get_machine_identification_unique(),
+                    namespace: TestMachineStepperNamespace {
+                        namespace: params.namespace.clone(),
+                    },
+                    last_state_emit: Instant::now(),
+                    main_sender: params.main_thread_channel.clone(),
+                    stepper,
+                };
+                my_test.emit_state();
+                drop(coupler);
+                return Ok(my_test);
+            }
         })
     }
 }
