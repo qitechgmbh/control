@@ -7,9 +7,9 @@ use crate::{
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
 use control_core::realtime::set_core_affinity;
-use control_core::socketio::namespace::NamespaceCacheingLogic;
 #[cfg(all(target_os = "linux", not(feature = "development-build")))]
-use control_core::{irq_handling::set_irq_affinity, realtime::set_realtime_priority};
+use control_core::realtime::set_realtime_priority;
+use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::debugging::diagnosis_history::get_most_recent_diagnosis_message;
 use ethercat_hal::devices::devices_from_subdevices;
 
@@ -207,11 +207,11 @@ pub async fn setup_loop(
     std::thread::Builder::new()
         .name("EthercatTxRxThread".to_owned())
         .spawn(move || {
-            #[cfg(all(target_os = "linux", not(feature = "development-build")))]
+            /*#[cfg(all(target_os = "linux", not(feature = "development-build")))]
             match set_irq_affinity(&interface, 3) {
                 Ok(_) => tracing::info!("ethernet interrupt handler now runs on cpu:{}", 3),
                 Err(e) => tracing::error!("set_irq_handler_affinity failed: {:?}", e),
-            }
+            }*/
 
             // Set core affinity to 4th core
             let _ = set_core_affinity(3);
