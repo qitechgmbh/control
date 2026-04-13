@@ -5,12 +5,15 @@ use ethercat_hal::{
     devices::{
         EthercatDevice, downcast_device,
         wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
-        wago_modules::{wago_750_671::Wago750_671, wago_750_672::{self, Wago750_672}},
+        wago_modules::{wago_750_671::Wago750_671, wago_750_672::Wago750_672},
     },
-    io::{stepper_velocity_wago_750_671::StepperVelocityWago750671, stepper_velocity_wago_750_672::StepperVelocityWago750672},
+    io::{
+        stepper_velocity_wago_750_671::StepperVelocityWago750671,
+        stepper_velocity_wago_750_672::StepperVelocityWago750672,
+    },
 };
-use smol::{block_on, lock::RwLock};
-use std::{sync::Arc, time::Instant};
+use smol::block_on;
+use std::time::Instant;
 
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
@@ -18,9 +21,6 @@ use crate::{
 };
 
 use anyhow::Error;
-
-
-
 
 impl MachineNewTrait for TestMachineStepper {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -66,9 +66,9 @@ impl MachineNewTrait for TestMachineStepper {
             let res = downcast_device::<Wago750_672>(dev).await;
             if res.is_ok() {
                 let dev = coupler.slot_devices.first().unwrap().clone().unwrap();
-                let wago_750_672 =
-                    downcast_device::<Wago750_672>(dev).await?;
-                let stepper = super::Stepper::Wago750_672( StepperVelocityWago750672::new(wago_750_672) );
+                let wago_750_672 = downcast_device::<Wago750_672>(dev).await?;
+                let stepper =
+                    super::Stepper::Wago750_672(StepperVelocityWago750672::new(wago_750_672));
                 let (sender, receiver) = smol::channel::unbounded();
                 let mut my_test = Self {
                     api_receiver: receiver,
@@ -84,11 +84,11 @@ impl MachineNewTrait for TestMachineStepper {
                 my_test.emit_state();
                 drop(coupler);
                 return Ok(my_test);
-            }else{
+            } else {
                 let dev = coupler.slot_devices.first().unwrap().clone().unwrap();
-                let wago_750_671 =
-                    downcast_device::<Wago750_671>(dev).await?;
-                let stepper = super::Stepper::Wago750_671( StepperVelocityWago750671::new(wago_750_671) );
+                let wago_750_671 = downcast_device::<Wago750_671>(dev).await?;
+                let stepper =
+                    super::Stepper::Wago750_671(StepperVelocityWago750671::new(wago_750_671));
                 let (sender, receiver) = smol::channel::unbounded();
                 let mut my_test = Self {
                     api_receiver: receiver,
@@ -105,9 +105,6 @@ impl MachineNewTrait for TestMachineStepper {
                 drop(coupler);
                 return Ok(my_test);
             }
-
-            
-            
         })
     }
 }
