@@ -48,7 +48,6 @@ use crate::{MachineHardware, MachineNew};
 
 impl MachineNew for Winder2 {
     fn new(hw: MachineHardware) -> Result<Self, Error> {        
-
         let _ek1100 = hw.try_get_ethercat_device_by_role::<EK1100>(0)?;
         let el2002 : Rc<RefCell<dyn DigitalOutputDevice>> = hw.try_get_ethercat_device_by_role::<EL2002>(1)?;
         let el7041 : Rc<RefCell<EL7041_0052>> = hw.try_get_ethercat_device_by_role::<EL7041_0052>(2)?;
@@ -113,7 +112,7 @@ impl MachineNew for Winder2 {
                 max_current: 2800,
                 ..Default::default()
                 },
-                ..Default::default()
+                ..Default::default() 
             };
 
         let mut b = el7041.borrow_mut();
@@ -127,7 +126,6 @@ impl MachineNew for Winder2 {
             traverse: el7031,            
             puller: el7031_0030.clone(),
             spool: el7041,
-
             laser: el2002,
             tension_arm: TensionArm::new(el7031_0030.clone()),
             namespace: Winder2Namespace {
@@ -147,7 +145,6 @@ impl MachineNew for Winder2 {
                     Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
                 ),
             ),
-            puller_reference_machine: None,
             traverse_controller: TraverseController::new(
                 Length::new::<millimeter>(22.0), // Default inner limit
                 Length::new::<millimeter>(92.0), // Default outer limit

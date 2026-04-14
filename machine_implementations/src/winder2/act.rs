@@ -10,7 +10,7 @@ impl Machine for Winder2 {
         self.machine_identification_unique.clone()
     }
 
-    fn act(&mut self, machine_data: Option<&mut qitech_lib::machines::MachineDataRegistry>) {
+    fn act(&mut self, _machine_data: Option<&mut qitech_lib::machines::MachineDataRegistry>) {
         let now = std::time::Instant::now();
         let machine_message = self.api_receiver.try_recv();
             match machine_message {

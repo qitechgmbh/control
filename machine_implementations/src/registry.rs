@@ -1,6 +1,5 @@
 use crate::{
-    MachineHardware, MachineNew, QiTechMachine,
-    minimal_machines::digital_input_test_machine::DigitalInputTestMachine, winder2::Winder2,
+    MachineHardware, MachineNew, QiTechMachine, laser::LaserMachine, minimal_machines::digital_input_test_machine::DigitalInputTestMachine, winder2::Winder2
 };
 use anyhow::Error;
 use lazy_static::lazy_static;
@@ -65,28 +64,11 @@ lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
         mc.register::<DigitalInputTestMachine>(vec![DigitalInputTestMachine::MACHINE_IDENTIFICATION]);
-        #[cfg(not(feature = "mock-machine"))]
+        
         mc.register::<ExtruderV2>(vec![ExtruderV2::MACHINE_IDENTIFICATION,ExtruderV2::MACHINE_IDENTIFICATION_V3 ]);
-
-
-
         mc.register::<Winder2>(vec![Winder2::MACHINE_IDENTIFICATION]);
+        mc.register::<LaserMachine>(vec![LaserMachine::MACHINE_IDENTIFICATION]);
 /*
-        #[cfg(feature = "mock-machine")]
-        mc.register::<ExtruderV2Mock1>(ExtruderV2Mock1::MACHINE_IDENTIFICATION);
-
-        #[cfg(feature = "mock-machine")]
-        mc.register::<ExtruderV2Mock2>(ExtruderV2Mock2::MACHINE_IDENTIFICATION);
-
-        #[cfg(not(feature = "mock-machine"))]
-        mc.register::<ExtruderV2>(ExtruderV2::MACHINE_IDENTIFICATION);
-
-        #[cfg(not(feature = "mock-machine"))]
-        mc.register::<ExtruderV3>(ExtruderV3::MACHINE_IDENTIFICATION);
-
-        #[cfg(feature = "mock-machine")]
-        mc.register::<MockMachine>(MockMachine::MACHINE_IDENTIFICATION);
-
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<LaserMachine>(LaserMachine::MACHINE_IDENTIFICATION);
 

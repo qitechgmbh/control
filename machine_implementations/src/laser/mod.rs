@@ -1,42 +1,33 @@
-use crate::serial::devices::laser::Laser;
-use crate::{
-    MACHINE_LASER_V1, VENDOR_QITECH,
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
-};
-use crate::{Machine, MachineData, MachineMessage};
+use crate::{MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH};
+use std::{cell::RefCell, rc::Rc, time::Instant};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use smol::{
-    channel::{Receiver, Sender},
-    lock::RwLock,
-};
-use socketioxide::extract::SocketRef;
-use units::Length;
-
-use crate::AsyncThreadMessage;
-use std::{sync::Arc, time::Instant};
-use units::length::millimeter;
+use qitech_lib::{machines::{MachineIdentification, MachineIdentificationUnique}, modbus::{Scheduler, devices::qitech_laser::LaserDevice, managers::{ExampleDeviceManager, example_manager::ExampleScheduler}}, units::{Length, length::millimeter}};
+use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::Sender;
 
 pub mod act;
 pub mod api;
 pub mod new;
 
-#[derive(Debug)]
+pub enum LaserRequestState {
+    Waiting(Instant),
+    NotWaiting,
+}
+
+pub const LASER_TIMEOUT_MS : u32 = 16;
+
 pub struct LaserMachine {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
     machine_identification_unique: MachineIdentificationUnique,
-    main_sender: Option<Sender<AsyncThreadMessage>>,
-
-    // state
     mutation_counter: u64,
-
-    // drivers
-    laser: Arc<RwLock<Laser>>,
-
-    // socketio
     namespace: LaserMachineNamespace,
     last_measurement_emit: Instant,
+
+    modbus_mgr : Rc<RefCell<ExampleDeviceManager>>,
+    laser : Rc<RefCell<LaserDevice<ExampleScheduler>>>,
+    laser_state : LaserRequestState,    
 
     // laser values
     diameter: Length,
@@ -59,69 +50,6 @@ pub struct LaserMachine {
     did_change_state: bool,
 }
 
-impl Machine for LaserMachine {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
-
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
-
-    fn mutation_counter(&self) -> u64 {
-        self.mutation_counter
-    }
-
-    fn update_machine_data(
-        &self,
-        data: &mut MachineData,
-        refresh_state: bool,
-        refresh_live_values: bool,
-    ) {
-        use MachineData::*;
-
-        match data {
-            Laser(state, live_values) => {
-                if refresh_state {
-                    *state = self.build_state_event();
-                }
-
-                if refresh_live_values {
-                    *live_values = self.get_live_values();
-                }
-            }
-            _ => {
-                *data = MachineData::Laser(self.build_state_event(), self.get_live_values());
-            }
-        };
-    }
-}
-
-impl LaserMachineNamespace {
-    pub async fn disconnect_all(&self) {
-        for socket in self.connected_sockets().await {
-            let _ = socket.disconnect();
-        }
-    }
-
-    async fn connected_sockets(&self) -> Vec<SocketRef> {
-        if self.namespace.is_none() {
-            return vec![];
-        }
-        let sockets = self.namespace.clone().unwrap().sockets.clone();
-        sockets
-    }
-}
-
-impl Drop for LaserMachine {
-    fn drop(&mut self) {
-        tracing::info!(
-            "[LaserMachine::{:?}] Dropping machine and disconnecting clients...",
-            self.machine_identification_unique
-        );
-        smol::block_on(self.namespace.disconnect_all());
-    }
-}
 
 impl LaserMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
@@ -256,30 +184,52 @@ impl LaserMachine {
         self.in_tolerance
     }
 
+    pub fn refresh_data(&mut self){
+        match self.laser_state {
+            LaserRequestState::Waiting(_) => return,
+            LaserRequestState::NotWaiting => {                
+                {
+                    let mut laser = self.laser.borrow_mut();            
+                    laser.refresh_measurement();
+                }
+                let mut borrow = self.modbus_mgr.borrow_mut();
+                borrow.try_send(); 
+                drop(borrow);
+                let now = Instant::now();
+                self.laser_state = LaserRequestState::Waiting(now);
+            },
+        }
+  
+    }
+
     pub fn update(&mut self) {
-        let laser_data = smol::block_on(async { self.laser.read().await.get_data().await });
-        self.diameter = Length::new::<millimeter>(
-            laser_data
-                .as_ref()
-                .map(|data| data.diameter.get::<millimeter>())
-                .unwrap_or(0.0),
-        );
-
-        self.x_diameter = laser_data
-            .as_ref()
-            .and_then(|data| data.x_axis.as_ref())
-            .cloned();
-
-        self.y_diameter = laser_data
-            .as_ref()
-            .and_then(|data| data.y_axis.as_ref())
-            .cloned();
-
-        self.roundness = self.calculate_roundness();
-
+      /*  match self.laser_state {
+            LaserRequestState::Waiting(earlier) => 
+            if Instant::now().duration_since(earlier).as_millis() < LASER_TIMEOUT_MS as u128 {
+                return
+            },
+            LaserRequestState::NotWaiting => return,
+        };*/
+        {
+            self.modbus_mgr.borrow_mut().try_receive();  // ? why no return ...       
+        }
+        {
+            let laser = self.laser.borrow_mut();
+            let measurement = laser.measurement();
+            match measurement {
+                Some(m) => {
+                    self.x_diameter = Some( Length::new::<millimeter>(m.x_axis as f64 / 1000.0));
+                    self.y_diameter = Some( Length::new::<millimeter>(m.y_axis as f64 / 1000.0));
+                    self.diameter = Length::new::<millimeter>(m.diameter as f64 / 1000.0);
+                },
+                None => (),
+            };
+        }
         if self.in_tolerance != self.calculate_in_tolerance() {
             self.did_change_state = true;
         }
+
+        self.laser_state = LaserRequestState::NotWaiting;
     }
 }
 
@@ -289,3 +239,5 @@ pub struct LaserTarget {
     lower_tolerance: Length,
     higher_tolerance: Length,
 }
+
+impl QiTechMachine for LaserMachine {}

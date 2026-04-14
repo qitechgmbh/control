@@ -1,48 +1,31 @@
-use std::time::Instant;
+use std::{ time::Instant};
 
-use crate::serial::{devices::laser::Laser, registry::SERIAL_DEVICE_REGISTRY};
-use crate::{MachineNewHardware, MachineNewTrait};
-
-use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
 use anyhow::Error;
-use units::ConstZero;
-use units::length::{Length, millimeter};
+use qitech_lib::{modbus::{ devices::qitech_laser::LaserDevice, managers::example_manager::ExampleScheduler}, units::{ConstZero, Length, length::millimeter}};
+use crate::{MachineHardware, MachineNew};
+use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
 
-impl MachineNewTrait for LaserMachine {
-    fn new(params: &crate::MachineNewParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, Error>
-    where
-        Self: Sized,
-    {
-        let hardware_serial = match params.hardware {
-            MachineNewHardware::Serial(serial) => *serial,
-            _ => return Err(Error::msg("Invalid hardware type for LaserMachine")),
-        };
+impl MachineNew for LaserMachine {
+    fn new(hw: MachineHardware) -> Result<Self, Error> {        
+        
+        let laser = hw.try_get_serial_device_by_index::<LaserDevice<ExampleScheduler>>(0)?;
+        let mgr = hw.try_get_modbus_mgr_by_index(0)?;
 
-        // downcast the hardware_serial to Arc<RwLock<Laser>>
-
-        let laser = match smol::block_on(
-            SERIAL_DEVICE_REGISTRY.downcast_arc_rwlock::<Laser>(hardware_serial.device.clone()),
-        ) {
-            Ok(laser) => laser,
-            Err(_) => return Err(Error::msg("Failed to downcast to Laser")),
-        };
-        // set laser target configuration
         let laser_target = LaserTarget {
             higher_tolerance: Length::new::<millimeter>(0.05),
             lower_tolerance: Length::new::<millimeter>(0.05),
             diameter: Length::new::<millimeter>(1.75),
         };
-        let (sender, receiver) = smol::channel::unbounded();
-
-        let laser_machine = Self {
-            main_sender: params.main_thread_channel.clone(),
+        println!("Hello WOrld");
+        let (sender,receiver) = tokio::sync::mpsc::channel(2);
+        let mut laser_machine = Self {
             api_receiver: receiver,
             api_sender: sender,
-            machine_identification_unique: params.get_machine_identification_unique(),
+            machine_identification_unique: hw.identification,
             mutation_counter: 0,
             laser,
             namespace: LaserMachineNamespace {
-                namespace: params.namespace.clone(),
+                namespace: None,
             },
             last_measurement_emit: Instant::now(),
             laser_target,
@@ -57,8 +40,11 @@ impl MachineNewTrait for LaserMachine {
             in_tolerance: true,
             global_warning: true,
             did_change_state: true,
+            modbus_mgr: mgr,
+            laser_state: crate::laser::LaserRequestState::NotWaiting,
         };
-
+        laser_machine.emit_state();
         Ok(laser_machine)
     }
+
 }

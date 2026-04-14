@@ -6,7 +6,7 @@ use qitech_lib::{
     ethercat_hal::{
         EtherCATThreadChannel, devices::{EthercatDevice, downcast_rc_refcell}, machine_ident_read::MachineDeviceInfo
     },
-    machines::{Machine, MachineIdentificationUnique},
+    machines::{Machine, MachineIdentificationUnique}, modbus::{Device, managers::{ExampleDeviceManager, example_manager::ExampleScheduler}},
 };
 use serde::Serialize;
 use tokio::sync::mpsc::Sender;
@@ -16,6 +16,8 @@ pub mod minimal_machines;
 pub mod registry;
 pub mod extruder1;
 pub mod winder2;
+pub mod laser;
+
 
 /*pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
@@ -73,20 +75,22 @@ pub trait MachineApi {
     fn api_event_namespace(&mut self) -> Option<Namespace>;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct IdentifiedEthercat {
     pub hw: Rc<RefCell<dyn EthercatDevice>>,
     pub ident: MachineDeviceInfo,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
+pub struct IdentifiedModbus {
+    pub hw: Rc<RefCell<dyn Device<ExampleScheduler>>>,
+    pub manager: Rc<RefCell<ExampleDeviceManager>>, 
+}
+
+#[derive (Clone)]
 pub enum Hardware {
-    Ethercat(IdentifiedEthercat),
-    Serial(),
-    Usb(),
-    ModbusTcp(),
-    ModbusRtu(),
-    ModbusAscii(),
+    Ethercat(IdentifiedEthercat),    
+    Modbus(IdentifiedModbus),
 }
 
 #[derive(Clone)]
@@ -144,6 +148,46 @@ impl MachineHardware {
             "index {} not an ethercat device in hardware",
             role
         ))
+    }
+
+
+    pub fn downcast_serial_rc_refcell<T: 'static>(
+        dev: Rc<RefCell<dyn Device<ExampleScheduler>>>,
+    ) -> Result<Rc<RefCell<T>>, anyhow::Error> {
+        // Check if the inner type is actually T
+        let is_t = dev.borrow().as_any().is::<T>();
+        if !is_t {
+            return Err(anyhow::anyhow!("Type mismatch in hardware downcast"));
+        }
+        // Since we verified the type above, we can use raw pointers.
+        let raw_trait_ptr = Rc::into_raw(dev);
+        // We cast the fat pointer to a thin pointer of the concrete RefCell<T>
+        let raw_concrete_ptr = raw_trait_ptr as *const RefCell<T>;
+        unsafe { Ok(Rc::from_raw(raw_concrete_ptr)) }
+    }
+
+    pub fn try_get_modbus_mgr_by_index(&self,index : usize) -> Result<Rc<RefCell<ExampleDeviceManager>>> {
+        let hw = self.hw.get(index).unwrap().clone();
+        match hw {
+            Hardware::Modbus(identified_modbus) => Ok(identified_modbus.manager.clone()),
+            _ => 
+            Err(anyhow::anyhow!(
+            "index {} not an modbus device in hardware",
+            index
+            )),
+        }    
+    }
+
+    pub fn try_get_serial_device_by_index<T :'static >(&self, index : usize) -> Result<Rc<RefCell<T>>,anyhow::Error >   {
+        let hw = self.hw.get(index).unwrap().clone();
+        match hw {
+            Hardware::Modbus(identified_modbus) => Self::downcast_serial_rc_refcell::<T>(identified_modbus.hw),
+            _ => 
+            Err(anyhow::anyhow!(
+            "index {} not an modbus device in hardware",
+            index
+            )),
+        }    
     }
 
 

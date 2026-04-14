@@ -1,4 +1,4 @@
-use crate::{MachineApi, MachineMessage};
+use crate::{MachineApi, MachineMessage, MachineValues};
 
 use super::LaserMachine;
 use control_core::socketio::{
@@ -10,6 +10,7 @@ use control_core::socketio::{
 use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tokio::sync::mpsc::Sender;
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -131,7 +132,36 @@ impl MachineApi for LaserMachine {
         self.namespace.namespace.clone()
     }
 
-    fn api_get_sender(&self) -> smol::channel::Sender<MachineMessage> {
+    fn get_api_sender(&self) -> Sender<MachineMessage> {
         self.api_sender.clone()
+    }
+
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+         match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+            }
+            MachineMessage::UnsubscribeNamespace => match &mut self.namespace.namespace {
+                Some(namespace) => {
+                    namespace.sockets.clear();
+                    namespace.events.clear();
+                }
+                None => (),
+            },
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::to_value(self.get_live_values())
+                            .expect("Failed to serialize live values"),
+                    })
+                    .expect("Failed to send values");            
+            }
+        }
     }
 }

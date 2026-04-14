@@ -1,11 +1,17 @@
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
+use machine_implementations::laser::LaserMachine;
 use machine_implementations::registry::MACHINE_REGISTRY;
-use machine_implementations::{Hardware, IdentifiedEthercat, MachineHardware, QiTechMachine};
+use machine_implementations::{Hardware, IdentifiedEthercat, IdentifiedModbus, MachineHardware, QiTechMachine};
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
 use qitech_lib::ethercat_hal::{EtherCATThreadChannel, MetaSubdevice, init_ethercat};
 use qitech_lib::ethercat_hal::machine_ident_read::MachineDeviceInfo;
 use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
+use qitech_lib::modbus::clients::example_client::ExampleClient;
+use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
+use qitech_lib::modbus::managers::ExampleDeviceManager;
+use qitech_lib::modbus::managers::example_manager::ExampleScheduler;
+use qitech_lib::modbus::start_modbus_async_task;
 use qitech_lib::{
     ethercat_hal::devices::{EthercatDevice, device_from_subdevice_identity_rc},
     machines::MachineDataRegistry,
@@ -41,6 +47,7 @@ struct MainState {
     pub machines: Vec<Box<dyn QiTechMachine>>,
     pub machine_errors: HashMap<MachineIdentificationUnique, String>,
     pub machine_data_reg: MachineDataRegistry,
+    pub modbus_mgrs: Vec<Rc<RefCell<ExampleDeviceManager>>>
 }
 
 impl MainState {
@@ -53,9 +60,26 @@ impl MainState {
             machines,
             machine_data_reg,
             subdevices: vec![],
+            modbus_mgrs: vec![],
             hardware: HashMap::new(),
             machine_errors: HashMap::new(),
         }
+    }
+
+    pub fn generate_machine_hardware_from_serial(
+        &mut self, mgr: Rc<RefCell<ExampleDeviceManager>>,
+    ){
+        let laser_device: Rc<RefCell<LaserDevice<ExampleScheduler>>> = ExampleDeviceManager::register_device(mgr.clone(), 1);
+        let id_modbus : IdentifiedModbus = IdentifiedModbus { hw: laser_device,manager:mgr.clone() };
+        let ident = MachineIdentificationUnique { machine_ident: LaserMachine::MACHINE_IDENTIFICATION, serial: 1 };
+        let mut hw = MachineHardware{ 
+            hw: vec![], 
+            identification:  ident,
+            ethercat_interface: None,
+        };
+        hw.hw.push(Hardware::Modbus(  id_modbus ));
+        self.modbus_mgrs.push(mgr.clone());
+        self.hardware.insert(ident, hw);
     }
 
     pub fn generate_machine_hardware_from_ethercat(
@@ -118,9 +142,10 @@ fn mock_logic(){
 }
 
 fn main_logic(){
-let rt = get_async_runtime();
+    let rt = get_async_runtime();
     let state = Arc::new(SharedAppState::new());
     let _api = rt.spawn(apis::init_api(state.clone()));
+
     let mut main_state = MainState::new();
     let eth_control = init_ethercat("eth0");
 
@@ -130,6 +155,10 @@ let rt = get_async_runtime();
 
     let state_clone = state.clone();
     rt.spawn(start_socketio_queue(state_clone));
+    
+    let (tx, rx) = ExampleClient::create_channels();
+    rt.spawn(start_modbus_async_task("/dev/ttyUSB0".to_string(),1,38400,rx));
+    let modbus_mgr = ExampleDeviceManager::new(tx);
 
     let _res = ecat_channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
     std::thread::sleep(Duration::from_millis(5000));
@@ -161,6 +190,7 @@ let rt = get_async_runtime();
         None => (),
     }
     let _res = state.fill_ethercat_metadata(ecat_controller.clone(), idents);
+    main_state.generate_machine_hardware_from_serial(modbus_mgr);
 
     println!("Initialized {} hw",main_state.hardware.keys().len());
 
@@ -206,6 +236,8 @@ let rt = get_async_runtime();
             ecat_controller.clone(),
             main_state.subdevices.clone(),
         );
+
+        
         std::thread::sleep(Duration::from_micros(100));
     }
 }
