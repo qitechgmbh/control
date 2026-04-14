@@ -5,6 +5,10 @@ import { MachineIdentificationUnique } from "@/machines/types";
 import {
   useTestMachineStepperNamespace,
   StateEvent,
+  modeSchema,
+  Mode,
+  AccelerationFaktor,
+  Frequency,
 } from "./testMachineStepperNamespace";
 import { useMachineMutate } from "@/client/useClient";
 import { produce } from "immer";
@@ -53,7 +57,6 @@ export function useTestMachineStepper() {
       value: z.any(),
     }),
   );
-
   const updateStateOptimistically = (
     producer: (current: StateEvent) => void,
     serverRequest?: () => void,
@@ -77,50 +80,56 @@ export function useTestMachineStepper() {
     );
   };
 
-  const setEnabled = (enabled: boolean) => {
+  const setFreq = (frequency: Frequency) => {
     updateStateOptimistically(
       (current) => {
-        current.enabled = enabled;
+        current.frequency_state.frequency = frequency;
       },
       () =>
         sendMutation({
           machine_identification_unique: machineIdentification,
-          data: { action: "SetEnabled", value: { enabled } },
+          data: { action: "SetFreq", value: frequency },
         }),
     );
   };
 
-  const setFreq = (factor: number) => {
+  const setAccFactor = (factor: AccelerationFaktor) => {
     updateStateOptimistically(
       (current) => {
-        current.freq = factor;
+        current.acceleration_state.factor = factor;
       },
       () =>
         sendMutation({
           machine_identification_unique: machineIdentification,
-          data: { action: "SetFreq", value: { factor } },
+          data: { action: "SetAccFactor", value: factor },
         }),
     );
   };
 
-  const setAccFreq = (factor: number) => {
+  const setMode = (mode: Mode) => {
     updateStateOptimistically(
       (current) => {
-        current.acc_freq = factor;
+        current.mode_state.mode = mode;
       },
       () =>
         sendMutation({
           machine_identification_unique: machineIdentification,
-          data: { action: "SetAccFreq", value: { factor } },
+          data: { action: "SetMode", value: mode },
         }),
     );
   };
+
+  const isLoading = stateOptimistic.isOptimistic;
+  const isDisabled = !stateOptimistic.isInitialized;
 
   return {
     state: stateOptimistic.value,
     setTargetSpeed,
-    setEnabled,
     setFreq,
-    setAccFreq,
+    setAccFactor,
+    setMode,
+
+    isLoading,
+    isDisabled,
   };
 }

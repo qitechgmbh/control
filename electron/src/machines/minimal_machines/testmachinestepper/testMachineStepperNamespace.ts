@@ -12,13 +12,52 @@ import {
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 
+/**
+ * Machine operation mode enum
+ */
+export const modeSchema = z.enum(["Standby", "Hold", "Turn"]);
+export type Mode = z.infer<typeof modeSchema>;
+
+/**
+ * Frequency Prescaler
+ */
+export const frequencySchema = z.enum(["Default", "Low", "Mid", "High"]);
+export type Frequency = z.infer<typeof frequencySchema>;
+
+/**
+ * Acceleration Factor
+ */
+export const accelerationSchema = z.enum(["Default", "Low", "Mid", "High"]);
+export type AccelerationFaktor = z.infer<typeof accelerationSchema>;
+
+/**
+ * Mode state schema
+ */
+export const modeStateSchema = z.object({
+  mode: modeSchema,
+});
+
+/**
+ * Frequency Prescaler Schema
+ */
+export const frequencyStateSchema = z.object({
+  frequency: frequencySchema,
+});
+
+/**
+ * Accleration Factor Schema
+ */
+export const accelerationStateSchema = z.object({
+  factor: accelerationSchema
+});
+
 // ========== Event Schema ==========
 
 export const stateEventDataSchema = z.object({
   target_speed: z.number(),
-  enabled: z.boolean(),
-  freq: z.number(),
-  acc_freq: z.number(),
+  mode_state: modeStateSchema,
+  frequency_state: frequencyStateSchema,
+  acceleration_state: accelerationStateSchema,
 });
 
 export const stateEventSchema = eventSchema(stateEventDataSchema);

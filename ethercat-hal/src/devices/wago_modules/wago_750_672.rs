@@ -40,6 +40,7 @@ pub enum InitState {
     Off,
     Enable,
     SetMode,
+    Ready,
     StartPulseStart,
     StartPulseEnd,
     Running,
@@ -199,7 +200,21 @@ impl EthercatDevice for Wago750_672 {
                 // Switch state if SPEED MODE is acknowledged
                 if self.txpdo.status_byte1 == c1 {
                     self.initialized = true;
-                    self.state = InitState::StartPulseStart;
+                    self.state = InitState::Ready;
+                }
+            }
+            InitState::Ready => {
+                // do nothing but wait for transition into running mode
+                let c1 = ControlByteC1::new()
+                    .with_flag(C1Flag::Enable)
+                    .with_flag(C1Flag::Stop2N)
+                    .with_command(C1Command::SpeedControl)
+                    .bits();
+                self.rxpdo.control_byte1 = c1;
+
+                // Switch state if SPEED MODE is acknowledged
+                if self.txpdo.status_byte1 == c1 {
+                    self.initialized = true;
                 }
             }
             InitState::StartPulseStart => {

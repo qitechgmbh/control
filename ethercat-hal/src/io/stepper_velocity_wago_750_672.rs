@@ -72,6 +72,28 @@ impl StepperVelocityWago750672 {
         dev.rxpdo.acceleration = acceleration;
     }
 
+    pub fn start_motor(&mut self) {
+        let mut dev = block_on(self.device.write());
+
+        if dev.initialized {
+            dev.state = InitState::StartPulseStart;
+        }
+    }
+
+    pub fn stop_motor(&mut self) {
+        let mut dev = block_on(self.device.write());
+
+        if dev.initialized {
+            dev.state = InitState::Ready;
+        }
+    }
+
+    pub fn get_state(self) -> InitState {
+        let dev = block_on(self.device.read());
+
+        dev.state.clone()
+    }
+
     #[allow(dead_code)]
     fn get_actual_velocity(&self) -> i16 {
         let dev = block_on(self.device.read());

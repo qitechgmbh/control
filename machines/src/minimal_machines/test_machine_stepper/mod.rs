@@ -1,5 +1,5 @@
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
-use crate::minimal_machines::test_machine_stepper::api::{StateEvent, TestMachineStepperEvents};
+use crate::minimal_machines::test_machine_stepper::api::{ModeState, StateEvent, TestMachineStepperEvents};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::stepper_velocity_wago_750_671::StepperVelocityWago750671;
@@ -27,6 +27,7 @@ pub struct TestMachineStepper {
     pub last_state_emit: Instant,
     pub main_sender: Option<Sender<AsyncThreadMessage>>,
     pub stepper: Stepper,
+    pub mode: TestMachineMode,
 }
 
 impl Machine for TestMachineStepper {
@@ -53,12 +54,17 @@ impl TestMachineStepper {
                 enabled: stepper_velocity_wago750672.enabled,
                 freq: stepper_velocity_wago750672.freq_range_sel,
                 acc_freq: stepper_velocity_wago750672.acc_range_sel,
+                mode_state: ModeState {
+                    mode: self.mode.clone().into(),
+                },
             },
             Stepper::Wago750_671(stepper_velocity_wago750671) => StateEvent {
                 target_speed: stepper_velocity_wago750671.target_velocity,
                 enabled: stepper_velocity_wago750671.enabled,
                 freq: stepper_velocity_wago750671.freq_range_sel,
                 acc_freq: stepper_velocity_wago750671.acc_range_sel,
+                mode_state: ModeState {
+                    mode: self.mode.clone().into(),
             },
         }
     }
@@ -81,6 +87,19 @@ impl TestMachineStepper {
         self.emit_state();
     }
 
+    pub fn set_mode(&mut self, mode: &TestMachineMode) {
+        self.mode = mode.clone();
+
+        match mode {
+            TestMachineMode::Standby => self.set_enabled(false),
+            TestMachineMode::Hold => {
+                self.set_enabled(true);
+                self.stop_motor();
+            }
+            TestMachineMode::Turn => self.start_motor(),
+        }
+    }
+
     pub fn set_enabled(&mut self, enabled: bool) {
         match &mut self.stepper {
             Stepper::Wago750_672(stepper_velocity_wago750672) => {
@@ -90,6 +109,16 @@ impl TestMachineStepper {
                 stepper_velocity_wago750671.set_enabled(enabled)
             }
         };
+        self.emit_state();
+    }
+
+    fn start_motor(&mut self) {
+        self.stepper.start_motor();
+        self.emit_state();
+    }
+
+    fn stop_motor(&mut self) {
+        self.stepper.stop_motor();
         self.emit_state();
     }
 
@@ -116,4 +145,11 @@ impl TestMachineStepper {
         };
         self.emit_state();
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TestMachineMode {
+    Standby,
+    Hold,
+    Turn,
 }
