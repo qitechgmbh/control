@@ -19,7 +19,7 @@ use machine_implementations::{
     },
 };
 use qitech_lib::ethercat_hal::{
-    StandardEtherCATController, controller::EtherCATController, machine_ident_read::MachineDeviceInfo
+    StandardEtherCATController, machine_ident_read::MachineDeviceInfo
 };
 use socketioxide::{SocketIo, extract::SocketRef};
 use std::{collections::HashMap, sync::Arc};

@@ -92,10 +92,6 @@ pub struct Winder2 {
 
     // control circuit puller
     pub puller_speed_controller: PullerSpeedController,
-
-    // reference machine for adapative mode
-    puller_reference_machine: Option<MachineIdentificationUnique>,
-
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
@@ -116,7 +112,6 @@ impl Winder2 {
 
     pub fn sync_traverse_speed(&mut self) {
         let traverse = &mut *self.traverse.borrow_mut();
-        traverse.get_position(TRAVERSE_PORT);        
         self.traverse_controller.update_speed(
             traverse,
             self.spool_speed_controller.get_speed(),
