@@ -116,11 +116,13 @@ impl Winder2 {
 
     pub fn sync_traverse_speed(&mut self) {
         let traverse = &mut *self.traverse.borrow_mut();
-        
+        traverse.get_position(TRAVERSE_PORT);        
         self.traverse_controller.update_speed(
             traverse,
             self.spool_speed_controller.get_speed(),
-        )
+        );
+
+
     }
 
     /// Can wind capability check
