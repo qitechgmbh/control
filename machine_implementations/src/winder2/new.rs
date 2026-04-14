@@ -42,22 +42,85 @@ mod winder2_imports {
 }
 
 use std::{cell::RefCell, rc::Rc};
-
-use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
+use qitech_lib::ethercat_hal::{EtherCATThreadChannel};
 pub use winder2_imports::*;
 use crate::{MachineHardware, MachineNew};
 
 impl MachineNew for Winder2 {
     fn new(hw: MachineHardware) -> Result<Self, Error> {        
+
         let _ek1100 = hw.try_get_ethercat_device_by_role::<EK1100>(0)?;
         let el2002 : Rc<RefCell<dyn DigitalOutputDevice>> = hw.try_get_ethercat_device_by_role::<EL2002>(1)?;
-        let el7041 : Rc<RefCell<dyn StepperVelocityEL70x1Device>> = hw.try_get_ethercat_device_by_role::<EL7041_0052>(2)?;
-        let el7031 : Rc<RefCell<dyn StepperVelocityEL70x1Device>> = hw.try_get_ethercat_device_by_role::<EL7031>(3)?;
-        let el7031_0030 : Rc<RefCell<dyn StepperVelocityEL70x1Device>> = hw.try_get_ethercat_device_by_role::<EL7031_0030>(4)?;
+        let el7041 : Rc<RefCell<EL7041_0052>> = hw.try_get_ethercat_device_by_role::<EL7041_0052>(2)?;
+        let el7031 : Rc<RefCell<EL7031>> = hw.try_get_ethercat_device_by_role::<EL7031>(3)?;
+        let el7031_0030 : Rc<RefCell<EL7031_0030>> = hw.try_get_ethercat_device_by_role::<EL7031_0030>(4)?;
 
         let mode = Winder2Mode::Standby;
         let (sender,receiver) = tokio::sync::mpsc::channel(2);
         
+        let interface : EtherCATThreadChannel = match &hw.ethercat_interface {
+            Some(ecat_interface) => ecat_interface.clone(),
+            None => {
+                return Err(anyhow::anyhow!("Winder2: No EtherCat Interface was supplied!"));
+            },
+        };
+
+        let el7031_0030_config = EL7031_0030Configuration {
+            stm_features: el7031_0030::coe::StmFeatures {
+                operation_mode: EL70x1OperationMode::DirectVelocity,
+                speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
+                ..Default::default()
+            },
+            stm_motor: StmMotorConfiguration {
+                max_current: 2700,
+                ..Default::default()
+            },
+            pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
+                ..Default::default()
+        };
+
+        let device_address = hw.try_get_ethercat_meta_by_role(4)?;        
+        let mut b = el7031_0030.borrow_mut();
+        (&mut *b).write_config(interface.clone(), device_address,&el7031_0030_config )?;
+        drop(b);
+
+        let device_address = hw.try_get_ethercat_meta_by_role(3)?;        
+        let el7031_config = EL7031Configuration {
+                    stm_features: shared_config::el70x1::StmFeatures {
+                        operation_mode: EL70x1OperationMode::DirectVelocity,
+                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
+                        ..Default::default()
+                    },
+                    stm_motor: StmMotorConfiguration {
+                        max_current: 1500,
+                        ..Default::default()
+                    },
+                    pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
+                    ..Default::default()
+                };
+
+        let mut b = el7031.borrow_mut();
+        (&mut *b).write_config(interface.clone(), device_address,&el7031_config )?;
+        drop(b);
+
+        let device_address = hw.try_get_ethercat_meta_by_role(2)?;
+        let el7041_config = EL7041_0052Configuration {
+            stm_features: shared_config::el70x1::StmFeatures {
+                operation_mode: EL70x1OperationMode::DirectVelocity,
+                ..Default::default()
+            },
+            stm_motor: StmMotorConfiguration {
+                max_current: 2800,
+                ..Default::default()
+                },
+                ..Default::default()
+            };
+
+        let mut b = el7041.borrow_mut();
+        (&mut *b).write_config(interface, device_address, &el7041_config)?;
+        drop(b);
+
+
         let mut new = Self {
             api_receiver: receiver,
             api_sender: sender,
@@ -65,8 +128,8 @@ impl MachineNew for Winder2 {
             puller: el7031_0030.clone(),
             spool: el7041,
 
-            tension_arm: TensionArm::new(el7031_0030.clone()),
             laser: el2002,
+            tension_arm: TensionArm::new(el7031_0030.clone()),
             namespace: Winder2Namespace {
                 namespace: None,
             },

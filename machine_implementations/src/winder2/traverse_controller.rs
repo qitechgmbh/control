@@ -1,6 +1,5 @@
 use std::time::Instant;
 use control_core::converters::linear_step_converter::LinearStepConverter;
-use qitech_lib::ethercat_hal::io::digital_input::DigitalInputDevice;
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::angular_velocity::revolution_per_second;
@@ -157,6 +156,7 @@ impl TraverseController {
     }
 
     pub fn get_current_position(&self) -> Option<Length> {
+        println!("get_current_position: {}",self.is_homed());
         match self.is_homed() {
             true => Some(self.position),
             false => None,
@@ -253,6 +253,7 @@ impl TraverseController {
     /// Gets the current traverse position as a [`Length`].
     pub fn sync_position(&mut self, traverse: &dyn StepperVelocityEL70x1Device) {
         let steps = traverse.get_position(TRAVERSE_PORT);
+        println!("sync_position position: {}",steps);
         self.position = self.microstep_converter.steps_to_distance(steps as f64);
     }
 
@@ -286,6 +287,9 @@ impl TraverseController {
 
         // save state before
         let old_state = self.state.clone();
+
+        //println!("get_speed state: {:?}", &self.state);
+        
 
         // Automatic Transitions
         match &self.state {

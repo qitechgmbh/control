@@ -122,7 +122,7 @@ let rt = get_async_runtime();
     let state = Arc::new(SharedAppState::new());
     let _api = rt.spawn(apis::init_api(state.clone()));
     let mut main_state = MainState::new();
-    let eth_control = init_ethercat("enp101s0f4u1u2");
+    let eth_control = init_ethercat("eth0");
 
     let mut ecat_handle = eth_control.app_handle;
     let ecat_channel = eth_control.channel;

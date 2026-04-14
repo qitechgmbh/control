@@ -23,6 +23,7 @@ pub fn write_ecat_inputs(
         {
             let mut subdevice = subdevice.borrow_mut();
             let _res = subdevice.input(input_bits_slice);
+            let _res = subdevice.input_post_process();
         }
     }
 }
@@ -39,8 +40,11 @@ pub fn write_ecat_outputs(
         let subdevice = subdevices.get(i).unwrap();
         let output_slice = &mut outputs[meta_dev.start_rx..meta_dev.end_rx];
         let output_bits = BitSlice::<u8, Lsb0>::from_slice_mut(output_slice);
-        let subdevice = subdevice.borrow();
-        let _res = subdevice.output(output_bits);
+        {
+            let mut subdevice = subdevice.borrow_mut();
+            let _res = subdevice.output(output_bits);
+            let _res = subdevice.output_pre_process();
+        }
     }
     ecat.send_outputs();
 }
