@@ -156,7 +156,6 @@ impl TraverseController {
     }
 
     pub fn get_current_position(&self) -> Option<Length> {
-        println!("get_current_position: {}",self.is_homed());
         match self.is_homed() {
             true => Some(self.position),
             false => None,
@@ -253,7 +252,6 @@ impl TraverseController {
     /// Gets the current traverse position as a [`Length`].
     pub fn sync_position(&mut self, traverse: &dyn StepperVelocityEL70x1Device) {
         let steps = traverse.get_position(TRAVERSE_PORT);
-        println!("sync_position position: {}",steps);
         self.position = self.microstep_converter.steps_to_distance(steps as f64);
     }
 
@@ -286,10 +284,7 @@ impl TraverseController {
         self.sync_position(traverse);
 
         // save state before
-        let old_state = self.state.clone();
-
-        //println!("get_speed state: {:?}", &self.state);
-        
+        let old_state = self.state.clone();        
 
         // Automatic Transitions
         match &self.state {
