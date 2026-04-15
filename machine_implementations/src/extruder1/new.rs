@@ -66,9 +66,8 @@ impl MachineNew for ExtruderV2 {
         let digital_out_device : Rc<RefCell<dyn DigitalOutputDevice>> = hw.try_get_ethercat_device_by_role::<EL2004>(roles.digital_out_role)?;
         let serial_device : Rc<RefCell<EL6021>> = hw.try_get_ethercat_device_by_role::<EL6021>(roles.serial_role)?;
         let el6021_addr = hw.try_get_ethercat_meta_by_role(roles.serial_role)?;
-        let mut el6021 = serial_device.borrow_mut();
-        println!("writing conf");
-        let res = el6021.write_config(interface.clone(),el6021_addr,&EL6021Configuration::default());
+        let mut el6021 = serial_device.borrow_mut();        
+        let _res = el6021.write_config(interface.clone(),el6021_addr,&EL6021Configuration::default());
         drop(el6021);
 
         let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);

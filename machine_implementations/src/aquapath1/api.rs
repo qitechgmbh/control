@@ -1,6 +1,5 @@
+use super::{AquaPathV1, AquaPathV1Mode, controller::CoolingMode};
 use crate::{MachineApi, MachineMessage, MachineValues};
-
-use super::{AquaPathV1, AquaPathV1Mode};
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
@@ -25,6 +24,18 @@ pub struct LiveValuesEvent {
     pub back_revolutions: f64,
     pub front_power: f64,
     pub back_power: f64,
+    pub front_heating: bool,
+    pub back_heating: bool,
+    pub front_cooling_mode: Option<CoolingMode>,
+    pub back_cooling_mode: Option<CoolingMode>,
+    pub front_pump_cooldown_active: bool,
+    pub back_pump_cooldown_active: bool,
+    pub front_pump_cooldown_remaining: f64,
+    pub back_pump_cooldown_remaining: f64,
+    pub front_heating_startup_wait_active: bool,
+    pub back_heating_startup_wait_active: bool,
+    pub front_heating_startup_wait_remaining: f64,
+    pub back_heating_startup_wait_remaining: f64,
     pub front_total_energy: f64,
     pub back_total_energy: f64,
 }
@@ -40,15 +51,36 @@ pub struct StateEvent {
     pub is_default_state: bool,
     /// mode state
     pub mode_state: ModeState,
+    pub ambient_temperature_calibration: f64,
+    pub default_heating_tolerance: f64,
+    pub default_cooling_tolerance: f64,
+    pub default_pid_kp: f64,
+    pub default_pid_ki: f64,
+    pub default_pid_kd: f64,
     pub flow_states: FlowStates,
     pub temperature_states: TempStates,
     pub fan_states: FanStates,
+    pub cooling_mode_states: CoolingModeStates,
     pub tolerance_states: ToleranceStates,
+    pub pid_states: PidStates,
+    pub thermal_safety_states: ThermalSafetyStates,
 }
 
 impl StateEvent {
     pub fn build(&self) -> Event<Self> {
         Event::new("StateEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct NoticeEvent {
+    pub title: String,
+    pub message: String,
+}
+
+impl NoticeEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("NoticeEvent", self.clone())
     }
 }
 
@@ -91,6 +123,17 @@ pub struct FanStates {
 }
 
 #[derive(Serialize, Debug, Clone)]
+pub struct CoolingModeState {
+    pub mode: Option<CoolingMode>,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct CoolingModeStates {
+    pub front: CoolingModeState,
+    pub back: CoolingModeState,
+}
+
+#[derive(Serialize, Debug, Clone)]
 pub struct ToleranceState {
     pub heating: f64,
     pub cooling: f64,
@@ -101,9 +144,35 @@ pub struct ToleranceStates {
     pub back: ToleranceState,
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct PidState {
+    pub kp: f64,
+    pub ki: f64,
+    pub kd: f64,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PidStates {
+    pub front: PidState,
+    pub back: PidState,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ThermalSafetyState {
+    pub thermal_delay: f64,
+    pub cooldown_min_temperature: f64,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ThermalSafetyStates {
+    pub front: ThermalSafetyState,
+    pub back: ThermalSafetyState,
+}
+
 pub enum AquaPathV1Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
+    Notice(Event<NoticeEvent>),
 }
 
 #[derive(Deserialize, Serialize)]
@@ -124,6 +193,17 @@ enum Mutation {
     SetBackHeatingTolerance(f64),
     SetFrontCoolingTolerance(f64),
     SetBackCoolingTolerance(f64),
+    SetFrontPidKp(f64),
+    SetFrontPidKi(f64),
+    SetFrontPidKd(f64),
+    SetBackPidKp(f64),
+    SetBackPidKi(f64),
+    SetBackPidKd(f64),
+    SetFrontThermalFlowSettleDuration(f64),
+    SetBackThermalFlowSettleDuration(f64),
+    SetFrontPumpCooldownMinTemperature(f64),
+    SetBackPumpCooldownMinTemperature(f64),
+    SetAmbientTemperatureCalibration(f64),
 }
 
 #[derive(Debug, Clone)]
@@ -148,6 +228,7 @@ impl CacheableEvents<AquaPathV1Events> for AquaPathV1Events {
         match self {
             AquaPathV1Events::LiveValues(event) => event.into(),
             AquaPathV1Events::State(event) => event.into(),
+            AquaPathV1Events::Notice(event) => event.into(),
         }
     }
 
@@ -157,6 +238,7 @@ impl CacheableEvents<AquaPathV1Events> for AquaPathV1Events {
         match self {
             AquaPathV1Events::LiveValues(_) => cache_first_and_last,
             AquaPathV1Events::State(_) => cache_first_and_last,
+            AquaPathV1Events::Notice(_) => Box::new(|_, _| {}),
         }
     }
 }
@@ -171,8 +253,6 @@ impl MachineApi for AquaPathV1 {
             }
             MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
             MachineMessage::HttpApiJsonRequest(value) => {
-                use crate::MachineApi;
-
                 let _res = self.api_mutate(value);
             }
             MachineMessage::RequestValues(sender) => {
@@ -192,7 +272,7 @@ impl MachineApi for AquaPathV1 {
         self.api_sender.clone()
     }
 
-    fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
+     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let control: Mutation = serde_json::from_value(request_body)?;
         match control {
             Mutation::SetAquaPathMode(mode) => self.set_mode_state(mode),
@@ -227,6 +307,39 @@ impl MachineApi for AquaPathV1 {
             }
             Mutation::SetFrontCoolingTolerance(tolerance) => {
                 self.set_cooling_tolerance(tolerance, super::AquaPathSideType::Front);
+            }
+            Mutation::SetFrontPidKp(value) => {
+                self.set_pid_kp(value, super::AquaPathSideType::Front);
+            }
+            Mutation::SetFrontPidKi(value) => {
+                self.set_pid_ki(value, super::AquaPathSideType::Front);
+            }
+            Mutation::SetFrontPidKd(value) => {
+                self.set_pid_kd(value, super::AquaPathSideType::Front);
+            }
+            Mutation::SetBackPidKp(value) => {
+                self.set_pid_kp(value, super::AquaPathSideType::Back);
+            }
+            Mutation::SetBackPidKi(value) => {
+                self.set_pid_ki(value, super::AquaPathSideType::Back);
+            }
+            Mutation::SetBackPidKd(value) => {
+                self.set_pid_kd(value, super::AquaPathSideType::Back);
+            }
+            Mutation::SetFrontThermalFlowSettleDuration(value) => {
+                self.set_thermal_flow_settle_duration(value, super::AquaPathSideType::Front);
+            }
+            Mutation::SetBackThermalFlowSettleDuration(value) => {
+                self.set_thermal_flow_settle_duration(value, super::AquaPathSideType::Back);
+            }
+            Mutation::SetFrontPumpCooldownMinTemperature(value) => {
+                self.set_pump_cooldown_min_temperature(value, super::AquaPathSideType::Front);
+            }
+            Mutation::SetBackPumpCooldownMinTemperature(value) => {
+                self.set_pump_cooldown_min_temperature(value, super::AquaPathSideType::Back);
+            }
+            Mutation::SetAmbientTemperatureCalibration(ambient_temp) => {
+                self.set_ambient_temperature_calibration(ambient_temp);
             }
         }
         Ok(())
