@@ -17,21 +17,7 @@ pub mod registry;
 pub mod extruder1;
 pub mod winder2;
 pub mod laser;
-
-
-/*pub mod aquapath1;
-#[cfg(not(feature = "mock-machine"))]
-pub mod buffer1;
-pub mod extruder1;
-pub mod extruder2;
-pub mod laser;
-pub mod machine_identification;
-pub mod minimal_machines;
-pub mod registry;
-pub mod serial;
-pub mod wago_power;*/
-/*pub mod wago_serial_machine;*/
-/*pub mod winder2;*/
+pub mod aquapath1;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
