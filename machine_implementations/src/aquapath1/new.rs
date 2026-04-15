@@ -1,7 +1,7 @@
 use std::time::Instant;
 use anyhow::Error;
 use qitech_lib::{ethercat_hal::devices::{ek1100::EK1100, el2008::EL2008, el3204::EL3204, el4002::EL4002, el5152::EL5152}, units::{AngularVelocity, ThermodynamicTemperature, angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius}};
-use crate::{MachineHardware, MachineNew};
+use crate::{MachineHardware, MachineNew, aquapath1::controller::ControllerConfig};
 use super::{AquaPathV1, Flow, Temperature, api::AquaPathV1Namespace, controller::Controller};
 
 impl MachineNew for AquaPathV1 {
@@ -29,6 +29,7 @@ impl MachineNew for AquaPathV1 {
         const BACK_CONTROLLER_PUMP_RELAIS_PORT : usize = 4; 
         const BACK_CONTROLLER_FLOW_SENSOR_PORT : usize = 1;
 
+        let controller_config = ControllerConfig::default();
         let front_controller = Controller::new(
                 Self::DEFAULT_PID_KP,
                 Self::DEFAULT_PID_KI,
@@ -48,6 +49,7 @@ impl MachineNew for AquaPathV1 {
                 FRONT_CONTROLLER_HEATING_OUT_PORT, // t2                
                 FRONT_CONTROLLER_PUMP_RELAIS_PORT, // do1 pump relais
                 FRONT_CONTROLLER_FLOW_SENSOR_PORT, //enc1 
+                controller_config
         );
 
         let back_controller = Controller::new(
@@ -69,6 +71,7 @@ impl MachineNew for AquaPathV1 {
                 BACK_CONTROLLER_HEATING_OUT_PORT, // t2                
                 BACK_CONTROLLER_PUMP_RELAIS_PORT, // do1 pump relais
                 BACK_CONTROLLER_FLOW_SENSOR_PORT, //enc1 
+                controller_config
         );
 
 
@@ -81,6 +84,9 @@ impl MachineNew for AquaPathV1 {
             last_measurement_emit: Instant::now(),
             front_controller,
             back_controller,
+            ambient_temperature_calibration: ThermodynamicTemperature::new::<degree_celsius>(
+                20.5,
+            ),
         };
 
         Ok(water_cooling)
