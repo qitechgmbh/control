@@ -1,198 +1,88 @@
-use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
-    validate_no_role_duplicates, validate_same_machine_identification_unique,
-};
-
-use super::{
-    AquaPathV1, AquaPathV1Mode, Flow, Temperature,
-    api::AquaPathV1Namespace,
-    controller::{Controller, ControllerConfig},
-};
-use anyhow::Error;
-use ethercat_hal::{
-    coe::ConfigurableDevice,
-    devices::{
-        ek1100::{EK1100, EK1100_IDENTITY_A},
-        el2008::{EL2008, EL2008_IDENTITY_A, EL2008_IDENTITY_B, EL2008Port},
-        el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port},
-        el4002::{EL4002, EL4002_IDENTITY_A, EL4002Port},
-        el5152::{
-            EL5152, EL5152_IDENTITY_A, EL5152Configuration, EL5152Port,
-            EL5152PredefinedPdoAssignment,
-        },
-    },
-    io::{
-        analog_output::AnalogOutput, digital_output::DigitalOutput, encoder_input::EncoderInput,
-        temperature_input::TemperatureInput,
-    },
-};
 use std::time::Instant;
-use units::{
-    AngularVelocity,
-    angular_velocity::revolution_per_minute,
-    thermodynamic_temperature::{ThermodynamicTemperature, degree_celsius},
-};
+use anyhow::Error;
+use qitech_lib::{ethercat_hal::devices::{ek1100::EK1100, el2008::EL2008, el3204::EL3204, el4002::EL4002, el5152::EL5152}, units::{AngularVelocity, ThermodynamicTemperature, angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius}};
+use crate::{MachineHardware, MachineNew};
+use super::{AquaPathV1, Flow, Temperature, api::AquaPathV1Namespace, controller::Controller};
 
-impl MachineNewTrait for AquaPathV1 {
-    fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
-        // validate general stuff
-        let device_identification = params
-            .device_group
-            .iter()
-            .map(|device_identification| device_identification.clone())
-            .collect::<Vec<_>>();
-        validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_duplicates(&device_identification)?;
+impl MachineNew for AquaPathV1 {
+    fn new(hw: MachineHardware) -> Result<Self, Error> {
+        let _ek1100 = hw.try_get_ethercat_device_by_role::<EK1100>(0)?;
+        let el2008 = hw.try_get_ethercat_device_by_role::<EL2008>(1)?;
+        let el4002 = hw.try_get_ethercat_device_by_role::<EL4002>(2)?;
+        let el3204 = hw.try_get_ethercat_device_by_role::<EL3204>(3)?;
+        let el5152 = hw.try_get_ethercat_device_by_role::<EL5152>(4)?;
+        let (sender,receiver) = tokio::sync::mpsc::channel(2);
 
-        let hardware = match &params.hardware {
-            MachineNewHardware::Ethercat(x) => x,
-            _ => {
-                return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/AquaPath1::new] MachineNewHardware is not Ethercat",
-                    module_path!()
-                ));
-            }
+        const FRONT_CONTROLLER_COOLING_PORT : usize = 0;
+        const FRONT_CONTROLLER_COOLING_RELAIS_PORT : usize = 3; 
+        const FRONT_CONTROLLER_HEATING_RELAIS_PORT : usize = 1; 
+        const FRONT_CONTROLLER_HEATING_IN_PORT : usize = 0;
+        const FRONT_CONTROLLER_HEATING_OUT_PORT : usize = 1;
+        const FRONT_CONTROLLER_PUMP_RELAIS_PORT : usize = 0; 
+        const FRONT_CONTROLLER_FLOW_SENSOR_PORT : usize = 0;
+
+        const BACK_CONTROLLER_COOLING_PORT : usize = 1;
+        const BACK_CONTROLLER_COOLING_RELAIS_PORT : usize = 7; 
+        const BACK_CONTROLLER_HEATING_RELAIS_PORT : usize = 5; 
+        const BACK_CONTROLLER_HEATING_IN_PORT : usize = 2;
+        const BACK_CONTROLLER_HEATING_OUT_PORT : usize = 3;
+        const BACK_CONTROLLER_PUMP_RELAIS_PORT : usize = 4; 
+        const BACK_CONTROLLER_FLOW_SENSOR_PORT : usize = 1;
+
+        let front_controller = Controller::new(
+                Self::DEFAULT_PID_KP,
+                Self::DEFAULT_PID_KI,
+                Self::DEFAULT_PID_KD,
+                Temperature::default(),
+                ThermodynamicTemperature::new::<degree_celsius>(25.0),
+                el4002.clone(),
+                el2008.clone(),                
+                el3204.clone(),
+                AngularVelocity::new::<revolution_per_minute>(100.0),
+                Flow::default(),
+                el5152.clone(),
+                FRONT_CONTROLLER_COOLING_PORT, //ao1 cooling controller
+                FRONT_CONTROLLER_COOLING_RELAIS_PORT, // do4
+                FRONT_CONTROLLER_HEATING_RELAIS_PORT, // do2                
+                FRONT_CONTROLLER_HEATING_IN_PORT, // t1
+                FRONT_CONTROLLER_HEATING_OUT_PORT, // t2                
+                FRONT_CONTROLLER_PUMP_RELAIS_PORT, // do1 pump relais
+                FRONT_CONTROLLER_FLOW_SENSOR_PORT, //enc1 
+        );
+
+        let back_controller = Controller::new(
+                Self::DEFAULT_PID_KP,
+                Self::DEFAULT_PID_KI,
+                Self::DEFAULT_PID_KD,
+                Temperature::default(),
+                ThermodynamicTemperature::new::<degree_celsius>(25.0),
+                el4002.clone(),
+                el2008.clone(),                
+                el3204.clone(),
+                AngularVelocity::new::<revolution_per_minute>(100.0),
+                Flow::default(),
+                el5152.clone(),
+                BACK_CONTROLLER_COOLING_PORT, //ao1 cooling controller
+                BACK_CONTROLLER_COOLING_RELAIS_PORT, // do4
+                BACK_CONTROLLER_HEATING_RELAIS_PORT, // do2                
+                BACK_CONTROLLER_HEATING_IN_PORT, // t1
+                BACK_CONTROLLER_HEATING_OUT_PORT, // t2                
+                BACK_CONTROLLER_PUMP_RELAIS_PORT, // do1 pump relais
+                BACK_CONTROLLER_FLOW_SENSOR_PORT, //enc1 
+        );
+
+
+        let water_cooling = Self {
+            api_receiver: receiver,
+            api_sender: sender,
+            machine_identification_unique: hw.identification,
+            namespace: AquaPathV1Namespace{ namespace:None },
+            mode: super::AquaPathV1Mode::Standby,
+            last_measurement_emit: Instant::now(),
+            front_controller,
+            back_controller,
         };
 
-        smol::block_on(async {
-            // Role 0 - Buscoupler EK1100
-            let _ek1100 =
-                get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
-
-            // Role 1 - EL2008 Digital Output Module
-            let el2008 = get_ethercat_device::<EL2008>(
-                hardware,
-                params,
-                1,
-                [EL2008_IDENTITY_A, EL2008_IDENTITY_B].to_vec(),
-            )
-            .await?
-            .0;
-
-            // Role 2 - EL4002 Analog Output Module
-            let el4002 =
-                get_ethercat_device::<EL4002>(hardware, params, 2, [EL4002_IDENTITY_A].to_vec())
-                    .await?
-                    .0;
-
-            let el3204 = get_ethercat_device::<EL3204>(
-                hardware,
-                params,
-                3,
-                [EL3204_IDENTITY_A, EL3204_IDENTITY_B].to_vec(),
-            )
-            .await?
-            .0;
-
-            let el5152 =
-                get_ethercat_device::<EL5152>(hardware, params, 4, [EL5152_IDENTITY_A].to_vec())
-                    .await?
-                    .0;
-
-            let config = EL5152Configuration {
-                pdo_assignment: EL5152PredefinedPdoAssignment::Frequency,
-                ..Default::default()
-            };
-
-            let subdevice =
-                get_ethercat_device::<EL5152>(hardware, params, 4, [EL5152_IDENTITY_A].to_vec())
-                    .await?
-                    .1;
-
-            el5152
-                .write()
-                .await
-                .write_config(&subdevice, &config)
-                .await?;
-
-            let enc1 = EncoderInput::new(el5152.clone(), EL5152Port::ENC1);
-
-            let enc2 = EncoderInput::new(el5152.clone(), EL5152Port::ENC2);
-            //after heating
-            let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1);
-            //in reservoir
-            let t2 = TemperatureInput::new(el3204.clone(), EL3204Port::T2);
-            //after heating
-            let t3 = TemperatureInput::new(el3204.clone(), EL3204Port::T3);
-            //in reservoir
-            let t4 = TemperatureInput::new(el3204.clone(), EL3204Port::T4);
-            //pump flow control
-            //phys 1
-            let do1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
-            //phys 5
-            let do2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
-            //heating
-
-            //phys 6
-            let do4 = DigitalOutput::new(el2008.clone(), EL2008Port::DO4);
-            //phys 3
-            let do5 = DigitalOutput::new(el2008.clone(), EL2008Port::DO5);
-            //phys 7
-            let do6 = DigitalOutput::new(el2008.clone(), EL2008Port::DO6);
-            //cooling power cut
-
-            //phys 8
-            let do8 = DigitalOutput::new(el2008.clone(), EL2008Port::DO8);
-
-            let ao1 = AnalogOutput::new(el4002.clone(), EL4002Port::AO1);
-            let ao2 = AnalogOutput::new(el4002.clone(), EL4002Port::AO2);
-            let controller_config = ControllerConfig::default();
-
-            let back_controller = Controller::new(
-                AquaPathV1::DEFAULT_PID_KP,
-                AquaPathV1::DEFAULT_PID_KI,
-                AquaPathV1::DEFAULT_PID_KD,
-                Temperature::default(),
-                ThermodynamicTemperature::new::<degree_celsius>(25.0),
-                ao2,
-                do8,
-                do6,
-                t3,
-                t4,
-                AngularVelocity::new::<revolution_per_minute>(100.0),
-                Flow::default(),
-                do5,
-                enc2,
-                controller_config,
-            );
-
-            let front_controller = Controller::new(
-                AquaPathV1::DEFAULT_PID_KP,
-                AquaPathV1::DEFAULT_PID_KI,
-                AquaPathV1::DEFAULT_PID_KD,
-                Temperature::default(),
-                ThermodynamicTemperature::new::<degree_celsius>(25.0),
-                ao1,
-                do4,
-                do2,
-                t1,
-                t2,
-                AngularVelocity::new::<revolution_per_minute>(100.0),
-                Flow::default(),
-                do1,
-                enc1,
-                controller_config,
-            );
-            let (sender, receiver) = smol::channel::unbounded();
-            let mut water_cooling = Self {
-                main_sender: params.main_thread_channel.clone(),
-                api_receiver: receiver,
-                api_sender: sender,
-                machine_identification_unique: params.get_machine_identification_unique(),
-                namespace: AquaPathV1Namespace {
-                    namespace: params.namespace.clone(),
-                },
-                mode: AquaPathV1Mode::Standby,
-                ambient_temperature_calibration: ThermodynamicTemperature::new::<degree_celsius>(
-                    22.0,
-                ),
-                last_measurement_emit: Instant::now(),
-                front_controller,
-                back_controller,
-            };
-            water_cooling.emit_state();
-
-            Ok(water_cooling)
-        })
-    }
+        Ok(water_cooling)
+    }    
 }
