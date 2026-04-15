@@ -1,15 +1,14 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use control_core::{
-    controllers::clamping_timeagnostic_pid::ClampingTimeagnosticPidController,
+    controllers::{clamping_timeagnostic_pid::ClampingTimeagnosticPidController, pid_autotuner::{AutoTuneConfig, PidAutoTuner}},
     helpers::interpolation::normalize,
     transmission::{Transmission, fixed::FixedTransmission},
 };
 use qitech_lib::{ethercat_hal::{self, io::{analog_input::AnalogInputDevice, serial_interface::SerialInterfaceDevice}}, units::{AngularVelocity, Frequency, Pressure, angular_velocity::revolution_per_minute, electric_current::milliampere, frequency::hertz, pressure::bar}};
-
 use crate::extruder1::mitsubishi_cs80::MitsubishiCS80Status;
-
-use super::mitsubishi_cs80::{MitsubishiCS80, MotorStatus};
+use super::{api::{PidSettings, PressureAutoTuneConfig}, mitsubishi_cs80::{MitsubishiCS80, MotorStatus}};
+const AUTOTUNE_MAX_DURATION: Duration = Duration::from_secs(30);
 
 #[derive(Debug)]
 pub struct ScrewSpeedController {
@@ -22,6 +21,7 @@ pub struct ScrewSpeedController {
     uses_rpm: bool,
     forward_rotation: bool,
     transmission: FixedTransmission,
+    pid_autotuner: Option<PidAutoTuner>,
     frequency: Frequency,
     pub pressure: Pressure,
     maximum_frequency: Frequency,
@@ -29,6 +29,8 @@ pub struct ScrewSpeedController {
     motor_on: bool,
     nozzle_pressure_limit: Pressure,
     nozzle_pressure_limit_enabled: bool,
+    autotune_high_frequency: Frequency,
+    autotune_low_frequency: Frequency,
     pub wiring_error : bool,
 }
 
@@ -61,6 +63,9 @@ impl ScrewSpeedController {
             motor_poles,
             wiring_error: false,
             pressure: Pressure::new::<bar>(0.0),
+            pid_autotuner: None,
+            autotune_high_frequency: Frequency::new::<hertz>(0.0),
+            autotune_low_frequency: Frequency::new::<hertz>(0.0),
         }
     }
 
@@ -283,4 +288,87 @@ impl ScrewSpeedController {
         self.pid.reset();
         self.last_update = Instant::now();
     }
+
+
+      pub fn start_pressure_autotune(&mut self, now: Instant, config: PressureAutoTuneConfig) {
+        // Snapshot the current inverter frequency as the relay centre point
+        let base_hz = self.inverter.motor_status.frequency.get::<hertz>();
+        let step_hz = config.frequency_step_hz;
+
+        let high = Self::clamp_frequency(
+            Frequency::new::<hertz>(base_hz + step_hz),
+            self.minimum_frequency,
+            self.maximum_frequency,
+        );
+        let low = Self::clamp_frequency(
+            Frequency::new::<hertz>(base_hz - step_hz),
+            self.minimum_frequency,
+            self.maximum_frequency,
+        );
+
+        self.autotune_high_frequency = high;
+        self.autotune_low_frequency = low;
+
+        // Use the actual Hz swing as max_power so the Ziegler–Nichols result
+        // is in the same units (Hz/bar) that the PID controller expects.
+        let hz_swing = (high - low).get::<hertz>().max(0.01); // guard against zero
+
+        let auto_config = AutoTuneConfig {
+            tune_delta: config.tune_delta,
+            max_power: hz_swing,
+            max_duration: AUTOTUNE_MAX_DURATION,
+        };
+        let mut tuner = PidAutoTuner::new(auto_config);
+        let target_pressure = self.target_pressure.get::<bar>();
+        tuner.start(now, target_pressure);
+        self.pid_autotuner = Some(tuner);
+        self.pid.reset();
+
+        tracing::info!(
+            "Pressure PID auto-tune started: target={:.2} bar, delta=±{:.2} bar, \
+             relay {:.1}–{:.1} Hz (base {:.1} Hz, step ±{:.1} Hz)",
+            target_pressure,
+            config.tune_delta,
+            low.get::<hertz>(),
+            high.get::<hertz>(),
+            base_hz,
+            step_hz,
+        );
+    }
+
+    /// Abort an in-progress auto-tune run
+    pub fn stop_autotune(&mut self) {
+        if let Some(ref mut tuner) = self.pid_autotuner {
+            tuner.stop();
+        }
+    }
+
+    /// Current auto-tuner state as a string slice
+    pub fn get_autotune_state(&self) -> &str {
+        match &self.pid_autotuner {
+            Some(tuner) => tuner.state(),
+            None => "not_started",
+        }
+    }
+
+    /// Auto-tune progress as a percentage (0 – 100)
+    pub fn get_autotune_progress(&self) -> f64 {
+        match &self.pid_autotuner {
+            Some(tuner) => tuner.get_progress_percent(),
+            None => 0.0,
+        }
+    }
+
+    /// Returns PID values from the last completed auto-tune run, if any
+    pub fn get_autotune_result(&self) -> Option<PidSettings> {
+        self.pid_autotuner
+            .as_ref()
+            .and_then(|t| t.result().ok())
+            .map(|result| PidSettings {
+                ki: result.ki,
+                kp: result.kp,
+                kd: result.kd,
+            })
+    }
+
 }
