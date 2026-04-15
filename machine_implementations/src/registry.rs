@@ -1,5 +1,5 @@
 use crate::{
-    MachineHardware, MachineNew, QiTechMachine, laser::LaserMachine, minimal_machines::digital_input_test_machine::DigitalInputTestMachine, winder2::Winder2
+    MachineHardware, MachineNew, QiTechMachine, aquapath1::AquaPathV1, laser::LaserMachine, minimal_machines::digital_input_test_machine::DigitalInputTestMachine, winder2::Winder2
 };
 use anyhow::Error;
 use lazy_static::lazy_static;
@@ -68,6 +68,7 @@ lazy_static! {
         mc.register::<ExtruderV2>(vec![ExtruderV2::MACHINE_IDENTIFICATION,ExtruderV2::MACHINE_IDENTIFICATION_V3 ]);
         mc.register::<Winder2>(vec![Winder2::MACHINE_IDENTIFICATION]);
         mc.register::<LaserMachine>(vec![LaserMachine::MACHINE_IDENTIFICATION]);
+        mc.register::<AquaPathV1>(vec![AquaPathV1::MACHINE_IDENTIFICATION]);
 /*
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<LaserMachine>(LaserMachine::MACHINE_IDENTIFICATION);
