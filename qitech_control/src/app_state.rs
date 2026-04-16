@@ -18,9 +18,7 @@ use machine_implementations::{
         QiTechMachineIdentificationUnique,
     },
 };
-use qitech_lib::ethercat_hal::{
-    StandardEtherCATController, machine_ident_read::MachineDeviceInfo
-};
+use qitech_lib::ethercat_hal::{controller::EtherCATController, machine_ident_read::MachineDeviceInfo};
 use socketioxide::{SocketIo, extract::SocketRef};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{
@@ -32,14 +30,12 @@ pub struct SocketioSetup {
     pub socketio: RwLock<Option<SocketIo>>,
     pub namespaces: RwLock<Namespaces>,
     pub socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
-    // Can/Should be an Arc<RefCell probably
     pub socket_queue_rx: RwLock<Receiver<(SocketRef, Arc<GenericEvent>)>>,
 }
 
 /*
     This struct is only written in the main machine loop or during initialization,
     Otherwise it is simply read.
-    TODO: then why is it locked and not just read-only?
     Except socketio
 */
 pub struct SharedAppState {
@@ -51,19 +47,33 @@ pub struct SharedAppState {
 }
 
 impl SharedAppState {
-    pub fn fill_ethercat_metadata(
+    pub fn fill_ethercat_metadata<C: qitech_lib::ethercat_hal::Consumer,P: qitech_lib::ethercat_hal::Producer>(
         &self,
-        controller: Arc<StandardEtherCATController>,
-        infos: Vec<MachineDeviceInfo>,
+        controller: Arc<EtherCATController<C,P>>,
+        infos: Option<Vec<MachineDeviceInfo>>,
     ) -> Result<(), anyhow::Error> {
         let mut guard = self.ethercat_meta_datas.try_write()?;
         for i in 0..controller.subdevice_count {
             let dev = controller.subdevices[i];
-            let mut device_machine_identification = infos.iter()
-                .find(|info| info.device_address == dev.device_address)
-                .map(|info| DeviceMachineIdentification::from(*info));
+            let mut device_machine_identification: Option<DeviceMachineIdentification> = None;
 
-            guard.push(
+            match infos {
+                Some(ref infos) => {
+                    let info = infos
+                        .iter()
+                        .find(|info| info.device_address == dev.device_address)
+                        .cloned();
+                    match info {
+                        Some(info) => {
+                            device_machine_identification = Some(info.into());
+                        }
+                        None => (),
+                    }
+                }
+                None => (),
+            };
+
+            guard.push(                 
                 EtherCatDeviceMetaData {
                     configured_address: dev.device_address,
                     name: dev.get_name()?,
@@ -105,12 +115,13 @@ impl SharedAppState {
         drop(guard);
     }
 
-    pub async fn send_machines_event(&self) {
+    pub async fn send_machines_event(&self) -> Result<(), anyhow::Error> {
         let event = MachinesEventBuilder().build(self.get_machines_meta().await);
         let mut guard = self.socketio_setup.namespaces.write().await;
         let main_namespace = &mut guard.main_namespace;
         main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
         drop(guard);
+        Ok(())
     }
 
     pub async fn get_machines_meta(&self) -> Vec<MachineObj> {

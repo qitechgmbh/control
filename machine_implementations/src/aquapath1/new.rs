@@ -1,6 +1,6 @@
 use std::time::Instant;
 use anyhow::Error;
-use qitech_lib::{ethercat_hal::devices::{ek1100::EK1100, el2008::EL2008, el3204::EL3204, el4002::EL4002, el5152::EL5152}, units::{AngularVelocity, ThermodynamicTemperature, angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius}};
+use qitech_lib::{ethercat_hal::{EtherCATThreadChannel, coe::ConfigurableDevice, devices::{ek1100::EK1100, el2008::EL2008, el3204::EL3204, el4002::EL4002, el5152::{EL5152, EL5152Configuration, EL5152PredefinedPdoAssignment}}}, units::{AngularVelocity, ThermodynamicTemperature, angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius}};
 use crate::{MachineHardware, MachineNew, aquapath1::controller::ControllerConfig};
 use super::{AquaPathV1, Flow, Temperature, api::AquaPathV1Namespace, controller::Controller};
 
@@ -11,6 +11,26 @@ impl MachineNew for AquaPathV1 {
         let el4002 = hw.try_get_ethercat_device_by_role::<EL4002>(2)?;
         let el3204 = hw.try_get_ethercat_device_by_role::<EL3204>(3)?;
         let el5152 = hw.try_get_ethercat_device_by_role::<EL5152>(4)?;
+
+        let interface : EtherCATThreadChannel = match &hw.ethercat_interface {
+            Some(ecat_interface) => ecat_interface.clone(),
+            None => {
+                return Err(anyhow::anyhow!("Winder2: No EtherCat Interface was supplied!"));
+            },
+        };
+
+        let config = EL5152Configuration {
+            pdo_assignment: EL5152PredefinedPdoAssignment::Frequency,
+            ..Default::default()
+        };
+        {
+            let el5152_ref = &mut *el5152.borrow_mut();
+            let el5152_address = hw.try_get_ethercat_meta_by_role(4)?;
+            el5152_ref.write_config(interface,el5152_address,&config)?;
+        }
+        
+
+
         let (sender,receiver) = tokio::sync::mpsc::channel(2);
 
         const FRONT_CONTROLLER_COOLING_PORT : usize = 0;
