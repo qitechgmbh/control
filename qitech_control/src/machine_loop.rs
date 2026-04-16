@@ -2,15 +2,15 @@ use bitvec::{order::Lsb0, slice::BitSlice};
 use machine_implementations::QiTechMachine;
 use qitech_lib::{
     ethercat_hal::{
-        StandardEtherCATAppHandle, StandardEtherCATController, devices::EthercatDevice,
+        Consumer, Producer, controller::{EtherCATAppHandle, EtherCATController}, devices::EthercatDevice
     },
     machines::MachineDataRegistry,
 };
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-pub fn write_ecat_inputs(
-    ecat: &mut StandardEtherCATAppHandle,
-    ecat_controller: Arc<StandardEtherCATController>,
+pub fn write_ecat_inputs<C : Consumer,P: Producer>(
+    ecat: &mut EtherCATAppHandle<C,P>,
+    ecat_controller: Arc<EtherCATController<C,P>>,
     subdevices: Vec<Rc<RefCell<dyn EthercatDevice>>>,
 ) {
     assert!(ecat_controller.subdevice_count == subdevices.len());
@@ -26,11 +26,12 @@ pub fn write_ecat_inputs(
             let _res = subdevice.input_post_process();
         }
     }
+//    println!("ecat_controller cycle_time us: {}",ecat_controller.cycle_time_us);
 }
 
-pub fn write_ecat_outputs(
-    ecat: &mut StandardEtherCATAppHandle,
-    ecat_controller: Arc<StandardEtherCATController>,
+pub fn write_ecat_outputs<C : Consumer,P: Producer>(
+    ecat: &mut EtherCATAppHandle<C,P>,
+    ecat_controller: Arc<EtherCATController<C,P>>,
     subdevices: Vec<Rc<RefCell<dyn EthercatDevice>>>,
 ) {
     assert!(ecat_controller.subdevice_count == subdevices.len());
