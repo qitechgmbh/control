@@ -1,10 +1,14 @@
-{ lib, buildNpmPackage, electron }:
+{
+  lib,
+  buildNpmPackage,
+  electron,
+}:
 
 buildNpmPackage rec {
   pname = "qitech-control-electron";
   version = "1.0.0";
 
-  src = ../../electron;
+  srcs = ../../electron;
   sourceRoot = "electron";
 
   ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
