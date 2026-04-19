@@ -20,6 +20,7 @@ use std::time::Instant;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
+pub mod drywell;
 pub mod extruder1;
 pub mod extruder2;
 pub mod laser;
@@ -57,6 +58,7 @@ pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
 pub const WAGO_750_501_TEST_MACHINE: u16 = 0x0042;
+pub const MACHINE_DRYWELL_V1: u16 = 0x0010;
 
 use serde_json::Value;
 use smol::lock::RwLock;

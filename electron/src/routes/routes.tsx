@@ -96,6 +96,9 @@ import { Wago750_553MachineControlPage } from "@/machines/minimal_machines/wago7
 
 import { Wago750460MachinePage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachinePage";
 import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachineControlPage";
+import { DrywellPage } from "@/machines/drywell/drywell_v1/DrywellPage";
+import { DrywellControlPage } from "@/machines/drywell/drywell_v1/DrywellControlPage";
+import { DrywellOverviewPage } from "@/machines/drywell/drywell_v1/DrywellOverviewPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -104,6 +107,23 @@ import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago75
 // the mainNavigation has a custom layout
 // the winder2 winder2 and configuration also have a custom layout
 // the leaf routes are just pages
+export const drywellV1SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "drywell_v1/$serial",
+  component: () => <DrywellPage />,
+});
+
+export const drywellV1ControlRoute = createRoute({
+  getParentRoute: () => drywellV1SerialRoute,
+  path: "control",
+  component: () => <DrywellControlPage />,
+});
+
+export const drywellV1OverviewRoute = createRoute({
+  getParentRoute: () => drywellV1SerialRoute,
+  path: "overview",
+  component: () => <DrywellOverviewPage />,
+});
 export const testMachineSerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "testmachine/$serial",
@@ -702,7 +722,10 @@ export const rootTree = RootRoute.addChildren([
       wago750430DiMachineSerialRoute.addChildren([
         wago750430DiMachineControlRoute,
       ]),
-
+      drywellV1SerialRoute.addChildren([
+        drywellV1ControlRoute,
+        drywellV1OverviewRoute,
+      ]),
       wago750460MachineSerialRoute.addChildren([wago750460MachineControlRoute]),
       wago750_553MachineSerialRoute.addChildren([
         wago750_553MachineControlRoute,

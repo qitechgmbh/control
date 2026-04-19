@@ -20,6 +20,8 @@ pub enum ModbusFunctionCode {
     ReadHoldingRegister,
     /// Read Input register
     ReadInputRegister,
+    /// Write Single Coil (FC 0x05)
+    WriteCoil,
     /// write one Register Value
     PresetHoldingRegister,
     /// The response should echo back your request
@@ -100,6 +102,7 @@ impl TryFrom<u8> for ModbusFunctionCode {
         match value {
             0x03 => Ok(Self::ReadHoldingRegister),
             0x04 => Ok(Self::ReadInputRegister),
+            0x05 => Ok(Self::WriteCoil),
             0x06 => Ok(Self::PresetHoldingRegister),
             0x08 => Ok(Self::DiagnoseFunction),
             _ => Err(anyhow::anyhow!("Error: Modbus Function Code doesnt exist!")),
@@ -112,6 +115,7 @@ impl From<ModbusFunctionCode> for u8 {
         match value {
             ModbusFunctionCode::ReadHoldingRegister => 0x03,
             ModbusFunctionCode::ReadInputRegister => 0x04,
+            ModbusFunctionCode::WriteCoil => 0x05,
             ModbusFunctionCode::PresetHoldingRegister => 0x06,
             ModbusFunctionCode::DiagnoseFunction => 0x08,
         }

@@ -5,6 +5,7 @@ use axum::routing::{get, post};
 use axum::{Extension, Json, Router, debug_handler};
 use machines::MachineMessage;
 use machines::aquapath1::AquaPathV1;
+use machines::drywell::DrywellMachine;
 use machines::extruder1::ExtruderV2;
 use machines::laser::LaserMachine;
 use machines::machine_identification::{MachineIdentification, MachineIdentificationUnique};
@@ -163,4 +164,5 @@ pub fn rest_api_router() -> Router<Arc<SharedState>> {
         .merge(make_machine_router(
             AnalogInputTestMachine::MACHINE_IDENTIFICATION,
         ))
+        .merge(make_machine_router(DrywellMachine::MACHINE_IDENTIFICATION))
 }

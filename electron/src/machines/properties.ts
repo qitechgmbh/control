@@ -833,8 +833,20 @@ export const wago750460Machine: MachineProperties = {
     },
   ],
 };
+export const drywellV1: MachineProperties = {
+  name: "Drywell",
+  version: "V1",
+  slug: "drywell_v1",
+  icon: "lu:Thermometer",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0010,
+  },
+  device_roles: [],
+};
 
 export const machineProperties: MachineProperties[] = [
+  drywellV1,
   winder2,
   extruder3,
   extruder2,

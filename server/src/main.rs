@@ -4,9 +4,11 @@ use crate::{
 };
 use control_core::socketio::event::GenericEvent;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
+use machines::serial::devices::drywell::Drywell;
 use machines::{
     AsyncThreadMessage, MachineNewHardware, MachineNewHardwareSerial, MachineNewParams,
     SerialDevice, SerialDeviceIdentification, SerialDeviceNew, SerialDeviceNewParams,
+    drywell::DrywellMachine,
     laser::LaserMachine,
     machine_identification::{
         DeviceIdentification, DeviceIdentificationIdentified, MachineIdentificationUnique,
@@ -201,7 +203,7 @@ pub async fn handle_serial_device_hotplug(
         product_id: 0x6001,
     };
 
-    let laser = SerialDetection::get_path_by_id(laser_ident, map);
+    let laser = SerialDetection::get_path_by_id(laser_ident, map.clone());
     let mut unique_ident: Option<MachineIdentificationUnique> = None;
 
     {
@@ -250,6 +252,60 @@ pub async fn handle_serial_device_hotplug(
             .send(HotThreadMessage::DeleteMachine(unique_ident))
             .await;
 
+        app_state.clone().send_machines_event().await;
+    }
+
+    // Drywell detection
+    let drywell_ident = SerialDeviceIdentification {
+        vendor_id: 0x1a86,
+        product_id: 0x7523,
+    };
+    let drywell_path = SerialDetection::get_path_by_id(drywell_ident, map);
+    let mut drywell_unique_ident: Option<MachineIdentificationUnique> = None;
+    {
+        let machines = app_state.current_machines_meta.lock().await;
+        for machine in machines.iter() {
+            if machine.machine_identification_unique.machine_identification
+                == DrywellMachine::MACHINE_IDENTIFICATION
+            {
+                drywell_unique_ident = Some(machine.machine_identification_unique.clone());
+                break;
+            }
+        }
+    }
+    if drywell_path.is_some() && drywell_unique_ident.is_none() {
+        let serial_params = SerialDeviceNewParams {
+            path: drywell_path.unwrap(),
+        };
+        match Drywell::new_serial(&serial_params) {
+            Ok((device_identification, serial_device)) => {
+                add_serial_device(
+                    app_state.clone(),
+                    &device_identification,
+                    serial_device,
+                    &MACHINE_REGISTRY,
+                    app_state.socketio_setup.socket_queue_tx.clone(),
+                )
+                .await;
+            }
+            Err(e) => {
+                tracing::error!("Failed to create Drywell machine: {:?}", e);
+            }
+        };
+    } else if drywell_path.is_none() && drywell_unique_ident.is_some() {
+        let unique_ident = drywell_unique_ident.unwrap();
+        app_state
+            .clone()
+            .api_machines
+            .lock()
+            .await
+            .remove(&unique_ident);
+        app_state.clone().remove_machine(&unique_ident).await;
+        let _ = app_state
+            .clone()
+            .rt_machine_creation_channel
+            .send(HotThreadMessage::DeleteMachine(unique_ident))
+            .await;
         app_state.clone().send_machines_event().await;
     }
 }

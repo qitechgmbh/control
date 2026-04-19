@@ -66,6 +66,7 @@ impl MachineIdentification {
             x if x == WAGO_DO_TEST_MACHINE => "wago_do_test_machine".to_string(),
             x if x == WAGO_750_430_DI_MACHINE => "wago_750_430_di_machine".to_string(),
             x if x == WAGO_750_531_MACHINE => "wago_750_531_machine".to_string(),
+            x if x == MACHINE_DRYWELL_V1 => "drywell_v1".to_string(),
 
             _ => unreachable!("Unknown machine id"),
         }
@@ -182,6 +183,7 @@ use crate::ANALOG_INPUT_TEST_MACHINE;
 use crate::IP20_TEST_MACHINE;
 use crate::MACHINE_AQUAPATH_V1;
 use crate::MACHINE_BUFFER_V1;
+use crate::MACHINE_DRYWELL_V1;
 use crate::MACHINE_EXTRUDER_V1;
 use crate::MACHINE_EXTRUDER_V2;
 use crate::MACHINE_LASER_V1;

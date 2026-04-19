@@ -1,3 +1,4 @@
+pub mod drywell;
 #[cfg(feature = "mock-machine")]
 pub mod extruder_mock;
 pub mod laser;

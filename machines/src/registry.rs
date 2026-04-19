@@ -1,3 +1,4 @@
+use crate::drywell::DrywellMachine;
 use crate::minimal_machines::analog_input_test_machine::AnalogInputTestMachine;
 use crate::minimal_machines::digital_input_test_machine::DigitalInputTestMachine;
 use crate::minimal_machines::ip20_test_machine::IP20TestMachine;
@@ -166,6 +167,7 @@ lazy_static! {
         mc.register::<Wago750_460Machine>(Wago750_460Machine::MACHINE_IDENTIFICATION);
 
         mc.register::<Wago750_553Machine>(Wago750_553Machine::MACHINE_IDENTIFICATION);
+        mc.register::<DrywellMachine>(DrywellMachine::MACHINE_IDENTIFICATION);
         mc
     };
 }
