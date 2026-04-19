@@ -417,14 +417,7 @@ export function ChooseVersionPage() {
               onClick={() => {
                 navigate({
                   to: "/_sidebar/setup/update/execute",
-                  search: {
-                    githubRepoOwner: currentUpdateInfo.githubRepoOwner,
-                    githubRepoName: currentUpdateInfo.githubRepoName,
-                    githubToken: currentUpdateInfo.githubToken,
-                    tag: currentUpdateInfo.tag,
-                    branch: currentUpdateInfo.branch,
-                    commit: currentUpdateInfo.commit,
-                  },
+                  search: currentUpdateInfo,
                 });
               }}
             >
