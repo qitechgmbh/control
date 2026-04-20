@@ -50,7 +50,9 @@ pub use winder2_imports::*;
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
-    MACHINE_WINDER_V1, MACHINE_WINDER_V1_7031_0030_SPOOL, MachineData, MachineMessage, VENDOR_QITECH, machine_identification::{MachineIdentification, MachineIdentificationUnique}
+    MACHINE_WINDER_V1, MACHINE_WINDER_V1_7031_0030_SPOOL, MachineData, MachineMessage,
+    VENDOR_QITECH,
+    machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
 
 #[derive(Debug)]

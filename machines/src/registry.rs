@@ -73,8 +73,8 @@ impl MachineRegistry {
     }
 
     pub fn new_machine(
-        &self,        
-        machine_new_params: &MachineNewParams
+        &self,
+        machine_new_params: &MachineNewParams,
     ) -> Result<Box<dyn Machine>, anyhow::Error> {
         let device_identification =
             &machine_new_params
@@ -84,14 +84,18 @@ impl MachineRegistry {
                     "[{}::MachineConstructor::new_machine] No device in group",
                     module_path!()
                 ))?;
-        let ident = device_identification.device_machine_identification.machine_identification_unique.machine_identification;
-        let (_, machine_new_closure) = self.type_map
+        let ident = device_identification
+            .device_machine_identification
+            .machine_identification_unique
+            .machine_identification;
+        let (_, machine_new_closure) = self
+            .type_map
             .values()
             .find(|(ids, _)| ids.contains(&ident)) // 'ids' is the Vec<MachineIdentification>
             .ok_or(anyhow::anyhow!(
                 "[{}::MachineConstructor::new_machine] Machine not found",
                 module_path!()
-            ))?;        
+            ))?;
         (machine_new_closure)(machine_new_params)
     }
 }
@@ -99,7 +103,10 @@ impl MachineRegistry {
 lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
-        mc.register::<Winder2>(vec![Winder2::MACHINE_IDENTIFICATION, Winder2::MACHINE_IDENTIFICATION_7031_SPOOL ]);
+        mc.register::<Winder2>(vec![
+            Winder2::MACHINE_IDENTIFICATION,
+            Winder2::MACHINE_IDENTIFICATION_7031_SPOOL,
+        ]);
 
         #[cfg(feature = "mock-machine")]
         mc.register::<ExtruderV2Mock1>(vec![ExtruderV2Mock1::MACHINE_IDENTIFICATION]);
@@ -135,7 +142,9 @@ lazy_static! {
 
         mc.register::<MotorTestMachine>(vec![MotorTestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<DigitalInputTestMachine>(vec![DigitalInputTestMachine::MACHINE_IDENTIFICATION]);
+        mc.register::<DigitalInputTestMachine>(vec![
+            DigitalInputTestMachine::MACHINE_IDENTIFICATION,
+        ]);
 
         mc.register::<WagoDOTestMachine>(vec![WagoDOTestMachine::MACHINE_IDENTIFICATION]);
 
@@ -143,9 +152,9 @@ lazy_static! {
 
         mc.register::<Wago750_501TestMachine>(vec![Wago750_501TestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<Wago8chDigitalIOTestMachine>(
-            vec![Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION],
-        );
+        mc.register::<Wago8chDigitalIOTestMachine>(vec![
+            Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION,
+        ]);
 
         mc.register::<WagoSerialMachine>(vec![WagoSerialMachine::MACHINE_IDENTIFICATION]);
 

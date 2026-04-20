@@ -25,7 +25,6 @@ export function getVendorProperties(
   return vendorProperties.find((v) => v.id === vendor);
 }
 
-
 export const winder2_spool_7031: MachineProperties = {
   name: "Winder",
   version: "V2_SPOOL_7031",
@@ -103,7 +102,6 @@ export const winder2_spool_7031: MachineProperties = {
     },
   ],
 };
-
 
 export const winder2: MachineProperties = {
   name: "Winder",

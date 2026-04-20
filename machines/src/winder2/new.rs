@@ -52,10 +52,9 @@ pub use winder2_imports::*;
 #[cfg(not(feature = "mock-machine"))]
 use crate::get_ethercat_device;
 
-
 impl Winder2 {
-    fn new_normal(params: &MachineNewParams) -> Result<Self,Error> {
- let hardware = match &params.hardware {
+    fn new_normal(params: &MachineNewParams) -> Result<Self, Error> {
+        let hardware = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,
             _ => {
                 return Err(anyhow::anyhow!(
@@ -440,31 +439,34 @@ impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
 
-        let device_identification = params.device_group.to_vec();        
+        let device_identification = params.device_group.to_vec();
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_duplicates(&device_identification)?;
 
         let machine_ident_unique = match device_identification.get(0) {
-            Some(ident) => ident.device_machine_identification.machine_identification_unique,
-            None => 
+            Some(ident) => {
+                ident
+                    .device_machine_identification
+                    .machine_identification_unique
+            }
+            None => {
                 return Err(anyhow::anyhow!(
                     "[{}::MachineNewTrait/Winder2::new] MachineNewHardware is missing",
                     module_path!()
-                )),
+                ));
+            }
         };
         if machine_ident_unique.machine_identification == Winder2::MACHINE_IDENTIFICATION {
             Self::new_normal(params)
-        }
-        else if machine_ident_unique.machine_identification == Winder2::MACHINE_IDENTIFICATION_7031_SPOOL {
+        } else if machine_ident_unique.machine_identification
+            == Winder2::MACHINE_IDENTIFICATION_7031_SPOOL
+        {
             Self::new_winder_spool_7031(params)
-        }
-        else{
+        } else {
             Err(anyhow::anyhow!(
                 "[{}::MachineNewTrait/Winder2::new] Unexpected MachineIdentification!!!",
                 module_path!()
             ))
         }
-
-       
     }
 }
