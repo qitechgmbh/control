@@ -1,5 +1,4 @@
 use crate::minimal_machines::analog_input_test_machine::AnalogInputTestMachine;
-use crate::minimal_machines::bottlecaps_test_machine::BottlecapsTestMachine;
 use crate::minimal_machines::digital_input_test_machine::DigitalInputTestMachine;
 use crate::minimal_machines::ip20_test_machine::IP20TestMachine;
 use crate::minimal_machines::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine;
@@ -43,7 +42,7 @@ pub type MachineNewClosure =
     Box<dyn Fn(&MachineNewParams) -> Result<Box<dyn Machine>, Error> + Send + Sync>;
 
 pub struct MachineRegistry {
-    type_map: HashMap<TypeId, (MachineIdentification, MachineNewClosure)>,
+    type_map: HashMap<TypeId, (Vec<MachineIdentification>, MachineNewClosure)>,
 }
 
 impl Default for MachineRegistry {
@@ -59,9 +58,9 @@ impl MachineRegistry {
         }
     }
 
-    pub fn register<T: MachineNewTrait + 'static>(
+    pub fn register<T: MachineNewTrait + 'static + Machine>(
         &mut self,
-        machine_identification: MachineIdentification,
+        machine_identification: Vec<MachineIdentification>,
     ) {
         self.type_map.insert(
             TypeId::of::<T>(),
@@ -74,10 +73,9 @@ impl MachineRegistry {
     }
 
     pub fn new_machine(
-        &self,
-        machine_new_params: &MachineNewParams,
+        &self,        
+        machine_new_params: &MachineNewParams
     ) -> Result<Box<dyn Machine>, anyhow::Error> {
-        // get machine identification
         let device_identification =
             &machine_new_params
                 .device_group
@@ -86,23 +84,14 @@ impl MachineRegistry {
                     "[{}::MachineConstructor::new_machine] No device in group",
                     module_path!()
                 ))?;
-
-        // find machine new function by comparing MachineIdentification
-        let (_, machine_new_closure) = self
-            .type_map
+        let ident = device_identification.device_machine_identification.machine_identification_unique.machine_identification;
+        let (_, machine_new_closure) = self.type_map
             .values()
-            .find(|(mi, _)| {
-                mi == &device_identification
-                    .device_machine_identification
-                    .machine_identification_unique
-                    .machine_identification
-            })
+            .find(|(ids, _)| ids.contains(&ident)) // 'ids' is the Vec<MachineIdentification>
             .ok_or(anyhow::anyhow!(
                 "[{}::MachineConstructor::new_machine] Machine not found",
                 module_path!()
-            ))?;
-
-        // call machine new function by reference
+            ))?;        
         (machine_new_closure)(machine_new_params)
     }
 }
@@ -110,66 +99,63 @@ impl MachineRegistry {
 lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
-        mc.register::<Winder2>(Winder2::MACHINE_IDENTIFICATION);
+        mc.register::<Winder2>(vec![Winder2::MACHINE_IDENTIFICATION, Winder2::MACHINE_IDENTIFICATION_7031_SPOOL ]);
 
         #[cfg(feature = "mock-machine")]
-        mc.register::<ExtruderV2Mock1>(ExtruderV2Mock1::MACHINE_IDENTIFICATION);
+        mc.register::<ExtruderV2Mock1>(vec![ExtruderV2Mock1::MACHINE_IDENTIFICATION]);
 
         #[cfg(feature = "mock-machine")]
-        mc.register::<ExtruderV2Mock2>(ExtruderV2Mock2::MACHINE_IDENTIFICATION);
+        mc.register::<ExtruderV2Mock2>(vec![ExtruderV2Mock2::MACHINE_IDENTIFICATION]);
 
         #[cfg(not(feature = "mock-machine"))]
-        mc.register::<ExtruderV2>(ExtruderV2::MACHINE_IDENTIFICATION);
+        mc.register::<ExtruderV2>(vec![ExtruderV2::MACHINE_IDENTIFICATION]);
 
         #[cfg(not(feature = "mock-machine"))]
-        mc.register::<ExtruderV3>(ExtruderV3::MACHINE_IDENTIFICATION);
+        mc.register::<ExtruderV3>(vec![ExtruderV3::MACHINE_IDENTIFICATION]);
 
         #[cfg(feature = "mock-machine")]
-        mc.register::<MockMachine>(MockMachine::MACHINE_IDENTIFICATION);
+        mc.register::<MockMachine>(vec![MockMachine::MACHINE_IDENTIFICATION]);
 
         #[cfg(not(feature = "mock-machine"))]
-        mc.register::<LaserMachine>(LaserMachine::MACHINE_IDENTIFICATION);
+        mc.register::<LaserMachine>(vec![LaserMachine::MACHINE_IDENTIFICATION]);
 
         #[cfg(not(feature = "mock-machine"))]
-        mc.register::<BufferV1>(BufferV1::MACHINE_IDENTIFICATION);
+        mc.register::<BufferV1>(vec![BufferV1::MACHINE_IDENTIFICATION]);
 
         #[cfg(not(feature = "mock-machine"))]
-        mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
+        mc.register::<AquaPathV1>(vec![AquaPathV1::MACHINE_IDENTIFICATION]);
 
-        mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<TestMachine>(vec![TestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<IP20TestMachine>(IP20TestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<IP20TestMachine>(vec![IP20TestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<AnalogInputTestMachine>(vec![AnalogInputTestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<WagoAiTestMachine>(WagoAiTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<WagoAiTestMachine>(vec![WagoAiTestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<MotorTestMachine>(MotorTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<MotorTestMachine>(vec![MotorTestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<DigitalInputTestMachine>(vec![DigitalInputTestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<WagoDOTestMachine>(WagoDOTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<WagoDOTestMachine>(vec![WagoDOTestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<Wago750_531Machine>(Wago750_531Machine::MACHINE_IDENTIFICATION);
+        mc.register::<Wago750_531Machine>(vec![Wago750_531Machine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<Wago750_501TestMachine>(Wago750_501TestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<Wago750_501TestMachine>(vec![Wago750_501TestMachine::MACHINE_IDENTIFICATION]);
 
         mc.register::<Wago8chDigitalIOTestMachine>(
-            Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION,
+            vec![Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION],
         );
 
-        mc.register::<WagoSerialMachine>(WagoSerialMachine::MACHINE_IDENTIFICATION);
+        mc.register::<WagoSerialMachine>(vec![WagoSerialMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
+        mc.register::<TestMachineStepper>(vec![TestMachineStepper::MACHINE_IDENTIFICATION]);
 
-        mc.register::<Wago750_430DiMachine>(Wago750_430DiMachine::MACHINE_IDENTIFICATION);
+        mc.register::<Wago750_430DiMachine>(vec![Wago750_430DiMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<Wago750_460Machine>(Wago750_460Machine::MACHINE_IDENTIFICATION);
+        mc.register::<Wago750_460Machine>(vec![Wago750_460Machine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<Wago750_553Machine>(Wago750_553Machine::MACHINE_IDENTIFICATION);
-
-        mc.register::<BottlecapsTestMachine>(BottlecapsTestMachine::MACHINE_IDENTIFICATION);
-
+        mc.register::<Wago750_553Machine>(vec![Wago750_553Machine::MACHINE_IDENTIFICATION]);
         mc
     };
 }
