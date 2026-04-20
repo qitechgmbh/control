@@ -5,7 +5,7 @@ use machine_implementations::registry::MACHINE_REGISTRY;
 use machine_implementations::{Hardware, IdentifiedEthercat, IdentifiedModbus, MachineHardware, QiTechMachine};
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
 use mock::{get_aquapath_machine_dev_infor, get_aquapath_meta, get_extruder_machine_dev_infor, get_extruder_meta, get_winder_machine_dev_infor, get_winder_meta};
-use qitech_lib::ethercat_hal::{EtherCATThreadChannel, MetaSubdevice, init_ethercat, init_ethercat_mock};
+use qitech_lib::ethercat_hal::{EtherCATThreadChannel, MetaSubdevice};
 use qitech_lib::ethercat_hal::machine_ident_read::MachineDeviceInfo;
 use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
 use qitech_lib::modbus::clients::example_client::ExampleClient;
@@ -105,7 +105,7 @@ impl MainState {
             .filter_map(|info| {
                 let address = info.device_address;
                 hw_map.remove(&address).map(|hw| {
-                    (info, hw.0, hw.1) // This is a 3-tuple
+                    (info, hw.0, hw.1) 
                 })
             })
             .collect();
@@ -147,7 +147,6 @@ fn mock_logic(){
     let state_clone = state.clone();
     rt.spawn(start_socketio_queue(state_clone));
     
-    
     let mut starting_dev_addr = 4096;
     let mut meta_subdevices = vec![];
 
@@ -170,7 +169,7 @@ fn mock_logic(){
     meta_subdevices.extend(metas.subdevices);
     starting_dev_addr = starting_dev_addr + meta_subdevices.len() as u16;
 
-    let eth_control = init_ethercat_mock(meta_subdevices,None);
+    let eth_control = qitech_lib::ethercat_hal::init_ethercat_mock(meta_subdevices,None);
     let mut ecat_handle = eth_control.app_handle;
     let ecat_channel = eth_control.channel;
     let ecat_controller = eth_control.controller;
@@ -218,21 +217,18 @@ fn mock_logic(){
             ecat_controller.clone(),
             main_state.subdevices.clone(),
         );
-
         run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
-
         write_ecat_outputs(
             &mut ecat_handle,
             ecat_controller.clone(),
             main_state.subdevices.clone(),
         );
-
-        
-        std::thread::sleep(Duration::from_micros(100));
+        std::thread::sleep(Duration::from_micros(10));
     }
 
 }
 
+#[cfg(not(feature = "mock"))]
 fn main_logic(){
     let rt = get_async_runtime();
     let state = Arc::new(SharedAppState::new());
@@ -340,10 +336,9 @@ fn main_logic(){
 }
 
 fn main() {
-    //#[cfg(feature = "mock")]
+    #[cfg(feature = "mock")]
     mock_logic();
 
-    //#[cfg(not(feature = "mock"))]
-  //  main_logic();
-    
+    #[cfg(not(feature = "mock"))]
+    main_logic();  
 }
