@@ -5,7 +5,7 @@ import { MachineIdentificationUnique } from "@/machines/types";
 import { useDrywellNamespace } from "./drywellNamespace";
 import { Page } from "@/components/Page";
 
-const drywellImage = "/images/drywell/drywell_machine.png";
+import drywellImage from "/images/drywell/drywell_machine.png";
 
 type LabelSide = "left" | "right";
 
