@@ -52,7 +52,7 @@ impl MachineIdentification {
     pub fn slug(&self) -> String {
         match self.machine {
             x if x == MACHINE_WINDER_V1 => "winder_v1".to_string(),
-            x if x == MACHINE_WINDER_V1_7031_0030_SPOOL => "winder_v1".to_string(),
+            x if x == MACHINE_WINDER_V1_7031_0030_SPOOL => "winder_v1_spool".to_string(),
             x if x == MACHINE_EXTRUDER_V1 => "extruder_v1".to_string(),
             x if x == MACHINE_LASER_V1 => "laser_v1".to_string(),
             x if x == MACHINE_MOCK => "mock".to_string(),

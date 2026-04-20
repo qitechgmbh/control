@@ -29,7 +29,7 @@ export function getVendorProperties(
 export const winder2_spool_7031: MachineProperties = {
   name: "Winder",
   version: "V2_SPOOL_7031",
-  slug: "winder2",
+  slug: "winder2_7031",
   icon: "lu:Disc3",
   machine_identification: {
     vendor: VENDOR_QITECH,
