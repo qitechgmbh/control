@@ -22,6 +22,9 @@ use crate::{
     MACHINE_DRYWELL_V1, SerialDevice, SerialDeviceNew, SerialDeviceNewParams, VENDOR_QITECH,
 };
 
+const COIL_START_STOP: u16 = 272; // Coil 273 (0-indexed): rising edge starts/stops dryer
+const COIL_SAVE_DATA: u16 = 273; // Coil 274 (0-indexed): rising edge saves parameter changes
+
 pub enum DrywellWriteCommand {
     WriteCoil { address: u16, value: bool },
     WriteHoldingRegister { address: u16, value: u16 },
@@ -144,25 +147,25 @@ impl Drywell {
     pub async fn set_start_stop(&self) -> Result<(), anyhow::Error> {
         self.cmd_sender
             .send(DrywellWriteCommand::WriteCoil {
-                address: 272,
+                address: COIL_START_STOP,
                 value: true,
             })
             .await?;
         self.cmd_sender
             .send(DrywellWriteCommand::WriteCoil {
-                address: 272,
+                address: COIL_START_STOP,
                 value: false,
             })
             .await?;
         self.cmd_sender
             .send(DrywellWriteCommand::WriteCoil {
-                address: 273,
+                address: COIL_SAVE_DATA,
                 value: true,
             })
             .await?;
         self.cmd_sender
             .send(DrywellWriteCommand::WriteCoil {
-                address: 273,
+                address: COIL_SAVE_DATA,
                 value: false,
             })
             .await?;
@@ -272,23 +275,7 @@ impl Drywell {
                     .map(|d| d.target_temperature)
                     .unwrap_or(0.0)
             };
-            let target_temp = {
-                let mut temp = prev_target;
-                if port.write_all(&hr_request_buffer).is_ok() {
-                    std::thread::sleep(Duration::from_millis(100));
-                    if let Ok(Some(raw)) = modbus::receive_data_modbus(&mut *port) {
-                        if let Ok(hr_resp) = ModbusResponse::try_from(raw) {
-                            let regs = parse_registers(&hr_resp.data);
-                            if let Some(&val) = regs.first() {
-                                if val != u16::MAX {
-                                    temp = val as f64;
-                                }
-                            }
-                        }
-                    }
-                }
-                temp
-            };
+            let target_temp = read_target_temp(&mut port, &hr_request_buffer, prev_target);
 
             if let Ok(Some(response)) = response {
                 let regs = parse_registers(&response.data);
@@ -357,6 +344,24 @@ fn execute_write_command(port: &mut Box<dyn SerialPort>, cmd: DrywellWriteComman
 
     std::thread::sleep(Duration::from_millis(200));
     let _ = modbus::receive_data_modbus(&mut **port);
+}
+
+fn read_target_temp(port: &mut Box<dyn SerialPort>, request: &[u8], fallback: f64) -> f64 {
+    if port.write_all(request).is_err() {
+        return fallback;
+    }
+    std::thread::sleep(Duration::from_millis(100));
+    let Ok(Some(raw)) = modbus::receive_data_modbus(&mut **port) else {
+        return fallback;
+    };
+    let Ok(resp) = ModbusResponse::try_from(raw) else {
+        return fallback;
+    };
+    let regs = parse_registers(&resp.data);
+    match regs.first() {
+        Some(&val) if val != u16::MAX => val as f64,
+        _ => fallback,
+    }
 }
 
 fn parse_registers(data: &[u8]) -> Vec<u16> {
