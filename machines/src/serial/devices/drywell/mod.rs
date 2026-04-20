@@ -303,7 +303,10 @@ impl Drywell {
                         temp_fan_inlet: regs[5] as f64 / 10.0,
                         pwm_fan1: regs.get(6).map(|&v| v as f64).unwrap_or(0.0),
                         pwm_fan2: regs.get(7).map(|&v| v as f64).unwrap_or(0.0),
-                        temp_dew_point: regs.get(12).map(|&v| v as i16 as f64 / 10.0).unwrap_or(0.0),
+                        temp_dew_point: regs
+                            .get(12)
+                            .map(|&v| v as i16 as f64 / 10.0)
+                            .unwrap_or(0.0),
                         alarm: regs[14],
                         warning: regs[15],
                         temp_return_air: regs[19] as f64 / 10.0,
