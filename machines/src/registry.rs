@@ -9,6 +9,7 @@ use crate::minimal_machines::wago_750_531_machine::Wago750_531Machine;
 use crate::minimal_machines::wago_750_553_machine::Wago750_553Machine;
 use crate::minimal_machines::wago_ai_test_machine::WagoAiTestMachine;
 use crate::minimal_machines::wago_do_test_machine::WagoDOTestMachine;
+use crate::minimal_machines::bottlecaps_test_machine::BottlecapsTestMachine;
 use crate::wago_serial_machine::WagoSerialMachine;
 #[cfg(feature = "mock-machine")]
 use crate::{
@@ -157,14 +158,11 @@ lazy_static! {
         ]);
 
         mc.register::<WagoSerialMachine>(vec![WagoSerialMachine::MACHINE_IDENTIFICATION]);
-
         mc.register::<TestMachineStepper>(vec![TestMachineStepper::MACHINE_IDENTIFICATION]);
-
         mc.register::<Wago750_430DiMachine>(vec![Wago750_430DiMachine::MACHINE_IDENTIFICATION]);
-
         mc.register::<Wago750_460Machine>(vec![Wago750_460Machine::MACHINE_IDENTIFICATION]);
-
         mc.register::<Wago750_553Machine>(vec![Wago750_553Machine::MACHINE_IDENTIFICATION]);
+        mc.register::<BottlecapsTestMachine>(vec![BottlecapsTestMachine::MACHINE_IDENTIFICATION]);
         mc
     };
 }
