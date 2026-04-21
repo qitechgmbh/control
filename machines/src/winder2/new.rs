@@ -52,6 +52,7 @@ pub use winder2_imports::*;
 #[cfg(not(feature = "mock-machine"))]
 use crate::get_ethercat_device;
 
+#[cfg(not(feature = "mock-machine"))]
 impl Winder2 {
     fn new_normal(params: &MachineNewParams) -> Result<Self, Error> {
         let hardware = match &params.hardware {
