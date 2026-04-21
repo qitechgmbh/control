@@ -287,7 +287,7 @@ impl Winder2 {
                         ..Default::default()
                     },
                     stm_motor: StmMotorConfiguration {
-                        max_current: 2800,
+                        max_current: 2700,
                         ..Default::default()
                     },
                     ..Default::default()
@@ -352,7 +352,7 @@ impl Winder2 {
                         ..Default::default()
                     },
                     stm_motor: StmMotorConfiguration {
-                        max_current: 2800,
+                        max_current: 2700,
                         ..Default::default()
                     },
                     pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
