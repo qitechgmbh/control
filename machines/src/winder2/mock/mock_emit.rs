@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use super::Winder2;
+use crate::MACHINE_WINDER_V1_7031_0030_SPOOL;
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
 use crate::winder2::Winder2Mode;
 use crate::winder2::api::LiveValuesEvent;
@@ -10,14 +11,13 @@ use crate::winder2::spool_speed_controller::SpoolSpeedControllerType;
 use crate::{MACHINE_WINDER_V1, VENDOR_QITECH};
 use control_core::socketio::event::BuildEvent;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use crate::MACHINE_WINDER_V1_7031_0030_SPOOL;
 
 impl Winder2 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_WINDER_V1,
     };
-    
+
     pub const MACHINE_IDENTIFICATION_7031_SPOOL: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_WINDER_V1_7031_0030_SPOOL,
