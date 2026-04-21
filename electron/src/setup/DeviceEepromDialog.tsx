@@ -469,11 +469,11 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                 <FormItem>
                   <FormLabel className="text-base">Device Role</FormLabel>
                   <FormControl>
-                      <Select 
-          onValueChange={field.onChange} 
-          defaultValue={field.value}
-          value={field.value}
-        >
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
                       <SelectTrigger className="h-12 min-w-48 text-base">
                         <SelectValue placeholder="Device Role" />
                       </SelectTrigger>
