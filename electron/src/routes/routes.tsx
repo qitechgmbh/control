@@ -20,6 +20,13 @@ import { Winder2SettingPage } from "@/machines/winder/winder2/Winder2Settings";
 import { Winder2GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
 import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
 
+import { Winder2_7031Page } from "@/machines/winder/winder2_7031/Winder2Page";
+import { Winder2_7031ControlPage } from "@/machines/winder/winder2_7031/Winder2_7031_ControlPage";
+import { Winder2_7031ManualPage } from "@/machines/winder/winder2_7031/Winder2_7031_Manual";
+import { Winder2_7031SettingPage } from "@/machines/winder/winder2_7031/Winder2_7031_Settings";
+import { Winder2_7031GraphsPage } from "@/machines/winder/winder2_7031/Winder2_7031_Graphs";
+import { Winder2_7031PresetsPage } from "@/machines/winder/winder2_7031/Winder2_7031_PresetsPage";
+
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
 import { Extruder2SettingsPage } from "@/machines/extruder/extruder2/Extruder2Settings";
@@ -328,6 +335,42 @@ export const winder2SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "winder2/$serial",
   component: () => <Winder2Page />,
+});
+
+export const winder2_7031SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "winder2_7031/$serial",
+  component: () => <Winder2_7031Page />,
+});
+
+export const winder2_7031ControlRoute = createRoute({
+  getParentRoute: () => winder2_7031SerialRoute,
+  path: "control",
+  component: () => <Winder2_7031ControlPage />,
+});
+
+export const winder2_7031ManualRoute = createRoute({
+  getParentRoute: () => winder2_7031SerialRoute,
+  path: "manual",
+  component: () => <Winder2_7031ManualPage />,
+});
+
+export const winder2_7031SettingsRoute = createRoute({
+  getParentRoute: () => winder2_7031SerialRoute,
+  path: "settings",
+  component: () => <Winder2_7031SettingPage />,
+});
+
+export const winder2_7031GraphsRoute = createRoute({
+  getParentRoute: () => winder2_7031SerialRoute,
+  path: "graphs",
+  component: () => <Winder2_7031GraphsPage />,
+});
+
+export const winder2_7031PresetsRoute = createRoute({
+  getParentRoute: () => winder2_7031SerialRoute,
+  path: "presets",
+  component: () => <Winder2_7031PresetsPage />,
 });
 
 export const winder2ControlRoute = createRoute({
@@ -667,6 +710,14 @@ export const rootTree = RootRoute.addChildren([
         aquapath1ControlRoute,
         aquapath1GraphRoute,
         aquapath1SettingsRoute,
+      ]),
+
+      winder2_7031SerialRoute.addChildren([
+        winder2_7031ControlRoute,
+        winder2_7031ManualRoute,
+        winder2_7031SettingsRoute,
+        winder2_7031GraphsRoute,
+        winder2_7031PresetsRoute,
       ]),
 
       winder2SerialRoute.addChildren([

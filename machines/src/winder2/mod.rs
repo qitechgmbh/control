@@ -50,7 +50,8 @@ pub use winder2_imports::*;
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
-    MACHINE_WINDER_V1, MachineData, MachineMessage, VENDOR_QITECH,
+    MACHINE_WINDER_V1, MACHINE_WINDER_V1_7031_0030_SPOOL, MachineData, MachineMessage,
+    VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
 
@@ -181,6 +182,10 @@ impl Winder2 {
         machine: MACHINE_WINDER_V1,
     };
 
+    pub const MACHINE_IDENTIFICATION_7031_SPOOL: MachineIdentification = MachineIdentification {
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_WINDER_V1_7031_0030_SPOOL,
+    };
     /// Validates that traverse limits maintain proper constraints:
     /// - Inner limit must be smaller than outer limit
     /// - At least 0.9mm difference between inner and outer limits
