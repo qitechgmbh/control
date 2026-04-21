@@ -290,6 +290,7 @@ impl Winder2 {
                         max_current: 2700,
                         ..Default::default()
                     },
+                    pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
                     ..Default::default()
                 };
                 device
