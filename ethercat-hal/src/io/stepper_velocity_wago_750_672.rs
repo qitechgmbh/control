@@ -12,24 +12,63 @@ use crate::devices::wago_modules::wago_750_672::{InitState, Wago750_672};
 pub struct StepperVelocityWago750672 {
     pub device: Arc<RwLock<Wago750_672>>,
     pub state: InitState,
+    /// Raw WAGO velocity register value written into rxpdo.velocity.
     pub target_velocity: i16,
+    /// Logical target speed in FULL steps per second.
+    pub target_speed_fullsteps_per_second: i32,
     pub target_acceleration: u16,
     pub enabled: bool,
     pub freq_range_sel: u8,
     pub acc_range_sel: u8,
+    /// Logical position offset in MICROSTEPS.
+    pub position_offset: i128,
+    pub speed_scale: f64,
+    pub direction_multiplier: i8,
+    pub motor_full_steps_per_rev: u16,
+    pub microsteps_per_full_step: u16,
+    pub restart_on_velocity_change: bool,
+    pub freq_div_config: i32,
 }
 
 impl StepperVelocityWago750672 {
     pub fn new(device: Arc<RwLock<Wago750_672>>) -> Self {
+        {
+            let mut dev = block_on(device.write());
+            dev.desired_command = C1Command::SpeedControl;
+            dev.start_requested = true;
+        }
+
         Self {
             device,
             state: InitState::Off,
             target_velocity: 0,
+            target_speed_fullsteps_per_second: 0,
             target_acceleration: 10000,
             enabled: false,
             freq_range_sel: 0,
             acc_range_sel: 0,
+            position_offset: 0,
+            speed_scale: 1.0,
+            direction_multiplier: 1,
+            motor_full_steps_per_rev: 200,
+            microsteps_per_full_step: 64,
+            restart_on_velocity_change: true,
+            freq_div_config: 200,
         }
+    }
+
+    pub fn set_microsteps_per_full_step(&mut self, microsteps: u16) {
+        if self.enabled || microsteps == 0 {
+            return;
+        }
+        self.microsteps_per_full_step = microsteps;
+    }
+
+    pub fn set_motor_full_steps_per_rev(&mut self, steps: u16) {
+        if self.enabled || steps == 0 {
+            return;
+        }
+        self.motor_full_steps_per_rev = steps;
     }
 
     pub fn set_enabled(&mut self, enabled: bool) {
@@ -43,14 +82,34 @@ impl StepperVelocityWago750672 {
 
         self.enabled = enabled;
         if enabled {
+            let mut dev = block_on(self.device.write());
+            dev.rxpdo.velocity = self.target_velocity.clamp(-25000, 25000);
+            dev.rxpdo.acceleration = self.target_acceleration;
+            dev.start_requested = self.target_velocity != 0;
+            drop(dev);
             self.change_init_state(InitState::Enable);
         } else {
             self.change_init_state(InitState::Off);
+            self.target_velocity = 0;
+            self.target_speed_fullsteps_per_second = 0;
+            self.position_offset = 0;
             self.write_control_byte(ControlByte::C1, 0b00000000);
+            let mut dev = block_on(self.device.write());
+            dev.initialized = false;
+            dev.desired_command = C1Command::SpeedControl;
+            dev.start_requested = false;
+            dev.rxpdo.velocity = 0;
+            dev.rxpdo.control_byte2 &= !(C2Flag::ErrorQuit as u8);
+            dev.rxpdo.control_byte3 &= !(C3Flag::ResetQuit as u8);
         }
     }
 
     pub fn set_velocity(&mut self, velocity: i16) {
+        self.set_velocity_register(velocity);
+    }
+
+    pub fn set_velocity_register(&mut self, velocity: i16) {
+        let previous_velocity = self.target_velocity;
         self.target_velocity = velocity;
 
         let mut dev = block_on(self.device.write());
@@ -59,9 +118,42 @@ impl StepperVelocityWago750672 {
         // the min max for the controller
         dev.rxpdo.velocity = velocity.clamp(-25000, 25000);
 
-        if dev.initialized {
-            dev.state = InitState::StartPulseStart;
+        let s1 = StatusByteS1::from_bits(dev.txpdo.status_byte1);
+        let start_ack = s1.has_flag(S1Flag::StartAck);
+        let velocity_changed = velocity != previous_velocity;
+        let needs_start_edge = self.restart_on_velocity_change
+            || (previous_velocity == 0 && velocity != 0)
+            || (!start_ack && velocity != 0);
+
+        if self.enabled && velocity_changed && needs_start_edge {
+            dev.start_requested = true;
+            if dev.initialized {
+                dev.state = if start_ack {
+                    InitState::StartPulseEnd
+                } else {
+                    InitState::StartPulseStart
+                };
+                self.state = dev.state.clone();
+            }
         }
+    }
+
+    pub fn set_speed(&mut self, steps_per_second: f64) {
+        self.request_speed_mode();
+        self.target_speed_fullsteps_per_second = steps_per_second.round() as i32;
+
+        let directed_fullsteps_per_second =
+            steps_per_second * self.speed_scale * f64::from(self.direction_multiplier);
+        let directed_microsteps_per_second =
+            directed_fullsteps_per_second * f64::from(self.microsteps_per_full_step);
+        let velocity_register =
+            self.microsteps_per_second_to_velocity_register(directed_microsteps_per_second);
+
+        self.set_velocity_register(velocity_register);
+    }
+
+    pub fn get_speed(&self) -> i32 {
+        self.target_speed_fullsteps_per_second
     }
 
     pub fn set_acceleration(&mut self, acceleration: u16) {
@@ -72,14 +164,12 @@ impl StepperVelocityWago750672 {
         dev.rxpdo.acceleration = acceleration;
     }
 
-    #[allow(dead_code)]
-    fn get_actual_velocity(&self) -> i16 {
+    pub fn get_actual_velocity_register(&self) -> i16 {
         let dev = block_on(self.device.read());
         dev.txpdo.actual_velocity
     }
 
-    #[allow(dead_code)]
-    fn get_target_acceleration(&self) -> u16 {
+    pub fn get_target_acceleration(&self) -> u16 {
         let dev = block_on(self.device.read());
         dev.rxpdo.acceleration
     }
@@ -106,6 +196,142 @@ impl StepperVelocityWago750672 {
             .with_acc_range(factor)
             .bits();
         dev.rxpdo.control_byte2 = c2;
+    }
+
+    pub fn set_speed_scale(&mut self, speed_scale: f64) {
+        self.speed_scale = speed_scale;
+    }
+
+    pub fn set_direction_multiplier(&mut self, direction_multiplier: i8) {
+        self.direction_multiplier = if direction_multiplier < 0 { -1 } else { 1 };
+    }
+
+    pub fn set_restart_on_velocity_change(&mut self, restart_on_velocity_change: bool) {
+        self.restart_on_velocity_change = restart_on_velocity_change;
+    }
+
+    pub fn set_freq_div_config(&mut self, freq_div_config: i32) {
+        if self.enabled || freq_div_config <= 0 {
+            return;
+        }
+        self.freq_div_config = freq_div_config;
+    }
+
+    pub fn get_effective_freq_prescaler(&self) -> i32 {
+        match self.freq_range_sel {
+            0 => self.freq_div_config.max(1),
+            1 => 80,
+            2 => 20,
+            3 => 4,
+            _ => self.freq_div_config.max(1),
+        }
+    }
+
+    pub fn request_speed_mode(&mut self) {
+        let mut dev = block_on(self.device.write());
+        let already_in_speed_mode =
+            dev.desired_command as u8 == C1Command::SpeedControl as u8 && !dev.start_requested;
+        if already_in_speed_mode {
+            return;
+        }
+
+        let should_restart =
+            !dev.initialized || dev.desired_command as u8 != C1Command::SpeedControl as u8;
+        dev.desired_command = C1Command::SpeedControl;
+        dev.start_requested = should_restart;
+        if self.enabled && should_restart {
+            dev.initialized = false;
+            dev.state = InitState::SetMode;
+            self.state = InitState::SetMode;
+        }
+    }
+
+    pub fn request_fast_stop(&mut self) {
+        self.target_velocity = 0;
+        self.target_speed_fullsteps_per_second = 0;
+        let mut dev = block_on(self.device.write());
+        dev.start_requested = false;
+        dev.rxpdo.velocity = 0;
+        dev.state = InitState::Running;
+    }
+
+    pub fn clear_fast_stop(&mut self) {
+        let mut dev = block_on(self.device.write());
+        dev.rxpdo.control_byte1 |= C1Flag::Stop2N as u8;
+    }
+
+    fn microsteps_per_second_to_velocity_register(&self, microsteps_per_second: f64) -> i16 {
+        let prescaler = f64::from(self.get_effective_freq_prescaler());
+        let register = (microsteps_per_second * prescaler / 80.0).round();
+        register.clamp(-25000.0, 25000.0) as i16
+    }
+
+    fn velocity_register_to_microsteps_per_second(&self, velocity_register: i16) -> f64 {
+        let prescaler = f64::from(self.get_effective_freq_prescaler());
+        f64::from(velocity_register) * 80.0 / prescaler
+    }
+
+    pub fn velocity_register_to_steps_per_second(&self, velocity_register: i16) -> f64 {
+        self.velocity_register_to_microsteps_per_second(velocity_register)
+            / f64::from(self.microsteps_per_full_step)
+    }
+
+    pub fn get_actual_speed_steps_per_second(&self) -> f64 {
+        self.velocity_register_to_steps_per_second(self.get_actual_velocity_register())
+    }
+
+    pub fn get_s3_bit0(&self) -> bool {
+        let dev = block_on(self.device.read());
+        StatusByteS3::from_bits(dev.txpdo.status_byte3).has_flag(S3Flag::Input1)
+    }
+
+    pub fn get_status_byte1(&self) -> u8 {
+        self.read_status_byte(StatusByte::S1)
+    }
+
+    pub fn get_status_byte2(&self) -> u8 {
+        self.read_status_byte(StatusByte::S2)
+    }
+
+    pub fn get_status_byte3(&self) -> u8 {
+        self.read_status_byte(StatusByte::S3)
+    }
+
+    pub fn get_control_byte1(&self) -> u8 {
+        let dev = block_on(self.device.read());
+        dev.rxpdo.control_byte1
+    }
+
+    pub fn get_control_byte2(&self) -> u8 {
+        let dev = block_on(self.device.read());
+        dev.rxpdo.control_byte2
+    }
+
+    pub fn get_control_byte3(&self) -> u8 {
+        let dev = block_on(self.device.read());
+        dev.rxpdo.control_byte3
+    }
+
+    pub fn get_raw_position(&self) -> i128 {
+        let dev = block_on(self.device.read());
+        decode_i24(
+            dev.txpdo.position_l,
+            dev.txpdo.position_m,
+            dev.txpdo.position_h,
+        ) as i128
+    }
+
+    pub fn get_position(&self) -> i128 {
+        self.get_raw_position() + self.position_offset
+    }
+
+    pub fn set_position(&mut self, position: i128) {
+        self.position_offset = position - self.get_raw_position();
+    }
+
+    pub fn get_s1_bit3_speed_mode_ack(&self) -> bool {
+        let s1 = StatusByteS1::from_bits(self.get_status_byte1());
+        (s1.bits() & (C1Command::SpeedControl as u8)) == C1Command::SpeedControl as u8
     }
 
     fn change_init_state(&mut self, state: InitState) {
@@ -138,6 +364,15 @@ impl StepperVelocityWago750672 {
     }
 }
 
+fn decode_i24(l: u8, m: u8, h: u8) -> i32 {
+    let raw = (l as u32) | ((m as u32) << 8) | ((h as u32) << 16);
+    if (raw & 0x0080_0000) != 0 {
+        (raw | 0xFF00_0000) as i32
+    } else {
+        raw as i32
+    }
+}
+
 // The Different Control Bytes set control the stepper controller
 // by setting and resetting specific bits.
 //
@@ -157,7 +392,7 @@ pub enum C1Flag {
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum C1Command {
     Idle = 0b0000_0000,
     SinglePosition = 0b0000_1000,

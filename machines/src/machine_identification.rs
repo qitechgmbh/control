@@ -52,6 +52,7 @@ impl MachineIdentification {
     pub fn slug(&self) -> String {
         match self.machine {
             x if x == MACHINE_WINDER_V1 => "winder_v1".to_string(),
+            x if x == MACHINE_WAGO_WINDER_V1 => "wago_winder".to_string(),
             x if x == MACHINE_EXTRUDER_V1 => "extruder_v1".to_string(),
             x if x == MACHINE_LASER_V1 => "laser_v1".to_string(),
             x if x == MACHINE_MOCK => "mock".to_string(),
@@ -68,7 +69,7 @@ impl MachineIdentification {
             x if x == WAGO_750_430_DI_MACHINE => "wago_750_430_di_machine".to_string(),
             x if x == WAGO_750_531_MACHINE => "wago_750_531_machine".to_string(),
 
-            _ => unreachable!("Unknown machine id"),
+            _ => unreachable!("Unknown machine id {}", self.machine),
         }
     }
 }
@@ -188,6 +189,7 @@ use crate::MACHINE_EXTRUDER_V2;
 use crate::MACHINE_LASER_V1;
 use crate::MACHINE_MOCK;
 use crate::MACHINE_WAGO_POWER_V1;
+use crate::MACHINE_WAGO_WINDER_V1;
 use crate::MACHINE_WINDER_V1;
 use crate::TEST_MACHINE;
 use crate::TEST_MACHINE_STEPPER;

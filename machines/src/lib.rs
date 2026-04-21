@@ -29,6 +29,7 @@ pub mod registry;
 pub mod serial;
 pub mod wago_power;
 pub mod wago_serial_machine;
+pub mod wago_winder;
 pub mod winder2;
 
 mod machine_data;
@@ -36,6 +37,7 @@ pub use machine_data::MachineData;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
+pub const MACHINE_WAGO_WINDER_V1: u16 = 0x0048;
 pub const MACHINE_EXTRUDER_V1: u16 = 0x0004;
 pub const MACHINE_LASER_V1: u16 = 0x0006;
 pub const MACHINE_MOCK: u16 = 0x0007;

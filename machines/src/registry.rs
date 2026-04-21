@@ -10,6 +10,7 @@ use crate::minimal_machines::wago_750_553_machine::Wago750_553Machine;
 use crate::minimal_machines::wago_ai_test_machine::WagoAiTestMachine;
 use crate::minimal_machines::wago_do_test_machine::WagoDOTestMachine;
 use crate::wago_serial_machine::WagoSerialMachine;
+use crate::wago_winder::WagoWinder;
 #[cfg(feature = "mock-machine")]
 use crate::{
     extruder1::mock::ExtruderV2 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
@@ -166,6 +167,8 @@ lazy_static! {
         mc.register::<Wago750_460Machine>(Wago750_460Machine::MACHINE_IDENTIFICATION);
 
         mc.register::<Wago750_553Machine>(Wago750_553Machine::MACHINE_IDENTIFICATION);
+
+        mc.register::<WagoWinder>(WagoWinder::MACHINE_IDENTIFICATION);
         mc
     };
 }
