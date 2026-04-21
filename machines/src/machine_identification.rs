@@ -69,7 +69,7 @@ impl MachineIdentification {
             x if x == WAGO_750_430_DI_MACHINE => "wago_750_430_di_machine".to_string(),
             x if x == WAGO_750_531_MACHINE => "wago_750_531_machine".to_string(),
             x if x == TEST_MACHINE_BOTTLECAPS => "bottlecaps_test_machine".to_string(),
-            _ => unreachable!("Unknown machine id {}",self.machine),
+            _ => unreachable!("Unknown machine id {}", self.machine),
         }
     }
 }

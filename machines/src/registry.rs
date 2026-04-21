@@ -1,4 +1,5 @@
 use crate::minimal_machines::analog_input_test_machine::AnalogInputTestMachine;
+use crate::minimal_machines::bottlecaps_test_machine::BottlecapsTestMachine;
 use crate::minimal_machines::digital_input_test_machine::DigitalInputTestMachine;
 use crate::minimal_machines::ip20_test_machine::IP20TestMachine;
 use crate::minimal_machines::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine;
@@ -9,7 +10,6 @@ use crate::minimal_machines::wago_750_531_machine::Wago750_531Machine;
 use crate::minimal_machines::wago_750_553_machine::Wago750_553Machine;
 use crate::minimal_machines::wago_ai_test_machine::WagoAiTestMachine;
 use crate::minimal_machines::wago_do_test_machine::WagoDOTestMachine;
-use crate::minimal_machines::bottlecaps_test_machine::BottlecapsTestMachine;
 use crate::wago_serial_machine::WagoSerialMachine;
 #[cfg(feature = "mock-machine")]
 use crate::{
