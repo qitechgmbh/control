@@ -284,6 +284,7 @@ impl Winder2 {
                 let el7031_0030_config = EL7031_0030Configuration {
                     stm_features: el7031_0030::coe::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
+                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps2000,
                         ..Default::default()
                     },
                     stm_motor: StmMotorConfiguration {
