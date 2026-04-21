@@ -10,11 +10,17 @@ use crate::winder2::spool_speed_controller::SpoolSpeedControllerType;
 use crate::{MACHINE_WINDER_V1, VENDOR_QITECH};
 use control_core::socketio::event::BuildEvent;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
+use crate::MACHINE_WINDER_V1_7031_0030_SPOOL;
 
 impl Winder2 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_WINDER_V1,
+    };
+    
+    pub const MACHINE_IDENTIFICATION_7031_SPOOL: MachineIdentification = MachineIdentification {
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_WINDER_V1_7031_0030_SPOOL,
     };
 
     pub fn stop_or_pull_spool_reset(&mut self, _now: Instant) {}
