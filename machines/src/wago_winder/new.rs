@@ -90,13 +90,13 @@ impl MachineNewTrait for WagoWinder {
             }
             coupler.init_slot_modules(wago_750_354.1);
 
+            let wago_750_501 = get_slot_device::<Wago750_501>(&coupler, 0, "Wago 750-501").await?;
             let traverse_671 =
-                get_slot_device::<Wago750_671>(&coupler, 0, "traverse Wago 750-671").await?;
+                get_slot_device::<Wago750_671>(&coupler, 1, "traverse Wago 750-671").await?;
             let puller_672 =
-                get_slot_device::<Wago750_672>(&coupler, 1, "puller Wago 750-672").await?;
+                get_slot_device::<Wago750_672>(&coupler, 2, "puller Wago 750-672").await?;
             let spool_672 =
-                get_slot_device::<Wago750_672>(&coupler, 2, "spool Wago 750-672").await?;
-            let wago_750_501 = get_slot_device::<Wago750_501>(&coupler, 3, "Wago 750-501").await?;
+                get_slot_device::<Wago750_672>(&coupler, 3, "spool Wago 750-672").await?;
             let wago_750_467 = get_slot_device::<Wago750_467>(&coupler, 4, "Wago 750-467").await?;
             drop(coupler);
 
