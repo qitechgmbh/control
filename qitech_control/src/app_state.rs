@@ -18,9 +18,7 @@ use machine_implementations::{
         QiTechMachineIdentificationUnique,
     },
 };
-use qitech_lib::ethercat_hal::{
-    StandardEtherCATController, machine_ident_read::MachineDeviceInfo
-};
+use qitech_lib::ethercat_hal::{StandardEtherCATController, machine_ident_read::MachineDeviceInfo};
 use socketioxide::{SocketIo, extract::SocketRef};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{
@@ -76,7 +74,7 @@ impl SharedAppState {
                 None => (),
             };
 
-            guard.push(                 
+            guard.push(
                 EtherCatDeviceMetaData {
                     configured_address: dev.device_address,
                     name: dev.get_name()?,
@@ -118,13 +116,12 @@ impl SharedAppState {
         drop(guard);
     }
 
-    pub async fn send_machines_event(&self) -> Result<(), anyhow::Error> {
+    pub async fn send_machines_event(&self) {
         let event = MachinesEventBuilder().build(self.get_machines_meta().await);
         let mut guard = self.socketio_setup.namespaces.write().await;
         let main_namespace = &mut guard.main_namespace;
         main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
         drop(guard);
-        Ok(())
     }
 
     pub async fn get_machines_meta(&self) -> Vec<MachineObj> {
