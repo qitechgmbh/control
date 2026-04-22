@@ -2,7 +2,7 @@ use bitvec::{order::Lsb0, slice::BitSlice};
 use machine_implementations::QiTechMachine;
 use qitech_lib::{
     ethercat_hal::{
-        StandardEtherCATAppHandle, StandardEtherCATController, devices::EthercatDevice
+        StandardEtherCATAppHandle, StandardEtherCATController, devices::EthercatDevice,
     },
     machines::MachineDataRegistry,
 };
