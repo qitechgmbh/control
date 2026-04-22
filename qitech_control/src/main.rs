@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
 use machine_implementations::laser::LaserMachine;
@@ -18,7 +19,9 @@ use qitech_lib::{
     ethercat_hal::devices::{EthercatDevice, device_from_subdevice_identity_rc},
     machines::MachineDataRegistry,
 };
+use serde_json::Value;
 
+use std::fs;
 use std::{
     cell::RefCell,
     collections::HashMap,
@@ -193,6 +196,20 @@ fn main_logic(interface: &str) {
 
     let mut idents = vec![];
 
+    match read_saved_identifications() {
+        Ok(mut saved_idents) => {
+            main_state.generate_machine_hardware_from_ethercat(
+                &saved_idents,
+                &mut devices_by_address,
+                ecat_channel.clone(),
+            );
+            idents.append(&mut saved_idents);
+        }
+        Err(e) => {
+            println!("Failed to read device identifications: {:?}", e);
+        }
+    };
+
     match ecat_channel.read_device_identifications() {
         Ok(mut eeprom_idents) => {
             main_state.generate_machine_hardware_from_ethercat(
@@ -258,6 +275,35 @@ fn main_logic(interface: &str) {
 
         std::thread::sleep(Duration::from_micros(100));
     }
+}
+
+fn read_saved_identifications() -> Result<Vec<MachineDeviceInfo>> {
+    let dir =
+        std::env::var("XDG_DATA_HOME")
+        .or(std::env::var("HOME"))
+        .unwrap_or(".".to_string());
+
+    let saved_mappings_path = dir + "/qitech.json";
+
+    if !fs::exists(&saved_mappings_path)? {
+        return Ok(vec![]);
+    }
+
+    let json = fs::read_to_string(saved_mappings_path)?;
+    let value: Value = serde_json::from_str(&json)?;
+
+    let infos = value.as_array().expect("Root value is not an array").iter().map(|value| {
+        MachineDeviceInfo {
+            role: value["role"].as_u64().unwrap_or(0) as u16,
+            machine_id: value["machine_id"].as_u64().unwrap_or(0) as u16,
+            machine_vendor: value["machine_vendor"].as_u64().unwrap_or(0) as u16,
+            machine_serial: value["machine_serial"].as_u64().unwrap_or(0) as u16,
+            device_address: value["device_address"].as_u64().expect("No device address given") as u16,
+        }
+    })
+    .collect();
+
+    Ok(infos)
 }
 
 fn main() {
