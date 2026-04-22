@@ -656,7 +656,54 @@ Appliances with this logo on the packaging or on the appliance must be disposed 
 <br>
 <br>
 
-# 3 Hazard warning and information on Residual risks
+# 3 Inverter Parameterization
+
+## 3.1 Motor Constants Extruder V2
+The following is a table that shows which Registers need to be set on the Inverter for the safe operation of the Motor.
+
+| Parameter number (Pr) | Name                         | Value         |
+| --------------------- | ---------------------------- | ------------- |
+| `71`                  | Applied Motor                | 0             |
+| `80`                  | Motor Capacity               | 15 (1.5 kw)   |
+| `96`                  | Auto tuning setting/status   | 1             |
+| `9`                   | Electronic Thermal O/L Relay | 3.30 (Ampere) |
+| `3`                   | Base frequency               | 5000 (50 Hz)  |
+| `19`                  | Base frequency voltage       | 400 (Volt)    |
+
+
+## 3.2 Motor Constants ExtruderV3
+The following is a table that shows which Registers need to be set on the Inverter for the safe operation of the Motor.
+
+| Parameter number (Pr) | Name                         | Value         |
+| --------------------- | ---------------------------- | ------------- |
+| `71`                  | Applied Motor                | 0             |
+| `80`                  | Motor Capacity               | 22 (2.2 kw)   |
+| `96`                  | Auto tuning setting/status   | 1             |
+| `9`                   | Electronic Thermal O/L Relay | 4.40 (Ampere) |
+| `3`                   | Base frequency               | 5000 (50 Hz)  |
+| `19`                  | Base frequency voltage       | 380 (Volt)    |
+
+## 3.3 All Settings needed for the Inverter Communication/Operation with ExtruderV2 (same as ExtruderV3)
+
+The Following settings are required to get the inverter Communication and Operation working properly
+| Parameter Number (Pr) | Value | Description |
+| --------------------- | ----- | -------------------------------------------------------------------------------------------- |
+| `Pr. 78` | 0 | Allows Reverse Rotation |
+| `Pr. 79` | 0 | Operation Mode Selection |
+| `Pr. 117` | 1 | Station Number (Slave Number) |
+| `Pr. 118` | 192 | Baudrate (192 → 19200 bps) |
+| `Pr. 119` | 1 | Stop Bit Length |
+| `Pr. 120` | 2 | Parity Check |
+| `Pr. 121` | 9999 | PU communication retry count |
+| `Pr. 122` | 1.0 | Communication Check Time (Time until no communication causes E.PUE fault), 0.1 seconds steps |
+| `Pr. 338` | 0 | Communication operation command source, 0 -> given through PU |
+| `Pr. 339` | 0 | Communication speed command source, 0 -> given through PU |
+| `Pr. 340` | 1 | Startup in Network Mode |
+| `Pr. 549` | 1 | Protocol Selection (1 = Modbus) |
+| `Pr. 551` | 9999 | Automatically Detect PU Connector |
+
+
+# 4 Hazard warning and information on Residual risks
 
 <br>
 
@@ -675,7 +722,7 @@ Appliances with this logo on the packaging or on the appliance must be disposed 
 <br>
 <br>
 
-# 4 Glossary and Definitions
+# 5 Glossary and Definitions
 
 <br>
 
