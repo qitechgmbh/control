@@ -53,30 +53,16 @@ impl SharedAppState {
     pub fn fill_ethercat_metadata(
         &self,
         controller: Arc<StandardEtherCATController>,
-        infos: Option<Vec<MachineDeviceInfo>>,
+        infos: Vec<MachineDeviceInfo>,
     ) -> Result<(), anyhow::Error> {
         let mut guard = self.ethercat_meta_datas.try_write()?;
         for i in 0..controller.subdevice_count {
             let dev = controller.subdevices[i];
-            let mut device_machine_identification: Option<DeviceMachineIdentification> = None;
+            let mut device_machine_identification = infos.iter()
+                .find(|info| info.device_address == dev.device_address)
+                .map(|info| DeviceMachineIdentification::from(*info));
 
-            match infos {
-                Some(ref infos) => {
-                    let info = infos
-                        .iter()
-                        .find(|info| info.device_address == dev.device_address)
-                        .cloned();
-                    match info {
-                        Some(info) => {
-                            device_machine_identification = Some(info.into());
-                        }
-                        None => (),
-                    }
-                }
-                None => (),
-            };
-
-            guard.push(                 
+            guard.push(
                 EtherCatDeviceMetaData {
                     configured_address: dev.device_address,
                     name: dev.get_name()?,
