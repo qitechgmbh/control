@@ -659,6 +659,7 @@ Appliances with this logo on the packaging or on the appliance must be disposed 
 # 3 Inverter Parameterization
 
 ## 3.1 Motor Constants Extruder V2
+
 The following is a table that shows which Registers need to be set on the Inverter for the safe operation of the Motor.
 
 | Parameter number (Pr) | Name                         | Value         |
@@ -670,8 +671,8 @@ The following is a table that shows which Registers need to be set on the Invert
 | `3`                   | Base frequency               | 5000 (50 Hz)  |
 | `19`                  | Base frequency voltage       | 400 (Volt)    |
 
-
 ## 3.2 Motor Constants ExtruderV3
+
 The following is a table that shows which Registers need to be set on the Inverter for the safe operation of the Motor.
 
 | Parameter number (Pr) | Name                         | Value         |
@@ -701,7 +702,6 @@ The Following settings are required to get the inverter Communication and Operat
 | `Pr. 340` | 1 | Startup in Network Mode |
 | `Pr. 549` | 1 | Protocol Selection (1 = Modbus) |
 | `Pr. 551` | 9999 | Automatically Detect PU Connector |
-
 
 # 4 Hazard warning and information on Residual risks
 
