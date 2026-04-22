@@ -141,13 +141,13 @@ fn mock_logic(){
 
 }
 
-fn main_logic(){
+fn main_logic(interface: &str){
     let rt = get_async_runtime();
     let state = Arc::new(SharedAppState::new());
     let _api = rt.spawn(apis::init_api(state.clone()));
 
     let mut main_state = MainState::new();
-    let eth_control = init_ethercat("eth0");
+    let eth_control = init_ethercat(interface);
 
     let mut ecat_handle = eth_control.app_handle;
     let ecat_channel = eth_control.channel;
@@ -246,6 +246,8 @@ fn main() {
     #[cfg(feature = "mock")]
     mock_logic();
 
+    let interface = std::env::args().nth(1).unwrap_or("eth0".to_string());
+
     #[cfg(not(feature = "mock"))]
-    main_logic();
+    main_logic(&interface);
 }
