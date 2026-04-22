@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -e
+
+BINARY="$1"
+shift
+
+echo "Setting capabilities for executable"
+sudo setcap 'cap_dac_override,cap_net_raw,cap_sys_nice,cap_ipc_lock=eip' "$BINARY"
+
+if [ -f "/dev/ttyUSB*" ]; then
+    echo "Setting permissions for serial ports"
+    sudo chown "root:$(id --group)" /dev/ttyUSB*
+fi
+
+exec "$BINARY" "$@"
