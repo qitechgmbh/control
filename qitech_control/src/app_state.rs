@@ -118,13 +118,12 @@ impl SharedAppState {
         drop(guard);
     }
 
-    pub async fn send_machines_event(&self) -> Result<(), anyhow::Error> {
+    pub async fn send_machines_event(&self) {
         let event = MachinesEventBuilder().build(self.get_machines_meta().await);
         let mut guard = self.socketio_setup.namespaces.write().await;
         let main_namespace = &mut guard.main_namespace;
         main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
         drop(guard);
-        Ok(())
     }
 
     pub async fn get_machines_meta(&self) -> Vec<MachineObj> {

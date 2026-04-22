@@ -85,15 +85,11 @@ impl MainState {
     pub fn generate_machine_hardware_from_ethercat(
         &mut self,
         device_infos: Vec<MachineDeviceInfo>,
-        mut ethercat_devices_mapped: Vec<(MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)>,
-        ethercat_interface : EtherCATThreadChannel,
+        devices_by_address: &mut HashMap<u16, (MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)>,
+        ethercat_channel : EtherCATThreadChannel,
     ) {
-        let mut hw_map: HashMap<u16, (MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)> =
-            ethercat_devices_mapped
-                .drain(..)
-                .map(|(meta, device)| (meta.device_address, (meta, device)))
-                .collect();
-
+        // If an info points to the same address as the actuall device, we assume they should be
+        // linked together. This is the only value from the MetaSubdevice, we can use here.
         let mut combined_list: Vec<(
             MachineDeviceInfo,
             MetaSubdevice,
@@ -102,7 +98,7 @@ impl MainState {
             .into_iter()
             .filter_map(|info| {
                 let address = info.device_address;
-                hw_map.remove(&address).map(|hw| {
+                devices_by_address.remove(&address).map(|hw| {
                     (info, hw.0, hw.1) // This is a 3-tuple
                 })
             })
@@ -110,6 +106,7 @@ impl MainState {
 
         combined_list.sort_by_key(|f| (f.0.machine_id, f.0.machine_serial));
         for (dev_info, _, eth) in combined_list.drain(0..combined_list.len()) {
+            // Here we try to get the MachineIdentificationUnique
             let identification = MachineIdentificationUnique {
                 machine_ident: MachineIdentification {
                     vendor: dev_info.machine_vendor,
@@ -117,16 +114,20 @@ impl MainState {
                 },
                 serial: dev_info.machine_serial as u32,
             };
+
+            // If this machine has no hardware assigned yet, create empty list
             if self.hardware.get(&identification).is_none() {
                 self.hardware.insert(
                     identification,
                     MachineHardware {
                         hw: vec![],
                         identification,
-                        ethercat_interface: Some(ethercat_interface.clone()),
+                        ethercat_interface: Some(ethercat_channel.clone()),
                     },
                 );
             }
+
+            // Add this device to the machine's hardware
             let ethercat_hw = Hardware::Ethercat(IdentifiedEthercat {
                 hw: eth,
                 ident: dev_info,
@@ -173,22 +174,23 @@ fn main_logic(interface: &str){
         },
     };
 
-    let mut mapped_ecat_devices = vec![];
-    println!("Initialized {} subdevices",ecat_controller.subdevice_count);
-
-    for i in 0..ecat_controller.subdevice_count {
-        let meta = ecat_controller.subdevices[i];
+    println!("Initialized {} subdevices", ecat_controller.subdevice_count);
+    let mut devices_by_address = ecat_controller.get_subdevices().into_iter().map(|meta| {
         let dev = device_from_subdevice_identity_rc(meta).unwrap();
+        (meta.device_address, (meta.clone(), dev))
+    }).collect::<HashMap<_, _>>();
+
+    for (_, dev) in devices_by_address.values() {
         main_state.subdevices.push(dev.clone());
-        mapped_ecat_devices.push((meta, dev));
     }
-    
+
     match idents.clone() {
         Some(idents) => {
-            main_state.generate_machine_hardware_from_ethercat(idents, mapped_ecat_devices,ecat_channel.clone())
+            main_state.generate_machine_hardware_from_ethercat(idents, &mut devices_by_address, ecat_channel.clone())
         }
         None => (),
     }
+
     let _res = state.fill_ethercat_metadata(ecat_controller.clone(), idents);
     main_state.generate_machine_hardware_from_serial(modbus_mgr);
 
@@ -198,6 +200,7 @@ fn main_logic(interface: &str){
         println!("{:?}",key);
         let result = MACHINE_REGISTRY
             .new_machine(key.clone(), main_state.hardware.get(key).unwrap().clone());
+
         match result {
             Ok(machine) => {
                 let _res = state.add_machine_sync(
@@ -208,7 +211,7 @@ fn main_logic(interface: &str){
                 main_state.machines.push(machine);
             }
             Err(e) => {
-                println!("{:?}", e);
+                println!("Creating machine failed: {:?}", e);
                 main_state.machine_errors.insert(*key, e.to_string());
             }
         };
