@@ -7,7 +7,7 @@ import {
   StateEvent,
   modeSchema,
   Mode,
-  AccelerationFaktor,
+  AccelerationFaktor as AccelerationFactor,
   Frequency,
 } from "./testMachineStepperNamespace";
 import { useMachineMutate } from "@/client/useClient";
@@ -93,7 +93,7 @@ export function useTestMachineStepper() {
     );
   };
 
-  const setAccFactor = (factor: AccelerationFaktor) => {
+  const setAccFactor = (factor: AccelerationFactor) => {
     updateStateOptimistically(
       (current) => {
         current.acceleration_state.factor = factor;

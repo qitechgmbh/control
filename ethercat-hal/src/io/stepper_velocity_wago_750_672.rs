@@ -106,14 +106,14 @@ impl StepperVelocityWago750672 {
         dev.rxpdo.acceleration
     }
 
-    pub fn set_freq_range_sel(&mut self, factor: u8) {
-        if self.enabled || factor > 3 {
+    pub fn set_freq_range_sel(&mut self, frequency: ) {
+        if self.enabled || frequency > 3 {
             return;
         }
-        self.freq_range_sel = factor;
+        self.freq_range_sel = frequency;
         let mut dev = block_on(self.device.write());
         let c2 = ControlByteC2::from_bits(dev.rxpdo.control_byte2)
-            .with_freq_range(factor)
+            .with_freq_range(frequency)
             .bits();
         dev.rxpdo.control_byte2 = c2;
     }

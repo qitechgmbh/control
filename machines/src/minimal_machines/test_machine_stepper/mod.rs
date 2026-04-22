@@ -1,5 +1,5 @@
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
-use crate::minimal_machines::test_machine_stepper::api::{ModeState, StateEvent, TestMachineStepperEvents};
+use crate::minimal_machines::test_machine_stepper::api::{AccelerationFactor, Frequency, Mode, ModeState, StateEvent, TestMachineStepperEvents};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::stepper_velocity_wago_750_671::StepperVelocityWago750671;
@@ -87,16 +87,16 @@ impl TestMachineStepper {
         self.emit_state();
     }
 
-    pub fn set_mode(&mut self, mode: &TestMachineMode) {
+    pub fn set_mode(&mut self, mode: Mode) {
         self.mode = mode.clone();
 
         match mode {
-            TestMachineMode::Standby => self.set_enabled(false),
-            TestMachineMode::Hold => {
+            Mode::Standby => self.set_enabled(false),
+            Mode::Hold => {
                 self.set_enabled(true);
                 self.stop_motor();
             }
-            TestMachineMode::Turn => self.start_motor(),
+            Mode::Turn => self.start_motor(),
         }
     }
 
@@ -122,7 +122,7 @@ impl TestMachineStepper {
         self.emit_state();
     }
 
-    pub fn set_freq(&mut self, factor: u8) {
+    pub fn set_freq(&mut self, factor: Frequency) {
         match &mut self.stepper {
             Stepper::Wago750_672(stepper_velocity_wago750672) => {
                 stepper_velocity_wago750672.set_freq_range_sel(factor)
@@ -134,7 +134,7 @@ impl TestMachineStepper {
         self.emit_state();
     }
 
-    pub fn set_acc_freq(&mut self, factor: u8) {
+    pub fn set_acc_freq(&mut self, factor: AccelerationFactor) {
         match &mut self.stepper {
             Stepper::Wago750_672(stepper_velocity_wago750672) => {
                 stepper_velocity_wago750672.set_acc_range_sel(factor)
@@ -145,11 +145,4 @@ impl TestMachineStepper {
         };
         self.emit_state();
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TestMachineMode {
-    Standby,
-    Hold,
-    Turn,
 }

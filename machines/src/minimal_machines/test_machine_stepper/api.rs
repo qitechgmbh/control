@@ -1,5 +1,5 @@
 use super::TestMachineStepper;
-use crate::{MachineApi, MachineMessage, minimal_machines::test_machine_stepper::TestMachineMode};
+use crate::{MachineApi, MachineMessage};
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
@@ -36,26 +36,6 @@ pub struct ModeState {
     pub mode: Mode,
 }
 
-impl From<TestMachineMode> for Mode {
-    fn from(mode: TestMachineMode) -> Self {
-        match mode {
-            TestMachineMode::Standby => Self::Standby,
-            TestMachineMode::Hold => Self::Hold,
-            TestMachineMode::Turn => Self::Turn,
-        }
-    }
-}
-
-impl From<Mode> for TestMachineMode {
-    fn from(mode: Mode) -> Self {
-        match mode {
-            Mode::Standby => Self::Standby,
-            Mode::Hold => Self::Hold,
-            Mode::Turn => Self::Turn,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum Frequency {
     #[default]
@@ -66,15 +46,31 @@ pub enum Frequency {
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
+pub struct FrequencyState {
+    pub frequency: Frequency,
+}
 
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub enum AccelerationFactor {
+    #[default]
+    Default,
+    Low,
+    Mid,
+    High,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct AccelerationState {
+    pub factor: AccelerationFactor,
+}
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
     pub target_speed: i16,
     pub enabled: bool,
-    pub freq: u8,
-    pub acc_freq: u8,
     pub mode_state: ModeState,
+    pub frequency_state: FrequencyState,
+    pub acceleration_state: AccelerationState,
 }
 
 impl StateEvent {
@@ -94,11 +90,13 @@ pub enum Mutation {
     SetEnabled { enabled: bool },
     StartMotor,
     StopMotor,
-    SetFreq { factor: u8 },
-    SetAccFreq { factor: u8 },
 
     // Mode
     SetMode(Mode),
+    // Frequency Prescaler
+    SetFreq(Frequency),
+    // Acceleration Factor
+    SetAccFactor(AccelerationFactor),
 }
 
 #[derive(Debug, Clone)]
@@ -140,9 +138,9 @@ impl MachineApi for TestMachineStepper {
             Mutation::SetEnabled { enabled } => self.set_enabled(enabled),
             Mutation::StartMotor => self.start_motor(),
             Mutation::StopMotor => self.stop_motor(),
-            Mutation::SetFreq { factor } => self.set_freq(factor),
-            Mutation::SetAccFreq { factor } => self.set_acc_freq(factor),
-            Mutation::SetMode(mode) => self.set_mode(&mode.into()),
+            Mutation::SetMode(mode) => self.set_mode(mode),
+            Mutation::SetFreq(freq) => self.set_freq(freq),
+            Mutation::SetAccFactor(factor) => self.set_acc_factor(factor),
         }
 
         Ok(())
