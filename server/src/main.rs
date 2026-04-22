@@ -200,8 +200,12 @@ pub async fn handle_serial_device_hotplug(
         vendor_id: 0x0403,
         product_id: 0x6001,
     };
+    let alternative_laser_ident = SerialDeviceIdentification {
+        vendor_id: 0x1a86,
+        product_id: 0x7523,
+    };
 
-    let laser = SerialDetection::get_path_by_id(laser_ident, map);
+    let laser = SerialDetection::get_path_by_id(vec![alternative_laser_ident, laser_ident], map);
     let mut unique_ident: Option<MachineIdentificationUnique> = None;
 
     {
