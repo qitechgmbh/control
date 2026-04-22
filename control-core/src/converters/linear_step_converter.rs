@@ -251,7 +251,7 @@ mod tests {
     use super::*;
     use approx::assert_relative_eq;
     use std::f64::EPSILON;
-    use units::{
+    use qitech_lib::units::{
         acceleration::meter_per_second_squared, angular_acceleration::radian_per_second_squared,
         length::meter, velocity::meter_per_second,
     };
