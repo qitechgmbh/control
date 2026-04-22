@@ -692,7 +692,7 @@ The Following settings are required to get the inverter Communication and Operat
 | `Pr. 79` | 0 | Operation Mode Selection |
 | `Pr. 117` | 1 | Station Number (Slave Number) |
 | `Pr. 118` | 192 | Baudrate (192 → 19200 bps) |
-| `Pr. 119` | 1 | Stop Bit Length |
+| `Pr. 119` | 0 | Stop Bit Length |
 | `Pr. 120` | 2 | Parity Check |
 | `Pr. 121` | 9999 | PU communication retry count |
 | `Pr. 122` | 1.0 | Communication Check Time (Time until no communication causes E.PUE fault), 0.1 seconds steps |
