@@ -62,12 +62,15 @@ impl SerialDetection {
     }
 
     pub fn get_path_by_id(
-        sdevid: SerialDeviceIdentification,
+        sdevids: Vec<SerialDeviceIdentification>,
         map: HashMap<String, UsbPortInfo>,
     ) -> Option<String> {
         for (port, usbport) in map.iter() {
-            if usbport.vid == sdevid.vendor_id && usbport.pid == sdevid.product_id {
-                return Some(port.clone());
+            let sdevids = sdevids.clone();
+            for device_ident in sdevids {
+                if usbport.vid == device_ident.vendor_id && usbport.pid == device_ident.product_id {
+                    return Some(port.clone());
+                }
             }
         }
         return None;

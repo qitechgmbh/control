@@ -17,9 +17,7 @@ impl MachineNewTrait for LaserMachine {
             MachineNewHardware::Serial(serial) => *serial,
             _ => return Err(Error::msg("Invalid hardware type for LaserMachine")),
         };
-
         // downcast the hardware_serial to Arc<RwLock<Laser>>
-
         let laser = match smol::block_on(
             SERIAL_DEVICE_REGISTRY.downcast_arc_rwlock::<Laser>(hardware_serial.device.clone()),
         ) {
