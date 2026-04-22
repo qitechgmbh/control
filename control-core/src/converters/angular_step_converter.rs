@@ -90,7 +90,7 @@ mod tests {
     use super::*;
     use approx::assert_relative_eq;
     use std::f64::EPSILON;
-    use units::{
+    use qitech_lib::units::{
         angle::degree, angular_acceleration::degree_per_second_squared,
         angular_velocity::degree_per_second,
     };

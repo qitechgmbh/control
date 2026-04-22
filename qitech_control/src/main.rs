@@ -292,16 +292,16 @@ fn read_saved_identifications() -> Result<Vec<MachineDeviceInfo>> {
     let json = fs::read_to_string(saved_mappings_path)?;
     let value: Value = serde_json::from_str(&json)?;
 
-    let infos = value.as_array().expect("Root value is not an array").iter().map(|value| {
-        MachineDeviceInfo {
+    let infos = value.as_array().context("Root value is not an array")?.iter().map(|value| -> Result<MachineDeviceInfo> {
+        Ok(MachineDeviceInfo {
             role: value["role"].as_u64().unwrap_or(0) as u16,
             machine_id: value["machine_id"].as_u64().unwrap_or(0) as u16,
             machine_vendor: value["machine_vendor"].as_u64().unwrap_or(0) as u16,
             machine_serial: value["machine_serial"].as_u64().unwrap_or(0) as u16,
-            device_address: value["device_address"].as_u64().expect("No device address given") as u16,
-        }
+            device_address: value["device_address"].as_u64().context("No device address given")? as u16,
+        })
     })
-    .collect();
+    .collect::<Result<Vec<_>>>()?;
 
     Ok(infos)
 }

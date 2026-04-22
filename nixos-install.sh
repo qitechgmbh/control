@@ -30,7 +30,7 @@ sudo \
     --preserve-env=GIT_ABBREVIATION \
     --preserve-env=GIT_ABBREVIATION_ESCAPED \
     nixos-rebuild boot \
-    	--flake .#nixos \
+    	--flake '.?submodules=1#nixos' \
     	--show-trace \
     	--impure \
     	--option sandbox false \

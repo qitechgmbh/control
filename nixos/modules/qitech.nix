@@ -53,6 +53,8 @@ in
     users.users.${cfg.user} = {
       isSystemUser = true;
       group = cfg.group;
+      home = "/var/lib/qitech";
+      createHome = true;
       description = "QiTech service user";
       extraGroups = [
         "realtime"
@@ -86,7 +88,7 @@ in
         Type = "simple";
         User = cfg.user;
         Group = cfg.group;
-        ExecStart = "${cfg.package}/bin/server";
+        ExecStart = "${cfg.package}/bin/qitech_control enp1s0";
         Restart = "always";
         RestartSec = "10s";
 
