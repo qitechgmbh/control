@@ -55,10 +55,6 @@ async fn get_slot_device<T: EthercatDevice>(
 }
 
 #[cfg(not(feature = "mock-machine"))]
-pub(crate) const WAGO_672_SPOOL_NOMINAL_CURRENT_TENTHS_AMP: u8 = 60;
-#[cfg(not(feature = "mock-machine"))]
-pub(crate) const WAGO_672_PULLER_NOMINAL_CURRENT_TENTHS_AMP: u8 = 28;
-#[cfg(not(feature = "mock-machine"))]
 pub(crate) const WAGO_672_CURRENT_PROFILE_FULL_PERCENT: u8 = 100;
 #[cfg(not(feature = "mock-machine"))]
 pub(crate) const WAGO_672_CURRENT_PROFILE_ALL_RANGES: u8 = 0x0F;
@@ -77,7 +73,6 @@ pub(crate) const WAGO_672_PULLER_FREQ_DIV: u16 = 32;
 fn configure_wago_672_velocity_axis(
     axis: &mut StepperVelocityWago750672,
     direction_multiplier: i8,
-    nominal_current_tenths_amp: u8,
     freq_div: u16,
 ) {
     axis.set_motor_full_steps_per_rev(200);
@@ -210,17 +205,12 @@ impl MachineNewTrait for WagoWinder {
             configure_wago_672_velocity_axis(
                 &mut new.spool,
                 1,
-                WAGO_672_SPOOL_NOMINAL_CURRENT_TENTHS_AMP,
                 WAGO_672_SPOOL_FREQ_DIV,
             );
             new.traverse.configure_for_traverse_contract(3, 2, 1000);
-            new.traverse
-                .inner_mut()
-                .request_set_current_mailbox(150, 0x0F);
             configure_wago_672_velocity_axis(
                 &mut new.puller,
                 -1,
-                WAGO_672_PULLER_NOMINAL_CURRENT_TENTHS_AMP,
                 WAGO_672_PULLER_FREQ_DIV,
             );
             new.traverse.set_acceleration(1000);
