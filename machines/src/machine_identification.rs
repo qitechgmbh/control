@@ -64,6 +64,7 @@ impl MachineIdentification {
             x if x == IP20_TEST_MACHINE => "ip20_test_machine".to_string(),
             x if x == ANALOG_INPUT_TEST_MACHINE => "analog_input_test_machine".to_string(),
             x if x == TEST_MACHINE_STEPPER => "test_machine_stepper".to_string(),
+            x if x == WAGO_671_SLOT1_TEST_MACHINE => "wago_671_slot1_test_machine".to_string(),
             x if x == WAGO_AI_TEST_MACHINE => "wago_ai_test_machine".to_string(),
             x if x == WAGO_DO_TEST_MACHINE => "wago_do_test_machine".to_string(),
             x if x == WAGO_750_430_DI_MACHINE => "wago_750_430_di_machine".to_string(),
@@ -194,6 +195,7 @@ use crate::MACHINE_WINDER_V1;
 use crate::TEST_MACHINE;
 use crate::TEST_MACHINE_STEPPER;
 use crate::VENDOR_QITECH;
+use crate::WAGO_671_SLOT1_TEST_MACHINE;
 use crate::WAGO_750_430_DI_MACHINE;
 use crate::WAGO_750_531_MACHINE;
 use crate::WAGO_AI_TEST_MACHINE;

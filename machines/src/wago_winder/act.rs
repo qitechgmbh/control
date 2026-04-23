@@ -47,6 +47,12 @@ impl MachineAct for WagoWinder {
             self.sync_traverse_speed();
         }
 
+        self.emit_control_loop_debug_if_due(
+            now,
+            traverse_in_error_recovery,
+            traverse_should_be_energized,
+        );
+
         // automatically stops or pulls after N Meters if enabled
         self.stop_or_pull_spool(now);
 

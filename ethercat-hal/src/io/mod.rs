@@ -13,5 +13,6 @@ pub mod stepper_velocity_el70x1;
 pub mod stepper_velocity_wago_750_671;
 pub mod stepper_velocity_wago_750_671_traverse;
 pub mod stepper_velocity_wago_750_672;
+pub mod stepper_velocity_wago_750_672_traverse;
 pub mod temperature_input;
 pub mod traverse_axis;

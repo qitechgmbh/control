@@ -5,6 +5,7 @@ pub mod mock;
 pub mod motor_test_machine;
 pub mod test_machine;
 pub mod test_machine_stepper;
+pub mod wago_671_slot1_test_machine;
 pub mod wago_750_430_di_machine;
 pub mod wago_750_460_machine;
 pub mod wago_750_501_test_machine;

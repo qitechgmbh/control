@@ -26,8 +26,6 @@ import { Winder2SettingPage as WagoWinderSettingPage } from "@/machines/winder/w
 import { Winder2GraphsPage as WagoWinderGraphsPage } from "@/machines/winder/wago_winder/Winder2Graphs";
 import { Winder2PresetsPage as WagoWinderPresetsPage } from "@/machines/winder/wago_winder/Winder2PresetsPage";
 
-
-
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
 import { Extruder2SettingsPage } from "@/machines/extruder/extruder2/Extruder2Settings";
@@ -71,6 +69,8 @@ import { TestMachineControlPage } from "@/machines/minimal_machines/testmachine/
 
 import { TestMachineStepperPage } from "@/machines/minimal_machines/testmachinestepper/TestMachineStepperPage";
 import { TestMachineStepperControlPage } from "@/machines/minimal_machines/testmachinestepper/TestMachineStepperControlPage";
+import { Wago671Slot1TestMachinePage } from "@/machines/minimal_machines/wago671slot1testmachine/Wago671Slot1TestMachinePage";
+import { Wago671Slot1TestMachineControlPage } from "@/machines/minimal_machines/wago671slot1testmachine/Wago671Slot1TestMachineControlPage";
 import { AnalogInputTestMachine } from "@/machines/minimal_machines/analoginputtestmachine/AnalogInputTestMachinePage";
 import { AnalogInputTestMachineControl } from "@/machines/minimal_machines/analoginputtestmachine/AnalogInputTestMachineControlPage";
 import { WagoAiTestMachine } from "@/machines/minimal_machines/wagoaitestmachine/WagoAiTestMachinePage";
@@ -104,7 +104,6 @@ import { Wago750_553MachineControlPage } from "@/machines/minimal_machines/wago7
 
 import { Wago750460MachinePage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachinePage";
 import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachineControlPage";
-
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -244,6 +243,18 @@ export const testMachineStepperControlRoute = createRoute({
   getParentRoute: () => testMachineStepperSerialRoute,
   path: "control",
   component: () => <TestMachineStepperControlPage />,
+});
+
+export const wago671Slot1TestMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wago671slot1testmachine/$serial",
+  component: () => <Wago671Slot1TestMachinePage />,
+});
+
+export const wago671Slot1TestMachineControlRoute = createRoute({
+  getParentRoute: () => wago671Slot1TestMachineSerialRoute,
+  path: "control",
+  component: () => <Wago671Slot1TestMachineControlPage />,
 });
 
 // Leaf route: control page
@@ -564,7 +575,6 @@ export const wago750_501TestMachineControlRoute = createRoute({
   component: () => <Wago750_501TestMachineControlPage />,
 });
 
-
 export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "setup",
@@ -674,6 +684,10 @@ export const rootTree = RootRoute.addChildren([
         testMachineStepperControlRoute,
       ]),
 
+      wago671Slot1TestMachineSerialRoute.addChildren([
+        wago671Slot1TestMachineControlRoute,
+      ]),
+
       analogInputTestMachineSerialRoute.addChildren([
         analogInputTestMachineControlRoute,
       ]),
@@ -752,7 +766,6 @@ export const rootTree = RootRoute.addChildren([
       wago750_501TestMachineSerialRoute.addChildren([
         wago750_501TestMachineControlRoute,
       ]),
-
 
       wago750430DiMachineSerialRoute.addChildren([
         wago750430DiMachineControlRoute,

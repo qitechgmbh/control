@@ -36,8 +36,8 @@ mod winder2_imports {
     pub use ethercat_hal::io::{
         analog_input::AnalogInput, digital_output::DigitalOutput,
         stepper_velocity_wago_750_671::StepperVelocityWago750671,
-        stepper_velocity_wago_750_671_traverse::StepperVelocityWago750671Traverse,
         stepper_velocity_wago_750_672::StepperVelocityWago750672,
+        stepper_velocity_wago_750_672_traverse::StepperVelocityWago750672Traverse,
     };
     pub use smol::channel::{Receiver, Sender};
     pub use smol::lock::RwLock;
@@ -148,8 +148,8 @@ pub struct WagoWinder {
     main_sender: Option<Sender<AsyncThreadMessage>>,
 
     // drivers
-    pub traverse: StepperVelocityWago750671Traverse,
-    pub puller: StepperVelocityWago750672,
+    pub traverse: StepperVelocityWago750672Traverse,
+    pub puller: StepperVelocityWago750671,
     pub spool: StepperVelocityWago750672,
     pub tension_arm: TensionArm,
     pub tension_arm_raw: AnalogInput,
@@ -165,6 +165,7 @@ pub struct WagoWinder {
     last_axis_status_signature: Option<String>,
     last_traverse_debug_raw_position: Option<i128>,
     last_traverse_debug_raw_delta: i128,
+    last_control_loop_debug_emit: Instant,
     pub machine_identification_unique: MachineIdentificationUnique,
 
     // mode
@@ -234,7 +235,7 @@ impl WagoWinder {
 
     pub fn sync_traverse_speed(&mut self) {
         let spool_speed = self.actual_spool_angular_velocity();
-        let traverse_end_stop = self.traverse.get_s3_bit1();
+        let traverse_end_stop = self.traverse.get_s3_bit0();
         self.traverse_controller
             .update_speed(&mut self.traverse, traverse_end_stop, spool_speed)
     }
@@ -265,7 +266,7 @@ impl WagoWinder {
 
     fn build_debug_key(&self) -> String {
         format!(
-            "mode={:?}|spool_mode={:?}|traverse_mode={:?}|puller_mode={:?}|can_wind={}|can_go_in={}|can_go_out={}|can_go_home={}|traverse_state={}|traverse_cmd_sign={:?}|traverse_raw_delta={}|tension_zeroed={}|laser={}|spool_c1=0x{:02X}|spool_c2=0x{:02X}|spool_c3=0x{:02X}|spool_s1=0x{:02X}|spool_s2=0x{:02X}|spool_s3=0x{:02X}|spool_ack={}|spool_di1={}|traverse_c1=0x{:02X}|traverse_c2=0x{:02X}|traverse_c3=0x{:02X}|traverse_s1=0x{:02X}|traverse_s2=0x{:02X}|traverse_s3=0x{:02X}|traverse_ack={}|traverse_ref_ack={}|traverse_ref_ok={}|traverse_busy={}|traverse_di1={}|traverse_di2={}|puller_c1=0x{:02X}|puller_c2=0x{:02X}|puller_c3=0x{:02X}|puller_s1=0x{:02X}|puller_s2=0x{:02X}|puller_s3=0x{:02X}|puller_ack={}|puller_di1={}",
+            "mode={:?}|spool_mode={:?}|traverse_mode={:?}|puller_mode={:?}|can_wind={}|can_go_in={}|can_go_out={}|can_go_home={}|traverse_state={}|traverse_cmd_sign={:?}|tension_zeroed={}|laser={}|spool_c1=0x{:02X}|spool_c2=0x{:02X}|spool_c3=0x{:02X}|spool_s1=0x{:02X}|spool_s2=0x{:02X}|spool_s3=0x{:02X}|spool_ack={}|spool_di1={}|traverse_c1=0x{:02X}|traverse_c2=0x{:02X}|traverse_c3=0x{:02X}|traverse_s1=0x{:02X}|traverse_s2=0x{:02X}|traverse_s3=0x{:02X}|traverse_ack={}|traverse_ref_ack={}|traverse_ref_ok={}|traverse_busy={}|traverse_di1={}|traverse_di2={}|puller_c1=0x{:02X}|puller_c2=0x{:02X}|puller_c3=0x{:02X}|puller_s1=0x{:02X}|puller_s2=0x{:02X}|puller_s3=0x{:02X}|puller_ack={}|puller_di1={}",
             self.mode,
             self.spool_mode,
             self.traverse_mode,
@@ -276,7 +277,6 @@ impl WagoWinder {
             self.can_go_home(),
             self.traverse_controller.debug_state(),
             self.traverse_controller.debug_homing_command_sign(),
-            self.last_traverse_debug_raw_delta,
             self.tension_arm.zeroed,
             self.laser.get(),
             self.spool.get_control_byte1(),
@@ -389,6 +389,73 @@ impl WagoWinder {
             tracing::info!("{}", snapshot);
             self.last_debug_signature = Some(debug_key);
         }
+    }
+
+    pub fn emit_control_loop_debug_if_due(
+        &mut self,
+        now: Instant,
+        traverse_in_error_recovery: bool,
+        traverse_should_be_energized: bool,
+    ) {
+        let active = self.mode != Winder2Mode::Standby
+            || self.spool_mode != SpoolMode::Standby
+            || self.traverse_mode != TraverseMode::Standby
+            || self.puller_mode != PullerMode::Standby
+            || self.traverse_controller.is_going_home()
+            || self.traverse_controller.is_going_in()
+            || self.traverse_controller.is_going_out()
+            || self.traverse_controller.is_traversing();
+
+        if !active
+            || now.duration_since(self.last_control_loop_debug_emit) < Duration::from_millis(500)
+        {
+            return;
+        }
+
+        self.last_control_loop_debug_emit = now;
+
+        tracing::info!(
+            "WagoWinder loop | mode={:?} spool_mode={:?} traverse_mode={:?} puller_mode={:?} can_go_home={} can_wind={} traverse_state={} cmd_sign={:?} error_recovery={} should_energize={} enabled={} target={} actual_reg={} raw_pos={} raw_delta={} di1={} home_di2={} c1=0x{:02X} c2=0x{:02X} c3=0x{:02X} s1=0x{:02X} s2=0x{:02X} s3=0x{:02X} speed_ack={} ref_ack={} ref_ok={} busy={} | spool target={} actual_reg={} c1=0x{:02X} s1=0x{:02X} s2=0x{:02X} s3=0x{:02X} | puller target={} actual_reg={} c1=0x{:02X} s1=0x{:02X} s2=0x{:02X} s3=0x{:02X}",
+            self.mode,
+            self.spool_mode,
+            self.traverse_mode,
+            self.puller_mode,
+            self.can_go_home(),
+            self.can_wind(),
+            self.traverse_controller.debug_state(),
+            self.traverse_controller.debug_homing_command_sign(),
+            traverse_in_error_recovery,
+            traverse_should_be_energized,
+            self.traverse.is_enabled(),
+            self.traverse.get_speed(),
+            self.traverse.get_actual_velocity_register(),
+            self.traverse.get_raw_position(),
+            self.last_traverse_debug_raw_delta,
+            self.traverse.get_s3_bit0(),
+            self.traverse.get_s3_bit1(),
+            self.traverse.get_control_byte1(),
+            self.traverse.get_control_byte2(),
+            self.traverse.get_control_byte3(),
+            self.traverse.get_status_byte1(),
+            self.traverse.get_status_byte2(),
+            self.traverse.get_status_byte3(),
+            self.traverse.get_s1_bit3_speed_mode_ack(),
+            self.traverse.get_s1_bit5_reference_mode_ack(),
+            self.traverse.get_s2_reference_ok(),
+            self.traverse.get_s2_busy(),
+            self.spool.get_speed(),
+            self.spool.get_actual_velocity_register(),
+            self.spool.get_control_byte1(),
+            self.spool.get_status_byte1(),
+            self.spool.get_status_byte2(),
+            self.spool.get_status_byte3(),
+            self.puller.get_speed(),
+            self.puller.get_actual_velocity_register(),
+            self.puller.get_control_byte1(),
+            self.puller.get_status_byte1(),
+            self.puller.get_status_byte2(),
+            self.puller.get_status_byte3(),
+        );
     }
 
     /// Can wind capability check

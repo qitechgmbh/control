@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use control_core::converters::linear_step_converter::LinearStepConverter;
-use ethercat_hal::io::stepper_velocity_wago_750_671_traverse::StepperVelocityWago750671Traverse;
+use ethercat_hal::io::stepper_velocity_wago_750_672_traverse::StepperVelocityWago750672Traverse;
 use units::ConstZero;
 use units::angular_velocity::revolution_per_second;
 use units::f64::{AngularVelocity, Length, Velocity};
@@ -313,7 +313,7 @@ impl TraverseController {
         }
     }
 
-    pub fn sync_position_velocity(&mut self, traverse: &StepperVelocityWago750671Traverse) {
+    pub fn sync_position_velocity(&mut self, traverse: &StepperVelocityWago750672Traverse) {
         let steps =
             self.logical_microsteps_from_normalized_raw(traverse.get_normalized_raw_position());
         self.position = self.microstep_converter.steps_to_distance(steps as f64);
@@ -353,7 +353,7 @@ impl TraverseController {
 
     pub fn update_speed(
         &mut self,
-        traverse: &mut StepperVelocityWago750671Traverse,
+        traverse: &mut StepperVelocityWago750672Traverse,
         traverse_end_stop: bool,
         spool_speed: AngularVelocity,
     ) {
