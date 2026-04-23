@@ -76,10 +76,6 @@ impl Wago750_672 {
         self.queue_mailbox_command(0x51, value_l, value_h, 0, 0);
     }
 
-    pub(crate) fn queue_set_current_profile(&mut self, percent: u8, valid_range_bits: u8) {
-        self.queue_mailbox_command(0x40, 0x39, percent, 0, valid_range_bits & 0x0F);
-    }
-
     pub fn queue_velocity_control_pointer_defaults(&mut self) {
         if self.config_defaults_queued {
             return;

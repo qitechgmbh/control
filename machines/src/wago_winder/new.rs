@@ -97,13 +97,6 @@ fn configure_wago_672_velocity_axis(
     axis.set_acceleration(WAGO_672_WINDER_ACCELERATION);
     axis.request_speed_mode();
     axis.clear_fast_stop();
-    axis.request_set_nominal_current_tenths_amp(nominal_current_tenths_amp);
-    // Mirror the Beckhoff runtime contract as closely as WAGO allows:
-    // do not reduce current in any motion phase unless the application asks for it.
-    axis.request_set_current_mailbox(
-        WAGO_672_CURRENT_PROFILE_FULL_PERCENT,
-        WAGO_672_CURRENT_PROFILE_ALL_RANGES,
-    );
 }
 
 #[cfg(not(feature = "mock-machine"))]

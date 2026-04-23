@@ -33,7 +33,6 @@ pub struct StepperVelocityWago750672 {
 impl StepperVelocityWago750672 {
     const CFG_FREQ_DIV: u16 = 4;
     const CFG_ACC_FACT: u16 = 6;
-    const CFG_CURRENT: u16 = 14;
 
     pub fn new(device: Arc<RwLock<Wago750_672>>) -> Self {
         {
@@ -252,12 +251,6 @@ impl StepperVelocityWago750672 {
         }
     }
 
-    pub fn request_set_current_mailbox(&mut self, current_percent: u8, valid_range_bits: u8) {
-        let mut dev = block_on(self.device.write());
-        dev.start_requested = false;
-        dev.queue_set_current_profile(current_percent.min(150), valid_range_bits & 0x0F);
-    }
-
     /// Sets the Freq_Div configuration parameter via the mailbox-backed
     /// configuration table. This is the prescaler used when
     /// `freq_range_sel == 0`.
@@ -278,15 +271,6 @@ impl StepperVelocityWago750672 {
         let mut dev = block_on(self.device.write());
         dev.start_requested = false;
         dev.queue_config_write_u16(Self::CFG_ACC_FACT, acc_fact);
-    }
-
-    /// Sets the configured motor rated current in 0.1 A units via the
-    /// configuration table. For the 750-672, the WAGO configuration layout
-    /// uses byte 14 ("Current"), where 50 corresponds to 5.0 A.
-    pub fn request_set_nominal_current_tenths_amp(&mut self, current_tenths_amp: u8) {
-        let mut dev = block_on(self.device.write());
-        dev.start_requested = false;
-        dev.queue_config_write_u8(Self::CFG_CURRENT, current_tenths_amp.min(75));
     }
 
     pub fn request_fast_stop(&mut self) {
