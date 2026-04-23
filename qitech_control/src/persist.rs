@@ -7,7 +7,8 @@ use anyhow::{Result, Context};
 
 fn get_machine_device_info_path() -> String {
     let dir =
-        std::env::var("XDG_DATA_HOME")
+        std::env::var("STATE_DIRECTORY")
+        .or(std::env::var("XDG_DATA_HOME"))
         .or(std::env::var("HOME"))
         .unwrap_or(".".to_string());
 
