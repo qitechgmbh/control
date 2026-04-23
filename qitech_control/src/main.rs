@@ -35,6 +35,7 @@ use tokio::runtime::Runtime;
 pub mod apis;
 mod app_state;
 mod machine_loop;
+mod persist;
 
 static RUNTIME: OnceLock<Runtime> = OnceLock::new();
 fn get_async_runtime() -> &'static Runtime {
@@ -196,7 +197,7 @@ fn main_logic(interface: &str) {
 
     let mut idents = vec![];
 
-    match read_saved_identifications() {
+    match persist::read_machine_device_info() {
         Ok(mut saved_idents) => {
             main_state.generate_machine_hardware_from_ethercat(
                 &saved_idents,
@@ -275,35 +276,6 @@ fn main_logic(interface: &str) {
 
         std::thread::sleep(Duration::from_micros(100));
     }
-}
-
-fn read_saved_identifications() -> Result<Vec<MachineDeviceInfo>> {
-    let dir =
-        std::env::var("XDG_DATA_HOME")
-        .or(std::env::var("HOME"))
-        .unwrap_or(".".to_string());
-
-    let saved_mappings_path = dir + "/qitech.json";
-
-    if !fs::exists(&saved_mappings_path)? {
-        return Ok(vec![]);
-    }
-
-    let json = fs::read_to_string(saved_mappings_path)?;
-    let value: Value = serde_json::from_str(&json)?;
-
-    let infos = value.as_array().context("Root value is not an array")?.iter().map(|value| -> Result<MachineDeviceInfo> {
-        Ok(MachineDeviceInfo {
-            role: value["role"].as_u64().unwrap_or(0) as u16,
-            machine_id: value["machine_id"].as_u64().unwrap_or(0) as u16,
-            machine_vendor: value["machine_vendor"].as_u64().unwrap_or(0) as u16,
-            machine_serial: value["machine_serial"].as_u64().unwrap_or(0) as u16,
-            device_address: value["device_address"].as_u64().context("No device address given")? as u16,
-        })
-    })
-    .collect::<Result<Vec<_>>>()?;
-
-    Ok(infos)
 }
 
 fn main() {
