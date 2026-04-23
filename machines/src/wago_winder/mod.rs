@@ -36,8 +36,8 @@ mod winder2_imports {
     pub use ethercat_hal::io::{
         analog_input::AnalogInput, digital_output::DigitalOutput,
         stepper_velocity_wago_750_671::StepperVelocityWago750671,
+        stepper_velocity_wago_750_671_traverse::StepperVelocityWago750671Traverse,
         stepper_velocity_wago_750_672::StepperVelocityWago750672,
-        stepper_velocity_wago_750_672_traverse::StepperVelocityWago750672Traverse,
     };
     pub use smol::channel::{Receiver, Sender};
     pub use smol::lock::RwLock;
@@ -148,8 +148,8 @@ pub struct WagoWinder {
     main_sender: Option<Sender<AsyncThreadMessage>>,
 
     // drivers
-    pub traverse: StepperVelocityWago750672Traverse,
-    pub puller: StepperVelocityWago750671,
+    pub traverse: StepperVelocityWago750671Traverse,
+    pub puller: StepperVelocityWago750672,
     pub spool: StepperVelocityWago750672,
     pub tension_arm: TensionArm,
     pub tension_arm_raw: AnalogInput,
@@ -235,7 +235,7 @@ impl WagoWinder {
 
     pub fn sync_traverse_speed(&mut self) {
         let spool_speed = self.actual_spool_angular_velocity();
-        let traverse_end_stop = self.traverse.get_s3_bit0();
+        let traverse_end_stop = self.traverse.get_s3_bit1();
         self.traverse_controller
             .update_speed(&mut self.traverse, traverse_end_stop, spool_speed)
     }

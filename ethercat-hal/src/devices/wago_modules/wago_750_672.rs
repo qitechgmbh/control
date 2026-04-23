@@ -47,7 +47,7 @@ pub struct Wago750_672 {
 }
 
 impl Wago750_672 {
-    fn queue_mailbox_command(&mut self, opcode: u8, p1: u8, p2: u8, p3: u8, p4: u8) {
+    pub(crate) fn queue_mailbox_command(&mut self, opcode: u8, p1: u8, p2: u8, p3: u8, p4: u8) {
         self.mailbox_toggle = !self.mailbox_toggle;
         let control_mbx = if self.mailbox_toggle { 0x80 } else { 0x00 };
         self.mailbox_queue

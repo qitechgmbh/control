@@ -31,6 +31,9 @@ pub struct StepperVelocityWago750672 {
 }
 
 impl StepperVelocityWago750672 {
+    const MBX_DRIVE_COMMAND: u8 = 0x40;
+    const MBX_SET_CURRENT: u8 = 0x39;
+
     pub fn new(device: Arc<RwLock<Wago750_672>>) -> Self {
         {
             let mut dev = block_on(device.write());
@@ -244,6 +247,18 @@ impl StepperVelocityWago750672 {
             dev.state = InitState::SetMode;
             self.state = InitState::SetMode;
         }
+    }
+
+    pub fn request_set_current_mailbox(&mut self, current_percent: u8, valid_range_bits: u8) {
+        let mut dev = block_on(self.device.write());
+        dev.start_requested = false;
+        dev.queue_mailbox_command(
+            Self::MBX_DRIVE_COMMAND,
+            Self::MBX_SET_CURRENT,
+            current_percent.min(150),
+            0,
+            valid_range_bits & 0x0F,
+        );
     }
 
     pub fn request_fast_stop(&mut self) {

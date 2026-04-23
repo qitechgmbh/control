@@ -22,8 +22,8 @@ mod winder2_imports {
     pub use ethercat_hal::io::analog_input::AnalogInput;
     pub use ethercat_hal::io::digital_output::DigitalOutput;
     pub use ethercat_hal::io::stepper_velocity_wago_750_671::StepperVelocityWago750671;
+    pub use ethercat_hal::io::stepper_velocity_wago_750_671_traverse::StepperVelocityWago750671Traverse;
     pub use ethercat_hal::io::stepper_velocity_wago_750_672::StepperVelocityWago750672;
-    pub use ethercat_hal::io::stepper_velocity_wago_750_672_traverse::StepperVelocityWago750672Traverse;
     pub use smol::lock::RwLock;
     pub use std::sync::Arc;
     pub use std::time::Instant;
@@ -91,12 +91,12 @@ impl MachineNewTrait for WagoWinder {
             coupler.init_slot_modules(wago_750_354.1);
 
             let wago_750_501 = get_slot_device::<Wago750_501>(&coupler, 0, "Wago 750-501").await?;
-            let puller_671 =
-                get_slot_device::<Wago750_671>(&coupler, 1, "puller Wago 750-671").await?;
+            let traverse_671 =
+                get_slot_device::<Wago750_671>(&coupler, 1, "traverse Wago 750-671").await?;
             let spool_672 =
                 get_slot_device::<Wago750_672>(&coupler, 2, "spool Wago 750-672").await?;
-            let traverse_672 =
-                get_slot_device::<Wago750_672>(&coupler, 3, "traverse Wago 750-672").await?;
+            let puller_672 =
+                get_slot_device::<Wago750_672>(&coupler, 3, "puller Wago 750-672").await?;
             let wago_750_467 = get_slot_device::<Wago750_467>(&coupler, 4, "Wago 750-467").await?;
             drop(coupler);
 
@@ -115,10 +115,10 @@ impl MachineNewTrait for WagoWinder {
                 main_sender: params.main_thread_channel.clone(),
                 api_receiver: receiver,
                 api_sender: sender,
-                traverse: StepperVelocityWago750672Traverse::new(StepperVelocityWago750672::new(
-                    traverse_672,
+                traverse: StepperVelocityWago750671Traverse::new(StepperVelocityWago750671::new(
+                    traverse_671,
                 )),
-                puller: StepperVelocityWago750671::new(puller_671),
+                puller: StepperVelocityWago750672::new(puller_672),
                 spool: StepperVelocityWago750672::new(spool_672),
                 tension_arm: TensionArm::new(AnalogInput::new(wago_750_467, Wago750_467Port::AI1)),
                 tension_arm_raw,
@@ -173,6 +173,9 @@ impl MachineNewTrait for WagoWinder {
             new.spool.request_speed_mode();
             new.spool.clear_fast_stop();
             new.traverse.configure_for_traverse_contract(3, 2, 1000);
+            new.traverse
+                .inner_mut()
+                .request_set_current_mailbox(150, 0x0F);
             new.puller.set_motor_full_steps_per_rev(200);
             new.puller.set_microsteps_per_full_step(64);
             new.puller.set_direction_multiplier(-1);
