@@ -53,8 +53,6 @@ in
     users.users.${cfg.user} = {
       isSystemUser = true;
       group = cfg.group;
-      home = "/var/lib/qitech";
-      createHome = true;
       description = "QiTech service user";
       extraGroups = [
         "realtime"
@@ -99,6 +97,8 @@ in
         # Hardening options
         NoNewPrivileges = true;
         ProtectSystem = "strict";
+
+        StateDirectory = "qitech";
 
         # Open only /proc/irq explicitly
         ReadWritePaths = [ "/proc/irq" ];
