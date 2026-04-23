@@ -36,9 +36,7 @@ pub struct Wago750_672 {
     enable_stuck_counter: u32,
     mailbox_toggle: bool,
     mailbox_queue: VecDeque<[u8; 6]>,
-    mailbox_queue_meta: VecDeque<MailboxCommandMeta>,
     mailbox_pending: Option<[u8; 6]>,
-    mailbox_pending_meta: Option<MailboxCommandMeta>,
     mailbox_in_flight: bool,
     mailbox_active: bool,
     config_defaults_queued: bool,
@@ -47,83 +45,39 @@ pub struct Wago750_672 {
     pub start_requested: bool,
     pub last_tms_enabling_block: Option<u32>,
     pub last_diag_return_code: Option<u8>,
-    pub landed_profile: Wago750672LandedProfile,
-}
-
-#[derive(Clone, Debug)]
-enum MailboxCommandMeta {
-    Other,
-    ConfigWriteU8 { address: u16, value: u8 },
-    ConfigWriteU16 { address: u16, value: u16 },
-    SetCurrentProfile { percent: u8, valid_range_bits: u8 },
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct Wago750672LandedProfile {
-    pub freq_div: Option<u16>,
-    pub acc_fact: Option<u16>,
-    pub nominal_current_tenths_amp: Option<u8>,
-    pub current_profile_percent: Option<u8>,
-    pub current_profile_range_bits: Option<u8>,
 }
 
 impl Wago750_672 {
-    fn queue_mailbox_command_with_meta(
+    fn queue_mailbox_command(
         &mut self,
         opcode: u8,
         p1: u8,
         p2: u8,
         p3: u8,
         p4: u8,
-        meta: MailboxCommandMeta,
     ) {
         self.mailbox_toggle = !self.mailbox_toggle;
         let control_mbx = if self.mailbox_toggle { 0x80 } else { 0x00 };
         self.mailbox_queue
             .push_back([opcode, control_mbx, p1, p2, p3, p4]);
-        self.mailbox_queue_meta.push_back(meta);
         self.mailbox_active = true;
     }
 
     pub(crate) fn queue_config_write_u8(&mut self, address: u16, value: u8) {
         let [addr_l, addr_h] = address.to_le_bytes();
-        self.queue_mailbox_command_with_meta(0x50, addr_l, addr_h, 1, 0, MailboxCommandMeta::Other);
-        self.queue_mailbox_command_with_meta(
-            0x51,
-            value,
-            0,
-            0,
-            0,
-            MailboxCommandMeta::ConfigWriteU8 { address, value },
-        );
+        self.queue_mailbox_command(0x50, addr_l, addr_h, 1, 0);
+        self.queue_mailbox_command(0x51, value, 0, 0, 0);
     }
 
     pub(crate) fn queue_config_write_u16(&mut self, address: u16, value: u16) {
         let [addr_l, addr_h] = address.to_le_bytes();
         let [value_l, value_h] = value.to_le_bytes();
-        self.queue_mailbox_command_with_meta(0x50, addr_l, addr_h, 2, 0, MailboxCommandMeta::Other);
-        self.queue_mailbox_command_with_meta(
-            0x51,
-            value_l,
-            value_h,
-            0,
-            0,
-            MailboxCommandMeta::ConfigWriteU16 { address, value },
-        );
+        self.queue_mailbox_command(0x50, addr_l, addr_h, 2, 0);
+        self.queue_mailbox_command(0x51, value_l, value_h, 0, 0);
     }
 
     pub(crate) fn queue_set_current_profile(&mut self, percent: u8, valid_range_bits: u8) {
-        self.queue_mailbox_command_with_meta(
-            0x40,
-            0x39,
-            percent,
-            0,
-            valid_range_bits & 0x0F,
-            MailboxCommandMeta::SetCurrentProfile {
-                percent,
-                valid_range_bits: valid_range_bits & 0x0F,
-            },
-        );
+        self.queue_mailbox_command(0x40, 0x39, percent, 0, valid_range_bits & 0x0F);
     }
 
     pub fn queue_velocity_control_pointer_defaults(&mut self) {
@@ -156,20 +110,12 @@ impl Wago750_672 {
             || !self.mailbox_queue.is_empty()
     }
 
-    pub fn is_mailbox_active(&self) -> bool {
-        self.mailbox_busy()
-    }
-
     fn process_mailbox_response(&mut self, b: &[u8; 12]) {
         if !self.mailbox_in_flight || (b[0] & 0x20) == 0 {
             return;
         }
 
         let opcode = self.mailbox_pending.map(|pending| pending[0]).unwrap_or(0);
-        let meta = self
-            .mailbox_pending_meta
-            .clone()
-            .unwrap_or(MailboxCommandMeta::Other);
         let expected_toggle = self
             .mailbox_pending
             .map(|pending| (pending[1] & 0x80) != 0)
@@ -185,30 +131,7 @@ impl Wago750_672 {
         if opcode == 0x4C {
             self.last_tms_enabling_block = Some(value);
         }
-        if return_code == 0 {
-            match meta {
-                MailboxCommandMeta::Other => {}
-                MailboxCommandMeta::ConfigWriteU8 { address, value } => {
-                    if address == 14 {
-                        self.landed_profile.nominal_current_tenths_amp = Some(value);
-                    }
-                }
-                MailboxCommandMeta::ConfigWriteU16 { address, value } => match address {
-                    4 => self.landed_profile.freq_div = Some(value),
-                    6 => self.landed_profile.acc_fact = Some(value),
-                    _ => {}
-                },
-                MailboxCommandMeta::SetCurrentProfile {
-                    percent,
-                    valid_range_bits,
-                } => {
-                    self.landed_profile.current_profile_percent = Some(percent);
-                    self.landed_profile.current_profile_range_bits = Some(valid_range_bits);
-                }
-            }
-        }
         self.mailbox_pending = None;
-        self.mailbox_pending_meta = None;
         self.mailbox_in_flight = false;
         if self.mailbox_queue.is_empty() {
             self.mailbox_active = false;
@@ -238,11 +161,6 @@ impl Wago750_672 {
 
         if let Some(bytes) = self.mailbox_queue.pop_front() {
             self.mailbox_pending = Some(bytes);
-            self.mailbox_pending_meta = Some(
-                self.mailbox_queue_meta
-                    .pop_front()
-                    .unwrap_or(MailboxCommandMeta::Other),
-            );
             self.mailbox_in_flight = true;
             self.mailbox_active = true;
             self.rxpdo.control_byte |= 0x20; // C0.5 = mailbox process image
@@ -749,11 +667,9 @@ impl NewEthercatDevice for Wago750_672 {
             log_counter: 0,
             enable_stuck_counter: 0,
             mailbox_toggle: false,
-            mailbox_queue: VecDeque::new(),
-            mailbox_queue_meta: VecDeque::new(),
             mailbox_pending: None,
-            mailbox_pending_meta: None,
             mailbox_in_flight: false,
+            mailbox_queue: VecDeque::new(),
             mailbox_active: false,
             config_defaults_queued: false,
             desired_command: C1Command::SpeedControl,
@@ -761,7 +677,6 @@ impl NewEthercatDevice for Wago750_672 {
             start_requested: true,
             last_tms_enabling_block: None,
             last_diag_return_code: None,
-            landed_profile: Wago750672LandedProfile::default(),
         }
     }
 }

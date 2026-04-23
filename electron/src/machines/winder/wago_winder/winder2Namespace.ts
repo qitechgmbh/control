@@ -168,19 +168,6 @@ export const tensionArmStateSchema = z.object({
   zeroed: z.boolean(),
 });
 
-export const axisDriveProfileStateSchema = z.object({
-  mailbox_idle: z.boolean(),
-  nominal_current_ok: z.boolean(),
-  freq_div_ok: z.boolean(),
-  acc_fact_ok: z.boolean(),
-  current_profile_ok: z.boolean(),
-});
-
-export const driveProfileStateSchema = z.object({
-  spool: axisDriveProfileStateSchema,
-  puller: axisDriveProfileStateSchema,
-});
-
 /**
  * Spool speed controller state schema
  */
@@ -205,7 +192,6 @@ export const stateEventDataSchema = z.object({
   puller_state: pullerStateSchema,
   mode_state: modeStateSchema,
   tension_arm_state: tensionArmStateSchema,
-  drive_profile_state: driveProfileStateSchema,
   spool_speed_controller_state: spoolSpeedControllerStateSchema,
   spool_automatic_action_state: spoolAutomaticActionStateSchema,
 });

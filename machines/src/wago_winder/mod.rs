@@ -232,14 +232,11 @@ impl WagoWinder {
         self.spool.request_speed_mode();
     }
 
-    fn stop_spool_motion(&mut self, disable_axis: bool) {
+    fn stop_spool_motion(&mut self, _disable_axis: bool) {
         self.spool_speed_controller.set_enabled(false);
         self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
         self.spool.request_fast_stop();
-        let _ = self.spool.set_speed(0.0);
-        if disable_axis {
-            self.spool.set_enabled(false);
-        }
+        self.spool.set_enabled(false);
     }
 
     fn arm_puller_for_speed_control(&mut self) {
@@ -248,13 +245,10 @@ impl WagoWinder {
         self.puller.request_speed_mode();
     }
 
-    fn stop_puller_motion(&mut self, disable_axis: bool) {
+    fn stop_puller_motion(&mut self, _disable_axis: bool) {
         self.puller_speed_controller.set_enabled(false);
         self.puller.request_fast_stop();
-        let _ = self.puller.set_speed(0.0);
-        if disable_axis {
-            self.puller.set_enabled(false);
-        }
+        self.puller.set_enabled(false);
     }
 
     /// Validates that traverse limits maintain proper constraints:

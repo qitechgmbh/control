@@ -324,34 +324,6 @@ impl StepperVelocityWago750672 {
         self.velocity_register_to_steps_per_second(self.get_actual_velocity_register())
     }
 
-    pub fn is_mailbox_active(&self) -> bool {
-        let dev = block_on(self.device.read());
-        dev.is_mailbox_active()
-    }
-
-    pub fn get_applied_freq_div_config(&self) -> Option<u16> {
-        let dev = block_on(self.device.read());
-        dev.landed_profile.freq_div
-    }
-
-    pub fn get_applied_acc_fact(&self) -> Option<u16> {
-        let dev = block_on(self.device.read());
-        dev.landed_profile.acc_fact
-    }
-
-    pub fn get_applied_nominal_current_tenths_amp(&self) -> Option<u8> {
-        let dev = block_on(self.device.read());
-        dev.landed_profile.nominal_current_tenths_amp
-    }
-
-    pub fn get_applied_current_profile(&self) -> Option<(u8, u8)> {
-        let dev = block_on(self.device.read());
-        Some((
-            dev.landed_profile.current_profile_percent?,
-            dev.landed_profile.current_profile_range_bits?,
-        ))
-    }
-
     pub fn get_s3_bit0(&self) -> bool {
         let dev = block_on(self.device.read());
         StatusByteS3::from_bits(dev.txpdo.status_byte3).has_flag(S3Flag::Input1)

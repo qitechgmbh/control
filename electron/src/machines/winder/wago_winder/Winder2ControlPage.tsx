@@ -32,23 +32,6 @@ import {
 import { getWinder2TraverseMax } from "./winder2Config";
 import { getWinder2AdaptivePullerSpeed } from "./winder2Config";
 
-function ProfileLamp({
-  label,
-  ok,
-}: {
-  label: string;
-  ok: boolean | undefined;
-}) {
-  return (
-    <div className="flex items-center gap-2 rounded-md border p-2">
-      <div
-        className={`h-3 w-3 rounded-sm ${ok ? "bg-green-500" : "bg-zinc-500"}`}
-      />
-      <span className="text-xs">{label}</span>
-    </div>
-  );
-}
-
 export function Winder2ControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
   const traverseMax = getWinder2TraverseMax();
@@ -104,61 +87,6 @@ export function Winder2ControlPage() {
   return (
     <Page>
       <ControlGrid>
-        <ControlCard title="WAGO 672 Profiles">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Spool</div>
-              <div className="grid grid-cols-2 gap-2">
-                <ProfileLamp
-                  label="Mailbox Idle"
-                  ok={state?.drive_profile_state?.spool?.mailbox_idle}
-                />
-                <ProfileLamp
-                  label="Nominal Current"
-                  ok={state?.drive_profile_state?.spool?.nominal_current_ok}
-                />
-                <ProfileLamp
-                  label="Freq_Div"
-                  ok={state?.drive_profile_state?.spool?.freq_div_ok}
-                />
-                <ProfileLamp
-                  label="Acc_Fact"
-                  ok={state?.drive_profile_state?.spool?.acc_fact_ok}
-                />
-                <ProfileLamp
-                  label="Current Profile"
-                  ok={state?.drive_profile_state?.spool?.current_profile_ok}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Puller</div>
-              <div className="grid grid-cols-2 gap-2">
-                <ProfileLamp
-                  label="Mailbox Idle"
-                  ok={state?.drive_profile_state?.puller?.mailbox_idle}
-                />
-                <ProfileLamp
-                  label="Nominal Current"
-                  ok={state?.drive_profile_state?.puller?.nominal_current_ok}
-                />
-                <ProfileLamp
-                  label="Freq_Div"
-                  ok={state?.drive_profile_state?.puller?.freq_div_ok}
-                />
-                <ProfileLamp
-                  label="Acc_Fact"
-                  ok={state?.drive_profile_state?.puller?.acc_fact_ok}
-                />
-                <ProfileLamp
-                  label="Current Profile"
-                  ok={state?.drive_profile_state?.puller?.current_profile_ok}
-                />
-              </div>
-            </div>
-          </div>
-        </ControlCard>
-
         <ControlCard title="Spool">
           <Spool rpm={spoolRpm.current?.value} />
           <TimeSeriesValueNumeric

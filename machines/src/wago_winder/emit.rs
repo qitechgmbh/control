@@ -4,8 +4,7 @@ mod winder2_imports {
     pub use super::super::{TraverseMode, WagoWinder, Winder2Mode, api, spool_speed_controller};
     pub use crate::buffer1::BufferV1;
     pub use api::{
-        AxisDriveProfileState, DriveProfileState, LiveValuesEvent, ModeState, PullerState,
-        SpoolAutomaticActionMode,
+        LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode,
         SpoolAutomaticActionState, SpoolSpeedControllerState, StateEvent, TensionArmState,
         TraverseState, Winder2Events,
     };
@@ -29,39 +28,12 @@ pub use winder2_imports::*;
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::{AsyncThreadMessage, MachineSubscriptionRequest};
-#[cfg(not(feature = "mock-machine"))]
-use crate::wago_winder::new::{
-    WAGO_672_CURRENT_PROFILE_ALL_RANGES, WAGO_672_CURRENT_PROFILE_FULL_PERCENT,
-    WAGO_672_PULLER_FREQ_DIV, WAGO_672_PULLER_NOMINAL_CURRENT_TENTHS_AMP,
-    WAGO_672_SPOOL_FREQ_DIV, WAGO_672_SPOOL_NOMINAL_CURRENT_TENTHS_AMP,
-};
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::MachineIdentificationUnique;
 
 #[cfg(not(feature = "mock-machine"))]
 impl WagoWinder {
-    fn build_672_profile_state(
-        axis: &crate::wago_winder::StepperVelocityWago750672,
-        expected_nominal_current_tenths_amp: u8,
-        expected_freq_div: u16,
-    ) -> AxisDriveProfileState {
-        let current_profile_ok = axis.get_applied_current_profile()
-            == Some((
-                WAGO_672_CURRENT_PROFILE_FULL_PERCENT,
-                WAGO_672_CURRENT_PROFILE_ALL_RANGES,
-            ));
-
-        AxisDriveProfileState {
-            mailbox_idle: !axis.is_mailbox_active(),
-            nominal_current_ok: axis.get_applied_nominal_current_tenths_amp()
-                == Some(expected_nominal_current_tenths_amp),
-            freq_div_ok: axis.get_applied_freq_div_config() == Some(expected_freq_div),
-            acc_fact_ok: axis.get_applied_acc_fact() == Some(expected_freq_div),
-            current_profile_ok,
-        }
-    }
-
     /// Implement Spool
     /// called by `act`
     pub fn sync_spool_speed(&mut self, t: Instant) {
@@ -84,7 +56,6 @@ impl WagoWinder {
                 self.spool_tension_blocked = false;
                 self.arm_spool_for_speed_control();
                 self.spool_speed_controller.reset();
-                let _ = self.spool.set_speed(0.0);
                 return;
             }
         } else if !self.tension_arm_in_spool_window() {
@@ -340,18 +311,6 @@ impl WagoWinder {
             },
             tension_arm_state: TensionArmState {
                 zeroed: self.tension_arm.zeroed,
-            },
-            drive_profile_state: DriveProfileState {
-                spool: Self::build_672_profile_state(
-                    &self.spool,
-                    WAGO_672_SPOOL_NOMINAL_CURRENT_TENTHS_AMP,
-                    WAGO_672_SPOOL_FREQ_DIV,
-                ),
-                puller: Self::build_672_profile_state(
-                    &self.puller,
-                    WAGO_672_PULLER_NOMINAL_CURRENT_TENTHS_AMP,
-                    WAGO_672_PULLER_FREQ_DIV,
-                ),
             },
             spool_speed_controller_state: SpoolSpeedControllerState {
                 regulation_mode: self.spool_speed_controller.get_type().clone(),

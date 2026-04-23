@@ -177,8 +177,6 @@ pub struct StateEvent {
     pub mode_state: ModeState,
     /// tension arm state
     pub tension_arm_state: TensionArmState,
-    /// backend confirmation that the WAGO 672 profile writes landed
-    pub drive_profile_state: DriveProfileState,
     /// spool speed controller state
     pub spool_speed_controller_state: SpoolSpeedControllerState,
     /// Is a Machine Connected?
@@ -281,21 +279,6 @@ pub struct ModeState {
 pub struct TensionArmState {
     /// is zeroed
     pub zeroed: bool,
-}
-
-#[derive(Serialize, Debug, Clone, Default)]
-pub struct AxisDriveProfileState {
-    pub mailbox_idle: bool,
-    pub nominal_current_ok: bool,
-    pub freq_div_ok: bool,
-    pub acc_fact_ok: bool,
-    pub current_profile_ok: bool,
-}
-
-#[derive(Serialize, Debug, Clone, Default)]
-pub struct DriveProfileState {
-    pub spool: AxisDriveProfileState,
-    pub puller: AxisDriveProfileState,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
