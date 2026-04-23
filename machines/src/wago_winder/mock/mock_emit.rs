@@ -91,6 +91,7 @@ impl WagoWinder {
             spool_automatic_action_state: self.spool_automatic_action_state.clone(),
             mode_state: self.mode_state.clone(),
             tension_arm_state: self.tension_arm_state.clone(),
+            drive_profile_state: self.drive_profile_state.clone(),
             spool_speed_controller_state: self.spool_speed_controller_state.clone(),
             puller_reference_machine: None,
         }

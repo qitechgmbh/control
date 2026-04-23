@@ -55,6 +55,58 @@ async fn get_slot_device<T: EthercatDevice>(
 }
 
 #[cfg(not(feature = "mock-machine"))]
+pub(crate) const WAGO_672_SPOOL_NOMINAL_CURRENT_TENTHS_AMP: u8 = 60;
+#[cfg(not(feature = "mock-machine"))]
+pub(crate) const WAGO_672_PULLER_NOMINAL_CURRENT_TENTHS_AMP: u8 = 28;
+#[cfg(not(feature = "mock-machine"))]
+pub(crate) const WAGO_672_CURRENT_PROFILE_FULL_PERCENT: u8 = 100;
+#[cfg(not(feature = "mock-machine"))]
+pub(crate) const WAGO_672_CURRENT_PROFILE_ALL_RANGES: u8 = 0x0F;
+#[cfg(not(feature = "mock-machine"))]
+pub(crate) const WAGO_672_FREQ_RANGE_SEL: u8 = 0;
+#[cfg(not(feature = "mock-machine"))]
+pub(crate) const WAGO_672_ACC_RANGE_SEL: u8 = 0;
+#[cfg(not(feature = "mock-machine"))]
+pub(crate) const WAGO_672_WINDER_ACCELERATION: u16 = 1600;
+#[cfg(not(feature = "mock-machine"))]
+pub(crate) const WAGO_672_SPOOL_FREQ_DIV: u16 = 16;
+#[cfg(not(feature = "mock-machine"))]
+pub(crate) const WAGO_672_PULLER_FREQ_DIV: u16 = 32;
+
+#[cfg(not(feature = "mock-machine"))]
+fn configure_wago_672_velocity_axis(
+    axis: &mut StepperVelocityWago750672,
+    direction_multiplier: i8,
+    nominal_current_tenths_amp: u8,
+    freq_div: u16,
+) {
+    axis.set_motor_full_steps_per_rev(200);
+    axis.set_microsteps_per_full_step(64);
+    axis.set_direction_multiplier(direction_multiplier);
+    axis.set_speed_scale(1.0);
+    axis.set_restart_on_velocity_change(false);
+    // Mirror Beckhoff speed realms as closely as the 750-672 permits:
+    // EL7041 default Steps2000 -> Freq_Div ~= 16
+    // EL7031-0030 Steps1000   -> Freq_Div ~= 32
+    axis.request_set_freq_div_config_mailbox(freq_div);
+    // When Acc_Fact == Freq_Div and the range selectors stay at 0,
+    // the WAGO acceleration setpoint is interpreted directly in Hz/s.
+    axis.request_set_acc_fact_mailbox(freq_div);
+    axis.set_freq_range_sel(WAGO_672_FREQ_RANGE_SEL);
+    axis.set_acc_range_sel(WAGO_672_ACC_RANGE_SEL);
+    axis.set_acceleration(WAGO_672_WINDER_ACCELERATION);
+    axis.request_speed_mode();
+    axis.clear_fast_stop();
+    axis.request_set_nominal_current_tenths_amp(nominal_current_tenths_amp);
+    // Mirror the Beckhoff runtime contract as closely as WAGO allows:
+    // do not reduce current in any motion phase unless the application asks for it.
+    axis.request_set_current_mailbox(
+        WAGO_672_CURRENT_PROFILE_FULL_PERCENT,
+        WAGO_672_CURRENT_PROFILE_ALL_RANGES,
+    );
+}
+
+#[cfg(not(feature = "mock-machine"))]
 impl MachineNewTrait for WagoWinder {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
@@ -162,34 +214,22 @@ impl MachineNewTrait for WagoWinder {
                 machine_identification_unique: machine_id,
             };
 
-            new.spool.set_motor_full_steps_per_rev(200);
-            new.spool.set_microsteps_per_full_step(64);
-            new.spool.set_direction_multiplier(1);
-            new.spool.set_speed_scale(1.0);
-            new.spool.set_restart_on_velocity_change(false);
-            new.spool.set_freq_range_sel(2);
-            new.spool.set_acc_range_sel(2);
-            new.spool.set_acceleration(1600);
-            new.spool.request_speed_mode();
-            new.spool.clear_fast_stop();
-            new.spool.request_set_nominal_current_tenths_amp(50);
-            new.spool.request_set_current_mailbox(100, 0x0F);
+            configure_wago_672_velocity_axis(
+                &mut new.spool,
+                1,
+                WAGO_672_SPOOL_NOMINAL_CURRENT_TENTHS_AMP,
+                WAGO_672_SPOOL_FREQ_DIV,
+            );
             new.traverse.configure_for_traverse_contract(3, 2, 1000);
             new.traverse
                 .inner_mut()
                 .request_set_current_mailbox(150, 0x0F);
-            new.puller.set_motor_full_steps_per_rev(200);
-            new.puller.set_microsteps_per_full_step(64);
-            new.puller.set_direction_multiplier(-1);
-            new.puller.set_speed_scale(1.0);
-            new.puller.set_restart_on_velocity_change(false);
-            new.puller.set_freq_range_sel(2);
-            new.puller.set_acc_range_sel(2);
-            new.puller.set_acceleration(1600);
-            new.puller.request_speed_mode();
-            new.puller.clear_fast_stop();
-            new.puller.request_set_nominal_current_tenths_amp(28);
-            new.puller.request_set_current_mailbox(100, 0x0F);
+            configure_wago_672_velocity_axis(
+                &mut new.puller,
+                -1,
+                WAGO_672_PULLER_NOMINAL_CURRENT_TENTHS_AMP,
+                WAGO_672_PULLER_FREQ_DIV,
+            );
             new.traverse.set_acceleration(1000);
 
             // initalize events

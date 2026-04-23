@@ -226,6 +226,37 @@ impl WagoWinder {
         (25.0..=85.0).contains(&angle_deg)
     }
 
+    fn arm_spool_for_speed_control(&mut self) {
+        self.spool.set_enabled(true);
+        self.spool.clear_fast_stop();
+        self.spool.request_speed_mode();
+    }
+
+    fn stop_spool_motion(&mut self, disable_axis: bool) {
+        self.spool_speed_controller.set_enabled(false);
+        self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
+        self.spool.request_fast_stop();
+        let _ = self.spool.set_speed(0.0);
+        if disable_axis {
+            self.spool.set_enabled(false);
+        }
+    }
+
+    fn arm_puller_for_speed_control(&mut self) {
+        self.puller.set_enabled(true);
+        self.puller.clear_fast_stop();
+        self.puller.request_speed_mode();
+    }
+
+    fn stop_puller_motion(&mut self, disable_axis: bool) {
+        self.puller_speed_controller.set_enabled(false);
+        self.puller.request_fast_stop();
+        let _ = self.puller.set_speed(0.0);
+        if disable_axis {
+            self.puller.set_enabled(false);
+        }
+    }
+
     /// Validates that traverse limits maintain proper constraints:
     /// - Inner limit must be smaller than outer limit
     /// - At least 0.9mm difference between inner and outer limits
@@ -516,13 +547,11 @@ impl WagoWinder {
                 SpoolMode::Standby => {}
                 SpoolMode::Hold => {
                     // From [`SpoolMode::Standby`] to [`SpoolMode::Hold`]
-                    self.spool.set_enabled(true);
-                    self.spool_speed_controller.set_enabled(false);
-                    self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
-                    let _ = self.spool.set_speed(0.0);
+                    self.arm_spool_for_speed_control();
+                    self.stop_spool_motion(false);
                 }
                 SpoolMode::Wind => {
-                    self.spool.set_enabled(true);
+                    self.arm_spool_for_speed_control();
                     self.spool_speed_controller.reset();
                     self.spool_speed_controller.set_enabled(true);
                 }
@@ -530,20 +559,14 @@ impl WagoWinder {
             SpoolMode::Hold => match mode {
                 SpoolMode::Standby => {
                     // From [`SpoolMode::Hold`] to [`SpoolMode::Standby`]
-                    self.spool_speed_controller.set_enabled(false);
-                    self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
-                    self.spool.request_fast_stop();
-                    let _ = self.spool.set_speed(0.0);
-                    self.spool.set_enabled(false);
+                    self.stop_spool_motion(true);
                 }
                 SpoolMode::Hold => {
-                    self.spool_speed_controller.set_enabled(false);
-                    self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
-                    self.spool.request_fast_stop();
-                    let _ = self.spool.set_speed(0.0);
+                    self.stop_spool_motion(false);
                 }
                 SpoolMode::Wind => {
                     // From [`SpoolMode::Hold`] to [`SpoolMode::Wind`]
+                    self.arm_spool_for_speed_control();
                     self.spool_speed_controller.reset();
                     self.spool_speed_controller.set_enabled(true);
                 }
@@ -551,18 +574,11 @@ impl WagoWinder {
             SpoolMode::Wind => match mode {
                 SpoolMode::Standby => {
                     // From [`SpoolMode::Wind`] to [`SpoolMode::Standby`]
-                    self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
-                    self.spool.request_fast_stop();
-                    let _ = self.spool.set_speed(0.0);
-                    self.spool.set_enabled(false);
-                    self.spool_speed_controller.set_enabled(false);
+                    self.stop_spool_motion(true);
                 }
                 SpoolMode::Hold => {
                     // From [`SpoolMode::Wind`] to [`SpoolMode::Hold`]
-                    self.spool_speed_controller.set_enabled(false);
-                    self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
-                    self.spool.request_fast_stop();
-                    let _ = self.spool.set_speed(0.0);
+                    self.stop_spool_motion(false);
                 }
                 SpoolMode::Wind => {}
             },
@@ -586,13 +602,12 @@ impl WagoWinder {
                 PullerMode::Standby => {}
                 PullerMode::Hold => {
                     // From [`PullerMode::Standby`] to [`PullerMode::Hold`]
-                    self.puller.set_enabled(true);
-                    self.puller_speed_controller.set_enabled(false);
-                    let _ = self.puller.set_speed(0.0);
+                    self.arm_puller_for_speed_control();
+                    self.stop_puller_motion(false);
                 }
                 PullerMode::Pull => {
                     // From [`PullerMode::Standby`] to [`PullerMode::Pull`]
-                    self.puller.set_enabled(true);
+                    self.arm_puller_for_speed_control();
                     self.puller_speed_controller.reset();
                     self.puller_speed_controller.set_enabled(true);
                 }
@@ -600,16 +615,14 @@ impl WagoWinder {
             PullerMode::Hold => match mode {
                 PullerMode::Standby => {
                     // From [`PullerMode::Hold`] to [`PullerMode::Standby`]
-                    self.puller_speed_controller.set_enabled(false);
-                    let _ = self.puller.set_speed(0.0);
-                    self.puller.set_enabled(false);
+                    self.stop_puller_motion(true);
                 }
                 PullerMode::Hold => {
-                    self.puller_speed_controller.set_enabled(false);
-                    let _ = self.puller.set_speed(0.0);
+                    self.stop_puller_motion(false);
                 }
                 PullerMode::Pull => {
                     // From [`PullerMode::Hold`] to [`PullerMode::Pull`]
+                    self.arm_puller_for_speed_control();
                     self.puller_speed_controller.reset();
                     self.puller_speed_controller.set_enabled(true);
                 }
@@ -617,14 +630,11 @@ impl WagoWinder {
             PullerMode::Pull => match mode {
                 PullerMode::Standby => {
                     // From [`PullerMode::Pull`] to [`PullerMode::Standby`]
-                    let _ = self.puller.set_speed(0.0);
-                    self.puller.set_enabled(false);
-                    self.puller_speed_controller.set_enabled(false);
+                    self.stop_puller_motion(true);
                 }
                 PullerMode::Hold => {
                     // From [`PullerMode::Pull`] to [`PullerMode::Hold`]
-                    self.puller_speed_controller.set_enabled(false);
-                    let _ = self.puller.set_speed(0.0);
+                    self.stop_puller_motion(false);
                 }
                 PullerMode::Pull => {}
             },
@@ -658,6 +668,12 @@ impl WagoWinder {
     /// Implement Puller
     /// called by `act`
     pub fn sync_puller_speed(&mut self, t: Instant) {
+        if !self.puller_speed_controller.is_enabled() {
+            self.stop_puller_motion(false);
+            return;
+        }
+
+        self.arm_puller_for_speed_control();
         let angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
         let steps_per_second = self
             .puller_speed_controller

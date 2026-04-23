@@ -6,8 +6,8 @@ pub mod mock_emit;
 pub mod new;
 
 use super::api::{
-    ModeState, PullerState, SpoolAutomaticActionState, SpoolSpeedControllerState, TensionArmState,
-    TraverseState, Winder2Namespace,
+    DriveProfileState, ModeState, PullerState, SpoolAutomaticActionState,
+    SpoolSpeedControllerState, TensionArmState, TraverseState, Winder2Namespace,
 };
 use crate::{
     AsyncThreadMessage, Machine, MachineConnection, MachineMessage,
@@ -31,6 +31,8 @@ pub struct WagoWinder {
     pub mode_state: ModeState,
     /// tension arm state
     pub tension_arm_state: TensionArmState,
+    /// mailbox landing state
+    pub drive_profile_state: DriveProfileState,
     /// spool speed controller state
     pub spool_speed_controller_state: SpoolSpeedControllerState,
 

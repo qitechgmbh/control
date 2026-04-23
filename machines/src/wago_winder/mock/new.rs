@@ -1,8 +1,8 @@
 use crate::{
     MachineNewParams, MachineNewTrait,
     wago_winder::api::{
-        ModeState, PullerState, SpoolAutomaticActionState, SpoolSpeedControllerState,
-        TensionArmState, TraverseState, Winder2Namespace,
+        DriveProfileState, ModeState, PullerState, SpoolAutomaticActionState,
+        SpoolSpeedControllerState, TensionArmState, TraverseState, Winder2Namespace,
     },
 };
 
@@ -46,6 +46,7 @@ impl MachineNewTrait for WagoWinder {
             spool_automatic_action_state: SpoolAutomaticActionState::default(),
             mode_state: ModeState::default(),
             tension_arm_state: TensionArmState::default(),
+            drive_profile_state: DriveProfileState::default(),
             spool_speed_controller_state: SpoolSpeedControllerState::default(),
             connected_machines: vec![],
         };

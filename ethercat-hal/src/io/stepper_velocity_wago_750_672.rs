@@ -31,8 +31,8 @@ pub struct StepperVelocityWago750672 {
 }
 
 impl StepperVelocityWago750672 {
-    const MBX_DRIVE_COMMAND: u8 = 0x40;
-    const MBX_SET_CURRENT: u8 = 0x39;
+    const CFG_FREQ_DIV: u16 = 4;
+    const CFG_ACC_FACT: u16 = 6;
     const CFG_CURRENT: u16 = 14;
 
     pub fn new(device: Arc<RwLock<Wago750_672>>) -> Self {
@@ -89,6 +89,7 @@ impl StepperVelocityWago750672 {
             let mut dev = block_on(self.device.write());
             dev.rxpdo.velocity = self.target_velocity.clamp(-25000, 25000);
             dev.rxpdo.acceleration = self.target_acceleration;
+            dev.desired_stop2_n = true;
             dev.start_requested = self.target_velocity != 0;
             drop(dev);
             self.change_init_state(InitState::Enable);
@@ -101,6 +102,7 @@ impl StepperVelocityWago750672 {
             let mut dev = block_on(self.device.write());
             dev.initialized = false;
             dev.desired_command = C1Command::SpeedControl;
+            dev.desired_stop2_n = true;
             dev.start_requested = false;
             dev.rxpdo.velocity = 0;
             dev.rxpdo.control_byte2 &= !(C2Flag::ErrorQuit as u8);
@@ -253,13 +255,29 @@ impl StepperVelocityWago750672 {
     pub fn request_set_current_mailbox(&mut self, current_percent: u8, valid_range_bits: u8) {
         let mut dev = block_on(self.device.write());
         dev.start_requested = false;
-        dev.queue_mailbox_command(
-            Self::MBX_DRIVE_COMMAND,
-            Self::MBX_SET_CURRENT,
-            current_percent.min(150),
-            0,
-            valid_range_bits & 0x0F,
-        );
+        dev.queue_set_current_profile(current_percent.min(150), valid_range_bits & 0x0F);
+    }
+
+    /// Sets the Freq_Div configuration parameter via the mailbox-backed
+    /// configuration table. This is the prescaler used when
+    /// `freq_range_sel == 0`.
+    pub fn request_set_freq_div_config_mailbox(&mut self, freq_div_config: u16) {
+        let freq_div_config = freq_div_config.max(4);
+        self.freq_div_config = i32::from(freq_div_config);
+
+        let mut dev = block_on(self.device.write());
+        dev.start_requested = false;
+        dev.queue_config_write_u16(Self::CFG_FREQ_DIV, freq_div_config);
+    }
+
+    /// Sets the Acc_Fact configuration parameter via the mailbox-backed
+    /// configuration table. This factor is used when `acc_range_sel == 0`.
+    pub fn request_set_acc_fact_mailbox(&mut self, acc_fact: u16) {
+        let acc_fact = acc_fact.max(1);
+
+        let mut dev = block_on(self.device.write());
+        dev.start_requested = false;
+        dev.queue_config_write_u16(Self::CFG_ACC_FACT, acc_fact);
     }
 
     /// Sets the configured motor rated current in 0.1 A units via the
@@ -275,6 +293,7 @@ impl StepperVelocityWago750672 {
         self.target_velocity = 0;
         self.target_speed_fullsteps_per_second = 0;
         let mut dev = block_on(self.device.write());
+        dev.desired_stop2_n = false;
         dev.start_requested = false;
         dev.rxpdo.velocity = 0;
         dev.state = InitState::Running;
@@ -282,7 +301,7 @@ impl StepperVelocityWago750672 {
 
     pub fn clear_fast_stop(&mut self) {
         let mut dev = block_on(self.device.write());
-        dev.rxpdo.control_byte1 |= C1Flag::Stop2N as u8;
+        dev.desired_stop2_n = true;
     }
 
     fn microsteps_per_second_to_velocity_register(&self, microsteps_per_second: f64) -> i16 {
@@ -303,6 +322,34 @@ impl StepperVelocityWago750672 {
 
     pub fn get_actual_speed_steps_per_second(&self) -> f64 {
         self.velocity_register_to_steps_per_second(self.get_actual_velocity_register())
+    }
+
+    pub fn is_mailbox_active(&self) -> bool {
+        let dev = block_on(self.device.read());
+        dev.is_mailbox_active()
+    }
+
+    pub fn get_applied_freq_div_config(&self) -> Option<u16> {
+        let dev = block_on(self.device.read());
+        dev.landed_profile.freq_div
+    }
+
+    pub fn get_applied_acc_fact(&self) -> Option<u16> {
+        let dev = block_on(self.device.read());
+        dev.landed_profile.acc_fact
+    }
+
+    pub fn get_applied_nominal_current_tenths_amp(&self) -> Option<u8> {
+        let dev = block_on(self.device.read());
+        dev.landed_profile.nominal_current_tenths_amp
+    }
+
+    pub fn get_applied_current_profile(&self) -> Option<(u8, u8)> {
+        let dev = block_on(self.device.read());
+        Some((
+            dev.landed_profile.current_profile_percent?,
+            dev.landed_profile.current_profile_range_bits?,
+        ))
     }
 
     pub fn get_s3_bit0(&self) -> bool {
