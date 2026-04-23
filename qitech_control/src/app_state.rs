@@ -39,6 +39,7 @@ pub struct SocketioSetup {
 /*
     This struct is only written in the main machine loop or during initialization,
     Otherwise it is simply read.
+    TODO: then why is it locked and not just read-only?
     Except socketio
 */
 pub struct SharedAppState {
