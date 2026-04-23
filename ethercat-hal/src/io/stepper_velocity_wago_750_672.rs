@@ -33,6 +33,7 @@ pub struct StepperVelocityWago750672 {
 impl StepperVelocityWago750672 {
     const MBX_DRIVE_COMMAND: u8 = 0x40;
     const MBX_SET_CURRENT: u8 = 0x39;
+    const CFG_CURRENT: u16 = 14;
 
     pub fn new(device: Arc<RwLock<Wago750_672>>) -> Self {
         {
@@ -259,6 +260,15 @@ impl StepperVelocityWago750672 {
             0,
             valid_range_bits & 0x0F,
         );
+    }
+
+    /// Sets the configured motor rated current in 0.1 A units via the
+    /// configuration table. For the 750-672, the WAGO configuration layout
+    /// uses byte 14 ("Current"), where 50 corresponds to 5.0 A.
+    pub fn request_set_nominal_current_tenths_amp(&mut self, current_tenths_amp: u8) {
+        let mut dev = block_on(self.device.write());
+        dev.start_requested = false;
+        dev.queue_config_write_u8(Self::CFG_CURRENT, current_tenths_amp.min(75));
     }
 
     pub fn request_fast_stop(&mut self) {

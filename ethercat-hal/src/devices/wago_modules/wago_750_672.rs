@@ -55,7 +55,7 @@ impl Wago750_672 {
         self.mailbox_active = true;
     }
 
-    fn queue_config_write_u8(&mut self, address: u16, value: u8) {
+    pub(crate) fn queue_config_write_u8(&mut self, address: u16, value: u8) {
         let [addr_l, addr_h] = address.to_le_bytes();
         self.queue_mailbox_command(0x50, addr_l, addr_h, 1, 0);
         self.queue_mailbox_command(0x51, value, 0, 0, 0);

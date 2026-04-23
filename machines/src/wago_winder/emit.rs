@@ -48,8 +48,7 @@ impl WagoWinder {
                 self.spool_speed_controller.reset();
             }
             self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
-            self.spool.clear_fast_stop();
-            self.spool.request_speed_mode();
+            self.spool.request_fast_stop();
             let _ = self.spool.set_speed(0.0);
             return;
         }
@@ -68,6 +67,7 @@ impl WagoWinder {
             self.spool_speed_controller.reset();
             self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
             self.spool.request_fast_stop();
+            let _ = self.spool.set_speed(0.0);
             return;
         }
 

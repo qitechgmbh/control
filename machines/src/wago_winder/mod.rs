@@ -235,7 +235,7 @@ impl WagoWinder {
 
     pub fn sync_traverse_speed(&mut self) {
         let spool_speed = self.actual_spool_angular_velocity();
-        let traverse_end_stop = self.traverse.get_s3_bit1();
+        let traverse_end_stop = self.traverse.get_s3_bit0();
         self.traverse_controller
             .update_speed(&mut self.traverse, traverse_end_stop, spool_speed)
     }
@@ -532,12 +532,14 @@ impl WagoWinder {
                     // From [`SpoolMode::Hold`] to [`SpoolMode::Standby`]
                     self.spool_speed_controller.set_enabled(false);
                     self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
+                    self.spool.request_fast_stop();
                     let _ = self.spool.set_speed(0.0);
                     self.spool.set_enabled(false);
                 }
                 SpoolMode::Hold => {
                     self.spool_speed_controller.set_enabled(false);
                     self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
+                    self.spool.request_fast_stop();
                     let _ = self.spool.set_speed(0.0);
                 }
                 SpoolMode::Wind => {
@@ -550,6 +552,7 @@ impl WagoWinder {
                 SpoolMode::Standby => {
                     // From [`SpoolMode::Wind`] to [`SpoolMode::Standby`]
                     self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
+                    self.spool.request_fast_stop();
                     let _ = self.spool.set_speed(0.0);
                     self.spool.set_enabled(false);
                     self.spool_speed_controller.set_enabled(false);
@@ -558,6 +561,7 @@ impl WagoWinder {
                     // From [`SpoolMode::Wind`] to [`SpoolMode::Hold`]
                     self.spool_speed_controller.set_enabled(false);
                     self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
+                    self.spool.request_fast_stop();
                     let _ = self.spool.set_speed(0.0);
                 }
                 SpoolMode::Wind => {}

@@ -172,6 +172,8 @@ impl MachineNewTrait for WagoWinder {
             new.spool.set_acceleration(1600);
             new.spool.request_speed_mode();
             new.spool.clear_fast_stop();
+            new.spool.request_set_nominal_current_tenths_amp(50);
+            new.spool.request_set_current_mailbox(100, 0x0F);
             new.traverse.configure_for_traverse_contract(3, 2, 1000);
             new.traverse
                 .inner_mut()
@@ -186,6 +188,8 @@ impl MachineNewTrait for WagoWinder {
             new.puller.set_acceleration(1600);
             new.puller.request_speed_mode();
             new.puller.clear_fast_stop();
+            new.puller.request_set_nominal_current_tenths_amp(28);
+            new.puller.request_set_current_mailbox(100, 0x0F);
             new.traverse.set_acceleration(1000);
 
             // initalize events
