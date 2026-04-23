@@ -9,6 +9,7 @@ use machine_implementations::machine_identification::{
     DeviceHardwareIdentificationEthercat, DeviceMachineIdentification,
     QiTechMachineIdentificationUnique,
 };
+use qitech_lib::ethercat_hal::machine_ident_read::MachineDeviceInfo;
 use response_util::{ResponseUtil, ResponseUtilError};
 use rest_api::rest_api_router;
 use serde::Serialize;
@@ -20,7 +21,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::Level;
 
-use crate::SharedAppState;
+use crate::{SharedAppState, persist};
 pub mod response;
 pub mod response_util;
 pub mod rest_api;
@@ -66,21 +67,38 @@ pub async fn post_write_machine_device_identification(
     State(app_state): State<Arc<SharedAppState>>,
     Json(body): Json<MachineDeviceInfoRequest>,
 ) -> Response<axum::body::Body> {
-    /*
-    let res = app_state
-        .rt_machine_creation_channel
-        .send(HotThreadMessage::WriteMachineDeviceInfo(
-            body,
-        ))
-        .await;
+    // We only save the mapping.
+    // The front-end will ask the user to restart.
 
-    match res {
-        Ok(_) => (),
-        Err(e) => tracing::error!(
-            "Failed to send HotThreadMessage::WriteMachineDeviceInfo {}",
-            e
-        ),
-    }*/
+    let dev_addr = body.hardware_identification_ethercat.subdevice_index as u16;
+
+    let mut idents = match persist::read_machine_device_info() {
+        Ok(i) => i,
+        Err(e) => return ResponseUtil::error(&e.to_string())
+    };
+
+    let mut ident = idents.iter_mut().find(|i|
+        i.device_address == dev_addr
+    );
+
+    if let Some(ident) = ident.as_mut() {
+        ident.role = body.device_machine_identification.role;
+        ident.machine_vendor = body.device_machine_identification.machine_identification_unique.machine_identification.vendor;
+        ident.machine_id = body.device_machine_identification.machine_identification_unique.machine_identification.machine;
+        ident.machine_serial = body.device_machine_identification.machine_identification_unique.serial;
+    } else {
+        idents.push(MachineDeviceInfo {
+            role: body.device_machine_identification.role,
+            machine_id: body.device_machine_identification.machine_identification_unique.machine_identification.machine,
+            machine_vendor: body.device_machine_identification.machine_identification_unique.machine_identification.vendor,
+            machine_serial: body.device_machine_identification.machine_identification_unique.serial,
+            device_address: dev_addr,
+        });
+    }
+
+    if let Err(e) = persist::write_machine_device_info(&idents) {
+        return ResponseUtil::error(&e.to_string())
+    }
 
     ResponseUtil::ok(MutationResponse::success())
 }
