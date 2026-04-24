@@ -271,7 +271,7 @@ impl Winder2 {
             .await?
             .0;
 
-            // Role 2: Stepper Spool EL7041-0052
+            // Role 2: Stepper Spool EL7031-0030
             let el7031_0030_spool = {
                 let device = get_ethercat_device::<EL7031_0030>(
                     hardware,
