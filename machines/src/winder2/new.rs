@@ -65,7 +65,7 @@ impl Winder2 {
             }
         };
 
-        // using block_on because making this funciton async creates a lifetime issue
+        // using block_on because making this function async creates a lifetime issue
         // if its async the compiler thinks &subdevices is persisted in the future which might never execute
         // so we can't drop subdevices unless this machine is dropped, which is bad
         smol::block_on(async {
