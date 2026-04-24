@@ -7,8 +7,6 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
-  time.timeZone = "UTC";
-
   i18n.defaultLocale = "en_GB.UTF-8";
   i18n.supportedLocales = [ "all" ];
 
