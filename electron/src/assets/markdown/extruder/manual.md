@@ -1,4 +1,4 @@
-![Titelseite,screenshot from Word doccument](images/manuals/extruder/Titelseite.jpeg)
+![Titelseite,screenshot from Word document](images/manuals/extruder/Titelseite.jpeg)
 
 <br>
 
