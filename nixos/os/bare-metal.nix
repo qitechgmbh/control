@@ -7,6 +7,18 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
+  time.timeZone = "UTC";
+
+  # en_DK: english texts with metric units and 24h time
+  i18n.defaultLocale = "en_DK.UTF-8";
+  i18n.supportedLocales = [ "all" ];
+
+  services.xserver.xkb = {
+    layout = "de";
+    variant = "";
+  };
+  console.keyMap = "de";
+
   imports = [
     ./configuration.nix
     (

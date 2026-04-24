@@ -103,14 +103,6 @@ in
   networking.networkmanager.enable = true;
   networking.wireless.enable = lib.mkImageMediaOverride false;
 
-  # Set your time zone.
-  time.timeZone = "UTC";
-
-  # Select internationalisation properties.
-  # we use en_DK for english texts but metric units and 24h time
-  i18n.defaultLocale = "en_DK.UTF-8";
-  i18n.supportedLocales = [ "all" ];
-
   # Enable the X11 windowing system.
   services.displayManager.gdm = {
     enable = true;
@@ -174,15 +166,6 @@ in
       };
     };
   };
-
-  # Configure keymap in X11
-  services.xserver.xkb = {
-    layout = "de";
-    variant = "";
-  };
-
-  # Configure console keymap
-  console.keyMap = "de";
 
   # Enable sound with pipewire.
   security.rtkit.enable = true;
