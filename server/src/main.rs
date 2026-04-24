@@ -147,7 +147,7 @@ pub async fn start_interface_discovery(
     sender: Sender<HotThreadMessage>,
 ) {
     let interface = find_ethercat_interface().await;
-    tracing::info!("Inferface found {}, setting up EtherCAT loop", interface);
+    tracing::info!("Interface found {}, setting up EtherCAT loop", interface);
     set_ethercat_iface(interface.clone());
     let res = setup_loop(&interface, CYCLE_TARGET_TIME, app_state.clone()).await;
 
