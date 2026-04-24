@@ -34,7 +34,7 @@ Landwehrsrtaße 55
 | function | Extruding plastics into filaments
 | Model | QiTech Extruder |
 | type | Plastics extruding machine |
-| Trade name | QiTech Esxruder |
+| Trade name | QiTech Extruder |
 <br><br>
 
 We hereby declare that the above-mentioned machine is in conformity with all relevant provisions of the EC Machinery Directive 2006/42/EC. The machine is also in compliance with all relevant provisions of the following EC Directives:
