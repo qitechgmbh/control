@@ -59,8 +59,6 @@ impl MachineNewTrait for WagoDioSeparate {
 
             coupler.init_slot_modules(_wago_750_354.1);
 
-            
-
             // Get the WAGO 750-430 8CH DI module at position 1
             let dev = coupler.slot_devices.get(0).unwrap().clone().unwrap();
             let wago750_430: Arc<RwLock<Wago750_430>> = downcast_device::<Wago750_430>(dev).await?;
