@@ -65,7 +65,7 @@ impl Winder2 {
             }
         };
 
-        // using block_on because making this funciton async creates a lifetime issue
+        // using block_on because making this function async creates a lifetime issue
         // if its async the compiler thinks &subdevices is persisted in the future which might never execute
         // so we can't drop subdevices unless this machine is dropped, which is bad
         smol::block_on(async {
@@ -239,7 +239,7 @@ impl Winder2 {
                 machine_identification_unique: machine_id,
             };
 
-            // initalize events
+            // initialize events
             new.emit_state();
             Ok(new)
         })
@@ -271,7 +271,7 @@ impl Winder2 {
             .await?
             .0;
 
-            // Role 2: Stepper Spool EL7041-0052
+            // Role 2: Stepper Spool EL7031-0030
             let el7031_0030_spool = {
                 let device = get_ethercat_device::<EL7031_0030>(
                     hardware,
@@ -428,7 +428,7 @@ impl Winder2 {
                 machine_identification_unique: machine_id,
             };
 
-            // initalize events
+            // initialize events
             new.emit_state();
             Ok(new)
         })
