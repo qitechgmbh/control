@@ -7,14 +7,7 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
-  i18n.defaultLocale = "en_GB.UTF-8";
   i18n.supportedLocales = [ "all" ];
-
-  services.xserver.xkb = {
-    layout = "de";
-    variant = "";
-  };
-  console.keyMap = "de";
 
   imports = [
     ./configuration.nix
