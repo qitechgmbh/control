@@ -14,7 +14,7 @@ The content of the EC Declaration of Conformity corresponds to Annex II, No. 1 A
 
 QiTech Industries GmbH
 
-Landwehrsrtaße 55
+Landwehrstraße 55
 
 64293, Darmstadt
 <br><br><br>
@@ -23,7 +23,7 @@ Landwehrsrtaße 55
 
 Milan von dem Bussche
 
-Landwehrsrtaße 55
+Landwehrstraße 55
 
 64293, Darmstadt
 <br><br><br>
