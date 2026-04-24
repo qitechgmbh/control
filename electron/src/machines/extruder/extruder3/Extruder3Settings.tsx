@@ -182,8 +182,8 @@ export function Extruder3SettingsPage() {
                   description="Inverter frequency deviation around operating point"
                   min={1}
                   max={5}
-                  step={0.5}
-                  renderValue={(v) => roundToDecimals(v, 1)}
+                  step={0.25}
+                  renderValue={(v) => roundToDecimals(v, 2)}
                   onChange={setFrequencyStepHz}
                 />
               </Label>
