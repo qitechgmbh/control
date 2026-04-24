@@ -140,6 +140,9 @@ function ExportButton({ onExport }: { onExport: () => void | Promise<void> }) {
   const handleClick = async () => {
     if (isExporting) return;
     setIsExporting(true);
+    // Yield to the event loop so React can re-render and paint the spinner
+    // before the heavy synchronous XLSX work blocks the thread.
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
     try {
       await onExport();
     } finally {
