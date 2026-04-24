@@ -71,10 +71,6 @@ export function useGraphSync(exportGroupId?: string) {
       },
       requestId?: number,
     ) => {
-      // Generate request ID if not provided
-      const currentRequestId =
-        requestId ?? ++syncStateRef.current.currentRequestId;
-
       // Prevent circular updates and stale requests
       if (syncStateRef.current.lastChangeSource === graphId) return;
       if (syncStateRef.current.isProcessingChange && !requestId) {
@@ -82,12 +78,17 @@ export function useGraphSync(exportGroupId?: string) {
         return;
       }
 
+      // Generate request ID after guards so blocked calls don't pollute the counter
+      const currentRequestId =
+        requestId ?? ++syncStateRef.current.currentRequestId;
+
       syncStateRef.current.isProcessingChange = true;
       syncStateRef.current.lastChangeSource = graphId;
       // Use requestAnimationFrame to ensure state updates happen in next frame
       requestAnimationFrame(() => {
         // Check if this request is still valid
         if (currentRequestId < syncStateRef.current.currentRequestId - 1) {
+          clearChangeSource(); // Always release the lock, even for stale requests
           return; // Skip stale request
         }
 
