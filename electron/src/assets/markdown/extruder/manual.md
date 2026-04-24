@@ -1,4 +1,4 @@
-![Titelseite,screenshot from Word doccument](images/manuals/extruder/Titelseite.jpeg)
+![Titelseite,screenshot from Word document](images/manuals/extruder/Titelseite.jpeg)
 
 <br>
 
@@ -14,7 +14,7 @@ The content of the EC Declaration of Conformity corresponds to Annex II, No. 1 A
 
 QiTech Industries GmbH
 
-Landwehrsrtaße 55
+Landwehrstraße 55
 
 64293, Darmstadt
 <br><br><br>
@@ -23,7 +23,7 @@ Landwehrsrtaße 55
 
 Milan von dem Bussche
 
-Landwehrsrtaße 55
+Landwehrstraße 55
 
 64293, Darmstadt
 <br><br><br>
@@ -31,10 +31,10 @@ Landwehrsrtaße 55
 **under consideration:**
 | General designation | Extruder |
 | ------------------- | ---------------------------------- |
-| function | Extruding plastics into filaments
+| function | Extruding plastics into filaments |
 | Model | QiTech Extruder |
 | type | Plastics extruding machine |
-| Trade name | QiTech Esxruder |
+| Trade name | QiTech Extruder |
 <br><br>
 
 We hereby declare that the above-mentioned machine is in conformity with all relevant provisions of the EC Machinery Directive 2006/42/EC. The machine is also in compliance with all relevant provisions of the following EC Directives:
