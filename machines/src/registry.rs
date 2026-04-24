@@ -164,7 +164,7 @@ lazy_static! {
         mc.register::<Wago750_460Machine>(vec![Wago750_460Machine::MACHINE_IDENTIFICATION]);
         mc.register::<Wago750_553Machine>(vec![Wago750_553Machine::MACHINE_IDENTIFICATION]);
         mc.register::<BottlecapsTestMachine>(vec![BottlecapsTestMachine::MACHINE_IDENTIFICATION]);
-        mc.register::<WagoDioSeparate>(WagoDioSeparate::MACHINE_IDENTIFICATION);
+        mc.register::<WagoDioSeparate>(vec![WagoDioSeparate::MACHINE_IDENTIFICATION]);
         mc
     };
 }
