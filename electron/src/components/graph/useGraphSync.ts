@@ -132,10 +132,10 @@ export function useGraphSync(exportGroupId?: string) {
   const handleExport = useCallback(() => {
     if (graphDataRef.current.size === 0) {
       console.warn("No graphs registered for export");
-      return;
+      return Promise.resolve();
     }
     const logs = useLogsStore.getState().entries;
-    exportGraphsToExcel(
+    return exportGraphsToExcel(
       graphDataRef.current,
       exportGroupId || "synced-graphs",
       logs,
