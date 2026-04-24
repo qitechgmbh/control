@@ -31,7 +31,7 @@ Landwehrsrtaße 55
 **under consideration:**
 | General designation | Extruder |
 | ------------------- | ---------------------------------- |
-| function | Extruding plastics into filaments
+| function | Extruding plastics into filaments |
 | Model | QiTech Extruder |
 | type | Plastics extruding machine |
 | Trade name | QiTech Extruder |
