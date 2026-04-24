@@ -239,7 +239,7 @@ impl Winder2 {
                 machine_identification_unique: machine_id,
             };
 
-            // initalize events
+            // initialize events
             new.emit_state();
             Ok(new)
         })
