@@ -1,19 +1,17 @@
-/*pub mod analog_input_test_machine;
-pub mod ip20_test_machine;
-pub mod mock;
-pub mod motor_test_machine;
-pub mod test_machine;
-pub mod test_machine_stepper;
+pub mod analog_input_test_machine;
+// pub mod ip20_test_machine;
+// pub mod mock;
+// pub mod motor_test_machine;
+// pub mod test_machine;
+// pub mod test_machine_stepper;
 
-pub mod wago_750_430_di_machine;
-pub mod wago_750_460_machine;
-pub mod wago_750_501_test_machine;
-pub mod wago_750_531_machine;
-pub mod wago_750_553_machine;
-pub mod wago_8ch_dio_test_machine;
-pub mod wago_ai_test_machine;
-pub mod wago_do_test_machine;
-
-*/
+// pub mod wago_750_430_di_machine;
+// pub mod wago_750_460_machine;
+// pub mod wago_750_501_test_machine;
+// pub mod wago_750_531_machine;
+// pub mod wago_750_553_machine;
+// pub mod wago_8ch_dio_test_machine;
+// pub mod wago_ai_test_machine;
+// pub mod wago_do_test_machine;
 
 pub mod digital_input_test_machine;
