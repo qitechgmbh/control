@@ -63,7 +63,7 @@ Milan von dem Bussche
 
 # Operating instructions based on DIN EN ISO 20607
 
-| Designation   | QiTech Winder                     |
+| Designation   | QiTech Extruder                   |
 | ------------- | --------------------------------- |
 | Manufacturer  | QiTech Industries GmbH            |
 | Administrator | Milan von dem Bussche             |
