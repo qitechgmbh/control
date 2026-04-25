@@ -361,7 +361,7 @@ Depending on the activity or the duration of the activity, the operator must det
 
 | Picture                                       | Caution!                                                                                                                                                                                                                                                                    |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Warning](images/manuals/extruder/w001.jpeg) | **Danger to life due to incorrect installation and commissioning!** <brErrors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
+| ![Warning](images/manuals/extruder/w001.jpeg) | **Danger to life due to incorrect installation and commissioning!** <br> Errors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
 
 <br>
 <br>
