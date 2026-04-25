@@ -424,7 +424,7 @@ Then start the machine as follows:
 
 - Make sure that the emergency Stop button is inactive
 - Turn on the display by pressing the button on the right side of the display above the USB connectors
-- Winder then appears in the left column
+- Extruder then appears in the left column
   **2. Preheat the extruder**
 - Go to "Control” mode in the function bar
 - Press the "Heat" button in the “mode” box
