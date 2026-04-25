@@ -441,7 +441,7 @@ Then start the machine as follows:
 
 - Set the screw speed via the "Screw Speed" slider
 - Press the "Extrude" button in the “mode” box
-- Wait until old melt has been "flushed" out of the extruder, i.e. no more discolouration of the filament is no longer discoloured and a constant material flow has been achieved
+- Wait until old melt has been "flushed" out of the extruder, i.e. the filament is no longer discoloured and a constant material flow has been achieved
 
 ![screenshot: adjust screw speed](images/manuals/extruder/screenshot_extruder_adjustscrew_speed.png)
 
