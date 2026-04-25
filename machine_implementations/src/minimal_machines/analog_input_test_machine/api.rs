@@ -7,8 +7,12 @@ use control_core::socketio::{
     },
 };
 use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc::Sender;
 
-use crate::{MachineApi, minimal_machines::analog_input_test_machine::AnalogInputTestMachine};
+use crate::{
+    MachineApi, MachineMessage, MachineValues,
+    minimal_machines::analog_input_test_machine::AnalogInputTestMachine,
+};
 
 #[derive(Debug, Clone)]
 pub struct AnalogInputTestMachineNamespace {
@@ -53,7 +57,7 @@ pub struct Mutation {
 }
 
 impl MachineApi for AnalogInputTestMachine {
-    fn api_get_sender(&self) -> smol::channel::Sender<crate::MachineMessage> {
+    fn get_api_sender(&self) -> Sender<MachineMessage> {
         self.api_sender.clone()
     }
 
@@ -66,5 +70,27 @@ impl MachineApi for AnalogInputTestMachine {
 
     fn api_event_namespace(&mut self) -> Option<control_core::socketio::namespace::Namespace> {
         self.namespace.namespace.clone()
+    }
+
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_measurement_rate();
+            }
+            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
+            MachineMessage::HttpApiJsonRequest(value) => {
+                use crate::MachineApi;
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send(MachineValues {
+                        state: serde_json::Value::Null,
+                        live_values: serde_json::Value::Null,
+                    })
+                    .expect("Failed to send values");
+            }
+        }
     }
 }

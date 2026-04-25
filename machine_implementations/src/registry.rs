@@ -1,11 +1,13 @@
+use crate::extruder1::ExtruderV2;
+use crate::minimal_machines::analog_input_test_machine::AnalogInputTestMachine;
 use crate::{
-    MachineHardware, MachineNew, QiTechMachine, aquapath1::AquaPathV1, laser::LaserMachine, minimal_machines::digital_input_test_machine::DigitalInputTestMachine, winder2::Winder2
+    MachineHardware, MachineNew, QiTechMachine, aquapath1::AquaPathV1, laser::LaserMachine,
+    minimal_machines::digital_input_test_machine::DigitalInputTestMachine, winder2::Winder2,
 };
 use anyhow::Error;
 use lazy_static::lazy_static;
 use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
 use std::{any::TypeId, collections::HashMap};
-use crate::extruder1::ExtruderV2;
 pub type MachineNewClosure =
     Box<dyn Fn(MachineHardware) -> Result<Box<dyn QiTechMachine>, Error> + Send + Sync>;
 
@@ -47,8 +49,8 @@ impl MachineRegistry {
     ) -> Result<Box<dyn QiTechMachine>, anyhow::Error> {
         let ident = ident.machine_ident;
 
-
-        let (_, machine_new_closure) = self.type_map
+        let (_, machine_new_closure) = self
+            .type_map
             .values()
             .find(|(ids, _)| ids.contains(&ident)) // 'ids' is the Vec<MachineIdentification>
             .ok_or(anyhow::anyhow!(
@@ -64,45 +66,45 @@ lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
         mc.register::<DigitalInputTestMachine>(vec![DigitalInputTestMachine::MACHINE_IDENTIFICATION]);
-        
+
         mc.register::<ExtruderV2>(vec![ExtruderV2::MACHINE_IDENTIFICATION,ExtruderV2::MACHINE_IDENTIFICATION_V3 ]);
         mc.register::<Winder2>(vec![Winder2::MACHINE_IDENTIFICATION]);
         mc.register::<LaserMachine>(vec![LaserMachine::MACHINE_IDENTIFICATION]);
         mc.register::<AquaPathV1>(vec![AquaPathV1::MACHINE_IDENTIFICATION]);
-/*
-        #[cfg(not(feature = "mock-machine"))]
-        mc.register::<LaserMachine>(LaserMachine::MACHINE_IDENTIFICATION);
 
-        #[cfg(not(feature = "mock-machine"))]
-        mc.register::<BufferV1>(BufferV1::MACHINE_IDENTIFICATION);
+        // #[cfg(not(feature = "mock-machine"))]
+        // mc.register::<LaserMachine>(LaserMachine::MACHINE_IDENTIFICATION);
 
-        #[cfg(not(feature = "mock-machine"))]
-        mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
+        // #[cfg(not(feature = "mock-machine"))]
+        // mc.register::<BufferV1>(BufferV1::MACHINE_IDENTIFICATION);
 
-        mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
+        // #[cfg(not(feature = "mock-machine"))]
+        // mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
 
-        mc.register::<IP20TestMachine>(IP20TestMachine::MACHINE_IDENTIFICATION);
+        // mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
 
-        mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
+        // mc.register::<IP20TestMachine>(IP20TestMachine::MACHINE_IDENTIFICATION);
 
-        mc.register::<WagoAiTestMachine>(WagoAiTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<AnalogInputTestMachine>(vec![AnalogInputTestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<MotorTestMachine>(MotorTestMachine::MACHINE_IDENTIFICATION);
+        // mc.register::<WagoAiTestMachine>(WagoAiTestMachine::MACHINE_IDENTIFICATION);
+
+        // mc.register::<MotorTestMachine>(MotorTestMachine::MACHINE_IDENTIFICATION);
 
 
-        mc.register::<WagoDOTestMachine>(WagoDOTestMachine::MACHINE_IDENTIFICATION);
+        // mc.register::<WagoDOTestMachine>(WagoDOTestMachine::MACHINE_IDENTIFICATION);
 
-        mc.register::<Wago750_501TestMachine>(Wago750_501TestMachine::MACHINE_IDENTIFICATION);
+        // mc.register::<Wago750_501TestMachine>(Wago750_501TestMachine::MACHINE_IDENTIFICATION);
 
-        mc.register::<Wago8chDigitalIOTestMachine>(
-            Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION,
-        );
+        // mc.register::<Wago8chDigitalIOTestMachine>(
+        //     Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION,
+        // );
 
-        mc.register::<WagoSerialMachine>(WagoSerialMachine::MACHINE_IDENTIFICATION);
+        // mc.register::<WagoSerialMachine>(WagoSerialMachine::MACHINE_IDENTIFICATION);
 
-        mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
-        mc.register::<Wago750_430DiMachine>(Wago750_430DiMachine::MACHINE_IDENTIFICATION);
-        mc.register::<Wago750_553Machine>(Wago750_553Machine::MACHINE_IDENTIFICATION);*/
+        // mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
+        // mc.register::<Wago750_430DiMachine>(Wago750_430DiMachine::MACHINE_IDENTIFICATION);
+        // mc.register::<Wago750_553Machine>(Wago750_553Machine::MACHINE_IDENTIFICATION);
         mc
     };
 }
