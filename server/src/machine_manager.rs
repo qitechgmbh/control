@@ -44,7 +44,6 @@ impl MachineManager {
             let uid = machine.get_machine_identification_unique();
 
             if self.data_registry.contains_key(&uid) {
-                tracing::warn!("Contains Key");
                 continue;
             }
 
