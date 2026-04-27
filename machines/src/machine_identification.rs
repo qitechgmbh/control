@@ -68,6 +68,7 @@ impl MachineIdentification {
             x if x == WAGO_DO_TEST_MACHINE => "wago_do_test_machine".to_string(),
             x if x == WAGO_750_430_DI_MACHINE => "wago_750_430_di_machine".to_string(),
             x if x == WAGO_750_531_MACHINE => "wago_750_531_machine".to_string(),
+            x if x == UFM_FLOW_TEST_MACHINE => "ufm_flow_test_machine".to_string(),
             x if x == TEST_MACHINE_BOTTLECAPS => "bottlecaps_test_machine".to_string(),
             _ => unreachable!("Unknown machine id {}", self.machine),
         }
@@ -150,6 +151,7 @@ use anyhow::anyhow;
 use ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
 use ethercat_hal::devices::el1002::EL1002_IDENTITY_A;
 use ethercat_hal::devices::el1008::EL1008_IDENTITY_A;
+use ethercat_hal::devices::el1124::EL1124_IDENTITY_A;
 use ethercat_hal::devices::el2002::EL2002_IDENTITY_A;
 use ethercat_hal::devices::el2002::EL2002_IDENTITY_B;
 use ethercat_hal::devices::el2004::EL2004_IDENTITY_A;
@@ -194,6 +196,7 @@ use crate::MACHINE_WINDER_V1_7031_0030_SPOOL;
 use crate::TEST_MACHINE;
 use crate::TEST_MACHINE_BOTTLECAPS;
 use crate::TEST_MACHINE_STEPPER;
+use crate::UFM_FLOW_TEST_MACHINE;
 use crate::VENDOR_QITECH;
 use crate::WAGO_750_430_DI_MACHINE;
 use crate::WAGO_750_531_MACHINE;
@@ -403,6 +406,7 @@ pub fn get_identification_addresses(
         EK1100_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1002_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1008_IDENTITY_A => MachineIdentificationAddresses::default(),
+        EL1124_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL2002_IDENTITY_A | EL2002_IDENTITY_B => MachineIdentificationAddresses::default(),
         EL2004_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL2008_IDENTITY_A | EL2008_IDENTITY_B => MachineIdentificationAddresses::default(),

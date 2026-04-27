@@ -53,6 +53,7 @@ pub struct UfmFlowData {
 ///
 /// Call [`tick`] once every EtherCAT cycle. The maximum UFM-02 pulse rate is 111 Hz (9 ms
 /// period), well within a 1 ms EtherCAT cycle rate, so no pulses are missed.
+#[derive(Debug)]
 pub struct UfmFlowInput {
     pulse_input: DigitalInput,
     error_input: DigitalInput,

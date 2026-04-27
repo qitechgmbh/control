@@ -77,6 +77,8 @@ import { WagoAiTestMachineControl } from "@/machines/minimal_machines/wagoaitest
 
 import { DigitalInputTestMachinePage } from "@/machines/minimal_machines/digitalinputtestmachine/DigitalInputTestMachinePage";
 import { DigitalInputTestMachineControlPage } from "@/machines/minimal_machines/digitalinputtestmachine/DigitalInputTestMachineControlPage";
+import { UfmFlowTestMachinePage } from "@/machines/minimal_machines/ufmflowtestmachine/UfmFlowTestMachinePage";
+import { UfmFlowTestMachineControlPage } from "@/machines/minimal_machines/ufmflowtestmachine/UfmFlowTestMachineControlPage";
 
 import { IP20TestMachinePage } from "@/machines/minimal_machines/ip20testmachine/IP20TestMachinePage";
 import { IP20TestMachineControlPage } from "@/machines/minimal_machines/ip20testmachine/IP20TestMachineControlPage";
@@ -209,6 +211,18 @@ export const digitalInputTestMachineControlRoute = createRoute({
   getParentRoute: () => digitalInputTestMachineSerialRoute,
   path: "control",
   component: () => <DigitalInputTestMachineControlPage />,
+});
+
+export const ufmFlowTestMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "ufmflowtestmachine/$serial",
+  component: () => <UfmFlowTestMachinePage />,
+});
+
+export const ufmFlowTestMachineControlRoute = createRoute({
+  getParentRoute: () => ufmFlowTestMachineSerialRoute,
+  path: "control",
+  component: () => <UfmFlowTestMachineControlPage />,
 });
 
 export const ip20TestMachineSerialRoute = createRoute({
@@ -701,6 +715,8 @@ export const rootTree = RootRoute.addChildren([
       digitalInputTestMachineSerialRoute.addChildren([
         digitalInputTestMachineControlRoute,
       ]),
+
+      ufmFlowTestMachineSerialRoute.addChildren([ufmFlowTestMachineControlRoute]),
 
       ip20TestMachineSerialRoute.addChildren([ip20TestMachineControlRoute]),
 

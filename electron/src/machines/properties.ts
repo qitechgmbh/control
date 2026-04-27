@@ -581,6 +581,41 @@ export const wago750430DiMachine: MachineProperties = {
   ],
 };
 
+export const ufmFlowTestMachine: MachineProperties = {
+  name: "UFM Flow Test",
+  version: "V1",
+  slug: "ufmflowtestmachine",
+  icon: "lu:Waves",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0048,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x2,
+          product_id: 0x44c2c52,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "EL1124",
+      allowed_devices: [
+        {
+          vendor_id: 0x2,
+          product_id: 0x04643052,
+          revision: 0x00120000,
+        },
+      ],
+    },
+  ],
+};
+
 export const wago8chDioTestMachine: MachineProperties = {
   name: "WAGO 8ch DIO Test",
   version: "V1",
@@ -961,6 +996,7 @@ export const machineProperties: MachineProperties[] = [
   analogInputTestMachine,
   wagoAiTestMachine,
   digitalInputTestMachine,
+  ufmFlowTestMachine,
   wago8chDioTestMachine,
   wago750430DiMachine,
   ip20TestMachine,
