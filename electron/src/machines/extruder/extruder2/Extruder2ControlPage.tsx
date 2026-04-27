@@ -132,7 +132,9 @@ export function Extruder2ControlPage() {
             </StatusBadge>
           ) : state?.inverter_status_state.fault_occurence == true ? (
             <StatusBadge variant="error">
-              Inverter encountered an error!! Press the restart button in Config
+              Inverter encountered an error! Press the restart button in Config.
+              If the issue persists, activate the extruder emergency stop to
+              reset the inverter.
             </StatusBadge>
           ) : state?.inverter_status_state.running == true &&
             state.inverter_status_state.fault_occurence == false ? (
