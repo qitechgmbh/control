@@ -32,6 +32,8 @@ impl MachineNewTrait for LaserMachine {
         };
         let (sender, receiver) = smol::channel::unbounded();
 
+        tracing::info!("Laser new called");
+
         let laser_machine = Self {
             main_sender: params.main_thread_channel.clone(),
             api_receiver: receiver,
