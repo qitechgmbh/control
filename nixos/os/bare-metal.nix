@@ -7,8 +7,6 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
-  i18n.supportedLocales = [ "all" ];
-
   imports = [
     ./configuration.nix
     (

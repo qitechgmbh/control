@@ -275,6 +275,8 @@ in
   ];
   networking.firewall.allowedTCPPorts = [ 443 ];
 
+  i18n.supportedLocales = [ "all" ];
+
   # Dont edit
   system.stateVersion = "24.11";
 }
