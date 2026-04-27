@@ -123,22 +123,23 @@ impl StepperVelocityWago750672 {
         // the min max for the controller
         dev.rxpdo.velocity = velocity.clamp(-25000, 25000);
 
-        let s1 = StatusByteS1::from_bits(dev.txpdo.status_byte1);
-        let start_ack = s1.has_flag(S1Flag::StartAck);
         let velocity_changed = velocity != previous_velocity;
-        let needs_start_edge = self.restart_on_velocity_change
-            || (previous_velocity == 0 && velocity != 0)
-            || (!start_ack && velocity != 0);
+        if self.enabled && velocity_changed && velocity != 0 {
+            let s1 = StatusByteS1::from_bits(dev.txpdo.status_byte1);
+            let start_ack = s1.has_flag(S1Flag::StartAck);
+            let needs_start_edge =
+                self.restart_on_velocity_change || previous_velocity == 0 || !start_ack;
 
-        if self.enabled && velocity_changed && needs_start_edge {
-            dev.start_requested = true;
-            if dev.initialized {
-                dev.state = if start_ack {
-                    InitState::StartPulseEnd
-                } else {
-                    InitState::StartPulseStart
-                };
-                self.state = dev.state.clone();
+            if needs_start_edge {
+                dev.start_requested = true;
+                if dev.initialized {
+                    dev.state = if start_ack {
+                        InitState::StartPulseEnd
+                    } else {
+                        InitState::StartPulseStart
+                    };
+                    self.state = dev.state.clone();
+                }
             }
         }
     }

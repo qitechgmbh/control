@@ -33,6 +33,13 @@ use crate::{AsyncThreadMessage, MachineSubscriptionRequest};
 use crate::MachineIdentificationUnique;
 
 #[cfg(not(feature = "mock-machine"))]
+const SPOOL_RUN_ACCELERATION: u16 = 3000;
+#[cfg(not(feature = "mock-machine"))]
+const SPOOL_BLOCK_STOP_ACCELERATION: u16 = 10_000;
+#[cfg(not(feature = "mock-machine"))]
+const SPOOL_STANDSTILL_THRESHOLD_REGISTER: i16 = 2;
+
+#[cfg(not(feature = "mock-machine"))]
 impl WagoWinder {
     /// Implement Spool
     /// called by `act`
@@ -44,23 +51,35 @@ impl WagoWinder {
         if !should_spin {
             let was_tension_blocked = self.spool_tension_blocked;
             self.spool_tension_blocked = false;
-            if was_tension_blocked || self.spool_speed_controller.is_enabled() {
+            if was_tension_blocked
+                || self.spool_speed_controller.is_enabled()
+                || self.spool.get_speed() != 0
+            {
                 self.spool_speed_controller.reset();
+                self.stop_spool_motion(false);
             }
-            self.stop_spool_motion(false);
             return;
         }
 
         if self.spool_tension_blocked {
-            if self.tension_arm_in_spool_restart_window() {
+            let spool_is_standstill = self.spool.get_actual_velocity_register().abs()
+                <= SPOOL_STANDSTILL_THRESHOLD_REGISTER;
+
+            if self.tension_arm_in_spool_window() && spool_is_standstill {
                 self.spool_tension_blocked = false;
+                self.spool.set_acceleration(SPOOL_RUN_ACCELERATION);
                 self.arm_spool_for_speed_control();
-                self.spool_speed_controller.reset();
+                self.spool_speed_controller.set_enabled(true);
+            } else {
+                self.spool_speed_controller.set_enabled(false);
+                self.spool.set_acceleration(SPOOL_BLOCK_STOP_ACCELERATION);
+                self.stop_spool_motion(false);
                 return;
             }
         } else if !self.tension_arm_in_spool_window() {
             self.spool_tension_blocked = true;
-            self.spool_speed_controller.reset();
+            self.spool_speed_controller.set_enabled(false);
+            self.spool.set_acceleration(SPOOL_BLOCK_STOP_ACCELERATION);
             self.stop_spool_motion(false);
             return;
         }
@@ -69,7 +88,13 @@ impl WagoWinder {
             return;
         }
 
-        self.arm_spool_for_speed_control();
+        if !self.spool_speed_controller.is_enabled() {
+            self.spool_speed_controller.set_enabled(true);
+        }
+
+        if self.spool.get_target_acceleration() != SPOOL_RUN_ACCELERATION {
+            self.spool.set_acceleration(SPOOL_RUN_ACCELERATION);
+        }
 
         let angular_velocity = self.spool_speed_controller.update_speed(
             t,

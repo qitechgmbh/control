@@ -55,19 +55,15 @@ async fn get_slot_device<T: EthercatDevice>(
 }
 
 #[cfg(not(feature = "mock-machine"))]
-pub(crate) const WAGO_672_CURRENT_PROFILE_FULL_PERCENT: u8 = 100;
-#[cfg(not(feature = "mock-machine"))]
-pub(crate) const WAGO_672_CURRENT_PROFILE_ALL_RANGES: u8 = 0x0F;
-#[cfg(not(feature = "mock-machine"))]
 pub(crate) const WAGO_672_FREQ_RANGE_SEL: u8 = 0;
 #[cfg(not(feature = "mock-machine"))]
 pub(crate) const WAGO_672_ACC_RANGE_SEL: u8 = 0;
 #[cfg(not(feature = "mock-machine"))]
-pub(crate) const WAGO_672_WINDER_ACCELERATION: u16 = 1600;
-#[cfg(not(feature = "mock-machine"))]
-pub(crate) const WAGO_672_SPOOL_FREQ_DIV: u16 = 16;
+pub(crate) const WAGO_672_WINDER_ACCELERATION: u16 = 3000;
 #[cfg(not(feature = "mock-machine"))]
 pub(crate) const WAGO_672_PULLER_FREQ_DIV: u16 = 32;
+#[cfg(not(feature = "mock-machine"))]
+pub(crate) const WAGO_672_SPOOL_FREQ_DIV: u16 = 16;
 
 #[cfg(not(feature = "mock-machine"))]
 fn configure_wago_672_velocity_axis(
