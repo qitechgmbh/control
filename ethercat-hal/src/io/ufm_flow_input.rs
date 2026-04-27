@@ -5,31 +5,32 @@ use std::{
 
 use super::digital_input::DigitalInput;
 
-/// ScioSense UFM-02 size variant, determines volume per pulse.
+/// ScioSense UFM-02 model variant, determines volume per pulse.
 ///
 /// From datasheet Table 7.
-#[derive(Debug, Clone, Copy)]
-pub enum Ufm02Size {
-    /// 3/8" — 2 ml/pulse, 500 pulses/l
-    Inch3_8,
-    /// 1/2" — 5 ml/pulse, 200 pulses/l
-    Inch1_2,
-    /// 3/4" — 8 ml/pulse, 125 pulses/l
-    Inch3_4,
-    /// 1" — 20 ml/pulse, 50 pulses/l
-    Inch1,
-    /// 1.5" — 50 ml/pulse, 20 pulses/l
-    Inch1_5,
+#[derive(Debug, Clone, Copy, Default)]
+pub enum Ufm02Type {
+    /// UFM-02-03 — 2 ml/pulse, 500 pulses/l, max 111 pulses/s
+    Ufm02_03,
+    /// UFM-02-05 — 5 ml/pulse, 200 pulses/l, max 111 pulses/s
+    #[default]
+    Ufm02_05,
+    /// UFM-02-07 — 8 ml/pulse, 125 pulses/l, max 104 pulses/s
+    Ufm02_07,
+    /// UFM-02-10 — 20 ml/pulse, 50 pulses/l, max 111 pulses/s
+    Ufm02_10,
+    /// UFM-02-15 — 50 ml/pulse, 20 pulses/l, max 100 pulses/s
+    Ufm02_15,
 }
 
-impl Ufm02Size {
+impl Ufm02Type {
     pub const fn ml_per_pulse(&self) -> f64 {
         match self {
-            Self::Inch3_8 => 2.0,
-            Self::Inch1_2 => 5.0,
-            Self::Inch3_4 => 8.0,
-            Self::Inch1 => 20.0,
-            Self::Inch1_5 => 50.0,
+            Self::Ufm02_03 => 2.0,
+            Self::Ufm02_05 => 5.0,
+            Self::Ufm02_07 => 8.0,
+            Self::Ufm02_10 => 20.0,
+            Self::Ufm02_15 => 50.0,
         }
     }
 }
@@ -68,20 +69,24 @@ impl UfmFlowInput {
     /// 5 seconds is a good default: responsive enough for control, stable enough to avoid noise.
     pub const DEFAULT_WINDOW: Duration = Duration::from_secs(5);
 
-    pub fn new(pulse_input: DigitalInput, error_input: DigitalInput, size: Ufm02Size) -> Self {
-        Self::with_window(pulse_input, error_input, size, Self::DEFAULT_WINDOW)
+    pub fn new(
+        pulse_input: DigitalInput,
+        error_input: DigitalInput,
+        sensor_type: Ufm02Type,
+    ) -> Self {
+        Self::with_window(pulse_input, error_input, sensor_type, Self::DEFAULT_WINDOW)
     }
 
     pub fn with_window(
         pulse_input: DigitalInput,
         error_input: DigitalInput,
-        size: Ufm02Size,
+        sensor_type: Ufm02Type,
         window: Duration,
     ) -> Self {
         Self {
             pulse_input,
             error_input,
-            ml_per_pulse: size.ml_per_pulse(),
+            ml_per_pulse: sensor_type.ml_per_pulse(),
             // Open-drain idles HIGH, so initial state is true.
             prev_pulse: true,
             pulse_timestamps: VecDeque::new(),
@@ -117,8 +122,8 @@ impl UfmFlowInput {
 
         // flow rate = (pulses_in_window × ml/pulse) / window_s  →  ml/s  →  ×3.6  →  l/h
         let pulses_in_window = self.pulse_timestamps.len() as f64;
-        let flow_lph = pulses_in_window * self.ml_per_pulse / (self.window.as_secs_f64() * 1000.0)
-            * 3600.0;
+        let flow_lph =
+            pulses_in_window * self.ml_per_pulse / (self.window.as_secs_f64() * 1000.0) * 3600.0;
 
         let total_volume_m3 = self.total_pulses as f64 * self.ml_per_pulse / 1_000_000.0;
 
