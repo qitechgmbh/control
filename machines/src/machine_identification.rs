@@ -69,6 +69,13 @@ impl MachineIdentification {
             x if x == WAGO_750_430_DI_MACHINE => "wago_750_430_di_machine".to_string(),
             x if x == WAGO_750_531_MACHINE => "wago_750_531_machine".to_string(),
             x if x == TEST_MACHINE_BOTTLECAPS => "bottlecaps_test_machine".to_string(),
+            x if x == UFM_FLOW_INPUT_MACHINE => "ufmflowinputmachine".to_string(),
+            x if x == DIGITAL_INPUT_TEST_MACHINE => "digitalInputTestMachine".to_string(),
+            x if x == WAGO_8CH_IO_TEST_MACHINE => "wago8chdiotestmachine".to_string(),
+            x if x == WAGO_750_501_TEST_MACHINE => "wago750501testmachine".to_string(),
+            x if x == WAGO_750_460_MACHINE => "wago750460machine".to_string(),
+            x if x == WAGO_750_553_MACHINE => "wago750553machine".to_string(),
+            x if x == MOTOR_TEST_MACHINE => "testmotor".to_string(),
             _ => unreachable!("Unknown machine id {}", self.machine),
         }
     }
@@ -155,6 +162,7 @@ use ethercat_hal::devices::el2002::EL2002_IDENTITY_B;
 use ethercat_hal::devices::el2004::EL2004_IDENTITY_A;
 use ethercat_hal::devices::el2008::EL2008_IDENTITY_A;
 use ethercat_hal::devices::el2008::EL2008_IDENTITY_B;
+use ethercat_hal::devices::el1124::EL1124_IDENTITY_A;
 use ethercat_hal::devices::el2521::{
     EL2521_IDENTITY_0000_A, EL2521_IDENTITY_0000_B, EL2521_IDENTITY_0024_A,
 };
@@ -166,6 +174,7 @@ use ethercat_hal::devices::el3062_0030::EL3062_0030_IDENTITY_A;
 use ethercat_hal::devices::el3204::EL3204_IDENTITY_A;
 use ethercat_hal::devices::el3204::EL3204_IDENTITY_B;
 use ethercat_hal::devices::el4002::EL4002_IDENTITY_A;
+use ethercat_hal::devices::el9505::EL9505_IDENTITY_A;
 use ethercat_hal::devices::el5152::EL5152_IDENTITY_A;
 use ethercat_hal::devices::el6021::{
     EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D,
@@ -194,9 +203,16 @@ use crate::MACHINE_WINDER_V1_7031_0030_SPOOL;
 use crate::TEST_MACHINE;
 use crate::TEST_MACHINE_BOTTLECAPS;
 use crate::TEST_MACHINE_STEPPER;
+use crate::UFM_FLOW_INPUT_MACHINE;
 use crate::VENDOR_QITECH;
 use crate::WAGO_750_430_DI_MACHINE;
 use crate::WAGO_750_531_MACHINE;
+use crate::DIGITAL_INPUT_TEST_MACHINE;
+use crate::MOTOR_TEST_MACHINE;
+use crate::WAGO_750_460_MACHINE;
+use crate::WAGO_750_501_TEST_MACHINE;
+use crate::WAGO_750_553_MACHINE;
+use crate::WAGO_8CH_IO_TEST_MACHINE;
 use crate::WAGO_AI_TEST_MACHINE;
 use crate::WAGO_DO_TEST_MACHINE;
 
@@ -403,6 +419,7 @@ pub fn get_identification_addresses(
         EK1100_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1002_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1008_IDENTITY_A => MachineIdentificationAddresses::default(),
+        EL1124_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL2002_IDENTITY_A | EL2002_IDENTITY_B => MachineIdentificationAddresses::default(),
         EL2004_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL2008_IDENTITY_A | EL2008_IDENTITY_B => MachineIdentificationAddresses::default(),
@@ -416,6 +433,7 @@ pub fn get_identification_addresses(
         EL3062_0030_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL3204_IDENTITY_A | EL3204_IDENTITY_B => MachineIdentificationAddresses::default(),
         EL4002_IDENTITY_A => MachineIdentificationAddresses::default(),
+        EL9505_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL5152_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C | EL6021_IDENTITY_D => {
             MachineIdentificationAddresses::default()

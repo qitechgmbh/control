@@ -43,6 +43,8 @@ pub struct UfmFlowData {
     pub total_volume_m3: f64,
     /// True when the sensor signals an error (IO1 active-LOW: no water / low signal amplitude).
     pub error: bool,
+    /// Raw pulse count since this instance was created.
+    pub total_pulses: u64,
 }
 
 /// UFM-02 ultrasonic flow sensor read via two EL1124 digital inputs.
@@ -53,6 +55,7 @@ pub struct UfmFlowData {
 ///
 /// Call [`tick`] once every EtherCAT cycle. The maximum UFM-02 pulse rate is 111 Hz (9 ms
 /// period), well within a 1 ms EtherCAT cycle rate, so no pulses are missed.
+#[derive(Debug)]
 pub struct UfmFlowInput {
     pulse_input: DigitalInput,
     error_input: DigitalInput,
@@ -134,6 +137,7 @@ impl UfmFlowInput {
             flow_lph,
             total_volume_m3,
             error,
+            total_pulses: self.total_pulses,
         })
     }
 

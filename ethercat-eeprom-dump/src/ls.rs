@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use control_core::ethercat::eeprom_identification::{
+use machines::machine_identification::{
     get_identification_addresses, machine_device_identification,
 };
 use ethercat_hal::{

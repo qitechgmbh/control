@@ -545,6 +545,52 @@ export const testmachine: MachineProperties = {
     },
   ],
 };
+export const ufmFlowInputMachine: MachineProperties = {
+  name: "UFM Flow Input Machine",
+  version: "V1",
+  slug: "ufmflowinputmachine",
+  icon: "lu:Droplets",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0048,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x044c2c52,
+          revision: 0x00120000,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "EL9505 Power Supply",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x25213052,
+          revision: 0x00120000,
+        },
+      ],
+    },
+    {
+      role: 2,
+      role_label: "EL1124 Digital Input",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x04643052,
+          revision: 0x00120000,
+        },
+      ],
+    },
+  ],
+};
+
 export const digitalInputTestMachine: MachineProperties = {
   name: "Digital Input Machine",
   version: "V1",
@@ -960,6 +1006,7 @@ export const machineProperties: MachineProperties[] = [
   testmachine,
   analogInputTestMachine,
   wagoAiTestMachine,
+  ufmFlowInputMachine,
   digitalInputTestMachine,
   wago8chDioTestMachine,
   wago750430DiMachine,

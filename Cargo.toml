@@ -5,7 +5,7 @@ members = [
     "ethercat-hal-derive",
     "control-core",
     "machines",
-    #"ethercat-eeprom-dump",
+    "ethercat-eeprom-dump",
     "control-core-derive",
     "units",
     "utils",

@@ -467,6 +467,8 @@ export function createNamespaceHookImplementation<S>({
   createEventHandler,
 }: NamespaceImplementationConfig<S>): NamespaceImplementationResult<S> {
   return function useNamespace(namespaceId: NamespaceId): S {
+    const namespacePath = serializeNamespaceId(namespaceId);
+
     // use socketio store
     const {
       incrementNamespace,
@@ -486,7 +488,7 @@ export function createNamespaceHookImplementation<S>({
       return () => {
         decrementNamespace(namespaceId);
       };
-    }, [namespaceId]);
+    }, [namespacePath]);
 
     // sync store
     const initalState = useMemo(() => createStore().getState(), [createStore]);
