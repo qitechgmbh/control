@@ -67,6 +67,12 @@ impl MachineManager {
     pub fn remove_machine(&mut self, uid: MachineUID) {
         self.machine_entries
             .retain(|entry| entry.machine.get_machine_identification_unique() != uid);
+
+        self.data_registry.remove(&uid);
+
+        for entry in self.machine_entries.iter_mut() {
+            entry.subscriptions.remove(&uid);
+        }
     }
 
     pub fn execute_machines(&mut self) {
