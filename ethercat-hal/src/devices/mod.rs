@@ -1,6 +1,7 @@
 pub mod ek1100;
 pub mod el1002;
 pub mod el1008;
+pub mod el1124;
 pub mod el2002;
 pub mod el2004;
 pub mod el2008;
@@ -20,6 +21,7 @@ pub mod el6021;
 pub mod el7031;
 pub mod el7031_0030;
 pub mod el7041_0052;
+pub mod el9505;
 pub mod wago_750_354;
 pub mod wago_modules;
 
@@ -33,6 +35,7 @@ use bitvec::{order::Lsb0, slice::BitSlice};
 use ek1100::{EK1100, EK1100_IDENTITY_A};
 use el1002::{EL1002, EL1002_IDENTITY_A};
 use el1008::EL1008_IDENTITY_A;
+use el1124::{EL1124, EL1124_IDENTITY_A};
 use el2002::{EL2002, EL2002_IDENTITY_A, EL2002_IDENTITY_B};
 use el2004::{EL2004, EL2004_IDENTITY_A};
 use el2008::{EL2008, EL2008_IDENTITY_A, EL2008_IDENTITY_B};
@@ -50,6 +53,7 @@ use el6021::{EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDE
 use el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
 use el7031_0030::EL7031_0030_IDENTITY_A;
 use el7041_0052::EL7041_0052_IDENTITY_A;
+use el9505::{EL9505, EL9505_IDENTITY_A};
 use ethercrab::{MainDevice, SubDeviceIdentity};
 use smol::lock::RwLock;
 use std::{any::Any, fmt::Debug, sync::Arc};
@@ -218,8 +222,10 @@ pub fn device_from_subdevice_identity_tuple(
         WAGO_750_354_IDENTITY_A => Ok(Arc::new(RwLock::new(Wago750_354::new()))),
         IP20_EC_DI8_DO8_IDENTITY => Ok(Arc::new(RwLock::new(IP20EcDi8Do8::new()))),
         EK1100_IDENTITY_A => Ok(Arc::new(RwLock::new(EK1100::new()))),
+        EL9505_IDENTITY_A => Ok(Arc::new(RwLock::new(EL9505::new()))),
         EL1002_IDENTITY_A => Ok(Arc::new(RwLock::new(EL1002::new()))),
         EL1008_IDENTITY_A => Ok(Arc::new(RwLock::new(EL1008::new()))),
+        EL1124_IDENTITY_A => Ok(Arc::new(RwLock::new(EL1124::new()))),
         EL2002_IDENTITY_A | EL2002_IDENTITY_B => Ok(Arc::new(RwLock::new(EL2002::new()))),
         EL2004_IDENTITY_A => Ok(Arc::new(RwLock::new(EL2004::new()))),
         EL2008_IDENTITY_A | EL2008_IDENTITY_B => Ok(Arc::new(RwLock::new(EL2008::new()))),
