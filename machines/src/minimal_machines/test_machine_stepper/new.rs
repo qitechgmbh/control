@@ -1,5 +1,6 @@
 use crate::minimal_machines::test_machine_stepper::{
-    TestMachineStepper, api::TestMachineStepperNamespace,
+    TestMachineStepper,
+    api::{Mode, TestMachineStepperNamespace},
 };
 use ethercat_hal::{
     devices::{
@@ -80,6 +81,7 @@ impl MachineNewTrait for TestMachineStepper {
                     last_state_emit: Instant::now(),
                     main_sender: params.main_thread_channel.clone(),
                     stepper,
+                    mode: Mode::Standby,
                 };
                 my_test.emit_state();
                 drop(coupler);
@@ -100,6 +102,7 @@ impl MachineNewTrait for TestMachineStepper {
                     last_state_emit: Instant::now(),
                     main_sender: params.main_thread_channel.clone(),
                     stepper,
+                    mode: Mode::Standby,
                 };
                 my_test.emit_state();
                 drop(coupler);

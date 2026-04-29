@@ -11,11 +11,110 @@ use serde_json::Value;
 use std::sync::Arc;
 
 #[derive(Serialize, Debug, Clone)]
+pub enum MotorState {
+    Off,
+    Enable,
+    SetMode,
+    Ready,
+    StartPulseStart,
+    StartPulseEnd,
+    Running,
+    ErrorQuit,
+    ResetQuit,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub enum Mode {
+    #[default]
+    Standby,
+    Hold,
+    Turn,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct ModeState {
+    pub mode: Mode,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub enum Frequency {
+    #[default]
+    Default,
+    Low,
+    Mid,
+    High,
+}
+
+impl From<u8> for Frequency {
+    fn from(val: u8) -> Self {
+        match val {
+            1 => Frequency::Low,
+            2 => Frequency::Mid,
+            3 => Frequency::High,
+            _ => Frequency::Default,
+        }
+    }
+}
+
+impl From<Frequency> for u8 {
+    fn from(freq: Frequency) -> Self {
+        match freq {
+            Frequency::Default => 0,
+            Frequency::Low => 1,
+            Frequency::Mid => 2,
+            Frequency::High => 3,
+        }
+    }
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct FrequencyState {
+    pub frequency: Frequency,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub enum AccelerationFactor {
+    #[default]
+    Default,
+    Low,
+    Mid,
+    High,
+}
+
+impl From<u8> for AccelerationFactor {
+    fn from(val: u8) -> Self {
+        match val {
+            1 => AccelerationFactor::Low,
+            2 => AccelerationFactor::Mid,
+            3 => AccelerationFactor::High,
+            _ => AccelerationFactor::Default,
+        }
+    }
+}
+
+impl From<AccelerationFactor> for u8 {
+    fn from(factor: AccelerationFactor) -> Self {
+        match factor {
+            AccelerationFactor::Default => 0,
+            AccelerationFactor::Low => 1,
+            AccelerationFactor::Mid => 2,
+            AccelerationFactor::High => 3,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct AccelerationState {
+    pub factor: AccelerationFactor,
+}
+
+#[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
     pub target_speed: i16,
     pub enabled: bool,
-    pub freq: u8,
-    pub acc_freq: u8,
+    pub mode_state: ModeState,
+    pub frequency_state: FrequencyState,
+    pub acceleration_state: AccelerationState,
 }
 
 impl StateEvent {
@@ -33,8 +132,15 @@ pub enum TestMachineStepperEvents {
 pub enum Mutation {
     SetTargetSpeed { target: i16 },
     SetEnabled { enabled: bool },
-    SetFreq { factor: u8 },
-    SetAccFreq { factor: u8 },
+    StartMotor,
+    StopMotor,
+
+    // Mode
+    SetMode(Mode),
+    // Frequency Prescaler
+    SetFreq(Frequency),
+    // Acceleration Factor
+    SetAccFactor(AccelerationFactor),
 }
 
 #[derive(Debug, Clone)]
@@ -74,8 +180,11 @@ impl MachineApi for TestMachineStepper {
         match mutation {
             Mutation::SetTargetSpeed { target } => self.set_target_speed(target),
             Mutation::SetEnabled { enabled } => self.set_enabled(enabled),
-            Mutation::SetFreq { factor } => self.set_freq(factor),
-            Mutation::SetAccFreq { factor } => self.set_acc_freq(factor),
+            Mutation::StartMotor => self.start_motor(),
+            Mutation::StopMotor => self.stop_motor(),
+            Mutation::SetMode(mode) => self.set_mode(mode),
+            Mutation::SetFreq(freq) => self.set_freq(freq),
+            Mutation::SetAccFactor(factor) => self.set_acc_factor(factor),
         }
 
         Ok(())

@@ -1,7 +1,11 @@
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
-use crate::minimal_machines::test_machine_stepper::api::{StateEvent, TestMachineStepperEvents};
+use crate::minimal_machines::test_machine_stepper::api::{
+    AccelerationFactor, AccelerationState, Frequency, FrequencyState, Mode, ModeState, StateEvent,
+    TestMachineStepperEvents,
+};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
+use core::convert::Into;
 use ethercat_hal::io::stepper_velocity_wago_750_671::StepperVelocityWago750671;
 use ethercat_hal::io::stepper_velocity_wago_750_672::StepperVelocityWago750672;
 use smol::channel::{Receiver, Sender};
@@ -27,6 +31,7 @@ pub struct TestMachineStepper {
     pub last_state_emit: Instant,
     pub main_sender: Option<Sender<AsyncThreadMessage>>,
     pub stepper: Stepper,
+    pub mode: Mode,
 }
 
 impl Machine for TestMachineStepper {
@@ -51,14 +56,28 @@ impl TestMachineStepper {
             Stepper::Wago750_672(stepper_velocity_wago750672) => StateEvent {
                 target_speed: stepper_velocity_wago750672.target_velocity,
                 enabled: stepper_velocity_wago750672.enabled,
-                freq: stepper_velocity_wago750672.freq_range_sel,
-                acc_freq: stepper_velocity_wago750672.acc_range_sel,
+                frequency_state: FrequencyState {
+                    frequency: stepper_velocity_wago750672.freq_range_sel.into(),
+                },
+                acceleration_state: AccelerationState {
+                    factor: stepper_velocity_wago750672.acc_range_sel.into(),
+                },
+                mode_state: ModeState {
+                    mode: self.mode.clone().into(),
+                },
             },
             Stepper::Wago750_671(stepper_velocity_wago750671) => StateEvent {
                 target_speed: stepper_velocity_wago750671.target_velocity,
                 enabled: stepper_velocity_wago750671.enabled,
-                freq: stepper_velocity_wago750671.freq_range_sel,
-                acc_freq: stepper_velocity_wago750671.acc_range_sel,
+                frequency_state: FrequencyState {
+                    frequency: stepper_velocity_wago750671.freq_range_sel.into(),
+                },
+                acceleration_state: AccelerationState {
+                    factor: stepper_velocity_wago750671.acc_range_sel.into(),
+                },
+                mode_state: ModeState {
+                    mode: self.mode.clone().into(),
+                },
             },
         }
     }
@@ -81,6 +100,19 @@ impl TestMachineStepper {
         self.emit_state();
     }
 
+    pub fn set_mode(&mut self, mode: Mode) {
+        self.mode = mode.clone();
+
+        match mode {
+            Mode::Standby => self.set_enabled(false),
+            Mode::Hold => {
+                self.set_enabled(true);
+                self.stop_motor();
+            }
+            Mode::Turn => self.start_motor(),
+        }
+    }
+
     pub fn set_enabled(&mut self, enabled: bool) {
         match &mut self.stepper {
             Stepper::Wago750_672(stepper_velocity_wago750672) => {
@@ -93,25 +125,49 @@ impl TestMachineStepper {
         self.emit_state();
     }
 
-    pub fn set_freq(&mut self, factor: u8) {
+    fn start_motor(&mut self) {
         match &mut self.stepper {
             Stepper::Wago750_672(stepper_velocity_wago750672) => {
-                stepper_velocity_wago750672.set_freq_range_sel(factor)
+                stepper_velocity_wago750672.start_motor();
             }
             Stepper::Wago750_671(stepper_velocity_wago750671) => {
-                stepper_velocity_wago750671.set_freq_range_sel(factor)
+                stepper_velocity_wago750671.start_motor();
+            }
+        }
+        self.emit_state();
+    }
+
+    fn stop_motor(&mut self) {
+        match &mut self.stepper {
+            Stepper::Wago750_672(stepper_velocity_wago750672) => {
+                stepper_velocity_wago750672.stop_motor();
+            }
+            Stepper::Wago750_671(stepper_velocity_wago750671) => {
+                stepper_velocity_wago750671.stop_motor();
+            }
+        }
+        self.emit_state();
+    }
+
+    pub fn set_freq(&mut self, factor: Frequency) {
+        match &mut self.stepper {
+            Stepper::Wago750_672(stepper_velocity_wago750672) => {
+                stepper_velocity_wago750672.set_freq_range_sel(factor.into())
+            }
+            Stepper::Wago750_671(stepper_velocity_wago750671) => {
+                stepper_velocity_wago750671.set_freq_range_sel(factor.into())
             }
         };
         self.emit_state();
     }
 
-    pub fn set_acc_freq(&mut self, factor: u8) {
+    pub fn set_acc_factor(&mut self, factor: AccelerationFactor) {
         match &mut self.stepper {
             Stepper::Wago750_672(stepper_velocity_wago750672) => {
-                stepper_velocity_wago750672.set_acc_range_sel(factor)
+                stepper_velocity_wago750672.set_acc_range_sel(factor.into())
             }
             Stepper::Wago750_671(stepper_velocity_wago750671) => {
-                stepper_velocity_wago750671.set_acc_range_sel(factor)
+                stepper_velocity_wago750671.set_acc_range_sel(factor.into())
             }
         };
         self.emit_state();
