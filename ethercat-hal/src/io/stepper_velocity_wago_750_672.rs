@@ -326,16 +326,6 @@ impl StepperVelocityWago750672 {
         self.read_status_byte(StatusByte::S3)
     }
 
-    pub fn get_last_tms_enabling_block(&self) -> Option<u32> {
-        let dev = block_on(self.device.read());
-        dev.last_tms_enabling_block
-    }
-
-    pub fn get_last_diag_return_code(&self) -> Option<u8> {
-        let dev = block_on(self.device.read());
-        dev.last_diag_return_code
-    }
-
     pub fn get_control_byte1(&self) -> u8 {
         let dev = block_on(self.device.read());
         dev.rxpdo.control_byte1

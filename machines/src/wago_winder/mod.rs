@@ -570,7 +570,7 @@ impl WagoWinder {
                     self.stop_spool_motion(true);
                 }
                 SpoolMode::Hold => {
-                    self.stop_spool_motion(false);
+                    self.pause_spool_in_speed_control();
                 }
                 SpoolMode::Wind => {}
             },

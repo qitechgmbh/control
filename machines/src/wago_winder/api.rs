@@ -171,8 +171,6 @@ pub struct StateEvent {
     pub traverse_state: TraverseState,
     /// puller state
     pub puller_state: PullerState,
-    /// spool fault state
-    pub spool_fault_state: SpoolFaultState,
     /// spool automatic action state and progress
     pub spool_automatic_action_state: SpoolAutomaticActionState,
     /// mode state
@@ -253,22 +251,6 @@ pub struct PullerState {
     /// Inner deadzone: max deviation from target (mm) that requires no correction
     pub allowed_diameter_deviation: f64,
     pub adaptive_reference_machine: Option<MachineIdentificationUnique>,
-}
-
-#[derive(Serialize, Debug, Clone, Default)]
-pub struct SpoolFaultState {
-    pub error: bool,
-    pub warning: bool,
-    pub reset: bool,
-    pub diag_return_code: Option<u8>,
-    pub arm_enabling_blocked: bool,
-    pub overcurrent: bool,
-    pub error_ack_present: bool,
-    pub internal_error: bool,
-    pub reset_not_completed: bool,
-    pub incomplete_tms_params: bool,
-    pub faulty_intermediate_voltage: bool,
-    pub faulty_24v: bool,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
