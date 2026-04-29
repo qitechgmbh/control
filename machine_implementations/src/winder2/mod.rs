@@ -27,6 +27,7 @@ use std::{cell::RefCell, rc::Rc};
 use std::time::Instant;
 use crate::MachineMessage;
 use crate::QiTechMachine;
+use crate::laser::api::LiveValuesEvent;
 use crate::{
     MACHINE_WINDER_V1, VENDOR_QITECH,
 };
@@ -67,7 +68,7 @@ pub struct Winder2 {
     pub puller: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
     pub spool: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
     pub tension_arm: TensionArm,
-    
+
     pub laser: Rc<RefCell< dyn DigitalOutputDevice>>,
     pub laser_enabled : bool,
     pub traverse_controller: TraverseController,
@@ -92,6 +93,10 @@ pub struct Winder2 {
 
     // control circuit puller
     pub puller_speed_controller: PullerSpeedController,
+
+    // machine connecting data
+    pub laser_live_values: Option<LiveValuesEvent>,
+
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
@@ -224,7 +229,7 @@ impl Winder2 {
         // Convert to `Winder2Mode` to `PullerMode`
         let mode: PullerMode = mode.clone().into();
         let puller = &mut *self.puller.borrow_mut();
-        
+
         // Transition matrix
         match self.puller_mode {
             PullerMode::Standby => match mode {

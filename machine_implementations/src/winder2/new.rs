@@ -47,7 +47,7 @@ pub use winder2_imports::*;
 use crate::{MachineHardware, MachineNew};
 
 impl MachineNew for Winder2 {
-    fn new(hw: MachineHardware) -> Result<Self, Error> {        
+    fn new(hw: MachineHardware) -> Result<Self, Error> {
         let _ek1100 = hw.try_get_ethercat_device_by_role::<EK1100>(0)?;
         let el2002 : Rc<RefCell<dyn DigitalOutputDevice>> = hw.try_get_ethercat_device_by_role::<EL2002>(1)?;
         let el7041 : Rc<RefCell<EL7041_0052>> = hw.try_get_ethercat_device_by_role::<EL7041_0052>(2)?;
@@ -56,7 +56,7 @@ impl MachineNew for Winder2 {
 
         let mode = Winder2Mode::Standby;
         let (sender,receiver) = tokio::sync::mpsc::channel(2);
-        
+
         let interface : EtherCATThreadChannel = match &hw.ethercat_interface {
             Some(ecat_interface) => ecat_interface.clone(),
             None => {
@@ -78,12 +78,12 @@ impl MachineNew for Winder2 {
                 ..Default::default()
         };
 
-        let device_address = hw.try_get_ethercat_meta_by_role(4)?;        
+        let device_address = hw.try_get_ethercat_meta_by_role(4)?;
         let mut b = el7031_0030.borrow_mut();
         (&mut *b).write_config(interface.clone(), device_address,&el7031_0030_config )?;
         drop(b);
 
-        let device_address = hw.try_get_ethercat_meta_by_role(3)?;        
+        let device_address = hw.try_get_ethercat_meta_by_role(3)?;
         let el7031_config = EL7031Configuration {
                     stm_features: shared_config::el70x1::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
@@ -112,7 +112,7 @@ impl MachineNew for Winder2 {
                 max_current: 2800,
                 ..Default::default()
                 },
-                ..Default::default() 
+                ..Default::default()
             };
 
         let mut b = el7041.borrow_mut();
@@ -123,7 +123,7 @@ impl MachineNew for Winder2 {
         let mut new = Self {
             api_receiver: receiver,
             api_sender: sender,
-            traverse: el7031,            
+            traverse: el7031,
             puller: el7031_0030.clone(),
             spool: el7041,
             laser: el2002,
@@ -159,11 +159,12 @@ impl MachineNew for Winder2 {
             },
             machine_identification_unique: hw.identification,
             laser_enabled: false,
+            laser_live_values: None,
         };
 
         // initalize events
             new.emit_state();
             Ok(new)
-        
+
     }
 }

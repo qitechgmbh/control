@@ -8,6 +8,7 @@ use control_core::socketio::{
     },
 };
 use control_core_derive::BuildEvent;
+use qitech_lib::machines::ConvertMachineData;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::mpsc::Sender;
@@ -28,6 +29,8 @@ impl LiveValuesEvent {
         Event::new("LiveValuesEvent", self.clone())
     }
 }
+
+impl ConvertMachineData for LiveValuesEvent {}
 
 #[derive(Serialize, Debug, Clone, BuildEvent)]
 pub struct StateEvent {
@@ -160,7 +163,7 @@ impl MachineApi for LaserMachine {
                         live_values: serde_json::to_value(self.get_live_values())
                             .expect("Failed to serialize live values"),
                     })
-                    .expect("Failed to send values");            
+                    .expect("Failed to send values");
             }
         }
     }

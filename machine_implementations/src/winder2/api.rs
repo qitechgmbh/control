@@ -18,6 +18,7 @@ mod winder2_imports {
     };
     pub use tracing::instrument;
 }
+use qitech_lib::machines::ConvertMachineData;
 pub use winder2_imports::*;
 use crate::{MachineApi, MachineMessage, MachineValues, machine_identification::QiTechMachineIdentificationUnique};
 
@@ -298,7 +299,7 @@ impl CacheableEvents<Self> for Winder2Events {
 }
 
 impl MachineApi for Winder2 {
-    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {        
+    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {
         self.api_sender.clone()
     }
 
