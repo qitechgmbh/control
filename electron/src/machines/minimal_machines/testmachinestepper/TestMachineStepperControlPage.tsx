@@ -8,7 +8,7 @@ import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import {
-  AccelerationFaktor,
+  AccelerationFactor,
   Frequency,
   Mode,
 } from "./testMachineStepperNamespace";
@@ -108,7 +108,7 @@ export function TestMachineStepperControlPage() {
           />
         </ControlCard>
         <ControlCard className="bg-red" title="Acceleration Faktor">
-          <SelectionGroup<AccelerationFaktor>
+          <SelectionGroup<AccelerationFactor>
             value={state?.acceleration_state.factor}
             disabled={isDisabled}
             loading={isLoading}

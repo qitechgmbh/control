@@ -28,7 +28,7 @@ export type Frequency = z.infer<typeof frequencySchema>;
  * Acceleration Factor
  */
 export const accelerationSchema = z.enum(["Default", "Low", "Mid", "High"]);
-export type AccelerationFaktor = z.infer<typeof accelerationSchema>;
+export type AccelerationFactor = z.infer<typeof accelerationSchema>;
 
 /**
  * Mode state schema

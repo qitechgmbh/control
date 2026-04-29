@@ -7,7 +7,7 @@ import {
   StateEvent,
   modeSchema,
   Mode,
-  AccelerationFaktor as AccelerationFactor,
+  AccelerationFactor as AccelerationFactor,
   Frequency,
 } from "./testMachineStepperNamespace";
 import { useMachineMutate } from "@/client/useClient";
