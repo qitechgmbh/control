@@ -1,192 +1,98 @@
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
-use machine_implementations::laser::LaserMachine;
 use machine_implementations::registry::MACHINE_REGISTRY;
-use machine_implementations::{Hardware, IdentifiedEthercat, IdentifiedModbus, MachineHardware, QiTechMachine};
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
-use mock::{get_aquapath_machine_dev_infor, get_aquapath_meta, get_extruder_machine_dev_infor, get_extruder_meta, get_winder_machine_dev_infor, get_winder_meta};
-use qitech_lib::ethercat_hal::{EtherCATThreadChannel, MetaSubdevice};
-use qitech_lib::ethercat_hal::machine_ident_read::MachineDeviceInfo;
-use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
+use qitech_lib::ethercat_hal::controller::{TripleBufConsumer, TripleBufProducer};
 use qitech_lib::modbus::clients::example_client::ExampleClient;
-use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
 use qitech_lib::modbus::managers::ExampleDeviceManager;
-use qitech_lib::modbus::managers::example_manager::ExampleScheduler;
 use qitech_lib::modbus::start_modbus_async_task;
-use qitech_lib::{
-    ethercat_hal::devices::{EthercatDevice, device_from_subdevice_identity_rc},
-    machines::MachineDataRegistry,
-};
+use qitech_lib::{ethercat_hal::devices::{device_from_subdevice_identity_rc}};
+use qitech_lib::ethercat_hal::{EtherCATControl, init_ethercat};
+use crate::app_state::get_async_runtime;
+use crate::app_state::MainState;
 
 use std::{
-    cell::RefCell,
     collections::HashMap,
-    rc::Rc,
-    sync::{Arc, OnceLock},
+    sync::{Arc},
     time::Duration,
 };
-
-use tokio::runtime::Runtime;
 
 pub mod apis;
 mod app_state;
 mod machine_loop;
 mod mock;
+mod mock_main;
 
-static RUNTIME: OnceLock<Runtime> = OnceLock::new();
-fn get_async_runtime() -> &'static Runtime {
-    RUNTIME.get_or_init(|| {
-        tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
-            .build()
-            .expect("Failed to create Tokio Runtime")
-    })
-}
+fn setup_ethercat(
+    state : Arc<SharedAppState>,
+    main_state : &mut MainState ,
+    eth_control : &EtherCATControl<TripleBufConsumer,TripleBufProducer>)
+{
 
-struct MainState {
-    pub subdevices: Vec<Rc<RefCell<dyn EthercatDevice>>>,
-    pub hardware: HashMap<MachineIdentificationUnique, MachineHardware>,
-    pub machines: Vec<Box<dyn QiTechMachine>>,
-    pub machine_errors: HashMap<MachineIdentificationUnique, String>,
-    pub machine_data_reg: MachineDataRegistry,
-    pub modbus_mgrs: Vec<Rc<RefCell<ExampleDeviceManager>>>
-}
+    let _res = eth_control.channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
+    std::thread::sleep(Duration::from_millis(5000));
 
-impl MainState {
-    pub fn new() -> Self {
-        let machines = vec![];
-        let machine_data_reg = MachineDataRegistry {
-            storage: HashMap::new(),
-        };
-        MainState {
-            machines,
-            machine_data_reg,
-            subdevices: vec![],
-            modbus_mgrs: vec![],
-            hardware: HashMap::new(),
-            machine_errors: HashMap::new(),
-        }
-    }
-
-    pub fn generate_machine_hardware_from_serial(
-        &mut self, mgr: Rc<RefCell<ExampleDeviceManager>>,
-    ){
-        let laser_device: Rc<RefCell<LaserDevice<ExampleScheduler>>> = ExampleDeviceManager::register_device(mgr.clone(), 1);
-        let id_modbus : IdentifiedModbus = IdentifiedModbus { hw: laser_device,manager:mgr.clone() };
-        let ident = MachineIdentificationUnique { machine_ident: LaserMachine::MACHINE_IDENTIFICATION, serial: 1 };
-        let mut hw = MachineHardware{ 
-            hw: vec![], 
-            identification:  ident,
-            ethercat_interface: None,
-        };
-        hw.hw.push(Hardware::Modbus(  id_modbus ));
-        self.modbus_mgrs.push(mgr.clone());
-        self.hardware.insert(ident, hw);
-    }
-
-    pub fn generate_machine_hardware_from_ethercat(
-        &mut self,
-        device_infos: Vec<MachineDeviceInfo>,
-        mut ethercat_devices_mapped: Vec<(MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)>,
-        ethercat_interface : EtherCATThreadChannel,
-    ) {
-        let mut hw_map: HashMap<u16, (MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)> =
-            ethercat_devices_mapped
-                .drain(..)
-                .map(|(meta, device)| (meta.device_address, (meta, device)))
-                .collect();
-
-        let mut combined_list: Vec<(
-            MachineDeviceInfo,
-            MetaSubdevice,
-            Rc<RefCell<dyn EthercatDevice>>,
-        )> = device_infos
-            .into_iter()
-            .filter_map(|info| {
-                let address = info.device_address;
-                hw_map.remove(&address).map(|hw| {
-                    (info, hw.0, hw.1) 
-                })
-            })
-            .collect();
-
-        combined_list.sort_by_key(|f| (f.0.machine_id, f.0.machine_serial));
-        for (dev_info, _, eth) in combined_list.drain(0..combined_list.len()) {
-            let identification = MachineIdentificationUnique {
-                machine_ident: MachineIdentification {
-                    vendor: dev_info.machine_vendor,
-                    machine: dev_info.machine_id,
-                },
-                serial: dev_info.machine_serial as u32,
-            };
-            if self.hardware.get(&identification).is_none() {
-                self.hardware.insert(
-                    identification,
-                    MachineHardware {
-                        hw: vec![],
-                        identification,
-                        ethercat_interface: Some(ethercat_interface.clone()),
-                    },
-                );
-            }
-            let ethercat_hw = Hardware::Ethercat(IdentifiedEthercat {
-                hw: eth,
-                ident: dev_info,
-            });
-            let hw = self.hardware.get_mut(&identification).unwrap();
-            hw.hw.push(ethercat_hw);
-        }
-    }
-}
-
-fn mock_logic(){
-    let rt = get_async_runtime();
-    let state = Arc::new(SharedAppState::new());
-    let _api = rt.spawn(apis::init_api(state.clone()));
-    let mut main_state = MainState::new();
-    let state_clone = state.clone();
-    rt.spawn(start_socketio_queue(state_clone));
+    let mut idents = vec![];    
+    println!("Initialized {} subdevices",eth_control.controller.subdevice_count);
     
-    let mut starting_dev_addr = 4096;
-    let mut meta_subdevices = vec![];
+    let mut devices_by_address = eth_control.controller
+        .get_subdevices()
+        .into_iter()
+        .map(|meta| {
+            let dev = device_from_subdevice_identity_rc(meta).unwrap();
+            (meta.device_address, (meta.clone(), dev))
+        })
+        .collect::<HashMap<_, _>>();
 
-    let mut metas = get_aquapath_meta(starting_dev_addr,0,0);
-    let mut idents = get_aquapath_machine_dev_infor(starting_dev_addr);    
-    meta_subdevices.extend(metas.subdevices);
-    starting_dev_addr += meta_subdevices.len() as u16;
-    let end_rx = metas.end_rx;
-    let end_tx = metas.end_tx;
-
-    metas = get_extruder_meta(starting_dev_addr,end_tx,end_rx);
-    idents.extend(get_extruder_machine_dev_infor(starting_dev_addr));
-    meta_subdevices.extend(metas.subdevices);
-    starting_dev_addr = starting_dev_addr + meta_subdevices.len() as u16;
-    let end_rx = metas.end_rx;
-    let end_tx = metas.end_tx;
-
-    metas = get_winder_meta(starting_dev_addr,end_tx,end_rx);
-    idents.extend(get_winder_machine_dev_infor(starting_dev_addr));
-    meta_subdevices.extend(metas.subdevices);
-    starting_dev_addr = starting_dev_addr + meta_subdevices.len() as u16;
-
-    let eth_control = qitech_lib::ethercat_hal::init_ethercat_mock(meta_subdevices,None);
-    let mut ecat_handle = eth_control.app_handle;
-    let ecat_channel = eth_control.channel;
-    let ecat_controller = eth_control.controller;
-    
-    let mut mapped_ecat_devices = vec![];
-    for i in 0..ecat_controller.subdevice_count {
-        let meta = ecat_controller.subdevices[i];
-        println!("{:?}",meta.get_name());
-        let dev = device_from_subdevice_identity_rc(meta).unwrap();
+    for (_, dev) in devices_by_address.values() {
         main_state.subdevices.push(dev.clone());
-        mapped_ecat_devices.push((meta, dev));
     }
-    main_state.generate_machine_hardware_from_ethercat(idents.clone(), mapped_ecat_devices,ecat_channel.clone());
-    let _res = state.fill_ethercat_metadata(ecat_controller.clone(), Some(idents) );
 
+    match eth_control.channel.read_device_identifications() {
+        Ok(mut eeprom_idents) => {
+            main_state.generate_machine_hardware_from_ethercat(
+                &eeprom_idents,
+                &mut devices_by_address,
+                eth_control.channel.clone(),
+            );
+            idents.append(&mut eeprom_idents);
+        }
+        Err(e) => {
+            println!("Could not read device identifications from eeprom: {:?}", e);
+        }
+    };
+    let _res = state.fill_ethercat_metadata(eth_control.controller.clone(), idents);
+}
+
+fn setup_serial(main_state : &mut MainState){
+    let rt = get_async_runtime();
+    let (tx, rx) = ExampleClient::create_channels();
+    rt.spawn(start_modbus_async_task("/dev/ttyUSB0".to_string(),1,38400,rx));
+    let modbus_mgr = ExampleDeviceManager::new(tx);
+    main_state.generate_machine_hardware_from_serial(modbus_mgr);
+}
+
+fn finalize_ethercat(eth_control : &EtherCATControl<TripleBufConsumer,TripleBufProducer>) {
+    let _res = eth_control.channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
+    std::thread::sleep(Duration::from_secs(1));
+}
+
+fn send_setup_done_events(state : Arc<SharedAppState>){
+    let rt = get_async_runtime();
+    rt.spawn(async move {
+        let _res = state.send_ethercat_setup_done().await;
+        let _res = state.send_machines_event().await;
+    });
+}
+
+fn setup_api(state : Arc<SharedAppState>){
+    let rt = get_async_runtime();
+    rt.spawn(apis::init_api(state.clone()));    
+    rt.spawn(start_socketio_queue(state));
+}
+
+fn detect_and_build_machines(state : Arc<SharedAppState>,main_state : &mut MainState){
     for key in main_state.hardware.keys() {
-        println!("{:?}",key);
         let result = MACHINE_REGISTRY
             .new_machine(key.clone(), main_state.hardware.get(key).unwrap().clone());
         match result {
@@ -204,133 +110,35 @@ fn mock_logic(){
             }
         };
     }
-
-    let state_clone = state.clone();
-    rt.spawn(async move {
-        let _res = state_clone.send_ethercat_setup_done().await;
-        let _res = state_clone.send_machines_event().await;
-    });
-
-    loop {
-        write_ecat_inputs(
-            &mut ecat_handle,
-            ecat_controller.clone(),
-            main_state.subdevices.clone(),
-        );
-        run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
-        write_ecat_outputs(
-            &mut ecat_handle,
-            ecat_controller.clone(),
-            main_state.subdevices.clone(),
-        );
-        std::thread::sleep(Duration::from_micros(10));
-    }
-
 }
 
 #[cfg(not(feature = "mock"))]
 fn main_logic(){
-    let rt = get_async_runtime();
     let state = Arc::new(SharedAppState::new());
-    let _api = rt.spawn(apis::init_api(state.clone()));
-
     let mut main_state = MainState::new();
-    let eth_control = init_ethercat("eth0");
-
-    let mut ecat_handle = eth_control.app_handle;
-    let ecat_channel = eth_control.channel;
-    let ecat_controller = eth_control.controller;
-
-    let state_clone = state.clone();
-    rt.spawn(start_socketio_queue(state_clone));
-    
-    let (tx, rx) = ExampleClient::create_channels();
-    rt.spawn(start_modbus_async_task("/dev/ttyUSB0".to_string(),1,38400,rx));
-    let modbus_mgr = ExampleDeviceManager::new(tx);
-
-    let _res = ecat_channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
-    std::thread::sleep(Duration::from_millis(5000));
-
-    let res = ecat_channel.read_device_identifications();
-    let idents = match res {
-        Ok(idents) => Some(idents),
-        Err(_e) => {
-            None
-        },
-    };
-
-    let mut mapped_ecat_devices = vec![];
-    println!("Initialized {} subdevices",ecat_controller.subdevice_count);
-
-    for i in 0..ecat_controller.subdevice_count {
-        let meta = ecat_controller.subdevices[i];
-        println!("{:?}",meta);
-        let dev = device_from_subdevice_identity_rc(meta).unwrap();
-        main_state.subdevices.push(dev.clone());
-        mapped_ecat_devices.push((meta, dev));
-    }
-    
-    match idents.clone() {
-        Some(idents) => {
-            main_state.generate_machine_hardware_from_ethercat(idents, mapped_ecat_devices,ecat_channel.clone())
-        }
-        None => (),
-    }
-    println!("{:?}",idents);
-    let _res = state.fill_ethercat_metadata(ecat_controller.clone(), idents);
-    main_state.generate_machine_hardware_from_serial(modbus_mgr);
-
+    let mut eth_control = init_ethercat("eth0");
+    setup_api(state.clone());    
+    setup_ethercat(state.clone(),&mut main_state,&eth_control);
+    setup_serial(&mut main_state);
     println!("Initialized {} hw",main_state.hardware.keys().len());
-
-    for key in main_state.hardware.keys() {
-        let result = MACHINE_REGISTRY
-            .new_machine(key.clone(), main_state.hardware.get(key).unwrap().clone());
-        match result {
-            Ok(machine) => {
-                let _res = state.add_machine_sync(
-                    key.clone().into(),
-                    None,
-                    Some(machine.get_api_sender()),
-                );
-                main_state.machines.push(machine);
-            }
-            Err(e) => {
-                println!("{:?}", e);
-                main_state.machine_errors.insert(*key, e.to_string());
-            }
-        };
-    }
-
-    let _res = ecat_channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
-
-    let state_clone = state.clone();
-    rt.spawn(async move {
-        let _res = state_clone.send_ethercat_setup_done().await;
-        let _res = state_clone.send_machines_event().await;
-    });
-    std::thread::sleep(Duration::from_secs(3));
-
-    for i in 0..ecat_controller.subdevice_count {
-        let meta = ecat_controller.subdevices[i];
-        println!("{:?}",meta);
-    }
+    detect_and_build_machines(state.clone(),&mut main_state);
+    // Order is important here, because when detect_and_build_machines is called
+    // Every machine assumes ethercat devices are in PreOp finalize moves to OP
+    finalize_ethercat(&eth_control);
+    send_setup_done_events(state);
 
     loop {
         write_ecat_inputs(
-            &mut ecat_handle,
-            ecat_controller.clone(),
+            &mut eth_control.app_handle,
+            eth_control.controller.clone(),
             main_state.subdevices.clone(),
         );
-
         run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
-
         write_ecat_outputs(
-            &mut ecat_handle,
-            ecat_controller.clone(),
+            &mut eth_control.app_handle,
+            eth_control.controller.clone(),
             main_state.subdevices.clone(),
         );
-
-        
         std::thread::sleep(Duration::from_micros(100));
     }
 }
