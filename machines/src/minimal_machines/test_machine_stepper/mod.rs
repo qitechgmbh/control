@@ -1,11 +1,14 @@
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
-use crate::minimal_machines::test_machine_stepper::api::{AccelerationFactor, AccelerationState, Frequency, FrequencyState, Mode, ModeState, StateEvent, TestMachineStepperEvents};
+use crate::minimal_machines::test_machine_stepper::api::{
+    AccelerationFactor, AccelerationState, Frequency, FrequencyState, Mode, ModeState, StateEvent,
+    TestMachineStepperEvents,
+};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
+use core::convert::Into;
 use ethercat_hal::io::stepper_velocity_wago_750_671::StepperVelocityWago750671;
 use ethercat_hal::io::stepper_velocity_wago_750_672::StepperVelocityWago750672;
 use smol::channel::{Receiver, Sender};
-use core::convert::Into;
 use std::time::Instant;
 pub mod act;
 pub mod api;
@@ -75,7 +78,7 @@ impl TestMachineStepper {
                 mode_state: ModeState {
                     mode: self.mode.clone().into(),
                 },
-            }
+            },
         }
     }
 

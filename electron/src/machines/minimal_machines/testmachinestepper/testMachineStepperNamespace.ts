@@ -48,7 +48,7 @@ export const frequencyStateSchema = z.object({
  * Accleration Factor Schema
  */
 export const accelerationStateSchema = z.object({
-  factor: accelerationSchema
+  factor: accelerationSchema,
 });
 
 // ========== Event Schema ==========

@@ -7,11 +7,22 @@ import { Label } from "@/control/Label";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { SelectionGroup } from "@/control/SelectionGroup";
-import { AccelerationFaktor, Frequency, Mode } from "./testMachineStepperNamespace";
+import {
+  AccelerationFaktor,
+  Frequency,
+  Mode,
+} from "./testMachineStepperNamespace";
 
 export function TestMachineStepperControlPage() {
-  const { state, setTargetSpeed, setFreq, setAccFactor, setMode, isDisabled, isLoading } =
-    useTestMachineStepper();
+  const {
+    state,
+    setTargetSpeed,
+    setFreq,
+    setAccFactor,
+    setMode,
+    isDisabled,
+    isLoading,
+  } = useTestMachineStepper();
 
   return (
     <Page>
