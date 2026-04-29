@@ -235,8 +235,9 @@ impl StepperVelocityWago750672 {
 
     pub fn request_speed_mode(&mut self) {
         let mut dev = block_on(self.device.write());
-        let already_in_speed_mode =
-            dev.desired_command as u8 == C1Command::SpeedControl as u8 && !dev.start_requested;
+        let already_in_speed_mode = dev.initialized
+            && dev.desired_command as u8 == C1Command::SpeedControl as u8
+            && !dev.start_requested;
         if already_in_speed_mode {
             return;
         }
