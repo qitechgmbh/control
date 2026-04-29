@@ -153,6 +153,21 @@ export const pullerStateSchema = z.object({
   adaptive_reference_machine: machineIdentificationUniqueSchema.nullable(),
 });
 
+export const spoolFaultStateSchema = z.object({
+  error: z.boolean(),
+  warning: z.boolean(),
+  reset: z.boolean(),
+  diag_return_code: z.number().nullable(),
+  arm_enabling_blocked: z.boolean(),
+  overcurrent: z.boolean(),
+  error_ack_present: z.boolean(),
+  internal_error: z.boolean(),
+  reset_not_completed: z.boolean(),
+  incomplete_tms_params: z.boolean(),
+  faulty_intermediate_voltage: z.boolean(),
+  faulty_24v: z.boolean(),
+});
+
 /**
  * Mode state schema
  */
@@ -190,6 +205,7 @@ export const stateEventDataSchema = z.object({
   is_default_state: z.boolean(),
   traverse_state: traverseStateSchema,
   puller_state: pullerStateSchema,
+  spool_fault_state: spoolFaultStateSchema,
   mode_state: modeStateSchema,
   tension_arm_state: tensionArmStateSchema,
   spool_speed_controller_state: spoolSpeedControllerStateSchema,

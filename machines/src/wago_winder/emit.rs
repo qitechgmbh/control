@@ -330,6 +330,26 @@ impl WagoWinder {
                     .get::<millimeter>(),
                 adaptive_reference_machine: self.puller_reference_machine,
             },
+            spool_fault_state: {
+                let spool_s2 = self.spool.get_status_byte2();
+                let spool_s3 = self.spool.get_status_byte3();
+                let diag_bits = self.spool.get_last_tms_enabling_block().unwrap_or(0);
+
+                super::api::SpoolFaultState {
+                    error: (spool_s2 & 0x80) != 0,
+                    warning: (spool_s3 & 0x40) != 0,
+                    reset: (spool_s3 & 0x80) != 0,
+                    diag_return_code: self.spool.get_last_diag_return_code(),
+                    arm_enabling_blocked: (diag_bits & (1 << 0)) != 0,
+                    overcurrent: (diag_bits & (1 << 1)) != 0,
+                    error_ack_present: (diag_bits & (1 << 2)) != 0,
+                    internal_error: (diag_bits & (1 << 3)) != 0,
+                    reset_not_completed: (diag_bits & (1 << 4)) != 0,
+                    incomplete_tms_params: (diag_bits & (1 << 5)) != 0,
+                    faulty_intermediate_voltage: (diag_bits & (1 << 6)) != 0,
+                    faulty_24v: (diag_bits & (1 << 7)) != 0,
+                }
+            },
             mode_state: ModeState {
                 mode: self.mode.clone().into(),
                 can_wind: self.can_wind(),

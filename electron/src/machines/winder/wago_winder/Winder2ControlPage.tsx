@@ -32,6 +32,26 @@ import {
 import { getWinder2TraverseMax } from "./winder2Config";
 import { getWinder2AdaptivePullerSpeed } from "./winder2Config";
 
+function FaultIndicator({
+  label,
+  active,
+}: {
+  label: string;
+  active: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border p-4 text-center text-sm font-semibold ${
+        active
+          ? "border-red-600 bg-red-600 text-white"
+          : "border-gray-200 bg-white text-gray-900"
+      }`}
+    >
+      {label}
+    </div>
+  );
+}
+
 export function Winder2ControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
   const traverseMax = getWinder2TraverseMax();
@@ -95,6 +115,63 @@ export function Winder2ControlPage() {
             timeseries={spoolRpm}
             renderValue={(value) => roundToDecimals(value, 0)}
           />
+          <div className="grid grid-cols-2 gap-3">
+            <FaultIndicator
+              label="Error"
+              active={state?.spool_fault_state?.error ?? false}
+            />
+            <FaultIndicator
+              label="Warning"
+              active={state?.spool_fault_state?.warning ?? false}
+            />
+            <FaultIndicator
+              label="Reset Active"
+              active={state?.spool_fault_state?.reset ?? false}
+            />
+            <FaultIndicator
+              label="Arm Enable Block"
+              active={state?.spool_fault_state?.arm_enabling_blocked ?? false}
+            />
+            <FaultIndicator
+              label="Overcurrent"
+              active={state?.spool_fault_state?.overcurrent ?? false}
+            />
+            <FaultIndicator
+              label="Error Ack Present"
+              active={state?.spool_fault_state?.error_ack_present ?? false}
+            />
+            <FaultIndicator
+              label="Internal Error"
+              active={state?.spool_fault_state?.internal_error ?? false}
+            />
+            <FaultIndicator
+              label="Reset Not Completed"
+              active={state?.spool_fault_state?.reset_not_completed ?? false}
+            />
+            <FaultIndicator
+              label="Incomplete TMS Params"
+              active={state?.spool_fault_state?.incomplete_tms_params ?? false}
+            />
+            <FaultIndicator
+              label="Intermediate Voltage Fault"
+              active={
+                state?.spool_fault_state?.faulty_intermediate_voltage ?? false
+              }
+            />
+            <FaultIndicator
+              label="24 V Fault"
+              active={state?.spool_fault_state?.faulty_24v ?? false}
+            />
+          </div>
+          {state?.spool_fault_state?.diag_return_code !== null &&
+          state?.spool_fault_state?.diag_return_code !== undefined ? (
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700">
+              {`Diag return code: 0x${state.spool_fault_state.diag_return_code
+                .toString(16)
+                .toUpperCase()
+                .padStart(2, "0")}`}
+            </div>
+          ) : null}
         </ControlCard>
 
         <ControlCard className="bg-red" height={2} title="Traverse">
