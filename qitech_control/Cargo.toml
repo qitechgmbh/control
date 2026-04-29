@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 tokio = { version = "1.50.0", features = ["rt", "rt-multi-thread", "macros", "time","sync"] }
-qitech_lib = { path = "../qitech_lib", features = ["mock"] }
+qitech_lib = { path = "../qitech_lib", features = [] }
 machine_implementations = { path = "../machine_implementations" }
 control_core = { path = "../control-core" }
 bitvec = "1.0.1"
@@ -20,8 +20,5 @@ erased-serde = "0.4.10"
 axum = { version = "0.8.8", features = ["macros"] }
 
 [features]
-# By default, no features are enabled
-default = ["mock"]
-
-# Define your custom feature
+default = []
 mock = []
