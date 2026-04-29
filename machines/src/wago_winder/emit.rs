@@ -37,7 +37,7 @@ const SPOOL_RUN_ACCELERATION: u16 = 3000;
 #[cfg(not(feature = "mock-machine"))]
 const SPOOL_BLOCK_STOP_ACCELERATION: u16 = 10_000;
 #[cfg(not(feature = "mock-machine"))]
-const SPOOL_STANDSTILL_THRESHOLD_REGISTER: i16 = 2;
+const SPOOL_RESUME_STANDSTILL_THRESHOLD_REGISTER: i16 = 32;
 
 #[cfg(not(feature = "mock-machine"))]
 impl WagoWinder {
@@ -51,44 +51,65 @@ impl WagoWinder {
         if !should_spin {
             let was_tension_blocked = self.spool_tension_blocked;
             self.spool_tension_blocked = false;
+            self.spool_resume_pending = false;
             if was_tension_blocked
                 || self.spool_speed_controller.is_enabled()
                 || self.spool.get_speed() != 0
             {
                 self.spool_speed_controller.reset();
-                if matches!(self.spool_mode, super::SpoolMode::Standby) {
-                    self.stop_spool_motion(false);
-                } else {
-                    self.spool.set_acceleration(SPOOL_BLOCK_STOP_ACCELERATION);
-                    self.pause_spool_in_speed_control();
-                }
+                self.spool.set_acceleration(SPOOL_BLOCK_STOP_ACCELERATION);
+                self.pause_spool_in_speed_control();
+                self.spool_last_commanded_velocity_register = Some(0);
+                self.spool_last_command_at = t;
             }
             return;
         }
 
         if self.spool_tension_blocked {
-            let spool_is_standstill = self.spool.get_actual_velocity_register().abs()
-                <= SPOOL_STANDSTILL_THRESHOLD_REGISTER;
+            let spool_s2 = self.spool.get_status_byte2();
+            let spool_s3 = self.spool.get_status_byte3();
+            let spool_error = (spool_s2 & 0x80) != 0;
+            let spool_reset = (spool_s3 & 0x80) != 0;
+            let spool_is_settled = self.spool.get_actual_velocity_register().abs()
+                <= SPOOL_RESUME_STANDSTILL_THRESHOLD_REGISTER;
 
-            if self.tension_arm_in_spool_window() && spool_is_standstill {
+            if self.tension_arm_in_spool_window()
+                && !spool_error
+                && !spool_reset
+                && spool_is_settled
+            {
                 self.spool_tension_blocked = false;
+                self.spool_resume_pending = true;
                 self.spool.set_acceleration(SPOOL_RUN_ACCELERATION);
-                self.spool.request_speed_mode();
-                self.spool_speed_controller.set_enabled(true);
+                self.arm_spool_for_speed_control();
             } else {
                 self.spool.set_acceleration(SPOOL_BLOCK_STOP_ACCELERATION);
-                self.pause_spool_in_speed_control();
+                self.stop_spool_motion(false);
                 return;
             }
         } else if !self.tension_arm_in_spool_window() {
             self.spool_tension_blocked = true;
+            self.spool_resume_pending = false;
             self.spool.set_acceleration(SPOOL_BLOCK_STOP_ACCELERATION);
-            self.pause_spool_in_speed_control();
+            self.stop_spool_motion(false);
             return;
         }
 
         if self.spool_tension_blocked {
             return;
+        }
+
+        if self.spool_resume_pending {
+            let spool_is_settled = self.spool.get_actual_velocity_register().abs()
+                <= SPOOL_RESUME_STANDSTILL_THRESHOLD_REGISTER;
+            if self.spool.get_s1_bit3_speed_mode_ack() && spool_is_settled {
+                self.spool_resume_pending = false;
+                self.spool_speed_controller.reset();
+                self.spool_speed_controller.set_enabled(true);
+            } else {
+                self.pause_spool_in_speed_control();
+                return;
+            }
         }
 
         if !self.spool_speed_controller.is_enabled() {
@@ -115,7 +136,7 @@ impl WagoWinder {
         let steps_per_second = self
             .spool_step_converter
             .angular_velocity_to_steps(directed_angular_velocity);
-        let _ = self.spool.set_speed(steps_per_second);
+        self.set_spool_speed_if_needed(steps_per_second, t);
     }
 
     pub fn stop_or_pull_spool(&mut self, now: Instant) {
