@@ -68,19 +68,17 @@ impl WagoWinder {
             if self.tension_arm_in_spool_window() && spool_is_standstill {
                 self.spool_tension_blocked = false;
                 self.spool.set_acceleration(SPOOL_RUN_ACCELERATION);
-                self.arm_spool_for_speed_control();
+                self.spool.request_speed_mode();
                 self.spool_speed_controller.set_enabled(true);
             } else {
-                self.spool_speed_controller.set_enabled(false);
                 self.spool.set_acceleration(SPOOL_BLOCK_STOP_ACCELERATION);
-                self.stop_spool_motion(false);
+                self.pause_spool_in_speed_control();
                 return;
             }
         } else if !self.tension_arm_in_spool_window() {
             self.spool_tension_blocked = true;
-            self.spool_speed_controller.set_enabled(false);
             self.spool.set_acceleration(SPOOL_BLOCK_STOP_ACCELERATION);
-            self.stop_spool_motion(false);
+            self.pause_spool_in_speed_control();
             return;
         }
 
