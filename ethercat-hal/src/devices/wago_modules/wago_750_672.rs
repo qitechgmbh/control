@@ -200,7 +200,6 @@ impl EthercatDevice for Wago750_672 {
                 // Switch state if SPEED MODE is acknowledged
                 if self.txpdo.status_byte1 == c1 {
                     self.initialized = true;
-                    self.state = InitState::Ready;
                 }
             }
             InitState::Ready => {

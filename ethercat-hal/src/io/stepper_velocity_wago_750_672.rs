@@ -106,7 +106,7 @@ impl StepperVelocityWago750672 {
         dev.rxpdo.acceleration
     }
 
-    pub fn set_freq_range_sel(&mut self, frequency: ) {
+    pub fn set_freq_range_sel(&mut self, frequency: u8) {
         if self.enabled || frequency > 3 {
             return;
         }

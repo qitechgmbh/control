@@ -39,7 +39,6 @@ pub struct Wago750_671 {
     pub initialized: bool,
     last_error_snapshot: Option<[u8; 6]>,
     pub desired_mode: C1Mode,
-    pub desired_stop2_n: bool,
     pub desired_control_byte3: u8,
     pub start_requested: bool,
 
@@ -106,6 +105,7 @@ pub enum InitState {
     Off,
     Enable,
     SetMode,
+    Ready,
     StartPulseStart,
     StartPulseEnd,
     Running,
@@ -266,10 +266,7 @@ impl EthercatDevice for Wago750_671 {
             }
             InitState::Enable => {
                 // set the specific bits of Control Byte C1
-                let mut c1 = ControlByteC1::new().with_flag(C1Flag::Enable);
-                if self.desired_stop2_n {
-                    c1 = c1.with_flag(C1Flag::Stop2N);
-                }
+                let c1 = ControlByteC1::new().with_flag(C1Flag::Enable);
                 let c1 = c1.bits();
                 self.rxpdo.control_byte1 = c1;
 
@@ -281,10 +278,7 @@ impl EthercatDevice for Wago750_671 {
             }
             InitState::SetMode => {
                 // set the specific bits of Control Byte C1 and also the mode
-                let mut c1 = ControlByteC1::new().with_flag(C1Flag::Enable);
-                if self.desired_stop2_n {
-                    c1 = c1.with_flag(C1Flag::Stop2N);
-                }
+                let c1 = ControlByteC1::new().with_flag(C1Flag::Enable);
                 let c1 = c1.with_mode(self.desired_mode).bits();
                 self.rxpdo.control_byte1 = c1;
                 self.rxpdo.control_byte3 = self.desired_control_byte3 & !(C3Flag::ResetQuit as u8);
@@ -299,12 +293,24 @@ impl EthercatDevice for Wago750_671 {
                     }
                 }
             }
-            InitState::StartPulseStart => {
-                let mut c1 = ControlByteC1::new().with_flag(C1Flag::Enable);
-                if self.desired_stop2_n {
-                    c1 = c1.with_flag(C1Flag::Stop2N);
+            InitState::Ready => {
+                // do nothing but wait for transition into running mode
+                let c1 = ControlByteC1::new()
+                    .with_flag(C1Flag::Enable)
+                    .with_flag(C1Flag::Stop2N)
+                    .with_mode(self.desired_mode)
+                    .bits();
+                self.rxpdo.control_byte1 = c1;
+
+                // Switch state if SPEED MODE is acknowledged
+                if self.txpdo.status_byte1 == c1 {
+                    self.initialized = true;
                 }
-                let c1 = c1
+            }
+            InitState::StartPulseStart => {
+                let c1 = ControlByteC1::new()
+                    .with_flag(C1Flag::Enable)
+                    .with_flag(C1Flag::Stop2N)
                     .with_flag(C1Flag::Start)
                     .with_mode(self.desired_mode)
                     .bits();
@@ -317,11 +323,11 @@ impl EthercatDevice for Wago750_671 {
                 }
             }
             InitState::StartPulseEnd => {
-                let mut c1 = ControlByteC1::new().with_flag(C1Flag::Enable);
-                if self.desired_stop2_n {
-                    c1 = c1.with_flag(C1Flag::Stop2N);
-                }
-                let c1 = c1.with_mode(self.desired_mode).bits();
+                let c1 = ControlByteC1::new()
+                    .with_flag(C1Flag::Enable)
+                    .with_flag(C1Flag::Stop2N)
+                    .with_mode(self.desired_mode)
+                    .bits();
                 self.rxpdo.control_byte1 = c1;
                 self.rxpdo.control_byte3 = self.desired_control_byte3 & !(C3Flag::ResetQuit as u8);
 
@@ -332,11 +338,12 @@ impl EthercatDevice for Wago750_671 {
                 }
             }
             InitState::Running => {
-                let mut c1 = ControlByteC1::new().with_flag(C1Flag::Enable);
-                if self.desired_stop2_n {
-                    c1 = c1.with_flag(C1Flag::Stop2N);
-                }
-                self.rxpdo.control_byte1 = c1.with_mode(self.desired_mode).bits();
+                let c1 = ControlByteC1::new()
+                    .with_flag(C1Flag::Enable)
+                    .with_flag(C1Flag::Stop2N)
+                    .with_mode(self.desired_mode)
+                    .bits();
+                self.rxpdo.control_byte1 = c1;
                 self.rxpdo.control_byte2 &= !(C2Flag::ErrorQuit as u8);
                 self.rxpdo.control_byte3 = self.desired_control_byte3 & !(C3Flag::ResetQuit as u8);
                 self.last_error_snapshot = None;
@@ -546,7 +553,6 @@ impl NewEthercatDevice for Wago750_671 {
             initialized: false,
             last_error_snapshot: None,
             desired_mode: C1Mode::SpeedControl,
-            desired_stop2_n: true,
             desired_control_byte3: 0,
             start_requested: false,
 

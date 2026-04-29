@@ -45,6 +45,28 @@ pub enum Frequency {
     High,
 }
 
+impl From<u8> for Frequency {
+    fn from(val: u8) -> Self {
+        match val {
+            1 => Frequency::Low,
+            2 => Frequency::Mid,
+            3 => Frequency::High,
+            _ => Frequency::Default,
+        }
+    }
+}
+
+impl From<Frequency> for u8 {
+    fn from(freq: Frequency) -> Self {
+        match freq {
+            Frequency::Default => 0,
+            Frequency::Low => 1,
+            Frequency::Mid => 2,
+            Frequency::High => 3,
+        }
+    }
+}
+
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct FrequencyState {
     pub frequency: Frequency,
@@ -57,6 +79,28 @@ pub enum AccelerationFactor {
     Low,
     Mid,
     High,
+}
+
+impl From<u8> for AccelerationFactor {
+    fn from(val: u8) -> Self {
+        match val {
+            1 => AccelerationFactor::Low,
+            2 => AccelerationFactor::Mid,
+            3 => AccelerationFactor::High,
+            _ => AccelerationFactor::Default,
+        }
+    }
+}
+
+impl From<AccelerationFactor> for u8 {
+    fn from(factor: AccelerationFactor) -> Self {
+        match factor {
+            AccelerationFactor::Default => 0,
+            AccelerationFactor::Low => 1,
+            AccelerationFactor::Mid => 2,
+            AccelerationFactor::High => 3,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
