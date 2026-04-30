@@ -5,7 +5,7 @@ The **Laser DRE** is a precision measurement device designed for real-time diame
 Key features include:
 
 - High-speed diameter measurement
-- Dual-axis capability
+- Single- or dual-axis capability
 - USB Serial communication
 - Modbus RTU protocol support
 
@@ -13,10 +13,10 @@ Key features include:
 
 - **Communication Interface:** USB Serial
 - **Protocol:** Modbus RTU
-- **Axes:** 2-axis measurement
+- **Axes:** 1-axis or 2-axis measurement (depending on model)
 - **Polling Rate:** Every 16 ms
 - **Measurement Rate:** 320 measurements per second (manufacturer specification)
-- **Measurement Type:** Diameter measurement | X/Y Axis width
+- **Measurement Type:** Diameter measurement | X-Axis width (1-axis) | X/Y-Axis width + Roundness (2-axis)
 
 ## Operation
 
@@ -30,7 +30,7 @@ According to the manufacturer, the Laser DRE can measure the diameter **320 time
 
 ### Axes
 
-The device is capable of measuring across **two axes**, allowing for comprehensive profiling of the object's diameter and shape.
+Depending on the model, the device measures across **one or two axes**. The 2-axis variant enables comprehensive profiling of both the diameter and the cross-sectional shape of the object.
 
 ## Communication Protocol
 
