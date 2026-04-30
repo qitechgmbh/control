@@ -82,6 +82,7 @@ impl MachineNew for Winder2 {
         let mut b = el7031_0030.borrow_mut();
         (&mut *b).write_config(interface.clone(), device_address,&el7031_0030_config )?;
         drop(b);
+        interface.enable_dc_sync0(device_address)?;
 
         let device_address = hw.try_get_ethercat_meta_by_role(3)?;        
         let el7031_config = EL7031Configuration {
@@ -101,6 +102,7 @@ impl MachineNew for Winder2 {
         let mut b = el7031.borrow_mut();
         (&mut *b).write_config(interface.clone(), device_address,&el7031_config )?;
         drop(b);
+        interface.enable_dc_sync0(device_address)?;
 
         let device_address = hw.try_get_ethercat_meta_by_role(2)?;
         let el7041_config = EL7041_0052Configuration {
@@ -116,10 +118,10 @@ impl MachineNew for Winder2 {
             };
 
         let mut b = el7041.borrow_mut();
-        (&mut *b).write_config(interface, device_address, &el7041_config)?;
+        (&mut *b).write_config(interface.clone(), device_address, &el7041_config)?;        
         drop(b);
-
-
+        interface.enable_dc_sync0(device_address)?;
+        
         let mut new = Self {
             api_receiver: receiver,
             api_sender: sender,
