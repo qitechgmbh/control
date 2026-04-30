@@ -67,6 +67,9 @@ use units::angle::degree;
 #[cfg(not(feature = "mock-machine"))]
 use units::f64::{AngularVelocity, Velocity};
 
+#[cfg(not(feature = "mock-machine"))]
+const SPOOL_SPEED_COMMAND_REGISTER_DELTA: i16 = 24;
+
 #[derive(Debug)]
 pub struct SpoolAutomaticAction {
     pub progress: Length,
@@ -181,6 +184,7 @@ pub struct WagoWinder {
     // spool automatic action state
     pub spool_automatic_action: SpoolAutomaticAction,
     pub spool_tension_blocked: bool,
+    spool_last_commanded_velocity_register: Option<i16>,
 
     // control circuit puller
     pub puller_speed_controller: PullerSpeedController,
@@ -226,6 +230,7 @@ impl WagoWinder {
         self.spool.clear_fast_stop();
         self.spool.request_speed_mode();
         self.spool.set_velocity_register(0);
+        self.spool_last_commanded_velocity_register = None;
     }
 
     fn pause_spool_in_speed_control(&mut self) {
@@ -233,6 +238,7 @@ impl WagoWinder {
         self.spool.clear_fast_stop();
         self.spool.request_speed_mode();
         self.spool.set_speed(0.0);
+        self.spool_last_commanded_velocity_register = None;
     }
 
     fn stop_spool_motion(&mut self, disable_axis: bool) {
@@ -241,6 +247,29 @@ impl WagoWinder {
         self.pause_spool_in_speed_control();
         if disable_axis {
             self.spool.set_enabled(false);
+        }
+    }
+
+    fn set_spool_speed_if_needed(&mut self, steps_per_second: f64) {
+        let next_register = self
+            .spool
+            .steps_per_second_to_velocity_register(steps_per_second);
+        let should_write = match self.spool_last_commanded_velocity_register {
+            None => true,
+            Some(previous_register) => {
+                let delta = next_register.abs_diff(previous_register);
+                let zero_transition = (previous_register == 0) != (next_register == 0);
+                let sign_transition = previous_register.signum() != next_register.signum();
+
+                zero_transition
+                    || sign_transition
+                    || delta >= SPOOL_SPEED_COMMAND_REGISTER_DELTA as u16
+            }
+        };
+
+        if should_write {
+            self.spool.set_speed(steps_per_second);
+            self.spool_last_commanded_velocity_register = Some(next_register);
         }
     }
 

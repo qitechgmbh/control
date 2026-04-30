@@ -115,7 +115,7 @@ impl WagoWinder {
         let steps_per_second = self
             .spool_step_converter
             .angular_velocity_to_steps(directed_angular_velocity);
-        let _ = self.spool.set_speed(steps_per_second);
+        self.set_spool_speed_if_needed(steps_per_second);
     }
 
     pub fn stop_or_pull_spool(&mut self, now: Instant) {

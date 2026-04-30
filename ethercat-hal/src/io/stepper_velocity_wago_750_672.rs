@@ -148,14 +148,17 @@ impl StepperVelocityWago750672 {
         self.request_speed_mode();
         self.target_speed_fullsteps_per_second = steps_per_second.round() as i32;
 
+        let velocity_register = self.steps_per_second_to_velocity_register(steps_per_second);
+
+        self.set_velocity_register(velocity_register);
+    }
+
+    pub fn steps_per_second_to_velocity_register(&self, steps_per_second: f64) -> i16 {
         let directed_fullsteps_per_second =
             steps_per_second * self.speed_scale * f64::from(self.direction_multiplier);
         let directed_microsteps_per_second =
             directed_fullsteps_per_second * f64::from(self.microsteps_per_full_step);
-        let velocity_register =
-            self.microsteps_per_second_to_velocity_register(directed_microsteps_per_second);
-
-        self.set_velocity_register(velocity_register);
+        self.microsteps_per_second_to_velocity_register(directed_microsteps_per_second)
     }
 
     pub fn get_speed(&self) -> i32 {

@@ -195,6 +195,7 @@ impl MachineNewTrait for WagoWinder {
                     mode: super::api::SpoolAutomaticActionMode::NoAction,
                 },
                 spool_tension_blocked: false,
+                spool_last_commanded_velocity_register: None,
                 machine_identification_unique: machine_id,
             };
 
