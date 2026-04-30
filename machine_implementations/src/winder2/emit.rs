@@ -101,9 +101,9 @@ impl Winder2 {
     /// Implement Traverse
     pub fn set_laser(&mut self, value: bool) {
         self.laser_enabled = value;
-        let mut laser = self.get_laser();        
-        laser.set_output(LASER_PORT,value);     
-        drop(laser);   
+        let mut laser = self.get_laser();
+        laser.set_output(LASER_PORT,value);
+        drop(laser);
         self.emit_state();
     }
 
@@ -390,7 +390,7 @@ impl Winder2 {
                 },
             }
         }
-       
+
 
         // Update the internal state
         self.traverse_mode = mode;

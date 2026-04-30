@@ -18,6 +18,7 @@ use std::{
 };
 
 pub mod apis;
+pub mod persist;
 mod app_state;
 mod machine_loop;
 mod mock;
@@ -32,9 +33,9 @@ fn setup_ethercat(
     let _res = eth_control.channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
     std::thread::sleep(Duration::from_millis(5000));
 
-    let mut idents = vec![];    
+    let mut idents = vec![];
     println!("Initialized {} subdevices",eth_control.controller.subdevice_count);
-    
+
     let mut devices_by_address = eth_control.controller
         .get_subdevices()
         .into_iter()
@@ -87,7 +88,7 @@ fn send_setup_done_events(state : Arc<SharedAppState>){
 
 fn setup_api(state : Arc<SharedAppState>){
     let rt = get_async_runtime();
-    rt.spawn(apis::init_api(state.clone()));    
+    rt.spawn(apis::init_api(state.clone()));
     rt.spawn(start_socketio_queue(state));
 }
 
@@ -116,8 +117,8 @@ fn detect_and_build_machines(state : Arc<SharedAppState>,main_state : &mut MainS
 fn main_logic(){
     let state = Arc::new(SharedAppState::new());
     let mut main_state = MainState::new();
-    let mut eth_control = init_ethercat("eth0");
-    setup_api(state.clone());    
+    let mut eth_control = init_ethercat("enp4s0");
+    setup_api(state.clone());
     setup_ethercat(state.clone(),&mut main_state,&eth_control);
     setup_serial(&mut main_state);
     println!("Initialized {} hw",main_state.hardware.keys().len());
@@ -148,5 +149,5 @@ fn main() {
     mock_logic();
 
     #[cfg(not(feature = "mock"))]
-    main_logic();  
+    main_logic();
 }
