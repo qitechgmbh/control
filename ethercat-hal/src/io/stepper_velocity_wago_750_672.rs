@@ -135,11 +135,7 @@ impl StepperVelocityWago750672 {
             if needs_start_edge {
                 dev.start_requested = true;
                 if dev.initialized {
-                    dev.state = if start_ack {
-                        InitState::StartPulseEnd
-                    } else {
-                        InitState::StartPulseStart
-                    };
+                    dev.state = InitState::StartPulseStart;
                     self.state = dev.state.clone();
                 }
             }
