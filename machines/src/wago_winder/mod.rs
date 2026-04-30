@@ -233,11 +233,18 @@ impl WagoWinder {
         self.spool_last_commanded_velocity_register = None;
     }
 
+    fn pause_spool_in_speed_control(&mut self) {
+        self.spool_speed_controller.set_enabled(false);
+        self.spool.clear_fast_stop();
+        self.spool.request_speed_mode();
+        self.spool.set_speed(0.0);
+        self.spool_last_commanded_velocity_register = None;
+    }
+
     fn stop_spool_motion(&mut self, disable_axis: bool) {
         self.spool_speed_controller.set_enabled(false);
         self.spool_speed_controller.set_speed(AngularVelocity::ZERO);
-        self.spool.request_fast_stop();
-        self.spool_last_commanded_velocity_register = None;
+        self.pause_spool_in_speed_control();
         if disable_axis {
             self.spool.set_enabled(false);
         }

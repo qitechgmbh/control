@@ -124,7 +124,7 @@ impl StepperVelocityWago750672 {
         dev.rxpdo.velocity = velocity.clamp(-25000, 25000);
 
         let velocity_changed = velocity != previous_velocity;
-        if self.enabled && velocity_changed && velocity != 0 {
+        if self.enabled && velocity_changed {
             let s1 = StatusByteS1::from_bits(dev.txpdo.status_byte1);
             let start_ack = s1.has_flag(S1Flag::StartAck);
             let needs_start_edge =
