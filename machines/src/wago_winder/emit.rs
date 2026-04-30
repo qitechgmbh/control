@@ -56,12 +56,8 @@ impl WagoWinder {
                 || self.spool.get_speed() != 0
             {
                 self.spool_speed_controller.reset();
-                if matches!(self.spool_mode, super::SpoolMode::Standby) {
-                    self.stop_spool_motion(false);
-                } else {
-                    self.spool.set_acceleration(SPOOL_BLOCK_STOP_ACCELERATION);
-                    self.pause_spool_in_speed_control();
-                }
+                self.spool.set_acceleration(SPOOL_BLOCK_STOP_ACCELERATION);
+                self.stop_spool_motion(false);
             }
             return;
         }
@@ -73,17 +69,17 @@ impl WagoWinder {
             if self.tension_arm_in_spool_window() && spool_is_standstill {
                 self.spool_tension_blocked = false;
                 self.spool.set_acceleration(SPOOL_RUN_ACCELERATION);
-                self.spool.request_speed_mode();
+                self.arm_spool_for_speed_control();
                 self.spool_speed_controller.set_enabled(true);
             } else {
                 self.spool.set_acceleration(SPOOL_BLOCK_STOP_ACCELERATION);
-                self.pause_spool_in_speed_control();
+                self.stop_spool_motion(false);
                 return;
             }
         } else if !self.tension_arm_in_spool_window() {
             self.spool_tension_blocked = true;
             self.spool.set_acceleration(SPOOL_BLOCK_STOP_ACCELERATION);
-            self.pause_spool_in_speed_control();
+            self.stop_spool_motion(false);
             return;
         }
 
