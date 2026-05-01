@@ -550,23 +550,23 @@ export const aquapath2: MachineProperties = {
     },
     {
       role: 2,
-      role_label: "EL4002",
-      allowed_devices: [
-        {
-          vendor_id: 2,
-          product_id: 0xfa23052,
-          revision: 0x140000,
-        },
-      ],
-    },
-    {
-      role: 3,
       role_label: "EL3204",
       allowed_devices: [
         {
           vendor_id: 2,
           product_id: 0xc843052,
           revision: 0x160000,
+        },
+      ],
+    },
+    {
+      role: 3,
+      role_label: "EL4002",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0xfa23052,
+          revision: 0x140000,
         },
       ],
     },
