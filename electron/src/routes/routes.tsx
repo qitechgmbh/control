@@ -64,6 +64,10 @@ import { Aquapath1ControlPage } from "@/machines/aquapath/aquapath1/Aquapath1Con
 import { Aquapath1Page } from "@/machines/aquapath/aquapath1/Aquapath1Page";
 import { Aquapath1GraphPage } from "@/machines/aquapath/aquapath1/Aquapath1Graph";
 import { Aquapath1SettingsPage } from "@/machines/aquapath/aquapath1/Aquapath1Settings";
+import { Aquapath2ControlPage } from "@/machines/aquapath/aquapath2/Aquapath2ControlPage";
+import { Aquapath2Page } from "@/machines/aquapath/aquapath2/Aquapath2Page";
+import { Aquapath2GraphPage } from "@/machines/aquapath/aquapath2/Aquapath2Graph";
+import { Aquapath2SettingsPage } from "@/machines/aquapath/aquapath2/Aquapath2Settings";
 
 import { TestMachinePage } from "@/machines/minimal_machines/testmachine/TestMachinePage";
 import { TestMachineControlPage } from "@/machines/minimal_machines/testmachine/TestMachineControlPage";
@@ -499,6 +503,30 @@ export const aquapath1SettingsRoute = createRoute({
   component: () => <Aquapath1SettingsPage />,
 });
 
+export const aquapath2SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "aquapath2/$serial",
+  component: () => <Aquapath2Page />,
+});
+
+export const aquapath2GraphRoute = createRoute({
+  getParentRoute: () => aquapath2SerialRoute,
+  path: "graph",
+  component: () => <Aquapath2GraphPage />,
+});
+
+export const aquapath2ControlRoute = createRoute({
+  getParentRoute: () => aquapath2SerialRoute,
+  path: "control",
+  component: () => <Aquapath2ControlPage />,
+});
+
+export const aquapath2SettingsRoute = createRoute({
+  getParentRoute: () => aquapath2SerialRoute,
+  path: "settings",
+  component: () => <Aquapath2SettingsPage />,
+});
+
 export const buffer1SettingsRoute = createRoute({
   getParentRoute: () => buffer1SerialRoute,
   path: "settings",
@@ -710,6 +738,12 @@ export const rootTree = RootRoute.addChildren([
         aquapath1ControlRoute,
         aquapath1GraphRoute,
         aquapath1SettingsRoute,
+      ]),
+
+      aquapath2SerialRoute.addChildren([
+        aquapath2ControlRoute,
+        aquapath2GraphRoute,
+        aquapath2SettingsRoute,
       ]),
 
       winder2_7031SerialRoute.addChildren([

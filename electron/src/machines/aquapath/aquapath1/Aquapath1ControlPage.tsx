@@ -3,7 +3,7 @@ import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
-import { useAquapath1 } from "./useAquapath";
+import { useAquapath1, useAquapathBase } from "./useAquapath";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,11 @@ import { Icon } from "@/components/Icon";
 import { Label } from "@/control/Label";
 import { roundToDecimals } from "@/lib/decimal";
 
-export function Aquapath1ControlPage() {
+export function Aquapath1ControlPage({
+  useHook = useAquapath1,
+}: {
+  useHook?: () => ReturnType<typeof useAquapathBase>;
+} = {}) {
   const {
     state,
     defaultState,
@@ -40,7 +44,7 @@ export function Aquapath1ControlPage() {
     setBackTemperature,
     setFrontFlow,
     setBackFlow,
-  } = useAquapath1();
+  } = useHook();
   const reservoir1TargetTemperature =
     state?.temperature_states?.back.target_temperature ?? 0;
   const reservoir2TargetTemperature =

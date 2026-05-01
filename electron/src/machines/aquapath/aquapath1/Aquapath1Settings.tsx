@@ -3,11 +3,15 @@ import { ControlCard } from "@/control/ControlCard";
 import { ControlGrid } from "@/control/ControlGrid";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
-import { useAquapath1 } from "./useAquapath";
+import { useAquapath1, useAquapathBase } from "./useAquapath";
 import React from "react";
 import { Button } from "@/components/ui/button";
 
-export function Aquapath1SettingsPage() {
+export function Aquapath1SettingsPage({
+  useHook = useAquapath1,
+}: {
+  useHook?: () => ReturnType<typeof useAquapathBase>;
+} = {}) {
   const DEFAULT_HEATING_TOLERANCE_C = 0.4;
   const DEFAULT_COOLING_TOLERANCE_C = 0.8;
   const DEFAULT_PID_KP = 0.16;
@@ -33,7 +37,7 @@ export function Aquapath1SettingsPage() {
     setBackThermalFlowSettleDuration,
     setFrontPumpCooldownMinTemperature,
     setBackPumpCooldownMinTemperature,
-  } = useAquapath1();
+  } = useHook();
   const frontTemp = state?.temperature_states.front.temperature;
   const backTemp = state?.temperature_states.back.temperature;
   const isStandby = state?.mode_state.mode === "Standby";

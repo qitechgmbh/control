@@ -25,8 +25,8 @@ use crate::{
 use crate::extruder1::ExtruderV2;
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
-    aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, laser::LaserMachine,
-    winder2::Winder2,
+    aquapath1::AquaPathV1, aquapath2::AquaPathV2, buffer1::BufferV1, extruder2::ExtruderV3,
+    laser::LaserMachine, winder2::Winder2,
 };
 
 use crate::minimal_machines::{
@@ -132,6 +132,9 @@ lazy_static! {
 
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<AquaPathV1>(vec![AquaPathV1::MACHINE_IDENTIFICATION]);
+
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<AquaPathV2>(vec![AquaPathV2::MACHINE_IDENTIFICATION]);
 
         mc.register::<TestMachine>(vec![TestMachine::MACHINE_IDENTIFICATION]);
 

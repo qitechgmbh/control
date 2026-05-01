@@ -7,10 +7,14 @@ import {
 } from "@/components/graph";
 
 import React from "react";
-import { useAquapath1 } from "./useAquapath";
+import { useAquapath1, useAquapathBase } from "./useAquapath";
 import { TimeSeries } from "@/lib/timeseries";
 
-export function Aquapath1GraphPage() {
+export function Aquapath1GraphPage({
+  useHook = useAquapath1,
+}: {
+  useHook?: () => ReturnType<typeof useAquapathBase>;
+} = {}) {
   const {
     state,
     front_flow,
@@ -25,7 +29,7 @@ export function Aquapath1GraphPage() {
     back_total_energy,
     targetFrontTemperature,
     targetBackTemperature,
-  } = useAquapath1();
+  } = useHook();
 
   const syncHook = useGraphSync("aquapath-group");
 

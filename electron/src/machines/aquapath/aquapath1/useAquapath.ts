@@ -1,6 +1,6 @@
 import { toastError } from "@/components/Toast";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { MachineIdentificationUnique } from "@/machines/types";
+import { MachineIdentificationUnique, MachineProperties } from "@/machines/types";
 import { aquapath1 } from "@/machines/properties";
 import { aquapath1SerialRoute } from "@/routes/routes";
 import { Mode, StateEvent, useAquapath1Namespace } from "./aquapath1Namespace";
@@ -10,10 +10,10 @@ import { useEffect, useMemo } from "react";
 import { produce } from "immer";
 import { z } from "zod";
 
-export function useAquapath1() {
-  const { serial: serialString } = aquapath1SerialRoute.useParams();
-
-  // Memoize the machine identification to keep it stable between renders
+export function useAquapathBase(
+  serialString: string,
+  properties: MachineProperties,
+) {
   const machineIdentification: MachineIdentificationUnique = useMemo(() => {
     const serial = parseInt(serialString);
 
@@ -33,12 +33,11 @@ export function useAquapath1() {
     }
 
     return {
-      machine_identification: aquapath1.machine_identification,
+      machine_identification: properties.machine_identification,
       serial,
     };
-  }, [serialString]);
+  }, [serialString, properties.machine_identification]);
 
-  // Get consolidated state and live values from namespace
   const {
     state,
     defaultState,
@@ -72,15 +71,92 @@ export function useAquapath1() {
     targetBackTemperature,
   } = useAquapath1Namespace(machineIdentification);
 
-  // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
 
-  // Update optimistic state when real state changes
   useEffect(() => {
     if (state) {
       stateOptimistic.setReal(state);
     }
   }, [state, stateOptimistic]);
+
+  const { request: requestAquapathMode } = useMachineMutation(
+    z.object({ SetAquaPathMode: z.enum(["Standby", "Auto"]) }),
+  );
+  const { request: requestFrontTemperature } = useMachineMutation(
+    z.object({ SetFrontTemperature: z.number() }),
+  );
+  const { request: requestBackTemperature } = useMachineMutation(
+    z.object({ SetBackTemperature: z.number() }),
+  );
+  const { request: requestFrontFlow } = useMachineMutation(
+    z.object({ SetFrontFlow: z.boolean() }),
+  );
+  const { request: requestBackFlow } = useMachineMutation(
+    z.object({ SetBackFlow: z.boolean() }),
+  );
+  const { request: requestFrontRevolutions } = useMachineMutation(
+    z.object({ SetFrontRevolutions: z.number() }),
+  );
+  const { request: requestBackRevolutions } = useMachineMutation(
+    z.object({ SetBackRevolutions: z.number() }),
+  );
+  const { request: requestFrontHeatingTolerance } = useMachineMutation(
+    z.object({ SetFrontHeatingTolerance: z.number() }),
+  );
+  const { request: requestFrontCoolingTolerance } = useMachineMutation(
+    z.object({ SetFrontCoolingTolerance: z.number() }),
+  );
+  const { request: requestBackHeatingTolerance } = useMachineMutation(
+    z.object({ SetBackHeatingTolerance: z.number() }),
+  );
+  const { request: requestBackCoolingTolerance } = useMachineMutation(
+    z.object({ SetBackCoolingTolerance: z.number() }),
+  );
+  const { request: requestAmbientTemperatureCalibration } = useMachineMutation(
+    z.object({ SetAmbientTemperatureCalibration: z.number() }),
+  );
+  const { request: requestFrontPidKp } = useMachineMutation(
+    z.object({ SetFrontPidKp: z.number() }),
+  );
+  const { request: requestFrontPidKi } = useMachineMutation(
+    z.object({ SetFrontPidKi: z.number() }),
+  );
+  const { request: requestFrontPidKd } = useMachineMutation(
+    z.object({ SetFrontPidKd: z.number() }),
+  );
+  const { request: requestBackPidKp } = useMachineMutation(
+    z.object({ SetBackPidKp: z.number() }),
+  );
+  const { request: requestBackPidKi } = useMachineMutation(
+    z.object({ SetBackPidKi: z.number() }),
+  );
+  const { request: requestBackPidKd } = useMachineMutation(
+    z.object({ SetBackPidKd: z.number() }),
+  );
+  const { request: requestFrontThermalFlowSettleDuration } = useMachineMutation(
+    z.object({ SetFrontThermalFlowSettleDuration: z.number() }),
+  );
+  const { request: requestBackThermalFlowSettleDuration } = useMachineMutation(
+    z.object({ SetBackThermalFlowSettleDuration: z.number() }),
+  );
+  const { request: requestFrontPumpCooldownMinTemperature } =
+    useMachineMutation(
+      z.object({ SetFrontPumpCooldownMinTemperature: z.number() }),
+    );
+  const { request: requestBackPumpCooldownMinTemperature } = useMachineMutation(
+    z.object({ SetBackPumpCooldownMinTemperature: z.number() }),
+  );
+
+  const updateStateOptimistically = (
+    producer: (current: StateEvent) => void,
+    serverRequest: () => void,
+  ) => {
+    const currentState = stateOptimistic.value;
+    if (currentState) {
+      stateOptimistic.setOptimistic(produce(currentState, producer));
+    }
+    serverRequest();
+  };
 
   const setAquapathMode = (mode: Mode) => {
     updateStateOptimistically(
@@ -386,92 +462,8 @@ export function useAquapath1() {
     );
   };
 
-  // Mutation hooks
-  const { request: requestAquapathMode } = useMachineMutation(
-    z.object({ SetAquaPathMode: z.enum(["Standby", "Auto"]) }),
-  );
-  const { request: requestFrontTemperature } = useMachineMutation(
-    z.object({ SetFrontTemperature: z.number() }),
-  );
-  const { request: requestBackTemperature } = useMachineMutation(
-    z.object({ SetBackTemperature: z.number() }),
-  );
-  const { request: requestFrontFlow } = useMachineMutation(
-    z.object({ SetFrontFlow: z.boolean() }),
-  );
-  const { request: requestBackFlow } = useMachineMutation(
-    z.object({ SetBackFlow: z.boolean() }),
-  );
-  const { request: requestFrontRevolutions } = useMachineMutation(
-    z.object({ SetFrontRevolutions: z.number() }),
-  );
-  const { request: requestBackRevolutions } = useMachineMutation(
-    z.object({ SetBackRevolutions: z.number() }),
-  );
-  const { request: requestFrontHeatingTolerance } = useMachineMutation(
-    z.object({ SetFrontHeatingTolerance: z.number() }),
-  );
-  const { request: requestFrontCoolingTolerance } = useMachineMutation(
-    z.object({ SetFrontCoolingTolerance: z.number() }),
-  );
-  const { request: requestBackHeatingTolerance } = useMachineMutation(
-    z.object({ SetBackHeatingTolerance: z.number() }),
-  );
-  const { request: requestBackCoolingTolerance } = useMachineMutation(
-    z.object({ SetBackCoolingTolerance: z.number() }),
-  );
-  const { request: requestAmbientTemperatureCalibration } = useMachineMutation(
-    z.object({ SetAmbientTemperatureCalibration: z.number() }),
-  );
-  const { request: requestFrontPidKp } = useMachineMutation(
-    z.object({ SetFrontPidKp: z.number() }),
-  );
-  const { request: requestFrontPidKi } = useMachineMutation(
-    z.object({ SetFrontPidKi: z.number() }),
-  );
-  const { request: requestFrontPidKd } = useMachineMutation(
-    z.object({ SetFrontPidKd: z.number() }),
-  );
-  const { request: requestBackPidKp } = useMachineMutation(
-    z.object({ SetBackPidKp: z.number() }),
-  );
-  const { request: requestBackPidKi } = useMachineMutation(
-    z.object({ SetBackPidKi: z.number() }),
-  );
-  const { request: requestBackPidKd } = useMachineMutation(
-    z.object({ SetBackPidKd: z.number() }),
-  );
-  const { request: requestFrontThermalFlowSettleDuration } = useMachineMutation(
-    z.object({ SetFrontThermalFlowSettleDuration: z.number() }),
-  );
-  const { request: requestBackThermalFlowSettleDuration } = useMachineMutation(
-    z.object({ SetBackThermalFlowSettleDuration: z.number() }),
-  );
-  const { request: requestFrontPumpCooldownMinTemperature } =
-    useMachineMutation(
-      z.object({ SetFrontPumpCooldownMinTemperature: z.number() }),
-    );
-  const { request: requestBackPumpCooldownMinTemperature } = useMachineMutation(
-    z.object({ SetBackPumpCooldownMinTemperature: z.number() }),
-  );
-
-  // Helper function for optimistic updates using produce
-  const updateStateOptimistically = (
-    producer: (current: StateEvent) => void,
-    serverRequest: () => void,
-  ) => {
-    const currentState = stateOptimistic.value;
-    if (currentState) {
-      stateOptimistic.setOptimistic(produce(currentState, producer));
-    }
-    serverRequest();
-  };
-
   return {
-    // Consolidated state
     state: stateOptimistic.value?.data,
-
-    // Default state for initial values
     defaultState: defaultState?.data,
     front_flow,
     back_flow,
@@ -525,4 +517,9 @@ export function useAquapath1() {
     setFrontPumpCooldownMinTemperature,
     setBackPumpCooldownMinTemperature,
   };
+}
+
+export function useAquapath1() {
+  const { serial: serialString } = aquapath1SerialRoute.useParams();
+  return useAquapathBase(serialString, aquapath1);
 }

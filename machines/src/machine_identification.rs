@@ -57,6 +57,7 @@ impl MachineIdentification {
             x if x == MACHINE_LASER_V1 => "laser_v1".to_string(),
             x if x == MACHINE_MOCK => "mock".to_string(),
             x if x == MACHINE_AQUAPATH_V1 => "aquapath_v1".to_string(),
+            x if x == MACHINE_AQUAPATH_V2 => "aquapath_v2".to_string(),
             x if x == MACHINE_BUFFER_V1 => "buffer_v1".to_string(),
             x if x == MACHINE_EXTRUDER_V2 => "extruder_v2".to_string(),
             x if x == MACHINE_WAGO_POWER_V1 => "wago_power_v1".to_string(),
@@ -183,6 +184,7 @@ use ethercrab::SubDeviceIdentity;
 use crate::ANALOG_INPUT_TEST_MACHINE;
 use crate::IP20_TEST_MACHINE;
 use crate::MACHINE_AQUAPATH_V1;
+use crate::MACHINE_AQUAPATH_V2;
 use crate::MACHINE_BUFFER_V1;
 use crate::MACHINE_EXTRUDER_V1;
 use crate::MACHINE_EXTRUDER_V2;

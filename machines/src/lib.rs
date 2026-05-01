@@ -18,6 +18,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Instant;
 pub mod aquapath1;
+pub mod aquapath2;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
 pub mod extruder1;
@@ -42,6 +43,7 @@ pub const MACHINE_LASER_V1: u16 = 0x0006;
 pub const MACHINE_MOCK: u16 = 0x0007;
 pub const MACHINE_BUFFER_V1: u16 = 0x0008;
 pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
+pub const MACHINE_AQUAPATH_V2: u16 = 0x0048;
 pub const MACHINE_WAGO_POWER_V1: u16 = 0x000A;
 pub const MACHINE_EXTRUDER_V2: u16 = 0x0016;
 pub const TEST_MACHINE: u16 = 0x0033;
