@@ -72,7 +72,7 @@ impl Default for ControllerConfig {
     fn default() -> Self {
         Self {
             min_flow_for_thermal: VolumeRate::new::<liter_per_minute>(0.2),
-            pump_startup_grace_period: Duration::from_secs(3),
+            pump_startup_grace_period: Duration::from_secs(10),
             thermal_flow_settle_duration: Duration::from_secs(10),
             heating_element_power: 700.0,
             heating_pwm_period: Duration::from_secs(12),
