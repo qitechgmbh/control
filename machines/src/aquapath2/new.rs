@@ -68,21 +68,21 @@ impl MachineNewTrait for AquaPathV2 {
             .await?
             .0;
 
-            // Role 2 - EL4002 Analog Output Module
-            let el4002 =
-                get_ethercat_device::<EL4002>(hardware, params, 2, [EL4002_IDENTITY_A].to_vec())
-                    .await?
-                    .0;
-
-            // Role 3 - EL3204 Temperature Input Module
+            // Role 2 - EL3204 Temperature Input Module
             let el3204 = get_ethercat_device::<EL3204>(
                 hardware,
                 params,
-                3,
+                2,
                 [EL3204_IDENTITY_A, EL3204_IDENTITY_B].to_vec(),
             )
             .await?
             .0;
+
+            // Role 3 - EL4002 Analog Output Module
+            let el4002 =
+                get_ethercat_device::<EL4002>(hardware, params, 3, [EL4002_IDENTITY_A].to_vec())
+                    .await?
+                    .0;
 
             // Role 4 - EL9505 Power Supply Terminal (no process data, no configuration needed)
             let _el9505 =
