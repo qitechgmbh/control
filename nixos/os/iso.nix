@@ -39,5 +39,4 @@ in
     ];
   };
 
-  i18n.supportedLocales = [ "all" ];
 }
