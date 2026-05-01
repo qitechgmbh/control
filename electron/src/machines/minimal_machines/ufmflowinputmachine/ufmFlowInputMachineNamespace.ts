@@ -11,6 +11,7 @@ import {
   ThrottledStoreUpdater,
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 
 export const stateEventDataSchema = z.object({
   flow_lph: z.number(),
@@ -25,12 +26,16 @@ export type StateEvent = z.infer<typeof stateEventDataSchema>;
 
 export type UfmFlowInputMachineNamespaceStore = {
   state: StateEvent | null;
+  flowLph: TimeSeries;
 };
+
+const { initialTimeSeries: flowLph, insert: addFlowLph } = createTimeSeries();
 
 export const createUfmFlowInputMachineNamespaceStore =
   (): StoreApi<UfmFlowInputMachineNamespaceStore> =>
     create<UfmFlowInputMachineNamespaceStore>(() => ({
       state: null,
+      flowLph,
     }));
 
 export function ufmFlowInputMachineMessageHandler(
@@ -47,7 +52,15 @@ export function ufmFlowInputMachineMessageHandler(
     try {
       if (event.name === "StateEvent") {
         const parsed = stateEventSchema.parse(event);
-        updateStore(() => ({ state: parsed.data }));
+        const timestamp = event.ts;
+        updateStore((state) => ({
+          ...state,
+          state: parsed.data,
+          flowLph: addFlowLph(state.flowLph, {
+            value: parsed.data.flow_lph,
+            timestamp,
+          }),
+        }));
       } else {
         handleUnhandledEventError(event.name);
       }

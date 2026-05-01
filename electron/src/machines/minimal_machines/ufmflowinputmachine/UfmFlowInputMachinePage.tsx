@@ -14,6 +14,12 @@ export function UfmFlowInputMachinePage() {
           title: "Control",
           icon: "lu:Droplets",
         },
+        {
+          link: "graph",
+          activeLink: "graph",
+          title: "Flow Graph",
+          icon: "lu:TrendingUp",
+        },
       ]}
     />
   );

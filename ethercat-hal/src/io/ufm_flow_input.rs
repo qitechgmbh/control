@@ -70,7 +70,7 @@ pub struct UfmFlowInput {
 impl UfmFlowInput {
     /// `window` controls the flow-rate averaging period.
     /// 5 seconds is a good default: responsive enough for control, stable enough to avoid noise.
-    pub const DEFAULT_WINDOW: Duration = Duration::from_secs(5);
+    pub const DEFAULT_WINDOW: Duration = Duration::from_secs(15);
 
     pub fn new(
         pulse_input: DigitalInput,

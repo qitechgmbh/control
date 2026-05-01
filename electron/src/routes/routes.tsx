@@ -80,6 +80,7 @@ import { DigitalInputTestMachineControlPage } from "@/machines/minimal_machines/
 
 import { UfmFlowInputMachinePage } from "@/machines/minimal_machines/ufmflowinputmachine/UfmFlowInputMachinePage";
 import { UfmFlowInputMachineControlPage } from "@/machines/minimal_machines/ufmflowinputmachine/UfmFlowInputMachineControlPage";
+import { UfmFlowInputMachineGraphPage } from "@/machines/minimal_machines/ufmflowinputmachine/UfmFlowInputMachineGraphPage";
 
 import { IP20TestMachinePage } from "@/machines/minimal_machines/ip20testmachine/IP20TestMachinePage";
 import { IP20TestMachineControlPage } from "@/machines/minimal_machines/ip20testmachine/IP20TestMachineControlPage";
@@ -224,6 +225,12 @@ export const ufmFlowInputMachineControlRoute = createRoute({
   getParentRoute: () => ufmFlowInputMachineSerialRoute,
   path: "control",
   component: () => <UfmFlowInputMachineControlPage />,
+});
+
+export const ufmFlowInputMachineGraphRoute = createRoute({
+  getParentRoute: () => ufmFlowInputMachineSerialRoute,
+  path: "graph",
+  component: () => <UfmFlowInputMachineGraphPage />,
 });
 
 export const ip20TestMachineSerialRoute = createRoute({
@@ -719,6 +726,7 @@ export const rootTree = RootRoute.addChildren([
 
       ufmFlowInputMachineSerialRoute.addChildren([
         ufmFlowInputMachineControlRoute,
+        ufmFlowInputMachineGraphRoute,
       ]),
 
       ip20TestMachineSerialRoute.addChildren([ip20TestMachineControlRoute]),

@@ -32,7 +32,7 @@ export function useUfmFlowInputMachine() {
     };
   }, [serialString]);
 
-  const { state } = useUfmFlowInputMachineNamespace(machineIdentification);
+  const { state, flowLph } = useUfmFlowInputMachineNamespace(machineIdentification);
 
   const stateOptimistic = useStateOptimistic<StateEvent>();
 
@@ -42,5 +42,6 @@ export function useUfmFlowInputMachine() {
 
   return {
     state: stateOptimistic.value,
+    flowLph,
   };
 }
