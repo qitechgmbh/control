@@ -109,7 +109,7 @@ export type ControlProps = {
   onTimeWindowChange: (timeWindow: number | "all") => void;
   onSwitchToLive: () => void;
   onSwitchToHistorical: (origin: SwitchOrigin) => void;
-  onExport?: () => void;
+  onExport?: () => void | Promise<void>;
   onAddMarker?: () => void;
   onManageMarkers?: () => void;
   timeWindowOptions?: TimeWindowOption[];
