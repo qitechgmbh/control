@@ -59,7 +59,7 @@ pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
 pub const WAGO_750_501_TEST_MACHINE: u16 = 0x0042;
 pub const TEST_MACHINE_BOTTLECAPS: u16 = 0x0039;
-
+pub const MACHINE_WAGO_DIO_SEPARATE_V1: u16 = 0x0045;
 use serde_json::Value;
 use smol::lock::RwLock;
 
