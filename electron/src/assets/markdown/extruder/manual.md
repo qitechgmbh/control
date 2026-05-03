@@ -63,7 +63,7 @@ Milan von dem Bussche
 
 # Operating instructions based on DIN EN ISO 20607
 
-| Designation   | QiTech Winder                     |
+| Designation   | QiTech Extruder                   |
 | ------------- | --------------------------------- |
 | Manufacturer  | QiTech Industries GmbH            |
 | Administrator | Milan von dem Bussche             |
@@ -166,9 +166,9 @@ Accuracy class: 2
 
 <br>
 
-| Picture                                       | Danger!                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Warning](images/manuals/extruder/w001.jpeg) | **Danger to life due to technically faulty machine.** <br> The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions. All faults, especially those that could impair safety, must be rectified immediately before starting the winder. Everyone who works on or with the Qitech Winder is responsible for observing these safety aspects! |
+| Picture                                       | Danger!                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Warning](images/manuals/extruder/w001.jpeg) | **Danger to life due to technically faulty machine.** <br> The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions. All faults, especially those that could impair safety, must be rectified immediately before starting the extruder. Everyone who works on or with the QiTech Extruder is responsible for observing these safety aspects! |
 
 <br><br><br>
 
@@ -359,9 +359,9 @@ Depending on the activity or the duration of the activity, the operator must det
 |---------|--------|
 | ![Warning](images/manuals/extruder/w001.jpeg)|**Risk of injury due to improper transport** <br> Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts. Wear personal protective equipment: safety shoes, protective work clothing, protective gloves.
 
-| Picture                                       | Caution!                                                                                                                                                                                                                                                                    |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Warning](images/manuals/extruder/w001.jpeg) | **Danger to life due to incorrect installation and commissioning!** <brErrors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
+| Picture                                       | Caution!                                                                                                                                                                                                                                                                      |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Warning](images/manuals/extruder/w001.jpeg) | **Danger to life due to incorrect installation and commissioning!** <br> Errors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
 
 <br>
 <br>
@@ -424,7 +424,7 @@ Then start the machine as follows:
 
 - Make sure that the emergency Stop button is inactive
 - Turn on the display by pressing the button on the right side of the display above the USB connectors
-- Winder then appears in the left column
+- Extruder then appears in the left column
   **2. Preheat the extruder**
 - Go to "Control” mode in the function bar
 - Press the "Heat" button in the “mode” box
@@ -441,7 +441,7 @@ Then start the machine as follows:
 
 - Set the screw speed via the "Screw Speed" slider
 - Press the "Extrude" button in the “mode” box
-- Wait until old melt has been "flushed" out of the extruder, i.e. no more discolouration of the filament is no longer discoloured and a constant material flow has been achieved
+- Wait until old melt has been "flushed" out of the extruder, i.e. the filament is no longer discoloured and a constant material flow has been achieved
 
 ![screenshot: adjust screw speed](images/manuals/extruder/screenshot_extruder_adjustscrew_speed.png)
 
