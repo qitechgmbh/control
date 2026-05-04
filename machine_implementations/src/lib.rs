@@ -178,6 +178,33 @@ impl MachineHardware {
 
 
 
+    pub fn try_get_ethercat_device_and_addr_by_role<T>(
+        &self,
+        role: u16,
+    ) -> Result<(Rc<RefCell<T>>, u16), anyhow::Error>
+    where
+        T: EthercatDevice,
+    {
+        for i in 0..self.hw.len() {
+            let hardware = self.hw.get(i).expect("try_get_ethercat_device_by_role failed to get hardware even though i is in range of len??????");
+            match hardware {
+                Hardware::Ethercat(identified_ethercat) => {
+                    if identified_ethercat.ident.role == role {
+                        let res = downcast_rc_refcell::<T>(identified_ethercat.hw.clone())?;
+                        return Ok((res, identified_ethercat.ident.device_address));
+                    }
+                    continue;
+                }
+                _ => continue,
+            }
+        }
+        Err(anyhow::anyhow!(
+            "index {} not an ethercat device in hardware",
+            role
+        ))
+    }
+
+
     pub fn try_get_ethercat_device_by_role<T>(
         &self,
         role: u16,

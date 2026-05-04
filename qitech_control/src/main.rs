@@ -6,21 +6,14 @@ use qitech_lib::modbus::clients::example_client::ExampleClient;
 use qitech_lib::modbus::managers::ExampleDeviceManager;
 use qitech_lib::modbus::start_modbus_async_task;
 use qitech_lib::{ethercat_hal::devices::{device_from_subdevice_identity_rc}};
-
-use qitech_lib::ethercat_hal::EtherCATControl;
-
+use qitech_lib::ethercat_hal::{EtherCATControl};
 #[cfg(not(feature = "mock"))]
 use qitech_lib::ethercat_hal::init_ethercat;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
-
-
-
 use crate::app_state::get_async_runtime;
 use crate::app_state::MainState;
-
 use std::{
-    collections::HashMap,
     sync::{Arc},
     time::Duration,
 };
@@ -44,7 +37,10 @@ fn setup_ethercat(
 
     for meta in eth_control.controller.get_subdevices() {
         let dev = device_from_subdevice_identity_rc(&meta).unwrap();
-        main_state.subdevices.push((meta.clone(), dev.clone()));
+        main_state.subdevices.push((meta.clone(), dev.clone()));        
+        if meta.vendor == 0x2 {
+            let _res = eth_control.channel.set_mut_beckhoff_eeprom_lock_active(meta.device_address);
+        }
     }
 
     match eth_control.channel.read_device_identifications() {
@@ -71,9 +67,16 @@ fn setup_serial(main_state : &mut MainState){
     main_state.generate_machine_hardware_from_serial(modbus_mgr);
 }
 
-fn finalize_ethercat(eth_control : &EtherCATControl<TripleBufConsumer,TripleBufProducer>) {
+fn finalize_ethercat(main_state : &mut MainState, eth_control : &EtherCATControl<TripleBufConsumer,TripleBufProducer>) {
     let _res = eth_control.channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
-    std::thread::sleep(Duration::from_secs(1));
+    std::thread::sleep(Duration::from_secs(5));
+    for meta in &mut main_state.subdevices {
+        let m = eth_control.controller.get_subdevices().iter().find(|m| m.device_address == meta.0.device_address).expect("Ethercat Device Suddenly Missing in finalize_ethercat");
+        meta.0.start_tx = m.start_tx;
+        meta.0.end_tx = m.end_tx;
+        meta.0.start_rx = m.start_rx;
+        meta.0.end_rx = m.end_rx;
+    }
 }
 
 fn send_setup_done_events(state : Arc<SharedAppState>){
@@ -120,13 +123,11 @@ fn main_logic(){
     setup_api_and_websock(state.clone());    
     setup_ethercat(state.clone(),&mut main_state,&eth_control);
     setup_serial(&mut main_state);
-    println!("Initialized {} hw",main_state.hardware.keys().len());
     detect_and_build_machines(state.clone(),&mut main_state);
     // Order is important here, because when detect_and_build_machines is called
-    // Every machine assumes ethercat devices are in PreOp finalize moves to OP
-    finalize_ethercat(&eth_control);
+    // Every machine assumes ethercat devices are in PreOp, finalize moves to OP
+    finalize_ethercat(&mut main_state,&eth_control);
     send_setup_done_events(state);
-
     loop {
         write_ecat_inputs(
             &mut eth_control.app_handle,
@@ -142,9 +143,6 @@ fn main_logic(){
 }
 
 fn main() {
-    #[cfg(feature = "mock")]
-    mock::mock_logic();
-
     #[cfg(not(feature = "mock"))]
     main_logic();  
 }
