@@ -21,14 +21,11 @@ use machine_implementations::{
 };
 use qitech_lib::{
     ethercat_hal::{
-        Consumer, EtherCATThreadChannel, MetaSubdevice, Producer,
-        controller::EtherCATController, devices::EthercatDevice,
-        machine_ident_read::MachineDeviceInfo,
+        Consumer, EtherCATThreadChannel, MetaSubdevice, Producer, controller::EtherCATController,
+        devices::EthercatDevice, machine_ident_read::MachineDeviceInfo,
     },
     machines::{MachineDataRegistry, MachineIdentification, MachineIdentificationUnique},
-    modbus::{
-        ModbusDevice, devices::qitech_laser::LaserDevice
-    },
+    modbus::{ModbusDevice, devices::qitech_laser::LaserDevice},
 };
 use socketioxide::{SocketIo, extract::SocketRef};
 use std::{
@@ -42,7 +39,8 @@ use tokio::{
     sync::{
         RwLock,
         mpsc::{Receiver, Sender},
-    }, task::JoinHandle,
+    },
+    task::JoinHandle,
 };
 
 static RUNTIME: OnceLock<Runtime> = OnceLock::new();
@@ -79,6 +77,7 @@ impl SharedAppState {
     pub fn fill_ethercat_metadata<C: Consumer, P: Producer>(
         &self,
         controller: Arc<EtherCATController<C, P>>,
+        ecat_channel: EtherCATThreadChannel,
         infos: Vec<MachineDeviceInfo>,
     ) -> Result<(), anyhow::Error> {
         let mut guard = self.ethercat_meta_datas.try_write()?;
@@ -89,19 +88,76 @@ impl SharedAppState {
                 .find(|info| info.device_address == dev.device_address)
                 .map(|info| DeviceMachineIdentification::from(*info));
 
-            guard.push(
-                EtherCatDeviceMetaData {
-                    configured_address: dev.device_address,
-                    name: dev.get_name()?,
-                    vendor_id: dev.vendor,
-                    product_id: dev.product_id,
-                    revision: dev.revision,
-                    device_identification: DeviceIdentification{
-                            device_machine_identification: device_machine_identification,
-                            device_hardware_identification:
-                                machine_implementations::machine_identification::DeviceHardwareIdentification::Ethercat(DeviceHardwareIdentificationEthercat{ subdevice_index: dev.device_address as usize })
+            let new_device_metadata = EtherCatDeviceMetaData {
+                configured_address: dev.device_address,
+                name: dev.get_name()?,
+                vendor_id: dev.vendor,
+                product_id: dev.product_id,
+                revision: dev.revision,
+                device_identification: DeviceIdentification{
+                        device_machine_identification: device_machine_identification,
+                        device_hardware_identification:
+                            machine_implementations::machine_identification::DeviceHardwareIdentification::Ethercat(DeviceHardwareIdentificationEthercat{ subdevice_index: dev.device_address as usize })
+                }
+            };
+
+            guard.push(new_device_metadata.clone());
+
+            match (dev.vendor, dev.product_id) {
+                (WAGO_750_354_VENDOR_ID, WAGO_750_354_PRODUCT_ID) => {
+                    let r =
+                        Wago750_354::initialize_modules(ecat_channel.clone(), dev.device_address)?;
+                    for module in r {
+                        let meta_data = EtherCatDeviceMetaData {
+                            configured_address: module.slot,
+                            name: module.name,
+                            vendor_id: module.vendor_id,
+                            product_id: module.product_id,
+                            revision: 0x2,
+                            device_identification: DeviceIdentification {
+                                device_machine_identification: new_device_metadata
+                                    .device_identification
+                                    .device_machine_identification
+                                    .clone(),
+                                device_hardware_identification:
+                                    machine_identification::DeviceHardwareIdentification::Ethercat(
+                                        DeviceHardwareIdentificationEthercat {
+                                            subdevice_index: module.slot as usize,
+                                        },
+                                    ),
+                            },
+                        };
+                        guard.push(meta_data);
                     }
-            });
+                }
+                (IP20_EC_DI8_DO8_VENDOR_ID, IP20_EC_DI8_DO8_PRODUCT_ID) => {
+                    let r =
+                        IP20EcDi8Do8::initialize_modules(ecat_channel.clone(), dev.device_address)?;
+                    for module in r {
+                        let meta_data = EtherCatDeviceMetaData {
+                            configured_address: module.slot,
+                            name: module.name,
+                            vendor_id: module.vendor_id,
+                            product_id: module.product_id,
+                            revision: 0x1,
+                            device_identification: DeviceIdentification {
+                                device_machine_identification: new_device_metadata
+                                    .device_identification
+                                    .device_machine_identification
+                                    .clone(),
+                                device_hardware_identification:
+                                    machine_identification::DeviceHardwareIdentification::Ethercat(
+                                        DeviceHardwareIdentificationEthercat {
+                                            subdevice_index: module.slot as usize,
+                                        },
+                                    ),
+                            },
+                        };
+                        guard.push(meta_data);
+                    }
+                }
+                _ => (),
+            }
         }
         drop(guard);
         Ok(())
@@ -237,7 +293,7 @@ impl MainState {
         MainState {
             machines,
             machine_data_reg,
-            subdevices: vec![],            
+            subdevices: vec![],
             hardware: HashMap::new(),
             machine_errors: HashMap::new(),
         }
@@ -245,13 +301,11 @@ impl MainState {
 
     pub fn generate_machine_hardware_from_serial(
         &mut self,
-        path : &str,
-    ) -> Result<(),anyhow::Error> {
+        path: &str,
+    ) -> Result<(), anyhow::Error> {
         let laser_device: Rc<RefCell<LaserDevice>> =
-           Rc::new(RefCell::new(LaserDevice::new(path.to_owned(), 1, None)?));
-        let id_modbus: IdentifiedModbus = IdentifiedModbus {
-            hw: laser_device,
-        };
+            Rc::new(RefCell::new(LaserDevice::new(path.to_owned(), 1, None)?));
+        let id_modbus: IdentifiedModbus = IdentifiedModbus { hw: laser_device };
         let ident = MachineIdentificationUnique {
             machine_ident: LaserMachine::MACHINE_IDENTIFICATION,
             serial: 1,
@@ -261,7 +315,7 @@ impl MainState {
             identification: ident,
             ethercat_interface: None,
         };
-        hw.hw.push(Hardware::Modbus(id_modbus));        
+        hw.hw.push(Hardware::Modbus(id_modbus));
         self.hardware.insert(ident, hw);
         Ok(())
     }
