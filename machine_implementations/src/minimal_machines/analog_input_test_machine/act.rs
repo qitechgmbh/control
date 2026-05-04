@@ -12,6 +12,7 @@ use crate::{
 
 impl Machine for AnalogInputTestMachine {
     fn act(&mut self, machine_data: Option<&mut MachineDataRegistry>) {
+        //@TODO: Check whether we should be using machine_data for anything. Also why is that reference mutable?
         let now = Instant::now();
         let recv = self.api_receiver.try_recv();
         if let Ok(msg) = recv {
