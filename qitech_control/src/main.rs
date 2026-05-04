@@ -1,12 +1,14 @@
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
 use machine_implementations::registry::MACHINE_REGISTRY;
+
 use qitech_lib::ethercat_hal::controller::{TripleBufConsumer, TripleBufProducer};
 use qitech_lib::modbus::clients::example_client::ExampleClient;
 use qitech_lib::modbus::managers::ExampleDeviceManager;
 use qitech_lib::modbus::start_modbus_async_task;
 use qitech_lib::{ethercat_hal::devices::{device_from_subdevice_identity_rc}};
 use qitech_lib::ethercat_hal::{EtherCATControl};
+
 #[cfg(not(feature = "mock"))]
 use qitech_lib::ethercat_hal::init_ethercat;
 #[cfg(not(feature = "mock"))]
@@ -70,8 +72,13 @@ fn setup_serial(main_state : &mut MainState){
 fn finalize_ethercat(main_state : &mut MainState, eth_control : &EtherCATControl<TripleBufConsumer,TripleBufProducer>) {
     let _res = eth_control.channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
     std::thread::sleep(Duration::from_secs(5));
-    for meta in &mut main_state.subdevices {
-        let m = eth_control.controller.get_subdevices().iter().find(|m| m.device_address == meta.0.device_address).expect("Ethercat Device Suddenly Missing in finalize_ethercat");
+
+    for meta in &mut main_state.subdevices {        
+        let m = eth_control.controller.get_subdevices()
+        .iter()
+        .find(|m| m.device_address == meta.0.device_address)
+        .expect("Ethercat Device Suddenly Missing in finalize_ethercat");
+        
         meta.0.start_tx = m.start_tx;
         meta.0.end_tx = m.end_tx;
         meta.0.start_rx = m.start_rx;
@@ -118,8 +125,7 @@ fn detect_and_build_machines(state : Arc<SharedAppState>,main_state : &mut MainS
 fn main_logic(){
     let state = Arc::new(SharedAppState::new());
     let mut main_state = MainState::new();
-    let mut eth_control = init_ethercat("eth0");
-    
+    let mut eth_control = init_ethercat("enp1s0");
     setup_api_and_websock(state.clone());    
     setup_ethercat(state.clone(),&mut main_state,&eth_control);
     setup_serial(&mut main_state);
