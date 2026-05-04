@@ -78,7 +78,11 @@ fn setup_ethercat(
             println!("Could not read device identifications from eeprom: {:?}", e);
         }
     };
-    let _res = state.fill_ethercat_metadata(eth_control.controller.clone(), idents);
+    let _res = state.fill_ethercat_metadata(
+        eth_control.controller.clone(),
+        eth_control.channel.clone(),
+        idents,
+    );
 }
 
 fn add_laser(

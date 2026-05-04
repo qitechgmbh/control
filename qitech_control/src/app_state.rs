@@ -79,6 +79,7 @@ impl SharedAppState {
     pub fn fill_ethercat_metadata<C: Consumer, P: Producer>(
         &self,
         controller: Arc<EtherCATController<C, P>>,
+        ecat_channel: EtherCATThreadChannel,
         infos: Vec<MachineDeviceInfo>,
     ) -> Result<(), anyhow::Error> {
         let mut guard = self.ethercat_meta_datas.try_write()?;
@@ -89,19 +90,76 @@ impl SharedAppState {
                 .find(|info| info.device_address == dev.device_address)
                 .map(|info| DeviceMachineIdentification::from(*info));
 
-            guard.push(
-                EtherCatDeviceMetaData {
-                    configured_address: dev.device_address,
-                    name: dev.get_name()?,
-                    vendor_id: dev.vendor,
-                    product_id: dev.product_id,
-                    revision: dev.revision,
-                    device_identification: DeviceIdentification{
-                            device_machine_identification: device_machine_identification,
-                            device_hardware_identification:
-                                machine_implementations::machine_identification::DeviceHardwareIdentification::Ethercat(DeviceHardwareIdentificationEthercat{ subdevice_index: dev.device_address as usize })
+            let new_device_metadata = EtherCatDeviceMetaData {
+                configured_address: dev.device_address,
+                name: dev.get_name()?,
+                vendor_id: dev.vendor,
+                product_id: dev.product_id,
+                revision: dev.revision,
+                device_identification: DeviceIdentification{
+                        device_machine_identification: device_machine_identification,
+                        device_hardware_identification:
+                            machine_implementations::machine_identification::DeviceHardwareIdentification::Ethercat(DeviceHardwareIdentificationEthercat{ subdevice_index: dev.device_address as usize })
+                }
+            };
+
+            guard.push(new_device_metadata.clone());
+
+            match (dev.vendor, dev.product_id) {
+                (WAGO_750_354_VENDOR_ID, WAGO_750_354_PRODUCT_ID) => {
+                    let r =
+                        Wago750_354::initialize_modules(ecat_channel.clone(), dev.device_address)?;
+                    for module in r {
+                        let meta_data = EtherCatDeviceMetaData {
+                            configured_address: module.slot,
+                            name: module.name,
+                            vendor_id: module.vendor_id,
+                            product_id: module.product_id,
+                            revision: 0x2,
+                            device_identification: DeviceIdentification {
+                                device_machine_identification: new_device_metadata
+                                    .device_identification
+                                    .device_machine_identification
+                                    .clone(),
+                                device_hardware_identification:
+                                    machine_identification::DeviceHardwareIdentification::Ethercat(
+                                        DeviceHardwareIdentificationEthercat {
+                                            subdevice_index: module.slot as usize,
+                                        },
+                                    ),
+                            },
+                        };
+                        guard.push(meta_data);
                     }
-            });
+                }
+                (IP20_EC_DI8_DO8_VENDOR_ID, IP20_EC_DI8_DO8_PRODUCT_ID) => {
+                    let r =
+                        IP20EcDi8Do8::initialize_modules(ecat_channel.clone(), dev.device_address)?;
+                    for module in r {
+                        let meta_data = EtherCatDeviceMetaData {
+                            configured_address: module.slot,
+                            name: module.name,
+                            vendor_id: module.vendor_id,
+                            product_id: module.product_id,
+                            revision: 0x1,
+                            device_identification: DeviceIdentification {
+                                device_machine_identification: new_device_metadata
+                                    .device_identification
+                                    .device_machine_identification
+                                    .clone(),
+                                device_hardware_identification:
+                                    machine_identification::DeviceHardwareIdentification::Ethercat(
+                                        DeviceHardwareIdentificationEthercat {
+                                            subdevice_index: module.slot as usize,
+                                        },
+                                    ),
+                            },
+                        };
+                        guard.push(meta_data);
+                    }
+                }
+                _ => (),
+            }
         }
         drop(guard);
         Ok(())
