@@ -1,3 +1,17 @@
+# `2.16.0`
+_04.05.2026_
+
+## General
+- [#1202](https://github.com/qitechgmbh/control/pull/1202) Added Abillity to search for Branches
+
+## Laser
+- [#1239](https://github.com/qitechgmbh/control/pull/1239) Improved Out of Spec Message Handling
+
+## Extruder V2
+- [#1133](https://github.com/qitechgmbh/control/pull/1133) Corrected RPM display
+- [#1248](https://github.com/qitechgmbh/control/pull/1248) Added Automatic PID Tuning for Pressure Regulation Mode
+- [#1311](https://github.com/qitechgmbh/control/pull/1311) Updated Manual
+
 # `2.15.0`
 _02.03.2026_
 
