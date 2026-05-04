@@ -1,9 +1,14 @@
+use qitech_lib::machines::{Machine, MachineDataRegistry};
+
+use crate::MachineApi;
+
 use super::Wago8chDigitalIOTestMachine;
-use crate::{MachineAct, MachineMessage, MachineValues};
 use std::time::{Duration, Instant};
 
-impl MachineAct for Wago8chDigitalIOTestMachine {
-    fn act(&mut self, now: Instant) {
+impl Machine for Wago8chDigitalIOTestMachine {
+    fn act(&mut self, machine_data: std::option::Option<&mut MachineDataRegistry>) {
+        let now = Instant::now();
+
         if let Ok(msg) = self.api_receiver.try_recv() {
             self.act_machine_message(msg);
         }
@@ -14,27 +19,9 @@ impl MachineAct for Wago8chDigitalIOTestMachine {
         }
     }
 
-    fn act_machine_message(&mut self, msg: MachineMessage) {
-        match msg {
-            MachineMessage::SubscribeNamespace(namespace) => {
-                self.namespace.namespace = Some(namespace);
-                self.emit_state();
-            }
-            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
-            MachineMessage::HttpApiJsonRequest(value) => {
-                use crate::MachineApi;
-                let _res = self.api_mutate(value);
-            }
-            MachineMessage::RequestValues(sender) => {
-                sender
-                    .send_blocking(MachineValues {
-                        state: serde_json::to_value(self.get_state())
-                            .expect("Failed to serialize state"),
-                        live_values: serde_json::Value::Null,
-                    })
-                    .expect("Failed to send values");
-                sender.close();
-            }
-        }
+    fn react(&mut self, registry: &qitech_lib::machines::MachineDataRegistry) {}
+
+    fn get_identification(&self) -> qitech_lib::machines::MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
     }
 }
