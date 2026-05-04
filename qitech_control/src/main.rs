@@ -2,46 +2,50 @@ use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
 use machine_implementations::registry::MACHINE_REGISTRY;
 
+use qitech_lib::ethercat_hal::EtherCATControl;
 use qitech_lib::ethercat_hal::controller::{TripleBufConsumer, TripleBufProducer};
+use qitech_lib::ethercat_hal::devices::device_from_subdevice_identity_rc;
 use qitech_lib::modbus::clients::example_client::ExampleClient;
 use qitech_lib::modbus::managers::ExampleDeviceManager;
 use qitech_lib::modbus::start_modbus_async_task;
-use qitech_lib::{ethercat_hal::devices::{device_from_subdevice_identity_rc}};
-use qitech_lib::ethercat_hal::{EtherCATControl};
 
-#[cfg(not(feature = "mock"))]
-use qitech_lib::ethercat_hal::init_ethercat;
+use crate::app_state::MainState;
+use crate::app_state::get_async_runtime;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
-use crate::app_state::get_async_runtime;
-use crate::app_state::MainState;
-use std::{
-    sync::{Arc},
-    time::Duration,
-};
+#[cfg(not(feature = "mock"))]
+use qitech_lib::ethercat_hal::init_ethercat;
+use std::{sync::Arc, time::Duration};
 
 pub mod apis;
-pub mod persist;
 mod app_state;
 mod machine_loop;
 mod mock;
+pub mod persist;
 
 fn setup_ethercat(
-    state : Arc<SharedAppState>,
-    main_state : &mut MainState ,
-    eth_control : &EtherCATControl<TripleBufConsumer,TripleBufProducer>)
-{
-    let _res = eth_control.channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
+    state: Arc<SharedAppState>,
+    main_state: &mut MainState,
+    eth_control: &EtherCATControl<TripleBufConsumer, TripleBufProducer>,
+) {
+    let _res = eth_control
+        .channel
+        .request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
     std::thread::sleep(Duration::from_millis(5000));
- 
-    let mut idents = vec![];    
-    println!("Initialized {} subdevices",eth_control.controller.subdevice_count);
+
+    let mut idents = vec![];
+    println!(
+        "Initialized {} subdevices",
+        eth_control.controller.subdevice_count
+    );
 
     for meta in eth_control.controller.get_subdevices() {
         let dev = device_from_subdevice_identity_rc(&meta).unwrap();
-        main_state.subdevices.push((meta.clone(), dev.clone()));        
+        main_state.subdevices.push((meta.clone(), dev.clone()));
         if meta.vendor == 0x2 {
-            let _res = eth_control.channel.set_mut_beckhoff_eeprom_lock_active(meta.device_address);
+            let _res = eth_control
+                .channel
+                .set_mut_beckhoff_eeprom_lock_active(meta.device_address);
         }
     }
 
@@ -58,27 +62,43 @@ fn setup_ethercat(
             println!("Could not read device identifications from eeprom: {:?}", e);
         }
     };
-    let _res = state.fill_ethercat_metadata(eth_control.controller.clone(), idents);
+    let _res = state.fill_ethercat_metadata(
+        eth_control.controller.clone(),
+        eth_control.channel.clone(),
+        idents,
+    );
 }
 
-fn setup_serial(main_state : &mut MainState){
+fn setup_serial(main_state: &mut MainState) {
     let rt = get_async_runtime();
     let (tx, rx) = ExampleClient::create_channels();
-    rt.spawn(start_modbus_async_task("/dev/ttyUSB0".to_string(),1,38400,rx));
+    rt.spawn(start_modbus_async_task(
+        "/dev/ttyUSB0".to_string(),
+        1,
+        38400,
+        rx,
+    ));
     let modbus_mgr = ExampleDeviceManager::new(tx);
     main_state.generate_machine_hardware_from_serial(modbus_mgr);
 }
 
-fn finalize_ethercat(main_state : &mut MainState, eth_control : &EtherCATControl<TripleBufConsumer,TripleBufProducer>) {
-    let _res = eth_control.channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
+fn finalize_ethercat(
+    main_state: &mut MainState,
+    eth_control: &EtherCATControl<TripleBufConsumer, TripleBufProducer>,
+) {
+    let _res = eth_control
+        .channel
+        .request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
     std::thread::sleep(Duration::from_secs(5));
 
-    for meta in &mut main_state.subdevices {        
-        let m = eth_control.controller.get_subdevices()
-        .iter()
-        .find(|m| m.device_address == meta.0.device_address)
-        .expect("Ethercat Device Suddenly Missing in finalize_ethercat");
-        
+    for meta in &mut main_state.subdevices {
+        let m = eth_control
+            .controller
+            .get_subdevices()
+            .iter()
+            .find(|m| m.device_address == meta.0.device_address)
+            .expect("Ethercat Device Suddenly Missing in finalize_ethercat");
+
         meta.0.start_tx = m.start_tx;
         meta.0.end_tx = m.end_tx;
         meta.0.start_rx = m.start_rx;
@@ -86,7 +106,7 @@ fn finalize_ethercat(main_state : &mut MainState, eth_control : &EtherCATControl
     }
 }
 
-fn send_setup_done_events(state : Arc<SharedAppState>){
+fn send_setup_done_events(state: Arc<SharedAppState>) {
     let rt = get_async_runtime();
     rt.spawn(async move {
         let _res = state.send_ethercat_setup_done().await;
@@ -94,13 +114,13 @@ fn send_setup_done_events(state : Arc<SharedAppState>){
     });
 }
 
-fn setup_api_and_websock(state : Arc<SharedAppState>){
+fn setup_api_and_websock(state: Arc<SharedAppState>) {
     let rt = get_async_runtime();
-    rt.spawn(apis::init_api(state.clone()));    
+    rt.spawn(apis::init_api(state.clone()));
     rt.spawn(start_socketio_queue(state));
 }
 
-fn detect_and_build_machines(state : Arc<SharedAppState>,main_state : &mut MainState){
+fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainState) {
     for key in main_state.hardware.keys() {
         let result = MACHINE_REGISTRY
             .new_machine(key.clone(), main_state.hardware.get(key).unwrap().clone());
@@ -122,33 +142,27 @@ fn detect_and_build_machines(state : Arc<SharedAppState>,main_state : &mut MainS
 }
 
 #[cfg(not(feature = "mock"))]
-fn main_logic(){
+fn main_logic() {
     let state = Arc::new(SharedAppState::new());
     let mut main_state = MainState::new();
     let mut eth_control = init_ethercat("enp1s0");
-    setup_api_and_websock(state.clone());    
-    setup_ethercat(state.clone(),&mut main_state,&eth_control);
+    setup_api_and_websock(state.clone());
+    setup_ethercat(state.clone(), &mut main_state, &eth_control);
     setup_serial(&mut main_state);
-    detect_and_build_machines(state.clone(),&mut main_state);
+    detect_and_build_machines(state.clone(), &mut main_state);
     // Order is important here, because when detect_and_build_machines is called
     // Every machine assumes ethercat devices are in PreOp, finalize moves to OP
-    finalize_ethercat(&mut main_state,&eth_control);
+    finalize_ethercat(&mut main_state, &eth_control);
     send_setup_done_events(state);
     loop {
-        write_ecat_inputs(
-            &mut eth_control.app_handle,
-            main_state.subdevices.clone(),
-        );
+        write_ecat_inputs(&mut eth_control.app_handle, main_state.subdevices.clone());
         run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
-        write_ecat_outputs(
-            &mut eth_control.app_handle,
-            main_state.subdevices.clone(),
-        );
+        write_ecat_outputs(&mut eth_control.app_handle, main_state.subdevices.clone());
         std::thread::sleep(Duration::from_micros(100));
     }
 }
 
 fn main() {
     #[cfg(not(feature = "mock"))]
-    main_logic();  
+    main_logic();
 }
