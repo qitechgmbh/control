@@ -185,7 +185,7 @@ export function Extruder3ControlPage() {
             <TimeSeriesValueNumeric
               label="Rpm"
               unit="rpm"
-              renderValue={(value) => roundToDecimals(value, 0)}
+              renderValue={(value) => roundToDecimals(value, 1)}
               timeseries={motorScrewRpm}
             />
 
@@ -197,7 +197,7 @@ export function Extruder3ControlPage() {
             <TimeSeriesValueNumeric
               label="Pressure"
               unit="bar"
-              renderValue={(value) => roundToDecimals(value, 0)}
+              renderValue={(value) => roundToDecimals(value, 1)}
               timeseries={pressure}
             />
           </div>
