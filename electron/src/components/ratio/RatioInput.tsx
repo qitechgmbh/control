@@ -31,7 +31,7 @@ export function RatioInput({
   title = "Motor Ratio",
   min = 0.1,
   max = 1000,
-  step = 0.1,
+  step = 0.01,
 }: RatioInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeField, setActiveField] = useState<"master" | "slave" | null>(
@@ -65,7 +65,7 @@ export function RatioInput({
   const formatRatioDisplay = useCallback(() => {
     const m = master ?? 1;
     const s = slave ?? 1;
-    return `${m.toFixed(1)} : ${s.toFixed(1)}`;
+    return `${m.toFixed(2)} : ${s.toFixed(2)}`;
   }, [master, slave]);
 
   // Increment/decrement functions with bounds checking
@@ -75,7 +75,7 @@ export function RatioInput({
       let newValue = increment ? currentValue + step : currentValue - step;
 
       // Round to avoid floating point precision issues
-      newValue = Math.round(newValue * 10) / 10;
+      newValue = Math.round(newValue * 100) / 100;
 
       // Clamp to min/max bounds
       if (newValue < min) {
@@ -370,9 +370,9 @@ export function RatioInput({
 
           {/* Description */}
           <div className="-mt-4 text-base text-gray-600">
-            Set the gear ratio. For every {currentValues.master.toFixed(1)}{" "}
+            Set the gear ratio. For every {currentValues.master.toFixed(2)}{" "}
             rotation(s) of the master puller, the motor will make{" "}
-            {currentValues.slave.toFixed(1)} rotation(s).
+            {currentValues.slave.toFixed(2)} rotation(s).
           </div>
 
           <Separator />
