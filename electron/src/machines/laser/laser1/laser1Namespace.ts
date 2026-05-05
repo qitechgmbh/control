@@ -16,6 +16,7 @@ import {
   ThrottledStoreUpdater,
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { useMemo } from "react";
 import {
   createTimeSeries,
   TimeSeries,
@@ -202,11 +203,14 @@ const useLaser1NamespaceImplementation =
 export function useLaser1Namespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): Laser1NamespaceStore {
-  // Generate namespace ID from validated machine ID
-  const namespaceId: NamespaceId = {
-    type: "machine",
-    machine_identification_unique,
-  };
+  // Generate namespace ID from validated machine ID (memoized to keep reference stable)
+  const namespaceId = useMemo<NamespaceId>(
+    () => ({
+      type: "machine",
+      machine_identification_unique,
+    }),
+    [machine_identification_unique],
+  );
 
   // Use the implementation with validated namespace ID
   return useLaser1NamespaceImplementation(namespaceId);

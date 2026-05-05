@@ -11,6 +11,7 @@ import {
   ThrottledStoreUpdater,
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { useMemo } from "react";
 
 // ========== Event Schema ==========
 
@@ -69,10 +70,13 @@ const useDigitalInputTestMachineNamespaceImplementation =
 export function useDigitalInputTestMachineNamespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): DigitalTestMachineNamespaceStore {
-  const namespaceId: NamespaceId = {
-    type: "machine",
-    machine_identification_unique,
-  };
+  const namespaceId = useMemo<NamespaceId>(
+    () => ({
+      type: "machine",
+      machine_identification_unique,
+    }),
+    [machine_identification_unique],
+  );
 
   return useDigitalInputTestMachineNamespaceImplementation(namespaceId);
 }

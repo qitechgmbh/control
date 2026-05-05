@@ -11,6 +11,7 @@ import {
   ThrottledStoreUpdater,
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { useMemo } from "react";
 
 // Mirrors the Rust `StateEvent` in machines/src/minimal_machines/wago_750_460_machine/api.rs
 //
@@ -70,10 +71,13 @@ const useWago750460MachineNamespaceImplementation =
 export function useWago750460MachineNamespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): Wago750460MachineNamespaceStore {
-  const namespaceId: NamespaceId = {
-    type: "machine",
-    machine_identification_unique,
-  };
+  const namespaceId = useMemo<NamespaceId>(
+    () => ({
+      type: "machine",
+      machine_identification_unique,
+    }),
+    [machine_identification_unique],
+  );
 
   return useWago750460MachineNamespaceImplementation(namespaceId);
 }
