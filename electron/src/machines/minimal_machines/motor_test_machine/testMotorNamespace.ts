@@ -35,7 +35,7 @@ export const createTestMotorNamespaceStore =
 
 // ========== Message Handler ==========
 export function testMotorMessageHandler(
-  chstore: StoreApi<TestMotorNamespaceStore>,
+  store: StoreApi<TestMotorNamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<TestMotorNamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
