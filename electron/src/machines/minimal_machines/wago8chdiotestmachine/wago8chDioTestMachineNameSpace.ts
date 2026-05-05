@@ -61,9 +61,6 @@ export function wago8chDioTestMachineMessageHandler(
   };
 }
 
-export const wago8chDioTestMachineMessageHndler =
-  wago8chDioTestMachineMessageHandler;
-
 // ========== Namespace Hook ==========
 const useWago8chDioTestMachineImplementation =
   createNamespaceHookImplementation<Wago8chDioTestMachineNamespaceStore>({
