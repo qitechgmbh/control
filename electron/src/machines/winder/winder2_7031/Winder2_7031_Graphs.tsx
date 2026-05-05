@@ -37,7 +37,7 @@ export function Winder2_7031GraphsPage() {
               targetSeries={targetPullerSpeed}
               targetSpeed={state?.puller_state?.target_speed}
               unit="m/min"
-              renderValue={(value) => roundToDecimals(value, 0)}
+              renderValue={(value) => roundToDecimals(value, 1)}
             />
 
             <TensionArmAngleGraph
