@@ -83,6 +83,10 @@ impl PullerSpeedController {
         self.enabled = enabled;
     }
 
+    pub const fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
     pub fn set_target_speed(&mut self, target: Velocity) {
         self.target_speed = target;
     }

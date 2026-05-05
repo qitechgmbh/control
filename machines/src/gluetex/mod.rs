@@ -486,6 +486,9 @@ impl Gluetex {
             Some(endstop_hit),
             distance_moved,
         );
+        if !self.puller_speed_controller.is_enabled() {
+            self.addon_motor_3.set_enabled(false);
+        }
 
         self.addon_motor_3_last_sync = t;
     }
@@ -500,13 +503,14 @@ impl Gluetex {
             None,
             Length::ZERO,
         );
+        if !self.puller_speed_controller.is_enabled() {
+            self.addon_motor_4.set_enabled(false);
+        }
     }
 
     /// Sync addon motor 5 speed based on puller angular velocity and ratio
     /// called by `act`
     pub fn sync_addon_motor_5_speed(&mut self, t: Instant) {
-        // Follow the actual commanded puller speed, not the static target.
-        // This keeps addon motor 5 stopped when the puller controller is disabled.
         let master_speed = self.puller_speed_controller.last_speed;
         let adjusted_speed = self.addon_motor_5_tension_controller.update_speed(
             t,
@@ -522,6 +526,9 @@ impl Gluetex {
             None,
             Length::ZERO,
         );
+        if !self.puller_speed_controller.is_enabled() {
+            self.addon_motor_5.set_enabled(false);
+        }
     }
 
     /// Sync slave puller speed based on master puller speed and TA inlet feeder
@@ -556,6 +563,9 @@ impl Gluetex {
             .angular_velocity_to_steps(angular_velocity);
 
         let _ = self.slave_puller.set_speed(steps_per_second);
+        if !self.puller_speed_controller.is_enabled() {
+            self.slave_puller.set_enabled(false);
+        }
     }
 
     /// Update valve based on puller movement
