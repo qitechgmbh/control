@@ -21,6 +21,7 @@ import {
   TimeSeries,
   TimeSeriesValue,
 } from "@/lib/timeseries";
+import { useMemo } from "react";
 
 // ========== Event Schema Definitions ==========
 /**
@@ -179,11 +180,14 @@ const useMock1NamespaceImplementation =
 export function useMock1Namespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): Mock1NamespaceStore {
-  // Generate namespace ID from validated machine ID
-  const namespaceId: NamespaceId = {
-    type: "machine",
-    machine_identification_unique,
-  };
+  // Generate namespace ID from validated machine ID (memoized to keep reference stable)
+  const namespaceId = useMemo<NamespaceId>(
+    () => ({
+      type: "machine",
+      machine_identification_unique,
+    }),
+    [machine_identification_unique],
+  );
 
   // Use the implementation with validated namespace ID
   return useMock1NamespaceImplementation(namespaceId);
