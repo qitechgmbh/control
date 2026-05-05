@@ -125,20 +125,47 @@ export function GraphControls({
                   Remove Marker
                 </TouchButton>
               )}
-              {onExport && (
-                <TouchButton
-                  onClick={onExport}
-                  variant="outline"
-                  className="h-auto bg-green-600 px-3 py-3 text-base font-medium text-white hover:bg-green-700"
-                >
-                  Export
-                </TouchButton>
-              )}
+              {onExport && <ExportButton onExport={onExport} />}
             </>
           )}
         </div>
       </div>
     </ControlCard>
+  );
+}
+
+function ExportButton({ onExport }: { onExport: () => void | Promise<void> }) {
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleClick = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    // Yield to the event loop so React can re-render and paint the spinner
+    // before the heavy synchronous XLSX work blocks the thread.
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    try {
+      await onExport();
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <TouchButton
+      onClick={handleClick}
+      disabled={isExporting}
+      variant="outline"
+      className="h-auto bg-green-600 px-3 py-3 text-base font-medium text-white hover:bg-green-700 disabled:opacity-70"
+    >
+      {isExporting ? (
+        <>
+          <Icon name="lu:Loader" className="mr-2 size-4 animate-spin" />
+          Exporting...
+        </>
+      ) : (
+        "Export"
+      )}
+    </TouchButton>
   );
 }
 
@@ -263,15 +290,7 @@ export function FloatingControlPanel({
                 Remove Marker
               </TouchButton>
             )}
-            {isExpanded && onExport && (
-              <TouchButton
-                onClick={onExport}
-                variant="outline"
-                className="h-auto bg-green-600 px-3 py-3 text-base font-medium text-white hover:bg-green-700"
-              >
-                Export
-              </TouchButton>
-            )}
+            {isExpanded && onExport && <ExportButton onExport={onExport} />}
           </div>
 
           {isExpanded && <div className="h-8 w-px bg-gray-200"></div>}
