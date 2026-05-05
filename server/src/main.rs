@@ -278,6 +278,11 @@ async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state:
                     .await
                     .expect("Could not send to real-time channel");
             }
+            MachinesInitialized => {
+                // The RT loop has confirmed all EtherCAT subdevices are
+                // operational. Flush pending machines to the frontend.
+                shared_state.flush_pending_machines().await;
+            }
         }
     }
 

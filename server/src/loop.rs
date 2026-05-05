@@ -153,9 +153,15 @@ pub fn start_loop_thread(
     return res;
 }
 
+/// Copies EtherCAT inputs from all subdevices.
+///
+/// Returns `Ok(true)` if subdevices just became operational for the first time
+/// (i.e. transitioned from not-all-OP to all-OP in this call).
+/// Returns `Ok(false)` if subdevices were already operational or there is no
+/// EtherCAT setup.
 pub async fn copy_ethercat_inputs(
     ethercat_setup: Option<&mut EthercatSetup>,
-) -> Result<(), anyhow::Error> {
+) -> Result<bool, anyhow::Error> {
     // only if we have an ethercat setup
     // - tx/rx cycle
     // - copy inputs to devices
@@ -205,8 +211,9 @@ pub async fn copy_ethercat_inputs(
                     )
                 })?;
             }
-            return Ok(());
+            return Ok(false);
         } else {
+            // Busy-wait until all subdevices reach OP state
             loop {
                 let now = Instant::now();
                 let response @ TxRxResponse {
@@ -223,13 +230,14 @@ pub async fn copy_ethercat_inputs(
                     .expect("TX/RX");
                 if response.all_op() {
                     ethercat_setup.all_operational = true;
-                    break;
+                    tracing::info!("All EtherCAT subdevices now operational");
+                    return Ok(true);
                 }
                 smol::Timer::at(now + next_cycle_wait).await;
             }
         }
     }
-    Ok(())
+    Ok(false)
 }
 
 pub async fn copy_ethercat_outputs(
@@ -291,7 +299,24 @@ pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyho
 
         let res = smol::block_on(copy_ethercat_inputs(inputs.ethercat_setup.as_deref_mut()));
         match res {
-            Ok(_) => (),
+            Ok(just_became_operational) => {
+                if just_became_operational {
+                    // Subdevices just reached OP state for the first time.
+                    // Notify the async handler to make pending machines visible in the frontend.
+                    if let Some(sender) = inputs
+                        .machine_manager
+                        .machine_entries
+                        .first()
+                        .and_then(|entry| entry.machine.get_main_sender())
+                    {
+                        let _ = sender.try_send(machines::AsyncThreadMessage::MachinesInitialized);
+                        tracing::info!(
+                            "Sent MachinesInitialized to async handler ({} machines pending)",
+                            inputs.machine_manager.machine_entries.len()
+                        );
+                    }
+                }
+            }
             Err(e) => {
                 return Err(anyhow::anyhow!("copy_ethercat_inputs failed: {:?}", e));
             }
