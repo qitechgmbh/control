@@ -137,6 +137,15 @@ impl SlavePullerSpeedController {
         master_speed: Velocity,
         tension_arm: &TensionArm,
     ) -> Velocity {
+        use units::angle::degree;
+
+        // Stop immediately when tension arm is at 0 degrees
+        let angle_deg = tension_arm.get_angle().get::<degree>();
+        if angle_deg == 0.0 {
+            self.last_speed = Velocity::ZERO;
+            return Velocity::ZERO;
+        }
+
         // Calculate raw target speed
         let target_speed = self.speed_raw(master_speed, tension_arm);
 

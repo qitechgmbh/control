@@ -106,6 +106,13 @@ impl AddonMotorTensionController {
         master_speed: Velocity,
         tension_arm: &TensionArm,
     ) -> Velocity {
+        // Stop immediately when tension arm is at 0 degrees
+        let angle_deg = tension_arm.get_angle().get::<degree>();
+        if angle_deg == 0.0 {
+            self.last_speed = Velocity::ZERO;
+            return Velocity::ZERO;
+        }
+
         let final_speed = if self.enabled {
             self.speed_raw(master_speed, tension_arm)
         } else {
