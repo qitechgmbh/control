@@ -1,6 +1,7 @@
 use std::{cell::RefCell, rc::Rc, time::{Duration, Instant}};
 use control_core::transmission::fixed::FixedTransmission;
-use qitech_lib::{ethercat_hal::{coe::ConfigurableDevice, devices::{ek1100::EK1100, el2004::EL2004, el3021::EL3021, el3204::EL3204, el6021::{EL6021, EL6021Configuration}}, io::{analog_input::AnalogInputDevice, digital_output::DigitalOutputDevice, serial_interface::SerialInterfaceDevice, temperature_input::TemperatureInputDevice}}, machines::MachineIdentificationUnique, units::{AngularVelocity, Pressure, ThermodynamicTemperature, angular_velocity::revolution_per_minute, pressure::bar, thermodynamic_temperature::degree_celsius}};
+use qitech_lib::ethercat_hal::{coe::ConfigurableDevice, devices::{ek1100::EK1100, el2004::EL2004, el3021::EL3021, el3204::EL3204, el6021::{EL6021, EL6021Configuration}}};
+use qitech_lib::units::{AngularVelocity, Pressure, ThermodynamicTemperature, angular_velocity::revolution_per_minute, pressure::bar, thermodynamic_temperature::degree_celsius};
 use crate::{MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, MachineHardware, MachineMessage, MachineNew};
 use super::{ExtruderV2, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80, screw_speed_controller::ScrewSpeedController, temperature_controller::TemperatureController};
 
@@ -58,18 +59,23 @@ impl MachineNew for ExtruderV2 {
             Some(interface) => interface,
             None => return Err(anyhow::anyhow!("No Ethercat Interface was supplied, but is required to setup Extruder")),
         };
-
-
         let _ek1100 : Rc<RefCell<EK1100>> = hw.try_get_ethercat_device_by_role(roles.ek1100_role)?;    
-        let temperature_device : Rc<RefCell<dyn TemperatureInputDevice>> = hw.try_get_ethercat_device_by_role::<EL3204>(roles.temp_role)?;        
-        let pressure_sensor : Rc<RefCell<dyn AnalogInputDevice>> =  hw.try_get_ethercat_device_by_role::<EL3021>(roles.pressure_sensor_role)?;
-        let digital_out_device : Rc<RefCell<dyn DigitalOutputDevice>> = hw.try_get_ethercat_device_by_role::<EL2004>(roles.digital_out_role)?;
-        let serial_device : Rc<RefCell<EL6021>> = hw.try_get_ethercat_device_by_role::<EL6021>(roles.serial_role)?;
-        let el6021_addr = hw.try_get_ethercat_meta_by_role(roles.serial_role)?;
-        let mut el6021 = serial_device.borrow_mut();        
-        let _res = el6021.write_config(interface.clone(),el6021_addr,&EL6021Configuration::default());
-        drop(el6021);
+        
+        let temperature_device = hw.try_get_ethercat_device_and_addr_by_role::<EL3204>(roles.temp_role)?;
+        interface.enable_dc_sync0(temperature_device.1)?;
 
+        let pressure_sensor  =  hw.try_get_ethercat_device_and_addr_by_role::<EL3021>(roles.pressure_sensor_role)?;
+        interface.enable_dc_sync0(pressure_sensor.1)?;
+        
+        let digital_out_device = hw.try_get_ethercat_device_and_addr_by_role::<EL2004>(roles.digital_out_role)?;
+        interface.enable_dc_sync0(digital_out_device.1)?;
+
+        let serial_device  = hw.try_get_ethercat_device_and_addr_by_role::<EL6021>(roles.serial_role)?;                
+        let mut el6021 = serial_device.0.borrow_mut();        
+        let _res = el6021.write_config(interface.clone(),serial_device.1,&EL6021Configuration::default());
+        drop(el6021);
+        interface.enable_dc_sync0(serial_device.1)?;
+        
         let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
         let temperature_controller_front = TemperatureController::new(
             0.16,
@@ -160,10 +166,10 @@ impl MachineNew for ExtruderV2 {
             emitted_default_state: false,
             last_status_hash: None,
 
-            relais_output: digital_out_device,
-            temperature_input: temperature_device,
-            serial_interface: serial_device,
-            pressure_sensor,
+            relais_output: digital_out_device.0,
+            temperature_input: temperature_device.0,
+            serial_interface: serial_device.0,
+            pressure_sensor: pressure_sensor.0,
         };
         extruder.emit_state();
         Ok(extruder)        

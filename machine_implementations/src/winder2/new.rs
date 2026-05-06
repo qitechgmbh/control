@@ -40,19 +40,17 @@ mod winder2_imports {
     pub use qitech_lib::units::length::{centimeter, meter, millimeter};
     pub use qitech_lib::units::velocity::meter_per_minute;
 }
-
-use std::{cell::RefCell, rc::Rc};
 use qitech_lib::ethercat_hal::{EtherCATThreadChannel};
 pub use winder2_imports::*;
 use crate::{MachineHardware, MachineNew};
 
 impl MachineNew for Winder2 {
     fn new(hw: MachineHardware) -> Result<Self, Error> {        
-        let _ek1100 = hw.try_get_ethercat_device_by_role::<EK1100>(0)?;
-        let el2002 : Rc<RefCell<dyn DigitalOutputDevice>> = hw.try_get_ethercat_device_by_role::<EL2002>(1)?;
-        let el7041 : Rc<RefCell<EL7041_0052>> = hw.try_get_ethercat_device_by_role::<EL7041_0052>(2)?;
-        let el7031 : Rc<RefCell<EL7031>> = hw.try_get_ethercat_device_by_role::<EL7031>(3)?;
-        let el7031_0030 : Rc<RefCell<EL7031_0030>> = hw.try_get_ethercat_device_by_role::<EL7031_0030>(4)?;
+        let _ek1100     = hw.try_get_ethercat_device_and_addr_by_role::<EK1100>(0)?;
+        let el2002      = hw.try_get_ethercat_device_and_addr_by_role::<EL2002>(1)?;
+        let el7041      = hw.try_get_ethercat_device_and_addr_by_role::<EL7041_0052>(2)?;
+        let el7031      = hw.try_get_ethercat_device_and_addr_by_role::<EL7031>(3)?;
+        let el7031_0030 = hw.try_get_ethercat_device_and_addr_by_role::<EL7031_0030>(4)?;
 
         let mode = Winder2Mode::Standby;
         let (sender,receiver) = tokio::sync::mpsc::channel(2);
@@ -77,13 +75,11 @@ impl MachineNew for Winder2 {
             pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
                 ..Default::default()
         };
-
-        let device_address = hw.try_get_ethercat_meta_by_role(4)?;        
-        let mut b = el7031_0030.borrow_mut();
-        (&mut *b).write_config(interface.clone(), device_address,&el7031_0030_config )?;
+        let mut b = el7031_0030.0.borrow_mut();
+        (&mut *b).write_config(interface.clone(), el7031_0030.1,&el7031_0030_config )?;
         drop(b);
+        interface.enable_dc_sync0(el7031_0030.1)?;
 
-        let device_address = hw.try_get_ethercat_meta_by_role(3)?;        
         let el7031_config = EL7031Configuration {
                     stm_features: shared_config::el70x1::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
@@ -98,11 +94,11 @@ impl MachineNew for Winder2 {
                     ..Default::default()
                 };
 
-        let mut b = el7031.borrow_mut();
-        (&mut *b).write_config(interface.clone(), device_address,&el7031_config )?;
+        let mut b = el7031.0.borrow_mut();
+        (&mut *b).write_config(interface.clone(), el7031_0030.1,&el7031_config )?;
         drop(b);
+        interface.enable_dc_sync0(el7031_0030.1)?;
 
-        let device_address = hw.try_get_ethercat_meta_by_role(2)?;
         let el7041_config = EL7041_0052Configuration {
             stm_features: shared_config::el70x1::StmFeatures {
                 operation_mode: EL70x1OperationMode::DirectVelocity,
@@ -115,19 +111,19 @@ impl MachineNew for Winder2 {
                 ..Default::default() 
             };
 
-        let mut b = el7041.borrow_mut();
-        (&mut *b).write_config(interface, device_address, &el7041_config)?;
+        let mut b = el7041.0.borrow_mut();
+        (&mut *b).write_config(interface.clone(), el7041.1, &el7041_config)?;        
         drop(b);
-
-
+        interface.enable_dc_sync0(el7041.1)?;
+        
         let mut new = Self {
             api_receiver: receiver,
             api_sender: sender,
-            traverse: el7031,            
-            puller: el7031_0030.clone(),
-            spool: el7041,
-            laser: el2002,
-            tension_arm: TensionArm::new(el7031_0030.clone()),
+            traverse: el7031.0,            
+            puller: el7031_0030.0.clone(),
+            spool: el7041.0,
+            laser: el2002.0,
+            tension_arm: TensionArm::new(el7031_0030.0.clone()),
             namespace: Winder2Namespace {
                 namespace: None,
             },
