@@ -17,19 +17,20 @@ type RatioInputProps = {
   step?: number;
 };
 
-const ratioSchema = z.object({
-  master: z.number().min(0.1).max(1000),
-  slave: z.number().min(0.1).max(1000),
-});
+const createRatioSchema = (min: number, max: number) =>
+  z.object({
+    master: z.number().min(min).max(max),
+    slave: z.number().min(min).max(max),
+  });
 
-type RatioFormData = z.infer<typeof ratioSchema>;
+type RatioFormData = { master: number; slave: number };
 
 export function RatioInput({
   master = 1,
   slave = 1,
   onRatioChange,
   title = "Motor Ratio",
-  min = 0.1,
+  min = 0.01,
   max = 1000,
   step = 0.01,
 }: RatioInputProps) {
@@ -45,6 +46,8 @@ export function RatioInput({
       slave: slave ?? 1,
     };
   }, [master, slave]);
+
+  const ratioSchema = createRatioSchema(min, max);
 
   const form = useForm<RatioFormData>({
     resolver: zodResolver(ratioSchema),
@@ -217,7 +220,7 @@ export function RatioInput({
   }) => {
     const isActive = activeField === field;
     const displayValue =
-      isActive && inputValue !== "" ? inputValue : value.toFixed(1);
+      isActive && inputValue !== "" ? inputValue : value.toFixed(2);
 
     return (
       <div className="flex flex-col items-center gap-3">
