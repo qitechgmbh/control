@@ -480,15 +480,18 @@ impl Gluetex {
             _ => false, // Current-based inputs are not expected here
         };
 
+        if self.puller_speed_controller.is_enabled() {
+            self.addon_motor_3_controller.set_enabled(true);
+        } else {
+            self.addon_motor_3_controller.set_enabled(false);
+        }
+
         self.addon_motor_3_controller.sync_motor_speed(
             &mut self.addon_motor_3,
             puller_angular_velocity,
             Some(endstop_hit),
             distance_moved,
         );
-        if !self.puller_speed_controller.is_enabled() {
-            self.addon_motor_3.set_enabled(false);
-        }
 
         self.addon_motor_3_last_sync = t;
     }
@@ -497,15 +500,19 @@ impl Gluetex {
     /// called by `act`
     pub fn sync_addon_motor_4_speed(&mut self, t: Instant) {
         let puller_angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
+
+        if self.puller_speed_controller.is_enabled() {
+            self.addon_motor_4_controller.set_enabled(true);
+        } else {
+            self.addon_motor_4_controller.set_enabled(false);
+        }
+
         self.addon_motor_4_controller.sync_motor_speed(
             &mut self.addon_motor_4,
             puller_angular_velocity,
             None,
             Length::ZERO,
         );
-        if !self.puller_speed_controller.is_enabled() {
-            self.addon_motor_4.set_enabled(false);
-        }
     }
 
     /// Sync addon motor 5 speed based on puller angular velocity and ratio
@@ -520,15 +527,19 @@ impl Gluetex {
         let puller_angular_velocity = self
             .puller_speed_controller
             .speed_to_angular_velocity(adjusted_speed);
+
+        if self.puller_speed_controller.is_enabled() {
+            self.addon_motor_5_controller.set_enabled(true);
+        } else {
+            self.addon_motor_5_controller.set_enabled(false);
+        }
+
         self.addon_motor_5_controller.sync_motor_speed(
             &mut self.addon_motor_5,
             puller_angular_velocity,
             None,
             Length::ZERO,
         );
-        if !self.puller_speed_controller.is_enabled() {
-            self.addon_motor_5.set_enabled(false);
-        }
     }
 
     /// Sync slave puller speed based on master puller speed and TA inlet feeder
@@ -562,8 +573,10 @@ impl Gluetex {
             .converter
             .angular_velocity_to_steps(angular_velocity);
 
-        let _ = self.slave_puller.set_speed(steps_per_second);
-        if !self.puller_speed_controller.is_enabled() {
+        if self.puller_speed_controller.is_enabled() {
+            self.slave_puller.set_enabled(true);
+            let _ = self.slave_puller.set_speed(steps_per_second);
+        } else {
             self.slave_puller.set_enabled(false);
         }
     }

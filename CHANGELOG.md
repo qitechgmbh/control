@@ -1,3 +1,15 @@
+# Gluetex Bugfixes
+_06.05.2026_
+
+### Safety & Motor Control
+- Added zero-degree tension arm safety stops for addon motor 5 (inlet feeder) and slave puller
+- Fixed inlet feeder motor freeze by correcting tension arm reference (was reading tape feeder instead of inlet feeder)
+- Improved motor enable/disable logic with `is_enabled` method in PullerSpeedController
+
+### UI & Frontend Improvements
+- Fixed RatioInput regression
+- Updated step value precision and formatting in RatioInput component
+
 # `2.15.0`
 _02.03.2026_
 
