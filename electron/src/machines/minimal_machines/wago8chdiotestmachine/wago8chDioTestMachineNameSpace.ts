@@ -36,7 +36,7 @@ export const createWago8chDioTestMachineNamespaceStore =
     }));
 
 // ========== Message Handler ==========
-export function wago8chDioTestMachineMessageHndler(
+export function wago8chDioTestMachineMessageHandler(
   store: StoreApi<Wago8chDioTestMachineNamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<Wago8chDioTestMachineNamespaceStore>,
 ): EventHandler {
@@ -65,7 +65,7 @@ export function wago8chDioTestMachineMessageHndler(
 const useWago8chDioTestMachineImplementation =
   createNamespaceHookImplementation<Wago8chDioTestMachineNamespaceStore>({
     createStore: createWago8chDioTestMachineNamespaceStore,
-    createEventHandler: wago8chDioTestMachineMessageHndler,
+    createEventHandler: wago8chDioTestMachineMessageHandler,
   });
 
 export function useWago8chDioTestMachineNamespace(
