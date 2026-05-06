@@ -139,19 +139,14 @@ impl SlavePullerSpeedController {
     ) -> Velocity {
         use units::angle::degree;
 
-        // Stop immediately when tension arm is at 0 degrees
-        let angle_deg = tension_arm.get_angle().get::<degree>();
-        if angle_deg == 0.0 {
-            self.last_speed = Velocity::ZERO;
-            return Velocity::ZERO;
-        }
-
-        // Calculate raw target speed
-        let target_speed = self.speed_raw(master_speed, tension_arm);
-
         // Apply enable/disable logic
         let final_speed = if self.enabled {
-            target_speed
+            let angle_deg = tension_arm.get_angle().get::<degree>();
+            if angle_deg == 0.0 {
+                Velocity::ZERO
+            } else {
+                self.speed_raw(master_speed, tension_arm)
+            }
         } else {
             Velocity::ZERO
         };
@@ -405,8 +400,13 @@ mod tests {
         let master_speed = Velocity::new::<meter_per_second>(2.0);
         let (mut analog_input_dummy, tension_arm) = create_tension_arm();
 
-        // Far below target would request 0.5x, but should clamp to min 0.8x
+        // At 0 degrees, motor should stop for safety
         set_tension_arm_angle_degrees(&mut analog_input_dummy, 0.0);
+        let zero_angle = controller.update_speed(Instant::now(), master_speed, &tension_arm);
+        assert_eq!(zero_angle.get::<meter_per_second>(), 0.0);
+
+        // Far below target would request 0.5x, but should clamp to min 0.8x
+        set_tension_arm_angle_degrees(&mut analog_input_dummy, 10.0);
         let min_limited = controller.update_speed(Instant::now(), master_speed, &tension_arm);
         assert_eq!(min_limited.get::<meter_per_second>(), 1.6);
 
