@@ -72,8 +72,6 @@ pub enum AsyncThreadMessage {
     NoMsg,
     SubscribeToMachine(MachineSubscriptionRequest),
     UnsubscribeFromMachine(MachineSubscriptionRequest),
-    /// Sent by the RT loop once all EtherCAT subdevices are operational.
-    /// The async handler should then add pending machines to the frontend list.
     MachinesInitialized,
 }
 

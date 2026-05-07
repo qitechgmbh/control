@@ -153,12 +153,12 @@ pub fn start_loop_thread(
     return res;
 }
 
-/// Copies EtherCAT inputs from all subdevices.
-///
-/// Returns `Ok(true)` if subdevices just became operational for the first time
-/// (i.e. transitioned from not-all-OP to all-OP in this call).
-/// Returns `Ok(false)` if subdevices were already operational or there is no
-/// EtherCAT setup.
+// Copies EtherCAT inputs from all subdevices.
+//
+// Returns `Ok(true)` if subdevices just became operational for the first time
+// (i.e. transitioned from not-all-OP to all-OP in this call).
+// Returns `Ok(false)` if subdevices were already operational or there is no
+// EtherCAT setup.
 pub async fn copy_ethercat_inputs(
     ethercat_setup: Option<&mut EthercatSetup>,
 ) -> Result<bool, anyhow::Error> {

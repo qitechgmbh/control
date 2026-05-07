@@ -84,9 +84,6 @@ pub struct SharedState {
     pub socketio_setup: SocketioSetup,
     pub api_machines: Mutex<HashMap<MachineIdentificationUnique, Sender<MachineMessage>>>,
     pub current_machines_meta: Mutex<Vec<MachineObj>>,
-    /// Machines that have been created but whose EtherCAT subdevices are not yet
-    /// operational. They will be moved to `current_machines_meta` and announced
-    /// to the frontend once the RT loop confirms all subdevices are in OP state.
     pub pending_machine_objs: Mutex<Vec<MachineObj>>,
     pub rt_machine_creation_channel: Sender<HotThreadMessage>,
     pub main_channel: Sender<AsyncThreadMessage>,
@@ -260,17 +257,17 @@ impl SharedState {
         }
     }
 
-    /// Stores machine objects that are pending EtherCAT subdevice initialization.
-    /// These will be announced to the frontend once the RT loop confirms all
-    /// subdevices have reached OP state.
+    // Stores machine objects that are pending EtherCAT subdevice initialization.
+    // These will be announced to the frontend once the RT loop confirms all
+    // subdevices have reached OP state.
     pub async fn store_pending_machine_objs(&self, machine_objs: Vec<MachineObj>) {
         let mut pending = self.pending_machine_objs.lock().await;
         pending.extend(machine_objs);
     }
 
-    /// Moves all pending machine objects to the current machines list and sends
-    /// a machines event to the frontend. Called by the async handler when the RT
-    /// loop reports that all EtherCAT subdevices are operational.
+    // Moves all pending machine objects to the current machines list and sends
+    // a machines event to the frontend. Called by the async handler when the RT
+    // loop reports that all EtherCAT subdevices are operational.
     pub async fn flush_pending_machines(&self) {
         let pending = {
             let mut pending = self.pending_machine_objs.lock().await;
