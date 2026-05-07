@@ -5,7 +5,7 @@ use qitech_lib::modbus::clients::example_client::ExampleClient;
 use qitech_lib::modbus::managers::ExampleDeviceManager;
 use qitech_lib::modbus::start_modbus_async_task;
 use qitech_lib::{ethercat_hal::devices::{device_from_subdevice_identity_rc}};
-use qitech_lib::ethercat_hal::{EtherCATControl, TripleBufConsumer, TripleBufProducer};
+use qitech_lib::ethercat_hal::{BECKHOFF_VENDOR_ID, EtherCATControl, TripleBufConsumer, TripleBufProducer};
 #[cfg(not(feature = "mock"))]
 use qitech_lib::ethercat_hal::{DcConfiguration, MasterConfiguration, RtOptimizationConfig, init_ethercat};
 #[cfg(not(feature = "mock"))]
@@ -35,9 +35,18 @@ fn setup_ethercat(
     println!("Initialized {} subdevices",eth_control.controller.subdevice_count);
 
     for meta in eth_control.controller.get_subdevices() {
-        let dev = device_from_subdevice_identity_rc(&meta).unwrap();
+        let dev = device_from_subdevice_identity_rc(&meta);
+        
+        let dev = match dev {
+            Ok(d) => d,
+            Err(_) => {
+                println!("{:?} is not implemented",meta.get_name());
+                continue;
+            },
+        };
+
         main_state.subdevices.push((meta.clone(), dev.clone()));        
-        if meta.vendor == 0x2 {
+        if meta.vendor == BECKHOFF_VENDOR_ID {
             let _res = eth_control.channel.set_mut_beckhoff_eeprom_lock_active(meta.device_address);
         }
     }
@@ -69,7 +78,6 @@ fn setup_serial(main_state : &mut MainState){
 fn finalize_ethercat(main_state : &mut MainState, eth_control : &EtherCATControl<TripleBufConsumer,TripleBufProducer>) {
     let _res = eth_control.channel.request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
     std::thread::sleep(Duration::from_secs(5));
-
     for meta in &mut main_state.subdevices {        
         let m = eth_control.controller.get_subdevices()
         .iter()
@@ -119,7 +127,7 @@ fn detect_and_build_machines(state : Arc<SharedAppState>,main_state : &mut MainS
 }
 
 fn optimized_ethercat_init(interface : &str) -> EtherCATControl<TripleBufConsumer,TripleBufProducer> {    
-    let target_cycle_time_us : u64 = 300;    
+    let target_cycle_time_us : u64 = 700;    
     let dc_config : DcConfiguration = 
         DcConfiguration { 
             start_delay: Duration::from_millis(100), 
@@ -202,7 +210,6 @@ fn main_logic(){
         Some(control) => finalize_ethercat(&mut main_state,control),
         None => (),
     };
-    
     send_setup_done_events(state);
     match &mut eth_control {
         Some(control) => {
