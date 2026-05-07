@@ -71,10 +71,12 @@ impl TemperatureController {
 
     pub fn disallow_heating(&mut self) {
         self.heating_allowed = false;
+        self.pid.reset();
     }
 
     pub fn allow_heating(&mut self) {
         self.heating_allowed = true;
+        self.pid.reset();
     }
 
     pub fn get_heating_element_wattage(&mut self) -> f64 {

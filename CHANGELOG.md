@@ -1,6 +1,9 @@
 # Gluetex Bugfixes
 _06.05.2026_
 
+### Heater Control
+- Fixed heater overshooting target temperature on re-enable after standby by resetting PID integral state on heating disable/enable transitions
+
 ### Safety & Motor Control
 - Added zero-degree tension arm safety stops for addon motor 5 (inlet feeder) and slave puller
 - Fixed inlet feeder motor freeze by correcting tension arm reference (was reading tape feeder instead of inlet feeder)
