@@ -176,8 +176,9 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
         .send(crate::app_state::HotThreadMessage::AddMachines(machines))
         .await;
 
-    shared_state.add_machines_if_not_exists(machine_objs).await;
-    shared_state.clone().send_machines_event().await;
+    // Store machine metadata in SharedState so the RT loop can
+    // notify the frontend once subdevices become operational.
+    shared_state.store_pending_machine_objs(machine_objs).await;
 
     Ok(())
 }

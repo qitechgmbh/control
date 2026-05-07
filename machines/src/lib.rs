@@ -72,6 +72,7 @@ pub enum AsyncThreadMessage {
     NoMsg,
     SubscribeToMachine(MachineSubscriptionRequest),
     UnsubscribeFromMachine(MachineSubscriptionRequest),
+    MachinesInitialized,
 }
 
 pub struct MachineNewParams<

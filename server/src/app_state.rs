@@ -84,6 +84,7 @@ pub struct SharedState {
     pub socketio_setup: SocketioSetup,
     pub api_machines: Mutex<HashMap<MachineIdentificationUnique, Sender<MachineMessage>>>,
     pub current_machines_meta: Mutex<Vec<MachineObj>>,
+    pub pending_machine_objs: Mutex<Vec<MachineObj>>,
     pub rt_machine_creation_channel: Sender<HotThreadMessage>,
     pub main_channel: Sender<AsyncThreadMessage>,
     pub ethercat_meta_data: RwLock<Vec<EtherCatDeviceMetaData>>,
@@ -242,6 +243,7 @@ impl SharedState {
         let (socket_queue_tx, socket_queue_rx) = smol::channel::unbounded();
         Self {
             current_machines_meta: vec![].into(),
+            pending_machine_objs: vec![].into(),
             ethercat_meta_data: vec![].into(),
             socketio_setup: SocketioSetup {
                 socketio: RwLock::new(None),
@@ -253,5 +255,34 @@ impl SharedState {
             rt_machine_creation_channel: sender,
             main_channel: main_async_channel,
         }
+    }
+
+    // Stores machine objects that are pending EtherCAT subdevice initialization.
+    // These will be announced to the frontend once the RT loop confirms all
+    // subdevices have reached OP state.
+    pub async fn store_pending_machine_objs(&self, machine_objs: Vec<MachineObj>) {
+        let mut pending = self.pending_machine_objs.lock().await;
+        pending.extend(machine_objs);
+    }
+
+    // Moves all pending machine objects to the current machines list and sends
+    // a machines event to the frontend. Called by the async handler when the RT
+    // loop reports that all EtherCAT subdevices are operational.
+    pub async fn flush_pending_machines(&self) {
+        let pending = {
+            let mut pending = self.pending_machine_objs.lock().await;
+            std::mem::take(&mut *pending)
+        };
+
+        if pending.is_empty() {
+            return;
+        }
+
+        tracing::info!(
+            "Flushing {} pending machines to frontend (subdevices now operational)",
+            pending.len()
+        );
+
+        self.add_machines_if_not_exists(pending).await;
     }
 }
