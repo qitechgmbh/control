@@ -89,12 +89,15 @@
               pkg-config
               libudev-zero
               libpcap
+              duckdb
               nodejs_22
               nodePackages.npm
               lldb
               electron
               nixfmt
               nixd
+              rust-analyzer
+              rustfmt
             ];
 
             ELECTRON_SKIP_BINARY_DOWNLOAD = 1;

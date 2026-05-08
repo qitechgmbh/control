@@ -1,9 +1,8 @@
 {
-  lib,
-  pkgs,
   pkg-config,
   libudev-zero,
   libpcap,
+  duckdb,
   craneLib,
 }:
 
@@ -17,6 +16,7 @@ let
     buildInputs = [
       libpcap
       libudev-zero
+      duckdb
     ];
 
     src = craneLib.cleanCargoSource ../..;

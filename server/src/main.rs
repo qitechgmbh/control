@@ -58,6 +58,9 @@ use crate::{
 #[cfg(feature = "mock-machine")]
 pub mod mock_init;
 
+#[cfg(feature = "database")]
+pub mod graph;
+
 pub mod app_state;
 pub mod ethercat;
 pub mod logging;

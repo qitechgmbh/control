@@ -49,6 +49,10 @@ dhat = { version = "0.3.3", optional = true }
 ctrlc = { version = "3.5", optional = true }
 ta = "0.5.0"
 
+# Database
+duckdb = "1.10502.0"
+chrono = { version = "0.4.44", features = ["serde"] }
+
 
 [dev-dependencies]
 approx = "0.5.1"
@@ -56,7 +60,7 @@ textplots = "0.8.7"
 
 
 [features]
-default = ["tracing-fmt"]
+default = ["tracing-fmt", "database"]
 never_type = []
 tracing-fmt = []
 tracing-journald = ["dep:tracing-journald"]
@@ -65,6 +69,7 @@ memory-locking = []
 io-uring = []
 development-build = ["ctrlc"]
 heap-profile = ["dhat"]
+database = []
 
 
 
