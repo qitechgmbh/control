@@ -87,8 +87,8 @@ impl MachineApi for DigitalInputTestMachine {
             MachineMessage::UnsubscribeNamespace => {
                 self.namespace.namespace = None;
             }
-            MachineMessage::HttpApiJsonRequest(value) => (),
-            MachineMessage::RequestValues(sender) => (),
+            MachineMessage::HttpApiJsonRequest(_value) => (),
+            MachineMessage::RequestValues(_sender) => (),
         }
     }
 }

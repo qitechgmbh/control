@@ -8,7 +8,7 @@ use control_core::socketio::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use smol::channel::Sender;
+use tokio::sync::mpsc::Sender;
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -64,11 +64,23 @@ impl CacheableEvents<BeckhoffEvents> for BeckhoffEvents {
 }
 
 impl MachineApi for MotorTestMachine {
-    fn api_get_sender(&self) -> Sender<MachineMessage> {
-        self.api_sender.clone()
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(ns) => {
+                self.namespace.namespace = Some(ns);
+                self.emit_state();
+            }
+            MachineMessage::UnsubscribeNamespace => {
+                self.namespace.namespace = None;
+            }
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _ = self.api_mutate(value);
+            }
+            _ => {}
+        }
     }
-    fn api_event_namespace(&mut self) -> Option<Namespace> {
-        self.namespace.namespace.clone()
+    fn get_api_sender(&self) -> Sender<MachineMessage> {
+        self.api_sender.clone()
     }
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
@@ -88,5 +100,9 @@ impl MachineApi for MotorTestMachine {
             _ => {}
         }
         Ok(())
+    }
+
+    fn api_event_namespace(&mut self) -> Option<Namespace> {
+        self.namespace.namespace.clone()
     }
 }

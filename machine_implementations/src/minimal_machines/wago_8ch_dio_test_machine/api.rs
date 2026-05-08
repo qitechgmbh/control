@@ -71,7 +71,6 @@ impl MachineApi for Wago8chDigitalIOTestMachine {
             }
             MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
             MachineMessage::HttpApiJsonRequest(value) => {
-                use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
             MachineMessage::RequestValues(sender) => {
