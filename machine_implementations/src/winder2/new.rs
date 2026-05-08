@@ -74,7 +74,7 @@ impl MachineNew for Winder2 {
             },
             pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
                 ..Default::default()
-        };
+        };        
         let mut b = el7031_0030.0.borrow_mut();
         (&mut *b).write_config(interface.clone(), el7031_0030.1,&el7031_0030_config )?;
         drop(b);
@@ -95,9 +95,9 @@ impl MachineNew for Winder2 {
                 };
 
         let mut b = el7031.0.borrow_mut();
-        (&mut *b).write_config(interface.clone(), el7031_0030.1,&el7031_config )?;
+        (&mut *b).write_config(interface.clone(), el7031.1,&el7031_config )?;
         drop(b);
-        interface.enable_dc_sync0(el7031_0030.1)?;
+        interface.enable_dc_sync0(el7031.1)?;
 
         let el7041_config = EL7041_0052Configuration {
             stm_features: shared_config::el70x1::StmFeatures {
