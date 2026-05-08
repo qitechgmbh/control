@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "jsx": "react",
+    "target": "ESNext",
+    "module": "CommonJS",
+    "lib": ["dom", "ESNext"],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "noImplicitAny": false,
+    "strict": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../electron/src/*"],
+      "@machines": ["."],
+      "@machines/*": ["./*"],
+      "*": ["../electron/node_modules/*", "../electron/node_modules/@types/*"]
+    }
+  },
+  "include": ["./**/*"]
+}
