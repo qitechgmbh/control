@@ -894,21 +894,7 @@ impl Gluetex {
     }
 
     pub fn update_status_output(&mut self) {
-        let any_heating_active = self.temperature_controller_1.heating.heating
-            || self.temperature_controller_2.heating.heating
-            || self.temperature_controller_3.heating.heating
-            || self.temperature_controller_4.heating.heating
-            || self.temperature_controller_5.heating.heating
-            || self.temperature_controller_6.heating.heating
-            || self.temperature_controller_1.is_autotuning()
-            || self.temperature_controller_2.is_autotuning()
-            || self.temperature_controller_3.is_autotuning()
-            || self.temperature_controller_4.is_autotuning()
-            || self.temperature_controller_5.is_autotuning()
-            || self.temperature_controller_6.is_autotuning();
-
-        let machine_active = self.mode != GluetexMode::Standby || self.heating_enabled;
-        let status_on = machine_active || any_heating_active;
+        let status_on = self.mode == GluetexMode::Wind || self.mode == GluetexMode::Pull;
         self.status_out.set(status_on);
     }
 

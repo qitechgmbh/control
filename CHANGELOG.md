@@ -1,3 +1,9 @@
+# Gluetex
+_08.05.2026_
+
+### Status Output (EL2008 DO8)
+- Changed status output logic: DO8 now only turns on when the machine is in Wind or Pull mode (previously was on in any non-Standby mode or when heating was active)
+
 # Gluetex Bugfixes
 _06.05.2026_
 
