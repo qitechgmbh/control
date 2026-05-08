@@ -91,10 +91,20 @@ impl Gluetex {
             match self.spool_automatic_action.mode {
                 SpoolAutomaticActionMode::NoAction => (),
                 SpoolAutomaticActionMode::Pull => {
+                    tracing::info!(
+                        progress_m = self.spool_automatic_action.progress.get::<meter>(),
+                        target_m = self.spool_automatic_action.target_length.get::<meter>(),
+                        "spool auto-action: target reached, switching to Pull"
+                    );
                     self.stop_or_pull_spool_reset(now);
                     self.set_mode(&GluetexMode::Pull);
                 }
                 SpoolAutomaticActionMode::Hold => {
+                    tracing::info!(
+                        progress_m = self.spool_automatic_action.progress.get::<meter>(),
+                        target_m = self.spool_automatic_action.target_length.get::<meter>(),
+                        "spool auto-action: target reached, switching to Hold"
+                    );
                     self.stop_or_pull_spool_reset(now);
                     self.set_mode(&GluetexMode::Hold);
                 }
@@ -106,6 +116,7 @@ impl Gluetex {
         let should_update = *mode != GluetexMode::Wind || self.can_wind();
 
         if should_update {
+            tracing::info!(old = ?self.mode, new = ?mode, "mode transition");
             // all transitions are allowed
             self.mode = mode.clone();
 
@@ -121,6 +132,7 @@ impl Gluetex {
 
     /// Set operation mode (safety monitoring level)
     pub fn set_operation_mode(&mut self, mode: &super::OperationMode) {
+        tracing::info!(old = ?self.operation_mode, new = ?mode, "operation mode change");
         self.operation_mode = mode.clone();
         // Reset activity timer when changing operation mode
         self.reset_sleep_timer();

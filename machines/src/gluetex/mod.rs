@@ -483,6 +483,10 @@ impl Gluetex {
         if !self.puller_speed_controller.is_enabled() {
             // Safety: puller is off — force motor physically off.
             // Do NOT change the controller's enabled flag (user preference).
+            tracing::debug!(
+                controller_enabled = self.addon_motor_3_controller.is_enabled(),
+                "addon motor 3 force-disabled: puller controller off"
+            );
             self.addon_motor_3.set_enabled(false);
             let _ = self.addon_motor_3.set_speed(0.0);
             self.addon_motor_3_last_sync = t;
@@ -507,6 +511,10 @@ impl Gluetex {
         if !self.puller_speed_controller.is_enabled() {
             // Safety: puller is off — force motor physically off.
             // Do NOT change the controller's enabled flag (user preference).
+            tracing::debug!(
+                controller_enabled = self.addon_motor_4_controller.is_enabled(),
+                "addon motor 4 force-disabled: puller controller off"
+            );
             self.addon_motor_4.set_enabled(false);
             let _ = self.addon_motor_4.set_speed(0.0);
             return;
@@ -536,6 +544,10 @@ impl Gluetex {
         if !self.puller_speed_controller.is_enabled() {
             // Safety: puller is off — force motor physically off.
             // Do NOT change the controller's enabled flag (user preference).
+            tracing::debug!(
+                controller_enabled = self.addon_motor_5_controller.is_enabled(),
+                "addon motor 5 force-disabled: puller controller off"
+            );
             self.addon_motor_5.set_enabled(false);
             let _ = self.addon_motor_5.set_speed(0.0);
             return;
@@ -696,6 +708,15 @@ impl Gluetex {
 
         // If any arm triggered, execute emergency stop without heaters
         if any_trigger && state_changed {
+            tracing::warn!(
+                winder_ta_deg = self.tension_arm.get_angle().get::<degree>(),
+                tape_feeder_ta_deg = self.tape_feeder_tension_arm.get_angle().get::<degree>(),
+                inlet_feeder_ta_deg = self.inlet_feeder_tension_arm.get_angle().get::<degree>(),
+                winder_monitor_enabled = self.winder_tension_arm_monitor.config.enabled,
+                tape_monitor_enabled = self.tape_feeder_tension_arm_monitor.config.enabled,
+                inlet_monitor_enabled = self.inlet_feeder_tension_arm_monitor.config.enabled,
+                "tension arm monitor triggered — emergency stop"
+            );
             self.emergency_stop_no_heaters();
         }
 
@@ -707,6 +728,12 @@ impl Gluetex {
 
     /// Emergency stop: stops all motors, heating, and sets machine to hold
     fn emergency_stop(&mut self) {
+        tracing::warn!(
+            mode = ?self.mode,
+            operation_mode = ?self.operation_mode,
+            puller_speed_m_per_min = self.puller_speed_controller.last_speed.get::<meter_per_second>() * 60.0,
+            "emergency stop — all motors and heaters disabled"
+        );
         // Safety transitions are backend-owned; force setup monitoring context on stop.
         self.operation_mode = Self::safety_stop_operation_mode();
 
@@ -740,6 +767,12 @@ impl Gluetex {
     /// Emergency stop without heaters: stops all motors but keeps heaters enabled
     /// Used when tension arm or voltage monitors are triggered
     fn emergency_stop_no_heaters(&mut self) {
+        tracing::warn!(
+            mode = ?self.mode,
+            operation_mode = ?self.operation_mode,
+            puller_speed_m_per_min = self.puller_speed_controller.last_speed.get::<meter_per_second>() * 60.0,
+            "emergency stop (no heaters) — all motors disabled, heaters kept"
+        );
         // Safety transitions are backend-owned; force setup monitoring context on stop.
         self.operation_mode = Self::safety_stop_operation_mode();
 
@@ -806,6 +839,11 @@ impl Gluetex {
 
         // If any voltage monitor triggered, execute emergency stop without heaters
         if any_trigger && state_changed {
+            tracing::warn!(
+                optris_1_v = optris_1_voltage,
+                optris_2_v = optris_2_voltage,
+                "voltage monitor triggered — emergency stop"
+            );
             self.emergency_stop_no_heaters();
         }
 
