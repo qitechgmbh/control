@@ -6,7 +6,7 @@ use super::Wago8chDigitalIOTestMachine;
 use std::time::{Duration, Instant};
 
 impl Machine for Wago8chDigitalIOTestMachine {
-    fn act(&mut self, machine_data: std::option::Option<&mut MachineDataRegistry>) {
+    fn act(&mut self, _machine_data: std::option::Option<&mut MachineDataRegistry>) {
         let now = Instant::now();
 
         if let Ok(msg) = self.api_receiver.try_recv() {
@@ -19,7 +19,7 @@ impl Machine for Wago8chDigitalIOTestMachine {
         }
     }
 
-    fn react(&mut self, registry: &qitech_lib::machines::MachineDataRegistry) {}
+    fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {}
 
     fn get_identification(&self) -> qitech_lib::machines::MachineIdentificationUnique {
         self.machine_identification_unique.clone()
