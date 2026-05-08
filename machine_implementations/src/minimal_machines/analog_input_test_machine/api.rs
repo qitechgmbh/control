@@ -80,7 +80,6 @@ impl MachineApi for AnalogInputTestMachine {
             }
             MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
             MachineMessage::HttpApiJsonRequest(value) => {
-                use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
             MachineMessage::RequestValues(sender) => {
