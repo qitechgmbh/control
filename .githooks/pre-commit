@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+
+# Pre-commit hook: format checks for Rust, Electron (TS/React), Nix.
+# Fails commit if any staged file is badly formatted.
+# Bypass with `git commit --no-verify` if absolutely necessary.
+
+set -euo pipefail
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+# Staged files (Added, Copied, Modified). Renamed handled by ACMR.
+mapfile -t staged < <(git diff --cached --name-only --diff-filter=ACMR)
+
+if [ ${#staged[@]} -eq 0 ]; then
+    exit 0
+fi
+
+color_red=$'\033[0;31m'
+color_green=$'\033[0;32m'
+color_yellow=$'\033[0;33m'
+color_reset=$'\033[0m'
+
+info()  { printf "%s[pre-commit]%s %s\n" "$color_yellow" "$color_reset" "$*"; }
+ok()    { printf "%s[pre-commit]%s %s\n" "$color_green"  "$color_reset" "$*"; }
+fail()  { printf "%s[pre-commit]%s %s\n" "$color_red"    "$color_reset" "$*" >&2; }
+
+has_ext() {
+    local pattern=$1
+    shift
+    local prefix=${1:-}
+    for f in "${staged[@]}"; do
+        if [ -n "$prefix" ]; then
+            [[ "$f" == "$prefix"* ]] || continue
+        fi
+        [[ "$f" =~ $pattern ]] && return 0
+    done
+    return 1
+}
+
+errors=0
+
+# --- Rust ---------------------------------------------------------------
+if has_ext '\.rs$'; then
+    info "Rust files staged → cargo fmt --check"
+    if ! cargo fmt --check --quiet; then
+        fail "Rust formatting issues. Run: cargo fmt"
+        errors=$((errors + 1))
+    else
+        ok "cargo fmt clean"
+    fi
+fi
+
+# --- Electron (TS/TSX/JS/JSX/CSS/JSON/MD inside electron/) --------------
+if has_ext '\.(ts|tsx|js|jsx|mjs|cjs|css|json|md|html)$' 'electron/'; then
+    info "Electron files staged → prettier + eslint"
+    pushd electron >/dev/null
+
+    if ! npm run --silent format; then
+        fail "Prettier formatting issues. Run: cd electron && npm run format:write"
+        errors=$((errors + 1))
+    else
+        ok "prettier clean"
+    fi
+
+    if ! npm run --silent lint; then
+        fail "ESLint issues. Run: cd electron && npm run lint:write"
+        errors=$((errors + 1))
+    else
+        ok "eslint clean"
+    fi
+
+    popd >/dev/null
+fi
+
+# --- Nix ----------------------------------------------------------------
+if has_ext '\.nix$'; then
+    info "Nix files staged → nix fmt --fail-on-change"
+    if ! nix fmt -- --fail-on-change >/dev/null; then
+        fail "Nix formatting issues. Run: nix fmt"
+        errors=$((errors + 1))
+    else
+        ok "nix fmt clean"
+    fi
+fi
+
+if [ "$errors" -gt 0 ]; then
+    fail "Commit blocked: $errors check(s) failed."
+    exit 1
+fi
+
+ok "All format checks passed."
+exit 0
