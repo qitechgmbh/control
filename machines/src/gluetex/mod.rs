@@ -480,10 +480,13 @@ impl Gluetex {
             _ => false, // Current-based inputs are not expected here
         };
 
-        if self.puller_speed_controller.is_enabled() {
-            self.addon_motor_3_controller.set_enabled(true);
-        } else {
-            self.addon_motor_3_controller.set_enabled(false);
+        if !self.puller_speed_controller.is_enabled() {
+            // Safety: puller is off — force motor physically off.
+            // Do NOT change the controller's enabled flag (user preference).
+            self.addon_motor_3.set_enabled(false);
+            let _ = self.addon_motor_3.set_speed(0.0);
+            self.addon_motor_3_last_sync = t;
+            return;
         }
 
         self.addon_motor_3_controller.sync_motor_speed(
@@ -501,10 +504,12 @@ impl Gluetex {
     pub fn sync_addon_motor_4_speed(&mut self, t: Instant) {
         let puller_angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
 
-        if self.puller_speed_controller.is_enabled() {
-            self.addon_motor_4_controller.set_enabled(true);
-        } else {
-            self.addon_motor_4_controller.set_enabled(false);
+        if !self.puller_speed_controller.is_enabled() {
+            // Safety: puller is off — force motor physically off.
+            // Do NOT change the controller's enabled flag (user preference).
+            self.addon_motor_4.set_enabled(false);
+            let _ = self.addon_motor_4.set_speed(0.0);
+            return;
         }
 
         self.addon_motor_4_controller.sync_motor_speed(
@@ -528,10 +533,12 @@ impl Gluetex {
             .puller_speed_controller
             .speed_to_angular_velocity(adjusted_speed);
 
-        if self.puller_speed_controller.is_enabled() {
-            self.addon_motor_5_controller.set_enabled(true);
-        } else {
-            self.addon_motor_5_controller.set_enabled(false);
+        if !self.puller_speed_controller.is_enabled() {
+            // Safety: puller is off — force motor physically off.
+            // Do NOT change the controller's enabled flag (user preference).
+            self.addon_motor_5.set_enabled(false);
+            let _ = self.addon_motor_5.set_speed(0.0);
+            return;
         }
 
         self.addon_motor_5_controller.sync_motor_speed(

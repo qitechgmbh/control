@@ -301,10 +301,11 @@ impl AddonMotorController {
         }
 
         if !self.enabled {
-            // If disabled, ensure motor is not enabled
+            // If disabled, ensure motor is not enabled and speed is cleared
             if motor.is_enabled() {
                 motor.set_enabled(false);
             }
+            let _ = motor.set_speed(0.0);
             return;
         }
 
