@@ -73,6 +73,7 @@ pub struct SharedAppState {
         RwLock<HashMap<QiTechMachineIdentificationUnique, Sender<MachineMessage>>>,
     pub ethercat_meta_datas: RwLock<Vec<EtherCatDeviceMetaData>>,
     pub socketio_setup: SocketioSetup,
+    pub ethercat_thread_channel: Option<EtherCATThreadChannel>,
 }
 
 impl SharedAppState {
@@ -216,6 +217,7 @@ impl SharedAppState {
                 socket_queue_rx: RwLock::new(socket_queue_rx),
             },
             ethercat_meta_datas: RwLock::new(vec![]),
+            ethercat_thread_channel: None,
         }
     }
 }
@@ -237,7 +239,7 @@ impl MainState {
         MainState {
             machines,
             machine_data_reg,
-            subdevices: vec![],            
+            subdevices: vec![],
             hardware: HashMap::new(),
             machine_errors: HashMap::new(),
         }
@@ -261,7 +263,7 @@ impl MainState {
             identification: ident,
             ethercat_interface: None,
         };
-        hw.hw.push(Hardware::Modbus(id_modbus));        
+        hw.hw.push(Hardware::Modbus(id_modbus));
         self.hardware.insert(ident, hw);
         Ok(())
     }
