@@ -1,13 +1,28 @@
 use std::time::{Duration, Instant};
 
+use super::{
+    api::{PidSettings, PressureAutoTuneConfig},
+    mitsubishi_cs80::{MitsubishiCS80, MotorStatus},
+};
+use crate::extruder1::mitsubishi_cs80::MitsubishiCS80Status;
 use control_core::{
-    controllers::{clamping_timeagnostic_pid::ClampingTimeagnosticPidController, pid_autotuner::{AutoTuneConfig, PidAutoTuner}},
+    controllers::{
+        clamping_timeagnostic_pid::ClampingTimeagnosticPidController,
+        pid_autotuner::{AutoTuneConfig, PidAutoTuner},
+    },
     helpers::interpolation::normalize,
     transmission::{Transmission, fixed::FixedTransmission},
 };
-use qitech_lib::{ethercat_hal::{self, io::{analog_input::AnalogInputDevice, serial_interface::SerialInterfaceDevice}}, units::{AngularVelocity, Frequency, Pressure, angular_velocity::revolution_per_minute, electric_current::milliampere, frequency::hertz, pressure::bar}};
-use crate::extruder1::mitsubishi_cs80::MitsubishiCS80Status;
-use super::{api::{PidSettings, PressureAutoTuneConfig}, mitsubishi_cs80::{MitsubishiCS80, MotorStatus}};
+use qitech_lib::{
+    ethercat_hal::{
+        self,
+        io::{analog_input::AnalogInputDevice, serial_interface::SerialInterfaceDevice},
+    },
+    units::{
+        AngularVelocity, Frequency, Pressure, angular_velocity::revolution_per_minute,
+        electric_current::milliampere, frequency::hertz, pressure::bar,
+    },
+};
 const AUTOTUNE_MAX_DURATION: Duration = Duration::from_secs(30);
 
 #[derive(Debug)]
@@ -31,7 +46,7 @@ pub struct ScrewSpeedController {
     nozzle_pressure_limit_enabled: bool,
     autotune_high_frequency: Frequency,
     autotune_low_frequency: Frequency,
-    pub wiring_error : bool,
+    pub wiring_error: bool,
 }
 
 impl ScrewSpeedController {
@@ -181,47 +196,42 @@ impl ScrewSpeedController {
             frequency
         }
     }
-/*
-    pub fn get_wiring_error(&self) -> bool {
-        self.pressure_sensor.get_wiring_error()
-    }
-*//*
-    pub fn get_sensor_current(&self) -> Result<ElectricCurrent, anyhow::Error> {
+    /*
+        pub fn get_wiring_error(&self) -> bool {
+            self.pressure_sensor.get_wiring_error()
+        }
+    *//*
+        pub fn get_sensor_current(&self) -> Result<ElectricCurrent, anyhow::Error> {
 
-        let phys: ethercat_hal::io::analog_input::physical::AnalogInputValue =
-            self.pressure_sensor.get_physical();
+            let phys: ethercat_hal::io::analog_input::physical::AnalogInputValue =
+                self.pressure_sensor.get_physical();
 
-        match phys {
-            ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(_) => {
-                Err(anyhow::anyhow!("Potential is not expected"))
-            }
-            ethercat_hal::io::analog_input::physical::AnalogInputValue::Current(quantity) => {
-                Ok(quantity)
+            match phys {
+                ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(_) => {
+                    Err(anyhow::anyhow!("Potential is not expected"))
+                }
+                ethercat_hal::io::analog_input::physical::AnalogInputValue::Current(quantity) => {
+                    Ok(quantity)
+                }
             }
         }
-    }
-*/
+    */
     pub const fn reset_pid(&mut self) {
         self.pid.reset()
     }
 
-    pub fn get_pressure(&self, pressure_sensor : &dyn AnalogInputDevice) -> Pressure {
+    pub fn get_pressure(&self, pressure_sensor: &dyn AnalogInputDevice) -> Pressure {
         let phys = pressure_sensor.get_input(0);
         let current_result = match phys {
-            Ok(phys) => {
-                match phys.get_physical(&pressure_sensor.analog_input_range()) {
-                    ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(_) => {
-                        Err(anyhow::anyhow!("Potential is not expected"))
-                    }
-                    ethercat_hal::io::analog_input::physical::AnalogInputValue::Current(quantity) => {
-                        Ok(quantity)
-                    }
+            Ok(phys) => match phys.get_physical(&pressure_sensor.analog_input_range()) {
+                ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(_) => {
+                    Err(anyhow::anyhow!("Potential is not expected"))
                 }
-
+                ethercat_hal::io::analog_input::physical::AnalogInputValue::Current(quantity) => {
+                    Ok(quantity)
+                }
             },
-            Err(e) => {
-                Err(anyhow::anyhow!("get_pressure failed: {}",e))
-            }
+            Err(e) => Err(anyhow::anyhow!("get_pressure failed: {}", e)),
         };
 
         let current = match current_result {
@@ -237,7 +247,13 @@ impl ScrewSpeedController {
         Pressure::new::<bar>(actual_pressure)
     }
 
-    pub fn update(&mut self, now: Instant, is_extruding: bool,serial_interface : &mut dyn SerialInterfaceDevice,pressure_sensor : &dyn AnalogInputDevice) {
+    pub fn update(
+        &mut self,
+        now: Instant,
+        is_extruding: bool,
+        serial_interface: &mut dyn SerialInterfaceDevice,
+        pressure_sensor: &dyn AnalogInputDevice,
+    ) {
         // TODO: move this logic elsewhere or make non async
         self.inverter.act(now, serial_interface);
         let measured_pressure = self.get_pressure(pressure_sensor);
@@ -289,8 +305,7 @@ impl ScrewSpeedController {
         self.last_update = Instant::now();
     }
 
-
-      pub fn start_pressure_autotune(&mut self, now: Instant, config: PressureAutoTuneConfig) {
+    pub fn start_pressure_autotune(&mut self, now: Instant, config: PressureAutoTuneConfig) {
         // Snapshot the current inverter frequency as the relay centre point
         let base_hz = self.inverter.motor_status.frequency.get::<hertz>();
         let step_hz = config.frequency_step_hz;
@@ -370,5 +385,4 @@ impl ScrewSpeedController {
                 kd: result.kd,
             })
     }
-
 }

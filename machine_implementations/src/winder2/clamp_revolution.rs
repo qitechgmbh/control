@@ -66,7 +66,7 @@ pub fn clamp_revolution(value: f64, min: f64, max: f64) -> (f64, Clamping) {
     (min, Clamping::Min)
 }
 
-/* 
+/*
     Calculates the clamping ranges for min and max values in a circular context.
     This is used internally by `clamp_revolution` to determine whether out-of-range
     values should be clamped to the min or max value.

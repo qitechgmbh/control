@@ -10,8 +10,8 @@ use control_core::socketio::{
 use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tokio::sync::mpsc::Sender;
 use std::sync::Arc;
+use tokio::sync::mpsc::Sender;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -137,7 +137,7 @@ impl MachineApi for LaserMachine {
     }
 
     fn act_machine_message(&mut self, msg: MachineMessage) {
-         match msg {
+        match msg {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
                 self.emit_state();
@@ -160,7 +160,7 @@ impl MachineApi for LaserMachine {
                         live_values: serde_json::to_value(self.get_live_values())
                             .expect("Failed to serialize live values"),
                     })
-                    .expect("Failed to send values");            
+                    .expect("Failed to send values");
             }
         }
     }

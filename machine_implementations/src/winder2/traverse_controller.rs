@@ -1,4 +1,4 @@
-use std::time::Instant;
+use super::{TRAVERSE_END_STOP_PORT, TRAVERSE_PORT};
 use control_core::converters::linear_step_converter::LinearStepConverter;
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
 use qitech_lib::units::ConstZero;
@@ -6,7 +6,7 @@ use qitech_lib::units::angular_velocity::revolution_per_second;
 use qitech_lib::units::f64::{AngularVelocity, Length, Velocity};
 use qitech_lib::units::length::millimeter;
 use qitech_lib::units::velocity::millimeter_per_second;
-use super::{TRAVERSE_END_STOP_PORT, TRAVERSE_PORT};
+use std::time::Instant;
 
 #[derive(Debug)]
 pub struct TraverseController {
@@ -284,7 +284,7 @@ impl TraverseController {
         self.sync_position(traverse);
 
         // save state before
-        let old_state = self.state.clone();        
+        let old_state = self.state.clone();
 
         // Automatic Transitions
         match &self.state {
@@ -307,7 +307,10 @@ impl TraverseController {
             State::Homing(homing_state) => match homing_state {
                 HomingState::Initialize => {
                     // If endstop is triggered, escape the endstop
-                    if traverse.get_digital_input(TRAVERSE_END_STOP_PORT).unwrap_or(false) {
+                    if traverse
+                        .get_digital_input(TRAVERSE_END_STOP_PORT)
+                        .unwrap_or(false)
+                    {
                         self.state = State::Homing(HomingState::EscapeEndstop);
                     } else {
                         // If endstop is not triggered, move to the endstop
@@ -316,29 +319,41 @@ impl TraverseController {
                 }
                 HomingState::EscapeEndstop => {
                     // Move out until endstop is not triggered anymore
-                    if !traverse.get_digital_input(TRAVERSE_END_STOP_PORT).unwrap_or(false) {
+                    if !traverse
+                        .get_digital_input(TRAVERSE_END_STOP_PORT)
+                        .unwrap_or(false)
+                    {
                         self.state = State::Homing(HomingState::FindEndstopFineDistancing);
                     }
                 }
                 HomingState::FindEndstopFineDistancing => {
                     // Move out until endstop is not triggered anymore
-                    if !traverse.get_digital_input(TRAVERSE_END_STOP_PORT).unwrap_or(false) {
+                    if !traverse
+                        .get_digital_input(TRAVERSE_END_STOP_PORT)
+                        .unwrap_or(false)
+                    {
                         // Find endstop fine
                         self.state = State::Homing(HomingState::FindEndtopFine);
                     }
                 }
                 HomingState::FindEndtopFine => {
                     // If endstop is reached change to idle
-                    if traverse.get_digital_input(TRAVERSE_END_STOP_PORT).unwrap_or(false) {
+                    if traverse
+                        .get_digital_input(TRAVERSE_END_STOP_PORT)
+                        .unwrap_or(false)
+                    {
                         // Set poition of traverse to 0
-                        traverse.set_position(TRAVERSE_PORT,0);
+                        traverse.set_position(TRAVERSE_PORT, 0);
                         // Put Into Idle
                         self.state = State::Homing(HomingState::Validate(Instant::now()));
                     }
                 }
                 HomingState::FindEndstopCoarse => {
                     // Move to endstop
-                    if traverse.get_digital_input(TRAVERSE_END_STOP_PORT).unwrap_or(false) {
+                    if traverse
+                        .get_digital_input(TRAVERSE_END_STOP_PORT)
+                        .unwrap_or(false)
+                    {
                         // Move awaiy from endstop
                         self.state = State::Homing(HomingState::FindEndstopFineDistancing);
                     }
@@ -488,6 +503,6 @@ impl TraverseController {
         let speed = self.get_speed(traverse, spool_speed);
         let steps_per_second = self.fullstep_converter.velocity_to_steps(speed);
         // ignore if we can't set speed
-        let _ = traverse.set_speed(TRAVERSE_PORT,steps_per_second);
+        let _ = traverse.set_speed(TRAVERSE_PORT, steps_per_second);
     }
 }

@@ -1,10 +1,10 @@
-use std::cell::RefCell;
-use std::rc::Rc;
 use qitech_lib::ethercat_hal::io::analog_input::physical::AnalogInputValue;
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
 use qitech_lib::units::angle::revolution;
 use qitech_lib::units::electric_potential::volt;
 use qitech_lib::units::f64::*;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub struct TensionArm {
     pub analog_input: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
@@ -28,10 +28,10 @@ impl TensionArm {
         Angle::new::<revolution>(volts / 5.0) % Angle::new::<revolution>(1.0)
     }
 
-    fn get_volts(&self) -> Result<f64,anyhow::Error> {
+    fn get_volts(&self) -> Result<f64, anyhow::Error> {
         // get the normalized value from the analog input
-        let analog_input = &* self.analog_input.borrow();
-        
+        let analog_input = &*self.analog_input.borrow();
+
         let range = match analog_input.analog_input_range() {
             Some(range) => range,
             None => return Err(anyhow::anyhow!("No input range supplied")),
@@ -44,7 +44,7 @@ impl TensionArm {
         }
     }
 
-    fn raw_angle(&self) -> Result<Angle,anyhow::Error> {
+    fn raw_angle(&self) -> Result<Angle, anyhow::Error> {
         // get volts
         let volts = self.get_volts()?;
 
@@ -52,16 +52,16 @@ impl TensionArm {
         Ok(self.volts_to_angle(volts))
     }
 
-    pub fn get_angle(&self) -> Result<Angle,anyhow::Error> {        
-        let raw  = self.raw_angle();        
+    pub fn get_angle(&self) -> Result<Angle, anyhow::Error> {
+        let raw = self.raw_angle();
         let raw = match raw {
             Ok(raw) => raw,
-            Err(e) => return Err(anyhow::anyhow!("get_angle {:?}",e)),
+            Err(e) => return Err(anyhow::anyhow!("get_angle {:?}", e)),
         };
 
         if raw < self.zero {
             // We've wrapped around, so add a full revolution
-            Ok(raw + Angle::new::<revolution>(1.0) - self.zero) 
+            Ok(raw + Angle::new::<revolution>(1.0) - self.zero)
         } else {
             // Normal case
             Ok(raw - self.zero)
@@ -73,11 +73,10 @@ impl TensionArm {
             Ok(angle) => {
                 self.zero = angle;
                 self.zeroed = true;
-            },
+            }
             Err(e) => {
-                tracing::error!("Failed to zero tension_arm angle {:?}",e)
-            },
+                tracing::error!("Failed to zero tension_arm angle {:?}", e)
+            }
         }
-        
     }
 }

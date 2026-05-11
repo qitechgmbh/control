@@ -205,7 +205,6 @@ pub struct DeviceHardwareIdentificationSerial {
     pub path: String,
 }
 
-use anyhow::Error;
 use crate::ANALOG_INPUT_TEST_MACHINE;
 use crate::DIGITAL_INPUT_TEST_MACHINE;
 use crate::IP20_TEST_MACHINE;
@@ -229,6 +228,7 @@ use crate::WAGO_750_531_MACHINE;
 use crate::WAGO_750_553_MACHINE;
 use crate::WAGO_AI_TEST_MACHINE;
 use crate::WAGO_DO_TEST_MACHINE;
+use anyhow::Error;
 
 #[derive(Debug)]
 pub struct MachineIdentificationAddresses {
@@ -272,17 +272,16 @@ pub fn get_identification_addresses(
     _subdevice_name: &str,
 ) -> Result<MachineIdentificationAddresses, Error> {
     Ok(match subdevice_identity {
-        _ => MachineIdentificationAddresses::default()
-        /* {
-            // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
-            Err(anyhow!(
-                "[{}::get_identification_addresses] Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
-                module_path!(),
-                subdevice_name,
-                subdevice_identity.0,
-                subdevice_identity.1,
-                subdevice_identity.2
-            ))?
-        }*/
+        _ => MachineIdentificationAddresses::default(), /* {
+                                                            // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
+                                                            Err(anyhow!(
+                                                                "[{}::get_identification_addresses] Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
+                                                                module_path!(),
+                                                                subdevice_name,
+                                                                subdevice_identity.0,
+                                                                subdevice_identity.1,
+                                                                subdevice_identity.2
+                                                            ))?
+                                                        }*/
     })
 }

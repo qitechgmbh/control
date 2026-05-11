@@ -9,7 +9,6 @@ use control_core::{
     helpers::{interpolation::scale, moving_time_window::MovingTimeWindow},
 };
 use core::f64;
-use std::time::Instant;
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::angle::degree;
 use qitech_lib::units::angular_acceleration::radian_per_second_squared;
@@ -17,6 +16,7 @@ use qitech_lib::units::angular_velocity::{radian_per_second, revolution_per_minu
 use qitech_lib::units::f64::*;
 use qitech_lib::units::length::{centimeter, meter};
 use qitech_lib::units::velocity::meter_per_second;
+use std::time::Instant;
 
 /// Adaptive spool speed controller that automatically adjusts to maintain optimal filament tension.
 ///

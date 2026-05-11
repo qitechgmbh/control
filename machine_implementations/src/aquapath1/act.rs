@@ -1,10 +1,10 @@
-use qitech_lib::machines::{Machine, MachineDataRegistry};
 use super::{AquaPathV1, AquaPathV1Mode};
-use crate::{ MachineApi};
+use crate::MachineApi;
+use qitech_lib::machines::{Machine, MachineDataRegistry};
 use std::time::{Duration, Instant};
 
 impl Machine for AquaPathV1 {
-    fn act(&mut self, _reg : Option<&mut MachineDataRegistry> ) {
+    fn act(&mut self, _reg: Option<&mut MachineDataRegistry>) {
         let msg = self.api_receiver.try_recv();
         match msg {
             Ok(msg) => {
@@ -47,9 +47,7 @@ impl Machine for AquaPathV1 {
         }
     }
 
-    fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {
-
-    }
+    fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {}
 
     fn get_identification(&self) -> qitech_lib::machines::MachineIdentificationUnique {
         self.machine_identification_unique

@@ -14,7 +14,11 @@ impl MachineNew for DigitalInputTestMachine {
         let (tx, rx) = tokio::sync::mpsc::channel::<MachineMessage>(2);
 
         if hw.identification.machine_ident != DigitalInputTestMachine::MACHINE_IDENTIFICATION {
-            return Err(anyhow::anyhow!("DigitalInputTestMachine: Passed Machine Hardware with ident: {:?} but expected: {:?}",hw.identification.machine_ident,DigitalInputTestMachine::MACHINE_IDENTIFICATION));
+            return Err(anyhow::anyhow!(
+                "DigitalInputTestMachine: Passed Machine Hardware with ident: {:?} but expected: {:?}",
+                hw.identification.machine_ident,
+                DigitalInputTestMachine::MACHINE_IDENTIFICATION
+            ));
         }
 
         let my_test = Self {

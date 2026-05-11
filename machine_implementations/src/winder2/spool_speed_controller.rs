@@ -6,9 +6,9 @@ use crate::winder2::{
 use control_core::controllers::second_degree_motion::acceleration_position_controller::MotionControllerError;
 
 use super::tension_arm::TensionArm;
+use qitech_lib::units::f64::*;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
-use qitech_lib::units::f64::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum SpoolSpeedControllerType {

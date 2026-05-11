@@ -4,20 +4,26 @@ use anyhow::Result;
 use control_core::socketio::namespace::Namespace;
 use qitech_lib::{
     ethercat_hal::{
-        EtherCATThreadChannel, devices::{EthercatDevice, downcast_rc_refcell}, machine_ident_read::MachineDeviceInfo
+        EtherCATThreadChannel,
+        devices::{EthercatDevice, downcast_rc_refcell},
+        machine_ident_read::MachineDeviceInfo,
     },
-    machines::{Machine, MachineIdentificationUnique}, modbus::{Device, managers::{ExampleDeviceManager, example_manager::ExampleScheduler}},
+    machines::{Machine, MachineIdentificationUnique},
+    modbus::{
+        Device,
+        managers::{ExampleDeviceManager, example_manager::ExampleScheduler},
+    },
 };
 use serde::Serialize;
 use tokio::sync::mpsc::Sender;
 
+pub mod aquapath1;
+pub mod extruder1;
+pub mod laser;
 pub mod machine_identification;
 pub mod minimal_machines;
 pub mod registry;
-pub mod extruder1;
 pub mod winder2;
-pub mod laser;
-pub mod aquapath1;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
@@ -70,20 +76,20 @@ pub struct IdentifiedEthercat {
 #[derive(Clone)]
 pub struct IdentifiedModbus {
     pub hw: Rc<RefCell<dyn Device<ExampleScheduler>>>,
-    pub manager: Rc<RefCell<ExampleDeviceManager>>, 
+    pub manager: Rc<RefCell<ExampleDeviceManager>>,
 }
 
-#[derive (Clone)]
+#[derive(Clone)]
 pub enum Hardware {
-    Ethercat(IdentifiedEthercat),    
+    Ethercat(IdentifiedEthercat),
     Modbus(IdentifiedModbus),
 }
 
 #[derive(Clone)]
 pub struct MachineHardware {
     pub hw: Vec<Hardware>,
-    pub identification : MachineIdentificationUnique,
-    pub ethercat_interface : Option<EtherCATThreadChannel>
+    pub identification: MachineIdentificationUnique,
+    pub ethercat_interface: Option<EtherCATThreadChannel>,
 }
 
 impl MachineHardware {
@@ -112,12 +118,7 @@ impl MachineHardware {
         Ok(downcast_rc_refcell::<T>(identified_ethercat.hw.clone())?)
     }
 
-
-     pub fn try_get_ethercat_meta_by_role(
-        &self,
-        role: u16,
-    ) -> Result<u16, anyhow::Error>    
-    {
+    pub fn try_get_ethercat_meta_by_role(&self, role: u16) -> Result<u16, anyhow::Error> {
         for i in 0..self.hw.len() {
             let hardware = self.hw.get(i).expect("try_get_ethercat_device_by_role failed to get hardware even though i is in range of len??????");
             match hardware {
@@ -136,7 +137,6 @@ impl MachineHardware {
         ))
     }
 
-
     pub fn downcast_serial_rc_refcell<T: 'static>(
         dev: Rc<RefCell<dyn Device<ExampleScheduler>>>,
     ) -> Result<Rc<RefCell<T>>, anyhow::Error> {
@@ -152,31 +152,35 @@ impl MachineHardware {
         unsafe { Ok(Rc::from_raw(raw_concrete_ptr)) }
     }
 
-    pub fn try_get_modbus_mgr_by_index(&self,index : usize) -> Result<Rc<RefCell<ExampleDeviceManager>>> {
+    pub fn try_get_modbus_mgr_by_index(
+        &self,
+        index: usize,
+    ) -> Result<Rc<RefCell<ExampleDeviceManager>>> {
         let hw = self.hw.get(index).unwrap().clone();
         match hw {
             Hardware::Modbus(identified_modbus) => Ok(identified_modbus.manager.clone()),
-            _ => 
-            Err(anyhow::anyhow!(
-            "index {} not an modbus device in hardware",
-            index
+            _ => Err(anyhow::anyhow!(
+                "index {} not an modbus device in hardware",
+                index
             )),
-        }    
+        }
     }
 
-    pub fn try_get_serial_device_by_index<T :'static >(&self, index : usize) -> Result<Rc<RefCell<T>>,anyhow::Error >   {
+    pub fn try_get_serial_device_by_index<T: 'static>(
+        &self,
+        index: usize,
+    ) -> Result<Rc<RefCell<T>>, anyhow::Error> {
         let hw = self.hw.get(index).unwrap().clone();
         match hw {
-            Hardware::Modbus(identified_modbus) => Self::downcast_serial_rc_refcell::<T>(identified_modbus.hw),
-            _ => 
-            Err(anyhow::anyhow!(
-            "index {} not an modbus device in hardware",
-            index
+            Hardware::Modbus(identified_modbus) => {
+                Self::downcast_serial_rc_refcell::<T>(identified_modbus.hw)
+            }
+            _ => Err(anyhow::anyhow!(
+                "index {} not an modbus device in hardware",
+                index
             )),
-        }    
+        }
     }
-
-
 
     pub fn try_get_ethercat_device_and_addr_by_role<T>(
         &self,
@@ -203,7 +207,6 @@ impl MachineHardware {
             role
         ))
     }
-
 
     pub fn try_get_ethercat_device_by_role<T>(
         &self,
