@@ -11,6 +11,9 @@ pub mod spool_speed_controller;
 pub mod tension_arm;
 pub mod traverse_controller;
 
+use crate::MachineMessage;
+use crate::QiTechMachine;
+use crate::{MACHINE_WINDER_V1, VENDOR_QITECH};
 use api::SpoolAutomaticActionMode;
 use api::Winder2Namespace;
 use control_core::converters::angular_step_converter::AngularStepConverter;
@@ -18,25 +21,28 @@ use new::{PullerSpeedController, SpoolSpeedController, TensionArm, TraverseContr
 #[cfg(not(feature = "mock-machine"))]
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
 use qitech_lib::units::ConstZero;
-use qitech_lib::{ethercat_hal::io::{digital_output::DigitalOutputDevice}, machines::{MachineIdentificationUnique}};
-use qitech_lib::{machines::{MachineIdentification}, units::{Length, length::{meter, millimeter}, velocity::meter_per_second}};
+use qitech_lib::{
+    ethercat_hal::io::digital_output::DigitalOutputDevice, machines::MachineIdentificationUnique,
+};
+use qitech_lib::{
+    machines::MachineIdentification,
+    units::{
+        Length,
+        length::{meter, millimeter},
+        velocity::meter_per_second,
+    },
+};
+use std::time::Instant;
+use std::{cell::RefCell, rc::Rc};
 #[cfg(not(feature = "mock-machine"))]
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
-use std::{cell::RefCell, rc::Rc};
-use std::time::Instant;
-use crate::MachineMessage;
-use crate::QiTechMachine;
-use crate::{
-    MACHINE_WINDER_V1, VENDOR_QITECH,
-};
 
-pub const TRAVERSE_PORT : usize = 0;
-pub const LASER_PORT : usize = 0;
-pub const PULLER_PORT : usize = 0;
-pub const SPOOL_PORT : usize = 0;
-pub const TRAVERSE_END_STOP_PORT : usize =0;
-
+pub const TRAVERSE_PORT: usize = 0;
+pub const LASER_PORT: usize = 0;
+pub const PULLER_PORT: usize = 0;
+pub const SPOOL_PORT: usize = 0;
+pub const TRAVERSE_END_STOP_PORT: usize = 0;
 
 #[derive(Debug)]
 pub struct SpoolAutomaticAction {
@@ -67,9 +73,9 @@ pub struct Winder2 {
     pub puller: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
     pub spool: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
     pub tension_arm: TensionArm,
-    
-    pub laser: Rc<RefCell< dyn DigitalOutputDevice>>,
-    pub laser_enabled : bool,
+
+    pub laser: Rc<RefCell<dyn DigitalOutputDevice>>,
+    pub laser_enabled: bool,
     pub traverse_controller: TraverseController,
 
     // socketio
@@ -112,12 +118,8 @@ impl Winder2 {
 
     pub fn sync_traverse_speed(&mut self) {
         let traverse = &mut *self.traverse.borrow_mut();
-        self.traverse_controller.update_speed(
-            traverse,
-            self.spool_speed_controller.get_speed(),
-        );
-
-
+        self.traverse_controller
+            .update_speed(traverse, self.spool_speed_controller.get_speed());
     }
 
     /// Can wind capability check
@@ -171,17 +173,17 @@ impl Winder2 {
     fn set_spool_mode(&mut self, mode: &Winder2Mode) {
         // Convert to `Winder2Mode` to `SpoolMode`
         let mode: SpoolMode = mode.clone().into();
-        let spool = &mut* self.spool.borrow_mut();
+        let spool = &mut *self.spool.borrow_mut();
         // Transition matrix
         match self.spool_mode {
             SpoolMode::Standby => match mode {
                 SpoolMode::Standby => {}
                 SpoolMode::Hold => {
                     // From [`SpoolMode::Standby`] to [`SpoolMode::Hold`]
-                    spool.set_enabled(SPOOL_PORT,true);
+                    spool.set_enabled(SPOOL_PORT, true);
                 }
                 SpoolMode::Wind => {
-                    spool.set_enabled(SPOOL_PORT,true);
+                    spool.set_enabled(SPOOL_PORT, true);
                     // self.spool_speed_controller.reset();
                     self.spool_speed_controller.set_enabled(true);
                 }
@@ -189,7 +191,7 @@ impl Winder2 {
             SpoolMode::Hold => match mode {
                 SpoolMode::Standby => {
                     // From [`SpoolMode::Hold`] to [`SpoolMode::Standby`]
-                    spool.set_enabled(SPOOL_PORT,false);
+                    spool.set_enabled(SPOOL_PORT, false);
                 }
                 SpoolMode::Hold => {}
                 SpoolMode::Wind => {
@@ -201,7 +203,7 @@ impl Winder2 {
             SpoolMode::Wind => match mode {
                 SpoolMode::Standby => {
                     // From [`SpoolMode::Wind`] to [`SpoolMode::Standby`]
-                    spool.set_enabled(SPOOL_PORT,false);
+                    spool.set_enabled(SPOOL_PORT, false);
                     self.spool_speed_controller.set_enabled(false);
                 }
                 SpoolMode::Hold => {
@@ -224,25 +226,25 @@ impl Winder2 {
         // Convert to `Winder2Mode` to `PullerMode`
         let mode: PullerMode = mode.clone().into();
         let puller = &mut *self.puller.borrow_mut();
-        
+
         // Transition matrix
         match self.puller_mode {
             PullerMode::Standby => match mode {
                 PullerMode::Standby => {}
                 PullerMode::Hold => {
                     // From [`PullerMode::Standby`] to [`PullerMode::Hold`]
-                    puller.set_enabled(PULLER_PORT,true);
+                    puller.set_enabled(PULLER_PORT, true);
                 }
                 PullerMode::Pull => {
                     // From [`PullerMode::Standby`] to [`PullerMode::Pull`]
-                    puller.set_enabled(PULLER_PORT,true);
+                    puller.set_enabled(PULLER_PORT, true);
                     self.puller_speed_controller.set_enabled(true);
                 }
             },
             PullerMode::Hold => match mode {
                 PullerMode::Standby => {
                     // From [`PullerMode::Hold`] to [`PullerMode::Standby`]
-                    puller.set_enabled(PULLER_PORT,false);
+                    puller.set_enabled(PULLER_PORT, false);
                 }
                 PullerMode::Hold => {}
                 PullerMode::Pull => {
@@ -253,7 +255,7 @@ impl Winder2 {
             PullerMode::Pull => match mode {
                 PullerMode::Standby => {
                     // From [`PullerMode::Pull`] to [`PullerMode::Standby`]
-                    puller.set_enabled(PULLER_PORT,false);
+                    puller.set_enabled(PULLER_PORT, false);
                     self.puller_speed_controller.set_enabled(false);
                 }
                 PullerMode::Hold => {
@@ -296,7 +298,7 @@ impl Winder2 {
             .converter
             .angular_velocity_to_steps(angular_velocity);
         let puller = &mut *self.puller.borrow_mut();
-        let _ = puller.set_speed(PULLER_PORT,steps_per_second);
+        let _ = puller.set_speed(PULLER_PORT, steps_per_second);
     }
 }
 

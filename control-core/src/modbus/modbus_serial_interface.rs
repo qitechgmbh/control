@@ -1,7 +1,8 @@
-use qitech_lib::ethercat_hal::io::serial_interface::{SerialEncoding, SerialInterfaceDevice};
 use crate::modbus::{ModbusRequest, ModbusResponse};
+use qitech_lib::ethercat_hal::io::serial_interface::{SerialEncoding, SerialInterfaceDevice};
 use std::{
-    collections::HashMap,time::{Duration, Instant}
+    collections::HashMap,
+    time::{Duration, Instant},
 };
 
 #[derive(Debug, Clone)]
@@ -87,13 +88,18 @@ impl ModbusSerialInterface {
     }
 
     /// This is used internally to read the receive buffer of the el6021
-    fn read_modbus_response(&mut self, serial_interface : &mut dyn SerialInterfaceDevice) -> Result<ModbusResponse, anyhow::Error> {
+    fn read_modbus_response(
+        &mut self,
+        serial_interface: &mut dyn SerialInterfaceDevice,
+    ) -> Result<ModbusResponse, anyhow::Error> {
         let raw_response = serial_interface.serial_interface_read_message(0);
         let raw_response = match raw_response {
             Some(resp) => resp,
             None => {
-                return Err(anyhow::anyhow!("read_modbus_response failed, no message was detected"))
-            },
+                return Err(anyhow::anyhow!(
+                    "read_modbus_response failed, no message was detected"
+                ));
+            }
         };
         let response = ModbusResponse::try_from(raw_response)?;
         self.last_message_size = response.data.len() + 4;
@@ -104,7 +110,7 @@ impl ModbusSerialInterface {
     /// This is used internally to fill the write buffer of the el6021 with the modbus request
     /// Decides what requests to send first by finding the one with the highest priority
     /// For example Highest Priority requests: ResetInverter StopMotor
-    fn send_modbus_request(&mut self, serial_interface : &mut dyn SerialInterfaceDevice) {
+    fn send_modbus_request(&mut self, serial_interface: &mut dyn SerialInterfaceDevice) {
         if self.request_map.is_empty() {
             return;
         }
@@ -128,7 +134,7 @@ impl ModbusSerialInterface {
         let request = &self.request_map[&highest_id];
         let modbus_request: Vec<u8> = request.clone().into();
 
-        if let Err(_) = serial_interface.serial_interface_write_message(0,modbus_request.clone()) {
+        if let Err(_) = serial_interface.serial_interface_write_message(0, modbus_request.clone()) {
             tracing::error!("ERROR: serial_interface.write_message has failed");
         } else {
             self.last_message_delay = delay;
@@ -140,7 +146,10 @@ impl ModbusSerialInterface {
         self.last_message_size = modbus_request.len();
     }
 
-    pub fn initialize_communication_settings(&mut self,serial_interface : &mut dyn SerialInterfaceDevice) -> bool {
+    pub fn initialize_communication_settings(
+        &mut self,
+        serial_interface: &mut dyn SerialInterfaceDevice,
+    ) -> bool {
         let baudrate = serial_interface.get_baudrate(0);
         let encoding = serial_interface.get_serial_encoding(0);
 
@@ -154,7 +163,7 @@ impl ModbusSerialInterface {
         }
     }
 
-    pub fn initialize(&mut self, serial_interface : &mut dyn SerialInterfaceDevice) -> bool {
+    pub fn initialize(&mut self, serial_interface: &mut dyn SerialInterfaceDevice) -> bool {
         if matches!(self.state, State::Uninitialized) {
             let success = serial_interface.serial_interface_initialize(0);
             if success {
@@ -203,7 +212,7 @@ impl ModbusSerialInterface {
         self.response.as_ref()
     }
 
-    pub fn act(&mut self, now_ts: Instant,serial_interface : &mut dyn SerialInterfaceDevice) {
+    pub fn act(&mut self, now_ts: Instant, serial_interface: &mut dyn SerialInterfaceDevice) {
         let elapsed = now_ts.duration_since(self.last_ts);
 
         let timeout = self.calculate_modbus_rtu_timeout(
@@ -225,18 +234,15 @@ impl ModbusSerialInterface {
         self.last_ts = now_ts;
         self.response = None;
         match self.state {
-            State::WaitingForResponse => {
+            State::WaitingForResponse => match self.read_modbus_response(serial_interface) {
+                Ok(response) => {
+                    self.response = Some(response.into());
+                }
 
-                match self.read_modbus_response(serial_interface) {
-                    Ok(response) => {                        
-                        self.response = Some(response.into());                        
-                    }
-                
-                    Err(_)=> {
-                        self.response = None;
-                        if self.no_response_expected {
-                            self.state = State::ReadyToSend;
-                        }
+                Err(_) => {
+                    self.response = None;
+                    if self.no_response_expected {
+                        self.state = State::ReadyToSend;
                     }
                 }
             },
@@ -254,7 +260,7 @@ impl ModbusSerialInterface {
             State::WaitingForRequestAccept => {
                 // An empty vec is used to check if we are finished with writing the message
                 // This is to keep the Serialinterface more simple
-                match serial_interface.serial_interface_write_message(0,vec![]) {
+                match serial_interface.serial_interface_write_message(0, vec![]) {
                     Ok(finished) if finished => {
                         self.state = State::WaitingForResponse;
                     }

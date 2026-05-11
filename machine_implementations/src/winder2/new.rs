@@ -27,39 +27,45 @@ mod winder2_imports {
     pub use qitech_lib::ethercat_hal::devices::el7041_0052::{
         EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port,
     };
-    pub use qitech_lib::ethercat_hal::devices::{ek1100::EK1100_IDENTITY_A, el2002::EL2002_IDENTITY_A};
+    pub use qitech_lib::ethercat_hal::devices::{
+        ek1100::EK1100_IDENTITY_A, el2002::EL2002_IDENTITY_A,
+    };
     pub use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
     pub use qitech_lib::ethercat_hal::io::digital_input::DigitalInputDevice;
     pub use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 
     pub use qitech_lib::ethercat_hal::shared_config;
-    pub use qitech_lib::ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
-    pub use std::time::Instant;
+    pub use qitech_lib::ethercat_hal::shared_config::el70x1::{
+        EL70x1OperationMode, StmMotorConfiguration,
+    };
     pub use qitech_lib::units::ConstZero;
     pub use qitech_lib::units::f64::*;
     pub use qitech_lib::units::length::{centimeter, meter, millimeter};
     pub use qitech_lib::units::velocity::meter_per_minute;
+    pub use std::time::Instant;
 }
-use qitech_lib::ethercat_hal::{EtherCATThreadChannel};
-pub use winder2_imports::*;
 use crate::{MachineHardware, MachineNew};
+use qitech_lib::ethercat_hal::EtherCATThreadChannel;
+pub use winder2_imports::*;
 
 impl MachineNew for Winder2 {
-    fn new(hw: MachineHardware) -> Result<Self, Error> {        
-        let _ek1100     = hw.try_get_ethercat_device_and_addr_by_role::<EK1100>(0)?;
-        let el2002      = hw.try_get_ethercat_device_and_addr_by_role::<EL2002>(1)?;
-        let el7041      = hw.try_get_ethercat_device_and_addr_by_role::<EL7041_0052>(2)?;
-        let el7031      = hw.try_get_ethercat_device_and_addr_by_role::<EL7031>(3)?;
+    fn new(hw: MachineHardware) -> Result<Self, Error> {
+        let _ek1100 = hw.try_get_ethercat_device_and_addr_by_role::<EK1100>(0)?;
+        let el2002 = hw.try_get_ethercat_device_and_addr_by_role::<EL2002>(1)?;
+        let el7041 = hw.try_get_ethercat_device_and_addr_by_role::<EL7041_0052>(2)?;
+        let el7031 = hw.try_get_ethercat_device_and_addr_by_role::<EL7031>(3)?;
         let el7031_0030 = hw.try_get_ethercat_device_and_addr_by_role::<EL7031_0030>(4)?;
 
         let mode = Winder2Mode::Standby;
-        let (sender,receiver) = tokio::sync::mpsc::channel(2);
-        
-        let interface : EtherCATThreadChannel = match &hw.ethercat_interface {
+        let (sender, receiver) = tokio::sync::mpsc::channel(2);
+
+        let interface: EtherCATThreadChannel = match &hw.ethercat_interface {
             Some(ecat_interface) => ecat_interface.clone(),
             None => {
-                return Err(anyhow::anyhow!("Winder2: No EtherCat Interface was supplied!"));
-            },
+                return Err(anyhow::anyhow!(
+                    "Winder2: No EtherCat Interface was supplied!"
+                ));
+            }
         };
 
         let el7031_0030_config = EL7031_0030Configuration {
@@ -73,29 +79,29 @@ impl MachineNew for Winder2 {
                 ..Default::default()
             },
             pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
-                ..Default::default()
-        };        
+            ..Default::default()
+        };
         let mut b = el7031_0030.0.borrow_mut();
-        (&mut *b).write_config(interface.clone(), el7031_0030.1,&el7031_0030_config )?;
+        (&mut *b).write_config(interface.clone(), el7031_0030.1, &el7031_0030_config)?;
         drop(b);
         interface.enable_dc_sync0(el7031_0030.1)?;
 
         let el7031_config = EL7031Configuration {
-                    stm_features: shared_config::el70x1::StmFeatures {
-                        operation_mode: EL70x1OperationMode::DirectVelocity,
-                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
-                        ..Default::default()
-                    },
-                    stm_motor: StmMotorConfiguration {
-                        max_current: 1500,
-                        ..Default::default()
-                    },
-                    pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
-                    ..Default::default()
-                };
+            stm_features: shared_config::el70x1::StmFeatures {
+                operation_mode: EL70x1OperationMode::DirectVelocity,
+                speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
+                ..Default::default()
+            },
+            stm_motor: StmMotorConfiguration {
+                max_current: 1500,
+                ..Default::default()
+            },
+            pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
+            ..Default::default()
+        };
 
         let mut b = el7031.0.borrow_mut();
-        (&mut *b).write_config(interface.clone(), el7031.1,&el7031_config )?;
+        (&mut *b).write_config(interface.clone(), el7031.1, &el7031_config)?;
         drop(b);
         interface.enable_dc_sync0(el7031.1)?;
 
@@ -107,26 +113,24 @@ impl MachineNew for Winder2 {
             stm_motor: StmMotorConfiguration {
                 max_current: 2800,
                 ..Default::default()
-                },
-                ..Default::default() 
-            };
+            },
+            ..Default::default()
+        };
 
         let mut b = el7041.0.borrow_mut();
-        (&mut *b).write_config(interface.clone(), el7041.1, &el7041_config)?;        
+        (&mut *b).write_config(interface.clone(), el7041.1, &el7041_config)?;
         drop(b);
         interface.enable_dc_sync0(el7041.1)?;
-        
+
         let mut new = Self {
             api_receiver: receiver,
             api_sender: sender,
-            traverse: el7031.0,            
+            traverse: el7031.0,
             puller: el7031_0030.0.clone(),
             spool: el7041.0,
             laser: el2002.0,
             tension_arm: TensionArm::new(el7031_0030.0.clone()),
-            namespace: Winder2Namespace {
-                namespace: None,
-            },
+            namespace: Winder2Namespace { namespace: None },
             mode: mode.clone(),
             spool_step_converter: AngularStepConverter::new(200),
             spool_speed_controller: SpoolSpeedController::new(),
@@ -158,8 +162,7 @@ impl MachineNew for Winder2 {
         };
 
         // initalize events
-            new.emit_state();
-            Ok(new)
-        
+        new.emit_state();
+        Ok(new)
     }
 }

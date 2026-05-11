@@ -4,8 +4,8 @@ use qitech_lib::ethercat_hal::io::analog_output::{AnalogOutputDevice, AnalogOutp
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use qitech_lib::ethercat_hal::io::encoder_input::EncoderInputDevice;
 use qitech_lib::ethercat_hal::io::temperature_input::TemperatureInputDevice;
+use qitech_lib::units;
 use qitech_lib::units::VolumeRate;
-use qitech_lib::{units};
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 use units::AngularVelocity;
 use units::angular_velocity::revolution_per_minute;
 use units::f64::ThermodynamicTemperature;
-use units::thermodynamic_temperature::{degree_celsius};
+use units::thermodynamic_temperature::degree_celsius;
 use units::volume_rate::liter_per_minute;
 
 #[derive(Debug, Clone, Copy)]
@@ -45,7 +45,6 @@ pub struct CoolingRampConfig {
     pub full_band: ThermodynamicTemperature,
     pub min_rpm: f64,
 }
-
 
 #[derive(Debug, Clone, Copy)]
 pub struct ControllerConfig {
@@ -93,20 +92,20 @@ impl Default for ControllerConfig {
 
 pub struct Controller {
     pub pid: PidController,
-    
+
     window_start: Instant,
     last_update: Instant,
     temperature_pid_output: f64,
     pwm_period: Duration,
     last_heating_switch: Instant,
     last_cooling_switch: Instant,
-    
+
     pub temperature: Temperature,
     pub target_temperature: ThermodynamicTemperature,
     pub current_temperature: ThermodynamicTemperature,
     pub temp_reservoir: ThermodynamicTemperature,
     pub min_temperature: ThermodynamicTemperature,
-    pub max_temperature: ThermodynamicTemperature,    
+    pub max_temperature: ThermodynamicTemperature,
     pub cooling_tolerance: ThermodynamicTemperature,
     pub heating_tolerance: ThermodynamicTemperature,
 
@@ -118,13 +117,13 @@ pub struct Controller {
     pub temperature_sensor_in: Rc<RefCell<dyn TemperatureInputDevice>>,
     pub flow_sensor: Rc<RefCell<dyn EncoderInputDevice>>,
 
-    pub cooling_controller_port : usize,
-    pub cooling_relais_port : usize,
-    pub heating_relais_port : usize,
-    pub temperature_port_in : usize,
-    pub temperature_port_out : usize,
-    pub pump_relais_port : usize,
-    pub flow_sensor_port : usize,
+    pub cooling_controller_port: usize,
+    pub cooling_relais_port: usize,
+    pub heating_relais_port: usize,
+    pub temperature_port_in: usize,
+    pub temperature_port_out: usize,
+    pub pump_relais_port: usize,
+    pub flow_sensor_port: usize,
 
     pub power: f64,
     pub total_energy: f64,
@@ -145,7 +144,6 @@ pub struct Controller {
 
     config: ControllerConfig,
     pending_notices: Vec<ControllerNotice>,
-
 }
 
 impl Controller {
@@ -161,15 +159,14 @@ impl Controller {
         max_revolutions: AngularVelocity,
         flow: Flow,
         flow_sensor: Rc<RefCell<dyn EncoderInputDevice>>,
-        cooling_controller_port : usize,
-        cooling_relais_port : usize,
-        heating_relais_port : usize,
-        temperature_port_in : usize,
-        temperature_port_out : usize,
-        pump_relais_port : usize,
-        flow_sensor_port : usize,
+        cooling_controller_port: usize,
+        cooling_relais_port: usize,
+        heating_relais_port: usize,
+        temperature_port_in: usize,
+        temperature_port_out: usize,
+        pump_relais_port: usize,
+        flow_sensor_port: usize,
         config: ControllerConfig,
-
     ) -> Self {
         let now = Instant::now();
         Self {
@@ -201,7 +198,7 @@ impl Controller {
             should_pump: false,
             current_flow: VolumeRate::new::<liter_per_minute>(0.0),
             pump_allowed: false,
-            max_flow: VolumeRate::new::<liter_per_minute>(10.0),            
+            max_flow: VolumeRate::new::<liter_per_minute>(10.0),
             cooling_controller_port,
             cooling_relais_port,
             heating_relais_port,
@@ -209,7 +206,7 @@ impl Controller {
             temperature_port_out,
             pump_relais_port,
             flow_sensor_port,
-            relais_control,            
+            relais_control,
             pump_started_at: None,
             flow_became_valid_at: None,
             pump_cooldown_started_at: None,
@@ -217,7 +214,6 @@ impl Controller {
             cooling_mode: None,
             config,
             pending_notices: Vec::new(),
-
         }
     }
 
@@ -225,14 +221,14 @@ impl Controller {
         self.flow.pump = false;
         self.pump_started_at = None;
         let relais = &mut *self.relais_control.borrow_mut();
-        relais.set_output(self.pump_relais_port,false);
+        relais.set_output(self.pump_relais_port, false);
     }
 
     pub fn turn_pump_on(&mut self) {
         self.flow.pump = true;
         self.pump_started_at = Some(Instant::now());
         let relais = &mut *self.relais_control.borrow_mut();
-        relais.set_output(self.pump_relais_port,true);
+        relais.set_output(self.pump_relais_port, true);
     }
 
     pub fn disallow_pump(&mut self) {
@@ -266,12 +262,12 @@ impl Controller {
         self.turn_heating_on();
         self.allow_heating();
     }
-    
+
     pub fn reset_pid(&mut self) {
         self.pid.reset()
     }
 
-    pub fn set_target_temperature(&mut self, temperature: ThermodynamicTemperature) {            
+    pub fn set_target_temperature(&mut self, temperature: ThermodynamicTemperature) {
         self.reset_control_state(
             Instant::now(),
             Some(ControlResetReason::TargetTemperatureChanged),
@@ -324,7 +320,7 @@ impl Controller {
         relais.set_output(self.cooling_relais_port, false);
 
         let cooling_controller = &mut *self.cooling_controller.borrow_mut();
-        cooling_controller.set_output(self.cooling_controller_port,AnalogOutputOutput( 0.0 ));
+        cooling_controller.set_output(self.cooling_controller_port, AnalogOutputOutput(0.0));
         self.cooling_mode = None;
         self.current_revolutions = AngularVelocity::new::<revolution_per_minute>(0.0);
         self.temperature.cooling = false;
@@ -515,8 +511,6 @@ impl Controller {
         (lower + (upper - lower) * t, CoolingMode::Low)
     }
 
-
-
     pub fn get_pid_kp(&self) -> f64 {
         self.pid.get_kp()
     }
@@ -616,7 +610,6 @@ impl Controller {
     pub fn drain_notices(&mut self) -> Vec<ControllerNotice> {
         std::mem::take(&mut self.pending_notices)
     }
-
 
     pub fn update(&mut self, now: Instant) -> () {
         let dt = now.duration_since(self.last_update).as_secs_f64();
@@ -756,11 +749,14 @@ impl Controller {
 
                 if self.temperature.cooling {
                     let cooling_controller = &mut *self.cooling_controller.borrow_mut();
-                    cooling_controller.set_output(self.cooling_controller_port,AnalogOutputOutput(target_revolutions as f32 / 10.0 ));
+                    cooling_controller.set_output(
+                        self.cooling_controller_port,
+                        AnalogOutputOutput(target_revolutions as f32 / 10.0),
+                    );
 
                     self.current_revolutions =
                         AngularVelocity::new::<revolution_per_minute>(target_revolutions);
-                    
+
                     self.cooling_mode = Some(cooling_mode);
                 }
             } else {

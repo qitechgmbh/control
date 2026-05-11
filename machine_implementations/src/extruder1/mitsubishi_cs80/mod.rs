@@ -3,12 +3,12 @@ use control_core::modbus::modbus_serial_interface::ModbusSerialInterface;
 use control_core::modbus::{ModbusFunctionCode, ModbusRequest, ModbusResponse};
 use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
 use qitech_lib::units::Frequency;
-use serde::Serialize;
-use std::time::{Duration, Instant};
 use qitech_lib::units::electric_current::centiampere;
 use qitech_lib::units::electric_potential::centivolt;
 use qitech_lib::units::f64::*;
 use qitech_lib::units::frequency::centihertz;
+use serde::Serialize;
+use std::time::{Duration, Instant};
 
 /// Specifies all System environment Variables
 /// Register addresses are calculated as follows: Register-value 40002 -> address: 40002-40001 -> actual address in request:0x1
@@ -345,7 +345,7 @@ impl MitsubishiCS80 {
             last_ts: Instant::now(),
             motor_status: MotorStatus::default(),
             status: MitsubishiCS80Status::default(),
-            modbus_serial_interface:ModbusSerialInterface::new(),
+            modbus_serial_interface: ModbusSerialInterface::new(),
         }
     }
 
@@ -464,9 +464,12 @@ impl MitsubishiCS80 {
         self.add_request(MitsubishiCS80Requests::ResetInverter.into());
     }
 
-    pub fn act(&mut self, now: Instant,serial_interface_device : &mut dyn SerialInterfaceDevice) {
+    pub fn act(&mut self, now: Instant, serial_interface_device: &mut dyn SerialInterfaceDevice) {
         if !self.modbus_serial_interface.is_initialized() {
-            if self.modbus_serial_interface.initialize(serial_interface_device) {
+            if self
+                .modbus_serial_interface
+                .initialize(serial_interface_device)
+            {
                 println!("is_initialized now reset inverter");
                 self.add_request(MitsubishiCS80Requests::ResetInverter.into());
             }
@@ -475,7 +478,8 @@ impl MitsubishiCS80 {
 
         self.add_request(MitsubishiCS80Requests::ReadInverterStatus.into());
         self.add_request(MitsubishiCS80Requests::ReadMotorStatus.into());
-        self.modbus_serial_interface.act(now,serial_interface_device);
+        self.modbus_serial_interface
+            .act(now, serial_interface_device);
         self.handle_response(self.modbus_serial_interface.last_message_id);
     }
 }

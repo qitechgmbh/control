@@ -1,8 +1,16 @@
 use crate::{MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH};
-use std::{cell::RefCell, rc::Rc, time::Instant};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use qitech_lib::{machines::{MachineIdentification, MachineIdentificationUnique}, modbus::{Scheduler, devices::qitech_laser::LaserDevice, managers::{ExampleDeviceManager, example_manager::ExampleScheduler}}, units::{Length, length::millimeter}};
+use qitech_lib::{
+    machines::{MachineIdentification, MachineIdentificationUnique},
+    modbus::{
+        Scheduler,
+        devices::qitech_laser::LaserDevice,
+        managers::{ExampleDeviceManager, example_manager::ExampleScheduler},
+    },
+    units::{Length, length::millimeter},
+};
+use std::{cell::RefCell, rc::Rc, time::Instant};
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 
@@ -15,7 +23,7 @@ pub enum LaserRequestState {
     NotWaiting,
 }
 
-pub const LASER_TIMEOUT_MS : u32 = 16;
+pub const LASER_TIMEOUT_MS: u32 = 16;
 
 pub struct LaserMachine {
     api_receiver: Receiver<MachineMessage>,
@@ -25,9 +33,9 @@ pub struct LaserMachine {
     namespace: LaserMachineNamespace,
     last_measurement_emit: Instant,
 
-    modbus_mgr : Rc<RefCell<ExampleDeviceManager>>,
-    laser : Rc<RefCell<LaserDevice<ExampleScheduler>>>,
-    laser_state : LaserRequestState,    
+    modbus_mgr: Rc<RefCell<ExampleDeviceManager>>,
+    laser: Rc<RefCell<LaserDevice<ExampleScheduler>>>,
+    laser_state: LaserRequestState,
 
     // laser values
     diameter: Length,
@@ -49,7 +57,6 @@ pub struct LaserMachine {
     emitted_default_state: bool,
     did_change_state: bool,
 }
-
 
 impl LaserMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
@@ -184,44 +191,43 @@ impl LaserMachine {
         self.in_tolerance
     }
 
-    pub fn refresh_data(&mut self){
+    pub fn refresh_data(&mut self) {
         match self.laser_state {
             LaserRequestState::Waiting(_) => return,
-            LaserRequestState::NotWaiting => {                
+            LaserRequestState::NotWaiting => {
                 {
-                    let mut laser = self.laser.borrow_mut();            
+                    let mut laser = self.laser.borrow_mut();
                     laser.refresh_measurement();
                 }
                 let mut borrow = self.modbus_mgr.borrow_mut();
-                borrow.try_send(); 
+                borrow.try_send();
                 drop(borrow);
                 let now = Instant::now();
                 self.laser_state = LaserRequestState::Waiting(now);
-            },
+            }
         }
-  
     }
 
     pub fn update(&mut self) {
-      /*  match self.laser_state {
-            LaserRequestState::Waiting(earlier) => 
+        /*  match self.laser_state {
+            LaserRequestState::Waiting(earlier) =>
             if Instant::now().duration_since(earlier).as_millis() < LASER_TIMEOUT_MS as u128 {
                 return
             },
             LaserRequestState::NotWaiting => return,
         };*/
         {
-            self.modbus_mgr.borrow_mut().try_receive();  // ? why no return ...       
+            self.modbus_mgr.borrow_mut().try_receive(); // ? why no return ...       
         }
         {
             let laser = self.laser.borrow_mut();
             let measurement = laser.measurement();
             match measurement {
                 Some(m) => {
-                    self.x_diameter = Some( Length::new::<millimeter>(m.x_axis as f64 / 1000.0));
-                    self.y_diameter = Some( Length::new::<millimeter>(m.y_axis as f64 / 1000.0));
+                    self.x_diameter = Some(Length::new::<millimeter>(m.x_axis as f64 / 1000.0));
+                    self.y_diameter = Some(Length::new::<millimeter>(m.y_axis as f64 / 1000.0));
                     self.diameter = Length::new::<millimeter>(m.diameter as f64 / 1000.0);
-                },
+                }
                 None => (),
             };
         }

@@ -14,7 +14,10 @@ use crate::extruder1::{
 #[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {
     pub fn get_state(&self) -> StateEvent {
-        use qitech_lib::units::{angular_velocity::revolution_per_minute, pressure::bar, thermodynamic_temperature::degree_celsius};
+        use qitech_lib::units::{
+            angular_velocity::revolution_per_minute, pressure::bar,
+            thermodynamic_temperature::degree_celsius,
+        };
 
         use crate::extruder1::api::TemperaturePidStates;
 
@@ -144,7 +147,10 @@ impl ExtruderV2 {
     }
 
     pub fn emit_state(&mut self) {
-        use control_core::{helpers::hasher_serializer::hash_with_serde_model, socketio::{event::BuildEvent, namespace::NamespaceCacheingLogic}};
+        use control_core::{
+            helpers::hasher_serializer::hash_with_serde_model,
+            socketio::{event::BuildEvent, namespace::NamespaceCacheingLogic},
+        };
 
         let state = self.get_state();
         let hash = hash_with_serde_model(self.screw_speed_controller.get_inverter_status());
@@ -250,8 +256,12 @@ impl ExtruderV2 {
         self.emit_state();
     }
 
-    pub fn set_mode_state(&mut self, mode: ExtruderV2Mode,digital_out : &mut dyn DigitalOutputDevice) {
-        self.switch_mode(mode,digital_out);
+    pub fn set_mode_state(
+        &mut self,
+        mode: ExtruderV2Mode,
+        digital_out: &mut dyn DigitalOutputDevice,
+    ) {
+        self.switch_mode(mode, digital_out);
         self.emit_state();
     }
 
@@ -294,7 +304,9 @@ impl ExtruderV2 {
     }
 
     pub fn set_target_temperature(&mut self, target_temperature: f64, heating_type: HeatingType) {
-        use qitech_lib::units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
+        use qitech_lib::units::{
+            ThermodynamicTemperature, thermodynamic_temperature::degree_celsius,
+        };
 
         let target_temp = ThermodynamicTemperature::new::<degree_celsius>(target_temperature);
 

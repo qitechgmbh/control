@@ -1,13 +1,11 @@
-use qitech_lib::machines::{Machine, MachineDataRegistry, MachineIdentificationUnique};
-use crate::MachineApi;
 use super::LaserMachine;
+use crate::MachineApi;
+use qitech_lib::machines::{Machine, MachineDataRegistry, MachineIdentificationUnique};
 use std::time::{Duration, Instant};
-
-
 
 impl Machine for LaserMachine {
     fn act(&mut self, _reg: Option<&mut MachineDataRegistry>) {
-        let now : Instant = std::time::Instant::now();
+        let now: Instant = std::time::Instant::now();
         let msg = self.api_receiver.try_recv();
         match msg {
             Ok(msg) => {
@@ -35,6 +33,4 @@ impl Machine for LaserMachine {
     fn get_identification(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique
     }
-
-
 }

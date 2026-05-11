@@ -18,8 +18,11 @@ mod winder2_imports {
     };
     pub use tracing::instrument;
 }
+use crate::{
+    MachineApi, MachineMessage, MachineValues,
+    machine_identification::QiTechMachineIdentificationUnique,
+};
 pub use winder2_imports::*;
-use crate::{MachineApi, MachineMessage, MachineValues, machine_identification::QiTechMachineIdentificationUnique};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum Mode {
@@ -298,7 +301,7 @@ impl CacheableEvents<Self> for Winder2Events {
 }
 
 impl MachineApi for Winder2 {
-    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {        
+    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {
         self.api_sender.clone()
     }
 
@@ -356,8 +359,7 @@ impl MachineApi for Winder2 {
             Mutation::SetPullerAdaptiveAcceptedDifference(v) => {
                 self.puller_set_adaptive_accepted_difference(v)
             }
-            Mutation::SetPullerAdaptiveReferenceMachine(v) => {
-            }
+            Mutation::SetPullerAdaptiveReferenceMachine(v) => {}
         }
         Ok(())
     }

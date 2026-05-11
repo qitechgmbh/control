@@ -1,8 +1,24 @@
-use std::time::Instant;
-use anyhow::Error;
-use qitech_lib::{ethercat_hal::{EtherCATThreadChannel, coe::ConfigurableDevice, devices::{ek1100::EK1100, el2008::EL2008, el3204::EL3204, el4002::EL4002, el5152::{EL5152, EL5152Configuration, EL5152PredefinedPdoAssignment}}}, units::{AngularVelocity, ThermodynamicTemperature, angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius}};
-use crate::{MachineHardware, MachineNew, aquapath1::controller::ControllerConfig};
 use super::{AquaPathV1, Flow, Temperature, api::AquaPathV1Namespace, controller::Controller};
+use crate::{MachineHardware, MachineNew, aquapath1::controller::ControllerConfig};
+use anyhow::Error;
+use qitech_lib::{
+    ethercat_hal::{
+        EtherCATThreadChannel,
+        coe::ConfigurableDevice,
+        devices::{
+            ek1100::EK1100,
+            el2008::EL2008,
+            el3204::EL3204,
+            el4002::EL4002,
+            el5152::{EL5152, EL5152Configuration, EL5152PredefinedPdoAssignment},
+        },
+    },
+    units::{
+        AngularVelocity, ThermodynamicTemperature, angular_velocity::revolution_per_minute,
+        thermodynamic_temperature::degree_celsius,
+    },
+};
+use std::time::Instant;
 
 impl MachineNew for AquaPathV1 {
     fn new(hw: MachineHardware) -> Result<Self, Error> {
@@ -12,105 +28,104 @@ impl MachineNew for AquaPathV1 {
         let el3204 = hw.try_get_ethercat_device_and_addr_by_role::<EL3204>(3)?;
         let el5152 = hw.try_get_ethercat_device_and_addr_by_role::<EL5152>(4)?;
 
-        let interface : EtherCATThreadChannel = match &hw.ethercat_interface {
+        let interface: EtherCATThreadChannel = match &hw.ethercat_interface {
             Some(ecat_interface) => ecat_interface.clone(),
             None => {
-                return Err(anyhow::anyhow!("Winder2: No EtherCat Interface was supplied!"));
-            },
+                return Err(anyhow::anyhow!(
+                    "Winder2: No EtherCat Interface was supplied!"
+                ));
+            }
         };
 
         interface.enable_dc_sync0(el2008.1)?;
         interface.enable_dc_sync0(el4002.1)?;
-        interface.enable_dc_sync0(el3204.1)?;        
+        interface.enable_dc_sync0(el3204.1)?;
 
         let config = EL5152Configuration {
             pdo_assignment: EL5152PredefinedPdoAssignment::Frequency,
             ..Default::default()
         };
-        
+
         {
-            let el5152_ref = &mut *el5152.0.borrow_mut();            
-            el5152_ref.write_config(interface.clone(),el5152.1,&config)?;
+            let el5152_ref = &mut *el5152.0.borrow_mut();
+            el5152_ref.write_config(interface.clone(), el5152.1, &config)?;
         }
-        interface.enable_dc_sync0(el5152.1)?;        
-        
-        let (sender,receiver) = tokio::sync::mpsc::channel(2);
-        
-        const FRONT_CONTROLLER_COOLING_PORT : usize = 0;
-        const FRONT_CONTROLLER_COOLING_RELAIS_PORT : usize = 3; 
-        const FRONT_CONTROLLER_HEATING_RELAIS_PORT : usize = 1; 
-        const FRONT_CONTROLLER_HEATING_IN_PORT : usize = 0;
-        const FRONT_CONTROLLER_HEATING_OUT_PORT : usize = 1;
-        const FRONT_CONTROLLER_PUMP_RELAIS_PORT : usize = 0; 
-        const FRONT_CONTROLLER_FLOW_SENSOR_PORT : usize = 0;
-        const BACK_CONTROLLER_COOLING_PORT : usize = 1;
-        const BACK_CONTROLLER_COOLING_RELAIS_PORT : usize = 7; 
-        const BACK_CONTROLLER_HEATING_RELAIS_PORT : usize = 5; 
-        const BACK_CONTROLLER_HEATING_IN_PORT : usize = 2;
-        const BACK_CONTROLLER_HEATING_OUT_PORT : usize = 3;
-        const BACK_CONTROLLER_PUMP_RELAIS_PORT : usize = 4; 
-        const BACK_CONTROLLER_FLOW_SENSOR_PORT : usize = 1;
+        interface.enable_dc_sync0(el5152.1)?;
+
+        let (sender, receiver) = tokio::sync::mpsc::channel(2);
+
+        const FRONT_CONTROLLER_COOLING_PORT: usize = 0;
+        const FRONT_CONTROLLER_COOLING_RELAIS_PORT: usize = 3;
+        const FRONT_CONTROLLER_HEATING_RELAIS_PORT: usize = 1;
+        const FRONT_CONTROLLER_HEATING_IN_PORT: usize = 0;
+        const FRONT_CONTROLLER_HEATING_OUT_PORT: usize = 1;
+        const FRONT_CONTROLLER_PUMP_RELAIS_PORT: usize = 0;
+        const FRONT_CONTROLLER_FLOW_SENSOR_PORT: usize = 0;
+        const BACK_CONTROLLER_COOLING_PORT: usize = 1;
+        const BACK_CONTROLLER_COOLING_RELAIS_PORT: usize = 7;
+        const BACK_CONTROLLER_HEATING_RELAIS_PORT: usize = 5;
+        const BACK_CONTROLLER_HEATING_IN_PORT: usize = 2;
+        const BACK_CONTROLLER_HEATING_OUT_PORT: usize = 3;
+        const BACK_CONTROLLER_PUMP_RELAIS_PORT: usize = 4;
+        const BACK_CONTROLLER_FLOW_SENSOR_PORT: usize = 1;
 
         let controller_config = ControllerConfig::default();
         let front_controller = Controller::new(
-                Self::DEFAULT_PID_KP,
-                Self::DEFAULT_PID_KI,
-                Self::DEFAULT_PID_KD,
-                Temperature::default(),
-                ThermodynamicTemperature::new::<degree_celsius>(25.0),
-                el4002.0.clone(),
-                el2008.0.clone(),                
-                el3204.0.clone(),
-                AngularVelocity::new::<revolution_per_minute>(100.0),
-                Flow::default(),
-                el5152.0.clone(),
-                FRONT_CONTROLLER_COOLING_PORT, //ao1 cooling controller
-                FRONT_CONTROLLER_COOLING_RELAIS_PORT, // do4
-                FRONT_CONTROLLER_HEATING_RELAIS_PORT, // do2                
-                FRONT_CONTROLLER_HEATING_IN_PORT, // t1
-                FRONT_CONTROLLER_HEATING_OUT_PORT, // t2                
-                FRONT_CONTROLLER_PUMP_RELAIS_PORT, // do1 pump relais
-                FRONT_CONTROLLER_FLOW_SENSOR_PORT, //enc1 
-                controller_config
+            Self::DEFAULT_PID_KP,
+            Self::DEFAULT_PID_KI,
+            Self::DEFAULT_PID_KD,
+            Temperature::default(),
+            ThermodynamicTemperature::new::<degree_celsius>(25.0),
+            el4002.0.clone(),
+            el2008.0.clone(),
+            el3204.0.clone(),
+            AngularVelocity::new::<revolution_per_minute>(100.0),
+            Flow::default(),
+            el5152.0.clone(),
+            FRONT_CONTROLLER_COOLING_PORT, //ao1 cooling controller
+            FRONT_CONTROLLER_COOLING_RELAIS_PORT, // do4
+            FRONT_CONTROLLER_HEATING_RELAIS_PORT, // do2
+            FRONT_CONTROLLER_HEATING_IN_PORT, // t1
+            FRONT_CONTROLLER_HEATING_OUT_PORT, // t2
+            FRONT_CONTROLLER_PUMP_RELAIS_PORT, // do1 pump relais
+            FRONT_CONTROLLER_FLOW_SENSOR_PORT, //enc1
+            controller_config,
         );
 
         let back_controller = Controller::new(
-                Self::DEFAULT_PID_KP,
-                Self::DEFAULT_PID_KI,
-                Self::DEFAULT_PID_KD,
-                Temperature::default(),
-                ThermodynamicTemperature::new::<degree_celsius>(25.0),
-                el4002.0.clone(),
-                el2008.0.clone(),                
-                el3204.0.clone(),
-                AngularVelocity::new::<revolution_per_minute>(100.0),
-                Flow::default(),
-                el5152.0.clone(),
-                BACK_CONTROLLER_COOLING_PORT, //ao1 cooling controller
-                BACK_CONTROLLER_COOLING_RELAIS_PORT, // do4
-                BACK_CONTROLLER_HEATING_RELAIS_PORT, // do2                
-                BACK_CONTROLLER_HEATING_IN_PORT, // t1
-                BACK_CONTROLLER_HEATING_OUT_PORT, // t2                
-                BACK_CONTROLLER_PUMP_RELAIS_PORT, // do1 pump relais
-                BACK_CONTROLLER_FLOW_SENSOR_PORT, //enc1 
-                controller_config
+            Self::DEFAULT_PID_KP,
+            Self::DEFAULT_PID_KI,
+            Self::DEFAULT_PID_KD,
+            Temperature::default(),
+            ThermodynamicTemperature::new::<degree_celsius>(25.0),
+            el4002.0.clone(),
+            el2008.0.clone(),
+            el3204.0.clone(),
+            AngularVelocity::new::<revolution_per_minute>(100.0),
+            Flow::default(),
+            el5152.0.clone(),
+            BACK_CONTROLLER_COOLING_PORT,        //ao1 cooling controller
+            BACK_CONTROLLER_COOLING_RELAIS_PORT, // do4
+            BACK_CONTROLLER_HEATING_RELAIS_PORT, // do2
+            BACK_CONTROLLER_HEATING_IN_PORT,     // t1
+            BACK_CONTROLLER_HEATING_OUT_PORT,    // t2
+            BACK_CONTROLLER_PUMP_RELAIS_PORT,    // do1 pump relais
+            BACK_CONTROLLER_FLOW_SENSOR_PORT,    //enc1
+            controller_config,
         );
-
 
         let water_cooling = Self {
             api_receiver: receiver,
             api_sender: sender,
             machine_identification_unique: hw.identification,
-            namespace: AquaPathV1Namespace{ namespace:None },
+            namespace: AquaPathV1Namespace { namespace: None },
             mode: super::AquaPathV1Mode::Standby,
             last_measurement_emit: Instant::now(),
             front_controller,
             back_controller,
-            ambient_temperature_calibration: ThermodynamicTemperature::new::<degree_celsius>(
-                20.5,
-            ),
+            ambient_temperature_calibration: ThermodynamicTemperature::new::<degree_celsius>(20.5),
         };
 
         Ok(water_cooling)
-    }    
+    }
 }

@@ -1,14 +1,19 @@
 use super::Heating;
 use control_core::controllers::pid::PidController;
-use qitech_lib::{ethercat_hal::io::{digital_output::DigitalOutputDevice, temperature_input::{TemperatureInputDevice}}, units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius}};
-use std::{time::{Duration, Instant}};
+use qitech_lib::{
+    ethercat_hal::io::{
+        digital_output::DigitalOutputDevice, temperature_input::TemperatureInputDevice,
+    },
+    units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius},
+};
+use std::time::{Duration, Instant};
 
 pub struct TemperatureController {
     pub pid: PidController,
     pub heating: Heating,
     pub target_temp: ThermodynamicTemperature,
-    pub digital_port : usize,
-    pub temperature_port : usize,
+    pub digital_port: usize,
+    pub temperature_port: usize,
     window_start: Instant,
     heating_allowed: bool,
     pwm_period: Duration,
@@ -20,8 +25,8 @@ pub struct TemperatureController {
 }
 
 impl TemperatureController {
-    pub fn disable(&mut self, relais : &mut dyn DigitalOutputDevice) {
-        relais.set_output(self.digital_port,false);
+    pub fn disable(&mut self, relais: &mut dyn DigitalOutputDevice) {
+        relais.set_output(self.digital_port, false);
         self.heating.heating = false;
         self.disallow_heating();
     }
@@ -36,8 +41,8 @@ impl TemperatureController {
         pwm_duration: Duration,
         heating_element_wattage: f64,
         max_clamp: f64,
-        digital_port : usize,
-        temperature_port : usize,
+        digital_port: usize,
+        temperature_port: usize,
     ) -> Self {
         Self {
             pid: PidController::new(kp, ki, kd),
@@ -80,7 +85,12 @@ impl TemperatureController {
         self.temperature_pid_output * self.heating_element_wattage
     }
 
-    pub fn update(&mut self, now: Instant,relais : &mut dyn DigitalOutputDevice, temperature_sensor : &dyn TemperatureInputDevice) {
+    pub fn update(
+        &mut self,
+        now: Instant,
+        relais: &mut dyn DigitalOutputDevice,
+        temperature_sensor: &dyn TemperatureInputDevice,
+    ) {
         self.temperature_pid_output = 0.0;
 
         let temperature = temperature_sensor.get_input(self.temperature_port);
@@ -91,10 +101,9 @@ impl TemperatureController {
         };
         self.heating.temperature = temperature_celsius;
 
-
         if self.heating.temperature > self.max_temperature {
             // disable the relais and return
-            relais.set_output(self.digital_port,false);
+            relais.set_output(self.digital_port, false);
             self.heating.heating = false;
             return;
         }
@@ -120,7 +129,7 @@ impl TemperatureController {
 
             // Relay is ON if within duty cycle window
             let on = elapsed < on_time;
-            relais.set_output(self.digital_port,on);
+            relais.set_output(self.digital_port, on);
             self.heating.heating = on;
         }
     }

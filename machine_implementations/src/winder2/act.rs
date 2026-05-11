@@ -1,9 +1,8 @@
 use qitech_lib::machines::{Machine, MachineIdentificationUnique};
 
 use super::Winder2;
-use crate::{MachineApi};
-use std::time::{Duration};
-
+use crate::MachineApi;
+use std::time::Duration;
 
 impl Machine for Winder2 {
     fn get_identification(&self) -> MachineIdentificationUnique {
@@ -13,10 +12,10 @@ impl Machine for Winder2 {
     fn act(&mut self, _machine_data: Option<&mut qitech_lib::machines::MachineDataRegistry>) {
         let now = std::time::Instant::now();
         let machine_message = self.api_receiver.try_recv();
-            match machine_message {
-                Ok(machine_message) => self.act_machine_message(machine_message),
-                Err(_e) => (),
-            };
+        match machine_message {
+            Ok(machine_message) => self.act_machine_message(machine_message),
+            Err(_e) => (),
+        };
         // sync the spool speed
         self.sync_spool_speed(now);
 
@@ -40,7 +39,5 @@ impl Machine for Winder2 {
         }
     }
 
-    fn react(&mut self, registry: &qitech_lib::machines::MachineDataRegistry) {
-
-    }
+    fn react(&mut self, registry: &qitech_lib::machines::MachineDataRegistry) {}
 }

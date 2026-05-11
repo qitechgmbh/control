@@ -1,26 +1,27 @@
 use crate::winder2::Winder2Mode;
 
-use super::{LASER_PORT, PULLER_PORT, SPOOL_PORT, TRAVERSE_PORT, TraverseMode, Winder2, api::PullerRegulationMode, spool_speed_controller};
 pub use super::api::{
-    LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode,
-    SpoolAutomaticActionState, SpoolSpeedControllerState, StateEvent, TensionArmState,
-    TraverseState, Winder2Events,
+    LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode, SpoolAutomaticActionState,
+    SpoolSpeedControllerState, StateEvent, TensionArmState, TraverseState, Winder2Events,
+};
+use super::{
+    LASER_PORT, PULLER_PORT, SPOOL_PORT, TRAVERSE_PORT, TraverseMode, Winder2,
+    api::PullerRegulationMode, spool_speed_controller,
 };
 pub use control_core::socketio::event::BuildEvent;
 pub use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
-use std::cell::RefMut;
-pub use std::time::Instant;
 pub use qitech_lib::units::{
     angle::degree,
     angular_velocity::revolution_per_minute,
     f64::*,
     length::{meter, millimeter},
 };
+use std::cell::RefMut;
+pub use std::time::Instant;
 
 pub use qitech_lib::units::Velocity;
 pub use qitech_lib::units::velocity::meter_per_minute;
-
 
 impl Winder2 {
     /// Implement Spool
@@ -42,8 +43,8 @@ impl Winder2 {
         let steps_per_second = self
             .spool_step_converter
             .angular_velocity_to_steps(directed_angular_velocity);
-        let spool_ref = &mut * self.spool.borrow_mut();
-        let _ = spool_ref.set_speed(SPOOL_PORT,steps_per_second);
+        let spool_ref = &mut *self.spool.borrow_mut();
+        let _ = spool_ref.set_speed(SPOOL_PORT, steps_per_second);
     }
 
     pub fn stop_or_pull_spool(&mut self, now: Instant) {
@@ -94,16 +95,16 @@ impl Winder2 {
         self.emit_state();
     }
 
-    fn get_laser(&mut self) -> RefMut<'_,dyn DigitalOutputDevice > {
+    fn get_laser(&mut self) -> RefMut<'_, dyn DigitalOutputDevice> {
         self.laser.borrow_mut()
     }
 
     /// Implement Traverse
     pub fn set_laser(&mut self, value: bool) {
         self.laser_enabled = value;
-        let mut laser = self.get_laser();        
-        laser.set_output(LASER_PORT,value);     
-        drop(laser);   
+        let mut laser = self.get_laser();
+        laser.set_output(LASER_PORT, value);
+        drop(laser);
         self.emit_state();
     }
 
@@ -317,7 +318,6 @@ impl Winder2 {
         self.namespace.emit(Winder2Events::State(event));
     }
 
-
     /// Apply the mode changes to the spool
     ///
     /// It contains a transition matrix for atomic changes.
@@ -325,11 +325,11 @@ impl Winder2 {
     fn set_traverse_mode(&mut self, mode: &Winder2Mode) {
         // Convert to `Winder2Mode` to `TraverseMode`
         let mode: TraverseMode = mode.clone().into();
-          // If coming out of standby
+        // If coming out of standby
         if self.traverse_mode == TraverseMode::Standby && mode != TraverseMode::Standby {
             let mut traverse = self.traverse.borrow_mut();
-            let traverse_ref = &mut * traverse;
-            traverse_ref.set_enabled(TRAVERSE_PORT,true);
+            let traverse_ref = &mut *traverse;
+            traverse_ref.set_enabled(TRAVERSE_PORT, true);
             self.traverse_controller.set_enabled(true);
             drop(traverse);
         }
@@ -337,29 +337,29 @@ impl Winder2 {
         // If going into standby
         if mode == TraverseMode::Standby && self.traverse_mode != TraverseMode::Standby {
             let mut traverse = self.traverse.borrow_mut();
-            let traverse_ref = &mut * traverse;
+            let traverse_ref = &mut *traverse;
             // If we are going into standby, we need to stop the traverse
-            traverse_ref.set_enabled(TRAVERSE_PORT,false);
+            traverse_ref.set_enabled(TRAVERSE_PORT, false);
             self.traverse_controller.set_enabled(false);
             drop(traverse);
         }
 
         {
             let mut traverse = self.traverse.borrow_mut();
-            let traverse_ref = &mut * traverse;
+            let traverse_ref = &mut *traverse;
             // Transition matrix
             match self.traverse_mode {
                 TraverseMode::Standby => match mode {
                     TraverseMode::Standby => {}
                     TraverseMode::Hold => {
                         // From [`TraverseMode::Standby`] to [`TraverseMode::Hold`]
-                        traverse_ref.set_enabled(TRAVERSE_PORT,true);
+                        traverse_ref.set_enabled(TRAVERSE_PORT, true);
                         self.traverse_controller.set_enabled(true);
                         self.traverse_controller.goto_home();
                     }
                     TraverseMode::Traverse => {
                         // From [`TraverseMode::Standby`] to [`TraverseMode::Wind`]
-                        traverse_ref.set_enabled(TRAVERSE_PORT,true);
+                        traverse_ref.set_enabled(TRAVERSE_PORT, true);
                         self.traverse_controller.set_enabled(true);
                         self.traverse_controller.start_traversing();
                     }
@@ -367,7 +367,7 @@ impl Winder2 {
                 TraverseMode::Hold => match mode {
                     TraverseMode::Standby => {
                         // From [`TraverseMode::Hold`] to [`TraverseMode::Standby`]
-                        traverse_ref.set_enabled(TRAVERSE_PORT,false);
+                        traverse_ref.set_enabled(TRAVERSE_PORT, false);
                         self.traverse_controller.set_enabled(false);
                     }
                     TraverseMode::Hold => {}
@@ -379,7 +379,7 @@ impl Winder2 {
                 TraverseMode::Traverse => match mode {
                     TraverseMode::Standby => {
                         // From [`TraverseMode::Wind`] to [`TraverseMode::Standby`]
-                        traverse_ref.set_enabled(TRAVERSE_PORT,false);
+                        traverse_ref.set_enabled(TRAVERSE_PORT, false);
                         self.traverse_controller.set_enabled(false);
                     }
                     TraverseMode::Hold => {
@@ -390,7 +390,6 @@ impl Winder2 {
                 },
             }
         }
-       
 
         // Update the internal state
         self.traverse_mode = mode;
