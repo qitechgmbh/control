@@ -69,6 +69,9 @@ impl MachineAct for Gluetex {
         self.temperature_controller_5.update(now);
         self.temperature_controller_6.update(now);
 
+        // check addon heater temperatures and trigger emergency stop if over-limit
+        self.check_addon_heater_temperatures();
+
         // update status output based on current activity
         self.update_status_output();
 

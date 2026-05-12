@@ -398,7 +398,7 @@ impl MachineNewTrait for Gluetex {
             let extra_output_8 = DigitalOutput::new(el2008_extra, EL2008Port::DO8);
 
             // Maximum temperature for all heating zones
-            let max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
+            let max_temperature = ThermodynamicTemperature::new::<degree_celsius>(200.0);
 
             // PID-controlled temperature controllers (60W heaters via SSR)
             let temperature_controller_1 = TemperatureController::new(

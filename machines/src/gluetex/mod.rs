@@ -853,6 +853,36 @@ impl Gluetex {
         }
     }
 
+    /// Check all heater temperatures and trigger emergency stop if any exceed their limit
+    pub fn check_addon_heater_temperatures(&mut self) {
+        let zone_1_over = self.temperature_controller_1.is_over_temperature();
+        let zone_2_over = self.temperature_controller_2.is_over_temperature();
+        let zone_3_over = self.temperature_controller_3.is_over_temperature();
+        let zone_4_over = self.temperature_controller_4.is_over_temperature();
+        let zone_5_over = self.temperature_controller_5.is_over_temperature();
+        let zone_6_over = self.temperature_controller_6.is_over_temperature();
+
+        if zone_1_over || zone_2_over || zone_3_over || zone_4_over || zone_5_over || zone_6_over {
+            tracing::warn!(
+                zone_1_over,
+                zone_2_over,
+                zone_3_over,
+                zone_4_over,
+                zone_5_over,
+                zone_6_over,
+                zone_1_temp = self.temperature_controller_1.heating.temperature.get::<degree_celsius>(),
+                zone_2_temp = self.temperature_controller_2.heating.temperature.get::<degree_celsius>(),
+                zone_3_temp = self.temperature_controller_3.heating.temperature.get::<degree_celsius>(),
+                zone_4_temp = self.temperature_controller_4.heating.temperature.get::<degree_celsius>(),
+                zone_5_temp = self.temperature_controller_5.heating.temperature.get::<degree_celsius>(),
+                zone_6_temp = self.temperature_controller_6.heating.temperature.get::<degree_celsius>(),
+                "heater over-temperature — emergency stop"
+            );
+            self.emergency_stop();
+            self.emit_state();
+        }
+    }
+
     /// Record optris voltage readings with distance tracking for delayed readings
     /// Should be called once per control loop iteration
     pub fn record_optris_voltages(&mut self, _now: Instant) {

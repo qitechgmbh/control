@@ -233,6 +233,10 @@ impl TemperatureController {
             self.heating.heating = false;
         }
     }
+
+    pub fn is_over_temperature(&self) -> bool {
+        self.heating.temperature > self.max_temperature
+    }
 }
 
 #[cfg(test)]
