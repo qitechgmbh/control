@@ -203,6 +203,7 @@ pub enum Mutation {
     SetAddonMotor5SlaveRatio(f64),
     SetAddonMotor3Konturlaenge(f64),
     SetAddonMotor3Pause(f64),
+    SetAddonMotor3DecelerationDistance(f64),
     HomeAddonMotor3,
 
     // Addon Motor 5 Tension Control
@@ -522,6 +523,8 @@ pub struct AddonMotor5State {
     pub konturlaenge_mm: f64,
     /// Pause in mm (0 = constant mode)
     pub pause_mm: f64,
+    /// Deceleration distance in mm (0 = instant stop)
+    pub deceleration_distance_mm: f64,
     /// Current pattern control state
     pub pattern_state: String,
 }
@@ -917,6 +920,11 @@ impl MachineApi for Gluetex {
             }
             Mutation::SetAddonMotor3Pause(pause_mm) => {
                 self.addon_motor_3_controller.set_pause_mm(pause_mm);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor3DecelerationDistance(distance_mm) => {
+                self.addon_motor_3_controller
+                    .set_deceleration_distance_mm(distance_mm);
                 self.emit_state();
             }
             Mutation::HomeAddonMotor3 => {

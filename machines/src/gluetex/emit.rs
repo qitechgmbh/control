@@ -551,6 +551,9 @@ impl Gluetex {
                 slave_ratio: self.addon_motor_3_controller.get_slave_ratio(),
                 konturlaenge_mm: self.addon_motor_3_controller.get_konturlaenge_mm(),
                 pause_mm: self.addon_motor_3_controller.get_pause_mm(),
+                deceleration_distance_mm: self
+                    .addon_motor_3_controller
+                    .get_deceleration_distance_mm(),
                 pattern_state: format!("{:?}", self.addon_motor_3_controller.get_pattern_state()),
             },
             addon_motor_4_state: api::AddonMotorState {

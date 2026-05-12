@@ -15,6 +15,8 @@ pub enum PatternControlState {
     Homing,
     /// Motor is running for Konturlänge distance
     Running,
+    /// Motor is decelerating over a configurable distance before stopping
+    Decelerating,
     /// Motor has hit endstop and is paused
     Paused,
 }
@@ -47,6 +49,12 @@ pub struct AddonMotorController {
     /// Whether the sensor has been seen as false after kontur length was reached
     /// (prevents stopping immediately if sensor is already true when kontur length is reached)
     seen_sensor_clear_after_kontur: bool,
+    /// Deceleration distance in mm before final stop (0 = instant stop, backward-compatible)
+    deceleration_distance_mm: f64,
+    /// Speed (steps/s) at the start of the deceleration phase
+    deceleration_start_speed: f64,
+    /// Accumulated distance when deceleration started (mm)
+    deceleration_start_distance: f64,
 }
 
 impl AddonMotorController {
@@ -68,6 +76,9 @@ impl AddonMotorController {
             needs_homing: false,
             manual_homing: false,
             seen_sensor_clear_after_kontur: false,
+            deceleration_distance_mm: 0.0,
+            deceleration_start_speed: 0.0,
+            deceleration_start_distance: 0.0,
         }
     }
 
@@ -171,6 +182,16 @@ impl AddonMotorController {
         self.pause_mm
     }
 
+    /// Set deceleration distance in mm (0 = instant stop, backward-compatible)
+    pub fn set_deceleration_distance_mm(&mut self, distance_mm: f64) {
+        self.deceleration_distance_mm = distance_mm.max(0.0);
+    }
+
+    /// Get deceleration distance in mm
+    pub const fn get_deceleration_distance_mm(&self) -> f64 {
+        self.deceleration_distance_mm
+    }
+
     /// Get current pattern control state
     pub const fn get_pattern_state(&self) -> PatternControlState {
         self.pattern_state
@@ -197,6 +218,8 @@ impl AddonMotorController {
         self.manual_homing = false;
         self.accumulated_distance = 0.0;
         self.seen_sensor_clear_after_kontur = false;
+        self.deceleration_start_speed = 0.0;
+        self.deceleration_start_distance = 0.0;
 
         let pattern_mode = self.konturlaenge_mm > 0.0 || self.pause_mm > 0.0;
         if self.enabled && pattern_mode {
@@ -365,7 +388,7 @@ impl AddonMotorController {
 
                 if self.accumulated_distance >= self.konturlaenge_mm {
                     // Konturlänge reached - keep running until we see sensor go false,
-                    // then stop on the next true reading
+                    // then stop (or start decelerating) on the next true reading
                     let target_velocity = self.calculate_motor_velocity(puller_angular_velocity);
                     let steps_per_second =
                         self.converter.angular_velocity_to_steps(target_velocity);
@@ -375,11 +398,20 @@ impl AddonMotorController {
                         // Sensor cleared - now we can accept the next true as a valid stop
                         self.seen_sensor_clear_after_kontur = true;
                     } else if self.seen_sensor_clear_after_kontur {
-                        // Sensor is true AND we already saw it go false - valid stop
-                        let _ = motor.set_speed(0.0);
-                        self.pattern_state = PatternControlState::Paused;
-                        self.accumulated_distance = 0.0;
-                        self.seen_sensor_clear_after_kontur = false;
+                        // Sensor is true AND we already saw it go false - valid stop trigger
+                        if self.deceleration_distance_mm > 0.0 {
+                            // Start deceleration phase
+                            self.deceleration_start_speed = steps_per_second;
+                            self.deceleration_start_distance = self.accumulated_distance;
+                            self.pattern_state = PatternControlState::Decelerating;
+                            self.seen_sensor_clear_after_kontur = false;
+                        } else {
+                            // No deceleration configured - instant stop (backward-compatible)
+                            let _ = motor.set_speed(0.0);
+                            self.pattern_state = PatternControlState::Paused;
+                            self.accumulated_distance = 0.0;
+                            self.seen_sensor_clear_after_kontur = false;
+                        }
                     }
                     // else: sensor is true but we haven't seen it go false yet - keep running
                 } else {
@@ -388,6 +420,23 @@ impl AddonMotorController {
                     let steps_per_second =
                         self.converter.angular_velocity_to_steps(target_velocity);
                     let _ = motor.set_speed(steps_per_second);
+                }
+            }
+            PatternControlState::Decelerating => {
+                self.accumulated_distance += distance_mm;
+
+                let decel_progress = self.accumulated_distance - self.deceleration_start_distance;
+
+                if decel_progress >= self.deceleration_distance_mm {
+                    // Deceleration complete - final stop
+                    let _ = motor.set_speed(0.0);
+                    self.pattern_state = PatternControlState::Paused;
+                    self.accumulated_distance = 0.0;
+                } else {
+                    // Ramp speed linearly from start speed to 0
+                    let fraction = 1.0 - (decel_progress / self.deceleration_distance_mm);
+                    let ramped_steps = self.deceleration_start_speed * fraction;
+                    let _ = motor.set_speed(ramped_steps);
                 }
             }
             PatternControlState::Paused => {

@@ -285,6 +285,7 @@ export const addonMotor5StateSchema = z.object({
   slave_ratio: z.number(),
   konturlaenge_mm: z.number(),
   pause_mm: z.number(),
+  deceleration_distance_mm: z.number(),
   pattern_state: z.string(),
 });
 
@@ -804,6 +805,7 @@ const DEFAULT_BACKEND_EXTENDED_STATE: ExtendedStateEvent = {
       slave_ratio: 1.0,
       konturlaenge_mm: 0.0,
       pause_mm: 0.0,
+      deceleration_distance_mm: 0.0,
       pattern_state: "",
     },
     addon_motor_4_state: {

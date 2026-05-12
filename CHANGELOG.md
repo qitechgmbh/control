@@ -1,6 +1,9 @@
 # Gluetex Bugfixes
 _12.05.2026_
 
+### Addon Motor 3 (Konturrad) — Configurable Deceleration Distance
+- Added `deceleration_distance_mm` setting to the Konturrad stepper motor. When set (> 0), the motor ramps speed linearly to zero over the configured distance after hitting the endstop and reaching its Konturlänge, instead of stopping instantly. Configured via Settings → Addons → Motor 3 Deceleration Distance.
+
 ### Pull Distance ETA
 - Fixed estimated time remaining for pull distance not updating continuously — ETA is now recomputed at 30 FPS from live puller speed and progress instead of only recalculating when the target length was saved
 

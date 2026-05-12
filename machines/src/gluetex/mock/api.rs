@@ -210,6 +210,9 @@ impl MachineApi for Gluetex {
             Mutation::SetAddonMotor3Pause(value) => {
                 self.addon_motor_3_state.pause_mm = value;
             }
+            Mutation::SetAddonMotor3DecelerationDistance(value) => {
+                self.addon_motor_3_state.deceleration_distance_mm = value;
+            }
             Mutation::HomeAddonMotor3 => {
                 self.addon_motor_3_state.pattern_state = "homed".to_string();
             }

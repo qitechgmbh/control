@@ -321,6 +321,12 @@ const previewEntries: PresetPreviewEntries<GluetexPresetData> = [
     unit: "mm",
     renderValue: (data) => data.addon_motor_3_state?.pause_mm?.toFixed(1),
   },
+  {
+    name: "Motor 3 Deceleration",
+    unit: "mm",
+    renderValue: (data) =>
+      data.addon_motor_3_state?.deceleration_distance_mm?.toFixed(1),
+  },
   previewSeparator,
 
   // ── Addon Motor 4 ──
@@ -756,6 +762,7 @@ export function GluetexPresetsPage() {
     setStepper3Slave,
     setStepper3Konturlaenge,
     setStepper3Pause,
+    setStepper3DecelerationDistance,
     setStepper4Mode,
     setStepper4Forward,
     setStepper4Master,
@@ -1151,6 +1158,17 @@ export function GluetexPresetsPage() {
       )
     )
       actions.push(() => setStepper3Pause(d.addon_motor_3_state!.pause_mm!));
+    if (
+      changed(
+        d?.addon_motor_3_state?.deceleration_distance_mm,
+        currentData.addon_motor_3_state?.deceleration_distance_mm,
+      )
+    )
+      actions.push(() =>
+        setStepper3DecelerationDistance(
+          d.addon_motor_3_state!.deceleration_distance_mm!,
+        ),
+      );
 
     // Addon Motor 4
     if (

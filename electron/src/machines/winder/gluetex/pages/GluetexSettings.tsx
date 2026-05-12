@@ -91,6 +91,7 @@ export function GluetexSettingPage() {
     setSleepTimerEnabled,
     setSleepTimerTimeout,
     setStepper3Forward,
+    setStepper3DecelerationDistance,
     setStepper4Forward,
     setStepper5Forward,
     setAddonMotor5TensionEnabled,
@@ -721,6 +722,27 @@ export function GluetexSettingPage() {
                         icon: "lu:RotateCw",
                       }}
                       onChange={(value) => setStepper3Forward(value)}
+                    />
+                  </Label>
+
+                  <Label label="Motor 3 Deceleration Distance">
+                    <EditValue
+                      value={
+                        state?.addon_motor_3_state?.deceleration_distance_mm
+                      }
+                      title="Motor 3 Deceleration Distance"
+                      unit="mm"
+                      step={0.1}
+                      min={0}
+                      max={100}
+                      defaultValue={
+                        defaultState?.addon_motor_3_state
+                          ?.deceleration_distance_mm ?? 0
+                      }
+                      renderValue={(value) => roundToDecimals(value, 1)}
+                      onChange={(value) =>
+                        setStepper3DecelerationDistance(value)
+                      }
                     />
                   </Label>
 
