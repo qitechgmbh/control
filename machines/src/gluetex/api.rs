@@ -323,6 +323,8 @@ pub struct LiveValuesEvent {
     pub extra_analog_input_4: f64,
     /// addon motor 5 (TA tape feeder) rpm
     pub addon_motor_5_rpm: f64,
+    /// estimated minutes remaining to reach target pull distance
+    pub estimated_minutes_remaining: f64,
 }
 
 impl LiveValuesEvent {

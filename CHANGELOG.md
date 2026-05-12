@@ -1,3 +1,9 @@
+# Gluetex Bugfixes
+_12.05.2026_
+
+### Pull Distance ETA
+- Fixed estimated time remaining for pull distance not updating continuously — ETA is now recomputed at 30 FPS from live puller speed and progress instead of only recalculating when the target length was saved
+
 # Gluetex
 _08.05.2026_
 

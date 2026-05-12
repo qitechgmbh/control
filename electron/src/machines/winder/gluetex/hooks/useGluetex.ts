@@ -90,6 +90,7 @@ export function useGluetex() {
     optris1Voltage,
     optris2Voltage,
     addonMotor5Rpm,
+    estimatedMinutesRemaining,
     longBufferSampleInterval,
     longBufferRetention,
     reconfigureLongBuffers,
@@ -1844,6 +1845,8 @@ export function useGluetex() {
     // Machine filtering
     filteredMachines,
     selectedMachine,
+
+    estimatedMinutesRemaining,
 
     // Live values (TimeSeries)
     traversePosition,

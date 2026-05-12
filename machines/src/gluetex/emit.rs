@@ -331,6 +331,11 @@ impl Gluetex {
             addon_motor_5_rpm: self
                 .addon_motor_5_controller
                 .steps_to_reference_rpm(self.addon_motor_5.get_speed()),
+            estimated_minutes_remaining: estimate_spool_minutes_remaining(
+                self.spool_automatic_action.target_length,
+                self.spool_automatic_action.progress,
+                puller_speed,
+            ),
         };
 
         live_values

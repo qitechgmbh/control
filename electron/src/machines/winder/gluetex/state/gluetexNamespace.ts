@@ -55,6 +55,7 @@ export const liveValuesEventDataSchema = z.object({
   optris_1_voltage: z.number(),
   optris_2_voltage: z.number(),
   addon_motor_5_rpm: z.number(),
+  estimated_minutes_remaining: z.number(),
 });
 
 /**
@@ -132,7 +133,6 @@ export type HeatingZone =
 export const spoolAutomaticActionStateSchema = z.object({
   spool_required_meters: z.number(),
   spool_automatic_action_mode: spoolAutomaticActionModeSchema,
-  estimated_minutes_remaining: z.number(),
 });
 
 export type SpoolAutomaticActionState = z.infer<
@@ -570,6 +570,9 @@ export type GluetexNamespaceStore = {
   // Addon motor 5 (TA tape feeder) rpm
   addonMotor5Rpm: TimeSeries;
 
+  // Estimated minutes remaining for pull distance (computed from LiveValuesEvent)
+  estimatedMinutesRemaining: number;
+
   // Long buffer configuration
   longBufferSampleInterval: number;
   longBufferRetention: number;
@@ -737,7 +740,6 @@ const DEFAULT_BACKEND_EXTENDED_STATE: ExtendedStateEvent = {
     spool_automatic_action_state: {
       spool_required_meters: 250.0,
       spool_automatic_action_mode: "NoAction",
-      estimated_minutes_remaining: 0,
     },
     heating_states: {
       enabled: false,
@@ -932,6 +934,8 @@ export const createGluetexNamespaceStore =
         // Addon motor 5 rpm
         addonMotor5Rpm,
 
+        estimatedMinutesRemaining: 0,
+
         // Long buffer configuration
         longBufferSampleInterval: persistedGraphConfig.sampleInterval,
         longBufferRetention: persistedGraphConfig.retention,
@@ -1101,6 +1105,7 @@ export function gluetexMessageHandler(
           optris_1_voltage,
           optris_2_voltage,
           addon_motor_5_rpm,
+          estimated_minutes_remaining,
         } = liveValuesEvent.data;
         const timestamp = liveValuesEvent.ts;
 
@@ -1323,6 +1328,8 @@ export function gluetexMessageHandler(
             state.addonMotor5Rpm,
             addonMotor5RpmValue,
           );
+
+          newState.estimatedMinutesRemaining = estimated_minutes_remaining;
 
           return newState;
         });

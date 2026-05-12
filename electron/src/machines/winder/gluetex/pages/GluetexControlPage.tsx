@@ -56,6 +56,7 @@ export function GluetexControlPage() {
     gotoTraverseHome,
     setSpoolAutomaticRequiredMeters,
     setSpoolAutomaticAction,
+    estimatedMinutesRemaining,
     isLoading,
     isDisabled,
   } = useGluetex();
@@ -267,9 +268,7 @@ export function GluetexControlPage() {
               </span>
               <span className="font-mono text-lg font-bold">
                 {(() => {
-                  const minutes =
-                    state?.spool_automatic_action_state
-                      .estimated_minutes_remaining || 0;
+                  const minutes = estimatedMinutesRemaining;
                   if (minutes >= 60) {
                     const hours = Math.floor(minutes / 60);
                     const mins = Math.round(minutes % 60);

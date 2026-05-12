@@ -48,6 +48,7 @@ export function GluetexOverviewPage() {
     setSpoolAutomaticAction,
     setOperationMode,
     resetSpoolProgress,
+    estimatedMinutesRemaining,
     isLoading,
     isDisabled,
     setMode,
@@ -337,9 +338,7 @@ export function GluetexOverviewPage() {
           <Label label="Estimated Time Remaining">
             <span className="font-mono text-lg">
               {(() => {
-                const minutes =
-                  state?.spool_automatic_action_state
-                    .estimated_minutes_remaining || 0;
+                const minutes = estimatedMinutesRemaining;
                 if (minutes >= 60) {
                   const hours = Math.floor(minutes / 60);
                   const mins = Math.round(minutes % 60);
