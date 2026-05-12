@@ -275,6 +275,10 @@ export function useGluetex() {
   const { request: requestAddonMotor3SetPause } = useMachineMutation(
     z.object({ SetAddonMotor3Pause: z.number() }),
   );
+  const { request: requestAddonMotor3SetDecelerationDistance } =
+    useMachineMutation(
+      z.object({ SetAddonMotor3DecelerationDistance: z.number() }),
+    );
   const { request: requestHomeAddonMotor3 } = useMachineMutation(
     z.literal("HomeAddonMotor3"),
   );
@@ -1061,6 +1065,14 @@ export function useGluetex() {
     requestAddonMotor3SetPause({
       machine_identification_unique: machineIdentification,
       data: { SetAddonMotor3Pause: value },
+    });
+  };
+
+  const setStepper3DecelerationDistance = (value: number) => {
+    // Update backend only, no optimistic update needed for now
+    requestAddonMotor3SetDecelerationDistance({
+      machine_identification_unique: machineIdentification,
+      data: { SetAddonMotor3DecelerationDistance: value },
     });
   };
 
@@ -1991,6 +2003,7 @@ export function useGluetex() {
     setStepper5Forward,
     setStepper3Konturlaenge,
     setStepper3Pause,
+    setStepper3DecelerationDistance,
     homeAddonMotor3,
     setAddonMotor5TensionEnabled,
     setAddonMotor5TensionTargetAngle,
