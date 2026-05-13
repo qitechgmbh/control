@@ -9,6 +9,7 @@ use control_core::socketio::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
+use tokio::sync::mpsc::Sender;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
@@ -65,7 +66,21 @@ impl CacheableEvents<TestMachineStepperEvents> for TestMachineStepperEvents {
 }
 
 impl MachineApi for TestMachineStepper {
-    fn api_get_sender(&self) -> smol::channel::Sender<MachineMessage> {
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+            }
+            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::RequestValues(_sender) => {}
+        }
+    }
+
+    fn get_api_sender(&self) -> Sender<MachineMessage> {
         self.api_sender.clone()
     }
 
