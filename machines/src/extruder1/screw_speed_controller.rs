@@ -25,6 +25,11 @@ use crate::{
 
 const AUTOTUNE_MAX_DURATION: Duration = Duration::from_secs(30);
 
+/// Default pressure drop below target before triggering a warning (bar)
+const DEFAULT_PRESSURE_DROP_THRESHOLD_BAR: f64 = 5.0;
+/// Default time the pressure drop condition must persist before stopping the motor
+const DEFAULT_PRESSURE_DROP_TIMEOUT: Duration = Duration::from_secs(5);
+
 #[derive(Debug)]
 pub struct ScrewSpeedController {
     pub pid: ClampingTimeagnosticPidController,
@@ -49,6 +54,18 @@ pub struct ScrewSpeedController {
     autotune_high_frequency: Frequency,
     /// Bounded relay low output used during auto-tuning (current_freq - step, clamped)
     autotune_low_frequency: Frequency,
+    /// Whether a pressure drop has been detected (pressure below target despite motor speeding up)
+    pressure_drop_detected: bool,
+    /// Human-readable message explaining the pressure drop, shown in the frontend
+    pressure_drop_message: String,
+    /// Timestamp when the current pressure drop condition first occurred
+    pressure_drop_start_time: Option<Instant>,
+    /// Motor frequency snapshot taken when the pressure deficit condition first started
+    pressure_drop_frequency_at_start: Frequency,
+    /// How far below target pressure before triggering the detection (bar)
+    pressure_drop_threshold: Pressure,
+    /// How long the condition must persist before stopping the motor
+    pressure_drop_timeout: Duration,
 }
 
 impl ScrewSpeedController {
@@ -83,6 +100,12 @@ impl ScrewSpeedController {
             pid_autotuner: None,
             autotune_high_frequency: Frequency::new::<hertz>(0.0),
             autotune_low_frequency: Frequency::new::<hertz>(0.0),
+            pressure_drop_detected: false,
+            pressure_drop_message: String::new(),
+            pressure_drop_start_time: None,
+            pressure_drop_frequency_at_start: Frequency::new::<hertz>(0.0),
+            pressure_drop_threshold: Pressure::new::<bar>(DEFAULT_PRESSURE_DROP_THRESHOLD_BAR),
+            pressure_drop_timeout: DEFAULT_PRESSURE_DROP_TIMEOUT,
         }
     }
 
@@ -217,6 +240,24 @@ impl ScrewSpeedController {
         }
     }
 
+    pub const fn get_pressure_drop_detected(&self) -> bool {
+        self.pressure_drop_detected
+    }
+
+    /// Returns the human-readable pressure drop warning message, or empty string if none.
+    pub fn get_pressure_drop_message(&self) -> &str {
+        &self.pressure_drop_message
+    }
+
+    /// Clear the pressure drop warning flag and reset the timer.
+    /// Call when the machine leaves extrude mode or the user acknowledges.
+    pub fn clear_pressure_drop_warning(&mut self) {
+        self.pressure_drop_detected = false;
+        self.pressure_drop_message = String::new();
+        self.pressure_drop_start_time = None;
+        self.pressure_drop_frequency_at_start = Frequency::new::<hertz>(0.0);
+    }
+
     pub const fn reset_pid(&mut self) {
         self.pid.reset()
     }
@@ -304,8 +345,61 @@ impl ScrewSpeedController {
             );
 
             self.inverter.set_frequency_target(self.frequency);
+
+            // ── Pressure drop detection ────────────────────────────────────────
+            if self.check_pressure_drop(measured_pressure, now) {
+                let message = format!(
+                    "Extruder pressure drop — motor stopped to prevent damage. \
+                     The extruder may be running empty on material or there is a clog. \
+                     Motor was speeding up ({:.1} → {:.1} Hz) but pressure stayed at \
+                     {:.2} bar (target: {:.2} bar). Motor shut off to avoid damage from \
+                     uncontrolled speedup and sudden material return.",
+                    self.pressure_drop_frequency_at_start.get::<hertz>(),
+                    self.frequency.get::<hertz>(),
+                    measured_pressure.get::<bar>(),
+                    self.target_pressure.get::<bar>(),
+                );
+                tracing::warn!("{message}");
+                self.pressure_drop_detected = true;
+                self.pressure_drop_message = message;
+                self.turn_motor_off();
+                self.last_update = now;
+                return;
+            }
         }
         self.last_update = now;
+    }
+
+    /// Check for pressure drop: the motor has been speeding up (frequency
+    /// increased) to recover pressure, but after the timeout the pressure is
+    /// still significantly below target. This detects conditions like material
+    /// run-out or a blockage before the motor reaches maximum speed.
+    fn check_pressure_drop(&mut self, measured_pressure: Pressure, now: Instant) -> bool {
+        let pressure_deficit = self.target_pressure - measured_pressure;
+
+        if pressure_deficit >= self.pressure_drop_threshold {
+            // Pressure is significantly below target — start or continue tracking
+            if self.pressure_drop_start_time.is_none() {
+                self.pressure_drop_start_time = Some(now);
+                self.pressure_drop_frequency_at_start = self.frequency;
+            }
+
+            if let Some(start) = self.pressure_drop_start_time {
+                let elapsed = now.duration_since(start);
+                let frequency_increased = self.frequency > self.pressure_drop_frequency_at_start;
+
+                // Trigger only if the motor tried to recover (frequency went up)
+                // but the condition has persisted for the full timeout.
+                if elapsed >= self.pressure_drop_timeout && frequency_increased {
+                    return true;
+                }
+            }
+        } else {
+            // Pressure recovered — reset tracking
+            self.pressure_drop_start_time = None;
+        }
+
+        false
     }
 
     pub fn start_pressure_regulation(&mut self) {

@@ -46,6 +46,11 @@ impl ExtruderV2 {
                     .get_target_pressure()
                     .get::<bar>(),
                 wiring_error: self.screw_speed_controller.get_wiring_error(),
+                pressure_drop_warning: self.screw_speed_controller.get_pressure_drop_detected(),
+                pressure_drop_warning_message: self
+                    .screw_speed_controller
+                    .get_pressure_drop_message()
+                    .to_string(),
             },
             screw_state: ScrewState {
                 target_rpm: self
@@ -253,6 +258,8 @@ impl ExtruderV2 {
 
     pub fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
         self.switch_mode(mode);
+        // Clear any pressure drop warning when user explicitly changes mode
+        self.screw_speed_controller.clear_pressure_drop_warning();
         self.emit_state();
     }
 

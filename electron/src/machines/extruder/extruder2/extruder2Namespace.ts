@@ -75,6 +75,8 @@ export const regulationStateSchema = z.object({
 export const pressureStateSchema = z.object({
   target_bar: z.number(),
   wiring_error: z.boolean(),
+  pressure_drop_warning: z.boolean(),
+  pressure_drop_warning_message: z.string(),
 });
 
 /**

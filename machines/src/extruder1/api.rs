@@ -129,6 +129,10 @@ pub struct RegulationState {
 pub struct PressureState {
     pub target_bar: f64,
     pub wiring_error: bool,
+    /// True when pressure has dropped below target despite motor speeding up
+    pub pressure_drop_warning: bool,
+    /// Human-readable warning message shown in the frontend when pressure_drop_warning is true
+    pub pressure_drop_warning_message: String,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]

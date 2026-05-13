@@ -58,6 +58,8 @@ impl MachineNewTrait for ExtruderV2 {
             pressure_state: PressureState {
                 target_bar: 0.0,
                 wiring_error: false,
+                pressure_drop_warning: false,
+                pressure_drop_warning_message: String::new(),
             },
             screw_state: ScrewState { target_rpm: 0.0 },
             heating_states: HeatingStates {

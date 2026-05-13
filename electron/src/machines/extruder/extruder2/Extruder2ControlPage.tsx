@@ -194,6 +194,11 @@ export function Extruder2ControlPage() {
                 Cant Measure Pressure! Check Pressure Sensor Wiring!
               </StatusBadge>
             )}
+            {state?.pressure_state?.pressure_drop_warning && (
+              <StatusBadge variant="error">
+                {state.pressure_state.pressure_drop_warning_message}
+              </StatusBadge>
+            )}
             <TimeSeriesValueNumeric
               label="Pressure"
               unit="bar"
