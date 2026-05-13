@@ -23,15 +23,20 @@ impl As008Flow {
         Self { input }
     }
 
-    /// Returns flow in liters per minute, or `None` if the input reports a wiring error.
-    pub fn get_flow_lpm(&self) -> Option<f64> {
+    /// Returns measured current in mA, or `None` on wiring/protocol errors.
+    pub fn get_current_ma(&self) -> Option<f64> {
         if self.input.get_wiring_error() {
             return None;
         }
-        let current_ma = match self.input.get_physical() {
-            AnalogInputValue::Current(c) => c.get::<milliampere>(),
-            _ => return None,
-        };
+        match self.input.get_physical() {
+            AnalogInputValue::Current(c) => Some(c.get::<milliampere>()),
+            _ => None,
+        }
+    }
+
+    /// Returns flow in liters per minute, or `None` if the input reports a wiring error.
+    pub fn get_flow_lpm(&self) -> Option<f64> {
+        let current_ma = self.get_current_ma()?;
         Some(3.125 * (current_ma - 4.0))
     }
 }
@@ -55,15 +60,20 @@ impl As008Temp {
         Self { input }
     }
 
-    /// Returns temperature in degrees Celsius, or `None` if the input reports a wiring error.
-    pub fn get_temperature_celsius(&self) -> Option<f64> {
+    /// Returns measured current in mA, or `None` on wiring/protocol errors.
+    pub fn get_current_ma(&self) -> Option<f64> {
         if self.input.get_wiring_error() {
             return None;
         }
-        let current_ma = match self.input.get_physical() {
-            AnalogInputValue::Current(c) => c.get::<milliampere>(),
-            _ => return None,
-        };
+        match self.input.get_physical() {
+            AnalogInputValue::Current(c) => Some(c.get::<milliampere>()),
+            _ => None,
+        }
+    }
+
+    /// Returns temperature in degrees Celsius, or `None` if the input reports a wiring error.
+    pub fn get_temperature_celsius(&self) -> Option<f64> {
+        let current_ma = self.get_current_ma()?;
         Some(9.375 * (current_ma - 4.0) - 25.0)
     }
 }
