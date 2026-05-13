@@ -7,7 +7,10 @@ use crate::{
 };
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::{
-    ethercat_hal::io::temperature_input::TemperatureInputInput,
+    ethercat_hal::{
+        devices::wago_modules::wago_750_460::Wago750_460,
+        io::temperature_input::TemperatureInputDevice,
+    },
     machines::MachineIdentificationUnique,
 };
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -26,7 +29,7 @@ pub struct Wago750_460Machine {
     pub last_state_emit: Instant,
 
     // --- hardware -----------------------------------------------------------
-    pub temperature_inputs: [TemperatureInputInput; 4],
+    pub temperature_input_device: Box<Wago750_460>,
 }
 
 impl Wago750_460Machine {
@@ -37,11 +40,16 @@ impl Wago750_460Machine {
 
     pub fn get_state(&self) -> StateEvent {
         let mut temperatures: [Option<f32>; 4] = [None; 4];
-        let mut errors = [false; 4];
-        for (i, ti) in self.temperature_inputs.iter().enumerate() {
-            errors[i] = ti.error;
-            if !ti.error {
-                temperatures[i] = Some(ti.temperature);
+        let mut errors: [bool; 4] = [false; 4];
+        for port in 0..4 {
+            let input = self
+                .temperature_input_device
+                .get_input(port)
+                .expect("getting input for valid port should succeed");
+            if input.error {
+                errors[port] = true;
+            } else {
+                temperatures[port] = Some(input.temperature);
             }
         }
         StateEvent {

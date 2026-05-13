@@ -2,12 +2,9 @@ use std::time::Instant;
 
 use anyhow::Error;
 
-use qitech_lib::ethercat_hal::{
-    devices::{
-        DynamicEthercatDevice, EthercatDevice, downcast_subdevice, wago_750_354::Wago750_354,
-        wago_modules::wago_750_460::Wago750_460,
-    },
-    io::temperature_input::TemperatureInputDevice,
+use qitech_lib::ethercat_hal::devices::{
+    DynamicEthercatDevice, EthercatDevice, downcast_subdevice, wago_750_354::Wago750_354,
+    wago_modules::wago_750_460::Wago750_460,
 };
 
 use crate::{MachineHardware, MachineMessage, MachineNew};
@@ -46,11 +43,6 @@ impl MachineNew for Wago750_460Machine {
         let wago750_460 =
             downcast_subdevice::<Wago750_460>(dev).expect("downcasting device should work");
 
-        let t1 = wago750_460.get_input(0)?;
-        let t2 = wago750_460.get_input(1)?;
-        let t3 = wago750_460.get_input(2)?;
-        let t4 = wago750_460.get_input(3)?;
-
         let (sender, receiver) = tokio::sync::mpsc::channel::<MachineMessage>(2);
         let mut machine = Self {
             api_receiver: receiver,
@@ -58,7 +50,7 @@ impl MachineNew for Wago750_460Machine {
             machine_identification_unique: hw.identification,
             namespace: Wago750_460MachineNamespace { namespace: None },
             last_state_emit: Instant::now(),
-            temperature_inputs: [t1, t2, t3, t4],
+            temperature_input_device: wago750_460,
         };
 
         machine.emit_state();
