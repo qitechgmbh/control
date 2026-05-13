@@ -1,18 +1,14 @@
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use qitech_lib::{
-    ethercat_hal::{io::analog_input::physical::AnalogInputValue},
+    ethercat_hal::io::analog_input::physical::AnalogInputValue,
     machines::{Machine, MachineDataRegistry, MachineIdentificationUnique},
 };
 
-use crate::{
-    MachineApi,
-    minimal_machines::analog_input_test_machine::AnalogInputTestMachine,
-};
+use crate::{MachineApi, minimal_machines::analog_input_test_machine::AnalogInputTestMachine};
 
 impl Machine for AnalogInputTestMachine {
     fn act(&mut self, _machine_data: Option<&mut MachineDataRegistry>) {
-        //@TODO: Check whether we should be using machine_data for anything. Also why is that reference mutable?
         let now = Instant::now();
         let recv = self.api_receiver.try_recv();
         if let Ok(msg) = recv {
