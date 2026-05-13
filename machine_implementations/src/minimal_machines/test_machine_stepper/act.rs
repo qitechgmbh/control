@@ -1,9 +1,14 @@
+use qitech_lib::machines::{Machine, MachineDataRegistry, MachineIdentificationUnique};
+
+use crate::MachineApi;
+
 use super::TestMachineStepper;
-use crate::{MachineAct, MachineMessage};
 use std::time::{Duration, Instant};
 
-impl MachineAct for TestMachineStepper {
-    fn act(&mut self, now: Instant) {
+impl Machine for TestMachineStepper {
+    fn act(&mut self, _machine: Option<&mut MachineDataRegistry>) {
+        let now = Instant::now();
+
         if let Ok(msg) = self.api_receiver.try_recv() {
             self.act_machine_message(msg);
         }
@@ -14,18 +19,11 @@ impl MachineAct for TestMachineStepper {
         }
     }
 
-    fn act_machine_message(&mut self, msg: MachineMessage) {
-        match msg {
-            MachineMessage::SubscribeNamespace(namespace) => {
-                self.namespace.namespace = Some(namespace);
-                self.emit_state();
-            }
-            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
-            MachineMessage::HttpApiJsonRequest(value) => {
-                use crate::MachineApi;
-                let _res = self.api_mutate(value);
-            }
-            MachineMessage::RequestValues(_sender) => {}
-        }
+    fn get_identification(&self) -> MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
+    }
+
+    fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {
+        todo!()
     }
 }
