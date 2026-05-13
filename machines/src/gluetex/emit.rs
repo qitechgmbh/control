@@ -334,7 +334,7 @@ impl Gluetex {
             estimated_minutes_remaining: estimate_spool_minutes_remaining(
                 self.spool_automatic_action.target_length,
                 self.spool_automatic_action.progress,
-                puller_speed,
+                self.puller_speed_controller.target_speed,
             ),
         };
 
@@ -439,7 +439,7 @@ impl Gluetex {
                 estimated_minutes_remaining: estimate_spool_minutes_remaining(
                     self.spool_automatic_action.target_length,
                     self.spool_automatic_action.progress,
-                    self.puller_speed_controller.last_speed,
+                    self.puller_speed_controller.target_speed,
                 ),
             },
             heating_states: api::HeatingStates {
