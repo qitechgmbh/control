@@ -8,7 +8,8 @@ use qitech_lib::{
         devices::{EthercatDevice, downcast_rc_refcell},
         machine_ident_read::MachineDeviceInfo,
     },
-    machines::{Machine, MachineIdentificationUnique}, modbus::ModbusDevice,
+    machines::{Machine, MachineIdentificationUnique},
+    modbus::ModbusDevice,
 };
 use serde::Serialize;
 use tokio::sync::mpsc::Sender;
@@ -37,11 +38,12 @@ pub const WAGO_AI_TEST_MACHINE: u16 = 0x0036;
 pub const DIGITAL_INPUT_TEST_MACHINE: u16 = 0x0040;
 pub const WAGO_8CH_IO_TEST_MACHINE: u16 = 0x0041;
 pub const WAGO_750_430_DI_MACHINE: u16 = 0x0043;
-pub const WAGO_750_553_MACHINE: u16 = 0x0044;
+pub const WAGO_750_553_MACHINE: u16 = 0x0046;
 pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
 pub const WAGO_750_501_TEST_MACHINE: u16 = 0x0042;
+pub const WAGO_750_460_MACHINE: u16 = 0x0044;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct MachineValues {
