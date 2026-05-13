@@ -1,7 +1,7 @@
 pub mod analog_input;
-pub mod as008;
 pub mod analog_input_dummy;
 pub mod analog_output;
+pub mod as008;
 pub mod digital_input;
 pub mod digital_output;
 pub mod encoder_input;
