@@ -1,3 +1,9 @@
+# Gluetex
+_14.05.2026_
+
+### UI
+- Added slave puller status indicator to the overview page (Motors, Temperatures & Heaters tile) — shows a green "Enabled" or gray "Disabled" dot matching the addon motors style
+
 # Gluetex Bugfixes
 _12.05.2026_
 

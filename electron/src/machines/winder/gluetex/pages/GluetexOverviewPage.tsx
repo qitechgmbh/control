@@ -309,6 +309,24 @@ export function GluetexOverviewPage() {
                 <span className="text-muted-foreground text-sm">W</span>
               </div>
             </div>
+
+            {/* Slave Puller */}
+            <div>
+              <h3 className="mb-1 text-sm font-semibold">Slave Puller</h3>
+              <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                <div
+                  className={cn(
+                    "h-5 w-5 rounded-full",
+                    state?.slave_puller_state?.enabled
+                      ? "bg-green-500"
+                      : "bg-gray-300",
+                  )}
+                />
+                <span className="text-xs">
+                  {state?.slave_puller_state?.enabled ? "Enabled" : "Disabled"}
+                </span>
+              </div>
+            </div>
           </div>
         </ControlCard>
 
