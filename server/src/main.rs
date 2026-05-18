@@ -94,8 +94,7 @@ pub async fn add_serial_device(
 
     let machine_identification: MachineIdentificationUnique = device_identification_identified
         .device_machine_identification
-        .machine_identification_unique
-        .clone();
+        .machine_identification_unique;
 
     let new_machine = machine_registry.new_machine(&MachineNewParams {
         device_group: &vec![device_identification_identified],
@@ -115,7 +114,7 @@ pub async fn add_serial_device(
 
     shared_state
         .add_machines_if_not_exists(vec![MachineObj {
-            machine_identification_unique: machine_identification.clone(),
+            machine_identification_unique: machine_identification,
             error: None,
         }])
         .await;

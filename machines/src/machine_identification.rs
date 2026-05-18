@@ -245,8 +245,17 @@ pub async fn read_device_identifications<'maindevice>(
     maindevice: &MainDevice<'maindevice>,
 ) -> Vec<Result<DeviceMachineIdentification, Error>> {
     let mut result = Vec::new();
-    for subdevice in subdevices.iter() {
-        let identification = machine_device_identification(subdevice, maindevice).await;
+    for (index, subdevice) in subdevices.iter().enumerate() {
+        let identification = machine_device_identification(subdevice, maindevice)
+            .await
+            .map(|mut ident| {
+                // Since role 0 illegal, we use the index as an initial best guess
+                if ident.role == 0 {
+                    ident.role = index as u16;
+                }
+
+                ident
+            });
         result.push(identification);
     }
     result

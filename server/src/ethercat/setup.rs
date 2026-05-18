@@ -344,8 +344,8 @@ pub async fn setup_loop(
     let device_identifications = read_device_identifications(&subdevices, &maindevice)
         .await
         .into_iter()
+        .map(|result| result.ok())
         .enumerate()
-        .map(|(i, result)| (i, result.ok()))
         .map(
             |(subdevice_index, device_machine_identification)| DeviceIdentification {
                 device_machine_identification,
