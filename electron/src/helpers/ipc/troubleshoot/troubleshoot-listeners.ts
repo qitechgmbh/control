@@ -82,18 +82,21 @@ export function addTroubleshootEventListeners() {
       return await new Promise<{ success: boolean; error?: string }>(
         (resolve) => {
           // Note: journalctl -xb usually requires sudo or journal group membership
-          exec(`journalctl --since "24 hours ago" > "${filePath}"`, (error, stdout, stderr) => {
-            if (error) {
-              console.error("Exec error:", error);
-              resolve({
-                success: false,
-                error: error instanceof Error ? error.message : String(error),
-              });
-              return;
-            }
+          exec(
+            `journalctl --since "24 hours ago" > "${filePath}"`,
+            (error, stdout, stderr) => {
+              if (error) {
+                console.error("Exec error:", error);
+                resolve({
+                  success: false,
+                  error: error instanceof Error ? error.message : String(error),
+                });
+                return;
+              }
 
-            resolve({ success: true });
-          });
+              resolve({ success: true });
+            },
+          );
         },
       );
     } catch (error) {
