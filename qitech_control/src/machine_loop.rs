@@ -43,16 +43,29 @@ pub fn write_ecat_outputs<C: Consumer, P: Producer>(
     ecat.send_outputs();
 }
 
-pub fn run_machines(machines: &mut Vec<Box<dyn QiTechMachine>>, reg: &mut MachineDataRegistry) {
+pub fn run_machines(machines: &mut Vec<Box<dyn QiTechMachine>>, reg: &mut MachineDataRegistry) -> Option<usize> {
     let machine_count = machines.len();
+    let mut machine_errored_i = None;
     for i in 0..machine_count {
         let machine = machines
             .get_mut(i)
             .expect("Machine should NEVER be NONE here (run_machines)!!");
-        machine.act(Some(reg));
+        let res = machine.act(Some(reg));
+        match res {
+            Ok(_) => (),
+            Err(e) =>{ 
+                match e {
+                    qitech_lib::machines::MachineError::RecoverableFailure(e) => {
+                        println!("machine {:?} had a RecoverableFailure: {:?}",machine.get_identification(), e);
+                        machine_errored_i = Some(i);
+                    },
+                    qitech_lib::machines::MachineError::IrrecoverableFailure(e) => {
+                        println!("removing machine {:?} it had an IrrecoverableFailure {:?}",machine.get_identification(), e);
+                        machine_errored_i = Some(i);
+                    },
+                }                    
+            },
+        }
     }
-
-    for machine in machines {
-        machine.react(reg);
-    }
+    machine_errored_i
 }

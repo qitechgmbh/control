@@ -1,10 +1,10 @@
 use super::LaserMachine;
 use crate::MachineApi;
-use qitech_lib::machines::{Machine, MachineDataRegistry, MachineIdentificationUnique};
+use qitech_lib::machines::{Machine, MachineDataRegistry, MachineError, MachineIdentificationUnique};
 use std::time::{Duration, Instant};
 
 impl Machine for LaserMachine {
-    fn act(&mut self, _reg: Option<&mut MachineDataRegistry>) {
+    fn act(&mut self, _reg: Option<&mut MachineDataRegistry>) -> Result<(), MachineError> {
         let now: Instant = std::time::Instant::now();
         let msg = self.api_receiver.try_recv();
         match msg {
@@ -15,8 +15,7 @@ impl Machine for LaserMachine {
         };
 
         self.update();
-        self.refresh_data();
-
+        
         if self.did_change_state {
             self.emit_state();
         }
@@ -26,6 +25,11 @@ impl Machine for LaserMachine {
             self.emit_live_values();
             self.last_measurement_emit = now;
         }
+
+        match &self.error {
+            Some(e) => return Err(e.clone()),
+            None => Ok(()),
+        }        
     }
 
     fn react(&mut self, _registry: &MachineDataRegistry) {}

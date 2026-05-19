@@ -1,10 +1,13 @@
 use crate::app_state::MainState;
 use crate::app_state::get_async_runtime;
+#[cfg(not(feature = "mock"))]
+use crate::machine_loop::run_machines;
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
+use machine_implementations::MACHINE_LASER_V1;
 use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
-use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
+use machine_loop::{write_ecat_inputs, write_ecat_outputs};
 use qitech_lib::ethercat_hal::devices::device_from_subdevice_identity_rc;
 use qitech_lib::ethercat_hal::{
     BECKHOFF_VENDOR_ID, EtherCATControl, TripleBufConsumer, TripleBufProducer,
@@ -13,9 +16,9 @@ use qitech_lib::ethercat_hal::{
 use qitech_lib::ethercat_hal::{
     DcConfiguration, MasterConfiguration, RtOptimizationConfig, init_ethercat,
 };
-use qitech_lib::modbus::clients::example_client::ExampleClient;
-use qitech_lib::modbus::managers::ExampleDeviceManager;
-use qitech_lib::modbus::start_modbus_async_task;
+use qitech_lib::serial::get_available_ports;
+#[cfg(not(feature = "mock"))]
+use tokio::runtime::Handle;
 use std::{sync::Arc, time::Duration};
 
 pub mod apis;
@@ -75,17 +78,46 @@ fn setup_ethercat(
     let _res = state.fill_ethercat_metadata(eth_control.controller.clone(), idents);
 }
 
-fn setup_serial(main_state: &mut MainState) {
-    let rt = get_async_runtime();
-    let (tx, rx) = ExampleClient::create_channels();
-    rt.spawn(start_modbus_async_task(
-        "/dev/ttyUSB0".to_string(),
-        1,
-        38400,
-        rx,
-    ));
-    let modbus_mgr = ExampleDeviceManager::new(tx);
-    main_state.generate_machine_hardware_from_serial(modbus_mgr);
+
+
+fn add_laser(main_state : &mut MainState, shared_state : Arc<SharedAppState>) -> Result<(),anyhow::Error> {
+    let machine_index_to_remove = main_state.machines.iter().position( |m| m.get_identification().machine_ident.machine == MACHINE_LASER_V1 );
+    let machine_obj_index = shared_state.machines.try_read()?.iter().position( |m| m.machine_identification_unique.machine_identification.machine == MACHINE_LASER_V1 );
+
+    match machine_index_to_remove {
+        Some(index) => {
+            main_state.machines.remove(index);
+        },
+        None => (),
+    }
+
+    match machine_obj_index {
+        Some(index) => {
+            shared_state.machines.try_write()?.remove(index);
+        },
+        None => (),
+        }
+        // Port is not used right now, so check if port exists
+        let ports = get_available_ports()?;
+        for port in ports {
+            if port.port_name == "/dev/ttyUSB0" || port.port_name == "/dev/ttyUSB1" {
+                main_state.generate_machine_hardware_from_serial(&port.port_name)?;            
+                detect_and_build_machines(shared_state, main_state);        
+                break;
+            }
+        }
+        Ok(())
+}
+
+fn laser_hotplug(main_state : &mut MainState, shared_state : Arc<SharedAppState>) -> Result<(),anyhow::Error> {
+    match main_state.machines.iter().any(|x| x.get_identification().machine_ident.machine == MACHINE_LASER_V1) {
+        true => Ok(()),
+        false => {
+            add_laser(main_state, shared_state.clone())?;
+            send_setup_done_events(shared_state);
+            Ok(())
+        },
+    }
 }
 
 fn finalize_ethercat(
@@ -125,8 +157,9 @@ fn setup_api_and_websock(state: Arc<SharedAppState>) {
     rt.spawn(start_socketio_queue(state));
 }
 
-fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainState) {
+fn detect_and_build_machines(state : Arc<SharedAppState>, main_state: &mut MainState) {
     for key in main_state.hardware.keys() {
+
         let result = MACHINE_REGISTRY
             .new_machine(key.clone(), main_state.hardware.get(key).unwrap().clone());
         match result {
@@ -176,7 +209,6 @@ fn optimized_ethercat_init(
 
 fn find_ethercat_interface() -> Result<String, anyhow::Error> {
     let interfaces = qitech_lib::ethercat_hal::interface_discovery::list_ethernet_interfaces();
-    println!("{:?}", interfaces);
     match interfaces {
         Ok(interfaces) => {
             for interface in interfaces {
@@ -205,43 +237,67 @@ fn find_ethercat_interface() -> Result<String, anyhow::Error> {
     }
 }
 
+
 #[cfg(not(feature = "mock"))]
 fn main_logic() {
     let state = Arc::new(SharedAppState::new());
     let mut main_state = MainState::new();
+    let mut eth_control : Option<EtherCATControl<TripleBufConsumer,TripleBufProducer>> = None;
 
     let res = find_ethercat_interface();
-    let mut eth_control = match res {
+    eth_control = match res {
         Ok(interface) => Some(optimized_ethercat_init(&interface)),
-        Err(_) => return,
+        Err(_) => None,
     };
+
     setup_api_and_websock(state.clone());
+
     match &eth_control {
         Some(control) => setup_ethercat(state.clone(), &mut main_state, control),
         None => (),
     };
 
-    setup_serial(&mut main_state);
     detect_and_build_machines(state.clone(), &mut main_state);
-    // Order is important here, because when detect_and_build_machines is called
-    // Every machine assumes ethercat devices are in PreOp, finalize moves to OP
+
     match &eth_control {
         Some(control) => finalize_ethercat(&mut main_state, control),
         None => (),
     };
-    send_setup_done_events(state);
-    match &mut eth_control {
-        Some(control) => loop {
-            write_ecat_inputs(&mut control.app_handle, main_state.subdevices.clone());
+    
+    send_setup_done_events(state.clone());
+    loop {
+        match &mut eth_control {
+            Some(control) => {
+                write_ecat_inputs(&mut control.app_handle, main_state.subdevices.clone());
+            },
+            None => (),            
+        };
+        
+        let _ = laser_hotplug(&mut main_state, state.clone());                   
+        let machines_to_remove = run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
+        match machines_to_remove {
+            Some(i) => {
+                let machine = main_state.machines.get(i).expect("Should not be none as we got an index into the machines vec");                
+                let ident = machine.get_identification();
+                main_state.machine_data_reg.zero_entry(ident);
+                main_state.machines.remove(i);
+                let mut guard = state.machines.try_write().expect("sharedstate.machines Should never be locked here!!!"); // Is expected to never be locked at this point
+                let pos = guard.iter().position(|x| x.machine_identification_unique == ident.into()).expect("Machine has to still exist as metadata at this point");
+                main_state.hardware.remove(&ident);
+                guard.remove(pos);
+                drop(guard);
+            },
+            None => (),
+        }
 
-            run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
-
-            write_ecat_outputs(&mut control.app_handle, main_state.subdevices.clone());
-
-            std::thread::sleep(Duration::from_micros(control.controller.cycle_time_us));
-        },
-        None => (),
-    }
+        match &mut eth_control {
+            Some(control) => {
+                write_ecat_outputs(&mut control.app_handle, main_state.subdevices.clone());
+            },
+            None => (),            
+        };
+        std::thread::sleep(Duration::from_micros(100));
+    }    
 }
 fn main() {
     #[cfg(not(feature = "mock"))]

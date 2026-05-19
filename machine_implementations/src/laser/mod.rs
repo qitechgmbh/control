@@ -2,15 +2,13 @@ use crate::{MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::{
-    machines::{MachineIdentification, MachineIdentificationUnique},
+    machines::{MachineError, MachineIdentification, MachineIdentificationUnique},
     modbus::{
-        Scheduler,
-        devices::qitech_laser::LaserDevice,
-        managers::{ExampleDeviceManager, example_manager::ExampleScheduler},
+        ModbusDevice, devices::qitech_laser::{LaserDevice, LaserError}
     },
     units::{Length, length::millimeter},
 };
-use std::{cell::RefCell, rc::Rc, time::Instant};
+use std::{cell::RefCell, rc::Rc, time::{Duration, Instant}};
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 
@@ -23,8 +21,6 @@ pub enum LaserRequestState {
     NotWaiting,
 }
 
-pub const LASER_TIMEOUT_MS: u32 = 16;
-
 pub struct LaserMachine {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
@@ -32,11 +28,9 @@ pub struct LaserMachine {
     mutation_counter: u64,
     namespace: LaserMachineNamespace,
     last_measurement_emit: Instant,
-
-    modbus_mgr: Rc<RefCell<ExampleDeviceManager>>,
-    laser: Rc<RefCell<LaserDevice<ExampleScheduler>>>,
-    laser_state: LaserRequestState,
-
+    last_request: Instant,
+    laser: Rc<RefCell<LaserDevice>>,
+    error: Option<MachineError>,
     // laser values
     diameter: Length,
     x_diameter: Option<Length>,
@@ -191,51 +185,48 @@ impl LaserMachine {
         self.in_tolerance
     }
 
-    pub fn refresh_data(&mut self) {
-        match self.laser_state {
-            LaserRequestState::Waiting(_) => return,
-            LaserRequestState::NotWaiting => {
-                {
-                    let mut laser = self.laser.borrow_mut();
-                    laser.refresh_measurement();
-                }
-                let mut borrow = self.modbus_mgr.borrow_mut();
-                borrow.try_send();
-                drop(borrow);
-                let now = Instant::now();
-                self.laser_state = LaserRequestState::Waiting(now);
-            }
-        }
-    }
-
     pub fn update(&mut self) {
-        /*  match self.laser_state {
-            LaserRequestState::Waiting(earlier) =>
-            if Instant::now().duration_since(earlier).as_millis() < LASER_TIMEOUT_MS as u128 {
-                return
-            },
-            LaserRequestState::NotWaiting => return,
-        };*/
-        {
-            self.modbus_mgr.borrow_mut().try_receive(); // ? why no return ...       
-        }
-        {
-            let laser = self.laser.borrow_mut();
-            let measurement = laser.measurement();
-            match measurement {
-                Some(m) => {
-                    self.x_diameter = Some(Length::new::<millimeter>(m.x_axis as f64 / 1000.0));
-                    self.y_diameter = Some(Length::new::<millimeter>(m.y_axis as f64 / 1000.0));
-                    self.diameter = Length::new::<millimeter>(m.diameter as f64 / 1000.0);
+        let mut laser = self.laser.borrow_mut();
+        let now = std::time::Instant::now();
+
+        // Check for incoming responses on every tick
+        let res = laser.handle_response();                
+        match res {
+            Ok(_) =>(),
+            Err(e) => {
+                if let Some(laser_error) = e.downcast_ref::<LaserError>() {                                
+                    match laser_error {
+                        LaserError::IoErr() => {                            
+                            self.error = Some(MachineError::IrrecoverableFailure("Physical hardware I/O broke. Dropping machine permanently.".to_owned()));
+                        }
+                        _ => (),
+                    }
                 }
-                None => (),
-            };
+            },
         }
+        
+        if now.duration_since(self.last_request) > Duration::from_millis(6) {            
+            self.last_request = now;
+            let res = laser.send_next_request();
+            if res.is_err() {
+                println!("send_next_request {:?}",res);
+            }
+        }     
+
+        match &laser.measurement {
+            Some(m) => {
+                self.x_diameter = Some(Length::new::<millimeter>(m.x_axis as f64 / 1000.0));
+                self.y_diameter = Some(Length::new::<millimeter>(m.y_axis as f64 / 1000.0));
+                self.diameter = Length::new::<millimeter>(m.diameter as f64 / 1000.0);
+            }
+            None => (),
+        };
+        drop(laser);
+        
         if self.in_tolerance != self.calculate_in_tolerance() {
             self.did_change_state = true;
         }
 
-        self.laser_state = LaserRequestState::NotWaiting;
     }
 }
 

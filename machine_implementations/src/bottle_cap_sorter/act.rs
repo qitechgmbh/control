@@ -6,7 +6,7 @@ use crate::MachineApi;
 use super::Sorter1;
 
 impl Machine for Sorter1 {
-    fn act(&mut self, _reg : Option<&mut MachineDataRegistry> ) {
+    fn act(&mut self, _reg : Option<&mut MachineDataRegistry> ) -> Result<(), MachineError> {
         let msg = self.api_receiver.try_recv();
         match msg {
             Ok(msg) => {
@@ -38,6 +38,7 @@ impl Machine for Sorter1 {
             self.emit_live_values();
             self.last_measurement_emit = now;
         }
+        Ok(())
     }
 
     fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {

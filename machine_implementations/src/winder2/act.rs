@@ -1,4 +1,4 @@
-use qitech_lib::machines::{Machine, MachineIdentificationUnique};
+use qitech_lib::machines::{Machine, MachineError, MachineIdentificationUnique};
 
 use super::Winder2;
 use crate::MachineApi;
@@ -9,7 +9,7 @@ impl Machine for Winder2 {
         self.machine_identification_unique.clone()
     }
 
-    fn act(&mut self, _machine_data: Option<&mut qitech_lib::machines::MachineDataRegistry>) {
+    fn act(&mut self, _machine_data: Option<&mut qitech_lib::machines::MachineDataRegistry>) -> Result<(), MachineError> {
         let now = std::time::Instant::now();
         let machine_message = self.api_receiver.try_recv();
         match machine_message {
@@ -37,6 +37,7 @@ impl Machine for Winder2 {
             self.emit_live_values();
             self.last_measurement_emit = now;
         }
+        Ok(())
     }
 
     fn react(&mut self, registry: &qitech_lib::machines::MachineDataRegistry) {}
