@@ -42,7 +42,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 const CYCLE_TARGET_TIME: Duration = Duration::from_micros(2000);
 
 #[cfg(not(feature = "development-build"))]
-const CYCLE_TARGET_TIME: Duration = Duration::from_micros(700);
+const CYCLE_TARGET_TIME: Duration = Duration::from_micros(1000);
 
 #[cfg(feature = "mock-machine")]
 use mock_init::init_mock;
