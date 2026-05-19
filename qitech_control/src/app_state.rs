@@ -21,14 +21,13 @@ use machine_implementations::{
 };
 use qitech_lib::{
     ethercat_hal::{
-        Consumer, EtherCATThreadChannel, MetaSubdevice, Producer, StandardEtherCATController,
+        Consumer, EtherCATThreadChannel, MetaSubdevice, Producer,
         controller::EtherCATController, devices::EthercatDevice,
         machine_ident_read::MachineDeviceInfo,
     },
     machines::{MachineDataRegistry, MachineIdentification, MachineIdentificationUnique},
     modbus::{
-        devices::qitech_laser::LaserDevice,
-        managers::{ExampleDeviceManager, example_manager::ExampleScheduler},
+        ModbusDevice, devices::qitech_laser::LaserDevice
     },
 };
 use socketioxide::{SocketIo, extract::SocketRef};
@@ -43,7 +42,7 @@ use tokio::{
     sync::{
         RwLock,
         mpsc::{Receiver, Sender},
-    },
+    }, task::JoinHandle,
 };
 
 static RUNTIME: OnceLock<Runtime> = OnceLock::new();
@@ -227,7 +226,6 @@ pub struct MainState {
     pub machines: Vec<Box<dyn QiTechMachine>>,
     pub machine_errors: HashMap<MachineIdentificationUnique, String>,
     pub machine_data_reg: MachineDataRegistry,
-    pub modbus_mgrs: Vec<Rc<RefCell<ExampleDeviceManager>>>,
 }
 
 impl MainState {
@@ -239,8 +237,7 @@ impl MainState {
         MainState {
             machines,
             machine_data_reg,
-            subdevices: vec![],
-            modbus_mgrs: vec![],
+            subdevices: vec![],            
             hardware: HashMap::new(),
             machine_errors: HashMap::new(),
         }
@@ -248,13 +245,12 @@ impl MainState {
 
     pub fn generate_machine_hardware_from_serial(
         &mut self,
-        mgr: Rc<RefCell<ExampleDeviceManager>>,
-    ) {
-        let laser_device: Rc<RefCell<LaserDevice<ExampleScheduler>>> =
-            ExampleDeviceManager::register_device(mgr.clone(), 1);
+        path : &str,
+    ) -> Result<(),anyhow::Error> {
+        let laser_device: Rc<RefCell<LaserDevice>> =
+           Rc::new(RefCell::new(LaserDevice::new(path.to_owned(), 1, None)?));
         let id_modbus: IdentifiedModbus = IdentifiedModbus {
             hw: laser_device,
-            manager: mgr.clone(),
         };
         let ident = MachineIdentificationUnique {
             machine_ident: LaserMachine::MACHINE_IDENTIFICATION,
@@ -265,9 +261,9 @@ impl MainState {
             identification: ident,
             ethercat_interface: None,
         };
-        hw.hw.push(Hardware::Modbus(id_modbus));
-        self.modbus_mgrs.push(mgr.clone());
+        hw.hw.push(Hardware::Modbus(id_modbus));        
         self.hardware.insert(ident, hw);
+        Ok(())
     }
 
     pub fn generate_machine_hardware_from_ethercat(

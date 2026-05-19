@@ -8,7 +8,7 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::ethercat_hal::devices::el2004::EL2004;
 use qitech_lib::ethercat_hal::io::digital_input::DigitalInputDevice;
 use qitech_lib::machines::{
-    Machine, MachineDataRegistry, MachineIdentification, MachineIdentificationUnique,
+    Machine, MachineDataRegistry, MachineError, MachineIdentification, MachineIdentificationUnique
 };
 use tokio::sync::mpsc::{Receiver, Sender};
 pub mod api;
@@ -34,7 +34,7 @@ impl DigitalInputTestMachine {
 }
 
 impl Machine for DigitalInputTestMachine {
-    fn act(&mut self, _registry: Option<&mut MachineDataRegistry>) {
+    fn act(&mut self, _registry: Option<&mut MachineDataRegistry>) -> Result<(),MachineError>{
         let now = std::time::Instant::now();
 
         let res = self.receiver.try_recv();
@@ -71,6 +71,7 @@ impl Machine for DigitalInputTestMachine {
                 ));
             self.last_state_emit = now;
         }
+        Ok(())
     }
 
     fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {

@@ -1,10 +1,10 @@
 use super::{AquaPathV1, AquaPathV1Mode};
 use crate::MachineApi;
-use qitech_lib::machines::{Machine, MachineDataRegistry};
+use qitech_lib::machines::{Machine, MachineDataRegistry, MachineError};
 use std::time::{Duration, Instant};
 
 impl Machine for AquaPathV1 {
-    fn act(&mut self, _reg: Option<&mut MachineDataRegistry>) {
+    fn act(&mut self, _reg: Option<&mut MachineDataRegistry>) -> Result<(), MachineError> {
         let msg = self.api_receiver.try_recv();
         match msg {
             Ok(msg) => {
@@ -45,6 +45,7 @@ impl Machine for AquaPathV1 {
             self.emit_live_values();
             self.last_measurement_emit = now;
         }
+        Ok(())
     }
 
     fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {}

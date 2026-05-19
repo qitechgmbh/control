@@ -8,11 +8,7 @@ use qitech_lib::{
         devices::{EthercatDevice, downcast_rc_refcell},
         machine_ident_read::MachineDeviceInfo,
     },
-    machines::{Machine, MachineIdentificationUnique},
-    modbus::{
-        Device,
-        managers::{ExampleDeviceManager, example_manager::ExampleScheduler},
-    },
+    machines::{Machine, MachineIdentificationUnique}, modbus::ModbusDevice,
 };
 use serde::Serialize;
 use tokio::sync::mpsc::Sender;
@@ -75,8 +71,7 @@ pub struct IdentifiedEthercat {
 
 #[derive(Clone)]
 pub struct IdentifiedModbus {
-    pub hw: Rc<RefCell<dyn Device<ExampleScheduler>>>,
-    pub manager: Rc<RefCell<ExampleDeviceManager>>,
+    pub hw: Rc<RefCell<dyn ModbusDevice>>,
 }
 
 #[derive(Clone)]
@@ -138,7 +133,7 @@ impl MachineHardware {
     }
 
     pub fn downcast_serial_rc_refcell<T: 'static>(
-        dev: Rc<RefCell<dyn Device<ExampleScheduler>>>,
+        dev: Rc<RefCell<dyn ModbusDevice>>,
     ) -> Result<Rc<RefCell<T>>, anyhow::Error> {
         // Check if the inner type is actually T
         let is_t = dev.borrow().as_any().is::<T>();
@@ -150,20 +145,6 @@ impl MachineHardware {
         // We cast the fat pointer to a thin pointer of the concrete RefCell<T>
         let raw_concrete_ptr = raw_trait_ptr as *const RefCell<T>;
         unsafe { Ok(Rc::from_raw(raw_concrete_ptr)) }
-    }
-
-    pub fn try_get_modbus_mgr_by_index(
-        &self,
-        index: usize,
-    ) -> Result<Rc<RefCell<ExampleDeviceManager>>> {
-        let hw = self.hw.get(index).unwrap().clone();
-        match hw {
-            Hardware::Modbus(identified_modbus) => Ok(identified_modbus.manager.clone()),
-            _ => Err(anyhow::anyhow!(
-                "index {} not an modbus device in hardware",
-                index
-            )),
-        }
     }
 
     pub fn try_get_serial_device_by_index<T: 'static>(
