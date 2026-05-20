@@ -9,7 +9,7 @@ impl Machine for TestMachineStepper {
     fn act(&mut self, _machine: Option<&mut MachineDataRegistry>) {
         let now = Instant::now();
 
-        if let Ok(msg) = self.api_receiver.try_recv() {
+        if let Ok(msg) = self.receiver.try_recv() {
             self.act_machine_message(msg);
         }
 
@@ -23,7 +23,5 @@ impl Machine for TestMachineStepper {
         self.machine_identification_unique.clone()
     }
 
-    fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {
-        todo!()
-    }
+    fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {}
 }

@@ -9,7 +9,7 @@ impl Machine for Wago8chDigitalIOTestMachine {
     fn act(&mut self, _machine_data: std::option::Option<&mut MachineDataRegistry>) {
         let now = Instant::now();
 
-        if let Ok(msg) = self.api_receiver.try_recv() {
+        if let Ok(msg) = self.receiver.try_recv() {
             self.act_machine_message(msg);
         }
 

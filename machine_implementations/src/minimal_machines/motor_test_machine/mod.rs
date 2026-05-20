@@ -1,19 +1,18 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::machine_identification::{MachineIdentification};
-use crate::{ MachineMessage};
 use crate::{MOTOR_TEST_MACHINE, VENDOR_QITECH};
+use crate::{MachineMessage, QiTechMachine};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
-use qitech_lib::machines::MachineIdentificationUnique;
+use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
 use tokio::sync::mpsc::{Receiver, Sender};
 
 pub mod act;
 pub mod api;
 pub mod new;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct MotorState {
     pub enabled: bool,
     pub target_velocity: i32,
@@ -21,8 +20,8 @@ pub struct MotorState {
 
 #[derive(Debug)]
 pub struct MotorTestMachine {
-    api_receiver: Receiver<MachineMessage>,
-    api_sender: Sender<MachineMessage>,
+    receiver: Receiver<MachineMessage>,
+    sender: Sender<MachineMessage>,
     machine_identification_unique: MachineIdentificationUnique,
     namespace: api::BeckhoffNamespace,
 
@@ -31,6 +30,7 @@ pub struct MotorTestMachine {
     pub motor_state: MotorState,
 }
 
+impl QiTechMachine for MotorTestMachine {}
 
 impl MotorTestMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
