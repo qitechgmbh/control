@@ -15,14 +15,18 @@ use machine_implementations::{
     Hardware, IdentifiedEthercat, IdentifiedModbus, MachineHardware, MachineMessage, QiTechMachine,
     laser::LaserMachine,
     machine_identification::{
-        DeviceHardwareIdentificationEthercat, DeviceIdentification, DeviceMachineIdentification,
-        QiTechMachineIdentificationUnique,
+        self, DeviceHardwareIdentificationEthercat, DeviceIdentification,
+        DeviceMachineIdentification, QiTechMachineIdentificationUnique,
     },
 };
 use qitech_lib::{
     ethercat_hal::{
-        Consumer, EtherCATThreadChannel, MetaSubdevice, Producer, controller::EtherCATController,
-        devices::EthercatDevice, machine_ident_read::MachineDeviceInfo,
+        Consumer, EtherCATThreadChannel, MetaSubdevice, Producer,
+        controller::EtherCATController,
+        devices::{
+            EthercatDevice, wago_750_354::Wago750_354, wago_modules::ip20_ec_di8_do8::IP20EcDi8Do8,
+        },
+        machine_ident_read::MachineDeviceInfo,
     },
     machines::{MachineDataRegistry, MachineIdentification, MachineIdentificationUnique},
     modbus::{ModbusDevice, devices::qitech_laser::LaserDevice},
@@ -40,7 +44,6 @@ use tokio::{
         RwLock,
         mpsc::{Receiver, Sender},
     },
-    task::JoinHandle,
 };
 
 static RUNTIME: OnceLock<Runtime> = OnceLock::new();

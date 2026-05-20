@@ -1,13 +1,13 @@
 use std::time::{Duration, Instant};
 
-use qitech_lib::machines::{Machine, MachineDataRegistry};
+use qitech_lib::machines::{Machine, MachineDataRegistry, MachineError};
 
 use crate::MachineApi;
 
 use super::Wago750_460Machine;
 
 impl Machine for Wago750_460Machine {
-    fn act(&mut self, _machine_data: Option<&mut MachineDataRegistry>) {
+    fn act(&mut self, _machine_data: Option<&mut MachineDataRegistry>) -> Result<(), MachineError> {
         let now = Instant::now();
 
         if let Ok(msg) = self.receiver.try_recv() {
@@ -19,6 +19,8 @@ impl Machine for Wago750_460Machine {
             self.emit_state();
             self.last_state_emit = now;
         }
+
+        Ok(())
     }
 
     fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {}
