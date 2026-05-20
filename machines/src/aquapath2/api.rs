@@ -38,8 +38,6 @@ pub struct LiveValuesEvent {
     pub back_heating_startup_wait_remaining: f64,
     pub front_total_energy: f64,
     pub back_total_energy: f64,
-    pub front_as006_temp: Option<f64>,
-    pub back_as006_temp: Option<f64>,
 }
 
 impl LiveValuesEvent {

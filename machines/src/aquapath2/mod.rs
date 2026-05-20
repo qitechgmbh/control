@@ -1,6 +1,5 @@
 use api::{ToleranceState, ToleranceStates};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use ethercat_hal::io::as006::As006Temp;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use units::angular_velocity::revolution_per_minute;
@@ -51,8 +50,6 @@ pub struct AquaPathV2 {
     last_measurement_emit: Instant,
     front_controller: Controller,
     back_controller: Controller,
-    front_as006_temp: As006Temp,
-    back_as006_temp: As006Temp,
     main_sender: Option<Sender<AsyncThreadMessage>>,
 }
 
@@ -137,8 +134,6 @@ impl AquaPathV2 {
                 .as_secs_f64(),
             front_total_energy: self.front_controller.get_total_energy(),
             back_total_energy: self.back_controller.get_total_energy(),
-            front_as006_temp: self.front_as006_temp.get_temperature_celsius(),
-            back_as006_temp: self.back_as006_temp.get_temperature_celsius(),
         }
     }
 

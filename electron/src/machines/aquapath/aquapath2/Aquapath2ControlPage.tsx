@@ -19,8 +19,6 @@ export function Aquapath2ControlPage() {
     back_flow,
     front_temperature,
     back_temperature,
-    front_as008_temp,
-    back_as008_temp,
     front_power,
     back_power,
     combinedPower,
@@ -93,15 +91,6 @@ export function Aquapath2ControlPage() {
                 label="Temperature"
                 unit="C"
                 timeseries={back_temperature}
-                renderValue={(value) => value.toFixed(1)}
-              />
-            </div>
-
-            <div className="flex flex-row">
-              <TimeSeriesValueNumeric
-                label="Flow Sensor Temperature"
-                unit="C"
-                timeseries={back_as008_temp}
                 renderValue={(value) => value.toFixed(1)}
               />
             </div>
@@ -229,15 +218,6 @@ export function Aquapath2ControlPage() {
                 label="Temperature"
                 unit="C"
                 timeseries={front_temperature}
-                renderValue={(value) => value.toFixed(1)}
-              />
-            </div>
-
-            <div className="flex flex-row">
-              <TimeSeriesValueNumeric
-                label="Flow Sensor Temperature"
-                unit="C"
-                timeseries={front_as008_temp}
                 renderValue={(value) => value.toFixed(1)}
               />
             </div>

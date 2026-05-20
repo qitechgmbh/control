@@ -15,7 +15,6 @@ use ethercat_hal::{
         ek1100::{EK1100, EK1100_IDENTITY_A},
         el2008::{EL2008, EL2008_IDENTITY_A, EL2008_IDENTITY_B, EL2008Port},
         el3024::{EL3024, EL3024_IDENTITY_A, EL3024Port},
-        el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port},
         el4002::{EL4002, EL4002_IDENTITY_A, EL4002Port},
     },
     io::{
@@ -23,7 +22,6 @@ use ethercat_hal::{
         analog_output::AnalogOutput,
         as006::{As006Flow, As006Temp},
         digital_output::DigitalOutput,
-        temperature_input::TemperatureInput,
     },
 };
 use std::time::Instant;
@@ -68,27 +66,17 @@ impl MachineNewTrait for AquaPathV2 {
             .await?
             .0;
 
-            // Role 2 - EL3204 PT100 Temperature Input
-            let el3204 = get_ethercat_device::<EL3204>(
-                hardware,
-                params,
-                2,
-                [EL3204_IDENTITY_A, EL3204_IDENTITY_B].to_vec(),
-            )
-            .await?
-            .0;
-
-            // Role 3 - EL4002 Analog Output (fan speed)
+            // Role 2 - EL4002 Analog Output (fan speed)
             let el4002 =
-                get_ethercat_device::<EL4002>(hardware, params, 3, [EL4002_IDENTITY_A].to_vec())
+                get_ethercat_device::<EL4002>(hardware, params, 2, [EL4002_IDENTITY_A].to_vec())
                     .await?
                     .0;
 
-            // Role 4 - EL3024 4-channel 4-20mA Analog Input
+            // Role 3 - EL3024 4-channel 4-20mA Analog Input
             // AI1 → front flow (As006Flow), AI2 → front temp (As006Temp)
             // AI3 → back flow (As006Flow),  AI4 → back temp (As006Temp)
             let el3024 =
-                get_ethercat_device::<EL3024>(hardware, params, 4, [EL3024_IDENTITY_A].to_vec())
+                get_ethercat_device::<EL3024>(hardware, params, 3, [EL3024_IDENTITY_A].to_vec())
                     .await?
                     .0;
 
@@ -99,12 +87,6 @@ impl MachineNewTrait for AquaPathV2 {
             let back_flow_sensor =
                 As006Flow::new(AnalogInput::new(el3024.clone(), EL3024Port::AI3));
             let back_as006_temp = As006Temp::new(AnalogInput::new(el3024.clone(), EL3024Port::AI4));
-
-            // PT100 temperature sensors from EL3204
-            let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1); // front, after heating
-            let t2 = TemperatureInput::new(el3204.clone(), EL3204Port::T2); // front, in reservoir
-            let t3 = TemperatureInput::new(el3204.clone(), EL3204Port::T3); // back, after heating
-            let t4 = TemperatureInput::new(el3204.clone(), EL3204Port::T4); // back, in reservoir
 
             // Digital outputs from EL2008
             let do1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1); // front pump
@@ -129,8 +111,7 @@ impl MachineNewTrait for AquaPathV2 {
                 ao2,
                 do8,
                 do6,
-                t3,
-                t4,
+                back_as006_temp,
                 AngularVelocity::new::<revolution_per_minute>(100.0),
                 Flow::default(),
                 do5,
@@ -147,8 +128,7 @@ impl MachineNewTrait for AquaPathV2 {
                 ao1,
                 do4,
                 do2,
-                t1,
-                t2,
+                front_as006_temp,
                 AngularVelocity::new::<revolution_per_minute>(100.0),
                 Flow::default(),
                 do1,
@@ -172,8 +152,6 @@ impl MachineNewTrait for AquaPathV2 {
                 last_measurement_emit: Instant::now(),
                 front_controller,
                 back_controller,
-                front_as006_temp,
-                back_as006_temp,
             };
             machine.emit_state();
 

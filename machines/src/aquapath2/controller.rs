@@ -1,9 +1,7 @@
 use crate::aquapath1::{Flow, Temperature};
 use control_core::controllers::pid::PidController;
-use ethercat_hal::io::as006::As006Flow;
-use ethercat_hal::io::{
-    analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
-};
+use ethercat_hal::io::as006::{As006Flow, As006Temp};
+use ethercat_hal::io::{analog_output::AnalogOutput, digital_output::DigitalOutput};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 use units::AngularVelocity;
@@ -114,8 +112,7 @@ pub struct Controller {
     pub cooling_mode: Option<CoolingMode>,
 
     pub heating_relais: DigitalOutput,
-    pub temperature_sensor_in: TemperatureInput,
-    pub temperature_sensor_out: TemperatureInput,
+    pub temperature_sensor: As006Temp,
 
     pub power: f64,
     pub total_energy: f64,
@@ -182,8 +179,7 @@ impl Controller {
         cooling_controller: AnalogOutput,
         cooling_relais: DigitalOutput,
         heating_relais: DigitalOutput,
-        temp_sensor_in: TemperatureInput,
-        temp_sensor_out: TemperatureInput,
+        temperature_sensor: As006Temp,
         max_revolutions: AngularVelocity,
         flow: Flow,
         pump_relais: DigitalOutput,
@@ -215,8 +211,7 @@ impl Controller {
             heating_relais,
             cooling_allowed: false,
             heating_allowed: false,
-            temperature_sensor_in: temp_sensor_in,
-            temperature_sensor_out: temp_sensor_out,
+            temperature_sensor,
             power: 0.0,
             total_energy: 0.0,
             flow,
@@ -291,20 +286,9 @@ impl Controller {
         self.target_temperature = temperature;
     }
 
-    pub fn get_temp_in(&mut self) -> ThermodynamicTemperature {
-        let temp = self.temperature_sensor_in.get_temperature();
-        match temp {
-            Ok(value) => ThermodynamicTemperature::new::<degree_celsius>(value),
-            Err(_) => ThermodynamicTemperature::new::<degree_celsius>(0.0),
-        }
-    }
-
-    pub fn get_temp_out(&mut self) -> ThermodynamicTemperature {
-        let temp = self.temperature_sensor_out.get_temperature();
-        match temp {
-            Ok(value) => ThermodynamicTemperature::new::<degree_celsius>(value),
-            Err(_) => ThermodynamicTemperature::new::<degree_celsius>(0.0),
-        }
+    pub fn get_temp_in(&self) -> ThermodynamicTemperature {
+        let value = self.temperature_sensor.get_temperature_celsius().unwrap_or(0.0);
+        ThermodynamicTemperature::new::<degree_celsius>(value)
     }
 
     pub fn disallow_cooling(&mut self) {
@@ -583,7 +567,7 @@ impl Controller {
         self.flow.should_pump = should_flow;
 
         self.current_temperature = self.get_temp_in();
-        self.temp_reservoir = self.get_temp_out();
+        self.temp_reservoir = self.current_temperature;
 
         let pump_cooldown_min_temperature = self.config.pump_cooldown_min_temperature;
         let pump_is_still_hot = self.current_temperature.get::<degree_celsius>()

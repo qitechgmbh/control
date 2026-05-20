@@ -19,8 +19,6 @@ export function Aquapath2GraphPage() {
     back_temperature,
     front_temp_reservoir,
     back_temp_reservoir,
-    front_as008_temp,
-    back_as008_temp,
     front_power,
     back_power,
     front_total_energy,
@@ -68,12 +66,6 @@ export function Aquapath2GraphPage() {
           targetSeries={targetFrontTemperature}
           name={"Reservoir 2 (Front) Temperature"}
           id={"reservoir_2_temp"}
-        />
-        <As008TempGraph
-          syncHook={syncHook}
-          reservoir1Temp={back_as008_temp}
-          reservoir2Temp={front_as008_temp}
-          id={"aquapath2_as008_temp"}
         />
         <PowerGraph
           syncHook={syncHook}
@@ -250,61 +242,6 @@ export function TemperatureGraph({
     <AutoSyncedBigGraph
       syncHook={syncHook}
       newData={combinedData}
-      unit="C"
-      renderValue={(value) => value.toFixed(1)}
-      config={config}
-      graphId={id}
-    />
-  );
-}
-
-export function As008TempGraph({
-  syncHook,
-  reservoir1Temp,
-  reservoir2Temp,
-  id,
-}: {
-  syncHook: ReturnType<typeof useGraphSync>;
-  reservoir1Temp: TimeSeries | null;
-  reservoir2Temp: TimeSeries | null;
-  id: string;
-}) {
-  const config: GraphConfig = {
-    title: "Flow Sensor Temperature (AS008)",
-    colors: {
-      primary: "#8b5cf6",
-      grid: "#e2e8f0",
-      background: "#ffffff",
-    },
-    exportFilename: "as008_temperature_data",
-    showLegend: true,
-  };
-
-  const tempData = [
-    ...(reservoir1Temp
-      ? [
-          {
-            newData: reservoir1Temp,
-            title: "Reservoir 1 (Back)",
-            color: "#8b5cf6",
-          },
-        ]
-      : []),
-    ...(reservoir2Temp
-      ? [
-          {
-            newData: reservoir2Temp,
-            title: "Reservoir 2 (Front)",
-            color: "#a78bfa",
-          },
-        ]
-      : []),
-  ];
-
-  return (
-    <AutoSyncedBigGraph
-      syncHook={syncHook}
-      newData={tempData}
       unit="C"
       renderValue={(value) => value.toFixed(1)}
       config={config}

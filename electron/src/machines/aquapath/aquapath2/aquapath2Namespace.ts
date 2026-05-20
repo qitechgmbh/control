@@ -113,8 +113,6 @@ export const liveValuesEventDataSchema = z.object({
   back_heating_startup_wait_remaining: z.number().optional().default(0),
   front_total_energy: z.number(),
   back_total_energy: z.number(),
-  front_as008_temp: z.number().nullable().optional().default(null),
-  back_as008_temp: z.number().nullable().optional().default(null),
 });
 
 export const stateEventDataSchema = z.object({
@@ -168,9 +166,6 @@ export type Aquapath2NamespaceStore = {
   back_total_energy: TimeSeries;
   totalEnergyKWh: TimeSeries;
 
-  front_as008_temp: TimeSeries;
-  back_as008_temp: TimeSeries;
-
   front_heating: boolean;
   back_heating: boolean;
   front_cooling_mode: "Low" | "Ramp" | "Max" | null;
@@ -213,10 +208,6 @@ const { initialTimeSeries: back_total_energy, insert: addBackEnergy } =
   createTimeSeries();
 const { initialTimeSeries: totalEnergyKWh, insert: addTotalEnergyKWh } =
   createTimeSeries();
-const { initialTimeSeries: front_as008_temp, insert: addFrontAs008Temp } =
-  createTimeSeries();
-const { initialTimeSeries: back_as008_temp, insert: addBackAs008Temp } =
-  createTimeSeries();
 const {
   initialTimeSeries: targetFrontTemperature,
   insert: addTargetFrontTemperature,
@@ -245,8 +236,6 @@ export const createAquapath2NamespaceStore =
       front_total_energy,
       back_total_energy,
       totalEnergyKWh,
-      front_as008_temp,
-      back_as008_temp,
       front_heating: false,
       back_heating: false,
       front_cooling_mode: null,
@@ -392,20 +381,6 @@ export function aquapath2MessageHandler(
               1000,
             timestamp: event.ts,
           }),
-          front_as008_temp:
-            liveValuesEvent.data.front_as008_temp != null
-              ? addFrontAs008Temp(state.front_as008_temp, {
-                  value: liveValuesEvent.data.front_as008_temp,
-                  timestamp: event.ts,
-                })
-              : state.front_as008_temp,
-          back_as008_temp:
-            liveValuesEvent.data.back_as008_temp != null
-              ? addBackAs008Temp(state.back_as008_temp, {
-                  value: liveValuesEvent.data.back_as008_temp,
-                  timestamp: event.ts,
-                })
-              : state.back_as008_temp,
           front_heating: liveValuesEvent.data.front_heating,
           back_heating: liveValuesEvent.data.back_heating,
           front_cooling_mode: liveValuesEvent.data.front_cooling_mode,
