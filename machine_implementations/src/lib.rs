@@ -44,6 +44,7 @@ pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
 pub const WAGO_750_501_TEST_MACHINE: u16 = 0x0042;
 pub const WAGO_750_460_MACHINE: u16 = 0x0044;
+pub const WAGO_750_531_MACHINE: u16 = 0x0047;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct MachineValues {

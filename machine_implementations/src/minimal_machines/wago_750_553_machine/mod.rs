@@ -1,14 +1,16 @@
 use std::time::Instant;
 
-use control_core::socketio::namespace::NamespaceCacheingLogic;
-use ethercat_hal::io::analog_output::AnalogOutput;
-use smol::channel::{Receiver, Sender};
-
 use self::api::{StateEvent, Wago750_553MachineEvents, Wago750_553MachineNamespace};
-use crate::{
-    AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH, WAGO_750_553_MACHINE,
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
+use crate::{MachineMessage, QiTechMachine, VENDOR_QITECH, WAGO_750_553_MACHINE};
+use control_core::socketio::namespace::NamespaceCacheingLogic;
+use qitech_lib::{
+    ethercat_hal::{
+        devices::wago_modules::wago_750_553::Wago750_553,
+        io::analog_output::{AnalogOutputDevice, AnalogOutputOutput},
+    },
+    machines::{MachineIdentification, MachineIdentificationUnique},
 };
+use tokio::sync::mpsc::{Receiver, Sender};
 
 pub mod act;
 pub mod api;
@@ -16,26 +18,16 @@ pub mod new;
 
 #[derive(Debug)]
 pub struct Wago750_553Machine {
-    pub api_receiver: Receiver<MachineMessage>,
-    pub api_sender: Sender<MachineMessage>,
+    pub receiver: Receiver<MachineMessage>,
+    pub sender: Sender<MachineMessage>,
     pub machine_identification_unique: MachineIdentificationUnique,
-    pub main_sender: Option<Sender<AsyncThreadMessage>>,
     pub namespace: Wago750_553MachineNamespace,
     pub last_state_emit: Instant,
-
     pub outputs: [f32; 4],
-    pub aouts: [AnalogOutput; 4],
+    pub analog_output_device: Box<Wago750_553>,
 }
 
-impl Machine for Wago750_553Machine {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
-
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
-}
+impl QiTechMachine for Wago750_553Machine {}
 
 impl Wago750_553Machine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
@@ -59,7 +51,8 @@ impl Wago750_553Machine {
         if index < self.outputs.len() {
             let clamped = value.clamp(0.0, 1.0);
             self.outputs[index] = clamped;
-            self.aouts[index].set(clamped);
+            self.analog_output_device
+                .set_output(index, AnalogOutputOutput(clamped));
             self.emit_state();
         }
     }
@@ -67,8 +60,9 @@ impl Wago750_553Machine {
     pub fn set_all_outputs(&mut self, value: f32) {
         let clamped = value.clamp(0.0, 1.0);
         self.outputs = [clamped; 4];
-        for aout in &self.aouts {
-            aout.set(clamped);
+        for i in 0..4 {
+            self.analog_output_device
+                .set_output(i, AnalogOutputOutput(clamped));
         }
         self.emit_state();
     }

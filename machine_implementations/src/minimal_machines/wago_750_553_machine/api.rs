@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::Wago750_553Machine;
-use crate::{MachineApi, MachineMessage};
+use crate::{MachineApi, MachineMessage, MachineValues};
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
@@ -63,12 +63,36 @@ impl CacheableEvents<Wago750_553MachineEvents> for Wago750_553MachineEvents {
 }
 
 impl MachineApi for Wago750_553Machine {
-    fn api_get_sender(&self) -> smol::channel::Sender<MachineMessage> {
-        self.api_sender.clone()
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+            }
+            MachineMessage::UnsubscribeNamespace => {
+                self.namespace.namespace = None;
+            }
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::Value::Null,
+                    })
+                    .expect("Failed to send values");
+            }
+        }
     }
 
-    fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
-        let mutation: Mutation = serde_json::from_value(request_body)?;
+    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {
+        self.sender.clone()
+    }
+
+    fn api_mutate(&mut self, value: Value) -> Result<(), anyhow::Error> {
+        let mutation: Mutation = serde_json::from_value(value)?;
         match mutation {
             Mutation::SetOutput { index, value } => self.set_output(index, value),
             Mutation::SetAllOutputs { value } => self.set_all_outputs(value),

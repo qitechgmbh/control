@@ -1,16 +1,16 @@
-use crate::AsyncThreadMessage;
-use crate::{
-    MACHINE_MOCK, Machine, MachineMessage, VENDOR_QITECH,
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
-};
 use api::{LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, StateEvent};
 use control_core::socketio::event::BuildEvent;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use smol::channel::{Receiver, Sender};
+use tokio::sync::mpsc::{Receiver, Sender};
 use std::time::Instant;
 use tracing::info;
 use units::f64::*;
 use units::frequency::{hertz, millihertz};
+
+use crate::{
+    MACHINE_MOCK, MachineMessage, QiTechMachine, VENDOR_QITECH,
+};
+use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
 
 pub mod act;
 pub mod api;
@@ -18,39 +18,21 @@ pub mod new;
 
 #[derive(Debug)]
 pub struct MockMachine {
-    machine_identification_unique: MachineIdentificationUnique,
-    main_sender: Option<Sender<AsyncThreadMessage>>,
-
-    // socketio
-    namespace: MockMachineNamespace,
-    last_measurement_emit: Instant,
-
-    // mock machine specific fields
-    t_0: Instant,
-    frequency1: Frequency,
-    frequency2: Frequency,
-    frequency3: Frequency,
-    mode: Mode,
-
-    // State tracking to only emit when values change
-    last_emitted_event: Option<StateEvent>,
-
-    /// Will be initialized as false and set to true by emit_state
-    /// This way we can signal to the client that the first state emission is a default state
-    emitted_default_state: bool,
-    api_sender: Sender<MachineMessage>,
-    api_receiver: Receiver<MachineMessage>,
+    pub receiver: Receiver<MachineMessage>,
+    pub sender: Sender<MachineMessage>,
+    pub machine_identification_unique: MachineIdentificationUnique,
+    pub namespace: MockMachineNamespace,
+    pub last_measurement_emit: Instant,
+    pub t_0: Instant,
+    pub frequency1: Frequency,
+    pub frequency2: Frequency,
+    pub frequency3: Frequency,
+    pub mode: Mode,
+    pub last_emitted_event: Option<StateEvent>,
+    pub emitted_default_state: bool,
 }
 
-impl Machine for MockMachine {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
-
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
-}
+impl QiTechMachine for MockMachine {}
 
 impl MockMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
@@ -65,7 +47,6 @@ impl MockMachine {
         let freq2_hz = self.frequency2.get::<hertz>();
         let freq3_hz = self.frequency3.get::<hertz>();
 
-        // Calculate sine wave: sin(2π * frequency * time)
         let t = match self.mode {
             Mode::Standby => 0.0,
             Mode::Running => 2.0 * std::f64::consts::PI * elapsed,
@@ -83,7 +64,6 @@ impl MockMachine {
         }
     }
 
-    /// Emit live values data event with the current sine wave amplitude
     pub fn emit_live_values(&mut self) {
         let event = self.get_live_values().build();
         self.namespace.emit(MockEvents::LiveValues(event));
@@ -106,7 +86,6 @@ impl MockMachine {
         }
     }
 
-    /// Emit the current state of the mock machine only if values have changed
     pub fn emit_state(&mut self) {
         let state = self.get_state();
         let event = state.build();
@@ -115,7 +94,6 @@ impl MockMachine {
         self.last_emitted_event = Some(state);
     }
 
-    /// Set the frequencies of the sine waves
     pub fn set_frequency1(&mut self, frequency_mhz: f64) {
         self.frequency1 = Frequency::new::<millihertz>(frequency_mhz);
         self.emit_state();
@@ -131,7 +109,6 @@ impl MockMachine {
         self.emit_state();
     }
 
-    /// Set the mode of the mock machine
     pub fn set_mode(&mut self, mode: Mode) {
         self.mode = mode;
         self.emit_state();

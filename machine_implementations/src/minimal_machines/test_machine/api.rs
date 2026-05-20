@@ -1,5 +1,5 @@
-use super::TestMachine;
-use crate::{MachineApi, MachineMessage};
+use std::sync::Arc;
+
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
@@ -8,7 +8,9 @@ use control_core::socketio::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::sync::Arc;
+
+use super::TestMachine;
+use crate::{MachineApi, MachineMessage, MachineValues};
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
@@ -60,21 +62,40 @@ impl CacheableEvents<TestMachineEvents> for TestMachineEvents {
 }
 
 impl MachineApi for TestMachine {
-    fn api_get_sender(&self) -> smol::channel::Sender<MachineMessage> {
-        self.api_sender.clone()
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+            }
+            MachineMessage::UnsubscribeNamespace => {
+                self.namespace.namespace = None;
+            }
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::Value::Null,
+                    })
+                    .expect("Failed to send values");
+            }
+        }
     }
 
-    fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
-        let mutation: Mutation = serde_json::from_value(request_body)?;
+    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {
+        self.sender.clone()
+    }
+
+    fn api_mutate(&mut self, value: Value) -> Result<(), anyhow::Error> {
+        let mutation: Mutation = serde_json::from_value(value)?;
         match mutation {
             Mutation::SetLed { index, on } => self.set_led(index, on),
             Mutation::SetAllLeds { on } => self.set_all_leds(on),
         }
-
-        for (led, &on) in self.douts.iter().zip(self.led_on.iter()) {
-            led.set(on);
-        }
-
         Ok(())
     }
 

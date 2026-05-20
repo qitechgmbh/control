@@ -8,7 +8,8 @@ use control_core::socketio::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{MachineApi, minimal_machines::wago_ai_test_machine::WagoAiTestMachine};
+use super::WagoAiTestMachine;
+use crate::{MachineApi, MachineMessage, MachineValues};
 
 #[derive(Debug, Clone)]
 pub struct WagoAiTestMachineNamespace {
@@ -20,6 +21,10 @@ pub enum AnalogInputsEvent {
     MeasurementRateHz(f64),
     AnalogInputs(f64, f64, f64, f64, String),
     WiringErrors(bool, bool, bool, bool),
+}
+
+pub enum WagoAiTestMachineEvents {
+    State(Event<AnalogInputsEvent>),
 }
 
 impl NamespaceCacheingLogic<WagoAiTestMachineEvents> for WagoAiTestMachineNamespace {
@@ -44,18 +49,37 @@ impl CacheableEvents<WagoAiTestMachineEvents> for WagoAiTestMachineEvents {
     }
 }
 
-pub enum WagoAiTestMachineEvents {
-    State(Event<AnalogInputsEvent>),
-}
-
 #[derive(Deserialize)]
 pub struct Mutation {
     measurement_rate_hz: i32,
 }
 
 impl MachineApi for WagoAiTestMachine {
-    fn api_get_sender(&self) -> smol::channel::Sender<crate::MachineMessage> {
-        self.api_sender.clone()
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_measurement_rate();
+            }
+            MachineMessage::UnsubscribeNamespace => {
+                self.namespace.namespace = None;
+            }
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send(MachineValues {
+                        state: serde_json::Value::Null,
+                        live_values: serde_json::Value::Null,
+                    })
+                    .expect("Failed to send values");
+            }
+        }
+    }
+
+    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {
+        self.sender.clone()
     }
 
     fn api_mutate(&mut self, value: serde_json::Value) -> Result<(), anyhow::Error> {
@@ -65,7 +89,7 @@ impl MachineApi for WagoAiTestMachine {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> Option<control_core::socketio::namespace::Namespace> {
+    fn api_event_namespace(&mut self) -> Option<Namespace> {
         self.namespace.namespace.clone()
     }
 }
