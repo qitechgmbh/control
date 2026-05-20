@@ -38,10 +38,8 @@ pub struct LiveValuesEvent {
     pub back_heating_startup_wait_remaining: f64,
     pub front_total_energy: f64,
     pub back_total_energy: f64,
-    /// AS008 temperature from EL3024 AI2 (°C), None on wiring error
-    pub front_as008_temp: Option<f64>,
-    /// AS008 temperature from EL3024 AI4 (°C), None on wiring error
-    pub back_as008_temp: Option<f64>,
+    pub front_as006_temp: Option<f64>,
+    pub back_as006_temp: Option<f64>,
 }
 
 impl LiveValuesEvent {

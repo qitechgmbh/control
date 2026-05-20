@@ -4,21 +4,21 @@ use units::electric_current::milliampere;
 use super::analog_input::AnalogInput;
 use super::analog_input::physical::AnalogInputValue;
 
-/// AS008 flow sensor converter (4–20 mA → l/min).
+/// AS006 flow sensor converter (4–20 mA → l/min).
 ///
-/// Formula: Q [l/min] = 3.125 × (I [mA] − 4)
-/// Range: 0 l/min at 4 mA, 50 l/min at 20 mA
-pub struct As008Flow {
+/// Formula: Q [l/min] = 0.938 × (I [mA] − 4)
+/// Range: 0 l/min at 4 mA, 15 l/min at 20 mA
+pub struct As006Flow {
     input: AnalogInput,
 }
 
-impl fmt::Debug for As008Flow {
+impl fmt::Debug for As006Flow {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "As008Flow")
+        write!(f, "As006Flow")
     }
 }
 
-impl As008Flow {
+impl As006Flow {
     pub fn new(input: AnalogInput) -> Self {
         Self { input }
     }
@@ -37,25 +37,25 @@ impl As008Flow {
     /// Returns flow in liters per minute, or `None` if the input reports a wiring error.
     pub fn get_flow_lpm(&self) -> Option<f64> {
         let current_ma = self.get_current_ma()?;
-        Some(3.125 * (current_ma - 4.0))
+        Some(0.938 * (current_ma - 4.0))
     }
 }
 
-/// AS008 temperature sensor converter (4–20 mA → °C).
+/// AS006 temperature sensor converter (4–20 mA → °C).
 ///
 /// Formula: T [°C] = 9.375 × (I [mA] − 4) − 25
 /// Range: −25 °C at 4 mA, 125 °C at 20 mA
-pub struct As008Temp {
+pub struct As006Temp {
     input: AnalogInput,
 }
 
-impl fmt::Debug for As008Temp {
+impl fmt::Debug for As006Temp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "As008Temp")
+        write!(f, "As006Temp")
     }
 }
 
-impl As008Temp {
+impl As006Temp {
     pub fn new(input: AnalogInput) -> Self {
         Self { input }
     }

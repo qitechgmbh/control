@@ -21,7 +21,7 @@ use ethercat_hal::{
     io::{
         analog_input::AnalogInput,
         analog_output::AnalogOutput,
-        as008::{As008Flow, As008Temp},
+        as006::{As006Flow, As006Temp},
         digital_output::DigitalOutput,
         temperature_input::TemperatureInput,
     },
@@ -85,20 +85,20 @@ impl MachineNewTrait for AquaPathV2 {
                     .0;
 
             // Role 4 - EL3024 4-channel 4-20mA Analog Input
-            // AI1 → front flow (As008Flow), AI2 → front temp (As008Temp)
-            // AI3 → back flow (As008Flow),  AI4 → back temp (As008Temp)
+            // AI1 → front flow (As006Flow), AI2 → front temp (As006Temp)
+            // AI3 → back flow (As006Flow),  AI4 → back temp (As006Temp)
             let el3024 =
                 get_ethercat_device::<EL3024>(hardware, params, 4, [EL3024_IDENTITY_A].to_vec())
                     .await?
                     .0;
 
             let front_flow_sensor =
-                As008Flow::new(AnalogInput::new(el3024.clone(), EL3024Port::AI1));
-            let front_as008_temp =
-                As008Temp::new(AnalogInput::new(el3024.clone(), EL3024Port::AI2));
+                As006Flow::new(AnalogInput::new(el3024.clone(), EL3024Port::AI1));
+            let front_as006_temp =
+                As006Temp::new(AnalogInput::new(el3024.clone(), EL3024Port::AI2));
             let back_flow_sensor =
-                As008Flow::new(AnalogInput::new(el3024.clone(), EL3024Port::AI3));
-            let back_as008_temp = As008Temp::new(AnalogInput::new(el3024.clone(), EL3024Port::AI4));
+                As006Flow::new(AnalogInput::new(el3024.clone(), EL3024Port::AI3));
+            let back_as006_temp = As006Temp::new(AnalogInput::new(el3024.clone(), EL3024Port::AI4));
 
             // PT100 temperature sensors from EL3204
             let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1); // front, after heating
@@ -172,8 +172,8 @@ impl MachineNewTrait for AquaPathV2 {
                 last_measurement_emit: Instant::now(),
                 front_controller,
                 back_controller,
-                front_as008_temp,
-                back_as008_temp,
+                front_as006_temp,
+                back_as006_temp,
             };
             machine.emit_state();
 

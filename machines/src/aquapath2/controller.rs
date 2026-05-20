@@ -1,6 +1,6 @@
 use crate::aquapath1::{Flow, Temperature};
 use control_core::controllers::pid::PidController;
-use ethercat_hal::io::as008::As008Flow;
+use ethercat_hal::io::as006::As006Flow;
 use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
@@ -130,7 +130,7 @@ pub struct Controller {
     flow_became_valid_at: Option<Instant>,
     pump_cooldown_started_at: Option<Instant>,
     heating_last_active_at: Option<Instant>,
-    pub flow_sensor: As008Flow,
+    pub flow_sensor: As006Flow,
     pub pump_allowed: bool,
     pub current_flow: VolumeRate,
     pub max_flow: VolumeRate,
@@ -187,7 +187,7 @@ impl Controller {
         max_revolutions: AngularVelocity,
         flow: Flow,
         pump_relais: DigitalOutput,
-        flow_sensor: As008Flow,
+        flow_sensor: As006Flow,
         config: ControllerConfig,
     ) -> Self {
         let now = Instant::now();
