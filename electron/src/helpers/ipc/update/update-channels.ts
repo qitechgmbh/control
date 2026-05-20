@@ -1,3 +1,5 @@
+export const UPDATE_FETCH_SEND = "update:fetch_send";
+export const UPDATE_FETCH_RECV = "update:fetch_recv";
 export const UPDATE_EXECUTE = "update:execute";
 export const UPDATE_LOG = "update:log";
 export const UPDATE_END = "update:end";

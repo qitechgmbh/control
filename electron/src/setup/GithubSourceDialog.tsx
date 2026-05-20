@@ -33,7 +33,6 @@ type Props = {
 export const githubSourceSchema = z.object({
   githubRepoOwner: z.string().catch("qitechgmbh"),
   githubRepoName: z.string().catch("control"),
-  githubToken: z.string().optional(),
 });
 
 export type GithubSource = z.infer<typeof githubSourceSchema>;
@@ -41,12 +40,6 @@ export type GithubSource = z.infer<typeof githubSourceSchema>;
 export const defaultGithubSource: GithubSource = {
   githubRepoOwner: "qitechgmbh",
   githubRepoName: "control",
-  // This PAT only has read-only access to public qitechgmbh repos
-  // It's split into 3 parts to avoid being detected by secret scanning
-  githubToken:
-    "github_pat_" +
-    "11AG6Q4KQ0cfgyVayexvpp_" +
-    "XuYqnT8DHTiq0tN0VdWpKxhunrBPwydGlfPm7qUMEfM4V6T2YXRXuJ8AfDA",
 };
 
 export function GithubSourceDialog({ value, onChange }: Props) {
@@ -90,7 +83,6 @@ export function GithubSourceDialogContent({
   const onSubmit = (values: GithubSource) => {
     onChange({
       ...values,
-      githubToken: values.githubToken === "" ? undefined : values.githubToken,
     });
     setOpen(false);
   };
@@ -135,25 +127,6 @@ export function GithubSourceDialogContent({
                   <Input placeholder="control" {...field} />
                 </FormControl>
                 <FormDescription>Github repo name.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          {/* Github token */}
-          <FormField
-            control={form.control}
-            name="githubToken"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Github Token</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="github_pat_..."
-                    {...field}
-                    value={field.value || ""}
-                  />
-                </FormControl>
-                <FormDescription>Github token.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
