@@ -118,6 +118,9 @@ in
         StandardOutput = "journal";
         StandardError = "journal";
         SyslogIdentifier = "qitech-control-server";
+
+        # Other
+        PassEnvironment = "QITECH_MODE";
       };
 
       environment = {
