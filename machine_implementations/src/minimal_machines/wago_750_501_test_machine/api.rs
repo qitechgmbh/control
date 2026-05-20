@@ -1,5 +1,5 @@
-use super::Wago750_501TestMachine;
-use crate::{MachineApi, MachineMessage};
+use std::sync::Arc;
+
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
@@ -8,7 +8,9 @@ use control_core::socketio::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::sync::Arc;
+
+use super::Wago750_501TestMachine;
+use crate::{MachineApi, MachineMessage, MachineValues};
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
@@ -60,21 +62,40 @@ impl CacheableEvents<Wago750_501TestMachineEvents> for Wago750_501TestMachineEve
 }
 
 impl MachineApi for Wago750_501TestMachine {
-    fn api_get_sender(&self) -> smol::channel::Sender<MachineMessage> {
-        self.api_sender.clone()
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+            }
+            MachineMessage::UnsubscribeNamespace => {
+                self.namespace.namespace = None;
+            }
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::Value::Null,
+                    })
+                    .expect("Failed to send values");
+            }
+        }
     }
 
-    fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
-        let mutation: Mutation = serde_json::from_value(request_body)?;
+    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {
+        self.sender.clone()
+    }
+
+    fn api_mutate(&mut self, value: Value) -> Result<(), anyhow::Error> {
+        let mutation: Mutation = serde_json::from_value(value)?;
         match mutation {
             Mutation::SetOutput { index, on } => self.set_output(index, on),
             Mutation::SetAllOutputs { on } => self.set_all_outputs(on),
         }
-
-        for (dout, &on) in self.douts.iter().zip(self.outputs.iter()) {
-            dout.set(on);
-        }
-
         Ok(())
     }
 

@@ -1,10 +1,18 @@
-use super::WagoDOTestMachine;
-use crate::{MachineAct, MachineMessage, MachineValues};
 use std::time::{Duration, Instant};
 
-impl MachineAct for WagoDOTestMachine {
-    fn act(&mut self, now: Instant) {
-        if let Ok(msg) = self.api_receiver.try_recv() {
+use qitech_lib::machines::{Machine, MachineDataRegistry, MachineError};
+
+use super::WagoDOTestMachine;
+use crate::MachineApi;
+
+impl Machine for WagoDOTestMachine {
+    fn act(
+        &mut self,
+        _machine_data: Option<&mut MachineDataRegistry>,
+    ) -> Result<(), MachineError> {
+        let now = Instant::now();
+
+        if let Ok(msg) = self.receiver.try_recv() {
             self.act_machine_message(msg);
         }
 
@@ -12,29 +20,13 @@ impl MachineAct for WagoDOTestMachine {
             self.emit_state();
             self.last_state_emit = now;
         }
+
+        Ok(())
     }
 
-    fn act_machine_message(&mut self, msg: MachineMessage) {
-        match msg {
-            MachineMessage::SubscribeNamespace(namespace) => {
-                self.namespace.namespace = Some(namespace);
-                self.emit_state();
-            }
-            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
-            MachineMessage::HttpApiJsonRequest(value) => {
-                use crate::MachineApi;
-                let _res = self.api_mutate(value);
-            }
-            MachineMessage::RequestValues(sender) => {
-                sender
-                    .send_blocking(MachineValues {
-                        state: serde_json::to_value(self.get_state())
-                            .expect("Failed to serialize state"),
-                        live_values: serde_json::Value::Null,
-                    })
-                    .expect("Failed to send values");
-                sender.close();
-            }
-        }
+    fn react(&mut self, _registry: &MachineDataRegistry) {}
+
+    fn get_identification(&self) -> qitech_lib::machines::MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
     }
 }

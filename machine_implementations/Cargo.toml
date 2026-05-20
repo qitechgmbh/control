@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 qitech_lib = { workspace = true }
 control_core = { path = "../control-core" }
+units = { path = "../qitech_lib/units" }
 control_core_derive = { path = "../control-core-derive" }
 
 serde = "1.0.217"

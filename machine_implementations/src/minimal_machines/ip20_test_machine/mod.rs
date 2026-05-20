@@ -1,52 +1,42 @@
-use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
-use crate::minimal_machines::ip20_test_machine::api::{
-    IP20TestMachineEvents, LiveValuesEvent, StateEvent,
-};
-use crate::{AsyncThreadMessage, Machine, MachineMessage};
+use std::{cell::RefCell, rc::Rc, time::Instant};
+
+use self::api::{IP20TestMachineEvents, IP20TestMachineNamespace, LiveValuesEvent, StateEvent};
+use crate::{IP20_TEST_MACHINE, MachineMessage, QiTechMachine, VENDOR_QITECH};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use ethercat_hal::io::digital_input::DigitalInput;
-use ethercat_hal::io::digital_output::DigitalOutput;
-use smol::channel::{Receiver, Sender};
-use std::time::Instant;
+use qitech_lib::{
+    ethercat_hal::{
+        devices::wago_modules::ip20_ec_di8_do8::IP20EcDi8Do8,
+        io::{digital_input::DigitalInputDevice, digital_output::DigitalOutputDevice},
+    },
+    machines::{MachineIdentification, MachineIdentificationUnique},
+};
+use tokio::sync::mpsc::{Receiver, Sender};
+
 pub mod act;
 pub mod api;
 pub mod new;
-use crate::minimal_machines::ip20_test_machine::api::IP20TestMachineNamespace;
-use crate::{IP20_TEST_MACHINE, VENDOR_QITECH};
 
 #[derive(Debug)]
 pub struct IP20TestMachine {
-    pub api_receiver: Receiver<MachineMessage>,
-    pub api_sender: Sender<MachineMessage>,
+    pub receiver: Receiver<MachineMessage>,
+    pub sender: Sender<MachineMessage>,
     pub machine_identification_unique: MachineIdentificationUnique,
     pub namespace: IP20TestMachineNamespace,
     pub last_state_emit: Instant,
     pub last_live_values_emit: Instant,
     pub outputs: [bool; 8],
     pub inputs: [bool; 8],
-    pub main_sender: Option<Sender<AsyncThreadMessage>>,
-    pub douts: [DigitalOutput; 8],
-    pub dins: [DigitalInput; 8],
+    pub device: Rc<RefCell<IP20EcDi8Do8>>,
 }
 
-impl Machine for IP20TestMachine {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
-
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
-}
+impl QiTechMachine for IP20TestMachine {}
 
 impl IP20TestMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: IP20_TEST_MACHINE,
     };
-}
 
-impl IP20TestMachine {
     pub fn get_state(&self) -> StateEvent {
         StateEvent {
             outputs: self.outputs,
@@ -70,28 +60,28 @@ impl IP20TestMachine {
             .emit(IP20TestMachineEvents::LiveValues(event));
     }
 
-    /// Set the state of a specific output
     pub fn set_output(&mut self, index: usize, on: bool) {
         if index < self.outputs.len() {
             self.outputs[index] = on;
-            self.douts[index].set(on);
+            self.device.borrow_mut().set_output(index, on);
             self.emit_state();
         }
     }
 
-    /// Set all outputs at once
     pub fn set_all_outputs(&mut self, on: bool) {
         self.outputs = [on; 8];
-        for (dout, &value) in self.douts.iter().zip(self.outputs.iter()) {
-            dout.set(value);
+        let mut dev = self.device.borrow_mut();
+        for i in 0..8 {
+            dev.set_output(i, on);
         }
+        drop(dev);
         self.emit_state();
     }
 
-    /// Read all digital inputs
     pub fn read_inputs(&mut self) {
-        for (i, din) in self.dins.iter().enumerate() {
-            self.inputs[i] = din.get_value().unwrap_or(false);
+        let dev = self.device.borrow();
+        for i in 0..8 {
+            self.inputs[i] = dev.get_input(i).unwrap_or(false);
         }
     }
 }

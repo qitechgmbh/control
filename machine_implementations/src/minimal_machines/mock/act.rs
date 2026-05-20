@@ -1,63 +1,32 @@
-use super::MockMachine;
-use crate::{MachineAct, MachineMessage, MachineValues};
 use std::time::{Duration, Instant};
 
-/// Implements the `MachineAct` trait for the `MockMachine`.
-///
-/// # Parameters
-/// - `_now_ts`: The current timestamp of type `Instant`.
-///
-/// # Returns
-/// A pinned `Future` that resolves to `()` and is `Send`-safe. The future encapsulates the asynchronous behavior of the `act` method.
-///
-/// # Description
-/// This method is called to perform periodic actions for the `MockMachine`. Specifically:
-/// - It checks if the time elapsed since the last measurement emission exceeds 33 milliseconds.
-/// - If the condition is met and the machine is in Running mode, it emits a sine wave data event.
-/// - State events (frequency, mode) are only emitted when values change, not continuously.
-///
-/// The method ensures that the sine wave value is updated approximately 60 times per second (16ms intervals) when running.
-///
-impl MachineAct for MockMachine {
-    fn act(&mut self, now: Instant) {
-        let msg = self.api_receiver.try_recv();
-        match msg {
-            Ok(msg) => {
-                let _res = self.act_machine_message(msg);
-            }
-            Err(_) => (),
-        };
-        // Only emit live values if machine is in Running mode
-        // The live values are updated approximately 30 times per second
+use qitech_lib::machines::{Machine, MachineDataRegistry, MachineError};
+
+use super::MockMachine;
+use crate::MachineApi;
+
+impl Machine for MockMachine {
+    fn act(
+        &mut self,
+        _machine_data: Option<&mut MachineDataRegistry>,
+    ) -> Result<(), MachineError> {
+        let now = Instant::now();
+
+        if let Ok(msg) = self.receiver.try_recv() {
+            self.act_machine_message(msg);
+        }
+
         if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             self.emit_live_values();
             self.last_measurement_emit = now;
         }
+
+        Ok(())
     }
 
-    fn act_machine_message(&mut self, msg: MachineMessage) {
-        match msg {
-            MachineMessage::SubscribeNamespace(namespace) => {
-                self.namespace.namespace = Some(namespace);
-                self.emit_state();
-            }
-            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
-            MachineMessage::HttpApiJsonRequest(value) => {
-                use crate::MachineApi;
+    fn react(&mut self, _registry: &MachineDataRegistry) {}
 
-                let _res = self.api_mutate(value);
-            }
-            MachineMessage::RequestValues(sender) => {
-                sender
-                    .send_blocking(MachineValues {
-                        state: serde_json::to_value(self.get_state())
-                            .expect("Failed to serialize state"),
-                        live_values: serde_json::to_value(self.get_live_values())
-                            .expect("Failed to serialize live values"),
-                    })
-                    .expect("Failed to send values");
-                sender.close();
-            }
-        }
+    fn get_identification(&self) -> qitech_lib::machines::MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
     }
 }

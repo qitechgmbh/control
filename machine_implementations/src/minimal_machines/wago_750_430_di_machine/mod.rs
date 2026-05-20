@@ -1,14 +1,16 @@
 use std::time::Instant;
 
-use control_core::socketio::namespace::NamespaceCacheingLogic;
-use ethercat_hal::io::digital_input::DigitalInput;
-use smol::channel::{Receiver, Sender};
-
 use self::api::{StateEvent, Wago750_430DiMachineEvents, Wago750_430DiMachineNamespace};
-use crate::{
-    AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH, WAGO_750_430_DI_MACHINE,
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
+use crate::{MachineMessage, QiTechMachine, VENDOR_QITECH, WAGO_750_430_DI_MACHINE};
+use control_core::socketio::namespace::NamespaceCacheingLogic;
+use qitech_lib::{
+    ethercat_hal::{
+        devices::wago_modules::wago_750_430::Wago750_430,
+        io::digital_input::DigitalInputDevice,
+    },
+    machines::{MachineIdentification, MachineIdentificationUnique},
 };
+use tokio::sync::mpsc::{Receiver, Sender};
 
 pub mod act;
 pub mod api;
@@ -16,25 +18,15 @@ pub mod new;
 
 #[derive(Debug)]
 pub struct Wago750_430DiMachine {
-    pub api_receiver: Receiver<MachineMessage>,
-    pub api_sender: Sender<MachineMessage>,
+    pub receiver: Receiver<MachineMessage>,
+    pub sender: Sender<MachineMessage>,
     pub machine_identification_unique: MachineIdentificationUnique,
-    pub main_sender: Option<Sender<AsyncThreadMessage>>,
     pub namespace: Wago750_430DiMachineNamespace,
     pub last_state_emit: Instant,
-    pub inputs: [bool; 8],
-    pub digital_input: [DigitalInput; 8],
+    pub digital_input_device: Box<Wago750_430>,
 }
 
-impl Machine for Wago750_430DiMachine {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
-
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
-}
+impl QiTechMachine for Wago750_430DiMachine {}
 
 impl Wago750_430DiMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
@@ -43,26 +35,15 @@ impl Wago750_430DiMachine {
     };
 
     pub fn get_state(&self) -> StateEvent {
-        StateEvent {
-            inputs: self.inputs,
+        let mut inputs = [false; 8];
+        for i in 0..8 {
+            inputs[i] = self.digital_input_device.get_input(i).unwrap_or(false);
         }
+        StateEvent { inputs }
     }
 
     pub fn emit_state(&mut self) {
-        for (i, di) in self.digital_input.iter().enumerate() {
-            self.inputs[i] = match di.get_value() {
-                Ok(v) => v,
-                Err(_) => false,
-            };
-        }
-
-        // let aaah = self.inputs;
-        // println!("{aaah:?}");
-
-        let event = StateEvent {
-            inputs: self.inputs,
-        }
-        .build();
+        let event = self.get_state().build();
         self.namespace
             .emit(Wago750_430DiMachineEvents::State(event));
     }

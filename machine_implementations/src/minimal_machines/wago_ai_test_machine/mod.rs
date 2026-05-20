@@ -1,13 +1,13 @@
 use std::time::Instant;
 
 use control_core::socketio::{event::Event, namespace::NamespaceCacheingLogic};
-use ethercat_hal::io::analog_input::AnalogInput;
-use smol::channel::{Receiver, Sender};
+use tokio::sync::mpsc::{Receiver, Sender};
 
 use self::api::{AnalogInputsEvent, WagoAiTestMachineEvents, WagoAiTestMachineNamespace};
-use crate::{
-    AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH, WAGO_AI_TEST_MACHINE,
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
+use crate::{MachineMessage, QiTechMachine, VENDOR_QITECH, WAGO_AI_TEST_MACHINE};
+use qitech_lib::{
+    ethercat_hal::devices::wago_modules::wago_750_455::Wago750_455,
+    machines::{MachineIdentification, MachineIdentificationUnique},
 };
 
 pub mod act;
@@ -16,27 +16,16 @@ pub mod new;
 
 #[derive(Debug)]
 pub struct WagoAiTestMachine {
-    api_receiver: Receiver<MachineMessage>,
-    api_sender: Sender<MachineMessage>,
-    machine_identification_unique: MachineIdentificationUnique,
-    main_sender: Option<Sender<AsyncThreadMessage>>,
-    namespace: WagoAiTestMachineNamespace,
-
-    last_measurement: Instant,
-    measurement_rate_hz: f64,
-
-    analog_inputs: [AnalogInput; 4],
+    pub receiver: Receiver<MachineMessage>,
+    pub sender: Sender<MachineMessage>,
+    pub machine_identification_unique: MachineIdentificationUnique,
+    pub namespace: WagoAiTestMachineNamespace,
+    pub last_measurement: Instant,
+    pub measurement_rate_hz: f64,
+    pub analog_input_device: Box<Wago750_455>,
 }
 
-impl Machine for WagoAiTestMachine {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
-
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
-}
+impl QiTechMachine for WagoAiTestMachine {}
 
 impl WagoAiTestMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
@@ -55,7 +44,7 @@ impl WagoAiTestMachine {
         self.namespace
             .emit(WagoAiTestMachineEvents::State(Event::new(
                 "AnalogInputs",
-                event.clone(),
+                event,
             )));
     }
 
@@ -64,7 +53,7 @@ impl WagoAiTestMachine {
         self.namespace
             .emit(WagoAiTestMachineEvents::State(Event::new(
                 "WiringErrors",
-                event.clone(),
+                event,
             )));
     }
 
@@ -73,7 +62,7 @@ impl WagoAiTestMachine {
         self.namespace
             .emit(WagoAiTestMachineEvents::State(Event::new(
                 "MeasurementRateHz",
-                event.clone(),
+                event,
             )));
     }
 }

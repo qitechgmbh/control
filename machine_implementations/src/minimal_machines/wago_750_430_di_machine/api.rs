@@ -7,8 +7,10 @@ use control_core::socketio::{
     },
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
-use crate::{MachineApi, minimal_machines::wago_750_430_di_machine::Wago750_430DiMachine};
+use super::Wago750_430DiMachine;
+use crate::{MachineApi, MachineMessage, MachineValues};
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
@@ -57,12 +59,35 @@ impl CacheableEvents<Wago750_430DiMachineEvents> for Wago750_430DiMachineEvents 
 }
 
 impl MachineApi for Wago750_430DiMachine {
-    fn api_get_sender(&self) -> smol::channel::Sender<crate::MachineMessage> {
-        self.api_sender.clone()
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+            }
+            MachineMessage::UnsubscribeNamespace => {
+                self.namespace.namespace = None;
+            }
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::Value::Null,
+                    })
+                    .expect("Failed to send values");
+            }
+        }
     }
 
-    fn api_mutate(&mut self, _value: serde_json::Value) -> Result<(), anyhow::Error> {
-        // WAGO 750-430 is a digital input only module - no mutations supported
+    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {
+        self.sender.clone()
+    }
+
+    fn api_mutate(&mut self, _value: Value) -> Result<(), anyhow::Error> {
         Ok(())
     }
 

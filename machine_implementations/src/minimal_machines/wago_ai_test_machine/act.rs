@@ -1,72 +1,60 @@
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use crate::{
-    MachineAct, MachineMessage, MachineValues,
-    minimal_machines::wago_ai_test_machine::WagoAiTestMachine,
+use qitech_lib::{
+    ethercat_hal::io::analog_input::{AnalogInputDevice, physical::AnalogInputValue},
+    machines::{Machine, MachineDataRegistry, MachineError},
 };
+use units::electric_current::milliampere;
 
-impl MachineAct for WagoAiTestMachine {
-    fn act_machine_message(&mut self, msg: MachineMessage) {
-        match msg {
-            MachineMessage::SubscribeNamespace(namespace) => {
-                self.namespace.namespace = Some(namespace);
-                self.emit_measurement_rate();
-            }
-            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
-            MachineMessage::HttpApiJsonRequest(value) => {
-                use crate::MachineApi;
-                let _res = self.api_mutate(value);
-            }
-            MachineMessage::RequestValues(sender) => {
-                sender
-                    .send_blocking(MachineValues {
-                        state: serde_json::Value::Null,
-                        live_values: serde_json::Value::Null,
-                    })
-                    .expect("Failed to send values");
-                sender.close();
-            }
-        }
-    }
+use super::WagoAiTestMachine;
+use crate::MachineApi;
 
-    fn act(&mut self, now: std::time::Instant) {
-        let recv = self.api_receiver.try_recv();
-        if let Ok(msg) = recv {
+impl Machine for WagoAiTestMachine {
+    fn act(
+        &mut self,
+        _machine_data: Option<&mut MachineDataRegistry>,
+    ) -> Result<(), MachineError> {
+        let now = Instant::now();
+
+        if let Ok(msg) = self.receiver.try_recv() {
             self.act_machine_message(msg);
         }
+
         if now.duration_since(self.last_measurement)
             > Duration::from_secs_f64(1.0 / self.measurement_rate_hz)
         {
-            let mut values = [0.0; 4];
+            let range = self.analog_input_device.analog_input_range();
+            let mut values = [0.0f64; 4];
             let mut wiring_errors = [false; 4];
 
-            // Read all 4 analog inputs
-            for (i, ai) in self.analog_inputs.iter().enumerate() {
-                let measured_value = ai.get_physical();
-                wiring_errors[i] = ai.get_wiring_error();
-
-                match measured_value {
-                    ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(
-                        _quantity,
-                    ) => {
-                        // Don't do anything - this module is current input only
-                    }
-                    ethercat_hal::io::analog_input::physical::AnalogInputValue::Current(
-                        quantity,
-                    ) => {
-                        values[i] = quantity.value;
+            for i in 0..4 {
+                if let Ok(input) = self.analog_input_device.get_input(i) {
+                    wiring_errors[i] = input.wiring_error;
+                    match input.get_physical(&range) {
+                        AnalogInputValue::Current(quantity) => {
+                            values[i] = quantity.get::<milliampere>();
+                        }
+                        AnalogInputValue::Potential(_) => {}
                     }
                 }
             }
 
-            let now_milliseconds = SystemTime::now()
+            let now_ms = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("Now is expected to be after UNIX_EPOCH")
                 .as_millis();
 
-            self.emit_analog_inputs(values, now_milliseconds);
+            self.emit_analog_inputs(values, now_ms);
             self.emit_wiring_errors(wiring_errors);
             self.last_measurement = Instant::now();
         }
+
+        Ok(())
+    }
+
+    fn react(&mut self, _registry: &MachineDataRegistry) {}
+
+    fn get_identification(&self) -> qitech_lib::machines::MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
     }
 }

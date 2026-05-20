@@ -1,102 +1,55 @@
 use std::time::Instant;
 
 use anyhow::Error;
-use ethercat_hal::{
-    devices::{
-        EthercatDevice, downcast_device,
-        wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
-        wago_modules::wago_750_455::{Wago750_455, Wago750_455Port},
-    },
-    io::analog_input::AnalogInput,
+
+use qitech_lib::ethercat_hal::devices::{
+    DynamicEthercatDevice, EthercatDevice, downcast_subdevice, wago_750_354::Wago750_354,
+    wago_modules::wago_750_455::Wago750_455,
 };
-use smol::{block_on, channel::unbounded, lock::RwLock};
-use std::sync::Arc;
+
+use crate::{MachineHardware, MachineMessage, MachineNew};
 
 use super::{WagoAiTestMachine, api::WagoAiTestMachineNamespace};
-use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
-    validate_no_role_duplicates, validate_same_machine_identification_unique,
-};
 
-impl MachineNewTrait for WagoAiTestMachine {
-    fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
-        // validate general stuff
-        let device_identification = params
-            .device_group
-            .iter()
-            .map(|device_identification| device_identification.clone())
-            .collect::<Vec<_>>();
-        validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_duplicates(&device_identification)?;
+impl MachineNew for WagoAiTestMachine {
+    fn new(hw: MachineHardware) -> Result<Self, Error> {
+        let ethercat_interface = hw
+            .ethercat_interface
+            .clone()
+            .ok_or_else(|| Error::msg("ethercat interface must not be None"))?;
 
-        let hardware = match &params.hardware {
-            MachineNewHardware::Ethercat(x) => x,
-            _ => {
-                return Err(anyhow::anyhow!(
-                    "[{}::WagoAiTestMachine::new] MachineNewHardware is not Ethercat",
-                    module_path!()
-                ));
-            }
-        };
+        let (wago_750_354_ref, wago_750_354_addr) =
+            hw.try_get_ethercat_device_and_addr_by_role::<Wago750_354>(0)?;
+        let mut wago_750_354 = wago_750_354_ref.borrow_mut();
 
-        block_on(async {
-            // Get the Wago 750-354 bus coupler
-            let wago_750_354 = get_ethercat_device::<Wago750_354>(
-                hardware,
-                params,
-                0,
-                [WAGO_750_354_IDENTITY_A].to_vec(),
-            )
-            .await?;
+        let modules =
+            Wago750_354::initialize_modules(ethercat_interface.clone(), wago_750_354_addr)?;
 
-            // Initialize modules on the bus coupler
-            let modules = Wago750_354::initialize_modules(wago_750_354.1).await?;
+        for module in modules {
+            wago_750_354.set_module(module);
+        }
 
-            let mut coupler = wago_750_354.0.write().await;
+        wago_750_354.init_slot_modules(ethercat_interface, wago_750_354_addr);
 
-            for module in modules {
-                coupler.set_module(module);
-            }
+        let dev: Box<dyn DynamicEthercatDevice> = wago_750_354.slot_devices[0]
+            .take()
+            .ok_or_else(|| Error::msg("Slot 0 should have a device"))?;
+        let dev: Box<dyn EthercatDevice> = dev;
 
-            coupler.init_slot_modules(wago_750_354.1);
+        let wago750_455 =
+            downcast_subdevice::<Wago750_455>(dev).expect("downcasting device should work");
 
-            // Get the 750-455 analog input module from slot 0 (first module)
-            let dev = coupler
-                .slot_devices
-                .get(0)
-                .ok_or_else(|| anyhow::anyhow!("No device in slot 0"))?
-                .clone()
-                .ok_or_else(|| anyhow::anyhow!("Slot 0 is empty"))?;
+        drop(wago_750_354);
 
-            let wago750_455: Arc<RwLock<Wago750_455>> = downcast_device::<Wago750_455>(dev).await?;
-
-            // Create AnalogInput instances for all 4 channels
-            let ai1 = AnalogInput::new(wago750_455.clone(), Wago750_455Port::AI1);
-            let ai2 = AnalogInput::new(wago750_455.clone(), Wago750_455Port::AI2);
-            let ai3 = AnalogInput::new(wago750_455.clone(), Wago750_455Port::AI3);
-            let ai4 = AnalogInput::new(wago750_455.clone(), Wago750_455Port::AI4);
-
-            drop(coupler);
-
-            let (sender, receiver) = unbounded();
-            let namespace = WagoAiTestMachineNamespace {
-                namespace: params.namespace.clone(),
-            };
-
-            let new_wago_ai_test_machine = Self {
-                api_receiver: receiver,
-                api_sender: sender,
-                machine_identification_unique: params.get_machine_identification_unique(),
-                main_sender: params.main_thread_channel.clone(),
-                namespace,
-
-                last_measurement: Instant::now(),
-                measurement_rate_hz: 1.0,
-
-                analog_inputs: [ai1, ai2, ai3, ai4],
-            };
-
-            Ok(new_wago_ai_test_machine)
+        let (sender, receiver) = tokio::sync::mpsc::channel::<MachineMessage>(10);
+        Ok(Self {
+            receiver,
+            sender,
+            machine_identification_unique: hw.identification,
+            namespace: WagoAiTestMachineNamespace { namespace: None },
+            last_measurement: Instant::now(),
+            measurement_rate_hz: 1.0,
+            analog_input_device: wago750_455,
         })
     }
 }
