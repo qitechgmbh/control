@@ -14,6 +14,7 @@ impl Machine for AnalogInputTestMachine {
         if let Ok(msg) = recv {
             self.act_machine_message(msg);
         }
+        // @TODO: Measurement rate is probably limited to 30hz due to outer loop rate
         if now.duration_since(self.last_measurement)
             > Duration::from_secs_f64(1.0 / self.measurement_rate_hz)
         {
@@ -26,6 +27,7 @@ impl Machine for AnalogInputTestMachine {
             match measured_value {
                 AnalogInputValue::Potential(_quantity) => {
                     // Don't do anything
+                    // @TODO: Perhaps add logging or something to handle this case in some way
                 }
                 AnalogInputValue::Current(quantity) => {
                     let now_milliseconds = SystemTime::now()

@@ -1,5 +1,9 @@
 use crate::extruder1::ExtruderV2;
 use crate::minimal_machines::analog_input_test_machine::AnalogInputTestMachine;
+use crate::minimal_machines::motor_test_machine::MotorTestMachine;
+use crate::minimal_machines::test_machine_stepper::TestMachineStepper;
+use crate::minimal_machines::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine;
+use crate::minimal_machines::wago_750_460_machine::Wago750_460Machine;
 use crate::{
     MachineHardware, MachineNew, QiTechMachine, aquapath1::AquaPathV1, laser::LaserMachine,
     minimal_machines::digital_input_test_machine::DigitalInputTestMachine, winder2::Winder2,
@@ -89,20 +93,22 @@ lazy_static! {
 
         // mc.register::<WagoAiTestMachine>(WagoAiTestMachine::MACHINE_IDENTIFICATION);
 
-        // mc.register::<MotorTestMachine>(MotorTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<MotorTestMachine>(vec![MotorTestMachine::MACHINE_IDENTIFICATION]);
+
+        mc.register::<Wago750_460Machine>(vec![Wago750_460Machine::MACHINE_IDENTIFICATION]);
 
 
         // mc.register::<WagoDOTestMachine>(WagoDOTestMachine::MACHINE_IDENTIFICATION);
 
         // mc.register::<Wago750_501TestMachine>(Wago750_501TestMachine::MACHINE_IDENTIFICATION);
 
-        // mc.register::<Wago8chDigitalIOTestMachine>(
-        //     Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION,
-        // );
+        mc.register::<Wago8chDigitalIOTestMachine>(vec![
+            Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION]
+        );
 
         // mc.register::<WagoSerialMachine>(WagoSerialMachine::MACHINE_IDENTIFICATION);
 
-        // mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
+        mc.register::<TestMachineStepper>(vec![TestMachineStepper::MACHINE_IDENTIFICATION]);
         // mc.register::<Wago750_430DiMachine>(Wago750_430DiMachine::MACHINE_IDENTIFICATION);
         // mc.register::<Wago750_553Machine>(Wago750_553Machine::MACHINE_IDENTIFICATION);
         mc

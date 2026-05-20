@@ -1,10 +1,9 @@
-use crate::MachineMessage;
-use crate::machine_identification::MachineIdentification;
 use crate::minimal_machines::test_machine_stepper::api::{StateEvent, TestMachineStepperEvents};
+use crate::{MachineMessage, QiTechMachine};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::ethercat_hal::io::stepper_velocity_wago_750_671::StepperVelocityWago750671;
 use qitech_lib::ethercat_hal::io::stepper_velocity_wago_750_672::StepperVelocityWago750672;
-use qitech_lib::machines::MachineIdentificationUnique;
+use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
 use std::time::Instant;
 use tokio::sync::mpsc::{Receiver, Sender};
 pub mod act;
@@ -21,13 +20,15 @@ pub enum Stepper {
 
 #[derive(Debug)]
 pub struct TestMachineStepper {
-    pub api_receiver: Receiver<MachineMessage>,
-    pub api_sender: Sender<MachineMessage>,
+    pub receiver: Receiver<MachineMessage>,
+    pub sender: Sender<MachineMessage>,
     pub machine_identification_unique: MachineIdentificationUnique,
     pub namespace: TestMachineStepperNamespace,
     pub last_state_emit: Instant,
     pub stepper: Stepper,
 }
+
+impl QiTechMachine for TestMachineStepper {}
 
 impl TestMachineStepper {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {

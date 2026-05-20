@@ -1,5 +1,5 @@
 use super::TestMachineStepper;
-use crate::{MachineApi, MachineMessage};
+use crate::{MachineApi, MachineMessage, MachineValues};
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
@@ -76,12 +76,20 @@ impl MachineApi for TestMachineStepper {
             MachineMessage::HttpApiJsonRequest(value) => {
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::RequestValues(_sender) => {}
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::Value::Null,
+                    })
+                    .expect("Failed to send values");
+            }
         }
     }
 
     fn get_api_sender(&self) -> Sender<MachineMessage> {
-        self.api_sender.clone()
+        self.sender.clone()
     }
 
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {

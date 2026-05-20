@@ -52,6 +52,7 @@ pub enum AnalogInputTestMachineEvents {
 }
 
 #[derive(Deserialize)]
+// @TODO: other modules use a tagged enum for mutations rather than a struct
 pub struct Mutation {
     measurement_rate_hz: i32,
 }
@@ -77,6 +78,7 @@ impl MachineApi for AnalogInputTestMachine {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
                 self.emit_measurement_rate();
+                // @TODO: perhaps also emit last measurement if possible
             }
             MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
             MachineMessage::HttpApiJsonRequest(value) => {
@@ -84,6 +86,7 @@ impl MachineApi for AnalogInputTestMachine {
             }
             MachineMessage::RequestValues(sender) => {
                 sender
+                    //@TODO: Currently sends null instead of any actual value
                     .send(MachineValues {
                         state: serde_json::Value::Null,
                         live_values: serde_json::Value::Null,

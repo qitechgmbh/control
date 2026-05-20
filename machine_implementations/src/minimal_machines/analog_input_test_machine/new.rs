@@ -10,11 +10,11 @@ impl MachineNew for AnalogInputTestMachine {
     fn new<'maindevice>(hw: MachineHardware) -> Result<Self, Error> {
         let ai1: Rc<RefCell<dyn AnalogInputDevice>> =
             hw.try_get_ethercat_device_by_role::<EL3021>(1)?;
-        let (tx, rx) = tokio::sync::mpsc::channel::<MachineMessage>(2);
+        let (sender, receiver) = tokio::sync::mpsc::channel::<MachineMessage>(10);
 
         Ok(Self {
-            api_receiver: rx,
-            api_sender: tx,
+            api_receiver: receiver,
+            api_sender: sender,
             machine_identification_unique: hw.identification,
             namespace: AnalogInputTestMachineNamespace { namespace: None },
 
