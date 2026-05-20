@@ -2,13 +2,13 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use qitech_lib::{
     ethercat_hal::io::analog_input::physical::AnalogInputValue,
-    machines::{Machine, MachineDataRegistry, MachineIdentificationUnique},
+    machines::{Machine, MachineDataRegistry, MachineError, MachineIdentificationUnique},
 };
 
 use crate::{MachineApi, minimal_machines::analog_input_test_machine::AnalogInputTestMachine};
 
 impl Machine for AnalogInputTestMachine {
-    fn act(&mut self, _machine_data: Option<&mut MachineDataRegistry>) {
+    fn act(&mut self, _machine_data: Option<&mut MachineDataRegistry>) -> Result<(), MachineError> {
         let now = Instant::now();
         let recv = self.api_receiver.try_recv();
         if let Ok(msg) = recv {
@@ -39,6 +39,8 @@ impl Machine for AnalogInputTestMachine {
             }
             self.last_measurement = Instant::now();
         }
+
+        Ok(())
     }
 
     fn get_identification(&self) -> MachineIdentificationUnique {

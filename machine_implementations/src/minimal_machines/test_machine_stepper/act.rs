@@ -1,4 +1,6 @@
-use qitech_lib::machines::{Machine, MachineDataRegistry, MachineIdentificationUnique};
+use qitech_lib::machines::{
+    Machine, MachineDataRegistry, MachineError, MachineIdentificationUnique,
+};
 
 use crate::MachineApi;
 
@@ -6,7 +8,7 @@ use super::TestMachineStepper;
 use std::time::{Duration, Instant};
 
 impl Machine for TestMachineStepper {
-    fn act(&mut self, _machine: Option<&mut MachineDataRegistry>) {
+    fn act(&mut self, _machine: Option<&mut MachineDataRegistry>) -> Result<(), MachineError> {
         let now = Instant::now();
 
         if let Ok(msg) = self.receiver.try_recv() {
@@ -17,6 +19,8 @@ impl Machine for TestMachineStepper {
             self.emit_state();
             self.last_state_emit = now;
         }
+
+        Ok(())
     }
 
     fn get_identification(&self) -> MachineIdentificationUnique {

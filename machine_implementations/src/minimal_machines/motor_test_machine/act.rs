@@ -1,10 +1,12 @@
-use qitech_lib::machines::{Machine, MachineDataRegistry, MachineIdentificationUnique};
+use qitech_lib::machines::{
+    Machine, MachineDataRegistry, MachineError, MachineIdentificationUnique,
+};
 
 use super::MotorTestMachine;
 use crate::MachineApi;
 
 impl Machine for MotorTestMachine {
-    fn act(&mut self, _registry: Option<&mut MachineDataRegistry>) {
+    fn act(&mut self, _registry: Option<&mut MachineDataRegistry>) -> Result<(), MachineError> {
         // println!("[{}::act] Running act", module_path!());
         if let Ok(msg) = self.receiver.try_recv() {
             self.act_machine_message(msg);
@@ -24,6 +26,8 @@ impl Machine for MotorTestMachine {
         } else {
             let _ = motor_driver_ref.set_speed(self.motor_driver_port, 0.0);
         }
+
+        Ok(())
     }
 
     fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {}
