@@ -107,11 +107,11 @@ impl TraverseController {
             did_change_state: false,
             fullstep_converter: LinearStepConverter::from_circumference(
                 200,
-                Length::new::<millimeter>(35.0),
+                Length::new::<millimeter>(32.0),
             ),
             microstep_converter: LinearStepConverter::from_circumference(
                 200 * microsteps as i16,
-                Length::new::<millimeter>(35.0),
+                Length::new::<millimeter>(32.0),
             ),
         }
     }
