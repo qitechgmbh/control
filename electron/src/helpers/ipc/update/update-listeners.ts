@@ -1,14 +1,18 @@
 import { ipcMain } from "electron";
 import {
+  UPDATE_FETCH_SEND,
   UPDATE_CANCEL,
   UPDATE_END,
   UPDATE_EXECUTE,
   UPDATE_LOG,
   UPDATE_STEP,
+  UPDATE_FETCH_RECV,
 } from "./update-channels";
 import { spawn, ChildProcess } from "child_process";
 import tkill from "@jub3i/tree-kill";
 import { existsSync, rmSync } from "fs";
+import { GithubSource } from "@/setup/GithubSourceDialog";
+import { UpdateTargets } from "@/helpers/update_helpers";
 
 type UpdateExecuteListenerParams = {
   githubRepoOwner: string;
@@ -21,8 +25,28 @@ type UpdateExecuteListenerParams = {
 
 // Store reference to current update process for cancellation
 let currentUpdateProcess: ChildProcess | null = null;
+let currentFetchProcess: ChildProcess | null = null;
 
 export function addUpdateEventListeners() {
+  ipcMain.handle(
+    UPDATE_FETCH_SEND,
+    async (event, source: GithubSource) => {
+      fetchTargets(event, source)
+      .then((value) => {
+          event.sender.send(
+            UPDATE_FETCH_RECV,
+            value,
+          );
+      })
+      .catch((error) => {
+          event.sender.send(
+            UPDATE_FETCH_RECV,
+            error.message,
+          );
+      });
+    }
+  );
+
   ipcMain.handle(
     UPDATE_EXECUTE,
     async (event, params: UpdateExecuteListenerParams) => {
@@ -89,6 +113,85 @@ export function addUpdateEventListeners() {
       return { success: false, error: "No update process running" };
     }
   });
+}
+
+async function fetchTargets(
+  event: Electron.IpcMainInvokeEvent,
+  source: GithubSource,
+): Promise<UpdateTargets | string> {
+  return new Promise((resolve, reject) => {
+    (async () => {
+      try {
+        console.log("Fetch parameters:",
+          source.githubRepoOwner,
+          source.githubRepoName,
+        );
+
+        const tmpDir =
+          process.env.TMPDIR ||
+          process.env.TMP ||
+          process.env.TEMP ||
+          "/tmp";
+
+        const outDir = `${tmpDir}/${source.githubRepoName}`;
+
+        const url = `https://github.com/${source.githubRepoOwner}/${source.githubRepoName}.git`
+
+        const args = ["clone", "--filter=blob:none", "--no-checkout", url, outDir];
+        const childProcess = spawn("git", [
+          "clone", "--filter=blob:none", "--no-checkout", url, outDir
+        ]);
+
+        if (cmd.error !== null) {
+          return cmd.error!
+        }
+
+        resolve();
+      } catch(error) {
+        reject(error);
+      } 
+    })
+  });
+}
+
+async function importMinimalRepo(
+  owner: string, 
+  name: string, 
+  outDir: string
+): Promise<string | null> {
+  try {
+    const url = `https://github.com/${owner}/${name}.git`
+
+    const childProcess = spawn("git", [
+      "clone", "--filter=blob:none", "--no-checkout", url, outDir
+    ]);
+
+    return new Promise((resolve, reject) => {
+      childProcess.on("close", (code, signal) => {
+        if (currentFetchProcess === childProcess) {
+          currentFetchProcess = null;
+        }
+
+        if (signal === "SIGTERM" || signal === "SIGKILL") {
+          reject("Command was cancelled");
+        } else if (code === 0) {
+          resolve(null);
+        } else {
+          reject("Command exited with no code");
+        }
+      });
+
+      childProcess.on("error", (err) => {
+        if (currentFetchProcess === childProcess) {
+          currentFetchProcess = null;
+        }
+
+        reject(err.message);
+      });
+    });
+  } catch (error: any) {
+    return error.toString();
+  }
 }
 
 async function update(
