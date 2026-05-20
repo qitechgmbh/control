@@ -86,7 +86,7 @@ impl MachineApi for Wago8chDigitalIOTestMachine {
     }
 
     fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<crate::MachineMessage> {
-        self.api_sender.clone()
+        self.sender.clone()
     }
 
     fn api_mutate(&mut self, value: serde_json::Value) -> Result<(), anyhow::Error> {

@@ -92,7 +92,7 @@ impl MachineApi for Wago750_460Machine {
     }
 
     fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {
-        self.api_sender.clone()
+        self.sender.clone()
     }
 
     fn api_mutate(&mut self, _request_body: Value) -> Result<(), anyhow::Error> {

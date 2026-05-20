@@ -1,17 +1,14 @@
 use std::time::Instant;
 
 use self::api::{StateEvent, Wago750_460MachineEvents, Wago750_460MachineNamespace};
-use crate::{
-    MachineMessage, VENDOR_QITECH, WAGO_750_460_MACHINE,
-    machine_identification::MachineIdentification,
-};
+use crate::{MachineMessage, QiTechMachine, VENDOR_QITECH, WAGO_750_460_MACHINE};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::{
     ethercat_hal::{
         devices::wago_modules::wago_750_460::Wago750_460,
         io::temperature_input::TemperatureInputDevice,
     },
-    machines::MachineIdentificationUnique,
+    machines::{MachineIdentification, MachineIdentificationUnique},
 };
 use tokio::sync::mpsc::{Receiver, Sender};
 
@@ -22,15 +19,18 @@ pub mod new;
 #[derive(Debug)]
 pub struct Wago750_460Machine {
     // --- mandatory plumbing -------------------------------------------------
-    pub api_receiver: Receiver<MachineMessage>,
-    pub api_sender: Sender<MachineMessage>,
+    pub receiver: Receiver<MachineMessage>,
+    pub sender: Sender<MachineMessage>,
     pub machine_identification_unique: MachineIdentificationUnique,
     pub namespace: Wago750_460MachineNamespace,
     pub last_state_emit: Instant,
 
     // --- hardware -----------------------------------------------------------
+    // Subdevices of a WAGO coupler are owned by the machine
     pub temperature_input_device: Box<Wago750_460>,
 }
+
+impl QiTechMachine for Wago750_460Machine {}
 
 impl Wago750_460Machine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {

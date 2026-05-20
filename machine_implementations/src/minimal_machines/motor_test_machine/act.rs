@@ -1,16 +1,18 @@
 use qitech_lib::machines::{Machine, MachineDataRegistry, MachineIdentificationUnique};
 
 use super::MotorTestMachine;
-use crate::{MachineApi};
+use crate::MachineApi;
 
 impl Machine for MotorTestMachine {
     fn act(&mut self, _registry: Option<&mut MachineDataRegistry>) {
         // println!("[{}::act] Running act", module_path!());
-        if let Ok(msg) = self.api_receiver.try_recv() {
+        if let Ok(msg) = self.receiver.try_recv() {
             self.act_machine_message(msg);
         }
 
         let mut motor_driver_ref = self.motor_driver.borrow_mut();
+
+        // @TODO: Don't write enabled and speed on every act cycle
 
         motor_driver_ref.set_enabled(self.motor_driver_port, self.motor_state.enabled);
 
@@ -24,7 +26,7 @@ impl Machine for MotorTestMachine {
         }
     }
 
-    fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) { }
+    fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {}
 
     fn get_identification(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique.clone()
