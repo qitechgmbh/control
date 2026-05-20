@@ -144,11 +144,12 @@ fn finalize_ethercat(
     }
 }
 
-fn send_setup_done_events(state: Arc<SharedAppState>) {
+fn send_setup_done_events(state: Arc<SharedAppState>, preop: bool) {
     let rt = get_async_runtime();
     rt.spawn(async move {
         let _res = state.send_ethercat_setup_done().await;
         let _res = state.send_machines_event().await;
+        let _res = state.send_ethercat_preop(preop).await;
     });
 }
 
@@ -263,18 +264,29 @@ pub fn remove_machines(main_state: &mut MainState, shared_state : Arc<SharedAppS
     }
 }
 
-
 #[cfg(not(feature = "mock"))]
 fn main_logic() {
-    let state = Arc::new(SharedAppState::new());
+    let stay_in_preop = std::env::var("QITECH_MODE").unwrap_or_default() == "preop"
+        || std::env::args().any(|a| a == "preop");
+
+    let mut state = Arc::new(SharedAppState::new());
     let mut main_state = MainState::new();
-    let mut eth_control : Option<EtherCATControl<TripleBufConsumer,TripleBufProducer>> = None;
 
     let res = find_ethercat_interface();
-    eth_control = match res {
+    let mut eth_control = match res {
         Ok(interface) => Some(optimized_ethercat_init(&interface)),
-        Err(_) => None,
+        Err(_) => return,
     };
+
+    if let Some(state) = Arc::get_mut(&mut state) {
+        if let Some(control) = &eth_control {
+            state.ethercat_thread_channel = Some(control.channel.clone());
+        }
+    } else {
+        tracing::error!(
+            "Could not get mutable reference to SharedAppState. Channel will not be available"
+        );
+    }
 
     setup_api_and_websock(state.clone());
 
@@ -284,43 +296,47 @@ fn main_logic() {
     };
 
     detect_and_build_machines(state.clone(), &mut main_state);
+    send_setup_done_events(state.clone(), stay_in_preop);
+
+    if stay_in_preop {
+        tracing::info!("Staying in PreOp as requested.");
+        loop {
+            std::thread::sleep(core::time::Duration::from_secs(1));
+        }
+    }
 
     match &eth_control {
         Some(control) => finalize_ethercat(&mut main_state, control),
         None => (),
     };
 
-    send_setup_done_events(state.clone());
     let mut last_check = std::time::Instant::now();
     let hotplug_duration = Duration::from_secs(4);
-    loop {
-        let now = std::time::Instant::now();
-        match &mut eth_control {
-            Some(control) => {
-                write_ecat_inputs(&mut control.app_handle, main_state.subdevices.clone());
-            },
-            None => (),
-        };
 
-        let machines_to_remove = run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
-        if machines_to_remove.is_some() {
-            remove_machines(&mut main_state, state.clone(),machines_to_remove);
-        }
+    match &mut eth_control {
+        Some(control) => loop {
+            let now = std::time::Instant::now();
 
-        if now.duration_since(last_check) >= hotplug_duration {
-            let _ = laser_hotplug(&mut main_state, state.clone());
-            last_check = now;
-        }
+            write_ecat_inputs(&mut control.app_handle, main_state.subdevices.clone());
 
-        match &mut eth_control {
-            Some(control) => {
-                write_ecat_outputs(&mut control.app_handle, main_state.subdevices.clone());
-            },
-            None => (),
-        };
-        std::thread::sleep(Duration::from_micros(100));
+            let machines_to_remove = run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
+            if machines_to_remove.is_some() {
+                remove_machines(&mut main_state, state.clone(), machines_to_remove);
+            }
+
+            if now.duration_since(last_check) >= hotplug_duration {
+                let _ = laser_hotplug(&mut main_state, state.clone());
+                last_check = now;
+            }
+
+            write_ecat_outputs(&mut control.app_handle, main_state.subdevices.clone());
+
+            std::thread::sleep(Duration::from_micros(control.controller.cycle_time_us));
+        },
+        None => (),
     }
 }
+
 fn main() {
     #[cfg(not(feature = "mock"))]
     main_logic();
