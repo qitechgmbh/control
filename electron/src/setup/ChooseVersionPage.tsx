@@ -1,9 +1,10 @@
+import fs from "node:fs";
 import { Icon } from "@/components/Icon";
 import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import { TouchButton } from "@/components/touch/TouchButton";
 import React, { useEffect, useState } from "react";
-import { GithubSourceDialog } from "./GithubSourceDialog";
+import { GithubSource, GithubSourceDialog } from "./GithubSourceDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert } from "@/components/Alert";
 import { useNavigate } from "@tanstack/react-router";
@@ -51,6 +52,7 @@ export function ChooseVersionPage() {
 
   const githubApiUrl = `https://api.github.com/repos/${githubSource.githubRepoOwner}/${githubSource.githubRepoName}`;
 
+  // https://github.com/qitechgmbh/control.git
   const fetchOptions = {
     headers: {
       ...(githubSource.githubToken && {
@@ -59,6 +61,42 @@ export function ChooseVersionPage() {
       Accept: "application/vnd.github.v3+json",
     },
   };
+
+  function loadRepo(source: GithubSource) {
+    const url = `https://github.com/${source.githubRepoOwner}/${source.githubRepoOwner}.git`
+    const path = "/tmp/${source.githubRepoOwner}-${source.githubRepoOwner}"
+
+    const cloneRepo = async () => {
+      
+    };
+
+    const updateRepo = async () => {
+      
+    };
+
+    if (fs.existsSync(path)) {
+      console.log("Repo exists, updating...");
+
+      execSync("git fetch", {
+        cwd: path,
+        stdio: "inherit",
+      });
+
+      execSync("git rebase origin/main", {
+        cwd: path,
+        stdio: "inherit",
+      });
+    } else {
+      console.log("Cloning repo...");
+
+      execSync(`git clone ${url} ${path}`, {
+        stdio: "inherit",
+      });
+    }
+
+    // /tmp/control-repo
+    // githubRepoOwner/githubRepoName
+  }
 
   // Fetch master commits
   useEffect(() => {

@@ -1,3 +1,4 @@
+import { GithubSource } from "@/setup/GithubSourceDialog";
 import type { UpdateInfo } from "@/stores/updateStore";
 import { useUpdateStore } from "@/stores/updateStore";
 
@@ -9,6 +10,25 @@ let currentStepListener:
       progress?: number;
     }) => void)
   | null = null;
+
+export type UpdateTarget = {
+  name: string,
+  hash: string,
+  date: string[],
+  time: string[],
+};
+
+export type UpdateTargets = {
+  version: UpdateTarget[],
+  branch: UpdateTarget[],
+  commit: UpdateTarget[],
+};
+
+export async function getTargets(source: GithubSource): Promise<UpdateTargets> {
+  return new Promise((resolve) => {
+    // window.update.getTargets();
+  })
+}
 
 export async function updateExecute(
   source: UpdateInfo,
