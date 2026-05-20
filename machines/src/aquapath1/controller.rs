@@ -1,9 +1,7 @@
 use crate::aquapath1::{Flow, Temperature};
 use control_core::controllers::pid::PidController;
-use ethercat_hal::io::encoder_input::EncoderInput;
-use ethercat_hal::io::{
-    analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
-};
+use ethercat_hal::io::as006::{As006Flow, As006Temp};
+use ethercat_hal::io::{analog_output::AnalogOutput, digital_output::DigitalOutput};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 use units::AngularVelocity;
@@ -72,7 +70,7 @@ impl Default for ControllerConfig {
     fn default() -> Self {
         Self {
             min_flow_for_thermal: VolumeRate::new::<liter_per_minute>(0.2),
-            pump_startup_grace_period: Duration::from_secs(3),
+            pump_startup_grace_period: Duration::from_secs(15),
             thermal_flow_settle_duration: Duration::from_secs(10),
             heating_element_power: 700.0,
             heating_pwm_period: Duration::from_secs(12),
@@ -114,8 +112,7 @@ pub struct Controller {
     pub cooling_mode: Option<CoolingMode>,
 
     pub heating_relais: DigitalOutput,
-    pub temperature_sensor_in: TemperatureInput,
-    pub temperature_sensor_out: TemperatureInput,
+    pub temperature_sensor: As006Temp,
 
     pub power: f64,
     pub total_energy: f64,
@@ -130,7 +127,7 @@ pub struct Controller {
     flow_became_valid_at: Option<Instant>,
     pump_cooldown_started_at: Option<Instant>,
     heating_last_active_at: Option<Instant>,
-    pub flow_sensor: EncoderInput,
+    pub flow_sensor: As006Flow,
     pub pump_allowed: bool,
     pub current_flow: VolumeRate,
     pub max_flow: VolumeRate,
@@ -186,13 +183,11 @@ impl Controller {
         cooling_controller: AnalogOutput,
         cooling_relais: DigitalOutput,
         heating_relais: DigitalOutput,
-        temp_sensor_in: TemperatureInput,
-        temp_sensor_out: TemperatureInput,
+        temperature_sensor: As006Temp,
         max_revolutions: AngularVelocity,
-
         flow: Flow,
         pump_relais: DigitalOutput,
-        flow_sensor: EncoderInput,
+        flow_sensor: As006Flow,
         config: ControllerConfig,
     ) -> Self {
         let now = Instant::now();
@@ -209,31 +204,23 @@ impl Controller {
             temp_reservoir: ThermodynamicTemperature::new::<degree_celsius>(25.0),
             min_temperature: ThermodynamicTemperature::new::<degree_celsius>(10.0),
             max_temperature: ThermodynamicTemperature::new::<degree_celsius>(80.0),
-
             temperature: temp,
-            cooling_controller: cooling_controller,
-
+            cooling_controller,
             cooling_tolerance: config.cooling.tolerance,
             heating_tolerance: config.heating_tolerance,
-
             current_revolutions: AngularVelocity::new::<revolution_per_minute>(0.0),
-            max_revolutions: max_revolutions,
+            max_revolutions,
             cooling_mode: None,
-
-            cooling_relais: cooling_relais,
-            heating_relais: heating_relais,
-
+            cooling_relais,
+            heating_relais,
             cooling_allowed: false,
             heating_allowed: false,
-            temperature_sensor_in: temp_sensor_in,
-            temperature_sensor_out: temp_sensor_out,
-
+            temperature_sensor,
             power: 0.0,
             total_energy: 0.0,
-
-            flow: flow,
-            pump_relais: pump_relais,
-            flow_sensor: flow_sensor,
+            flow,
+            pump_relais,
+            flow_sensor,
             should_pump: false,
             pump_started_at: None,
             flow_became_valid_at: None,
@@ -301,20 +288,12 @@ impl Controller {
         self.target_temperature = temperature;
     }
 
-    pub fn get_temp_in(&mut self) -> ThermodynamicTemperature {
-        let temp = self.temperature_sensor_in.get_temperature();
-        match temp {
-            Ok(value) => ThermodynamicTemperature::new::<degree_celsius>(value),
-            Err(_) => ThermodynamicTemperature::new::<degree_celsius>(0.0),
-        }
-    }
-
-    pub fn get_temp_out(&mut self) -> ThermodynamicTemperature {
-        let temp = self.temperature_sensor_out.get_temperature();
-        match temp {
-            Ok(value) => ThermodynamicTemperature::new::<degree_celsius>(value),
-            Err(_) => ThermodynamicTemperature::new::<degree_celsius>(0.0),
-        }
+    pub fn get_temp_in(&self) -> ThermodynamicTemperature {
+        let value = self
+            .temperature_sensor
+            .get_temperature_celsius()
+            .unwrap_or(0.0);
+        ThermodynamicTemperature::new::<degree_celsius>(value)
     }
 
     pub fn disallow_cooling(&mut self) {
@@ -369,26 +348,10 @@ impl Controller {
         self.should_pump
     }
 
-    pub fn get_flow(&mut self) -> VolumeRate {
-        let value = match self.flow_sensor.get_frequency_value() {
-            Ok(val) => val,
-            Err(_e) => {
-                return VolumeRate::new::<liter_per_minute>(0.0);
-            }
-        };
-
-        match value {
-            Some(val) => {
-                if val == 0 {
-                    return VolumeRate::new::<liter_per_minute>(0.0);
-                }
-                // Formula: f = 8.1*q - 3, so q = (f + 3) / 8.1
-                let actual_flow = ((val / 100) as f32 + 3.0) / 8.1;
-                VolumeRate::new::<liter_per_minute>(actual_flow.into())
-            }
-            None => {
-                return VolumeRate::new::<liter_per_minute>(0.0);
-            }
+    pub fn get_flow(&self) -> VolumeRate {
+        match self.flow_sensor.get_flow_lpm() {
+            Some(lpm) => VolumeRate::new::<liter_per_minute>(lpm),
+            None => VolumeRate::new::<liter_per_minute>(0.0),
         }
     }
 
@@ -588,7 +551,7 @@ impl Controller {
         self.last_cooling_switch = now;
     }
 
-    pub fn update(&mut self, now: Instant) -> () {
+    pub fn update(&mut self, now: Instant) {
         let dt = now.duration_since(self.last_update).as_secs_f64();
         self.last_update = now;
 
@@ -612,7 +575,7 @@ impl Controller {
         self.flow.should_pump = should_flow;
 
         self.current_temperature = self.get_temp_in();
-        self.temp_reservoir = self.get_temp_out();
+        self.temp_reservoir = self.current_temperature;
 
         let pump_cooldown_min_temperature = self.config.pump_cooldown_min_temperature;
         let pump_is_still_hot = self.current_temperature.get::<degree_celsius>()
