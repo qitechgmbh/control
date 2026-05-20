@@ -1,5 +1,5 @@
 use super::TestMachineStepper;
-use crate::{MachineApi, MachineMessage};
+use crate::{MachineApi, MachineMessage, MachineValues};
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
@@ -9,6 +9,7 @@ use control_core::socketio::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
+use tokio::sync::mpsc::Sender;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
@@ -65,8 +66,30 @@ impl CacheableEvents<TestMachineStepperEvents> for TestMachineStepperEvents {
 }
 
 impl MachineApi for TestMachineStepper {
-    fn api_get_sender(&self) -> smol::channel::Sender<MachineMessage> {
-        self.api_sender.clone()
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+            }
+            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::Value::Null,
+                    })
+                    .expect("Failed to send values");
+            }
+        }
+    }
+
+    fn get_api_sender(&self) -> Sender<MachineMessage> {
+        self.sender.clone()
     }
 
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {

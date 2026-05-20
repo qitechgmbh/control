@@ -1,41 +1,29 @@
-use std::time::Instant;
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use control_core::socketio::{event::Event, namespace::NamespaceCacheingLogic};
-use ethercat_hal::io::analog_input::AnalogInput;
-use smol::channel::{Receiver, Sender};
+use qitech_lib::{
+    ethercat_hal::io::analog_input::AnalogInputDevice,
+    machines::{MachineIdentification, MachineIdentificationUnique},
+};
+use tokio::sync::mpsc::{Receiver, Sender};
 
 use self::api::{AnalogInputTestMachineEvents, AnalogInputTestMachineNamespace, MeasurementEvent};
-use crate::{
-    ANALOG_INPUT_TEST_MACHINE, AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH,
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
-};
+use crate::{ANALOG_INPUT_TEST_MACHINE, MachineMessage, QiTechMachine, VENDOR_QITECH};
 
 pub mod act;
 pub mod api;
 pub mod new;
 
-#[derive(Debug)]
 pub struct AnalogInputTestMachine {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
     machine_identification_unique: MachineIdentificationUnique,
-    main_sender: Option<Sender<AsyncThreadMessage>>,
     namespace: AnalogInputTestMachineNamespace,
 
     last_measurement: Instant,
     measurement_rate_hz: f64,
 
-    analog_input: AnalogInput,
-}
-
-impl Machine for AnalogInputTestMachine {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
-
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
+    analog_input: Rc<RefCell<dyn AnalogInputDevice>>,
 }
 
 impl AnalogInputTestMachine {
@@ -62,3 +50,5 @@ impl AnalogInputTestMachine {
             )));
     }
 }
+
+impl QiTechMachine for AnalogInputTestMachine {}

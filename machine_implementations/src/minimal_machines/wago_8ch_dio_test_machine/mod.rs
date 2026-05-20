@@ -1,16 +1,18 @@
 use std::time::Instant;
 
-use control_core::socketio::namespace::NamespaceCacheingLogic;
-use ethercat_hal::io::{digital_input::DigitalInput, digital_output::DigitalOutput};
-use smol::channel::{Receiver, Sender};
-
 use self::api::{
     StateEvent, Wago8chDigitalIOTestMachineEvents, Wago8chDigitalIOTestMachineNamespace,
 };
-use crate::{
-    AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH, WAGO_8CH_IO_TEST_MACHINE,
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
+use crate::{MachineMessage, QiTechMachine, VENDOR_QITECH, WAGO_8CH_IO_TEST_MACHINE};
+use control_core::socketio::namespace::NamespaceCacheingLogic;
+use qitech_lib::{
+    ethercat_hal::{
+        devices::wago_modules::wago_750_1506::Wago750_1506,
+        io::{digital_input::DigitalInputDevice, digital_output::DigitalOutputDevice},
+    },
+    machines::{MachineIdentification, MachineIdentificationUnique},
 };
+use tokio::sync::mpsc::{Receiver, Sender};
 
 pub mod act;
 pub mod api;
@@ -18,24 +20,14 @@ pub mod new;
 
 #[derive(Debug)]
 pub struct Wago8chDigitalIOTestMachine {
-    pub api_receiver: Receiver<MachineMessage>,
-    pub api_sender: Sender<MachineMessage>,
+    pub receiver: Receiver<MachineMessage>,
+    pub sender: Sender<MachineMessage>,
     pub machine_identification_unique: MachineIdentificationUnique,
-    pub main_sender: Option<Sender<AsyncThreadMessage>>,
     pub namespace: Wago8chDigitalIOTestMachineNamespace,
     pub last_state_emit: Instant,
-    pub digital_output: [DigitalOutput; 8],
-    pub digital_input: [DigitalInput; 8],
-}
-
-impl Machine for Wago8chDigitalIOTestMachine {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
-
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
+    // Subdevices of a WAGO coupler are owned by the machine
+    pub digital_input_output_device: Box<Wago750_1506>,
+    pub last_output_state: [bool; 8],
 }
 
 impl Wago8chDigitalIOTestMachine {
@@ -46,25 +38,12 @@ impl Wago8chDigitalIOTestMachine {
 
     pub fn get_state(&self) -> StateEvent {
         StateEvent {
-            digital_input: (0..8)
-                .map(|i| {
-                    self.digital_input[i]
-                        .get_value()
-                        .expect("digital input value should be available")
-                })
-                .collect::<Vec<_>>()
-                .try_into()
-                .expect("bool vector into array[8] should work"),
-            digital_output: [
-                self.digital_output[0].get(),
-                self.digital_output[1].get(),
-                self.digital_output[2].get(),
-                self.digital_output[3].get(),
-                self.digital_output[4].get(),
-                self.digital_output[5].get(),
-                self.digital_output[6].get(),
-                self.digital_output[7].get(),
-            ],
+            digital_input: std::array::from_fn(|i| {
+                self.digital_input_output_device
+                    .get_input(i)
+                    .expect("digital input value should be available for indices 0 to 7")
+            }),
+            digital_output: self.last_output_state,
         }
     }
 
@@ -75,6 +54,10 @@ impl Wago8chDigitalIOTestMachine {
     }
 
     pub fn set_output(&mut self, i: usize, value: bool) {
-        self.digital_output[i].set(value);
+        self.digital_input_output_device.set_output(i, value);
+        self.last_output_state[i] = value;
+        self.emit_state();
     }
 }
+
+impl QiTechMachine for Wago8chDigitalIOTestMachine {}

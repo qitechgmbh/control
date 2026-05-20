@@ -8,7 +8,10 @@ use control_core::socketio::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{MachineApi, minimal_machines::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine};
+use crate::{
+    MachineApi, MachineMessage, MachineValues,
+    minimal_machines::wago_8ch_dio_test_machine::Wago8chDigitalIOTestMachine,
+};
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
@@ -60,8 +63,30 @@ impl CacheableEvents<Wago8chDigitalIOTestMachineEvents> for Wago8chDigitalIOTest
 }
 
 impl MachineApi for Wago8chDigitalIOTestMachine {
-    fn api_get_sender(&self) -> smol::channel::Sender<crate::MachineMessage> {
-        self.api_sender.clone()
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+            }
+            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::Value::Null,
+                    })
+                    .expect("Failed to send values");
+            }
+        }
+    }
+
+    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<crate::MachineMessage> {
+        self.sender.clone()
     }
 
     fn api_mutate(&mut self, value: serde_json::Value) -> Result<(), anyhow::Error> {

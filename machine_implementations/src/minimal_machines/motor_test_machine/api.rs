@@ -8,9 +8,8 @@ use control_core::socketio::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use smol::channel::Sender;
 use std::sync::Arc;
-use tracing::instrument;
+use tokio::sync::mpsc::Sender;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
@@ -29,6 +28,7 @@ pub enum BeckhoffEvents {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+// @TODO format diverges, other modules use #[serde(tag = "action", content = "value")]
 #[serde(tag = "type", content = "payload")]
 enum Mutation {
     SetMotorOn(bool),
@@ -42,7 +42,6 @@ pub struct BeckhoffNamespace {
 }
 
 impl NamespaceCacheingLogic<BeckhoffEvents> for BeckhoffNamespace {
-    #[instrument(skip_all)]
     fn emit(&mut self, events: BeckhoffEvents) {
         let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
@@ -64,11 +63,24 @@ impl CacheableEvents<BeckhoffEvents> for BeckhoffEvents {
 }
 
 impl MachineApi for MotorTestMachine {
-    fn api_get_sender(&self) -> Sender<MachineMessage> {
-        self.api_sender.clone()
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(ns) => {
+                self.namespace.namespace = Some(ns);
+                self.emit_state();
+            }
+            MachineMessage::UnsubscribeNamespace => {
+                self.namespace.namespace = None;
+            }
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _ = self.api_mutate(value);
+            }
+            // @TODO: Check whether it's fine that this machine never returns its state. Self is also missing an implementation for get_state
+            MachineMessage::RequestValues(_sender) => (),
+        }
     }
-    fn api_event_namespace(&mut self) -> Option<Namespace> {
-        self.namespace.namespace.clone()
+    fn get_api_sender(&self) -> Sender<MachineMessage> {
+        self.sender.clone()
     }
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
@@ -84,9 +96,15 @@ impl MachineApi for MotorTestMachine {
                 self.motor_state.target_velocity = vel;
                 self.emit_state();
             }
-
-            _ => {}
+            // @TODO motorOff may be redundant
+            Mutation::SetMotorOff(_t) => {
+                self.turn_motor_off();
+            }
         }
         Ok(())
+    }
+
+    fn api_event_namespace(&mut self) -> Option<Namespace> {
+        self.namespace.namespace.clone()
     }
 }

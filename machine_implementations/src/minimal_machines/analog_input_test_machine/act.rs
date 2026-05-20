@@ -1,50 +1,35 @@
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use crate::{
-    MachineAct, MachineMessage, MachineValues,
-    minimal_machines::analog_input_test_machine::AnalogInputTestMachine,
+use qitech_lib::{
+    ethercat_hal::io::analog_input::physical::AnalogInputValue,
+    machines::{Machine, MachineDataRegistry, MachineIdentificationUnique},
 };
 
-impl MachineAct for AnalogInputTestMachine {
-    fn act_machine_message(&mut self, msg: MachineMessage) {
-        match msg {
-            MachineMessage::SubscribeNamespace(namespace) => {
-                self.namespace.namespace = Some(namespace);
-                self.emit_measurement_rate();
-            }
-            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
-            MachineMessage::HttpApiJsonRequest(value) => {
-                use crate::MachineApi;
-                let _res = self.api_mutate(value);
-            }
-            MachineMessage::RequestValues(sender) => {
-                sender
-                    .send_blocking(MachineValues {
-                        state: serde_json::Value::Null,
-                        live_values: serde_json::Value::Null,
-                    })
-                    .expect("Failed to send values");
-                sender.close();
-            }
-        }
-    }
+use crate::{MachineApi, minimal_machines::analog_input_test_machine::AnalogInputTestMachine};
 
-    fn act(&mut self, now: std::time::Instant) {
+impl Machine for AnalogInputTestMachine {
+    fn act(&mut self, _machine_data: Option<&mut MachineDataRegistry>) {
+        let now = Instant::now();
         let recv = self.api_receiver.try_recv();
         if let Ok(msg) = recv {
             self.act_machine_message(msg);
         }
+        // @TODO: Measurement rate is probably limited to 30hz due to outer loop rate
         if now.duration_since(self.last_measurement)
             > Duration::from_secs_f64(1.0 / self.measurement_rate_hz)
         {
-            let measured_value = self.analog_input.get_physical();
+            let analog_input_clone = self.analog_input.clone(); //Might be possible without cloning
+            let analog_input = analog_input_clone.borrow();
+            let measured_value = analog_input
+                .get_input(0)
+                .expect("analog input must exist")
+                .get_physical(&analog_input.analog_input_range());
             match measured_value {
-                ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(
-                    _quantity,
-                ) => {
+                AnalogInputValue::Potential(_quantity) => {
                     // Don't do anything
+                    // @TODO: Perhaps add logging or something to handle this case in some way
                 }
-                ethercat_hal::io::analog_input::physical::AnalogInputValue::Current(quantity) => {
+                AnalogInputValue::Current(quantity) => {
                     let now_milliseconds = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .expect("Now is expected to be after UNIX_EPOCH")
@@ -55,4 +40,10 @@ impl MachineAct for AnalogInputTestMachine {
             self.last_measurement = Instant::now();
         }
     }
+
+    fn get_identification(&self) -> MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
+    }
+
+    fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {}
 }

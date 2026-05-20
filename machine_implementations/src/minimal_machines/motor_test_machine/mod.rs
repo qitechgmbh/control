@@ -1,15 +1,18 @@
-use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
-use crate::{AsyncThreadMessage, Machine, MachineMessage};
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::{MOTOR_TEST_MACHINE, VENDOR_QITECH};
+use crate::{MachineMessage, QiTechMachine};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
-use smol::channel::{Receiver, Sender};
+use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
+use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
+use tokio::sync::mpsc::{Receiver, Sender};
 
 pub mod act;
 pub mod api;
 pub mod new;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct MotorState {
     pub enabled: bool,
     pub target_velocity: i32,
@@ -17,25 +20,17 @@ pub struct MotorState {
 
 #[derive(Debug)]
 pub struct MotorTestMachine {
-    api_receiver: Receiver<MachineMessage>,
-    api_sender: Sender<MachineMessage>,
-    main_sender: Option<Sender<AsyncThreadMessage>>,
+    receiver: Receiver<MachineMessage>,
+    sender: Sender<MachineMessage>,
     machine_identification_unique: MachineIdentificationUnique,
     namespace: api::BeckhoffNamespace,
 
-    pub motor_driver: StepperVelocityEL70x1,
+    pub motor_driver: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+    pub motor_driver_port: usize,
     pub motor_state: MotorState,
 }
 
-impl Machine for MotorTestMachine {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
-
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
-}
+impl QiTechMachine for MotorTestMachine {}
 
 impl MotorTestMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {

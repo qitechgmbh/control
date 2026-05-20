@@ -1,91 +1,73 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use crate::{MachineHardware, MachineMessage, MachineNew};
+
 use super::{MotorState, MotorTestMachine, api::BeckhoffNamespace};
-use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
-    validate_no_role_duplicates, validate_same_machine_identification_unique,
-};
 use anyhow::Error;
 
 use ethercat_hal::coe::ConfigurableDevice;
-use ethercat_hal::devices::ek1100::{EK1100, EK1100_IDENTITY_A};
+use ethercat_hal::devices::ek1100::EK1100;
+use ethercat_hal::devices::el7031_0030::EL7031_0030;
 use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
 use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
-use ethercat_hal::devices::el7031_0030::{
-    EL7031_0030, EL7031_0030_IDENTITY_A, EL7031_0030StepperPort,
-};
-use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
+use qitech_lib::ethercat_hal;
 
-impl MachineNewTrait for MotorTestMachine {
-    fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
+impl MachineNew for MotorTestMachine {
+    fn new<'maindevice>(hw: MachineHardware) -> Result<Self, Error> {
         println!("[{}::new] Creating new MotorTestMachine", module_path!());
-        let device_identification = params.device_group.iter().cloned().collect::<Vec<_>>();
-        validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_duplicates(&device_identification)?;
 
-        let hardware = match &params.hardware {
-            MachineNewHardware::Ethercat(x) => x,
-            _ => return Err(anyhow::anyhow!("Hardware is not EtherCAT")),
-        };
+        // removed a check on params.hardware that returned an error if not ethercat. is that necessary here?
 
-        smol::block_on(async {
-            // Role 0: EK1100 (Koppler)
-            let _ek1100 =
-                get_ethercat_device::<EK1100>(hardware, params, 0, vec![EK1100_IDENTITY_A]).await?;
+        // Role 0: EK1100 (Koppler)
+        let _ek1100: Rc<RefCell<EK1100>> = hw.try_get_ethercat_device_by_role(0)?;
 
-            // Role 1: EL7031 (Stepper Motor)
-            let el7031 = {
-                let device = get_ethercat_device::<EL7031_0030>(
-                    hardware,
-                    params,
-                    1,
-                    vec![EL7031_0030_IDENTITY_A],
-                )
-                .await?;
+        // Role 1: EL7031 (Stepper Motor)
+        let el7031 = {
+            let (device, device_addr): (Rc<RefCell<EL7031_0030>>, u16) =
+                hw.try_get_ethercat_device_and_addr_by_role(1)?;
 
-                let el7031_config = EL7031_0030Configuration {
-                    stm_features: ethercat_hal::devices::el7031_0030::coe::StmFeatures {
-                        operation_mode: EL70x1OperationMode::DirectVelocity,
-                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
-                        ..Default::default()
-                    },
-                    stm_motor: StmMotorConfiguration {
-                        max_current: 1500,
-                        ..Default::default()
-                    },
-                    pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
+            let el7031_config = EL7031_0030Configuration {
+                stm_features: ethercat_hal::devices::el7031_0030::coe::StmFeatures {
+                    operation_mode: EL70x1OperationMode::DirectVelocity,
+                    speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
                     ..Default::default()
-                };
-
-                device
-                    .0
-                    .write()
-                    .await
-                    .write_config(&device.1, &el7031_config)
-                    .await?;
-
-                device.0
+                },
+                stm_motor: StmMotorConfiguration {
+                    max_current: 1500,
+                    ..Default::default()
+                },
+                pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
+                ..Default::default()
             };
 
-            let motor_driver =
-                StepperVelocityEL70x1::new(el7031.clone(), EL7031_0030StepperPort::STM1);
-
-            let (sender, receiver) = smol::channel::unbounded();
-
-            Ok(Self {
-                main_sender: params.main_thread_channel.clone(),
-                api_receiver: receiver,
-                api_sender: sender,
-                machine_identification_unique: params.get_machine_identification_unique(),
-                namespace: BeckhoffNamespace {
-                    namespace: params.namespace.clone(),
+            device.borrow_mut().write_config(
+                match hw.ethercat_interface {
+                    Some(some_ethercat_interface) => some_ethercat_interface,
+                    None => return Err(Error::msg("ethercat interface must not be None")),
                 },
-                motor_driver,
-                motor_state: MotorState {
-                    enabled: true,
-                    target_velocity: 100,
-                },
-            })
+                device_addr,
+                &el7031_config,
+            )?;
+
+            device
+        };
+
+        let (sender, receiver) = tokio::sync::mpsc::channel::<MachineMessage>(10);
+
+        Ok(Self {
+            receiver,
+            sender,
+            machine_identification_unique: hw.identification,
+            namespace: BeckhoffNamespace { namespace: None },
+            motor_driver: el7031,
+            motor_driver_port: 0, //@TODO Would be cool if we could use EL7031_0030StepperPort::STM1.into::<usize>() in the future and have hardcoded mappings from enum values to ports
+            motor_state: MotorState {
+                enabled: true,
+                target_velocity: 0,
+            },
         })
     }
 }

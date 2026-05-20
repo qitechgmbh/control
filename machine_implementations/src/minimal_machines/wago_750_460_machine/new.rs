@@ -1,104 +1,59 @@
 use std::time::Instant;
 
 use anyhow::Error;
-use smol::block_on;
-use smol::lock::RwLock;
-use std::sync::Arc;
 
-use ethercat_hal::devices::{
-    EthercatDevice, downcast_device,
-    wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
-    wago_modules::wago_750_460::{Wago750_460, Wago750_460Port},
+use qitech_lib::ethercat_hal::devices::{
+    DynamicEthercatDevice, EthercatDevice, downcast_subdevice, wago_750_354::Wago750_354,
+    wago_modules::wago_750_460::Wago750_460,
 };
-use ethercat_hal::io::temperature_input::TemperatureInput;
+
+use crate::{MachineHardware, MachineMessage, MachineNew};
 
 use super::{Wago750_460Machine, api::Wago750_460MachineNamespace};
-use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
-    validate_no_role_duplicates, validate_same_machine_identification_unique,
-};
 
-impl MachineNewTrait for Wago750_460Machine {
-    fn new(params: &MachineNewParams) -> Result<Self, Error> {
-        let device_identification = params
-            .device_group
-            .iter()
-            .map(|d| d.clone())
-            .collect::<Vec<_>>();
-        validate_same_machine_identification_unique(&device_identification)?;
-        validate_no_role_duplicates(&device_identification)?;
-
-        let hardware = match &params.hardware {
-            MachineNewHardware::Ethercat(x) => x,
-            _ => {
-                return Err(anyhow::anyhow!(
-                    "[{}::Wago750_460Machine::new] MachineNewHardware is not Ethercat",
-                    module_path!()
-                ));
-            }
+impl MachineNew for Wago750_460Machine {
+    fn new(hw: MachineHardware) -> Result<Self, Error> {
+        let ethercat_interface = match hw.ethercat_interface.clone() {
+            Some(some_ethercat_interface) => some_ethercat_interface,
+            None => return Err(Error::msg("ethercat interface must not be None")),
         };
 
-        block_on(async {
-            // Acquire the WAGO 750-354 bus coupler at role 0.
-            let (coupler_dev, coupler_subdev) = get_ethercat_device::<Wago750_354>(
-                hardware,
-                params,
-                0,
-                [WAGO_750_354_IDENTITY_A].to_vec(),
-            )
-            .await?;
+        // Acquire the WAGO 750-354 bus coupler at role 0.
+        let (wago_750_354_ref, wago_750_354_addr) =
+            hw.try_get_ethercat_device_and_addr_by_role::<Wago750_354>(0)?;
+        let mut wago_750_354 = wago_750_354_ref.borrow_mut();
 
-            // Discover and register modules on the coupler.
-            let modules = Wago750_354::initialize_modules(coupler_subdev).await?;
-            let mut coupler = coupler_dev.write().await;
-            for module in modules {
-                coupler.set_module(module);
-            }
-            coupler.init_slot_modules(coupler_subdev);
+        // Discover and register modules on the coupler.
+        let modules =
+            Wago750_354::initialize_modules(ethercat_interface.clone(), wago_750_354_addr)?;
 
-            // Retrieve the 750-460 module from slot 0.
-            let dev = coupler
-                .slot_devices
-                .get(0)
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "[{}::Wago750_460Machine::new] No device in slot 0",
-                        module_path!()
-                    )
-                })?
-                .clone()
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "[{}::Wago750_460Machine::new] Slot 0 is empty",
-                        module_path!()
-                    )
-                })?;
+        for module in modules {
+            wago_750_354.set_module(module);
+        }
 
-            let wago750_460: Arc<RwLock<Wago750_460>> = downcast_device::<Wago750_460>(dev).await?;
+        wago_750_354.init_slot_modules(ethercat_interface, wago_750_354_addr);
 
-            // Create TemperatureInput handles for all 4 channels.
-            let t1 = TemperatureInput::new(wago750_460.clone(), Wago750_460Port::T1);
-            let t2 = TemperatureInput::new(wago750_460.clone(), Wago750_460Port::T2);
-            let t3 = TemperatureInput::new(wago750_460.clone(), Wago750_460Port::T3);
-            let t4 = TemperatureInput::new(wago750_460.clone(), Wago750_460Port::T4);
+        // Retrieve the 750-460 module from slot 0.
+        let dev: Box<dyn DynamicEthercatDevice> = match wago_750_354.slot_devices[0].take() {
+            Some(a) => a,
+            None => return Err(Error::msg("Slot 0 should have a device")),
+        };
+        let dev: Box<dyn EthercatDevice> = dev;
 
-            drop(coupler);
+        let wago750_460 =
+            downcast_subdevice::<Wago750_460>(dev).expect("downcasting device should work");
 
-            let (sender, receiver) = smol::channel::unbounded();
-            let mut machine = Self {
-                api_receiver: receiver,
-                api_sender: sender,
-                machine_identification_unique: params.get_machine_identification_unique(),
-                main_sender: params.main_thread_channel.clone(),
-                namespace: Wago750_460MachineNamespace {
-                    namespace: params.namespace.clone(),
-                },
-                last_state_emit: Instant::now(),
-                temperature_inputs: [t1, t2, t3, t4],
-            };
+        let (sender, receiver) = tokio::sync::mpsc::channel::<MachineMessage>(10);
+        let mut machine = Self {
+            receiver,
+            sender,
+            machine_identification_unique: hw.identification,
+            namespace: Wago750_460MachineNamespace { namespace: None },
+            last_state_emit: Instant::now(),
+            temperature_input_device: wago750_460,
+        };
 
-            machine.emit_state();
-            Ok(machine)
-        })
+        machine.emit_state();
+        Ok(machine)
     }
 }

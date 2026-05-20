@@ -10,7 +10,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::Wago750_460Machine;
-use crate::{MachineApi, MachineMessage};
+use crate::{MachineApi, MachineMessage, MachineValues};
 
 // ----------------------------------------------------------------------------
 // StateEvent — broadcast to frontend on every cycle
@@ -23,7 +23,7 @@ use crate::{MachineApi, MachineMessage};
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
     /// Temperature in °C for each channel; None when sensor error is active.
-    pub temperatures: [Option<f64>; 4],
+    pub temperatures: [Option<f32>; 4],
     /// Wire-break / overrange error flag per channel.
     pub errors: [bool; 4],
 }
@@ -67,8 +67,32 @@ impl CacheableEvents<Wago750_460MachineEvents> for Wago750_460MachineEvents {
 
 // This machine is read-only — no mutations.
 impl MachineApi for Wago750_460Machine {
-    fn api_get_sender(&self) -> smol::channel::Sender<MachineMessage> {
-        self.api_sender.clone()
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+            }
+            MachineMessage::UnsubscribeNamespace => {
+                self.namespace.namespace = None;
+            }
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::Value::Null,
+                    })
+                    .expect("Failed to send values");
+            }
+        }
+    }
+
+    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {
+        self.sender.clone()
     }
 
     fn api_mutate(&mut self, _request_body: Value) -> Result<(), anyhow::Error> {

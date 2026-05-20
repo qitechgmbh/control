@@ -1,14 +1,16 @@
 use std::time::Instant;
 
-use control_core::socketio::namespace::NamespaceCacheingLogic;
-use ethercat_hal::io::temperature_input::{TemperatureInput, TemperatureInputError};
-use smol::channel::{Receiver, Sender};
-
 use self::api::{StateEvent, Wago750_460MachineEvents, Wago750_460MachineNamespace};
-use crate::{
-    AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH, WAGO_750_460_MACHINE,
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
+use crate::{MachineMessage, QiTechMachine, VENDOR_QITECH, WAGO_750_460_MACHINE};
+use control_core::socketio::namespace::NamespaceCacheingLogic;
+use qitech_lib::{
+    ethercat_hal::{
+        devices::wago_modules::wago_750_460::Wago750_460,
+        io::temperature_input::TemperatureInputDevice,
+    },
+    machines::{MachineIdentification, MachineIdentificationUnique},
 };
+use tokio::sync::mpsc::{Receiver, Sender};
 
 pub mod act;
 pub mod api;
@@ -17,26 +19,18 @@ pub mod new;
 #[derive(Debug)]
 pub struct Wago750_460Machine {
     // --- mandatory plumbing -------------------------------------------------
-    pub api_receiver: Receiver<MachineMessage>,
-    pub api_sender: Sender<MachineMessage>,
+    pub receiver: Receiver<MachineMessage>,
+    pub sender: Sender<MachineMessage>,
     pub machine_identification_unique: MachineIdentificationUnique,
-    pub main_sender: Option<Sender<AsyncThreadMessage>>,
     pub namespace: Wago750_460MachineNamespace,
     pub last_state_emit: Instant,
 
     // --- hardware -----------------------------------------------------------
-    pub temperature_inputs: [TemperatureInput; 4],
+    // Subdevices of a WAGO coupler are owned by the machine
+    pub temperature_input_device: Box<Wago750_460>,
 }
 
-impl Machine for Wago750_460Machine {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
-
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
-}
+impl QiTechMachine for Wago750_460Machine {}
 
 impl Wago750_460Machine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
@@ -45,16 +39,17 @@ impl Wago750_460Machine {
     };
 
     pub fn get_state(&self) -> StateEvent {
-        let mut temperatures = [None; 4];
-        let mut errors = [false; 4];
-        for (i, ti) in self.temperature_inputs.iter().enumerate() {
-            match ti.get_temperature() {
-                Ok(t) => temperatures[i] = Some(t),
-                // WireBreak is not currently returned by the 750-460 driver,
-                // but we handle it defensively for forward-compatibility.
-                Err(TemperatureInputError::WireBreak)
-                | Err(TemperatureInputError::OverVoltage)
-                | Err(TemperatureInputError::UnderVoltage) => errors[i] = true,
+        let mut temperatures: [Option<f32>; 4] = [None; 4];
+        let mut errors: [bool; 4] = [false; 4];
+        for port in 0..4 {
+            let input = self
+                .temperature_input_device
+                .get_input(port)
+                .expect("getting input for valid port should succeed");
+            if input.error {
+                errors[port] = true;
+            } else {
+                temperatures[port] = Some(input.temperature);
             }
         }
         StateEvent {
