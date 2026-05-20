@@ -19,6 +19,8 @@ use qitech_lib::ethercat_hal::{
 use qitech_lib::serial::get_available_ports;
 #[cfg(not(feature = "mock"))]
 use tokio::runtime::Handle;
+use tokio::sync::mpsc::Sender;
+use tokio::time::sleep;
 use std::{sync::Arc, time::Duration};
 
 pub mod apis;
@@ -78,7 +80,20 @@ fn setup_ethercat(
     let _res = state.fill_ethercat_metadata(eth_control.controller.clone(), idents);
 }
 
-
+async fn find_ports(tx: Sender<String>) -> Result<(), anyhow::Error> {
+    loop {
+        let ports = get_available_ports()?;
+        for port in ports {
+            if port.port_name.starts_with("/dev/ttyUSB") {
+                if let Err(e) = tx.send(port.port_name.clone()).await {
+                    eprintln!("Receiver dropped, closing loop: {}", e);
+                    return Ok(());
+                }
+            }
+        }        
+        sleep(Duration::from_secs(1)).await;
+    }
+}
 
 fn add_laser(main_state : &mut MainState, shared_state : Arc<SharedAppState>) -> Result<(),anyhow::Error> {
     let machine_index_to_remove = main_state.machines.iter().position( |m| m.get_identification().machine_ident.machine == MACHINE_LASER_V1 );
@@ -88,34 +103,31 @@ fn add_laser(main_state : &mut MainState, shared_state : Arc<SharedAppState>) ->
         Some(index) => {
             main_state.machines.remove(index);
         },
-        None => (),
+        None => {
+            return Err(anyhow::anyhow!("laser was not in machines"))
+        },
     }
 
     match machine_obj_index {
         Some(index) => {
             shared_state.machines.try_write()?.remove(index);
         },
-        None => (),
-        }
-        // Port is not used right now, so check if port exists
-        let ports = get_available_ports()?;
-        for port in ports {
-            if port.port_name == "/dev/ttyUSB0" || port.port_name == "/dev/ttyUSB1" {
-                main_state.generate_machine_hardware_from_serial(&port.port_name)?;            
-                detect_and_build_machines(shared_state, main_state);        
-                break;
-            }
-        }
-        Ok(())
+        None => return Err(anyhow::anyhow!("laser was not in machines")),
+    }
+
+    Ok(())
 }
 
 fn laser_hotplug(main_state : &mut MainState, shared_state : Arc<SharedAppState>) -> Result<(),anyhow::Error> {
     match main_state.machines.iter().any(|x| x.get_identification().machine_ident.machine == MACHINE_LASER_V1) {
         true => Ok(()),
         false => {
-            add_laser(main_state, shared_state.clone())?;
-            send_setup_done_events(shared_state);
-            Ok(())
+            let res = add_laser(main_state, shared_state.clone());
+            if res.is_ok() {
+                send_setup_done_events(shared_state);
+                return Ok(());
+            }
+            Err(anyhow::anyhow!("laser was not in machines"))
         },
     }
 }
