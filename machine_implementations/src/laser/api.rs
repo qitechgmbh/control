@@ -142,13 +142,9 @@ impl MachineApi for LaserMachine {
                 self.namespace.namespace = Some(namespace);
                 self.emit_state();
             }
-            MachineMessage::UnsubscribeNamespace => match &mut self.namespace.namespace {
-                Some(namespace) => {
-                    namespace.sockets.clear();
-                    namespace.events.clear();
-                }
-                None => (),
-            },
+            MachineMessage::UnsubscribeNamespace =>{
+                self.namespace.namespace.take();
+            }
             MachineMessage::HttpApiJsonRequest(value) => {
                 let _res = self.api_mutate(value);
             }
