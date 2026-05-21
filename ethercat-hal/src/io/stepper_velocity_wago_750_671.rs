@@ -71,6 +71,22 @@ impl StepperVelocityWago750671 {
         dev.rxpdo.acceleration = acceleration;
     }
 
+    pub fn start_motor(&mut self) {
+        let mut dev = block_on(self.device.write());
+
+        if dev.initialized {
+            dev.state = InitState::StartPulseStart;
+        }
+    }
+
+    pub fn stop_motor(&mut self) {
+        let mut dev = block_on(self.device.write());
+
+        if dev.initialized {
+            dev.state = InitState::Ready;
+        }
+    }
+
     pub fn set_freq_range_sel(&mut self, factor: u8) {
         if self.enabled || factor > 3 {
             return;
