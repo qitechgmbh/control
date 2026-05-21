@@ -41,7 +41,7 @@ export const ethercatDevicesEventDataSchema = z
   })
   .check(rustEnum);
 
-export type EthercatDevicesEventData = z.infer
+export type EthercatDevicesEventData = z.infer<
   typeof ethercatDevicesEventDataSchema
 >;
 
@@ -83,7 +83,7 @@ export const ethercatInterfaceDiscoveryEventDataSchema = z
   })
   .check(rustEnum);
 
-export type EthercatInterfaceDiscoveryEventData = z.infer
+export type EthercatInterfaceDiscoveryEventData = z.infer<
   typeof ethercatInterfaceDiscoveryEventDataSchema
 >;
 
@@ -91,7 +91,7 @@ export const ethercatInterfaceDiscoveryEventSchema = eventSchema(
   ethercatInterfaceDiscoveryEventDataSchema,
 );
 
-export type EthercatInterfaceDiscoveryEvent = z.infer
+export type EthercatInterfaceDiscoveryEvent = z.infer<
   typeof ethercatInterfaceDiscoveryEventSchema
 >;
 
