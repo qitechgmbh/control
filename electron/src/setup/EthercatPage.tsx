@@ -123,7 +123,7 @@ export const columns: ColumnDef<
 ];
 
 export function EthercatPage() {
-  const { ethercatDevices, ethercatInterfaceDiscovery } = useMainNamespace();
+  const { ethercatDevices, ethercatState, ethercatInterfaceDiscovery } = useMainNamespace();
   const [isRestartPreopLoading, setIsRestartPreopLoading] = useState(false);
 
   const data = useMemo(() => {
@@ -152,6 +152,13 @@ export function EthercatPage() {
     }
   };
 
+  const etherCatState =
+    ethercatState?.data?.Preop === true
+      ? "preop"
+      : ethercatState?.data == null
+        ? "unknown"
+        : "op";
+
   return (
     <Page>
       <SectionTitle title="Interface"></SectionTitle>
@@ -173,7 +180,24 @@ export function EthercatPage() {
         written to the EEPROM to identify machines as a unit.
       </p>
 
-      <SectionTitle title="Prepare SubDevices"></SectionTitle>
+      <SectionTitle title="Prepare SubDevices">
+        <div
+          className={`h-2.5 w-2.5 rounded-full ${
+            etherCatState === "preop"
+              ? "bg-yellow-400"
+              : etherCatState === "op"
+                ? "bg-green-400"
+                : "bg-neutral-400"
+          }`}
+        />
+        <span className="text-xs text-neutral-500">
+          {etherCatState === "preop"
+            ? "PreOp"
+            : etherCatState === "op"
+              ? "Operational"
+              : "Unknown"}
+        </span>
+      </SectionTitle>
 
       <p>
         SubDevices have to be put into preop before writing to the EEPROM is
