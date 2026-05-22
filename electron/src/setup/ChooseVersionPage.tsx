@@ -4,7 +4,7 @@ import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import { TouchButton } from "@/components/touch/TouchButton";
 import React, { useEffect, useState } from "react";
-import { GithubSource, GithubSourceDialog } from "./GithubSourceDialog";
+import { GithubSourceDialog } from "./GithubSourceDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert } from "@/components/Alert";
 import { useNavigate } from "@tanstack/react-router";
@@ -14,6 +14,8 @@ import { CollapsibleContent } from "@/components/ui/collapsible";
 import { useUpdateStore } from "@/stores/updateStore";
 import { useGithubSourceStore } from "@/stores/githubSourceStore";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { RepoImportResult } from "@/helpers/ipc/update/git-fetch-utils";
 
 export function ChooseVersionPage() {
   const navigate = useNavigate();
@@ -50,244 +52,21 @@ export function ChooseVersionPage() {
 
   const { githubSource, setGithubSource } = useGithubSourceStore();
 
-  const githubApiUrl = `https://api.github.com/repos/${githubSource.githubRepoOwner}/${githubSource.githubRepoName}`;
+  let targets: RepoImportResult | null = null;
 
-  // https://github.com/qitechgmbh/control.git
-  const fetchOptions = {
-    headers: {
-      ...(githubSource.githubToken && {
-        Authorization: `token ${githubSource.githubToken}`,
-      }),
-      Accept: "application/vnd.github.v3+json",
-    },
-  };
-
-  function loadRepo(source: GithubSource) {
-    const url = `https://github.com/${source.githubRepoOwner}/${source.githubRepoOwner}.git`
-    const path = "/tmp/${source.githubRepoOwner}-${source.githubRepoOwner}"
-
-    const cloneRepo = async () => {
-      
-    };
-
-    const updateRepo = async () => {
-      
-    };
-
-    if (fs.existsSync(path)) {
-      console.log("Repo exists, updating...");
-
-      execSync("git fetch", {
-        cwd: path,
-        stdio: "inherit",
-      });
-
-      execSync("git rebase origin/main", {
-        cwd: path,
-        stdio: "inherit",
-      });
-    } else {
-      console.log("Cloning repo...");
-
-      execSync(`git clone ${url} ${path}`, {
-        stdio: "inherit",
-      });
+  // install callback
+  window.update.onFetchRecv((result) => {
+    if (typeof result === "string") {
+      toast(`Failed to retrieve targets: ${result}`);
+      return;
     }
 
-    // /tmp/control-repo
-    // githubRepoOwner/githubRepoName
-  }
+    targets = result;
+  });
 
-  // Fetch master commits
+  // Retrieve update targets
   useEffect(() => {
-    setMasterCommits(undefined);
-
-    const fetchAllCommits = async () => {
-      try {
-        const allCommits = [] as any[];
-        let page = 1;
-        const perPage = 100; // Maximum allowed by GitHub API
-
-        while (true) {
-          const response = await fetch(
-            `${githubApiUrl}/commits?per_page=${perPage}&page=${page}`,
-            fetchOptions,
-          );
-          const json = await response.json();
-
-          if (!Array.isArray(json) || json.length === 0) {
-            break;
-          }
-
-          allCommits.push(...json);
-
-          // If we got fewer results than requested, we've reached the end
-          if (json.length < perPage) {
-            break;
-          }
-
-          page++;
-
-          // Limit to reasonable number of commits to avoid excessive API calls
-          if (allCommits.length >= 1000) {
-            break;
-          }
-        }
-
-        setMasterCommits(allCommits);
-      } catch (error) {
-        console.error("Error fetching commits:", error);
-        setMasterCommits([]);
-      }
-    };
-
-    fetchAllCommits();
-  }, [githubSource]);
-
-  // Fetch branches with their commit data
-  useEffect(() => {
-    setBranches(undefined);
-
-    const fetchAllBranches = async () => {
-      try {
-        const allBranches = [] as any[];
-        let page = 1;
-        const perPage = 100; // Maximum allowed by GitHub API
-
-        while (true) {
-          const response = await fetch(
-            `${githubApiUrl}/branches?per_page=${perPage}&page=${page}`,
-            fetchOptions,
-          );
-          const json = await response.json();
-
-          if (!Array.isArray(json) || json.length === 0) {
-            break;
-          }
-
-          allBranches.push(...json);
-
-          // If we got fewer results than requested, we've reached the end
-          if (json.length < perPage) {
-            break;
-          }
-
-          page++;
-        }
-
-        // Fetch commit data for each branch
-        const branchesWithCommitData = await Promise.all(
-          allBranches.map(async (branch) => {
-            try {
-              // Fetch the commit data for this branch
-              const commitRes = await fetch(
-                `${githubApiUrl}/commits/${branch.commit.sha}`,
-                fetchOptions,
-              );
-              const commitData = await commitRes.json();
-
-              // Add the date to the branch object
-              if (commitData && commitData.commit) {
-                branch.date = commitData.commit.author.date;
-              }
-            } catch (error) {
-              console.error(
-                `Error fetching commit for branch ${branch.name}:`,
-                error,
-              );
-            }
-            return branch;
-          }),
-        );
-
-        // Sort branches by date
-        setBranches(
-          branchesWithCommitData.sort((a, b) => {
-            return (
-              new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
-            );
-          }),
-        );
-      } catch (error) {
-        console.error("Error fetching branches:", error);
-        setBranches([]);
-      }
-    };
-
-    fetchAllBranches();
-  }, [githubSource]);
-
-  // Fetch tags with their commit data
-  useEffect(() => {
-    setTags(undefined);
-
-    const fetchAllTags = async () => {
-      try {
-        const allTags = [] as any[];
-        let page = 1;
-        const perPage = 100; // Maximum allowed by GitHub API
-
-        while (true) {
-          const response = await fetch(
-            `${githubApiUrl}/tags?per_page=${perPage}&page=${page}`,
-            fetchOptions,
-          );
-          const json = await response.json();
-
-          if (!Array.isArray(json) || json.length === 0) {
-            break;
-          }
-
-          allTags.push(...json);
-
-          // If we got fewer results than requested, we've reached the end
-          if (json.length < perPage) {
-            break;
-          }
-
-          page++;
-        }
-
-        // Fetch commit data for each tag
-        const tagsWithCommitData = await Promise.all(
-          allTags.map(async (tag) => {
-            try {
-              // Fetch the commit data for this tag
-              const commitRes = await fetch(
-                `${githubApiUrl}/commits/${tag.commit.sha}`,
-                fetchOptions,
-              );
-              const commitData = await commitRes.json();
-
-              // Add the date to the tag object
-              if (commitData && commitData.commit) {
-                tag.date = commitData.commit.author.date;
-              }
-            } catch (error) {
-              console.error(
-                `Error fetching commit for tag ${tag.name}:`,
-                error,
-              );
-            }
-            return tag;
-          }),
-        );
-
-        // Sort tags by date
-        setTags(
-          tagsWithCommitData.sort((a, b) => {
-            return (
-              new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
-            );
-          }),
-        );
-      } catch (error) {
-        console.error("Error fetching tags:", error);
-        setTags([]);
-      }
-    };
-
-    fetchAllTags();
+    window.update.fetchTargets(githubSource);
   }, [githubSource]);
 
   // Fetch NixOS generations
@@ -458,11 +237,10 @@ export function ChooseVersionPage() {
                   search: {
                     githubRepoOwner: currentUpdateInfo.githubRepoOwner,
                     githubRepoName: currentUpdateInfo.githubRepoName,
-                    githubToken: currentUpdateInfo.githubToken,
                     tag: currentUpdateInfo.tag,
                     branch: currentUpdateInfo.branch,
                     commit: currentUpdateInfo.commit,
-                  },
+                  },  
                 });
               }}
             >
@@ -826,7 +604,6 @@ export function CurrentVersionCard() {
               branch: undefined,
               githubRepoOwner: githubRepoOwner,
               githubRepoName: githubRepoName,
-              githubToken: undefined,
             },
           });
         }}
