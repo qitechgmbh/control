@@ -4,11 +4,16 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::{
     machines::{MachineError, MachineIdentification, MachineIdentificationUnique},
     modbus::{
-        ModbusDevice, devices::qitech_laser::{LaserDevice, LaserError}
+        ModbusDevice,
+        devices::qitech_laser::{LaserDevice, LaserError},
     },
     units::{Length, length::millimeter},
 };
-use std::{cell::RefCell, rc::Rc, time::{Duration, Instant}};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    time::{Duration, Instant},
+};
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 
@@ -190,28 +195,31 @@ impl LaserMachine {
         let now = std::time::Instant::now();
 
         // Check for incoming responses on every tick
-        let res = laser.handle_response();                
+        let res = laser.handle_response();
         match res {
-            Ok(_) =>(),
+            Ok(_) => (),
             Err(e) => {
-                if let Some(laser_error) = e.downcast_ref::<LaserError>() {                                
+                if let Some(laser_error) = e.downcast_ref::<LaserError>() {
                     match laser_error {
-                        LaserError::IoErr() => {                            
-                            self.error = Some(MachineError::IrrecoverableFailure("Physical hardware I/O broke. Dropping machine permanently.".to_owned()));
+                        LaserError::IoErr() => {
+                            self.error = Some(MachineError::IrrecoverableFailure(
+                                "Physical hardware I/O broke. Dropping machine permanently."
+                                    .to_owned(),
+                            ));
                         }
                         _ => (),
                     }
                 }
-            },
+            }
         }
-        
-        if now.duration_since(self.last_request) > Duration::from_millis(6) {            
+
+        if now.duration_since(self.last_request) > Duration::from_millis(6) {
             self.last_request = now;
             let res = laser.send_next_request();
             if res.is_err() {
-                println!("send_next_request {:?}",res);
+                println!("send_next_request {:?}", res);
             }
-        }     
+        }
 
         match &laser.measurement {
             Some(m) => {
@@ -222,11 +230,10 @@ impl LaserMachine {
             None => (),
         };
         drop(laser);
-        
+
         if self.in_tolerance != self.calculate_in_tolerance() {
             self.did_change_state = true;
         }
-
     }
 }
 

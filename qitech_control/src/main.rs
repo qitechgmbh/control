@@ -19,9 +19,9 @@ use qitech_lib::ethercat_hal::{
     DcConfiguration, MasterConfiguration, RtOptimizationConfig, init_ethercat,
 };
 use qitech_lib::serial::get_available_ports;
+use std::{sync::Arc, time::Duration};
 #[cfg(not(feature = "mock"))]
 use tokio::runtime::Handle;
-use std::{sync::Arc, time::Duration};
 
 pub mod apis;
 mod app_state;
@@ -80,44 +80,62 @@ fn setup_ethercat(
     let _res = state.fill_ethercat_metadata(eth_control.controller.clone(), idents);
 }
 
-fn add_laser(main_state : &mut MainState, shared_state : Arc<SharedAppState>) -> Result<(),anyhow::Error> {
-    let machine_index_to_remove = main_state.machines.iter().position( |m| m.get_identification().machine_ident.machine == MACHINE_LASER_V1 );
-    let machine_obj_index = shared_state.machines.try_read()?.iter().position( |m| m.machine_identification_unique.machine_identification.machine == MACHINE_LASER_V1 );
+fn add_laser(
+    main_state: &mut MainState,
+    shared_state: Arc<SharedAppState>,
+) -> Result<(), anyhow::Error> {
+    let machine_index_to_remove = main_state
+        .machines
+        .iter()
+        .position(|m| m.get_identification().machine_ident.machine == MACHINE_LASER_V1);
+    let machine_obj_index = shared_state.machines.try_read()?.iter().position(|m| {
+        m.machine_identification_unique
+            .machine_identification
+            .machine
+            == MACHINE_LASER_V1
+    });
 
     match machine_index_to_remove {
         Some(index) => {
             main_state.machines.remove(index);
-        },
+        }
         None => (),
     }
 
     match machine_obj_index {
         Some(index) => {
             shared_state.machines.try_write()?.remove(index);
-        },
+        }
         None => (),
+    }
+    // Port is not used right now, so check if port exists
+    let ports = get_available_ports()?;
+    for port in ports {
+        if port.port_name == "/dev/ttyUSB0" || port.port_name == "/dev/ttyUSB1" {
+            main_state.generate_machine_hardware_from_serial(&port.port_name)?;
+            detect_and_build_machines(shared_state.clone(), main_state);
+            send_machines_event(shared_state);
+            println!("send_setup_done_events");
+            break;
         }
-        // Port is not used right now, so check if port exists
-        let ports = get_available_ports()?;
-        for port in ports {
-            if port.port_name == "/dev/ttyUSB0" || port.port_name == "/dev/ttyUSB1" {
-                main_state.generate_machine_hardware_from_serial(&port.port_name)?;
-                detect_and_build_machines(shared_state.clone(), main_state);
-                send_machines_event(shared_state);
-                println!("send_setup_done_events");
-                break;
-            }
-        }
-        Ok(())
+    }
+    Ok(())
 }
 
-fn laser_hotplug(main_state : &mut MainState, shared_state : Arc<SharedAppState>) -> Result<(),anyhow::Error> {
-    match main_state.machines.iter().any(|x| x.get_identification().machine_ident.machine == MACHINE_LASER_V1) {
+fn laser_hotplug(
+    main_state: &mut MainState,
+    shared_state: Arc<SharedAppState>,
+) -> Result<(), anyhow::Error> {
+    match main_state
+        .machines
+        .iter()
+        .any(|x| x.get_identification().machine_ident.machine == MACHINE_LASER_V1)
+    {
         true => Ok(()),
         false => {
             add_laser(main_state, shared_state.clone())?;
             Ok(())
-        },
+        }
     }
 }
 
@@ -166,10 +184,16 @@ fn setup_api_and_websock(state: Arc<SharedAppState>) {
     rt.spawn(start_socketio_queue(state));
 }
 
-fn detect_and_build_machines(state : Arc<SharedAppState>, main_state: &mut MainState) {
+fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainState) {
     for key in main_state.hardware.keys() {
-        let result = MACHINE_REGISTRY
-            .new_machine(key.clone(), main_state.hardware.get(key).expect("key should exist for machine here").clone());
+        let result = MACHINE_REGISTRY.new_machine(
+            key.clone(),
+            main_state
+                .hardware
+                .get(key)
+                .expect("key should exist for machine here")
+                .clone(),
+        );
 
         match result {
             Ok(machine) => {
@@ -246,20 +270,33 @@ fn find_ethercat_interface() -> Result<String, anyhow::Error> {
     }
 }
 
-pub fn remove_machines(main_state: &mut MainState, shared_state : Arc<SharedAppState>,machines_to_remove : Option<usize>) {
+pub fn remove_machines(
+    main_state: &mut MainState,
+    shared_state: Arc<SharedAppState>,
+    machines_to_remove: Option<usize>,
+) {
     match machines_to_remove {
         Some(i) => {
-            let machine = main_state.machines.get(i).expect("Should not be none as we got an index into the machines vec");
+            let machine = main_state
+                .machines
+                .get(i)
+                .expect("Should not be none as we got an index into the machines vec");
             let ident = machine.get_identification();
             main_state.machine_data_reg.zero_entry(ident);
             main_state.machines.remove(i);
-            let mut guard = shared_state.machines.try_write().expect("sharedstate.machines Should never be locked here!!!"); // Is expected to never be locked at this point
-            let pos = guard.iter().position(|x| x.machine_identification_unique == ident.into()).expect("Machine has to still exist as metadata at this point");
+            let mut guard = shared_state
+                .machines
+                .try_write()
+                .expect("sharedstate.machines Should never be locked here!!!"); // Is expected to never be locked at this point
+            let pos = guard
+                .iter()
+                .position(|x| x.machine_identification_unique == ident.into())
+                .expect("Machine has to still exist as metadata at this point");
             main_state.hardware.remove(&ident);
             guard.remove(pos);
             drop(guard);
             send_machines_event(shared_state.clone());
-        },
+        }
         None => (),
     }
 }
@@ -319,7 +356,8 @@ fn main_logic() {
 
             write_ecat_inputs(&mut control.app_handle, main_state.subdevices.clone());
 
-            let machines_to_remove = run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
+            let machines_to_remove =
+                run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
             if machines_to_remove.is_some() {
                 remove_machines(&mut main_state, state.clone(), machines_to_remove);
             }
