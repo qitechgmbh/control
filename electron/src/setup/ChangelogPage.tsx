@@ -7,6 +7,7 @@ import { Alert } from "@/components/Alert";
 import { Markdown } from "@/components/Markdown";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { useUpdateStore } from "@/stores/updateStore";
+import { toast } from "sonner";
 
 export function ChangelogPage() {
   const navigate = useNavigate();
@@ -24,21 +25,19 @@ export function ChangelogPage() {
         : "Unknown";
 
   const versionName = search.branch ?? search.tag ?? search.commit;
+  const ref = search.branch ?? search.tag ?? search.commit;
 
-  const githubApiUrl = `https://api.github.com/repos/${search.githubRepoOwner}/${search.githubRepoName}`;
+  let changelog: string | null = null;
 
-  const fetchOptions = {
-    headers: {
-      ...(search.githubToken && {
-        Authorization: `token ${search.githubToken}`,
-      }),
-      Accept: "application/vnd.github.v3+json",
-    },
-  };
+  // install callback
+  window.update.onFetchChangelog((result) => {
+    changelog = result;
+  });
 
-  const [changelog, setReadme] = React.useState<string | undefined | null>(
-    undefined,
-  );
+  // Retrieve update targets
+  useEffect(() => {
+    window.update.fetchChangelog({source: search. , ref });
+  }, [githubSource]);
 
   useEffect(() => {
     const params = new URLSearchParams();

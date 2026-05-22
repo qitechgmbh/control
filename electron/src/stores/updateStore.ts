@@ -4,7 +4,6 @@ import { produce } from "immer";
 export type UpdateInfo = {
   githubRepoOwner: string;
   githubRepoName: string;
-  githubToken?: string;
   tag?: string;
   branch?: string;
   commit?: string;
