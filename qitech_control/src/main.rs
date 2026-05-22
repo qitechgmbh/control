@@ -1,3 +1,5 @@
+#[cfg(not(feature = "mock"))]
+use crate::apis::socketio::namespace_id::NamespaceId;
 use crate::app_state::MainState;
 use crate::app_state::get_async_runtime;
 #[cfg(not(feature = "mock"))]
@@ -20,8 +22,6 @@ use qitech_lib::serial::get_available_ports;
 use std::{sync::Arc, time::Duration};
 #[cfg(not(feature = "mock"))]
 use tokio::runtime::Handle;
-use tokio::sync::mpsc::Sender;
-use tokio::time::sleep;
 
 pub mod apis;
 mod app_state;
@@ -84,21 +84,6 @@ fn setup_ethercat(
     );
 }
 
-async fn find_ports(tx: Sender<String>) -> Result<(), anyhow::Error> {
-    loop {
-        let ports = get_available_ports()?;
-        for port in ports {
-            if port.port_name.starts_with("/dev/ttyUSB") {
-                if let Err(e) = tx.send(port.port_name.clone()).await {
-                    eprintln!("Receiver dropped, closing loop: {}", e);
-                    return Ok(());
-                }
-            }
-        }
-        sleep(Duration::from_secs(1)).await;
-    }
-}
-
 fn add_laser(
     main_state: &mut MainState,
     shared_state: Arc<SharedAppState>,
@@ -118,16 +103,26 @@ fn add_laser(
         Some(index) => {
             main_state.machines.remove(index);
         }
-        None => return Err(anyhow::anyhow!("laser was not in machines")),
+        None => (),
     }
 
     match machine_obj_index {
         Some(index) => {
             shared_state.machines.try_write()?.remove(index);
         }
-        None => return Err(anyhow::anyhow!("laser was not in machines")),
+        None => (),
     }
-
+    // Port is not used right now, so check if port exists
+    let ports = get_available_ports()?;
+    for port in ports {
+        if port.port_name == "/dev/ttyUSB0" || port.port_name == "/dev/ttyUSB1" {
+            main_state.generate_machine_hardware_from_serial(&port.port_name)?;
+            detect_and_build_machines(shared_state.clone(), main_state);
+            send_machines_event(shared_state);
+            println!("send_setup_done_events");
+            break;
+        }
+    }
     Ok(())
 }
 
@@ -142,12 +137,8 @@ fn laser_hotplug(
     {
         true => Ok(()),
         false => {
-            let res = add_laser(main_state, shared_state.clone());
-            if res.is_ok() {
-                send_setup_done_events(shared_state);
-                return Ok(());
-            }
-            Err(anyhow::anyhow!("laser was not in machines"))
+            add_laser(main_state, shared_state.clone())?;
+            Ok(())
         }
     }
 }
@@ -183,6 +174,13 @@ fn send_setup_done_events(state: Arc<SharedAppState>) {
     });
 }
 
+fn send_machines_event(state: Arc<SharedAppState>) {
+    let rt = get_async_runtime();
+    rt.spawn(async move {
+        let _res = state.send_machines_event().await;
+    });
+}
+
 fn setup_api_and_websock(state: Arc<SharedAppState>) {
     let rt = get_async_runtime();
     rt.spawn(apis::init_api(state.clone()));
@@ -191,8 +189,15 @@ fn setup_api_and_websock(state: Arc<SharedAppState>) {
 
 fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainState) {
     for key in main_state.hardware.keys() {
-        let result = MACHINE_REGISTRY
-            .new_machine(key.clone(), main_state.hardware.get(key).unwrap().clone());
+        let result = MACHINE_REGISTRY.new_machine(
+            key.clone(),
+            main_state
+                .hardware
+                .get(key)
+                .expect("key should exist for machine here")
+                .clone(),
+        );
+
         match result {
             Ok(machine) => {
                 let _res = state.add_machine_sync(
@@ -268,6 +273,37 @@ fn find_ethercat_interface() -> Result<String, anyhow::Error> {
     }
 }
 
+pub fn remove_machines(
+    main_state: &mut MainState,
+    shared_state: Arc<SharedAppState>,
+    machines_to_remove: Option<usize>,
+) {
+    match machines_to_remove {
+        Some(i) => {
+            let machine = main_state
+                .machines
+                .get(i)
+                .expect("Should not be none as we got an index into the machines vec");
+            let ident = machine.get_identification();
+            main_state.machine_data_reg.zero_entry(ident);
+            main_state.machines.remove(i);
+            let mut guard = shared_state
+                .machines
+                .try_write()
+                .expect("sharedstate.machines Should never be locked here!!!"); // Is expected to never be locked at this point
+            let pos = guard
+                .iter()
+                .position(|x| x.machine_identification_unique == ident.into())
+                .expect("Machine has to still exist as metadata at this point");
+            main_state.hardware.remove(&ident);
+            guard.remove(pos);
+            drop(guard);
+            send_machines_event(shared_state.clone());
+        }
+        None => (),
+    }
+}
+
 #[cfg(not(feature = "mock"))]
 fn main_logic() {
     let state = Arc::new(SharedAppState::new());
@@ -295,7 +331,10 @@ fn main_logic() {
     };
 
     send_setup_done_events(state.clone());
+    let mut last_check = std::time::Instant::now();
+    let hotplug_duration = Duration::from_secs(4);
     loop {
+        let now = std::time::Instant::now();
         match &mut eth_control {
             Some(control) => {
                 write_ecat_inputs(&mut control.app_handle, main_state.subdevices.clone());
@@ -303,31 +342,15 @@ fn main_logic() {
             None => (),
         };
 
-        let _ = laser_hotplug(&mut main_state, state.clone());
         let machines_to_remove =
             run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
-        match machines_to_remove {
-            Some(i) => {
-                let machine = main_state
-                    .machines
-                    .get(i)
-                    .expect("Should not be none as we got an index into the machines vec");
-                let ident = machine.get_identification();
-                main_state.machine_data_reg.zero_entry(ident);
-                main_state.machines.remove(i);
-                let mut guard = state
-                    .machines
-                    .try_write()
-                    .expect("sharedstate.machines Should never be locked here!!!"); // Is expected to never be locked at this point
-                let pos = guard
-                    .iter()
-                    .position(|x| x.machine_identification_unique == ident.into())
-                    .expect("Machine has to still exist as metadata at this point");
-                main_state.hardware.remove(&ident);
-                guard.remove(pos);
-                drop(guard);
-            }
-            None => (),
+        if machines_to_remove.is_some() {
+            remove_machines(&mut main_state, state.clone(), machines_to_remove);
+        }
+
+        if now.duration_since(last_check) >= hotplug_duration {
+            let _ = laser_hotplug(&mut main_state, state.clone());
+            last_check = now;
         }
 
         match &mut eth_control {
