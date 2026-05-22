@@ -11,25 +11,6 @@ let currentStepListener:
     }) => void)
   | null = null;
 
-export type UpdateTarget = {
-  name: string,
-  hash: string,
-  date: string[],
-  time: string[],
-};
-
-export type UpdateTargets = {
-  version: UpdateTarget[],
-  branch: UpdateTarget[],
-  commit: UpdateTarget[],
-};
-
-export async function getTargets(source: GithubSource): Promise<UpdateTargets> {
-  return new Promise((resolve) => {
-    // window.update.getTargets();
-  })
-}
-
 export async function updateExecute(
   source: UpdateInfo,
   onLog: (log: string) => void,

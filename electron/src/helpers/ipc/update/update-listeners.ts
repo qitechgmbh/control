@@ -1,18 +1,20 @@
 import { ipcMain } from "electron";
 import {
-  UPDATE_FETCH_SEND,
+  UPDATE_FETCH_TARGETS_SEND,
   UPDATE_CANCEL,
   UPDATE_END,
   UPDATE_EXECUTE,
   UPDATE_LOG,
   UPDATE_STEP,
-  UPDATE_FETCH_RECV,
+  UPDATE_FETCH_TARGETS_RECV,
+  UPDATE_FETCH_CHANGELOG_SEND,
+  UPDATE_FETCH_CHANGELOG_RECV,
 } from "./update-channels";
 import { spawn, ChildProcess } from "child_process";
 import tkill from "@jub3i/tree-kill";
 import { existsSync, rmSync } from "fs";
 import { GithubSource } from "@/setup/GithubSourceDialog";
-import { UpdateTargets } from "@/helpers/update_helpers";
+import { fetchChangelog, fetchTargets } from "./git-fetch-utils";
 
 type UpdateExecuteListenerParams = {
   githubRepoOwner: string;
@@ -29,21 +31,45 @@ let currentFetchProcess: ChildProcess | null = null;
 
 export function addUpdateEventListeners() {
   ipcMain.handle(
-    UPDATE_FETCH_SEND,
+    UPDATE_FETCH_TARGETS_SEND,
     async (event, source: GithubSource) => {
-      fetchTargets(event, source)
-      .then((value) => {
-          event.sender.send(
-            UPDATE_FETCH_RECV,
-            value,
-          );
-      })
-      .catch((error) => {
-          event.sender.send(
-            UPDATE_FETCH_RECV,
-            error.message,
-          );
-      });
+      try {
+        const result = await fetchTargets(
+          source.githubRepoOwner, 
+          source.githubRepoName
+        );
+        event.sender.send(
+          UPDATE_FETCH_TARGETS_RECV,
+          result,
+        );
+      } catch(error: any)  {
+        event.sender.send(
+          UPDATE_FETCH_TARGETS_RECV,
+          `get update targets failed: ${error}`,
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(
+    UPDATE_FETCH_CHANGELOG_SEND,
+    async (event, args: { source: GithubSource, ref: string }) => {
+      try {
+        const result = await fetchChangelog(
+          args.source.githubRepoName,
+          args.source.githubRepoName,
+          args.ref,
+        );
+        event.sender.send(
+          UPDATE_FETCH_CHANGELOG_RECV,
+          result,
+        );
+      } catch(error: any)  {
+        event.sender.send(
+          UPDATE_FETCH_CHANGELOG_RECV,
+          `get update targets failed: ${error}`,
+        );
+      }
     }
   );
 
@@ -113,85 +139,6 @@ export function addUpdateEventListeners() {
       return { success: false, error: "No update process running" };
     }
   });
-}
-
-async function fetchTargets(
-  event: Electron.IpcMainInvokeEvent,
-  source: GithubSource,
-): Promise<UpdateTargets | string> {
-  return new Promise((resolve, reject) => {
-    (async () => {
-      try {
-        console.log("Fetch parameters:",
-          source.githubRepoOwner,
-          source.githubRepoName,
-        );
-
-        const tmpDir =
-          process.env.TMPDIR ||
-          process.env.TMP ||
-          process.env.TEMP ||
-          "/tmp";
-
-        const outDir = `${tmpDir}/${source.githubRepoName}`;
-
-        const url = `https://github.com/${source.githubRepoOwner}/${source.githubRepoName}.git`
-
-        const args = ["clone", "--filter=blob:none", "--no-checkout", url, outDir];
-        const childProcess = spawn("git", [
-          "clone", "--filter=blob:none", "--no-checkout", url, outDir
-        ]);
-
-        if (cmd.error !== null) {
-          return cmd.error!
-        }
-
-        resolve();
-      } catch(error) {
-        reject(error);
-      } 
-    })
-  });
-}
-
-async function importMinimalRepo(
-  owner: string, 
-  name: string, 
-  outDir: string
-): Promise<string | null> {
-  try {
-    const url = `https://github.com/${owner}/${name}.git`
-
-    const childProcess = spawn("git", [
-      "clone", "--filter=blob:none", "--no-checkout", url, outDir
-    ]);
-
-    return new Promise((resolve, reject) => {
-      childProcess.on("close", (code, signal) => {
-        if (currentFetchProcess === childProcess) {
-          currentFetchProcess = null;
-        }
-
-        if (signal === "SIGTERM" || signal === "SIGKILL") {
-          reject("Command was cancelled");
-        } else if (code === 0) {
-          resolve(null);
-        } else {
-          reject("Command exited with no code");
-        }
-      });
-
-      childProcess.on("error", (err) => {
-        if (currentFetchProcess === childProcess) {
-          currentFetchProcess = null;
-        }
-
-        reject(err.message);
-      });
-    });
-  } catch (error: any) {
-    return error.toString();
-  }
 }
 
 async function update(

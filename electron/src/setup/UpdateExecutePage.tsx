@@ -37,7 +37,6 @@ export function UpdateExecutePage() {
       setUpdateInfo({
         githubRepoOwner: search.githubRepoOwner,
         githubRepoName: search.githubRepoName,
-        githubToken: search.githubToken || undefined,
         tag: search.tag,
         branch: search.branch,
         commit: search.commit,
@@ -49,7 +48,6 @@ export function UpdateExecutePage() {
     const updateInfo = currentUpdateInfo || {
       githubRepoOwner: search.githubRepoOwner,
       githubRepoName: search.githubRepoName,
-      githubToken: search.githubToken || undefined,
       tag: search.tag,
       branch: search.branch,
       commit: search.commit,

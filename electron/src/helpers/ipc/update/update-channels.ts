@@ -1,5 +1,7 @@
-export const UPDATE_FETCH_SEND = "update:fetch_send";
-export const UPDATE_FETCH_RECV = "update:fetch_recv";
+export const UPDATE_FETCH_TARGETS_SEND = "update:fetch_targets_send";
+export const UPDATE_FETCH_TARGETS_RECV = "update:fetch_targets_recv";
+export const UPDATE_FETCH_CHANGELOG_SEND = "update:fetch_changelog_send";
+export const UPDATE_FETCH_CHANGELOG_RECV = "update:fetch_changelog_recv";
 export const UPDATE_EXECUTE = "update:execute";
 export const UPDATE_LOG = "update:log";
 export const UPDATE_END = "update:end";
