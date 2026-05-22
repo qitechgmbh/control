@@ -17,7 +17,7 @@ pub mod aquapath1;
 pub mod extruder1;
 pub mod laser;
 pub mod machine_identification;
-//pub mod minimal_machines;
+pub mod minimal_machines;
 pub mod registry;
 pub mod winder2;
 
