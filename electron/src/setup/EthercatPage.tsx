@@ -203,7 +203,7 @@ export function EthercatPage() {
       </SectionTitle>
 
       <p>
-        SubDevices have to be put into preop before writing to the EEPROM is
+        SubDevices have to be in preop before writing to the EEPROM is
         allowed.
       </p>
 
