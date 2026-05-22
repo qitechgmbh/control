@@ -11,7 +11,6 @@ import {
   ThrottledStoreUpdater,
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { useMemo } from "react";
 
 // ========== Event Schema (Must match StateEvent) ==========
 export const stateEventDataSchema = z.object({
@@ -35,7 +34,7 @@ export const createTestMotorNamespaceStore =
 
 // ========== Message Handler ==========
 export function testMotorMessageHandler(
-  store: StoreApi<TestMotorNamespaceStore>,
+  chstore: StoreApi<TestMotorNamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<TestMotorNamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
@@ -66,12 +65,9 @@ const useTestMotorNamespaceImplementation =
 export function useTestMotorNamespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): TestMotorNamespaceStore {
-  const namespaceId = useMemo<NamespaceId>(
-    () => ({
-      type: "machine",
-      machine_identification_unique,
-    }),
-    [machine_identification_unique],
-  );
+  const namespaceId: NamespaceId = {
+    type: "machine",
+    machine_identification_unique,
+  };
   return useTestMotorNamespaceImplementation(namespaceId);
 }

@@ -132,9 +132,7 @@ export function Extruder3ControlPage() {
             </StatusBadge>
           ) : state?.inverter_status_state.fault_occurence == true ? (
             <StatusBadge variant="error">
-              Inverter encountered an error! Press the restart button in Config.
-              If the issue persists, activate the extruder emergency stop to
-              reset the inverter.
+              Inverter encountered an error!! Press the restart button in Config
             </StatusBadge>
           ) : state?.inverter_status_state.running == true &&
             state.inverter_status_state.fault_occurence == false ? (
@@ -185,7 +183,7 @@ export function Extruder3ControlPage() {
             <TimeSeriesValueNumeric
               label="Rpm"
               unit="rpm"
-              renderValue={(value) => roundToDecimals(value, 1)}
+              renderValue={(value) => roundToDecimals(value, 0)}
               timeseries={motorScrewRpm}
             />
 
@@ -197,7 +195,7 @@ export function Extruder3ControlPage() {
             <TimeSeriesValueNumeric
               label="Pressure"
               unit="bar"
-              renderValue={(value) => roundToDecimals(value, 1)}
+              renderValue={(value) => roundToDecimals(value, 0)}
               timeseries={pressure}
             />
           </div>

@@ -127,7 +127,7 @@ export function mainMessageHandler(
     const eventName = event.name;
 
     try {
-      // Apply appropriate caching strategy based on event type
+      console.log(event);
       if (eventName === "EthercatDevicesEvent") {
         store.setState((state) => ({
           ...state,
@@ -140,22 +140,6 @@ export function mainMessageHandler(
         }));
       } else if (eventName === "MachinesEvent") {
         const validatedEvent = machinesEventSchema.parse(event);
-        // Grab the current version of the machines data out of your Zustand store
-        const currentMachinesState = store.getState().machines;
-
-        if (currentMachinesState) {
-          // Compare the old data array with the incoming data array if mismatch reload
-          const oldDataStr = JSON.stringify(currentMachinesState.data.machines);
-          const newDataStr = JSON.stringify(validatedEvent.data.machines);
-
-          if (oldDataStr !== newDataStr) {
-            console.log("Detected a change in the machines state! Reloading...");
-            window.location.reload();
-            return;
-          }
-        }
-
-        // 4. If it's the first payload or perfectly matches what we have, update the state normally
         store.setState((state) => ({
           ...state,
           machines: validatedEvent,

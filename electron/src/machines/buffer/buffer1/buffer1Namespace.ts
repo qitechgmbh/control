@@ -16,7 +16,6 @@ import {
   ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { useMemo } from "react";
 
 // ========== Event Schema Definitions ==========
 
@@ -151,14 +150,11 @@ const useBuffer1NamespaceImplementation =
 export function useBuffer1Namespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): Buffer1NamespaceStore {
-  // Generate namespace ID from validated machine ID (memoized to keep reference stable)
-  const namespaceId = useMemo<NamespaceId>(
-    () => ({
-      type: "machine",
-      machine_identification_unique,
-    }),
-    [machine_identification_unique],
-  );
+  // Generate namespace ID from validated machine ID
+  const namespaceId: NamespaceId = {
+    type: "machine",
+    machine_identification_unique,
+  };
 
   // Use the implementation with validated namespace ID
   return useBuffer1NamespaceImplementation(namespaceId);

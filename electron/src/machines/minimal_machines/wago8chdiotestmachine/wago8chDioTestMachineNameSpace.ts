@@ -11,7 +11,6 @@ import {
   ThrottledStoreUpdater,
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { useMemo } from "react";
 
 // ========== Event Schema ==========
 
@@ -36,7 +35,7 @@ export const createWago8chDioTestMachineNamespaceStore =
     }));
 
 // ========== Message Handler ==========
-export function wago8chDioTestMachineMessageHandler(
+export function wago8chDioTestMachineMessageHndler(
   store: StoreApi<Wago8chDioTestMachineNamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<Wago8chDioTestMachineNamespaceStore>,
 ): EventHandler {
@@ -65,19 +64,16 @@ export function wago8chDioTestMachineMessageHandler(
 const useWago8chDioTestMachineImplementation =
   createNamespaceHookImplementation<Wago8chDioTestMachineNamespaceStore>({
     createStore: createWago8chDioTestMachineNamespaceStore,
-    createEventHandler: wago8chDioTestMachineMessageHandler,
+    createEventHandler: wago8chDioTestMachineMessageHndler,
   });
 
 export function useWago8chDioTestMachineNamespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): Wago8chDioTestMachineNamespaceStore {
-  const namespaceId = useMemo<NamespaceId>(
-    () => ({
-      type: "machine",
-      machine_identification_unique,
-    }),
-    [machine_identification_unique],
-  );
+  const namespaceId: NamespaceId = {
+    type: "machine",
+    machine_identification_unique,
+  };
 
   return useWago8chDioTestMachineImplementation(namespaceId);
 }

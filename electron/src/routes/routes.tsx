@@ -20,13 +20,6 @@ import { Winder2SettingPage } from "@/machines/winder/winder2/Winder2Settings";
 import { Winder2GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
 import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
 
-import { Winder2_7031Page } from "@/machines/winder/winder2_7031/Winder2Page";
-import { Winder2_7031ControlPage } from "@/machines/winder/winder2_7031/Winder2_7031_ControlPage";
-import { Winder2_7031ManualPage } from "@/machines/winder/winder2_7031/Winder2_7031_Manual";
-import { Winder2_7031SettingPage } from "@/machines/winder/winder2_7031/Winder2_7031_Settings";
-import { Winder2_7031GraphsPage } from "@/machines/winder/winder2_7031/Winder2_7031_Graphs";
-import { Winder2_7031PresetsPage } from "@/machines/winder/winder2_7031/Winder2_7031_PresetsPage";
-
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
 import { Extruder2SettingsPage } from "@/machines/extruder/extruder2/Extruder2Settings";
@@ -103,9 +96,6 @@ import { Wago750_553MachineControlPage } from "@/machines/minimal_machines/wago7
 
 import { Wago750460MachinePage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachinePage";
 import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachineControlPage";
-
-import { BottlecapsTestMachinePage } from "@/machines/minimal_machines/bottlecaps_test_machine/BottlecapsTestMachinePage";
-import { BottlecapsTestMachineControlPage } from "@/machines/minimal_machines/bottlecaps_test_machine/BottlecapsTestMachineControlPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -337,42 +327,6 @@ export const winder2SerialRoute = createRoute({
   component: () => <Winder2Page />,
 });
 
-export const winder2_7031SerialRoute = createRoute({
-  getParentRoute: () => machinesRoute,
-  path: "winder2_7031/$serial",
-  component: () => <Winder2_7031Page />,
-});
-
-export const winder2_7031ControlRoute = createRoute({
-  getParentRoute: () => winder2_7031SerialRoute,
-  path: "control",
-  component: () => <Winder2_7031ControlPage />,
-});
-
-export const winder2_7031ManualRoute = createRoute({
-  getParentRoute: () => winder2_7031SerialRoute,
-  path: "manual",
-  component: () => <Winder2_7031ManualPage />,
-});
-
-export const winder2_7031SettingsRoute = createRoute({
-  getParentRoute: () => winder2_7031SerialRoute,
-  path: "settings",
-  component: () => <Winder2_7031SettingPage />,
-});
-
-export const winder2_7031GraphsRoute = createRoute({
-  getParentRoute: () => winder2_7031SerialRoute,
-  path: "graphs",
-  component: () => <Winder2_7031GraphsPage />,
-});
-
-export const winder2_7031PresetsRoute = createRoute({
-  getParentRoute: () => winder2_7031SerialRoute,
-  path: "presets",
-  component: () => <Winder2_7031PresetsPage />,
-});
-
 export const winder2ControlRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "control",
@@ -565,18 +519,6 @@ export const wago750_501TestMachineControlRoute = createRoute({
   component: () => <Wago750_501TestMachineControlPage />,
 });
 
-export const bottlecapsTestMachineSerialRoute = createRoute({
-  getParentRoute: () => machinesRoute,
-  path: "bottlecapstest/$serial",
-  component: () => <BottlecapsTestMachinePage />,
-});
-
-export const bottlecapsTestMachineControlRoute = createRoute({
-  getParentRoute: () => bottlecapsTestMachineSerialRoute,
-  path: "control",
-  component: () => <BottlecapsTestMachineControlPage />,
-});
-
 export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "setup",
@@ -712,14 +654,6 @@ export const rootTree = RootRoute.addChildren([
         aquapath1SettingsRoute,
       ]),
 
-      winder2_7031SerialRoute.addChildren([
-        winder2_7031ControlRoute,
-        winder2_7031ManualRoute,
-        winder2_7031SettingsRoute,
-        winder2_7031GraphsRoute,
-        winder2_7031PresetsRoute,
-      ]),
-
       winder2SerialRoute.addChildren([
         winder2ControlRoute,
         winder2ManualRoute,
@@ -763,10 +697,6 @@ export const rootTree = RootRoute.addChildren([
 
       wago750_501TestMachineSerialRoute.addChildren([
         wago750_501TestMachineControlRoute,
-      ]),
-
-      bottlecapsTestMachineSerialRoute.addChildren([
-        bottlecapsTestMachineControlRoute,
       ]),
 
       wago750430DiMachineSerialRoute.addChildren([
