@@ -130,6 +130,7 @@ export function EthercatPage() {
         : "op";
 
   const isPreop = etherCatState === "preop";
+  console.log("isPreop", isPreop, "etherCatState", etherCatState);
 
   const data = useMemo(() => {
     return ethercatDevices?.data?.Done?.devices || [];
@@ -216,7 +217,7 @@ export function EthercatPage() {
         Restart Backend Process Into Preop
       </TouchButton>
 
-      <MyTable table={table} key={data.toString()} />
+      <MyTable table={table} key={`${data.toString()}-${isPreop}`} />
     </Page>
   );
 }
