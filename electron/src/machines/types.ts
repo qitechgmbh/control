@@ -5,6 +5,8 @@ import { IconName } from "@/components/Icon";
 import { rustEnum } from "@/lib/types";
 import { z } from "zod";
 
+export const VENDOR_QITECH = 0x0001;
+
 // EK1100 should have role 0
 export type DeviceRole = {
   role: number;

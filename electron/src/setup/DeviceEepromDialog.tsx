@@ -12,7 +12,8 @@ import { useClient } from "@/client/useClient";
 import {
   filterAllowedDevices,
   getMachineProperties,
-  machineProperties,
+  mainMachineProperties,
+  minimalMachineProperties,
   VENDOR_QITECH,
 } from "@/machines/properties";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -36,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useFormValues } from "@/lib/useFormValues";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
 import { Alert } from "@/components/Alert";
@@ -385,21 +387,26 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                 <FormItem>
                   <FormLabel className="text-base">Maschine</FormLabel>
                   <FormControl>
-                    <Select {...field} onValueChange={field.onChange}>
-                      <SelectTrigger className="h-12 min-w-48 text-base">
-                        <SelectValue placeholder="Machine" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {machineProperties.map((machine) => (
-                          <SelectItem
-                            key={machine.machine_identification.machine}
-                            value={machine.machine_identification.machine.toString()}
-                          >
-                            {machine.name} {machine.version}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      groups={[
+                        {
+                          label: "Main Machines",
+                          options: mainMachineProperties,
+                        },
+                        {
+                          label: "Test / Minimal Machines",
+                          options: minimalMachineProperties,
+                        },
+                      ]}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Machine"
+                      searchPlaceholder="Search machines..."
+                      getOptionLabel={(m) => `${m.name} ${m.version}`}
+                      getOptionValue={(m) =>
+                        m.machine_identification.machine.toString()
+                      }
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
