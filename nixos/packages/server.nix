@@ -37,6 +37,7 @@ let
         "2";
 
     cargoExtraArgs = "--features io-uring --no-default-features";
+    cargoCheckExtraArgs = "--lib --bins";
   };
 
   cargoArtifacts = craneLib.buildDepsOnly commonArgs;
