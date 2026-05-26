@@ -15,7 +15,7 @@ use crate::{
         },
     },
     pdo::{PredefinedPdoAssignment, RxPdo, TxPdo},
-    shared_config::el70x1::EL70x1OperationMode,
+    shared_config::el70x7::EL70x1OperationMode,
 };
 
 use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
@@ -187,7 +187,7 @@ impl StepperVelocityEL70x1Device<EL7037StepperPort> for EL7037 {
     fn get_speed_range(
         &self,
         _port: EL7037StepperPort,
-    ) -> crate::shared_config::el70x1::EL70x1SpeedRange {
+    ) -> crate::shared_config::el70x7::EL70x1SpeedRange {
         self.configuration.stm_features.speed_range
     }
 

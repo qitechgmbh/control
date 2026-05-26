@@ -11,8 +11,9 @@ use ethercat_hal::devices::el7037::coe::EL7037Configuration;
 use ethercat_hal::devices::el7037::pdo::EL7037PredefinedPdoAssignment;
 use ethercat_hal::devices::el7037::{EL7037, EL7037_IDENTITY_A, EL7037StepperPort};
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
-use ethercat_hal::shared_config;
-use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
+use ethercat_hal::shared_config::el70x7::{
+    EL70x1OperationMode, EL70x1SpeedRange, EL70x7InfoData, StmFeatures, StmMotorConfiguration,
+};
 
 impl MachineNewTrait for MotorTestMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -42,11 +43,11 @@ impl MachineNewTrait for MotorTestMachine {
                 .await?;
 
                 let el7037_config = EL7037Configuration {
-                    stm_features: shared_config::el70x1::StmFeatures {
+                    stm_features: StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
-                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
-                        select_info_data_1: shared_config::el70x1::EL70x1InfoData::MotorLoad,
-                        select_info_data_2: shared_config::el70x1::EL70x1InfoData::MotorDcCurrent,
+                        speed_range: EL70x1SpeedRange::Steps1000,
+                        select_info_data_1: EL70x7InfoData::MotorLoad,
+                        select_info_data_2: EL70x7InfoData::MotorDcCurrent,
                         ..Default::default()
                     },
                     stm_motor: StmMotorConfiguration {
