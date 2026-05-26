@@ -67,7 +67,13 @@ impl MachineIdentification {
             x if x == WAGO_AI_TEST_MACHINE => "wago_ai_test_machine".to_string(),
             x if x == WAGO_DO_TEST_MACHINE => "wago_do_test_machine".to_string(),
             x if x == WAGO_750_430_DI_MACHINE => "wago_750_430_di_machine".to_string(),
+            x if x == WAGO_750_460_MACHINE => "wago_750_460_machine".to_string(),
+            x if x == WAGO_750_501_TEST_MACHINE => "wago_750_501_test_machine".to_string(),
             x if x == WAGO_750_531_MACHINE => "wago_750_531_machine".to_string(),
+            x if x == WAGO_750_553_MACHINE => "wago_750_553_machine".to_string(),
+            x if x == MOTOR_TEST_MACHINE => "motor_test_machine".to_string(),
+            x if x == DIGITAL_INPUT_TEST_MACHINE => "digital_input_test_machine".to_string(),
+            x if x == WAGO_8CH_IO_TEST_MACHINE => "wago_8ch_io_test_machine".to_string(),
             x if x == TEST_MACHINE_BOTTLECAPS => "bottlecaps_test_machine".to_string(),
             _ => unreachable!("Unknown machine id {}", self.machine),
         }
@@ -183,6 +189,7 @@ use ethercrab::MainDevice;
 use ethercrab::SubDeviceIdentity;
 
 use crate::ANALOG_INPUT_TEST_MACHINE;
+use crate::DIGITAL_INPUT_TEST_MACHINE;
 use crate::IP20_TEST_MACHINE;
 use crate::MACHINE_AQUAPATH_V1;
 use crate::MACHINE_BUFFER_V1;
@@ -193,12 +200,17 @@ use crate::MACHINE_MOCK;
 use crate::MACHINE_WAGO_POWER_V1;
 use crate::MACHINE_WINDER_V1;
 use crate::MACHINE_WINDER_V1_7031_0030_SPOOL;
+use crate::MOTOR_TEST_MACHINE;
 use crate::TEST_MACHINE;
 use crate::TEST_MACHINE_BOTTLECAPS;
 use crate::TEST_MACHINE_STEPPER;
 use crate::VENDOR_QITECH;
+use crate::WAGO_8CH_IO_TEST_MACHINE;
 use crate::WAGO_750_430_DI_MACHINE;
+use crate::WAGO_750_460_MACHINE;
+use crate::WAGO_750_501_TEST_MACHINE;
 use crate::WAGO_750_531_MACHINE;
+use crate::WAGO_750_553_MACHINE;
 use crate::WAGO_AI_TEST_MACHINE;
 use crate::WAGO_DO_TEST_MACHINE;
 
