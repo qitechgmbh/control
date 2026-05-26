@@ -61,17 +61,31 @@ impl Configuration for EL7037Configuration {
         self.encoder.write_config(device).await?;
         // EL7037 uses 10 mV units for nominal_voltage (0x8010:03),
         // unlike EL7031 which uses 1 mV. Write fields individually.
-        // NOTE: 0x8010:03 (nominal_voltage) is skipped — EL7037 rejects SDO writes.
-        //       The terminal default (5000 = 50V in 10mV units) is acceptable.
         device.sdo_write(0x8010, 0x01, self.stm_motor.max_current).await?;
         device.sdo_write(0x8010, 0x02, self.stm_motor.reduced_current).await?;
+        // Convert from 1 mV (shared StmMotorConfiguration) to 10 mV (EL7037).
+        // The terminal may reject writes exceeding the actual supply voltage;
+        // fall back to terminal default on failure.
+        if let Err(e) = device
+            .sdo_write(0x8010, 0x03, self.stm_motor.nominal_voltage / 10)
+            .await
+        {
+            tracing::debug!(
+                "EL7037 0x8010:03 nominal_voltage write rejected ({e}); \
+                 keeping terminal default."
+            );
+        }
         device.sdo_write(0x8010, 0x04, self.stm_motor.motor_coil_resistance).await?;
         device.sdo_write(0x8010, 0x05, self.stm_motor.motor_emf).await?;
         device.sdo_write(0x8010, 0x06, self.stm_motor.motor_full_steps).await?;
         device.sdo_write(0x8010, 0x09, self.stm_motor.start_velocity).await?;
         device.sdo_write(0x8010, 0x10, self.stm_motor.drive_on_delay_time).await?;
         device.sdo_write(0x8010, 0x11, self.stm_motor.drive_off_delay_time).await?;
-        self.stm_controller_1.write_config(device, 0x8011).await?;
+        // EL7037 0x8011: only subindices 01, 02 exist (max subindex = 0x02).
+        // Write them directly instead of using the shared write_config which also
+        // writes 03,05,06,07,08 (valid for EL7031/EL7041 but not EL7037).
+        device.sdo_write(0x8011, 0x01, self.stm_controller_1.kp_factor).await?;
+        device.sdo_write(0x8011, 0x02, self.stm_controller_1.ki_factor).await?;
         self.stm_features.write_config(device).await?;
         self.pos_configuration.write_config(device).await?;
         self.pos_features.write_config(device).await?;

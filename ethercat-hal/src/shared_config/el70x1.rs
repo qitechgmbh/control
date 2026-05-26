@@ -200,17 +200,17 @@ impl StmControllerConfiguration {
     ) -> Result<(), anyhow::Error> {
         device.sdo_write(base_index, 0x01, self.kp_factor).await?;
         device.sdo_write(base_index, 0x02, self.ki_factor).await?;
-        // device
-        //     .sdo_write(base_index, 0x03, self.inner_window)
-        //     .await?;
-        // device
-        //     .sdo_write(base_index, 0x05, self.outer_window)
-        //     .await?;
-        // device
-        //     .sdo_write(base_index, 0x06, self.filter_cutoff_frequency)
-        //     .await?;
-        // device.sdo_write(base_index, 0x07, self.ka_factor).await?;
-        // device.sdo_write(base_index, 0x08, self.kd_factor).await?;
+        device
+            .sdo_write(base_index, 0x03, self.inner_window)
+            .await?;
+        device
+            .sdo_write(base_index, 0x05, self.outer_window)
+            .await?;
+        device
+            .sdo_write(base_index, 0x06, self.filter_cutoff_frequency)
+            .await?;
+        device.sdo_write(base_index, 0x07, self.ka_factor).await?;
+        device.sdo_write(base_index, 0x08, self.kd_factor).await?;
         Ok(())
     }
 }

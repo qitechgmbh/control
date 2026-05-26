@@ -38,23 +38,28 @@ Branch: `1365-implement-el7037-driver`
 **Fix:** Explicitly set `select_info_data_1: EL70x1InfoData::MotorLoad` and `select_info_data_2: EL70x1InfoData::MotorDcCurrent` in TestMotor config.
 **File:** `machines/src/minimal_machines/motor_test_machine/new.rs`
 
-### 7. `8010:03` nominal_voltage rejected by EL7037
-**Symptom:** `0x06040043` on `sdo_write(0x8010, 0x03, ...)` regardless of value (tried 50000 and 5000).
-**Root cause:** EL7037 uses **10 mV** units (default `0x1388` = 5000 = 50V), shared config uses **1 mV** units. Even with correct raw value (5000), EL7037 rejects writes. May require pre-initialization or code word.
-**Fix (temporary):** Skip `8010:03` write entirely — terminal default (5000 = 50V) is acceptable.
+### 7. `8010:03` nominal_voltage — unit conversion & supply-voltage validation ✅
+**Symptom:** `0x06040043` when writing 5000 (50V in 10mV units) — terminal stores 2400 (24V).
+**Root cause:** EL7037 uses **10 mV** units (shared config uses 1 mV). The write was rejected because 50V exceeds the actual 24V supply voltage. When configured with matching 24V (24000 in 1mV → 2400 in 10mV), the write succeeds.
+**Fix:** Write `nominal_voltage / 10` with graceful fallback. If the terminal rejects (supply mismatch), `tracing::debug!` logs it and the terminal default is preserved.
 **File:** `ethercat-hal/src/devices/el7037/coe.rs`
 
-### 8. `8010:05` motor_emf skipped (untested)
-**Status:** Skipped for now; shared default is `0x00C8` (200) vs EL7037 default `0x0000` (0). May also reject writes like `8010:03`.
+### 8. `8010:05` motor_emf re-enabled ✅
+**Status:** Write succeeds. Shared default `0x00C8` (200) vs EL7037 doc default `0x0000` (0).
 **File:** `ethercat-hal/src/devices/el7037/coe.rs`
+
+### 9. Shared `StmControllerConfiguration::write_config` restored for EL7031/EL7041 ✅
+**Root cause:** Subindices 03–08 were commented out in the shared function, breaking EL7031/EL7031_0030/EL7041_0052 which have those subindices on `0x8011` and `0x8013`.
+**Fix:** Restored full `write_config` (all subindices 01–08). EL7037 now writes only `0x8011:01,02` directly (max subindex = 0x02 per doc), bypassing the shared function.
+**File:** `ethercat-hal/src/shared_config/el70x1.rs`, `ethercat-hal/src/devices/el7037/coe.rs`
 
 ## Configuration Write Order (EL7037)
 
 All steps verified working ✅
 
 1. `encoder` → `8000:0E` ✅
-2. `stm_motor` → `8010:01,02,(skip 03),04,05,06,09,10,11` ✅
-3. `stm_controller_1` → `8011:01,02` ✅
+2. `stm_motor` → `8010:01,02,03(graceful fallback),04,05,06,09,10,11` ✅
+3. `stm_controller_1` → `8011:01,02` (direct, no shared write_config) ✅
 4. `stm_features` → `8012:01,05,09,11,19,30,31,32,36` ✅
 5. `pos_configuration` → `8020:01–10` ✅
 6. `pos_features` → `8021:01,11,13,14,15,16` ✅
@@ -63,10 +68,13 @@ All steps verified working ✅
 
 ### Remaining caveats
 
-- **`0x8010:03` (nominal_voltage):** Skipped — EL7037 rejects all SDO writes to this subindex.
-  Terminal default `0x1388` (5000 = 50V in 10mV units) is acceptable and preserved.
-- **`0x8010:05` (motor_emf):** Re-enabled. Shared default is `200` vs EL7037 doc default `0`.
-  If it fails, skip it like `0x8010:03`.
+- **`0x8010:03` (nominal_voltage):** Written in 10mV units (`nominal_voltage / 10`).
+  Rejected if the value exceeds the actual supply voltage; falls back to terminal default
+  with a `tracing::debug!` log. Works correctly when config value matches supply (e.g. 24V).
+- **`0x8010:05` (motor_emf):** Re-enabled. Shared default differs from EL7037 doc default.
+- **`0x8011:03–08`:** EL7037 doc says max subindex = 0x02 — these genuinely don't exist.
+  EL7037 writes only 01,02 directly; shared `StmControllerConfiguration::write_config`
+  is restored for EL7031/EL7041 which do have these subindices.
 
 ## Key Differences: EL7031 vs EL7037
 
