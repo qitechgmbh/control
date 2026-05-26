@@ -104,7 +104,6 @@ in
 
   # Enable networking
   networking.networkmanager.enable = true;
-  networking.wireless.enable = lib.mkImageMediaOverride false;
 
   # Enable the X11 windowing system.
   services.displayManager.gdm = {
