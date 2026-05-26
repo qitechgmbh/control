@@ -11,7 +11,6 @@ import {
   ThrottledStoreUpdater,
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { useMemo } from "react";
 
 // ========== Event Schema ==========
 
@@ -70,13 +69,10 @@ const useWagoDoTestMachineNamespaceImplementation =
 export function useWagoDoTestMachineNamespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): WagoDoTestMachineNamespaceStore {
-  const namespaceId = useMemo<NamespaceId>(
-    () => ({
-      type: "machine",
-      machine_identification_unique,
-    }),
-    [machine_identification_unique],
-  );
+  const namespaceId: NamespaceId = {
+    type: "machine",
+    machine_identification_unique,
+  };
 
   return useWagoDoTestMachineNamespaceImplementation(namespaceId);
 }

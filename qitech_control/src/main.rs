@@ -167,11 +167,12 @@ fn finalize_ethercat(
     }
 }
 
-fn send_setup_done_events(state: Arc<SharedAppState>) {
+fn send_setup_done_events(state: Arc<SharedAppState>, preop: bool) {
     let rt = get_async_runtime();
     rt.spawn(async move {
         let _res = state.send_ethercat_setup_done().await;
         let _res = state.send_machines_event().await;
+        let _res = state.send_ethercat_preop(preop).await;
     });
 }
 
@@ -317,7 +318,7 @@ fn main_logic() {
     };
 
     detect_and_build_machines(state.clone(), &mut main_state);
-    send_setup_done_events(state.clone());
+    send_setup_done_events(state.clone(), stay_in_preop);
 
     if stay_in_preop {
         println!("Staying in PreOp as requested, exiting after setup.");
@@ -332,8 +333,6 @@ fn main_logic() {
         Some(control) => finalize_ethercat(&mut main_state, control),
         None => (),
     };
-
-    send_setup_done_events(state.clone());
 
     let mut last_check = std::time::Instant::now();
     let hotplug_duration = Duration::from_secs(4);

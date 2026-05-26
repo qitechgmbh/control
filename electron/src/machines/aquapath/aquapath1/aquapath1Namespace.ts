@@ -16,7 +16,6 @@ import {
   ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { useMemo } from "react";
 import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 import { Toast } from "@/components/Toast";
 import { toast } from "sonner";
@@ -465,14 +464,11 @@ const useAquapath1NamespaceImplementation =
 export function useAquapath1Namespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): Aquapath1NamespaceStore {
-  // Generate namespace ID from validated machine ID (memoized to keep reference stable)
-  const namespaceId = useMemo<NamespaceId>(
-    () => ({
-      type: "machine",
-      machine_identification_unique,
-    }),
-    [machine_identification_unique],
-  );
+  // Generate namespace ID from validated machine ID
+  const namespaceId: NamespaceId = {
+    type: "machine",
+    machine_identification_unique,
+  };
 
   // Use the implementation with validated namespace ID
   return useAquapath1NamespaceImplementation(namespaceId);

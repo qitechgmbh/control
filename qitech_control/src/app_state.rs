@@ -138,6 +138,15 @@ impl SharedAppState {
         Ok(())
     }
 
+    pub async fn send_ethercat_preop(&self, is_preop: bool) {
+        let event = Event::new("EthercatStateEvent", EthercatDevicesEvent::Preop(is_preop));
+        let mut guard = self.socketio_setup.namespaces.write().await;
+        let main_namespace = &mut guard.main_namespace;
+        main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
+        drop(guard);
+    }
+
+
     pub async fn get_machines_meta(&self) -> Vec<MachineObj> {
         self.machines.read().await.clone()
     }

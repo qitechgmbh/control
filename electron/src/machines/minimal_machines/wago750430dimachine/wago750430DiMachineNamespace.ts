@@ -11,7 +11,6 @@ import {
   ThrottledStoreUpdater,
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { useMemo } from "react";
 
 export const stateEventDataSchema = z.object({
   inputs: z.array(z.boolean()).length(8),
@@ -64,13 +63,10 @@ const useWago750430DiMachineNamespaceImplementation =
 export function useWago750430DiMachineNamespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): Wago750430DiMachineNamespaceStore {
-  const namespaceId = useMemo<NamespaceId>(
-    () => ({
-      type: "machine",
-      machine_identification_unique,
-    }),
-    [machine_identification_unique],
-  );
+  const namespaceId: NamespaceId = {
+    type: "machine",
+    machine_identification_unique,
+  };
 
   return useWago750430DiMachineNamespaceImplementation(namespaceId);
 }

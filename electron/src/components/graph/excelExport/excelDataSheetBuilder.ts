@@ -34,31 +34,14 @@ export class DataSheetBuilder {
     const [timestamps, values] = seriesToUPlotData(this.graphLine.series.long);
     const unitSymbol = renderUnitSymbol(this.unit) || "";
 
-    const targetLine = this.graphLine.targetLines.find(
-      (line): line is Extract<GraphLine, { type: "target" }> =>
-        line.type === "target",
-    );
-
-    const getTargetAt = targetLine
-      ? this.buildTargetLookup(targetLine)
-      : undefined;
-
     const sheetData: any[][] = [];
 
     // Build header
     const col1Header = unitSymbol
       ? `${unitSymbol} ${this.seriesTitle}`
       : this.seriesTitle;
-    const col2Header = targetLine ? "Target" : "";
 
-    sheetData.push([
-      "Timestamp",
-      col1Header,
-      col2Header,
-      "",
-      "Statistic",
-      "Value",
-    ]);
+    sheetData.push(["Timestamp", col1Header, "", "", "Statistic", "Value"]);
 
     // Build stats section
     const statsRows = this.buildStatsRows(timestamps, values, unitSymbol);
@@ -66,13 +49,7 @@ export class DataSheetBuilder {
     // Combine data and stats rows
     const maxRows = Math.max(timestamps.length, statsRows.length);
     for (let i = 0; i < maxRows; i++) {
-      const row = this.buildDataRow(
-        i,
-        timestamps,
-        values,
-        statsRows,
-        getTargetAt,
-      );
+      const row = this.buildDataRow(i, timestamps, values, statsRows);
       sheetData.push(row);
     }
 
@@ -85,7 +62,7 @@ export class DataSheetBuilder {
     worksheet["!cols"] = [
       { wch: 20 }, // Timestamp
       { wch: 15 }, // Value
-      { wch: targetLine ? 15 : 5 }, // Target (or spacer)
+      { wch: 5 }, // Empty
       { wch: 5 }, // Empty
       { wch: 30 }, // Statistic name
       { wch: 20 }, // Statistic value
@@ -166,36 +143,11 @@ export class DataSheetBuilder {
     return statsRows;
   }
 
-  private buildTargetLookup(
-    targetLine: Extract<GraphLine, { type: "target" }>,
-  ): (timestamp: number) => string {
-    if (targetLine.targetSeries) {
-      const [tts, tvs] = seriesToUPlotData(targetLine.targetSeries.long);
-      return (ts: number) => {
-        // Step-interpolation: find last target timestamp <= ts
-        let lo = 0,
-          hi = tts.length - 1,
-          idx = -1;
-        while (lo <= hi) {
-          const mid = (lo + hi) >> 1;
-          if (tts[mid] <= ts) {
-            idx = mid;
-            lo = mid + 1;
-          } else hi = mid - 1;
-        }
-        const v = idx >= 0 ? tvs[idx] : targetLine.value;
-        return Number.isFinite(v) ? this.formatValue(v) : "";
-      };
-    }
-    return () => this.formatValue(targetLine.value);
-  }
-
   private buildDataRow(
     index: number,
     timestamps: number[],
     values: number[],
     statsRows: string[][],
-    getTargetAt?: (timestamp: number) => string,
   ): any[] {
     const row: any[] = ["", "", "", ""];
 
@@ -204,7 +156,6 @@ export class DataSheetBuilder {
       const date = new Date(timestamps[index]);
       row[0] = this.formatter.formatDate(date);
       row[1] = this.formatValue(values[index]);
-      row[2] = getTargetAt ? getTargetAt(timestamps[index]) : "";
     }
 
     // Add stats

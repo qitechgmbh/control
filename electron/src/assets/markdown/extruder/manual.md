@@ -1,4 +1,4 @@
-![Titelseite,screenshot from Word document](images/manuals/extruder/Titelseite.jpeg)
+![Titelseite,screenshot from Word doccument](images/manuals/extruder/Titelseite.jpeg)
 
 <br>
 
@@ -14,7 +14,7 @@ The content of the EC Declaration of Conformity corresponds to Annex II, No. 1 A
 
 QiTech Industries GmbH
 
-Landwehrstraße 55
+Landwehrsrtaße 55
 
 64293, Darmstadt
 <br><br><br>
@@ -23,7 +23,7 @@ Landwehrstraße 55
 
 Milan von dem Bussche
 
-Landwehrstraße 55
+Landwehrsrtaße 55
 
 64293, Darmstadt
 <br><br><br>
@@ -31,10 +31,10 @@ Landwehrstraße 55
 **under consideration:**
 | General designation | Extruder |
 | ------------------- | ---------------------------------- |
-| function | Extruding plastics into filaments |
+| function | Extruding plastics into filaments
 | Model | QiTech Extruder |
 | type | Plastics extruding machine |
-| Trade name | QiTech Extruder |
+| Trade name | QiTech Esxruder |
 <br><br>
 
 We hereby declare that the above-mentioned machine is in conformity with all relevant provisions of the EC Machinery Directive 2006/42/EC. The machine is also in compliance with all relevant provisions of the following EC Directives:
@@ -63,7 +63,7 @@ Milan von dem Bussche
 
 # Operating instructions based on DIN EN ISO 20607
 
-| Designation   | QiTech Extruder                   |
+| Designation   | QiTech Winder                     |
 | ------------- | --------------------------------- |
 | Manufacturer  | QiTech Industries GmbH            |
 | Administrator | Milan von dem Bussche             |
@@ -166,9 +166,9 @@ Accuracy class: 2
 
 <br>
 
-| Picture                                       | Danger!                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Warning](images/manuals/extruder/w001.jpeg) | **Danger to life due to technically faulty machine.** <br> The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions. All faults, especially those that could impair safety, must be rectified immediately before starting the extruder. Everyone who works on or with the QiTech Extruder is responsible for observing these safety aspects! |
+| Picture                                       | Danger!                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Warning](images/manuals/extruder/w001.jpeg) | **Danger to life due to technically faulty machine.** <br> The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions. All faults, especially those that could impair safety, must be rectified immediately before starting the winder. Everyone who works on or with the Qitech Winder is responsible for observing these safety aspects! |
 
 <br><br><br>
 
@@ -359,9 +359,9 @@ Depending on the activity or the duration of the activity, the operator must det
 |---------|--------|
 | ![Warning](images/manuals/extruder/w001.jpeg)|**Risk of injury due to improper transport** <br> Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts. Wear personal protective equipment: safety shoes, protective work clothing, protective gloves.
 
-| Picture                                       | Caution!                                                                                                                                                                                                                                                                      |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Warning](images/manuals/extruder/w001.jpeg) | **Danger to life due to incorrect installation and commissioning!** <br> Errors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
+| Picture                                       | Caution!                                                                                                                                                                                                                                                                    |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Warning](images/manuals/extruder/w001.jpeg) | **Danger to life due to incorrect installation and commissioning!** <brErrors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
 
 <br>
 <br>
@@ -424,7 +424,7 @@ Then start the machine as follows:
 
 - Make sure that the emergency Stop button is inactive
 - Turn on the display by pressing the button on the right side of the display above the USB connectors
-- Extruder then appears in the left column
+- Winder then appears in the left column
   **2. Preheat the extruder**
 - Go to "Control” mode in the function bar
 - Press the "Heat" button in the “mode” box
@@ -441,7 +441,7 @@ Then start the machine as follows:
 
 - Set the screw speed via the "Screw Speed" slider
 - Press the "Extrude" button in the “mode” box
-- Wait until old melt has been "flushed" out of the extruder, i.e. the filament is no longer discoloured and a constant material flow has been achieved
+- Wait until old melt has been "flushed" out of the extruder, i.e. no more discolouration of the filament is no longer discoloured and a constant material flow has been achieved
 
 ![screenshot: adjust screw speed](images/manuals/extruder/screenshot_extruder_adjustscrew_speed.png)
 
@@ -493,7 +493,7 @@ Auto-tuning should be performed **after an active filament production run** — 
 3. Set the **Target Pressure** to the operating pressure that gives the best results for this material.
 4. Navigate to **Settings → Advanced → Pressure PID Auto-Tune**.
 5. Configure the tuning parameters:
-   - **Tune Delta:** Pressure oscillation band around the target (default: 1.0 bar).
+   - **Tune Delta:** Pressure oscillation band around the target (default: 1.0 bar). A smaller value gives finer excitation; increase it if the system does not oscillate.
    - **Frequency Step:** Inverter frequency deviation used as the relay excitation (default: 2.5 Hz). Lower values result in smaller pressure swings; **Only increase if oscillations are too weak and only by a small amount, for every retry.**
 6. Press **Start Auto-Tune**. The controller will switch to the tuning control and begins oscillating the screw speed around the current operating frequency.
 7. Monitor the **Status** progress bar. The tuner records 20 oscillation peaks (~10 full cycles) to ensure a clean and representative identification. This typically takes 10 seconds.
@@ -656,54 +656,7 @@ Appliances with this logo on the packaging or on the appliance must be disposed 
 <br>
 <br>
 
-# 3 Inverter Parameterization
-
-## 3.1 Motor Constants Extruder V2
-
-The following is a table that shows which Registers need to be set on the Inverter for the safe operation of the Motor.
-
-| Parameter number (Pr) | Name                         | Value         |
-| --------------------- | ---------------------------- | ------------- |
-| `71`                  | Applied Motor                | 0             |
-| `80`                  | Motor Capacity               | 15 (1.5 kw)   |
-| `96`                  | Auto tuning setting/status   | 1             |
-| `9`                   | Electronic Thermal O/L Relay | 3.30 (Ampere) |
-| `3`                   | Base frequency               | 5000 (50 Hz)  |
-| `19`                  | Base frequency voltage       | 400 (Volt)    |
-
-## 3.2 Motor Constants ExtruderV3
-
-The following is a table that shows which Registers need to be set on the Inverter for the safe operation of the Motor.
-
-| Parameter number (Pr) | Name                         | Value         |
-| --------------------- | ---------------------------- | ------------- |
-| `71`                  | Applied Motor                | 0             |
-| `80`                  | Motor Capacity               | 22 (2.2 kw)   |
-| `96`                  | Auto tuning setting/status   | 1             |
-| `9`                   | Electronic Thermal O/L Relay | 4.40 (Ampere) |
-| `3`                   | Base frequency               | 5000 (50 Hz)  |
-| `19`                  | Base frequency voltage       | 380 (Volt)    |
-
-## 3.3 All Settings needed for the Inverter Communication/Operation with ExtruderV2 (same as ExtruderV3)
-
-The Following settings are required to get the inverter Communication and Operation working properly
-| Parameter Number (Pr) | Value | Description |
-| --------------------- | ----- | -------------------------------------------------------------------------------------------- |
-| `Pr. 78` | 0 | Allows Reverse Rotation |
-| `Pr. 79` | 0 | Operation Mode Selection |
-| `Pr. 117` | 1 | Station Number (Slave Number) |
-| `Pr. 118` | 192 | Baudrate (192 → 19200 bps) |
-| `Pr. 119` | 0 | Stop Bit Length |
-| `Pr. 120` | 2 | Parity Check |
-| `Pr. 121` | 9999 | PU communication retry count |
-| `Pr. 122` | 1.0 | Communication Check Time (Time until no communication causes E.PUE fault), 0.1 seconds steps |
-| `Pr. 338` | 0 | Communication operation command source, 0 -> given through PU |
-| `Pr. 339` | 0 | Communication speed command source, 0 -> given through PU |
-| `Pr. 340` | 1 | Startup in Network Mode |
-| `Pr. 549` | 1 | Protocol Selection (1 = Modbus) |
-| `Pr. 551` | 9999 | Automatically Detect PU Connector |
-
-# 4 Hazard warning and information on Residual risks
+# 3 Hazard warning and information on Residual risks
 
 <br>
 
@@ -722,7 +675,7 @@ The Following settings are required to get the inverter Communication and Operat
 <br>
 <br>
 
-# 5 Glossary and Definitions
+# 4 Glossary and Definitions
 
 <br>
 
