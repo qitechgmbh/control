@@ -200,9 +200,9 @@ impl StmControllerConfiguration {
     ) -> Result<(), anyhow::Error> {
         device.sdo_write(base_index, 0x01, self.kp_factor).await?;
         device.sdo_write(base_index, 0x02, self.ki_factor).await?;
-        device
-            .sdo_write(base_index, 0x03, self.inner_window)
-            .await?;
+        // device
+        //     .sdo_write(base_index, 0x03, self.inner_window)
+        //     .await?;
         // device
         //     .sdo_write(base_index, 0x05, self.outer_window)
         //     .await?;
@@ -312,6 +312,9 @@ impl StmFeatures {
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
+        device
+            .sdo_write(0x8012, 0x01, u8::from(self.operation_mode))
+            .await?;
         device
             .sdo_write(0x8012, 0x05, u8::from(self.speed_range))
             .await?;
@@ -801,6 +804,10 @@ pub enum EL70x1InfoData {
     DutyCycleCoilB = 6,
     /// Current velocity (value range +/- 10000)
     CurrentVelocity = 7,
+    /// Motor load (unit 0.01 deg)
+    MotorLoad = 11,
+    /// Motor DC current (unit 1 mA)
+    MotorDcCurrent = 13,
     /// Internal temperature of the driver card
     InternalTemperature = 101,
     /// Control voltage
@@ -828,6 +835,8 @@ impl std::fmt::Debug for EL70x1InfoData {
             Self::DutyCycleCoilA => write!(f, "DutyCycleCoilA (5)"),
             Self::DutyCycleCoilB => write!(f, "DutyCycleCoilB (6)"),
             Self::CurrentVelocity => write!(f, "CurrentVelocity (7)"),
+            Self::MotorLoad => write!(f, "MotorLoad (11)"),
+            Self::MotorDcCurrent => write!(f, "MotorDcCurrent (13)"),
             Self::InternalTemperature => write!(f, "InternalTemperature (101)"),
             Self::ControlVoltage => write!(f, "ControlVoltage (103)"),
             Self::MotorSupplyVoltage => write!(f, "MotorSupplyVoltage (104)"),
@@ -852,6 +861,8 @@ impl TryFrom<u8> for EL70x1InfoData {
             5 => Ok(Self::DutyCycleCoilA),
             6 => Ok(Self::DutyCycleCoilB),
             7 => Ok(Self::CurrentVelocity),
+            11 => Ok(Self::MotorLoad),
+            13 => Ok(Self::MotorDcCurrent),
             101 => Ok(Self::InternalTemperature),
             103 => Ok(Self::ControlVoltage),
             104 => Ok(Self::MotorSupplyVoltage),

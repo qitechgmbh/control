@@ -179,6 +179,7 @@ use ethercat_hal::devices::el6021::{
 };
 use ethercat_hal::devices::el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
 use ethercat_hal::devices::el7031_0030::EL7031_0030_IDENTITY_A;
+use ethercat_hal::devices::el7037::EL7037_IDENTITY_A;
 use ethercat_hal::devices::el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercat_hal::devices::el9505::EL9505_IDENTITY_A;
 use ethercat_hal::devices::subdevice_identity_to_tuple;
@@ -437,6 +438,7 @@ pub fn get_identification_addresses(
         }
         EL7031_IDENTITY_A | EL7031_IDENTITY_B => MachineIdentificationAddresses::default(),
         EL7031_0030_IDENTITY_A => MachineIdentificationAddresses::default(),
+        EL7037_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL7041_0052_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL9505_IDENTITY_A => MachineIdentificationAddresses::default(),
 

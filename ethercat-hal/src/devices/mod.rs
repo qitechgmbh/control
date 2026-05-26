@@ -19,6 +19,7 @@ pub mod el4002;
 pub mod el5152;
 pub mod el6021;
 pub mod el7031;
+pub mod el7037;
 pub mod el7031_0030;
 pub mod el7041_0052;
 pub mod el9505;
@@ -51,6 +52,7 @@ use el4002::EL4002_IDENTITY_A;
 use el5152::{EL5152, EL5152_IDENTITY_A};
 use el6021::{EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D};
 use el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
+use el7037::EL7037_IDENTITY_A;
 use el7031_0030::EL7031_0030_IDENTITY_A;
 use el7041_0052::EL7041_0052_IDENTITY_A;
 use el9505::{EL9505, EL9505_IDENTITY_A};
@@ -241,6 +243,7 @@ pub fn device_from_subdevice_identity_tuple(
         }
         EL3204_IDENTITY_A | EL3204_IDENTITY_B => Ok(Arc::new(RwLock::new(el3204::EL3204::new()))),
         EL7031_IDENTITY_A | EL7031_IDENTITY_B => Ok(Arc::new(RwLock::new(el7031::EL7031::new()))),
+        EL7037_IDENTITY_A => Ok(Arc::new(RwLock::new(el7037::EL7037::new()))),
         EL7031_0030_IDENTITY_A => Ok(Arc::new(RwLock::new(el7031_0030::EL7031_0030::new()))),
         EL7041_0052_IDENTITY_A => Ok(Arc::new(RwLock::new(el7041_0052::EL7041_0052::new()))),
         EL2521_IDENTITY_0000_A | EL2521_IDENTITY_0000_B | EL2521_IDENTITY_0024_A => {

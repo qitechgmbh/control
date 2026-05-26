@@ -7,11 +7,9 @@ use anyhow::Error;
 
 use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::ek1100::{EK1100, EK1100_IDENTITY_A};
-use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
-use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
-use ethercat_hal::devices::el7031_0030::{
-    EL7031_0030, EL7031_0030_IDENTITY_A, EL7031_0030StepperPort,
-};
+use ethercat_hal::devices::el7037::coe::EL7037Configuration;
+use ethercat_hal::devices::el7037::pdo::EL7037PredefinedPdoAssignment;
+use ethercat_hal::devices::el7037::{EL7037, EL7037_IDENTITY_A, EL7037StepperPort};
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
@@ -33,27 +31,29 @@ impl MachineNewTrait for MotorTestMachine {
             let _ek1100 =
                 get_ethercat_device::<EK1100>(hardware, params, 0, vec![EK1100_IDENTITY_A]).await?;
 
-            // Role 1: EL7031 (Stepper Motor)
-            let el7031 = {
-                let device = get_ethercat_device::<EL7031_0030>(
+            // Role 1: EL7037 (Stepper Motor)
+            let el7037 = {
+                let device = get_ethercat_device::<EL7037>(
                     hardware,
                     params,
                     1,
-                    vec![EL7031_0030_IDENTITY_A],
+                    vec![EL7037_IDENTITY_A],
                 )
                 .await?;
 
-                let el7031_config = EL7031_0030Configuration {
-                    stm_features: ethercat_hal::devices::el7031_0030::coe::StmFeatures {
+                let el7037_config = EL7037Configuration {
+                    stm_features: shared_config::el70x1::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
                         speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
+                        select_info_data_1: shared_config::el70x1::EL70x1InfoData::MotorLoad,
+                        select_info_data_2: shared_config::el70x1::EL70x1InfoData::MotorDcCurrent,
                         ..Default::default()
                     },
                     stm_motor: StmMotorConfiguration {
                         max_current: 1500,
                         ..Default::default()
                     },
-                    pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
+                    pdo_assignment: EL7037PredefinedPdoAssignment::VelocityControlCompact,
                     ..Default::default()
                 };
 
@@ -61,14 +61,14 @@ impl MachineNewTrait for MotorTestMachine {
                     .0
                     .write()
                     .await
-                    .write_config(&device.1, &el7031_config)
+                    .write_config(&device.1, &el7037_config)
                     .await?;
 
                 device.0
             };
 
             let motor_driver =
-                StepperVelocityEL70x1::new(el7031.clone(), EL7031_0030StepperPort::STM1);
+                StepperVelocityEL70x1::new(el7037.clone(), EL7037StepperPort::STM1);
 
             let (sender, receiver) = smol::channel::unbounded();
 

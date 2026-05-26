@@ -5,6 +5,7 @@ pub mod el32xx;
 pub mod el40xx;
 pub mod el5152;
 pub mod el70x1;
+pub mod el70x7;
 use crate::coe::Configuration;
 use bitvec::prelude::*;
 

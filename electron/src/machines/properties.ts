@@ -715,8 +715,8 @@ export const TestMotor: MachineProperties = {
       allowed_devices: [
         {
           vendor_id: 0x2,
-          product_id: 0x1b773052,
-          revision: 0x10001e,
+          product_id: 0x1b7d3052,
+          revision: 0x170000,
         },
       ],
     },
