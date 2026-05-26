@@ -1,6 +1,4 @@
 {
-  lib,
-  pkgs,
   pkg-config,
   libudev-zero,
   libpcap,
@@ -14,7 +12,7 @@ let
 
   commonArgs = {
     pname = "server";
-    version = "1.0.0";
+    version = (builtins.fromJSON (builtins.readFile ../../electron/package.json)).version;
     strictDeps = true;
 
     # Avoid using sudo as set by the cargo config
@@ -44,7 +42,6 @@ in
 craneLib.buildPackage (
   commonArgs
   // {
-
     inherit cargoArtifacts;
   }
 )
