@@ -86,35 +86,35 @@ import { bottlecapsTestMachine as _bottlecapsTestMachine } from "./minimal_machi
 
 /** Production machines shown first in the assignment dropdown. */
 export const mainMachineProperties: MachineProperties[] = [
-  _winder2_spool_7031,
-  _winder2,
-  _extruder3,
-  _extruder2,
-  _laser1,
-  _buffer1,
   _aquapath1,
-  _wagoPower1,
-  _wagoSerial,
-  _mock1,
+  _buffer1,
+  _extruder2,
+  _extruder3,
+  _laser1,
+  _winder2,
+  _winder2_spool_7031,
 ];
 
 /** Test / development machines shown in a separate group. */
 export const minimalMachineProperties: MachineProperties[] = [
-  _testmachine,
-  _digitalInputTestMachine,
-  _wago750430DiMachine,
-  _wago8chDioTestMachine,
   _analogInputTestMachine,
-  _wagoAiTestMachine,
-  _wagoDoTestMachine,
+  _bottlecapsTestMachine,
+  _digitalInputTestMachine,
   _ip20TestMachine,
+  _mock1,
+  _testmachine,
   _testmachinestepper,
   _TestMotor,
+  _wago750430DiMachine,
+  _wago750460Machine,
+  _wago750_501TestMachine,
   _wago750_531Machine,
   _wago750_553Machine,
-  _wago750_501TestMachine,
-  _wago750460Machine,
-  _bottlecapsTestMachine,
+  _wago8chDioTestMachine,
+  _wagoAiTestMachine,
+  _wagoDoTestMachine,
+  _wagoPower1,
+  _wagoSerial,
 ];
 
 /** All machines (flat list, kept for backward compatibility). */
