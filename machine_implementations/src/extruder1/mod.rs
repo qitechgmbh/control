@@ -7,22 +7,28 @@ pub mod screw_speed_controller;
 pub mod temperature_controller;
 
 #[cfg(not(feature = "mock-machine"))]
-use std::{cell::RefCell, rc::Rc};
-use std::time::Instant;
-use api::ExtruderV2Namespace;
-use qitech_lib::machines::MachineIdentificationUnique;
-#[cfg(not(feature = "mock-machine"))]
-use qitech_lib::{ethercat_hal::io::{analog_input::AnalogInputDevice, digital_output::DigitalOutputDevice, serial_interface::SerialInterfaceDevice, temperature_input::TemperatureInputDevice}, units::{electric_current::ampere, electric_potential::volt}};
-use qitech_lib::units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
-use screw_speed_controller::ScrewSpeedController;
-use serde::Serialize;
-use temperature_controller::TemperatureController;
-use tokio::sync::mpsc::{Sender,Receiver};
-use crate::{MachineMessage, QiTechMachine};
-#[cfg(not(feature = "mock-machine"))]
 use crate::{MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, VENDOR_QITECH};
-use serde::Deserialize;
+use crate::{MachineMessage, QiTechMachine};
+use api::ExtruderV2Namespace;
 use qitech_lib::machines::MachineIdentification;
+use qitech_lib::machines::MachineIdentificationUnique;
+use qitech_lib::units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
+#[cfg(not(feature = "mock-machine"))]
+use qitech_lib::{
+    ethercat_hal::io::{
+        analog_input::AnalogInputDevice, digital_output::DigitalOutputDevice,
+        serial_interface::SerialInterfaceDevice, temperature_input::TemperatureInputDevice,
+    },
+    units::{electric_current::ampere, electric_potential::volt},
+};
+use screw_speed_controller::ScrewSpeedController;
+use serde::Deserialize;
+use serde::Serialize;
+use std::time::Instant;
+#[cfg(not(feature = "mock-machine"))]
+use std::{cell::RefCell, rc::Rc};
+use temperature_controller::TemperatureController;
+use tokio::sync::mpsc::{Receiver, Sender};
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub enum ExtruderV2Mode {
@@ -69,10 +75,10 @@ pub struct ExtruderV2 {
     last_status_hash: Option<u64>,
     mode: ExtruderV2Mode,
 
-    relais_output : Rc<RefCell<dyn DigitalOutputDevice>>,
-    temperature_input : Rc<RefCell<dyn TemperatureInputDevice>>,
-    serial_interface : Rc<RefCell<dyn SerialInterfaceDevice>>,
-    pressure_sensor : Rc<RefCell<dyn AnalogInputDevice>>,
+    relais_output: Rc<RefCell<dyn DigitalOutputDevice>>,
+    temperature_input: Rc<RefCell<dyn TemperatureInputDevice>>,
+    serial_interface: Rc<RefCell<dyn SerialInterfaceDevice>>,
+    pressure_sensor: Rc<RefCell<dyn AnalogInputDevice>>,
 
     screw_speed_controller: ScrewSpeedController,
     temperature_controller_front: TemperatureController,
@@ -88,7 +94,6 @@ pub struct ExtruderV2 {
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
 }
-
 
 #[cfg(not(feature = "mock-machine"))]
 impl std::fmt::Display for ExtruderV2 {
@@ -147,14 +152,14 @@ impl ExtruderV2 {
         self.last_energy_calculation_time = Some(now);
     }
 
-    fn turn_heating_off(&mut self, digital_out : &mut dyn DigitalOutputDevice) {
+    fn turn_heating_off(&mut self, digital_out: &mut dyn DigitalOutputDevice) {
         self.temperature_controller_back.disable(digital_out);
         self.temperature_controller_front.disable(digital_out);
         self.temperature_controller_middle.disable(digital_out);
         self.temperature_controller_nozzle.disable(digital_out);
     }
 
-    fn switch_to_standby(&mut self,digital_out : &mut dyn DigitalOutputDevice) {
+    fn switch_to_standby(&mut self, digital_out: &mut dyn DigitalOutputDevice) {
         match self.mode {
             ExtruderV2Mode::Standby => (),
             ExtruderV2Mode::Heat => {
@@ -170,14 +175,11 @@ impl ExtruderV2 {
         self.mode = ExtruderV2Mode::Standby;
     }
 
-    fn get_temperature_device(){
+    fn get_temperature_device() {}
 
-    }
+    fn get_serial_device() {}
 
-    fn get_serial_device(){
-    }
-
-    fn get_relais(&mut self) -> Rc<RefCell<dyn DigitalOutputDevice>>{
+    fn get_relais(&mut self) -> Rc<RefCell<dyn DigitalOutputDevice>> {
         self.relais_output.clone()
     }
 
@@ -210,7 +212,7 @@ impl ExtruderV2 {
         self.mode = ExtruderV2Mode::Extrude;
     }
 
-    fn switch_mode(&mut self, mode: ExtruderV2Mode,digital_out : &mut dyn DigitalOutputDevice) {
+    fn switch_mode(&mut self, mode: ExtruderV2Mode, digital_out: &mut dyn DigitalOutputDevice) {
         if self.mode == mode {
             return;
         }

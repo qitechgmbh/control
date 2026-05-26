@@ -116,7 +116,6 @@ export function mainMessageHandler(
     const eventName = event.name;
 
     try {
-      console.log(event);
       // Apply appropriate caching strategy based on event type
       if (eventName === "EthercatDevicesEvent") {
         const validatedEvent = event;
@@ -140,8 +139,6 @@ export function mainMessageHandler(
             return; 
           }
         }
-
-        // 4. If it's the first payload or perfectly matches what we have, update the state normally
         store.setState((state) => ({
           ...state,
           machines: validatedEvent,
