@@ -126,6 +126,8 @@ pub async fn post_write_machine_device_identification(
         if let Err(e) = channel.write_machine_device_info_eeprom(idents.clone()) {
             return ResponseUtil::error(&e.to_string());
         }
+    }else{
+        println!("Tried write_machine_device_info without an EtherCatChannel?")
     }
 
     ResponseUtil::ok(MutationResponse::success())

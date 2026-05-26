@@ -294,14 +294,21 @@ fn find_ethercat_interface() -> Result<String, anyhow::Error> {
 #[cfg(not(feature = "mock"))]
 fn main_logic() {
     let stay_in_preop = std::env::args().any(|a| a == "preop");
-    let state = Arc::new(SharedAppState::new());
+    let mut shared_state = SharedAppState::new();
+
+    
     let mut main_state = MainState::new();
     let res = find_ethercat_interface();
     let mut eth_control = match res {
-        Ok(interface) => Some(optimized_ethercat_init(&interface)),
+        Ok(interface) => {                    
+            Some(optimized_ethercat_init(&interface))
+        } ,
         Err(_) => return,
     };
 
+    shared_state.ethercat_thread_channel = Some(eth_control.as_ref().expect("is_some here").channel.clone());
+
+    let state = Arc::new(shared_state);
     setup_api_and_websock(state.clone());
 
     match &eth_control {
@@ -313,7 +320,7 @@ fn main_logic() {
     send_setup_done_events(state.clone());
 
     if stay_in_preop {
-        tracing::info!("Staying in PreOp as requested, exiting after setup.");
+        println!("Staying in PreOp as requested, exiting after setup.");
         loop {
             std::thread::sleep(core::time::Duration::from_secs(1));
         }
