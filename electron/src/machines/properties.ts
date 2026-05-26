@@ -936,6 +936,40 @@ export const bottlecapsTestMachine: MachineProperties = {
   ],
 };
 
+export const analogOutOversamplingMachine: MachineProperties = {
+  name: "Analog Out Oversampling",
+  version: "V1",
+  slug: "analogoutoversampling",
+  icon: "lu:AudioWaveform",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0066,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "EL4732 2-CH Analog Output",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x127c3052,
+          revision: 0x00020000,   // EL4732_REVISION_A
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x127c3052,
+          revision: 0x00030000,   // EL4732_REVISION_B
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x127c3052,
+          revision: 0x00040000,   // EL4732_REVISION_C
+        },
+      ],
+    },
+  ],
+};
+
 export const machineProperties: MachineProperties[] = [
   winder2,
   winder2_spool_7031,
@@ -962,6 +996,7 @@ export const machineProperties: MachineProperties[] = [
   wagoSerial,
   wago750460Machine,
   bottlecapsTestMachine,
+  analogOutOversamplingMachine,
 ];
 
 export const getMachineProperties = (

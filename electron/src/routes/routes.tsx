@@ -107,6 +107,9 @@ import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago75
 import { BottlecapsTestMachinePage } from "@/machines/minimal_machines/bottlecaps_test_machine/BottlecapsTestMachinePage";
 import { BottlecapsTestMachineControlPage } from "@/machines/minimal_machines/bottlecaps_test_machine/BottlecapsTestMachineControlPage";
 
+import { AnalogOutOversamplingPage } from "@/machines/minimal_machines/analogoutoversamplingmachine/AnalogOutOversamplingMachinePage";
+import { AnalogOutOversamplingControlPage } from "@/machines/minimal_machines/analogoutoversamplingmachine/AnalogOutOversamplingMachineControlPage";
+
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
 // _mainNavigation/configuration/a
@@ -577,6 +580,18 @@ export const bottlecapsTestMachineControlRoute = createRoute({
   component: () => <BottlecapsTestMachineControlPage />,
 });
 
+export const analogOutOversamplingSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "analogoutoversampling/$serial",
+  component: () => <AnalogOutOversamplingPage />,
+});
+
+export const analogOutOversamplingControlRoute = createRoute({
+  getParentRoute: () => analogOutOversamplingSerialRoute,
+  path: "control",
+  component: () => <AnalogOutOversamplingControlPage />,
+});
+
 export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "setup",
@@ -767,6 +782,10 @@ export const rootTree = RootRoute.addChildren([
 
       bottlecapsTestMachineSerialRoute.addChildren([
         bottlecapsTestMachineControlRoute,
+      ]),
+
+      analogOutOversamplingSerialRoute.addChildren([
+        analogOutOversamplingControlRoute,
       ]),
 
       wago750430DiMachineSerialRoute.addChildren([
