@@ -1,3 +1,36 @@
+# `2.17.0`
+_26.05.2026_
+
+## General
+- [#1322](https://github.com/qitechgmbh/control/pull/1322) Update Rust & Electron dependencies
+- [#1339](https://github.com/qitechgmbh/control/pull/1339) Bump axum from 0.8.8 to 0.8.9
+- [#1340](https://github.com/qitechgmbh/control/pull/1340) Bump rand from 0.9.2 to 0.9.4
+- [#1341](https://github.com/qitechgmbh/control/pull/1341) Bump libc from 0.2.183 to 0.2.186
+- [#1346](https://github.com/qitechgmbh/control/pull/1346), [#1374](https://github.com/qitechgmbh/control/pull/1374) Update flake.lock (NixOS dependencies)
+- [#1351](https://github.com/qitechgmbh/control/pull/1351) Rename `chstore` to `store` in `testMotorMessageHandler`
+- [#1352](https://github.com/qitechgmbh/control/pull/1352) Fix typo: rename `wago8chDioTestMachineMessageHndler` → `wago8chDioTestMachineMessageHandler`
+- [#1360](https://github.com/qitechgmbh/control/pull/1360) Added pre-commit hook and setup script
+- [#1370](https://github.com/qitechgmbh/control/pull/1370) Added 24h journalctl export instead of since boot
+- [#1378](https://github.com/qitechgmbh/control/pull/1378) Added missing machine identifiers for WAGO and test machines
+
+## Aquapath V1
+- [#1375](https://github.com/qitechgmbh/control/pull/1375) Added support for AS006 flow sensor
+
+## Extruder
+- [#1318](https://github.com/qitechgmbh/control/pull/1318) Make frequency step smaller and update manual
+- [#1325](https://github.com/qitechgmbh/control/pull/1325) Updated renderValue precision for speed graphs to one decimal place for puller speed
+- [#1329](https://github.com/qitechgmbh/control/pull/1329) Show decimal numbers for pressure and RPM in extruder control pages
+- [#1330](https://github.com/qitechgmbh/control/pull/1330) Corrections in extruder manual
+
+## Laser
+- [#1328](https://github.com/qitechgmbh/control/pull/1328) Fixed graph buttons becoming unresponsive after 1 hour runtime
+
+## Data Export
+- [#1355](https://github.com/qitechgmbh/control/pull/1355) Added target values over time to Excel export
+
+## UX
+- [#1350](https://github.com/qitechgmbh/control/pull/1350) Fixed machines showing before subdevice initialization
+
 # `2.16.0`
 _04.05.2026_
 
