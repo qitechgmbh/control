@@ -90,6 +90,7 @@
               libudev-zero
               libpcap
               nodejs_22
+              nodePackages.npm
               lldb
               electron
               nixfmt
