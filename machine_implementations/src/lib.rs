@@ -43,6 +43,7 @@ pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
 pub const WAGO_750_501_TEST_MACHINE: u16 = 0x0042;
+pub const ANALOG_OUT_OVERSAMPLING_MACHINE: u16 = 0x0066;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct MachineValues {
