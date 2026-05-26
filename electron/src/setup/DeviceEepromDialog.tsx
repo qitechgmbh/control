@@ -52,7 +52,6 @@ type Device = NonNullable<EthercatDevicesEventData["Done"]>["devices"][number];
 
 type Props = {
   device: Device;
-  disabled?: boolean;
 };
 
 const formSchema = z.object({
@@ -69,7 +68,7 @@ const formSchema = z.object({
 
 type FormSchema = z.infer<typeof formSchema>;
 
-export function DeviceEepromDialog({ device, disabled }: Props) {
+export function DeviceEepromDialog({ device }: Props) {
   const [open, setOpen] = React.useState(false);
   const key = useMemo(() => Math.random(), [open]);
   const onClose = () => setOpen(false);
@@ -77,7 +76,7 @@ export function DeviceEepromDialog({ device, disabled }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen} modal>
       <DialogTrigger asChild>
-        <Button variant="outline" disabled={disabled}>
+        <Button variant="outline">
           <Icon name="lu:Pencil" />
           Assign
         </Button>
@@ -87,6 +86,7 @@ export function DeviceEepromDialog({ device, disabled }: Props) {
   );
 }
 
+// (Empty comment block removed)
 type ContentProps = {
   device: Device;
   setOpen: () => void;
@@ -161,6 +161,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
     });
   };
 
+  // Apply & restart: always save first; if save fails, block restart and show error
   const handleApplyAndRestart = () => {
     if (!confirmIfChangingMachine()) return;
     form.handleSubmit((values) => {
@@ -220,21 +221,26 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
     [device.product_id, device.revision, machinePreset],
   );
 
+  // if there is only one allowed role, set the role to that immediately
   useEffect(() => {
     const allowedRoles = filteredAllowedDevices.reduce(
       (acc, isAllowed) => acc + (isAllowed ? 1 : 0),
       0,
     );
     if (allowedRoles === 1) {
+      // find the index of the first true value
       const index = filteredAllowedDevices.findIndex(
         (isAllowed) => isAllowed === true,
       );
+      // set the device role of index
       form.setValue("role", index.toString());
     }
   }, [filteredAllowedDevices]);
 
+  // Keep focus on input field when numpad is opened
   useEffect(() => {
     if (numpadOpen && serialInputRef.current) {
+      // Use setTimeout to ensure this runs after any other focus changes
       setTimeout(() => {
         if (serialInputRef.current) {
           serialInputRef.current.focus();
@@ -243,6 +249,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
     }
   }, [numpadOpen]);
 
+  // Numpad handlers for serial input
   const numpadHandlers = useMemo(() => {
     const ensureFocus = () => {
       if (
@@ -268,6 +275,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
     return {
       appendDigit: (digit: string) => {
         if (!serialInputRef.current) return;
+
         ensureFocus();
         const input = serialInputRef.current;
         const start = input.selectionStart || 0;
@@ -275,14 +283,19 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
         const currentValue = getCurrentValue();
         const newValue =
           currentValue.slice(0, start) + digit + currentValue.slice(end);
+
         form.setValue("serial", newValue, { shouldValidate: true });
         updateCursorPosition(start + 1);
       },
 
-      addDecimal: () => {},
+      addDecimal: () => {
+        // Not needed for serial (U16 integer), but keeping for consistency
+        // Could be used for other numeric inputs if needed
+      },
 
       deleteChar: () => {
         if (!serialInputRef.current) return;
+
         ensureFocus();
         const input = serialInputRef.current;
         const start = input.selectionStart || 0;
@@ -293,9 +306,11 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
         let newPosition: number;
 
         if (start !== end) {
+          // Delete selection
           newValue = currentValue.slice(0, start) + currentValue.slice(end);
           newPosition = start;
         } else if (start > 0) {
+          // Backspace
           newValue =
             currentValue.slice(0, start - 1) + currentValue.slice(start);
           newPosition = start - 1;
@@ -307,10 +322,13 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
         updateCursorPosition(newPosition);
       },
 
-      toggleSign: () => {},
+      toggleSign: () => {
+        // Not needed for U16 (unsigned), but keeping for consistency
+      },
 
       moveCursorLeft: () => {
         if (!serialInputRef.current) return;
+
         ensureFocus();
         const currentPos = serialInputRef.current.selectionStart || 0;
         if (currentPos > 0) {
@@ -323,6 +341,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
 
       moveCursorRight: () => {
         if (!serialInputRef.current) return;
+
         ensureFocus();
         const currentPos = serialInputRef.current.selectionStart || 0;
         const currentValue = getCurrentValue();
@@ -335,11 +354,11 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
       },
     };
   }, [form]);
-
   return (
     <>
       <DialogContent
         className="sm:max-w-2xl"
+        // Keep dialog open on any outside interaction; closing is manual via controls
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
@@ -358,6 +377,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
         <Separator />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* machine type dropdown */}
             <FormField
               control={form.control}
               name="machine"
@@ -385,6 +405,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                 </FormItem>
               )}
             />
+            {/* Serial Number */}
             <FormField
               control={form.control}
               name="serial"
@@ -419,6 +440,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                           {numpadOpen ? "Hide" : "Numpad"}
                         </Button>
                       </div>
+
                       {numpadOpen && (
                         <div className="border-border bg-card flex justify-center rounded-xl border p-3 shadow-sm">
                           <TouchNumpad
@@ -438,6 +460,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                 </FormItem>
               )}
             />
+            {/* Device Role */}
             <FormField
               control={form.control}
               name="role"
@@ -446,7 +469,11 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                 <FormItem>
                   <FormLabel className="text-base">Device Role</FormLabel>
                   <FormControl>
-                    <Select {...field}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
                       <SelectTrigger className="h-12 min-w-48 text-base">
                         <SelectValue placeholder="Device Role" />
                       </SelectTrigger>
