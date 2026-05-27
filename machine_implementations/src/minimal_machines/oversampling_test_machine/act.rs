@@ -1,4 +1,4 @@
-use qitech_lib::machines::{Machine, MachineDataRegistry, MachineIdentificationUnique};
+use qitech_lib::machines::{Machine, MachineError, MachineDataRegistry, MachineIdentificationUnique};
 use std::time::{Duration, Instant};
 
 use crate::{MachineApi, minimal_machines::oversampling_test_machine::AnalogOutOversamplingMachine, };
@@ -8,7 +8,7 @@ impl Machine for AnalogOutOversamplingMachine {
         self.machine_identification_unique.clone()
     }
 
-    fn act(&mut self, _machine_data: Option<&mut MachineDataRegistry>) {
+    fn act(&mut self, _machine_data: Option<&mut MachineDataRegistry>) -> Result<(), MachineError> {
         let now = Instant::now();
 
         if let Ok(msg) = self.api_receiver.try_recv() {
@@ -36,6 +36,7 @@ impl Machine for AnalogOutOversamplingMachine {
             self.emit_live_values();
             self.last_live_values_emit = now;
         }
+        Ok(())
     }
 
     fn react(&mut self, _registry: &MachineDataRegistry) {}
