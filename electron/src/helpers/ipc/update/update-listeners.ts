@@ -141,13 +141,7 @@ async function update(
   return new Promise((resolve, reject) => {
     (async () => {
       try {
-        const {
-          githubRepoOwner,
-          githubRepoName,
-          tag,
-          branch,
-          commit,
-        } = params;
+        const { githubRepoOwner, githubRepoName, tag, branch, commit } = params;
 
         // Implement your update logic here
         console.log("Update parameters:", {
@@ -307,8 +301,7 @@ async function cloneRepository(
   params: CloneRepositoryParams,
   event: Electron.IpcMainInvokeEvent,
 ): Promise<{ success: boolean; error?: string }> {
-  const { githubRepoOwner, githubRepoName, tag, branch, commit } =
-    params;
+  const { githubRepoOwner, githubRepoName, tag, branch, commit } = params;
 
   const qitechControlEnv = process.env.QITECH_CONTROL_ENV;
   const homeDir = qitechControlEnv ? "/home/qitech" : process.env.HOME;
