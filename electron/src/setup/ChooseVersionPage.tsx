@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import { Icon } from "@/components/Icon";
 import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
@@ -17,7 +16,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   GitRefInfo,
-  RepoImportResult,
 } from "@/helpers/ipc/update/git-fetch-utils";
 
 export function ChooseVersionPage() {
