@@ -554,7 +554,6 @@ export function CurrentVersionCard() {
     setEnvironmentInfo(_environmentInfo);
   }, []);
 
-  // filter out the token if present
   const url = environmentInfo?.qitechOsGitUrl?.replace(/:\/\/.*@/, "://");
 
   const [owner, repository] =
