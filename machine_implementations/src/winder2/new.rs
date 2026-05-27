@@ -44,12 +44,27 @@ mod winder2_imports {
     pub use qitech_lib::units::velocity::meter_per_minute;
     pub use std::time::Instant;
 }
+
 use crate::{MachineHardware, MachineNew};
 use qitech_lib::ethercat_hal::EtherCATThreadChannel;
 pub use winder2_imports::*;
-
 impl MachineNew for Winder2 {
     fn new(hw: MachineHardware) -> Result<Self, Error> {
+        if hw.identification.machine_ident == Winder2::MACHINE_IDENTIFICATION {
+            Self::new_normal(hw)
+        } else if hw.identification.machine_ident == Winder2::MACHINE_IDENTIFICATION_7031_SPOOL {
+            Self::new_winder_spool_7031(hw)
+        } else {
+            Err(anyhow::anyhow!(
+                "Winder2: Unexpected MachineIdentification {:?}!",
+                hw.identification.machine_ident
+            ))
+        }
+    }
+}
+
+impl Winder2 {
+    fn new_normal(hw: MachineHardware) -> Result<Self, Error> {
         let _ek1100 = hw.try_get_ethercat_device_and_addr_by_role::<EK1100>(0)?;
         let el2002 = hw.try_get_ethercat_device_and_addr_by_role::<EL2002>(1)?;
         let el7041 = hw.try_get_ethercat_device_and_addr_by_role::<EL7041_0052>(2)?;
@@ -68,6 +83,7 @@ impl MachineNew for Winder2 {
             }
         };
 
+        // Role 4: Stepper Puller EL7031-0030
         let el7031_0030_config = EL7031_0030Configuration {
             stm_features: el7031_0030::coe::StmFeatures {
                 operation_mode: EL70x1OperationMode::DirectVelocity,
@@ -86,6 +102,7 @@ impl MachineNew for Winder2 {
         drop(b);
         interface.enable_dc_sync0(el7031_0030.1)?;
 
+        // Role 3: Stepper Traverse EL7031
         let el7031_config = EL7031Configuration {
             stm_features: shared_config::el70x1::StmFeatures {
                 operation_mode: EL70x1OperationMode::DirectVelocity,
@@ -99,12 +116,12 @@ impl MachineNew for Winder2 {
             pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
             ..Default::default()
         };
-
         let mut b = el7031.0.borrow_mut();
         (&mut *b).write_config(interface.clone(), el7031.1, &el7031_config)?;
         drop(b);
         interface.enable_dc_sync0(el7031.1)?;
 
+        // Role 2: Stepper Spool EL7041-0052
         let el7041_config = EL7041_0052Configuration {
             stm_features: shared_config::el70x1::StmFeatures {
                 operation_mode: EL70x1OperationMode::DirectVelocity,
@@ -116,7 +133,6 @@ impl MachineNew for Winder2 {
             },
             ..Default::default()
         };
-
         let mut b = el7041.0.borrow_mut();
         (&mut *b).write_config(interface.clone(), el7041.1, &el7041_config)?;
         drop(b);
@@ -161,7 +177,127 @@ impl MachineNew for Winder2 {
             laser_enabled: false,
         };
 
-        // initalize events
+        // initialize events
+        new.emit_state();
+        Ok(new)
+    }
+
+    fn new_winder_spool_7031(hw: MachineHardware) -> Result<Self, Error> {
+        let _ek1100 = hw.try_get_ethercat_device_and_addr_by_role::<EK1100>(0)?;
+        let el2002 = hw.try_get_ethercat_device_and_addr_by_role::<EL2002>(1)?;
+        let el7031_0030_spool = hw.try_get_ethercat_device_and_addr_by_role::<EL7031_0030>(2)?;
+        let el7031 = hw.try_get_ethercat_device_and_addr_by_role::<EL7031>(3)?;
+        let el7031_0030 = hw.try_get_ethercat_device_and_addr_by_role::<EL7031_0030>(4)?;
+
+        let mode = Winder2Mode::Standby;
+        let (sender, receiver) = tokio::sync::mpsc::channel(2);
+
+        let interface: EtherCATThreadChannel = match &hw.ethercat_interface {
+            Some(ecat_interface) => ecat_interface.clone(),
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Winder2: No EtherCat Interface was supplied!"
+                ));
+            }
+        };
+
+        // Role 4: Stepper Puller EL7031-0030
+        let el7031_0030_config = EL7031_0030Configuration {
+            stm_features: el7031_0030::coe::StmFeatures {
+                operation_mode: EL70x1OperationMode::DirectVelocity,
+                speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
+                ..Default::default()
+            },
+            stm_motor: StmMotorConfiguration {
+                max_current: 2700,
+                ..Default::default()
+            },
+            pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
+            ..Default::default()
+        };
+        let mut b = el7031_0030.0.borrow_mut();
+        (&mut *b).write_config(interface.clone(), el7031_0030.1, &el7031_0030_config)?;
+        drop(b);
+        interface.enable_dc_sync0(el7031_0030.1)?;
+
+        // Role 3: Stepper Traverse EL7031
+        let el7031_config = EL7031Configuration {
+            stm_features: shared_config::el70x1::StmFeatures {
+                operation_mode: EL70x1OperationMode::DirectVelocity,
+                speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
+                ..Default::default()
+            },
+            stm_motor: StmMotorConfiguration {
+                max_current: 1500,
+                ..Default::default()
+            },
+            pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
+            ..Default::default()
+        };
+        let mut b = el7031.0.borrow_mut();
+        (&mut *b).write_config(interface.clone(), el7031.1, &el7031_config)?;
+        drop(b);
+        interface.enable_dc_sync0(el7031.1)?;
+
+        // Role 2: Stepper Spool EL7031-0030
+        let el7031_0030_spool_config = EL7031_0030Configuration {
+            stm_features: el7031_0030::coe::StmFeatures {
+                operation_mode: EL70x1OperationMode::DirectVelocity,
+                speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps2000,
+                ..Default::default()
+            },
+            stm_motor: StmMotorConfiguration {
+                max_current: 2700,
+                ..Default::default()
+            },
+            pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
+            ..Default::default()
+        };
+        let mut b = el7031_0030_spool.0.borrow_mut();
+        (&mut *b).write_config(interface.clone(), el7031_0030_spool.1, &el7031_0030_spool_config)?;
+        drop(b);
+        interface.enable_dc_sync0(el7031_0030_spool.1)?;
+
+        let mut new = Self {
+            api_receiver: receiver,
+            api_sender: sender,
+            traverse: el7031.0,
+            puller: el7031_0030.0.clone(),
+            spool: el7031_0030_spool.0,
+            laser: el2002.0,
+            tension_arm: TensionArm::new(el7031_0030.0.clone()),
+            namespace: Winder2Namespace { namespace: None },
+            mode: mode.clone(),
+            spool_step_converter: AngularStepConverter::new(200),
+            spool_speed_controller: SpoolSpeedController::new(),
+            last_measurement_emit: Instant::now(),
+            spool_mode: mode.clone().into(),
+            traverse_mode: mode.clone().into(),
+            puller_mode: mode.into(),
+            puller_speed_controller: PullerSpeedController::new(
+                Velocity::new::<meter_per_minute>(1.0),
+                LinearStepConverter::from_diameter(
+                    200,                            // Assuming 200 steps per revolution for the puller stepper,
+                    Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
+                ),
+            ),
+            traverse_controller: TraverseController::new(
+                Length::new::<millimeter>(22.0), // Default inner limit
+                Length::new::<millimeter>(92.0), // Default outer limit
+                64,                              // Microsteps
+            ),
+            emitted_default_state: false,
+            spool_automatic_action: super::SpoolAutomaticAction {
+                progress: Length::ZERO,
+                progress_last_check: Instant::now(),
+                target_length: Length::new::<meter>(250.0),
+                mode: super::api::SpoolAutomaticActionMode::NoAction,
+            },
+            machine_identification_unique: hw.identification,
+            laser_enabled: false,
+        };
+
+        // initialize events
         new.emit_state();
         Ok(new)
     }

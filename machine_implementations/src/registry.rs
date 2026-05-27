@@ -64,46 +64,55 @@ impl MachineRegistry {
 lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
-        mc.register::<DigitalInputTestMachine>(vec![DigitalInputTestMachine::MACHINE_IDENTIFICATION]);
+        mc.register::<Winder2>(vec![
+            Winder2::MACHINE_IDENTIFICATION,
+            Winder2::MACHINE_IDENTIFICATION_7031_SPOOL,
+        ]);
 
-        mc.register::<ExtruderV2>(vec![ExtruderV2::MACHINE_IDENTIFICATION,ExtruderV2::MACHINE_IDENTIFICATION_V3 ]);
-        mc.register::<Winder2>(vec![Winder2::MACHINE_IDENTIFICATION]);
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<ExtruderV2>(vec![ExtruderV2::MACHINE_IDENTIFICATION]);
+
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<ExtruderV2>(vec![ExtruderV2::MACHINE_IDENTIFICATION, ExtruderV2::MACHINE_IDENTIFICATION_V3 ]);
+
+        #[cfg(not(feature = "mock-machine"))]
         mc.register::<LaserMachine>(vec![LaserMachine::MACHINE_IDENTIFICATION]);
+
+
+        #[cfg(not(feature = "mock-machine"))]
         mc.register::<AquaPathV1>(vec![AquaPathV1::MACHINE_IDENTIFICATION]);
-/*
-        #[cfg(not(feature = "mock-machine"))]
-        mc.register::<LaserMachine>(LaserMachine::MACHINE_IDENTIFICATION);
 
-        #[cfg(not(feature = "mock-machine"))]
-        mc.register::<BufferV1>(BufferV1::MACHINE_IDENTIFICATION);
+        /*mc.register::<TestMachine>(vec![TestMachine::MACHINE_IDENTIFICATION]);
 
-        #[cfg(not(feature = "mock-machine"))]
-        mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
+        mc.register::<IP20TestMachine>(vec![IP20TestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<AnalogInputTestMachine>(vec![AnalogInputTestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<IP20TestMachine>(IP20TestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<WagoAiTestMachine>(vec![WagoAiTestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<MotorTestMachine>(vec![MotorTestMachine::MACHINE_IDENTIFICATION]);
+        */
 
-        mc.register::<WagoAiTestMachine>(WagoAiTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<DigitalInputTestMachine>(vec![
+            DigitalInputTestMachine::MACHINE_IDENTIFICATION,
+        ]);
 
-        mc.register::<MotorTestMachine>(MotorTestMachine::MACHINE_IDENTIFICATION);
+       /* mc.register::<WagoDOTestMachine>(vec![WagoDOTestMachine::MACHINE_IDENTIFICATION]);
 
+        mc.register::<Wago750_531Machine>(vec![Wago750_531Machine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<WagoDOTestMachine>(WagoDOTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<Wago750_501TestMachine>(vec![Wago750_501TestMachine::MACHINE_IDENTIFICATION]);
 
-        mc.register::<Wago750_501TestMachine>(Wago750_501TestMachine::MACHINE_IDENTIFICATION);
-
-        mc.register::<Wago8chDigitalIOTestMachine>(
+        mc.register::<Wago8chDigitalIOTestMachine>(vec![
             Wago8chDigitalIOTestMachine::MACHINE_IDENTIFICATION,
-        );
+        ]);
 
-        mc.register::<WagoSerialMachine>(WagoSerialMachine::MACHINE_IDENTIFICATION);
-
-        mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
-        mc.register::<Wago750_430DiMachine>(Wago750_430DiMachine::MACHINE_IDENTIFICATION);
-        mc.register::<Wago750_553Machine>(Wago750_553Machine::MACHINE_IDENTIFICATION);*/
+        mc.register::<WagoSerialMachine>(vec![WagoSerialMachine::MACHINE_IDENTIFICATION]);
+        mc.register::<TestMachineStepper>(vec![TestMachineStepper::MACHINE_IDENTIFICATION]);
+        mc.register::<Wago750_430DiMachine>(vec![Wago750_430DiMachine::MACHINE_IDENTIFICATION]);
+        mc.register::<Wago750_460Machine>(vec![Wago750_460Machine::MACHINE_IDENTIFICATION]);
+        mc.register::<Wago750_553Machine>(vec![Wago750_553Machine::MACHINE_IDENTIFICATION]);
+        mc.register::<BottlecapsTestMachine>(vec![BottlecapsTestMachine::MACHINE_IDENTIFICATION]);*/
         mc
     };
 }
