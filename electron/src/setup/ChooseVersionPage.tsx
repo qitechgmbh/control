@@ -14,9 +14,7 @@ import { useUpdateStore } from "@/stores/updateStore";
 import { useGithubSourceStore } from "@/stores/githubSourceStore";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import {
-  GitRefInfo,
-} from "@/helpers/ipc/update/git-fetch-utils";
+import { GitRefInfo } from "@/helpers/ipc/update/git-fetch-utils";
 
 export function ChooseVersionPage() {
   const navigate = useNavigate();
