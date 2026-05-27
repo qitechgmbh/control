@@ -629,7 +629,7 @@ export const versionSearchSchema = z
     commit: z.string().optional(),
     tag: z.string().optional(),
   })
-  .extend(githubSourceSchema)
+  .merge(githubSourceSchema)
   .refine(
     (data) => {
       const definedCount = [data.branch, data.commit, data.tag].filter(

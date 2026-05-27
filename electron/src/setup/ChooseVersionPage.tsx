@@ -15,7 +15,10 @@ import { useUpdateStore } from "@/stores/updateStore";
 import { useGithubSourceStore } from "@/stores/githubSourceStore";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { RepoImportResult } from "@/helpers/ipc/update/git-fetch-utils";
+import {
+  GitRefInfo,
+  RepoImportResult,
+} from "@/helpers/ipc/update/git-fetch-utils";
 
 export function ChooseVersionPage() {
   const navigate = useNavigate();
@@ -34,11 +37,11 @@ export function ChooseVersionPage() {
     ? new Date(environmentInfo.qitechOsGitTimestamp).getTime()
     : 0;
 
-  const [masterCommits, setMasterCommits] = useState<any[] | undefined>(
+  const [masterCommits, setMasterCommits] = useState<GitRefInfo[] | undefined>(
     undefined,
   );
-  const [branches, setBranches] = useState<any[] | undefined>(undefined);
-  const [tags, setTags] = useState<any[] | undefined>(undefined);
+  const [branches, setBranches] = useState<GitRefInfo[] | undefined>(undefined);
+  const [tags, setTags] = useState<GitRefInfo[] | undefined>(undefined);
 
   // NixOS generations state
   const [nixosGenerations, setNixosGenerations] = useState<
@@ -52,16 +55,15 @@ export function ChooseVersionPage() {
 
   const { githubSource, setGithubSource } = useGithubSourceStore();
 
-  let targets: RepoImportResult | null = null;
-
   // install callback
-  window.update.onFetchRecv((result) => {
+  window.update.onFetchTargetsRecv((result) => {
     if (typeof result === "string") {
       toast(`Failed to retrieve targets: ${result}`);
-      return;
     }
 
-    targets = result;
+    setTags(result?.tags);
+    setBranches(result?.branches);
+    setMasterCommits(result?.commits);
   });
 
   // Retrieve update targets
@@ -240,7 +242,7 @@ export function ChooseVersionPage() {
                     tag: currentUpdateInfo.tag,
                     branch: currentUpdateInfo.branch,
                     commit: currentUpdateInfo.commit,
-                  },  
+                  },
                 });
               }}
             >
@@ -347,16 +349,16 @@ export function ChooseVersionPage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {masterCommits.map((commit) => (
                 <UpdateButton
-                  time={new Date(commit.commit.author.date)}
-                  key={commit.sha}
-                  title={commit.commit.message}
+                  time={new Date(commit.date)}
+                  key={commit.hash}
+                  title={commit.name}
                   kind="commit"
-                  isOlder={isOlderThanCurrent(commit.commit.author.date)}
+                  isOlder={isOlderThanCurrent(commit.date)}
                   onClick={() => {
                     navigate({
                       to: "/_sidebar/setup/update/changelog",
                       search: {
-                        commit: commit.sha,
+                        commit: commit.hash,
                         ...githubSource,
                       },
                     });
@@ -516,7 +518,7 @@ export function UpdateButton({
                   ? "lu:GitBranch"
                   : "lu:GitCommitVertical"
             }
-            className={isOlder ? "text-gray-400" : ""}
+            className={isOlder ? "text-gray-400" : "setTags(targets?.tags);"}
           />
           <span className={`flex-1 truncate ${isOlder ? "text-gray-400" : ""}`}>
             {title}
@@ -546,21 +548,19 @@ export function CurrentVersionCard() {
   const [environmentInfo, setEnvironmentInfo] = useState<
     EnvironmentInfo | undefined
   >(undefined);
+
   useEffectAsync(async () => {
     const _environmentInfo = await window.environment.getInfo();
     setEnvironmentInfo(_environmentInfo);
   }, []);
 
-  const githubRegex =
-    /https:\/\/(?<token>[^@.]+)@?github\.com\/(?<username>[^/^.]+)\/(?<repository>[^/^.]+)(?:.+)/;
-  const match = environmentInfo?.qitechOsGitUrl?.match(githubRegex);
-  const githubRepoOwner = match?.groups?.username;
-  const githubRepoName = match?.groups?.repository;
+  const url = environmentInfo?.qitechOsGitUrl;
 
-  const urlWithCensoredToken = environmentInfo?.qitechOsGitUrl?.replace(
-    githubRegex,
-    `https://github.com/${githubRepoOwner}/${githubRepoName}`,
-  );
+  const [owner, repository] =
+    url
+      ?.replace("https://github.com/", "")
+      .replace(/\.git$/, "")
+      .split("/") ?? [];
 
   if (!environmentInfo) {
     return <LoadingSpinner />;
@@ -583,14 +583,12 @@ export function CurrentVersionCard() {
         <span className="font-mono text-sm text-gray-700">
           {environmentInfo?.qitechOsGitCommit ?? "N/A"}
         </span>
-        <span className="font-mono text-sm text-gray-700">
-          {urlWithCensoredToken ?? "N/A"}
-        </span>
+        <span className="font-mono text-sm text-gray-700">{url ?? "N/A"}</span>
       </div>
       <TouchButton
         className="flex-shrink-0"
         onClick={() => {
-          if (!githubRepoOwner || !githubRepoName) {
+          if (!owner || !repository) {
             console.error(
               "GitHub repo owner or name not found in environment info.",
             );
@@ -602,8 +600,8 @@ export function CurrentVersionCard() {
               commit: environmentInfo?.qitechOsGitCommit,
               tag: undefined,
               branch: undefined,
-              githubRepoOwner: githubRepoOwner,
-              githubRepoName: githubRepoName,
+              githubRepoOwner: owner,
+              githubRepoName: repository,
             },
           });
         }}

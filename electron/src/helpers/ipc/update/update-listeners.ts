@@ -27,7 +27,6 @@ type UpdateExecuteListenerParams = {
 
 // Store reference to current update process for cancellation
 let currentUpdateProcess: ChildProcess | null = null;
-let currentFetchProcess: ChildProcess | null = null;
 
 export function addUpdateEventListeners() {
   ipcMain.handle(
@@ -35,42 +34,37 @@ export function addUpdateEventListeners() {
     async (event, source: GithubSource) => {
       try {
         const result = await fetchTargets(
-          source.githubRepoOwner, 
-          source.githubRepoName
+          source.githubRepoOwner,
+          source.githubRepoName,
         );
-        event.sender.send(
-          UPDATE_FETCH_TARGETS_RECV,
-          result,
-        );
-      } catch(error: any)  {
+        event.sender.send(UPDATE_FETCH_TARGETS_RECV, result);
+      } catch (error: any) {
         event.sender.send(
           UPDATE_FETCH_TARGETS_RECV,
           `get update targets failed: ${error}`,
         );
       }
-    }
+    },
   );
 
   ipcMain.handle(
     UPDATE_FETCH_CHANGELOG_SEND,
-    async (event, args: { source: GithubSource, ref: string }) => {
+    async (event, args: { source: GithubSource; ref: string }) => {
       try {
         const result = await fetchChangelog(
-          args.source.githubRepoName,
+          args.source.githubRepoOwner,
           args.source.githubRepoName,
           args.ref,
         );
-        event.sender.send(
-          UPDATE_FETCH_CHANGELOG_RECV,
-          result,
-        );
-      } catch(error: any)  {
+
+        event.sender.send(UPDATE_FETCH_CHANGELOG_RECV, result);
+      } catch (error: any) {
         event.sender.send(
           UPDATE_FETCH_CHANGELOG_RECV,
           `get update changelog failed: ${error}`,
         );
       }
-    }
+    },
   );
 
   ipcMain.handle(
@@ -329,9 +323,7 @@ async function cloneRepository(
   }
 
   // Construct repository URL
-  const repoUrl = githubToken
-    ? `https://${githubToken}@github.com/${githubRepoOwner}/${githubRepoName}.git`
-    : `https://github.com/${githubRepoOwner}/${githubRepoName}.git`;
+  const repoUrl = `https://github.com/${githubRepoOwner}/${githubRepoName}.git`;
 
   // Determine clone arguments based on whether tag, branch, or commit is specified
   const cloneArgs = ["clone", "--progress", "--recurse-submodules", repoUrl];
