@@ -8,7 +8,8 @@ use qitech_lib::{
         devices::{EthercatDevice, downcast_rc_refcell},
         machine_ident_read::MachineDeviceInfo,
     },
-    machines::{Machine, MachineIdentificationUnique}, modbus::ModbusDevice,
+    machines::{Machine, MachineIdentificationUnique},
+    modbus::ModbusDevice,
 };
 use serde::Serialize;
 use tokio::sync::mpsc::Sender;

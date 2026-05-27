@@ -21,14 +21,11 @@ use machine_implementations::{
 };
 use qitech_lib::{
     ethercat_hal::{
-        Consumer, EtherCATThreadChannel, MetaSubdevice, Producer,
-        controller::EtherCATController, devices::EthercatDevice,
-        machine_ident_read::MachineDeviceInfo,
+        Consumer, EtherCATThreadChannel, MetaSubdevice, Producer, controller::EtherCATController,
+        devices::EthercatDevice, machine_ident_read::MachineDeviceInfo,
     },
     machines::{MachineDataRegistry, MachineIdentification, MachineIdentificationUnique},
-    modbus::{
-        ModbusDevice, devices::qitech_laser::LaserDevice
-    },
+    modbus::{ModbusDevice, devices::qitech_laser::LaserDevice},
 };
 use socketioxide::{SocketIo, extract::SocketRef};
 use std::{
@@ -42,7 +39,7 @@ use tokio::{
     sync::{
         RwLock,
         mpsc::{Receiver, Sender},
-    }, task::JoinHandle,
+    },
 };
 
 static RUNTIME: OnceLock<Runtime> = OnceLock::new();
@@ -73,6 +70,7 @@ pub struct SharedAppState {
         RwLock<HashMap<QiTechMachineIdentificationUnique, Sender<MachineMessage>>>,
     pub ethercat_meta_datas: RwLock<Vec<EtherCatDeviceMetaData>>,
     pub socketio_setup: SocketioSetup,
+    pub ethercat_thread_channel: Option<EtherCATThreadChannel>,
 }
 
 impl SharedAppState {
@@ -138,6 +136,14 @@ impl SharedAppState {
         main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
         drop(guard);
         Ok(())
+    }
+
+    pub async fn send_ethercat_preop(&self, is_preop: bool) {
+        let event = Event::new("EthercatStateEvent", EthercatDevicesEvent::Preop(is_preop));
+        let mut guard = self.socketio_setup.namespaces.write().await;
+        let main_namespace = &mut guard.main_namespace;
+        main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
+        drop(guard);
     }
 
     pub async fn get_machines_meta(&self) -> Vec<MachineObj> {
@@ -216,6 +222,7 @@ impl SharedAppState {
                 socket_queue_rx: RwLock::new(socket_queue_rx),
             },
             ethercat_meta_datas: RwLock::new(vec![]),
+            ethercat_thread_channel: None,
         }
     }
 }
@@ -237,7 +244,7 @@ impl MainState {
         MainState {
             machines,
             machine_data_reg,
-            subdevices: vec![],            
+            subdevices: vec![],
             hardware: HashMap::new(),
             machine_errors: HashMap::new(),
         }
@@ -245,13 +252,11 @@ impl MainState {
 
     pub fn generate_machine_hardware_from_serial(
         &mut self,
-        path : &str,
-    ) -> Result<(),anyhow::Error> {
+        path: &str,
+    ) -> Result<(), anyhow::Error> {
         let laser_device: Rc<RefCell<LaserDevice>> =
-           Rc::new(RefCell::new(LaserDevice::new(path.to_owned(), 1, None)?));
-        let id_modbus: IdentifiedModbus = IdentifiedModbus {
-            hw: laser_device,
-        };
+            Rc::new(RefCell::new(LaserDevice::new(path.to_owned(), 1, None)?));
+        let id_modbus: IdentifiedModbus = IdentifiedModbus { hw: laser_device };
         let ident = MachineIdentificationUnique {
             machine_ident: LaserMachine::MACHINE_IDENTIFICATION,
             serial: 1,
@@ -261,7 +266,7 @@ impl MainState {
             identification: ident,
             ethercat_interface: None,
         };
-        hw.hw.push(Hardware::Modbus(id_modbus));        
+        hw.hw.push(Hardware::Modbus(id_modbus));
         self.hardware.insert(ident, hw);
         Ok(())
     }

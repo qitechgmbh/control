@@ -4,7 +4,7 @@ use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
 use crate::{MachineHardware, MachineNew};
 use anyhow::Error;
 use qitech_lib::{
-    modbus::{devices::qitech_laser::LaserDevice},
+    modbus::devices::qitech_laser::LaserDevice,
     units::{ConstZero, Length, length::millimeter},
 };
 
@@ -17,7 +17,7 @@ impl MachineNew for LaserMachine {
             lower_tolerance: Length::new::<millimeter>(0.05),
             diameter: Length::new::<millimeter>(1.75),
         };
-        
+
         let (sender, receiver) = tokio::sync::mpsc::channel(2);
         let mut laser_machine = Self {
             error: None,

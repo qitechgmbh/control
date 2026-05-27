@@ -85,11 +85,11 @@ in
       serviceConfig = {
         Type = "simple";
         User = cfg.user;
-        Group = cfg.group;
-        ExecStart = "${cfg.package}/bin/qitech_control enp1s0";
+        Group = cfg.group;        
+        ExecStart = "${cfg.package}/bin/qitech_control";
         Restart = "always";
         RestartSec = "10s";
-
+        
         # Capabilities
         CapabilityBoundingSet = "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
         AmbientCapabilities = "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
@@ -97,7 +97,6 @@ in
         # Hardening options
         NoNewPrivileges = true;
         ProtectSystem = "strict";
-
         StateDirectory = "qitech";
 
         # Open only /proc/irq explicitly
