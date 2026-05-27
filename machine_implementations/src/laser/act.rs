@@ -1,6 +1,8 @@
 use super::LaserMachine;
 use crate::MachineApi;
-use qitech_lib::machines::{Machine, MachineDataRegistry, MachineError, MachineIdentificationUnique};
+use qitech_lib::machines::{
+    Machine, MachineDataRegistry, MachineError, MachineIdentificationUnique,
+};
 use std::time::{Duration, Instant};
 
 impl Machine for LaserMachine {
@@ -15,7 +17,7 @@ impl Machine for LaserMachine {
         };
 
         self.update();
-        
+
         if self.did_change_state {
             self.emit_state();
         }
@@ -29,7 +31,7 @@ impl Machine for LaserMachine {
         match &self.error {
             Some(e) => return Err(e.clone()),
             None => Ok(()),
-        }        
+        }
     }
 
     fn react(&mut self, _registry: &MachineDataRegistry) {}

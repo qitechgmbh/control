@@ -1,10 +1,12 @@
 use crate::extruder1::ExtruderV2Mode;
 use crate::{MachineApi, extruder1::ExtruderV2};
-use qitech_lib::machines::{Machine, MachineDataRegistry, MachineError, MachineIdentificationUnique};
+use qitech_lib::machines::{
+    Machine, MachineDataRegistry, MachineError, MachineIdentificationUnique,
+};
 use std::time::{Duration, Instant};
 
 impl Machine for ExtruderV2 {
-    fn act(&mut self, _registry: Option<&mut MachineDataRegistry>) -> Result<(), MachineError>{
+    fn act(&mut self, _registry: Option<&mut MachineDataRegistry>) -> Result<(), MachineError> {
         let now = Instant::now();
         let msg = self.api_receiver.try_recv();
         match msg {

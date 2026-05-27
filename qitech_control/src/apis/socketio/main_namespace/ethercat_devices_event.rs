@@ -24,6 +24,7 @@ pub enum EthercatDevicesEvent {
     Initializing(bool),
     Done(EthercatSetupDone),
     Error(String),
+    Preop(bool),
 }
 
 pub struct EthercatDevicesEventBuilder();
