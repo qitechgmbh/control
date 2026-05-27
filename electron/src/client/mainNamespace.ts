@@ -127,7 +127,6 @@ export function mainMessageHandler(
     const eventName = event.name;
 
     try {
-      console.log(event);
       if (eventName === "EthercatDevicesEvent") {
         store.setState((state) => ({
           ...state,
