@@ -3,6 +3,7 @@ import { spawn, exec, ChildProcess } from "child_process";
 import {
   TROUBLESHOOT_REBOOT_HMI,
   TROUBLESHOOT_RESTART_BACKEND,
+  TROUBLESHOOT_RESTART_BACKEND_INTO_PREOP,
   TROUBLESHOOT_EXPORT_LOGS,
 } from "./troubleshoot-channels";
 
@@ -23,35 +24,65 @@ export function addTroubleshootEventListeners() {
     }
   });
 
-  ipcMain.handle(TROUBLESHOOT_RESTART_BACKEND, async () => {
+  ipcMain.handle(TROUBLESHOOT_RESTART_BACKEND_INTO_PREOP, async () => {
     try {
       const process = spawn(
         "sudo",
-        ["systemctl", "restart", "qitech-control-server"],
-        { shell: true },
+        [
+          "bash",
+          "-c",
+          "systemctl set-environment QITECH_MODE=preop && systemctl restart qitech-control-server",
+        ],
+        { shell: false },
       );
 
       return new Promise<{ success: boolean; error?: string }>((resolve) => {
         process.on("close", (code) => {
-          if (code === 0) {
-            resolve({ success: true });
-          } else {
+          if (code === 0) resolve({ success: true });
+          else
             resolve({
               success: false,
               error: `Process exited with code ${code}`,
             });
-          }
         });
-
-        process.on("error", (error) => {
-          resolve({
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        });
+        process.on("error", (error) =>
+          resolve({ success: false, error: error.message }),
+        );
       });
     } catch (error) {
-      console.error("Failed to restart backend:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  });
+
+  ipcMain.handle(TROUBLESHOOT_RESTART_BACKEND, async () => {
+    try {
+      const process = spawn(
+        "sudo",
+        [
+          "bash",
+          "-c",
+          "systemctl unset-environment QITECH_MODE && systemctl restart qitech-control-server",
+        ],
+        { shell: false },
+      );
+
+      return new Promise<{ success: boolean; error?: string }>((resolve) => {
+        process.on("close", (code) => {
+          if (code === 0) resolve({ success: true });
+          else
+            resolve({
+              success: false,
+              error: `Process exited with code ${code}`,
+            });
+        });
+        process.on("error", (error) =>
+          resolve({ success: false, error: error.message }),
+        );
+      });
+    } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -82,21 +113,18 @@ export function addTroubleshootEventListeners() {
       return await new Promise<{ success: boolean; error?: string }>(
         (resolve) => {
           // Note: journalctl -xb usually requires sudo or journal group membership
-          exec(
-            `journalctl --since "24 hours ago" > "${filePath}"`,
-            (error, stdout, stderr) => {
-              if (error) {
-                console.error("Exec error:", error);
-                resolve({
-                  success: false,
-                  error: error instanceof Error ? error.message : String(error),
-                });
-                return;
-              }
+          exec(`journalctl -xb > "${filePath}"`, (error, stdout, stderr) => {
+            if (error) {
+              console.error("Exec error:", error);
+              resolve({
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+              });
+              return;
+            }
 
-              resolve({ success: true });
-            },
-          );
+            resolve({ success: true });
+          });
         },
       );
     } catch (error) {

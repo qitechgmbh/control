@@ -1,0 +1,289 @@
+use qitech_lib::ethercat_hal::machine_ident_read::MachineDeviceInfo;
+use qitech_lib::machines::MachineIdentificationUnique;
+use serde::Deserialize;
+use serde::Serialize;
+use std::fmt::Display;
+
+/// Identifies a specific machine
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct QiTechMachineIdentificationUnique {
+    pub machine_identification: MachineIdentification,
+    pub serial: u16,
+}
+
+impl From<MachineIdentificationUnique> for QiTechMachineIdentificationUnique {
+    fn from(value: MachineIdentificationUnique) -> Self {
+        QiTechMachineIdentificationUnique {
+            machine_identification: MachineIdentification {
+                vendor: value.machine_ident.vendor,
+                machine: value.machine_ident.machine,
+            },
+            serial: value.serial as u16,
+        }
+    }
+}
+
+impl From<QiTechMachineIdentificationUnique> for MachineIdentificationUnique {
+    fn from(value: QiTechMachineIdentificationUnique) -> Self {
+        MachineIdentificationUnique {
+            serial: value.serial as u32,
+            machine_ident: qitech_lib::machines::MachineIdentification {
+                vendor: value.machine_identification.vendor,
+                machine: value.machine_identification.machine,
+            },
+        }
+    }
+}
+
+impl QiTechMachineIdentificationUnique {
+    /// Check if values are non-zero
+    pub const fn is_valid(&self) -> bool {
+        self.machine_identification.is_valid() && self.serial != 0
+    }
+}
+
+impl Display for QiTechMachineIdentificationUnique {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}/{}/{}",
+            self.machine_identification.vendor, self.machine_identification.machine, self.serial
+        )
+    }
+}
+
+/// Identifies a machine
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct MachineIdentification {
+    pub vendor: u16,
+    pub machine: u16,
+}
+
+impl From<qitech_lib::machines::MachineIdentification> for MachineIdentification {
+    fn from(value: qitech_lib::machines::MachineIdentification) -> Self {
+        MachineIdentification {
+            vendor: value.vendor,
+            machine: value.machine,
+        }
+    }
+}
+
+impl From<MachineIdentification> for qitech_lib::machines::MachineIdentification {
+    fn from(value: MachineIdentification) -> Self {
+        qitech_lib::machines::MachineIdentification {
+            vendor: value.vendor,
+            machine: value.machine,
+        }
+    }
+}
+
+impl MachineIdentification {
+    /// Check if values are non-zero
+    pub const fn is_valid(&self) -> bool {
+        self.vendor != 0 && self.machine != 0
+    }
+
+    pub fn vendor_str(&self) -> String {
+        match self.vendor {
+            x if x == VENDOR_QITECH => "QiTech".to_string(),
+            _ => "N/A".to_string(),
+        }
+    }
+
+    pub fn slug(&self) -> String {
+        match self.machine {
+            x if x == MACHINE_WINDER_V1 => "winder_v1".to_string(),
+            x if x == MACHINE_WINDER_V1_7031_0030_SPOOL => "winder_v1_7031".to_string(),
+            x if x == MACHINE_EXTRUDER_V1 => "extruder_v1".to_string(),
+            x if x == MACHINE_LASER_V1 => "laser_v1".to_string(),
+            x if x == MACHINE_MOCK => "mock".to_string(),
+            x if x == MACHINE_AQUAPATH_V1 => "aquapath_v1".to_string(),
+            x if x == MACHINE_BUFFER_V1 => "buffer_v1".to_string(),
+            x if x == MACHINE_EXTRUDER_V2 => "extruder_v2".to_string(),
+            x if x == MACHINE_WAGO_POWER_V1 => "wago_power_v1".to_string(),
+            x if x == TEST_MACHINE => "test_machine".to_string(),
+            x if x == IP20_TEST_MACHINE => "ip20_test_machine".to_string(),
+            x if x == ANALOG_INPUT_TEST_MACHINE => "analog_input_test_machine".to_string(),
+            x if x == WAGO_AI_TEST_MACHINE => "wago_ai_test_machine".to_string(),
+            x if x == WAGO_DO_TEST_MACHINE => "wago_do_test_machine".to_string(),
+            x if x == WAGO_750_430_DI_MACHINE => "wago_750_430_di_machine".to_string(),
+            x if x == WAGO_750_460_MACHINE => "wago_750_460_machine".to_string(),
+            x if x == WAGO_750_501_TEST_MACHINE => "wago_750_501_test_machine".to_string(),
+            x if x == WAGO_750_531_MACHINE => "wago_750_531_machine".to_string(),
+            x if x == WAGO_750_553_MACHINE => "wago_750_553_machine".to_string(),
+            x if x == MOTOR_TEST_MACHINE => "motor_test_machine".to_string(),
+            x if x == DIGITAL_INPUT_TEST_MACHINE => "digital_input_test_machine".to_string(),
+            x if x == WAGO_8CH_IO_TEST_MACHINE => "wago_8ch_io_test_machine".to_string(),
+            x if x == TEST_MACHINE_BOTTLECAPS => "bottlecaps_test_machine".to_string(),
+            _ => unreachable!("Unknown machine id {}", self.machine),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DeviceMachineIdentification {
+    pub machine_identification_unique: QiTechMachineIdentificationUnique,
+    pub role: u16,
+}
+
+impl From<MachineDeviceInfo> for DeviceMachineIdentification {
+    fn from(value: MachineDeviceInfo) -> Self {
+        DeviceMachineIdentification {
+            machine_identification_unique: QiTechMachineIdentificationUnique {
+                machine_identification: MachineIdentification {
+                    vendor: value.machine_vendor,
+                    machine: value.machine_id,
+                },
+                serial: value.machine_serial,
+            },
+            role: value.role,
+        }
+    }
+}
+
+impl DeviceMachineIdentification {
+    /// Check if values are non-zero
+    pub const fn is_valid(&self) -> bool {
+        self.machine_identification_unique.is_valid()
+            && self
+                .machine_identification_unique
+                .machine_identification
+                .machine
+                != 0
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DeviceIdentification {
+    pub device_machine_identification: Option<DeviceMachineIdentification>,
+    pub device_hardware_identification: DeviceHardwareIdentification,
+}
+
+impl From<DeviceIdentificationIdentified> for DeviceIdentification {
+    fn from(value: DeviceIdentificationIdentified) -> Self {
+        Self {
+            device_machine_identification: Some(value.device_machine_identification),
+            device_hardware_identification: value.device_hardware_identification,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DeviceIdentificationIdentified {
+    pub device_machine_identification: DeviceMachineIdentification,
+    pub device_hardware_identification: DeviceHardwareIdentification,
+}
+
+impl TryFrom<DeviceIdentification> for DeviceIdentificationIdentified {
+    type Error = anyhow::Error;
+
+    fn try_from(value: DeviceIdentification) -> Result<Self, Self::Error> {
+        let device_machine_identification =
+            value.device_machine_identification.ok_or(anyhow::anyhow!(
+                "[{}::DeviceIdentificationIdentified::try_from] No device machine identification",
+                module_path!()
+            ))?;
+
+        Ok(Self {
+            device_machine_identification,
+            device_hardware_identification: value.device_hardware_identification,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum DeviceHardwareIdentification {
+    Ethercat(DeviceHardwareIdentificationEthercat),
+    Serial(DeviceHardwareIdentificationSerial),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DeviceHardwareIdentificationEthercat {
+    pub subdevice_index: usize,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DeviceHardwareIdentificationSerial {
+    pub path: String,
+}
+
+use crate::ANALOG_INPUT_TEST_MACHINE;
+use crate::DIGITAL_INPUT_TEST_MACHINE;
+use crate::IP20_TEST_MACHINE;
+use crate::MACHINE_AQUAPATH_V1;
+use crate::MACHINE_BUFFER_V1;
+use crate::MACHINE_EXTRUDER_V1;
+use crate::MACHINE_EXTRUDER_V2;
+use crate::MACHINE_LASER_V1;
+use crate::MACHINE_MOCK;
+use crate::MACHINE_WAGO_POWER_V1;
+use crate::MACHINE_WINDER_V1;
+use crate::MACHINE_WINDER_V1_7031_0030_SPOOL;
+use crate::MOTOR_TEST_MACHINE;
+use crate::TEST_MACHINE;
+use crate::TEST_MACHINE_BOTTLECAPS;
+use crate::VENDOR_QITECH;
+use crate::WAGO_8CH_IO_TEST_MACHINE;
+use crate::WAGO_750_430_DI_MACHINE;
+use crate::WAGO_750_460_MACHINE;
+use crate::WAGO_750_501_TEST_MACHINE;
+use crate::WAGO_750_531_MACHINE;
+use crate::WAGO_750_553_MACHINE;
+use crate::WAGO_AI_TEST_MACHINE;
+use crate::WAGO_DO_TEST_MACHINE;
+use anyhow::Error;
+
+#[derive(Debug)]
+pub struct MachineIdentificationAddresses {
+    pub vendor_word: u16,
+    pub serial_word: u16,
+    pub machine_word: u16,
+    pub role_word: u16,
+}
+
+impl MachineIdentificationAddresses {
+    pub const fn new(
+        vendor_word: u16,
+        serial_word: u16,
+        machine_word: u16,
+        device_word: u16,
+    ) -> Self {
+        Self {
+            vendor_word,
+            serial_word,
+            machine_word,
+            role_word: device_word,
+        }
+    }
+}
+
+impl Default for MachineIdentificationAddresses {
+    fn default() -> Self {
+        Self {
+            vendor_word: 0x0028,
+            machine_word: 0x0029,
+            serial_word: 0x002a,
+            role_word: 0x002b,
+        }
+    }
+}
+
+/// Returns the EEPROM addresses for the machine device identification
+/// based on the subdevice's identity
+pub fn get_identification_addresses(
+    subdevice_identity: (u32, u32, u32),
+    _subdevice_name: &str,
+) -> Result<MachineIdentificationAddresses, Error> {
+    Ok(match subdevice_identity {
+        _ => MachineIdentificationAddresses::default(), /* {
+                                                            // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
+                                                            Err(anyhow!(
+                                                                "[{}::get_identification_addresses] Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
+                                                                module_path!(),
+                                                                subdevice_name,
+                                                                subdevice_identity.0,
+                                                                subdevice_identity.1,
+                                                                subdevice_identity.2
+                                                            ))?
+                                                        }*/
+    })
+}
