@@ -1,12 +1,13 @@
 import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert } from "@/components/Alert";
 import { Markdown } from "@/components/Markdown";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { useUpdateStore } from "@/stores/updateStore";
+import { GithubSource } from "./GithubSourceDialog";
 
 export function ChangelogPage() {
   const navigate = useNavigate();
@@ -23,42 +24,27 @@ export function ChangelogPage() {
         ? "Commit"
         : "Unknown";
 
-  const versionName = search.branch ?? search.tag ?? search.commit;
-
-  const githubApiUrl = `https://api.github.com/repos/${search.githubRepoOwner}/${search.githubRepoName}`;
-
-  const fetchOptions = {
-    headers: {
-      ...(search.githubToken && {
-        Authorization: `token ${search.githubToken}`,
-      }),
-      Accept: "application/vnd.github.v3+json",
-    },
+  const source: GithubSource = {
+    githubRepoOwner: search.githubRepoOwner,
+    githubRepoName: search.githubRepoName,
   };
 
-  const [changelog, setReadme] = React.useState<string | undefined | null>(
+  const versionName = search.branch ?? search.tag ?? search.commit;
+  const ref = search.branch ?? search.tag ?? search.commit!;
+
+  const [changelog, setChangelog] = useState<string | null | undefined>(
     undefined,
   );
 
+  // install callback
+  window.update.onFetchChangelog((result) => {
+    setChangelog(result);
+  });
+
+  // Retrieve update targets
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (search.branch) {
-      params.append("ref", search.branch);
-    } else if (search.tag) {
-      params.append("ref", search.tag);
-    } else if (search.commit) {
-      params.append("ref", search.commit);
-    }
-    fetch(`${githubApiUrl}/contents/CHANGELOG.md?${params}`, fetchOptions)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.content) {
-          const decodedContent = atob(data.content);
-          setReadme(decodedContent);
-        }
-      })
-      .catch((err) => console.error(err));
-  }, [search]);
+    window.update.fetchChangelog(source, ref);
+  }, []);
 
   return (
     <Page>

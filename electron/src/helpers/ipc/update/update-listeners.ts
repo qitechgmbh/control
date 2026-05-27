@@ -1,19 +1,24 @@
 import { ipcMain } from "electron";
 import {
+  UPDATE_FETCH_TARGETS_SEND,
   UPDATE_CANCEL,
   UPDATE_END,
   UPDATE_EXECUTE,
   UPDATE_LOG,
   UPDATE_STEP,
+  UPDATE_FETCH_TARGETS_RECV,
+  UPDATE_FETCH_CHANGELOG_SEND,
+  UPDATE_FETCH_CHANGELOG_RECV,
 } from "./update-channels";
 import { spawn, ChildProcess } from "child_process";
 import tkill from "@jub3i/tree-kill";
 import { existsSync, rmSync } from "fs";
+import { GithubSource } from "@/setup/GithubSourceDialog";
+import { fetchChangelog, fetchTargets } from "./git-fetch-utils";
 
 type UpdateExecuteListenerParams = {
   githubRepoOwner: string;
   githubRepoName: string;
-  githubToken?: string;
   tag?: string;
   branch?: string;
   commit?: string;
@@ -23,6 +28,44 @@ type UpdateExecuteListenerParams = {
 let currentUpdateProcess: ChildProcess | null = null;
 
 export function addUpdateEventListeners() {
+  ipcMain.handle(
+    UPDATE_FETCH_TARGETS_SEND,
+    async (event, source: GithubSource) => {
+      try {
+        const result = await fetchTargets(
+          source.githubRepoOwner,
+          source.githubRepoName,
+        );
+        event.sender.send(UPDATE_FETCH_TARGETS_RECV, result);
+      } catch (error: any) {
+        event.sender.send(
+          UPDATE_FETCH_TARGETS_RECV,
+          `get update targets failed: ${error}`,
+        );
+      }
+    },
+  );
+
+  ipcMain.handle(
+    UPDATE_FETCH_CHANGELOG_SEND,
+    async (event, args: { source: GithubSource; ref: string }) => {
+      try {
+        const result = await fetchChangelog(
+          args.source.githubRepoOwner,
+          args.source.githubRepoName,
+          args.ref,
+        );
+
+        event.sender.send(UPDATE_FETCH_CHANGELOG_RECV, result);
+      } catch (error: any) {
+        event.sender.send(
+          UPDATE_FETCH_CHANGELOG_RECV,
+          `get update changelog failed: ${error}`,
+        );
+      }
+    },
+  );
+
   ipcMain.handle(
     UPDATE_EXECUTE,
     async (event, params: UpdateExecuteListenerParams) => {
@@ -98,20 +141,12 @@ async function update(
   return new Promise((resolve, reject) => {
     (async () => {
       try {
-        const {
-          githubRepoOwner,
-          githubRepoName,
-          githubToken,
-          tag,
-          branch,
-          commit,
-        } = params;
+        const { githubRepoOwner, githubRepoName, tag, branch, commit } = params;
 
         // Implement your update logic here
         console.log("Update parameters:", {
           githubRepoOwner,
           githubRepoName,
-          githubToken,
           tag,
           branch,
           commit,
@@ -157,7 +192,6 @@ async function update(
           {
             githubRepoOwner,
             githubRepoName,
-            githubToken,
             tag,
             branch,
             commit,
@@ -230,7 +264,6 @@ async function update(
 type CloneRepositoryParams = {
   githubRepoOwner: string;
   githubRepoName: string;
-  githubToken?: string;
   tag?: string;
   branch?: string;
   commit?: string;
@@ -268,8 +301,7 @@ async function cloneRepository(
   params: CloneRepositoryParams,
   event: Electron.IpcMainInvokeEvent,
 ): Promise<{ success: boolean; error?: string }> {
-  const { githubRepoOwner, githubRepoName, githubToken, tag, branch, commit } =
-    params;
+  const { githubRepoOwner, githubRepoName, tag, branch, commit } = params;
 
   const qitechControlEnv = process.env.QITECH_CONTROL_ENV;
   const homeDir = qitechControlEnv ? "/home/qitech" : process.env.HOME;
@@ -279,9 +311,7 @@ async function cloneRepository(
   }
 
   // Construct repository URL
-  const repoUrl = githubToken
-    ? `https://${githubToken}@github.com/${githubRepoOwner}/${githubRepoName}.git`
-    : `https://github.com/${githubRepoOwner}/${githubRepoName}.git`;
+  const repoUrl = `https://github.com/${githubRepoOwner}/${githubRepoName}.git`;
 
   // Determine clone arguments based on whether tag, branch, or commit is specified
   const cloneArgs = ["clone", "--progress", repoUrl];
