@@ -451,7 +451,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "117725a109d387c937a1533ce01b450cbde6b88abceea8473c4d7a85853cda3c"
 dependencies = [
  "lazy_static",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -890,8 +890,8 @@ dependencies = [
 
 [[package]]
 name = "ethercrab"
-version = "0.6.0"
-source = "git+https://github.com/v-morlock/ethercrab?branch=main#d297d13389d85a4edb4e69cc98f9dd7f12626cac"
+version = "0.7.1"
+source = "git+https://github.com/ethercrab-rs/ethercrab?branch=main#b3f21600a36a1eb9019c92f6d6cfc5151cf53b59"
 dependencies = [
  "async-io",
  "atomic-waker",
@@ -905,8 +905,9 @@ dependencies = [
  "heapless",
  "io-uring",
  "libc",
+ "lock_api",
  "log",
- "nix 0.29.0",
+ "nix 0.31.3",
  "pcap",
  "pnet_datalink",
  "sealed",
@@ -919,8 +920,8 @@ dependencies = [
 
 [[package]]
 name = "ethercrab-wire"
-version = "0.2.0"
-source = "git+https://github.com/v-morlock/ethercrab?branch=main#d297d13389d85a4edb4e69cc98f9dd7f12626cac"
+version = "0.3.0"
+source = "git+https://github.com/ethercrab-rs/ethercrab?branch=main#b3f21600a36a1eb9019c92f6d6cfc5151cf53b59"
 dependencies = [
  "ethercrab-wire-derive",
  "heapless",
@@ -928,8 +929,8 @@ dependencies = [
 
 [[package]]
 name = "ethercrab-wire-derive"
-version = "0.2.0"
-source = "git+https://github.com/v-morlock/ethercrab?branch=main#d297d13389d85a4edb4e69cc98f9dd7f12626cac"
+version = "0.3.0"
+source = "git+https://github.com/ethercrab-rs/ethercrab?branch=main#b3f21600a36a1eb9019c92f6d6cfc5151cf53b59"
 dependencies = [
  "criterion",
  "proc-macro2",
@@ -1643,6 +1644,18 @@ dependencies = [
  "cfg-if",
  "cfg_aliases",
  "libc",
+]
+
+[[package]]
+name = "nix"
+version = "0.31.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf20d2fde8ff38632c426f1165ed7436270b44f199fc55284c38276f9db47c3d"
+dependencies = [
+ "bitflags 2.11.1",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
  "memoffset 0.9.1",
 ]
 
@@ -2125,7 +2138,7 @@ dependencies = [
  "errno 0.3.14",
  "libc",
  "linux-raw-sys 0.4.15",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2451,6 +2464,9 @@ name = "spin"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5fe4ccb98d9c292d56fec89a5e07da7fc4cf0dc11e156b41793132775d3e591"
+dependencies = [
+ "lock_api",
+]
 
 [[package]]
 name = "stable_deref_trait"
@@ -3004,15 +3020,6 @@ name = "windows-sys"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "282be5f36a8ce781fad8c8ae18fa3f9beff57ec1b52cb3de0789201425d9a33d"
-dependencies = [
- "windows-targets",
-]
-
-[[package]]
-name = "windows-sys"
-version = "0.59.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e38bc4d79ed67fd075bcc251a1c39b32a1776bbe92e5bef1f0bf1f8c531853b"
 dependencies = [
  "windows-targets",
 ]

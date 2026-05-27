@@ -226,6 +226,11 @@ export const extruder3: MachineProperties = {
           product_id: 394604626,
           revision: 0x100000,
         },
+        {
+          vendor_id: 2,
+          product_id: 	0x127c3052,
+          revision: 0x40000,
+        },
       ],
     },
     {
@@ -959,6 +964,17 @@ export const analogOutOversamplingMachine: MachineProperties = {
   device_roles: [
     {
       role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x44c2c52,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 1,
       role_label: "EL4732 2-CH Analog Output",
       allowed_devices: [
         {

@@ -3,7 +3,10 @@ pub mod api;
 pub mod new;
 
 use crate::{
-    ANALOG_OUT_OVERSAMPLING_MACHINE, MachineMessage, QiTechMachine, VENDOR_QITECH, minimal_machines::oversampling_test_machine::api::{AnalogOutOversamplingEvents, AnalogOutOversamplingNamespace, LiveValuesEvent, StateEvent}
+    ANALOG_OUT_OVERSAMPLING_MACHINE, MachineMessage, QiTechMachine, VENDOR_QITECH,
+    minimal_machines::oversampling_test_machine::api::{
+        AnalogOutOversamplingEvents, AnalogOutOversamplingNamespace, LiveValuesEvent, StateEvent,
+    },
 };
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::{
@@ -17,7 +20,7 @@ use tokio::sync::mpsc::{Receiver, Sender};
 /// Must be one of: 1, 2, 3, 4, 5, 8, 10, 16, 20, 25, 32, 40, 50, 100
 pub const OVERSAMPLE_FACTOR: usize = 4;
 
-/// EtherCAT cycle time — must match DcConfiguration::sync0_period in your master config.
+/// EtherCAT cycle time must match DcConfiguration::sync0_period in your master config.
 pub const CYCLE_TIME_US: u64 = 1000;
 
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -78,6 +81,8 @@ pub struct AnalogOutOversamplingMachine {
 
     /// Last computed samples, kept for LiveValuesEvent
     pub last_samples: [[f32; OVERSAMPLE_FACTOR]; 2],
+
+    pub last_act: Option<Instant>,
 }
 
 impl AnalogOutOversamplingMachine {
@@ -128,13 +133,23 @@ impl AnalogOutOversamplingMachine {
     /// Sub-sample phases are linearly interpolated so the waveform is continuous
     /// across cycle boundaries regardless of frequency.
     pub fn generate_samples(&mut self, channel: usize) -> [f32; OVERSAMPLE_FACTOR] {
+        let now = Instant::now();
+        let elapsed_secs = match self.last_act {
+            Some(last) => now.duration_since(last).as_secs_f64(),
+            None => CYCLE_TIME_US as f64 * 1e-6,
+        };
+
         let config = &self.channels[channel];
         let cycle_secs = CYCLE_TIME_US as f64 * 1e-6;
-        let phase_step = 2.0 * PI * config.frequency_hz * cycle_secs / OVERSAMPLE_FACTOR as f64;
+
+        // Inter-slot spacing is always fixed to the EtherCAT cycle time —
+        // each slot is one sub-period of the cycle apart from the next.
+        let phase_step_per_slot =
+            2.0 * PI * config.frequency_hz * cycle_secs / OVERSAMPLE_FACTOR as f64;
 
         let mut samples = [0.0f32; OVERSAMPLE_FACTOR];
         for (i, slot) in samples.iter_mut().enumerate() {
-            let p = self.phase[channel] + phase_step * i as f64;
+            let p = self.phase[channel] + phase_step_per_slot * i as f64;
             let raw = match config.waveform {
                 WaveformType::Sine => p.sin(),
                 WaveformType::Sawtooth => {
@@ -142,16 +157,20 @@ impl AnalogOutOversamplingMachine {
                     2.0 * (t - t.floor()) - 1.0
                 }
                 WaveformType::Square => {
-                    if p.sin() >= 0.0 { 1.0 } else { -1.0 }
+                    if p.sin() >= 0.0 {
+                        1.0
+                    } else {
+                        -1.0
+                    }
                 }
                 WaveformType::Constant => 1.0,
             };
             *slot = ((raw * config.amplitude + config.offset).clamp(-1.0, 1.0)) as f32;
         }
 
-        // Advance phase by exactly one full cycle
+        // Phase accumulator advances by actual elapsed time between act() calls
         self.phase[channel] =
-            (self.phase[channel] + 2.0 * PI * config.frequency_hz * cycle_secs) % (2.0 * PI);
+            (self.phase[channel] + 2.0 * PI * config.frequency_hz * elapsed_secs) % (2.0 * PI);
 
         samples
     }

@@ -6,7 +6,7 @@ import {
   StateEvent,
   WaveformType,
   useAnalogOutOversamplingNamespace,
-} from "./useAnalogOutOversamplingMachineNamespace";
+} from "./analogOutOversamplingMachineNamespace";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { analogOutOversamplingSerialRoute } from "@/routes/routes";
 import { z } from "zod";
@@ -15,45 +15,35 @@ import { useMachineMutate } from "@/client/useClient";
 import { analogOutOversamplingMachine } from "@/machines/properties";
 
 export function useAnalogOutOversampling() {
-  const { serial: serialString } =
-    analogOutOversamplingSerialRoute.useParams();
+  const { serial: serialString } = analogOutOversamplingSerialRoute.useParams();
 
   const machineIdentification: MachineIdentificationUnique = useMemo(() => {
     const serial = parseInt(serialString);
-
     if (isNaN(serial)) {
       toastError(
         "Invalid Serial Number",
         `"${serialString}" is not a valid serial number.`,
       );
-      return {
-        machine_identification: { vendor: 0, machine: 0 },
-        serial: 0,
-      };
+      return { machine_identification: { vendor: 0, machine: 0 }, serial: 0 };
     }
-
     return {
-      machine_identification:
-        analogOutOversamplingMachine.machine_identification,
+      machine_identification: analogOutOversamplingMachine.machine_identification,
       serial,
     };
   }, [serialString]);
 
-  const { state, liveValues } = useAnalogOutOversamplingNamespace(
-    machineIdentification,
-  );
+  const { state, ch1Voltage, ch2Voltage, ch1Samples, ch2Samples } =
+    useAnalogOutOversamplingNamespace(machineIdentification);
 
   const stateOptimistic = useStateOptimistic<StateEvent>();
 
   useEffect(() => {
     if (state) stateOptimistic.setReal(state);
-  }, [state, stateOptimistic]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   const { request: sendMutation } = useMachineMutate(
-    z.object({
-      action: z.string(),
-      value: z.any().optional(),
-    }),
+    z.object({ action: z.string(), value: z.any().optional() }),
   );
 
   const updateStateOptimistically = (
@@ -68,81 +58,68 @@ export function useAnalogOutOversampling() {
 
   const setChannelConfig = (channel: number, config: ChannelConfig) => {
     updateStateOptimistically(
-      (current) => {
-        current.channels[channel] = config;
-      },
-      () =>
-        sendMutation({
-          machine_identification_unique: machineIdentification,
-          data: { action: "SetChannelConfig", value: { channel, config } },
-        }),
+      (current) => { current.channels[channel] = config; },
+      () => sendMutation({
+        machine_identification_unique: machineIdentification,
+        data: { action: "SetChannelConfig", value: { channel, config } },
+      }),
     );
   };
 
   const setWaveform = (channel: number, waveform: WaveformType) => {
     updateStateOptimistically(
-      (current) => {
-        current.channels[channel].waveform = waveform;
-      },
-      () =>
-        sendMutation({
-          machine_identification_unique: machineIdentification,
-          data: { action: "SetWaveform", value: { channel, waveform } },
-        }),
+      (current) => { current.channels[channel].waveform = waveform; },
+      () => sendMutation({
+        machine_identification_unique: machineIdentification,
+        data: { action: "SetWaveform", value: { channel, waveform } },
+      }),
     );
   };
 
   const setFrequency = (channel: number, frequency_hz: number) => {
     updateStateOptimistically(
-      (current) => {
-        current.channels[channel].frequency_hz = frequency_hz;
-      },
-      () =>
-        sendMutation({
-          machine_identification_unique: machineIdentification,
-          data: { action: "SetFrequency", value: { channel, frequency_hz } },
-        }),
+      (current) => { current.channels[channel].frequency_hz = frequency_hz; },
+      () => sendMutation({
+        machine_identification_unique: machineIdentification,
+        data: { action: "SetFrequency", value: { channel, frequency_hz } },
+      }),
     );
   };
 
   const setAmplitude = (channel: number, amplitude: number) => {
     updateStateOptimistically(
-      (current) => {
-        current.channels[channel].amplitude = amplitude;
-      },
-      () =>
-        sendMutation({
-          machine_identification_unique: machineIdentification,
-          data: { action: "SetAmplitude", value: { channel, amplitude } },
-        }),
+      (current) => { current.channels[channel].amplitude = amplitude; },
+      () => sendMutation({
+        machine_identification_unique: machineIdentification,
+        data: { action: "SetAmplitude", value: { channel, amplitude } },
+      }),
     );
   };
 
   const setOffset = (channel: number, offset: number) => {
     updateStateOptimistically(
-      (current) => {
-        current.channels[channel].offset = offset;
-      },
-      () =>
-        sendMutation({
-          machine_identification_unique: machineIdentification,
-          data: { action: "SetOffset", value: { channel, offset } },
-        }),
+      (current) => { current.channels[channel].offset = offset; },
+      () => sendMutation({
+        machine_identification_unique: machineIdentification,
+        data: { action: "SetOffset", value: { channel, offset } },
+      }),
     );
   };
 
-  const isDisabled = !stateOptimistic.isInitialized;
-  const isLoading = stateOptimistic.isOptimistic;
-
   return {
     state: stateOptimistic.value,
-    liveValues,
+    // TimeSeries — mean voltage over time for each channel
+    ch1Voltage,
+    ch2Voltage,
+    // Raw latest oversampled slots for bar visualiser
+    ch1Samples,
+    ch2Samples,
     setChannelConfig,
     setWaveform,
     setFrequency,
     setAmplitude,
     setOffset,
-    isDisabled,
-    isLoading,
+    isDisabled: !stateOptimistic.isInitialized,
+    isLoading: stateOptimistic.isOptimistic,
   };
 }

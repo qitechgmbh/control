@@ -1,7 +1,11 @@
-use qitech_lib::machines::{Machine, MachineError, MachineDataRegistry, MachineIdentificationUnique};
+use qitech_lib::machines::{
+    Machine, MachineDataRegistry, MachineError, MachineIdentificationUnique,
+};
 use std::time::{Duration, Instant};
 
-use crate::{MachineApi, minimal_machines::oversampling_test_machine::AnalogOutOversamplingMachine, };
+use crate::{
+    MachineApi, minimal_machines::oversampling_test_machine::AnalogOutOversamplingMachine,
+};
 
 impl Machine for AnalogOutOversamplingMachine {
     fn get_identification(&self) -> MachineIdentificationUnique {
@@ -15,12 +19,10 @@ impl Machine for AnalogOutOversamplingMachine {
             self.act_machine_message(msg);
         }
 
-        // Generate samples for both channels and push them to the device.
-        // Called every main-loop tick (≥ EtherCAT cycle rate) so the device
-        // always has fresh samples ready for the next PDI exchange.
         let samples_ch0 = self.generate_samples(0);
         let samples_ch1 = self.generate_samples(1);
         self.last_samples = [samples_ch0, samples_ch1];
+        self.last_act = Some(now);
 
         if let Ok(mut device) = self.el4732.try_borrow_mut() {
             device.set_output_samples(0, &samples_ch0);

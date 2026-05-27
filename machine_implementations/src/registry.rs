@@ -1,7 +1,8 @@
 use crate::extruder1::ExtruderV2;
 use crate::{
     MachineHardware, MachineNew, QiTechMachine, aquapath1::AquaPathV1, laser::LaserMachine,
-    minimal_machines::digital_input_test_machine::DigitalInputTestMachine, winder2::Winder2,
+    minimal_machines::digital_input_test_machine::DigitalInputTestMachine,
+    minimal_machines::oversampling_test_machine::AnalogOutOversamplingMachine, winder2::Winder2,
 };
 use anyhow::Error;
 use lazy_static::lazy_static;
@@ -65,6 +66,7 @@ lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
         mc.register::<DigitalInputTestMachine>(vec![DigitalInputTestMachine::MACHINE_IDENTIFICATION]);
+        mc.register::<AnalogOutOversamplingMachine>(vec![AnalogOutOversamplingMachine::MACHINE_IDENTIFICATION]);
 
         mc.register::<ExtruderV2>(vec![ExtruderV2::MACHINE_IDENTIFICATION,ExtruderV2::MACHINE_IDENTIFICATION_V3 ]);
         mc.register::<Winder2>(vec![Winder2::MACHINE_IDENTIFICATION]);
