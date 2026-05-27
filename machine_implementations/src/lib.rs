@@ -1,5 +1,4 @@
 use std::{cell::RefCell, rc::Rc};
-
 use anyhow::Result;
 use control_core::socketio::namespace::Namespace;
 use qitech_lib::{
@@ -24,6 +23,7 @@ pub mod winder2;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
+pub const MACHINE_WINDER_V1_7031_0030_SPOOL: u16 = 0x0062;
 pub const MACHINE_EXTRUDER_V1: u16 = 0x0004;
 pub const MACHINE_LASER_V1: u16 = 0x0006;
 pub const MACHINE_MOCK: u16 = 0x0007;
@@ -38,11 +38,14 @@ pub const WAGO_AI_TEST_MACHINE: u16 = 0x0036;
 pub const DIGITAL_INPUT_TEST_MACHINE: u16 = 0x0040;
 pub const WAGO_8CH_IO_TEST_MACHINE: u16 = 0x0041;
 pub const WAGO_750_430_DI_MACHINE: u16 = 0x0043;
-pub const WAGO_750_553_MACHINE: u16 = 0x0044;
+pub const WAGO_750_460_MACHINE: u16 = 0x0044;
+pub const WAGO_750_553_MACHINE: u16 = 0x0046;
+pub const WAGO_750_531_MACHINE: u16 = 0x0047;
 pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
 pub const WAGO_750_501_TEST_MACHINE: u16 = 0x0042;
+pub const TEST_MACHINE_BOTTLECAPS: u16 = 0x0039;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct MachineValues {

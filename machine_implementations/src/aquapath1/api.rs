@@ -9,7 +9,6 @@ use control_core::socketio::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
-use tokio::sync::mpsc::Sender;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -244,7 +243,7 @@ impl CacheableEvents<AquaPathV1Events> for AquaPathV1Events {
 }
 
 impl MachineApi for AquaPathV1 {
-    fn act_machine_message(&mut self, msg: MachineMessage) {
+      fn act_machine_message(&mut self, msg: MachineMessage) {
         match msg {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
@@ -267,7 +266,7 @@ impl MachineApi for AquaPathV1 {
         }
     }
 
-    fn get_api_sender(&self) -> Sender<MachineMessage> {
+    fn get_api_sender(&self) -> tokio::sync::mpsc::Sender<MachineMessage> {
         self.api_sender.clone()
     }
 

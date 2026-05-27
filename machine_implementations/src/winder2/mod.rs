@@ -11,6 +11,7 @@ pub mod spool_speed_controller;
 pub mod tension_arm;
 pub mod traverse_controller;
 
+use crate::MACHINE_WINDER_V1_7031_0030_SPOOL;
 use crate::MachineMessage;
 use crate::QiTechMachine;
 use crate::{MACHINE_WINDER_V1, VENDOR_QITECH};
@@ -107,6 +108,11 @@ impl Winder2 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_WINDER_V1,
+    };
+
+    pub const MACHINE_IDENTIFICATION_7031_SPOOL: MachineIdentification = MachineIdentification {
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_WINDER_V1_7031_0030_SPOOL,
     };
 
     /// Validates that traverse limits maintain proper constraints:

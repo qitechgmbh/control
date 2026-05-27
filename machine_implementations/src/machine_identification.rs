@@ -93,6 +93,7 @@ impl MachineIdentification {
     pub fn slug(&self) -> String {
         match self.machine {
             x if x == MACHINE_WINDER_V1 => "winder_v1".to_string(),
+            x if x == MACHINE_WINDER_V1_7031_0030_SPOOL => "winder_v1_7031".to_string(),
             x if x == MACHINE_EXTRUDER_V1 => "extruder_v1".to_string(),
             x if x == MACHINE_LASER_V1 => "laser_v1".to_string(),
             x if x == MACHINE_MOCK => "mock".to_string(),
@@ -219,6 +220,7 @@ use crate::MACHINE_WINDER_V1;
 use crate::MACHINE_WINDER_V1_7031_0030_SPOOL;
 use crate::MOTOR_TEST_MACHINE;
 use crate::TEST_MACHINE;
+use crate::TEST_MACHINE_BOTTLECAPS;
 use crate::VENDOR_QITECH;
 use crate::WAGO_8CH_IO_TEST_MACHINE;
 use crate::WAGO_750_430_DI_MACHINE;

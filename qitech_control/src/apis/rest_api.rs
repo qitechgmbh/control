@@ -4,10 +4,14 @@ use axum::extract::{Path, State};
 use axum::routing::{get, post};
 use axum::{Extension, Json, Router, debug_handler};
 use machine_implementations::MachineMessage;
+use machine_implementations::aquapath1::AquaPathV1;
+use machine_implementations::extruder1::ExtruderV2;
+use machine_implementations::laser::LaserMachine;
 use machine_implementations::machine_identification::{
     MachineIdentification, QiTechMachineIdentificationUnique,
 };
 use machine_implementations::minimal_machines::digital_input_test_machine::DigitalInputTestMachine;
+use machine_implementations::winder2::Winder2;
 use serde::Serialize;
 use std::sync::Arc;
 
@@ -144,18 +148,14 @@ fn make_machine_router(id: MachineIdentification) -> Router<Arc<SharedAppState>>
 pub fn rest_api_router() -> Router<Arc<SharedAppState>> {
     Router::new()
         .route("/machine", get(get_machines_handler))
+        .merge(make_machine_router(LaserMachine::MACHINE_IDENTIFICATION.into()))
+        .merge(make_machine_router(Winder2::MACHINE_IDENTIFICATION.into()))
+        .merge(make_machine_router(ExtruderV2::MACHINE_IDENTIFICATION.into()))
+        .merge(make_machine_router(AquaPathV1::MACHINE_IDENTIFICATION.into()))
+        /*.merge(make_machine_router(TestMachine::MACHINE_IDENTIFICATION.into()))
+        .merge(make_machine_router(WagoPower::MACHINE_IDENTIFICATION.into()))
+        .merge(make_machine_router(IP20TestMachine::MACHINE_IDENTIFICATION.into()))
         .merge(make_machine_router(
-            DigitalInputTestMachine::MACHINE_IDENTIFICATION.into(),
-        ))
-    /*.merge(make_machine_router(LaserMachine::MACHINE_IDENTIFICATION))
-    .merge(make_machine_router(Winder2::MACHINE_IDENTIFICATION))
-    .merge(make_machine_router(MockMachine::MACHINE_IDENTIFICATION))
-    .merge(make_machine_router(ExtruderV2::MACHINE_IDENTIFICATION))
-    .merge(make_machine_router(AquaPathV1::MACHINE_IDENTIFICATION))
-    .merge(make_machine_router(TestMachine::MACHINE_IDENTIFICATION))
-    .merge(make_machine_router(WagoPower::MACHINE_IDENTIFICATION))
-    .merge(make_machine_router(IP20TestMachine::MACHINE_IDENTIFICATION))
-    .merge(make_machine_router(
-        AnalogInputTestMachine::MACHINE_IDENTIFICATION,
-    )*/
+            AnalogInputTestMachine::MACHINE_IDENTIFICATION,
+        ))*/
 }

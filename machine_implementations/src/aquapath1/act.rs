@@ -1,5 +1,5 @@
 use super::{AquaPathV1, AquaPathV1Mode};
-use crate::MachineApi;
+use crate::{MachineApi, QiTechMachine};
 use qitech_lib::machines::{Machine, MachineDataRegistry, MachineError};
 use std::time::{Duration, Instant};
 
@@ -49,8 +49,9 @@ impl Machine for AquaPathV1 {
     }
 
     fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {}
-
     fn get_identification(&self) -> qitech_lib::machines::MachineIdentificationUnique {
         self.machine_identification_unique
     }
 }
+
+impl QiTechMachine for AquaPathV1 {}
