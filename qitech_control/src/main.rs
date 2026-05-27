@@ -294,7 +294,8 @@ fn find_ethercat_interface() -> Result<String, anyhow::Error> {
 
 #[cfg(not(feature = "mock"))]
 fn main_logic() {
-    let stay_in_preop = std::env::args().any(|a| a == "preop");
+    let stay_in_preop = std::env::var("QITECH_MODE").unwrap_or_default() == "preop"
+        || std::env::args().any(|a| a == "preop");
     let mut shared_state = SharedAppState::new();
 
     
