@@ -301,12 +301,13 @@ fn main_logic() {
     let mut main_state = MainState::new();
     let res = find_ethercat_interface();
     let mut eth_control = match res {
-        Ok(interface) => Some(optimized_ethercat_init(&interface)),
-        Err(_) => return,
+        Ok(interface) => {
+            let eth_control = optimized_ethercat_init(&interface);
+            shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
+            Some( eth_control )
+        } ,
+        Err(_) => None,
     };
-
-    shared_state.ethercat_thread_channel =
-        Some(eth_control.as_ref().expect("is_some here").channel.clone());
 
     let state = Arc::new(shared_state);
     setup_api_and_websock(state.clone());
@@ -319,7 +320,7 @@ fn main_logic() {
     detect_and_build_machines(state.clone(), &mut main_state);
     send_setup_done_events(state.clone(), stay_in_preop);
 
-    if stay_in_preop {
+    if stay_in_preop && eth_control.is_some() {
         println!("Staying in PreOp as requested, exiting after setup.");
         loop {
             std::thread::sleep(core::time::Duration::from_secs(1));
