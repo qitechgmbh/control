@@ -1,16 +1,14 @@
 use crate::aquapath1::{Flow, Temperature};
 use control_core::controllers::pid::PidController;
 use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
-use qitech_lib::ethercat_hal::io::analog_input::physical::AnalogInputRange;
 use qitech_lib::ethercat_hal::io::analog_output::AnalogOutputDevice;
 use qitech_lib::ethercat_hal::io::as006::{calculate_as006_flow_lpm, calculate_as006_temperature_celsius};
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
-use qitech_lib::units::electric_current::milliampere;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
-use qitech_lib::units::{self, AngularVelocity, ElectricCurrent};
+use qitech_lib::units::{self, AngularVelocity};
 use units::angular_velocity::revolution_per_minute;
 use units::f64::{ThermodynamicTemperature, VolumeRate};
 use units::thermodynamic_temperature::degree_celsius;
@@ -375,7 +373,7 @@ impl Controller {
 
     pub fn get_flow(&self) -> VolumeRate {
         let guard = self.temp_and_flow_sensor.borrow();
-        let input = guard.get_input(self.temperature_sensor_port);        
+        let input = guard.get_input(self.flow_sensor_port);        
         let input_data = match input {
             Ok(input_data) => input_data,
             Err(_) => {
