@@ -146,7 +146,6 @@ impl SharedAppState {
         drop(guard);
     }
 
-
     pub async fn get_machines_meta(&self) -> Vec<MachineObj> {
         self.machines.read().await.clone()
     }

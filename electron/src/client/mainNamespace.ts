@@ -139,7 +139,18 @@ export function mainMessageHandler(
           ethercatState: event,
         }));
       } else if (eventName === "MachinesEvent") {
-        const validatedEvent = machinesEventSchema.parse(event);
+        const validatedEvent = machinesEventSchema.parse(event);        
+        const currentMachinesState = store.getState().machines;
+        if (currentMachinesState) {
+          // Compare the old data array with the incoming data array if mismatch reload          
+          const oldDataStr = JSON.stringify(currentMachinesState.data.machines);
+          const newDataStr = JSON.stringify(validatedEvent.data.machines);
+          if (oldDataStr !== newDataStr) {
+            console.log("Detected a change in the machines state! Reloading...");
+            window.location.reload();
+            return; 
+          }
+        }
         store.setState((state) => ({
           ...state,
           machines: validatedEvent,

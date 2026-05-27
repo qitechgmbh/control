@@ -298,17 +298,15 @@ fn main_logic() {
         || std::env::args().any(|a| a == "preop");
     let mut shared_state = SharedAppState::new();
 
-    
     let mut main_state = MainState::new();
     let res = find_ethercat_interface();
     let mut eth_control = match res {
-        Ok(interface) => {                    
-            Some(optimized_ethercat_init(&interface))
-        } ,
+        Ok(interface) => Some(optimized_ethercat_init(&interface)),
         Err(_) => return,
     };
 
-    shared_state.ethercat_thread_channel = Some(eth_control.as_ref().expect("is_some here").channel.clone());
+    shared_state.ethercat_thread_channel =
+        Some(eth_control.as_ref().expect("is_some here").channel.clone());
 
     let state = Arc::new(shared_state);
     setup_api_and_websock(state.clone());
