@@ -6,7 +6,7 @@ import {
   StateEvent,
   WaveformType,
   useAnalogOutOversamplingNamespace,
-} from "./analogOutOversamplingNamespace";
+} from "./useAnalogOutOversamplingMachineNamespace";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { analogOutOversamplingSerialRoute } from "@/routes/routes";
 import { z } from "zod";
