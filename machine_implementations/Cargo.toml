@@ -18,7 +18,8 @@ tokio = { version = "1.50.0", features = ["sync"] }
 
 # web
 serde_json = "1.0.149"
-socketioxide = { version = "0.18.2", features = ["msgpack"] }# serial
+socketioxide = { version = "0.15.2", features = ["msgpack"] }
+
 serialport = "4.7.3"
 #tracing
 tracing = { version = "0.1.44", features = ["attributes"] }
