@@ -41,11 +41,19 @@ interface UpdateContext {
     branch?: string;
     commit?: string;
   }) => Promise<void>;
+  fetchTargets: (source: GithubSource) => Promise<void>;
+  fetchChangelog: (source: GithubSource, ref: string) => Promise<void>;
   cancel: () => Promise<{ success: boolean; error?: string }>;
   onLog: (callback: (log: string) => void) => void;
   onEnd: (
     callback: (params: { success: boolean; error?: string }) => void,
   ) => void;
+  onFetchTargetsRecv: (
+    callback: (result: RepoImportResult | string) => void,
+  ) => Promise<void>;
+  onFetchChangelog: (
+    callback: (result: RepoImportResult | string) => void,
+  ) => Promise<void>;
   onStep: (
     callback: (params: {
       stepId: string;

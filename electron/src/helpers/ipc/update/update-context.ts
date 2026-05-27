@@ -32,12 +32,12 @@ type UpdateStepParams = {
 export function exposeUpdateContext() {
   const { contextBridge, ipcRenderer } = window.require("electron");
 
-  let currentFetchTargetsRecvListener: 
-    | ((event: any, result: RepoImportResult | string) => void) 
+  let currentFetchTargetsRecvListener:
+    | ((event: any, result: RepoImportResult | string) => void)
     | null = null;
-  
-  let currentFetchChangelogRecvListener: 
-    | ((event: any, result: string) => void) 
+
+  let currentFetchChangelogRecvListener:
+    | ((event: any, result: string) => void)
     | null = null;
 
   let currentLogListener: ((event: any, log: string) => void) | null = null;
@@ -55,28 +55,45 @@ export function exposeUpdateContext() {
       ipcRenderer.invoke(UPDATE_EXECUTE, params),
     cancel: () => ipcRenderer.invoke(UPDATE_CANCEL),
 
-    onFetchTargetsRecv: (callback: (result: RepoImportResult | string) => void) => {
+    onFetchTargetsRecv: (
+      callback: (result: RepoImportResult | string) => void,
+    ) => {
       if (currentFetchTargetsRecvListener) {
-        ipcRenderer.removeListener(UPDATE_FETCH_TARGETS_RECV, currentFetchTargetsRecvListener);
+        ipcRenderer.removeListener(
+          UPDATE_FETCH_TARGETS_RECV,
+          currentFetchTargetsRecvListener,
+        );
       }
 
-      currentFetchTargetsRecvListener = (_event, result: RepoImportResult | string) => {
+      currentFetchTargetsRecvListener = (
+        _event,
+        result: RepoImportResult | string,
+      ) => {
         callback(result);
       };
 
-      ipcRenderer.on(UPDATE_FETCH_TARGETS_RECV, currentFetchTargetsRecvListener);
+      ipcRenderer.on(
+        UPDATE_FETCH_TARGETS_RECV,
+        currentFetchTargetsRecvListener,
+      );
     },
 
     onFetchChangelog: (callback: (result: string) => void) => {
       if (currentFetchChangelogRecvListener) {
-        ipcRenderer.removeListener(UPDATE_FETCH_CHANGELOG_RECV, currentFetchChangelogRecvListener);
+        ipcRenderer.removeListener(
+          UPDATE_FETCH_CHANGELOG_RECV,
+          currentFetchChangelogRecvListener,
+        );
       }
 
       currentFetchChangelogRecvListener = (_event, result: string) => {
         callback(result);
       };
 
-      ipcRenderer.on(UPDATE_FETCH_CHANGELOG_RECV, currentFetchChangelogRecvListener);
+      ipcRenderer.on(
+        UPDATE_FETCH_CHANGELOG_RECV,
+        currentFetchChangelogRecvListener,
+      );
     },
 
     onLog: (callback: (log: string) => void) => {
