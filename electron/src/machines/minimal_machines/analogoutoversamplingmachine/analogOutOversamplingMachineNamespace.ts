@@ -10,15 +10,12 @@ import {
   ThrottledStoreUpdater,
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { useMemo } from "react";
+import { createTimeSeries, TimeSeries, TimeSeriesValue } from "@/lib/timeseries";
 
-// ========== Event Schema ==========
+// ========== Schemas ==========
 
-export const waveformTypeSchema = z.enum([
-  "Sine",
-  "Sawtooth",
-  "Square",
-  "Constant",
-]);
+export const waveformTypeSchema = z.enum(["Sine", "Sawtooth", "Square", "Constant"]);
 export type WaveformType = z.infer<typeof waveformTypeSchema>;
 
 export const channelConfigSchema = z.object({
@@ -50,14 +47,26 @@ export type LiveValuesEvent = z.infer<typeof liveValuesEventDataSchema>;
 
 export type AnalogOutOversamplingNamespaceStore = {
   state: StateEvent | null;
-  liveValues: LiveValuesEvent | null;
+  // One TimeSeries per channel — tracks the mean voltage of all oversampled
+  // slots each cycle, giving a readable "current output level" over time.
+  ch1Voltage: TimeSeries;
+  ch2Voltage: TimeSeries;
+  // Raw latest samples for the bar visualiser
+  ch1Samples: number[];
+  ch2Samples: number[];
 };
+
+const { initialTimeSeries: ch1VoltageInit, insert: addCh1Voltage } = createTimeSeries();
+const { initialTimeSeries: ch2VoltageInit, insert: addCh2Voltage } = createTimeSeries();
 
 export const createAnalogOutOversamplingNamespaceStore =
   (): StoreApi<AnalogOutOversamplingNamespaceStore> =>
     create<AnalogOutOversamplingNamespaceStore>(() => ({
       state: null,
-      liveValues: null,
+      ch1Voltage: ch1VoltageInit,
+      ch2Voltage: ch2VoltageInit,
+      ch1Samples: [],
+      ch2Samples: [],
     }));
 
 // ========== Message Handler ==========
@@ -68,18 +77,32 @@ export function analogOutOversamplingMessageHandler(
 ): EventHandler {
   return (event: Event<any>) => {
     const updateStore = (
-      updater: (
-        state: AnalogOutOversamplingNamespaceStore,
-      ) => AnalogOutOversamplingNamespaceStore,
+      updater: (s: AnalogOutOversamplingNamespaceStore) => AnalogOutOversamplingNamespaceStore,
     ) => throttledUpdater.updateWith(updater);
 
     try {
       if (event.name === "StateEvent") {
         const parsed = stateEventSchema.parse(event);
-        updateStore((current) => ({ ...current, state: parsed.data }));
+        updateStore((s) => ({ ...s, state: parsed.data }));
       } else if (event.name === "LiveValuesEvent") {
         const parsed = liveValuesEventSchema.parse(event);
-        updateStore((current) => ({ ...current, liveValues: parsed.data }));
+        const ch1 = parsed.data.ch1_samples;
+        const ch2 = parsed.data.ch2_samples;
+
+        // Mean of all slots → single voltage reading for the time series
+        const mean = (arr: number[]) =>
+          arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+
+        const ch1Val: TimeSeriesValue = { value: mean(ch1) * 10, timestamp: event.ts };
+        const ch2Val: TimeSeriesValue = { value: mean(ch2) * 10, timestamp: event.ts };
+
+        updateStore((s) => ({
+          ...s,
+          ch1Voltage: addCh1Voltage(s.ch1Voltage, ch1Val),
+          ch2Voltage: addCh2Voltage(s.ch2Voltage, ch2Val),
+          ch1Samples: ch1,
+          ch2Samples: ch2,
+        }));
       } else {
         handleUnhandledEventError(event.name);
       }
@@ -101,10 +124,9 @@ const useAnalogOutOversamplingNamespaceImplementation =
 export function useAnalogOutOversamplingNamespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): AnalogOutOversamplingNamespaceStore {
-  const namespaceId: NamespaceId = {
-    type: "machine",
-    machine_identification_unique,
-  };
-
+  const namespaceId = useMemo<NamespaceId>(
+    () => ({ type: "machine", machine_identification_unique }),
+    [machine_identification_unique],
+  );
   return useAnalogOutOversamplingNamespaceImplementation(namespaceId);
 }

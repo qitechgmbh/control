@@ -4,26 +4,21 @@ import { ControlGrid } from "@/control/ControlGrid";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { Label } from "@/control/Label";
 import { Badge } from "@/components/ui/badge";
-import { TouchSlider } from "@/components/touch/TouchSlider";
-import { Input } from "@/components/ui/input";
+import { EditValue } from "@/control/EditValue";
+import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
+import { TimeSeries } from "@/lib/timeseries";
 import React from "react";
 import { useAnalogOutOversampling } from "./useAnalogOutOversamplingMachine";
-import { ChannelConfig, WaveformType } from "./useAnalogOutOversamplingMachineNamespace";
+import { ChannelConfig, WaveformType } from "./analogOutOversamplingMachineNamespace";
 
-function SampleBar({
-  value,
-  label,
-}: {
-  value: number; // -1.0 .. 1.0
-  label: string;
-}) {
-  const pct = ((value + 1) / 2) * 100; // map to 0-100%
+// ========== Sample bar ==========
+
+function SampleBar({ value, label }: { value: number; label: string }) {
+  const pct = ((value + 1) / 2) * 100;
   return (
     <div className="flex flex-col items-center gap-1">
       <div className="relative h-16 w-5 overflow-hidden rounded bg-gray-800">
-        {/* centre line */}
         <div className="absolute inset-x-0 top-1/2 h-px bg-gray-600" />
-        {/* fill from centre */}
         <div
           className={`absolute inset-x-0 ${value >= 0 ? "bg-blue-500" : "bg-orange-500"}`}
           style={
@@ -38,31 +33,48 @@ function SampleBar({
   );
 }
 
-function ChannelLiveValues({
-  samples,
-  label,
-}: {
-  samples: number[];
-  label: string;
-}) {
+// ========== Voltage time-series card ==========
+
+function VoltageCard({ title, timeseries }: { title: string; timeseries: TimeSeries }) {
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium text-gray-300">{label}</span>
-      <div className="flex gap-2">
-        {samples.map((v, i) => (
-          <SampleBar key={i} value={v} label={`S${i}`} />
-        ))}
-      </div>
-      <div className="flex gap-2">
-        {samples.map((v, i) => (
-          <span key={i} className="w-5 text-center text-xs text-gray-500">
-            {(v * 10).toFixed(1)}V
-          </span>
-        ))}
-      </div>
-    </div>
+    <ControlCard title={title}>
+      <TimeSeriesValueNumeric
+        label="Mean output voltage"
+        timeseries={timeseries}
+        renderValue={(v) => `${v.toFixed(2)} V`}
+      />
+    </ControlCard>
   );
 }
+
+// ========== Per-slot bar visualiser ==========
+
+function SamplesCard({ title, samples }: { title: string; samples: number[] }) {
+  return (
+    <ControlCard title={title}>
+      {samples.length === 0 ? (
+        <span className="text-sm text-gray-500">Waiting for data…</span>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            {samples.map((v, i) => (
+              <SampleBar key={i} value={v} label={`S${i}`} />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            {samples.map((v, i) => (
+              <span key={i} className="w-5 text-center text-xs text-gray-500">
+                {(v * 10).toFixed(1)}V
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </ControlCard>
+  );
+}
+
+// ========== Per-channel controls ==========
 
 function ChannelControl({
   index,
@@ -83,7 +95,7 @@ function ChannelControl({
 }) {
   return (
     <ControlCard title={`Channel ${index + 1}`}>
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-6">
 
         {/* Waveform selector */}
         <Label label="Waveform">
@@ -95,96 +107,73 @@ function ChannelControl({
             orientation="horizontal"
             className="grid grid-cols-4 gap-1"
             options={{
-              Sine: {
-                children: "Sine",
-                icon: "lu:AudioWaveform",
-                isActiveClassName: "bg-blue-600",
-              },
-              Sawtooth: {
-                children: "Saw",
-                icon: "lu:TrendingUp",
-                isActiveClassName: "bg-blue-600",
-              },
-              Square: {
-                children: "Square",
-                icon: "lu:Square",
-                isActiveClassName: "bg-blue-600",
-              },
-              Constant: {
-                children: "DC",
-                icon: "lu:Minus",
-                isActiveClassName: "bg-blue-600",
-              },
+              Sine:     { children: "Sine",   icon: "lu:AudioWaveform", isActiveClassName: "bg-blue-600" },
+              Sawtooth: { children: "Saw",    icon: "lu:TrendingUp",    isActiveClassName: "bg-blue-600" },
+              Square:   { children: "Square", icon: "lu:Square",        isActiveClassName: "bg-blue-600" },
+              Constant: { children: "DC",     icon: "lu:Minus",         isActiveClassName: "bg-blue-600" },
             }}
           />
         </Label>
 
-        {/* Frequency */}
-        {config.waveform !== "Constant" && (
-          <Label label={`Frequency: ${config.frequency_hz.toFixed(1)} Hz`}>
-            <div className="flex gap-2">
-              <TouchSlider
-                disabled={disabled}
-                min={0.1}
-                max={500}
-                step={0.1}
-                value={[config.frequency_hz]}
-                onValueChange={([v]) => onFrequency(v)}
-                className="flex-1"
-              />
-              <Input
-                type="number"
-                disabled={disabled}
-                className="w-24 text-right"
-                value={config.frequency_hz}
-                min={0.001}
-                max={10000}
-                step={0.1}
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value);
-                  if (!isNaN(v) && v > 0) onFrequency(v);
-                }}
-              />
-            </div>
-          </Label>
-        )}
+        <div className="flex flex-row flex-wrap gap-4">
+          {/* Frequency — hidden for Constant */}
+          {config.waveform !== "Constant" && (
+            <EditValue
+              title="Frequency"
+              value={config.frequency_hz}
+              defaultValue={10}
+              min={0.001}
+              max={10000}
+              minSlider={0.1}
+              maxSlider={500}
+              step={0.1}
+              disabled={disabled}
+              renderValue={(v) => v.toFixed(1)}
+              onChange={onFrequency}
+            />
+          )}
 
-        {/* Amplitude */}
-        <Label
-          label={`Amplitude: ${(config.amplitude * 10).toFixed(1)} V`}
-        >
-          <TouchSlider
-            disabled={disabled}
+          {/* Amplitude */}
+          <EditValue
+            title="Amplitude"
+            value={config.amplitude * 10}
+            defaultValue={10}
             min={0}
-            max={1}
-            step={0.01}
-            value={[config.amplitude]}
-            onValueChange={([v]) => onAmplitude(v)}
-          />
-        </Label>
-
-        {/* Offset */}
-        <Label
-          label={`Offset: ${(config.offset * 10).toFixed(1)} V`}
-        >
-          <TouchSlider
+            max={10}
+            step={0.1}
             disabled={disabled}
-            min={-1}
-            max={1}
-            step={0.01}
-            value={[config.offset]}
-            onValueChange={([v]) => onOffset(v)}
+            renderValue={(v) => v.toFixed(1)}
+            onChange={(v) => onAmplitude(v / 10)}
           />
-        </Label>
+
+          {/* Offset */}
+          <EditValue
+            title="Offset"
+            value={config.offset * 10}
+            defaultValue={0}
+            min={-10}
+            max={10}
+            step={0.1}
+            disabled={disabled}
+            renderValue={(v) => v.toFixed(1)}
+            onChange={(v) => onOffset(v / 10)}
+          />
+        </div>
+
       </div>
     </ControlCard>
   );
 }
 
+// ========== Page ==========
+
 export function AnalogOutOversamplingControlPage() {
   const {
     state,
-    liveValues,
+    ch1Voltage,
+    ch2Voltage,
+    ch1Samples,
+    ch2Samples,
     setWaveform,
     setFrequency,
     setAmplitude,
@@ -194,14 +183,17 @@ export function AnalogOutOversamplingControlPage() {
 
   const ch1 = state?.channels[0];
   const ch2 = state?.channels[1];
+  const effectiveSampleRate = state
+    ? (state.oversample_factor / state.cycle_time_us) * 1e6
+    : null;
 
   return (
     <Page>
       <ControlGrid columns={2}>
 
-        {/* Info strip */}
+        {/* Device info */}
         <ControlCard title="Device Info" className="col-span-2">
-          <div className="flex gap-6">
+          <div className="flex flex-wrap gap-6">
             <Label label="Oversample factor">
               <Badge className="bg-blue-600 text-sm">
                 {state?.oversample_factor ?? "—"}×
@@ -214,8 +206,8 @@ export function AnalogOutOversamplingControlPage() {
             </Label>
             <Label label="Effective sample rate">
               <Badge className="bg-gray-600 text-sm">
-                {state
-                  ? `${((state.oversample_factor / state.cycle_time_us) * 1e6 / 1000).toFixed(1)} kSps`
+                {effectiveSampleRate != null
+                  ? `${(effectiveSampleRate / 1000).toFixed(1)} kSps`
                   : "—"}
               </Badge>
             </Label>
@@ -225,9 +217,7 @@ export function AnalogOutOversamplingControlPage() {
         {/* Channel controls */}
         {ch1 && (
           <ChannelControl
-            index={0}
-            config={ch1}
-            disabled={isDisabled}
+            index={0} config={ch1} disabled={isDisabled}
             onWaveform={(w) => setWaveform(0, w)}
             onFrequency={(hz) => setFrequency(0, hz)}
             onAmplitude={(a) => setAmplitude(0, a)}
@@ -236,9 +226,7 @@ export function AnalogOutOversamplingControlPage() {
         )}
         {ch2 && (
           <ChannelControl
-            index={1}
-            config={ch2}
-            disabled={isDisabled}
+            index={1} config={ch2} disabled={isDisabled}
             onWaveform={(w) => setWaveform(1, w)}
             onFrequency={(hz) => setFrequency(1, hz)}
             onAmplitude={(a) => setAmplitude(1, a)}
@@ -246,23 +234,13 @@ export function AnalogOutOversamplingControlPage() {
           />
         )}
 
-        {/* Live values */}
-        <ControlCard title="Live Samples" className="col-span-2">
-          {liveValues ? (
-            <div className="grid grid-cols-2 gap-8">
-              <ChannelLiveValues
-                samples={liveValues.ch1_samples}
-                label="Channel 1"
-              />
-              <ChannelLiveValues
-                samples={liveValues.ch2_samples}
-                label="Channel 2"
-              />
-            </div>
-          ) : (
-            <span className="text-sm text-gray-500">Waiting for data…</span>
-          )}
-        </ControlCard>
+        {/* Voltage time series */}
+        <VoltageCard title="Channel 1 — Output Voltage" timeseries={ch1Voltage} />
+        <VoltageCard title="Channel 2 — Output Voltage" timeseries={ch2Voltage} />
+
+        {/* Per-slot bar visualisers */}
+        <SamplesCard title="Channel 1 — Oversampled Slots" samples={ch1Samples} />
+        <SamplesCard title="Channel 2 — Oversampled Slots" samples={ch2Samples} />
 
       </ControlGrid>
     </Page>
