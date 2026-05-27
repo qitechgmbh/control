@@ -19,7 +19,6 @@ import { fetchChangelog, fetchTargets } from "./git-fetch-utils";
 type UpdateExecuteListenerParams = {
   githubRepoOwner: string;
   githubRepoName: string;
-  githubToken?: string;
   tag?: string;
   branch?: string;
   commit?: string;
@@ -145,7 +144,6 @@ async function update(
         const {
           githubRepoOwner,
           githubRepoName,
-          githubToken,
           tag,
           branch,
           commit,
@@ -155,7 +153,6 @@ async function update(
         console.log("Update parameters:", {
           githubRepoOwner,
           githubRepoName,
-          githubToken,
           tag,
           branch,
           commit,
@@ -201,7 +198,6 @@ async function update(
           {
             githubRepoOwner,
             githubRepoName,
-            githubToken,
             tag,
             branch,
             commit,
@@ -274,7 +270,6 @@ async function update(
 type CloneRepositoryParams = {
   githubRepoOwner: string;
   githubRepoName: string;
-  githubToken?: string;
   tag?: string;
   branch?: string;
   commit?: string;
@@ -312,7 +307,7 @@ async function cloneRepository(
   params: CloneRepositoryParams,
   event: Electron.IpcMainInvokeEvent,
 ): Promise<{ success: boolean; error?: string }> {
-  const { githubRepoOwner, githubRepoName, githubToken, tag, branch, commit } =
+  const { githubRepoOwner, githubRepoName, tag, branch, commit } =
     params;
 
   const qitechControlEnv = process.env.QITECH_CONTROL_ENV;

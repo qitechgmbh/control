@@ -36,7 +36,6 @@ interface UpdateContext {
   execute: (params: {
     githubRepoOwner: string;
     githubRepoName: string;
-    githubToken?: string;
     tag?: string;
     branch?: string;
     commit?: string;

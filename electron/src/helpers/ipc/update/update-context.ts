@@ -16,7 +16,6 @@ type UpdateExecuteInvokeParams = {
   source: {
     githubRepoOwner: string;
     githubRepoName: string;
-    githubToken?: string;
     tag?: string;
     branch?: string;
     commit?: string;
