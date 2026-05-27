@@ -32,7 +32,7 @@ export function ChangelogPage() {
   const versionName = search.branch ?? search.tag ?? search.commit;
   const ref = search.branch ?? search.tag ?? search.commit!;
 
-  let [changelog, setChangelog] = useState<string | null | undefined>(
+  const [changelog, setChangelog] = useState<string | null | undefined>(
     undefined,
   );
 
