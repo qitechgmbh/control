@@ -67,7 +67,7 @@ export function addUpdateEventListeners() {
       } catch(error: any)  {
         event.sender.send(
           UPDATE_FETCH_CHANGELOG_RECV,
-          `get update targets failed: ${error}`,
+          `get update changelog failed: ${error}`,
         );
       }
     }
