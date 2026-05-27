@@ -1,4 +1,3 @@
-import { GithubSource } from "@/setup/GithubSourceDialog";
 import type { UpdateInfo } from "@/stores/updateStore";
 import { useUpdateStore } from "@/stores/updateStore";
 
