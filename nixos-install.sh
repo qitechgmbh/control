@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+set -euo pipefail
+
 # Capture all git information
 export GIT_TIMESTAMP=$(git --no-pager show -s --format=%cI HEAD)  # e.g., "2025-06-10T14:30:45+02:00"
 export GIT_COMMIT=$(git rev-parse HEAD)                           # e.g., "b2c7f6e0b138174770798f84ada8b0aa65afeb"
@@ -27,7 +30,7 @@ sudo \
     --preserve-env=GIT_ABBREVIATION \
     --preserve-env=GIT_ABBREVIATION_ESCAPED \
     nixos-rebuild boot \
-    	--flake "git+file://$(pwd)?submodules=1#nixos" \
+    	--flake .#nixos \
     	--show-trace \
     	--impure \
     	--option sandbox false \
