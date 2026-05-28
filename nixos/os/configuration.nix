@@ -107,7 +107,6 @@ in
   services.displayManager.gdm = {
     enable = true;
     autoSuspend = false;
-    wayland = true;
   };
   services.desktopManager.gnome.enable = true;
 
@@ -250,7 +249,7 @@ in
     htop
     wireshark
     pciutils
-    neofetch
+    fastfetch
     caddy
     # QiTech Frontend
     pkgs.qitechPackages.electron
