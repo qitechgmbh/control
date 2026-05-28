@@ -28,6 +28,8 @@ jobs:
 
       - &checkout
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - &setup-rust
         name: Install Rust toolchain

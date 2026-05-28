@@ -26,6 +26,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          submodules: true
 
       - name: Install Nix
         uses: nixbuild/nix-quick-install-action@v34
