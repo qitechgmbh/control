@@ -243,7 +243,7 @@ impl CacheableEvents<AquaPathV1Events> for AquaPathV1Events {
 }
 
 impl MachineApi for AquaPathV1 {
-      fn act_machine_message(&mut self, msg: MachineMessage) {
+    fn act_machine_message(&mut self, msg: MachineMessage) {
         match msg {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);

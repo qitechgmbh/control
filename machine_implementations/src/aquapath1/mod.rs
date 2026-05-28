@@ -1,19 +1,27 @@
-use api::{ToleranceState, ToleranceStates};
-use control_core::socketio::namespace::NamespaceCacheingLogic;
-use qitech_lib::{machines::{MachineIdentification, MachineIdentificationUnique}, units::{AngularVelocity, ThermodynamicTemperature, VolumeRate, angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius, volume_rate::liter_per_minute}};
-use serde::{Deserialize, Serialize};
-use tokio::sync::mpsc::{Receiver, Sender};
-use std::time::Instant;
 use crate::{
-    MACHINE_AQUAPATH_V1, MachineMessage, VENDOR_QITECH, aquapath1::{
+    MACHINE_AQUAPATH_V1, MachineMessage, VENDOR_QITECH,
+    aquapath1::{
         api::{
             AquaPathV1Events, AquaPathV1Namespace, CoolingModeState, CoolingModeStates, FanState,
             FanStates, FlowState, FlowStates, LiveValuesEvent, ModeState, NoticeEvent, PidState,
             PidStates, StateEvent, TempState, TempStates, ThermalSafetyState, ThermalSafetyStates,
         },
         controller::{ControlResetReason, Controller, ControllerNotice},
-    }
+    },
 };
+use api::{ToleranceState, ToleranceStates};
+use control_core::socketio::namespace::NamespaceCacheingLogic;
+use qitech_lib::{
+    machines::{MachineIdentification, MachineIdentificationUnique},
+    units::{
+        AngularVelocity, ThermodynamicTemperature, VolumeRate,
+        angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius,
+        volume_rate::liter_per_minute,
+    },
+};
+use serde::{Deserialize, Serialize};
+use std::time::Instant;
+use tokio::sync::mpsc::{Receiver, Sender};
 
 pub mod act;
 pub mod api;
@@ -76,7 +84,7 @@ pub struct AquaPathV1 {
     ambient_temperature_calibration: ThermodynamicTemperature,
     last_measurement_emit: Instant,
     front_controller: Controller,
-    back_controller: Controller
+    back_controller: Controller,
 }
 
 impl AquaPathV1 {
