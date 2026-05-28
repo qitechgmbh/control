@@ -11,9 +11,6 @@ on:
 permissions:
   contents: read
 
-env:
-  NIX_PATH: nixpkgs=channel:nixos-25.05
-
 jobs:
   electron:
     runs-on: ubuntu-latest
@@ -83,8 +80,8 @@ jobs:
 
       - uses: actions/upload-artifact@v7.0.0
         with:
-          name: nixos-qitech-x86_64-${{ steps.vars.outputs.sha_short }}.iso
           path: result/iso/*.iso
+          archive: false
 
   format:
     runs-on: ubuntu-latest
