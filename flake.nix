@@ -2,12 +2,12 @@
   description = "QiTech Control";
 
   inputs = {
+    self.submodules = true;
+
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
 
     # Crane for Rust builds with dependency caching
-    crane = {
-      url = "github:ipetkov/crane";
-    };
+    crane.url = "github:ipetkov/crane";
 
     home-manager = {
       url = "github:nix-community/home-manager/release-25.11";

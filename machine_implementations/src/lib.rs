@@ -1,4 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
 use anyhow::Result;
 use control_core::socketio::namespace::Namespace;
 use qitech_lib::{
@@ -11,6 +10,7 @@ use qitech_lib::{
     modbus::ModbusDevice,
 };
 use serde::Serialize;
+use std::{cell::RefCell, rc::Rc};
 use tokio::sync::mpsc::Sender;
 
 pub mod aquapath1;

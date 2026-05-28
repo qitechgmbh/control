@@ -304,8 +304,8 @@ fn main_logic() {
         Ok(interface) => {
             let eth_control = optimized_ethercat_init(&interface);
             shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
-            Some( eth_control )
-        } ,
+            Some(eth_control)
+        }
         Err(_) => None,
     };
 

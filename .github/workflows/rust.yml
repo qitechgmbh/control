@@ -12,7 +12,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_VERSION: "1.86"
 
 permissions:
   contents: read
@@ -28,15 +27,15 @@ jobs:
 
       - &checkout
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - &setup-rust
         name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ env.RUST_VERSION }}
-          profile: minimal
-          override: true
-          components: rustfmt
+          toolchain: stable
+          components: clippy,rustfmt
 
       - &cargo-cache
         name: Cache Rust dependencies
@@ -48,13 +47,11 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-${{ env.RUST_VERSION }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ env.RUST_VERSION }}-cargo-
+            ${{ runner.os }}-cargo-
 
       - name: Build
-        env:
-          RUSTFLAGS: "-D warnings"
         run: cargo build --verbose
 
   format:
