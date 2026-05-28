@@ -174,7 +174,7 @@ impl ExtruderV2 {
         };
         self.mode = ExtruderV2Mode::Standby;
     }
-    
+
     fn get_relais(&mut self) -> Rc<RefCell<dyn DigitalOutputDevice>> {
         self.relais_output.clone()
     }
