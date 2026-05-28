@@ -5,7 +5,7 @@ members = [
     "control-core",
     "machine_implementations",
     "control-core-derive",
-    "utils",
+#    "utils",
 ]
 exclude = []
 resolver = "2"

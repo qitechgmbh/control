@@ -375,7 +375,7 @@ impl Controller {
 
     pub fn get_flow(&self) -> VolumeRate {
         let guard = self.temp_and_flow_sensor.borrow();
-        let input = guard.get_input(self.temperature_sensor_port);        
+        let input = guard.get_input(self.flow_sensor_port);        
         let input_data = match input {
             Ok(input_data) => input_data,
             Err(_) => {
