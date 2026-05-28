@@ -24,7 +24,8 @@ impl Machine for AnalogOutOversamplingMachine {
         self.last_samples = [samples_ch0, samples_ch1];
         self.last_act = Some(now);
 
-        if let Ok(mut device) = self.el4732.try_borrow_mut() {
+        {
+            let mut device = self.el4732.borrow_mut();
             device.set_output_samples(0, &samples_ch0);
             device.set_output_samples(1, &samples_ch1);
         }
@@ -38,6 +39,7 @@ impl Machine for AnalogOutOversamplingMachine {
             self.emit_live_values();
             self.last_live_values_emit = now;
         }
+
         Ok(())
     }
 
