@@ -206,12 +206,12 @@ fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainSt
 fn optimized_ethercat_init(
     interface: &str,
 ) -> EtherCATControl<TripleBufConsumer, TripleBufProducer> {
-    let target_cycle_time_us: u64 = 400;
+    let target_cycle_time_us: u64 = 1000;
     let dc_config: DcConfiguration = DcConfiguration {
         start_delay: Duration::from_millis(100),
         sync0_period: Duration::from_micros(target_cycle_time_us),
         sync0_shift: Duration::from_micros(target_cycle_time_us / 2),
-        target_dc_tick: 300,
+        target_dc_tick: 500,
     };
 
     let opt_config: RtOptimizationConfig = RtOptimizationConfig {
@@ -219,7 +219,7 @@ fn optimized_ethercat_init(
         ethercat_loop_thread_priority: 99,
         ethercat_io_thread_core: 3,
         ethercat_io_thread_priority: 99,
-        pin_irq_core: None,
+        pin_irq_core: Some(3),
     };
 
     let config: MasterConfiguration = MasterConfiguration {

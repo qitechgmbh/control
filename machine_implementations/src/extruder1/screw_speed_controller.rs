@@ -68,7 +68,6 @@ impl ScrewSpeedController {
             uses_rpm: true,
             forward_rotation: true,
             transmission: transmission,
-            //FixedTransmission::new(1.0 / 34.0),
             motor_on: false,
             nozzle_pressure_limit: Pressure::new::<bar>(100.0),
             nozzle_pressure_limit_enabled: true,

@@ -15,7 +15,6 @@ impl Machine for ExtruderV2 {
             }
             Err(_) => (),
         };
-
         {
             let mut relais = self.relais_output.borrow_mut();
             let relais_ref = &mut *relais;
