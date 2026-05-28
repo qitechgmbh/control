@@ -6,24 +6,16 @@
 }:
 
 let
-  runner = pkgs.writeShellScriptBin "run-linux" ''
-    exec $@
-  '';
-
   commonArgs = {
     pname = "server";
     version = (builtins.fromJSON (builtins.readFile ../../electron/package.json)).version;
     strictDeps = true;
-
-    # Avoid using sudo as set by the cargo config
-    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER="${runner}/bin/run-linux";
 
     nativeBuildInputs = [ pkg-config ];
 
     buildInputs = [
       libpcap
       libudev-zero
-      runner
     ];
 
     src = ../..;
