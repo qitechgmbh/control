@@ -1,8 +1,7 @@
 use crate::{
     MachineHardware, MachineNew,
     minimal_machines::oversampling_test_machine::{
-        AnalogOutOversamplingMachine, ChannelConfig, CYCLE_TIME_US, OVERSAMPLE_FACTOR,
-        api::AnalogOutOversamplingNamespace,
+        AnalogOutOversamplingMachine, CYCLE_TIME_US, ChannelConfig, OVERSAMPLE_FACTOR, SYNC1_PERIOD_US, api::AnalogOutOversamplingNamespace
     },
 };
 use anyhow::Error;
@@ -38,7 +37,7 @@ impl MachineNew for AnalogOutOversamplingMachine {
 
         // Enable DC Sync01 so the device steps between sub-samples at the
         // correct moment. sync1_period = cycle_time / oversample_factor.
-        let sync1_period = Duration::from_micros(CYCLE_TIME_US) / OVERSAMPLE_FACTOR as u32;
+        let sync1_period = Duration::from_micros(SYNC1_PERIOD_US);
         interface.enable_dc_sync01(device_address, sync1_period)?;
 
         let (sender, receiver) = tokio::sync::mpsc::channel(2);

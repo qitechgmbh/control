@@ -19,9 +19,9 @@ use tokio::sync::mpsc::{Receiver, Sender};
 /// How many samples the EL4732 outputs per EtherCAT cycle.
 /// Must be one of: 1, 2, 3, 4, 5, 8, 10, 16, 20, 25, 32, 40, 50, 100
 pub const OVERSAMPLE_FACTOR: usize = 4;
-
-/// EtherCAT cycle time must match DcConfiguration::sync0_period in your master config.
 pub const CYCLE_TIME_US: u64 = 1000;
+pub const SYNC0_PERIOD_US: u64 = CYCLE_TIME_US / OVERSAMPLE_FACTOR as u64; // 250µs
+pub const SYNC1_PERIOD_US: u64 = SYNC0_PERIOD_US * (OVERSAMPLE_FACTOR as u64 - 1); // 750µs
 
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum WaveformType {
