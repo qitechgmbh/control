@@ -55,7 +55,6 @@ impl MachineNew for AquaPathV1 {
         };
         
         interface.enable_dc_sync0(el2008.1)?;
-        interface.enable_dc_sync0(el4002.1)?;
         interface.enable_dc_sync0(el3024.1)?;
         let (sender, receiver) = tokio::sync::mpsc::channel(2);
 
