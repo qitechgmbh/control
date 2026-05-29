@@ -25,7 +25,7 @@ impl MachineNew for AnalogOutOversamplingMachine {
         if OVERSAMPLE_FACTOR > 1 {
             interface.configure_oversampling(device_address)?;
 
-            el4732.borrow_mut().rxpdo = EL4732RxPdo::new(OVERSAMPLE_FACTOR);
+            el4732.borrow_mut().rxpdo = EL4732RxPdo::new(OVERSAMPLE_FACTOR as usize);
         }
 
         let sync1_period = Duration::from_micros(SYNC1_PERIOD_US);
@@ -43,7 +43,7 @@ impl MachineNew for AnalogOutOversamplingMachine {
             el4732,
             channels: [ChannelConfig::default(), ChannelConfig::default()],
             phase: [0.0; 2],
-            last_samples: [[0.0; OVERSAMPLE_FACTOR]; 2],
+            last_samples: [[0.0; OVERSAMPLE_FACTOR as usize]; 2],
             last_act: Some(Instant::now()),
         };
 

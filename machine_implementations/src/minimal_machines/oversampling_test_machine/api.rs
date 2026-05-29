@@ -28,9 +28,9 @@ impl StateEvent {
 #[derive(Serialize, Debug, Clone)]
 pub struct LiveValuesEvent {
     /// Most recent samples written to CH1 (one per oversampling slot)
-    pub ch1_samples: [f32; OVERSAMPLE_FACTOR],
+    pub ch1_samples: [f32; OVERSAMPLE_FACTOR as usize],
     /// Most recent samples written to CH2
-    pub ch2_samples: [f32; OVERSAMPLE_FACTOR],
+    pub ch2_samples: [f32; OVERSAMPLE_FACTOR as usize],
 }
 
 impl LiveValuesEvent {

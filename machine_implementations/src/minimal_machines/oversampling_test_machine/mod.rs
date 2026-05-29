@@ -10,7 +10,7 @@ use crate::{
 };
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::{
-    ethercat_hal::devices::el4732::EL4732,
+    ethercat_hal::{devices::el4732::EL4732, pdo::oversampling::OVERSAMPLE_FACTOR},
     machines::{MachineIdentification, MachineIdentificationUnique},
 };
 use std::{cell::RefCell, f64::consts::PI, rc::Rc, time::Instant};
@@ -79,7 +79,7 @@ pub struct AnalogOutOversamplingMachine {
     pub phase: [f64; 2],
 
     /// Last computed samples, kept for LiveValuesEvent
-    pub last_samples: [[f32; OVERSAMPLE_FACTOR]; 2],
+    pub last_samples: [[f32; OVERSAMPLE_FACTOR as usize]; 2],
 
     pub last_act: Option<Instant>,
 }
@@ -95,7 +95,7 @@ impl AnalogOutOversamplingMachine {
     pub fn get_state(&self) -> StateEvent {
         StateEvent {
             channels: self.channels.clone(),
-            oversample_factor: OVERSAMPLE_FACTOR,
+            oversample_factor: OVERSAMPLE_FACTOR as usize,
             cycle_time_us: CYCLE_TIME_US,
         }
     }
@@ -131,7 +131,7 @@ impl AnalogOutOversamplingMachine {
     /// Generate OVERSAMPLE_FACTOR samples for one channel and advance its phase.
     /// Sub-sample phases are linearly interpolated so the waveform is continuous
     /// across cycle boundaries regardless of frequency.
-    pub fn generate_samples(&mut self, channel: usize) -> [f32; OVERSAMPLE_FACTOR] {
+    pub fn generate_samples(&mut self, channel: usize) -> [f32; OVERSAMPLE_FACTOR as usize] {
         let now = Instant::now();
         let elapsed_secs = match self.last_act {
             Some(last) => now.duration_since(last).as_secs_f64(),
@@ -146,7 +146,7 @@ impl AnalogOutOversamplingMachine {
         let phase_step_per_slot =
             2.0 * PI * config.frequency_hz * cycle_secs / OVERSAMPLE_FACTOR as f64;
 
-        let mut samples = [0.0f32; OVERSAMPLE_FACTOR];
+        let mut samples = [0.0f32; OVERSAMPLE_FACTOR as usize];
         for (i, slot) in samples.iter_mut().enumerate() {
             let p = self.phase[channel] + phase_step_per_slot * i as f64;
             let raw = match config.waveform {
