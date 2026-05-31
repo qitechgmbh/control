@@ -96,13 +96,37 @@ fn setup_ethercat(
     }
 
     match eth_control.channel.read_device_identifications() {
-        Ok(mut eeprom_idents) => {
+        Ok(eeprom_idents) => {
+            let mut machine_idents = eeprom_idents;
+
+            match persist::read_machine_device_info() {
+                Ok(saved_idents) if !saved_idents.is_empty() => {
+                    println!(
+                        "Applying {} saved machine device assignment(s)",
+                        saved_idents.len()
+                    );
+
+                    for saved_ident in saved_idents {
+                        if let Some(ident) = machine_idents
+                            .iter_mut()
+                            .find(|ident| ident.device_address == saved_ident.device_address)
+                        {
+                            *ident = saved_ident;
+                        } else {
+                            machine_idents.push(saved_ident);
+                        }
+                    }
+                }
+                Ok(_) => {}
+                Err(e) => println!("Could not read saved machine device assignments: {:?}", e),
+            }
+
             main_state.generate_machine_hardware_from_ethercat(
-                &eeprom_idents,
+                &machine_idents,
                 main_state.subdevices.clone(),
                 eth_control.channel.clone(),
             );
-            idents.append(&mut eeprom_idents);
+            idents.append(&mut machine_idents);
         }
         Err(e) => {
             println!("Could not read device identifications from eeprom: {:?}", e);

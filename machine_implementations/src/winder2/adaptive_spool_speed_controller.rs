@@ -1,21 +1,21 @@
 use crate::winder2::{
     clamp_revolution::clamp_revolution_uom, filament_tension::FilamentTensionCalculator,
-    puller_speed_controller::PullerSpeedController,
+    puller_speed_controller::PullerSpeedController, spool_speed_controller::SpoolTensionResponse,
 };
 
-use super::{clamp_revolution::Clamping, tension_arm::TensionArm};
+use super::tension_arm::TensionArm;
 use control_core::{
     controllers::first_degree_motion::angular_acceleration_speed_controller::AngularAccelerationSpeedController,
     helpers::{interpolation::scale, moving_time_window::MovingTimeWindow},
 };
 use core::f64;
-use qitech_lib::units::ConstZero;
 use qitech_lib::units::angle::degree;
 use qitech_lib::units::angular_acceleration::radian_per_second_squared;
 use qitech_lib::units::angular_velocity::{radian_per_second, revolution_per_minute};
 use qitech_lib::units::f64::*;
 use qitech_lib::units::length::{centimeter, meter};
 use qitech_lib::units::velocity::meter_per_second;
+use qitech_lib::units::ConstZero;
 use std::time::Instant;
 
 /// Adaptive spool speed controller that automatically adjusts to maintain optimal filament tension.
@@ -50,6 +50,7 @@ pub struct AdaptiveSpoolSpeedController {
     acceleration_factor: f64,
     /// Urgency multiplier for near-zero target speeds
     deacceleration_urgency_multiplier: f64,
+    tension_response: SpoolTensionResponse,
 }
 
 impl Default for AdaptiveSpoolSpeedController {
@@ -106,6 +107,25 @@ impl AdaptiveSpoolSpeedController {
     /// # Returns
     /// A new `AdaptiveSpoolSpeedController` instance ready for use.
     pub fn new() -> Self {
+        Self::new_with_tension_range(
+            Angle::new::<degree>(Self::TENSION_ARM_MAX_ANGLE_DEG),
+            Angle::new::<degree>(Self::TENSION_ARM_MIN_ANGLE_DEG),
+        )
+    }
+
+    pub fn new_with_tension_range(max_angle: Angle, min_angle: Angle) -> Self {
+        Self::new_with_tension_range_and_response(
+            max_angle,
+            min_angle,
+            SpoolTensionResponse::Takeup,
+        )
+    }
+
+    pub fn new_with_tension_range_and_response(
+        max_angle: Angle,
+        min_angle: Angle,
+        tension_response: SpoolTensionResponse,
+    ) -> Self {
         let max_speed = AngularVelocity::new::<revolution_per_minute>(Self::INITIAL_MAX_SPEED_RPM);
 
         Self {
@@ -118,10 +138,7 @@ impl AdaptiveSpoolSpeedController {
                 AngularAcceleration::ZERO,  // Will be dynamically adjusted
                 AngularVelocity::ZERO,
             ),
-            filament_calc: FilamentTensionCalculator::new(
-                Angle::new::<degree>(Self::TENSION_ARM_MAX_ANGLE_DEG),
-                Angle::new::<degree>(Self::TENSION_ARM_MIN_ANGLE_DEG),
-            ),
+            filament_calc: FilamentTensionCalculator::new(max_angle, min_angle),
             speed_time_window: MovingTimeWindow::new(
                 std::time::Duration::from_secs(Self::SPEED_WINDOW_DURATION_SECS),
                 Self::SPEED_WINDOW_MAX_SAMPLES,
@@ -133,6 +150,7 @@ impl AdaptiveSpoolSpeedController {
             max_speed_multiplier: Self::MAX_SPEED_MULTIPLIER,
             acceleration_factor: Self::ACCELERATION_FACTOR,
             deacceleration_urgency_multiplier: Self::DEACCELERATION_URGENCY_MULTIPLIER,
+            tension_response,
         }
     }
 
@@ -183,9 +201,11 @@ impl AdaptiveSpoolSpeedController {
             self.filament_calc.get_min_angle(),
         );
 
-        // Return minimum speed if tension arm is at limits
-        if matches!(clamping_state, Clamping::Min | Clamping::Max) {
-            return min_speed;
+        if let Some(speed) =
+            self.tension_response
+                .speed_for_clamping(clamping_state, min_speed, max_speed)
+        {
+            return speed;
         }
 
         // 1.0 means maximum tension (high angle, low speed)
@@ -194,10 +214,8 @@ impl AdaptiveSpoolSpeedController {
 
         self.update_speed_factor(filament_tension, t);
 
-        // Calculate speed based on inverted tension (lower tension = higher speed)
-
         AngularVelocity::new::<radian_per_second>(scale(
-            1.0 - filament_tension,
+            self.tension_response.speed_factor(filament_tension),
             min_speed.get::<radian_per_second>(),
             max_speed.get::<radian_per_second>(),
         ))
@@ -291,7 +309,9 @@ impl AdaptiveSpoolSpeedController {
 
         // Calculate proportional control adjustment
         let proportional_gain = self.radius_learning_rate * delta_t;
-        let factor_change = tension_error * proportional_gain;
+        let factor_change = self
+            .tension_response
+            .speed_factor_change(tension_error, proportional_gain);
 
         // Update the speed factor directly
         let new_factor = (self.speed_factor.get::<centimeter>() + factor_change)

@@ -27,6 +27,9 @@ import { Winder2_7031SettingPage } from "@/machines/winder/winder2_7031/Winder2_
 import { Winder2_7031GraphsPage } from "@/machines/winder/winder2_7031/Winder2_7031_Graphs";
 import { Winder2_7031PresetsPage } from "@/machines/winder/winder2_7031/Winder2_7031_PresetsPage";
 
+import { RewinderControlPage } from "@/machines/winder/rewinder/RewinderControlPage";
+import { RewinderPage } from "@/machines/winder/rewinder/RewinderPage";
+
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
 import { Extruder2SettingsPage } from "@/machines/extruder/extruder2/Extruder2Settings";
@@ -371,6 +374,18 @@ export const winder2_7031PresetsRoute = createRoute({
   getParentRoute: () => winder2_7031SerialRoute,
   path: "presets",
   component: () => <Winder2_7031PresetsPage />,
+});
+
+export const rewinderSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "rewinder/$serial",
+  component: () => <RewinderPage />,
+});
+
+export const rewinderControlRoute = createRoute({
+  getParentRoute: () => rewinderSerialRoute,
+  path: "control",
+  component: () => <RewinderControlPage />,
 });
 
 export const winder2ControlRoute = createRoute({
@@ -727,6 +742,8 @@ export const rootTree = RootRoute.addChildren([
         winder2GraphsRoute,
         winder2PresetsRoute,
       ]),
+
+      rewinderSerialRoute.addChildren([rewinderControlRoute]),
 
       extruder2Route.addChildren([
         extruder2ControlRoute,
