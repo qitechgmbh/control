@@ -1,7 +1,7 @@
-use super::{clamp_revolution::Clamping, tension_arm::TensionArm};
+use super::tension_arm::TensionArm;
 use crate::winder2::{
     clamp_revolution::clamp_revolution_uom, filament_tension::FilamentTensionCalculator,
-    puller_speed_controller::PullerSpeedController,
+    puller_speed_controller::PullerSpeedController, spool_speed_controller::SpoolTensionResponse,
 };
 use control_core::{
     controllers::{
@@ -15,7 +15,6 @@ use control_core::{
 };
 use std::time::Instant;
 
-use qitech_lib::units::ConstZero;
 use qitech_lib::units::angle::degree;
 use qitech_lib::units::angular_acceleration::{
     radian_per_second_squared, revolution_per_minute_per_second,
@@ -26,6 +25,7 @@ use qitech_lib::units::angular_velocity::{
 use qitech_lib::units::f64::*;
 use qitech_lib::units::length::meter;
 use qitech_lib::units::velocity::meter_per_second;
+use qitech_lib::units::ConstZero;
 
 #[derive(Debug)]
 pub struct MinMaxSpoolSpeedController {
@@ -37,6 +37,7 @@ pub struct MinMaxSpoolSpeedController {
     acceleration_controller: AngularAccelerationSpeedController,
     /// Filament tension calculator
     filament_calc: FilamentTensionCalculator,
+    tension_response: SpoolTensionResponse,
     /// Unit is angular velocity in rad/s
     speed_time_window: MovingTimeWindow<f64>,
 }
@@ -49,6 +50,22 @@ impl Default for MinMaxSpoolSpeedController {
 
 impl MinMaxSpoolSpeedController {
     pub fn new() -> Self {
+        Self::new_with_tension_range(Angle::new::<degree>(90.0), Angle::new::<degree>(20.0))
+    }
+
+    pub fn new_with_tension_range(max_angle: Angle, min_angle: Angle) -> Self {
+        Self::new_with_tension_range_and_response(
+            max_angle,
+            min_angle,
+            SpoolTensionResponse::Takeup,
+        )
+    }
+
+    pub fn new_with_tension_range_and_response(
+        max_angle: Angle,
+        min_angle: Angle,
+        tension_response: SpoolTensionResponse,
+    ) -> Self {
         let max_speed = AngularVelocity::new::<revolution_per_minute>(150.0);
 
         Self {
@@ -61,10 +78,8 @@ impl MinMaxSpoolSpeedController {
                 AngularAcceleration::ZERO,  // Will be dynamically adjusted
                 AngularVelocity::ZERO,
             ),
-            filament_calc: FilamentTensionCalculator::new(
-                Angle::new::<degree>(90.0),
-                Angle::new::<degree>(20.0),
-            ),
+            filament_calc: FilamentTensionCalculator::new(max_angle, min_angle),
+            tension_response,
             speed_time_window: MovingTimeWindow::new(
                 std::time::Duration::from_secs(5),
                 10, // max samples
@@ -110,20 +125,20 @@ impl MinMaxSpoolSpeedController {
             self.filament_calc.get_min_angle(),
         );
 
-        match tension_arm_revolution.1 {
-            Clamping::Min => return min_speed,
-            Clamping::Max => return min_speed,
-            _ => {}
-        };
+        if let Some(speed) =
+            self.tension_response
+                .speed_for_clamping(tension_arm_revolution.1, min_speed, max_speed)
+        {
+            return speed;
+        }
 
         let filament_tension = self
             .filament_calc
             .calc_filament_tension(tension_arm_revolution.0);
 
-        let filament_tension_inverted = 1.0 - filament_tension;
-
         // use exponetial interpolation to make the speed change more sensitive in the lower range
-        let filament_tension_exponential = interpolate_exponential(filament_tension_inverted, 2.0);
+        let filament_tension_exponential =
+            interpolate_exponential(self.tension_response.speed_factor(filament_tension), 2.0);
 
         // interpolate speed linear
 

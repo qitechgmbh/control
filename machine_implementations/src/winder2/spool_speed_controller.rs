@@ -1,11 +1,12 @@
 use crate::winder2::{
-    adaptive_spool_speed_controller::AdaptiveSpoolSpeedController,
+    adaptive_spool_speed_controller::AdaptiveSpoolSpeedController, clamp_revolution::Clamping,
     minmax_spool_speed_controller::MinMaxSpoolSpeedController,
     puller_speed_controller::PullerSpeedController,
 };
 use control_core::controllers::second_degree_motion::acceleration_position_controller::MotionControllerError;
 
 use super::tension_arm::TensionArm;
+use qitech_lib::units::angle::degree;
 use qitech_lib::units::f64::*;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
@@ -15,6 +16,43 @@ pub enum SpoolSpeedControllerType {
     #[default]
     Adaptive,
     MinMax,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub enum SpoolTensionResponse {
+    #[default]
+    Takeup,
+    Source,
+}
+
+impl SpoolTensionResponse {
+    pub fn speed_for_clamping(
+        self,
+        clamping_state: Clamping,
+        min_speed: AngularVelocity,
+        max_speed: AngularVelocity,
+    ) -> Option<AngularVelocity> {
+        match (self, clamping_state) {
+            (_, Clamping::None) => None,
+            (Self::Takeup, Clamping::Min | Clamping::Max) => Some(min_speed),
+            (Self::Source, Clamping::Min) => Some(min_speed),
+            (Self::Source, Clamping::Max) => Some(max_speed),
+        }
+    }
+
+    pub fn speed_factor(self, filament_tension: f64) -> f64 {
+        match self {
+            Self::Takeup => 1.0 - filament_tension,
+            Self::Source => filament_tension,
+        }
+    }
+
+    pub fn speed_factor_change(self, tension_error: f64, proportional_gain: f64) -> f64 {
+        match self {
+            Self::Takeup => tension_error * proportional_gain,
+            Self::Source => -tension_error * proportional_gain,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -33,9 +71,33 @@ impl Default for SpoolSpeedController {
 
 impl SpoolSpeedController {
     pub fn new() -> Self {
+        Self::new_with_tension_range(Angle::new::<degree>(90.0), Angle::new::<degree>(20.0))
+    }
+
+    pub fn new_with_tension_range(max_angle: Angle, min_angle: Angle) -> Self {
+        Self::new_with_tension_range_and_response(
+            max_angle,
+            min_angle,
+            SpoolTensionResponse::Takeup,
+        )
+    }
+
+    pub fn new_with_tension_range_and_response(
+        max_angle: Angle,
+        min_angle: Angle,
+        tension_response: SpoolTensionResponse,
+    ) -> Self {
         Self {
-            adaptive_controller: AdaptiveSpoolSpeedController::new(),
-            minmax_controller: MinMaxSpoolSpeedController::new(),
+            adaptive_controller: AdaptiveSpoolSpeedController::new_with_tension_range_and_response(
+                max_angle,
+                min_angle,
+                tension_response,
+            ),
+            minmax_controller: MinMaxSpoolSpeedController::new_with_tension_range_and_response(
+                max_angle,
+                min_angle,
+                tension_response,
+            ),
             r#type: SpoolSpeedControllerType::Adaptive,
             forward: true,
         }
