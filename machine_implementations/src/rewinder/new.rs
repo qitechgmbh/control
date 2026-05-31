@@ -1,0 +1,148 @@
+use super::{
+    RewindPhase, Rewinder, RewinderMode, EK1100_ROLE, EL2002_ROLE, PULLER_ROLE, SOURCE_SPOOL_ROLE,
+    TAKEUP_SPOOL_ROLE, TRAVERSE_ROLE,
+};
+use crate::{MachineHardware, MachineNew};
+use control_core::converters::{
+    angular_step_converter::AngularStepConverter, linear_step_converter::LinearStepConverter,
+};
+use qitech_lib::{
+    ethercat_hal::{
+        coe::ConfigurableDevice,
+        devices::{
+            ek1100::EK1100,
+            el2002::EL2002,
+            el7031::{coe::EL7031Configuration, pdo::EL7031PredefinedPdoAssignment, EL7031},
+            el7031_0030::{
+                self, coe::EL7031_0030Configuration, pdo::EL7031_0030PredefinedPdoAssignment,
+                EL7031_0030,
+            },
+            el7041_0052::{coe::EL7041_0052Configuration, EL7041_0052},
+        },
+        shared_config,
+        shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration},
+        EtherCATThreadChannel,
+    },
+    units::{
+        angle::degree,
+        f64::*,
+        length::{centimeter, millimeter},
+        velocity::meter_per_minute,
+    },
+};
+use std::time::Instant;
+
+impl MachineNew for Rewinder {
+    fn new(hw: MachineHardware) -> Result<Self, anyhow::Error> {
+        let _ek1100 = hw.try_get_ethercat_device_and_addr_by_role::<EK1100>(EK1100_ROLE)?;
+        let el2002 = hw.try_get_ethercat_device_and_addr_by_role::<EL2002>(EL2002_ROLE)?;
+        let takeup_spool =
+            hw.try_get_ethercat_device_and_addr_by_role::<EL7041_0052>(TAKEUP_SPOOL_ROLE)?;
+        let traverse = hw.try_get_ethercat_device_and_addr_by_role::<EL7031>(TRAVERSE_ROLE)?;
+        let puller = hw.try_get_ethercat_device_and_addr_by_role::<EL7031_0030>(PULLER_ROLE)?;
+        let source_spool =
+            hw.try_get_ethercat_device_and_addr_by_role::<EL7031_0030>(SOURCE_SPOOL_ROLE)?;
+
+        let interface: EtherCATThreadChannel = hw
+            .ethercat_interface
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("Rewinder: No EtherCAT interface was supplied"))?;
+
+        let el7031_0030_config = EL7031_0030Configuration {
+            stm_features: el7031_0030::coe::StmFeatures {
+                operation_mode: EL70x1OperationMode::DirectVelocity,
+                speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
+                ..Default::default()
+            },
+            stm_motor: StmMotorConfiguration {
+                max_current: 2700,
+                ..Default::default()
+            },
+            pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
+            ..Default::default()
+        };
+
+        for (device, address) in [&puller, &source_spool] {
+            let mut device_ref = device.borrow_mut();
+            (&mut *device_ref).write_config(interface.clone(), *address, &el7031_0030_config)?;
+            drop(device_ref);
+        }
+
+        let el7031_config = EL7031Configuration {
+            stm_features: shared_config::el70x1::StmFeatures {
+                operation_mode: EL70x1OperationMode::DirectVelocity,
+                speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
+                ..Default::default()
+            },
+            stm_motor: StmMotorConfiguration {
+                max_current: 1500,
+                ..Default::default()
+            },
+            pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
+            ..Default::default()
+        };
+
+        {
+            let mut traverse_ref = traverse.0.borrow_mut();
+            (&mut *traverse_ref).write_config(interface.clone(), traverse.1, &el7031_config)?;
+        }
+
+        let el7041_config = EL7041_0052Configuration {
+            stm_features: shared_config::el70x1::StmFeatures {
+                operation_mode: EL70x1OperationMode::DirectVelocity,
+                ..Default::default()
+            },
+            stm_motor: StmMotorConfiguration {
+                max_current: 2800,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        {
+            let mut takeup_ref = takeup_spool.0.borrow_mut();
+            (&mut *takeup_ref).write_config(interface.clone(), takeup_spool.1, &el7041_config)?;
+        }
+
+        let (api_sender, api_receiver) = tokio::sync::mpsc::channel(2);
+
+        let mut rewinder = Self {
+            api_receiver,
+            api_sender,
+            digital_outputs: el2002.0,
+            traverse: traverse.0,
+            takeup_spool: takeup_spool.0,
+            puller: puller.0.clone(),
+            source_spool: source_spool.0.clone(),
+            takeup_tension_arm: super::TensionArm::new(puller.0.clone()),
+            source_tension_arm: super::TensionArm::new(source_spool.0.clone()),
+            namespace: super::api::RewinderNamespace { namespace: None },
+            last_measurement_emit: Instant::now(),
+            machine_identification_unique: hw.identification,
+            mode: RewinderMode::Standby,
+            puller_speed_controller: super::PullerSpeedController::new(
+                Velocity::new::<meter_per_minute>(1.0),
+                LinearStepConverter::from_diameter(200, Length::new::<centimeter>(8.0)),
+            ),
+            takeup_spool_speed_controller: super::SpoolSpeedController::new(),
+            source_spool_speed_controller:
+                super::SpoolSpeedController::new_with_tension_range_and_response(
+                    Angle::new::<degree>(super::Rewinder::SOURCE_TENSION_ARM_MAX_ANGLE_DEG),
+                    Angle::new::<degree>(super::Rewinder::SOURCE_TENSION_ARM_MIN_ANGLE_DEG),
+                    crate::winder2::spool_speed_controller::SpoolTensionResponse::Source,
+                ),
+            takeup_spool_step_converter: AngularStepConverter::new(200),
+            source_spool_step_converter: AngularStepConverter::new(200),
+            traverse_controller: super::TraverseController::new(
+                Length::new::<millimeter>(22.0),
+                Length::new::<millimeter>(92.0),
+                64,
+            ),
+            rewind_phase: RewindPhase::Idle,
+            emitted_default_state: false,
+        };
+
+        rewinder.emit_state();
+        Ok(rewinder)
+    }
+}
