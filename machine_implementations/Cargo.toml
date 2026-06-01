@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-qitech_lib = { path = "../qitech_lib" }
+qitech_lib = { workspace = true }
 control_core = { path = "../control-core" }
 control_core_derive = { path = "../control-core-derive" }
 

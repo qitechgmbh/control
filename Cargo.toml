@@ -14,7 +14,7 @@ resolver = "2"
 
 
 [workspace.dependencies]
-qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git" }
+qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev  = "bd2c2111b74be0e91e21b80188c2adcad9515841" }
 
 # don't lint poissbilities for let chains because they were introduces after Rust 1.86
 collapsible_if = "allow"

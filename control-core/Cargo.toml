@@ -11,7 +11,7 @@ anyhow = "1.0.102"
 
 axum = "0.8.9"
 
-qitech_lib = { path = "../qitech_lib" }
+qitech_lib = { workspace = true }
 ethercrab = { git = "https://github.com/v-morlock/ethercrab", branch = "main" }
 interfaces = "0.0.9"
 serde = "1.0.219"
