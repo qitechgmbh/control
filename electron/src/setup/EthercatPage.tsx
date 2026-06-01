@@ -189,36 +189,25 @@ export function EthercatPage() {
         </div>
       </SectionTitle>
 
-    <p style={{ lineHeight: '1.6', margin: '1em 0' }}>
-      SubDevices have to be in preop before writing to the EEPROM is allowed
-    </p>
-    {etherCatState === 'preop' && (
-    
-    <span
-      style={{
-        color: '#542603',
-        backgroundColor: '#dea31b',
-        padding: '2px 6px',
-        borderRadius: '4px',
-        fontWeight: 'bold',
-        display: 'inline-block',
-        marginLeft: '4px',
-      }}
-    >
+<p style={{ lineHeight: '1.6', margin: '1em 0' }}>
+  SubDevices have to be in preop before writing to the EEPROM is allowed
+</p>
+{etherCatState === 'preop' && (
+  <span
+    style={{
+      color: '#542603',
+      backgroundColor: '#dea31b',
+      padding: '2px 6px',
+      borderRadius: '4px',
+      fontWeight: 'bold',
+      display: 'inline-block',
+      width: 'max-content', /* Forces the width to match the text exactly */
+      marginLeft: '4px',
+    }}
+  >
     NOTE: YOU ARE CURRENTLY IN PREOP, MACHINES WILL NOT SHOW UP/WORK! GO TO TROUBLESHOOT AND PRESS RESTART BACKEND
-    </span>
-  )}
-    
-    <TouchButton
-      variant="default"
-      icon="lu:RotateCcw"
-      isLoading={isRestartPreopLoading}
-      onClick={handleRestartBackendIntoPreop}
-      className="w-max"
-    >
-      Restart Backend Process Into Preop
-    </TouchButton>
-
+  </span>
+)}
       <MyTable table={table} key={`${data.toString()}-${etherCatState === "preop"}`} />
     </Page>
   );
