@@ -356,7 +356,7 @@ impl Controller {
 
     pub fn turn_heating_off(&mut self) {
         let mut guard = self.relais_controller.borrow_mut();
-        guard.set_output(self.heating_relais_port, true);
+        guard.set_output(self.heating_relais_port, false);
         drop(guard);
         self.temperature.heating = false;
         self.power = 0.0;
