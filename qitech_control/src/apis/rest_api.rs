@@ -10,7 +10,6 @@ use machine_implementations::laser::LaserMachine;
 use machine_implementations::machine_identification::{
     MachineIdentification, QiTechMachineIdentificationUnique,
 };
-use machine_implementations::minimal_machines::digital_input_test_machine::DigitalInputTestMachine;
 use machine_implementations::winder2::Winder2;
 use serde::Serialize;
 use std::sync::Arc;
@@ -152,6 +151,7 @@ pub fn rest_api_router() -> Router<Arc<SharedAppState>> {
             LaserMachine::MACHINE_IDENTIFICATION.into(),
         ))
         .merge(make_machine_router(Winder2::MACHINE_IDENTIFICATION.into()))
+        .merge(make_machine_router(Winder2::MACHINE_IDENTIFICATION_7031_SPOOL.into()))
         .merge(make_machine_router(
             ExtruderV2::MACHINE_IDENTIFICATION.into(),
         ))
