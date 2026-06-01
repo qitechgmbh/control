@@ -31,6 +31,7 @@ impl Into<String> for EcatState {
             EtherCATState::Init => String::from("init"),
             EtherCATState::PreOp => String::from("preop"),
             EtherCATState::PreopPdi => String::from("preoppdi"),
+            EtherCATState::SafeOp => String::from("safeop"),
             EtherCATState::Op => String::from("op"),
         }
     }

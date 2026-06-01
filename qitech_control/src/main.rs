@@ -153,7 +153,7 @@ fn finalize_ethercat(
 ) {
     let _res = eth_control
         .channel
-        .request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
+        .request_state_change(qitech_lib::ethercat_hal::EtherCATState::SafeOp);
     std::thread::sleep(Duration::from_secs(5));
     for meta in &mut main_state.subdevices {
         let m = eth_control
@@ -168,6 +168,11 @@ fn finalize_ethercat(
         meta.0.start_rx = m.start_rx;
         meta.0.end_rx = m.end_rx;
     }
+
+    /*let _res = eth_control
+        .channel
+        .request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);*/
+    //std::thread::sleep(Duration::from_secs(5));
 }
 
 fn send_setup_done_events(state: Arc<SharedAppState>) {
