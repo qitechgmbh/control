@@ -228,7 +228,7 @@ fn optimized_ethercat_init(
         ethercat_loop_thread_priority: 99,
         ethercat_io_thread_core: 3,
         ethercat_io_thread_priority: 99,
-        pin_irq_core: Some(3),
+        pin_irq_core: None,
     };
 
     let config: MasterConfiguration = MasterConfiguration {
