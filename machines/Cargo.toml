@@ -21,7 +21,7 @@ euclid = "0.22.14"
 smol = "2.0.2"
 
 # web
-serde_json = "1.0.149"
+serde_json = "1.0.150"
 socketioxide = { version = "0.17.2", features = ["msgpack"] }
 
 # serial
