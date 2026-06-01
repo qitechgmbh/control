@@ -145,6 +145,7 @@ impl LaserMachine {
         self.emit_state();
     }
 
+    /*
     ///
     /// Roundness = min(x, y) / max(x, y)
     ///
@@ -165,7 +166,7 @@ impl LaserMachine {
             }
             _ => None,
         }
-    }
+    }*/
 
     ///
     /// Calculates if the current diameter is inside of the tolerance

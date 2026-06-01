@@ -359,7 +359,7 @@ impl MachineApi for Winder2 {
             Mutation::SetPullerAdaptiveAcceptedDifference(v) => {
                 self.puller_set_adaptive_accepted_difference(v)
             }
-            Mutation::SetPullerAdaptiveReferenceMachine(v) => {}
+            Mutation::SetPullerAdaptiveReferenceMachine(_) => {}
         }
         Ok(())
     }

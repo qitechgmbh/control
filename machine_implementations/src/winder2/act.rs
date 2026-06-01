@@ -43,5 +43,5 @@ impl Machine for Winder2 {
         Ok(())
     }
 
-    fn react(&mut self, registry: &qitech_lib::machines::MachineDataRegistry) {}
+    fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {}
 }

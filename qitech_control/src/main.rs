@@ -26,6 +26,7 @@ use crate::{
 pub mod apis;
 mod app_state;
 mod machine_loop;
+#[cfg(feature = "mock")]
 mod mock;
 pub mod persist;
 
