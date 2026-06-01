@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "qitech_control",
-    "qitech_lib",
     "control-core",
     "machine_implementations",
     "control-core-derive",
@@ -12,6 +11,10 @@ resolver = "2"
 
 [workspace.lints.clippy]
 # Individual lints (priority 0)
+
+
+[workspace.dependencies]
+qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git" }
 
 # don't lint poissbilities for let chains because they were introduces after Rust 1.86
 collapsible_if = "allow"
