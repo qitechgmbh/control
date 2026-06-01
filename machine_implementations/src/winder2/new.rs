@@ -254,7 +254,11 @@ impl Winder2 {
             ..Default::default()
         };
         let mut b = el7031_0030_spool.0.borrow_mut();
-        (&mut *b).write_config(interface.clone(), el7031_0030_spool.1, &el7031_0030_spool_config)?;
+        (&mut *b).write_config(
+            interface.clone(),
+            el7031_0030_spool.1,
+            &el7031_0030_spool_config,
+        )?;
         drop(b);
         interface.enable_dc_sync0(el7031_0030_spool.1)?;
 

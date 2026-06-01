@@ -284,7 +284,7 @@ async function cloneRepository(
     : `https://github.com/${githubRepoOwner}/${githubRepoName}.git`;
 
   // Determine clone arguments based on whether tag, branch, or commit is specified
-  const cloneArgs = ["clone", "--progress","--recurse-submodules", repoUrl];
+  const cloneArgs = ["clone", "--progress", "--recurse-submodules", repoUrl];
 
   if (tag) {
     // Clone a specific tag

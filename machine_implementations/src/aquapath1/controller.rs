@@ -3,14 +3,16 @@ use control_core::controllers::pid::PidController;
 use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
 use qitech_lib::ethercat_hal::io::analog_input::physical::AnalogInputRange;
 use qitech_lib::ethercat_hal::io::analog_output::AnalogOutputDevice;
-use qitech_lib::ethercat_hal::io::as006::{calculate_as006_flow_lpm, calculate_as006_temperature_celsius};
+use qitech_lib::ethercat_hal::io::as006::{
+    calculate_as006_flow_lpm, calculate_as006_temperature_celsius,
+};
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use qitech_lib::units::electric_current::milliampere;
+use qitech_lib::units::{self, AngularVelocity, ElectricCurrent};
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
-use qitech_lib::units::{self, AngularVelocity, ElectricCurrent};
 use units::angular_velocity::revolution_per_minute;
 use units::f64::{ThermodynamicTemperature, VolumeRate};
 use units::thermodynamic_temperature::degree_celsius;
@@ -99,9 +101,9 @@ pub struct Controller {
     last_heating_switch: Instant,
     last_cooling_switch: Instant,
 
-    cooling_controller : Rc<RefCell<dyn AnalogOutputDevice>>,
-    relais_controller : Rc<RefCell<dyn DigitalOutputDevice>>,
-    temp_and_flow_sensor : Rc<RefCell<dyn AnalogInputDevice>>,
+    cooling_controller: Rc<RefCell<dyn AnalogOutputDevice>>,
+    relais_controller: Rc<RefCell<dyn DigitalOutputDevice>>,
+    temp_and_flow_sensor: Rc<RefCell<dyn AnalogInputDevice>>,
 
     cooling_controller_port: usize,
     cooling_relais_port: usize,
@@ -187,15 +189,15 @@ impl Controller {
         max_revolutions: AngularVelocity,
         flow: Flow,
         config: ControllerConfig,
-        cooling_controller : Rc<RefCell<dyn AnalogOutputDevice>>,
-        relais_controller : Rc<RefCell<dyn DigitalOutputDevice>>,
-        temp_and_flow_sensor : Rc<RefCell<dyn AnalogInputDevice>>,
+        cooling_controller: Rc<RefCell<dyn AnalogOutputDevice>>,
+        relais_controller: Rc<RefCell<dyn DigitalOutputDevice>>,
+        temp_and_flow_sensor: Rc<RefCell<dyn AnalogInputDevice>>,
         pump_relais_port: usize,
         flow_sensor_port: usize,
         cooling_controller_port: usize,
         cooling_relais_port: usize,
         heating_relais_port: usize,
-        temperature_sensor_port: usize,        
+        temperature_sensor_port: usize,
     ) -> Self {
         let now = Instant::now();
         Self {
@@ -257,7 +259,7 @@ impl Controller {
         self.pump_started_at = Some(Instant::now());
         let mut guard = self.relais_controller.borrow_mut();
         guard.set_output(self.pump_relais_port, true);
-        drop(guard);    
+        drop(guard);
     }
 
     pub fn disallow_pump(&mut self) {
@@ -348,7 +350,7 @@ impl Controller {
 
     pub fn turn_heating_on(&mut self) {
         let mut guard = self.relais_controller.borrow_mut();
-        guard.set_output(self.heating_relais_port,true);
+        guard.set_output(self.heating_relais_port, true);
         drop(guard);
         self.temperature.heating = true;
         self.power = self.config.heating_element_power;
@@ -356,7 +358,7 @@ impl Controller {
 
     pub fn turn_heating_off(&mut self) {
         let mut guard = self.relais_controller.borrow_mut();
-        guard.set_output(self.heating_relais_port,true);
+        guard.set_output(self.heating_relais_port, true);
         drop(guard);
         self.temperature.heating = false;
         self.power = 0.0;
@@ -375,17 +377,17 @@ impl Controller {
 
     pub fn get_flow(&self) -> VolumeRate {
         let guard = self.temp_and_flow_sensor.borrow();
-        let input = guard.get_input(self.flow_sensor_port);        
+        let input = guard.get_input(self.flow_sensor_port);
         let input_data = match input {
             Ok(input_data) => input_data,
             Err(_) => {
                 drop(guard);
                 return VolumeRate::new::<liter_per_minute>(0.0);
-            },
+            }
         };
         let range = guard.analog_input_range();
         drop(guard);
-        match calculate_as006_flow_lpm(&input_data,&range) {
+        match calculate_as006_flow_lpm(&input_data, &range) {
             Some(lpm) => VolumeRate::new::<liter_per_minute>(lpm),
             None => VolumeRate::new::<liter_per_minute>(0.0),
         }
@@ -725,7 +727,10 @@ impl Controller {
 
                 if self.temperature.cooling {
                     let mut guard = self.cooling_controller.borrow_mut();
-                    guard.set_output(self.cooling_controller_port, (target_revolutions as f32 / 10.0).into() ) ;
+                    guard.set_output(
+                        self.cooling_controller_port,
+                        (target_revolutions as f32 / 10.0).into(),
+                    );
                     drop(guard);
                     self.current_revolutions =
                         AngularVelocity::new::<revolution_per_minute>(target_revolutions);

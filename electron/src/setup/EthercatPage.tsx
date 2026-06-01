@@ -22,7 +22,7 @@ import { TouchButton } from "@/components/touch/TouchButton";
 
 export function createColumns(
   isPreop: boolean,
-): ColumnDef <
+): ColumnDef<
   NonNullable<EthercatDevicesEventData["Done"]>["devices"][number]
 >[] {
   return [
@@ -32,8 +32,8 @@ export function createColumns(
       cell: (row) => (
         <Value
           value={
-            row.row.original.device_identification.device_hardware_identification
-              .Ethercat?.subdevice_index
+            row.row.original.device_identification
+              .device_hardware_identification.Ethercat?.subdevice_index
           }
         />
       ),
@@ -121,12 +121,15 @@ export function EthercatPage() {
   const { ethercatDevices, ethercatState, ethercatInterfaceDiscovery } =
     useMainNamespace();
   const [isRestartPreopLoading, setIsRestartPreopLoading] = useState(false);
-  const etherCatState=ethercatState?.data?.State;
+  const etherCatState = ethercatState?.data?.State;
   const data = useMemo(() => {
     return ethercatDevices?.data?.Done?.devices || [];
   }, [ethercatDevices]);
 
-  const columns = useMemo(() => createColumns(etherCatState === "preop"), [etherCatState === "preop"]);
+  const columns = useMemo(
+    () => createColumns(etherCatState === "preop"),
+    [etherCatState === "preop"],
+  );
 
   const table = useReactTable({
     data,
@@ -176,39 +179,41 @@ export function EthercatPage() {
           <div
             className={`h-2.5 w-2.5 rounded-full ${
               etherCatState === "preop"
-                ? "bg-yellow-400" : etherCatState === "op"
+                ? "bg-yellow-400"
+                : etherCatState === "op"
                   ? "bg-green-400"
                   : "bg-neutral-400"
             }`}
           />
-          <span className="text-xs text-neutral-500">
-            {
-              etherCatState
-            }
-          </span>
+          <span className="text-xs text-neutral-500">{etherCatState}</span>
         </div>
       </SectionTitle>
 
-<p style={{ lineHeight: '1.6', margin: '1em 0' }}>
-  SubDevices have to be in preop before writing to the EEPROM is allowed
-</p>
-{etherCatState === 'preop' && (
-  <span
-    style={{
-      color: '#542603',
-      backgroundColor: '#dea31b',
-      padding: '2px 6px',
-      borderRadius: '4px',
-      fontWeight: 'bold',
-      display: 'inline-block',
-      width: 'max-content', /* Forces the width to match the text exactly */
-      marginLeft: '4px',
-    }}
-  >
-    NOTE: YOU ARE CURRENTLY IN PREOP, MACHINES WILL NOT SHOW UP/WORK! GO TO TROUBLESHOOT AND PRESS RESTART BACKEND
-  </span>
-)}
-      <MyTable table={table} key={`${data.toString()}-${etherCatState === "preop"}`} />
+      <p style={{ lineHeight: "1.6", margin: "1em 0" }}>
+        SubDevices have to be in preop before writing to the EEPROM is allowed
+      </p>
+      {etherCatState === "preop" && (
+        <span
+          style={{
+            color: "#542603",
+            backgroundColor: "#dea31b",
+            padding: "2px 6px",
+            borderRadius: "4px",
+            fontWeight: "bold",
+            display: "inline-block",
+            width:
+              "max-content" /* Forces the width to match the text exactly */,
+            marginLeft: "4px",
+          }}
+        >
+          NOTE: YOU ARE CURRENTLY IN PREOP, MACHINES WILL NOT SHOW UP/WORK! GO
+          TO TROUBLESHOOT AND PRESS RESTART BACKEND
+        </span>
+      )}
+      <MyTable
+        table={table}
+        key={`${data.toString()}-${etherCatState === "preop"}`}
+      />
     </Page>
   );
 }

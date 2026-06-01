@@ -1,7 +1,9 @@
 use crate::apis::socketio::{
     main_namespace::{
         MainNamespaceEvents,
-        ethercat_devices_event::{EcatState, EtherCatDeviceMetaData, EthercatDevicesEvent, EthercatSetupDone},
+        ethercat_devices_event::{
+            EcatState, EtherCatDeviceMetaData, EthercatDevicesEvent, EthercatSetupDone,
+        },
         machines_event::{MachineObj, MachinesEventBuilder},
     },
     namespaces::Namespaces,
@@ -138,8 +140,11 @@ impl SharedAppState {
         Ok(())
     }
 
-    pub async fn send_ethercat_state(&self, ecat_state : EcatState) {
-        let event = Event::new("EthercatStateEvent", EthercatDevicesEvent::State(ecat_state.into()));
+    pub async fn send_ethercat_state(&self, ecat_state: EcatState) {
+        let event = Event::new(
+            "EthercatStateEvent",
+            EthercatDevicesEvent::State(ecat_state.into()),
+        );
         let mut guard = self.socketio_setup.namespaces.write().await;
         let main_namespace = &mut guard.main_namespace;
         main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));

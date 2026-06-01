@@ -55,9 +55,13 @@ export const ethercatStateEventDataSchema = z.object({
   state: z.string(),
 });
 
-export type EthercatStateEventData = z.infer<typeof ethercatStateEventDataSchema>;
+export type EthercatStateEventData = z.infer<
+  typeof ethercatStateEventDataSchema
+>;
 
-export const ethercatStateEventSchema = eventSchema(ethercatStateEventDataSchema);
+export const ethercatStateEventSchema = eventSchema(
+  ethercatStateEventDataSchema,
+);
 
 export type EthercatStateEvent = z.infer<typeof ethercatStateEventSchema>;
 
@@ -138,16 +142,18 @@ export function mainMessageHandler(
           ethercatState: event,
         }));
       } else if (eventName === "MachinesEvent") {
-        const validatedEvent = machinesEventSchema.parse(event);        
+        const validatedEvent = machinesEventSchema.parse(event);
         const currentMachinesState = store.getState().machines;
         if (currentMachinesState) {
-          // Compare the old data array with the incoming data array if mismatch reload          
+          // Compare the old data array with the incoming data array if mismatch reload
           const oldDataStr = JSON.stringify(currentMachinesState.data.machines);
           const newDataStr = JSON.stringify(validatedEvent.data.machines);
           if (oldDataStr !== newDataStr) {
-            console.log("Detected a change in the machines state! Reloading...");
+            console.log(
+              "Detected a change in the machines state! Reloading...",
+            );
             window.location.reload();
-            return; 
+            return;
           }
         }
         store.setState((state) => ({
@@ -176,8 +182,10 @@ export function mainMessageHandler(
 export const mainNamespaceStore: StoreApi<MainNamespaceStore> =
   createMainNamespaceStore();
 
-export const mainMessageHandlerInstance: EventHandler =
-  mainMessageHandler(mainNamespaceStore, new ThrottledStoreUpdater(mainNamespaceStore));
+export const mainMessageHandlerInstance: EventHandler = mainMessageHandler(
+  mainNamespaceStore,
+  new ThrottledStoreUpdater(mainNamespaceStore),
+);
 
 const mainRoomImplementation = createNamespaceHookImplementation({
   createStore: () => mainNamespaceStore,

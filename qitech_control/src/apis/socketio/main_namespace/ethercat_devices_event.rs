@@ -20,7 +20,6 @@ pub struct EthercatSetupDone {
     pub devices: Vec<EtherCatDeviceMetaData>,
 }
 
-
 pub struct EcatState(EtherCATState);
 
 impl Into<String> for EcatState {
@@ -39,10 +38,9 @@ impl Into<String> for EcatState {
 
 impl From<EtherCATState> for EcatState {
     fn from(value: EtherCATState) -> Self {
-        Self( value )
+        Self(value)
     }
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum EthercatDevicesEvent {
@@ -51,10 +49,6 @@ pub enum EthercatDevicesEvent {
     Error(String),
     State(String),
 }
-
-
-
-
 
 pub struct EthercatDevicesEventBuilder();
 

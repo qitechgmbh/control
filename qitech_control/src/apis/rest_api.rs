@@ -148,14 +148,20 @@ fn make_machine_router(id: MachineIdentification) -> Router<Arc<SharedAppState>>
 pub fn rest_api_router() -> Router<Arc<SharedAppState>> {
     Router::new()
         .route("/machine", get(get_machines_handler))
-        .merge(make_machine_router(LaserMachine::MACHINE_IDENTIFICATION.into()))
-        .merge(make_machine_router(Winder2::MACHINE_IDENTIFICATION.into()))
-        .merge(make_machine_router(ExtruderV2::MACHINE_IDENTIFICATION.into()))
-        .merge(make_machine_router(AquaPathV1::MACHINE_IDENTIFICATION.into()))
-        /*.merge(make_machine_router(TestMachine::MACHINE_IDENTIFICATION.into()))
-        .merge(make_machine_router(WagoPower::MACHINE_IDENTIFICATION.into()))
-        .merge(make_machine_router(IP20TestMachine::MACHINE_IDENTIFICATION.into()))
         .merge(make_machine_router(
-            AnalogInputTestMachine::MACHINE_IDENTIFICATION,
-        ))*/
+            LaserMachine::MACHINE_IDENTIFICATION.into(),
+        ))
+        .merge(make_machine_router(Winder2::MACHINE_IDENTIFICATION.into()))
+        .merge(make_machine_router(
+            ExtruderV2::MACHINE_IDENTIFICATION.into(),
+        ))
+        .merge(make_machine_router(
+            AquaPathV1::MACHINE_IDENTIFICATION.into(),
+        ))
+    /*.merge(make_machine_router(TestMachine::MACHINE_IDENTIFICATION.into()))
+    .merge(make_machine_router(WagoPower::MACHINE_IDENTIFICATION.into()))
+    .merge(make_machine_router(IP20TestMachine::MACHINE_IDENTIFICATION.into()))
+    .merge(make_machine_router(
+        AnalogInputTestMachine::MACHINE_IDENTIFICATION,
+    ))*/
 }
