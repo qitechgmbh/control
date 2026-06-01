@@ -52,7 +52,7 @@ export const ethercatDevicesEventSchema = eventSchema(
 export type EthercatDevicesEvent = z.infer<typeof ethercatDevicesEventSchema>;
 
 export const ethercatStateEventDataSchema = z.object({
-  Preop: z.boolean(),
+  state: z.string(),
 });
 
 export type EthercatStateEventData = z.infer<typeof ethercatStateEventDataSchema>;

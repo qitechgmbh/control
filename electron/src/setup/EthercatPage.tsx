@@ -121,22 +121,12 @@ export function EthercatPage() {
   const { ethercatDevices, ethercatState, ethercatInterfaceDiscovery } =
     useMainNamespace();
   const [isRestartPreopLoading, setIsRestartPreopLoading] = useState(false);
-
-  const etherCatState =
-    ethercatState?.data?.Preop === true
-      ? "preop"
-      : ethercatState?.data == null
-        ? "unknown"
-        : "op";
-
-  const isPreop = etherCatState === "preop";
-  console.log("isPreop", isPreop, "etherCatState", etherCatState);
-
+  const etherCatState=ethercatState?.data?.State;
   const data = useMemo(() => {
     return ethercatDevices?.data?.Done?.devices || [];
   }, [ethercatDevices]);
 
-  const columns = useMemo(() => createColumns(isPreop), [isPreop]);
+  const columns = useMemo(() => createColumns(etherCatState === "preop"), [etherCatState === "preop"]);
 
   const table = useReactTable({
     data,
@@ -186,18 +176,15 @@ export function EthercatPage() {
           <div
             className={`h-2.5 w-2.5 rounded-full ${
               etherCatState === "preop"
-                ? "bg-yellow-400"
-                : etherCatState === "op"
+                ? "bg-yellow-400" : etherCatState === "op"
                   ? "bg-green-400"
                   : "bg-neutral-400"
             }`}
           />
           <span className="text-xs text-neutral-500">
-            {etherCatState === "preop"
-              ? "PreOp"
-              : etherCatState === "op"
-                ? "Operational"
-                : "Unknown"}
+            {
+              etherCatState
+            }
           </span>
         </div>
       </SectionTitle>
@@ -217,7 +204,7 @@ export function EthercatPage() {
         Restart Backend Process Into Preop
       </TouchButton>
 
-      <MyTable table={table} key={`${data.toString()}-${isPreop}`} />
+      <MyTable table={table} key={`${data.toString()}-${etherCatState === "preop"}`} />
     </Page>
   );
 }

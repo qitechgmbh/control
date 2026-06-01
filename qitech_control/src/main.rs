@@ -5,7 +5,7 @@ use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
 use qitech_lib::ethercat_hal::{
-    BECKHOFF_VENDOR_ID, EtherCATControl, TripleBufConsumer, TripleBufProducer,
+    BECKHOFF_VENDOR_ID, EtherCATControl, TripleBufConsumer, TripleBufProducer
 };
 #[cfg(not(feature = "mock"))]
 use qitech_lib::ethercat_hal::{
@@ -19,7 +19,7 @@ use std::{sync::Arc, time::Duration};
 
 #[cfg(not(feature = "mock"))]
 use crate::app_state::MainState;
-use crate::app_state::get_async_runtime;
+use crate::{apis::socketio::main_namespace::ethercat_devices_event::EcatState, app_state::get_async_runtime};
 
 pub mod apis;
 mod app_state;
@@ -167,13 +167,23 @@ fn finalize_ethercat(
     }
 }
 
-fn send_setup_done_events(state: Arc<SharedAppState>, preop: bool) {
+fn send_setup_done_events(state: Arc<SharedAppState>) {
     let rt = get_async_runtime();
     rt.spawn(async move {
         let _res = state.send_ethercat_setup_done().await;
         let _res = state.send_machines_event().await;
-        let _res = state.send_ethercat_preop(preop).await;
     });
+}
+
+fn send_ecat_state(state: Arc<SharedAppState>, ecat_state : EcatState) {
+    let rt = get_async_runtime();
+    rt.spawn(
+        async move {
+            let _res = state.send_ethercat_state(ecat_state).await;
+        }
+    ); 
+    
+ 
 }
 
 fn setup_api_and_websock(state: Arc<SharedAppState>) {
@@ -297,7 +307,6 @@ fn main_logic() {
     let stay_in_preop = std::env::var("QITECH_MODE").unwrap_or_default() == "preop"
         || std::env::args().any(|a| a == "preop");
     let mut shared_state = SharedAppState::new();
-
     let mut main_state = MainState::new();
     let res = find_ethercat_interface();
     let mut eth_control = match res {
@@ -308,8 +317,16 @@ fn main_logic() {
         } ,
         Err(_) => None,
     };
-
+    
     let state = Arc::new(shared_state);
+    match &eth_control {
+        Some(ecat) => {
+            send_ecat_state(state.clone(),ecat.controller.state.into() );  
+        },
+        None => (),
+    }
+    
+    
     setup_api_and_websock(state.clone());
 
     match &eth_control {
@@ -317,9 +334,13 @@ fn main_logic() {
         None => (),
     };
 
-    detect_and_build_machines(state.clone(), &mut main_state);
-    send_setup_done_events(state.clone(), stay_in_preop);
-
+    match &eth_control {
+        Some(ecat) => {
+            send_ecat_state(state.clone(),ecat.controller.state.into() );  
+        },
+        None => (),
+    }
+    
     if stay_in_preop && eth_control.is_some() {
         println!("Staying in PreOp as requested, exiting after setup.");
         loop {
@@ -327,10 +348,16 @@ fn main_logic() {
         }
     }
 
+    detect_and_build_machines(state.clone(), &mut main_state);
+    send_setup_done_events(state.clone());
+
     // Order is important here, because when detect_and_build_machines is called
     // Every machine assumes ethercat devices are in PreOp, finalize moves to OP
     match &eth_control {
-        Some(control) => finalize_ethercat(&mut main_state, control),
+        Some(ecat) => {
+            finalize_ethercat(&mut main_state, ecat);
+            send_ecat_state(state.clone(),ecat.controller.state.into() );  
+        },
         None => (),
     };
 

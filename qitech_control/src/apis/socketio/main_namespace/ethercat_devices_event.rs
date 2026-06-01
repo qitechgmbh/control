@@ -1,6 +1,7 @@
 use crate::SharedAppState;
 use control_core::socketio::event::Event;
 use machine_implementations::machine_identification::DeviceIdentification;
+use qitech_lib::ethercat_hal::EtherCATState;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -19,13 +20,41 @@ pub struct EthercatSetupDone {
     pub devices: Vec<EtherCatDeviceMetaData>,
 }
 
+
+pub struct EcatState(EtherCATState);
+
+impl Into<String> for EcatState {
+    fn into(self) -> String {
+        // Access the inner type via self.0
+        match self.0 {
+            EtherCATState::NoInterface => String::from("no interface"),
+            EtherCATState::Boot => String::from("booting"),
+            EtherCATState::Init => String::from("init"),
+            EtherCATState::PreOp => String::from("preop"),
+            EtherCATState::PreopPdi => String::from("preoppdi"),
+            EtherCATState::Op => String::from("op"),
+        }
+    }
+}
+
+impl From<EtherCATState> for EcatState {
+    fn from(value: EtherCATState) -> Self {
+        Self( value )
+    }
+}
+
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum EthercatDevicesEvent {
     Initializing(bool),
     Done(EthercatSetupDone),
     Error(String),
-    Preop(bool),
+    State(String),
 }
+
+
+
+
 
 pub struct EthercatDevicesEventBuilder();
 
