@@ -218,7 +218,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
         device.revision,
         machinePreset?.device_roles,
       ),
-    [device.product_id, device.revision, machinePreset],
+    [device.vendor_id, device.product_id, device.revision, machinePreset],
   );
 
   // if there is only one allowed role, set the role to that immediately
@@ -232,10 +232,15 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
       const index = filteredAllowedDevices.findIndex(
         (isAllowed) => isAllowed === true,
       );
-      // set the device role of index
-      form.setValue("role", index.toString());
+      // set the device role using the actual role number, not the index
+      if (machinePreset && machinePreset.device_roles[index]) {
+        form.setValue(
+          "role",
+          machinePreset.device_roles[index].role.toString(),
+        );
+      }
     }
-  }, [filteredAllowedDevices]);
+  }, [filteredAllowedDevices, machinePreset, form]);
 
   // Keep focus on input field when numpad is opened
   useEffect(() => {

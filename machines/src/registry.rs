@@ -17,6 +17,9 @@ use crate::{
     minimal_machines::mock::MockMachine, winder2::mock::Winder2,
 };
 
+#[cfg(feature = "gluetex-mock")]
+use crate::gluetex::mock::Gluetex as GluetexMock;
+
 use crate::{
     Machine, MachineNewParams, MachineNewTrait, machine_identification::MachineIdentification,
 };
@@ -32,6 +35,9 @@ use crate::{
 use crate::minimal_machines::{
     test_machine::TestMachine, test_machine_stepper::TestMachineStepper,
 };
+
+#[cfg(not(feature = "gluetex-mock"))]
+use crate::gluetex::Gluetex;
 
 use lazy_static::lazy_static;
 
@@ -163,6 +169,12 @@ lazy_static! {
         mc.register::<Wago750_460Machine>(vec![Wago750_460Machine::MACHINE_IDENTIFICATION]);
         mc.register::<Wago750_553Machine>(vec![Wago750_553Machine::MACHINE_IDENTIFICATION]);
         mc.register::<BottlecapsTestMachine>(vec![BottlecapsTestMachine::MACHINE_IDENTIFICATION]);
+
+        #[cfg(feature = "gluetex-mock")]
+        mc.register::<GluetexMock>(vec![GluetexMock::MACHINE_IDENTIFICATION]);
+
+        #[cfg(not(feature = "gluetex-mock"))]
+        mc.register::<Gluetex>(vec![Gluetex::MACHINE_IDENTIFICATION]);
         mc
     };
 }

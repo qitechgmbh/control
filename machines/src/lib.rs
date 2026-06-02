@@ -22,6 +22,7 @@ pub mod aquapath1;
 pub mod buffer1;
 pub mod extruder1;
 pub mod extruder2;
+pub mod gluetex;
 pub mod laser;
 pub mod machine_identification;
 pub mod minimal_machines;
@@ -43,6 +44,7 @@ pub const MACHINE_MOCK: u16 = 0x0007;
 pub const MACHINE_BUFFER_V1: u16 = 0x0008;
 pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
 pub const MACHINE_WAGO_POWER_V1: u16 = 0x000A;
+pub const MACHINE_GLUETEX_V1: u16 = 0x000B;
 pub const MACHINE_EXTRUDER_V2: u16 = 0x0016;
 pub const TEST_MACHINE: u16 = 0x0033;
 pub const IP20_TEST_MACHINE: u16 = 0x0034;
@@ -381,9 +383,8 @@ async fn get_device_ident<
             }
             _ => {
                 return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/{}::new] Device with role {} is not Ethercat",
+                    "[{}] Device with role {} is not Ethercat",
                     module_path!(),
-                    slug,
                     role,
                 ));
             }
@@ -448,10 +449,11 @@ where
 
     if !matched_any_identity {
         return Err(anyhow::anyhow!(
-            "[{}::MachineNewTrait/{}::new] Device identity mismatch: expected {:?}",
+            "[{}] Device identity mismatch for role {}: expected {:?}, got {:?}",
             module_path!(),
-            slug,
-            expected_identities
+            role,
+            expected_identities,
+            actual_identity
         ));
     }
 

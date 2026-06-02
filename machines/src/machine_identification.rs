@@ -60,6 +60,7 @@ impl MachineIdentification {
             x if x == MACHINE_BUFFER_V1 => "buffer_v1".to_string(),
             x if x == MACHINE_EXTRUDER_V2 => "extruder_v2".to_string(),
             x if x == MACHINE_WAGO_POWER_V1 => "wago_power_v1".to_string(),
+            x if x == MACHINE_GLUETEX_V1 => "gluetex".to_string(),
             x if x == TEST_MACHINE => "test_machine".to_string(),
             x if x == IP20_TEST_MACHINE => "ip20_test_machine".to_string(),
             x if x == ANALOG_INPUT_TEST_MACHINE => "analog_input_test_machine".to_string(),
@@ -195,6 +196,7 @@ use crate::MACHINE_AQUAPATH_V1;
 use crate::MACHINE_BUFFER_V1;
 use crate::MACHINE_EXTRUDER_V1;
 use crate::MACHINE_EXTRUDER_V2;
+use crate::MACHINE_GLUETEX_V1;
 use crate::MACHINE_LASER_V1;
 use crate::MACHINE_MOCK;
 use crate::MACHINE_WAGO_POWER_V1;

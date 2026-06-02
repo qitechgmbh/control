@@ -42,6 +42,8 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:RefreshCcw";
     case "s":
       return "lu:Clock";
+    case "min":
+      return "lu:Clock";
     case "MiB":
       return "lu:MemoryStick";
     case "Mbit/s":
@@ -95,6 +97,8 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "µs";
     case "s":
       return "s";
+    case "min":
+      return "min";
     case "MiB":
       return "MiB";
     case "Mbit/s":
@@ -170,6 +174,8 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "microseconds";
     case "s":
       return "seconds";
+    case "min":
+      return "minutes";
     case "MiB":
       return "mebibytes";
     case "Mbit/s":
@@ -202,6 +208,7 @@ export const units = [
   "%",
   "µs",
   "s",
+  "min",
   "MiB",
   "Mbit/s",
   "/s",

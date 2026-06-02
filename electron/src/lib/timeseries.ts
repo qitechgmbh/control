@@ -296,6 +296,32 @@ export function isSeriesFull(series: Series): boolean {
 }
 
 /**
+ * Reconfigure the long buffer of a TimeSeries with new sample interval and retention.
+ * This resets all data in the long buffer. The short buffer is left unchanged.
+ */
+export function reconfigureLongBuffer(
+  timeSeries: TimeSeries,
+  sampleInterval: number,
+  retention: number,
+): TimeSeries {
+  const newSize = Math.ceil(retention / sampleInterval);
+  const emptyEntry: TimeSeriesValue = { value: 0, timestamp: 0 };
+
+  return {
+    ...timeSeries,
+    long: {
+      values: Array.from({ length: newSize }, () => ({ ...emptyEntry })),
+      index: 0,
+      size: newSize,
+      lastTimestamp: 0,
+      timeWindow: retention,
+      sampleInterval: sampleInterval,
+      validCount: 0,
+    },
+  };
+}
+
+/**
  * Reset series to empty state
  */
 export function resetSeries(series: Series): void {

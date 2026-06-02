@@ -31,6 +31,18 @@ _26.05.2026_
 ## UX
 - [#1350](https://github.com/qitechgmbh/control/pull/1350) Fixed machines showing before subdevice initialization
 
+## Gluetex
+- Added slave puller status indicator to the overview page (Motors, Temperatures & Heaters tile) — shows a green "Enabled" or gray "Disabled" dot matching the addon motors style
+- Added `deceleration_distance_mm` setting to the Konturrad stepper motor. When set (> 0), the motor ramps speed linearly to zero over the configured distance after hitting the endstop and reaching its Konturlänge, instead of stopping instantly. Configured via Settings → Addons → Motor 3 Deceleration Distance.
+- Fixed estimated time remaining for pull distance not updating continuously — ETA is now recomputed at 30 FPS from live puller speed and progress instead of only recalculating when the target length was saved
+- Changed status output logic: DO8 now only turns on when the machine is in Wind or Pull mode (previously was on in any non-Standby mode or when heating was active)
+- Fixed heater overshooting target temperature on re-enable after standby by resetting PID integral state on heating disable/enable transitions
+- Added zero-degree tension arm safety stops for addon motor 5 (inlet feeder) and slave puller
+- Fixed inlet feeder motor freeze by correcting tension arm reference (was reading tape feeder instead of inlet feeder)
+- Improved motor enable/disable logic with `is_enabled` method in PullerSpeedController
+- Fixed RatioInput regression
+- Updated step value precision and formatting in RatioInput component
+
 # `2.16.0`
 _04.05.2026_
 

@@ -4,11 +4,12 @@ import React from "react";
 type Props = {
   children?: React.ReactNode;
   columns?: 2 | 3;
+  className?: string;
 };
 
-export function ControlGrid({ children, columns = 3 }: Props) {
+export function ControlGrid({ children, columns = 3, className }: Props) {
   return (
-    <div id="grid" className={controlGridStyle({ columns })}>
+    <div id="grid" className={controlGridStyle({ columns, className })}>
       {children}
     </div>
   );

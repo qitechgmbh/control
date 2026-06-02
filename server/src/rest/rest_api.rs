@@ -6,6 +6,7 @@ use axum::{Extension, Json, Router, debug_handler};
 use machines::MachineMessage;
 use machines::aquapath1::AquaPathV1;
 use machines::extruder1::ExtruderV2;
+use machines::gluetex::Gluetex;
 use machines::laser::LaserMachine;
 use machines::machine_identification::{MachineIdentification, MachineIdentificationUnique};
 use machines::minimal_machines::analog_input_test_machine::AnalogInputTestMachine;
@@ -154,6 +155,7 @@ pub fn rest_api_router() -> Router<Arc<SharedState>> {
         .route("/machine", get(get_machines_handler))
         .merge(make_machine_router(LaserMachine::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(Winder2::MACHINE_IDENTIFICATION))
+        .merge(make_machine_router(Gluetex::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(MockMachine::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(ExtruderV2::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(AquaPathV1::MACHINE_IDENTIFICATION))

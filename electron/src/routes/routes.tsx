@@ -27,6 +27,16 @@ import { Winder2_7031SettingPage } from "@/machines/winder/winder2_7031/Winder2_
 import { Winder2_7031GraphsPage } from "@/machines/winder/winder2_7031/Winder2_7031_Graphs";
 import { Winder2_7031PresetsPage } from "@/machines/winder/winder2_7031/Winder2_7031_PresetsPage";
 
+import { GluetexPage } from "@/machines/winder/gluetex/pages/GluetexPage";
+import { GluetexOverviewPage } from "@/machines/winder/gluetex/pages/GluetexOverviewPage";
+import { GluetexControlPage } from "@/machines/winder/gluetex/pages/GluetexControlPage";
+import { GluetexManualPage } from "@/machines/winder/gluetex/pages/GluetexManual";
+import { GluetexSettingPage } from "@/machines/winder/gluetex/pages/GluetexSettings";
+import { GluetexGraphsPage } from "@/machines/winder/gluetex/pages/GluetexGraphs";
+import { GluetexPresetsPage } from "@/machines/winder/gluetex/pages/GluetexPresetsPage";
+import { GluetexAddonsPage } from "@/machines/winder/gluetex/pages/GluetexAddonsPage";
+import { GluetexHeatersPage } from "@/machines/winder/gluetex/pages/GluetexHeatersPage";
+
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
 import { Extruder2SettingsPage } from "@/machines/extruder/extruder2/Extruder2Settings";
@@ -403,6 +413,60 @@ export const winder2PresetsRoute = createRoute({
   component: () => <Winder2PresetsPage />,
 });
 
+export const gluetexRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "gluetex/$serial",
+  component: () => <GluetexPage />,
+});
+
+export const gluetexOverviewRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "overview",
+  component: () => <GluetexOverviewPage />,
+});
+
+export const gluetexControlRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "control",
+  component: () => <GluetexControlPage />,
+});
+
+export const gluetexManualRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "manual",
+  component: () => <GluetexManualPage />,
+});
+
+export const gluetexSettingsRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "settings",
+  component: () => <GluetexSettingPage />,
+});
+
+export const gluetexGraphsRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "graphs",
+  component: () => <GluetexGraphsPage />,
+});
+
+export const gluetexPresetsRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "presets",
+  component: () => <GluetexPresetsPage />,
+});
+
+export const gluetexAddonsRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "addons",
+  component: () => <GluetexAddonsPage />,
+});
+
+export const gluetexHeatersRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "heaters",
+  component: () => <GluetexHeatersPage />,
+});
+
 export const laser1SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "laser1/$serial",
@@ -726,6 +790,17 @@ export const rootTree = RootRoute.addChildren([
         winder2SettingsRoute,
         winder2GraphsRoute,
         winder2PresetsRoute,
+      ]),
+
+      gluetexRoute.addChildren([
+        gluetexOverviewRoute,
+        gluetexControlRoute,
+        gluetexManualRoute,
+        gluetexSettingsRoute,
+        gluetexGraphsRoute,
+        gluetexPresetsRoute,
+        gluetexAddonsRoute,
+        gluetexHeatersRoute,
       ]),
 
       extruder2Route.addChildren([

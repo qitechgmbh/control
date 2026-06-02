@@ -72,7 +72,7 @@ export function NewPresetDialog<T>({
       </DialogTrigger>
 
       <DialogContent
-        className="max-h-[90vh] overflow-y-auto sm:max-w-4xl"
+        className="flex max-h-[90vh] flex-col sm:max-w-4xl"
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           showKeyboard();
@@ -132,7 +132,7 @@ export function NewPresetDialog<T>({
           visible={keyboardVisible}
         />
 
-        <div className="flex flex-col gap-6 text-sm">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto text-sm">
           <span>Current Settings:</span>
           <PresetPreviewTable entries={previewEntries} data={currentState} />
         </div>

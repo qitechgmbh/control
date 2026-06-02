@@ -1,0 +1,590 @@
+import { ControlCard } from "@/control/ControlCard";
+import { Page } from "@/components/Page";
+import React from "react";
+import { ControlGrid } from "@/control/ControlGrid";
+import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
+import { EditValue } from "@/control/EditValue";
+import { Label } from "@/control/Label";
+import { TouchButton } from "@/components/touch/TouchButton";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useGluetex } from "../hooks/useGluetex";
+import { roundToDecimals } from "@/lib/decimal";
+import { SpoolAutomaticActionMode, Mode } from "../state/gluetexNamespace";
+import { SelectionGroup } from "@/control/SelectionGroup";
+import { cn } from "@/lib/utils";
+import { GluetexErrorBanner } from "../components/GluetexErrorBanner";
+import { gluetexRoute } from "@/routes/routes";
+
+export function GluetexOverviewPage() {
+  const { serial: serialString } = gluetexRoute.useParams();
+  const deviceSerialId = parseInt(serialString);
+
+  const {
+    state,
+    pullerSpeed,
+    temperature1,
+    temperature2,
+    temperature3,
+    temperature4,
+    temperature5,
+    temperature6,
+    heater1Power,
+    heater2Power,
+    heater3Power,
+    heater4Power,
+    heater5Power,
+    heater6Power,
+    optris1Voltage,
+    optris2Voltage,
+    spoolProgress,
+    setSpoolAutomaticRequiredMeters,
+    setSpoolAutomaticAction,
+    setOperationMode,
+    resetSpoolProgress,
+    estimatedMinutesRemaining,
+    isLoading,
+    isDisabled,
+    setMode,
+    setOrderNumber,
+    setSerialNumber,
+    setProductDescription,
+  } = useGluetex();
+
+  const [tempDescription, setTempDescription] = React.useState("");
+  const [descriptionOpen, setDescriptionOpen] = React.useState(false);
+
+  // Helper function to get temperature status color
+  const getTemperatureColor = (temp?: number, target?: number) => {
+    if (!temp || !target) return "bg-gray-300";
+    const diff = Math.abs(temp - target);
+    if (diff < 5) return "bg-green-500";
+    if (diff < 15) return "bg-yellow-500";
+    return "bg-red-500";
+  };
+
+  // Helper function to get stepper status color
+  const getStepperColor = (mode?: string) => {
+    if (!mode) return "bg-gray-300";
+    if (mode === "Run") return "bg-green-500";
+    return "bg-gray-300";
+  };
+
+  // Helper function to check if any monitoring is triggered in setup mode
+  const isAnyMonitoringTriggered = () => {
+    if (!state) return false;
+    return (
+      state.winder_tension_arm_monitor_state?.triggered ||
+      state.tape_feeder_tension_arm_monitor_state?.triggered ||
+      state.inlet_feeder_tension_arm_monitor_state?.triggered ||
+      state.optris_1_monitor_state?.triggered ||
+      state.optris_2_monitor_state?.triggered ||
+      state.sleep_timer_state?.triggered ||
+      false
+    );
+  };
+
+  const handleResetProgress = () => {
+    resetSpoolProgress();
+  };
+
+  return (
+    <Page className="h-[calc(100vh-4.5rem)] overflow-hidden">
+      <GluetexErrorBanner />
+      <ControlGrid className="min-h-0 flex-1 auto-rows-fr">
+        {/* Top Row: Speed (left) */}
+        <ControlCard title="Speed">
+          <TimeSeriesValueNumeric
+            label="Speed"
+            unit="m/min"
+            timeseries={pullerSpeed}
+            renderValue={(value) => roundToDecimals(value, 1)}
+          />
+        </ControlCard>
+
+        {/* Top Row: Quali (center) */}
+        <ControlCard title="Quali">
+          <TimeSeriesValueNumeric
+            label="Optris 1"
+            unit="V"
+            timeseries={optris1Voltage}
+            renderValue={(value) => roundToDecimals(value, 2)}
+          />
+          <TimeSeriesValueNumeric
+            label="Optris 2"
+            unit="V"
+            timeseries={optris2Voltage}
+            renderValue={(value) => roundToDecimals(value, 2)}
+          />
+        </ControlCard>
+
+        {/* Right Column: Tall tile spans two rows */}
+        <ControlCard height={2} title="Motors, Temperatures & Heaters">
+          <div className="flex flex-col gap-3">
+            {/* Addon Motors Status Grid */}
+            <div>
+              <h3 className="mb-1 text-sm font-semibold">Addon Motors</h3>
+              <div className="grid grid-cols-3 gap-1">
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Stepper 3</span>
+                  <div
+                    className={cn(
+                      "h-5 w-5 rounded-full",
+                      getStepperColor(state?.stepper_state?.stepper3_mode),
+                    )}
+                  />
+                  <span className="text-xs">
+                    {state?.stepper_state?.stepper3_mode || "Standby"}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Stepper 4</span>
+                  <div
+                    className={cn(
+                      "h-5 w-5 rounded-full",
+                      getStepperColor(state?.stepper_state?.stepper4_mode),
+                    )}
+                  />
+                  <span className="text-xs">
+                    {state?.stepper_state?.stepper4_mode || "Standby"}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Stepper 5</span>
+                  <div
+                    className={cn(
+                      "h-5 w-5 rounded-full",
+                      getStepperColor(state?.stepper_state?.stepper5_mode),
+                    )}
+                  />
+                  <span className="text-xs">
+                    {state?.stepper_state?.stepper5_mode || "Standby"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Temperature Status Grid */}
+            <div>
+              <h3 className="mb-1 text-sm font-semibold">Temperatures</h3>
+              <div className="grid grid-cols-3 gap-1">
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Temp 1</span>
+                  <div
+                    className={cn(
+                      "h-5 w-5 rounded-full",
+                      getTemperatureColor(
+                        temperature1.current?.value,
+                        state?.heating_states?.zone_1?.target_temperature,
+                      ),
+                    )}
+                  />
+                  <span className="text-xs">
+                    {temperature1.current?.value
+                      ? roundToDecimals(temperature1.current.value, 1)
+                      : "—"}
+                    °C
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Temp 2</span>
+                  <div
+                    className={cn(
+                      "h-5 w-5 rounded-full",
+                      getTemperatureColor(
+                        temperature2.current?.value,
+                        state?.heating_states?.zone_2?.target_temperature,
+                      ),
+                    )}
+                  />
+                  <span className="text-xs">
+                    {temperature2.current?.value
+                      ? roundToDecimals(temperature2.current.value, 1)
+                      : "—"}
+                    °C
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Temp 3</span>
+                  <div
+                    className={cn(
+                      "h-5 w-5 rounded-full",
+                      getTemperatureColor(
+                        temperature3.current?.value,
+                        state?.heating_states?.zone_3?.target_temperature,
+                      ),
+                    )}
+                  />
+                  <span className="text-xs">
+                    {temperature3.current?.value
+                      ? roundToDecimals(temperature3.current.value, 1)
+                      : "—"}
+                    °C
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Temp 4</span>
+                  <div
+                    className={cn(
+                      "h-5 w-5 rounded-full",
+                      getTemperatureColor(
+                        temperature4.current?.value,
+                        state?.heating_states?.zone_4?.target_temperature,
+                      ),
+                    )}
+                  />
+                  <span className="text-xs">
+                    {temperature4.current?.value
+                      ? roundToDecimals(temperature4.current.value, 1)
+                      : "—"}
+                    °C
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Temp 5</span>
+                  <div
+                    className={cn(
+                      "h-5 w-5 rounded-full",
+                      getTemperatureColor(
+                        temperature5.current?.value,
+                        state?.heating_states?.zone_5?.target_temperature,
+                      ),
+                    )}
+                  />
+                  <span className="text-xs">
+                    {temperature5.current?.value
+                      ? roundToDecimals(temperature5.current.value, 1)
+                      : "—"}
+                    °C
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs font-medium">Temp 6</span>
+                  <div
+                    className={cn(
+                      "h-5 w-5 rounded-full",
+                      getTemperatureColor(
+                        temperature6.current?.value,
+                        state?.heating_states?.zone_6?.target_temperature,
+                      ),
+                    )}
+                  />
+                  <span className="text-xs">
+                    {temperature6.current?.value
+                      ? roundToDecimals(temperature6.current.value, 1)
+                      : "—"}
+                    °C
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Heaters Power Draw */}
+            <div>
+              <h3 className="mb-1 text-sm font-semibold">Heaters Power</h3>
+              <div className="flex flex-row items-center justify-center gap-3 rounded-lg border px-4 py-2">
+                <span className="text-sm">Total Power Draw</span>
+                <span className="font-mono text-2xl font-bold">
+                  {(() => {
+                    const powers = [
+                      heater1Power.current?.value,
+                      heater2Power.current?.value,
+                      heater3Power.current?.value,
+                      heater4Power.current?.value,
+                      heater5Power.current?.value,
+                      heater6Power.current?.value,
+                    ];
+                    const allDefined = powers.every((p) => p !== undefined);
+                    if (!allDefined) return "—";
+                    const total = powers.reduce((sum, p) => sum + (p || 0), 0);
+                    return roundToDecimals(total, 1);
+                  })()}
+                </span>
+                <span className="text-muted-foreground text-sm">W</span>
+              </div>
+            </div>
+
+            {/* Slave Puller */}
+            <div>
+              <h3 className="mb-1 text-sm font-semibold">Slave Puller</h3>
+              <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                <div
+                  className={cn(
+                    "h-5 w-5 rounded-full",
+                    state?.slave_puller_state?.enabled
+                      ? "bg-green-500"
+                      : "bg-gray-300",
+                  )}
+                />
+                <span className="text-xs">
+                  {state?.slave_puller_state?.enabled ? "Enabled" : "Disabled"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </ControlCard>
+
+        {/* Second Row: Spool Autostop (left, height=2 to show all content) */}
+        <ControlCard title="Spool Autostop" height={2}>
+          <TimeSeriesValueNumeric
+            label="Pulled Distance"
+            renderValue={(value) => roundToDecimals(value, 2)}
+            unit="m"
+            timeseries={spoolProgress}
+          />
+
+          <Label label="Target Length">
+            <EditValue
+              value={state?.spool_automatic_action_state.spool_required_meters}
+              unit="m"
+              title="Expected Meters"
+              defaultValue={250}
+              min={10}
+              max={10000}
+              step={10}
+              renderValue={(value) => roundToDecimals(value, 2)}
+              onChange={setSpoolAutomaticRequiredMeters}
+            />
+          </Label>
+
+          <Label label="Estimated Time Remaining">
+            <span className="font-mono text-lg">
+              {(() => {
+                const minutes = estimatedMinutesRemaining;
+                if (minutes >= 60) {
+                  const hours = Math.floor(minutes / 60);
+                  const mins = Math.round(minutes % 60);
+                  return `${hours}h ${mins}min`;
+                }
+                return `${Math.round(minutes)} min`;
+              })()}
+            </span>
+          </Label>
+
+          <TouchButton
+            variant="outline"
+            onClick={handleResetProgress}
+            disabled={isDisabled}
+            isLoading={isLoading || state?.traverse_state?.is_going_out}
+          >
+            Reset Progress
+          </TouchButton>
+
+          <Label label="After Target Length Reached">
+            <SelectionGroup<SpoolAutomaticActionMode>
+              value={
+                state?.spool_automatic_action_state.spool_automatic_action_mode
+              }
+              disabled={isDisabled}
+              loading={isLoading}
+              onChange={setSpoolAutomaticAction}
+              orientation="horizontal"
+              className="grid grid-cols-3 gap-2"
+              options={{
+                Hold: {
+                  children: "Hold",
+                  icon: "lu:CirclePause",
+                },
+                Pull: {
+                  children: "Pull",
+                  icon: "lu:ChevronsLeft",
+                },
+                NoAction: {
+                  children: "No Action",
+                  icon: "lu:RefreshCcw",
+                },
+              }}
+            />
+          </Label>
+        </ControlCard>
+
+        {/* Second Row: Winder Mode (center) */}
+        <ControlCard title="Winder Mode">
+          <SelectionGroup<Mode>
+            value={state?.mode_state.mode}
+            disabled={isDisabled}
+            loading={isLoading}
+            onChange={setMode}
+            orientation="vertical"
+            className="grid h-full grid-cols-2 gap-2"
+            options={{
+              Standby: {
+                children: "Standby",
+                icon: "lu:Power",
+                isActiveClassName: "bg-green-600",
+                className: "h-full",
+              },
+              Hold: {
+                children: "Hold",
+                icon: "lu:CirclePause",
+                isActiveClassName: "bg-green-600",
+                className: "h-full",
+              },
+              Pull: {
+                children: "Pull",
+                icon: "lu:ChevronsLeft",
+                isActiveClassName: "bg-green-600",
+                className: "h-full",
+              },
+              Wind: {
+                children: "Wind",
+                icon: "lu:RefreshCcw",
+                isActiveClassName: "bg-green-600",
+                disabled: !state?.mode_state?.can_wind,
+                className: "h-full",
+              },
+            }}
+          />
+        </ControlCard>
+
+        {/* Row 3 col 2: Control Mode */}
+        <ControlCard title="Control Mode">
+          <div className="flex flex-col gap-4">
+            <TouchButton
+              variant={
+                state?.mode_state?.operation_mode === "Setup"
+                  ? "default"
+                  : "outline"
+              }
+              disabled={isDisabled}
+              className="h-20 text-lg"
+              icon="lu:Wrench"
+              onClick={() => setOperationMode("Setup")}
+            >
+              Setup Mode
+            </TouchButton>
+            <TouchButton
+              variant={
+                state?.mode_state?.operation_mode === "Production"
+                  ? "default"
+                  : "outline"
+              }
+              disabled={isDisabled || isAnyMonitoringTriggered()}
+              className="h-20 text-lg"
+              icon="lu:ShieldCheck"
+              onClick={() => setOperationMode("Production")}
+            >
+              Production Mode
+            </TouchButton>
+            {isAnyMonitoringTriggered() && (
+              <div className="rounded bg-orange-50 p-2 text-center text-sm text-orange-600">
+                Production mode is disabled because monitoring alert is
+                triggered
+              </div>
+            )}
+          </div>
+        </ControlCard>
+
+        {/* Row 3 col 3: Order Information */}
+        <ControlCard title="Order Information">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-row gap-4 overflow-x-auto">
+              <div className="shrink-0">
+                <Label label="Machine Serial ID">
+                  <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2 font-mono text-lg">
+                    {deviceSerialId}
+                  </div>
+                </Label>
+              </div>
+              <div className="shrink-0">
+                <Label label="Order Number">
+                  <EditValue
+                    value={state?.order_info_state?.order_number ?? 0}
+                    title="Order Number"
+                    defaultValue={0}
+                    min={0}
+                    max={999999}
+                    renderValue={(value) => value.toString()}
+                    onChange={setOrderNumber}
+                  />
+                </Label>
+              </div>
+              <div className="shrink-0">
+                <Label label="Serial Number">
+                  <EditValue
+                    value={state?.order_info_state?.serial_number ?? 0}
+                    title="Serial Number"
+                    defaultValue={0}
+                    min={0}
+                    max={999999}
+                    renderValue={(value) => value.toString()}
+                    onChange={setSerialNumber}
+                  />
+                </Label>
+              </div>
+            </div>
+            <Label label="Product Description">
+              <Dialog
+                open={descriptionOpen}
+                onOpenChange={(isOpen) => {
+                  setDescriptionOpen(isOpen);
+                  if (isOpen) {
+                    setTempDescription(
+                      state?.order_info_state?.product_description ?? "",
+                    );
+                  }
+                }}
+              >
+                <DialogTrigger asChild>
+                  <TouchButton
+                    variant="outline"
+                    className="h-12 w-full justify-start text-lg font-normal"
+                  >
+                    {state?.order_info_state?.product_description ||
+                      "Enter description..."}
+                  </TouchButton>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Product Description</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex flex-col gap-6 py-4">
+                    <Input
+                      type="text"
+                      placeholder="Enter description..."
+                      className="h-14 text-xl"
+                      value={tempDescription}
+                      onChange={(e) => setTempDescription(e.target.value)}
+                      autoComplete="off"
+                      autoFocus
+                    />
+                    <div className="flex gap-3">
+                      <TouchButton
+                        variant="outline"
+                        className="h-14 flex-1 text-lg"
+                        onClick={() => {
+                          setDescriptionOpen(false);
+                          setTempDescription(
+                            state?.order_info_state?.product_description ?? "",
+                          );
+                        }}
+                      >
+                        Cancel
+                      </TouchButton>
+                      <TouchButton
+                        variant="default"
+                        className="h-14 flex-1 text-lg"
+                        onClick={() => {
+                          setProductDescription(tempDescription);
+                          setDescriptionOpen(false);
+                        }}
+                      >
+                        Save
+                      </TouchButton>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </Label>
+          </div>
+        </ControlCard>
+      </ControlGrid>
+    </Page>
+  );
+}

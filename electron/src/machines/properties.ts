@@ -664,30 +664,6 @@ export const ip20TestMachine: MachineProperties = {
   ],
 };
 
-export const testmachinestepper: MachineProperties = {
-  name: "TestMachineStepper",
-  version: "V1",
-  slug: "testmachinestepper",
-  icon: "lu:Disc3",
-  machine_identification: {
-    vendor: VENDOR_QITECH,
-    machine: 0x0037,
-  },
-  device_roles: [
-    {
-      role: 0,
-      role_label: "Bus Coupler",
-      allowed_devices: [
-        {
-          vendor_id: 0x00000021,
-          product_id: 0x07500354,
-          revision: 0x2,
-        },
-      ],
-    },
-  ],
-};
-
 export const TestMotor: MachineProperties = {
   name: "TestMotor",
   version: "V1",
@@ -787,6 +763,287 @@ export const wagoAiTestMachine: MachineProperties = {
         {
           vendor_id: 0x21,
           product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+
+export const gluetex: MachineProperties = {
+  name: "Gluetex",
+  version: "V1",
+  slug: "gluetex",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x000b,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x44c2c52,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "2x Digital Output",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x7d23052,
+          revision: 0x110000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x7d23052,
+          revision: 0x120000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x7d83052,
+          revision: 0x110000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x7d83052,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 2,
+      role_label: "1x Stepper Spool EL7041-0052",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 461451346,
+          revision: 0x100034,
+        },
+      ],
+    },
+    {
+      role: 3,
+      role_label: "1x Stepper Traverse",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x1a0000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x190000,
+        },
+      ],
+    },
+    {
+      role: 4,
+      role_label: "1x Stepper Puller",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x10001e,
+        },
+      ],
+    },
+    {
+      role: 5,
+      role_label: "Temperature Sensors 1-4",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 0x160000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 0x150000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 0x1a0000,
+        },
+      ],
+    },
+    {
+      role: 6,
+      role_label: "Temperature Sensors 5-6",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 0x160000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 0x150000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 0x1a0000,
+        },
+      ],
+    },
+    {
+      role: 7,
+      role_label: "Digital Outputs for Heater SSRs",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x7d83052,
+          revision: 0x110000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x7d83052,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 8,
+      role_label: "Addon Motor 3",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x1a0000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x190000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x10001e,
+        },
+      ],
+    },
+    {
+      role: 9,
+      role_label: "Slave Puller",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x1a0000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x190000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x10001e,
+        },
+      ],
+    },
+    {
+      role: 10,
+      role_label: "Addon Motor 4",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x1a0000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x190000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x10001e,
+        },
+      ],
+    },
+    {
+      role: 11,
+      role_label: "Addon Motor 5",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x1a0000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x190000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x10001e,
+        },
+      ],
+    },
+    {
+      role: 12,
+      role_label: "Extra Digital Outputs",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x7d83052,
+          revision: 0x110000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x7d83052,
+          revision: 0x120000,
+        },
+      ],
+    },
+  ],
+};
+
+export const testmachinestepper: MachineProperties = {
+  name: "TestMachineStepper",
+  version: "V1",
+  slug: "testmachinestepper",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0037,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x00000021,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "Stepper Motor",
+      allowed_devices: [
+        {
+          vendor_id: 0x00000021,
+          product_id: 0x67214e8,
           revision: 0x2,
         },
       ],
@@ -957,6 +1214,7 @@ export const machineProperties: MachineProperties[] = [
   wago750_531Machine,
   wago750_501TestMachine,
   wago750_553Machine,
+  gluetex,
   TestMotor,
   testmachinestepper,
   wagoSerial,

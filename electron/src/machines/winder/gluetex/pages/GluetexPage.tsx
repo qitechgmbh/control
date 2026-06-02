@@ -1,0 +1,62 @@
+import { Topbar } from "@/components/Topbar";
+import { gluetexRoute } from "@/routes/routes";
+import React from "react";
+
+export function GluetexPage() {
+  const { serial } = gluetexRoute.useParams();
+  return (
+    <Topbar
+      pathname={`/_sidebar/machines/gluetex/${serial}`}
+      items={[
+        {
+          link: "overview",
+          activeLink: "overview",
+          title: "Overview",
+          icon: "lu:LayoutDashboard",
+        },
+        {
+          link: "control",
+          activeLink: "control",
+          title: "Control",
+          icon: "lu:CirclePlay",
+        },
+        {
+          link: "addons",
+          activeLink: "addons",
+          title: "Addons",
+          icon: "lu:Puzzle",
+        },
+        {
+          link: "heaters",
+          activeLink: "heaters",
+          title: "Heaters",
+          icon: "lu:Flame",
+        },
+        {
+          link: "graphs",
+          activeLink: "graphs",
+          title: "Graphs",
+          icon: "lu:ChartSpline",
+        },
+        {
+          link: "settings",
+          activeLink: "settings",
+          title: "Config",
+          icon: "lu:Settings",
+        },
+        {
+          link: "manual",
+          activeLink: "manual",
+          title: "Manual",
+          icon: "lu:BookOpen",
+        },
+        {
+          link: "presets",
+          activeLink: "presets",
+          title: "Presets",
+          icon: "lu:Save",
+        },
+      ]}
+    />
+  );
+}

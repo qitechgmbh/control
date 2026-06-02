@@ -84,6 +84,18 @@ export function toastError(title: string, error: string) {
   toast(<ErrorToast title={title} error={error} />);
 }
 
+export function SuccessToast({ title, message }: Props & { message: string }) {
+  return (
+    <Toast title={title} icon="lu:Check">
+      <div className="text-zinc-500">{message}</div>
+    </Toast>
+  );
+}
+
+export function toastSuccess(title: string, message: string) {
+  toast(<SuccessToast title={title} message={message} />);
+}
+
 const friendlyHttpStatus = {
   "200": "OK",
   "201": "Created",
