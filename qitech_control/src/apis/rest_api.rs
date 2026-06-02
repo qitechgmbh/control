@@ -151,7 +151,9 @@ pub fn rest_api_router() -> Router<Arc<SharedAppState>> {
             LaserMachine::MACHINE_IDENTIFICATION.into(),
         ))
         .merge(make_machine_router(Winder2::MACHINE_IDENTIFICATION.into()))
-        .merge(make_machine_router(Winder2::MACHINE_IDENTIFICATION_7031_SPOOL.into()))
+        .merge(make_machine_router(
+            Winder2::MACHINE_IDENTIFICATION_7031_SPOOL.into(),
+        ))
         .merge(make_machine_router(
             ExtruderV2::MACHINE_IDENTIFICATION.into(),
         ))

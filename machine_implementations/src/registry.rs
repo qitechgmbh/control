@@ -1,6 +1,7 @@
 use crate::extruder1::ExtruderV2;
 use crate::{
-    MachineHardware, MachineNew, QiTechMachine, aquapath1::AquaPathV1, laser::LaserMachine,winder2::Winder2,
+    MachineHardware, MachineNew, QiTechMachine, aquapath1::AquaPathV1, laser::LaserMachine,
+    winder2::Winder2,
 };
 use anyhow::Error;
 use lazy_static::lazy_static;
@@ -90,7 +91,7 @@ lazy_static! {
         mc.register::<WagoAiTestMachine>(vec![WagoAiTestMachine::MACHINE_IDENTIFICATION]);
 
         mc.register::<MotorTestMachine>(vec![MotorTestMachine::MACHINE_IDENTIFICATION]);
-        
+
 
         mc.register::<DigitalInputTestMachine>(vec![
             DigitalInputTestMachine::MACHINE_IDENTIFICATION,
