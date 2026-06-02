@@ -342,6 +342,12 @@ impl Controller {
         let mut guard = self.relais_controller.borrow_mut();
         guard.set_output(self.cooling_relais_port, false);
         drop(guard);
+        
+        let mut analog_guard = self.cooling_controller.borrow_mut();
+        analog_guard.set_output(self.cooling_controller_port, 0.0f32.into());
+        drop(analog_guard);
+
+        self.cooling_mode = None;
         self.temperature.cooling = false;
         self.current_revolutions = AngularVelocity::new::<revolution_per_minute>(0.0);
     }
