@@ -70,6 +70,8 @@ in
     settings = {
       experimental-features = "nix-command flakes";
       cores = 2;
+      http-connections = 10;
+      download-attempts = 15;
     };
   };
 
