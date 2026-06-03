@@ -26,6 +26,7 @@ pub mod response;
 pub mod response_util;
 pub mod rest_api;
 pub mod socketio;
+pub mod otel;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct MutationResponse {

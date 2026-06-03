@@ -4,6 +4,8 @@ use machine_implementations::MACHINE_LASER_V1;
 use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
+#[cfg(not(feature = "mock"))]
+use opentelemetry_sdk::Resource;
 use qitech_lib::ethercat_hal::{
     BECKHOFF_VENDOR_ID, EtherCATControl, TripleBufConsumer, TripleBufProducer,
 };
@@ -15,10 +17,12 @@ use qitech_lib::{
     ethercat_hal::devices::device_from_subdevice_identity_rc, serial::get_available_ports,
 };
 #[cfg(not(feature = "mock"))]
+use tracing::info;
+#[cfg(not(feature = "mock"))]
 use std::{sync::Arc, time::Duration};
 
 #[cfg(not(feature = "mock"))]
-use crate::app_state::MainState;
+use crate::{apis::otel::OpenTelemetrySystem, app_state::MainState};
 use crate::app_state::get_async_runtime;
 
 pub mod apis;
@@ -294,6 +298,14 @@ fn find_ethercat_interface() -> Result<String, anyhow::Error> {
 
 #[cfg(not(feature = "mock"))]
 fn main_logic() {
+    let _rt = get_async_runtime().enter();
+
+    // step one: initalize otel so we can trace all operations
+    let resource = Resource::builder().with_service_name("qitech-control").build();
+    
+    // don't discard so the ::drop() isn't invoked immediately
+    let _otel_system = OpenTelemetrySystem::new(&resource);
+
     let stay_in_preop = std::env::var("QITECH_MODE").unwrap_or_default() == "preop"
         || std::env::args().any(|a| a == "preop");
     let mut shared_state = SharedAppState::new();
@@ -338,6 +350,11 @@ fn main_logic() {
     let hotplug_duration = Duration::from_secs(4);
 
     loop {
+        tracing::info!(
+            roll.value = 101,
+            "Player rolled the dice"
+        );
+
         let now = std::time::Instant::now();
         match &mut eth_control {
             Some(control) => {
