@@ -308,13 +308,17 @@ fn find_ethercat_interface() -> Result<String, anyhow::Error> {
 
 #[cfg(not(feature = "mock"))]
 fn main_logic() {
+    
     let _rt = get_async_runtime().enter();
 
+    
     // step one: initalize otel so we can trace all operations
     let resource = Resource::builder().with_service_name("qitech-control").build();
-    
+        
     // don't discard so the ::drop() isn't invoked immediately
     let _otel_system = OpenTelemetrySystem::new(&resource);
+
+    println!("Otel engaged");
 
     let stay_in_preop = std::env::var("QITECH_MODE").unwrap_or_default() == "preop"
         || std::env::args().any(|a| a == "preop");

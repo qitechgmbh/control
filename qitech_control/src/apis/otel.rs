@@ -19,7 +19,7 @@ impl OpenTelemetrySystem {
         }
     }
 
-    pub fn shutdown(&self) {
+    pub fn shutdown(&self) { 
         if let Err(err) = self.tracer_provider.shutdown() {
             eprintln!("Error shutting down tracer provider: {err:?}");
         }
@@ -27,7 +27,7 @@ impl OpenTelemetrySystem {
         if let Err(err) = self.meter_provider.shutdown() {
             eprintln!("Error shutting down meter provider: {err:?}");
         }
-
+ 
         if let Err(err) = self.logger_provider.shutdown() {
             eprintln!("Error shutting down logger provider: {err:?}");
         }
@@ -84,10 +84,10 @@ fn init_logger_provider(resource: &Resource) -> SdkLoggerProvider {
         .build();
 
     // Logs: wire the tracing bridge so tracing::info! etc. go to OTel
-    let otel_layer = OpenTelemetryTracingBridge::new(&provider);
-    tracing_subscriber::registry()
-        .with(otel_layer)
-        .init();
+    // let otel_layer = OpenTelemetryTracingBridge::new(&provider);
+    // tracing_subscriber::registry()
+    //     .with(otel_layer)
+    //     .init();
 
     provider
 }

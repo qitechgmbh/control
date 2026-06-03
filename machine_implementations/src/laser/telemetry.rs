@@ -8,7 +8,9 @@ pub struct Metrics {
 }
  
 impl Metrics {   
-    pub fn new() -> Self {
+    pub fn new() ->Self {
+        println!("Yes indeed!");
+
         let meter = global::meter("winder_v1");
 
         let diameter = meter
