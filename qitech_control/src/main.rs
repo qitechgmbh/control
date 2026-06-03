@@ -5,7 +5,7 @@ use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
 use qitech_lib::ethercat_hal::{
-    BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer, TripleBufProducer,
+    BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox
 };
 #[cfg(not(feature = "mock"))]
 use qitech_lib::ethercat_hal::{
@@ -361,7 +361,7 @@ fn main_logic() {
 
     let mut last_check = std::time::Instant::now();
     let hotplug_duration = Duration::from_secs(4);
-
+    let mut last_cycle_time = last_check;
     loop {
         let now = std::time::Instant::now();
         match &mut eth_control {
@@ -370,9 +370,16 @@ fn main_logic() {
             }
             None => (),
         };
-
         let machines_to_remove =
             run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
+        match &mut eth_control {
+            Some(control) => {
+                write_ecat_outputs(&mut control.app_handle, main_state.subdevices.clone());
+            }
+            None => (),
+        };
+
+
         if machines_to_remove.is_some() {
             remove_machines(&mut main_state, state.clone(), machines_to_remove);
         }
@@ -381,14 +388,9 @@ fn main_logic() {
             let _ = laser_hotplug(&mut main_state, state.clone());
             last_check = now;
         }
-
-        match &mut eth_control {
-            Some(control) => {
-                write_ecat_outputs(&mut control.app_handle, main_state.subdevices.clone());
-            }
-            None => (),
-        };
-        std::thread::sleep(Duration::from_micros(100));
+        println!("loop took {:?}", std::time::Instant::now().duration_since(last_cycle_time).as_micros());
+        last_cycle_time = std::time::Instant::now();
+        //std::thread::sleep(Duration::from_micros(100));
     }
 }
 
