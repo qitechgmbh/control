@@ -10,7 +10,8 @@ pub fn write_ecat_inputs<C: Consumer, P: Producer>(
     ecat: &mut EtherCATAppHandle<C, P>,
     subdevices: Vec<(MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)>,
 ) {
-    let inputs = ecat.get_inputs();
+    let inputs = ecat.get_inputs().expect("There should always be an input (latest state)");
+    //println!("{:?}", inputs);
     for i in 0..subdevices.len() {
         let meta_dev = subdevices[i].0;
         let subdevice = subdevices.get(i).unwrap();
@@ -28,19 +29,26 @@ pub fn write_ecat_outputs<C: Consumer, P: Producer>(
     ecat: &mut EtherCATAppHandle<C, P>,
     subdevices: Vec<(MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)>,
 ) {
-    let outputs = ecat.write_outputs();
-    for i in 0..subdevices.len() {
-        let meta_dev = subdevices[i].0;
-        let subdevice = subdevices.get(i).unwrap();
-        let output_slice = &mut outputs[meta_dev.start_rx..meta_dev.end_rx];
-        let output_bits = BitSlice::<u8, Lsb0>::from_slice_mut(output_slice);
-        {
-            let mut subdevice = subdevice.1.borrow_mut();
-            let _res = subdevice.output_pre_process();
-            let _res = subdevice.output(output_bits);
-        }
-    }
-    ecat.send_outputs();
+    match ecat.write_outputs() {
+        Some(outputs) => {
+            for i in 0..subdevices.len() {
+                let meta_dev = subdevices[i].0;
+                let subdevice = subdevices.get(i).unwrap();
+                let output_slice = &mut outputs[meta_dev.start_rx..meta_dev.end_rx];
+                let output_bits = BitSlice::<u8, Lsb0>::from_slice_mut(output_slice);
+                {
+                    let mut subdevice = subdevice.1.borrow_mut();
+                    let _res = subdevice.output_pre_process();
+                    let _res = subdevice.output(output_bits);
+                }
+            }
+            ecat.send_outputs();
+        },
+        None => {
+            // Do nothing
+        },
+    }   
+    
 }
 
 pub fn run_machines(

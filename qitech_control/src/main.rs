@@ -5,7 +5,7 @@ use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
 use qitech_lib::ethercat_hal::{
-    BECKHOFF_VENDOR_ID, EtherCATControl, TripleBufConsumer, TripleBufProducer,
+    BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer, TripleBufProducer
 };
 #[cfg(not(feature = "mock"))]
 use qitech_lib::ethercat_hal::{
@@ -33,7 +33,7 @@ pub mod persist;
 fn setup_ethercat(
     state: Arc<SharedAppState>,
     main_state: &mut MainState,
-    eth_control: &EtherCATControl<TripleBufConsumer, TripleBufProducer>,
+    eth_control: &EtherCATControl<Arc<Mailbox>,TripleBufProducer,TripleBufConsumer,Arc<Mailbox>>,
 ) {
     let _res = eth_control
         .channel
@@ -43,7 +43,7 @@ fn setup_ethercat(
     let mut idents = vec![];
     println!(
         "Initialized {} subdevices",
-        eth_control.controller.subdevice_count
+        eth_control.controller.get_subdevice_count()
     );
 
     for meta in eth_control.controller.get_subdevices() {
@@ -149,7 +149,7 @@ fn send_machines_event(state: Arc<SharedAppState>) {
 
 fn finalize_ethercat(
     main_state: &mut MainState,
-    eth_control: &EtherCATControl<TripleBufConsumer, TripleBufProducer>,
+    eth_control:  &EtherCATControl<Arc<Mailbox>,TripleBufProducer,TripleBufConsumer,Arc<Mailbox>>,
 ) {
     let _res = eth_control
         .channel
@@ -214,7 +214,7 @@ fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainSt
 
 fn optimized_ethercat_init(
     interface: &str,
-) -> EtherCATControl<TripleBufConsumer, TripleBufProducer> {
+) ->  EtherCATControl<Arc<Mailbox>,TripleBufProducer,TripleBufConsumer,Arc<Mailbox>> {
     let target_cycle_time_us: u64 = 1000;
     let dc_config: DcConfiguration = DcConfiguration {
         start_delay: Duration::from_millis(100),
@@ -320,7 +320,7 @@ fn main_logic() {
     let state = Arc::new(shared_state);
     match &eth_control {
         Some(ecat) => {
-            send_ecat_state(state.clone(), ecat.controller.state.into());
+            send_ecat_state(state.clone(), ecat.controller.get_state().into());
         }
         None => (),
     }
@@ -334,7 +334,7 @@ fn main_logic() {
 
     match &eth_control {
         Some(ecat) => {
-            send_ecat_state(state.clone(), ecat.controller.state.into());
+            send_ecat_state(state.clone(), ecat.controller.get_state().into());
         }
         None => (),
     }
@@ -354,7 +354,7 @@ fn main_logic() {
     match &eth_control {
         Some(ecat) => {
             finalize_ethercat(&mut main_state, ecat);
-            send_ecat_state(state.clone(), ecat.controller.state.into());
+            send_ecat_state(state.clone(), ecat.controller.get_state().into());
         }
         None => (),
     };
