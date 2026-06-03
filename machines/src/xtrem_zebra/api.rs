@@ -37,8 +37,8 @@ pub struct Configuration {
 pub struct StateEvent {
     pub is_default_state: bool,
     pub xtrem_zebra_state: XtremZebraState,
-    pub weighted_item: WeightedItem,
-    pub configuration: Configuration,
+    // pub weighted_item: WeightedItem,
+    // pub configuration: Configuration,
 }
 
 impl StateEvent {
@@ -130,15 +130,15 @@ impl MachineApi for XtremZebra {
                 self.clear_lights();
             }
             Mutation::SetConfigString(root) => {
-                self.configuration.config_string = Some(root);
-                println!("SetConfigString {:?}", self.configuration.config_string);
+                // self.configuration.config_string = Some(root);
+                // println!("SetConfigString {:?}", self.configuration.config_string);
             }
             Mutation::SetPassword(pw) => {
-                self.configuration.password = Some(pw);
-                println!("SetPassword {:?}", self.configuration.password);
+                // self.configuration.password = Some(pw);
+                // println!("SetPassword {:?}", self.configuration.password);
             }
             Mutation::Start => {
-                self.start();
+                // self.start();
             }
         }
         Ok(())

@@ -7,11 +7,14 @@ use beas_bsl::WeightedItem;
 
 impl XtremZebra {
     pub fn check_for_weighted_item(&self) -> Option<WeightedItem> {
+        None
+        /* 
         let res = self.item_rx.try_recv();
         match res {
             Ok(item) => Some(item),
             Err(_e) => None,
         }
+        */
     }
 }
 
@@ -31,7 +34,7 @@ impl MachineAct for XtremZebra {
         
         if it.is_some() {
             println!("Got New Item: {:?}", it);
-            self.weighted_item = it.unwrap();
+            // self.weighted_item = it.unwrap();
             self.emit_state();
             self.zero_counters();
             self.clear_lights();

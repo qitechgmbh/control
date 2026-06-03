@@ -3,7 +3,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use api::Configuration;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::digital_output::DigitalOutput;
 use smol::{
@@ -24,9 +23,6 @@ use crate::{
 pub mod act;
 pub mod api;
 pub mod new;
-
-use beas_bsl::{ApiConfig, WeightedItem};
-
 #[derive(Debug)]
 pub struct XtremZebra {
     api_receiver: Receiver<MachineMessage>,
@@ -55,14 +51,6 @@ pub struct XtremZebra {
     tare_weight: f64,
     last_raw_weight: f64,
 
-    signal_light: SignalLight,
-
-    weighted_item: WeightedItem,
-    configuration: Configuration,
-
-    request_tx: Sender<()>,
-    item_rx: Receiver<WeightedItem>,
-    config_tx: Sender<ApiConfig>,
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     _emitted_default_state: bool,
@@ -129,8 +117,8 @@ impl XtremZebra {
         StateEvent {
             is_default_state: false,
             xtrem_zebra_state: xtrem_zebra,
-            weighted_item: self.weighted_item.clone(),
-            configuration: self.configuration.clone(),
+            // weighted_item: self.weighted_item.clone(),
+            // configuration: self.configuration.clone(),
         }
     }
 
@@ -168,12 +156,12 @@ impl XtremZebra {
                 if (w >= self.lower_tolerance)
                     && (w <= self.upper_tolerance)
                 {
-                    self.signal_light.green_light.set(true);
-                    self.signal_light.green_light_on_since = Some(Instant::now());
+                    // self.signal_light.green_light.set(true);
+                    // self.signal_light.green_light_on_since = Some(Instant::now());
                     self.plate_counter += 1;
                 } else {
-                    self.signal_light.red_light.set(true);
-                    self.signal_light.red_light_on_since = Some(Instant::now());
+                    // self.signal_light.red_light.set(true);
+                    // self.signal_light.red_light_on_since = Some(Instant::now());
                 }
 
                 self.total_weight = 0.0;
@@ -186,19 +174,21 @@ impl XtremZebra {
         let now = Instant::now();
         let light_duration = Duration::from_millis(500);
 
+        /* 
         if let Some(t) = self.signal_light.green_light_on_since {
             if now.duration_since(t) > light_duration {
-                self.signal_light.green_light.set(false);
-                self.signal_light.green_light_on_since = None;
+                // self.signal_light.green_light.set(false);
+                // self.signal_light.green_light_on_since = None;
             }
-        }
+        }*/
 
+        /* 
         if let Some(t) = self.signal_light.red_light_on_since {
             if now.duration_since(t) > light_duration {
                 self.signal_light.red_light.set(false);
                 self.signal_light.red_light_on_since = None;
             }
-        }
+        }*/
 
         self.last_weight = new_weight;
         self.current_weight = new_weight;
@@ -226,12 +216,9 @@ impl XtremZebra {
         self.emit_state();
     }
     pub fn clear_lights(&mut self) {
-        self.signal_light.green_light.set(false);
-        self.signal_light.yellow_light.set(false);
-        self.signal_light.red_light.set(false);
-    }
-    pub fn start(&mut self) {
-        let _res = self.request_tx.try_send(());
+        // self.signal_light.green_light.set(false);
+        // self.signal_light.yellow_light.set(false);
+        // self.signal_light.red_light.set(false);
     }
 
     pub fn update(&mut self) {
