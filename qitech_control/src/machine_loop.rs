@@ -10,21 +10,23 @@ pub fn write_ecat_inputs<C: Consumer, P: Producer>(
     ecat: &mut EtherCATAppHandle<C, P>,
     subdevices: Vec<(MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)>,
 ) {
-    let inputs = ecat
-        .get_inputs()
-        .expect("There should always be an input (latest state)");
-    //println!("{:?}", inputs);
-    for i in 0..subdevices.len() {
-        let meta_dev = subdevices[i].0;
-        let subdevice = subdevices.get(i).unwrap();
-        let input_slice = &inputs[meta_dev.start_tx..meta_dev.end_tx];
-        let input_bits_slice = BitSlice::<u8, Lsb0>::from_slice(input_slice);
-        {
-            let mut subdevice = subdevice.1.borrow_mut();
-            let _res = subdevice.input(input_bits_slice);
-            let _res = subdevice.input_post_process();
-        }
-    }
+    match ecat.get_inputs() {
+        Some(inputs) => {
+            for i in 0..subdevices.len() {
+                let meta_dev = subdevices[i].0;
+                let subdevice = subdevices.get(i).unwrap();
+                let input_slice = &inputs[meta_dev.start_tx..meta_dev.end_tx];
+                let input_bits_slice = BitSlice::<u8, Lsb0>::from_slice(input_slice);
+                {
+                    let mut subdevice = subdevice.1.borrow_mut();
+                    let _res = subdevice.input(input_bits_slice);
+                    let _res = subdevice.input_post_process();
+                }
+            }
+            ecat.input_consumer.finish_read();
+        },
+        None => (),
+    };
 }
 
 pub fn write_ecat_outputs<C: Consumer, P: Producer>(

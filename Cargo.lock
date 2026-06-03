@@ -275,9 +275,9 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "bitflags"
-version = "2.11.1"
+version = "2.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4512299f36f043ab09a583e57bceb5a5aab7a73db1805848e8fef3c9e8c78b3"
+checksum = "84d7ced0ae9557296835c32bf1b1e02b44c746701f898460fb000d7eaa84f00a"
 
 [[package]]
 name = "bitvec"
@@ -342,9 +342,9 @@ checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
 
 [[package]]
 name = "cc"
-version = "1.2.62"
+version = "1.2.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1dce859f0832a7d088c4f1119888ab94ef4b5d6795d1ce05afb7fe159d79f98"
+checksum = "556e016178bb5662a08681bbe0f00f8e17631781a4dfc8c45e466e4b185ec27f"
 dependencies = [
  "find-msvc-tools",
  "shlex",
@@ -427,7 +427,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2566732390e2ea1c069247fa267c85ef735b188f#2566732390e2ea1c069247fa267c85ef735b188f"
 dependencies = [
  "anyhow",
  "libc",
@@ -815,7 +815,7 @@ dependencies = [
 [[package]]
 name = "ethercat_hal"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2566732390e2ea1c069247fa267c85ef735b188f#2566732390e2ea1c069247fa267c85ef735b188f"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -836,7 +836,7 @@ dependencies = [
 [[package]]
 name = "ethercat_hal_derive"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2566732390e2ea1c069247fa267c85ef735b188f#2566732390e2ea1c069247fa267c85ef735b188f"
 dependencies = [
  "deluxe",
  "proc-macro2",
@@ -852,7 +852,7 @@ dependencies = [
  "async-io",
  "atomic-waker",
  "atomic_enum",
- "bitflags 2.11.1",
+ "bitflags 2.12.1",
  "crc",
  "embassy-time",
  "embedded-io-async",
@@ -1218,9 +1218,9 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
 name = "hyper"
-version = "1.9.0"
+version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6299f016b246a94207e63da54dbe807655bf9e00044f73ded42c3ac5305fbcca"
+checksum = "55281c53a1894c864990125767da440a4e630446785086f52523b20033b74498"
 dependencies = [
  "atomic-waker",
  "bytes",
@@ -1265,7 +1265,7 @@ dependencies = [
  "hyper",
  "libc",
  "pin-project-lite",
- "socket2 0.6.3",
+ "socket2 0.6.4",
  "tokio",
  "tower-service",
  "tracing",
@@ -1293,7 +1293,7 @@ version = "0.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb6250a98af259a26fd5a4a6081fccea9ac116e4c3178acf4aeb86d32d2b7715"
 dependencies = [
- "bitflags 2.11.1",
+ "bitflags 2.12.1",
  "cc",
  "handlebars",
  "lazy_static",
@@ -1319,7 +1319,7 @@ version = "0.7.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4d09b98f7eace8982db770e4408e7470b028ce513ac28fecdc6bf4c30fe92b62"
 dependencies = [
- "bitflags 2.11.1",
+ "bitflags 2.12.1",
  "cfg-if",
  "libc",
 ]
@@ -1421,9 +1421,9 @@ checksum = "11d3d7f243d5c5a8b9bb5d6dd2b1602c0cb0b9db1621bafc7ed66e35ff9fe092"
 
 [[package]]
 name = "log"
-version = "0.4.30"
+version = "0.4.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "616ec5685824bcc94416c6d4a7a446eea774a31efd7062c8480ba6fd06d7a6e5"
+checksum = "113b30b4cd05f7c06868fdb2854f66a7b9fece9a48425351cd532e810d74024f"
 
 [[package]]
 name = "mach2"
@@ -1456,7 +1456,7 @@ dependencies = [
 [[package]]
 name = "machines"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2566732390e2ea1c069247fa267c85ef735b188f#2566732390e2ea1c069247fa267c85ef735b188f"
 
 [[package]]
 name = "matchit"
@@ -1466,9 +1466,9 @@ checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 
 [[package]]
 name = "memchr"
-version = "2.8.0"
+version = "2.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
+checksum = "6b947ae49db0d222b1dbc6b113ce7248a3fc3a6ca21b696717bfc000ba4484d8"
 
 [[package]]
 name = "memoffset"
@@ -1496,9 +1496,9 @@ checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
 
 [[package]]
 name = "mio"
-version = "1.2.0"
+version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50b7e5b27aa02a74bac8c3f23f448f8d87ff11f92d3aac1a6ed369ee08cc56c1"
+checksum = "02bd0af71c67b473010cbbc60715ee815645a4dc942899111f494b4b737d6fda"
 dependencies = [
  "libc",
  "log",
@@ -1522,7 +1522,7 @@ dependencies = [
 [[package]]
 name = "modbus"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2566732390e2ea1c069247fa267c85ef735b188f#2566732390e2ea1c069247fa267c85ef735b188f"
 dependencies = [
  "anyhow",
  "common",
@@ -1565,7 +1565,7 @@ version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71e2746dc3a24dd78b3cfcb7be93368c6de9963d30f43a6a73998a9cf4b17b46"
 dependencies = [
- "bitflags 2.11.1",
+ "bitflags 2.12.1",
  "cfg-if",
  "cfg_aliases",
  "libc",
@@ -1833,7 +1833,7 @@ dependencies = [
 [[package]]
 name = "qitech_lib"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2566732390e2ea1c069247fa267c85ef735b188f#2566732390e2ea1c069247fa267c85ef735b188f"
 dependencies = [
  "bitvec",
  "common",
@@ -1995,7 +1995,7 @@ version = "0.38.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fdb5bc1ae2baa591800df16c9ca78619bf65c0488b41b96ccec5d11220d8c154"
 dependencies = [
- "bitflags 2.11.1",
+ "bitflags 2.12.1",
  "errno 0.3.14",
  "libc",
  "linux-raw-sys 0.4.15",
@@ -2008,7 +2008,7 @@ version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6fe4565b9518b83ef4f91bb47ce29620ca828bd32cb7e408f0062e9930ba190"
 dependencies = [
- "bitflags 2.11.1",
+ "bitflags 2.12.1",
  "errno 0.3.14",
  "libc",
  "linux-raw-sys 0.12.1",
@@ -2122,7 +2122,7 @@ dependencies = [
 [[package]]
 name = "serial"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2566732390e2ea1c069247fa267c85ef735b188f#2566732390e2ea1c069247fa267c85ef735b188f"
 dependencies = [
  "anyhow",
  "tokio",
@@ -2136,7 +2136,7 @@ version = "4.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4d91116f97173694f1642263b2ff837f80d933aa837e2314969f6728f661df3"
 dependencies = [
- "bitflags 2.11.1",
+ "bitflags 2.12.1",
  "cfg-if",
  "core-foundation",
  "core-foundation-sys",
@@ -2173,9 +2173,9 @@ dependencies = [
 
 [[package]]
 name = "shlex"
-version = "1.3.0"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
+checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
 
 [[package]]
 name = "signal-hook-registry"
@@ -2249,9 +2249,9 @@ dependencies = [
 
 [[package]]
 name = "socket2"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a766e1110788c36f4fa1c2b71b387a7815aa65f88ce0229841826633d93723e"
+checksum = "52d1cfed4120b4d927bf7c0f86d2087a4a7d6027c906d9f9d525a80573b9be51"
 dependencies = [
  "libc",
  "windows-sys 0.61.2",
@@ -2465,7 +2465,7 @@ dependencies = [
  "mio",
  "pin-project-lite",
  "signal-hook-registry",
- "socket2 0.6.3",
+ "socket2 0.6.4",
  "tokio-macros",
  "windows-sys 0.61.2",
 ]
@@ -2621,7 +2621,7 @@ version = "0.6.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4cfcf7e2740e6fc6d4d688b4ef00650406bb94adf4731e43c096c3a19fe40840"
 dependencies = [
- "bitflags 2.11.1",
+ "bitflags 2.12.1",
  "bytes",
  "http",
  "http-body",
@@ -2716,9 +2716,9 @@ checksum = "bc7d623258602320d5c55d1bc22793b57daff0ec7efc270ea7d55ce1d5f5471c"
 
 [[package]]
 name = "typenum"
-version = "1.20.0"
+version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40ce102ab67701b8526c123c1bab5cbe42d7040ccfd0f64af1a385808d2f43de"
+checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 
 [[package]]
 name = "ucd-trie"
@@ -2744,7 +2744,7 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 [[package]]
 name = "units"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2566732390e2ea1c069247fa267c85ef735b188f#2566732390e2ea1c069247fa267c85ef735b188f"
 dependencies = [
  "uom",
 ]
@@ -3008,18 +3008,18 @@ dependencies = [
 
 [[package]]
 name = "zerocopy"
-version = "0.8.48"
+version = "0.8.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eed437bf9d6692032087e337407a86f04cd8d6a16a37199ed57949d415bd68e9"
+checksum = "3b065d4f0e55f82fae73202e189638116a87c55ab6b8e6c2721e13dd9d854ad1"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.8.48"
+version = "0.8.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70e3cd084b1788766f53af483dd21f93881ff30d7320490ec3ef7526d203bad4"
+checksum = "0b631b19d36a892ab55420c92dbc83ccd79274f25be714855d3074aa71cab639"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -10,7 +10,7 @@ exclude = []
 resolver = "2"
 
 [workspace.dependencies]
-qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev  = "1058e40d9d63c234e55510aefe35b54938bf0a41" }
+qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev  = "2566732390e2ea1c069247fa267c85ef735b188f" }
 
 [workspace.lints.clippy]
 # don't lint poissbilities for let chains because they were introduces after Rust 1.86
