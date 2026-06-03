@@ -7,10 +7,14 @@ use qitech_lib::{
     modbus::devices::qitech_laser::LaserDevice,
     units::{ConstZero, Length, length::millimeter},
 };
+use tracing::info;
 
 impl MachineNew for LaserMachine {
     fn new(hw: MachineHardware) -> Result<Self, Error> {
         println!("building laser machine");
+
+        info!("building laser machine");
+        
         let laser = hw.try_get_serial_device_by_index::<LaserDevice>(0)?;
         let laser_target = LaserTarget {
             higher_tolerance: Length::new::<millimeter>(0.05),
