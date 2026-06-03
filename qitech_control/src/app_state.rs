@@ -82,7 +82,7 @@ impl SharedAppState {
         infos: Vec<MachineDeviceInfo>,
     ) -> Result<(), anyhow::Error> {
         let mut guard = self.ethercat_meta_datas.try_write()?;
-        for i in 0..controller.subdevice_count {
+        for i in 0..controller.get_subdevice_count() {
             let dev = controller.subdevices[i];
             let device_machine_identification = infos
                 .iter()
