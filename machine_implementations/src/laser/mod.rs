@@ -1,4 +1,4 @@
-use crate::{MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH};
+use crate::{MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH, laser::telemetry::Metrics};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::{
@@ -20,6 +20,7 @@ use tokio::sync::mpsc::Sender;
 pub mod act;
 pub mod api;
 pub mod new;
+mod telemetry;
 
 pub enum LaserRequestState {
     Waiting(Instant),
@@ -55,6 +56,8 @@ pub struct LaserMachine {
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
     did_change_state: bool,
+
+    metrics: Metrics,
 }
 
 impl LaserMachine {
@@ -80,6 +83,9 @@ impl LaserMachine {
     ///diameter in mm
     pub fn emit_live_values(&mut self) {
         let event = self.get_live_values().build();
+
+        self.metrics.diameter.record(event.data.diameter, &[]);
+
         self.namespace.emit(LaserEvents::LiveValues(event));
     }
 

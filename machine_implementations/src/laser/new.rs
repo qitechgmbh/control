@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
-use crate::{MachineHardware, MachineNew};
+use crate::{MachineHardware, MachineNew, laser::telemetry::Metrics};
 use anyhow::Error;
 use qitech_lib::{
     modbus::devices::qitech_laser::LaserDevice,
@@ -41,6 +41,9 @@ impl MachineNew for LaserMachine {
             in_tolerance: true,
             global_warning: true,
             did_change_state: true,
+
+            // telemetry
+            metrics: Metrics::new(),
         };
         laser_machine.emit_state();
         Ok(laser_machine)

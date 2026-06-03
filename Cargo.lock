@@ -1683,12 +1683,17 @@ dependencies = [
  "control_core_derive",
  "euclid",
  "lazy_static",
+ "opentelemetry",
+ "opentelemetry-appender-tracing",
+ "opentelemetry-otlp",
+ "opentelemetry_sdk",
  "qitech_lib",
  "serde",
  "serde_json",
  "tokio",
  "tonic 0.13.1",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
