@@ -10,7 +10,9 @@ pub fn write_ecat_inputs<C: Consumer, P: Producer>(
     ecat: &mut EtherCATAppHandle<C, P>,
     subdevices: Vec<(MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)>,
 ) {
-    let inputs = ecat.get_inputs().expect("There should always be an input (latest state)");
+    let inputs = ecat
+        .get_inputs()
+        .expect("There should always be an input (latest state)");
     //println!("{:?}", inputs);
     for i in 0..subdevices.len() {
         let meta_dev = subdevices[i].0;
@@ -43,12 +45,11 @@ pub fn write_ecat_outputs<C: Consumer, P: Producer>(
                 }
             }
             ecat.send_outputs();
-        },
+        }
         None => {
             // Do nothing
-        },
-    }   
-    
+        }
+    }
 }
 
 pub fn run_machines(
