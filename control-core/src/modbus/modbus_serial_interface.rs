@@ -225,7 +225,7 @@ impl ModbusSerialInterface {
         // Check if we need to wait for timeout (except for specific states)
         if !matches!(
             self.state,
-            State::Uninitialized | State::WaitingForReceiveAccept | State::WaitingForRequestAccept
+            State::Uninitialized | State::WaitingForResponse
         ) && elapsed < timeout
         {
             return;
