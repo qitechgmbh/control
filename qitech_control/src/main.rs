@@ -388,8 +388,6 @@ fn main_logic() {
             let _ = laser_hotplug(&mut main_state, state.clone());
             last_check = now;
         }
-        println!("loop took {:?}", std::time::Instant::now().duration_since(last_cycle_time).as_micros());
-        last_cycle_time = std::time::Instant::now();
         //std::thread::sleep(Duration::from_micros(100));
     }
 }
