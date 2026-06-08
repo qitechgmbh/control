@@ -1,6 +1,4 @@
 {
-  lib,
-  pkgs,
   pkg-config,
   libudev-zero,
   libpcap,
@@ -10,16 +8,17 @@
 let
   commonArgs = {
     pname = "server";
-    version = "1.0.0";
+    version = (builtins.fromJSON (builtins.readFile ../../electron/package.json)).version;
     strictDeps = true;
 
     nativeBuildInputs = [ pkg-config ];
+
     buildInputs = [
       libpcap
       libudev-zero
     ];
 
-    src = craneLib.cleanCargoSource ../..;
+    src = ../..;
 
     CARGO_BUILD_JOBS =
       if (builtins.tryEval (builtins.getEnv "CARGO_BUILD_JOBS")).success then
@@ -27,7 +26,7 @@ let
       else
         "2";
 
-    cargoExtraArgs = "--features tracing-journald,io-uring --no-default-features";
+    cargoExtraArgs = "--features io-uring --no-default-features";
   };
 
   cargoArtifacts = craneLib.buildDepsOnly commonArgs;
@@ -35,7 +34,6 @@ in
 craneLib.buildPackage (
   commonArgs
   // {
-
     inherit cargoArtifacts;
   }
 )

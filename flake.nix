@@ -5,9 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
 
     # Crane for Rust builds with dependency caching
-    crane = {
-      url = "github:ipetkov/crane";
-    };
+    crane.url = "github:ipetkov/crane";
 
     home-manager = {
       url = "github:nix-community/home-manager/release-25.11";
@@ -86,6 +84,7 @@
             packages = with pkgs; [
               cargo
               rustc
+              rust.packages.stable.rustPlatform.rustLibSrc
               pkg-config
               libudev-zero
               libpcap
@@ -97,6 +96,7 @@
               nixd
             ];
 
+            RUST_SRC_PATH = "${rust.packages.stable.rustPlatform.rustLibSrc}";
             ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
             # TODO: There's probably a better solution
             ELECTRON_OVERRIDE_DIST_PATH = "${electron}/bin/";

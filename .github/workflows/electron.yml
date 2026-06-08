@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - master
+      - staging
   pull_request:
     branches:
       - master
+      - staging
 
 permissions:
   contents: read
@@ -28,7 +30,7 @@ jobs:
         name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "npm"
           cache-dependency-path: |
             electron/package-lock.json

@@ -58,6 +58,7 @@ interface UpdateContext {
 interface TroubleshootContext {
   rebootHmi: () => Promise<{ success: boolean; error?: string }>;
   restartBackend: () => Promise<{ success: boolean; error?: string }>;
+  restartBackendIntoPreop: () => Promise<{ success: boolean; error?: string }>;
   exportLogs: () => Promise<{ success: boolean; error?: string }>;
 }
 

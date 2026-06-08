@@ -86,7 +86,7 @@ in
         Type = "simple";
         User = cfg.user;
         Group = cfg.group;
-        ExecStart = "${cfg.package}/bin/server";
+        ExecStart = "${cfg.package}/bin/qitech_control";
         Restart = "always";
         RestartSec = "10s";
 
@@ -97,6 +97,7 @@ in
         # Hardening options
         NoNewPrivileges = true;
         ProtectSystem = "strict";
+        StateDirectory = "qitech";
 
         # Open only /proc/irq explicitly
         ReadWritePaths = [ "/proc/irq" ];

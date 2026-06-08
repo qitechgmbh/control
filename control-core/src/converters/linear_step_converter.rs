@@ -1,4 +1,4 @@
-use units::{
+use qitech_lib::units::{
     angle::revolution,
     angular_velocity::revolution_per_second,
     f64::{Acceleration, Angle, AngularAcceleration, AngularVelocity, Length, Velocity},
@@ -250,11 +250,11 @@ impl LinearStepConverter {
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    use std::f64::EPSILON;
-    use units::{
+    use qitech_lib::units::{
         acceleration::meter_per_second_squared, angular_acceleration::radian_per_second_squared,
         length::meter, velocity::meter_per_second,
     };
+    use std::f64::EPSILON;
 
     #[test]
     fn test_new() {

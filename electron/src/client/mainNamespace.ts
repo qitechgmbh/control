@@ -9,6 +9,7 @@ import {
   handleEventValidationError,
   handleUnhandledEventError,
   NamespaceId,
+  ThrottledStoreUpdater,
 } from "./socketioStore";
 import {
   deviceIdentification,
@@ -32,7 +33,6 @@ export const ethercatDevicesSchema = z.object({
   ),
 });
 
-// Update the EthercatDevicesEventData schema
 export const ethercatDevicesEventDataSchema = z
   .object({
     Initializing: z.boolean(),
@@ -51,7 +51,20 @@ export const ethercatDevicesEventSchema = eventSchema(
 
 export type EthercatDevicesEvent = z.infer<typeof ethercatDevicesEventSchema>;
 
-// Create a new schema for MachinesEvent
+export const ethercatStateEventDataSchema = z.object({
+  state: z.string(),
+});
+
+export type EthercatStateEventData = z.infer<
+  typeof ethercatStateEventDataSchema
+>;
+
+export const ethercatStateEventSchema = eventSchema(
+  ethercatStateEventDataSchema,
+);
+
+export type EthercatStateEvent = z.infer<typeof ethercatStateEventSchema>;
+
 export const machinesEventDataSchema = z.object({
   machines: z.array(
     z.object({
@@ -67,7 +80,6 @@ export const machinesEventSchema = eventSchema(machinesEventDataSchema);
 
 export type MachinesEvent = z.infer<typeof machinesEventSchema>;
 
-// Keep the EthercatInterfaceDiscovery event
 export const ethercatInterfaceDiscoveryEventDataSchema = z
   .object({
     Discovering: z.boolean(),
@@ -87,9 +99,9 @@ export type EthercatInterfaceDiscoveryEvent = z.infer<
   typeof ethercatInterfaceDiscoveryEventSchema
 >;
 
-// Update the main namespace store schema
 export const mainNamespaceStoreSchema = z.object({
   ethercatDevices: ethercatDevicesEventSchema.nullable(),
+  ethercatState: ethercatStateEventSchema.nullable(),
   machines: machinesEventSchema.nullable(),
   ethercatInterfaceDiscovery: ethercatInterfaceDiscoveryEventSchema.nullable(),
 });
@@ -99,6 +111,7 @@ export type MainNamespaceStore = z.infer<typeof mainNamespaceStoreSchema>;
 export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
   return create<MainNamespaceStore>()(() => ({
     ethercatDevices: null,
+    ethercatState: null,
     machines: null,
     ethercatInterfaceDiscovery: null,
   }));
@@ -106,34 +119,51 @@ export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
 
 export const eventSchemaMap = {
   EthercatDevicesEvent: ethercatDevicesEventSchema,
+  EthercatStateEvent: ethercatStateEventSchema,
   MachinesEvent: machinesEventSchema,
 };
 
 export function mainMessageHandler(
   store: StoreApi<MainNamespaceStore>,
+  _throttledUpdater: ThrottledStoreUpdater<MainNamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
 
     try {
-      // Apply appropriate caching strategy based on event type
       if (eventName === "EthercatDevicesEvent") {
-        const validatedEvent = event;
         store.setState((state) => ({
           ...state,
-          ethercatDevices: validatedEvent,
+          ethercatDevices: event,
+        }));
+      } else if (eventName === "EthercatStateEvent") {
+        store.setState((state) => ({
+          ...state,
+          ethercatState: event,
         }));
       } else if (eventName === "MachinesEvent") {
         const validatedEvent = machinesEventSchema.parse(event);
+        const currentMachinesState = store.getState().machines;
+        if (currentMachinesState) {
+          // Compare the old data array with the incoming data array if mismatch reload
+          const oldDataStr = JSON.stringify(currentMachinesState.data.machines);
+          const newDataStr = JSON.stringify(validatedEvent.data.machines);
+          if (oldDataStr !== newDataStr) {
+            console.log(
+              "Detected a change in the machines state! Reloading...",
+            );
+            window.location.reload();
+            return;
+          }
+        }
         store.setState((state) => ({
           ...state,
           machines: validatedEvent,
         }));
       } else if (eventName === "EthercatInterfaceDiscoveryEvent") {
-        const validatedEvent = event;
         store.setState((state) => ({
           ...state,
-          ethercatInterfaceDiscovery: validatedEvent,
+          ethercatInterfaceDiscovery: event,
         }));
       } else {
         handleUnhandledEventError(eventName);
@@ -149,17 +179,16 @@ export function mainMessageHandler(
   };
 }
 
-// Create the store instance once and export it
 export const mainNamespaceStore: StoreApi<MainNamespaceStore> =
   createMainNamespaceStore();
 
-// Message handler stays the same
-export const mainMessageHandlerInstance: EventHandler =
-  mainMessageHandler(mainNamespaceStore);
+export const mainMessageHandlerInstance: EventHandler = mainMessageHandler(
+  mainNamespaceStore,
+  new ThrottledStoreUpdater(mainNamespaceStore),
+);
 
-// Hook that uses the exported store
 const mainRoomImplementation = createNamespaceHookImplementation({
-  createStore: () => mainNamespaceStore, // use the exported store
+  createStore: () => mainNamespaceStore,
   createEventHandler: mainMessageHandler,
 });
 
@@ -167,6 +196,6 @@ export function useMainNamespace(): MainNamespaceStore;
 export function useMainNamespace<T>(selector: (s: MainNamespaceStore) => T): T;
 export function useMainNamespace<T>(selector?: (s: MainNamespaceStore) => T) {
   const namespaceId = useRef({ type: "main" } satisfies NamespaceId);
-  mainRoomImplementation(namespaceId.current); // keeps the socket subscription alive
+  mainRoomImplementation(namespaceId.current);
   return useStore(mainNamespaceStore, selector ?? ((s) => s as unknown as T));
 }

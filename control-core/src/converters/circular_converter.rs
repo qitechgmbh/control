@@ -14,14 +14,14 @@
 //!
 //! ```rust
 //! use control_core::converters::circular_converter::CircularConverter;
-//! use units::{f64::{Length, Velocity}, length::meter, velocity::meter_per_second};
+//! use qitech_lib::units::{f64::{Length, Velocity}, length::meter, velocity::meter_per_second};
 //!
 //! let converter = CircularConverter::from_radius(Length::new::<meter>(0.1));
 //! let velocity = Velocity::new::<meter_per_second>(1.0);
 //! let angular_velocity = converter.linear_to_angular_velocity(velocity);
 //! ```
 
-use units::{
+use qitech_lib::units::{
     acceleration::meter_per_second_squared,
     angle::radian,
     angular_acceleration::radian_per_second_squared,
@@ -199,7 +199,7 @@ impl CircularConverter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use units::length::centimeter;
+    use qitech_lib::units::length::centimeter;
 
     #[test]
     fn test_constructors() {

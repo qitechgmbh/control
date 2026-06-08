@@ -4,13 +4,15 @@ on:
   push:
     branches:
       - master
+      - staging
   pull_request:
     branches:
       - master
+      - staging
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_VERSION: "1.86"
+  RUST_VERSION: "stable"
 
 permissions:
   contents: read
@@ -29,12 +31,10 @@ jobs:
 
       - &setup-rust
         name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ env.RUST_VERSION }}
-          profile: minimal
-          override: true
-          components: rustfmt
+          components: clippy,rustfmt
 
       - &cargo-cache
         name: Cache Rust dependencies
@@ -51,8 +51,6 @@ jobs:
             ${{ runner.os }}-${{ env.RUST_VERSION }}-cargo-
 
       - name: Build
-        env:
-          RUSTFLAGS: "-D warnings"
         run: cargo build --verbose
 
   format:

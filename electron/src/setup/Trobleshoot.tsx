@@ -5,6 +5,7 @@ import { TouchButton } from "@/components/touch/TouchButton";
 import {
   rebootHmi,
   restartBackend,
+  restartBackendIntoPreop,
   exportLogs,
 } from "@/helpers/troubleshoot_helpers";
 import React, { useState } from "react";
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 export function TroubleshootPage() {
   const [isRebootLoading, setIsRebootLoading] = useState(false);
   const [isRestartLoading, setIsRestartLoading] = useState(false);
+  const [isRestartPreopLoading, setIsRestartPreopLoading] = useState(false);
   const [isExportLoading, setIsExportLoading] = useState(false);
 
   const handleRebootHmi = async () => {
@@ -44,6 +46,22 @@ export function TroubleshootPage() {
       toast.error(`Failed to restart backend: ${error}`);
     } finally {
       setIsRestartLoading(false);
+    }
+  };
+
+  const handleRestartBackendIntoPreop = async () => {
+    setIsRestartPreopLoading(true);
+    try {
+      const result = await restartBackendIntoPreop();
+      if (result.success) {
+        toast.success("Backend restarted into Preop mode");
+      } else {
+        toast.error(`Failed to restart into Preop: ${result.error}`);
+      }
+    } catch (error) {
+      toast.error(`Failed to restart into Preop: ${error}`);
+    } finally {
+      setIsRestartPreopLoading(false);
     }
   };
 
@@ -96,9 +114,19 @@ export function TroubleshootPage() {
 
         <TouchButton
           variant="outline"
+          icon="lu:RotateCcw"
+          isLoading={isRestartPreopLoading}
+          onClick={handleRestartBackendIntoPreop}
+          className="w-max"
+        >
+          Restart Backend Process Into Preop
+        </TouchButton>
+
+        <TouchButton
+          variant="outline"
           icon="lu:FileDown"
           isLoading={isExportLoading}
-          onClick={exportLogs}
+          onClick={handleExportLogs}
           className="w-max"
         >
           Export Backend Service Logs
