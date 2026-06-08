@@ -484,7 +484,7 @@ dependencies = [
  "core_affinity",
  "crc",
  "erased-serde",
- "ethercrab 0.6.0",
+ "ethercrab",
  "interfaces",
  "libc",
  "qitech_lib",
@@ -867,7 +867,7 @@ dependencies = [
  "common",
  "core_affinity",
  "ethercat_hal_derive",
- "ethercrab 0.7.1",
+ "ethercrab",
  "libc",
  "rand 0.9.4",
  "smol",
@@ -900,37 +900,7 @@ dependencies = [
  "crc",
  "embassy-time",
  "embedded-io-async",
- "ethercrab-wire 0.2.0",
- "futures-lite",
- "heapless",
- "io-uring",
- "libc",
- "lock_api",
- "log",
- "nix 0.31.3",
- "pcap",
- "pnet_datalink",
- "sealed",
- "slab",
- "smallvec",
- "smlang",
- "spin",
- "timerfd",
-]
-
-[[package]]
-name = "ethercrab"
-version = "0.7.1"
-source = "git+https://github.com/ethercrab-rs/ethercrab?branch=main#4c7d36157fa5caab3194df494e92e08551cd2e43"
-dependencies = [
- "async-io",
- "atomic-waker",
- "atomic_enum",
- "bitflags 2.11.1",
- "crc",
- "embassy-time",
- "embedded-io-async",
- "ethercrab-wire 0.3.0",
+ "ethercrab-wire",
  "futures-lite",
  "heapless",
  "io-uring",
@@ -953,16 +923,7 @@ name = "ethercrab-wire"
 version = "0.3.0"
 source = "git+https://github.com/ethercrab-rs/ethercrab?branch=main#b3f21600a36a1eb9019c92f6d6cfc5151cf53b59"
 dependencies = [
- "ethercrab-wire-derive 0.2.0",
- "heapless",
-]
-
-[[package]]
-name = "ethercrab-wire"
-version = "0.3.0"
-source = "git+https://github.com/ethercrab-rs/ethercrab?branch=main#4c7d36157fa5caab3194df494e92e08551cd2e43"
-dependencies = [
- "ethercrab-wire-derive 0.3.0",
+ "ethercrab-wire-derive",
  "heapless",
 ]
 
@@ -970,17 +931,6 @@ dependencies = [
 name = "ethercrab-wire-derive"
 version = "0.3.0"
 source = "git+https://github.com/ethercrab-rs/ethercrab?branch=main#b3f21600a36a1eb9019c92f6d6cfc5151cf53b59"
-dependencies = [
- "criterion",
- "proc-macro2",
- "quote",
- "syn 2.0.117",
-]
-
-[[package]]
-name = "ethercrab-wire-derive"
-version = "0.3.0"
-source = "git+https://github.com/ethercrab-rs/ethercrab?branch=main#4c7d36157fa5caab3194df494e92e08551cd2e43"
 dependencies = [
  "criterion",
  "proc-macro2",
@@ -1694,19 +1644,6 @@ dependencies = [
  "cfg-if",
  "cfg_aliases",
  "libc",
-]
-
-[[package]]
-name = "nix"
-version = "0.31.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf20d2fde8ff38632c426f1165ed7436270b44f199fc55284c38276f9db47c3d"
-dependencies = [
- "bitflags 2.11.1",
- "cfg-if",
- "cfg_aliases",
- "libc",
- "memoffset 0.9.1",
 ]
 
 [[package]]
