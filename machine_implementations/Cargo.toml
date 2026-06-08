@@ -30,6 +30,8 @@ opentelemetry_sdk = { version = "0.28.0", features = ["trace", "metrics", "logs"
 opentelemetry-appender-tracing = "0.28.0"
 opentelemetry-otlp = { version = "0.28.0", features = ["grpc-tonic"] }
 
+crossbeam="0.8.4"
+heapless="0.9.3"
 
 [dev-dependencies]
 approx = "0.5.1"

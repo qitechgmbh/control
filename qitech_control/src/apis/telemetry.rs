@@ -4,21 +4,13 @@ use opentelemetry_otlp::{LogExporter, MetricExporter, SpanExporter};
 use opentelemetry_sdk::{Resource, logs::SdkLoggerProvider, metrics::SdkMeterProvider, propagation::TraceContextPropagator, trace::SdkTracerProvider};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-pub struct OpenTelemetrySystem {
+pub struct OpenTelemetryHandle {
     tracer_provider: SdkTracerProvider,
     meter_provider: SdkMeterProvider,
     logger_provider: SdkLoggerProvider,
 }
 
-impl OpenTelemetrySystem {
-    pub fn new(resource: &Resource) -> Self {
-        Self {
-            tracer_provider: init_tracer_provider(resource),
-            meter_provider: init_meter_provider(resource),
-            logger_provider: init_logger_provider(resource),
-        }
-    }
-
+impl OpenTelemetryHandle {
     pub fn shutdown(&self) { 
         if let Err(err) = self.tracer_provider.shutdown() {
             eprintln!("Error shutting down tracer provider: {err:?}");
@@ -34,10 +26,21 @@ impl OpenTelemetrySystem {
     }
 }
 
-impl Drop for OpenTelemetrySystem {
+impl Drop for OpenTelemetryHandle {
     fn drop(&mut self) {
         self.shutdown();
     }
+}
+
+pub fn init(resource: &Resource) -> OpenTelemetryHandle {
+    let handle = OpenTelemetryHandle {
+        tracer_provider: init_tracer_provider(resource),
+        meter_provider: init_meter_provider(resource),
+        logger_provider: init_logger_provider(resource),
+    };
+
+    println!("Initialized Telemetry");
+    handle
 }
 
 fn init_tracer_provider(resource: &Resource) -> SdkTracerProvider {

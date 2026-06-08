@@ -7,7 +7,6 @@ use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
 
 // telemetry stuff
 use opentelemetry_sdk::Resource;
-use crate::apis::otel::OpenTelemetrySystem;
 
 use qitech_lib::ethercat_hal::{
     BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer, TripleBufProducer,
@@ -23,12 +22,13 @@ use qitech_lib::{
 use std::{sync::Arc, time::Duration};
 
 #[cfg(not(feature = "mock"))]
-use crate::app_state::MainState;
+use crate::{apis::telemetry, app_state::MainState};
 use crate::{
     apis::socketio::main_namespace::ethercat_devices_event::EcatState, app_state::get_async_runtime,
 };
 
 pub mod apis;
+mod database;
 mod app_state;
 mod machine_loop;
 #[cfg(feature = "mock")]
@@ -308,17 +308,15 @@ fn find_ethercat_interface() -> Result<String, anyhow::Error> {
 
 #[cfg(not(feature = "mock"))]
 fn main_logic() {
-    
     let _rt = get_async_runtime().enter();
 
-    
     // step one: initalize otel so we can trace all operations
-    let resource = Resource::builder().with_service_name("qitech-control").build();
+    let resource = Resource::builder()
+        .with_service_name("qitech-control")
+        .build();
         
-    // don't discard so the ::drop() isn't invoked immediately
-    let _otel_system = OpenTelemetrySystem::new(&resource);
-
-    println!("Otel engaged");
+    // don't discard so the ::drop() isn't invoked
+    let _telemetry_handle = telemetry::init(&resource);
 
     let stay_in_preop = std::env::var("QITECH_MODE").unwrap_or_default() == "preop"
         || std::env::args().any(|a| a == "preop");

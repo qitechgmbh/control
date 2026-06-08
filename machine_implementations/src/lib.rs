@@ -13,6 +13,7 @@ use serde::Serialize;
 use std::{cell::RefCell, rc::Rc};
 use tokio::sync::mpsc::Sender;
 
+pub mod telemetry;
 pub mod aquapath1;
 pub mod extruder1;
 pub mod laser;

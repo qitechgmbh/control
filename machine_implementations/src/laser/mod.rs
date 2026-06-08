@@ -1,4 +1,4 @@
-use crate::{MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH, laser::telemetry::Metrics};
+use crate::{MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH, laser::{properties::Properties, telemetry::Metrics}};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::{
@@ -17,6 +17,7 @@ use std::{
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 
+mod properties;
 pub mod act;
 pub mod api;
 pub mod new;
@@ -58,6 +59,8 @@ pub struct LaserMachine {
     did_change_state: bool,
 
     metrics: Metrics,
+
+    properties: Properties,
 }
 
 impl LaserMachine {
@@ -85,6 +88,9 @@ impl LaserMachine {
         let event = self.get_live_values().build();
 
         self.metrics.diameter.record(event.data.diameter, &[]);
+        self.metrics.x_diameter.record(event.data.x_diameter.unwrap(), &[]);
+        self.metrics.y_diameter.record(event.data.y_diameter.unwrap(), &[]);
+        // self.metrics.roundness.record(event.data.roundness.unwrap(), &[]);
 
         self.namespace.emit(LaserEvents::LiveValues(event));
     }
@@ -181,6 +187,7 @@ impl LaserMachine {
         let diameter_epsilon: f64 = 0.0001; // 0.0001 mm
         // early return true if the diameter is 0 to prevent warning happening before start
         if self.diameter.get::<millimeter>() < diameter_epsilon {
+            self.properties.in_tolerance.set(true);
             self.in_tolerance = true;
             return true;
         }
@@ -190,8 +197,10 @@ impl LaserMachine {
 
         if self.diameter > top || self.diameter < bottom {
             self.in_tolerance = false;
+            self.properties.in_tolerance.set(false);
         } else {
             self.in_tolerance = true;
+            self.properties.in_tolerance.set(true);
         }
 
         self.in_tolerance
@@ -230,9 +239,17 @@ impl LaserMachine {
 
         match &laser.measurement {
             Some(m) => {
-                self.x_diameter = Some(Length::new::<millimeter>(m.x_axis as f64 / 1000.0));
-                self.y_diameter = Some(Length::new::<millimeter>(m.y_axis as f64 / 1000.0));
-                self.diameter = Length::new::<millimeter>(m.diameter as f64 / 1000.0);
+                let x_diameter = Length::new::<millimeter>(m.x_axis as f64 / 1000.0);
+                let y_diameter = Length::new::<millimeter>(m.y_axis as f64 / 1000.0);
+                let diameter = Length::new::<millimeter>(m.diameter as f64 / 1000.0);
+
+                self.x_diameter = Some(x_diameter);
+                self.y_diameter = Some(y_diameter);
+                self.diameter = diameter;
+
+                self.properties.x_diameter.set(x_diameter);
+                self.properties.y_diameter.set(y_diameter);
+                self.properties.diameter.set(diameter);
             }
             None => (),
         };
