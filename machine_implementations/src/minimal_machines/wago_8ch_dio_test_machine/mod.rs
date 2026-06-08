@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use self::api::{
     StateEvent, Wago8chDigitalIOTestMachineEvents, Wago8chDigitalIOTestMachineNamespace,
@@ -25,8 +25,8 @@ pub struct Wago8chDigitalIOTestMachine {
     pub machine_identification_unique: MachineIdentificationUnique,
     pub namespace: Wago8chDigitalIOTestMachineNamespace,
     pub last_state_emit: Instant,
-    // Subdevices of a WAGO coupler are owned by the machine
-    pub digital_input_output_device: Box<Wago750_1506>,
+    // Subdevices of a WAGO coupler are shared with the coupler
+    pub digital_input_output_device: Rc<RefCell<Wago750_1506>>,
     pub last_output_state: [bool; 8],
 }
 
@@ -40,6 +40,7 @@ impl Wago8chDigitalIOTestMachine {
         StateEvent {
             digital_input: std::array::from_fn(|i| {
                 self.digital_input_output_device
+                    .borrow()
                     .get_input(i)
                     .expect("digital input value should be available for indices 0 to 7")
             }),
@@ -54,7 +55,7 @@ impl Wago8chDigitalIOTestMachine {
     }
 
     pub fn set_output(&mut self, i: usize, value: bool) {
-        self.digital_input_output_device.set_output(i, value);
+        self.digital_input_output_device.borrow_mut().set_output(i, value);
         self.last_output_state[i] = value;
         self.emit_state();
     }

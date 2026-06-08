@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use control_core::socketio::{event::Event, namespace::NamespaceCacheingLogic};
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -22,7 +22,7 @@ pub struct WagoAiTestMachine {
     pub namespace: WagoAiTestMachineNamespace,
     pub last_measurement: Instant,
     pub measurement_rate_hz: f64,
-    pub analog_input_device: Box<Wago750_455>,
+    pub analog_input_device: Rc<RefCell<Wago750_455>>,
 }
 
 impl QiTechMachine for WagoAiTestMachine {}

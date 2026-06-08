@@ -1,9 +1,9 @@
-use std::time::Instant;
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use anyhow::Error;
 
 use qitech_lib::ethercat_hal::devices::{
-    DynamicEthercatDevice, EthercatDevice, downcast_subdevice, wago_750_354::Wago750_354,
+    DynamicEthercatDevice, EthercatDevice, downcast_rc_refcell_dynamic, wago_750_354::Wago750_354,
     wago_modules::wago_750_501::Wago750_501,
 };
 
@@ -31,13 +31,15 @@ impl MachineNew for Wago750_501TestMachine {
 
         wago_750_354.init_slot_modules(ethercat_interface, wago_750_354_addr);
 
-        let dev: Box<dyn DynamicEthercatDevice> = wago_750_354.slot_devices[0]
-            .take()
+        let dev: Rc<RefCell<dyn DynamicEthercatDevice>> = wago_750_354
+            .slot_devices
+            .get(0)
+            .ok_or_else(|| Error::msg("Slot 0 should have a device"))?
+            .clone()
             .ok_or_else(|| Error::msg("Slot 0 should have a device"))?;
-        let dev: Box<dyn EthercatDevice> = dev;
 
-        let wago750_501 =
-            downcast_subdevice::<Wago750_501>(dev).expect("downcasting device should work");
+        let wago750_501 = downcast_rc_refcell_dynamic::<Wago750_501>(dev)
+            .expect("downcasting device should work");
 
         drop(wago_750_354);
 

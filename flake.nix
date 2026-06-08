@@ -84,6 +84,7 @@
             packages = with pkgs; [
               cargo
               rustc
+              rust.packages.stable.rustPlatform.rustLibSrc
               pkg-config
               libudev-zero
               libpcap
@@ -95,6 +96,7 @@
               nixd
             ];
 
+            RUST_SRC_PATH = "${rust.packages.stable.rustPlatform.rustLibSrc}";
             ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
             # TODO: There's probably a better solution
             ELECTRON_OVERRIDE_DIST_PATH = "${electron}/bin/";

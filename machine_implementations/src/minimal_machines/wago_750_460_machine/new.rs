@@ -1,9 +1,9 @@
-use std::time::Instant;
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use anyhow::Error;
 
 use qitech_lib::ethercat_hal::devices::{
-    DynamicEthercatDevice, EthercatDevice, downcast_subdevice, wago_750_354::Wago750_354,
+    DynamicEthercatDevice, EthercatDevice, downcast_rc_refcell_dynamic, wago_750_354::Wago750_354,
     wago_modules::wago_750_460::Wago750_460,
 };
 
@@ -33,15 +33,18 @@ impl MachineNew for Wago750_460Machine {
 
         wago_750_354.init_slot_modules(ethercat_interface, wago_750_354_addr);
 
-        // Retrieve the 750-460 module from slot 0.
-        let dev: Box<dyn DynamicEthercatDevice> = match wago_750_354.slot_devices[0].take() {
+        // Clone a shared handle to the 750-460 module in slot 0.
+        let dev: Rc<RefCell<dyn DynamicEthercatDevice>> = match wago_750_354
+            .slot_devices
+            .get(0)
+            .and_then(|slot| slot.clone())
+        {
             Some(a) => a,
             None => return Err(Error::msg("Slot 0 should have a device")),
         };
-        let dev: Box<dyn EthercatDevice> = dev;
 
-        let wago750_460 =
-            downcast_subdevice::<Wago750_460>(dev).expect("downcasting device should work");
+        let wago750_460 = downcast_rc_refcell_dynamic::<Wago750_460>(dev)
+            .expect("downcasting device should work");
 
         let (sender, receiver) = tokio::sync::mpsc::channel::<MachineMessage>(10);
         let mut machine = Self {

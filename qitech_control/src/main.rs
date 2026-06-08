@@ -38,11 +38,20 @@ fn setup_ethercat(
     let _res = eth_control
         .channel
         .request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
-    std::thread::sleep(Duration::from_millis(5000));
+
+    // Poll and wait for state PreOp
+
+    loop {
+        match eth_control.controller.state {
+            EtherCATState::PreOp => break,
+            _ => (),
+        }
+        std::thread::sleep(Duration::from_millis(500)) // Also waiting in PreOp case until state changs are a bit cleaner and guarantee that the statechange code executes before the state value changes
+    }
 
     let mut idents = vec![];
     println!(
-        "Initialized {} subdevices",
+        "[setup_ethercat] initialized {} subdevices",
         eth_control.controller.get_subdevice_count()
     );
 

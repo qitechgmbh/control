@@ -1,9 +1,9 @@
-use std::time::Instant;
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use anyhow::Error;
 
 use qitech_lib::ethercat_hal::devices::{
-    DynamicEthercatDevice, EthercatDevice, downcast_subdevice, wago_750_354::Wago750_354,
+    DynamicEthercatDevice, EthercatDevice, downcast_rc_refcell_dynamic, wago_750_354::Wago750_354,
     wago_modules::wago_750_531::Wago750_531,
 };
 
@@ -31,13 +31,23 @@ impl MachineNew for Wago750_531Machine {
 
         wago_750_354.init_slot_modules(ethercat_interface, wago_750_354_addr);
 
-        let dev: Box<dyn DynamicEthercatDevice> = wago_750_354.slot_devices[0]
-            .take()
-            .ok_or_else(|| Error::msg("Slot 0 should have a device"))?;
-        let dev: Box<dyn EthercatDevice> = dev;
-
-        let wago750_531 =
-            downcast_subdevice::<Wago750_531>(dev).expect("downcasting device should work");
+        let dev: Rc<RefCell<dyn DynamicEthercatDevice>> = wago_750_354.slot_devices
+            .get(0)
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "[{}::Wago750_531Machine::new] Expected Wago 750-531 module in slot 0, but slot 0 is not configured",
+                    module_path!()
+                )
+            })?
+            .clone()
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "[{}::Wago750_531Machine::new] Expected Wago 750-531 module in slot 0, but slot 0 is empty",
+                    module_path!()
+                )
+            })?;
+        let wago750_531 = downcast_rc_refcell_dynamic::<Wago750_531>(dev)
+            .expect("downcasting device should work");
 
         drop(wago_750_354);
 

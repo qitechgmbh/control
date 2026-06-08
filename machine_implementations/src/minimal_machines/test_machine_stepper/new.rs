@@ -6,7 +6,7 @@ use anyhow::Error;
 
 use qitech_lib::ethercat_hal::{
     devices::{
-        DynamicEthercatDevice, EthercatDevice, downcast_subdevice,
+        DynamicEthercatDevice, EthercatDevice, downcast_rc_refcell_dynamic,
         wago_750_354::Wago750_354,
         wago_modules::{
             wago_750_671::{WAGO_750_671_MODULE_IDENT, Wago750_671},
@@ -58,20 +58,23 @@ impl MachineNew for TestMachineStepper {
             None => return Err(Error::msg("Slot 0 should be populated")),
         };
 
-        let dev: Box<dyn DynamicEthercatDevice> = match wago_750_354.slot_devices[0].take() {
+        let dev: Rc<RefCell<dyn DynamicEthercatDevice>> = match wago_750_354
+            .slot_devices
+            .get(0)
+            .and_then(|slot| slot.clone())
+        {
             Some(a) => a,
             None => return Err(Error::msg("Slot 0 should be populated")),
         };
-        let dev: Box<dyn EthercatDevice> = dev;
 
         let stepper = match slot_ident {
             WAGO_750_672_MODULE_IDENT => {
-                let inner = *downcast_subdevice::<Wago750_672>(dev)?;
-                Stepper::Wago750_672(StepperVelocityWago750672::new(Rc::new(RefCell::new(inner))))
+                let inner = downcast_rc_refcell_dynamic::<Wago750_672>(dev)?;
+                Stepper::Wago750_672(StepperVelocityWago750672::new(inner))
             }
             WAGO_750_671_MODULE_IDENT => {
-                let inner = *downcast_subdevice::<Wago750_671>(dev)?;
-                Stepper::Wago750_671(StepperVelocityWago750671::new(Rc::new(RefCell::new(inner))))
+                let inner = downcast_rc_refcell_dynamic::<Wago750_671>(dev)?;
+                Stepper::Wago750_671(StepperVelocityWago750671::new(inner))
             }
             (vendor_id, product_id) => {
                 return Err(anyhow::anyhow!(

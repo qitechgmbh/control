@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use self::api::{StateEvent, WagoDOTestMachineEvents, WagoDOTestMachineNamespace};
 use crate::{MachineMessage, QiTechMachine, VENDOR_QITECH, WAGO_DO_TEST_MACHINE};
@@ -24,7 +24,7 @@ pub struct WagoDOTestMachine {
     pub namespace: WagoDOTestMachineNamespace,
     pub last_state_emit: Instant,
     pub led_on: [bool; 8],
-    pub digital_output_device: Box<Wago750_530>,
+    pub digital_output_device: Rc<RefCell<Wago750_530>>,
 }
 
 impl QiTechMachine for WagoDOTestMachine {}
@@ -49,16 +49,18 @@ impl WagoDOTestMachine {
     pub fn set_led(&mut self, index: usize, on: bool) {
         if index < self.led_on.len() {
             self.led_on[index] = on;
-            self.digital_output_device.set_output(index, on);
+            self.digital_output_device.borrow_mut().set_output(index, on);
             self.emit_state();
         }
     }
 
     pub fn set_all_leds(&mut self, on: bool) {
         self.led_on = [on; 8];
+        let mut dev = self.digital_output_device.borrow_mut();
         for i in 0..8 {
-            self.digital_output_device.set_output(i, on);
+            dev.set_output(i, on);
         }
+        drop(dev);
         self.emit_state();
     }
 }

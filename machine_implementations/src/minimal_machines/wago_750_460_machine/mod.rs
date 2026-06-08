@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use self::api::{StateEvent, Wago750_460MachineEvents, Wago750_460MachineNamespace};
 use crate::{MachineMessage, QiTechMachine, VENDOR_QITECH, WAGO_750_460_MACHINE};
@@ -26,8 +26,8 @@ pub struct Wago750_460Machine {
     pub last_state_emit: Instant,
 
     // --- hardware -----------------------------------------------------------
-    // Subdevices of a WAGO coupler are owned by the machine
-    pub temperature_input_device: Box<Wago750_460>,
+    // Subdevices of a WAGO coupler are shared with the coupler
+    pub temperature_input_device: Rc<RefCell<Wago750_460>>,
 }
 
 impl QiTechMachine for Wago750_460Machine {}
@@ -44,6 +44,7 @@ impl Wago750_460Machine {
         for port in 0..4 {
             let input = self
                 .temperature_input_device
+                .borrow()
                 .get_input(port)
                 .expect("getting input for valid port should succeed");
             if input.error {
