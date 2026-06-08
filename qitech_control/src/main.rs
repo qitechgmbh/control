@@ -5,7 +5,7 @@ use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
 use qitech_lib::ethercat_hal::{
-    BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer, TripleBufProducer,
+    BECKHOFF_VENDOR_ID, EtherCATControl, EtherCATState, Mailbox, TripleBufConsumer, TripleBufProducer,
 };
 #[cfg(not(feature = "mock"))]
 use qitech_lib::ethercat_hal::{
@@ -42,7 +42,7 @@ fn setup_ethercat(
     // Poll and wait for state PreOp
 
     loop {
-        match eth_control.controller.state {
+        match eth_control.controller.get_state() {
             EtherCATState::PreOp => break,
             _ => (),
         }

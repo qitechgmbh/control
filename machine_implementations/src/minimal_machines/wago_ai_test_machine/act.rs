@@ -4,7 +4,7 @@ use qitech_lib::{
     ethercat_hal::io::analog_input::{AnalogInputDevice, physical::AnalogInputValue},
     machines::{Machine, MachineDataRegistry, MachineError},
 };
-use units::electric_current::milliampere;
+use qitech_lib::units::electric_current::milliampere;
 
 use super::WagoAiTestMachine;
 use crate::MachineApi;
