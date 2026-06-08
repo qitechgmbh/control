@@ -23,12 +23,13 @@ impl Machine for WagoAiTestMachine {
         if now.duration_since(self.last_measurement)
             > Duration::from_secs_f64(1.0 / self.measurement_rate_hz)
         {
-            let range = self.analog_input_device.analog_input_range();
+            let analog_input_device = self.analog_input_device.borrow();
+            let range = analog_input_device.analog_input_range();
             let mut values = [0.0f64; 4];
             let mut wiring_errors = [false; 4];
 
             for i in 0..4 {
-                if let Ok(input) = self.analog_input_device.get_input(i) {
+                if let Ok(input) = analog_input_device.get_input(i) {
                     wiring_errors[i] = input.wiring_error;
                     match input.get_physical(&range) {
                         AnalogInputValue::Current(quantity) => {
@@ -38,6 +39,7 @@ impl Machine for WagoAiTestMachine {
                     }
                 }
             }
+            drop(analog_input_device);
 
             let now_ms = SystemTime::now()
                 .duration_since(UNIX_EPOCH)

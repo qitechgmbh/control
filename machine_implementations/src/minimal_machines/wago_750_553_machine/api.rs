@@ -28,7 +28,7 @@ pub enum Wago750_553MachineEvents {
     State(Event<StateEvent>),
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(tag = "action", content = "value")]
 pub enum Mutation {
     SetOutput { index: usize, value: f32 },

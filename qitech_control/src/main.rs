@@ -1,5 +1,4 @@
 #[cfg(not(feature = "mock"))]
-use crate::apis::socketio::namespace_id::NamespaceId;
 use crate::app_state::MainState;
 use crate::app_state::get_async_runtime;
 #[cfg(not(feature = "mock"))]
@@ -10,6 +9,7 @@ use machine_implementations::MACHINE_LASER_V1;
 use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{write_ecat_inputs, write_ecat_outputs};
+use qitech_lib::ethercat_hal::EtherCATState;
 use qitech_lib::ethercat_hal::devices::device_from_subdevice_identity_rc;
 use qitech_lib::ethercat_hal::{
     BECKHOFF_VENDOR_ID, EtherCATControl, TripleBufConsumer, TripleBufProducer,
@@ -20,8 +20,6 @@ use qitech_lib::ethercat_hal::{
 };
 use qitech_lib::serial::get_available_ports;
 use std::{sync::Arc, time::Duration};
-#[cfg(not(feature = "mock"))]
-use tokio::runtime::Handle;
 
 pub mod apis;
 mod app_state;
@@ -37,11 +35,20 @@ fn setup_ethercat(
     let _res = eth_control
         .channel
         .request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
-    std::thread::sleep(Duration::from_millis(5000));
+
+    // Poll and wait for state PreOp
+
+    loop {
+        match eth_control.controller.state {
+            EtherCATState::PreOp => break,
+            _ => (),
+        }
+        std::thread::sleep(Duration::from_millis(500)) // Also waiting in PreOp case until state changs are a bit cleaner and guarantee that the statechange code executes before the state value changes
+    }
 
     let mut idents = vec![];
     println!(
-        "Initialized {} subdevices",
+        "[setup_ethercat] initialized {} subdevices",
         eth_control.controller.subdevice_count
     );
 

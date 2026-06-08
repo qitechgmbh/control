@@ -34,7 +34,7 @@ pub mod new;
 // Hardware handle conventions:
 //   - Beckhoff terminal:        Rc<RefCell<EL2004>>           or
 //                               Rc<RefCell<dyn DigitalOutputDevice>>  (trait obj)
-//   - WAGO module (subdevice):  Box<Wago750_530>              (owned by machine)
+//   - WAGO module (subdevice):  Rc<RefCell<Wago750_530>>      (shared with coupler)
 // ----------------------------------------------------------------------------
 #[derive(Debug)]
 pub struct MyMachine {

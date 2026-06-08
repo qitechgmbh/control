@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use self::api::{StateEvent, Wago750_553MachineEvents, Wago750_553MachineNamespace};
 use crate::{MachineMessage, QiTechMachine, VENDOR_QITECH, WAGO_750_553_MACHINE};
@@ -24,7 +24,7 @@ pub struct Wago750_553Machine {
     pub namespace: Wago750_553MachineNamespace,
     pub last_state_emit: Instant,
     pub outputs: [f32; 4],
-    pub analog_output_device: Box<Wago750_553>,
+    pub analog_output_device: Rc<RefCell<Wago750_553>>,
 }
 
 impl QiTechMachine for Wago750_553Machine {}
@@ -52,6 +52,7 @@ impl Wago750_553Machine {
             let clamped = value.clamp(0.0, 1.0);
             self.outputs[index] = clamped;
             self.analog_output_device
+                .borrow_mut()
                 .set_output(index, AnalogOutputOutput(clamped));
             self.emit_state();
         }
@@ -60,10 +61,11 @@ impl Wago750_553Machine {
     pub fn set_all_outputs(&mut self, value: f32) {
         let clamped = value.clamp(0.0, 1.0);
         self.outputs = [clamped; 4];
+        let mut dev = self.analog_output_device.borrow_mut();
         for i in 0..4 {
-            self.analog_output_device
-                .set_output(i, AnalogOutputOutput(clamped));
+            dev.set_output(i, AnalogOutputOutput(clamped));
         }
+        drop(dev);
         self.emit_state();
     }
 }

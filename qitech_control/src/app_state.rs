@@ -341,8 +341,7 @@ impl MainState {
                 let address = info.device_address;
                 let f = mapped_ecat_devices
                     .iter()
-                    .find(|f| f.0.device_address == address)
-                    .unwrap();
+                    .find(|f| f.0.device_address == address)?;
                 Some((info.clone(), f.0, f.1.clone())) // This is a 3-tuple
             })
             .collect();

@@ -21,8 +21,9 @@ use crate::{MachineHardware, MachineMessage, MachineNew};
 // use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 
 // --- Pattern B imports (WAGO coupler + module) ------------------------------
+// use std::{cell::RefCell, rc::Rc};
 // use qitech_lib::ethercat_hal::devices::{
-//     DynamicEthercatDevice, EthercatDevice, downcast_subdevice,
+//     DynamicEthercatDevice, EthercatDevice, downcast_rc_refcell_dynamic,
 //     wago_750_354::Wago750_354,
 //     wago_modules::wago_750_530::Wago750_530,
 // };
@@ -53,8 +54,11 @@ impl MachineNew for MyMachine {
         // Pattern B — WAGO 750 coupler + expansion module
         // --------------------------------------------------------------------
         // The coupler is always role 0. After acquiring it, discover modules,
-        // attach them to the coupler, init the slots, then pluck the subdevice
-        // out of the slot you care about and downcast it.
+        // attach them to the coupler, init the slots, then clone a shared handle
+        // to the subdevice you care about and downcast it.
+        //
+        // Coupler subdevices are `Rc<RefCell<dyn DynamicEthercatDevice>>` — they
+        // may need multiple owners, so clone the slot's Rc (don't `.take()` it).
         //
         // let ethercat_interface = hw
         //     .ethercat_interface
@@ -72,12 +76,14 @@ impl MachineNew for MyMachine {
         // }
         // wago_750_354.init_slot_modules(ethercat_interface, coupler_addr);
         //
-        // // Take ownership of the module from slot 0 (first expansion slot).
-        // let dev: Box<dyn DynamicEthercatDevice> = wago_750_354.slot_devices[0]
-        //     .take()
-        //     .ok_or_else(|| Error::msg("Slot 0 should have a device"))?;
-        // let dev: Box<dyn EthercatDevice> = dev;
-        // let wago750_530 = downcast_subdevice::<Wago750_530>(dev)?;
+        // // Clone a shared handle to the module in slot 0 (first expansion slot).
+        // let dev: Rc<RefCell<dyn DynamicEthercatDevice>> = wago_750_354
+        //     .slot_devices
+        //     .get(0)
+        //     .ok_or_else(|| Error::msg("Slot 0 is not configured"))?
+        //     .clone()
+        //     .ok_or_else(|| Error::msg("Slot 0 is empty"))?;
+        // let wago750_530 = downcast_rc_refcell_dynamic::<Wago750_530>(dev)?;
         // drop(wago_750_354);
 
         // --------------------------------------------------------------------

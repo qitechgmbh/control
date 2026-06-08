@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use self::api::{StateEvent, Wago750_430DiMachineEvents, Wago750_430DiMachineNamespace};
 use crate::{MachineMessage, QiTechMachine, VENDOR_QITECH, WAGO_750_430_DI_MACHINE};
@@ -23,7 +23,7 @@ pub struct Wago750_430DiMachine {
     pub machine_identification_unique: MachineIdentificationUnique,
     pub namespace: Wago750_430DiMachineNamespace,
     pub last_state_emit: Instant,
-    pub digital_input_device: Box<Wago750_430>,
+    pub digital_input_device: Rc<RefCell<Wago750_430>>,
 }
 
 impl QiTechMachine for Wago750_430DiMachine {}
@@ -36,9 +36,11 @@ impl Wago750_430DiMachine {
 
     pub fn get_state(&self) -> StateEvent {
         let mut inputs = [false; 8];
+        let dev = self.digital_input_device.borrow();
         for i in 0..8 {
-            inputs[i] = self.digital_input_device.get_input(i).unwrap_or(false);
+            inputs[i] = dev.get_input(i).unwrap_or(false);
         }
+        drop(dev);
         StateEvent { inputs }
     }
 

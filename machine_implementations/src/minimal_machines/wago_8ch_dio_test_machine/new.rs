@@ -1,11 +1,11 @@
-use std::time::Instant;
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use crate::{MachineHardware, MachineMessage, MachineNew};
 
 use super::{Wago8chDigitalIOTestMachine, api::Wago8chDigitalIOTestMachineNamespace};
 use anyhow::Error;
 use qitech_lib::ethercat_hal::devices::{
-    DynamicEthercatDevice, EthercatDevice, downcast_subdevice, wago_750_354::Wago750_354,
+    DynamicEthercatDevice, EthercatDevice, downcast_rc_refcell_dynamic, wago_750_354::Wago750_354,
     wago_modules::wago_750_1506::Wago750_1506,
 };
 
@@ -27,13 +27,16 @@ impl MachineNew for Wago8chDigitalIOTestMachine {
 
         wago_750_354.init_slot_modules(ethercat_interface, device_ident);
 
-        let dev: Box<dyn DynamicEthercatDevice> = match wago_750_354.slot_devices[0].take() {
+        let dev: Rc<RefCell<dyn DynamicEthercatDevice>> = match wago_750_354
+            .slot_devices
+            .get(0)
+            .and_then(|slot| slot.clone())
+        {
             Some(a) => a,
             None => return Err(Error::msg("Slot 0 should be populated")),
         };
-        let dev: Box<dyn EthercatDevice> = dev;
 
-        let wago750_1506 = downcast_subdevice::<Wago750_1506>(dev)?;
+        let wago750_1506 = downcast_rc_refcell_dynamic::<Wago750_1506>(dev)?;
 
         let (sender, receiver) = tokio::sync::mpsc::channel::<MachineMessage>(10);
         let mut my_test = Self {

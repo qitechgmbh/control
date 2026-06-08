@@ -175,13 +175,24 @@ EtherCAT bus:  [WAGO 750-354 (role 0)] ── local backplane ──
 ```
 
 The coupler is **always** role 0. The expansion modules are discovered by
-calling `Wago750_354::initialize_modules` then `init_slot_modules`, and are
-taken out of `coupler.slot_devices[i]` by slot index (0-based) and downcast
-with `downcast_subdevice::<T>(dev)?`.
+calling `Wago750_354::initialize_modules` then `init_slot_modules`. Clone a
+shared handle out of `coupler.slot_devices[i]` by slot index (0-based) and
+downcast it with `downcast_rc_refcell_dynamic::<T>(dev)?`:
 
-WAGO module subdevices are owned by the machine (`Box<T>`), not shared
-through `Rc<RefCell<…>>` — once taken from the coupler slot they live on
-the machine struct.
+```rust
+let dev: Rc<RefCell<dyn DynamicEthercatDevice>> = coupler
+    .slot_devices
+    .get(0)
+    .ok_or_else(|| Error::msg("Slot 0 is not configured"))?
+    .clone()
+    .ok_or_else(|| Error::msg("Slot 0 is empty"))?;
+let module = downcast_rc_refcell_dynamic::<T>(dev)?;
+```
+
+WAGO module subdevices are stored as `Rc<RefCell<T>>` and shared with the
+coupler — they may need multiple owners, so the machine holds a cloned `Rc`
+(don't `.take()` the slot). Access the module through `.borrow()` /
+`.borrow_mut()`.
 
 ## Reference machines (already ported)
 
