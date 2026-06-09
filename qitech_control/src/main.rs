@@ -379,6 +379,14 @@ fn main_logic() {
         let now = std::time::Instant::now();
         match &mut eth_control {
             Some(control) => {
+                if control
+                    .join_handle
+                    .as_ref()
+                    .expect("Join handle should be some")
+                    .is_finished()
+                {
+                    return;
+                }
                 write_ecat_inputs(&mut control.app_handle, main_state.subdevices.clone());
             }
             None => (),
