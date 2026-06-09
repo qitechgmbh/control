@@ -4,9 +4,9 @@ use machine_implementations::MACHINE_LASER_V1;
 use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
-use qitech_lib::ethercat_hal::{
+use qitech_lib::{ethercat_hal::{
     BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer, TripleBufProducer,
-};
+}, machines::MachineIdentificationUnique};
 #[cfg(not(feature = "mock"))]
 use qitech_lib::ethercat_hal::{
     DcConfiguration, MasterConfiguration, RtOptimizationConfig, init_ethercat,
@@ -192,7 +192,15 @@ fn setup_api_and_websock(state: Arc<SharedAppState>) {
 }
 
 fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainState) {
+    let idents: Vec<MachineIdentificationUnique> = main_state.machines
+    .iter()
+    .map(|machine| machine.get_identification())
+    .collect();
+
     for key in main_state.hardware.keys() {
+        if idents.contains(key)  {
+            continue;  
+        }
         let result = MACHINE_REGISTRY
             .new_machine(key.clone(), main_state.hardware.get(key).unwrap().clone());
         match result {
@@ -340,6 +348,7 @@ fn main_logic() {
     }
 
     if stay_in_preop && eth_control.is_some() {
+        send_setup_done_events(state.clone());
         println!("Staying in PreOp as requested, exiting after setup.");
         loop {
             std::thread::sleep(core::time::Duration::from_secs(1));
