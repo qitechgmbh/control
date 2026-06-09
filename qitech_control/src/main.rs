@@ -4,15 +4,18 @@ use machine_implementations::MACHINE_LASER_V1;
 use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
-use qitech_lib::{ethercat_hal::{
-    BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer, TripleBufProducer,
-}, machines::MachineIdentificationUnique};
 #[cfg(not(feature = "mock"))]
 use qitech_lib::ethercat_hal::{
     DcConfiguration, MasterConfiguration, RtOptimizationConfig, init_ethercat,
 };
 use qitech_lib::{
     ethercat_hal::devices::device_from_subdevice_identity_rc, serial::get_available_ports,
+};
+use qitech_lib::{
+    ethercat_hal::{
+        BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer, TripleBufProducer,
+    },
+    machines::MachineIdentificationUnique,
 };
 #[cfg(not(feature = "mock"))]
 use std::{sync::Arc, time::Duration};
@@ -192,14 +195,15 @@ fn setup_api_and_websock(state: Arc<SharedAppState>) {
 }
 
 fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainState) {
-    let idents: Vec<MachineIdentificationUnique> = main_state.machines
-    .iter()
-    .map(|machine| machine.get_identification())
-    .collect();
+    let idents: Vec<MachineIdentificationUnique> = main_state
+        .machines
+        .iter()
+        .map(|machine| machine.get_identification())
+        .collect();
 
     for key in main_state.hardware.keys() {
-        if idents.contains(key)  {
-            continue;  
+        if idents.contains(key) {
+            continue;
         }
         let result = MACHINE_REGISTRY
             .new_machine(key.clone(), main_state.hardware.get(key).unwrap().clone());

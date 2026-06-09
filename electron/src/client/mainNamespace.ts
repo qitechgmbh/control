@@ -22,7 +22,6 @@ import { useRef } from "react";
 import { rustEnum } from "@/lib/types";
 import { produce } from "immer"; // <-- Added Import for state updates
 
-
 export type EthercatDevices = z.infer<typeof ethercatDevicesSchema>;
 export const ethercatDevicesSchema = z.object({
   devices: z.array(
@@ -148,7 +147,7 @@ export function mainMessageHandler(
       } else if (eventName === "MachinesEvent") {
         const validatedEvent = machinesEventSchema.parse(event);
         const currentMachinesState = store.getState().machines;
-        
+
         if (currentMachinesState) {
           const oldMachines = currentMachinesState.data.machines;
           const newMachines = validatedEvent.data.machines;
@@ -167,16 +166,19 @@ export function mainMessageHandler(
           removedMachines.forEach((machine) => {
             const targetNamespaceId: NamespaceId = {
               type: "machine",
-              machine_identification_unique: machine.machine_identification_unique,
+              machine_identification_unique:
+                machine.machine_identification_unique,
             };
             const namespace_path = serializeNamespaceId(targetNamespaceId);
-            
+
             // Access your global socketio store state out of context
             const socketStoreState = useSocketioStore.getState();
             const namespace = socketStoreState.namespaces[namespace_path];
 
             if (namespace) {
-              console.log(`Cleaning up removed machine namespace: ${namespace_path}`);
+              console.log(
+                `Cleaning up removed machine namespace: ${namespace_path}`,
+              );
               useSocketioStore.setState(
                 produce((state) => {
                   const ns = state.namespaces[namespace_path];
@@ -190,7 +192,7 @@ export function mainMessageHandler(
             }
           });
         }
-        
+
         store.setState((state) => ({
           ...state,
           machines: validatedEvent,

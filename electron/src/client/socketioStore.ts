@@ -311,9 +311,9 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
     });
     socket.on("disconnect", (reason) => {
       socket.disconnect();
-      resetStore(set);      
+      resetStore(set);
     });
-    socket.on("event", (event: unknown) => {  
+    socket.on("event", (event: unknown) => {
       const event_parsed = eventSchema(z.any()).safeParse(event);
       if (!event_parsed.success) {
         toastZodError(event_parsed.error, "Invalid event");
@@ -380,7 +380,7 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
     );
   },
 
-  decrementNamespace: (namespaceId: NamespaceId) => {    
+  decrementNamespace: (namespaceId: NamespaceId) => {
     /*const namespace_path = serializeNamespaceId(namespaceId);
     const namespace = get().namespaces[namespace_path];
     if (namespace) {
@@ -394,7 +394,6 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
         }),
       )
     }*/
-    
     /*
     // check if the namespace exists
     const namespace = get().namespaces[namespace_path];
