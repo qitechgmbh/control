@@ -10,16 +10,19 @@ import {
   handleUnhandledEventError,
   NamespaceId,
   ThrottledStoreUpdater,
+  serializeNamespaceId,
+  useSocketioStore,
 } from "./socketioStore";
+import { useSock } from "./socketioStore";
 import {
   deviceIdentification,
   machineIdentificationUnique,
 } from "@/machines/types";
 import { useRef } from "react";
 import { rustEnum } from "@/lib/types";
+import { produce } from "immer"; // <-- Added Import for state updates
 
 export type EthercatDevices = z.infer<typeof ethercatDevicesSchema>;
-
 export const ethercatDevicesSchema = z.object({
   devices: z.array(
     z.object({
@@ -144,18 +147,52 @@ export function mainMessageHandler(
       } else if (eventName === "MachinesEvent") {
         const validatedEvent = machinesEventSchema.parse(event);
         const currentMachinesState = store.getState().machines;
+
         if (currentMachinesState) {
-          // Compare the old data array with the incoming data array if mismatch reload
-          const oldDataStr = JSON.stringify(currentMachinesState.data.machines);
-          const newDataStr = JSON.stringify(validatedEvent.data.machines);
-          if (oldDataStr !== newDataStr) {
-            console.log(
-              "Detected a change in the machines state! Reloading...",
-            );
-            window.location.reload();
-            return;
-          }
+          const oldMachines = currentMachinesState.data.machines;
+          const newMachines = validatedEvent.data.machines;
+
+          // Find machines that existed before but are missing in the new event payload
+          const removedMachines = oldMachines.filter(
+            (oldM) =>
+              !newMachines.some(
+                (newM) =>
+                  newM.machine_identification_unique.serial ===
+                  oldM.machine_identification_unique.serial,
+              ),
+          );
+
+          // Disconnect and clean up each missing machine's socket namespace dynamically
+          removedMachines.forEach((machine) => {
+            const targetNamespaceId: NamespaceId = {
+              type: "machine",
+              machine_identification_unique:
+                machine.machine_identification_unique,
+            };
+            const namespace_path = serializeNamespaceId(targetNamespaceId);
+
+            // Access your global socketio store state out of context
+            const socketStoreState = useSocketioStore.getState();
+            const namespace = socketStoreState.namespaces[namespace_path];
+
+            if (namespace) {
+              console.log(
+                `Cleaning up removed machine namespace: ${namespace_path}`,
+              );
+              useSocketioStore.setState(
+                produce((state) => {
+                  const ns = state.namespaces[namespace_path];
+                  if (ns) {
+                    ns.socket.disconnect();
+                    ns.throttledUpdater.destroy();
+                    delete state.namespaces[namespace_path];
+                  }
+                }),
+              );
+            }
+          });
         }
+
         store.setState((state) => ({
           ...state,
           machines: validatedEvent,

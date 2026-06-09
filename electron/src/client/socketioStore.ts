@@ -263,7 +263,7 @@ type SocketioStore = {
 /**
  * Global socket store singleton that manages socket.io connections and namespaces
  */
-const useSocketioStore = create<SocketioStore>()((set, get) => ({
+export const useSocketioStore = create<SocketioStore>()((set, get) => ({
   baseUrl: "http://localhost:3001",
   namespaces: {},
   getNamespace: (namespaceId: NamespaceId) => {
@@ -312,12 +312,8 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
     socket.on("disconnect", (reason) => {
       socket.disconnect();
       resetStore(set);
-      // Its hacky but i do not care, electron + react is annoying ...
-      window.location.reload();
     });
-
     socket.on("event", (event: unknown) => {
-      // validate the event
       const event_parsed = eventSchema(z.any()).safeParse(event);
       if (!event_parsed.success) {
         toastZodError(event_parsed.error, "Invalid event");
@@ -386,7 +382,19 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
 
   decrementNamespace: (namespaceId: NamespaceId) => {
     /*const namespace_path = serializeNamespaceId(namespaceId);
+    const namespace = get().namespaces[namespace_path];
+    if (namespace) {
+      set(
+        produce((state: SocketioStore) => {
+          const ns = state.namespaces[namespace_path];
+          ns.socket.disconnect();
+          ns.throttledUpdater.destroy();
+          delete state.namespaces[namespace_path];
 
+        }),
+      )
+    }*/
+    /*
     // check if the namespace exists
     const namespace = get().namespaces[namespace_path];
     if (namespace) {
