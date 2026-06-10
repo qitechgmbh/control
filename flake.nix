@@ -91,8 +91,11 @@
               nodePackages.npm
               lldb
               electron
+              # dev tools
               nixfmt
               nixd
+              rustfmt
+              rust-analyzer
             ];
 
             ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
