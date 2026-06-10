@@ -14,12 +14,10 @@ use control_core::socketio::{
     namespace::NamespaceCacheingLogic,
 };
 use machine_implementations::{
-    Hardware, IdentifiedEthercat, IdentifiedModbus, MachineHardware, MachineMessage, QiTechMachine,
-    laser::LaserMachine,
-    machine_identification::{
+    Hardware, IdentifiedEthercat, IdentifiedModbus, MachineInitArgs, MachineMessage, PropertyPool, QiTechMachine, laser::LaserMachine, machine_identification::{
         DeviceHardwareIdentificationEthercat, DeviceIdentification, DeviceMachineIdentification,
         QiTechMachineIdentificationUnique,
-    },
+    }
 };
 use qitech_lib::{
     ethercat_hal::{
@@ -234,9 +232,10 @@ impl SharedAppState {
 
 pub struct MainState {
     pub subdevices: Vec<(MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)>,
-    pub hardware: HashMap<MachineIdentificationUnique, MachineHardware>,
+    pub hardware: HashMap<MachineIdentificationUnique, MachineInitArgs>,
     pub machines: Vec<Box<dyn QiTechMachine>>,
     pub machine_errors: HashMap<MachineIdentificationUnique, String>,
+    pub machine_properties: HashMap<MachineIdentificationUnique, PropertyPool>,
     pub machine_data_reg: MachineDataRegistry,
 }
 
@@ -252,6 +251,7 @@ impl MainState {
             subdevices: vec![],
             hardware: HashMap::new(),
             machine_errors: HashMap::new(),
+            machine_properties: HashMap::new()
         }
     }
 
@@ -262,17 +262,18 @@ impl MainState {
         let laser_device: Rc<RefCell<LaserDevice>> =
             Rc::new(RefCell::new(LaserDevice::new(path.to_owned(), 1, None)?));
         let id_modbus: IdentifiedModbus = IdentifiedModbus { hw: laser_device };
-        let ident = MachineIdentificationUnique {
+        let identification = MachineIdentificationUnique {
             machine_ident: LaserMachine::MACHINE_IDENTIFICATION,
             serial: 1,
         };
-        let mut hw = MachineHardware {
+        let mut args = MachineInitArgs {
             hw: vec![],
-            identification: ident,
+            identification,
             ethercat_interface: None,
+            property_pool: Default::default(),
         };
-        hw.hw.push(Hardware::Modbus(id_modbus));
-        self.hardware.insert(ident, hw);
+        args.hw.push(Hardware::Modbus(id_modbus));
+        self.hardware.insert(identification, args);
         Ok(())
     }
 
@@ -315,10 +316,11 @@ impl MainState {
             if self.hardware.get(&identification).is_none() {
                 self.hardware.insert(
                     identification,
-                    MachineHardware {
+                    MachineInitArgs {
                         hw: vec![],
                         identification,
                         ethercat_interface: Some(ethercat_channel.clone()),
+                        property_pool: Default::default(),
                     },
                 );
             }

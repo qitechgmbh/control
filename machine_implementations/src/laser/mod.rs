@@ -1,4 +1,4 @@
-use crate::{MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH, laser::{properties::Properties, telemetry::Metrics}};
+use crate::{MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH, telemetry::{BoolProperty, LengthProperty, PropertyPool}};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::{
@@ -7,7 +7,7 @@ use qitech_lib::{
         ModbusDevice,
         devices::qitech_laser::{LaserDevice, LaserError},
     },
-    units::{Length, length::millimeter},
+    units::{length::millimeter},
 };
 use std::{
     cell::RefCell,
@@ -17,11 +17,9 @@ use std::{
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 
-mod properties;
 pub mod act;
 pub mod api;
 pub mod new;
-mod telemetry;
 
 pub enum LaserRequestState {
     Waiting(Instant),
@@ -32,35 +30,25 @@ pub struct LaserMachine {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
     machine_identification_unique: MachineIdentificationUnique,
-    mutation_counter: u64,
     namespace: LaserMachineNamespace,
     last_measurement_emit: Instant,
     last_request: Instant,
     laser: Rc<RefCell<LaserDevice>>,
     error: Option<MachineError>,
-    // laser values
-    diameter: Length,
-    x_diameter: Option<Length>,
-    y_diameter: Option<Length>,
-    roundness: Option<f64>,
-
-    target_diameter: Length,
-    higher_tolerance: Length,
-    lower_tolerance: Length,
-    in_tolerance: bool,
-    global_warning: bool,
-
-    //laser target configuration
-    laser_target: LaserTarget,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
     did_change_state: bool,
 
-    metrics: Metrics,
-
-    properties: Properties,
+    // properties
+    config: Config,
+    diameter: LengthProperty<millimeter>,
+    x_diameter: LengthProperty<millimeter>,
+    y_diameter: LengthProperty<millimeter>,
+    in_tolerance: BoolProperty,
+    global_warning: BoolProperty,
+    // roundness: Option<f64>,
 }
 
 impl LaserMachine {
@@ -70,38 +58,32 @@ impl LaserMachine {
     };
 
     pub fn get_live_values(&self) -> LiveValuesEvent {
-        let diameter = self.diameter.get::<millimeter>();
-        let x_diameter = self.x_diameter.map(|x| x.get::<millimeter>());
-        let y_diameter = self.y_diameter.map(|y| y.get::<millimeter>());
-        let roundness = self.roundness;
+        let diameter = self.diameter.get_as::<millimeter>();
+        let x_diameter = Some(self.x_diameter.get_as::<millimeter>());
+        let y_diameter = Some(self.y_diameter.get_as::<millimeter>());
+        // let roundness = self.roundness;
 
         LiveValuesEvent {
             diameter,
             x_diameter,
             y_diameter,
-            roundness,
+            roundness: None,
         }
     }
 
     ///diameter in mm
     pub fn emit_live_values(&mut self) {
         let event = self.get_live_values().build();
-
-        self.metrics.diameter.record(event.data.diameter, &[]);
-        self.metrics.x_diameter.record(event.data.x_diameter.unwrap(), &[]);
-        self.metrics.y_diameter.record(event.data.y_diameter.unwrap(), &[]);
-        // self.metrics.roundness.record(event.data.roundness.unwrap(), &[]);
-
         self.namespace.emit(LaserEvents::LiveValues(event));
     }
 
     pub fn build_state_event(&self) -> StateEvent {
         let laser = LaserState {
-            higher_tolerance: self.higher_tolerance.get::<millimeter>(),
-            lower_tolerance: self.lower_tolerance.get::<millimeter>(),
-            target_diameter: self.laser_target.diameter.get::<millimeter>(),
-            in_tolerance: self.in_tolerance,
-            global_warning: self.global_warning,
+            higher_tolerance: self.config.higher_tolerance.get().get::<millimeter>(),
+            lower_tolerance: self.config.lower_tolerance.get().get::<millimeter>(),
+            target_diameter: self.config.target_diameter.get().get::<millimeter>(),
+            in_tolerance: self.in_tolerance.get(),
+            global_warning: self.global_warning.get(),
         };
 
         StateEvent {
@@ -114,11 +96,11 @@ impl LaserMachine {
         StateEvent {
             is_default_state: !self.emitted_default_state,
             laser_state: LaserState {
-                higher_tolerance: self.laser_target.higher_tolerance.get::<millimeter>(),
-                lower_tolerance: self.laser_target.lower_tolerance.get::<millimeter>(),
-                target_diameter: self.laser_target.diameter.get::<millimeter>(),
-                in_tolerance: self.in_tolerance,
-                global_warning: self.global_warning,
+                higher_tolerance: self.config.higher_tolerance.get_as::<millimeter>(),
+                lower_tolerance: self.config.lower_tolerance.get_as::<millimeter>(),
+                target_diameter: self.config.target_diameter.get_as::<millimeter>(),
+                in_tolerance: self.in_tolerance.get(),
+                global_warning: self.global_warning.get(),
             },
         }
     }
@@ -131,29 +113,22 @@ impl LaserMachine {
     }
 
     pub fn set_higher_tolerance(&mut self, higher_tolerance: f64) {
-        self.higher_tolerance = Length::new::<millimeter>(higher_tolerance);
-        self.laser_target.higher_tolerance = self.higher_tolerance;
-        self.mutation_counter += 1;
+        self.config.higher_tolerance.set::<millimeter>(higher_tolerance);
         self.emit_state();
     }
 
     pub fn set_lower_tolerance(&mut self, lower_tolerance: f64) {
-        self.lower_tolerance = Length::new::<millimeter>(lower_tolerance);
-        self.laser_target.lower_tolerance = self.lower_tolerance;
-        self.mutation_counter += 1;
+        self.config.lower_tolerance.set::<millimeter>(lower_tolerance);
         self.emit_state();
     }
 
     pub fn set_target_diameter(&mut self, target_diameter: f64) {
-        self.target_diameter = Length::new::<millimeter>(target_diameter);
-        self.laser_target.diameter = Length::new::<millimeter>(target_diameter);
-        self.mutation_counter += 1;
+        self.config.target_diameter.set::<millimeter>(target_diameter);
         self.emit_state();
     }
 
     pub fn set_global_warning(&mut self, toggle: bool) {
-        self.global_warning = toggle;
-        self.mutation_counter += 1;
+        self.global_warning.set(toggle);
         self.emit_state();
     }
 
@@ -183,49 +158,35 @@ impl LaserMachine {
     ///
     /// Calculates if the current diameter is inside of the tolerance
     ///
-    fn calculate_in_tolerance(&mut self) -> bool {
+    fn compute_in_tolerance(&self) -> bool {
         let diameter_epsilon: f64 = 0.0001; // 0.0001 mm
+
         // early return true if the diameter is 0 to prevent warning happening before start
-        if self.diameter.get::<millimeter>() < diameter_epsilon {
-            self.properties.in_tolerance.set(true);
-            self.in_tolerance = true;
+        if self.diameter.get_as::<millimeter>() < diameter_epsilon {
             return true;
         }
 
-        let top = self.target_diameter + self.higher_tolerance;
-        let bottom = self.target_diameter - self.lower_tolerance;
+        let top = self.config.target_diameter.get() + self.config.higher_tolerance.get();
+        let bottom = self.config.target_diameter.get() - self.config.lower_tolerance.get();
 
-        if self.diameter > top || self.diameter < bottom {
-            self.in_tolerance = false;
-            self.properties.in_tolerance.set(false);
-        } else {
-            self.in_tolerance = true;
-            self.properties.in_tolerance.set(true);
-        }
-
-        self.in_tolerance
+        !(self.diameter.get() > top || self.diameter.get() < bottom)
     }
 
     pub fn update(&mut self) {
-        let mut laser = self.laser.borrow_mut();
         let now = std::time::Instant::now();
+        let mut laser = self.laser.borrow_mut();
 
         // Check for incoming responses on every tick
-        let res = laser.handle_response();
-        match res {
-            Ok(_) => (),
-            Err(e) => {
-                if let Some(laser_error) = e.downcast_ref::<LaserError>() {
-                    match laser_error {
-                        LaserError::IoErr() => {
-                            self.error = Some(MachineError::IrrecoverableFailure(
-                                "Physical hardware I/O broke. Dropping machine permanently."
-                                    .to_owned(),
-                            ));
-                        }
-                        _ => (),
-                    }
-                }
+        if let Err(e) = laser.handle_response() {
+            let Some(laser_error) = e.downcast_ref::<LaserError>() else {
+                return;
+            };
+
+            if let LaserError::IoErr() = laser_error {
+                self.error = Some(MachineError::IrrecoverableFailure(
+                    "Physical hardware I/O broke. Dropping machine permanently."
+                        .to_owned(),
+                ));
             }
         }
 
@@ -237,35 +198,27 @@ impl LaserMachine {
             }
         }
 
-        match &laser.measurement {
-            Some(m) => {
-                let x_diameter = Length::new::<millimeter>(m.x_axis as f64 / 1000.0);
-                let y_diameter = Length::new::<millimeter>(m.y_axis as f64 / 1000.0);
-                let diameter = Length::new::<millimeter>(m.diameter as f64 / 1000.0);
-
-                self.x_diameter = Some(x_diameter);
-                self.y_diameter = Some(y_diameter);
-                self.diameter = diameter;
-
-                self.properties.x_diameter.set(x_diameter);
-                self.properties.y_diameter.set(y_diameter);
-                self.properties.diameter.set(diameter);
-            }
-            None => (),
+        if let Some(m) = &laser.measurement {
+            self.diameter.set::<millimeter>(m.diameter as f64 / 1000.0);
+            self.x_diameter.set::<millimeter>(m.x_axis as f64 / 1000.0);
+            self.y_diameter.set::<millimeter>(m.y_axis as f64 / 1000.0);
         };
-        drop(laser);
 
-        if self.in_tolerance != self.calculate_in_tolerance() {
+        self.in_tolerance.set(self.compute_in_tolerance());
+
+        /* 
+        if self.in_tolerance.is_dirty() {
             self.did_change_state = true;
         }
+        */
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct LaserTarget {
-    diameter: Length,
-    lower_tolerance: Length,
-    higher_tolerance: Length,
+#[derive(Debug)]
+pub struct Config {
+    target_diameter: LengthProperty<millimeter>,
+    higher_tolerance: LengthProperty<millimeter>,
+    lower_tolerance: LengthProperty<millimeter>,
 }
 
 impl QiTechMachine for LaserMachine {}

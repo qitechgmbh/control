@@ -1,6 +1,6 @@
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
-use machine_implementations::MACHINE_LASER_V1;
+use machine_implementations::{MACHINE_LASER_V1, PropertyPool};
 use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
@@ -199,15 +199,16 @@ fn setup_api_and_websock(state: Arc<SharedAppState>) {
 fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainState) {
     for key in main_state.hardware.keys() {
         let result = MACHINE_REGISTRY
-            .new_machine(key.clone(), main_state.hardware.get(key).unwrap().clone());
+            .new_machine(*key, main_state.hardware.get(key).unwrap().clone());
         match result {
             Ok(machine) => {
                 let _res = state.add_machine_sync(
-                    key.clone().into(),
+                    (*key).into(),
                     None,
                     Some(machine.get_api_sender()),
                 );
                 main_state.machines.push(machine);
+                main_state.machine_properties.insert(*key, Default::default());
             }
             Err(e) => {
                 println!("detect_and_build_machines {:?}", e);

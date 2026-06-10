@@ -1,6 +1,6 @@
 use crate::extruder1::ExtruderV2;
 use crate::{
-    MachineHardware, MachineNew, QiTechMachine, aquapath1::AquaPathV1, laser::LaserMachine,
+    MachineInitArgs, MachineNew, QiTechMachine, aquapath1::AquaPathV1, laser::LaserMachine,
     winder2::Winder2,
 };
 use anyhow::Error;
@@ -8,7 +8,7 @@ use lazy_static::lazy_static;
 use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
 use std::{any::TypeId, collections::HashMap};
 pub type MachineNewClosure =
-    Box<dyn Fn(MachineHardware) -> Result<Box<dyn QiTechMachine>, Error> + Send + Sync>;
+    Box<dyn Fn(MachineInitArgs) -> Result<Box<dyn QiTechMachine>, Error> + Send + Sync>;
 
 pub struct MachineRegistry {
     type_map: HashMap<TypeId, (Vec<MachineIdentification>, MachineNewClosure)>,
@@ -36,7 +36,7 @@ impl MachineRegistry {
             (
                 machine_identification.clone(),
                 // create a machine construction closure
-                Box::new(|hardware: MachineHardware| Ok(Box::new(T::new(hardware)?))),
+                Box::new(|hardware: MachineInitArgs| Ok(Box::new(T::new(hardware)?))),
             ),
         );
     }
@@ -44,7 +44,7 @@ impl MachineRegistry {
     pub fn new_machine(
         &self,
         ident: MachineIdentificationUnique,
-        hardware: MachineHardware,
+        hardware: MachineInitArgs,
     ) -> Result<Box<dyn QiTechMachine>, anyhow::Error> {
         let ident = ident.machine_ident;
 

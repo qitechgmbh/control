@@ -13,7 +13,9 @@ use serde::Serialize;
 use std::{cell::RefCell, rc::Rc};
 use tokio::sync::mpsc::Sender;
 
-pub mod telemetry;
+mod telemetry;
+pub use telemetry::PropertyPool;
+
 pub mod aquapath1;
 pub mod extruder1;
 pub mod laser;
@@ -86,13 +88,14 @@ pub enum Hardware {
 }
 
 #[derive(Clone)]
-pub struct MachineHardware {
+pub struct MachineInitArgs {
     pub hw: Vec<Hardware>,
     pub identification: MachineIdentificationUnique,
     pub ethercat_interface: Option<EtherCATThreadChannel>,
+    pub property_pool: Rc<RefCell<PropertyPool>>,
 }
 
-impl MachineHardware {
+impl MachineInitArgs {
     pub fn try_get_ethercat_device_by_index<T>(
         &self,
         index: usize,
@@ -221,7 +224,7 @@ impl MachineHardware {
 }
 
 pub trait MachineNew: Sized {
-    fn new(hw: MachineHardware) -> Result<Self>;
+    fn new(hw: MachineInitArgs) -> Result<Self>;
 }
 
 pub trait QiTechMachine: Machine + MachineApi {}

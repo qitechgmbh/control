@@ -32,6 +32,8 @@ opentelemetry-otlp = { version = "0.28.0", features = ["grpc-tonic"] }
 
 crossbeam="0.8.4"
 heapless="0.9.3"
+clickhouse="0.15.1"
+uom = { version = "0.37.0", default-features = false, features = [ "f64" ] }
 
 [dev-dependencies]
 approx = "0.5.1"

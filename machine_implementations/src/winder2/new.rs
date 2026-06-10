@@ -45,11 +45,11 @@ mod winder2_imports {
     pub use std::time::Instant;
 }
 
-use crate::{MachineHardware, MachineNew};
+use crate::{MachineInitArgs, MachineNew};
 use qitech_lib::ethercat_hal::EtherCATThreadChannel;
 pub use winder2_imports::*;
 impl MachineNew for Winder2 {
-    fn new(hw: MachineHardware) -> Result<Self, Error> {
+    fn new(hw: MachineInitArgs) -> Result<Self, Error> {
         if hw.identification.machine_ident == Winder2::MACHINE_IDENTIFICATION {
             Self::new_normal(hw)
         } else if hw.identification.machine_ident == Winder2::MACHINE_IDENTIFICATION_7031_SPOOL {
@@ -64,7 +64,7 @@ impl MachineNew for Winder2 {
 }
 
 impl Winder2 {
-    fn new_normal(hw: MachineHardware) -> Result<Self, Error> {
+    fn new_normal(hw: MachineInitArgs) -> Result<Self, Error> {
         let _ek1100 = hw.try_get_ethercat_device_and_addr_by_role::<EK1100>(0)?;
         let el2002 = hw.try_get_ethercat_device_and_addr_by_role::<EL2002>(1)?;
         let el7041 = hw.try_get_ethercat_device_and_addr_by_role::<EL7041_0052>(2)?;
@@ -182,7 +182,7 @@ impl Winder2 {
         Ok(new)
     }
 
-    fn new_winder_spool_7031(hw: MachineHardware) -> Result<Self, Error> {
+    fn new_winder_spool_7031(hw: MachineInitArgs) -> Result<Self, Error> {
         let _ek1100 = hw.try_get_ethercat_device_and_addr_by_role::<EK1100>(0)?;
         let el2002 = hw.try_get_ethercat_device_and_addr_by_role::<EL2002>(1)?;
         let el7031_0030_spool = hw.try_get_ethercat_device_and_addr_by_role::<EL7031_0030>(2)?;

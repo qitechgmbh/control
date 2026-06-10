@@ -8,12 +8,9 @@ use std::time::{Duration, Instant};
 impl Machine for LaserMachine {
     fn act(&mut self, _reg: Option<&mut MachineDataRegistry>) -> Result<(), MachineError> {
         let now: Instant = std::time::Instant::now();
-        let msg = self.api_receiver.try_recv();
-        match msg {
-            Ok(msg) => {
-                let _res = self.act_machine_message(msg);
-            }
-            Err(_) => (),
+
+        if let Ok(msg) = self.api_receiver.try_recv() {
+            self.act_machine_message(msg);
         };
 
         self.update();
@@ -29,7 +26,7 @@ impl Machine for LaserMachine {
         }
 
         match &self.error {
-            Some(e) => return Err(e.clone()),
+            Some(e) => Err(e.clone()),
             None => Ok(()),
         }
     }
