@@ -11,7 +11,7 @@ import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { Spool } from "../Spool";
 import { TensionArm } from "../TensionArm";
 import { TraverseBar } from "../TraverseBar";
-import { Mode } from "./rewinderNamespace";
+import { Mode, getGearRatioMultiplier } from "./rewinderNamespace";
 import { useRewinder } from "./useRewinder";
 import React from "react";
 
@@ -32,15 +32,6 @@ export function RewinderControlPage() {
     setMode,
     setPullerTargetSpeed,
     setPullerGearRatio,
-    setTakeupSpoolRegulationMode,
-    setTakeupSpoolMinMaxMinSpeed,
-    setTakeupSpoolMinMaxMaxSpeed,
-    setTakeupTensionTarget,
-    setTakeupSpoolAdaptiveRadiusLearningRate,
-    setTakeupSpoolAdaptiveMaxSpeedMultiplier,
-    setTakeupSpoolAdaptiveAccelerationFactor,
-    setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier,
-    setSourceTensionTarget,
     zeroTakeupTensionArm,
     zeroSourceTensionArm,
     setTraverseLimitInner,
@@ -51,6 +42,10 @@ export function RewinderControlPage() {
     gotoTraverseLimitInner,
     gotoTraverseLimitOuter,
   } = useRewinder();
+  const gearRatioMultiplier = getGearRatioMultiplier(
+    state?.puller_state.gear_ratio,
+  );
+  const maxTargetSpeed = 50 / gearRatioMultiplier;
 
   return (
     <Page>
@@ -109,7 +104,7 @@ export function RewinderControlPage() {
             title="Target Speed"
             defaultValue={defaultState?.puller_state.target_speed}
             min={0}
-            max={10}
+            max={maxTargetSpeed}
             renderValue={(value) => roundToDecimals(value, 2)}
             onChange={setPullerTargetSpeed}
           />
@@ -140,120 +135,6 @@ export function RewinderControlPage() {
             timeseries={takeupSpoolRpm}
             renderValue={(value) => roundToDecimals(value, 0)}
           />
-          <Label label="Speed Algorithm">
-            <SelectionGroup
-              value={state?.takeup_spool_state.regulation_mode}
-              disabled={isDisabled}
-              loading={isLoading}
-              options={{
-                MinMax: { children: "Min/Max", icon: "lu:ArrowUpDown" },
-                Adaptive: { children: "Adaptive", icon: "lu:Brain" },
-              }}
-              onChange={(value) =>
-                setTakeupSpoolRegulationMode(value as "Adaptive" | "MinMax")
-              }
-            />
-          </Label>
-          {state?.takeup_spool_state.regulation_mode === "MinMax" && (
-            <>
-              <EditValue
-                value={state?.takeup_spool_state.minmax_min_speed}
-                title="Minimum Speed"
-                unit="rpm"
-                step={10}
-                min={0}
-                max={600}
-                defaultValue={defaultState?.takeup_spool_state.minmax_min_speed}
-                renderValue={(value) => roundToDecimals(value, 0)}
-                onChange={setTakeupSpoolMinMaxMinSpeed}
-              />
-              <EditValue
-                value={state?.takeup_spool_state.minmax_max_speed}
-                title="Maximum Speed"
-                unit="rpm"
-                step={10}
-                min={0}
-                max={600}
-                defaultValue={defaultState?.takeup_spool_state.minmax_max_speed}
-                renderValue={(value) => roundToDecimals(value, 0)}
-                onChange={setTakeupSpoolMinMaxMaxSpeed}
-              />
-            </>
-          )}
-          <EditValue
-            value={state?.takeup_spool_state.adaptive_tension_target}
-            title="Tension Target"
-            defaultValue={defaultState?.takeup_spool_state.adaptive_tension_target}
-            min={0}
-            max={1}
-            renderValue={(value) => roundToDecimals(value, 2)}
-            onChange={setTakeupTensionTarget}
-          />
-          {state?.takeup_spool_state.regulation_mode === "Adaptive" && (
-            <>
-              <EditValue
-                value={
-                  state?.takeup_spool_state.adaptive_radius_learning_rate
-                }
-                title="Radius Learning Rate"
-                step={0.001}
-                min={0}
-                max={100}
-                defaultValue={
-                  defaultState?.takeup_spool_state
-                    .adaptive_radius_learning_rate
-                }
-                renderValue={(value) => roundToDecimals(value, 2)}
-                onChange={setTakeupSpoolAdaptiveRadiusLearningRate}
-              />
-              <EditValue
-                value={
-                  state?.takeup_spool_state.adaptive_max_speed_multiplier
-                }
-                title="Max Speed Multiplier"
-                step={0.1}
-                min={0.1}
-                max={10}
-                defaultValue={
-                  defaultState?.takeup_spool_state
-                    .adaptive_max_speed_multiplier
-                }
-                renderValue={(value) => roundToDecimals(value, 1)}
-                onChange={setTakeupSpoolAdaptiveMaxSpeedMultiplier}
-              />
-              <EditValue
-                value={state?.takeup_spool_state.adaptive_acceleration_factor}
-                title="Acceleration Factor"
-                step={0.01}
-                min={0.01}
-                max={100}
-                defaultValue={
-                  defaultState?.takeup_spool_state
-                    .adaptive_acceleration_factor
-                }
-                renderValue={(value) => roundToDecimals(value, 2)}
-                onChange={setTakeupSpoolAdaptiveAccelerationFactor}
-              />
-              <EditValue
-                value={
-                  state?.takeup_spool_state
-                    .adaptive_deacceleration_urgency_multiplier
-                }
-                title="Deaccel. Urgency"
-                step={0.5}
-                min={1}
-                max={100}
-                defaultValue={
-                  defaultState?.takeup_spool_state
-                    .adaptive_deacceleration_urgency_multiplier
-                }
-                renderValue={(value) => roundToDecimals(value, 1)}
-                onChange={
-                  setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier
-                }
-              />
-            </>
-          )}
         </ControlCard>
 
         <ControlCard title="Source Spool">
@@ -263,15 +144,6 @@ export function RewinderControlPage() {
             unit="rpm"
             timeseries={sourceSpoolRpm}
             renderValue={(value) => roundToDecimals(value, 0)}
-          />
-          <EditValue
-            value={state?.source_spool_state.adaptive_tension_target}
-            title="Tension Target"
-            defaultValue={defaultState?.source_spool_state.adaptive_tension_target}
-            min={0}
-            max={1}
-            renderValue={(value) => roundToDecimals(value, 2)}
-            onChange={setSourceTensionTarget}
           />
         </ControlCard>
 

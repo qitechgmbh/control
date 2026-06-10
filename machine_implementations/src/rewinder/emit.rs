@@ -3,6 +3,7 @@ use super::{
         LiveValuesEvent, ModeState, PullerState, RewinderEvents, SourceSpoolState, StateEvent,
         TakeupSpoolState, TensionArmState, TraverseState,
     },
+    rewind_control::ArmConfig,
     RewindPhase, Rewinder, RewinderMode, PULLER_PORT, SOURCE_SPOOL_PORT, TAKEUP_SPOOL_PORT,
     TRAVERSE_PORT,
 };
@@ -17,14 +18,159 @@ use qitech_lib::units::{
 use std::time::Instant;
 
 impl Rewinder {
-    pub(crate) const SOURCE_TENSION_ARM_MIN_ANGLE_DEG: f64 = 20.0;
-    pub(crate) const SOURCE_TENSION_ARM_MAX_ANGLE_DEG: f64 = 60.0;
-    pub(crate) const SOURCE_TENSION_ARM_SOFT_HIGH_ANGLE_DEG: f64 = 50.0;
-    pub(crate) const TAKEUP_TENSION_ARM_MIN_ANGLE_DEG: f64 = 20.0;
-    pub(crate) const TAKEUP_TENSION_ARM_LOW_EXIT_ANGLE_DEG: f64 = 25.0;
-    pub(crate) const TAKEUP_TENSION_ARM_MAX_ANGLE_DEG: f64 = 90.0;
-    const SOURCE_TENSION_HARD_HIGH_SOURCE_FEED_RPM: f64 = 30.0;
-    const TAKEUP_TENSION_LOW_TAKEUP_FEED_RPM: f64 = 20.0;
+    pub(crate) const SOURCE_TENSION_ARM_MIN_ANGLE_DEG: f64 = ArmConfig::SOURCE.hard_min_deg;
+    pub(crate) const SOURCE_TENSION_ARM_MAX_ANGLE_DEG: f64 = ArmConfig::SOURCE.hard_max_deg;
+    pub(crate) const TAKEUP_TENSION_ARM_MIN_ANGLE_DEG: f64 = ArmConfig::TAKEUP.hard_min_deg;
+    pub(crate) const TAKEUP_TENSION_ARM_MAX_ANGLE_DEG: f64 = ArmConfig::TAKEUP.hard_max_deg;
+    pub(crate) const SOURCE_TENSION_ARM_START_MIN_ANGLE_DEG: f64 = ArmConfig::SOURCE.start_min_deg;
+    pub(crate) const SOURCE_TENSION_ARM_START_MAX_ANGLE_DEG: f64 = ArmConfig::SOURCE.start_max_deg;
+    pub(crate) const TAKEUP_TENSION_ARM_START_MIN_ANGLE_DEG: f64 = ArmConfig::TAKEUP.start_min_deg;
+    pub(crate) const TAKEUP_TENSION_ARM_START_MAX_ANGLE_DEG: f64 = ArmConfig::TAKEUP.start_max_deg;
+
+    pub(crate) fn normalize_tension_arm_angle_deg(angle: Angle) -> f64 {
+        let angle_deg = angle.get::<degree>();
+        if angle_deg >= 270.0 {
+            angle_deg - 360.0
+        } else {
+            angle_deg
+        }
+    }
+
+    fn read_tension_arm_angles_deg(&self) -> Result<(f64, f64), &'static str> {
+        let source_angle = self
+            .source_tension_arm
+            .get_angle()
+            .map(Self::normalize_tension_arm_angle_deg)
+            .map_err(|_| "failed to read source tension arm angle")?;
+        let takeup_angle = self
+            .takeup_tension_arm
+            .get_angle()
+            .map(Self::normalize_tension_arm_angle_deg)
+            .map_err(|_| "failed to read takeup tension arm angle")?;
+        Ok((source_angle, takeup_angle))
+    }
+
+    fn set_rewind_phase(&mut self, phase: RewindPhase, reason: &str) {
+        if self.rewind_phase != phase {
+            println!(
+                "Rewinder phase {:?} -> {:?}: {}",
+                self.rewind_phase, phase, reason
+            );
+            self.rewind_control.start_phase(Instant::now());
+        }
+        if matches!(phase, RewindPhase::FaultHold) {
+            self.rewind_hard_stop_reason = Some(reason.to_owned());
+        } else {
+            self.rewind_hard_stop_reason = None;
+        }
+        self.rewind_phase = phase;
+    }
+
+    fn prepare_rewind_control(&mut self, now: Instant) {
+        if !matches!(self.mode, RewinderMode::Rewind) {
+            if !matches!(self.rewind_phase, RewindPhase::Idle) {
+                self.set_rewind_phase(RewindPhase::Idle, "mode is not Rewind");
+            }
+            self.rewind_control.reset_motion();
+            self.rewind_puller_command_speed = None;
+            return;
+        }
+
+        if matches!(self.rewind_phase, RewindPhase::FaultHold) {
+            self.rewind_control.reset_motion();
+            self.rewind_puller_command_speed = Some(Velocity::new::<meter_per_minute>(0.0));
+            return;
+        }
+
+        if let Some(reason) = self.runtime_rewind_block_reason() {
+            self.set_rewind_phase(RewindPhase::FaultHold, reason);
+            self.rewind_control.reset_motion();
+            self.rewind_puller_command_speed = Some(Velocity::new::<meter_per_minute>(0.0));
+            return;
+        }
+
+        let Ok((source_angle, takeup_angle)) = self.read_tension_arm_angles_deg() else {
+            self.set_rewind_phase(RewindPhase::FaultHold, "failed to read tension arm angle");
+            self.rewind_control.reset_motion();
+            self.rewind_puller_command_speed = Some(Velocity::new::<meter_per_minute>(0.0));
+            return;
+        };
+
+        let dt_s = self
+            .rewind_control
+            .update_arms(source_angle, takeup_angle, now)
+            .max(0.0);
+
+        if self.rewind_control.source_arm.zone.is_fault() {
+            self.set_rewind_phase(
+                RewindPhase::FaultHold,
+                "source tension arm is outside rewind range",
+            );
+        } else if self.rewind_control.takeup_arm.zone.is_fault() {
+            self.set_rewind_phase(
+                RewindPhase::FaultHold,
+                "takeup tension arm is outside rewind range",
+            );
+        }
+
+        if matches!(self.rewind_phase, RewindPhase::FaultHold) {
+            self.rewind_control.reset_motion();
+            self.rewind_puller_command_speed = Some(Velocity::new::<meter_per_minute>(0.0));
+            return;
+        }
+
+        match self.rewind_phase {
+            RewindPhase::Idle => self.set_rewind_phase(RewindPhase::Validate, "rewind requested"),
+            RewindPhase::Validate => {
+                let source_ok = self
+                    .rewind_control
+                    .config
+                    .source_arm
+                    .in_start_range(source_angle);
+                let takeup_ok = self
+                    .rewind_control
+                    .config
+                    .takeup_arm
+                    .in_start_range(takeup_angle);
+                if source_ok && takeup_ok {
+                    self.set_rewind_phase(RewindPhase::Precharge, "start angles validated");
+                }
+            }
+            RewindPhase::Precharge => {
+                if self.rewind_control.phase_elapsed(now)
+                    >= self.rewind_control.config.precharge_duration
+                {
+                    self.set_rewind_phase(RewindPhase::CrawlStart, "precharge settled");
+                }
+            }
+            RewindPhase::CrawlStart => {
+                if self.rewind_control.phase_elapsed(now)
+                    >= self.rewind_control.config.crawl_duration
+                {
+                    self.set_rewind_phase(RewindPhase::Rewind, "crawl start complete");
+                }
+            }
+            RewindPhase::Rewind | RewindPhase::FaultHold => {}
+        }
+
+        let ui_target_m_per_min = self
+            .puller_speed_controller
+            .get_target_speed()
+            .get::<meter_per_minute>();
+        let commanded_target = match self.rewind_phase {
+            RewindPhase::Precharge | RewindPhase::Validate | RewindPhase::Idle => 0.0,
+            RewindPhase::CrawlStart => ui_target_m_per_min
+                .min(self.rewind_control.config.puller_ramp.crawl_speed_m_per_min),
+            RewindPhase::Rewind => ui_target_m_per_min,
+            RewindPhase::FaultHold => 0.0,
+        };
+
+        self.rewind_control
+            .update_puller_command(commanded_target, dt_s);
+        self.rewind_puller_command_speed = Some(Velocity::new::<meter_per_minute>(
+            self.rewind_control.puller_command_m_per_min,
+        ));
+    }
 
     pub fn set_mode(&mut self, mode: &RewinderMode) {
         let should_update = *mode != RewinderMode::Rewind || self.can_rewind();
@@ -32,14 +178,34 @@ impl Rewinder {
             let entering_rewind =
                 !matches!(self.mode, RewinderMode::Rewind) && matches!(mode, RewinderMode::Rewind);
             self.mode = mode.clone();
-            self.rewind_phase = if entering_rewind {
-                RewindPhase::StartPulling
-            } else if matches!(self.mode, RewinderMode::Rewind) {
-                self.rewind_phase
+            self.rewind_phase = if matches!(mode, RewinderMode::Rewind) {
+                RewindPhase::Validate
             } else {
                 RewindPhase::Idle
             };
+            if entering_rewind {
+                let now = Instant::now();
+                let zero_speed = Velocity::new::<meter_per_minute>(0.0);
+                self.rewind_puller_command_speed = Some(zero_speed);
+                self.rewind_control.reset_for_rewind(now);
+                self.puller_speed_controller.reset_speed(zero_speed);
+                self.takeup_spool_speed_controller
+                    .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
+                self.source_spool_speed_controller
+                    .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
+            }
             self.apply_axis_modes();
+            if matches!(mode, RewinderMode::Pull) {
+                self.rewind_control.reset_motion();
+                self.source_spool_speed_controller.set_enabled(false);
+                let _ = self
+                    .source_spool
+                    .borrow_mut()
+                    .set_speed(SOURCE_SPOOL_PORT, 0.0);
+                self.source_spool
+                    .borrow_mut()
+                    .set_enabled(SOURCE_SPOOL_PORT, false);
+            }
         } else if matches!(mode, RewinderMode::Rewind) {
             println!(
                 "Rewinder rejected Rewind: {}",
@@ -49,23 +215,14 @@ impl Rewinder {
         self.emit_state();
     }
 
-    fn set_rewind_phase(&mut self, phase: RewindPhase, reason: &str) {
-        if self.rewind_phase != phase {
-            println!(
-                "Rewinder phase {:?} -> {:?}: {}",
-                self.rewind_phase, phase, reason
-            );
-        }
-        self.rewind_phase = phase;
-    }
-
     fn apply_axis_modes(&mut self) {
         let puller_enabled = matches!(
             self.mode,
             RewinderMode::Hold | RewinderMode::Pull | RewinderMode::Rewind
         );
         let controller_enabled = matches!(self.mode, RewinderMode::Pull | RewinderMode::Rewind);
-        let spool_enabled = matches!(self.mode, RewinderMode::Hold | RewinderMode::Rewind);
+        let takeup_spool_enabled = matches!(self.mode, RewinderMode::Hold | RewinderMode::Rewind);
+        let source_spool_enabled = matches!(self.mode, RewinderMode::Hold | RewinderMode::Rewind);
         let traverse_enabled = matches!(self.mode, RewinderMode::Hold | RewinderMode::Rewind);
 
         self.puller
@@ -75,10 +232,10 @@ impl Rewinder {
 
         self.takeup_spool
             .borrow_mut()
-            .set_enabled(TAKEUP_SPOOL_PORT, spool_enabled);
+            .set_enabled(TAKEUP_SPOOL_PORT, takeup_spool_enabled);
         self.source_spool
             .borrow_mut()
-            .set_enabled(SOURCE_SPOOL_PORT, spool_enabled);
+            .set_enabled(SOURCE_SPOOL_PORT, source_spool_enabled);
         self.takeup_spool_speed_controller
             .set_enabled(matches!(self.mode, RewinderMode::Rewind));
         self.source_spool_speed_controller
@@ -96,121 +253,41 @@ impl Rewinder {
         }
     }
 
-    fn update_rewind_phase(&mut self) {
-        if !matches!(self.mode, RewinderMode::Rewind) {
-            self.set_rewind_phase(RewindPhase::Idle, "mode is not Rewind");
-            return;
-        }
-
-        if matches!(self.rewind_phase, RewindPhase::HardStop) {
-            return;
-        }
-
-        let Ok(source_angle) = self.source_tension_arm.get_angle() else {
-            self.set_rewind_phase(
-                RewindPhase::HardStop,
-                "failed to read source tension arm angle",
-            );
-            return;
-        };
-        let source_angle = source_angle.get::<degree>();
-
-        let Ok(takeup_angle) = self.takeup_tension_arm.get_angle() else {
-            self.set_rewind_phase(
-                RewindPhase::HardStop,
-                "failed to read takeup tension arm angle",
-            );
-            return;
-        };
-        let takeup_angle = takeup_angle.get::<degree>();
-
-        if let Some(reason) = self.rewind_block_reason() {
-            self.set_rewind_phase(RewindPhase::HardStop, reason);
-            return;
-        }
-
-        if takeup_angle > Self::TAKEUP_TENSION_ARM_MAX_ANGLE_DEG {
-            self.set_rewind_phase(
-                RewindPhase::HardStop,
-                "takeup tension arm exceeded maximum angle",
-            );
-            return;
-        }
-
-        if source_angle > Self::SOURCE_TENSION_ARM_MAX_ANGLE_DEG {
-            self.set_rewind_phase(
-                RewindPhase::SourceHigh,
-                "source tension arm exceeded maximum angle",
-            );
-            return;
-        }
-
-        let next_phase = match self.rewind_phase {
-            RewindPhase::Idle => RewindPhase::StartPulling,
-            RewindPhase::StartPulling => {
-                if source_angle < Self::SOURCE_TENSION_ARM_MIN_ANGLE_DEG {
-                    RewindPhase::StartPulling
-                } else if takeup_angle < Self::TAKEUP_TENSION_ARM_MIN_ANGLE_DEG {
-                    RewindPhase::TakeupLow
-                } else {
-                    RewindPhase::Normal
-                }
-            }
-            RewindPhase::Normal => {
-                if takeup_angle < Self::TAKEUP_TENSION_ARM_MIN_ANGLE_DEG {
-                    RewindPhase::TakeupLow
-                } else if source_angle < Self::SOURCE_TENSION_ARM_MIN_ANGLE_DEG {
-                    RewindPhase::SourceLow
-                } else {
-                    RewindPhase::Normal
-                }
-            }
-            RewindPhase::SourceLow => {
-                if takeup_angle < Self::TAKEUP_TENSION_ARM_MIN_ANGLE_DEG {
-                    RewindPhase::TakeupLow
-                } else if source_angle >= Self::SOURCE_TENSION_ARM_MIN_ANGLE_DEG {
-                    RewindPhase::Normal
-                } else {
-                    RewindPhase::SourceLow
-                }
-            }
-            RewindPhase::SourceHigh => {
-                if source_angle <= Self::SOURCE_TENSION_ARM_SOFT_HIGH_ANGLE_DEG {
-                    if source_angle < Self::SOURCE_TENSION_ARM_MIN_ANGLE_DEG {
-                        RewindPhase::SourceLow
-                    } else if takeup_angle < Self::TAKEUP_TENSION_ARM_MIN_ANGLE_DEG {
-                        RewindPhase::TakeupLow
-                    } else {
-                        RewindPhase::Normal
-                    }
-                } else {
-                    RewindPhase::SourceHigh
-                }
-            }
-            RewindPhase::TakeupLow => {
-                if takeup_angle >= Self::TAKEUP_TENSION_ARM_LOW_EXIT_ANGLE_DEG {
-                    if source_angle < Self::SOURCE_TENSION_ARM_MIN_ANGLE_DEG {
-                        RewindPhase::SourceLow
-                    } else {
-                        RewindPhase::Normal
-                    }
-                } else {
-                    RewindPhase::TakeupLow
-                }
-            }
-            RewindPhase::HardStop => RewindPhase::HardStop,
-        };
-        self.set_rewind_phase(next_phase, "tension range update");
-    }
-
     pub fn sync_puller_speed(&mut self, t: Instant) {
-        self.update_rewind_phase();
+        self.prepare_rewind_control(t);
 
         let angular_velocity = if self.puller_motion_permitted() {
-            self.puller_speed_controller.calc_angular_velocity(t)
+            if matches!(self.mode, RewinderMode::Rewind) {
+                let target_speed = self.puller_speed_controller.get_target_speed();
+                let command_speed =
+                    Velocity::new::<meter_per_minute>(self.rewind_control.puller_command_m_per_min);
+                self.puller_speed_controller.set_target_speed(command_speed);
+                let angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
+                self.puller_speed_controller.set_target_speed(target_speed);
+                angular_velocity
+            } else {
+                self.rewind_puller_command_speed = None;
+                self.puller_speed_controller.calc_angular_velocity(t)
+            }
         } else {
+            self.rewind_puller_command_speed = None;
             AngularVelocity::new::<revolution_per_minute>(0.0)
         };
+        let actual_line_speed = self
+            .puller_speed_controller
+            .angular_velocity_to_speed(angular_velocity)
+            / self.puller_speed_controller.get_gear_ratio().multiplier();
+        let actual_line_speed_m_per_min = actual_line_speed.get::<meter_per_minute>().abs();
+        if matches!(
+            self.rewind_phase,
+            RewindPhase::Precharge | RewindPhase::CrawlStart | RewindPhase::Rewind
+        ) {
+            self.rewind_control
+                .update_followers(actual_line_speed_m_per_min, self.rewind_control.last_dt_s);
+        } else {
+            self.rewind_control.source_follower.force_zero();
+            self.rewind_control.takeup_follower.force_zero();
+        }
         let steps_per_second = self
             .puller_speed_controller
             .converter
@@ -222,18 +299,27 @@ impl Rewinder {
     }
 
     pub fn sync_takeup_spool_speed(&mut self, t: Instant) {
-        let angular_velocity = if matches!(self.rewind_phase, RewindPhase::TakeupLow) {
-            AngularVelocity::new::<revolution_per_minute>(
-                Self::TAKEUP_TENSION_LOW_TAKEUP_FEED_RPM,
-            )
-        } else if self.takeup_spool_motion_permitted() {
-            self.takeup_spool_speed_controller.update_speed(
+        let angular_velocity = if self.takeup_spool_motion_permitted() {
+            let target_speed = self.puller_speed_controller.get_target_speed();
+            if matches!(self.mode, RewinderMode::Rewind) {
+                let command_speed =
+                    Velocity::new::<meter_per_minute>(self.rewind_control.puller_command_m_per_min);
+                self.puller_speed_controller.set_target_speed(command_speed);
+            }
+            let angular_velocity = self.takeup_spool_speed_controller.update_speed(
                 t,
                 &self.takeup_tension_arm,
                 &self.puller_speed_controller,
-            )
+            );
+            if matches!(self.mode, RewinderMode::Rewind) {
+                self.puller_speed_controller.set_target_speed(target_speed);
+            }
+            angular_velocity
         } else {
-            AngularVelocity::new::<revolution_per_minute>(0.0)
+            let angular_velocity = AngularVelocity::new::<revolution_per_minute>(0.0);
+            self.takeup_spool_speed_controller
+                .set_speed(angular_velocity);
+            angular_velocity
         };
 
         let directed_angular_velocity = if self.takeup_spool_speed_controller.get_forward() {
@@ -249,26 +335,10 @@ impl Rewinder {
         let _ = takeup_spool.set_speed(TAKEUP_SPOOL_PORT, steps_per_second);
     }
 
-    pub fn sync_source_spool_speed(&mut self, t: Instant) {
-        let source_angle_below_min = self
-            .source_tension_arm
-            .get_angle()
-            .map(|angle| angle.get::<degree>() < Self::SOURCE_TENSION_ARM_MIN_ANGLE_DEG)
-            .unwrap_or(true);
-
-        let angular_velocity = if source_angle_below_min
-            && !matches!(self.rewind_phase, RewindPhase::SourceHigh)
-        {
-            AngularVelocity::new::<revolution_per_minute>(0.0)
-        } else if matches!(self.rewind_phase, RewindPhase::SourceHigh) {
+    pub fn sync_source_spool_speed(&mut self, _t: Instant) {
+        let angular_velocity = if self.source_spool_motion_permitted() {
             AngularVelocity::new::<revolution_per_minute>(
-                Self::SOURCE_TENSION_HARD_HIGH_SOURCE_FEED_RPM,
-            )
-        } else if self.source_spool_motion_permitted() {
-            self.source_spool_speed_controller.update_speed(
-                t,
-                &self.source_tension_arm,
-                &self.puller_speed_controller,
+                self.rewind_control.source_follower.command_rpm,
             )
         } else {
             AngularVelocity::new::<revolution_per_minute>(0.0)
@@ -332,14 +402,67 @@ impl Rewinder {
             takeup_tension_arm_angle: self
                 .takeup_tension_arm
                 .get_angle()
-                .map(|angle| angle.get::<degree>())
+                .map(Self::normalize_tension_arm_angle_deg)
                 .unwrap_or_default(),
             source_tension_arm_angle: self
                 .source_tension_arm
                 .get_angle()
-                .map(|angle| angle.get::<degree>())
+                .map(Self::normalize_tension_arm_angle_deg)
                 .unwrap_or_default(),
         }
+    }
+
+    pub fn log_rewind_diagnostics(&mut self, now: Instant) {
+        if !matches!(self.mode, RewinderMode::Rewind) {
+            return;
+        }
+        if now
+            .duration_since(self.last_rewind_diagnostics_log)
+            .as_secs_f64()
+            < 0.5
+        {
+            return;
+        }
+        self.last_rewind_diagnostics_log = now;
+
+        let live_values = self.get_live_values();
+        println!(
+            "Rewinder diag: phase={:?} puller_target={:.2}m/min puller_command={:.2}m/min puller_accel={:.2}m/min/s puller_actual={:.2}m/min takeup_angle={:.1}deg takeup_filtered={:.1}deg takeup_zone={:?} takeup_rate={:.1}deg/s takeup_controller={:.1}rpm source_angle={:.1}deg source_filtered={:.1}deg source_zone={:?} source_rate={:.1}deg/s source_recovery={} source_ff={:.1}rpm source_trim={:.1}rpm source_target={:.1}rpm source_cmd={:.1}rpm source_ratio={:.2} takeup_actual={:.1}rpm source_actual={:.1}rpm can_rewind={} reason={}",
+            self.rewind_phase,
+            self.puller_speed_controller
+                .get_target_speed()
+                .get::<meter_per_minute>(),
+            self.rewind_control.puller_command_m_per_min,
+            self.rewind_control.puller_accel_m_per_min_s,
+            live_values.puller_speed,
+            live_values.takeup_tension_arm_angle,
+            self.rewind_control.takeup_arm.filtered_deg,
+            self.rewind_control.takeup_arm.zone,
+            self.rewind_control.takeup_arm.rate_deg_per_s,
+            self.takeup_spool_speed_controller
+                .get_speed()
+                .get::<revolution_per_minute>(),
+            live_values.source_tension_arm_angle,
+            self.rewind_control.source_arm.filtered_deg,
+            self.rewind_control.source_arm.zone,
+            self.rewind_control.source_arm.rate_deg_per_s,
+            self.rewind_control.source_recovery_active(),
+            self.rewind_control.source_follower.feed_forward_rpm,
+            self.rewind_control.source_follower.trim_rpm,
+            self.rewind_control.source_follower.target_rpm,
+            self.rewind_control.source_follower.command_rpm,
+            self.rewind_control.source_follower.ratio_rpm_per_m_per_min,
+            live_values.takeup_spool_rpm,
+            live_values.source_spool_rpm,
+            !matches!(self.rewind_phase, RewindPhase::FaultHold),
+            if matches!(self.rewind_phase, RewindPhase::FaultHold) {
+                self.rewind_hard_stop_reason
+                    .as_deref()
+                    .unwrap_or("runtime hard stop")
+            } else {
+                "ok"
+            }
+        );
     }
 
     pub fn emit_live_values(&mut self) {
@@ -350,12 +473,19 @@ impl Rewinder {
     pub fn build_state_event(&mut self) -> StateEvent {
         let is_default_state = !self.emitted_default_state;
         self.emitted_default_state = true;
+        let can_rewind = if matches!(self.mode, RewinderMode::Rewind) {
+            self.runtime_rewind_block_reason().is_none()
+                && !matches!(self.rewind_phase, RewindPhase::FaultHold)
+        } else {
+            self.can_rewind()
+        };
+        self.last_can_rewind = can_rewind;
 
         StateEvent {
             is_default_state,
             mode_state: ModeState {
                 mode: self.mode.clone().into(),
-                can_rewind: self.can_rewind(),
+                can_rewind,
             },
             traverse_state: TraverseState {
                 limit_inner: self

@@ -106,6 +106,18 @@ impl MachineNew for Rewinder {
 
         let (api_sender, api_receiver) = tokio::sync::mpsc::channel(2);
 
+        let mut source_spool_speed_controller =
+            super::SpoolSpeedController::new_with_tension_range_and_response(
+                Angle::new::<degree>(super::Rewinder::SOURCE_TENSION_ARM_MAX_ANGLE_DEG),
+                Angle::new::<degree>(super::Rewinder::SOURCE_TENSION_ARM_MIN_ANGLE_DEG),
+                crate::winder2::spool_speed_controller::SpoolTensionResponse::Source,
+            );
+        source_spool_speed_controller.set_adaptive_tension_target(0.70);
+        source_spool_speed_controller.set_adaptive_radius_learning_rate(0.15);
+        source_spool_speed_controller.set_adaptive_max_speed_multiplier(2.0);
+        source_spool_speed_controller.set_adaptive_acceleration_factor(0.05);
+        source_spool_speed_controller.set_adaptive_deacceleration_urgency_multiplier(20.0);
+
         let mut rewinder = Self {
             api_receiver,
             api_sender,
@@ -118,6 +130,7 @@ impl MachineNew for Rewinder {
             source_tension_arm: super::TensionArm::new(source_spool.0.clone()),
             namespace: super::api::RewinderNamespace { namespace: None },
             last_measurement_emit: Instant::now(),
+            last_rewind_diagnostics_log: Instant::now(),
             machine_identification_unique: hw.identification,
             mode: RewinderMode::Standby,
             puller_speed_controller: super::PullerSpeedController::new(
@@ -125,12 +138,7 @@ impl MachineNew for Rewinder {
                 LinearStepConverter::from_diameter(200, Length::new::<centimeter>(8.0)),
             ),
             takeup_spool_speed_controller: super::SpoolSpeedController::new(),
-            source_spool_speed_controller:
-                super::SpoolSpeedController::new_with_tension_range_and_response(
-                    Angle::new::<degree>(super::Rewinder::SOURCE_TENSION_ARM_MAX_ANGLE_DEG),
-                    Angle::new::<degree>(super::Rewinder::SOURCE_TENSION_ARM_MIN_ANGLE_DEG),
-                    crate::winder2::spool_speed_controller::SpoolTensionResponse::Source,
-                ),
+            source_spool_speed_controller,
             takeup_spool_step_converter: AngularStepConverter::new(200),
             source_spool_step_converter: AngularStepConverter::new(200),
             traverse_controller: super::TraverseController::new(
@@ -139,7 +147,13 @@ impl MachineNew for Rewinder {
                 64,
             ),
             rewind_phase: RewindPhase::Idle,
+            rewind_hard_stop_reason: None,
+            rewind_puller_command_speed: None,
+            rewind_control: super::rewind_control::RewindControlState::new(
+                super::rewind_control::RewindControlConfig::default(),
+            ),
             emitted_default_state: false,
+            last_can_rewind: false,
         };
 
         rewinder.emit_state();
