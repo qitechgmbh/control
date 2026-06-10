@@ -24,6 +24,21 @@ export type Mode = z.infer<typeof modeSchema>;
 export const gearRatioSchema = z.enum(["OneToOne", "OneToFive", "OneToTen"]);
 export type GearRatio = z.infer<typeof gearRatioSchema>;
 
+export function getGearRatioMultiplier(
+  gearRatio: GearRatio | undefined,
+): number {
+  switch (gearRatio) {
+    case "OneToOne":
+      return 1.0;
+    case "OneToFive":
+      return 5.0;
+    case "OneToTen":
+      return 10.0;
+    default:
+      return 1.0;
+  }
+}
+
 export const spoolRegulationModeSchema = z.enum(["Adaptive", "MinMax"]);
 export type SpoolRegulationMode = z.infer<typeof spoolRegulationModeSchema>;
 
