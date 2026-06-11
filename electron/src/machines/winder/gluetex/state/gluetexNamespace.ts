@@ -422,26 +422,6 @@ export const safetyStopEventDataSchema = z.object({
 
 export const safetyStopEventSchema = eventSchema(safetyStopEventDataSchema);
 
-function formatSafetyStopReason(reason: unknown): string {
-  if (reason === "WinderTensionArm") return "Winder tension arm triggered";
-  if (reason === "TapeFeederTensionArm")
-    return "Tape feeder tension arm triggered";
-  if (reason === "InletTensionArm") return "Inlet tension arm triggered";
-  if (reason === "Optris1Voltage") return "Optris 1 voltage out of range";
-  if (reason === "Optris2Voltage") return "Optris 2 voltage out of range";
-  if (reason === "SleepTimer") return "Sleep timer activated";
-  if (
-    typeof reason === "object" &&
-    reason !== null &&
-    "HeaterOverTemperature" in reason
-  ) {
-    const ht = (reason as { HeaterOverTemperature: { zones: number } })
-      .HeaterOverTemperature;
-    return `Heater over-temperature (zone mask: ${ht.zones})`;
-  }
-  return String(reason);
-}
-
 export type StateEvent = z.infer<typeof stateEventSchema>;
 export type StateEventData = z.infer<typeof stateEventDataSchema>;
 export type HeatingAutoTuneCompleteEvent = z.infer<
@@ -600,6 +580,10 @@ export type GluetexNamespaceStore = {
 
   // Estimated minutes remaining for pull distance (computed from LiveValuesEvent)
   estimatedMinutesRemaining: number;
+
+  // Last safety stop event data (set on SafetyStop event, keyed by ts for dedup)
+  lastSafetyStop: z.infer<typeof safetyStopEventDataSchema> | null;
+  lastSafetyStopTs: number | null;
 
   // Long buffer configuration
   longBufferSampleInterval: number;
@@ -964,6 +948,9 @@ export const createGluetexNamespaceStore =
         addonMotor5Rpm,
 
         estimatedMinutesRemaining: 0,
+
+        lastSafetyStop: null,
+        lastSafetyStopTs: null,
 
         // Long buffer configuration
         longBufferSampleInterval: persistedGraphConfig.sampleInterval,
@@ -1390,14 +1377,9 @@ export function gluetexMessageHandler(
         eventName === "SafetyStopEvent"
       ) {
         const safetyStopEvent = safetyStopEventSchema.parse(event);
-        const { reason, heaters_disabled } = safetyStopEvent.data;
-        const reasonText = formatSafetyStopReason(reason);
-        const detail = heaters_disabled
-          ? `${reasonText} — motors and heaters disabled`
-          : `${reasonText} — motors disabled`;
-
-        import("@/components/Toast").then(({ toastError }) => {
-          toastError("Safety Stop", detail);
+        store.setState({
+          lastSafetyStop: safetyStopEvent.data,
+          lastSafetyStopTs: safetyStopEvent.ts,
         });
       } else {
         handleUnhandledEventError(eventName);

@@ -1,3 +1,8 @@
+# `Small Gluetex Updates`
+_26.05.2026_
+
+- Fixed safety stop notifications flooding the frontend and causing Electron to restart — replaced toast-based notifications (which replayed on every reconnect) with a state-driven blocking modal that requires explicit acknowledgment
+
 # `2.17.0`
 _26.05.2026_
 

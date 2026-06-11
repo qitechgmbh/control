@@ -20,7 +20,6 @@ import {
 } from "../state/gluetexNamespace";
 import { TensionArm } from "../../TensionArm";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
-import { GluetexErrorBanner } from "../components/GluetexErrorBanner";
 import { Spool } from "../../Spool";
 import {
   Dialog,
@@ -84,7 +83,6 @@ export function GluetexControlPage() {
 
   return (
     <Page className="h-[calc(100vh-4.5rem)] overflow-hidden">
-      <GluetexErrorBanner />
       <ControlGrid className="min-h-0 flex-1 auto-rows-fr">
         <ControlCard title="Spool">
           <Spool rpm={spoolRpm.current?.value} />

@@ -91,6 +91,8 @@ export function useGluetex() {
     optris2Voltage,
     addonMotor5Rpm,
     estimatedMinutesRemaining,
+    lastSafetyStop,
+    lastSafetyStopTs,
     longBufferSampleInterval,
     longBufferRetention,
     reconfigureLongBuffers,
@@ -1859,6 +1861,8 @@ export function useGluetex() {
     selectedMachine,
 
     estimatedMinutesRemaining,
+    lastSafetyStop,
+    lastSafetyStopTs,
 
     // Live values (TimeSeries)
     traversePosition,

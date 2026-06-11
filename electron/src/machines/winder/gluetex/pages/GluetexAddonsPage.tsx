@@ -18,7 +18,6 @@ import {
 import { roundToDecimals, roundDegreesToDecimals } from "@/lib/decimal";
 import { TensionArm } from "../../TensionArm";
 import { RatioInput } from "@/components/ratio/RatioInput";
-import { GluetexErrorBanner } from "../components/GluetexErrorBanner";
 
 export function GluetexAddonsPage() {
   const {
@@ -56,7 +55,6 @@ export function GluetexAddonsPage() {
 
   return (
     <Page className="h-[calc(100vh-4.5rem)] overflow-hidden">
-      <GluetexErrorBanner />
       <ControlGrid className="min-h-0 flex-1 auto-rows-fr">
         <ControlCard className="bg-red" title="Motors">
           <Label label="Stepper 3">
