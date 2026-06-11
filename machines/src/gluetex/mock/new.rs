@@ -49,7 +49,7 @@ impl MachineNewTrait for Gluetex {
             extra_analog_input_2: 0.0,
             extra_analog_input_3: 0.0,
             extra_analog_input_4: 0.0,
-            stepper_5_rpm: 0.0,
+            addon_motor_5_rpm: 0.0,
             estimated_minutes_remaining: 0.0,
         };
 
