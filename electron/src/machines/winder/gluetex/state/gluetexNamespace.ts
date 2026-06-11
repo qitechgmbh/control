@@ -415,6 +415,33 @@ export const heatingAutoTuneCompleteEventSchema = eventSchema(
   heatingAutoTuneCompleteEventDataSchema,
 );
 
+export const safetyStopEventDataSchema = z.object({
+  reason: z.unknown(),
+  heaters_disabled: z.boolean(),
+});
+
+export const safetyStopEventSchema = eventSchema(safetyStopEventDataSchema);
+
+function formatSafetyStopReason(reason: unknown): string {
+  if (reason === "WinderTensionArm") return "Winder tension arm triggered";
+  if (reason === "TapeFeederTensionArm")
+    return "Tape feeder tension arm triggered";
+  if (reason === "InletTensionArm") return "Inlet tension arm triggered";
+  if (reason === "Optris1Voltage") return "Optris 1 voltage out of range";
+  if (reason === "Optris2Voltage") return "Optris 2 voltage out of range";
+  if (reason === "SleepTimer") return "Sleep timer activated";
+  if (
+    typeof reason === "object" &&
+    reason !== null &&
+    "HeaterOverTemperature" in reason
+  ) {
+    const ht = (reason as { HeaterOverTemperature: { zones: number } })
+      .HeaterOverTemperature;
+    return `Heater over-temperature (zone mask: ${ht.zones})`;
+  }
+  return String(reason);
+}
+
 export type StateEvent = z.infer<typeof stateEventSchema>;
 export type StateEventData = z.infer<typeof stateEventDataSchema>;
 export type HeatingAutoTuneCompleteEvent = z.infer<
@@ -1358,6 +1385,20 @@ export function gluetexMessageHandler(
             );
           });
         }
+      } else if (
+        eventName === "SafetyStop" ||
+        eventName === "SafetyStopEvent"
+      ) {
+        const safetyStopEvent = safetyStopEventSchema.parse(event);
+        const { reason, heaters_disabled } = safetyStopEvent.data;
+        const reasonText = formatSafetyStopReason(reason);
+        const detail = heaters_disabled
+          ? `${reasonText} — motors and heaters disabled`
+          : `${reasonText} — motors disabled`;
+
+        import("@/components/Toast").then(({ toastError }) => {
+          toastError("Safety Stop", detail);
+        });
       } else {
         handleUnhandledEventError(eventName);
       }

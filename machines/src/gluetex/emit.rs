@@ -710,6 +710,9 @@ impl Gluetex {
                 TraverseMode::Hold => {}
                 TraverseMode::Traverse => {
                     // From [`TraverseMode::Hold`] to [`TraverseMode::Wind`]
+                    // Re-enable hardware in case shutdown_motors() disabled it (e.g. after safety stop)
+                    self.traverse.set_enabled(true);
+                    self.traverse_controller.set_enabled(true);
                     // Resume from saved position if available, otherwise start from beginning
                     if let Some(saved_pos) = self.saved_traverse_position {
                         self.traverse_controller
@@ -1046,6 +1049,15 @@ impl Gluetex {
         if did_complete {
             self.emit_state();
         }
+    }
+
+    pub(crate) fn emit_safety_stop(&mut self, stop: super::safety::SafetyStop) {
+        let event = api::SafetyStopEvent {
+            reason: stop.reason().into(),
+            heaters_disabled: stop.disables_heaters(),
+        }
+        .build();
+        self.namespace.emit(api::GluetexEvents::SafetyStop(event));
     }
 
     /// Emit auto-tuning completion event

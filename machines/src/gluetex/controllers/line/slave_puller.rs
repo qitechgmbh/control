@@ -130,8 +130,7 @@ impl SlavePullerSpeedController {
     ) -> Velocity {
         // Apply enable/disable logic
         let final_speed = if self.enabled {
-            let normalized =
-                normalize_angle_deg(tension_arm.get_angle().get::<degree>());
+            let normalized = normalize_angle_deg(tension_arm.get_angle().get::<degree>());
             if normalized <= 0.0 {
                 Velocity::ZERO
             } else {

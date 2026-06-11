@@ -353,6 +353,8 @@ impl Gluetex {
                 SpoolMode::Hold => {}
                 SpoolMode::Wind => {
                     // From [`SpoolMode::Hold`] to [`SpoolMode::Wind`]
+                    // Re-enable hardware in case shutdown_motors() disabled it (e.g. after safety stop)
+                    self.spool.set_enabled(true);
                     // self.spool_speed_controller.reset();
                     self.spool_speed_controller.set_enabled(true);
                 }

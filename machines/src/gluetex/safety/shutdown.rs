@@ -39,6 +39,7 @@ impl Gluetex {
         }
 
         self.update_status_output();
+        self.emit_safety_stop(stop);
         self.shutdown_motors();
     }
 

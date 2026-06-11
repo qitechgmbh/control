@@ -68,6 +68,39 @@ pub struct HeatingAutoTuneCompleteEvent {
     pub kd: f64,
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub enum SafetyStopReason {
+    WinderTensionArm,
+    TapeFeederTensionArm,
+    InletTensionArm,
+    Optris1Voltage,
+    Optris2Voltage,
+    HeaterOverTemperature { zones: u8 },
+    SleepTimer,
+}
+
+impl From<super::safety::StopReason> for SafetyStopReason {
+    fn from(reason: super::safety::StopReason) -> Self {
+        match reason {
+            super::safety::StopReason::WinderTensionArm => Self::WinderTensionArm,
+            super::safety::StopReason::TapeFeederTensionArm => Self::TapeFeederTensionArm,
+            super::safety::StopReason::InletTensionArm => Self::InletTensionArm,
+            super::safety::StopReason::Optris1Voltage => Self::Optris1Voltage,
+            super::safety::StopReason::Optris2Voltage => Self::Optris2Voltage,
+            super::safety::StopReason::HeaterOverTemperature { zones } => {
+                Self::HeaterOverTemperature { zones }
+            }
+            super::safety::StopReason::SleepTimer => Self::SleepTimer,
+        }
+    }
+}
+
+#[derive(Serialize, Debug, Clone, BuildEvent)]
+pub struct SafetyStopEvent {
+    pub reason: SafetyStopReason,
+    pub heaters_disabled: bool,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum Mode {
     #[default]
@@ -683,6 +716,7 @@ pub enum GluetexEvents {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
     HeatingAutoTuneComplete(Event<HeatingAutoTuneCompleteEvent>),
+    SafetyStop(Event<SafetyStopEvent>),
 }
 
 #[derive(Debug)]
@@ -708,6 +742,7 @@ impl CacheableEvents<Self> for GluetexEvents {
             Self::LiveValues(event) => event.into(),
             Self::State(event) => event.into(),
             Self::HeatingAutoTuneComplete(event) => event.into(),
+            Self::SafetyStop(event) => event.into(),
         }
     }
 
@@ -717,6 +752,7 @@ impl CacheableEvents<Self> for GluetexEvents {
             Self::LiveValues(_) => cache_first_and_last,
             Self::State(_) => cache_first_and_last,
             Self::HeatingAutoTuneComplete(_) => cache_first_and_last,
+            Self::SafetyStop(_) => cache_first_and_last,
         }
     }
 }

@@ -100,8 +100,7 @@ impl Stepper5TensionController {
             if !tension_arm.zeroed {
                 master_speed
             } else {
-                let normalized =
-                    normalize_angle_deg(tension_arm.get_angle().get::<degree>());
+                let normalized = normalize_angle_deg(tension_arm.get_angle().get::<degree>());
                 if normalized <= 0.0 {
                     Velocity::ZERO
                 } else {
