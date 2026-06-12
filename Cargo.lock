@@ -427,7 +427,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
 dependencies = [
  "anyhow",
  "libc",
@@ -455,7 +455,7 @@ dependencies = [
  "core_affinity",
  "crc",
  "erased-serde",
- "ethercrab",
+ "ethercrab 0.6.0",
  "interfaces",
  "libc",
  "qitech_lib",
@@ -815,14 +815,14 @@ dependencies = [
 [[package]]
 name = "ethercat_hal"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
 dependencies = [
  "anyhow",
  "bitvec",
  "common",
  "core_affinity",
  "ethercat_hal_derive",
- "ethercrab",
+ "ethercrab 0.7.1",
  "libc",
  "rand 0.9.4",
  "smol",
@@ -836,7 +836,7 @@ dependencies = [
 [[package]]
 name = "ethercat_hal_derive"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
 dependencies = [
  "deluxe",
  "proc-macro2",
@@ -856,7 +856,7 @@ dependencies = [
  "crc",
  "embassy-time",
  "embedded-io-async",
- "ethercrab-wire",
+ "ethercrab-wire 0.2.0",
  "futures-lite",
  "heapless",
  "io-uring",
@@ -874,11 +874,50 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethercrab"
+version = "0.7.1"
+source = "git+https://github.com/ethercrab-rs/ethercrab?branch=main#4c7d36157fa5caab3194df494e92e08551cd2e43"
+dependencies = [
+ "async-io",
+ "atomic-waker",
+ "atomic_enum",
+ "bitflags 2.11.1",
+ "crc",
+ "embassy-time",
+ "embedded-io-async",
+ "ethercrab-wire 0.3.0",
+ "futures-lite",
+ "heapless",
+ "io-uring",
+ "libc",
+ "lock_api",
+ "log",
+ "nix 0.31.3",
+ "pcap",
+ "pnet_datalink",
+ "sealed",
+ "slab",
+ "smallvec",
+ "smlang",
+ "spin",
+ "timerfd",
+]
+
+[[package]]
 name = "ethercrab-wire"
 version = "0.2.0"
 source = "git+https://github.com/v-morlock/ethercrab?branch=main#d297d13389d85a4edb4e69cc98f9dd7f12626cac"
 dependencies = [
- "ethercrab-wire-derive",
+ "ethercrab-wire-derive 0.2.0",
+ "heapless",
+]
+
+[[package]]
+name = "ethercrab-wire"
+version = "0.3.0"
+source = "git+https://github.com/ethercrab-rs/ethercrab?branch=main#4c7d36157fa5caab3194df494e92e08551cd2e43"
+dependencies = [
+ "ethercrab-wire-derive 0.3.0",
  "heapless",
 ]
 
@@ -886,6 +925,17 @@ dependencies = [
 name = "ethercrab-wire-derive"
 version = "0.2.0"
 source = "git+https://github.com/v-morlock/ethercrab?branch=main#d297d13389d85a4edb4e69cc98f9dd7f12626cac"
+dependencies = [
+ "criterion",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "ethercrab-wire-derive"
+version = "0.3.0"
+source = "git+https://github.com/ethercrab-rs/ethercrab?branch=main#4c7d36157fa5caab3194df494e92e08551cd2e43"
 dependencies = [
  "criterion",
  "proc-macro2",
@@ -1420,6 +1470,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11d3d7f243d5c5a8b9bb5d6dd2b1602c0cb0b9db1621bafc7ed66e35ff9fe092"
 
 [[package]]
+name = "lock_api"
+version = "0.4.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965"
+dependencies = [
+ "scopeguard",
+]
+
+[[package]]
 name = "log"
 version = "0.4.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1456,7 +1515,7 @@ dependencies = [
 [[package]]
 name = "machines"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
 
 [[package]]
 name = "matchit"
@@ -1522,7 +1581,7 @@ dependencies = [
 [[package]]
 name = "modbus"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
 dependencies = [
  "anyhow",
  "common",
@@ -1564,6 +1623,19 @@ name = "nix"
 version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71e2746dc3a24dd78b3cfcb7be93368c6de9963d30f43a6a73998a9cf4b17b46"
+dependencies = [
+ "bitflags 2.11.1",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
+ "memoffset 0.9.1",
+]
+
+[[package]]
+name = "nix"
+version = "0.31.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf20d2fde8ff38632c426f1165ed7436270b44f199fc55284c38276f9db47c3d"
 dependencies = [
  "bitflags 2.11.1",
  "cfg-if",
@@ -1833,7 +1905,7 @@ dependencies = [
 [[package]]
 name = "qitech_lib"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
 dependencies = [
  "bitvec",
  "common",
@@ -2122,7 +2194,7 @@ dependencies = [
 [[package]]
 name = "serial"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
 dependencies = [
  "anyhow",
  "tokio",
@@ -2326,6 +2398,9 @@ name = "spin"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5fe4ccb98d9c292d56fec89a5e07da7fc4cf0dc11e156b41793132775d3e591"
+dependencies = [
+ "lock_api",
+]
 
 [[package]]
 name = "stable_deref_trait"
@@ -2744,7 +2819,7 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 [[package]]
 name = "units"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=1058e40d9d63c234e55510aefe35b54938bf0a41#1058e40d9d63c234e55510aefe35b54938bf0a41"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
 dependencies = [
  "uom",
 ]

@@ -287,6 +287,8 @@ fn find_ethercat_interface() -> Result<String, anyhow::Error> {
     let interfaces = qitech_lib::ethercat_hal::interface_discovery::list_ethernet_interfaces();
     match interfaces {
         Ok(interfaces) => {
+            let mut found: Vec<String> = vec![];
+
             for interface in interfaces {
                 match interface.link_type {
                     qitech_lib::ethercat_hal::interface_discovery::LinkType::Link => (),
@@ -300,12 +302,30 @@ fn find_ethercat_interface() -> Result<String, anyhow::Error> {
                 match res {
                     Ok(_) => {
                         println!("{} is ethercat", &interface.name);
-                        return Ok(interface.name);
+                        found.push(interface.name);
                     }
                     Err(_) => println!("{} is not ethercat", &interface.name),
                 }
             }
-            return Err(anyhow::anyhow!("No EtherCAT Interface Found"));
+
+            if found.is_empty() {
+                return Err(anyhow::anyhow!("No EtherCAT Interface Found"));
+            }
+
+            // Prefer a physical interface (enX) over virtual ones (bridge, gif, etc.)
+            // Higher-numbered en interfaces (en6, en7) are usually USB/Thunderbolt
+            // adapters — more likely to be the dedicated EtherCAT link.
+            let physical: Option<&String> = found
+                .iter()
+                .filter(|n| n.starts_with("en"))
+                .max_by_key(|n| {
+                    n.strip_prefix("en")
+                        .and_then(|s| s.parse::<u32>().ok())
+                        .unwrap_or(0)
+                });
+            let choice = physical.unwrap_or(&found[0]).clone();
+            println!("Using EtherCAT interface: {choice}");
+            Ok(choice)
         }
         Err(_) => {
             return Err(anyhow::anyhow!("No EtherCAT Interface Found"));
