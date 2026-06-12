@@ -283,7 +283,7 @@ pub fn remove_machines(
     }
 }
 
-fn find_ethercat_interface() -> Result<String, anyhow::Error> {
+fn find_ethercat_interface_once() -> Result<String, anyhow::Error> {
     let interfaces = qitech_lib::ethercat_hal::interface_discovery::list_ethernet_interfaces();
     match interfaces {
         Ok(interfaces) => {
@@ -333,69 +333,80 @@ fn find_ethercat_interface() -> Result<String, anyhow::Error> {
     }
 }
 
+/// Retries interface discovery in a background thread until an interface
+/// is found, matching the old server behaviour. At boot time the EtherCAT
+/// link may not be up yet, causing the first attempt(s) to fail.
+#[cfg(not(feature = "mock"))]
+fn spawn_ethercat_interface_discovery() -> std::sync::mpsc::Receiver<String> {
+    let (iface_tx, iface_rx) = std::sync::mpsc::channel::<String>();
+    std::thread::spawn(move || {
+        loop {
+            match find_ethercat_interface_once() {
+                Ok(interface) => {
+                    let _ = iface_tx.send(interface);
+                    return;
+                }
+                Err(e) => {
+                    println!("EtherCAT interface not yet found: {}. Retrying in 1s...", e);
+                    std::thread::sleep(Duration::from_secs(1));
+                }
+            }
+        }
+    });
+    iface_rx
+}
+
 #[cfg(not(feature = "mock"))]
 fn main_logic() {
     let stay_in_preop = std::env::var("QITECH_MODE").unwrap_or_default() == "preop"
         || std::env::args().any(|a| a == "preop");
-    let mut shared_state = SharedAppState::new();
+    let shared_state = SharedAppState::new();
     let mut main_state = MainState::new();
-    let res = find_ethercat_interface();
-    let mut eth_control = match res {
-        Ok(interface) => {
-            let eth_control = optimized_ethercat_init(&interface);
-            shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
-            Some(eth_control)
-        }
-        Err(_) => None,
-    };
-
     let state = Arc::new(shared_state);
-    match &eth_control {
-        Some(ecat) => {
-            send_ecat_state(state.clone(), ecat.controller.get_state().into());
-        }
-        None => (),
-    }
 
     setup_api_and_websock(state.clone());
 
-    match &eth_control {
-        Some(control) => setup_ethercat(state.clone(), &mut main_state, control),
-        None => (),
-    };
+    let iface_rx = spawn_ethercat_interface_discovery();
 
-    match &eth_control {
-        Some(ecat) => {
-            send_ecat_state(state.clone(), ecat.controller.get_state().into());
-        }
-        None => (),
-    }
-
-    if stay_in_preop && eth_control.is_some() {
-        send_setup_done_events(state.clone());
-        println!("Staying in PreOp as requested, exiting after setup.");
-        loop {
-            std::thread::sleep(core::time::Duration::from_secs(1));
-        }
-    }
-
+    // Laser/serial machines work without EtherCAT
     detect_and_build_machines(state.clone(), &mut main_state);
     send_setup_done_events(state.clone());
 
-    // Order is important here, because when detect_and_build_machines is called
-    // Every machine assumes ethercat devices are in PreOp, finalize moves to OP
-    match &eth_control {
-        Some(ecat) => {
-            finalize_ethercat(&mut main_state, ecat);
-            send_ecat_state(state.clone(), ecat.controller.get_state().into());
-        }
-        None => (),
-    };
+    let mut eth_control: Option<
+        EtherCATControl<Arc<Mailbox>, TripleBufProducer, TripleBufConsumer, Arc<Mailbox>>,
+    > = None;
 
     let mut last_check = std::time::Instant::now();
     let hotplug_duration = Duration::from_secs(4);
 
     loop {
+        // Attach EtherCAT once the background discovery finds an interface
+        if eth_control.is_none() {
+            if let Ok(interface) = iface_rx.try_recv() {
+                let control = optimized_ethercat_init(&interface);
+                let _ = state.ethercat_thread_channel.set(control.channel.clone());
+                send_ecat_state(state.clone(), control.controller.get_state().into());
+                setup_ethercat(state.clone(), &mut main_state, &control);
+                send_ecat_state(state.clone(), control.controller.get_state().into());
+
+                if stay_in_preop {
+                    send_setup_done_events(state.clone());
+                    println!("Staying in PreOp as requested, exiting after setup.");
+                    loop {
+                        std::thread::sleep(core::time::Duration::from_secs(1));
+                    }
+                }
+
+                // Order is important here, because when detect_and_build_machines is called
+                // Every machine assumes ethercat devices are in PreOp, finalize moves to OP
+                detect_and_build_machines(state.clone(), &mut main_state);
+                send_setup_done_events(state.clone());
+                finalize_ethercat(&mut main_state, &control);
+                send_ecat_state(state.clone(), control.controller.get_state().into());
+                eth_control = Some(control);
+            }
+        }
+
         let now = std::time::Instant::now();
         match &mut eth_control {
             Some(control) => {

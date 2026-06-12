@@ -122,7 +122,7 @@ pub async fn post_write_machine_device_identification(
     // }
 
     // legacy eeprom
-    if let Some(channel) = &app_state.ethercat_thread_channel {
+    if let Some(channel) = app_state.ethercat_thread_channel.get() {
         if let Err(e) = channel.write_machine_device_info_eeprom(idents.clone()) {
             return ResponseUtil::error(&e.to_string());
         }

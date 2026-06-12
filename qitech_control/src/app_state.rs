@@ -72,7 +72,7 @@ pub struct SharedAppState {
         RwLock<HashMap<QiTechMachineIdentificationUnique, Sender<MachineMessage>>>,
     pub ethercat_meta_datas: RwLock<Vec<EtherCatDeviceMetaData>>,
     pub socketio_setup: SocketioSetup,
-    pub ethercat_thread_channel: Option<EtherCATThreadChannel>,
+    pub ethercat_thread_channel: std::sync::OnceLock<EtherCATThreadChannel>,
 }
 
 impl SharedAppState {
@@ -227,7 +227,7 @@ impl SharedAppState {
                 socket_queue_rx: RwLock::new(socket_queue_rx),
             },
             ethercat_meta_datas: RwLock::new(vec![]),
-            ethercat_thread_channel: None,
+            ethercat_thread_channel: std::sync::OnceLock::new(),
         }
     }
 }
