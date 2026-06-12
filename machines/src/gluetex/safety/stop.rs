@@ -7,6 +7,7 @@ pub enum StopReason {
     Optris1Voltage,
     Optris2Voltage,
     HeaterOverTemperature { zones: u8 },
+    Bandueberwachung,
     SleepTimer,
 }
 

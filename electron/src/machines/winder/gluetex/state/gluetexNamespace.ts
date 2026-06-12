@@ -342,6 +342,13 @@ export const voltageMonitorStateSchema = z.object({
 });
 
 /**
+ * Band monitoring state schema (from backend)
+ */
+export const bandMonitorStateSchema = z.object({
+  active: z.boolean(),
+});
+
+/**
  * Sleep timer state schema (from backend)
  */
 export const sleepTimerStateSchema = z.object({
@@ -386,6 +393,7 @@ export const stateEventDataSchema = z.object({
   inlet_feeder_tension_arm_monitor_state: tensionArmMonitorStateSchema,
   optris_1_monitor_state: voltageMonitorStateSchema,
   optris_2_monitor_state: voltageMonitorStateSchema,
+  bandueberwachung_monitor_state: bandMonitorStateSchema,
   sleep_timer_state: sleepTimerStateSchema,
   order_info_state: orderInfoStateSchema,
   valve_state: z.object({
@@ -879,6 +887,9 @@ const DEFAULT_BACKEND_EXTENDED_STATE: ExtendedStateEvent = {
       max_voltage: 8.0,
       delay_mm: 0,
       triggered: false,
+    },
+    bandueberwachung_monitor_state: {
+      active: true,
     },
     sleep_timer_state: {
       enabled: false,

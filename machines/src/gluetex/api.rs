@@ -76,6 +76,7 @@ pub enum SafetyStopReason {
     Optris1Voltage,
     Optris2Voltage,
     HeaterOverTemperature { zones: u8 },
+    Bandueberwachung,
     SleepTimer,
 }
 
@@ -90,6 +91,7 @@ impl From<super::safety::StopReason> for SafetyStopReason {
             super::safety::StopReason::HeaterOverTemperature { zones } => {
                 Self::HeaterOverTemperature { zones }
             }
+            super::safety::StopReason::Bandueberwachung => Self::Bandueberwachung,
             super::safety::StopReason::SleepTimer => Self::SleepTimer,
         }
     }
@@ -348,8 +350,6 @@ pub struct LiveValuesEvent {
     pub optris_1_voltage: f64,
     /// optris 2 voltage (role 10 AI2)
     pub optris_2_voltage: f64,
-    /// extra analog input 1 voltage (role 4 AI2)
-    pub extra_analog_input_1: f64,
     /// extra analog input 2 voltage (role 8 AI2)
     pub extra_analog_input_2: f64,
     /// extra analog input 3 voltage (role 11 AI1)
@@ -413,6 +413,8 @@ pub struct StateEvent {
     pub optris_1_monitor_state: VoltageMonitorState,
     /// optris 2 voltage monitor state
     pub optris_2_monitor_state: VoltageMonitorState,
+    /// band monitoring state
+    pub bandueberwachung_monitor_state: BandMonitorState,
     /// sleep timer state
     pub sleep_timer_state: SleepTimerState,
     /// order information state
@@ -658,6 +660,12 @@ pub struct VoltageMonitorState {
     pub delay_mm: f64,
     /// is monitor currently triggered (limits exceeded)
     pub triggered: bool,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct BandMonitorState {
+    /// is band currently active (present)
+    pub active: bool,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]

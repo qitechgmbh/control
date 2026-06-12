@@ -485,7 +485,7 @@ impl MachineNewTrait for Gluetex {
 
             let mode = GluetexMode::Standby;
 
-            let extra_analog_input_1 =
+            let bandueberwachung_input =
                 AnalogInput::new(el7031_0030.clone(), EL7031_0030AnalogInputPort::AI2);
             let extra_analog_input_2 = AnalogInput::new(
                 el7031_addon3_shared.clone(),
@@ -550,8 +550,8 @@ impl MachineNewTrait for Gluetex {
                     EL7031_0030AnalogInputPort::AI2,
                 ),
                 optris_2: AnalogInput::new(el7031_addon4, EL7031_0030AnalogInputPort::AI2),
+                bandueberwachung_input,
                 extra_analog_inputs: [
-                    extra_analog_input_1,
                     extra_analog_input_2,
                     extra_analog_input_3,
                     extra_analog_input_4,
@@ -642,6 +642,8 @@ impl MachineNewTrait for Gluetex {
                 inlet_feeder_tension_arm_monitor: super::TensionArmMonitor::new("InletFeeder"),
                 optris_1_monitor: super::VoltageMonitor::new("Optris 1"),
                 optris_2_monitor: super::VoltageMonitor::new("Optris 2"),
+                bandueberwachung_triggered: false,
+                bandueberwachung_not_active_since: None,
                 sleep_timer: super::SleepTimer::new(),
                 optris_1_last_distance_mm: 0.0,
                 optris_2_last_distance_mm: 0.0,

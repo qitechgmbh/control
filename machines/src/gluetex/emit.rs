@@ -299,10 +299,9 @@ impl Gluetex {
             },
             optris_1_voltage: self.optris_1_monitor.get_delayed_voltage(),
             optris_2_voltage: self.optris_2_monitor.get_delayed_voltage(),
-            extra_analog_input_1: read_voltage(&self.extra_analog_inputs[0]),
-            extra_analog_input_2: read_voltage(&self.extra_analog_inputs[1]),
-            extra_analog_input_3: read_voltage(&self.extra_analog_inputs[2]),
-            extra_analog_input_4: read_voltage(&self.extra_analog_inputs[3]),
+            extra_analog_input_2: read_voltage(&self.extra_analog_inputs[0]),
+            extra_analog_input_3: read_voltage(&self.extra_analog_inputs[1]),
+            extra_analog_input_4: read_voltage(&self.extra_analog_inputs[2]),
             addon_motor_5_rpm: self
                 .stepper_5_controller
                 .steps_to_reference_rpm(self.stepper_5.get_speed()),
@@ -623,6 +622,9 @@ impl Gluetex {
                 max_voltage: self.optris_2_monitor.config.max_voltage,
                 delay_mm: self.optris_2_monitor.config.delay_mm,
                 triggered: self.optris_2_monitor.triggered,
+            },
+            bandueberwachung_monitor_state: api::BandMonitorState {
+                active: !self.bandueberwachung_triggered,
             },
             sleep_timer_state: api::SleepTimerState {
                 enabled: self.sleep_timer.config.enabled,

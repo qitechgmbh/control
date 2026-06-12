@@ -56,6 +56,10 @@ impl MachineAct for Gluetex {
             self.emit_state();
         }
 
+        if super::safety::run_bandueberwachung_check(self) {
+            self.emit_state();
+        }
+
         if super::safety::run_sleep_timer_check(self) {
             self.emit_state();
         }

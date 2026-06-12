@@ -55,6 +55,7 @@ export function GluetexErrorBanner() {
     reason === "InletTensionArm";
   const isVoltage = reason === "Optris1Voltage" || reason === "Optris2Voltage";
   const isSleepTimer = reason === "SleepTimer";
+  const isBandueberwachung = reason === "Bandueberwachung";
   const isHeaterOverTemp =
     typeof reason === "object" &&
     reason !== null &&
@@ -205,10 +206,29 @@ export function GluetexErrorBanner() {
               </div>
             )}
 
+            {isBandueberwachung && (
+              <div className="space-y-3">
+                <p className="text-red-600/90 dark:text-red-400/90">
+                  The band monitoring system detected that the band is absent or
+                  broken. The machine was automatically stopped to prevent
+                  damage.
+                </p>
+                <div className="rounded-md bg-red-500/15 p-3">
+                  <p className="font-semibold text-red-600 dark:text-red-400">
+                    Band Monitoring Alert
+                  </p>
+                  <p className="text-sm text-red-600/90 dark:text-red-400/90">
+                    Check that the band is properly loaded and intact.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {!isTensionArm &&
               !isVoltage &&
               !isHeaterOverTemp &&
-              !isSleepTimer && (
+              !isSleepTimer &&
+              !isBandueberwachung && (
                 <p className="text-red-600/90 dark:text-red-400/90">
                   An unexpected safety condition triggered an automatic stop.
                   Check the machine before resuming.

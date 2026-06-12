@@ -325,6 +325,26 @@ export function GluetexOverviewPage() {
                 </span>
               </div>
             </div>
+
+            {/* Bandüberwachung */}
+            <div>
+              <h3 className="mb-1 text-sm font-semibold">Band</h3>
+              <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
+                <div
+                  className={cn(
+                    "h-5 w-5 rounded-full",
+                    state?.bandueberwachung_monitor_state?.active
+                      ? "bg-green-500"
+                      : "bg-red-500",
+                  )}
+                />
+                <span className="text-xs">
+                  {state?.bandueberwachung_monitor_state?.active
+                    ? "Present"
+                    : "Absent"}
+                </span>
+              </div>
+            </div>
           </div>
         </ControlCard>
 

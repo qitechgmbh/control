@@ -95,6 +95,39 @@ pub fn run_tension_and_voltage_checks(machine: &mut Gluetex) -> bool {
     state_changed
 }
 
+/// Check band monitoring; may trigger a motors-only safety stop.
+///
+/// Returns whether monitor state changed (caller should emit state when true).
+pub fn run_bandueberwachung_check(machine: &mut Gluetex) -> bool {
+    const BAND_ACTIVE_THRESHOLD_VOLTS: f64 = 10.0;
+    const BAND_DEBOUNCE_MS: u64 = 200;
+
+    let voltage = read_optris_voltage(&machine.bandueberwachung_input);
+    let active = voltage > BAND_ACTIVE_THRESHOLD_VOLTS;
+    let was_triggered = machine.bandueberwachung_triggered;
+
+    if !active {
+        let since = machine
+            .bandueberwachung_not_active_since
+            .get_or_insert_with(std::time::Instant::now);
+        if !was_triggered && since.elapsed() >= std::time::Duration::from_millis(BAND_DEBOUNCE_MS) {
+            machine.bandueberwachung_triggered = true;
+            tracing::warn!(voltage, "Bandüberwachung: band absent — safety stop");
+            machine.apply_safety_stop(Gluetex::safety_stop_motors_only(
+                StopReason::Bandueberwachung,
+            ));
+            return true;
+        }
+    } else {
+        machine.bandueberwachung_not_active_since = None;
+        if was_triggered {
+            machine.bandueberwachung_triggered = false;
+            return true;
+        }
+    }
+    false
+}
+
 /// Check heater over-temperature after PID updates; may trigger a full safety stop.
 pub fn run_heater_overtemperature_check(machine: &mut Gluetex) -> bool {
     if !machine.heaters.any_over_temperature() {

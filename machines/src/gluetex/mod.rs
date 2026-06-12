@@ -248,8 +248,10 @@ pub struct Gluetex {
     // optris temperature sensors (analog voltage inputs)
     pub optris_1: AnalogInput,
     pub optris_2: AnalogInput,
+    // band monitoring (analog input converted to digital)
+    pub bandueberwachung_input: AnalogInput,
     // unused analog inputs from EL7031 devices
-    pub extra_analog_inputs: [AnalogInput; 4],
+    pub extra_analog_inputs: [AnalogInput; 3],
 
     // Monitoring systems
     pub winder_tension_arm_monitor: TensionArmMonitor,
@@ -257,6 +259,8 @@ pub struct Gluetex {
     pub inlet_feeder_tension_arm_monitor: TensionArmMonitor,
     pub optris_1_monitor: VoltageMonitor,
     pub optris_2_monitor: VoltageMonitor,
+    pub bandueberwachung_triggered: bool,
+    pub bandueberwachung_not_active_since: Option<std::time::Instant>,
     pub sleep_timer: SleepTimer,
 
     // Distance tracking for optris voltage delay
