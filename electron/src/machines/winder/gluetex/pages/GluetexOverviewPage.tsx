@@ -308,41 +308,44 @@ export function GluetexOverviewPage() {
               </div>
             </div>
 
-            {/* Slave Puller */}
+            {/* Slave Puller & Band Monitoring */}
             <div>
-              <h3 className="mb-1 text-sm font-semibold">Slave Puller</h3>
-              <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
-                <div
-                  className={cn(
-                    "h-5 w-5 rounded-full",
-                    state?.slave_puller_state?.enabled
-                      ? "bg-green-500"
-                      : "bg-gray-300",
-                  )}
-                />
-                <span className="text-xs">
-                  {state?.slave_puller_state?.enabled ? "Enabled" : "Disabled"}
-                </span>
-              </div>
-            </div>
-
-            {/* Bandüberwachung */}
-            <div>
-              <h3 className="mb-1 text-sm font-semibold">Band</h3>
-              <div className="flex flex-col items-center gap-1 rounded-lg border p-2">
-                <div
-                  className={cn(
-                    "h-5 w-5 rounded-full",
-                    state?.bandueberwachung_monitor_state?.active
-                      ? "bg-green-500"
-                      : "bg-red-500",
-                  )}
-                />
-                <span className="text-xs">
-                  {state?.bandueberwachung_monitor_state?.active
-                    ? "Present"
-                    : "Absent"}
-                </span>
+              <h3 className="mb-1 text-sm font-semibold">
+                Slave Puller & Band
+              </h3>
+              <div className="flex gap-2">
+                <div className="flex flex-1 flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs">Slave Puller</span>
+                  <div
+                    className={cn(
+                      "h-5 w-5 rounded-full",
+                      state?.slave_puller_state?.enabled
+                        ? "bg-green-500"
+                        : "bg-gray-300",
+                    )}
+                  />
+                  <span className="text-xs">
+                    {state?.slave_puller_state?.enabled
+                      ? "Enabled"
+                      : "Disabled"}
+                  </span>
+                </div>
+                <div className="flex flex-1 flex-col items-center gap-1 rounded-lg border p-2">
+                  <span className="text-xs">Band</span>
+                  <div
+                    className={cn(
+                      "h-5 w-5 rounded-full",
+                      state?.bandueberwachung_monitor_state?.active
+                        ? "bg-green-500"
+                        : "bg-red-500",
+                    )}
+                  />
+                  <span className="text-xs">
+                    {state?.bandueberwachung_monitor_state?.active
+                      ? "Present"
+                      : "Absent"}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

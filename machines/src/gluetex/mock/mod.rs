@@ -9,11 +9,11 @@ pub mod new;
 
 #[cfg(feature = "gluetex-mock")]
 use super::api::{
-    AddonMotor5State, AddonMotorState, AddonMotorTensionControlState, ConnectedMachineState,
-    ExtraOutputsState, GluetexNamespace, HeatingPidStates, HeatingStates, LiveValuesEvent,
-    ModeState, OrderInfoState, PullerState, SleepTimerState, SpoolAutomaticActionState,
-    SpoolSpeedControllerState, StateEvent, TensionArmMonitorState, TensionArmState, TraverseState,
-    ValveState, VoltageMonitorState,
+    AddonMotor5State, AddonMotorState, AddonMotorTensionControlState, BandMonitorState,
+    ConnectedMachineState, ExtraOutputsState, GluetexNamespace, HeatingPidStates, HeatingStates,
+    LiveValuesEvent, ModeState, OrderInfoState, PullerState, SleepTimerState,
+    SpoolAutomaticActionState, SpoolSpeedControllerState, StateEvent, TensionArmMonitorState,
+    TensionArmState, TraverseState, ValveState, VoltageMonitorState,
 };
 #[cfg(feature = "gluetex-mock")]
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
@@ -55,6 +55,7 @@ pub struct Gluetex {
     inlet_feeder_tension_arm_monitor_state: TensionArmMonitorState,
     optris_1_monitor_state: VoltageMonitorState,
     optris_2_monitor_state: VoltageMonitorState,
+    bandueberwachung_monitor_state: BandMonitorState,
     sleep_timer_state: SleepTimerState,
     order_info_state: OrderInfoState,
     extra_outputs_state: ExtraOutputsState,
@@ -136,6 +137,7 @@ impl Gluetex {
                 .clone(),
             optris_1_monitor_state: self.optris_1_monitor_state.clone(),
             optris_2_monitor_state: self.optris_2_monitor_state.clone(),
+            bandueberwachung_monitor_state: self.bandueberwachung_monitor_state.clone(),
             sleep_timer_state: self.sleep_timer_state.clone(),
             order_info_state: self.order_info_state.clone(),
             extra_outputs_state: self.extra_outputs_state.clone(),

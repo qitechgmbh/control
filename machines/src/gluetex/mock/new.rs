@@ -1,10 +1,10 @@
 use super::Gluetex;
 use crate::gluetex::api::{
-    AddonMotor5State, AddonMotorState, AddonMotorTensionControlState, ConnectedMachineState,
-    ExtraOutputsState, GluetexNamespace, HeatingPidSettings, HeatingPidStates, HeatingStates,
-    LiveValuesEvent, ModeState, OrderInfoState, PullerState, SlavePullerState, SleepTimerState,
-    SpoolAutomaticActionState, SpoolSpeedControllerState, TensionArmMonitorState, TensionArmState,
-    TraverseState, ValveState, VoltageMonitorState,
+    AddonMotor5State, AddonMotorState, AddonMotorTensionControlState, BandMonitorState,
+    ConnectedMachineState, ExtraOutputsState, GluetexNamespace, HeatingPidSettings,
+    HeatingPidStates, HeatingStates, LiveValuesEvent, ModeState, OrderInfoState, PullerState,
+    SlavePullerState, SleepTimerState, SpoolAutomaticActionState, SpoolSpeedControllerState,
+    TensionArmMonitorState, TensionArmState, TraverseState, ValveState, VoltageMonitorState,
 };
 use crate::machine_identification::MachineIdentificationUnique;
 use crate::{MachineNewHardware, MachineNewParams, MachineNewTrait};
@@ -124,6 +124,7 @@ impl MachineNewTrait for Gluetex {
             inlet_feeder_tension_arm_monitor_state: TensionArmMonitorState::default(),
             optris_1_monitor_state: VoltageMonitorState::default(),
             optris_2_monitor_state: VoltageMonitorState::default(),
+            bandueberwachung_monitor_state: BandMonitorState { active: true },
             sleep_timer_state: SleepTimerState::default(),
             order_info_state: OrderInfoState::default(),
             extra_outputs_state: ExtraOutputsState::default(),
