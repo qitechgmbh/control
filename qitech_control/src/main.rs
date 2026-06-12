@@ -366,47 +366,49 @@ fn main_logic() {
 
     setup_api_and_websock(state.clone());
 
+    // Background thread retries interface discovery until the EtherCAT link
+    // comes up. On boot the link may not be ready immediately.
     let iface_rx = spawn_ethercat_interface_discovery();
 
-    // Laser/serial machines work without EtherCAT
+    // Block until the EtherCAT interface is found (same behaviour as the old
+    // synchronous find_ethercat_interface, but with automatic retries).
+    let interface = iface_rx
+        .recv()
+        .expect("EtherCAT interface discovery channel closed unexpectedly");
+
+    let control = optimized_ethercat_init(&interface);
+    let _ = state.ethercat_thread_channel.set(control.channel.clone());
+    send_ecat_state(state.clone(), control.controller.get_state().into());
+
+    setup_ethercat(state.clone(), &mut main_state, &control);
+    send_ecat_state(state.clone(), control.controller.get_state().into());
+
+    if stay_in_preop {
+        // In PreOp mode devices are reachable via CoE (mailbox / EEPROM) but
+        // process-data exchange (PDO) is not active. Machines are intentionally
+        // not built here — they assume subdevices are in PreOp and finalize
+        // would move them to OP, which we skip.
+        send_setup_done_events(state.clone());
+        println!("Staying in PreOp as requested, exiting after setup.");
+        loop {
+            std::thread::sleep(core::time::Duration::from_secs(1));
+        }
+    }
+
+    // Order is important here: detect_and_build_machines assumes EtherCAT
+    // devices are already in PreOp; finalize_ethercat then moves them to OP.
     detect_and_build_machines(state.clone(), &mut main_state);
     send_setup_done_events(state.clone());
 
-    let mut eth_control: Option<
-        EtherCATControl<Arc<Mailbox>, TripleBufProducer, TripleBufConsumer, Arc<Mailbox>>,
-    > = None;
+    finalize_ethercat(&mut main_state, &control);
+    send_ecat_state(state.clone(), control.controller.get_state().into());
+
+    let mut eth_control = Some(control);
 
     let mut last_check = std::time::Instant::now();
     let hotplug_duration = Duration::from_secs(4);
 
     loop {
-        // Attach EtherCAT once the background discovery finds an interface
-        if eth_control.is_none() {
-            if let Ok(interface) = iface_rx.try_recv() {
-                let control = optimized_ethercat_init(&interface);
-                let _ = state.ethercat_thread_channel.set(control.channel.clone());
-                send_ecat_state(state.clone(), control.controller.get_state().into());
-                setup_ethercat(state.clone(), &mut main_state, &control);
-                send_ecat_state(state.clone(), control.controller.get_state().into());
-
-                if stay_in_preop {
-                    send_setup_done_events(state.clone());
-                    println!("Staying in PreOp as requested, exiting after setup.");
-                    loop {
-                        std::thread::sleep(core::time::Duration::from_secs(1));
-                    }
-                }
-
-                // Order is important here, because when detect_and_build_machines is called
-                // Every machine assumes ethercat devices are in PreOp, finalize moves to OP
-                detect_and_build_machines(state.clone(), &mut main_state);
-                send_setup_done_events(state.clone());
-                finalize_ethercat(&mut main_state, &control);
-                send_ecat_state(state.clone(), control.controller.get_state().into());
-                eth_control = Some(control);
-            }
-        }
-
         let now = std::time::Instant::now();
         match &mut eth_control {
             Some(control) => {
