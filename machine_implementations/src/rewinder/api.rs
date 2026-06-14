@@ -21,6 +21,7 @@ pub enum Mode {
     Standby,
     Hold,
     Pull,
+    Prepare,
     Rewind,
 }
 
@@ -30,6 +31,7 @@ impl From<RewinderMode> for Mode {
             RewinderMode::Standby => Self::Standby,
             RewinderMode::Hold => Self::Hold,
             RewinderMode::Pull => Self::Pull,
+            RewinderMode::Prepare => Self::Prepare,
             RewinderMode::Rewind => Self::Rewind,
         }
     }
@@ -41,6 +43,7 @@ impl From<Mode> for RewinderMode {
             Mode::Standby => Self::Standby,
             Mode::Hold => Self::Hold,
             Mode::Pull => Self::Pull,
+            Mode::Prepare => Self::Prepare,
             Mode::Rewind => Self::Rewind,
         }
     }
@@ -60,6 +63,12 @@ pub enum Mutation {
     SetTakeupSpoolAdaptiveAccelerationFactor(f64),
     SetTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier(f64),
     SetSourceTensionTarget(f64),
+    SetTakeupTensionArmControl(TensionArmControlState),
+    SetSourceTensionArmControl(TensionArmControlState),
+    SetPrepareControl(PrepareControlState),
+    SetRewindAutomaticRequiredMeters(f64),
+    SetRewindAutomaticAction(RewindAutomaticActionMode),
+    ResetRewindProgress,
     ZeroTakeupTensionArm,
     ZeroSourceTensionArm,
     SetTraverseLimitOuter(f64),
@@ -79,6 +88,7 @@ pub struct LiveValuesEvent {
     pub source_spool_rpm: f64,
     pub takeup_tension_arm_angle: f64,
     pub source_tension_arm_angle: f64,
+    pub rewind_progress: f64,
 }
 
 impl LiveValuesEvent {
@@ -95,8 +105,12 @@ pub struct StateEvent {
     pub puller_state: PullerState,
     pub takeup_spool_state: TakeupSpoolState,
     pub source_spool_state: SourceSpoolState,
+    pub rewind_automatic_action_state: RewindAutomaticActionState,
     pub takeup_tension_arm_state: TensionArmState,
     pub source_tension_arm_state: TensionArmState,
+    pub takeup_tension_arm_control_state: TensionArmControlState,
+    pub source_tension_arm_control_state: TensionArmControlState,
+    pub prepare_control_state: PrepareControlState,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -141,6 +155,35 @@ pub struct TakeupSpoolState {
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct SourceSpoolState {
     pub adaptive_tension_target: f64,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Copy, Default)]
+pub struct TensionArmControlState {
+    pub hard_min_angle: f64,
+    pub hard_max_angle: f64,
+    pub start_min_angle: f64,
+    pub start_max_angle: f64,
+    pub target_angle: f64,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Copy, Default)]
+pub struct PrepareControlState {
+    pub tolerance_angle: f64,
+    pub settle_rate: f64,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+pub enum RewindAutomaticActionMode {
+    #[default]
+    NoAction,
+    Pull,
+    Hold,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct RewindAutomaticActionState {
+    pub required_meters: f64,
+    pub mode: RewindAutomaticActionMode,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -224,6 +267,18 @@ impl MachineApi for super::Rewinder {
             Mutation::SetSourceTensionTarget(target) => {
                 self.source_spool_set_adaptive_tension_target(target)
             }
+            Mutation::SetTakeupTensionArmControl(config) => {
+                self.set_takeup_tension_arm_control(config)
+            }
+            Mutation::SetSourceTensionArmControl(config) => {
+                self.set_source_tension_arm_control(config)
+            }
+            Mutation::SetPrepareControl(config) => self.set_prepare_control(config),
+            Mutation::SetRewindAutomaticRequiredMeters(meters) => {
+                self.set_rewind_automatic_required_meters(meters)
+            }
+            Mutation::SetRewindAutomaticAction(mode) => self.set_rewind_automatic_action(mode),
+            Mutation::ResetRewindProgress => self.reset_rewind_progress(std::time::Instant::now()),
             Mutation::ZeroTakeupTensionArm => self.takeup_tension_arm_zero(),
             Mutation::ZeroSourceTensionArm => self.source_tension_arm_zero(),
             Mutation::SetTraverseLimitOuter(limit) => self.traverse_set_limit_outer(limit),

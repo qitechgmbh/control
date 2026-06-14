@@ -18,7 +18,13 @@ import {
 } from "@/lib/timeseries";
 import { useMemo } from "react";
 
-export const modeSchema = z.enum(["Standby", "Hold", "Pull", "Rewind"]);
+export const modeSchema = z.enum([
+  "Standby",
+  "Hold",
+  "Pull",
+  "Prepare",
+  "Rewind",
+]);
 export type Mode = z.infer<typeof modeSchema>;
 
 export const gearRatioSchema = z.enum(["OneToOne", "OneToFive", "OneToTen"]);
@@ -49,6 +55,7 @@ export const liveValuesEventDataSchema = z.object({
   source_spool_rpm: z.number(),
   takeup_tension_arm_angle: z.number(),
   source_tension_arm_angle: z.number(),
+  rewind_progress: z.number(),
 });
 
 export const modeStateSchema = z.object({
@@ -90,8 +97,35 @@ export const sourceSpoolStateSchema = z.object({
   adaptive_tension_target: z.number(),
 });
 
+export const rewindAutomaticActionModeSchema = z.enum([
+  "NoAction",
+  "Pull",
+  "Hold",
+]);
+export type RewindAutomaticActionMode = z.infer<
+  typeof rewindAutomaticActionModeSchema
+>;
+
+export const rewindAutomaticActionStateSchema = z.object({
+  required_meters: z.number(),
+  mode: rewindAutomaticActionModeSchema,
+});
+
 export const tensionArmStateSchema = z.object({
   zeroed: z.boolean(),
+});
+
+export const tensionArmControlStateSchema = z.object({
+  hard_min_angle: z.number(),
+  hard_max_angle: z.number(),
+  start_min_angle: z.number(),
+  start_max_angle: z.number(),
+  target_angle: z.number(),
+});
+
+export const prepareControlStateSchema = z.object({
+  tolerance_angle: z.number(),
+  settle_rate: z.number(),
 });
 
 export const stateEventDataSchema = z.object({
@@ -101,8 +135,12 @@ export const stateEventDataSchema = z.object({
   puller_state: pullerStateSchema,
   takeup_spool_state: takeupSpoolStateSchema,
   source_spool_state: sourceSpoolStateSchema,
+  rewind_automatic_action_state: rewindAutomaticActionStateSchema,
   takeup_tension_arm_state: tensionArmStateSchema,
   source_tension_arm_state: tensionArmStateSchema,
+  takeup_tension_arm_control_state: tensionArmControlStateSchema,
+  source_tension_arm_control_state: tensionArmControlStateSchema,
+  prepare_control_state: prepareControlStateSchema,
 });
 
 export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
@@ -119,6 +157,7 @@ export type RewinderNamespaceStore = {
   sourceSpoolRpm: TimeSeries;
   takeupTensionArmAngle: TimeSeries;
   sourceTensionArmAngle: TimeSeries;
+  rewindProgress: TimeSeries;
 };
 
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
@@ -137,6 +176,8 @@ const {
   initialTimeSeries: sourceTensionArmAngle,
   insert: addSourceTensionArmAngle,
 } = createTimeSeries();
+const { initialTimeSeries: rewindProgress, insert: addRewindProgress } =
+  createTimeSeries();
 
 export const createRewinderNamespaceStore =
   (): StoreApi<RewinderNamespaceStore> =>
@@ -149,6 +190,7 @@ export const createRewinderNamespaceStore =
       sourceSpoolRpm,
       takeupTensionArmAngle,
       sourceTensionArmAngle,
+      rewindProgress,
     }));
 
 export function rewinderMessageHandler(
@@ -180,6 +222,7 @@ export function rewinderMessageHandler(
           source_spool_rpm,
           takeup_tension_arm_angle,
           source_tension_arm_angle,
+          rewind_progress,
         } = liveValuesEvent.data;
 
         updateStore((state) => {
@@ -198,6 +241,7 @@ export function rewinderMessageHandler(
             ["sourceSpoolRpm", source_spool_rpm],
             ["takeupTensionArmAngle", takeup_tension_arm_angle],
             ["sourceTensionArmAngle", source_tension_arm_angle],
+            ["rewindProgress", rewind_progress],
           ];
 
           for (const [key, value] of values) {
@@ -225,6 +269,11 @@ export function rewinderMessageHandler(
             } else if (key === "sourceTensionArmAngle") {
               next.sourceTensionArmAngle = addSourceTensionArmAngle(
                 state.sourceTensionArmAngle,
+                timeseriesValue,
+              );
+            } else if (key === "rewindProgress") {
+              next.rewindProgress = addRewindProgress(
+                state.rewindProgress,
                 timeseriesValue,
               );
             }
