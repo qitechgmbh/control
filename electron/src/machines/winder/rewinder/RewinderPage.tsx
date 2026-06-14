@@ -14,6 +14,18 @@ export function RewinderPage() {
           title: "Control",
           icon: "lu:CirclePlay",
         },
+        {
+          link: "settings",
+          activeLink: "settings",
+          title: "Settings",
+          icon: "lu:Settings",
+        },
+        {
+          link: "graphs",
+          activeLink: "graphs",
+          title: "Graphs",
+          icon: "lu:ChartLine",
+        },
       ]}
     />
   );

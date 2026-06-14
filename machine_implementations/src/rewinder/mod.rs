@@ -1,8 +1,14 @@
 pub mod act;
 pub mod api;
+pub mod auto_stop;
+pub mod axis_modes;
+pub mod diagnostics;
 pub mod emit;
 pub mod new;
+pub mod prepare_control;
 pub mod rewind_control;
+pub mod rewind_sequence;
+pub mod tension_arms;
 
 use crate::winder2::{
     puller_speed_controller::PullerSpeedController, spool_speed_controller::SpoolSpeedController,
@@ -28,6 +34,7 @@ pub const TRAVERSE_PORT: usize = 0;
 pub const PULLER_PORT: usize = 0;
 pub const TAKEUP_SPOOL_PORT: usize = 0;
 pub const SOURCE_SPOOL_PORT: usize = 0;
+pub const DIAGNOSTIC_LOGS_ENABLED: bool = false;
 
 pub const EK1100_ROLE: u16 = 0;
 pub const EL2002_ROLE: u16 = 1;
@@ -35,6 +42,8 @@ pub const TAKEUP_SPOOL_ROLE: u16 = 2;
 pub const TRAVERSE_ROLE: u16 = 3;
 pub const PULLER_ROLE: u16 = 4;
 pub const SOURCE_SPOOL_ROLE: u16 = 5;
+pub const PULL_MODE_SOURCE_ASSIST_RPM_PER_M_PER_MIN: f64 = 2.75;
+pub const PULL_MODE_SOURCE_ASSIST_MAX_RPM: f64 = 35.0;
 
 impl QiTechMachine for Rewinder {}
 
@@ -57,6 +66,10 @@ pub struct Rewinder {
     pub machine_identification_unique: MachineIdentificationUnique,
 
     pub mode: RewinderMode,
+    pub takeup_spool_mode: TakeupSpoolMode,
+    pub source_spool_mode: SourceSpoolMode,
+    pub traverse_mode: TraverseMode,
+    pub puller_mode: PullerMode,
     pub puller_speed_controller: PullerSpeedController,
     pub takeup_spool_speed_controller: SpoolSpeedController,
     pub source_spool_speed_controller: SpoolSpeedController,
@@ -67,6 +80,7 @@ pub struct Rewinder {
     rewind_hard_stop_reason: Option<String>,
     rewind_puller_command_speed: Option<Velocity>,
     pub rewind_control: RewindControlState,
+    pub rewind_automatic_action: auto_stop::RewindAutomaticAction,
     emitted_default_state: bool,
     last_can_rewind: bool,
 }
@@ -77,115 +91,48 @@ impl Rewinder {
         machine: MACHINE_REWINDER_V1,
     };
 
-    pub fn can_rewind(&self) -> bool {
-        self.rewind_block_reason().is_none()
-    }
-
-    pub fn rewind_block_reason(&self) -> Option<&'static str> {
-        self.rewind_block_reason_with_start_window(true)
-    }
-
-    pub fn runtime_rewind_block_reason(&self) -> Option<&'static str> {
-        self.rewind_block_reason_with_start_window(false)
-    }
-
-    fn rewind_block_reason_with_start_window(
-        &self,
-        enforce_start_window: bool,
-    ) -> Option<&'static str> {
-        if !self.takeup_tension_arm.zeroed {
-            Some("takeup tension arm is not zeroed")
-        } else if !self.source_tension_arm.zeroed {
-            Some("source tension arm is not zeroed")
-        } else if !self.traverse_controller.is_homed() {
-            Some("traverse is not homed")
-        } else if self.traverse_controller.is_going_home() {
-            Some("traverse is still homing")
-        } else if enforce_start_window
-            && self
-                .source_tension_arm
-                .get_angle()
-                .map(Self::normalize_tension_arm_angle_deg)
-                .map_or(true, |angle| {
-                    !(Self::SOURCE_TENSION_ARM_START_MIN_ANGLE_DEG
-                        ..=Self::SOURCE_TENSION_ARM_START_MAX_ANGLE_DEG)
-                        .contains(&angle)
-                })
-        {
-            Some("source tension arm is outside rewind start range")
-        } else if enforce_start_window
-            && self
-                .takeup_tension_arm
-                .get_angle()
-                .map(Self::normalize_tension_arm_angle_deg)
-                .map_or(true, |angle| {
-                    !(Self::TAKEUP_TENSION_ARM_START_MIN_ANGLE_DEG
-                        ..=Self::TAKEUP_TENSION_ARM_START_MAX_ANGLE_DEG)
-                        .contains(&angle)
-                })
-        {
-            Some("takeup tension arm is outside rewind start range")
-        } else if self
-            .source_tension_arm
-            .get_angle()
-            .map(Self::normalize_tension_arm_angle_deg)
-            .map_or(true, |angle| {
-                !(Self::SOURCE_TENSION_ARM_MIN_ANGLE_DEG..=Self::SOURCE_TENSION_ARM_MAX_ANGLE_DEG)
-                    .contains(&angle)
-            })
-        {
-            Some("source tension arm is outside rewind range")
-        } else if self
-            .takeup_tension_arm
-            .get_angle()
-            .map(Self::normalize_tension_arm_angle_deg)
-            .map_or(true, |angle| {
-                !(Self::TAKEUP_TENSION_ARM_MIN_ANGLE_DEG..=Self::TAKEUP_TENSION_ARM_MAX_ANGLE_DEG)
-                    .contains(&angle)
-            })
-        {
-            Some("takeup tension arm is outside rewind range")
-        } else {
-            None
-        }
-    }
-
     pub fn rewind_motion_permitted(&self) -> bool {
         matches!(self.mode, RewinderMode::Rewind)
     }
 
     pub fn puller_motion_permitted(&self) -> bool {
-        matches!(self.mode, RewinderMode::Pull)
-            || (self.rewind_motion_permitted()
-                && matches!(
-                    self.rewind_phase,
-                    RewindPhase::CrawlStart | RewindPhase::Rewind
-                ))
+        matches!(self.puller_mode, PullerMode::Pull)
+            && (matches!(self.mode, RewinderMode::Pull | RewinderMode::Prepare)
+                || (self.rewind_motion_permitted()
+                    && matches!(
+                        self.rewind_phase,
+                        RewindPhase::CrawlStart | RewindPhase::Rewind
+                    )))
     }
 
     pub fn takeup_spool_motion_permitted(&self) -> bool {
-        self.rewind_motion_permitted()
-            && matches!(
-                self.rewind_phase,
-                RewindPhase::Precharge | RewindPhase::CrawlStart | RewindPhase::Rewind
-            )
+        matches!(self.takeup_spool_mode, TakeupSpoolMode::Drive)
+            && (matches!(self.mode, RewinderMode::Prepare)
+                || (self.rewind_motion_permitted()
+                    && matches!(
+                        self.rewind_phase,
+                        RewindPhase::Precharge | RewindPhase::CrawlStart | RewindPhase::Rewind
+                    )))
     }
 
     pub fn source_spool_motion_permitted(&self) -> bool {
-        self.rewind_motion_permitted()
-            && matches!(
-                self.rewind_phase,
-                RewindPhase::Precharge | RewindPhase::CrawlStart | RewindPhase::Rewind
-            )
+        matches!(self.source_spool_mode, SourceSpoolMode::Drive)
+            && (matches!(self.mode, RewinderMode::Pull | RewinderMode::Prepare)
+                || (self.rewind_motion_permitted()
+                    && matches!(
+                        self.rewind_phase,
+                        RewindPhase::Precharge | RewindPhase::CrawlStart | RewindPhase::Rewind
+                    )))
     }
 
     pub fn traverse_motion_permitted(&self) -> bool {
-        matches!(self.mode, RewinderMode::Hold)
-            || (self.rewind_motion_permitted()
-                && matches!(
-                    self.rewind_phase,
-                    RewindPhase::CrawlStart | RewindPhase::Rewind
-                ))
+        !matches!(self.traverse_mode, TraverseMode::Standby)
+            && (matches!(self.mode, RewinderMode::Hold)
+                || (self.rewind_motion_permitted()
+                    && matches!(
+                        self.rewind_phase,
+                        RewindPhase::CrawlStart | RewindPhase::Rewind
+                    )))
     }
 
     fn validate_traverse_limits(inner: Length, outer: Length) -> bool {
@@ -208,6 +155,7 @@ pub enum RewinderMode {
     Standby,
     Hold,
     Pull,
+    Prepare,
     Rewind,
 }
 
@@ -219,4 +167,72 @@ pub enum RewindPhase {
     CrawlStart,
     Rewind,
     FaultHold,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TakeupSpoolMode {
+    Standby,
+    Hold,
+    Drive,
+}
+
+impl From<RewinderMode> for TakeupSpoolMode {
+    fn from(mode: RewinderMode) -> Self {
+        match mode {
+            RewinderMode::Standby => Self::Standby,
+            RewinderMode::Hold | RewinderMode::Pull => Self::Hold,
+            RewinderMode::Prepare | RewinderMode::Rewind => Self::Drive,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SourceSpoolMode {
+    Standby,
+    Hold,
+    Drive,
+}
+
+impl From<RewinderMode> for SourceSpoolMode {
+    fn from(mode: RewinderMode) -> Self {
+        match mode {
+            RewinderMode::Standby => Self::Standby,
+            RewinderMode::Hold => Self::Hold,
+            RewinderMode::Pull | RewinderMode::Prepare | RewinderMode::Rewind => Self::Drive,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TraverseMode {
+    Standby,
+    Hold,
+    Traverse,
+}
+
+impl From<RewinderMode> for TraverseMode {
+    fn from(mode: RewinderMode) -> Self {
+        match mode {
+            RewinderMode::Hold => Self::Hold,
+            RewinderMode::Rewind => Self::Traverse,
+            RewinderMode::Standby | RewinderMode::Pull | RewinderMode::Prepare => Self::Standby,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PullerMode {
+    Standby,
+    Hold,
+    Pull,
+}
+
+impl From<RewinderMode> for PullerMode {
+    fn from(mode: RewinderMode) -> Self {
+        match mode {
+            RewinderMode::Standby => Self::Standby,
+            RewinderMode::Hold => Self::Hold,
+            RewinderMode::Pull | RewinderMode::Prepare | RewinderMode::Rewind => Self::Pull,
+        }
+    }
 }

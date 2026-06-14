@@ -10,11 +10,15 @@ import { z } from "zod";
 import {
   GearRatio,
   Mode,
+  RewindAutomaticActionMode,
   SpoolRegulationMode,
   StateEvent,
   gearRatioSchema,
   modeSchema,
+  prepareControlStateSchema,
+  rewindAutomaticActionModeSchema,
   spoolRegulationModeSchema,
+  tensionArmControlStateSchema,
   useRewinderNamespace,
 } from "./rewinderNamespace";
 
@@ -54,6 +58,7 @@ export function useRewinder() {
     sourceSpoolRpm,
     takeupTensionArmAngle,
     sourceTensionArmAngle,
+    rewindProgress,
   } = useRewinderNamespace(machineIdentification);
 
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -106,6 +111,25 @@ export function useRewinder() {
   );
   const { request: requestSourceTensionTarget } = useMachineMutation(
     z.object({ SetSourceTensionTarget: z.number() }),
+  );
+  const { request: requestSetTakeupTensionArmControl } = useMachineMutation(
+    z.object({ SetTakeupTensionArmControl: tensionArmControlStateSchema }),
+  );
+  const { request: requestSetSourceTensionArmControl } = useMachineMutation(
+    z.object({ SetSourceTensionArmControl: tensionArmControlStateSchema }),
+  );
+  const { request: requestSetPrepareControl } = useMachineMutation(
+    z.object({ SetPrepareControl: prepareControlStateSchema }),
+  );
+  const { request: requestSetRewindAutomaticRequiredMeters } =
+    useMachineMutation(
+      z.object({ SetRewindAutomaticRequiredMeters: z.number() }),
+    );
+  const { request: requestSetRewindAutomaticAction } = useMachineMutation(
+    z.object({ SetRewindAutomaticAction: rewindAutomaticActionModeSchema }),
+  );
+  const { request: requestResetRewindProgress } = useMachineMutation(
+    z.literal("ResetRewindProgress"),
   );
   const { request: requestZeroTakeupTensionArm } = useMachineMutation(
     z.literal("ZeroTakeupTensionArm"),
@@ -318,6 +342,106 @@ export function useRewinder() {
     );
   };
 
+  const setTakeupTensionArmControl = (
+    field: keyof StateEvent["data"]["takeup_tension_arm_control_state"],
+    value: number,
+  ) => {
+    const currentConfig =
+      stateOptimistic.value?.data.takeup_tension_arm_control_state;
+    if (!currentConfig) return;
+    const next = {
+      ...currentConfig,
+      [field]: value,
+    };
+    updateStateOptimistically(
+      (current) => {
+        current.data.takeup_tension_arm_control_state = next;
+      },
+      () =>
+        requestSetTakeupTensionArmControl({
+          machine_identification_unique: machineIdentification,
+          data: { SetTakeupTensionArmControl: next },
+        }),
+    );
+  };
+
+  const setSourceTensionArmControl = (
+    field: keyof StateEvent["data"]["source_tension_arm_control_state"],
+    value: number,
+  ) => {
+    const currentConfig =
+      stateOptimistic.value?.data.source_tension_arm_control_state;
+    if (!currentConfig) return;
+    const next = {
+      ...currentConfig,
+      [field]: value,
+    };
+    updateStateOptimistically(
+      (current) => {
+        current.data.source_tension_arm_control_state = next;
+      },
+      () =>
+        requestSetSourceTensionArmControl({
+          machine_identification_unique: machineIdentification,
+          data: { SetSourceTensionArmControl: next },
+        }),
+    );
+  };
+
+  const setPrepareControl = (
+    field: keyof StateEvent["data"]["prepare_control_state"],
+    value: number,
+  ) => {
+    const currentConfig = stateOptimistic.value?.data.prepare_control_state;
+    if (!currentConfig) return;
+    const next = {
+      ...currentConfig,
+      [field]: value,
+    };
+    updateStateOptimistically(
+      (current) => {
+        current.data.prepare_control_state = next;
+      },
+      () =>
+        requestSetPrepareControl({
+          machine_identification_unique: machineIdentification,
+          data: { SetPrepareControl: next },
+        }),
+    );
+  };
+
+  const setRewindAutomaticRequiredMeters = (meters: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.rewind_automatic_action_state.required_meters = meters;
+      },
+      () =>
+        requestSetRewindAutomaticRequiredMeters({
+          machine_identification_unique: machineIdentification,
+          data: { SetRewindAutomaticRequiredMeters: meters },
+        }),
+    );
+  };
+
+  const setRewindAutomaticAction = (mode: RewindAutomaticActionMode) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.rewind_automatic_action_state.mode = mode;
+      },
+      () =>
+        requestSetRewindAutomaticAction({
+          machine_identification_unique: machineIdentification,
+          data: { SetRewindAutomaticAction: mode },
+        }),
+    );
+  };
+
+  const resetRewindProgress = () =>
+    requestResetRewindProgress({
+      machine_identification_unique: machineIdentification,
+      data: "ResetRewindProgress",
+    });
+
   const zeroTakeupTensionArm = () => {
     updateStateOptimistically(
       (current) => {
@@ -421,6 +545,7 @@ export function useRewinder() {
     sourceSpoolRpm,
     takeupTensionArmAngle,
     sourceTensionArmAngle,
+    rewindProgress,
     isLoading: stateOptimistic.isOptimistic,
     isDisabled: false,
     setMode,
@@ -435,6 +560,12 @@ export function useRewinder() {
     setTakeupSpoolAdaptiveAccelerationFactor,
     setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier,
     setSourceTensionTarget,
+    setTakeupTensionArmControl,
+    setSourceTensionArmControl,
+    setPrepareControl,
+    setRewindAutomaticRequiredMeters,
+    setRewindAutomaticAction,
+    resetRewindProgress,
     zeroTakeupTensionArm,
     zeroSourceTensionArm,
     setTraverseLimitInner,
