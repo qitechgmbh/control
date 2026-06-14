@@ -1,3 +1,7 @@
+use super::prepare_control::{PrepareConfig, PreparePhase};
+use qitech_lib::units::{
+    angular_velocity::revolution_per_minute, f64::*, velocity::meter_per_minute,
+};
 use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -91,6 +95,40 @@ impl ArmConfig {
     pub fn in_hard_range(self, angle_deg: f64) -> bool {
         (self.hard_min_deg..=self.hard_max_deg).contains(&angle_deg)
     }
+
+    pub fn with_hard_range(self, min_deg: f64, max_deg: f64) -> Option<Self> {
+        let config = Self {
+            hard_min_deg: min_deg,
+            hard_max_deg: max_deg,
+            ..self
+        };
+        config.is_valid().then_some(config)
+    }
+
+    pub fn with_start_range(self, min_deg: f64, max_deg: f64) -> Option<Self> {
+        let config = Self {
+            start_min_deg: min_deg,
+            start_max_deg: max_deg,
+            ..self
+        };
+        config.is_valid().then_some(config)
+    }
+
+    pub fn with_target(self, target_deg: f64) -> Option<Self> {
+        let config = Self { target_deg, ..self };
+        config.is_valid().then_some(config)
+    }
+
+    fn is_valid(self) -> bool {
+        self.hard_min_deg < self.hard_max_deg
+            && self.hard_min_deg >= -90.0
+            && self.hard_max_deg <= 180.0
+            && self.start_min_deg >= self.hard_min_deg
+            && self.start_max_deg <= self.hard_max_deg
+            && self.start_min_deg < self.start_max_deg
+            && (self.start_min_deg..=self.start_max_deg).contains(&self.target_deg)
+            && self.filter_time_constant_s > 0.0
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -164,21 +202,21 @@ pub struct FollowerConfig {
 impl FollowerConfig {
     pub const SOURCE: Self = Self {
         response: FollowerResponse::Source,
-        initial_ratio_rpm_per_m_per_min: 2.75,
-        min_ratio_rpm_per_m_per_min: 1.2,
+        initial_ratio_rpm_per_m_per_min: 2.2,
+        min_ratio_rpm_per_m_per_min: 0.8,
         max_ratio_rpm_per_m_per_min: 6.0,
-        kp_rpm_per_deg: 0.45,
+        kp_rpm_per_deg: 0.70,
         kd_rpm_per_deg_per_s: 0.12,
         deadband_deg: 2.0,
-        max_trim_rpm: 32.0,
-        max_trim_feed_forward_fraction: 0.35,
-        trim_filter_time_constant_s: 0.8,
-        min_feed_forward_fraction: 0.45,
+        max_trim_rpm: 34.0,
+        max_trim_feed_forward_fraction: 0.55,
+        trim_filter_time_constant_s: 0.7,
+        min_feed_forward_fraction: 0.25,
         max_rpm: 220.0,
-        slew_rpm_per_s: 35.0,
+        slew_rpm_per_s: 32.0,
         emergency_slew_rpm_per_s: 55.0,
         learning_min_line_speed_m_per_min: 5.0,
-        learning_tau_s: 25.0,
+        learning_tau_s: 18.0,
     };
 
     pub const TAKEUP: Self = Self {
@@ -266,8 +304,13 @@ impl FollowerState {
         } else {
             self.trim_rpm = raw_trim_rpm;
         }
+        let moving_floor_fraction = match arm_state.zone {
+            ArmZone::EmergencyLow => 0.0,
+            ArmZone::WarningLow => 0.05,
+            _ => config.min_feed_forward_fraction,
+        };
         let moving_floor_rpm = if line_speed_m_per_min > 0.05 {
-            self.feed_forward_rpm * config.min_feed_forward_fraction
+            self.feed_forward_rpm * moving_floor_fraction
         } else {
             0.0
         };
@@ -276,6 +319,7 @@ impl FollowerState {
             FollowerResponse::Source => source_target_rpm(
                 target_rpm,
                 self.feed_forward_rpm,
+                moving_floor_rpm,
                 arm_state,
                 arm_config,
                 config,
@@ -311,11 +355,8 @@ impl FollowerState {
         }
 
         if matches!(config.response, FollowerResponse::Source)
-            && learning_allowed
             && line_speed_m_per_min >= config.learning_min_line_speed_m_per_min
-            && !source_needs_recovery(arm_state)
             && !matches!(arm_state.zone, ArmZone::HardLow | ArmZone::HardHigh)
-            && arm_state.rate_deg_per_s.abs() <= 4.0
             && (arm_state.raw_deg - arm_state.filtered_deg).abs() <= 6.0
             && self.command_rpm < config.max_rpm * 0.95
             && dt_s > 0.0
@@ -324,7 +365,14 @@ impl FollowerState {
                 arm_state.filtered_deg - arm_config.target_deg,
                 config.deadband_deg * 3.0,
             );
-            let ratio_step = persistent_error * 0.0025 * dt_s;
+            let learning_gain = if persistent_error < 0.0 {
+                0.012
+            } else if learning_allowed && arm_state.rate_deg_per_s.abs() <= 4.0 {
+                0.0025
+            } else {
+                0.0
+            };
+            let ratio_step = persistent_error * learning_gain * dt_s;
             self.ratio_rpm_per_m_per_min = (self.ratio_rpm_per_m_per_min + ratio_step).clamp(
                 config.min_ratio_rpm_per_m_per_min,
                 config.max_ratio_rpm_per_m_per_min,
@@ -365,6 +413,7 @@ pub struct RewindControlConfig {
     pub source_follower: FollowerConfig,
     pub takeup_follower: FollowerConfig,
     pub puller_ramp: PullerRampConfig,
+    pub prepare: PrepareConfig,
     pub precharge_duration: Duration,
     pub crawl_duration: Duration,
 }
@@ -377,6 +426,7 @@ impl Default for RewindControlConfig {
             source_follower: FollowerConfig::SOURCE,
             takeup_follower: FollowerConfig::TAKEUP,
             puller_ramp: PullerRampConfig::default(),
+            prepare: PrepareConfig::default(),
             precharge_duration: Duration::from_secs(1),
             crawl_duration: Duration::from_secs(3),
         }
@@ -395,6 +445,9 @@ pub struct RewindControlState {
     pub last_dt_s: f64,
     pub last_update: Option<Instant>,
     pub phase_started_at: Option<Instant>,
+    pub prepare_settled_since: Option<Instant>,
+    pub prepare_phase: PreparePhase,
+    pub(super) prepare_phase_started_at: Option<Instant>,
 }
 
 impl RewindControlState {
@@ -410,6 +463,9 @@ impl RewindControlState {
             last_dt_s: 0.0,
             last_update: None,
             phase_started_at: None,
+            prepare_settled_since: None,
+            prepare_phase: PreparePhase::Relax,
+            prepare_phase_started_at: None,
         }
     }
 
@@ -423,6 +479,9 @@ impl RewindControlState {
         self.last_dt_s = 0.0;
         self.last_update = Some(now);
         self.phase_started_at = Some(now);
+        self.prepare_settled_since = None;
+        self.prepare_phase = PreparePhase::Relax;
+        self.prepare_phase_started_at = None;
     }
 
     pub fn reset_motion(&mut self) {
@@ -433,6 +492,9 @@ impl RewindControlState {
         self.last_dt_s = 0.0;
         self.last_update = None;
         self.phase_started_at = None;
+        self.prepare_settled_since = None;
+        self.prepare_phase = PreparePhase::Relax;
+        self.prepare_phase_started_at = None;
     }
 
     pub fn update_arms(
@@ -464,10 +526,22 @@ impl RewindControlState {
             .unwrap_or_default()
     }
 
-    pub fn update_puller_command(&mut self, target_m_per_min: f64, dt_s: f64) {
+    pub fn puller_command_speed(&self) -> Velocity {
+        Velocity::new::<meter_per_minute>(self.puller_command_m_per_min)
+    }
+
+    pub fn source_command_angular_velocity(&self) -> AngularVelocity {
+        AngularVelocity::new::<revolution_per_minute>(self.source_follower.command_rpm)
+    }
+
+    pub fn takeup_command_angular_velocity(&self) -> AngularVelocity {
+        AngularVelocity::new::<revolution_per_minute>(self.takeup_follower.command_rpm)
+    }
+
+    pub fn update_puller_command(&mut self, target: Velocity, dt_s: f64) {
         let ramp = self.config.puller_ramp;
         let source_recovery = source_needs_recovery(self.source_arm);
-        let constrained_target = target_m_per_min;
+        let constrained_target = target.get::<meter_per_minute>();
 
         let rate = if constrained_target >= self.puller_command_m_per_min {
             if source_recovery {
@@ -506,7 +580,8 @@ impl RewindControlState {
         };
     }
 
-    pub fn update_followers(&mut self, line_speed_m_per_min: f64, dt_s: f64) {
+    pub fn update_followers(&mut self, line_speed: Velocity, dt_s: f64) {
+        let line_speed_m_per_min = line_speed.get::<meter_per_minute>();
         let learning_allowed = self.puller_accel_m_per_min_s.abs() <= 0.2;
         self.source_follower.update(
             self.config.source_follower,
@@ -524,12 +599,17 @@ impl RewindControlState {
     }
 }
 
-fn deadband(value: f64, width: f64) -> f64 {
+pub(crate) fn deadband(value: f64, width: f64) -> f64 {
     if value.abs() <= width {
         0.0
     } else {
         value.signum() * (value.abs() - width)
     }
+}
+
+pub(crate) fn slew(current: f64, target: f64, rate_per_s: f64, dt_s: f64) -> f64 {
+    let max_delta = rate_per_s * dt_s.max(0.0);
+    current + (target - current).clamp(-max_delta, max_delta)
 }
 
 fn low_side_accel_scale(angle_deg: f64, config: ArmConfig) -> f64 {
@@ -587,8 +667,9 @@ fn source_needs_recovery(source_arm: ArmState) -> bool {
 }
 
 fn source_target_rpm(
-    _target_rpm: f64,
+    target_rpm: f64,
     feed_forward_rpm: f64,
+    moving_floor_rpm: f64,
     arm_state: ArmState,
     arm_config: ArmConfig,
     follower_config: FollowerConfig,
@@ -597,16 +678,11 @@ fn source_target_rpm(
         return 0.0;
     }
 
-    let angle_error_deg = deadband(
-        arm_state.filtered_deg - arm_config.target_deg,
-        follower_config.deadband_deg,
-    );
-    let angle_fraction = angle_error_deg * 0.025;
-    let mut multiplier = (1.0 + angle_fraction).clamp(0.45, 1.30);
+    let mut multiplier = (target_rpm / feed_forward_rpm).clamp(0.10, 1.45);
 
     if source_needs_recovery(arm_state) {
         let recovery_progress = source_low_recovery_progress(arm_state);
-        let recovery_max_multiplier = 0.80 - 0.45 * recovery_progress;
+        let recovery_max_multiplier = 0.70 - 0.55 * recovery_progress;
         multiplier = multiplier.min(recovery_max_multiplier);
     }
 
@@ -614,7 +690,7 @@ fn source_target_rpm(
         let low_span = (arm_config.warning_min_deg - arm_config.hard_min_deg).max(f64::EPSILON);
         let low_progress =
             ((arm_config.warning_min_deg - arm_state.raw_deg) / low_span).clamp(0.0, 1.0);
-        multiplier = multiplier.min(0.35 - 0.30 * low_progress);
+        multiplier = multiplier.min(0.25 - 0.20 * low_progress);
     } else if arm_state.filtered_deg > arm_config.warning_max_deg {
         let high_span = (arm_config.hard_max_deg - arm_config.warning_max_deg).max(f64::EPSILON);
         let high_progress =
@@ -622,5 +698,5 @@ fn source_target_rpm(
         multiplier = multiplier.max(1.10 + 0.20 * high_progress);
     }
 
-    (feed_forward_rpm * multiplier).clamp(0.0, follower_config.max_rpm)
+    (feed_forward_rpm * multiplier).clamp(moving_floor_rpm, follower_config.max_rpm)
 }
