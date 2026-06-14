@@ -1,6 +1,7 @@
 use super::{
-    RewindPhase, Rewinder, RewinderMode, EK1100_ROLE, EL2002_ROLE, PULLER_ROLE, SOURCE_SPOOL_ROLE,
-    TAKEUP_SPOOL_ROLE, TRAVERSE_ROLE,
+    PullerMode, RewindPhase, Rewinder, RewinderMode, SourceSpoolMode, TakeupSpoolMode,
+    TraverseMode, EK1100_ROLE, EL2002_ROLE, PULLER_ROLE, SOURCE_SPOOL_ROLE, TAKEUP_SPOOL_ROLE,
+    TRAVERSE_ROLE,
 };
 use crate::{MachineHardware, MachineNew};
 use control_core::converters::{
@@ -25,6 +26,7 @@ use qitech_lib::{
     },
     units::{
         angle::degree,
+        angular_velocity::revolution_per_minute,
         f64::*,
         length::{centimeter, millimeter},
         velocity::meter_per_minute,
@@ -108,8 +110,8 @@ impl MachineNew for Rewinder {
 
         let mut source_spool_speed_controller =
             super::SpoolSpeedController::new_with_tension_range_and_response(
-                Angle::new::<degree>(super::Rewinder::SOURCE_TENSION_ARM_MAX_ANGLE_DEG),
-                Angle::new::<degree>(super::Rewinder::SOURCE_TENSION_ARM_MIN_ANGLE_DEG),
+                Angle::new::<degree>(super::rewind_control::ArmConfig::SOURCE.hard_max_deg),
+                Angle::new::<degree>(super::rewind_control::ArmConfig::SOURCE.hard_min_deg),
                 crate::winder2::spool_speed_controller::SpoolTensionResponse::Source,
             );
         source_spool_speed_controller.set_adaptive_tension_target(0.70);
@@ -117,6 +119,12 @@ impl MachineNew for Rewinder {
         source_spool_speed_controller.set_adaptive_max_speed_multiplier(2.0);
         source_spool_speed_controller.set_adaptive_acceleration_factor(0.05);
         source_spool_speed_controller.set_adaptive_deacceleration_urgency_multiplier(20.0);
+
+        let mut takeup_spool_speed_controller = super::SpoolSpeedController::new();
+        let _ = takeup_spool_speed_controller
+            .set_minmax_min_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
+        let _ = takeup_spool_speed_controller
+            .set_minmax_max_speed(AngularVelocity::new::<revolution_per_minute>(90.0));
 
         let mut rewinder = Self {
             api_receiver,
@@ -133,11 +141,15 @@ impl MachineNew for Rewinder {
             last_rewind_diagnostics_log: Instant::now(),
             machine_identification_unique: hw.identification,
             mode: RewinderMode::Standby,
+            takeup_spool_mode: TakeupSpoolMode::Standby,
+            source_spool_mode: SourceSpoolMode::Standby,
+            traverse_mode: TraverseMode::Standby,
+            puller_mode: PullerMode::Standby,
             puller_speed_controller: super::PullerSpeedController::new(
                 Velocity::new::<meter_per_minute>(1.0),
                 LinearStepConverter::from_diameter(200, Length::new::<centimeter>(8.0)),
             ),
-            takeup_spool_speed_controller: super::SpoolSpeedController::new(),
+            takeup_spool_speed_controller,
             source_spool_speed_controller,
             takeup_spool_step_converter: AngularStepConverter::new(200),
             source_spool_step_converter: AngularStepConverter::new(200),
@@ -152,6 +164,7 @@ impl MachineNew for Rewinder {
             rewind_control: super::rewind_control::RewindControlState::new(
                 super::rewind_control::RewindControlConfig::default(),
             ),
+            rewind_automatic_action: super::auto_stop::RewindAutomaticAction::default(),
             emitted_default_state: false,
             last_can_rewind: false,
         };

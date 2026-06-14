@@ -27,6 +27,7 @@ export function RewinderControlPage() {
     sourceSpoolRpm,
     takeupTensionArmAngle,
     sourceTensionArmAngle,
+    rewindProgress,
     isLoading,
     isDisabled,
     setMode,
@@ -41,6 +42,9 @@ export function RewinderControlPage() {
     gotoTraverseHome,
     gotoTraverseLimitInner,
     gotoTraverseLimitOuter,
+    setRewindAutomaticRequiredMeters,
+    setRewindAutomaticAction,
+    resetRewindProgress,
   } = useRewinder();
   const gearRatioMultiplier = getGearRatioMultiplier(
     state?.puller_state.gear_ratio,
@@ -76,6 +80,15 @@ export function RewinderControlPage() {
                 icon: "lu:ArrowRight",
                 isActiveClassName: "bg-green-600",
                 className: "h-full",
+              },
+              Prepare: {
+                children: "Prepare",
+                icon: "lu:Crosshair",
+                isActiveClassName: "bg-green-600",
+                className: "h-full",
+                disabled:
+                  state?.takeup_tension_arm_state.zeroed !== true ||
+                  state?.source_tension_arm_state.zeroed !== true,
               },
               Rewind: {
                 children: "Rewind",
@@ -125,6 +138,50 @@ export function RewinderControlPage() {
               }
             />
           </Label>
+        </ControlCard>
+
+        <ControlCard title="Automatic Stop">
+          <TimeSeriesValueNumeric
+            label="Progress"
+            unit="m"
+            timeseries={rewindProgress}
+            renderValue={(value) => roundToDecimals(value, 2)}
+          />
+          <EditValue
+            value={state?.rewind_automatic_action_state.required_meters}
+            unit="m"
+            title="Required Length"
+            defaultValue={defaultState?.rewind_automatic_action_state.required_meters}
+            min={0}
+            max={10000}
+            step={0.1}
+            renderValue={(value) => roundToDecimals(value, 1)}
+            onChange={setRewindAutomaticRequiredMeters}
+          />
+          <Label label="After Length">
+            <SelectionGroup
+              value={state?.rewind_automatic_action_state.mode}
+              disabled={isDisabled}
+              loading={isLoading}
+              options={{
+                NoAction: { children: "No Action", icon: "lu:Minus" },
+                Hold: { children: "Hold", icon: "lu:CirclePause" },
+                Pull: { children: "Pull", icon: "lu:ArrowRight" },
+              }}
+              onChange={(value) =>
+                setRewindAutomaticAction(value as "NoAction" | "Hold" | "Pull")
+              }
+            />
+          </Label>
+          <TouchButton
+            variant="outline"
+            icon="lu:RotateCcw"
+            onClick={resetRewindProgress}
+            disabled={isDisabled}
+            isLoading={isLoading}
+          >
+            Reset Progress
+          </TouchButton>
         </ControlCard>
 
         <ControlCard title="Takeup Spool">
