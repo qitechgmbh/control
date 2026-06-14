@@ -20,6 +20,7 @@ impl Machine for Rewinder {
         self.sync_takeup_spool_speed(now);
         self.sync_source_spool_speed(now);
         self.sync_traverse_speed();
+        self.stop_or_pull_rewind(now);
         self.log_rewind_diagnostics(now);
 
         if self.traverse_controller.did_change_state() {
