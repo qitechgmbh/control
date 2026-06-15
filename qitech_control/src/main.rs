@@ -1,6 +1,6 @@
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
-use machine_implementations::MACHINE_LASER_V1;
+use machine_implementations::{MACHINE_LASER_V1, MachineNewArgs, property};
 use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
@@ -205,12 +205,20 @@ fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainSt
         if idents.contains(key) {
             continue;
         }
-        let result = MACHINE_REGISTRY
-            .new_machine(key.clone(), main_state.hardware.get(key).unwrap().clone());
-        match result {
+
+        let hardware = main_state.hardware.get(key).unwrap().clone();
+        let properties = property::Allocator::new(&mut main_state.properties, *key);
+
+        let args = MachineNewArgs {
+            ident: *key,
+            hardware,
+            properties
+        };
+
+        match MACHINE_REGISTRY.new_machine(*key, args) {
             Ok(machine) => {
                 let _res = state.add_machine_sync(
-                    key.clone().into(),
+                    (*key).into(),
                     None,
                     Some(machine.get_api_sender()),
                 );

@@ -4,7 +4,7 @@ use super::{
     controller::{Controller, ControllerConfig},
 };
 use super::{Flow, Temperature};
-use crate::{MachineHardware, MachineNew};
+use crate::{MachineNew, MachineNewArgs};
 use anyhow::Error;
 
 use qitech_lib::ethercat_hal::{
@@ -42,7 +42,9 @@ const FRONT_FAN_SPEED_PORT: usize = 0; // AO1
 const BACK_FAN_SPEED_PORT: usize = 1; // AO2
 
 impl MachineNew for AquaPathV1 {
-    fn new(hw: MachineHardware) -> Result<Self, Error> {
+    fn new(args: MachineNewArgs) -> Result<Self, Error> {
+        let hw = args.hardware;
+        
         let _ek1100 = hw.try_get_ethercat_device_and_addr_by_role::<EK1100>(0)?;
         let el2008 = hw.try_get_ethercat_device_and_addr_by_role::<EL2008>(1)?;
         let el4002 = hw.try_get_ethercat_device_and_addr_by_role::<EL4002>(2)?;

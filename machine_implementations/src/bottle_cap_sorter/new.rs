@@ -24,7 +24,7 @@ use qitech_lib::ethercat_hal::{
 };
 
 impl MachineNew for Sorter1 {
-    fn new(hw: MachineHardware) -> Result<Self, Error> {
+    fn new(args: MachineNewArgs) -> Result<Self, Error> {
         // 1. Fetch devices using the role-based abstraction
         let el7041 = hw.try_get_ethercat_device_by_role::<EL7041_0052>(1)?;
         let el2008 = hw.try_get_ethercat_device_by_role::<EL2008>(2)?;

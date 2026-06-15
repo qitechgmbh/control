@@ -45,11 +45,13 @@ mod winder2_imports {
     pub use std::time::Instant;
 }
 
-use crate::{MachineHardware, MachineNew};
+use crate::{MachineHardware, MachineNew, MachineNewArgs};
 use qitech_lib::ethercat_hal::EtherCATThreadChannel;
 pub use winder2_imports::*;
 impl MachineNew for Winder2 {
-    fn new(hw: MachineHardware) -> Result<Self, Error> {
+    fn new(args: MachineNewArgs) -> Result<Self, Error> {
+        let hw = args.hardware;
+        
         if hw.identification.machine_ident == Winder2::MACHINE_IDENTIFICATION {
             Self::new_normal(hw)
         } else if hw.identification.machine_ident == Winder2::MACHINE_IDENTIFICATION_7031_SPOOL {

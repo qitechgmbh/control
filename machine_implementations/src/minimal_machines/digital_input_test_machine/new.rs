@@ -8,7 +8,7 @@ use qitech_lib::{
 };
 
 impl MachineNew for DigitalInputTestMachine {
-    fn new(hw: MachineHardware) -> Result<DigitalInputTestMachine, anyhow::Error> {
+    fn new(args: MachineNewArgs) -> Result<DigitalInputTestMachine, anyhow::Error> {
         let el1008: Rc<RefCell<EL1008>> = hw.try_get_ethercat_device_by_role(1)?;
         let el2004: Rc<RefCell<EL2004>> = hw.try_get_ethercat_device_by_role(2)?;
         let (tx, rx) = tokio::sync::mpsc::channel::<MachineMessage>(2);

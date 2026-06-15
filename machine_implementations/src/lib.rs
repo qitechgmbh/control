@@ -13,6 +13,7 @@ use serde::Serialize;
 use std::{cell::RefCell, rc::Rc};
 use tokio::sync::mpsc::Sender;
 
+pub mod property;
 pub mod aquapath1;
 pub mod extruder1;
 pub mod laser;
@@ -114,7 +115,8 @@ impl MachineHardware {
                 ));
             }
         };
-        Ok(downcast_rc_refcell::<T>(identified_ethercat.hw.clone())?)
+        
+        downcast_rc_refcell::<T>(identified_ethercat.hw.clone())
     }
 
     pub fn try_get_ethercat_meta_by_role(&self, role: u16) -> Result<u16, anyhow::Error> {
@@ -205,7 +207,7 @@ impl MachineHardware {
             match hardware {
                 Hardware::Ethercat(identified_ethercat) => {
                     if identified_ethercat.ident.role == role {
-                        return Ok(downcast_rc_refcell::<T>(identified_ethercat.hw.clone())?);
+                        return downcast_rc_refcell::<T>(identified_ethercat.hw.clone());
                     }
                     continue;
                 }
@@ -219,8 +221,14 @@ impl MachineHardware {
     }
 }
 
+pub struct MachineNewArgs<'a> {
+    pub ident: MachineIdentificationUnique,
+    pub hardware: MachineHardware,
+    pub properties: property::Allocator<'a>,
+}
+
 pub trait MachineNew: Sized {
-    fn new(hw: MachineHardware) -> Result<Self>;
+    fn new<'a>(args: MachineNewArgs<'a>) -> Result<Self>;
 }
 
 pub trait QiTechMachine: Machine + MachineApi {}

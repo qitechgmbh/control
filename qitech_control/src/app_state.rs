@@ -19,7 +19,7 @@ use machine_implementations::{
     machine_identification::{
         DeviceHardwareIdentificationEthercat, DeviceIdentification, DeviceMachineIdentification,
         QiTechMachineIdentificationUnique,
-    },
+    }, property,
 };
 use qitech_lib::{
     ethercat_hal::{
@@ -97,7 +97,7 @@ impl SharedAppState {
                     product_id: dev.product_id,
                     revision: dev.revision,
                     device_identification: DeviceIdentification{
-                            device_machine_identification: device_machine_identification,
+                            device_machine_identification,
                             device_hardware_identification:
                                 machine_implementations::machine_identification::DeviceHardwareIdentification::Ethercat(DeviceHardwareIdentificationEthercat{ subdevice_index: dev.device_address as usize })
                     }
@@ -238,6 +238,7 @@ pub struct MainState {
     pub machines: Vec<Box<dyn QiTechMachine>>,
     pub machine_errors: HashMap<MachineIdentificationUnique, String>,
     pub machine_data_reg: MachineDataRegistry,
+    pub properties: property::Pool,
 }
 
 impl MainState {
@@ -252,6 +253,7 @@ impl MainState {
             subdevices: vec![],
             hardware: HashMap::new(),
             machine_errors: HashMap::new(),
+            properties: Default::default(),
         }
     }
 

@@ -858,7 +858,7 @@ dependencies = [
  "embedded-io-async",
  "ethercrab-wire",
  "futures-lite",
- "heapless",
+ "heapless 0.8.0",
  "io-uring",
  "libc",
  "log",
@@ -879,7 +879,7 @@ version = "0.2.0"
 source = "git+https://github.com/v-morlock/ethercrab?branch=main#d297d13389d85a4edb4e69cc98f9dd7f12626cac"
 dependencies = [
  "ethercrab-wire-derive",
- "heapless",
+ "heapless 0.8.0",
 ]
 
 [[package]]
@@ -1154,6 +1154,16 @@ name = "heapless"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bfb9eb618601c89945a70e254898da93b13be0388091d42117462b265bb3fad"
+dependencies = [
+ "hash32",
+ "stable_deref_trait",
+]
+
+[[package]]
+name = "heapless"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25ba4bd83f9415b58b4ed8dc5714c76e626a105be4646c02630ad730ad3b5aa4"
 dependencies = [
  "hash32",
  "stable_deref_trait",
@@ -1444,6 +1454,7 @@ dependencies = [
  "control_core",
  "control_core_derive",
  "euclid",
+ "heapless 0.9.3",
  "lazy_static",
  "qitech_lib",
  "serde",
@@ -1451,6 +1462,7 @@ dependencies = [
  "tokio",
  "tonic",
  "tracing",
+ "uom",
 ]
 
 [[package]]

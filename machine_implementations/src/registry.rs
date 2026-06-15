@@ -1,6 +1,7 @@
+use crate::MachineNewArgs;
 use crate::extruder1::ExtruderV2;
 use crate::{
-    MachineHardware, MachineNew, QiTechMachine, aquapath1::AquaPathV1, laser::LaserMachine,
+    MachineNew, QiTechMachine, aquapath1::AquaPathV1, laser::LaserMachine,
     winder2::Winder2,
 };
 use anyhow::Error;
@@ -8,7 +9,7 @@ use lazy_static::lazy_static;
 use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
 use std::{any::TypeId, collections::HashMap};
 pub type MachineNewClosure =
-    Box<dyn Fn(MachineHardware) -> Result<Box<dyn QiTechMachine>, Error> + Send + Sync>;
+    Box<dyn Fn(MachineNewArgs) -> Result<Box<dyn QiTechMachine>, Error> + Send + Sync>;
 
 pub struct MachineRegistry {
     type_map: HashMap<TypeId, (Vec<MachineIdentification>, MachineNewClosure)>,
@@ -36,7 +37,7 @@ impl MachineRegistry {
             (
                 machine_identification.clone(),
                 // create a machine construction closure
-                Box::new(|hardware: MachineHardware| Ok(Box::new(T::new(hardware)?))),
+                Box::new(|args: MachineNewArgs| Ok(Box::new(T::new(args)?))),
             ),
         );
     }
@@ -44,7 +45,7 @@ impl MachineRegistry {
     pub fn new_machine(
         &self,
         ident: MachineIdentificationUnique,
-        hardware: MachineHardware,
+        args: MachineNewArgs,
     ) -> Result<Box<dyn QiTechMachine>, anyhow::Error> {
         let ident = ident.machine_ident;
 
@@ -57,7 +58,7 @@ impl MachineRegistry {
                 module_path!()
             ))?;
         // call machine new function by reference
-        (machine_new_closure)(hardware)
+        (machine_new_closure)(args)
     }
 }
 

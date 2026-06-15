@@ -3,7 +3,7 @@ use super::{
     screw_speed_controller::ScrewSpeedController, temperature_controller::TemperatureController,
 };
 use crate::{
-    MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, MachineHardware, MachineMessage, MachineNew,
+    MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, MachineMessage, MachineNew, MachineNewArgs,
 };
 use control_core::transmission::fixed::FixedTransmission;
 use qitech_lib::ethercat_hal::{
@@ -57,7 +57,9 @@ impl ExtruderRoles {
 }
 
 impl MachineNew for ExtruderV2 {
-    fn new(hw: MachineHardware) -> Result<Self, anyhow::Error> {
+    fn new(args: MachineNewArgs) -> Result<Self, anyhow::Error> {
+        let hw = args.hardware;
+        
         let motor_poles;
         let transmission;
 
