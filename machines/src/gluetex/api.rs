@@ -289,6 +289,9 @@ pub enum Mutation {
     SetSleepTimerTimeout(u64),
     ResetSleepTimer,
 
+    // Band Monitoring
+    SetBandueberwachungEnabled(bool),
+
     // Order Information
     SetOrderNumber(u32),
     SetSerialNumber(u32),
@@ -664,6 +667,8 @@ pub struct VoltageMonitorState {
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct BandMonitorState {
+    /// is band monitoring enabled
+    pub enabled: bool,
     /// is band currently active (present)
     pub active: bool,
 }
@@ -1127,6 +1132,14 @@ impl MachineApi for Gluetex {
             }
             Mutation::ResetSleepTimer => {
                 self.reset_sleep_timer();
+                self.emit_state();
+            }
+            Mutation::SetBandueberwachungEnabled(enabled) => {
+                self.bandueberwachung_enabled = enabled;
+                if !enabled {
+                    self.bandueberwachung_triggered = false;
+                    self.bandueberwachung_not_active_since = None;
+                }
                 self.emit_state();
             }
             Mutation::SetOrderNumber(order_number) => {

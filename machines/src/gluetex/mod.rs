@@ -259,6 +259,7 @@ pub struct Gluetex {
     pub inlet_feeder_tension_arm_monitor: TensionArmMonitor,
     pub optris_1_monitor: VoltageMonitor,
     pub optris_2_monitor: VoltageMonitor,
+    pub bandueberwachung_enabled: bool,
     pub bandueberwachung_triggered: bool,
     pub bandueberwachung_not_active_since: Option<std::time::Instant>,
     pub sleep_timer: SleepTimer,

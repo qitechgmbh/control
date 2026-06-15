@@ -335,15 +335,19 @@ export function GluetexOverviewPage() {
                   <div
                     className={cn(
                       "h-5 w-5 rounded-full",
-                      state?.bandueberwachung_monitor_state?.active
-                        ? "bg-green-500"
-                        : "bg-red-500",
+                      !state?.bandueberwachung_monitor_state?.enabled
+                        ? "bg-gray-300"
+                        : state?.bandueberwachung_monitor_state?.active
+                          ? "bg-green-500"
+                          : "bg-red-500",
                     )}
                   />
                   <span className="text-xs">
-                    {state?.bandueberwachung_monitor_state?.active
-                      ? "Present"
-                      : "Absent"}
+                    {!state?.bandueberwachung_monitor_state?.enabled
+                      ? "Disabled"
+                      : state?.bandueberwachung_monitor_state?.active
+                        ? "Present"
+                        : "Absent"}
                   </span>
                 </div>
               </div>

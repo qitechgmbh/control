@@ -99,6 +99,20 @@ pub fn run_tension_and_voltage_checks(machine: &mut Gluetex) -> bool {
 ///
 /// Returns whether monitor state changed (caller should emit state when true).
 pub fn run_bandueberwachung_check(machine: &mut Gluetex) -> bool {
+    use crate::gluetex::OperationMode;
+
+    let should_check =
+        machine.bandueberwachung_enabled && machine.operation_mode == OperationMode::Production;
+
+    if !should_check {
+        machine.bandueberwachung_not_active_since = None;
+        if machine.bandueberwachung_triggered {
+            machine.bandueberwachung_triggered = false;
+            return true;
+        }
+        return false;
+    }
+
     const BAND_ACTIVE_THRESHOLD_VOLTS: f64 = 10.0;
     const BAND_DEBOUNCE_MS: u64 = 200;
 

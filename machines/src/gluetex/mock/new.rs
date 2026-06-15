@@ -124,7 +124,10 @@ impl MachineNewTrait for Gluetex {
             inlet_feeder_tension_arm_monitor_state: TensionArmMonitorState::default(),
             optris_1_monitor_state: VoltageMonitorState::default(),
             optris_2_monitor_state: VoltageMonitorState::default(),
-            bandueberwachung_monitor_state: BandMonitorState { active: true },
+            bandueberwachung_monitor_state: BandMonitorState {
+                enabled: true,
+                active: true,
+            },
             sleep_timer_state: SleepTimerState::default(),
             order_info_state: OrderInfoState::default(),
             extra_outputs_state: ExtraOutputsState::default(),

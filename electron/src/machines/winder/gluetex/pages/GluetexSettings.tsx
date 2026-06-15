@@ -42,6 +42,7 @@ export function GluetexSettingPage() {
   const [addonsOpen, setAddonsOpen] = useState(false);
   const [tensionArmMonitorsOpen, setTensionArmMonitorsOpen] = useState(false);
   const [voltageMonitoringOpen, setVoltageMonitoringOpen] = useState(false);
+  const [bandMonitoringOpen, setBandMonitoringOpen] = useState(false);
   const [graphOpen, setGraphOpen] = useState(false);
 
   const {
@@ -90,6 +91,7 @@ export function GluetexSettingPage() {
     setInletFeederTensionArmMonitorMaxAngle,
     setSleepTimerEnabled,
     setSleepTimerTimeout,
+    setBandueberwachungEnabled,
     setStepper3Forward,
     setStepper3DecelerationDistance,
     setStepper4Forward,
@@ -2005,6 +2007,51 @@ export function GluetexSettingPage() {
                       />
                     </Label>
                   </div>
+                </ControlCard>
+              </ControlGrid>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* ========== BAND MONITORING ========== */}
+        <Collapsible
+          open={bandMonitoringOpen}
+          onOpenChange={setBandMonitoringOpen}
+        >
+          <CollapsibleTrigger asChild>
+            <div className="dark:hover:bg-gray-750 cursor-pointer rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+              <div className="flex items-center justify-between">
+                <h2 className="flex items-center gap-2 text-xl font-semibold">
+                  <Icon name="lu:Eye" className="h-5 w-5" />
+                  Band Monitoring
+                </h2>
+                <Icon
+                  name={bandMonitoringOpen ? "lu:ChevronUp" : "lu:ChevronDown"}
+                  className="h-5 w-5 transition-transform"
+                />
+              </div>
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-4">
+              <ControlGrid>
+                <ControlCard title="Bandüberwachung">
+                  <Label label="Enable Monitoring">
+                    <SelectionGroupBoolean
+                      value={state?.bandueberwachung_monitor_state?.enabled}
+                      disabled={isDisabled}
+                      loading={isLoading}
+                      optionFalse={{
+                        children: "Disabled",
+                        icon: "lu:CircleOff",
+                      }}
+                      optionTrue={{
+                        children: "Enabled",
+                        icon: "lu:Shield",
+                      }}
+                      onChange={(value) => setBandueberwachungEnabled(value)}
+                    />
+                  </Label>
                 </ControlCard>
               </ControlGrid>
             </div>

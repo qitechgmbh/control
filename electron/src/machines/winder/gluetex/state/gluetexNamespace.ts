@@ -345,6 +345,7 @@ export const voltageMonitorStateSchema = z.object({
  * Band monitoring state schema (from backend)
  */
 export const bandMonitorStateSchema = z.object({
+  enabled: z.boolean(),
   active: z.boolean(),
 });
 

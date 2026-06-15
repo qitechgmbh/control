@@ -624,6 +624,7 @@ impl Gluetex {
                 triggered: self.optris_2_monitor.triggered,
             },
             bandueberwachung_monitor_state: api::BandMonitorState {
+                enabled: self.bandueberwachung_enabled,
                 active: !self.bandueberwachung_triggered,
             },
             sleep_timer_state: api::SleepTimerState {

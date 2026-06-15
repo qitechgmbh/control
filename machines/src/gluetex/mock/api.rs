@@ -321,6 +321,12 @@ impl MachineApi for Gluetex {
                 self.sleep_timer_state.remaining_seconds = self.sleep_timer_state.timeout_seconds;
                 self.sleep_timer_state.triggered = false;
             }
+            Mutation::SetBandueberwachungEnabled(enabled) => {
+                self.bandueberwachung_monitor_state.enabled = enabled;
+                if !enabled {
+                    self.bandueberwachung_monitor_state.active = false;
+                }
+            }
             Mutation::SetOrderNumber(value) => {
                 self.order_info_state.order_number = value;
             }

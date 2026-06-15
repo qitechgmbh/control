@@ -379,6 +379,11 @@ export function useGluetex() {
     z.object({ SetOptris2MonitorDelay: z.number() }),
   );
 
+  // Band Monitoring mutations
+  const { request: requestSetBandueberwachungEnabled } = useMachineMutation(
+    z.object({ SetBandueberwachungEnabled: z.boolean() }),
+  );
+
   // Sleep Timer mutations
   const { request: requestSetSleepTimerEnabled } = useMachineMutation(
     z.object({ SetSleepTimerEnabled: z.boolean() }),
@@ -1525,6 +1530,20 @@ export function useGluetex() {
     );
   };
 
+  // Band Monitoring action functions
+  const setBandueberwachungEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.bandueberwachung_monitor_state.enabled = enabled;
+      },
+      () =>
+        requestSetBandueberwachungEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetBandueberwachungEnabled: enabled },
+        }),
+    );
+  };
+
   // Sleep Timer action functions
   const setSleepTimerEnabled = (enabled: boolean) => {
     updateStateOptimistically(
@@ -1959,6 +1978,9 @@ export function useGluetex() {
     setOptris2MonitorMinVoltage,
     setOptris2MonitorMaxVoltage,
     setOptris2MonitorDelay,
+
+    // Band Monitoring action functions
+    setBandueberwachungEnabled,
 
     // Sleep Timer action functions
     setSleepTimerEnabled,

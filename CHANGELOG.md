@@ -1,4 +1,10 @@
 # `Small Gluetex Updates`
+_15.06.2026_
+
+- Added band monitoring enable/disable toggle — users can turn band monitoring on/off via Settings → Band Monitoring, with a gray "Disabled" indicator on the overview page when monitoring is off (previously only showed Present/Absent)
+- Safety coordinator now suppresses band monitoring checks when disabled or not in Production mode, preventing false triggered states during maintenance or idle
+
+# `Small Gluetex Updates`
 _12.06.2026_
 
 - Fixed safety stop notifications flooding the frontend and causing Electron to restart — replaced toast-based notifications (which replayed on every reconnect) with a state-driven blocking modal that requires explicit acknowledgment
