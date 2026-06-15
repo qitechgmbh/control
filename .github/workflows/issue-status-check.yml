@@ -16,7 +16,7 @@ jobs:
     
     steps:
       - name: Check assigned issues for status updates
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
