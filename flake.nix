@@ -2,13 +2,13 @@
   description = "QiTech Control";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
 
     # Crane for Rust builds with dependency caching
     crane.url = "github:ipetkov/crane";
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -88,7 +88,6 @@
               libudev-zero
               libpcap
               nodejs_22
-              nodePackages.npm
               lldb
               electron
               # dev tools
