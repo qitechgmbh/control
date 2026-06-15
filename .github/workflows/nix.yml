@@ -29,7 +29,7 @@ jobs:
             keep-env-derivations = true
             keep-outputs = true
 
-      - uses: nix-community/cache-nix-action@v6
+      - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-electron-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './electron/package-lock.json') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
@@ -46,7 +46,7 @@ jobs:
       - *checkout
       - *nix-install
 
-      - uses: nix-community/cache-nix-action@v6
+      - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-server-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './Cargo.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
@@ -65,7 +65,7 @@ jobs:
       - *nix-install
 
       - name: Use both Electron and Server Nix Store
-        uses: nix-community/cache-nix-action@v6
+        uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './Cargo.lock', './electron/package-lock.json') }}
 
