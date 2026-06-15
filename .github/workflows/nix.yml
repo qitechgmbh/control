@@ -20,7 +20,7 @@ jobs:
     steps:
       - &checkout
         name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - &nix-install
         uses: nixbuild/nix-quick-install-action@v34
