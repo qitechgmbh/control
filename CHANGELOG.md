@@ -3,6 +3,7 @@ _15.06.2026_
 
 - Added band monitoring enable/disable toggle — users can turn band monitoring on/off via Settings → Band Monitoring, with a gray "Disabled" indicator on the overview page when monitoring is off (previously only showed Present/Absent)
 - Safety coordinator now suppresses band monitoring checks when disabled or not in Production mode, preventing false triggered states during maintenance or idle
+- Preserve operator's stepper_5_tension_controller toggle during safety stops — no longer forces it disabled, so the tape-feeder coupling resumes as configured when the motor is re-enabled
 
 # `Small Gluetex Updates`
 _12.06.2026_

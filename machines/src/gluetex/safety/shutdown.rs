@@ -61,7 +61,11 @@ impl Gluetex {
         self.stepper_4_controller.on_safety_stop();
         self.stepper_5_controller.on_safety_stop();
 
-        self.stepper_5_tension_controller.set_enabled(false);
+        // NOTE: stepper_5_tension_controller is intentionally NOT disabled here.
+        // It is an operator toggle (tape-feeder follows the tension arm); the motor
+        // itself is already cut above via stepper_5.set_enabled(false), so no tape
+        // moves during the stop. Leaving the flag untouched preserves the operator's
+        // setting so the coupling resumes as configured when Wind re-enables the motor.
         self.traverse_controller.set_enabled(false);
         self.valve_controller.set_enabled(false);
         let _ = self.valve.set(false);
