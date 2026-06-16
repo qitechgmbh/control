@@ -2,6 +2,7 @@
   lib,
   buildNpmPackage,
   electron,
+  importNpmLock,
   nodejs_22,
 }:
 
@@ -15,12 +16,13 @@ buildNpmPackage (finalAttrs: {
   ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
 
   nodejs = nodejs_22;
-  makeCacheWritable = true;
-  npmDepsHash = "sha256-3xCFDwaZXcvcRzS3eFKjoWyxoouDV1HlXxLaTW+i8kQ=";
   npmFlags = [
     "--no-audit"
     "--no-fund"
   ];
+
+  npmDeps = importNpmLock { npmRoot = ../../electron; };
+  npmConfigHook = importNpmLock.npmConfigHook;
 
   installPhase = ''
     runHook preInstall
