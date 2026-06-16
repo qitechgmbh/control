@@ -7,6 +7,7 @@ edition = "2024"
 qitech_lib = { workspace = true }
 control_core = { path = "../control-core" }
 control_core_derive = { path = "../control-core-derive" }
+property = { path = "../property" }
 
 serde = "1.0.217"
 anyhow = "1.0.102"

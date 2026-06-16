@@ -1,6 +1,7 @@
+use property::{BoolProperty, LengthProperty};
+
 use crate::{
     MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH,
-    property::{BoolProperty, LengthProperty},
 };
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
@@ -118,21 +119,21 @@ impl LaserMachine {
     pub fn set_higher_tolerance(&mut self, higher_tolerance: f64) {
         self.config
             .higher_tolerance
-            .set::<millimeter>(higher_tolerance);
+            .set_as::<millimeter>(higher_tolerance);
         self.emit_state();
     }
 
     pub fn set_lower_tolerance(&mut self, lower_tolerance: f64) {
         self.config
             .lower_tolerance
-            .set::<millimeter>(lower_tolerance);
+            .set_as::<millimeter>(lower_tolerance);
         self.emit_state();
     }
 
     pub fn set_target_diameter(&mut self, target_diameter: f64) {
         self.config
             .target_diameter
-            .set::<millimeter>(target_diameter);
+            .set_as::<millimeter>(target_diameter);
         self.emit_state();
     }
 
@@ -207,9 +208,9 @@ impl LaserMachine {
         }
 
         if let Some(m) = &laser.measurement {
-            self.diameter.set::<millimeter>(m.diameter as f64 / 1000.0);
-            self.x_diameter.set::<millimeter>(m.x_axis as f64 / 1000.0);
-            self.y_diameter.set::<millimeter>(m.y_axis as f64 / 1000.0);
+            self.diameter.set_as::<millimeter>(m.diameter as f64 / 1000.0);
+            self.x_diameter.set_as::<millimeter>(m.x_axis as f64 / 1000.0);
+            self.y_diameter.set_as::<millimeter>(m.y_axis as f64 / 1000.0);
         };
 
         self.in_tolerance.set(self.compute_in_tolerance());

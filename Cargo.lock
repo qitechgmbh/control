@@ -1166,6 +1166,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25ba4bd83f9415b58b4ed8dc5714c76e626a105be4646c02630ad730ad3b5aa4"
 dependencies = [
  "hash32",
+ "serde_core",
  "stable_deref_trait",
 ]
 
@@ -1456,6 +1457,7 @@ dependencies = [
  "euclid",
  "heapless 0.9.3",
  "lazy_static",
+ "property",
  "qitech_lib",
  "serde",
  "serde_json",
@@ -1815,6 +1817,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "property"
+version = "0.1.0"
+dependencies = [
+ "heapless 0.9.3",
+ "qitech_lib",
+ "serde",
+ "serde_json",
+ "uom",
+]
+
+[[package]]
 name = "prost"
 version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1833,6 +1846,7 @@ dependencies = [
  "control_core",
  "erased-serde",
  "machine_implementations",
+ "property",
  "qitech_lib",
  "serde",
  "serde_json",

@@ -4,6 +4,7 @@ members = [
     "control-core",
     "machine_implementations",
     "control-core-derive",
+    "property",
 #    "utils",
 ]
 exclude = []

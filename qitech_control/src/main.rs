@@ -1,6 +1,6 @@
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
-use machine_implementations::{MACHINE_LASER_V1, MachineNewArgs, property};
+use machine_implementations::{MACHINE_LASER_V1, MachineNewArgs};
 use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
