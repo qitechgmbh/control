@@ -16,7 +16,7 @@ buildNpmPackage (finalAttrs: {
 
   nodejs = nodejs_22;
   makeCacheWritable = true;
-  npmDepsHash = "sha256-EWC9VL6MjJYpdAuuB8E5wxcv7mf40VMrqdeUWlS3o64=";
+  npmDepsHash = "sha256-AyufFg9oA+PeFTlnb1XUHz6Ij5Y1MEa9VESZDl3YHZ4=";
   npmFlags = [
     "--no-audit"
     "--no-fund"
