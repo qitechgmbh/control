@@ -34,6 +34,7 @@ sudo \
     	--show-trace \
     	--impure \
     	--option sandbox false \
+    	-L \
     	--option eval-cache false
 
 sudo reboot

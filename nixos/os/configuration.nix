@@ -1,12 +1,16 @@
 { config, pkgs, ... }:
 
-let gitInfo = import ../gitInfo.nix { inherit pkgs; };
-in {
+let
+  gitInfo = import ../gitInfo.nix { inherit pkgs; };
+in
+{
   imports = [
-    (if builtins.pathExists "/etc/nixos/hardware-configuration.nix" then
-      /etc/nixos/hardware-configuration.nix
-    else
-      ./ci-hardware-configuration.nix)
+    (
+      if builtins.pathExists "/etc/nixos/hardware-configuration.nix" then
+        /etc/nixos/hardware-configuration.nix
+      else
+        ./ci-hardware-configuration.nix
+    )
   ];
 
   # Bootloader.
@@ -15,7 +19,7 @@ in {
     consoleMode = "max"; # Use the highest available resolution
   };
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelPackages = pkgs.linuxPackages_6_13;
+  boot.kernelPackages = pkgs.linuxPackages_6_18;
   boot.kernelModules = [ "i915" ];
 
   boot.kernelParams = [
@@ -77,7 +81,9 @@ in {
     extraOptions = ''
       experimental-features = nix-command flakes
     '';
-    settings = { sandbox = false; };
+    settings = {
+      sandbox = false;
+    };
   };
 
   # Create a realtime group
@@ -147,7 +153,6 @@ in {
   services.xserver.displayManager.gdm = {
     enable = true;
     autoSuspend = false;
-    wayland = true;
   };
 
   services.xserver.desktopManager.gnome.enable = true;
@@ -167,16 +172,16 @@ in {
   };
 
   # Ensure all power management is disabled
-  services.logind = {
-    lidSwitch = "ignore";
-    extraConfig = ''
-      HandlePowerKey=ignore
-      HandleSuspendKey=ignore
-      HandleHibernateKey=ignore
-      HandleLidSwitch=ignore
-      IdleAction=ignore
-    '';
-  };
+  # services.logind = {
+  #   lidSwitch = "ignore";
+  #   extraConfig = ''
+  #     HandlePowerKey=ignore
+  #     HandleSuspendKey=ignore
+  #     HandleHibernateKey=ignore
+  #     HandleLidSwitch=ignore
+  #     IdleAction=ignore
+  #   '';
+  # };
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -227,7 +232,12 @@ in {
   users.users.qitech = {
     isNormalUser = true;
     description = "QiTech HMI";
-    extraGroups = [ "networkmanager" "wheel" "realtime" "wireshark" ];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+      "realtime"
+      "wireshark"
+    ];
     packages = with pkgs; [ ];
   };
 
@@ -263,37 +273,39 @@ in {
     htop
     wireshark
     pciutils
-    neofetch
   ];
 
   xdg.portal.enable = true;
   xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
 
-  environment.gnome.excludePackages = (with pkgs; [
-    atomix # puzzle game
-    baobab # disk usage analyzer
-    cheese # webcam tool
-    eog # image viewer
-    epiphany # web browser
-    evince # document viewer
-    geary # email reader
-    simple-scan # document scanner
-    gnome-characters
-    gnome-music
-    gnome-photos
-    gnome-terminal
-    gnome-tour
-    gnome-calculator
-    gnome-calendar
-    gnome-contacts
-    gnome-maps
-    gnome-weather
-    hitori # sudoku game
-    iagno # go game
-    tali # poker game
-    totem # video player
-    seahorse # password manager
-  ]);
+  environment.gnome.excludePackages = (
+    with pkgs;
+    [
+      atomix # puzzle game
+      baobab # disk usage analyzer
+      cheese # webcam tool
+      eog # image viewer
+      epiphany # web browser
+      evince # document viewer
+      geary # email reader
+      simple-scan # document scanner
+      gnome-characters
+      gnome-music
+      gnome-photos
+      gnome-terminal
+      gnome-tour
+      gnome-calculator
+      gnome-calendar
+      gnome-contacts
+      gnome-maps
+      gnome-weather
+      hitori # sudoku game
+      iagno # go game
+      tali # poker game
+      totem # video player
+      seahorse # password manager
+    ]
+  );
 
   # Set system wide env variables
   environment.variables = {
@@ -327,14 +339,17 @@ in {
     settings = {
       interface = "enp1s0"; # only this interface
       bind-interfaces = true;
-      server = [ "1.1.1.1" "8.8.8.8" ];
+      server = [
+        "1.1.1.1"
+        "8.8.8.8"
+      ];
 
       # DHCP subnet + pool
       dhcp-range = "10.10.10.50,10.10.10.250,255.255.255.0,12h";
 
       # Default gateway (router)
       dhcp-option = [
-        "3,10.10.10.1"      # option 3 = router
+        "3,10.10.10.1" # option 3 = router
         "6,1.1.1.1,8.8.8.8" # option 6 = DNS servers
       ];
     };
