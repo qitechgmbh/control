@@ -38,7 +38,7 @@ export function useWagoDioSeparate() {
 
   useEffect(() => {
     if (state) stateOptimistic.setReal(state);
-  }, [state, stateOptimistic]);
+  }, [state, stateOptimistic.setReal]);
 
   const { request: sendMutation } = useMachineMutate(
     z.object({
