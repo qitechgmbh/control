@@ -427,7 +427,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bf9f36f8e417f75a8c72355185d494d191ce05e3#bf9f36f8e417f75a8c72355185d494d191ce05e3"
 dependencies = [
  "anyhow",
  "libc",
@@ -815,7 +815,7 @@ dependencies = [
 [[package]]
 name = "ethercat_hal"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bf9f36f8e417f75a8c72355185d494d191ce05e3#bf9f36f8e417f75a8c72355185d494d191ce05e3"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -836,7 +836,7 @@ dependencies = [
 [[package]]
 name = "ethercat_hal_derive"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bf9f36f8e417f75a8c72355185d494d191ce05e3#bf9f36f8e417f75a8c72355185d494d191ce05e3"
 dependencies = [
  "deluxe",
  "proc-macro2",
@@ -1515,7 +1515,7 @@ dependencies = [
 [[package]]
 name = "machines"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bf9f36f8e417f75a8c72355185d494d191ce05e3#bf9f36f8e417f75a8c72355185d494d191ce05e3"
 
 [[package]]
 name = "matchit"
@@ -1581,7 +1581,7 @@ dependencies = [
 [[package]]
 name = "modbus"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bf9f36f8e417f75a8c72355185d494d191ce05e3#bf9f36f8e417f75a8c72355185d494d191ce05e3"
 dependencies = [
  "anyhow",
  "common",
@@ -1905,7 +1905,7 @@ dependencies = [
 [[package]]
 name = "qitech_lib"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bf9f36f8e417f75a8c72355185d494d191ce05e3#bf9f36f8e417f75a8c72355185d494d191ce05e3"
 dependencies = [
  "bitvec",
  "common",
@@ -2194,7 +2194,7 @@ dependencies = [
 [[package]]
 name = "serial"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bf9f36f8e417f75a8c72355185d494d191ce05e3#bf9f36f8e417f75a8c72355185d494d191ce05e3"
 dependencies = [
  "anyhow",
  "tokio",
@@ -2819,7 +2819,7 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 [[package]]
 name = "units"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?branch=macos-fixes#7090dba615d4e5076df6d742cf565c364deddbbf"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bf9f36f8e417f75a8c72355185d494d191ce05e3#bf9f36f8e417f75a8c72355185d494d191ce05e3"
 dependencies = [
  "uom",
 ]
