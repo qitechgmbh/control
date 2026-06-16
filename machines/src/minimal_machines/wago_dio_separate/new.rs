@@ -59,12 +59,40 @@ impl MachineNewTrait for WagoDioSeparate {
 
             coupler.init_slot_modules(_wago_750_354.1);
 
-            // Get the WAGO 750-430 8CH DI module at position 1
-            let dev = coupler.slot_devices.get(0).unwrap().clone().unwrap();
+            let dev = coupler
+                .slot_devices
+                .get(0)
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "[{}::WagoDioSeparate::new] Expected Wago 750-430 module in slot 0, but slot 0 is not configured",
+                        module_path!()
+                    )
+                })?
+                .clone()
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "[{}::WagoDioSeparate::new] Expected Wago 750-430 module in slot 0, but slot 0 is empty or no device is present",
+                        module_path!()
+                    )
+                })?;
             let wago750_430: Arc<RwLock<Wago750_430>> = downcast_device::<Wago750_430>(dev).await?;
 
-            // Get the WAGO 750-530 8CH DO module at position 2
-            let dev = coupler.slot_devices.get(1).unwrap().clone().unwrap();
+            let dev = coupler
+                .slot_devices
+                .get(1)
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "[{}::WagoDioSeparate::new] Expected Wago 750-530 module in slot 1, but slot 1 is not configured",
+                        module_path!()
+                    )
+                })?
+                .clone()
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "[{}::WagoDioSeparate::new] Expected Wago 750-530 module in slot 1, but slot 1 is empty or no device is present",
+                        module_path!()
+                    )
+                })?;
             let wago750_530: Arc<RwLock<Wago750_530>> = downcast_device::<Wago750_530>(dev).await?;
 
             let di1 = DigitalInput::new(wago750_430.clone(), Wago750_430Port::Port1);
