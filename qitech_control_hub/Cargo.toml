@@ -1,0 +1,19 @@
+[workspace]
+
+[package]
+name = "control_hub"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev  = "1058e40d9d63c234e55510aefe35b54938bf0a41" }
+property = { path = "../property", features = ["serde"]}
+
+uom = { version = "0.37.0", default-features = false, features = [ "f64" ] }
+heapless = { version = "0.9.3" }
+
+serde = { version = "1.0.217", features = ["derive"], optional = true }
+postcard="1.1.3"
+
+[features]
+default = []

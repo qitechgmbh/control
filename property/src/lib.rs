@@ -1,6 +1,6 @@
 const POOL_CAPACITY_MAX_FLOAT: usize = 1024;
 const POOL_CAPACITY_MAX_INTEGER: usize = 1024;
-const POOL_CAPACITY_MAX_BOOLEAN: usize = 1024;
+const POOL_CAPACITY_MAX_BOOLEAN: usize = 256;
 const POOL_CAPACITY_MAX_STRING: usize = 64;
 
 mod property;

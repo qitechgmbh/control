@@ -21,6 +21,7 @@ use machine_implementations::{
         QiTechMachineIdentificationUnique,
     },
 };
+use property::PropertySet;
 use qitech_lib::{
     ethercat_hal::{
         Consumer, EtherCATThreadChannel, MetaSubdevice, Producer, controller::EtherCATController,
@@ -238,7 +239,7 @@ pub struct MainState {
     pub machines: Vec<Box<dyn QiTechMachine>>,
     pub machine_errors: HashMap<MachineIdentificationUnique, String>,
     pub machine_data_reg: MachineDataRegistry,
-    pub properties: property::PropertySet,
+    pub properties: Box<PropertySet>,
 }
 
 impl MainState {

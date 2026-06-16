@@ -22,4 +22,9 @@ impl PropertySet {
         self.r#bool.clear_dirty_flags();
         self.string.clear_dirty_flags();
     }
+
+    pub fn remove_where_machine_uid(&mut self, machine_uid: u64) {
+        //TODO: implement
+        _ = machine_uid;
+    }
 }

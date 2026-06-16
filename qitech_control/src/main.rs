@@ -21,6 +21,8 @@ use qitech_lib::{
 use std::{sync::Arc, time::Duration};
 
 #[cfg(not(feature = "mock"))]
+use crate::apis::property_exporter;
+#[cfg(not(feature = "mock"))]
 use crate::app_state::MainState;
 use crate::{
     apis::socketio::main_namespace::ethercat_devices_event::EcatState, app_state::get_async_runtime,
@@ -50,7 +52,7 @@ fn setup_ethercat(
     );
 
     for meta in eth_control.controller.get_subdevices() {
-        let dev = device_from_subdevice_identity_rc(&meta);
+        let dev = device_from_subdevice_identity_rc(meta);
 
         let dev = match dev {
             Ok(d) => d,
@@ -60,7 +62,7 @@ fn setup_ethercat(
             }
         };
 
-        main_state.subdevices.push((meta.clone(), dev.clone()));
+        main_state.subdevices.push((*meta, dev.clone()));
         if meta.vendor == BECKHOFF_VENDOR_ID {
             let _res = eth_control
                 .channel
@@ -99,19 +101,14 @@ fn add_laser(
             == MACHINE_LASER_V1
     });
 
-    match machine_index_to_remove {
-        Some(index) => {
-            main_state.machines.remove(index);
-        }
-        None => (),
+    if let Some(index) = machine_index_to_remove {
+        main_state.machines.remove(index);
     }
 
-    match machine_obj_index {
-        Some(index) => {
-            shared_state.machines.try_write()?.remove(index);
-        }
-        None => (),
+    if let Some(index) = machine_obj_index {
+        shared_state.machines.try_write()?.remove(index);
     }
+    
     // Port is not used right now, so check if port exists
     let ports = get_available_ports()?;
     for port in ports {
@@ -260,35 +257,37 @@ fn optimized_ethercat_init(
     init_ethercat(interface, Some(config))
 }
 
-pub fn remove_machines(
+pub fn remove_machine(
     main_state: &mut MainState,
     shared_state: Arc<SharedAppState>,
-    machines_to_remove: Option<usize>,
+    index: usize,
 ) {
-    match machines_to_remove {
-        Some(i) => {
-            let machine = main_state
-                .machines
-                .get(i)
-                .expect("Should not be none as we got an index into the machines vec");
-            let ident = machine.get_identification();
-            main_state.machine_data_reg.zero_entry(ident);
-            main_state.machines.remove(i);
-            let mut guard = shared_state
-                .machines
-                .try_write()
-                .expect("sharedstate.machines Should never be locked here!!!"); // Is expected to never be locked at this point
-            let pos = guard
-                .iter()
-                .position(|x| x.machine_identification_unique == ident.into())
-                .expect("Machine has to still exist as metadata at this point");
-            main_state.hardware.remove(&ident);
-            guard.remove(pos);
-            drop(guard);
-            send_machines_event(shared_state.clone());
-        }
-        None => (),
-    }
+    let machine = main_state
+        .machines
+        .get(index)
+        .expect("Should not be none as we got an index into the machines vec");
+
+    let ident = machine.get_identification();
+    main_state.machine_data_reg.zero_entry(ident);
+    main_state.machines.remove(index);
+
+    // free up all slots the machine used
+    main_state.properties.remove_where_machine_uid(ident.as_u64());
+
+    let mut guard = shared_state
+        .machines
+        .try_write()
+        .expect("sharedstate.machines Should never be locked here!!!"); // Is expected to never be locked at this point
+
+    let pos = guard
+        .iter()
+        .position(|x| x.machine_identification_unique == ident.into())
+        .expect("Machine has to still exist as metadata at this point");
+
+    main_state.hardware.remove(&ident);
+    guard.remove(pos);
+    drop(guard);
+    send_machines_event(shared_state.clone());
 }
 
 fn find_ethercat_interface() -> Result<String, anyhow::Error> {
@@ -313,10 +312,10 @@ fn find_ethercat_interface() -> Result<String, anyhow::Error> {
                     Err(_) => println!("{} is not ethercat", &interface.name),
                 }
             }
-            return Err(anyhow::anyhow!("No EtherCAT Interface Found"));
+            Err(anyhow::anyhow!("No EtherCAT Interface Found"))
         }
         Err(_) => {
-            return Err(anyhow::anyhow!("No EtherCAT Interface Found"));
+            Err(anyhow::anyhow!("No EtherCAT Interface Found"))
         }
     }
 }
@@ -338,25 +337,20 @@ fn main_logic() {
     };
 
     let state = Arc::new(shared_state);
-    match &eth_control {
-        Some(ecat) => {
-            send_ecat_state(state.clone(), ecat.controller.get_state().into());
-        }
-        None => (),
+    if let Some(ecat) = &eth_control {
+        send_ecat_state(state.clone(), ecat.controller.get_state().into());
     }
 
     setup_api_and_websock(state.clone());
 
-    match &eth_control {
-        Some(control) => setup_ethercat(state.clone(), &mut main_state, control),
-        None => (),
+    let properties_tx = property_exporter::start();
+
+    if let Some(control) = &eth_control { 
+        setup_ethercat(state.clone(), &mut main_state, control) 
     };
 
-    match &eth_control {
-        Some(ecat) => {
-            send_ecat_state(state.clone(), ecat.controller.get_state().into());
-        }
-        None => (),
+    if let Some(ecat) = &eth_control {
+        send_ecat_state(state.clone(), ecat.controller.get_state().into());
     }
 
     if stay_in_preop && eth_control.is_some() {
@@ -372,30 +366,29 @@ fn main_logic() {
 
     // Order is important here, because when detect_and_build_machines is called
     // Every machine assumes ethercat devices are in PreOp, finalize moves to OP
-    match &eth_control {
-        Some(ecat) => {
-            finalize_ethercat(&mut main_state, ecat);
-            send_ecat_state(state.clone(), ecat.controller.get_state().into());
-        }
-        None => (),
+    if let Some(ecat) = &eth_control {
+        finalize_ethercat(&mut main_state, ecat);
+        send_ecat_state(state.clone(), ecat.controller.get_state().into());
     };
 
     let mut last_check = std::time::Instant::now();
     let hotplug_duration = Duration::from_secs(4);
 
+    let mut prev_property_export_ts = std::time::Instant::now();
+    let property_export_interval = Duration::from_secs_f64(1.0 / 32.0);
+
     loop {
         let now = std::time::Instant::now();
-        match &mut eth_control {
-            Some(control) => {
-                write_ecat_inputs(&mut control.app_handle, main_state.subdevices.clone());
-            }
-            None => (),
+
+        if let Some(control) = &mut eth_control {
+            write_ecat_inputs(&mut control.app_handle, main_state.subdevices.clone());
         };
 
-        let machines_to_remove =
+        let machine_to_remove =
             run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
-        if machines_to_remove.is_some() {
-            remove_machines(&mut main_state, state.clone(), machines_to_remove);
+            
+        if let Some(index) = machine_to_remove {
+            remove_machine(&mut main_state, state.clone(), index);
         }
 
         if now.duration_since(last_check) >= hotplug_duration {
@@ -403,12 +396,23 @@ fn main_logic() {
             last_check = now;
         }
 
-        match &mut eth_control {
-            Some(control) => {
-                write_ecat_outputs(&mut control.app_handle, main_state.subdevices.clone());
-            }
-            None => (),
+        if let Some(control) = &mut eth_control {
+            write_ecat_outputs(&mut control.app_handle, main_state.subdevices.clone());
         };
+
+        if now.duration_since(prev_property_export_ts) >= property_export_interval {
+            let properties = Arc::from(main_state.properties.clone());
+            if let Err(e) = properties_tx.try_send(properties) {
+                eprintln!("Failed enqueue property export: {}", e);
+            };
+
+            // reset the dirty flags since we exported the dirty ones
+            main_state.properties.clear_dirty_flags();
+
+            // reset interval
+            prev_property_export_ts = now;
+        }
+
         std::thread::sleep(Duration::from_micros(100));
     }
 }
