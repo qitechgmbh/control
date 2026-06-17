@@ -74,6 +74,17 @@ impl<T: Debug + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
         Ok(())
     }
 
+    pub fn dirty_count(&self) -> usize {
+        let mut count = 0;
+        for item in &self.slots {
+            if item.dirty {
+                count += 1;
+            }
+        }
+
+        count
+    }
+
     pub fn clear_dirty_flags(&mut self) {
         for item in &mut self.slots {
             item.dirty = false;

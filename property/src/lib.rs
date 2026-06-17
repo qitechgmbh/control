@@ -31,6 +31,7 @@ pub use codec::{
     DirtyPropertyPoolExportView,
     DirtyPropertySetExportView,
     ExportedPropertySet,
+    ExportedPropertyEntry,
 };
 
 pub type StringPropertyValue = heapless::String<128>;

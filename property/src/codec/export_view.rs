@@ -59,7 +59,8 @@ where
     where
         S: Serializer,
     {
-        let mut seq = serializer.serialize_seq(None)?;
+        let count = self.pool.dirty_count();
+        let mut seq = serializer.serialize_seq(Some(count))?;
 
         for entry in self.pool.iter_dirty() {
             seq.serialize_element(entry)?;

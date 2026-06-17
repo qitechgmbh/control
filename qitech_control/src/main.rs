@@ -403,7 +403,7 @@ fn main_logic() {
         if now.duration_since(prev_property_export_ts) >= property_export_interval {
             let properties = Arc::from(main_state.properties.clone());
             if let Err(e) = properties_tx.try_send(properties) {
-                eprintln!("Failed enqueue property export: {}", e);
+                // eprintln!("Failed to enqueue property export: {}", e);
             };
 
             // reset the dirty flags since we exported the dirty ones

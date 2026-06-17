@@ -9,12 +9,18 @@ uom = { version = "0.37.0", default-features = false, features = [ "f64" ] }
 heapless = { version = "0.9.3" }
 serde = { version = "1.0.217", features = ["derive"], optional = true }
 
+clickhouse = { version = "0.14.2", optional = true}
+
 [features]
 default = []
 
 serde = [
     "dep:serde",
     "heapless/serde",
+]
+
+clickhouse = [
+    "dep:clickhouse"
 ]
 
 [dev-dependencies]
