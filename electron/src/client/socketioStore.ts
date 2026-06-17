@@ -312,6 +312,8 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
     socket.on("disconnect", (reason) => {
       socket.disconnect();
       resetStore(set);
+      
+      window.location.reload();
     });
     socket.on("event", (event: unknown) => {
       const event_parsed = eventSchema(z.any()).safeParse(event);
