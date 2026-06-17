@@ -157,7 +157,9 @@ fn finalize_ethercat(
     let _res = eth_control
         .channel
         .request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
-    std::thread::sleep(Duration::from_secs(5));
+    while !eth_control.controller.is_all_operational() {
+        std::thread::sleep(Duration::from_millis(50));
+    }
     for meta in &mut main_state.subdevices {
         let m = eth_control
             .controller
@@ -171,6 +173,13 @@ fn finalize_ethercat(
         meta.0.start_rx = m.start_rx;
         meta.0.end_rx = m.end_rx;
     }
+}
+
+fn send_ethercat_devices_event(state: Arc<SharedAppState>) {
+    let rt = get_async_runtime();
+    rt.spawn(async move {
+        let _res = state.send_ethercat_setup_done().await;
+    });
 }
 
 fn send_setup_done_events(state: Arc<SharedAppState>) {
@@ -291,7 +300,9 @@ fn find_ethercat_interface() -> String {
                 for interface in interfaces {
                     match interface.link_type {
                         qitech_lib::ethercat_hal::interface_discovery::LinkType::Link => (),
-                        qitech_lib::ethercat_hal::interface_discovery::LinkType::Unknown => continue,
+                        qitech_lib::ethercat_hal::interface_discovery::LinkType::Unknown => {
+                            continue;
+                        }
                         qitech_lib::ethercat_hal::interface_discovery::LinkType::Ipv4 => continue,
                         qitech_lib::ethercat_hal::interface_discovery::LinkType::Ipv6 => continue,
                     };
@@ -353,6 +364,9 @@ fn main_logic() {
         None => (),
     }
 
+    // Subdevices are known after PreOp — show them in the frontend now
+    send_ethercat_devices_event(state.clone());
+
     if stay_in_preop && eth_control.is_some() {
         send_setup_done_events(state.clone());
         println!("Staying in PreOp as requested, exiting after setup.");
@@ -361,11 +375,10 @@ fn main_logic() {
         }
     }
 
+    // detect_and_build_machines must run in PreOp (machines initialize assuming PreOp)
     detect_and_build_machines(state.clone(), &mut main_state);
-    send_setup_done_events(state.clone());
 
-    // Order is important here, because when detect_and_build_machines is called
-    // Every machine assumes ethercat devices are in PreOp, finalize moves to OP
+    // finalize_ethercat transitions to OP and waits until all subdevices confirm OP
     match &eth_control {
         Some(ecat) => {
             finalize_ethercat(&mut main_state, ecat);
@@ -373,6 +386,9 @@ fn main_logic() {
         }
         None => (),
     };
+
+    // Only emit machines to frontend after OP state is confirmed
+    send_machines_event(state.clone());
 
     let mut last_check = std::time::Instant::now();
     let hotplug_duration = Duration::from_secs(4);
