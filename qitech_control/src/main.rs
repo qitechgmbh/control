@@ -283,33 +283,40 @@ pub fn remove_machines(
     }
 }
 
-fn find_ethercat_interface() -> Result<String, anyhow::Error> {
-    let interfaces = qitech_lib::ethercat_hal::interface_discovery::list_ethernet_interfaces();
-    match interfaces {
-        Ok(interfaces) => {
-            for interface in interfaces {
-                match interface.link_type {
-                    qitech_lib::ethercat_hal::interface_discovery::LinkType::Link => (),
-                    qitech_lib::ethercat_hal::interface_discovery::LinkType::Unknown => continue,
-                    qitech_lib::ethercat_hal::interface_discovery::LinkType::Ipv4 => continue,
-                    qitech_lib::ethercat_hal::interface_discovery::LinkType::Ipv6 => continue,
-                };
+fn find_ethercat_interface() -> String {
+    loop {
+        let interfaces = qitech_lib::ethercat_hal::interface_discovery::list_ethernet_interfaces();
+        match interfaces {
+            Ok(interfaces) => {
+                for interface in interfaces {
+                    match interface.link_type {
+                        qitech_lib::ethercat_hal::interface_discovery::LinkType::Link => (),
+                        qitech_lib::ethercat_hal::interface_discovery::LinkType::Unknown => continue,
+                        qitech_lib::ethercat_hal::interface_discovery::LinkType::Ipv4 => continue,
+                        qitech_lib::ethercat_hal::interface_discovery::LinkType::Ipv6 => continue,
+                    };
 
-                let res =
-                    qitech_lib::ethercat_hal::interface_discovery::test_interface(&interface.name);
-                match res {
-                    Ok(_) => {
-                        println!("{} is ethercat", &interface.name);
-                        return Ok(interface.name);
+                    let res = qitech_lib::ethercat_hal::interface_discovery::test_interface(
+                        &interface.name,
+                    );
+                    match res {
+                        Ok(_) => {
+                            println!("{} is ethercat", &interface.name);
+                            return interface.name;
+                        }
+                        Err(_) => println!("{} is not ethercat", &interface.name),
                     }
-                    Err(_) => println!("{} is not ethercat", &interface.name),
                 }
+                println!("No EtherCAT interface found, retrying in 2s...");
             }
-            return Err(anyhow::anyhow!("No EtherCAT Interface Found"));
+            Err(e) => {
+                println!(
+                    "Could not list ethernet interfaces ({:?}), retrying in 2s...",
+                    e
+                );
+            }
         }
-        Err(_) => {
-            return Err(anyhow::anyhow!("No EtherCAT Interface Found"));
-        }
+        std::thread::sleep(Duration::from_secs(2));
     }
 }
 
@@ -319,15 +326,10 @@ fn main_logic() {
         || std::env::args().any(|a| a == "preop");
     let mut shared_state = SharedAppState::new();
     let mut main_state = MainState::new();
-    let res = find_ethercat_interface();
-    let mut eth_control = match res {
-        Ok(interface) => {
-            let eth_control = optimized_ethercat_init(&interface);
-            shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
-            Some(eth_control)
-        }
-        Err(_) => None,
-    };
+    let interface = find_ethercat_interface();
+    let eth_control = optimized_ethercat_init(&interface);
+    shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
+    let mut eth_control = Some(eth_control);
 
     let state = Arc::new(shared_state);
     match &eth_control {
