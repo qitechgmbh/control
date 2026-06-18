@@ -9,6 +9,7 @@ import { toastError, toastZodError } from "@/components/Toast";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { FPS_30 } from "@/lib/constants";
 import { mainNamespaceStore } from "./mainNamespace";
+import { router } from "@/routes/router";
 
 /**
  * Simple buffer-based store updater to limit React re-renders to ~30 FPS
@@ -245,6 +246,7 @@ export function deserializeNamespaceId(namespaceId: string): NamespaceId {
 
 type SocketioStore = {
   baseUrl: string;
+  backendConnected: boolean;
   namespaces: Record<string, Namespace<unknown>>;
   getNamespace: (namespaceId: NamespaceId) => Namespace<unknown> | undefined;
   hasNamespace: (namespaceId: NamespaceId) => boolean;
@@ -265,6 +267,7 @@ type SocketioStore = {
  */
 export const useSocketioStore = create<SocketioStore>()((set, get) => ({
   baseUrl: "http://localhost:3001",
+  backendConnected: false,
   namespaces: {},
   getNamespace: (namespaceId: NamespaceId) => {
     const namespace_path = serializeNamespaceId(namespaceId);
@@ -308,12 +311,45 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
     socket.on("connect", () => {
       console.log(`Connected to ${namespace_path}`);
       resetStore(set);
+      if (namespace_path === "/main") {
+        set(
+          produce((s: SocketioStore) => {
+            s.backendConnected = true;
+          }),
+        );
+      }
     });
-    socket.on("disconnect", (reason) => {
-      socket.disconnect();
+    socket.on("disconnect", (_reason) => {
       resetStore(set);
-      
-      window.location.reload();
+      if (namespace_path === "/main") {
+        mainNamespaceStore.setState({
+          ethercatDevices: null,
+          ethercatState: null,
+          machines: null,
+          ethercatInterfaceDiscovery: null,
+        });
+        set(
+          produce((s: SocketioStore) => {
+            s.backendConnected = false;
+          }),
+        );
+        for (const [path, ns] of Object.entries(get().namespaces)) {
+          if (path !== "/main") ns.socket.disconnect();
+        }
+        router.navigate({ to: "/_sidebar/setup/ethercat" });
+      } else if (namespaceId.type === "machine") {
+        const serial = namespaceId.machine_identification_unique.serial;
+        const repollingInterval = setInterval(() => {
+          const mainState = mainNamespaceStore.getState();
+          const machineExists = mainState.machines?.data?.machines.some(
+            (m) => m.machine_identification_unique.serial === serial,
+          );
+          if (machineExists && !socket.connected) {
+            socket.connect();
+            clearInterval(repollingInterval);
+          }
+        }, 500);
+      }
     });
     socket.on("event", (event: unknown) => {
       const event_parsed = eventSchema(z.any()).safeParse(event);
@@ -471,6 +507,10 @@ export interface NamespaceImplementationConfig<S> {
 }
 
 export type NamespaceImplementationResult<S> = (namespaceId: NamespaceId) => S;
+
+export function useBackendConnected(): boolean {
+  return useSocketioStore((s) => s.backendConnected);
+}
 
 export function createNamespaceHookImplementation<S>({
   createStore,
