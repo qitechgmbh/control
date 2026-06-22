@@ -60,6 +60,11 @@ interface UpdateContext {
       progress?: number;
     }) => void,
   ) => void;
+  // Token management — token is sent to main for storage; never returned to renderer
+  hasToken: () => Promise<boolean>;
+  saveToken: (token: string) => Promise<{ success: boolean; error?: string }>;
+  loadTokenFromFile: () => Promise<{ success: boolean; error?: string }>;
+  clearToken: () => Promise<{ success: boolean }>;
 }
 
 interface TroubleshootContext {

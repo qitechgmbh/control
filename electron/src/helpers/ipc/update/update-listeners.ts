@@ -1,4 +1,4 @@
-import { ipcMain } from "electron";
+import { dialog, ipcMain } from "electron";
 import {
   UPDATE_FETCH_TARGETS_SEND,
   UPDATE_CANCEL,
@@ -9,12 +9,23 @@ import {
   UPDATE_FETCH_TARGETS_RECV,
   UPDATE_FETCH_CHANGELOG_SEND,
   UPDATE_FETCH_CHANGELOG_RECV,
+  UPDATE_SAVE_TOKEN,
+  UPDATE_LOAD_TOKEN_FILE,
+  UPDATE_HAS_TOKEN,
+  UPDATE_CLEAR_TOKEN,
 } from "./update-channels";
 import { spawn, ChildProcess } from "child_process";
 import tkill from "@jub3i/tree-kill";
-import { existsSync, rmSync } from "fs";
+import { existsSync, readFileSync, rmSync } from "fs";
 import { GithubSource } from "@/setup/GithubSourceDialog";
 import { fetchChangelog, fetchTargets } from "./git-fetch-utils";
+import {
+  clearToken,
+  gitAuthArgs,
+  hasToken,
+  saveToken,
+  usbDefaultPath,
+} from "./token-store";
 
 type UpdateExecuteListenerParams = {
   githubRepoOwner: string;
@@ -86,6 +97,64 @@ export function addUpdateEventListeners() {
         });
     },
   );
+
+  // ── Token management handlers ────────────────────────────────────────────
+  ipcMain.handle(UPDATE_HAS_TOKEN, async () => {
+    return hasToken();
+  });
+
+  ipcMain.handle(UPDATE_SAVE_TOKEN, async (_event, token: string) => {
+    try {
+      saveToken(token);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error?.message ?? String(error) };
+    }
+  });
+
+  ipcMain.handle(UPDATE_CLEAR_TOKEN, async () => {
+    clearToken();
+    return { success: true };
+  });
+
+  ipcMain.handle(UPDATE_LOAD_TOKEN_FILE, async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ["openFile"],
+        defaultPath: usbDefaultPath(),
+        filters: [
+          { name: "Token files", extensions: ["txt"] },
+          { name: "All files", extensions: ["*"] },
+        ],
+      });
+
+      if (result.canceled || !result.filePaths[0]) {
+        return { success: false, error: "Cancelled" };
+      }
+
+      const filePath = result.filePaths[0];
+      const content = readFileSync(filePath, "utf8");
+
+      // Parse: take first non-empty trimmed line
+      const token = content
+        .split("\n")
+        .map((l) => l.trim())
+        .find((l) => l.length > 0);
+
+      if (!token || /\s/.test(token)) {
+        return {
+          success: false,
+          error: "File does not contain a valid token",
+        };
+      }
+
+      saveToken(token);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error?.message ?? String(error) };
+    }
+  });
+  // ────────────────────────────────────────────────────────────────────────
 
   ipcMain.handle(UPDATE_CANCEL, async (event) => {
     if (currentUpdateProcess) {
@@ -313,8 +382,10 @@ async function cloneRepository(
   // Construct repository URL
   const repoUrl = `https://github.com/${githubRepoOwner}/${githubRepoName}.git`;
 
-  // Determine clone arguments based on whether tag, branch, or commit is specified
-  const cloneArgs = ["clone", "--progress", "--recurse-submodules", repoUrl];
+  // Determine clone arguments based on whether tag, branch, or commit is specified.
+  // Auth args are prepended so private repos work without storing credentials
+  // in the on-disk git config (unlike a token-in-URL approach).
+  const cloneArgs = [...gitAuthArgs(), "clone", "--progress", repoUrl];
 
   if (tag) {
     // Clone a specific tag
@@ -377,7 +448,19 @@ async function runCommand(
   event: Electron.IpcMainInvokeEvent,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const completeCommand = `${cmd} ${args.join(" ")}`;
+    // Redact any `-c http.extraheader=...` value so the PAT never appears in
+    // the on-screen log stream.
+    const redactedArgs = args.map((arg, i) => {
+      if (
+        i > 0 &&
+        args[i - 1] === "-c" &&
+        arg.startsWith("http.extraheader=")
+      ) {
+        return "http.extraheader=***";
+      }
+      return arg;
+    });
+    const completeCommand = `${cmd} ${redactedArgs.join(" ")}`;
     const workingDirText = terminalGray(workingDir);
     event.sender.send(
       UPDATE_LOG,

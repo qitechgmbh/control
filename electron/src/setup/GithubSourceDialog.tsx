@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/Icon";
 import { TouchButton } from "@/components/touch/TouchButton";
+import { Badge } from "@/components/ui/badge";
 
 type Props = {
   value: GithubSource;
@@ -87,6 +88,46 @@ export function GithubSourceDialogContent({
     setOpen(false);
   };
 
+  // Token state
+  const [tokenSet, setTokenSet] = React.useState(false);
+  const [tokenInput, setTokenInput] = React.useState("");
+  const [tokenLoading, setTokenLoading] = React.useState(false);
+  const [tokenError, setTokenError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    window.update.hasToken().then(setTokenSet);
+  }, []);
+
+  const handleSaveToken = async () => {
+    setTokenLoading(true);
+    setTokenError(null);
+    const result = await window.update.saveToken(tokenInput.trim());
+    setTokenLoading(false);
+    if (result.success) {
+      setTokenSet(tokenInput.trim().length > 0);
+      setTokenInput("");
+    } else {
+      setTokenError(result.error ?? "Failed to save token");
+    }
+  };
+
+  const handleLoadFromUsb = async () => {
+    setTokenLoading(true);
+    setTokenError(null);
+    const result = await window.update.loadTokenFromFile();
+    setTokenLoading(false);
+    if (result.success) {
+      setTokenSet(true);
+    } else if (result.error !== "Cancelled") {
+      setTokenError(result.error ?? "Failed to load token from file");
+    }
+  };
+
+  const handleClearToken = async () => {
+    await window.update.clearToken();
+    setTokenSet(false);
+  };
+
   return (
     <DialogContent>
       <DialogHeader>
@@ -99,7 +140,7 @@ export function GithubSourceDialogContent({
       <Separator />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Gtihub Owner */}
+          {/* GitHub Owner */}
           <FormField
             control={form.control}
             name="githubRepoOwner"
@@ -137,6 +178,73 @@ export function GithubSourceDialogContent({
           </Button>
         </form>
       </Form>
+
+      {/* ── GitHub Access Token ──────────────────────────────────────────── */}
+      <Separator />
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">GitHub Access Token</span>
+          {tokenSet ? (
+            <Badge variant="default" className="text-xs">
+              Token set
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="text-xs">
+              No token
+            </Badge>
+          )}
+        </div>
+        <p className="text-muted-foreground text-xs">
+          Required only for private repositories. The token is encrypted and
+          stored on disk.
+        </p>
+
+        {tokenSet ? (
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={handleClearToken}
+            disabled={tokenLoading}
+          >
+            <Icon name="lu:Trash2" /> Remove token
+          </Button>
+        ) : (
+          <div className="space-y-2">
+            {/* Manual entry */}
+            <div className="flex gap-2">
+              <Input
+                type="password"
+                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                value={tokenInput}
+                onChange={(e) => setTokenInput(e.target.value)}
+                className="font-mono text-xs"
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSaveToken}
+                disabled={tokenLoading || tokenInput.trim().length === 0}
+              >
+                <Icon name="lu:Save" /> Save
+              </Button>
+            </div>
+            {/* Load from USB */}
+            <TouchButton
+              type="button"
+              variant="outline"
+              icon="lu:Usb"
+              className="w-max"
+              onClick={handleLoadFromUsb}
+              disabled={tokenLoading}
+            >
+              Load from USB
+            </TouchButton>
+          </div>
+        )}
+
+        {tokenError && <p className="text-destructive text-xs">{tokenError}</p>}
+      </div>
     </DialogContent>
   );
 }
