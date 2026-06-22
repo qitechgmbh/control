@@ -280,26 +280,62 @@ export function ChooseVersionPage() {
         }
       />
       {tags !== undefined && tags.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {tags.map((tag) => (
-            <UpdateButton
-              time={tag.date ? new Date(tag.date) : undefined}
-              key={tag.name}
-              title={tag.name}
-              kind="tag"
-              isOlder={isOlderThanCurrent(tag.date)}
-              onClick={() => {
-                navigate({
-                  to: "/_sidebar/setup/update/changelog",
-                  search: {
-                    tag: tag.name,
-                    ...githubSource,
-                  },
-                });
-              }}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {tags.slice(0, 3).map((tag) => (
+              <UpdateButton
+                time={tag.date ? new Date(tag.date) : undefined}
+                key={tag.name}
+                title={tag.name}
+                kind="tag"
+                isOlder={isOlderThanCurrent(tag.date)}
+                onClick={() => {
+                  navigate({
+                    to: "/_sidebar/setup/update/changelog",
+                    search: {
+                      tag: tag.name,
+                      ...githubSource,
+                    },
+                  });
+                }}
+              />
+            ))}
+          </div>
+          {tags.length > 3 && (
+            <Collapsible>
+              <CollapsibleTrigger className="w-full">
+                <div className="flex flex-row items-center gap-2 rounded-3xl border border-gray-200 bg-gray-50 p-3 hover:bg-gray-100">
+                  <Icon name="lu:ChevronsUpDown" />
+                  <span className="text-sm text-gray-600">
+                    Show {tags.length - 3} more versions
+                  </span>
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {tags.slice(3).map((tag) => (
+                    <UpdateButton
+                      time={tag.date ? new Date(tag.date) : undefined}
+                      key={tag.name}
+                      title={tag.name}
+                      kind="tag"
+                      isOlder={isOlderThanCurrent(tag.date)}
+                      onClick={() => {
+                        navigate({
+                          to: "/_sidebar/setup/update/changelog",
+                          search: {
+                            tag: tag.name,
+                            ...githubSource,
+                          },
+                        });
+                      }}
+                    />
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </>
       ) : null}
       {tags === undefined && <LoadingSpinner />}
       {tags?.length == 0 && <>No Versions</>}
