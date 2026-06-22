@@ -48,7 +48,22 @@ export function ChangelogPage() {
 
   return (
     <Page>
-      <SectionTitle title={`Changelog of ${versionType}`}>
+      <SectionTitle
+        title={`Changelog of ${versionType}`}
+        right={
+          <TouchButton
+            icon="lu:RefreshCw"
+            variant="outline"
+            disabled={changelog === undefined}
+            onClick={() => {
+              setChangelog(undefined);
+              window.update.fetchChangelog(source, ref);
+            }}
+          >
+            Reload
+          </TouchButton>
+        }
+      >
         <span className="font-mono text-2xl">{versionName}</span>
       </SectionTitle>
       {changelog === undefined ? (

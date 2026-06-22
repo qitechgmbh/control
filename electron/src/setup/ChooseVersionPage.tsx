@@ -261,7 +261,24 @@ export function ChooseVersionPage() {
         <GithubSourceDialog value={githubSource} onChange={setGithubSource} />
       </div>
 
-      <span className="text-xl">Choose a Version</span>
+      <SectionTitle
+        title="Choose a Version"
+        right={
+          <TouchButton
+            icon="lu:RefreshCw"
+            variant="outline"
+            disabled={tags === undefined}
+            onClick={() => {
+              setTags(undefined);
+              setBranches(undefined);
+              setMasterCommits(undefined);
+              window.update.fetchTargets(githubSource);
+            }}
+          >
+            Reload
+          </TouchButton>
+        }
+      />
       {tags !== undefined && tags.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {tags.map((tag) => (
