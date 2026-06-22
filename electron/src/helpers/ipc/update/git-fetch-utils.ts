@@ -92,10 +92,14 @@ function removeStaleLockFiles(repoPath: string): void {
         } else if (entry.name.endsWith(".lock")) {
           try {
             rmSync(full, { force: true });
-          } catch {}
+          } catch (err) {
+            console.error("Failed to remove stale lock file:", err);
+          }
         }
       }
-    } catch {}
+    } catch (err) {
+      console.error("Failed to walk .git directory for lock cleanup:", err);
+    }
   }
   walk(path.join(repoPath, ".git"));
 }
@@ -112,7 +116,9 @@ async function fetchWithRetry(repoPath: string): Promise<void> {
         removeStaleLockFiles(repoPath);
         try {
           await runGitCommand(["pack-refs", "--all"], repoPath);
-        } catch {}
+        } catch (err) {
+          console.error("Failed to run git pack-refs:", err);
+        }
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
         continue;
       }
