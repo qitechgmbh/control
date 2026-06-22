@@ -82,7 +82,7 @@ async function importIfNotExists(owner: string, name: string) {
   }
 }
 
-function removeStaleLockFiles(repoPath: string): void {
+export function removeStaleLockFiles(repoPath: string): void {
   function walk(dir: string): void {
     try {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
