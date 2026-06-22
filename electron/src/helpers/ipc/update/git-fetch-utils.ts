@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import { gitAuthArgs } from "./token-store";
 
@@ -82,6 +82,45 @@ async function importIfNotExists(owner: string, name: string) {
   }
 }
 
+function removeStaleLockFiles(repoPath: string): void {
+  function walk(dir: string): void {
+    try {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+        } else if (entry.name.endsWith(".lock")) {
+          try {
+            rmSync(full, { force: true });
+          } catch {}
+        }
+      }
+    } catch {}
+  }
+  walk(path.join(repoPath, ".git"));
+}
+
+async function fetchWithRetry(repoPath: string): Promise<void> {
+  const maxRetries = 3;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      await runGitCommand(["fetch", "--prune", "--force", "origin"], repoPath);
+      return;
+    } catch (error: any) {
+      const msg = error?.message || String(error);
+      if (attempt < maxRetries - 1 && /cannot lock ref/i.test(msg)) {
+        removeStaleLockFiles(repoPath);
+        try {
+          await runGitCommand(["pack-refs", "--all"], repoPath);
+        } catch {}
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
 export async function fetchTargets(
   owner: string,
   name: string,
@@ -91,8 +130,9 @@ export async function fetchTargets(
   try {
     await importIfNotExists(owner, name);
 
-    // fetch updates
-    await runGitCommand(["remote", "update", "--prune"], repoPath);
+    // fetch updates — clean stale locks first, then fetch with retry on transient lock errors
+    removeStaleLockFiles(repoPath);
+    await fetchWithRetry(repoPath);
 
     // retrieve last 1000 commits from master branch
     const commitsRes = await runGitCommand(
