@@ -31,4 +31,4 @@ updates:
     directory: "/"
     schedule:
       interval: "cron"
-      cronjob: "0 7 * * 1,3,5"
+      cronjob: "0 8 * * 1-5"
