@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { gitAuthArgs } from "./token-store";
 
 export type GitRefInfo = {
   hash: string;
@@ -19,7 +20,9 @@ export function runGitCommand(
   cwd?: string,
 ): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    const child = spawn("git", args, {
+    // Prepend auth args so private repos authenticate over HTTPS without
+    // storing credentials in the mirror clone's on-disk git config.
+    const child = spawn("git", [...gitAuthArgs(), ...args], {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
       env: {

@@ -9,6 +9,10 @@ import {
   UPDATE_STEP,
   UPDATE_FETCH_CHANGELOG_SEND,
   UPDATE_FETCH_CHANGELOG_RECV,
+  UPDATE_SAVE_TOKEN,
+  UPDATE_LOAD_TOKEN_FILE,
+  UPDATE_HAS_TOKEN,
+  UPDATE_CLEAR_TOKEN,
 } from "./update-channels";
 import { RepoImportResult } from "./git-fetch-utils";
 
@@ -53,6 +57,12 @@ export function exposeUpdateContext() {
     execute: (params: UpdateExecuteInvokeParams) =>
       ipcRenderer.invoke(UPDATE_EXECUTE, params),
     cancel: () => ipcRenderer.invoke(UPDATE_CANCEL),
+
+    // Token management
+    hasToken: () => ipcRenderer.invoke(UPDATE_HAS_TOKEN),
+    saveToken: (token: string) => ipcRenderer.invoke(UPDATE_SAVE_TOKEN, token),
+    loadTokenFromFile: () => ipcRenderer.invoke(UPDATE_LOAD_TOKEN_FILE),
+    clearToken: () => ipcRenderer.invoke(UPDATE_CLEAR_TOKEN),
 
     onFetchTargetsRecv: (
       callback: (result: RepoImportResult | string) => void,
