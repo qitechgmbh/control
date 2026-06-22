@@ -12,6 +12,7 @@ use qitech_lib::{
     ethercat_hal::devices::device_from_subdevice_identity_rc, serial::get_available_ports,
 };
 use qitech_lib::{
+    ethercat_hal::interface_discovery::{LinkType, list_ethernet_interfaces, test_interface},
     ethercat_hal::{
         BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer, TripleBufProducer,
     },
@@ -41,7 +42,33 @@ fn setup_ethercat(
     let _res = eth_control
         .channel
         .request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
-    std::thread::sleep(Duration::from_millis(5000));
+
+    // Require 2 consecutive stable polls (~100 ms) in PreOp before proceeding.
+    // One poll is not enough: the state machine may still be mid-iteration on first observation,
+    // causing EEPROM reads to contend with its ongoing preop_group tick.
+    let deadline = std::time::Instant::now() + Duration::from_secs(10);
+    let mut stable_ticks: u32 = 0;
+    while stable_ticks < 2 {
+        // State-machine thread died, or timeout — bail for a clean restart.
+        if eth_control
+            .join_handle
+            .as_ref()
+            .map_or(false, |h| h.is_finished())
+            || std::time::Instant::now() >= deadline
+        {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+        // Happy path: bus is in PreOp and subdevices have been enumerated.
+        let preop_ready = eth_control.controller.get_state()
+            == qitech_lib::ethercat_hal::EtherCATState::PreOp
+            && eth_control.controller.get_subdevice_count() > 0;
+        if preop_ready {
+            stable_ticks += 1
+        } else {
+            stable_ticks = 0
+        }
+    }
 
     let mut idents = vec![];
     println!(
@@ -157,7 +184,17 @@ fn finalize_ethercat(
     let _res = eth_control
         .channel
         .request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
-    std::thread::sleep(Duration::from_secs(5));
+    while !eth_control.controller.is_all_operational() {
+        if eth_control
+            .join_handle
+            .as_ref()
+            .map_or(false, |h| h.is_finished())
+        {
+            // State machine died before reaching OP — bail so main_logic can exit cleanly.
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
     for meta in &mut main_state.subdevices {
         let m = eth_control
             .controller
@@ -171,6 +208,13 @@ fn finalize_ethercat(
         meta.0.start_rx = m.start_rx;
         meta.0.end_rx = m.end_rx;
     }
+}
+
+fn send_ethercat_devices_event(state: Arc<SharedAppState>) {
+    let rt = get_async_runtime();
+    rt.spawn(async move {
+        let _res = state.send_ethercat_setup_done().await;
+    });
 }
 
 fn send_setup_done_events(state: Arc<SharedAppState>) {
@@ -283,33 +327,40 @@ pub fn remove_machines(
     }
 }
 
-fn find_ethercat_interface() -> Result<String, anyhow::Error> {
-    let interfaces = qitech_lib::ethercat_hal::interface_discovery::list_ethernet_interfaces();
-    match interfaces {
-        Ok(interfaces) => {
-            for interface in interfaces {
-                match interface.link_type {
-                    qitech_lib::ethercat_hal::interface_discovery::LinkType::Link => (),
-                    qitech_lib::ethercat_hal::interface_discovery::LinkType::Unknown => continue,
-                    qitech_lib::ethercat_hal::interface_discovery::LinkType::Ipv4 => continue,
-                    qitech_lib::ethercat_hal::interface_discovery::LinkType::Ipv6 => continue,
-                };
+fn find_ethercat_interface() -> String {
+    loop {
+        let interfaces = list_ethernet_interfaces();
+        match interfaces {
+            Ok(interfaces) => {
+                for interface in interfaces {
+                    match interface.link_type {
+                        LinkType::Link => (),
+                        LinkType::Unknown => {
+                            continue;
+                        }
+                        LinkType::Ipv4 => continue,
+                        LinkType::Ipv6 => continue,
+                    };
 
-                let res =
-                    qitech_lib::ethercat_hal::interface_discovery::test_interface(&interface.name);
-                match res {
-                    Ok(_) => {
-                        println!("{} is ethercat", &interface.name);
-                        return Ok(interface.name);
+                    let res = test_interface(&interface.name);
+                    match res {
+                        Ok(_) => {
+                            println!("{} is ethercat", &interface.name);
+                            return interface.name;
+                        }
+                        Err(_) => println!("{} is not ethercat", &interface.name),
                     }
-                    Err(_) => println!("{} is not ethercat", &interface.name),
                 }
+                println!("No EtherCAT interface found, retrying in 2s...");
             }
-            return Err(anyhow::anyhow!("No EtherCAT Interface Found"));
+            Err(e) => {
+                println!(
+                    "Could not list ethernet interfaces ({:?}), retrying in 2s...",
+                    e
+                );
+            }
         }
-        Err(_) => {
-            return Err(anyhow::anyhow!("No EtherCAT Interface Found"));
-        }
+        std::thread::sleep(Duration::from_secs(2));
     }
 }
 
@@ -319,15 +370,10 @@ fn main_logic() {
         || std::env::args().any(|a| a == "preop");
     let mut shared_state = SharedAppState::new();
     let mut main_state = MainState::new();
-    let res = find_ethercat_interface();
-    let mut eth_control = match res {
-        Ok(interface) => {
-            let eth_control = optimized_ethercat_init(&interface);
-            shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
-            Some(eth_control)
-        }
-        Err(_) => None,
-    };
+    let interface = find_ethercat_interface();
+    let eth_control = optimized_ethercat_init(&interface);
+    shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
+    let mut eth_control = Some(eth_control);
 
     let state = Arc::new(shared_state);
     match &eth_control {
@@ -351,6 +397,9 @@ fn main_logic() {
         None => (),
     }
 
+    // Subdevices are known after PreOp — show them in the frontend now
+    send_ethercat_devices_event(state.clone());
+
     if stay_in_preop && eth_control.is_some() {
         send_setup_done_events(state.clone());
         println!("Staying in PreOp as requested, exiting after setup.");
@@ -359,11 +408,10 @@ fn main_logic() {
         }
     }
 
+    // detect_and_build_machines must run in PreOp (machines initialize assuming PreOp)
     detect_and_build_machines(state.clone(), &mut main_state);
-    send_setup_done_events(state.clone());
 
-    // Order is important here, because when detect_and_build_machines is called
-    // Every machine assumes ethercat devices are in PreOp, finalize moves to OP
+    // finalize_ethercat transitions to OP and waits until all subdevices confirm OP
     match &eth_control {
         Some(ecat) => {
             finalize_ethercat(&mut main_state, ecat);
@@ -371,6 +419,9 @@ fn main_logic() {
         }
         None => (),
     };
+
+    // Only emit machines to frontend after OP state is confirmed
+    send_machines_event(state.clone());
 
     let mut last_check = std::time::Instant::now();
     let hotplug_duration = Duration::from_secs(4);

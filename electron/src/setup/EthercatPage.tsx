@@ -16,6 +16,7 @@ import {
   EthercatDevicesEventData,
   useMainNamespace,
 } from "@/client/mainNamespace";
+import { useBackendConnected } from "@/client/socketioStore";
 import { restartBackendIntoPreop } from "@/helpers/troubleshoot_helpers";
 import { toast } from "sonner";
 import { TouchButton } from "@/components/touch/TouchButton";
@@ -120,6 +121,7 @@ export function createColumns(
 export function EthercatPage() {
   const { ethercatDevices, ethercatState, ethercatInterfaceDiscovery } =
     useMainNamespace();
+  const backendConnected = useBackendConnected();
   const [isRestartPreopLoading, setIsRestartPreopLoading] = useState(false);
   const etherCatState = ethercatState?.data?.State;
   const data = useMemo(() => {
@@ -178,20 +180,40 @@ export function EthercatPage() {
         <div className="flex w-fit items-center gap-1.5 rounded-full bg-neutral-100 p-0.5 px-3">
           <div
             className={`h-2.5 w-2.5 rounded-full ${
-              etherCatState === "preop"
-                ? "bg-yellow-400"
-                : etherCatState === "op"
-                  ? "bg-green-400"
-                  : "bg-neutral-400"
+              !backendConnected
+                ? "bg-red-400"
+                : etherCatState === "preop"
+                  ? "bg-yellow-400"
+                  : etherCatState === "op"
+                    ? "bg-green-400"
+                    : "bg-neutral-400"
             }`}
           />
-          <span className="text-xs text-neutral-500">{etherCatState}</span>
+          <span className="text-xs text-neutral-500">
+            {!backendConnected ? "disconnected" : etherCatState}
+          </span>
         </div>
       </SectionTitle>
 
       <p style={{ lineHeight: "1.6", margin: "1em 0" }}>
         SubDevices have to be in preop before writing to the EEPROM is allowed
       </p>
+      {!backendConnected && (
+        <span
+          style={{
+            color: "#fff",
+            backgroundColor: "#dc2626",
+            padding: "2px 6px",
+            borderRadius: "4px",
+            fontWeight: "bold",
+            display: "inline-block",
+            width: "max-content",
+            marginLeft: "4px",
+          }}
+        >
+          BACKEND DISCONNECTED — RECONNECTING…
+        </span>
+      )}
       {etherCatState === "preop" && (
         <span
           style={{
