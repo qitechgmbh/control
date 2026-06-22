@@ -27,7 +27,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libudev-dev
 
       - &checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - &setup-rust
         name: Install Rust toolchain
