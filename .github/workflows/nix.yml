@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v6
 
       - &nix-install
-        uses: nixbuild/nix-quick-install-action@v34
+        uses: nixbuild/nix-quick-install-action@v35
         with:
           nix_conf: |
             keep-env-derivations = true
