@@ -19,7 +19,7 @@ axum = "0.8"
 tokio = { version = "1", features = ["full"] }
 hyper = { version = "1", features = ["server", "http1"] }
 hyper-util = { version = "0.1", features = ["tokio"] }
-clickhouse = { version = "0.14.2", features = ["inserter"]}
+clickhouse = { version = "0.14.2", features = ["inserter", "chrono"]}
 
 chrono= { version = "0.4.45", features = ["serde"]}
 

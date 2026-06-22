@@ -5,9 +5,13 @@ use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
 #[cfg(not(feature = "mock"))]
+use property::Allocator;
+#[cfg(not(feature = "mock"))]
 use qitech_lib::ethercat_hal::{
     DcConfiguration, MasterConfiguration, RtOptimizationConfig, init_ethercat,
 };
+#[cfg(not(feature = "mock"))]
+use qitech_lib::machines::MachineIdentification;
 use qitech_lib::{
     ethercat_hal::devices::device_from_subdevice_identity_rc, serial::get_available_ports,
 };
@@ -377,8 +381,22 @@ fn main_logic() {
     let mut prev_property_export_ts = std::time::Instant::now();
     let property_export_interval = Duration::from_secs_f64(1.0 / 32.0);
 
+    let mut allocator = Allocator::new(
+        &mut main_state.properties, 
+        MachineIdentificationUnique { 
+            machine_ident: MachineIdentification {
+                vendor: 0,
+                machine: 0,
+            }, 
+            serial: 0 
+    });
+
+    let mut prop = allocator.add_bool("hello.world", false).unwrap();
+
     loop {
         let now = std::time::Instant::now();
+
+        prop.set(true);
 
         if let Some(control) = &mut eth_control {
             write_ecat_inputs(&mut control.app_handle, main_state.subdevices.clone());

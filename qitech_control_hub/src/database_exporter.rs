@@ -42,7 +42,8 @@ pub async fn run(
         loop {
             let now = Instant::now();
 
-            if last_export_ts.duration_since(now) >= export_interval {
+            if now.duration_since(last_export_ts) >= export_interval {
+                println!("Exporting");
                 insert_float.end().await.expect("___");
                 insert_integer.end().await.expect("___");
                 insert_bool.end().await.expect("___");
@@ -57,6 +58,8 @@ pub async fn run(
 
                 match result {
                     Ok(set) => {
+                        println!("Received set: {:?}", set);
+
                         for entry in &set.float {
                             insert_float.write(&PropertyRow {
                                 ts: now,
@@ -76,6 +79,8 @@ pub async fn run(
                         }
 
                         for entry in &set.bool {
+                            println!("inserting: {:?}", entry);
+
                             insert_bool.write(&PropertyRow {
                                 ts: now,
                                 ident: entry.ident,

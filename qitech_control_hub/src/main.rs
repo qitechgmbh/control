@@ -9,6 +9,7 @@ async fn main() {
     let socket_path = "/tmp/qitech_ctrl_hub.sock";
 
     std::fs::remove_file(socket_path).expect("msg");
+
     let listener = UnixListener::bind(socket_path).unwrap();
     let mut sigabrt = signal(SignalKind::terminate()).expect("Needs hook");
 
@@ -92,5 +93,7 @@ pub async fn handle_client(
 
         let snapshot: ExportedPropertySet = postcard::from_bytes(&buf)
             .expect("REMOVE LATER");
+
+        tx.send(Arc::new(snapshot));
     }
 }

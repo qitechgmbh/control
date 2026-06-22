@@ -193,6 +193,8 @@ impl LaserMachine {
             };
 
             if let LaserError::IoErr() = laser_error {
+                eprintln!("error: {}", e);
+
                 self.error = Some(MachineError::IrrecoverableFailure(
                     "Physical hardware I/O broke. Dropping machine permanently.".to_owned(),
                 ));
