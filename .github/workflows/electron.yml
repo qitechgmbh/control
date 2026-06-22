@@ -24,7 +24,7 @@ jobs:
     steps:
       - &checkout
         name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - &setup-node
         name: Setup Node.js
