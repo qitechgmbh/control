@@ -12,6 +12,7 @@ use qitech_lib::{
     ethercat_hal::devices::device_from_subdevice_identity_rc, serial::get_available_ports,
 };
 use qitech_lib::{
+    ethercat_hal::interface_discovery::{LinkType, list_ethernet_interfaces, test_interface},
     ethercat_hal::{
         BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer, TripleBufProducer,
     },
@@ -46,7 +47,7 @@ fn setup_ethercat(
     // One poll is not enough: the state machine may still be mid-iteration on first observation,
     // causing EEPROM reads to contend with its ongoing preop_group tick.
     let deadline = std::time::Instant::now() + Duration::from_secs(10);
-    let mut stable_ticks = 0u32;
+    let mut stable_ticks: u32 = 0;
     while stable_ticks < 2 {
         // State-machine thread died, or timeout — bail for a clean restart.
         if eth_control
@@ -328,22 +329,20 @@ pub fn remove_machines(
 
 fn find_ethercat_interface() -> String {
     loop {
-        let interfaces = qitech_lib::ethercat_hal::interface_discovery::list_ethernet_interfaces();
+        let interfaces = list_ethernet_interfaces();
         match interfaces {
             Ok(interfaces) => {
                 for interface in interfaces {
                     match interface.link_type {
-                        qitech_lib::ethercat_hal::interface_discovery::LinkType::Link => (),
-                        qitech_lib::ethercat_hal::interface_discovery::LinkType::Unknown => {
+                        LinkType::Link => (),
+                        LinkType::Unknown => {
                             continue;
                         }
-                        qitech_lib::ethercat_hal::interface_discovery::LinkType::Ipv4 => continue,
-                        qitech_lib::ethercat_hal::interface_discovery::LinkType::Ipv6 => continue,
+                        LinkType::Ipv4 => continue,
+                        LinkType::Ipv6 => continue,
                     };
 
-                    let res = qitech_lib::ethercat_hal::interface_discovery::test_interface(
-                        &interface.name,
-                    );
+                    let res = test_interface(&interface.name);
                     match res {
                         Ok(_) => {
                             println!("{} is ethercat", &interface.name);

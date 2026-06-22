@@ -319,7 +319,8 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
         );
       }
     });
-    socket.on("disconnect", (_reason) => {
+    socket.on("disconnect", (reason) => {
+      console.debug(`Disconnected from ${namespace_path}: ${reason}`);
       resetStore(set);
       if (namespace_path === "/main") {
         mainNamespaceStore.setState({
