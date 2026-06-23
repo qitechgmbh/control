@@ -1,48 +1,78 @@
 use std::collections::HashMap;
 use clickhouse::Client;
-use crate::shared_state::{MachineRegistry, PropertyType};
+use crate::PropertyType;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, clickhouse::Row)]
-struct RegistryEntry {
-    ident: u64,
-    name: String,
+#[derive(Debug, Clone, Default)]
+pub struct MachineRegistry {
+    inner: HashMap<u64, HashMap<String, PropertyType>>,
 }
 
-pub async fn refresh(client: &mut Client, registry: &mut MachineRegistry) {
-    // read float table
-    let entries = read_property_type(client, PropertyType::Float).await;
+impl MachineRegistry {
+    pub fn get_data_type(&self, ident: u64, name: &String) -> Result<PropertyType, &str> {
+        let Some(properties) = self.inner.get(&ident) else {
+            return Err("No Such Machine!");
+        };
 
-    for RegistryEntry { ident, name } in entries {
-        let properties = registry.entry(ident).or_insert(HashMap::default());
-        properties.insert(name, PropertyType::Float);
+        let Some(data_type) = properties.get(name) else {
+            return Err("No Such Property!");
+        };
+
+        Ok(*data_type)
     }
 
-    // read integer table
-    let entries = read_property_type(client, PropertyType::Integer).await;
+    pub fn try_insert(&mut self, ident: u64, name: &String, r#type: PropertyType) -> bool {
+        let props = self.inner.entry(ident).or_default();
 
-    for RegistryEntry { ident, name } in entries {
-        let properties = registry.entry(ident).or_insert(HashMap::default());
-        properties.insert(name, PropertyType::Integer);
+        if props.contains_key(name) {
+            return false;
+        }
+
+        let old = props.insert(name.clone(), r#type);
+        assert!(old.is_none());
+        true
     }
 
-    // read boolean table
-    let entries = read_property_type(client, PropertyType::Boolean).await;
+    pub async fn sync(&mut self, client: &mut Client) -> clickhouse::error::Result<()> {
+        // read float table
+        let entries = read_property_type(client, PropertyType::Float).await?;
 
-    for RegistryEntry { ident, name } in entries {
-        let properties = registry.entry(ident).or_insert(HashMap::default());
-        properties.insert(name, PropertyType::Boolean);
-    }
+        for RegistryEntry { ident, name } in entries {
+            let properties = self.inner.entry(ident).or_insert(HashMap::default());
+            properties.insert(name, PropertyType::Float);
+        }
 
-    // read string table
-    let entries = read_property_type(client, PropertyType::String).await;
+        // read integer table
+        let entries = read_property_type(client, PropertyType::Integer).await?;
 
-    for RegistryEntry { ident, name } in entries {
-        let properties = registry.entry(ident).or_insert(HashMap::default());
-        properties.insert(name, PropertyType::String);
+        for RegistryEntry { ident, name } in entries {
+            let properties = self.inner.entry(ident).or_insert(HashMap::default());
+            properties.insert(name, PropertyType::Integer);
+        }
+
+        // read boolean table
+        let entries = read_property_type(client, PropertyType::Boolean).await?;
+
+        for RegistryEntry { ident, name } in entries {
+            let properties = self.inner.entry(ident).or_insert(HashMap::default());
+            properties.insert(name, PropertyType::Boolean);
+        }
+
+        // read string table
+        let entries = read_property_type(client, PropertyType::String).await?;
+
+        for RegistryEntry { ident, name } in entries {
+            let properties = self.inner.entry(ident).or_insert(HashMap::default());
+            properties.insert(name, PropertyType::String);
+        }
+
+        Ok(())
     }
 }
 
-async fn read_property_type(client: &mut Client, r#type: PropertyType) -> Vec<RegistryEntry> {
+async fn read_property_type(
+    client: &mut Client, 
+    r#type: PropertyType
+) -> clickhouse::error::Result<Vec<RegistryEntry>> {
     let type_name = match r#type {
         PropertyType::Float => "float",
         PropertyType::Integer => "integer",
@@ -61,5 +91,10 @@ async fn read_property_type(client: &mut Client, r#type: PropertyType) -> Vec<Re
         .query(&query)
         .fetch_all::<RegistryEntry>()
         .await
-        .expect("why")
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, clickhouse::Row)]
+struct RegistryEntry {
+    ident: u64,
+    name: String,
 }

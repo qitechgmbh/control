@@ -1,11 +1,14 @@
-use std::{sync::Arc, time::Instant};
+use std::time::Instant;
 use chrono::{DateTime, Utc};
+use property::{PropertySetView, StringPropertyValue};
 use tokio::{
     sync::broadcast,
     time::{Duration, timeout},
 };
-use clickhouse::{self, Client, Row};
-use property::ExportedPropertySet;
+
+use clickhouse::{self, Client, Row, insert::Insert};
+
+use crate::{PropertyMessage, SharedState};
 
 pub struct Config {
     pub export_interval: Duration,
@@ -20,43 +23,62 @@ struct PropertyRow<T> {
     value: T,
 }
 
+struct Inserts {
+    pub float: Insert<PropertyRow<f64>>,
+    pub integer: Insert<PropertyRow<i64>>,
+    pub boolean: Insert<PropertyRow<bool>>,
+    pub string: Insert<PropertyRow<StringPropertyValue>>,
+}
+
+impl Inserts {
+    pub async fn new(client: &Client) -> clickhouse::error::Result<Self> {
+        let float = client
+            .insert::<PropertyRow<f64>>("properties_float")
+            .await?;
+
+        let integer = client
+            .insert::<PropertyRow<i64>>("properties_integer")
+            .await?;
+
+        let boolean = client
+            .insert::<PropertyRow<bool>>("properties_bool")
+            .await?;
+
+        let string = client
+            .insert::<PropertyRow<StringPropertyValue>>("properties_string")
+            .await?;
+        
+        Ok(Self { float, integer, boolean, string })
+    }
+
+    pub async fn end(self) -> clickhouse::error::Result<()> {
+        tokio::try_join!(
+            self.float.end(),
+            self.integer.end(),
+            self.boolean.end(),
+            self.string.end(),
+        )?;
+
+        Ok(())
+    }
+}
+
 pub async fn run(
-    client: Client,
-    mut rx: broadcast::Receiver<Arc<ExportedPropertySet>>,
+    state: SharedState,
+    mut rx: broadcast::Receiver<PropertyMessage>,
     config: Config,
 ) -> clickhouse::error::Result<()> {
     let mut last_export_ts = Instant::now();
 
     loop {
-        let mut insert_float = client
-            .insert::<PropertyRow<f64>>("properties_float")
-            .await?;
-
-        let mut insert_integer = client
-            .insert::<PropertyRow<i64>>("properties_integer")
-            .await?;
-
-        let mut insert_bool = client
-            .insert::<PropertyRow<bool>>("properties_bool")
-            .await?;
-
-        let mut insert_string = client
-            .insert::<PropertyRow<heapless::String<128>>>("properties_string")
-            .await?;
+        let mut inserts = Inserts::new(&state.client).await?;
 
         loop {
             let now = Instant::now();
 
             if now.duration_since(last_export_ts) >= config.export_interval {
                 println!("Exporting");
-
-                tokio::try_join!(
-                    insert_float.end(),
-                    insert_integer.end(),
-                    insert_bool.end(),
-                    insert_string.end(),
-                )?;
-                
+                inserts.end().await?;
                 last_export_ts = now;
                 break;
             }
@@ -66,43 +88,7 @@ pub async fn run(
                 let now = Utc::now();
 
                 match result {
-                    Ok(set) => {
-                        for entry in &set.float {
-                            insert_float.write(&PropertyRow {
-                                ts: now,
-                                ident: entry.ident,
-                                name: entry.name.clone(),
-                                value: entry.value,
-                            }).await?;
-                        }
-
-                        for entry in &set.int {
-                            insert_integer.write(&PropertyRow {
-                                ts: now,
-                                ident: entry.ident,
-                                name: entry.name.clone(),
-                                value: entry.value,
-                            }).await?;
-                        }
-
-                        for entry in &set.bool {
-                            insert_bool.write(&PropertyRow {
-                                ts: now,
-                                ident: entry.ident,
-                                name: entry.name.clone(),
-                                value: entry.value,
-                            }).await?;
-                        }
-
-                        for entry in &set.string {
-                            insert_string.write(&PropertyRow {
-                                ts: now,
-                                ident: entry.ident,
-                                name: entry.name.clone(),
-                                value: entry.value.clone(),
-                            }).await?;
-                        }
-                    },
+                    Ok(set) => map_message(&mut inserts, set, now).await?,
                     Err(e) => match e {
                         RecvError::Closed => return Ok(()),
                         RecvError::Lagged(count) => {
@@ -114,4 +100,55 @@ pub async fn run(
             }
         }
     }
+}
+
+async fn map_message(
+    inserts: &mut Inserts, 
+    msg: PropertyMessage,
+    now: DateTime<Utc>,
+) -> clickhouse::error::Result<()> {
+    // use PropertyMessage::*;
+
+    let view = match &msg {
+        PropertyMessage::Native(set) => PropertySetView::native_dirty(&set),
+        PropertyMessage::Exported(set) => PropertySetView::exported(&set),
+    };
+
+    for entry in view.float {
+        inserts.float.write(&PropertyRow {
+            ts: now,
+            ident: entry.ident,
+            name: entry.name.into(),
+            value: *entry.value,
+        }).await?;
+    }
+
+    for entry in view.integer {
+        inserts.integer.write(&PropertyRow {
+            ts: now,
+            ident: entry.ident,
+            name: entry.name.into(),
+            value: *entry.value,
+        }).await?;
+    }
+
+    for entry in view.boolean {
+        inserts.boolean.write(&PropertyRow {
+            ts: now,
+            ident: entry.ident,
+            name: entry.name.into(),
+            value: *entry.value,
+        }).await?;
+    }
+
+    for entry in view.string {
+        inserts.string.write(&PropertyRow {
+            ts: now,
+            ident: entry.ident,
+            name: entry.name.into(),
+            value: entry.value.clone(),
+        }).await?;
+    }
+
+    Ok(())
 }

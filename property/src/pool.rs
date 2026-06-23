@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use crate::{AllocatorError, PropertyEntry};
 
 #[derive(Debug, Default, Clone)]
-pub struct PropertySlot<T: Default + Debug> {
+pub struct PropertySlot<T: Debug> {
     pub entry: Option<PropertyEntry<T>>,
     pub dirty: bool,
 }
@@ -91,8 +91,16 @@ impl<T: Debug + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
         }
     }
 
-    pub fn iter_dirty(&self) -> BufferDirtyIter<'_, T, CAPACITY> {
-        BufferDirtyIter {
+    pub fn iter(&self) -> PropertyPoolIter<'_, T> {
+        PropertyPoolIter {
+            items: &self.slots,
+            index: 0,
+            last: self.last,
+        }
+    }
+
+    pub fn iter_dirty(&self) -> PropertyPoolDirtyIter<'_, T> {
+        PropertyPoolDirtyIter {
             items: &self.slots,
             index: 0,
             last: self.last,
@@ -109,15 +117,43 @@ impl<T: Debug + Default, const CAPACITY: usize> Default for PropertyPool<T, CAPA
     }
 }
 
-pub struct BufferDirtyIter<'a, T: Debug + Default, const CAPACITY: usize> {
-    items: &'a [PropertySlot<T>; CAPACITY],
+pub struct PropertyPoolIter<'a, T: Debug> {
+    items: &'a [PropertySlot<T>],
     last: usize,
     index: usize,
 }
 
-impl<'a, T, const CAPACITY: usize> Iterator for BufferDirtyIter<'a, T, CAPACITY>
+impl<'a, T> Iterator for PropertyPoolIter<'a, T>
 where
-    T: Debug + Default,
+    T: Debug,
+{
+    type Item = &'a PropertyEntry<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.index < self.last {
+            let item = &self.items[self.index];
+            self.index += 1;
+
+            let Some(entry) = &item.entry else {
+                continue;
+            };
+
+            return Some(entry);
+        }
+
+        None
+    }
+}
+
+pub struct PropertyPoolDirtyIter<'a, T: Debug> {
+    items: &'a [PropertySlot<T>],
+    last: usize,
+    index: usize,
+}
+
+impl<'a, T> Iterator for PropertyPoolDirtyIter<'a, T>
+where
+    T: Debug,
 {
     type Item = &'a PropertyEntry<T>;
 

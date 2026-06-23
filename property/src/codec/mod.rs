@@ -12,7 +12,7 @@ type Buffer<T> = Vec<ExportedPropertyEntry<T>>;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "clickhouse", derive(clickhouse::Row))]
-pub struct ExportedPropertyEntry<T: Default + Debug> {
+pub struct ExportedPropertyEntry<T: Debug> {
     pub ident: u64,
     pub name: String,
     pub value: T,

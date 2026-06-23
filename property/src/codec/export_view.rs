@@ -21,10 +21,10 @@ impl<'a> From<&'a PropertySet> for DirtyPropertySetExportView<'a> {
                 pool: &value.float 
             },
             int: DirtyPropertyPoolExportView { 
-                pool: &value.int 
+                pool: &value.integer 
             },
             r#bool: DirtyPropertyPoolExportView {
-                pool: &value.r#bool,
+                pool: &value.boolean,
             },
             string: DirtyPropertyPoolExportView {
                 pool: &value.string,

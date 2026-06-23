@@ -23,6 +23,11 @@ mod allocator;
 pub use allocator::Allocator;
 pub use allocator::AllocatorError;
 
+mod view;
+pub use view::PropertySetView;
+pub use view::PropertyView;
+pub use view::PropertyBufferIter;
+
 #[cfg(feature = "serde")]
 mod codec;
 
@@ -38,7 +43,7 @@ pub type StringPropertyValue = heapless::String<128>;
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[derive(Debug, Default, Clone)]
-pub struct PropertyEntry<T: Default + Debug> {
+pub struct PropertyEntry<T: Debug> {
     pub ident: u64,
     pub name: &'static str,
     pub value: T,

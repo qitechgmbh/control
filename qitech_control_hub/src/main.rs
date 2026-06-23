@@ -1,58 +1,30 @@
-use std::{io, time::Duration};
-mod exporter;
-use clickhouse::Client;
-use tokio::sync::broadcast;
-
-use crate::shared_state::SharedState;
-
-mod bridge;
-use bridge::ControlBridge;
-
-mod rest_api;
-mod shared_state;
-mod registry;
-
-// TODO: use ENV vars for this
-const SOCKET_PATH: &str = "/tmp/qitech_ctrl_hub.sock";
-const DB_URL: &str = "http://localhost:8123";
-const DB_USER: &str = "default";
-// const DB_PWD: &str = "";
-const DB_NAME: &str = "qitech_ctrl";
+use std::time::Duration;
+use control_hub::{self, DatabaseConfig, bridge, exporter, rest_api};
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
-    let mut client = Client::default()
-        .with_url(DB_URL)
-        .with_user(DB_USER)
-        // .with_password("")
-        .with_database(DB_NAME);
-
-    // TODO: create dedicated type for registry
-    let mut registry = Default::default();
-    registry::refresh(&mut client, &mut registry).await;
-
-    let (tx, rx) = broadcast::channel(1024);
-
-    let state = SharedState {
-        client: client.clone(),
-        snapshot_tx: tx,
-        machine_registry: Default::default(),
+async fn main() {
+    let database_config = DatabaseConfig { 
+        url: "http://localhost:8123".into(), 
+        user: "default".into(), 
+        database: "qitech_ctrl".into(),
     };
 
-    // bridge sub system
-    let bridge = ControlBridge::new(state.clone(), SOCKET_PATH)?;
-    tokio::spawn(bridge.run());
+    let bridge_config = bridge::remote::Config { 
+        socket_path: "/tmp/qitech_ctrl_hub.sock".into()
+    };
 
-    // exporter sub system
-    let config = exporter::Config { export_interval: Duration::from_secs_f64(2.0) };
-    tokio::spawn(exporter::run(client, rx, config));
+    let exporter_config = exporter::Config { 
+        export_interval: Duration::from_millis(2500)
+    };
 
-    // rest api sub system
-    let config = rest_api::Config { address: "0.0.0.0:3000" };
-    tokio::spawn(rest_api::run(state.clone(), config));
-    
-    // grafana live sub system
-    // TODO: implement 
+    let rest_api_config = rest_api::Config { 
+        address: "0.0.0.0:3000".into(),
+    };
 
-    Ok(())
+    control_hub::run_remote(
+        database_config, 
+        bridge_config, 
+        exporter_config, 
+        rest_api_config
+    ).await;
 }
