@@ -39,13 +39,19 @@ fn setup_ethercat(
     main_state: &mut MainState,
     eth_control: &EtherCATControl<Arc<Mailbox>, TripleBufProducer, TripleBufConsumer, Arc<Mailbox>>,
 ) {
-    let _res = eth_control
+    match eth_control
         .channel
-        .request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
+        .request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp)
+    {
+        Ok(()) => (),
+        Err(e) => {
+            eprintln!("Failed to transition to PreOp: {:?}. Bailing for clean restart.", e);
+            return;
+        }
+    }
 
-    // Require 2 consecutive stable polls (~100 ms) in PreOp before proceeding.
-    // One poll is not enough: the state machine may still be mid-iteration on first observation,
-    // causing EEPROM reads to contend with its ongoing preop_group tick.
+    // Wait for the state machine to enumerate subdevices. The state change already
+    // completed, but give the controller a short window to finish its first PreOp tick.
     let deadline = std::time::Instant::now() + Duration::from_secs(10);
     let mut stable_ticks: u32 = 0;
     while stable_ticks < 2 {
@@ -181,20 +187,24 @@ fn finalize_ethercat(
     main_state: &mut MainState,
     eth_control: &EtherCATControl<Arc<Mailbox>, TripleBufProducer, TripleBufConsumer, Arc<Mailbox>>,
 ) {
-    let _res = eth_control
+    match eth_control
         .channel
-        .request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
-    while !eth_control.controller.is_all_operational() {
-        if eth_control
-            .join_handle
-            .as_ref()
-            .map_or(false, |h| h.is_finished())
-        {
-            // State machine died before reaching OP — bail so main_logic can exit cleanly.
+        .request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op)
+    {
+        Ok(()) => (),
+        Err(e) => {
+            eprintln!("Failed to transition to OP: {:?}. Bailing for clean restart.", e);
             return;
         }
-        std::thread::sleep(Duration::from_millis(50));
     }
+
+    // The blocking state change above already waited for all-OP.
+    // Double-check the latch in case the state machine finished right after.
+    if !eth_control.controller.is_all_operational() {
+        eprintln!("EtherCAT not operational after OP transition; bailing for clean restart.");
+        return;
+    }
+
     for meta in &mut main_state.subdevices {
         let m = eth_control
             .controller
@@ -293,10 +303,11 @@ fn optimized_ethercat_init(
         realtime_optimizations: Some(opt_config),
         dc_config,
         wkc_mismatch_threshold: 5,
-        // Allow up to 5000 consecutive cycles (5 seconds at 1ms) for DC PLL
+        // Allow up to 1000 consecutive cycles (1 second at 1ms) for DC PLL
         // to lock during SAFE-OP → OP. Error 0x32 ("No valid inputs") is
-        // expected transiently while clocks synchronize.
-        op_ramp_grace_cycles: 5000,
+        // expected transiently while clocks synchronize, but a persistent error
+        // indicates a real bus fault and should fail fast.
+        op_ramp_grace_cycles: 1000,
     };
     init_ethercat(interface, Some(config))
 }
