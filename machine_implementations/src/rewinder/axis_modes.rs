@@ -1,6 +1,6 @@
 use super::{
-    PullerMode, Rewinder, RewinderMode, SourceSpoolMode, TakeupSpoolMode, TraverseMode,
-    PULLER_PORT, SOURCE_SPOOL_PORT, TAKEUP_SPOOL_PORT, TRAVERSE_PORT,
+    PULLER_PORT, PullerMode, Rewinder, RewinderMode, SOURCE_SPOOL_PORT, SourceSpoolMode,
+    TAKEUP_SPOOL_PORT, TRAVERSE_PORT, TakeupSpoolMode, TraverseMode,
 };
 
 impl Rewinder {

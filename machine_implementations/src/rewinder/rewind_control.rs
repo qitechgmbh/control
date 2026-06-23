@@ -19,14 +19,6 @@ impl ArmZone {
     pub fn is_fault(self) -> bool {
         matches!(self, Self::HardLow | Self::HardHigh)
     }
-
-    pub fn is_emergency(self) -> bool {
-        matches!(self, Self::EmergencyLow | Self::EmergencyHigh)
-    }
-
-    pub fn is_warning_or_worse(self) -> bool {
-        !matches!(self, Self::Comfort)
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -174,14 +166,7 @@ impl ArmState {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum FollowerResponse {
-    Source,
-    Takeup,
-}
-
-#[derive(Debug, Clone, Copy)]
 pub struct FollowerConfig {
-    pub response: FollowerResponse,
     pub initial_ratio_rpm_per_m_per_min: f64,
     pub min_ratio_rpm_per_m_per_min: f64,
     pub max_ratio_rpm_per_m_per_min: f64,
@@ -201,7 +186,6 @@ pub struct FollowerConfig {
 
 impl FollowerConfig {
     pub const SOURCE: Self = Self {
-        response: FollowerResponse::Source,
         initial_ratio_rpm_per_m_per_min: 2.2,
         min_ratio_rpm_per_m_per_min: 0.8,
         max_ratio_rpm_per_m_per_min: 6.0,
@@ -217,25 +201,6 @@ impl FollowerConfig {
         emergency_slew_rpm_per_s: 55.0,
         learning_min_line_speed_m_per_min: 5.0,
         learning_tau_s: 18.0,
-    };
-
-    pub const TAKEUP: Self = Self {
-        response: FollowerResponse::Takeup,
-        initial_ratio_rpm_per_m_per_min: 3.0,
-        min_ratio_rpm_per_m_per_min: 0.5,
-        max_ratio_rpm_per_m_per_min: 8.0,
-        kp_rpm_per_deg: 0.45,
-        kd_rpm_per_deg_per_s: 0.0,
-        deadband_deg: 2.0,
-        max_trim_rpm: 10.0,
-        max_trim_feed_forward_fraction: 0.20,
-        trim_filter_time_constant_s: 0.0,
-        min_feed_forward_fraction: 0.35,
-        max_rpm: 110.0,
-        slew_rpm_per_s: 22.0,
-        emergency_slew_rpm_per_s: 22.0,
-        learning_min_line_speed_m_per_min: 5.0,
-        learning_tau_s: 60.0,
     };
 }
 
@@ -253,6 +218,17 @@ impl FollowerState {
     pub fn new(config: FollowerConfig) -> Self {
         Self {
             ratio_rpm_per_m_per_min: config.initial_ratio_rpm_per_m_per_min,
+            feed_forward_rpm: 0.0,
+            trim_rpm: 0.0,
+            target_rpm: 0.0,
+            command_rpm: 0.0,
+            learning_active: false,
+        }
+    }
+
+    pub fn command_state() -> Self {
+        Self {
+            ratio_rpm_per_m_per_min: 0.0,
             feed_forward_rpm: 0.0,
             trim_rpm: 0.0,
             target_rpm: 0.0,
@@ -284,15 +260,9 @@ impl FollowerState {
     ) {
         self.feed_forward_rpm = line_speed_m_per_min.max(0.0) * self.ratio_rpm_per_m_per_min;
 
-        let signed_error = match config.response {
-            FollowerResponse::Source => arm_state.filtered_deg - arm_config.target_deg,
-            FollowerResponse::Takeup => arm_config.target_deg - arm_state.filtered_deg,
-        };
+        let signed_error = arm_state.filtered_deg - arm_config.target_deg;
         let effective_error = deadband(signed_error, config.deadband_deg);
-        let derivative_trim = match config.response {
-            FollowerResponse::Source => arm_state.rate_deg_per_s * config.kd_rpm_per_deg_per_s,
-            FollowerResponse::Takeup => -arm_state.rate_deg_per_s * config.kd_rpm_per_deg_per_s,
-        };
+        let derivative_trim = arm_state.rate_deg_per_s * config.kd_rpm_per_deg_per_s;
         let trim_limit_rpm = config
             .max_trim_rpm
             .max(self.feed_forward_rpm * config.max_trim_feed_forward_fraction);
@@ -315,19 +285,15 @@ impl FollowerState {
             0.0
         };
         let target_rpm = self.feed_forward_rpm + self.trim_rpm;
-        self.target_rpm = match config.response {
-            FollowerResponse::Source => source_target_rpm(
-                target_rpm,
-                self.feed_forward_rpm,
-                moving_floor_rpm,
-                arm_state,
-                arm_config,
-                config,
-            ),
-            FollowerResponse::Takeup => target_rpm.clamp(moving_floor_rpm, config.max_rpm),
-        };
-        let slew_rpm_per_s = if matches!(config.response, FollowerResponse::Source)
-            && self.target_rpm < self.command_rpm
+        self.target_rpm = source_target_rpm(
+            target_rpm,
+            self.feed_forward_rpm,
+            moving_floor_rpm,
+            arm_state,
+            arm_config,
+            config,
+        );
+        let slew_rpm_per_s = if self.target_rpm < self.command_rpm
             && matches!(arm_state.zone, ArmZone::WarningLow | ArmZone::EmergencyLow)
         {
             config.emergency_slew_rpm_per_s
@@ -338,29 +304,13 @@ impl FollowerState {
         self.command_rpm += (self.target_rpm - self.command_rpm).clamp(-max_delta, max_delta);
         self.command_rpm = self.command_rpm.clamp(0.0, config.max_rpm);
 
-        self.learning_active = !matches!(config.response, FollowerResponse::Source)
-            && learning_allowed
-            && line_speed_m_per_min >= config.learning_min_line_speed_m_per_min
-            && arm_state.zone == ArmZone::Comfort
-            && arm_state.rate_deg_per_s.abs() <= 2.0
-            && self.trim_rpm.abs() <= trim_limit_rpm * 0.35;
-
-        if self.learning_active && line_speed_m_per_min > 0.0 && dt_s > 0.0 {
-            let observed_ratio = (self.command_rpm / line_speed_m_per_min).clamp(
-                config.min_ratio_rpm_per_m_per_min,
-                config.max_ratio_rpm_per_m_per_min,
-            );
-            let alpha = (dt_s / config.learning_tau_s).clamp(0.0, 1.0);
-            self.ratio_rpm_per_m_per_min += (observed_ratio - self.ratio_rpm_per_m_per_min) * alpha;
-        }
-
-        if matches!(config.response, FollowerResponse::Source)
-            && line_speed_m_per_min >= config.learning_min_line_speed_m_per_min
+        self.learning_active = line_speed_m_per_min >= config.learning_min_line_speed_m_per_min
             && !matches!(arm_state.zone, ArmZone::HardLow | ArmZone::HardHigh)
             && (arm_state.raw_deg - arm_state.filtered_deg).abs() <= 6.0
             && self.command_rpm < config.max_rpm * 0.95
-            && dt_s > 0.0
-        {
+            && dt_s > 0.0;
+
+        if self.learning_active {
             let persistent_error = deadband(
                 arm_state.filtered_deg - arm_config.target_deg,
                 config.deadband_deg * 3.0,
@@ -388,7 +338,6 @@ pub struct PullerRampConfig {
     pub source_recovery_accel_min_m_per_min_s: f64,
     pub source_recovery_accel_max_m_per_min_s: f64,
     pub warning_accel_m_per_min_s: f64,
-    pub emergency_decel_m_per_min_s: f64,
     pub normal_decel_m_per_min_s: f64,
 }
 
@@ -400,7 +349,6 @@ impl Default for PullerRampConfig {
             source_recovery_accel_min_m_per_min_s: 0.35,
             source_recovery_accel_max_m_per_min_s: 1.25,
             warning_accel_m_per_min_s: 0.75,
-            emergency_decel_m_per_min_s: 5.0,
             normal_decel_m_per_min_s: 5.0,
         }
     }
@@ -411,7 +359,6 @@ pub struct RewindControlConfig {
     pub source_arm: ArmConfig,
     pub takeup_arm: ArmConfig,
     pub source_follower: FollowerConfig,
-    pub takeup_follower: FollowerConfig,
     pub puller_ramp: PullerRampConfig,
     pub prepare: PrepareConfig,
     pub precharge_duration: Duration,
@@ -424,7 +371,6 @@ impl Default for RewindControlConfig {
             source_arm: ArmConfig::SOURCE,
             takeup_arm: ArmConfig::TAKEUP,
             source_follower: FollowerConfig::SOURCE,
-            takeup_follower: FollowerConfig::TAKEUP,
             puller_ramp: PullerRampConfig::default(),
             prepare: PrepareConfig::default(),
             precharge_duration: Duration::from_secs(1),
@@ -456,7 +402,7 @@ impl RewindControlState {
             source_arm: ArmState::default(),
             takeup_arm: ArmState::default(),
             source_follower: FollowerState::new(config.source_follower),
-            takeup_follower: FollowerState::new(config.takeup_follower),
+            takeup_follower: FollowerState::command_state(),
             config,
             puller_command_m_per_min: 0.0,
             puller_accel_m_per_min_s: 0.0,
@@ -473,7 +419,7 @@ impl RewindControlState {
         self.source_arm.reset();
         self.takeup_arm.reset();
         self.source_follower.reset(self.config.source_follower);
-        self.takeup_follower.reset(self.config.takeup_follower);
+        self.takeup_follower.force_zero();
         self.puller_command_m_per_min = 0.0;
         self.puller_accel_m_per_min_s = 0.0;
         self.last_dt_s = 0.0;
