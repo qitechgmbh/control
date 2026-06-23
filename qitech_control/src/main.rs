@@ -286,7 +286,9 @@ fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainSt
             }
             Err(e) => {
                 println!("detect_and_build_machines {:?}", e);
-                main_state.machine_errors.insert(*key, e.to_string());
+                let error = e.to_string();
+                main_state.machine_errors.insert(*key, error.clone());
+                let _res = state.add_machine_sync(key.clone().into(), Some(error), None);
             }
         };
     }
