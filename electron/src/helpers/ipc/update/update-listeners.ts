@@ -18,7 +18,11 @@ import { spawn, ChildProcess } from "child_process";
 import tkill from "@jub3i/tree-kill";
 import { existsSync, readFileSync, rmSync } from "fs";
 import { GithubSource } from "@/setup/GithubSourceDialog";
-import { fetchChangelog, fetchTargets } from "./git-fetch-utils";
+import {
+  fetchChangelog,
+  fetchTargets,
+  removeStaleLockFiles,
+} from "./git-fetch-utils";
 import {
   clearToken,
   gitAuthArgs,
@@ -239,40 +243,71 @@ async function update(
           return;
         }
 
-        // 1. first make sure the clone path is empty by deleting it if it containsa .git folder
+        // 1. Prepare the repository. If a valid clone of the target repo already
+        // exists we reuse it via an incremental fetch + checkout (no full re-clone
+        // over the network); otherwise we fall back to a fresh clone.
         const repoDir = `${homeDir}/${githubRepoName}`;
 
-        // Clear repo (not tracked in progress UI)
-        const clearResult = await clearRepoDirectory(
-          `${homeDir}/${githubRepoName}`,
-          event,
-        );
-        if (!clearResult.success) {
-          event.sender.send(UPDATE_LOG, clearResult.error);
-          return;
-        }
-
-        // 2. clone the repository
         event.sender.send(UPDATE_STEP, {
           stepId: "clone-repo",
           status: "in-progress",
         });
-        const cloneResult = await cloneRepository(
-          {
-            githubRepoOwner,
-            githubRepoName,
-            tag,
-            branch,
-            commit,
-          },
-          event,
-        );
-        if (!cloneResult.success) {
+
+        let prepareResult: { success: boolean; error?: string };
+
+        if (await isValidCloneOf(repoDir, githubRepoOwner, githubRepoName)) {
+          // REUSE PATH — incremental update of the existing clone.
+          prepareResult = await updateRepository(
+            { githubRepoOwner, githubRepoName, tag, branch, commit },
+            event,
+          );
+
+          // Self-heal: if the incremental update fails (e.g. corrupt .git), fall
+          // back to a clean clear + clone before giving up.
+          if (!prepareResult.success) {
+            event.sender.send(
+              UPDATE_LOG,
+              terminalInfo(
+                "Incremental update failed, falling back to fresh clone",
+              ),
+            );
+            const clearResult = await clearRepoDirectory(repoDir, event);
+            if (!clearResult.success) {
+              event.sender.send(UPDATE_LOG, clearResult.error);
+              event.sender.send(UPDATE_STEP, {
+                stepId: "clone-repo",
+                status: "error",
+              });
+              return;
+            }
+            prepareResult = await cloneRepository(
+              { githubRepoOwner, githubRepoName, tag, branch, commit },
+              event,
+            );
+          }
+        } else {
+          // FRESH CLONE PATH — first run, corrupt, or wrong remote.
+          const clearResult = await clearRepoDirectory(repoDir, event);
+          if (!clearResult.success) {
+            event.sender.send(UPDATE_LOG, clearResult.error);
+            event.sender.send(UPDATE_STEP, {
+              stepId: "clone-repo",
+              status: "error",
+            });
+            return;
+          }
+          prepareResult = await cloneRepository(
+            { githubRepoOwner, githubRepoName, tag, branch, commit },
+            event,
+          );
+        }
+
+        if (!prepareResult.success) {
           event.sender.send(UPDATE_STEP, {
             stepId: "clone-repo",
             status: "error",
           });
-          event.sender.send(UPDATE_LOG, cloneResult.error);
+          event.sender.send(UPDATE_LOG, prepareResult.error);
           return;
         }
         event.sender.send(UPDATE_STEP, {
@@ -363,6 +398,192 @@ async function clearRepoDirectory(
   } catch (error: any) {
     event.sender.send(UPDATE_LOG, terminalError(`Error: ${error.toString()}`));
     return { success: false, error: error.toString() };
+  }
+}
+
+// Run a git command and capture its stdout (used for read-only inspection like
+// `git remote get-url origin`). Unlike runCommand this does not stream to the UI.
+function captureGit(
+  args: string[],
+  workingDir: string,
+): Promise<{ success: boolean; stdout: string }> {
+  return new Promise((resolve) => {
+    try {
+      const child = spawn("git", args, {
+        cwd: workingDir,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+      });
+      let stdout = "";
+      child.stdout.on("data", (data) => {
+        stdout += data.toString();
+      });
+      child.on("error", () => resolve({ success: false, stdout: "" }));
+      child.on("close", (code) =>
+        resolve({ success: code === 0, stdout: stdout.trim() }),
+      );
+    } catch {
+      resolve({ success: false, stdout: "" });
+    }
+  });
+}
+
+// Normalize a GitHub URL to `owner/name` (lowercased, credentials and trailing
+// `.git` stripped) so we can compare an existing clone's remote against the target.
+function normalizeGithubRepo(url: string): string | null {
+  const match = url
+    .trim()
+    .toLowerCase()
+    .match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/);
+  if (!match) return null;
+  return `${match[1]}/${match[2]}`;
+}
+
+// Returns true if repoDir is an existing git clone whose origin points at the
+// target owner/name. Used to decide between the reuse and fresh-clone paths.
+async function isValidCloneOf(
+  repoDir: string,
+  owner: string,
+  name: string,
+): Promise<boolean> {
+  if (!existsSync(`${repoDir}/.git`)) return false;
+  const res = await captureGit(["remote", "get-url", "origin"], repoDir);
+  if (!res.success) return false;
+  const actual = normalizeGithubRepo(res.stdout);
+  return actual === `${owner}/${name}`.toLowerCase();
+}
+
+// Reuse an existing clone: fetch the requested ref incrementally, then force the
+// working tree to exactly match it (full clean checkout). Avoids re-downloading
+// the entire repository on every update.
+async function updateRepository(
+  params: CloneRepositoryParams,
+  event: Electron.IpcMainInvokeEvent,
+): Promise<{ success: boolean; error?: string }> {
+  const { githubRepoName, tag, branch, commit } = params;
+
+  const qitechControlEnv = process.env.QITECH_CONTROL_ENV;
+  const homeDir = qitechControlEnv ? "/home/qitech" : process.env.HOME;
+  if (!homeDir) {
+    return { success: false, error: terminalError("Home directory not found") };
+  }
+  const repoDir = `${homeDir}/${githubRepoName}`;
+
+  if (!tag && !branch && !commit) {
+    return {
+      success: false,
+      error: terminalError("No specific version specified!"),
+    };
+  }
+
+  try {
+    event.sender.send(
+      UPDATE_LOG,
+      terminalInfo(`Reusing existing repository at ${repoDir}`),
+    );
+
+    // Clear any stale lock files left by an interrupted git operation.
+    removeStaleLockFiles(repoDir);
+
+    // Fetch the requested ref incrementally. Tags are always fetched so tag
+    // updates resolve; an explicit ref fetch makes sure single-branch clones
+    // still obtain the target branch/commit.
+    const fetchArgs = [
+      ...gitAuthArgs(),
+      "fetch",
+      "--force",
+      "--tags",
+      "origin",
+    ];
+    if (branch) {
+      fetchArgs.push(`${branch}:refs/remotes/origin/${branch}`);
+    } else if (commit) {
+      fetchArgs.push(commit);
+    }
+    const fetchRes = await runCommand("git", fetchArgs, repoDir, event);
+    if (!fetchRes.success) {
+      return {
+        success: false,
+        error: terminalError("Failed to fetch updates"),
+      };
+    }
+
+    // Check out the requested ref. `-f` discards any conflicting local state.
+    let checkoutArgs: string[];
+    if (tag) {
+      event.sender.send(UPDATE_LOG, terminalInfo(`Checking out tag: ${tag}`));
+      checkoutArgs = [
+        "-c",
+        "advice.detachedHead=false",
+        "checkout",
+        "-f",
+        `tags/${tag}`,
+      ];
+    } else if (branch) {
+      event.sender.send(
+        UPDATE_LOG,
+        terminalInfo(`Checking out branch: ${branch}`),
+      );
+      checkoutArgs = ["checkout", "-f", "-B", branch, `origin/${branch}`];
+    } else {
+      event.sender.send(
+        UPDATE_LOG,
+        terminalInfo(`Checking out commit: ${commit}`),
+      );
+      checkoutArgs = [
+        "-c",
+        "advice.detachedHead=false",
+        "checkout",
+        "-f",
+        commit as string,
+      ];
+    }
+    const checkoutRes = await runCommand("git", checkoutArgs, repoDir, event);
+    if (!checkoutRes.success) {
+      return {
+        success: false,
+        error: terminalError("Failed to checkout target version"),
+      };
+    }
+
+    // For a branch, fast-forward the working tree to the fetched remote tip.
+    if (branch) {
+      const resetBranch = await runCommand(
+        "git",
+        ["reset", "--hard", `origin/${branch}`],
+        repoDir,
+        event,
+      );
+      if (!resetBranch.success) {
+        return {
+          success: false,
+          error: terminalError(`Failed to reset to origin/${branch}`),
+        };
+      }
+    }
+
+    // Full clean checkout: wipe all untracked/ignored files so the tree matches
+    // a fresh clone.
+    const cleanRes = await runCommand("git", ["clean", "-fdx"], repoDir, event);
+    if (!cleanRes.success) {
+      return {
+        success: false,
+        error: terminalError("Failed to clean working tree"),
+      };
+    }
+
+    event.sender.send(
+      UPDATE_LOG,
+      terminalSuccess("Repository updated successfully"),
+    );
+    return { success: true, error: undefined };
+  } catch (error: any) {
+    // runCommand rejects with { success, error } on a non-zero exit; surface that.
+    const message =
+      typeof error?.error === "string"
+        ? error.error
+        : (error?.message ?? error?.toString?.() ?? "Unknown error");
+    return { success: false, error: terminalError(message) };
   }
 }
 
