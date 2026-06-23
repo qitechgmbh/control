@@ -1,8 +1,7 @@
 use super::{
-    rewind_control::{deadband, slew, RewindControlState},
     Rewinder, RewinderMode,
+    rewind_control::{RewindControlState, deadband, slew},
 };
-use qitech_lib::units::{f64::*, velocity::meter_per_minute};
 use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Copy)]
@@ -280,7 +279,6 @@ impl Rewinder {
 
         let Ok((source_angle, takeup_angle)) = self.read_tension_arm_angles_deg() else {
             self.rewind_control.reset_motion();
-            self.rewind_puller_command_speed = Some(Velocity::new::<meter_per_minute>(0.0));
             return true;
         };
 
@@ -288,7 +286,6 @@ impl Rewinder {
             .rewind_control
             .update_arms(source_angle, takeup_angle, now);
         let prepared = self.rewind_control.update_prepare_commands(now, dt_s);
-        self.rewind_puller_command_speed = Some(self.rewind_control.puller_command_speed());
 
         if prepared {
             println!("Rewinder Prepare complete: holding settled start angles");

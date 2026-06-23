@@ -1,7 +1,7 @@
 use super::{
-    PullerMode, RewindPhase, Rewinder, RewinderMode, SourceSpoolMode, TakeupSpoolMode,
-    TraverseMode, EK1100_ROLE, EL2002_ROLE, PULLER_ROLE, SOURCE_SPOOL_ROLE, TAKEUP_SPOOL_ROLE,
-    TRAVERSE_ROLE,
+    EK1100_ROLE, EL2002_ROLE, PULLER_ROLE, PullerMode, RewindPhase, Rewinder, RewinderMode,
+    SOURCE_SPOOL_ROLE, SourceSpoolMode, TAKEUP_SPOOL_ROLE, TRAVERSE_ROLE, TakeupSpoolMode,
+    TraverseMode,
 };
 use crate::{MachineHardware, MachineNew};
 use control_core::converters::{
@@ -9,20 +9,20 @@ use control_core::converters::{
 };
 use qitech_lib::{
     ethercat_hal::{
+        EtherCATThreadChannel,
         coe::ConfigurableDevice,
         devices::{
             ek1100::EK1100,
             el2002::EL2002,
-            el7031::{coe::EL7031Configuration, pdo::EL7031PredefinedPdoAssignment, EL7031},
+            el7031::{EL7031, coe::EL7031Configuration, pdo::EL7031PredefinedPdoAssignment},
             el7031_0030::{
-                self, coe::EL7031_0030Configuration, pdo::EL7031_0030PredefinedPdoAssignment,
-                EL7031_0030,
+                self, EL7031_0030, coe::EL7031_0030Configuration,
+                pdo::EL7031_0030PredefinedPdoAssignment,
             },
-            el7041_0052::{coe::EL7041_0052Configuration, EL7041_0052},
+            el7041_0052::{EL7041_0052, coe::EL7041_0052Configuration},
         },
         shared_config,
         shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration},
-        EtherCATThreadChannel,
     },
     units::{
         angle::degree,
@@ -159,8 +159,6 @@ impl MachineNew for Rewinder {
                 64,
             ),
             rewind_phase: RewindPhase::Idle,
-            rewind_hard_stop_reason: None,
-            rewind_puller_command_speed: None,
             rewind_control: super::rewind_control::RewindControlState::new(
                 super::rewind_control::RewindControlConfig::default(),
             ),

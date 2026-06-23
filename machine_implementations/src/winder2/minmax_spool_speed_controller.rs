@@ -15,6 +15,7 @@ use control_core::{
 };
 use std::time::Instant;
 
+use qitech_lib::units::ConstZero;
 use qitech_lib::units::angle::degree;
 use qitech_lib::units::angular_acceleration::{
     radian_per_second_squared, revolution_per_minute_per_second,
@@ -25,7 +26,6 @@ use qitech_lib::units::angular_velocity::{
 use qitech_lib::units::f64::*;
 use qitech_lib::units::length::meter;
 use qitech_lib::units::velocity::meter_per_second;
-use qitech_lib::units::ConstZero;
 
 #[derive(Debug)]
 pub struct MinMaxSpoolSpeedController {

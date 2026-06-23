@@ -17,6 +17,7 @@ import {
   createTimeSeries,
 } from "@/lib/timeseries";
 import { useMemo } from "react";
+import { toastError } from "@/components/Toast";
 
 export const modeSchema = z.enum([
   "Standby",
@@ -56,6 +57,18 @@ export const liveValuesEventDataSchema = z.object({
   takeup_tension_arm_angle: z.number(),
   source_tension_arm_angle: z.number(),
   rewind_progress: z.number(),
+});
+
+export const hardStopEventDataSchema = z.object({
+  reason: z.string(),
+  source_angle: z.number().nullable(),
+  takeup_angle: z.number().nullable(),
+  source_min_angle: z.number(),
+  source_max_angle: z.number(),
+  takeup_min_angle: z.number(),
+  takeup_max_angle: z.number(),
+  source_out_of_range: z.boolean(),
+  takeup_out_of_range: z.boolean(),
 });
 
 export const modeStateSchema = z.object({
@@ -144,6 +157,7 @@ export const stateEventDataSchema = z.object({
 });
 
 export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
+export const hardStopEventSchema = eventSchema(hardStopEventDataSchema);
 export const stateEventSchema = eventSchema(stateEventDataSchema);
 
 export type StateEvent = z.infer<typeof stateEventSchema>;
@@ -179,6 +193,73 @@ const {
 const { initialTimeSeries: rewindProgress, insert: addRewindProgress } =
   createTimeSeries();
 
+function formatHardStopAngle(
+  label: string,
+  angle: number | null,
+  minAngle: number,
+  maxAngle: number,
+): string {
+  const range = `${minAngle.toFixed(1)}-${maxAngle.toFixed(1)} deg`;
+  if (angle === null) {
+    return `${label}: angle unavailable; allowed ${range}`;
+  }
+  return `${label}: ${angle.toFixed(1)} deg; allowed ${range}`;
+}
+
+function showHardStopToast(event: z.infer<typeof hardStopEventSchema>) {
+  const {
+    reason,
+    source_angle,
+    takeup_angle,
+    source_min_angle,
+    source_max_angle,
+    takeup_min_angle,
+    takeup_max_angle,
+    source_out_of_range,
+    takeup_out_of_range,
+  } = event.data;
+
+  const details: string[] = [];
+  if (source_out_of_range) {
+    details.push(
+      formatHardStopAngle(
+        "Source",
+        source_angle,
+        source_min_angle,
+        source_max_angle,
+      ),
+    );
+  }
+  if (takeup_out_of_range) {
+    details.push(
+      formatHardStopAngle(
+        "Takeup",
+        takeup_angle,
+        takeup_min_angle,
+        takeup_max_angle,
+      ),
+    );
+  }
+  if (details.length === 0) {
+    details.push(
+      formatHardStopAngle(
+        "Source",
+        source_angle,
+        source_min_angle,
+        source_max_angle,
+      ),
+      formatHardStopAngle(
+        "Takeup",
+        takeup_angle,
+        takeup_min_angle,
+        takeup_max_angle,
+      ),
+    );
+  }
+
+  toastError("Rewinder hard stop", `${reason}. ${details.join(" ")}`);
+}
+
 export const createRewinderNamespaceStore =
   (): StoreApi<RewinderNamespaceStore> =>
     create<RewinderNamespaceStore>(() => ({
@@ -212,6 +293,8 @@ export function rewinderMessageHandler(
             ? stateEvent
             : state.defaultState,
         }));
+      } else if (event.name === "HardStopEvent") {
+        showHardStopToast(hardStopEventSchema.parse(event));
       } else if (event.name === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
         const timestamp = liveValuesEvent.ts;
