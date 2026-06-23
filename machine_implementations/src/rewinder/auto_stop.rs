@@ -1,5 +1,5 @@
-use super::{api::RewindAutomaticActionMode, Rewinder, RewinderMode};
-use qitech_lib::units::{length::meter, velocity::meter_per_second, ConstZero, Length};
+use super::{RewindPhase, Rewinder, RewinderMode, api::RewindAutomaticActionMode};
+use qitech_lib::units::{ConstZero, Length, length::meter, velocity::meter_per_second};
 use std::time::Instant;
 
 #[derive(Debug)]
@@ -42,7 +42,14 @@ impl Rewinder {
     }
 
     pub fn stop_or_pull_rewind(&mut self, now: Instant) {
-        if matches!(self.mode, RewinderMode::Pull) || self.rewind_motion_permitted() {
+        let can_progress = matches!(self.mode, RewinderMode::Pull)
+            || (matches!(self.mode, RewinderMode::Rewind)
+                && matches!(
+                    self.rewind_phase,
+                    RewindPhase::CrawlStart | RewindPhase::Rewind
+                ));
+
+        if can_progress {
             self.update_rewind_progress(now);
         } else {
             self.rewind_automatic_action.progress_last_check = now;
