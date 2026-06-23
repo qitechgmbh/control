@@ -303,11 +303,11 @@ fn optimized_ethercat_init(
         realtime_optimizations: Some(opt_config),
         dc_config,
         wkc_mismatch_threshold: 5,
-        // Allow up to 1000 consecutive cycles (1 second at 1ms) for DC PLL
-        // to lock during SAFE-OP → OP. Error 0x32 ("No valid inputs") is
-        // expected transiently while clocks synchronize, but a persistent error
-        // indicates a real bus fault and should fail fast.
-        op_ramp_grace_cycles: 1000,
+        // Allow up to 5000 consecutive cycles (5 seconds at 1ms) for DC PLL
+        // to lock during SAFE-OP -> OP. Error 0x32 ("Master not synchronized:
+        // at least one DC event received") is expected transiently while PLLs
+        // synchronize. Larger bus topologies (e.g. 3 winders) need more time.
+        op_ramp_grace_cycles: 5000,
     };
     init_ethercat(interface, Some(config))
 }
