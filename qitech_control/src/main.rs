@@ -42,33 +42,7 @@ fn setup_ethercat(
     let _res = eth_control
         .channel
         .request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
-
-    // Require 2 consecutive stable polls (~100 ms) in PreOp before proceeding.
-    // One poll is not enough: the state machine may still be mid-iteration on first observation,
-    // causing EEPROM reads to contend with its ongoing preop_group tick.
-    let deadline = std::time::Instant::now() + Duration::from_secs(10);
-    let mut stable_ticks: u32 = 0;
-    while stable_ticks < 2 {
-        // State-machine thread died, or timeout — bail for a clean restart.
-        if eth_control
-            .join_handle
-            .as_ref()
-            .map_or(false, |h| h.is_finished())
-            || std::time::Instant::now() >= deadline
-        {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(50));
-        // Happy path: bus is in PreOp and subdevices have been enumerated.
-        let preop_ready = eth_control.controller.get_state()
-            == qitech_lib::ethercat_hal::EtherCATState::PreOp
-            && eth_control.controller.get_subdevice_count() > 0;
-        if preop_ready {
-            stable_ticks += 1
-        } else {
-            stable_ticks = 0
-        }
-    }
+    std::thread::sleep(Duration::from_secs(5));
 
     let mut idents = vec![];
     println!(
@@ -184,17 +158,7 @@ fn finalize_ethercat(
     let _res = eth_control
         .channel
         .request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
-    while !eth_control.controller.is_all_operational() {
-        if eth_control
-            .join_handle
-            .as_ref()
-            .map_or(false, |h| h.is_finished())
-        {
-            // State machine died before reaching OP — bail so main_logic can exit cleanly.
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(50));
-    }
+    std::thread::sleep(Duration::from_secs(5));
     for meta in &mut main_state.subdevices {
         let m = eth_control
             .controller
