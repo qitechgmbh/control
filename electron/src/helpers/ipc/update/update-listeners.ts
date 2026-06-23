@@ -524,7 +524,7 @@ async function updateRepository(
         UPDATE_LOG,
         terminalInfo(`Checking out branch: ${branch}`),
       );
-      checkoutArgs = ["checkout", "-f", branch];
+      checkoutArgs = ["checkout", "-f", "-B", branch, `origin/${branch}`];
     } else {
       event.sender.send(
         UPDATE_LOG,
