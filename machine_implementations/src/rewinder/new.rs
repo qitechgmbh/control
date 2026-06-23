@@ -36,14 +36,36 @@ use std::time::Instant;
 
 impl MachineNew for Rewinder {
     fn new(hw: MachineHardware) -> Result<Self, anyhow::Error> {
-        let _ek1100 = hw.try_get_ethercat_device_and_addr_by_role::<EK1100>(EK1100_ROLE)?;
-        let el2002 = hw.try_get_ethercat_device_and_addr_by_role::<EL2002>(EL2002_ROLE)?;
-        let takeup_spool =
-            hw.try_get_ethercat_device_and_addr_by_role::<EL7041_0052>(TAKEUP_SPOOL_ROLE)?;
-        let traverse = hw.try_get_ethercat_device_and_addr_by_role::<EL7031>(TRAVERSE_ROLE)?;
-        let puller = hw.try_get_ethercat_device_and_addr_by_role::<EL7031_0030>(PULLER_ROLE)?;
-        let source_spool =
-            hw.try_get_ethercat_device_and_addr_by_role::<EL7031_0030>(SOURCE_SPOOL_ROLE)?;
+        let _ek1100 = hw
+            .try_get_ethercat_device_and_addr_by_role::<EK1100>(EK1100_ROLE)
+            .map_err(|e| anyhow::anyhow!("Rewinder role 0 Bus Coupler must be EK1100: {e}"))?;
+        let el2002 = hw
+            .try_get_ethercat_device_and_addr_by_role::<EL2002>(EL2002_ROLE)
+            .map_err(|e| {
+                anyhow::anyhow!("Rewinder role 1 2x Digital Output must be EL2002: {e}")
+            })?;
+        let takeup_spool = hw
+            .try_get_ethercat_device_and_addr_by_role::<EL7041_0052>(TAKEUP_SPOOL_ROLE)
+            .map_err(|e| {
+                anyhow::anyhow!("Rewinder role 2 Takeup Spool must be EL7041_0052: {e}")
+            })?;
+        let traverse = hw
+            .try_get_ethercat_device_and_addr_by_role::<EL7031>(TRAVERSE_ROLE)
+            .map_err(|e| anyhow::anyhow!("Rewinder role 3 Traverse must be EL7031: {e}"))?;
+        let puller = hw
+            .try_get_ethercat_device_and_addr_by_role::<EL7031_0030>(PULLER_ROLE)
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "Rewinder role 4 Puller + Takeup Tension Arm must be EL7031_0030: {e}"
+                )
+            })?;
+        let source_spool = hw
+            .try_get_ethercat_device_and_addr_by_role::<EL7031_0030>(SOURCE_SPOOL_ROLE)
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "Rewinder role 5 Source Spool + Source Tension Arm must be EL7031_0030: {e}"
+                )
+            })?;
 
         let interface: EtherCATThreadChannel = hw
             .ethercat_interface
