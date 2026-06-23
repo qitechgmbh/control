@@ -7,8 +7,6 @@
 {
   home.stateVersion = "24.11";
 
-  home.packages = [ pkgs.qitechPackages.electron ];
-
   nix.channels.nixpkgs = lib.mkDefault inputs.nixpkgs;
 
   xdg.configFile."autostart/de.qitech.control-electron.desktop".source =
