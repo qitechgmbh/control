@@ -70,10 +70,6 @@ impl Rewinder {
         if self.rewind_automatic_action.progress >= self.rewind_automatic_action.target_length {
             match self.rewind_automatic_action.mode {
                 RewindAutomaticActionMode::NoAction => {}
-                RewindAutomaticActionMode::Pull => {
-                    self.reset_rewind_progress(now);
-                    self.set_mode(&RewinderMode::Pull);
-                }
                 RewindAutomaticActionMode::Hold => {
                     self.reset_rewind_progress(now);
                     self.set_mode(&RewinderMode::Hold);

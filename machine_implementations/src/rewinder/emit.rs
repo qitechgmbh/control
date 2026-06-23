@@ -8,9 +8,7 @@ use super::{
         TensionArmControlState, TensionArmState, TraverseState,
     },
 };
-use crate::winder2::{
-    puller_speed_controller::GearRatio, spool_speed_controller::SpoolSpeedControllerType,
-};
+use crate::winder2::spool_speed_controller::SpoolSpeedControllerType;
 use control_core::socketio::{event::BuildEvent, namespace::NamespaceCacheingLogic};
 use qitech_lib::units::{
     angular_velocity::revolution_per_minute,
@@ -206,7 +204,6 @@ impl Rewinder {
     fn puller_angular_velocity_to_line_speed(&self, angular_velocity: AngularVelocity) -> Velocity {
         self.puller_speed_controller
             .angular_velocity_to_speed(angular_velocity)
-            / self.puller_speed_controller.get_gear_ratio().multiplier()
     }
 
     fn measured_puller_line_speed(&self) -> Velocity {
@@ -323,7 +320,6 @@ impl Rewinder {
                     .puller_speed_controller
                     .get_target_speed()
                     .get::<meter_per_minute>(),
-                gear_ratio: self.puller_speed_controller.get_gear_ratio(),
             },
             takeup_spool_state: TakeupSpoolState {
                 regulation_mode: self.takeup_spool_speed_controller.get_type().clone(),
@@ -387,18 +383,6 @@ impl Rewinder {
             self.puller_speed_controller
                 .reset_speed(Velocity::new::<meter_per_minute>(0.0));
         }
-        self.emit_state();
-    }
-
-    pub fn puller_set_gear_ratio(&mut self, gear_ratio: GearRatio) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
-        self.puller_speed_controller.set_gear_ratio(gear_ratio);
-        self.puller_speed_controller
-            .set_target_speed(Velocity::new::<meter_per_minute>(0.0));
         self.emit_state();
     }
 
