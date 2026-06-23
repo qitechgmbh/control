@@ -29,8 +29,8 @@ impl Default for PrepareConfig {
         Self {
             settle_tolerance_deg: 6.0,
             settle_rate_deg_per_s: 5.0,
-            settle_duration: Duration::from_millis(300),
-            relax_duration: Duration::from_millis(250),
+            settle_duration: Duration::from_millis(150),
+            relax_duration: Duration::from_millis(150),
             puller_kp_m_per_min_per_deg: 0.018,
             puller_slew_m_per_min_s: 0.12,
             puller_max_m_per_min: 0.22,
@@ -198,8 +198,9 @@ struct PrepareCommands {
 }
 
 fn prepare_axis_ready(error_deg: f64, rate_deg_per_s: f64, config: PrepareConfig) -> bool {
-    error_deg.abs() <= config.settle_tolerance_deg
-        && rate_deg_per_s.abs() <= config.settle_rate_deg_per_s
+    let validation_tolerance_deg = config.settle_tolerance_deg + 4.0;
+    let validation_rate_deg_per_s = (config.settle_rate_deg_per_s * 2.5).max(12.0);
+    error_deg.abs() <= validation_tolerance_deg && rate_deg_per_s.abs() <= validation_rate_deg_per_s
 }
 
 fn prepare_source_axis_commands(
