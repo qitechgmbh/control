@@ -64,21 +64,21 @@ impl MachineNewTrait for Wago671Slot12TestMachine {
 
             let slot1_dev = coupler
                 .slot_devices
+                .get(0)
+                .and_then(|entry| entry.clone())
+                .ok_or_else(|| anyhow::anyhow!("slot 0 missing Wago 750-671"))?;
+            let slot2_dev = coupler
+                .slot_devices
                 .get(1)
                 .and_then(|entry| entry.clone())
                 .ok_or_else(|| anyhow::anyhow!("slot 1 missing Wago 750-671"))?;
-            let slot2_dev = coupler
-                .slot_devices
-                .get(2)
-                .and_then(|entry| entry.clone())
-                .ok_or_else(|| anyhow::anyhow!("slot 2 missing Wago 750-671"))?;
 
             let slot1 = downcast_device::<Wago750_671>(slot1_dev)
                 .await
-                .map_err(|source| anyhow::anyhow!("slot 1 expected Wago 750-671: {}", source))?;
+                .map_err(|source| anyhow::anyhow!("slot 0 expected Wago 750-671: {}", source))?;
             let slot2 = downcast_device::<Wago750_671>(slot2_dev)
                 .await
-                .map_err(|source| anyhow::anyhow!("slot 2 expected Wago 750-671: {}", source))?;
+                .map_err(|source| anyhow::anyhow!("slot 1 expected Wago 750-671: {}", source))?;
             drop(coupler);
 
             let mut slot1 = StepperVelocityWago750671::new(slot1);

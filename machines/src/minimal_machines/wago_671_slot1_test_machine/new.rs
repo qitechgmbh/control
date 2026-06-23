@@ -52,9 +52,9 @@ impl MachineNewTrait for Wago671Slot1TestMachine {
 
             let dev = coupler
                 .slot_devices
-                .get(1)
+                .get(0)
                 .and_then(|entry| entry.clone())
-                .ok_or_else(|| anyhow::anyhow!("slot 1 missing Wago 750-671"))?;
+                .ok_or_else(|| anyhow::anyhow!("slot 0 missing Wago 750-671"))?;
 
             let actual_module = {
                 let dev = dev.read().await;
@@ -72,7 +72,7 @@ impl MachineNewTrait for Wago671Slot1TestMachine {
                 .await
                 .map_err(|source| {
                     anyhow::anyhow!(
-                        "slot 1 expected Wago 750-671 but found {}: {}",
+                        "slot 0 expected Wago 750-671 but found {}: {}",
                         actual_module,
                         source
                     )
