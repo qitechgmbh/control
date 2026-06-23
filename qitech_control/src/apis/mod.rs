@@ -116,15 +116,18 @@ pub async fn post_write_machine_device_identification(
         });
     }
 
-    // json
-    // if let Err(e) = persist::write_machine_device_info(&idents) {
-    //     return ResponseUtil::error(&e.to_string())
-    // }
+    // Persist assignments in the service state directory. Startup reads EEPROM first
+    // and then overlays this file, so the HMI can recover from stale or unwritable
+    // terminal EEPROM assignments after a backend restart.
+    if let Err(e) = persist::write_machine_device_info(&idents) {
+        return ResponseUtil::error(&e.to_string());
+    }
 
-    // legacy eeprom
+    // Legacy EEPROM write. Keep it best-effort because the JSON assignment above
+    // is the source used to override stale terminal data on startup.
     if let Some(channel) = &app_state.ethercat_thread_channel {
         if let Err(e) = channel.write_machine_device_info_eeprom(idents.clone()) {
-            return ResponseUtil::error(&e.to_string());
+            tracing::warn!("Could not write machine device assignments to EEPROM: {e:?}");
         }
     } else {
         println!("Tried write_machine_device_info without an EtherCatChannel?")
