@@ -1,99 +1,58 @@
-use std::sync::Arc;
-mod database_exporter;
+use std::{io, time::Duration};
+mod exporter;
 use clickhouse::Client;
-use tokio::{io::AsyncReadExt, net::{UnixListener, UnixStream}, select, signal::unix::{Signal, SignalKind, signal}, sync::broadcast};
-use property::ExportedPropertySet;
+use tokio::sync::broadcast;
+
+use crate::shared_state::SharedState;
+
+mod bridge;
+use bridge::ControlBridge;
+
+mod rest_api;
+mod shared_state;
+mod registry;
+
+// TODO: use ENV vars for this
+const SOCKET_PATH: &str = "/tmp/qitech_ctrl_hub.sock";
+const DB_URL: &str = "http://localhost:8123";
+const DB_USER: &str = "default";
+// const DB_PWD: &str = "";
+const DB_NAME: &str = "qitech_ctrl";
 
 #[tokio::main]
-async fn main() {
-    let socket_path = "/tmp/qitech_ctrl_hub.sock";
-
-    std::fs::remove_file(socket_path).expect("msg");
-
-    let listener = UnixListener::bind(socket_path).unwrap();
-    let mut sigabrt = signal(SignalKind::terminate()).expect("Needs hook");
-
-    let (mut tx, rx) = broadcast::channel(512);
-
-    let client = Client::default()
-        .with_url("http://localhost:8123")
-        .with_user("default")
+async fn main() -> io::Result<()> {
+    let mut client = Client::default()
+        .with_url(DB_URL)
+        .with_user(DB_USER)
         // .with_password("")
-        .with_database("qitech_ctrl");
+        .with_database(DB_NAME);
 
-    tokio::spawn(database_exporter::run(client, rx));
+    // TODO: create dedicated type for registry
+    let mut registry = Default::default();
+    registry::refresh(&mut client, &mut registry).await;
 
-    loop {
-        let stream = select! {
-            biased;
+    let (tx, rx) = broadcast::channel(1024);
 
-            _ = sigabrt.recv() => {
-                println!("Received SIGABRT");
-                break;
-            }
+    let state = SharedState {
+        client: client.clone(),
+        snapshot_tx: tx,
+        machine_registry: Default::default(),
+    };
 
-            res = listener.accept() => {
-                let (stream, _) = match res {
-                    Ok(v) => v,
-                    Err(e) => {
-                        eprintln!("Failed to accept connection: {e}");
-                        continue;
-                    }
-                };
+    // bridge sub system
+    let bridge = ControlBridge::new(state.clone(), SOCKET_PATH)?;
+    tokio::spawn(bridge.run());
 
-                stream
-            }
-        };
+    // exporter sub system
+    let config = exporter::Config { export_interval: Duration::from_secs_f64(2.0) };
+    tokio::spawn(exporter::run(client, rx, config));
 
-        handle_client(&mut sigabrt, stream, &mut tx).await;
-    }
-}
+    // rest api sub system
+    let config = rest_api::Config { address: "0.0.0.0:3000" };
+    tokio::spawn(rest_api::run(state.clone(), config));
+    
+    // grafana live sub system
+    // TODO: implement 
 
-pub async fn handle_client(
-    sigabrt: &mut Signal, 
-    mut stream: UnixStream,
-    tx: &mut broadcast::Sender<Arc<ExportedPropertySet>>,
-) {
-    loop {
-        let len = select! {
-            biased;
-
-            _ = sigabrt.recv() => {
-                println!("Received SIGABRT");
-                break;
-            }
-
-            result = stream.read_u32_le() => {
-                match result {
-                    Ok(v) => v,
-                    Err(e) => {
-                        eprintln!("Failed to read len: {e}");
-                        return;
-                    },
-                }
-            }
-        };
-
-        let mut buf = vec![0u8; len as usize];
-        select! {
-            biased;
-
-            _ = sigabrt.recv() => {
-                println!("Received SIGABRT");
-                break;
-            }
-
-            result = stream.read_exact(&mut buf) => {
-                if let Err(e) = result {
-                    eprintln!("Failed to read data: {e}");
-                    continue;
-                }
-            }
-        };
-
-        let snapshot: ExportedPropertySet = postcard::from_bytes(&buf)
-            .expect("REMOVE LATER");
-
-        tx.send(Arc::new(snapshot));
-    }
+    Ok(())
 }

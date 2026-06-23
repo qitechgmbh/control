@@ -4,11 +4,16 @@ use tokio::{
     sync::broadcast,
     time::{Duration, timeout},
 };
-use clickhouse::{Client, Row};
+use clickhouse::{self, Client, Row};
 use property::ExportedPropertySet;
+
+pub struct Config {
+    pub export_interval: Duration,
+}
 
 #[derive(Debug, Row, serde::Serialize, serde::Deserialize)]
 struct PropertyRow<T> {
+    #[serde(with = "clickhouse::serde::chrono::datetime64::millis")]
     ts: DateTime<Utc>,
     ident: u64,
     name: String,
@@ -18,36 +23,40 @@ struct PropertyRow<T> {
 pub async fn run(
     client: Client,
     mut rx: broadcast::Receiver<Arc<ExportedPropertySet>>,
-) {
+    config: Config,
+) -> clickhouse::error::Result<()> {
     let mut last_export_ts = Instant::now();
-    let export_interval = Duration::from_secs_f64(2.0);
 
     loop {
         let mut insert_float = client
             .insert::<PropertyRow<f64>>("properties_float")
-            .await.expect("LMAO");
+            .await?;
 
         let mut insert_integer = client
             .insert::<PropertyRow<i64>>("properties_integer")
-            .await.expect("LMAO");
+            .await?;
 
         let mut insert_bool = client
             .insert::<PropertyRow<bool>>("properties_bool")
-            .await.expect("LMAO");
+            .await?;
 
         let mut insert_string = client
             .insert::<PropertyRow<heapless::String<128>>>("properties_string")
-            .await.expect("LMAO");
+            .await?;
 
         loop {
             let now = Instant::now();
 
-            if now.duration_since(last_export_ts) >= export_interval {
+            if now.duration_since(last_export_ts) >= config.export_interval {
                 println!("Exporting");
-                insert_float.end().await.expect("___");
-                insert_integer.end().await.expect("___");
-                insert_bool.end().await.expect("___");
-                insert_string.end().await.expect("___");
+
+                tokio::try_join!(
+                    insert_float.end(),
+                    insert_integer.end(),
+                    insert_bool.end(),
+                    insert_string.end(),
+                )?;
+                
                 last_export_ts = now;
                 break;
             }
@@ -58,15 +67,13 @@ pub async fn run(
 
                 match result {
                     Ok(set) => {
-                        println!("Received set: {:?}", set);
-
                         for entry in &set.float {
                             insert_float.write(&PropertyRow {
                                 ts: now,
                                 ident: entry.ident,
                                 name: entry.name.clone(),
                                 value: entry.value,
-                            }).await.expect("REMOVE LATER");
+                            }).await?;
                         }
 
                         for entry in &set.int {
@@ -75,18 +82,16 @@ pub async fn run(
                                 ident: entry.ident,
                                 name: entry.name.clone(),
                                 value: entry.value,
-                            }).await.expect("REMOVE LATER");
+                            }).await?;
                         }
 
                         for entry in &set.bool {
-                            println!("inserting: {:?}", entry);
-
                             insert_bool.write(&PropertyRow {
                                 ts: now,
                                 ident: entry.ident,
                                 name: entry.name.clone(),
                                 value: entry.value,
-                            }).await.expect("REMOVE LATER");
+                            }).await?;
                         }
 
                         for entry in &set.string {
@@ -95,11 +100,11 @@ pub async fn run(
                                 ident: entry.ident,
                                 name: entry.name.clone(),
                                 value: entry.value.clone(),
-                            }).await.expect("REMOVE LATER");
+                            }).await?;
                         }
                     },
                     Err(e) => match e {
-                        RecvError::Closed => return,
+                        RecvError::Closed => return Ok(()),
                         RecvError::Lagged(count) => {
                             eprintln!("Lagged behind {count} messages!");
                             continue;
