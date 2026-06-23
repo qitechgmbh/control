@@ -27,7 +27,6 @@ export function RewinderSettingsPage() {
     setTakeupTensionArmControl,
     setSourceTensionArmControl,
     setPrepareControl,
-    setPullerGearRatio,
   } = useRewinder();
   const angleSettingsDisabled =
     isDisabled ||
@@ -412,26 +411,6 @@ export function RewinderSettingsPage() {
               />
             </Label>
           </div>
-        </ControlCard>
-
-        <ControlCard title="Puller">
-          <Label label="Gear Ratio">
-            <SelectionGroup
-              value={state?.puller_state.gear_ratio}
-              disabled={settingsDisabled}
-              loading={isLoading}
-              options={{
-                OneToOne: { children: "1:1", icon: "lu:Circle" },
-                OneToFive: { children: "1:5", icon: "lu:Cog" },
-                OneToTen: { children: "1:10", icon: "lu:Cog" },
-              }}
-              onChange={(value) =>
-                setPullerGearRatio(
-                  value as "OneToOne" | "OneToFive" | "OneToTen",
-                )
-              }
-            />
-          </Label>
         </ControlCard>
 
         <ControlCard title="Traverse">
