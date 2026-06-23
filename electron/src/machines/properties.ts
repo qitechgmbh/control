@@ -723,6 +723,30 @@ export const wago671Slot1TestMachine: MachineProperties = {
   ],
 };
 
+export const wago671Slot12TestMachine: MachineProperties = {
+  name: "WAGO 671 Slot 1+2 Test",
+  version: "V1",
+  slug: "wago671slot12testmachine",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x004a,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x00000021,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+
 export const TestMotor: MachineProperties = {
   name: "TestMotor",
   version: "V1",
@@ -984,6 +1008,7 @@ export const machineProperties: MachineProperties[] = [
   TestMotor,
   testmachinestepper,
   wago671Slot1TestMachine,
+  wago671Slot12TestMachine,
   wagoSerial,
   wago750460Machine,
 ];

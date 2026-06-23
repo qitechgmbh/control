@@ -71,6 +71,8 @@ import { TestMachineStepperPage } from "@/machines/minimal_machines/testmachines
 import { TestMachineStepperControlPage } from "@/machines/minimal_machines/testmachinestepper/TestMachineStepperControlPage";
 import { Wago671Slot1TestMachinePage } from "@/machines/minimal_machines/wago671slot1testmachine/Wago671Slot1TestMachinePage";
 import { Wago671Slot1TestMachineControlPage } from "@/machines/minimal_machines/wago671slot1testmachine/Wago671Slot1TestMachineControlPage";
+import { Wago671Slot12TestMachinePage } from "@/machines/minimal_machines/wago671slot12testmachine/Wago671Slot12TestMachinePage";
+import { Wago671Slot12TestMachineControlPage } from "@/machines/minimal_machines/wago671slot12testmachine/Wago671Slot12TestMachineControlPage";
 import { AnalogInputTestMachine } from "@/machines/minimal_machines/analoginputtestmachine/AnalogInputTestMachinePage";
 import { AnalogInputTestMachineControl } from "@/machines/minimal_machines/analoginputtestmachine/AnalogInputTestMachineControlPage";
 import { WagoAiTestMachine } from "@/machines/minimal_machines/wagoaitestmachine/WagoAiTestMachinePage";
@@ -255,6 +257,18 @@ export const wago671Slot1TestMachineControlRoute = createRoute({
   getParentRoute: () => wago671Slot1TestMachineSerialRoute,
   path: "control",
   component: () => <Wago671Slot1TestMachineControlPage />,
+});
+
+export const wago671Slot12TestMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wago671slot12testmachine/$serial",
+  component: () => <Wago671Slot12TestMachinePage />,
+});
+
+export const wago671Slot12TestMachineControlRoute = createRoute({
+  getParentRoute: () => wago671Slot12TestMachineSerialRoute,
+  path: "control",
+  component: () => <Wago671Slot12TestMachineControlPage />,
 });
 
 // Leaf route: control page
@@ -686,6 +700,10 @@ export const rootTree = RootRoute.addChildren([
 
       wago671Slot1TestMachineSerialRoute.addChildren([
         wago671Slot1TestMachineControlRoute,
+      ]),
+
+      wago671Slot12TestMachineSerialRoute.addChildren([
+        wago671Slot12TestMachineControlRoute,
       ]),
 
       analogInputTestMachineSerialRoute.addChildren([
