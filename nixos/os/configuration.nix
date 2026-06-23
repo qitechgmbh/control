@@ -269,8 +269,6 @@ in
     pciutils
     neofetch
     caddy
-    # QiTech Frontend
-    pkgs.qitechPackages.electron
   ];
 
   # Set system wide env variables
