@@ -562,17 +562,8 @@ async function updateRepository(
       }
     }
 
-    // Full clean checkout: discard tracked changes and wipe all untracked/ignored
-    // files so the tree matches a fresh clone.
-    const resetRes = await runCommand(
-      "git",
-      ["reset", "--hard"],
-      repoDir,
-      event,
-    );
-    if (!resetRes.success) {
-      return { success: false, error: terminalError("Failed to reset tree") };
-    }
+    // Full clean checkout: wipe all untracked/ignored files so the tree matches
+    // a fresh clone.
     const cleanRes = await runCommand("git", ["clean", "-fdx"], repoDir, event);
     if (!cleanRes.success) {
       return {
