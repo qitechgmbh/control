@@ -266,6 +266,7 @@ fn optimized_ethercat_init(
         tx_rx_config: qitech_lib::ethercat_hal::MasterTxRxConfig::TxRxIoUring,
         realtime_optimizations: Some(opt_config),
         dc_config,
+        wkc_mismatch_threshold: 5,
     };
     init_ethercat(interface, Some(config))
 }
