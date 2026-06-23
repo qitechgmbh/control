@@ -158,7 +158,17 @@ fn finalize_ethercat(
     let _res = eth_control
         .channel
         .request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
-    std::thread::sleep(Duration::from_secs(5));
+    while !eth_control.controller.is_all_operational() {
+        if eth_control
+            .join_handle
+            .as_ref()
+            .map_or(false, |h| h.is_finished())
+        {
+            // State machine died before reaching OP — bail so main_logic can exit cleanly.
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
     for meta in &mut main_state.subdevices {
         let m = eth_control
             .controller
