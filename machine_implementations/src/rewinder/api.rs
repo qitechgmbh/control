@@ -1,7 +1,5 @@
 use super::RewinderMode;
-use crate::winder2::{
-    puller_speed_controller::GearRatio, spool_speed_controller::SpoolSpeedControllerType,
-};
+use crate::winder2::spool_speed_controller::SpoolSpeedControllerType;
 use crate::{MachineApi, MachineMessage, MachineValues};
 use control_core::socketio::{
     event::{Event, GenericEvent},
@@ -53,7 +51,6 @@ impl From<Mode> for RewinderMode {
 pub enum Mutation {
     SetMode(Mode),
     SetPullerTargetSpeed(f64),
-    SetPullerGearRatio(GearRatio),
     SetTakeupSpoolRegulationMode(SpoolSpeedControllerType),
     SetTakeupSpoolMinMaxMinSpeed(f64),
     SetTakeupSpoolMinMaxMaxSpeed(f64),
@@ -156,7 +153,6 @@ pub struct TraverseState {
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct PullerState {
     pub target_speed: f64,
-    pub gear_ratio: GearRatio,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -195,7 +191,6 @@ pub struct PrepareControlState {
 pub enum RewindAutomaticActionMode {
     #[default]
     NoAction,
-    Pull,
     Hold,
 }
 
@@ -261,7 +256,6 @@ impl MachineApi for super::Rewinder {
         match mutation {
             Mutation::SetMode(mode) => self.set_mode(&mode.into()),
             Mutation::SetPullerTargetSpeed(speed) => self.puller_set_target_speed(speed),
-            Mutation::SetPullerGearRatio(gear_ratio) => self.puller_set_gear_ratio(gear_ratio),
             Mutation::SetTakeupSpoolRegulationMode(mode) => {
                 self.takeup_spool_set_regulation_mode(mode)
             }

@@ -11,7 +11,7 @@ import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { Spool } from "../Spool";
 import { TensionArm } from "../TensionArm";
 import { TraverseBar } from "../TraverseBar";
-import { Mode, getGearRatioMultiplier } from "./rewinderNamespace";
+import { Mode } from "./rewinderNamespace";
 import { useRewinder } from "./useRewinder";
 import React from "react";
 
@@ -32,7 +32,6 @@ export function RewinderControlPage() {
     isDisabled,
     setMode,
     setPullerTargetSpeed,
-    setPullerGearRatio,
     zeroTakeupTensionArm,
     zeroSourceTensionArm,
     setTraverseLimitInner,
@@ -46,10 +45,7 @@ export function RewinderControlPage() {
     setRewindAutomaticAction,
     resetRewindProgress,
   } = useRewinder();
-  const gearRatioMultiplier = getGearRatioMultiplier(
-    state?.puller_state.gear_ratio,
-  );
-  const maxTargetSpeed = 50 / gearRatioMultiplier;
+  const maxTargetSpeed = 50;
 
   return (
     <Page>
@@ -121,23 +117,6 @@ export function RewinderControlPage() {
             renderValue={(value) => roundToDecimals(value, 2)}
             onChange={setPullerTargetSpeed}
           />
-          <Label label="Gear Ratio">
-            <SelectionGroup
-              value={state?.puller_state.gear_ratio}
-              disabled={isDisabled}
-              loading={isLoading}
-              options={{
-                OneToOne: { children: "1:1", icon: "lu:Circle" },
-                OneToFive: { children: "1:5", icon: "lu:Cog" },
-                OneToTen: { children: "1:10", icon: "lu:Cog" },
-              }}
-              onChange={(value) =>
-                setPullerGearRatio(
-                  value as "OneToOne" | "OneToFive" | "OneToTen",
-                )
-              }
-            />
-          </Label>
         </ControlCard>
 
         <ControlCard title="Automatic Stop">
@@ -166,10 +145,9 @@ export function RewinderControlPage() {
               options={{
                 NoAction: { children: "No Action", icon: "lu:Minus" },
                 Hold: { children: "Hold", icon: "lu:CirclePause" },
-                Pull: { children: "Pull", icon: "lu:ArrowRight" },
               }}
               onChange={(value) =>
-                setRewindAutomaticAction(value as "NoAction" | "Hold" | "Pull")
+                setRewindAutomaticAction(value as "NoAction" | "Hold")
               }
             />
           </Label>

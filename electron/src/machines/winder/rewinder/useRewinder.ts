@@ -8,12 +8,10 @@ import { produce } from "immer";
 import { useEffect, useMemo } from "react";
 import { z } from "zod";
 import {
-  GearRatio,
   Mode,
   RewindAutomaticActionMode,
   SpoolRegulationMode,
   StateEvent,
-  gearRatioSchema,
   modeSchema,
   prepareControlStateSchema,
   rewindAutomaticActionModeSchema,
@@ -74,9 +72,6 @@ export function useRewinder() {
   );
   const { request: requestPullerSetTargetSpeed } = useMachineMutation(
     z.object({ SetPullerTargetSpeed: z.number() }),
-  );
-  const { request: requestPullerSetGearRatio } = useMachineMutation(
-    z.object({ SetPullerGearRatio: gearRatioSchema }),
   );
   const { request: requestTakeupSpoolSetRegulationMode } = useMachineMutation(
     z.object({ SetTakeupSpoolRegulationMode: spoolRegulationModeSchema }),
@@ -200,25 +195,6 @@ export function useRewinder() {
           machine_identification_unique: machineIdentification,
           data: { SetPullerTargetSpeed: targetSpeed },
         }),
-    );
-  };
-
-  const setPullerGearRatio = (gearRatio: GearRatio) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.puller_state.gear_ratio = gearRatio;
-        current.data.puller_state.target_speed = 0;
-      },
-      async () => {
-        await requestPullerSetTargetSpeed({
-          machine_identification_unique: machineIdentification,
-          data: { SetPullerTargetSpeed: 0 },
-        });
-        await requestPullerSetGearRatio({
-          machine_identification_unique: machineIdentification,
-          data: { SetPullerGearRatio: gearRatio },
-        });
-      },
     );
   };
 
@@ -550,7 +526,6 @@ export function useRewinder() {
     isDisabled: false,
     setMode,
     setPullerTargetSpeed,
-    setPullerGearRatio,
     setTakeupSpoolRegulationMode,
     setTakeupSpoolMinMaxMinSpeed,
     setTakeupSpoolMinMaxMaxSpeed,
