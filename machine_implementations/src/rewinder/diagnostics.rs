@@ -1,4 +1,4 @@
-use super::{RewindPhase, Rewinder, RewinderMode, DIAGNOSTIC_LOGS_ENABLED};
+use super::{DIAGNOSTIC_LOGS_ENABLED, Rewinder, RewinderMode};
 use qitech_lib::units::{angular_velocity::revolution_per_minute, velocity::meter_per_minute};
 use std::time::Instant;
 
@@ -76,14 +76,8 @@ impl Rewinder {
             self.rewind_control.source_follower.ratio_rpm_per_m_per_min,
             live_values.takeup_spool_rpm,
             live_values.source_spool_rpm,
-            !matches!(self.rewind_phase, RewindPhase::FaultHold),
-            if matches!(self.rewind_phase, RewindPhase::FaultHold) {
-                self.rewind_hard_stop_reason
-                    .as_deref()
-                    .unwrap_or("rewind hard stop")
-            } else {
-                "ok"
-            }
+            self.active_rewind_block_reason().is_none(),
+            self.active_rewind_block_reason().unwrap_or("ok")
         );
     }
 }

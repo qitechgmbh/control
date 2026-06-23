@@ -6,7 +6,7 @@ use crate::{MachineApi, MachineMessage, MachineValues};
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
-        cache_first_and_last_event, CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic,
+        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
     },
 };
 use control_core_derive::BuildEvent;
@@ -94,6 +94,25 @@ pub struct LiveValuesEvent {
 impl LiveValuesEvent {
     pub fn build(&self) -> Event<Self> {
         Event::new("LiveValuesEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct HardStopEvent {
+    pub reason: String,
+    pub source_angle: Option<f64>,
+    pub takeup_angle: Option<f64>,
+    pub source_min_angle: f64,
+    pub source_max_angle: f64,
+    pub takeup_min_angle: f64,
+    pub takeup_max_angle: f64,
+    pub source_out_of_range: bool,
+    pub takeup_out_of_range: bool,
+}
+
+impl HardStopEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("HardStopEvent", self.clone())
     }
 }
 
@@ -192,6 +211,7 @@ pub struct TensionArmState {
 }
 
 pub enum RewinderEvents {
+    HardStop(Event<HardStopEvent>),
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
 }
@@ -215,6 +235,7 @@ impl NamespaceCacheingLogic<RewinderEvents> for RewinderNamespace {
 impl CacheableEvents<Self> for RewinderEvents {
     fn event_value(&self) -> GenericEvent {
         match self {
+            Self::HardStop(event) => event.into(),
             Self::LiveValues(event) => event.into(),
             Self::State(event) => event.into(),
         }
@@ -223,6 +244,7 @@ impl CacheableEvents<Self> for RewinderEvents {
     fn event_cache_fn(&self) -> CacheFn {
         let cache_first_and_last = cache_first_and_last_event();
         match self {
+            Self::HardStop(_) => Box::new(|_, _| {}),
             Self::LiveValues(_) => cache_first_and_last,
             Self::State(_) => cache_first_and_last,
         }

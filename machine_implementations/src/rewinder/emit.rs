@@ -1,12 +1,12 @@
 use super::rewind_control::ArmConfig;
 use super::{
+    PULL_MODE_SOURCE_ASSIST_MAX_RPM, PULL_MODE_SOURCE_ASSIST_RPM_PER_M_PER_MIN, PULLER_PORT,
+    RewindPhase, Rewinder, RewinderMode, SOURCE_SPOOL_PORT, TAKEUP_SPOOL_PORT,
     api::{
-        LiveValuesEvent, ModeState, PrepareControlState, PullerState, RewindAutomaticActionState,
-        RewinderEvents, SourceSpoolState, StateEvent, TakeupSpoolState, TensionArmControlState,
-        TensionArmState, TraverseState,
+        HardStopEvent, LiveValuesEvent, ModeState, PrepareControlState, PullerState,
+        RewindAutomaticActionState, RewinderEvents, SourceSpoolState, StateEvent, TakeupSpoolState,
+        TensionArmControlState, TensionArmState, TraverseState,
     },
-    RewindPhase, Rewinder, RewinderMode, PULLER_PORT, PULL_MODE_SOURCE_ASSIST_MAX_RPM,
-    PULL_MODE_SOURCE_ASSIST_RPM_PER_M_PER_MIN, SOURCE_SPOOL_PORT, TAKEUP_SPOOL_PORT,
 };
 use crate::winder2::{
     puller_speed_controller::GearRatio, spool_speed_controller::SpoolSpeedControllerType,
@@ -43,7 +43,6 @@ impl Rewinder {
             if entering_rewind {
                 let now = Instant::now();
                 let zero_speed = Velocity::new::<meter_per_minute>(0.0);
-                self.rewind_puller_command_speed = Some(zero_speed);
                 self.rewind_control.reset_for_rewind(now);
                 self.puller_speed_controller.reset_speed(zero_speed);
                 self.takeup_spool_speed_controller
@@ -103,14 +102,7 @@ impl Rewinder {
         }
 
         let angular_velocity = if self.puller_motion_permitted() {
-            if matches!(self.mode, RewinderMode::Rewind) {
-                let target_speed = self.puller_speed_controller.get_target_speed();
-                self.puller_speed_controller
-                    .set_target_speed(self.rewind_control.puller_command_speed());
-                let angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
-                self.puller_speed_controller.set_target_speed(target_speed);
-                angular_velocity
-            } else if matches!(self.mode, RewinderMode::Prepare) {
+            if matches!(self.mode, RewinderMode::Rewind | RewinderMode::Prepare) {
                 let target_speed = self.puller_speed_controller.get_target_speed();
                 self.puller_speed_controller
                     .set_target_speed(self.rewind_control.puller_command_speed());
@@ -118,11 +110,9 @@ impl Rewinder {
                 self.puller_speed_controller.set_target_speed(target_speed);
                 angular_velocity
             } else {
-                self.rewind_puller_command_speed = None;
                 self.puller_speed_controller.calc_angular_velocity(t)
             }
         } else {
-            self.rewind_puller_command_speed = None;
             AngularVelocity::new::<revolution_per_minute>(0.0)
         };
         let actual_line_speed = self.puller_angular_velocity_to_line_speed(angular_velocity);
@@ -190,8 +180,6 @@ impl Rewinder {
         let angular_velocity = if self.source_spool_motion_permitted() {
             if matches!(self.mode, RewinderMode::Pull) {
                 AngularVelocity::new::<revolution_per_minute>(self.pull_mode_source_assist_rpm())
-            } else if matches!(self.mode, RewinderMode::Prepare) {
-                self.rewind_control.source_command_angular_velocity()
             } else {
                 self.rewind_control.source_command_angular_velocity()
             }
@@ -287,12 +275,15 @@ impl Rewinder {
         self.namespace.emit(RewinderEvents::LiveValues(event));
     }
 
+    pub(crate) fn emit_hard_stop(&mut self, event: HardStopEvent) {
+        self.namespace.emit(RewinderEvents::HardStop(event.build()));
+    }
+
     pub fn build_state_event(&mut self) -> StateEvent {
         let is_default_state = !self.emitted_default_state;
         self.emitted_default_state = true;
         let can_rewind = if matches!(self.mode, RewinderMode::Rewind) {
             self.active_rewind_block_reason().is_none()
-                && !matches!(self.rewind_phase, RewindPhase::FaultHold)
         } else {
             self.can_rewind()
         };

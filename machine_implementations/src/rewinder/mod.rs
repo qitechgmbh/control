@@ -14,7 +14,7 @@ use crate::winder2::{
     puller_speed_controller::PullerSpeedController, spool_speed_controller::SpoolSpeedController,
     tension_arm::TensionArm, traverse_controller::TraverseController,
 };
-use crate::{MachineMessage, QiTechMachine, MACHINE_REWINDER_V1, VENDOR_QITECH};
+use crate::{MACHINE_REWINDER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH};
 use api::RewinderNamespace;
 use control_core::converters::angular_step_converter::AngularStepConverter;
 #[cfg(not(feature = "mock-machine"))]
@@ -22,7 +22,7 @@ use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1
 use qitech_lib::{
     ethercat_hal::io::digital_output::DigitalOutputDevice,
     machines::{MachineIdentification, MachineIdentificationUnique},
-    units::{length::millimeter, Length, Velocity},
+    units::{Length, length::millimeter},
 };
 use rewind_control::RewindControlState;
 use std::{cell::RefCell, rc::Rc, time::Instant};
@@ -77,8 +77,6 @@ pub struct Rewinder {
     pub source_spool_step_converter: AngularStepConverter,
     pub traverse_controller: TraverseController,
     pub rewind_phase: RewindPhase,
-    rewind_hard_stop_reason: Option<String>,
-    rewind_puller_command_speed: Option<Velocity>,
     pub rewind_control: RewindControlState,
     pub rewind_automatic_action: auto_stop::RewindAutomaticAction,
     emitted_default_state: bool,
@@ -166,7 +164,6 @@ pub enum RewindPhase {
     Precharge,
     CrawlStart,
     Rewind,
-    FaultHold,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
