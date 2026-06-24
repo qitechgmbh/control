@@ -40,18 +40,6 @@ The hardware-abstraction layer (EtherCAT device drivers and the typed IO layer) 
 
 **Frontend:** [Electron](https://www.electronjs.org/) + [React](https://react.dev/), with [Radix](https://www.radix-ui.com/) components and [Tailwind](https://tailwindcss.com/) styling.
 
-## Getting started
-
-The project uses [Nix](https://nixos.org/) for a reproducible toolchain. Clone the repository and enter the development shell, which provides the correct Rust and Node versions and all system libraries:
-
-```bash
-git clone https://github.com/qitechgmbh/control.git
-cd control
-nix develop
-```
-
-From there you can run the backend (a `mock` feature lets you run without hardware) and the Electron frontend. See the **Getting Started** wiki page for the exact run commands.
-
 ## License
 
 See [LICENSE](LICENSE).
