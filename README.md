@@ -1,78 +1,57 @@
-<img width="1280" height="537" alt="grafik" src="https://github.com/user-attachments/assets/7fa67de4-772e-4528-bd6d-72b56380cad7" />
-
+<p align="center">
+  <img width="1280" height="537" alt="QiTech Control" src="https://github.com/user-attachments/assets/7fa67de4-772e-4528-bd6d-72b56380cad7" />
+</p>
 
 # QiTech Control
 
-QiTech Control is an open-source framework designed to bring modern software development practices to certified industrial hardware.
-
-It frees developers from proprietary, license-heavy PLC ecosystems and rigid "point-and-click" workflows that are no longer adequate for today's complex automation challenges.
-
-QiTech Control combines the modularity and reliability of standard EtherCAT terminals (e.g., WAGO, Beckhoff) with the power of a modern Rust & React stack.
-
-## Documentation
-
-**[View Full Documentation Wiki](https://github.com/qitechgmbh/control/wiki)**
-
-- [Getting Started](https://github.com/qitechgmbh/control/wiki/Getting-Started)
-- [Architecture Overview](https://github.com/qitechgmbh/control/wiki/Architecture-Overview)
-- [EtherCAT Basics](https://github.com/qitechgmbh/control/wiki/Ethercat-Basics)
-- [Device Examples](https://github.com/qitechgmbh/control/wiki/Hardware-Examples)
-- [REST API Reference](https://github.com/qitechgmbh/control/wiki/Rest-Api)
+QiTech Control is a real-time control system for industrial machines. A Rust backend drives the hardware directly over EtherCAT on a fixed cycle, while an Electron + React interface lets the operator run the machine. One codebase runs a range of machines, each built to a common pattern, so new machine types can be added without changing the core.
 
 ## Videos
 
 | Software Demo | Full Explainer |
-|---------------|----------------|
-| [![](https://img.youtube.com/vi/KI3YeBwfV-s/maxresdefault.jpg)](https://www.youtube.com/watch?v=KI3YeBwfV-s)<br/>*Watch a demo of the control software in action* | [![](https://img.youtube.com/vi/55egCAkQgyM/maxresdefault.jpg)](https://youtu.be/55egCAkQgyM)<br/>*Watch a complete overview of QiTech Control* |
+|---|---|
+| [![Software Demo](https://img.youtube.com/vi/KI3YeBwfV-s/maxresdefault.jpg)](https://www.youtube.com/watch?v=KI3YeBwfV-s)<br/>*A demo of the control software in action* | [![Full Explainer](https://img.youtube.com/vi/55egCAkQgyM/maxresdefault.jpg)](https://youtu.be/55egCAkQgyM)<br/>*A complete overview of QiTech Control* |
 
-## Repository Structure
+## Documentation
 
-- **`/electron`** - React + Electron frontend
-- **`/server`** - Rust backend implementing machine logic
-- **`/ethercat-hal`** - Hardware abstraction layer for EtherCAT devices
-- **`/control-core`** - Core control logic
-- **`/nixos`** - Custom Linux OS with realtime kernel
+The full documentation lives in the [Wiki](https://github.com/qitechgmbh/control/wiki):
 
-## Technology Stack
+- **Getting Started** — set up the development environment, run with and without hardware, install on a device
+- **Architecture** — the real-time loop, the machine model, registry & identification, logging
+- **Communication & API** — the command API and the live-data Socket.IO interface
+- **Frontend** — the Electron + React application
+- **Extending** — how to add a new machine
+- **Reference & examples** — the example machines
 
-**Backend:** Rust with [Ethercrab](https://github.com/ethercrab-rs/ethercrab) for EtherCAT, [SocketIO](https://socket.io/) for real-time communication, [axum](https://docs.rs/axum/latest/axum/) for REST API
+## Repository structure
 
-**Frontend:** [Electron](https://www.electronjs.org/) + [React](https://react.dev/) with [Shadcn](https://ui.shadcn.com/) components and [Tailwind](https://tailwindcss.com/) styling
+- `qitech_control/` — Runtime and composition: startup, the real-time loop, the REST and Socket.IO APIs, device discovery
+- `machine_implementations/` — The concrete machines, each built to a common pattern
+- `control-core/` — Shared mechanisms: controllers, converters, Socket.IO, Modbus, serial
+- `control-core-derive/` — Procedural macros for `control-core`
+- `electron/` — React + Electron frontend
+- `nixos/` — NixOS system definition, including the real-time kernel and the device installer
 
+The hardware-abstraction layer (EtherCAT device drivers and the typed IO layer) is provided by a separate library, `qitech_lib`, which this repository depends on.
 
-## Hardware Examples
+## Technology
 
-QiTech Control supports a wide range of EtherCAT hardware from WAGO and Beckhoff. We provide complete step-by-step tutorials with wiring diagrams and software configuration for many common modules.
+**Backend:** Rust, with [ethercrab](https://github.com/ethercrab-rs/ethercrab) for EtherCAT, [axum](https://docs.rs/axum) for the REST API, and [Socket.IO](https://socket.io/) for live data.
 
-**[View all hardware examples and tutorials on the wiki](https://github.com/qitechgmbh/control/wiki/Hardware-Examples)**
+**Frontend:** [Electron](https://www.electronjs.org/) + [React](https://react.dev/), with [Radix](https://www.radix-ui.com/) components and [Tailwind](https://tailwindcss.com/) styling.
 
-Quick links to popular examples:
-- [EL2004 - LED Control](https://github.com/qitechgmbh/control/wiki/Minimal-Example-El2004) (simplest setup for beginners)
-- [EL3021 - Analog Input](https://github.com/qitechgmbh/control/wiki/Minimal-Example-El3021)
-- [EL7031 - Stepper Motor Control](https://github.com/qitechgmbh/control/wiki/Minimal-Example-El7031-Motor)
-- [WAGO 750-402 - Digital Input](https://github.com/qitechgmbh/control/wiki/Minimal-Example-Wago750-402)
-- [WAGO 750-455 - Analog Input](https://github.com/qitechgmbh/control/wiki/Minimal-Example-Wago-750-455)
+## Getting started
 
-## QiTech Machines
+The project uses [Nix](https://nixos.org/) for a reproducible toolchain. Clone the repository and enter the development shell, which provides the correct Rust and Node versions and all system libraries:
 
-QiTech Control powers 10+ production machines for filament extrusion, winding, measurement, and material processing.
+```bash
+git clone https://github.com/qitechgmbh/control.git
+cd control
+nix develop
+```
 
-**[View complete machine catalog on the wiki](https://github.com/qitechgmbh/control/wiki/QiTech-Machines)**
-
-
-## Contributing
-
-This is an open-source project. Contributions are welcome! Please see the [wiki](https://github.com/qitechgmbh/control/wiki) for development guidelines.
-
-
-
-## Additional Videos
-
-| Episode Highlights |  |
-|--------------------|--------------------|
-| [![](https://img.youtube.com/vi/U2wNN6sF4to/maxresdefault.jpg)](https://www.youtube.com/watch?v=U2wNN6sF4to&t=163s)<br/>**Day in the Software Team**<br/>*Behind the scenes with Robin and how the team ships control software.* | [![](https://img.youtube.com/vi/R5WGAY3WRWA/maxresdefault.jpg)](https://www.youtube.com/watch?v=R5WGAY3WRWA&t=1s)<br/>**Software Stack Day**<br/>*A fast tour through the tools, stack, and daily workflow.* |
-| [![](https://img.youtube.com/vi/xyaHwxXguw4/maxresdefault.jpg)](https://www.youtube.com/watch?v=xyaHwxXguw4&t=32s)<br/>**First Client**<br/>*A milestone week building the first real client project.* | [![](https://img.youtube.com/vi/moI7z2PVdF4/maxresdefault.jpg)](https://www.youtube.com/watch?v=moI7z2PVdF4)<br/>**Steelworks Week**<br/>*A deep-dive week on a demanding steelworks order.* |
+From there you can run the backend (a `mock` feature lets you run without hardware) and the Electron frontend. See the **Getting Started** wiki page for the exact run commands.
 
 ## License
 
-See [LICENSE](LICENSE) file for details.
+See [LICENSE](LICENSE).
