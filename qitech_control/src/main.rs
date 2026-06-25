@@ -24,7 +24,11 @@ use std::{sync::Arc, time::Duration};
 #[cfg(not(feature = "mock"))]
 use crate::app_state::MainState;
 use crate::{
-    apis::socketio::main_namespace::ethercat_devices_event::EcatState, app_state::get_async_runtime,
+    apis::socketio::main_namespace::{
+        ethercat_devices_event::EcatState,
+        ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent,
+    },
+    app_state::get_async_runtime,
 };
 
 pub mod apis;
@@ -333,8 +337,11 @@ pub fn remove_machines(
     }
 }
 
-fn find_ethercat_interface() -> String {
+fn find_ethercat_interface(state: &SharedAppState) -> String {
     loop {
+        let _ = state.emit_ethercat_interface_discovery(
+            EthercatInterfaceDiscoveryEvent::Discovering(true),
+        );
         let interfaces = list_ethernet_interfaces();
         match interfaces {
             Ok(interfaces) => {
@@ -352,6 +359,11 @@ fn find_ethercat_interface() -> String {
                     match res {
                         Ok(_) => {
                             println!("{} is ethercat", &interface.name);
+                            let _ = state.emit_ethercat_interface_discovery(
+                                EthercatInterfaceDiscoveryEvent::Done(
+                                    interface.name.clone(),
+                                ),
+                            );
                             return interface.name;
                         }
                         Err(_) => println!("{} is not ethercat", &interface.name),
@@ -376,7 +388,7 @@ fn main_logic() {
         || std::env::args().any(|a| a == "preop");
     let mut shared_state = SharedAppState::new();
     let mut main_state = MainState::new();
-    let interface = find_ethercat_interface();
+    let interface = find_ethercat_interface(&shared_state);
     let eth_control = optimized_ethercat_init(&interface);
     shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
     let mut eth_control = Some(eth_control);
