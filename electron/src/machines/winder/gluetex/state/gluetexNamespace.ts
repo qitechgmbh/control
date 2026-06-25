@@ -1397,10 +1397,11 @@ export function gluetexMessageHandler(
         eventName === "SafetyStopEvent"
       ) {
         const safetyStopEvent = safetyStopEventSchema.parse(event);
-        store.setState({
+        updateStore((state) => ({
+          ...state,
           lastSafetyStop: safetyStopEvent.data,
           lastSafetyStopTs: safetyStopEvent.ts,
-        });
+        }));
       } else {
         handleUnhandledEventError(eventName);
       }
