@@ -173,7 +173,6 @@ in
   services.pipewire = {
     enable = true;
     alsa.enable = true;
-    alsa.support32Bit = true;
     pulse.enable = true;
   };
 
@@ -236,7 +235,12 @@ in
 
   documentation.doc.enable = false;
   services.gnome.core-apps.enable = false;
-  environment.gnome.excludePackages = [ pkgs.gnome-tour ];
+  services.gnome.localsearch.enable = false;
+  services.gnome.tinysparql.enable = false;
+  environment.gnome.excludePackages = [
+    pkgs.gnome-tour
+    pkgs.orca
+  ];
   environment.systemPackages = with pkgs; [
     # Bare minimum gnome desktop
     gnome-console
