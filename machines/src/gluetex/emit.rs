@@ -329,7 +329,7 @@ impl Gluetex {
             is_available: self.connected_machine.is_some(),
         };
 
-        StateEvent {
+        let state_event = StateEvent {
             is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
             status_out: self.status_out.get(),
             traverse_state: TraverseState {
@@ -657,7 +657,23 @@ impl Gluetex {
                 accumulated_distance: self.valve_controller.get_accumulated_distance(),
                 valve_output: self.valve_controller.get_desired_state(),
             },
+        };
+
+        // Debug: log can_wind state for diagnosing safety-stop resume issues
+        if !self.can_wind() {
+            let reason = self.can_wind_debug().unwrap_or("unknown");
+            tracing::debug!(
+                mode = ?self.mode,
+                operation_mode = ?self.operation_mode,
+                tension_arm_zeroed = self.winder_tension_arm.zeroed,
+                traverse_homed = self.traverse_controller.is_homed(),
+                traverse_going_home = self.traverse_controller.is_going_home(),
+                reason = reason,
+                "can_wind is false",
+            );
         }
+
+        state_event
     }
 
     pub fn emit_state(&mut self) {
@@ -695,7 +711,12 @@ impl Gluetex {
                     // From [`TraverseMode::Standby`] to [`TraverseMode::Hold`]
                     self.traverse.set_enabled(true);
                     self.traverse_controller.set_enabled(true);
-                    self.traverse_controller.goto_home();
+                    // Only re-home if the traverse is not already homed (e.g.
+                    // after a safety stop the traverse stays homed — re-homing
+                    // would lose the saved position used to resume in Wind mode).
+                    if !self.traverse_controller.is_homed() {
+                        self.traverse_controller.goto_home();
+                    }
                 }
                 TraverseMode::Traverse => {
                     // From [`TraverseMode::Standby`] to [`TraverseMode::Wind`]

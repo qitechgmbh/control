@@ -292,6 +292,19 @@ impl Gluetex {
             && !self.traverse_controller.is_going_home()
     }
 
+    /// Returns a human-readable reason why can_wind is false (for debugging)
+    pub fn can_wind_debug(&self) -> Option<&'static str> {
+        if !self.winder_tension_arm.zeroed {
+            Some("tension arm not zeroed")
+        } else if !self.traverse_controller.is_homed() {
+            Some("traverse not homed")
+        } else if self.traverse_controller.is_going_home() {
+            Some("traverse is going home")
+        } else {
+            None
+        }
+    }
+
     /// Can go to inner limit capability check
     pub fn can_go_in(&self) -> bool {
         // Check if traverse is homed, not in standby, not traversing
@@ -412,6 +425,8 @@ impl Gluetex {
                 PullerMode::Hold => {}
                 PullerMode::Pull => {
                     // From [`PullerMode::Hold`] to [`PullerMode::Pull`]
+                    // Re-enable hardware in case shutdown_motors() disabled it (e.g. after safety stop)
+                    self.puller.set_enabled(true);
                     self.puller_speed_controller.set_enabled(true);
                 }
             },
@@ -469,6 +484,8 @@ impl Gluetex {
                 PullerMode::Hold => {}
                 PullerMode::Pull => {
                     // From [`PullerMode::Hold`] to [`PullerMode::Pull`]
+                    // Re-enable hardware in case shutdown_motors() disabled it (e.g. after safety stop)
+                    self.slave_puller.set_enabled(true);
                     // Only enable speed controller if user wants it enabled
                     if should_enable_controller {
                         self.slave_puller_speed_controller.set_enabled(true);

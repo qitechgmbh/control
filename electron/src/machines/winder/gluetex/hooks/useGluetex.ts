@@ -96,6 +96,7 @@ export function useGluetex() {
     longBufferSampleInterval,
     longBufferRetention,
     reconfigureLongBuffers,
+    clearSafetyStop,
   } = useGluetexNamespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -1882,6 +1883,7 @@ export function useGluetex() {
     estimatedMinutesRemaining,
     lastSafetyStop,
     lastSafetyStopTs,
+    clearSafetyStop,
 
     // Live values (TimeSeries)
     traversePosition,

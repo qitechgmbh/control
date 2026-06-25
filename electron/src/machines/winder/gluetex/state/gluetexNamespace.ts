@@ -598,6 +598,9 @@ export type GluetexNamespaceStore = {
   longBufferSampleInterval: number;
   longBufferRetention: number;
   reconfigureLongBuffers: (sampleInterval: number, retention: number) => void;
+
+  // Actions
+  clearSafetyStop: () => void;
 };
 
 // Constants for time durations
@@ -890,6 +893,7 @@ const DEFAULT_BACKEND_EXTENDED_STATE: ExtendedStateEvent = {
       triggered: false,
     },
     bandueberwachung_monitor_state: {
+      enabled: false,
       active: true,
     },
     sleep_timer_state: {
@@ -921,7 +925,7 @@ const DEFAULT_BACKEND_EXTENDED_STATE: ExtendedStateEvent = {
  */
 export const createGluetexNamespaceStore =
   (): StoreApi<GluetexNamespaceStore> =>
-    create<GluetexNamespaceStore>(() => {
+    create<GluetexNamespaceStore>((set) => {
       return {
         // State event from server (will be extended with addon state)
         state: null,
@@ -969,6 +973,10 @@ export const createGluetexNamespaceStore =
         longBufferRetention: persistedGraphConfig.retention,
         // Placeholder — replaced by gluetexMessageHandler once throttledUpdater is available
         reconfigureLongBuffers: () => {},
+
+        // Actions
+        clearSafetyStop: () =>
+          set({ lastSafetyStop: null, lastSafetyStopTs: null }),
       };
     });
 

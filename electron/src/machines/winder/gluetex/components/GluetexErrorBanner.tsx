@@ -18,7 +18,7 @@ function decodeHeaterZones(zoneMask: number): number[] {
 }
 
 export function GluetexErrorBanner() {
-  const { lastSafetyStop, state } = useGluetex();
+  const { lastSafetyStop, state, clearSafetyStop } = useGluetex();
 
   // Deduplicate by reason content, not timestamp. The backend emits SafetyStop
   // every control loop iteration while the condition is active, so timestamp-based
@@ -30,13 +30,16 @@ export function GluetexErrorBanner() {
   const [showDialog, setShowDialog] = useState(false);
 
   // Open whenever there is an active stop and the dialog is not already showing.
-  // Including showDialog in deps means: after the user acknowledges (dialog closes),
-  // the effect re-runs and re-opens the dialog if the condition is still present.
   useEffect(() => {
     if (currentReasonKey !== null && !showDialog) {
       setShowDialog(true);
     }
   }, [currentReasonKey, showDialog]);
+
+  const handleAcknowledge = () => {
+    clearSafetyStop();
+    setShowDialog(false);
+  };
 
   if (!lastSafetyStop) return null;
 
@@ -241,7 +244,7 @@ export function GluetexErrorBanner() {
           <TouchButton
             variant="destructive"
             className="w-full"
-            onClick={() => setShowDialog(false)}
+            onClick={handleAcknowledge}
           >
             Acknowledge
           </TouchButton>
