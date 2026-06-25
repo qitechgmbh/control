@@ -2,6 +2,7 @@
 _25.06.2026_
 
 - Improved handling after a safety stop that shouldnt need the workaround with standby -> Wind, which cleared the traverse position
+- Fix error message blinking
 
 # `Small Gluetex Updates`
 _15.06.2026_
