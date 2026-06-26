@@ -1,4 +1,5 @@
 import { mainNamespaceStore, mainMessageHandler } from "./mainNamespace";
+import { ThrottledStoreUpdater } from "./socketioStore";
 
 // Soft reset function
 export function softReloadMainNamespaceStore() {
@@ -11,7 +12,10 @@ export function softReloadMainNamespaceStore() {
 
   // 2️⃣ Re-attach the message handler if needed
   // This ensures future socket events still update the store
-  mainMessageHandler(mainNamespaceStore);
+  mainMessageHandler(
+    mainNamespaceStore,
+    new ThrottledStoreUpdater(mainNamespaceStore),
+  );
 
   console.log("MainNamespaceStore soft reloaded");
 }
