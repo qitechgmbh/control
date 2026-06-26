@@ -52,6 +52,7 @@ type Device = NonNullable<EthercatDevicesEventData["Done"]>["devices"][number];
 
 type Props = {
   device: Device;
+  disabled?: boolean;
 };
 
 const formSchema = z.object({
@@ -68,7 +69,7 @@ const formSchema = z.object({
 
 type FormSchema = z.infer<typeof formSchema>;
 
-export function DeviceEepromDialog({ device }: Props) {
+export function DeviceEepromDialog({ device, disabled }: Props) {
   const [open, setOpen] = React.useState(false);
   const key = useMemo(() => Math.random(), [open]);
   const onClose = () => setOpen(false);
@@ -76,7 +77,7 @@ export function DeviceEepromDialog({ device }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen} modal>
       <DialogTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" disabled={disabled}>
           <Icon name="lu:Pencil" />
           Assign
         </Button>

@@ -13,7 +13,6 @@ import {
   serializeNamespaceId,
   useSocketioStore,
 } from "./socketioStore";
-import { useSock } from "./socketioStore";
 import {
   deviceIdentification,
   machineIdentificationUnique,
