@@ -124,7 +124,7 @@ export function EthercatPage() {
   const backendConnected = useBackendConnected();
   const [isRestartPreopLoading, setIsRestartPreopLoading] = useState(false);
   const [isIntentionalPreop, setIsIntentionalPreop] = useState(false);
-  const etherCatState = ethercatState?.data?.state;
+  const etherCatState = ethercatState?.data?.State;
   const data = useMemo(() => {
     return ethercatDevices?.data?.Done?.devices || [];
   }, [ethercatDevices]);
