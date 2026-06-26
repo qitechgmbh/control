@@ -18,11 +18,7 @@ import { spawn, ChildProcess } from "child_process";
 import tkill from "@jub3i/tree-kill";
 import { existsSync, readFileSync, rmSync } from "fs";
 import { GithubSource } from "@/setup/GithubSourceDialog";
-import {
-  fetchChangelog,
-  fetchTargets,
-  removeStaleLockFiles,
-} from "./git-fetch-utils";
+import { fetchChangelog, fetchTargets } from "./git-fetch-utils";
 import {
   clearToken,
   gitAuthArgs,
@@ -481,9 +477,6 @@ async function updateRepository(
       UPDATE_LOG,
       terminalInfo(`Reusing existing repository at ${repoDir}`),
     );
-
-    // Clear any stale lock files left by an interrupted git operation.
-    removeStaleLockFiles(repoDir);
 
     // Fetch the requested ref incrementally. Tags are always fetched so tag
     // updates resolve; an explicit ref fetch makes sure single-branch clones

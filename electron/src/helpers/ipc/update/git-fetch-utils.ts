@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync, readdirSync, rmSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { gitAuthArgs } from "./token-store";
 
@@ -82,43 +82,29 @@ async function importIfNotExists(owner: string, name: string) {
   }
 }
 
-export function removeStaleLockFiles(repoPath: string): void {
-  function walk(dir: string): void {
-    try {
-      for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          walk(full);
-        } else if (entry.name.endsWith(".lock")) {
-          try {
-            rmSync(full, { force: true });
-          } catch (err) {
-            console.error("Failed to remove stale lock file:", err);
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Failed to walk .git directory for lock cleanup:", err);
-    }
-  }
-  walk(path.join(repoPath, ".git"));
+// Deduplicate concurrent git operations per repo path: if a fetch is already
+// in-flight, return the same promise so callers share the result instead of
+// racing on the same .git directory.
+const inFlight = new Map<string, Promise<unknown>>();
+function deduplicateOp<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const existing = inFlight.get(key);
+  if (existing) return existing as Promise<T>;
+  const p = fn().finally(() => inFlight.delete(key));
+  inFlight.set(key, p);
+  return p;
 }
 
 async function fetchWithRetry(repoPath: string): Promise<void> {
   const maxRetries = 3;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      await runGitCommand(["fetch", "--prune", "--force", "origin"], repoPath);
+      await runGitCommand(["fetch", "--prune", "origin"], repoPath);
       return;
     } catch (error: any) {
       const msg = error?.message || String(error);
       if (attempt < maxRetries - 1 && /cannot lock ref/i.test(msg)) {
-        removeStaleLockFiles(repoPath);
-        try {
-          await runGitCommand(["pack-refs", "--all"], repoPath);
-        } catch (err) {
-          console.error("Failed to run git pack-refs:", err);
-        }
+        // Back off and retry — the repo lock above means no concurrent fetches
+        // are fighting us, so a transient OS-level lock clears on its own.
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
         continue;
       }
@@ -133,85 +119,85 @@ export async function fetchTargets(
 ): Promise<RepoImportResult> {
   const repoPath = path.resolve(getDir(owner, name));
 
-  try {
-    await importIfNotExists(owner, name);
+  return deduplicateOp(repoPath, async () => {
+    try {
+      await importIfNotExists(owner, name);
 
-    // fetch updates — clean stale locks first, then fetch with retry on transient lock errors
-    removeStaleLockFiles(repoPath);
-    await fetchWithRetry(repoPath);
+      await fetchWithRetry(repoPath);
 
-    // retrieve last 1000 commits from master branch
-    const commitsRes = await runGitCommand(
-      [
-        "log",
-        "master",
-        "--max-count=1000",
-        '--pretty=format:"%H|%ad|%f"',
-        "--date=iso",
-      ],
-      repoPath,
-    );
-
-    const commits: GitRefInfo[] = commitsRes.stdout
-      .split("\n")
-      .filter(Boolean)
-      .map((line) => {
-        const [hash, date, name] = line.split("|");
-        return { hash, name, date };
-      })
-      .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
-
-    // retrieve all branches
-    const branchesRes = await runGitCommand(
-      [
-        "for-each-ref",
-        "refs/heads",
-        "--format=%(objectname)|%(refname:short)|%(committerdate:iso8601)",
-      ],
-      repoPath,
-    );
-
-    const branches: GitRefInfo[] = branchesRes.stdout
-      .split("\n")
-      .filter(Boolean)
-      .map((line) => {
-        const [hash, name, date] = line.split("|");
-        return { hash, name, date };
-      })
-      .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
-
-    // retrieve all tags
-    const tagsRes = await runGitCommand(
-      [
-        "for-each-ref",
-        "refs/tags",
-        '--format="%(objectname)|%(refname:short)|%(creatordate:iso8601)"',
-      ],
-      repoPath,
-    );
-
-    const tags: GitRefInfo[] = tagsRes.stdout
-      .split("\n")
-      .filter(Boolean)
-      .map((line) => {
-        const [hash, name, date] = line.split("|");
-        return { hash, name, date };
-      })
-      .sort((a, b) =>
-        b.name.localeCompare(a.name, undefined, {
-          numeric: true,
-          sensitivity: "base",
-        }),
+      // retrieve last 1000 commits from master branch
+      const commitsRes = await runGitCommand(
+        [
+          "log",
+          "master",
+          "--max-count=1000",
+          '--pretty=format:"%H|%ad|%f"',
+          "--date=iso",
+        ],
+        repoPath,
       );
 
-    return {
-      commits,
-      branches,
-      tags,
-    };
-  } catch (error: any) {
-    throw new Error(error?.message || String(error));
-  }
+      const commits: GitRefInfo[] = commitsRes.stdout
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => {
+          const [hash, date, name] = line.split("|");
+          return { hash, name, date };
+        })
+        .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+
+      // retrieve all branches
+      const branchesRes = await runGitCommand(
+        [
+          "for-each-ref",
+          "refs/heads",
+          "--format=%(objectname)|%(refname:short)|%(committerdate:iso8601)",
+        ],
+        repoPath,
+      );
+
+      const branches: GitRefInfo[] = branchesRes.stdout
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => {
+          const [hash, name, date] = line.split("|");
+          return { hash, name, date };
+        })
+        .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+
+      // retrieve all tags
+      const tagsRes = await runGitCommand(
+        [
+          "for-each-ref",
+          "refs/tags",
+          '--format="%(objectname)|%(refname:short)|%(creatordate:iso8601)"',
+        ],
+        repoPath,
+      );
+
+      const tags: GitRefInfo[] = tagsRes.stdout
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => {
+          const [hash, name, date] = line.split("|");
+          return { hash, name, date };
+        })
+        .sort((a, b) =>
+          b.name.localeCompare(a.name, undefined, {
+            numeric: true,
+            sensitivity: "base",
+          }),
+        );
+
+      return {
+        commits,
+        branches,
+        tags,
+      };
+    } catch (error: any) {
+      throw new Error(error?.message || String(error));
+    }
+  });
 }
 
 export async function fetchChangelog(
@@ -219,17 +205,19 @@ export async function fetchChangelog(
   name: string,
   ref: string,
 ): Promise<string> {
-  try {
-    await importIfNotExists(owner, name);
-    const repoPath = path.resolve(getDir(owner, name));
+  const repoPath = path.resolve(getDir(owner, name));
+  return deduplicateOp(repoPath, async () => {
+    try {
+      await importIfNotExists(owner, name);
 
-    const result = await runGitCommand(
-      ["show", `${ref}:CHANGELOG.md`],
-      repoPath,
-    );
+      const result = await runGitCommand(
+        ["show", `${ref}:CHANGELOG.md`],
+        repoPath,
+      );
 
-    return result.stdout;
-  } catch (error: any) {
-    return `${error}`;
-  }
+      return result.stdout;
+    } catch (error: any) {
+      return `${error}`;
+    }
+  });
 }
