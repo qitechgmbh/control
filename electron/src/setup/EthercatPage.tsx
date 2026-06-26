@@ -112,17 +112,18 @@ export function createColumns(
     {
       accessorKey: "eeprom",
       header: "Edit Assignment",
-      cell: (row) => (
-        <DeviceEepromDialog device={row.row.original} />
-      ),
+      cell: (row) => <DeviceEepromDialog device={row.row.original} />,
     },
   ];
 }
 
 export function EthercatPage() {
-  const { ethercatDevices, ethercatState, ethercatInterfaceDiscovery,
-    isIntentionalPreop } =
-    useMainNamespace();
+  const {
+    ethercatDevices,
+    ethercatState,
+    ethercatInterfaceDiscovery,
+    isIntentionalPreop,
+  } = useMainNamespace();
   const backendConnected = useBackendConnected();
   const [isRestartPreopLoading, setIsRestartPreopLoading] = useState(false);
   const etherCatState = ethercatState?.data?.State;

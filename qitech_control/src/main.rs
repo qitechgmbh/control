@@ -339,9 +339,8 @@ pub fn remove_machines(
 
 fn find_ethercat_interface(state: &SharedAppState) -> String {
     loop {
-        let _ = state.emit_ethercat_interface_discovery(
-            EthercatInterfaceDiscoveryEvent::Discovering(true),
-        );
+        let _ = state
+            .emit_ethercat_interface_discovery(EthercatInterfaceDiscoveryEvent::Discovering(true));
         let interfaces = list_ethernet_interfaces();
         match interfaces {
             Ok(interfaces) => {
@@ -360,9 +359,7 @@ fn find_ethercat_interface(state: &SharedAppState) -> String {
                         Ok(_) => {
                             println!("{} is ethercat", &interface.name);
                             let _ = state.emit_ethercat_interface_discovery(
-                                EthercatInterfaceDiscoveryEvent::Done(
-                                    interface.name.clone(),
-                                ),
+                                EthercatInterfaceDiscoveryEvent::Done(interface.name.clone()),
                             );
                             return interface.name;
                         }
