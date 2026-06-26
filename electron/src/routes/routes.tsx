@@ -83,9 +83,6 @@ import { IP20TestMachineControlPage } from "@/machines/minimal_machines/ip20test
 import { TestMotorPage } from "@/machines/minimal_machines/motor_test_machine/TestMotorPage";
 import { TestMotorControlPage } from "@/machines/minimal_machines/motor_test_machine/TestMotorControlPage";
 
-import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
-import { MetricsControlPage } from "@/metrics/MetricsControlPage";
-
 import { WagoPower1Page } from "@/machines/wago_power/wago_power1/WagoPower1Page";
 import { WagoPower1ControlPage } from "@/machines/wago_power/wago_power1/WagoPower1ControlPage";
 import { WagoDoTestMachinePage } from "@/machines/minimal_machines/wagodotestmachine/WagoDoTestMachinePage";
@@ -612,16 +609,6 @@ export const updateChooseVersionRoute = createRoute({
   path: "choose-version",
   component: () => <ChooseVersionPage />,
 });
-export const metricsRoute = createRoute({
-  getParentRoute: () => setupRoute,
-  path: "metrics",
-  component: () => (
-    <>
-      <MetricsControlPage />
-      <MetricsGraphsPage />
-    </>
-  ),
-});
 
 export const versionSearchSchema = z
   .object({
@@ -670,7 +657,6 @@ export const rootTree = RootRoute.addChildren([
         updateExecuteRoute,
       ]),
       troubleshootRoute,
-      metricsRoute,
     ]),
     machinesRoute.addChildren([
       laser1SerialRoute.addChildren([
