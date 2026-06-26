@@ -14,6 +14,7 @@ import { getMachineProperties } from "@/machines/properties";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
 import {
   EthercatDevicesEventData,
+  mainNamespaceStore,
   useMainNamespace,
 } from "@/client/mainNamespace";
 import { useBackendConnected } from "@/client/socketioStore";
@@ -119,11 +120,11 @@ export function createColumns(
 }
 
 export function EthercatPage() {
-  const { ethercatDevices, ethercatState, ethercatInterfaceDiscovery } =
+  const { ethercatDevices, ethercatState, ethercatInterfaceDiscovery,
+    isIntentionalPreop } =
     useMainNamespace();
   const backendConnected = useBackendConnected();
   const [isRestartPreopLoading, setIsRestartPreopLoading] = useState(false);
-  const [isIntentionalPreop, setIsIntentionalPreop] = useState(false);
   const etherCatState = ethercatState?.data?.State;
   const data = useMemo(() => {
     return ethercatDevices?.data?.Done?.devices || [];
@@ -145,7 +146,7 @@ export function EthercatPage() {
     try {
       const result = await restartBackendIntoPreop();
       if (result.success) {
-        setIsIntentionalPreop(true);
+        mainNamespaceStore.setState({ isIntentionalPreop: true });
         toast.success("Backend restarted into Preop mode");
       } else {
         toast.error(`Failed to restart into Preop: ${result.error}`);

@@ -106,6 +106,7 @@ export const mainNamespaceStoreSchema = z.object({
   ethercatState: ethercatStateEventSchema.nullable(),
   machines: machinesEventSchema.nullable(),
   ethercatInterfaceDiscovery: ethercatInterfaceDiscoveryEventSchema.nullable(),
+  isIntentionalPreop: z.boolean(),
 });
 
 export type MainNamespaceStore = z.infer<typeof mainNamespaceStoreSchema>;
@@ -116,6 +117,7 @@ export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
     ethercatState: null,
     machines: null,
     ethercatInterfaceDiscovery: null,
+    isIntentionalPreop: false,
   }));
 };
 
