@@ -1,6 +1,7 @@
 name: Nix CI
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -11,6 +12,7 @@ on:
       - staging
 
 permissions:
+  id-token: write
   contents: read
 
 jobs:
@@ -23,18 +25,10 @@ jobs:
         uses: actions/checkout@v7
 
       - &nix-install
-        uses: nixbuild/nix-quick-install-action@v35
-        with:
-          nix_conf: |
-            keep-env-derivations = true
-            keep-outputs = true
+        uses: cachix/install-nix-action@v31
 
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-electron-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './electron/package-lock.json') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          purge: true
-          purge-prefixes: nix-electron-${{ runner.os }}-
+      - &nix-cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Build Electron in Nix
         run: nix build -L .#packages.x86_64-linux.electron
@@ -45,13 +39,7 @@ jobs:
     steps:
       - *checkout
       - *nix-install
-
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-server-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './Cargo.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          purge: true
-          purge-prefixes: nix-server-${{ runner.os }}-
+      - *nix-cache
 
       - name: Build Server in Nix
         run: nix build -L .#packages.x86_64-linux.server
@@ -63,19 +51,7 @@ jobs:
     steps:
       - *checkout
       - *nix-install
-
-      - name: Use both Electron and Server Nix Store
-        uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './Cargo.lock', './electron/package-lock.json') }}
-
-          # if no hit on the primary key, merge individual caches
-          restore-prefixes-all-matches: |
-            nix-electron-${{ runner.os }}-
-            nix-server-${{ runner.os }}-
-
-      - name: Save commit short hash
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - *nix-cache
 
       - name: Build Flake and System Configuration
         run: ./nixos-build-iso.sh
