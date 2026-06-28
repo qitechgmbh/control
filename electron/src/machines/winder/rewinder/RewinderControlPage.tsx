@@ -1,17 +1,18 @@
 import { Page } from "@/components/Page";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { ControlCard } from "@/control/ControlCard";
-import { ControlGrid } from "@/control/ControlGrid";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
-import { SelectionGroup } from "@/control/SelectionGroup";
+import {
+  SelectionGroup,
+  SelectionGroupBoolean,
+} from "@/control/SelectionGroup";
 import { StatusBadge } from "@/control/StatusBadge";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
-import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
-import { Spool } from "../Spool";
-import { TensionArm } from "../TensionArm";
+import { roundToDecimals } from "@/lib/decimal";
 import { TraverseBar } from "../TraverseBar";
 import { Mode } from "./rewinderNamespace";
+import { RewinderOverview } from "./RewinderOverview";
 import { useRewinder } from "./useRewinder";
 import React from "react";
 
@@ -43,200 +44,226 @@ export function RewinderControlPage() {
     setRewindAutomaticAction,
     resetRewindProgress,
   } = useRewinder();
+
   const maxTargetSpeed = 50;
   const tensionArmsZeroed =
     state?.takeup_tension_arm_state.zeroed === true &&
     state?.source_tension_arm_state.zeroed === true;
+
   const zeroTensionArms = () => {
     zeroTakeupTensionArm();
     zeroSourceTensionArm();
   };
 
+  // Laserpointer placeholder — no backend mutation exists yet for the rewinder
+  // TODO: wire to EnableTraverseLaserpointer mutation once added to rewinder backend (see winder2 for reference)
+  const [laserOn, setLaserOn] = React.useState(false);
+
+  // Debug: preview filament line without a live machine connection
+  const [debugFilamentMode, setDebugFilamentMode] = React.useState<Mode | null>(
+    null,
+  );
+  const [debugCanRewind, setDebugCanRewind] = React.useState(false);
+  const DEBUG_MODES: Mode[] = ["Standby", "Hold", "Pull", "Prepare", "Rewind"];
+
+  const isReady = state?.mode_state.can_rewind === true;
+
   return (
     <Page>
-      <ControlGrid>
-        <ControlCard width={2} title="Run">
-          <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-            <SelectionGroup<Mode>
-              value={state?.mode_state.mode}
-              disabled={isDisabled}
-              loading={isLoading}
-              onChange={setMode}
-              orientation="vertical"
-              className="grid grid-cols-2 gap-2"
-              options={{
-                Standby: {
-                  children: "Standby",
-                  icon: "lu:Power",
-                  isActiveClassName: "bg-green-600",
-                  className: "min-h-16",
-                },
-                Hold: {
-                  children: "Hold",
-                  icon: "lu:CirclePause",
-                  isActiveClassName: "bg-green-600",
-                  className: "min-h-16",
-                },
-                Pull: {
-                  children: "Pull",
-                  icon: "lu:ArrowRight",
-                  isActiveClassName: "bg-green-600",
-                  className: "min-h-16",
-                },
-                Prepare: {
-                  children: "Prepare",
-                  icon: "lu:Crosshair",
-                  isActiveClassName: "bg-green-600",
-                  className: "min-h-16",
-                  disabled: !tensionArmsZeroed,
-                },
-                Rewind: {
-                  children: "Rewind",
-                  icon: "lu:RefreshCw",
-                  isActiveClassName: "bg-green-600",
-                  className: "col-span-2 min-h-16",
-                  disabled: state?.mode_state.can_rewind !== true,
-                },
-              }}
-            />
-            <div className="flex flex-col gap-4">
-              <TimeSeriesValueNumeric
-                label="Line Speed"
-                unit="m/min"
-                timeseries={pullerSpeed}
-                renderValue={(value) => roundToDecimals(value, 2)}
-              />
-              <EditValue
-                value={state?.puller_state.target_speed}
-                unit="m/min"
-                title="Target Speed"
-                defaultValue={defaultState?.puller_state.target_speed}
-                min={0}
-                max={maxTargetSpeed}
-                renderValue={(value) => roundToDecimals(value, 2)}
-                onChange={setPullerTargetSpeed}
-              />
-              <div className="flex flex-wrap gap-2">
-                {state?.mode_state.can_rewind !== true ? (
-                  <StatusBadge variant="error">Not Ready</StatusBadge>
-                ) : (
-                  <StatusBadge variant="success">Ready</StatusBadge>
-                )}
-                {!tensionArmsZeroed ? (
-                  <StatusBadge variant="error">Arms Not Zeroed</StatusBadge>
-                ) : null}
-                {state?.traverse_state.is_homed !== true ? (
-                  <StatusBadge variant="error">Traverse Not Homed</StatusBadge>
-                ) : null}
-              </div>
+      {/* Top: machine overview schematic */}
+      <ControlCard title="Overview">
+        <RewinderOverview
+          state={state}
+          takeupSpoolRpm={takeupSpoolRpm}
+          sourceSpoolRpm={sourceSpoolRpm}
+          traversePosition={traversePosition}
+          pullerSpeed={pullerSpeed}
+          takeupTensionArmAngle={takeupTensionArmAngle}
+          sourceTensionArmAngle={sourceTensionArmAngle}
+          modeOverride={debugFilamentMode ?? undefined}
+          canRewindOverride={debugFilamentMode ? debugCanRewind : undefined}
+        />
+        {/* Debug row: preview filament appearance per mode */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-gray-400">Filament debug:</span>
+          <button
+            onClick={() => setDebugFilamentMode(null)}
+            className={`rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${debugFilamentMode === null ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+          >
+            Live
+          </button>
+          {DEBUG_MODES.map((m) => (
+            <button
+              key={m}
+              onClick={() => setDebugFilamentMode(m)}
+              className={`rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${debugFilamentMode === m ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+            >
+              {m}
+            </button>
+          ))}
+          {debugFilamentMode === "Prepare" && (
+            <button
+              onClick={() => setDebugCanRewind((v) => !v)}
+              className={`rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${debugCanRewind ? "bg-green-600 text-white" : "bg-amber-500 text-white"}`}
+            >
+              {debugCanRewind ? "can_rewind: true" : "can_rewind: false"}
+            </button>
+          )}
+        </div>
+      </ControlCard>
+
+      {/* Bottom: 3-column row */}
+      <div className="grid grid-cols-3 gap-4">
+        {/* Run */}
+        <ControlCard>
+          <div className="flex items-start justify-between gap-2">
+            <h2 className="text-2xl font-bold">Run</h2>
+            <div className="flex flex-wrap justify-end gap-2">
+              {isReady ? (
+                <StatusBadge variant="success">Ready</StatusBadge>
+              ) : (
+                <StatusBadge variant="error">Not Ready</StatusBadge>
+              )}
+              {!tensionArmsZeroed && (
+                <StatusBadge variant="error">Arms Not Zeroed</StatusBadge>
+              )}
+              {state?.traverse_state.is_homed !== true && (
+                <StatusBadge variant="error">Traverse Not Homed</StatusBadge>
+              )}
             </div>
           </div>
-        </ControlCard>
-
-        <ControlCard title="Automatic Stop">
+          <SelectionGroup<Mode>
+            value={state?.mode_state.mode}
+            disabled={isDisabled}
+            loading={isLoading}
+            onChange={setMode}
+            orientation="vertical"
+            className="grid grid-cols-2 gap-2"
+            options={{
+              Standby: {
+                children: "Standby",
+                icon: "lu:Power",
+                isActiveClassName: "bg-green-600",
+                className: "min-h-16",
+              },
+              Hold: {
+                children: "Hold",
+                icon: "lu:CirclePause",
+                isActiveClassName: "bg-green-600",
+                className: "min-h-16",
+              },
+              Pull: {
+                children: "Pull",
+                icon: "lu:ArrowRight",
+                isActiveClassName: "bg-green-600",
+                className: "min-h-16",
+              },
+              Prepare: {
+                children: "Prepare",
+                icon: "lu:Crosshair",
+                isActiveClassName: "bg-green-600",
+                className: "min-h-16",
+                disabled: !tensionArmsZeroed,
+              },
+              Rewind: {
+                children: "Rewind",
+                icon: "lu:RefreshCw",
+                isActiveClassName: "bg-green-600",
+                className: "col-span-2 min-h-16",
+                disabled: !isReady,
+              },
+            }}
+          />
           <TimeSeriesValueNumeric
-            label="Progress"
-            unit="m"
-            timeseries={rewindProgress}
+            label="Line Speed"
+            unit="m/min"
+            timeseries={pullerSpeed}
             renderValue={(value) => roundToDecimals(value, 2)}
           />
           <EditValue
-            value={state?.rewind_automatic_action_state.required_meters}
-            unit="m"
-            title="Required Length"
-            defaultValue={defaultState?.rewind_automatic_action_state.required_meters}
+            value={state?.puller_state.target_speed}
+            unit="m/min"
+            title="Target Speed"
+            defaultValue={defaultState?.puller_state.target_speed}
             min={0}
-            max={10000}
-            step={0.1}
-            renderValue={(value) => roundToDecimals(value, 1)}
-            onChange={setRewindAutomaticRequiredMeters}
+            max={maxTargetSpeed}
+            renderValue={(value) => roundToDecimals(value, 2)}
+            onChange={setPullerTargetSpeed}
           />
-          <Label label="After Length">
-            <SelectionGroup
-              value={state?.rewind_automatic_action_state.mode}
-              disabled={isDisabled}
-              loading={isLoading}
-              options={{
-                NoAction: { children: "No Action", icon: "lu:Minus" },
-                Hold: { children: "Hold", icon: "lu:CirclePause" },
-              }}
-              onChange={(value) =>
-                setRewindAutomaticAction(value as "NoAction" | "Hold")
-              }
+        </ControlCard>
+
+        {/* Middle column: Automatic Stop + Actions stacked */}
+        <div className="flex flex-col gap-4">
+          <ControlCard title="Automatic Stop">
+            <TimeSeriesValueNumeric
+              label="Progress"
+              unit="m"
+              timeseries={rewindProgress}
+              renderValue={(value) => roundToDecimals(value, 2)}
             />
-          </Label>
-          <TouchButton
-            variant="outline"
-            icon="lu:RotateCcw"
-            onClick={resetRewindProgress}
-            disabled={isDisabled}
-            isLoading={isLoading}
-          >
-            Reset Progress
-          </TouchButton>
-        </ControlCard>
-
-        <ControlCard title="Source Side">
-          <Spool rpm={sourceSpoolRpm.current?.value} />
-          <TimeSeriesValueNumeric
-            label="Source Spool"
-            unit="rpm"
-            timeseries={sourceSpoolRpm}
-            renderValue={(value) => roundToDecimals(value, 0)}
-          />
-        </ControlCard>
-
-        <ControlCard title="Tension Arms">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-3">
-              <h3 className="text-lg font-semibold">Source</h3>
-              <TensionArm degrees={sourceTensionArmAngle.current?.value} />
-              <TimeSeriesValueNumeric
-                label="Angle"
-                unit="deg"
-                timeseries={sourceTensionArmAngle}
-                renderValue={(value) => roundDegreesToDecimals(value, 0)}
+            <EditValue
+              value={state?.rewind_automatic_action_state.required_meters}
+              unit="m"
+              title="Required Length"
+              defaultValue={
+                defaultState?.rewind_automatic_action_state.required_meters
+              }
+              min={0}
+              max={10000}
+              step={0.1}
+              renderValue={(value) => roundToDecimals(value, 1)}
+              onChange={setRewindAutomaticRequiredMeters}
+            />
+            <Label label="After Length">
+              <SelectionGroup
+                value={state?.rewind_automatic_action_state.mode}
+                disabled={isDisabled}
+                loading={isLoading}
+                options={{
+                  NoAction: { children: "No Action", icon: "lu:Minus" },
+                  Hold: { children: "Hold", icon: "lu:CirclePause" },
+                }}
+                onChange={(value) =>
+                  setRewindAutomaticAction(value as "NoAction" | "Hold")
+                }
               />
-              {!state?.source_tension_arm_state.zeroed && (
-                <StatusBadge variant="error">Not Zeroed</StatusBadge>
-              )}
-            </div>
-            <div className="flex flex-col gap-3">
-              <h3 className="text-lg font-semibold">Takeup</h3>
-              <TensionArm degrees={takeupTensionArmAngle.current?.value} />
-              <TimeSeriesValueNumeric
-                label="Angle"
-                unit="deg"
-                timeseries={takeupTensionArmAngle}
-                renderValue={(value) => roundDegreesToDecimals(value, 0)}
-              />
-              {!state?.takeup_tension_arm_state.zeroed && (
-                <StatusBadge variant="error">Not Zeroed</StatusBadge>
-              )}
-            </div>
-          </div>
-          <TouchButton
-            variant="outline"
-            icon="lu:House"
-            onClick={zeroTensionArms}
-            disabled={isDisabled}
-            isLoading={isLoading}
-          >
-            Set Both Zero Points
-          </TouchButton>
-        </ControlCard>
+            </Label>
+            <TouchButton
+              variant="outline"
+              icon="lu:RotateCcw"
+              onClick={resetRewindProgress}
+              disabled={isDisabled}
+              isLoading={isLoading}
+            >
+              Reset Progress
+            </TouchButton>
+          </ControlCard>
 
-        <ControlCard title="Takeup Side">
-          <Spool rpm={takeupSpoolRpm.current?.value} />
-          <TimeSeriesValueNumeric
-            label="Takeup Spool"
-            unit="rpm"
-            timeseries={takeupSpoolRpm}
-            renderValue={(value) => roundToDecimals(value, 0)}
-          />
-        </ControlCard>
+          <ControlCard title="Actions">
+            <TouchButton
+              variant="outline"
+              icon="lu:RotateCcw"
+              onClick={zeroTensionArms}
+              disabled={isDisabled}
+              isLoading={isLoading}
+            >
+              Zero Tension Arms
+            </TouchButton>
+            <TouchButton
+              variant="outline"
+              icon="lu:MapPin"
+              onClick={() => {
+                // TODO: implement go to start position mutation
+              }}
+              disabled={true}
+            >
+              Go to Start Position
+            </TouchButton>
+          </ControlCard>
+        </div>
 
-        <ControlCard width={3} title="Traverse">
+        {/* Traverse */}
+        <ControlCard title="Traverse">
           <TimeSeriesValueNumeric
             label="Position"
             unit="mm"
@@ -297,6 +324,18 @@ export function RewinderControlPage() {
               Go to Inner Limit
             </TouchButton>
           </Label>
+          <Label label="Laserpointer">
+            <SelectionGroupBoolean
+              value={laserOn}
+              onChange={setLaserOn}
+              optionTrue={{
+                children: "On",
+                icon: "lu:Lightbulb",
+                isActiveClassName: "bg-green-600",
+              }}
+              optionFalse={{ children: "Off", icon: "lu:LightbulbOff" }}
+            />
+          </Label>
           <Label label="Home">
             <TouchButton
               variant="outline"
@@ -312,7 +351,7 @@ export function RewinderControlPage() {
             ) : null}
           </Label>
         </ControlCard>
-      </ControlGrid>
+      </div>
     </Page>
   );
 }

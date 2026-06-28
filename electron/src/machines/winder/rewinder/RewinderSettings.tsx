@@ -108,9 +108,7 @@ export function RewinderSettingsPage() {
               </Label>
               <Label label="Acceleration Factor">
                 <EditValue
-                  value={
-                    state?.takeup_spool_state.adaptive_acceleration_factor
-                  }
+                  value={state?.takeup_spool_state.adaptive_acceleration_factor}
                   title="Acceleration Factor"
                   step={0.01}
                   min={0.01}
@@ -234,8 +232,7 @@ export function RewinderSettingsPage() {
                 max={120}
                 disabled={angleSettingsDisabled}
                 defaultValue={
-                  defaultState?.takeup_tension_arm_control_state
-                    .start_min_angle
+                  defaultState?.takeup_tension_arm_control_state.start_min_angle
                 }
                 renderValue={(value) => roundToDecimals(value, 0)}
                 onChange={(value) =>
@@ -253,8 +250,7 @@ export function RewinderSettingsPage() {
                 max={135}
                 disabled={angleSettingsDisabled}
                 defaultValue={
-                  defaultState?.takeup_tension_arm_control_state
-                    .start_max_angle
+                  defaultState?.takeup_tension_arm_control_state.start_max_angle
                 }
                 renderValue={(value) => roundToDecimals(value, 0)}
                 onChange={(value) =>
@@ -331,8 +327,7 @@ export function RewinderSettingsPage() {
                 max={120}
                 disabled={angleSettingsDisabled}
                 defaultValue={
-                  defaultState?.source_tension_arm_control_state
-                    .start_min_angle
+                  defaultState?.source_tension_arm_control_state.start_min_angle
                 }
                 renderValue={(value) => roundToDecimals(value, 0)}
                 onChange={(value) =>
@@ -350,8 +345,7 @@ export function RewinderSettingsPage() {
                 max={135}
                 disabled={angleSettingsDisabled}
                 defaultValue={
-                  defaultState?.source_tension_arm_control_state
-                    .start_max_angle
+                  defaultState?.source_tension_arm_control_state.start_max_angle
                 }
                 renderValue={(value) => roundToDecimals(value, 0)}
                 onChange={(value) =>
@@ -391,9 +385,13 @@ export function RewinderSettingsPage() {
                 min={1}
                 max={20}
                 disabled={angleSettingsDisabled}
-                defaultValue={defaultState?.prepare_control_state.tolerance_angle}
+                defaultValue={
+                  defaultState?.prepare_control_state.tolerance_angle
+                }
                 renderValue={(value) => roundToDecimals(value, 1)}
-                onChange={(value) => setPrepareControl("tolerance_angle", value)}
+                onChange={(value) =>
+                  setPrepareControl("tolerance_angle", value)
+                }
               />
             </Label>
             <Label label="Settle Rate">
