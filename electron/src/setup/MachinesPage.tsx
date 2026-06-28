@@ -15,6 +15,8 @@ import {
 } from "@/machines/properties";
 import { IconText } from "@/components/IconText";
 import { MachinesEventData, useMainNamespace } from "@/client/mainNamespace";
+import { TouchButton } from "@/components/touch/TouchButton";
+import { Link } from "@tanstack/react-router";
 
 export const columns: ColumnDef<
   NonNullable<MachinesEventData>["machines"][number]
@@ -92,6 +94,13 @@ export function MachinesPage() {
       <SectionTitle title="Machines">
         <RefreshIndicator ts={machines?.ts} />
       </SectionTitle>
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Link to="/_sidebar/machines/rewinder/demo/control">
+          <TouchButton variant="outline" icon="lu:RefreshCw">
+            Preview Rewinder UI
+          </TouchButton>
+        </Link>
+      </div>
       <MyTable table={table} key={data.toString()} />
     </Page>
   );
