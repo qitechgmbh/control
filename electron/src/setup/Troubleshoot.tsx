@@ -2,6 +2,7 @@ import { Alert } from "@/components/Alert";
 import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import { TouchButton } from "@/components/touch/TouchButton";
+import { mainNamespaceStore } from "@/client/mainNamespace";
 import {
   rebootHmi,
   restartBackend,
@@ -54,6 +55,7 @@ export function TroubleshootPage() {
     try {
       const result = await restartBackendIntoPreop();
       if (result.success) {
+        mainNamespaceStore.setState({ isIntentionalPreop: true });
         toast.success("Backend restarted into Preop mode");
       } else {
         toast.error(`Failed to restart into Preop: ${result.error}`);

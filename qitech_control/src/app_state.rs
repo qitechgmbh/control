@@ -4,6 +4,7 @@ use crate::apis::socketio::{
         ethercat_devices_event::{
             EcatState, EtherCatDeviceMetaData, EthercatDevicesEvent, EthercatSetupDone,
         },
+        ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent,
         machines_event::{MachineObj, MachinesEventBuilder},
     },
     namespaces::Namespaces,
@@ -103,6 +104,22 @@ impl SharedAppState {
                     }
             });
         }
+        drop(guard);
+        Ok(())
+    }
+
+    /// Emit an EtherCAT interface discovery event synchronously (non-async).
+    /// Uses `try_write()` so it can be called from a synchronous context during
+    /// startup, before the Tokio runtime and Socket.io server are fully running.
+    /// Events are queued and delivered when the Socket.io queue consumer starts.
+    pub fn emit_ethercat_interface_discovery(
+        &self,
+        event: EthercatInterfaceDiscoveryEvent,
+    ) -> Result<(), anyhow::Error> {
+        let built = event.build();
+        let mut guard = self.socketio_setup.namespaces.try_write()?;
+        let main_namespace = &mut guard.main_namespace;
+        main_namespace.emit(MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(built));
         drop(guard);
         Ok(())
     }

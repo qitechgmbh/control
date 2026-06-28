@@ -14,6 +14,7 @@ import { getMachineProperties } from "@/machines/properties";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
 import {
   EthercatDevicesEventData,
+  mainNamespaceStore,
   useMainNamespace,
 } from "@/client/mainNamespace";
 import { useBackendConnected } from "@/client/socketioStore";
@@ -111,19 +112,21 @@ export function createColumns(
     {
       accessorKey: "eeprom",
       header: "Edit Assignment",
-      cell: (row) => (
-        <DeviceEepromDialog device={row.row.original} disabled={!isPreop} />
-      ),
+      cell: (row) => <DeviceEepromDialog device={row.row.original} />,
     },
   ];
 }
 
 export function EthercatPage() {
-  const { ethercatDevices, ethercatState, ethercatInterfaceDiscovery } =
-    useMainNamespace();
+  const {
+    ethercatDevices,
+    ethercatState,
+    ethercatInterfaceDiscovery,
+    isIntentionalPreop,
+  } = useMainNamespace();
   const backendConnected = useBackendConnected();
   const [isRestartPreopLoading, setIsRestartPreopLoading] = useState(false);
-  const etherCatState = ethercatState?.data?.state;
+  const etherCatState = ethercatState?.data?.State;
   const data = useMemo(() => {
     return ethercatDevices?.data?.Done?.devices || [];
   }, [ethercatDevices]);
@@ -144,6 +147,7 @@ export function EthercatPage() {
     try {
       const result = await restartBackendIntoPreop();
       if (result.success) {
+        mainNamespaceStore.setState({ isIntentionalPreop: true });
         toast.success("Backend restarted into Preop mode");
       } else {
         toast.error(`Failed to restart into Preop: ${result.error}`);
@@ -198,23 +202,7 @@ export function EthercatPage() {
       <p style={{ lineHeight: "1.6", margin: "1em 0" }}>
         SubDevices have to be in preop before writing to the EEPROM is allowed
       </p>
-      {!backendConnected && (
-        <span
-          style={{
-            color: "#fff",
-            backgroundColor: "#dc2626",
-            padding: "2px 6px",
-            borderRadius: "4px",
-            fontWeight: "bold",
-            display: "inline-block",
-            width: "max-content",
-            marginLeft: "4px",
-          }}
-        >
-          BACKEND DISCONNECTED — RECONNECTING…
-        </span>
-      )}
-      {etherCatState === "preop" && (
+      {isIntentionalPreop && etherCatState === "preop" && (
         <span
           style={{
             color: "#542603",

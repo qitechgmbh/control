@@ -54,7 +54,7 @@ export const ethercatDevicesEventSchema = eventSchema(
 export type EthercatDevicesEvent = z.infer<typeof ethercatDevicesEventSchema>;
 
 export const ethercatStateEventDataSchema = z.object({
-  state: z.string(),
+  State: z.string(),
 });
 
 export type EthercatStateEventData = z.infer<
@@ -106,6 +106,7 @@ export const mainNamespaceStoreSchema = z.object({
   ethercatState: ethercatStateEventSchema.nullable(),
   machines: machinesEventSchema.nullable(),
   ethercatInterfaceDiscovery: ethercatInterfaceDiscoveryEventSchema.nullable(),
+  isIntentionalPreop: z.boolean(),
 });
 
 export type MainNamespaceStore = z.infer<typeof mainNamespaceStoreSchema>;
@@ -116,6 +117,7 @@ export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
     ethercatState: null,
     machines: null,
     ethercatInterfaceDiscovery: null,
+    isIntentionalPreop: false,
   }));
 };
 
