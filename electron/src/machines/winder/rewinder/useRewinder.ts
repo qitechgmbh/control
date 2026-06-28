@@ -390,7 +390,9 @@ export function useRewinder() {
       () =>
         requestTakeupSpoolSetAdaptiveDeaccelerationUrgencyMultiplier({
           machine_identification_unique: machineIdentification,
-          data: { SetTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier: value },
+          data: {
+            SetTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier: value,
+          },
         }),
     );
   };
