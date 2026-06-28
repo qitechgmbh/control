@@ -20,11 +20,101 @@ import {
   useRewinderNamespace,
 } from "./rewinderNamespace";
 
+const DEMO_SERIAL = "demo";
+
+/** Realistic default state for previewing the ReWinder UI without a machine connection. */
+function createDemoStateEvent(): StateEvent {
+  return {
+    name: "StateEvent",
+    ts: Date.now(),
+    data: {
+      is_default_state: true,
+      mode_state: {
+        mode: "Standby",
+        can_rewind: true,
+      },
+      traverse_state: {
+        limit_inner: 20,
+        limit_outer: 100,
+        position_in: 20,
+        position_out: 100,
+        is_going_in: false,
+        is_going_out: false,
+        is_homed: true,
+        is_going_home: false,
+        is_traversing: false,
+        step_size: 5,
+        padding: 10,
+      },
+      puller_state: {
+        target_speed: 10.0,
+      },
+      takeup_spool_state: {
+        regulation_mode: "Adaptive",
+        minmax_min_speed: 5.0,
+        minmax_max_speed: 50.0,
+        adaptive_tension_target: 2.5,
+        adaptive_radius_learning_rate: 0.1,
+        adaptive_max_speed_multiplier: 2.0,
+        adaptive_acceleration_factor: 1.5,
+        adaptive_deacceleration_urgency_multiplier: 2.0,
+      },
+      source_spool_state: {
+        adaptive_tension_target: 2.0,
+      },
+      rewind_automatic_action_state: {
+        required_meters: 100.0,
+        mode: "NoAction",
+      },
+      takeup_tension_arm_state: {
+        zeroed: true,
+      },
+      source_tension_arm_state: {
+        zeroed: true,
+      },
+      takeup_tension_arm_control_state: {
+        hard_min_angle: -10,
+        hard_max_angle: 190,
+        start_min_angle: 0,
+        start_max_angle: 180,
+        target_angle: 90,
+      },
+      source_tension_arm_control_state: {
+        hard_min_angle: -10,
+        hard_max_angle: 190,
+        start_min_angle: 0,
+        start_max_angle: 180,
+        target_angle: 90,
+      },
+      prepare_control_state: {
+        tolerance_angle: 3.0,
+        settle_rate: 0.5,
+      },
+    },
+  };
+}
+
+/** No-op mutation for demo mode – does nothing, returns undefined. */
+function noopMutation() {
+  return undefined as any;
+}
+
 export function useRewinder() {
   const { serial: serialString } = rewinderSerialRoute.useParams();
+  const isDemo = serialString === DEMO_SERIAL;
 
   const machineIdentification: MachineIdentificationUnique = useMemo(() => {
     const serial = parseInt(serialString);
+
+    if (isDemo) {
+      return {
+        machine_identification: {
+          vendor: 0,
+          machine: 0,
+        },
+        serial: 0,
+      };
+    }
 
     if (isNaN(serial)) {
       toastError(
@@ -45,7 +135,7 @@ export function useRewinder() {
       machine_identification: rewinder.machine_identification,
       serial,
     };
-  }, [serialString]);
+  }, [serialString, isDemo]);
 
   const {
     state,
@@ -511,6 +601,49 @@ export function useRewinder() {
       machine_identification_unique: machineIdentification,
       data: "GotoTraverseLimitOuter",
     });
+
+  if (isDemo) {
+    const demoState = createDemoStateEvent();
+    return {
+      state: demoState.data,
+      defaultState: demoState.data,
+      traversePosition,
+      pullerSpeed,
+      takeupSpoolRpm,
+      sourceSpoolRpm,
+      takeupTensionArmAngle,
+      sourceTensionArmAngle,
+      rewindProgress,
+      isLoading: false,
+      isDisabled: false,
+      setMode: noopMutation,
+      setPullerTargetSpeed: noopMutation,
+      setTakeupSpoolRegulationMode: noopMutation,
+      setTakeupSpoolMinMaxMinSpeed: noopMutation,
+      setTakeupSpoolMinMaxMaxSpeed: noopMutation,
+      setTakeupTensionTarget: noopMutation,
+      setTakeupSpoolAdaptiveRadiusLearningRate: noopMutation,
+      setTakeupSpoolAdaptiveMaxSpeedMultiplier: noopMutation,
+      setTakeupSpoolAdaptiveAccelerationFactor: noopMutation,
+      setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier: noopMutation,
+      setSourceTensionTarget: noopMutation,
+      setTakeupTensionArmControl: noopMutation,
+      setSourceTensionArmControl: noopMutation,
+      setPrepareControl: noopMutation,
+      setRewindAutomaticRequiredMeters: noopMutation,
+      setRewindAutomaticAction: noopMutation,
+      resetRewindProgress: noopMutation,
+      zeroTakeupTensionArm: noopMutation,
+      zeroSourceTensionArm: noopMutation,
+      setTraverseLimitInner: noopMutation,
+      setTraverseLimitOuter: noopMutation,
+      setTraverseStepSize: noopMutation,
+      setTraversePadding: noopMutation,
+      gotoTraverseHome: noopMutation,
+      gotoTraverseLimitInner: noopMutation,
+      gotoTraverseLimitOuter: noopMutation,
+    };
+  }
 
   return {
     state: stateOptimistic.value?.data,
