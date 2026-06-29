@@ -138,7 +138,9 @@ function FilamentPath({
 
   if (mode === "Prepare") {
     stroke = canRewind ? "#16a34a" : "#d97706";
-  } else if (mode === "Hold" || mode === "Pull") {
+  } else if (mode === "Hold") {
+    strokeDasharray = "14 8";
+  } else if (mode === "Pull") {
     strokeDasharray = "14 8";
     className = "animate-filament";
   }
@@ -204,7 +206,7 @@ export function RewinderOverview({
           </div>
           <div className="flex flex-1 flex-col items-center gap-1">
             <p className={LABEL}>Source Spool</p>
-            <Spool rpm={sourceSpoolRpm.current?.value} />
+            <Spool rpm={sourceSpoolRpm.current?.value} clockwise />
           </div>
         </div>
 
