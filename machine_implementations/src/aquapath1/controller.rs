@@ -61,6 +61,7 @@ impl Default for CoolingRampConfig {
 pub struct ControllerConfig {
     pub min_flow_for_thermal: VolumeRate,
     pub pump_startup_grace_period: Duration,
+    pub low_flow_grace_period: Duration,
     pub thermal_flow_settle_duration: Duration,
     pub heating_element_power: f64,
     pub heating_pwm_period: Duration,
@@ -77,6 +78,7 @@ impl Default for ControllerConfig {
         Self {
             min_flow_for_thermal: VolumeRate::new::<liter_per_minute>(0.2),
             pump_startup_grace_period: Duration::from_secs(15),
+            low_flow_grace_period: Duration::from_secs(5),
             thermal_flow_settle_duration: Duration::from_secs(10),
             heating_element_power: 700.0,
             heating_pwm_period: Duration::from_secs(12),
@@ -129,6 +131,7 @@ pub struct Controller {
     pub flow: Flow,
     pub should_pump: bool,
     pump_started_at: Option<Instant>,
+    low_flow_started_at: Option<Instant>,
     flow_became_valid_at: Option<Instant>,
     pump_cooldown_started_at: Option<Instant>,
     heating_last_active_at: Option<Instant>,
@@ -224,6 +227,7 @@ impl Controller {
             flow,
             should_pump: false,
             pump_started_at: None,
+            low_flow_started_at: None,
             flow_became_valid_at: None,
             pump_cooldown_started_at: None,
             heating_last_active_at: None,
@@ -608,9 +612,15 @@ impl Controller {
             && !has_flow_for_thermal
             && self.pump_startup_grace_elapsed(now)
         {
-            self.set_should_pump(false);
-            self.pending_notices
-                .push(ControllerNotice::PumpStoppedLowFlow);
+            let started_at = *self.low_flow_started_at.get_or_insert(now);
+            if now.duration_since(started_at) >= self.config.low_flow_grace_period {
+                self.low_flow_started_at = None;
+                self.set_should_pump(false);
+                self.pending_notices
+                    .push(ControllerNotice::PumpStoppedLowFlow);
+            }
+        } else {
+            self.low_flow_started_at = None;
         }
 
         let should_flow = self.get_should_pump();
