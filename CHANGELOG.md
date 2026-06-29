@@ -1,4 +1,17 @@
-# `3.0.0`
+# `3.0.0-rc2`
+_29.06.2026_
+
+## Aquapath
+- [#1462](https://github.com/qitechgmbh/control/pull/1462) Add a 5s grace period if the flow sensor registeres no flow
+
+## Winder
+- [#1461](https://github.com/qitechgmbh/control/pull/1461) change max dist between steps for winder to 50m
+
+## General
+- [#1457](https://github.com/qitechgmbh/control/pull/1457) Bump nixpkgs from `667d5cf` to `714a5f8`
+- [#1458](https://github.com/qitechgmbh/control/pull/1458) Bump home-manager from `7bfff44` to `868d0a6`
+
+# `3.0.0-rc1`
 _28.06.2026_
 
 This is the new 3.0 release of QiTech Control. Notably, it is the first version built on QiTech Lib, delivering gains in efficiency, performance, and stability. Across the board, this release focuses on behind-the-scenes enhancements that make the overall experience smoother and more reliable.
