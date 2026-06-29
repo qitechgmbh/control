@@ -454,7 +454,7 @@ export function Winder2SettingPage() {
                   unit="m"
                   step={0.1}
                   min={0}
-                  max={200}
+                  max={50}
                   defaultValue={
                     defaultState?.puller_state?.adaptive_adjustment_distance
                   }
