@@ -37,12 +37,18 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
     [],
   );
 
-  // Memoize the tick formatter to avoid recreating on every render
-  const tickFormatter = useMemo(() => {
-    return renderValue
-      ? (u: uPlot, ticks: number[]) => ticks.map((v) => renderValue(v))
-      : (u: uPlot, ticks: number[]) => ticks.map((v) => v.toFixed(1));
-  }, [renderValue]);
+  // Always reflect the latest renderValue without changing tickFormatter identity
+  const renderValueRef = useRef(renderValue);
+  renderValueRef.current = renderValue;
+
+  // Stable tick formatter — reads latest renderValue via ref, never changes identity
+  const tickFormatter = useCallback(
+    (_u: uPlot, ticks: number[]) => {
+      const rv = renderValueRef.current;
+      return rv ? ticks.map((v) => rv(v)) : ticks.map((v) => v.toFixed(1));
+    },
+    [],
+  );
 
   // Ultra-efficient update function
   const updateChart = useCallback(() => {
@@ -121,7 +127,7 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
     rafId.current = requestAnimationFrame(updateChart);
   }, [updateChart]);
 
-  // Initialize chart only once (timeWindow is the only legit reason to recreate)
+  // Initialize chart only once
   useEffect(() => {
     if (!divRef.current || !newData?.short?.timeWindow || isInitialized.current)
       return;
@@ -168,7 +174,7 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
           side: 1,
           grid: { stroke: "#ccc", width: 0.5 },
           ticks: { stroke: "#ccc", width: 0.5 },
-          values: tickFormatter, // Use the memoized formatter
+          values: tickFormatter, // Stable via renderValueRef
         },
       ],
       series: [
@@ -198,31 +204,21 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
       isInitialized.current = false;
       pendingUpdate.current = false;
     };
-    // Only recreate chart when the time window changes. tickFormatter and
-    // width are handled by separate effects below to avoid destroying and
-    // recreating the uPlot instance on every render (which was causing
-    // ~270 create/destroy cycles/sec on the rewinder page → OOM crash).
+    // tickFormatter is stable (uses renderValueRef), hashData is stable.
+    // width is handled by the setSize effect below — not included here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [newData?.short?.timeWindow]);
+  }, [newData?.short?.timeWindow, tickFormatter, hashData]);
 
   // Trigger updates only when timestamp changes
   useEffect(() => {
     scheduleUpdate();
   }, [newData?.current?.timestamp, scheduleUpdate]);
 
-  // Efficient width handling (separate from init to avoid chart recreation)
+  // Efficient width handling
   useEffect(() => {
     if (!uplotRef.current || !isInitialized.current) return;
     uplotRef.current.setSize({ width, height: HEIGHT });
   }, [width]);
-
-  // Update tick formatter on existing chart without destroying/recreating
-  useEffect(() => {
-    if (!uplotRef.current || !isInitialized.current) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (uplotRef.current.axes[1] as any).values = tickFormatter;
-    uplotRef.current.redraw();
-  }, [tickFormatter]);
 
   return (
     <div
