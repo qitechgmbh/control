@@ -28,11 +28,8 @@ export function RewinderSettingsPage() {
     setSourceTensionArmControl,
     setPrepareControl,
   } = useRewinder();
-  const angleSettingsDisabled =
-    isDisabled ||
-    state?.mode_state.mode === "Prepare" ||
-    state?.mode_state.mode === "Rewind";
-  const settingsDisabled = angleSettingsDisabled;
+  const settingsDisabled = isDisabled;
+  const angleSettingsDisabled = isDisabled;
 
   return (
     <Page>
