@@ -14,9 +14,7 @@ use qitech_lib::{
 };
 use qitech_lib::{
     ethercat_hal::interface_discovery::{LinkType, list_ethernet_interfaces, test_interface},
-    ethercat_hal::{
-        BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer,
-    },
+    ethercat_hal::{BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer},
     machines::MachineIdentificationUnique,
 };
 #[cfg(not(feature = "mock"))]
@@ -43,7 +41,7 @@ fn setup_ethercat(
     state: Arc<SharedAppState>,
     main_state: &mut MainState,
     eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
-) -> Result<(),anyhow::Error> {
+) -> Result<(), anyhow::Error> {
     let _res = eth_control
         .channel
         .request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
@@ -74,7 +72,6 @@ fn setup_ethercat(
         } else {
             stable_ticks = 0
         }
-
     }
 
     let mut idents = vec![];
@@ -188,7 +185,7 @@ fn send_machines_event(state: Arc<SharedAppState>) {
 fn finalize_ethercat(
     main_state: &mut MainState,
     eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
-) -> Result<(),anyhow::Error> {
+) -> Result<(), anyhow::Error> {
     let _res = eth_control
         .channel
         .request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
@@ -282,9 +279,7 @@ fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainSt
     }
 }
 
-fn optimized_ethercat_init(
-    interface: &str,
-) -> EtherCATControl<TripleBufConsumer, Arc<Mailbox>> {
+fn optimized_ethercat_init(interface: &str) -> EtherCATControl<TripleBufConsumer, Arc<Mailbox>> {
     let target_cycle_time_us: u64 = 1000;
     let dc_config: DcConfiguration = DcConfiguration {
         start_delay: Duration::from_millis(100),
@@ -408,9 +403,9 @@ fn main_logic() {
     setup_api_and_websock(state.clone());
 
     match &eth_control {
-        Some(control) =>{
+        Some(control) => {
             setup_ethercat(state.clone(), &mut main_state, control).expect("setup_ethercat failed");
-        },
+        }
         None => (),
     };
 
