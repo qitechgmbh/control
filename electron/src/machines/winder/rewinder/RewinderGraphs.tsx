@@ -7,6 +7,7 @@ import {
   type GraphLine,
 } from "@/components/graph";
 import { GraphWithMarkerControls } from "@/components/graph/marker/GraphWithMarkerControls";
+import { IconName } from "@/components/Icon";
 import { Unit } from "@/control/units";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { TimeSeries } from "@/lib/timeseries";
@@ -139,7 +140,7 @@ function SeriesGraph({
   syncHook: ReturnType<typeof useGraphSync>;
   graphId: string;
   title: string;
-  icon: string;
+  icon?: IconName;
   color: string;
   data: TimeSeries | null;
   unit?: Unit;
