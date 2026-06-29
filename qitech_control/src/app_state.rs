@@ -24,11 +24,8 @@ use machine_implementations::{
 };
 use qitech_lib::{
     ethercat_hal::{
-        Consumer, EtherCATThreadChannel, MetaSubdevice, Producer, controller::EtherCATController,
-        devices::EthercatDevice, machine_ident_read::MachineDeviceInfo,
-    },
-    machines::{MachineDataRegistry, MachineIdentification, MachineIdentificationUnique},
-    modbus::{ModbusDevice, devices::qitech_laser::LaserDevice},
+        Consumer, EtherCATControl, EtherCATThreadChannel, MetaSubdevice, Producer, devices::EthercatDevice, machine_ident_read::MachineDeviceInfo,
+    }, machines::{MachineDataRegistry, MachineIdentification, MachineIdentificationUnique}, modbus::{ModbusDevice, devices::qitech_laser::LaserDevice},
 };
 use socketioxide::{SocketIo, extract::SocketRef};
 use std::{
@@ -79,12 +76,12 @@ pub struct SharedAppState {
 impl SharedAppState {
     pub fn fill_ethercat_metadata<C: Consumer, P: Producer>(
         &self,
-        controller: Arc<EtherCATController<C, P>>,
+        controller: &EtherCATControl<C, P>,
         infos: Vec<MachineDeviceInfo>,
     ) -> Result<(), anyhow::Error> {
         let mut guard = self.ethercat_meta_datas.try_write()?;
-        for i in 0..controller.get_subdevice_count() {
-            let dev = controller.subdevices[i];
+        let subdevices = controller.app_handle.try_get_subdevices_vec_sync()?;
+        for dev in subdevices {            
             let device_machine_identification = infos
                 .iter()
                 .find(|info| info.device_address == dev.device_address)
