@@ -43,6 +43,7 @@ export function RewinderControlPage() {
     setRewindAutomaticRequiredMeters,
     setRewindAutomaticAction,
     resetRewindProgress,
+    enableTraverseLaserpointer,
   } = useRewinder();
 
   const maxTargetSpeed = 50;
@@ -55,9 +56,8 @@ export function RewinderControlPage() {
     zeroSourceTensionArm();
   };
 
-  // Laserpointer placeholder — no backend mutation exists yet for the rewinder
-  // TODO: wire to EnableTraverseLaserpointer mutation once added to rewinder backend (see winder2 for reference)
-  const [laserOn, setLaserOn] = React.useState(false);
+  // Laserpointer controlled via EL2002 digital output — same as winder2
+  const laserOn = state?.traverse_state.laserpointer ?? false;
 
   // Debug: preview filament line without a live machine connection
   const [debugFilamentMode, setDebugFilamentMode] = React.useState<Mode | null>(
@@ -327,7 +327,7 @@ export function RewinderControlPage() {
           <Label label="Laserpointer">
             <SelectionGroupBoolean
               value={laserOn}
-              onChange={setLaserOn}
+              onChange={enableTraverseLaserpointer}
               optionTrue={{
                 children: "On",
                 icon: "lu:Lightbulb",

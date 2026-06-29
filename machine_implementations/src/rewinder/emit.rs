@@ -1,7 +1,7 @@
 use super::rewind_control::ArmConfig;
 use super::{
-    PULL_MODE_SOURCE_ASSIST_MAX_RPM, PULL_MODE_SOURCE_ASSIST_RPM_PER_M_PER_MIN, PULLER_PORT,
-    RewindPhase, Rewinder, RewinderMode, SOURCE_SPOOL_PORT, TAKEUP_SPOOL_PORT,
+    LASER_PORT, PULL_MODE_SOURCE_ASSIST_MAX_RPM, PULL_MODE_SOURCE_ASSIST_RPM_PER_M_PER_MIN,
+    PULLER_PORT, RewindPhase, Rewinder, RewinderMode, SOURCE_SPOOL_PORT, TAKEUP_SPOOL_PORT,
     api::{
         HardStopEvent, LiveValuesEvent, ModeState, PrepareControlState, PullerState,
         RewindAutomaticActionState, RewinderEvents, SourceSpoolState, StateEvent, TakeupSpoolState,
@@ -10,12 +10,16 @@ use super::{
 };
 use crate::winder2::spool_speed_controller::SpoolSpeedControllerType;
 use control_core::socketio::{event::BuildEvent, namespace::NamespaceCacheingLogic};
-use qitech_lib::units::{
-    angular_velocity::revolution_per_minute,
-    f64::*,
-    length::{meter, millimeter},
-    velocity::meter_per_minute,
+use qitech_lib::{
+    ethercat_hal::io::digital_output::DigitalOutputDevice,
+    units::{
+        angular_velocity::revolution_per_minute,
+        f64::*,
+        length::{meter, millimeter},
+        velocity::meter_per_minute,
+    },
 };
+use std::cell::RefMut;
 use std::time::Instant;
 
 impl Rewinder {
@@ -91,6 +95,18 @@ impl Rewinder {
                 self.prepare_block_reason().unwrap_or("unknown reason")
             );
         }
+        self.emit_state();
+    }
+
+    fn get_laser(&mut self) -> RefMut<'_, dyn DigitalOutputDevice> {
+        self.digital_outputs.borrow_mut()
+    }
+
+    pub fn set_laser(&mut self, value: bool) {
+        self.laser_enabled = value;
+        let mut laser = self.get_laser();
+        laser.set_output(LASER_PORT, value);
+        drop(laser);
         self.emit_state();
     }
 
@@ -314,6 +330,7 @@ impl Rewinder {
                 is_traversing: self.traverse_controller.is_traversing(),
                 step_size: self.traverse_controller.get_step_size().get::<millimeter>(),
                 padding: self.traverse_controller.get_padding().get::<millimeter>(),
+                laserpointer: self.laser_enabled,
             },
             puller_state: PullerState {
                 target_speed: self

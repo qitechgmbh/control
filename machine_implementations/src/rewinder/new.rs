@@ -152,6 +152,7 @@ impl MachineNew for Rewinder {
             api_receiver,
             api_sender,
             digital_outputs: el2002.0,
+            laser_enabled: false,
             traverse: traverse.0,
             takeup_spool: takeup_spool.0,
             puller: puller.0.clone(),
