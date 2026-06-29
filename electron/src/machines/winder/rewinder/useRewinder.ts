@@ -250,7 +250,7 @@ export function useRewinder() {
 
   const updateStateOptimistically = (
     producer: (current: StateEvent) => void,
-    serverRequest: () => void | Promise<void>,
+    serverRequest: () => void,
   ) => {
     const currentState = stateOptimistic.value;
     if (currentState && !stateOptimistic.isOptimistic) {
@@ -272,7 +272,7 @@ export function useRewinder() {
         current.data.mode_state.mode = mode;
       },
       () =>
-        requestModeSet({
+        void requestModeSet({
           machine_identification_unique: machineIdentification,
           data: { SetMode: mode },
         }),
@@ -285,7 +285,7 @@ export function useRewinder() {
         current.data.puller_state.target_speed = targetSpeed;
       },
       () =>
-        requestPullerSetTargetSpeed({
+        void requestPullerSetTargetSpeed({
           machine_identification_unique: machineIdentification,
           data: { SetPullerTargetSpeed: targetSpeed },
         }),
@@ -298,7 +298,7 @@ export function useRewinder() {
         current.data.takeup_spool_state.regulation_mode = mode;
       },
       () =>
-        requestTakeupSpoolSetRegulationMode({
+        void requestTakeupSpoolSetRegulationMode({
           machine_identification_unique: machineIdentification,
           data: { SetTakeupSpoolRegulationMode: mode },
         }),
@@ -311,7 +311,7 @@ export function useRewinder() {
         current.data.takeup_spool_state.minmax_min_speed = speed;
       },
       () =>
-        requestTakeupSpoolSetMinMaxMinSpeed({
+        void requestTakeupSpoolSetMinMaxMinSpeed({
           machine_identification_unique: machineIdentification,
           data: { SetTakeupSpoolMinMaxMinSpeed: speed },
         }),
@@ -324,7 +324,7 @@ export function useRewinder() {
         current.data.takeup_spool_state.minmax_max_speed = speed;
       },
       () =>
-        requestTakeupSpoolSetMinMaxMaxSpeed({
+        void requestTakeupSpoolSetMinMaxMaxSpeed({
           machine_identification_unique: machineIdentification,
           data: { SetTakeupSpoolMinMaxMaxSpeed: speed },
         }),
@@ -337,7 +337,7 @@ export function useRewinder() {
         current.data.takeup_spool_state.adaptive_tension_target = target;
       },
       () =>
-        requestTakeupTensionTarget({
+        void requestTakeupTensionTarget({
           machine_identification_unique: machineIdentification,
           data: { SetTakeupTensionTarget: target },
         }),
@@ -350,7 +350,7 @@ export function useRewinder() {
         current.data.takeup_spool_state.adaptive_radius_learning_rate = value;
       },
       () =>
-        requestTakeupSpoolSetAdaptiveRadiusLearningRate({
+        void requestTakeupSpoolSetAdaptiveRadiusLearningRate({
           machine_identification_unique: machineIdentification,
           data: { SetTakeupSpoolAdaptiveRadiusLearningRate: value },
         }),
@@ -363,7 +363,7 @@ export function useRewinder() {
         current.data.takeup_spool_state.adaptive_max_speed_multiplier = value;
       },
       () =>
-        requestTakeupSpoolSetAdaptiveMaxSpeedMultiplier({
+        void requestTakeupSpoolSetAdaptiveMaxSpeedMultiplier({
           machine_identification_unique: machineIdentification,
           data: { SetTakeupSpoolAdaptiveMaxSpeedMultiplier: value },
         }),
@@ -376,7 +376,7 @@ export function useRewinder() {
         current.data.takeup_spool_state.adaptive_acceleration_factor = value;
       },
       () =>
-        requestTakeupSpoolSetAdaptiveAccelerationFactor({
+        void requestTakeupSpoolSetAdaptiveAccelerationFactor({
           machine_identification_unique: machineIdentification,
           data: { SetTakeupSpoolAdaptiveAccelerationFactor: value },
         }),
@@ -392,7 +392,7 @@ export function useRewinder() {
           value;
       },
       () =>
-        requestTakeupSpoolSetAdaptiveDeaccelerationUrgencyMultiplier({
+        void requestTakeupSpoolSetAdaptiveDeaccelerationUrgencyMultiplier({
           machine_identification_unique: machineIdentification,
           data: {
             SetTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier: value,
@@ -407,7 +407,7 @@ export function useRewinder() {
         current.data.source_spool_state.adaptive_tension_target = target;
       },
       () =>
-        requestSourceTensionTarget({
+        void requestSourceTensionTarget({
           machine_identification_unique: machineIdentification,
           data: { SetSourceTensionTarget: target },
         }),
@@ -430,7 +430,7 @@ export function useRewinder() {
         current.data.takeup_tension_arm_control_state = next;
       },
       () =>
-        requestSetTakeupTensionArmControl({
+        void requestSetTakeupTensionArmControl({
           machine_identification_unique: machineIdentification,
           data: { SetTakeupTensionArmControl: next },
         }),
@@ -453,7 +453,7 @@ export function useRewinder() {
         current.data.source_tension_arm_control_state = next;
       },
       () =>
-        requestSetSourceTensionArmControl({
+        void requestSetSourceTensionArmControl({
           machine_identification_unique: machineIdentification,
           data: { SetSourceTensionArmControl: next },
         }),
@@ -475,7 +475,7 @@ export function useRewinder() {
         current.data.prepare_control_state = next;
       },
       () =>
-        requestSetPrepareControl({
+        void requestSetPrepareControl({
           machine_identification_unique: machineIdentification,
           data: { SetPrepareControl: next },
         }),
@@ -488,7 +488,7 @@ export function useRewinder() {
         current.data.rewind_automatic_action_state.required_meters = meters;
       },
       () =>
-        requestSetRewindAutomaticRequiredMeters({
+        void requestSetRewindAutomaticRequiredMeters({
           machine_identification_unique: machineIdentification,
           data: { SetRewindAutomaticRequiredMeters: meters },
         }),
@@ -501,7 +501,7 @@ export function useRewinder() {
         current.data.rewind_automatic_action_state.mode = mode;
       },
       () =>
-        requestSetRewindAutomaticAction({
+        void requestSetRewindAutomaticAction({
           machine_identification_unique: machineIdentification,
           data: { SetRewindAutomaticAction: mode },
         }),
@@ -520,7 +520,7 @@ export function useRewinder() {
         current.data.takeup_tension_arm_state.zeroed = true;
       },
       () =>
-        requestZeroTakeupTensionArm({
+        void requestZeroTakeupTensionArm({
           machine_identification_unique: machineIdentification,
           data: "ZeroTakeupTensionArm",
         }),
@@ -533,7 +533,7 @@ export function useRewinder() {
         current.data.source_tension_arm_state.zeroed = true;
       },
       () =>
-        requestZeroSourceTensionArm({
+        void requestZeroSourceTensionArm({
           machine_identification_unique: machineIdentification,
           data: "ZeroSourceTensionArm",
         }),
@@ -546,7 +546,7 @@ export function useRewinder() {
         current.data.traverse_state.limit_inner = limit;
       },
       () =>
-        requestTraverseSetLimitInner({
+        void requestTraverseSetLimitInner({
           machine_identification_unique: machineIdentification,
           data: { SetTraverseLimitInner: limit },
         }),
@@ -559,7 +559,7 @@ export function useRewinder() {
         current.data.traverse_state.limit_outer = limit;
       },
       () =>
-        requestTraverseSetLimitOuter({
+        void requestTraverseSetLimitOuter({
           machine_identification_unique: machineIdentification,
           data: { SetTraverseLimitOuter: limit },
         }),
@@ -572,7 +572,7 @@ export function useRewinder() {
         current.data.traverse_state.step_size = stepSize;
       },
       () =>
-        requestTraverseSetStepSize({
+        void requestTraverseSetStepSize({
           machine_identification_unique: machineIdentification,
           data: { SetTraverseStepSize: stepSize },
         }),
@@ -585,7 +585,7 @@ export function useRewinder() {
         current.data.traverse_state.padding = padding;
       },
       () =>
-        requestTraverseSetPadding({
+        void requestTraverseSetPadding({
           machine_identification_unique: machineIdentification,
           data: { SetTraversePadding: padding },
         }),
@@ -614,7 +614,7 @@ export function useRewinder() {
         current.data.traverse_state.laserpointer = enabled;
       },
       () =>
-        requestEnableTraverseLaserpointer({
+        void requestEnableTraverseLaserpointer({
           machine_identification_unique: machineIdentification,
           data: { EnableTraverseLaserpointer: enabled },
         }),

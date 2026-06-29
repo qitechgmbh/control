@@ -95,7 +95,10 @@ export function MachinesPage() {
         <RefreshIndicator ts={machines?.ts} />
       </SectionTitle>
       <div className="mb-4 flex flex-wrap gap-2">
-        <Link to="/_sidebar/machines/rewinder/demo/control">
+        <Link
+          to="/_sidebar/machines/rewinder/$serial/control"
+          params={{ serial: "demo" }}
+        >
           <TouchButton variant="outline" icon="lu:RefreshCw">
             Preview Rewinder UI
           </TouchButton>
