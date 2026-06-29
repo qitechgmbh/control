@@ -75,6 +75,7 @@ pub enum Mutation {
     GotoTraverseLimitOuter,
     GotoTraverseLimitInner,
     GotoTraverseHome,
+    EnableTraverseLaserpointer(bool),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -148,6 +149,7 @@ pub struct TraverseState {
     pub is_traversing: bool,
     pub step_size: f64,
     pub padding: f64,
+    pub laserpointer: bool,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -304,6 +306,7 @@ impl MachineApi for super::Rewinder {
             Mutation::GotoTraverseLimitOuter => self.traverse_goto_limit_outer(),
             Mutation::GotoTraverseLimitInner => self.traverse_goto_limit_inner(),
             Mutation::GotoTraverseHome => self.traverse_goto_home(),
+            Mutation::EnableTraverseLaserpointer(enable) => self.set_laser(enable),
         }
         Ok(())
     }

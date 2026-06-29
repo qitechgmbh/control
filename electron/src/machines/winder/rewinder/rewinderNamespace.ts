@@ -70,6 +70,7 @@ export const traverseStateSchema = z.object({
   is_traversing: z.boolean(),
   step_size: z.number(),
   padding: z.number(),
+  laserpointer: z.boolean(),
 });
 
 export const pullerStateSchema = z.object({

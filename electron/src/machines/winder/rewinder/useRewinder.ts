@@ -45,6 +45,7 @@ function createDemoStateEvent(): StateEvent {
         is_traversing: false,
         step_size: 5,
         padding: 10,
+        laserpointer: false,
       },
       puller_state: {
         target_speed: 10.0,
@@ -242,6 +243,9 @@ export function useRewinder() {
   );
   const { request: requestTraverseGotoLimitOuter } = useMachineMutation(
     z.literal("GotoTraverseLimitOuter"),
+  );
+  const { request: requestEnableTraverseLaserpointer } = useMachineMutation(
+    z.object({ EnableTraverseLaserpointer: z.boolean() }),
   );
 
   const updateStateOptimistically = (
@@ -604,6 +608,19 @@ export function useRewinder() {
       data: "GotoTraverseLimitOuter",
     });
 
+  const enableTraverseLaserpointer = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.laserpointer = enabled;
+      },
+      () =>
+        requestEnableTraverseLaserpointer({
+          machine_identification_unique: machineIdentification,
+          data: { EnableTraverseLaserpointer: enabled },
+        }),
+    );
+  };
+
   if (isDemo) {
     const demoState = createDemoStateEvent();
     return {
@@ -644,6 +661,7 @@ export function useRewinder() {
       gotoTraverseHome: noopMutation,
       gotoTraverseLimitInner: noopMutation,
       gotoTraverseLimitOuter: noopMutation,
+      enableTraverseLaserpointer: noopMutation,
     };
   }
 
@@ -685,5 +703,6 @@ export function useRewinder() {
     gotoTraverseHome,
     gotoTraverseLimitInner,
     gotoTraverseLimitOuter,
+    enableTraverseLaserpointer,
   };
 }
