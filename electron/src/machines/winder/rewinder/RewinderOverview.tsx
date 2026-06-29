@@ -232,37 +232,37 @@ export function RewinderOverview({
           label="Takeup"
           unit="rpm"
           timeseries={takeupSpoolRpm}
-          renderValue={(v) => roundToDecimals(v, 0)}
+          renderValue={React.useCallback((v) => roundToDecimals(v, 0), [])}
         />
         <TimeSeriesValueNumeric
           label="Position"
           unit="mm"
           timeseries={traversePosition}
-          renderValue={(v) => roundToDecimals(v, 1)}
+          renderValue={React.useCallback((v) => roundToDecimals(v, 1), [])}
         />
         <TimeSeriesValueNumeric
           label="TU Angle"
           unit="deg"
           timeseries={takeupTensionArmAngle}
-          renderValue={(v) => roundDegreesToDecimals(v, 0)}
+          renderValue={React.useCallback((v) => roundDegreesToDecimals(v, 0), [])}
         />
         <TimeSeriesValueNumeric
           label="Speed"
           unit="m/min"
           timeseries={pullerSpeed}
-          renderValue={(v) => roundToDecimals(v, 2)}
+          renderValue={React.useCallback((v) => roundToDecimals(v, 2), [])}
         />
         <TimeSeriesValueNumeric
           label="Src Angle"
           unit="deg"
           timeseries={sourceTensionArmAngle}
-          renderValue={(v) => roundDegreesToDecimals(v, 0)}
+          renderValue={React.useCallback((v) => roundDegreesToDecimals(v, 0), [])}
         />
         <TimeSeriesValueNumeric
           label="Source"
           unit="rpm"
           timeseries={sourceSpoolRpm}
-          renderValue={(v) => roundToDecimals(v, 0)}
+          renderValue={React.useCallback((v) => roundToDecimals(v, 0), [])}
         />
       </div>
     </div>

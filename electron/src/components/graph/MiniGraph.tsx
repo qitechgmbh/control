@@ -121,7 +121,7 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
     rafId.current = requestAnimationFrame(updateChart);
   }, [updateChart]);
 
-  // Initialize chart only once
+  // Initialize chart only once (timeWindow is the only legit reason to recreate)
   useEffect(() => {
     if (!divRef.current || !newData?.short?.timeWindow || isInitialized.current)
       return;
@@ -198,18 +198,31 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
       isInitialized.current = false;
       pendingUpdate.current = false;
     };
-  }, [width, newData?.short?.timeWindow, hashData, tickFormatter]);
+    // Only recreate chart when the time window changes. tickFormatter and
+    // width are handled by separate effects below to avoid destroying and
+    // recreating the uPlot instance on every render (which was causing
+    // ~270 create/destroy cycles/sec on the rewinder page → OOM crash).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newData?.short?.timeWindow]);
 
   // Trigger updates only when timestamp changes
   useEffect(() => {
     scheduleUpdate();
   }, [newData?.current?.timestamp, scheduleUpdate]);
 
-  // Efficient width handling
+  // Efficient width handling (separate from init to avoid chart recreation)
   useEffect(() => {
     if (!uplotRef.current || !isInitialized.current) return;
     uplotRef.current.setSize({ width, height: HEIGHT });
   }, [width]);
+
+  // Update tick formatter on existing chart without destroying/recreating
+  useEffect(() => {
+    if (!uplotRef.current || !isInitialized.current) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (uplotRef.current.axes[1] as any).values = tickFormatter;
+    uplotRef.current.redraw();
+  }, [tickFormatter]);
 
   return (
     <div

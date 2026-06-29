@@ -178,7 +178,7 @@ export function RewinderControlPage() {
             label="Line Speed"
             unit="m/min"
             timeseries={pullerSpeed}
-            renderValue={(value) => roundToDecimals(value, 2)}
+            renderValue={React.useCallback((value) => roundToDecimals(value, 2), [])}
           />
           <EditValue
             value={state?.puller_state.target_speed}
@@ -199,7 +199,7 @@ export function RewinderControlPage() {
               label="Progress"
               unit="m"
               timeseries={rewindProgress}
-              renderValue={(value) => roundToDecimals(value, 2)}
+              renderValue={React.useCallback((value) => roundToDecimals(value, 2), [])}
             />
             <EditValue
               value={state?.rewind_automatic_action_state.required_meters}
@@ -268,7 +268,7 @@ export function RewinderControlPage() {
             label="Position"
             unit="mm"
             timeseries={traversePosition}
-            renderValue={(value) => roundToDecimals(value, 1)}
+            renderValue={React.useCallback((value) => roundToDecimals(value, 1), [])}
           />
           {state?.traverse_state && (
             <TraverseBar
