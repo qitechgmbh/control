@@ -31,6 +31,7 @@ use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 
 pub const TRAVERSE_PORT: usize = 0;
+pub const LASER_PORT: usize = 0;
 pub const PULLER_PORT: usize = 0;
 pub const TAKEUP_SPOOL_PORT: usize = 0;
 pub const SOURCE_SPOOL_PORT: usize = 0;
@@ -52,6 +53,7 @@ pub struct Rewinder {
     api_sender: Sender<MachineMessage>,
 
     pub digital_outputs: Rc<RefCell<dyn DigitalOutputDevice>>,
+    pub laser_enabled: bool,
     pub traverse: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
     pub takeup_spool: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
     pub puller: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
