@@ -454,41 +454,18 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
         // Decrement the active subscriber count
         ns.count = Math.max(0, ns.count - 1);
 
-        // Only teardown machine namespaces (never the main namespace)
+        // When all subscribers have left, clean up any orphaned intervals
+        // but keep the namespace alive — tearing it down requires more
+        // careful lifecycle management to avoid disrupting active machines.
         if (namespaceId.type !== "main" && ns.count <= 0) {
-          // Clear any existing disconnect timeout
-          if (ns.disconnectTimeoutId) {
-            clearTimeout(ns.disconnectTimeoutId);
+          if (ns.repollingIntervalId) {
+            clearInterval(ns.repollingIntervalId);
+            ns.repollingIntervalId = undefined;
           }
-
-          // Set a grace-period timeout before teardown to handle rapid
-          // mount/unmount cycles during tab switching
-          const timeoutId = setTimeout(() => {
-            const currentNs = get().namespaces[namespace_path];
-            if (currentNs && currentNs.count <= 0) {
-              // Clear any orphaned intervals
-              if (currentNs.repollingIntervalId) {
-                clearInterval(currentNs.repollingIntervalId);
-              }
-              if (currentNs.initIntervalId) {
-                clearInterval(currentNs.initIntervalId);
-              }
-              // Disconnect socket and destroy throttled updater
-              currentNs.socket.disconnect();
-              currentNs.throttledUpdater.destroy();
-              // Remove namespace from store
-              set(
-                produce((s: SocketioStore) => {
-                  delete s.namespaces[namespace_path];
-                }),
-              );
-              console.log(
-                `Namespace ${namespace_path} disconnected after grace period`,
-              );
-            }
-          }, 10_000); // 10 second grace period
-
-          ns.disconnectTimeoutId = timeoutId;
+          if (ns.initIntervalId) {
+            clearInterval(ns.initIntervalId);
+            ns.initIntervalId = undefined;
+          }
         }
       }),
     );
