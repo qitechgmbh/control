@@ -1,0 +1,52 @@
+name: laser_v1
+
+identification:
+  vendor_id: 0
+  machine_id: 0
+
+properties:
+  diameter:
+    type: millimeter
+    sampling: simple
+
+  x_diameter:
+    type: millimeter
+    sampling: simple
+
+  y_diameter: 
+    type: millimeter
+    sampling: simple
+
+  input_tolerance:
+    type: millimeter
+    sampling: simple
+
+  global_warning: 
+    type: bool
+    sampling: simple
+
+  config: 
+    target_diameter:
+      type: millimeter
+      sampling: simple
+
+    higher_tolerance:
+      type: millimeter
+      sampling: simple
+
+    lower_tolerance:
+      type: millimeter
+      sampling: simple
+
+mutations:
+  set_target_diameter: 
+    value: 
+      type: float
+      min: 0.0
+      max: 1.0
+
+  set_lower_tolerance:
+    value: float
+
+  set_higher_tolerance: 
+    value: float

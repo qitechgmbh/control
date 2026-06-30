@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 # internal deps
 qitech_lib = { workspace = true }
-machine_implementations = { path = "../machine_implementations" }
+machine_implementations = { path = "../machine-impls" }
 control_core = { path = "../control-core" }
 property = { path = "../property", features = ["serde"]}
 

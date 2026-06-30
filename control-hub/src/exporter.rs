@@ -1,6 +1,6 @@
 use std::time::Instant;
 use chrono::{DateTime, Utc};
-use property::{PropertySetView, StringPropertyValue};
+use machine_core::property::{PropertySetView, StringPropertyValue};
 use tokio::{
     sync::broadcast,
     time::{Duration, timeout},

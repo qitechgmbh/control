@@ -2,7 +2,7 @@
 members = [
     "qitech_control",
     "control-core",
-    "machine_implementations",
+    "machine-impls",
     "control-core-derive",
     "property",
 #    "utils",

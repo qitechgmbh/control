@@ -26,5 +26,5 @@ async fn main() {
         bridge_config, 
         exporter_config, 
         rest_api_config
-    ).await;
+    ).await.unwrap();
 }

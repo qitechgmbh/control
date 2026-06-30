@@ -2,6 +2,7 @@ use std::{fmt::Debug, io, sync::Arc};
 use axum::{Json, extract::{Path, State}, routing::get};
 use chrono::{DateTime, Utc};
 use clickhouse::{Row, query::Query};
+use machine_core::MachineIdentificationUnique;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::{SharedState, PropertyType};
@@ -33,7 +34,8 @@ pub struct Config {
 
 pub async fn run(state: SharedState, config: Config) -> io::Result<()> {
     let app = axum::Router::new()
-        .route("/properties/{machine_id}/{property_name}", get(property))
+        // .route("/properties/{machine_id}/{property_name}", get(property))
+        .route("/api/v2/machines", get(machines))
         .with_state(Arc::new(state));
 
     let listener = tokio::net::TcpListener::bind(&config.address)
@@ -46,6 +48,36 @@ pub async fn run(state: SharedState, config: Config) -> io::Result<()> {
     Ok(())
 }
 
+pub struct MachineIdentity {
+
+}
+
+async fn machines(
+    State(state): State<Arc<SharedState>>,
+) -> Result<Json<Vec<(u64, String)>>, String> {
+    let mut items: Vec<(u64, String)> = Vec::new();
+
+    for ident in state.machine_registry.load().iter() {
+        let uid = MachineIdentificationUnique::from_u64(*ident);
+        let name = if let Some(v) = state.machine_specs.get(&uid.ident) {
+            &v.name
+        } else { "undefined" };
+
+        items.push((*ident, name.into()));
+    }
+
+    Ok(axum::Json(items))
+}
+
+// #[derive(Machine("laser_v1"))] -> generate trait for mutations LaserV1Mutations
+
+// pub fn unpack_uid(value: u64) -> Self {
+//     let vendor = (value >> 48) as u16;
+//     let machine = (value >> 32) as u16;
+//     let serial = value as u32;
+// }
+
+/* 
 async fn property(
     State(state): State<Arc<SharedState>>,
     Path((machine_uid, property_name)): Path<(u64, String)>,
@@ -59,7 +91,7 @@ async fn property(
         LIMIT 1000
     "#;
 
-    let registry = state.registry.read().await;
+    let registry = state.machine_specs;
 
     let data_type = match registry.get_data_type(machine_uid, &property_name) {
         Ok(v) => v,
@@ -113,6 +145,7 @@ async fn property(
         }
     }
 }
+    */
 
 async fn extract_rows<T: 'static + DeserializeOwned>(
     query: Query
