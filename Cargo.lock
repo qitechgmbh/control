@@ -451,7 +451,6 @@ dependencies = [
  "approx",
  "axum",
  "bitvec",
- "control_core_derive",
  "core_affinity",
  "crc",
  "erased-serde",
@@ -466,15 +465,6 @@ dependencies = [
  "textplots",
  "tokio",
  "tracing",
-]
-
-[[package]]
-name = "control_core_derive"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.118",
 ]
 
 [[package]]
@@ -1503,7 +1493,6 @@ dependencies = [
  "approx",
  "bitvec",
  "control_core",
- "control_core_derive",
  "euclid",
  "lazy_static",
  "qitech_lib",

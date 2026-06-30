@@ -3,7 +3,6 @@ members = [
     "qitech_control",
     "control-core",
     "machine_implementations",
-    "control-core-derive",
 #    "utils",
 ]
 exclude = []

@@ -24,7 +24,6 @@ crc = "3.3.0"
 tracing = "0.1.44"
 erased-serde = "0.4.10"
 core_affinity = "0.8.3"
-control_core_derive = { version = "0.1.0", path = "../control-core-derive" }
 
 
 [target.'cfg(unix)'.dependencies]

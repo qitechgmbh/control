@@ -9,7 +9,6 @@ mod winder2_imports {
         },
     };
 
-    pub use control_core_derive::BuildEvent;
     pub use serde::{Deserialize, Serialize};
     pub use serde_json::Value;
     pub use std::{
@@ -136,7 +135,7 @@ impl LiveValuesEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone, BuildEvent)]
+#[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
     pub is_default_state: bool,
     /// traverse state
@@ -153,6 +152,12 @@ pub struct StateEvent {
     pub spool_speed_controller_state: SpoolSpeedControllerState,
     /// Is a Machine Connected?
     pub puller_reference_machine: Option<QiTechMachineIdentificationUnique>,
+}
+
+impl StateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("StateEvent", self.clone())
+    }
 }
 
 #[derive(Serialize, Debug, Clone, Default)]

@@ -16,7 +16,6 @@ use control_core::socketio::{
         CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
     },
 };
-use control_core_derive::BuildEvent;
 use qitech_lib::units::angular_velocity::revolution_per_minute;
 use qitech_lib::units::electric_current::ampere;
 use qitech_lib::units::electric_potential::volt;
@@ -83,7 +82,7 @@ impl LiveValuesEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq, BuildEvent)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct StateEvent {
     pub is_default_state: bool,
     /// rotation state
@@ -106,6 +105,12 @@ pub struct StateEvent {
     pub pid_settings: PidSettingsStates,
     /// pressure PID auto-tuner state
     pub pid_autotune_state: PidAutoTuneState,
+}
+
+impl StateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("StateEvent", self.clone())
+    }
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
