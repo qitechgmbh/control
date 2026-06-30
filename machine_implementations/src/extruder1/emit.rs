@@ -149,7 +149,7 @@ impl ExtruderV2 {
     pub fn emit_state(&mut self) {
         use control_core::{
             helpers::hasher_serializer::hash_with_serde_model,
-            socketio::{event::BuildEvent, namespace::NamespaceCacheingLogic},
+            socketio::namespace::NamespaceCacheingLogic,
         };
 
         let state = self.get_state();

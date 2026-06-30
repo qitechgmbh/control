@@ -7,7 +7,6 @@ use control_core::socketio::{
         CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
     },
 };
-use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
@@ -29,7 +28,7 @@ impl LiveValuesEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone, BuildEvent)]
+#[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
     pub is_default_state: bool,
     /// laser state
