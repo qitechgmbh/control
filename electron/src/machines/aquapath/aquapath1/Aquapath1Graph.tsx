@@ -41,13 +41,13 @@ export function Aquapath1GraphPage() {
           syncHook={syncHook}
           flow={right_flow}
           name={"Right Reservoir Flow"}
-          id={"reservoir_1_flow"}
+          id={"right_reservoir_flow"}
         />
         <FlowGraph
           syncHook={syncHook}
           flow={left_flow}
           name={"Left Reservoir Flow"}
-          id={"reservoir_2_flow"}
+          id={"left_reservoir_flow"}
         />
         <TemperatureGraph
           syncHook={syncHook}
@@ -56,7 +56,7 @@ export function Aquapath1GraphPage() {
           targetTemp={rightReservoirTempTarget}
           targetSeries={targetRightTemperature}
           name={"Right Reservoir Temperature"}
-          id={"reservoir_1_temp"}
+          id={"right_reservoir_temp"}
         />
         <TemperatureGraph
           syncHook={syncHook}
@@ -65,7 +65,7 @@ export function Aquapath1GraphPage() {
           targetTemp={leftReservoirTempTarget}
           targetSeries={targetLeftTemperature}
           name={"Left Reservoir Temperature"}
-          id={"reservoir_2_temp"}
+          id={"left_reservoir_temp"}
         />
         <PowerGraph
           syncHook={syncHook}
