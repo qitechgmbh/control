@@ -542,9 +542,8 @@ export function createNamespaceHookImplementation<S>({
     useEffect(() => {
       if (!hasNamespace(namespaceId)) {
         initNamespace(namespaceId, createStore, createEventHandler);
-      } else {
-        incrementNamespace(namespaceId);
       }
+      incrementNamespace(namespaceId);
       return () => {
         decrementNamespace(namespaceId);
       };
