@@ -11,6 +11,33 @@ pub struct MachineSpec {
     pub mutations: HashMap<String, IndexMap<String, MutationParameterType>>,
 }
 
+impl MachineSpec {
+    pub fn find_property<'a>(
+        &'a self,
+        path: &str,
+    ) -> Option<&'a PropertySpec> {
+        let mut parts = path.split('.');
+
+        let mut current = self.properties.get(parts.next()?)?;
+
+        for part in parts {
+            match current {
+                PropertySpecNode::Group(map) => {
+                    current = map.get(part)?;
+                }
+                PropertySpecNode::Property(_) => {
+                    return None;
+                }
+            }
+        }
+
+        match current {
+            PropertySpecNode::Property(p) => Some(p),
+            PropertySpecNode::Group(_) => None,
+        }
+    }
+}
+
 #[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(untagged))]
 #[derive(Debug)]
@@ -25,8 +52,9 @@ pub enum PropertySpec {
     String,
     Integer{sampling: PropertySampling},
     Float{sampling: PropertySampling},
-    Millimeter{sampling: PropertySampling},
-    Meter{sampling: PropertySampling},
+    UoM {
+        sampling: PropertySampling
+    },
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Deserialize))]

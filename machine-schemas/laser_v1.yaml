@@ -1,8 +1,8 @@
 name: laser_v1
 
 identification:
-  vendor_id: 0
-  machine_id: 0
+  vendor_id: 1
+  machine_id: 6
 
 properties:
   diameter:

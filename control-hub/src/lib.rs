@@ -20,6 +20,8 @@ pub mod exporter;
 pub mod rest_api;
 // TODO: grafana live
 
+mod api;
+
 #[derive(Debug, Clone, Copy)]
 pub enum PropertyType {
     Float,
