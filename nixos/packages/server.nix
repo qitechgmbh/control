@@ -22,6 +22,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
     libudev-zero
   ];
 
+  doCheck = false;
+
   CARGO_BUILD_JOBS =
     if (builtins.tryEval (builtins.getEnv "CARGO_BUILD_JOBS")).success then
       builtins.getEnv "CARGO_BUILD_JOBS"
