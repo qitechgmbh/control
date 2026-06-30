@@ -198,6 +198,10 @@ type Namespace<S> = {
   disconnectTimeoutId?: NodeJS.Timeout;
   /** Throttled store updater for batching state updates */
   throttledUpdater: ThrottledStoreUpdater<S>;
+  /** Interval ID for repolling on machine disconnect */
+  repollingIntervalId?: NodeJS.Timeout;
+  /** Interval ID for polling on namespace init */
+  initIntervalId?: NodeJS.Timeout;
 };
 
 /**
@@ -350,6 +354,15 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
             clearInterval(repollingInterval);
           }
         }, 500);
+        // Store interval ID for cleanup on namespace teardown
+        set(
+          produce((state: SocketioStore) => {
+            const ns = state.namespaces[namespace_path];
+            if (ns) {
+              ns.repollingIntervalId = repollingInterval;
+            }
+          }),
+        );
       }
     });
     socket.on("event", (event: unknown) => {
@@ -393,6 +406,15 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
           clearInterval(intervalId); // stop polling
         }
       }, 500);
+      // Store interval ID for cleanup on namespace teardown
+      set(
+        produce((state: SocketioStore) => {
+          const ns = state.namespaces[namespace_path];
+          if (ns) {
+            ns.initIntervalId = intervalId;
+          }
+        }),
+      );
     } else {
       socket.connect();
     }
@@ -420,67 +442,56 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
   },
 
   decrementNamespace: (namespaceId: NamespaceId) => {
-    /*const namespace_path = serializeNamespaceId(namespaceId);
+    const namespace_path = serializeNamespaceId(namespaceId);
     const namespace = get().namespaces[namespace_path];
-    if (namespace) {
-      set(
-        produce((state: SocketioStore) => {
-          const ns = state.namespaces[namespace_path];
-          ns.socket.disconnect();
-          ns.throttledUpdater.destroy();
-          delete state.namespaces[namespace_path];
+    if (!namespace) return;
 
-        }),
-      )
-    }*/
-    /*
-    // check if the namespace exists
-    const namespace = get().namespaces[namespace_path];
-    if (namespace) {
-      set(
-        produce((state: SocketioStore) => {
-          // decrement the count
-          state.namespaces[namespace_path].count--;
+    set(
+      produce((state: SocketioStore) => {
+        const ns = state.namespaces[namespace_path];
+        if (!ns) return;
 
-          // if the count is zero and it's not the main namespace,
-          // set a timeout to check again after 10 seconds
-          if (
-            namespaceId.type !== "main" &&
-            state.namespaces[namespace_path].count <= 0
-          ) {
-            // Clear any existing timeout first
-            if (state.namespaces[namespace_path].disconnectTimeoutId) {
-              clearTimeout(
-                state.namespaces[namespace_path].disconnectTimeoutId,
+        // Decrement the active subscriber count
+        ns.count = Math.max(0, ns.count - 1);
+
+        // Only teardown machine namespaces (never the main namespace)
+        if (namespaceId.type !== "main" && ns.count <= 0) {
+          // Clear any existing disconnect timeout
+          if (ns.disconnectTimeoutId) {
+            clearTimeout(ns.disconnectTimeoutId);
+          }
+
+          // Set a grace-period timeout before teardown to handle rapid
+          // mount/unmount cycles during tab switching
+          const timeoutId = setTimeout(() => {
+            const currentNs = get().namespaces[namespace_path];
+            if (currentNs && currentNs.count <= 0) {
+              // Clear any orphaned intervals
+              if (currentNs.repollingIntervalId) {
+                clearInterval(currentNs.repollingIntervalId);
+              }
+              if (currentNs.initIntervalId) {
+                clearInterval(currentNs.initIntervalId);
+              }
+              // Disconnect socket and destroy throttled updater
+              currentNs.socket.disconnect();
+              currentNs.throttledUpdater.destroy();
+              // Remove namespace from store
+              set(
+                produce((s: SocketioStore) => {
+                  delete s.namespaces[namespace_path];
+                }),
+              );
+              console.log(
+                `Namespace ${namespace_path} disconnected after grace period`,
               );
             }
+          }, 10_000); // 10 second grace period
 
-            // Create a timeout to check if the namespace is still unused after 1 hour
-            const timeoutId = setTimeout(
-              () => {
-                set(
-                  produce((state: SocketioStore) => {
-                    const ns = state.namespaces[namespace_path];
-                    if (ns && ns.count <= 0) {
-                      ns.socket.disconnect();
-                      ns.throttledUpdater.destroy(); // Clean up throttled updater
-                      delete state.namespaces[namespace_path];
-                      console.log(
-                        `Namespace ${namespace_path} disconnected after 1h of inactivity`,
-                      );
-                    }
-                  }),
-                );
-              },
-              // 1h until disconnect
-              60 * 60 * 1000,
-            );
-
-            state.namespaces[namespace_path].disconnectTimeoutId = timeoutId;
-          }
-        }),
-      );
-    }*/
+          ns.disconnectTimeoutId = timeoutId;
+        }
+      }),
+    );
   },
 }));
 

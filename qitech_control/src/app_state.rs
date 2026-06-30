@@ -233,7 +233,7 @@ impl SharedAppState {
     }
 
     pub fn new() -> Self {
-        let (socket_queue_tx, socket_queue_rx) = tokio::sync::mpsc::channel(64);
+        let (socket_queue_tx, socket_queue_rx) = tokio::sync::mpsc::channel(512);
         Self {
             machines: RwLock::new(vec![]),
             machines_with_channel: RwLock::new(HashMap::new()),

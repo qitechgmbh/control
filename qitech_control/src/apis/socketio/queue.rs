@@ -40,6 +40,7 @@ async fn send_event_with_retry(
                 }
                 socketioxide::SendError::Socket(socket_error) => match socket_error {
                     socketioxide::SocketError::InternalChannelFull => {
+                        tokio::task::yield_now().await;
                         continue; // Retry sending the event
                     }
                     socketioxide::SocketError::Closed => {
