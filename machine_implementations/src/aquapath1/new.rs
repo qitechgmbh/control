@@ -66,7 +66,7 @@ impl MachineNew for AquaPathV1 {
         let fan_speed_control: Rc<RefCell<dyn AnalogOutputDevice>> = el4002.0.clone();
         let controller_config = ControllerConfig::default();
 
-        let right_controller = Controller::new(
+        let left_controller = Controller::new(
             AquaPathV1::DEFAULT_PID_KP,
             AquaPathV1::DEFAULT_PID_KI,
             AquaPathV1::DEFAULT_PID_KD,
@@ -86,7 +86,7 @@ impl MachineNew for AquaPathV1 {
             LEFT_TEMP_SENSOR_PORT,
         );
 
-        let left_controller = Controller::new(
+        let right_controller = Controller::new(
             AquaPathV1::DEFAULT_PID_KP,
             AquaPathV1::DEFAULT_PID_KI,
             AquaPathV1::DEFAULT_PID_KD,
