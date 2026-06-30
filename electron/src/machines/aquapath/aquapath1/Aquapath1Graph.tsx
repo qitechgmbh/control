@@ -13,70 +13,70 @@ import { TimeSeries } from "@/lib/timeseries";
 export function Aquapath1GraphPage() {
   const {
     state,
-    front_flow,
-    back_flow,
-    front_temperature,
-    back_temperature,
-    front_temp_reservoir,
-    back_temp_reservoir,
-    front_power,
-    back_power,
-    front_total_energy,
-    back_total_energy,
-    targetFrontTemperature,
-    targetBackTemperature,
+    left_flow,
+    right_flow,
+    left_temperature,
+    right_temperature,
+    left_temp_reservoir,
+    right_temp_reservoir,
+    left_power,
+    right_power,
+    left_total_energy,
+    right_total_energy,
+    targetLeftTemperature,
+    targetRightTemperature,
   } = useAquapath1();
 
   const syncHook = useGraphSync("aquapath-group");
 
   const reservoir1TempTarget =
-    state?.temperature_states?.back.target_temperature ?? 0;
+    state?.temperature_states?.right.target_temperature ?? 0;
   const reservoir2TempTarget =
-    state?.temperature_states?.front.target_temperature ?? 0;
+    state?.temperature_states?.left.target_temperature ?? 0;
 
   return (
     <Page className="pb-27">
       <div className="flex flex-col gap-4">
         <FlowGraph
           syncHook={syncHook}
-          flow={back_flow}
-          name={"Reservoir 1 (Back) Flow"}
+          flow={right_flow}
+          name={"Right Reservoir Flow"}
           id={"reservoir_1_flow"}
         />
         <FlowGraph
           syncHook={syncHook}
-          flow={front_flow}
-          name={"Reservoir 2 (Front) Flow"}
+          flow={left_flow}
+          name={"Left Reservoir Flow"}
           id={"reservoir_2_flow"}
         />
         <TemperatureGraph
           syncHook={syncHook}
-          temp_in={back_temperature}
-          temp_out={back_temp_reservoir}
+          temp_in={right_temperature}
+          temp_out={right_temp_reservoir}
           targetTemp={reservoir1TempTarget}
-          targetSeries={targetBackTemperature}
-          name={"Reservoir 1 (Back) Temperature"}
+          targetSeries={targetRightTemperature}
+          name={"Right Reservoir Temperature"}
           id={"reservoir_1_temp"}
         />
         <TemperatureGraph
           syncHook={syncHook}
-          temp_in={front_temperature}
-          temp_out={front_temp_reservoir}
+          temp_in={left_temperature}
+          temp_out={left_temp_reservoir}
           targetTemp={reservoir2TempTarget}
-          targetSeries={targetFrontTemperature}
-          name={"Reservoir 2 (Front) Temperature"}
+          targetSeries={targetLeftTemperature}
+          name={"Left Reservoir Temperature"}
           id={"reservoir_2_temp"}
         />
         <PowerGraph
           syncHook={syncHook}
-          reservoir1Power={back_power}
-          reservoir2Power={front_power}
+          reservoir1Power={right_power}
+          reservoir2Power={left_power}
           id={"aquapath_power"}
         />
         <EnergyGraph
           syncHook={syncHook}
-          reservoir1Energy={scaleTimeSeries(back_total_energy, 1 / 1000)}
-          reservoir2Energy={scaleTimeSeries(front_total_energy, 1 / 1000)}
+          reservoir1Energy={scaleTimeSeries(right_total_energy, 1 / 1000)}
+          reservoir2Energy={scaleTimeSeries(left_total_energy, 1 / 1000)}
           id={"aquapath_energy"}
         />
       </div>
@@ -276,7 +276,7 @@ export function PowerGraph({
       ? [
           {
             newData: reservoir1Power,
-            title: "Reservoir 1 (Back)",
+            title: "Right Reservoir",
             color: "#f97316",
           },
         ]
@@ -285,7 +285,7 @@ export function PowerGraph({
       ? [
           {
             newData: reservoir2Power,
-            title: "Reservoir 2 (Front)",
+            title: "Left Reservoir",
             color: "#ef4444",
           },
         ]
@@ -331,7 +331,7 @@ export function EnergyGraph({
       ? [
           {
             newData: reservoir1Energy,
-            title: "Reservoir 1 (Back)",
+            title: "Right Reservoir",
             color: "#0f766e",
           },
         ]
@@ -340,7 +340,7 @@ export function EnergyGraph({
       ? [
           {
             newData: reservoir2Energy,
-            title: "Reservoir 2 (Front)",
+            title: "Left Reservoir",
             color: "#14b8a6",
           },
         ]

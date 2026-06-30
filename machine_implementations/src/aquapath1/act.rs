@@ -23,21 +23,21 @@ impl Machine for AquaPathV1 {
         }
 
         let now = Instant::now();
-        self.front_controller.update(now);
-        self.back_controller.update(now);
+        self.left_controller.update(now);
+        self.right_controller.update(now);
 
-        let front_notices = self.front_controller.drain_notices();
-        let back_notices = self.back_controller.drain_notices();
+        let left_notices = self.left_controller.drain_notices();
+        let right_notices = self.right_controller.drain_notices();
 
-        for notice in front_notices.iter().copied() {
-            self.emit_controller_notice("Reservoir 2 (Front)", notice);
+        for notice in left_notices.iter().copied() {
+            self.emit_controller_notice("Left Reservoir", notice);
         }
 
-        for notice in back_notices.iter().copied() {
-            self.emit_controller_notice("Reservoir 1 (Back)", notice);
+        for notice in right_notices.iter().copied() {
+            self.emit_controller_notice("Right Reservoir", notice);
         }
 
-        if !front_notices.is_empty() || !back_notices.is_empty() {
+        if !left_notices.is_empty() || !right_notices.is_empty() {
             self.emit_state();
         }
 
