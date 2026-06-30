@@ -41,31 +41,34 @@ export function Aquapath1ControlPage() {
     setLeftFlow,
     setRightFlow,
   } = useAquapath1();
-  const reservoir1TargetTemperature =
+  const rightReservoirTargetTemperature =
     state?.temperature_states?.right.target_temperature ?? 0;
-  const reservoir2TargetTemperature =
+  const leftReservoirTargetTemperature =
     state?.temperature_states?.left.target_temperature ?? 0;
   const minSettableTemperature = state?.ambient_temperature_calibration ?? 22;
 
-  const reservoir1TargetFlow = state?.flow_states.right.should_flow ?? false;
-  const reservoir2TargetFlow = state?.flow_states.left.should_flow ?? false;
-  const reservoir1HeaterOn = right_heating;
-  const reservoir2HeaterOn = left_heating;
-  const reservoir1FanOn = (right_revolutions.current?.value ?? 0) > 0;
-  const reservoir2FanOn = (left_revolutions.current?.value ?? 0) > 0;
-  const reservoir1PumpCooldownActive = right_pump_cooldown_active;
-  const reservoir2PumpCooldownActive = left_pump_cooldown_active;
-  const reservoir1PumpCooldownRemaining = right_pump_cooldown_remaining;
-  const reservoir2PumpCooldownRemaining = left_pump_cooldown_remaining;
-  const reservoir1HeatingStartupWaitActive = right_heating_startup_wait_active;
-  const reservoir2HeatingStartupWaitActive = left_heating_startup_wait_active;
-  const reservoir1HeatingStartupWaitRemaining =
+  const rightReservoirTargetFlow =
+    state?.flow_states.right.should_flow ?? false;
+  const leftReservoirTargetFlow = state?.flow_states.left.should_flow ?? false;
+  const rightReservoirHeaterOn = right_heating;
+  const leftReservoirHeaterOn = left_heating;
+  const rightReservoirFanOn = (right_revolutions.current?.value ?? 0) > 0;
+  const leftReservoirFanOn = (left_revolutions.current?.value ?? 0) > 0;
+  const rightReservoirPumpCooldownActive = right_pump_cooldown_active;
+  const leftReservoirPumpCooldownActive = left_pump_cooldown_active;
+  const rightReservoirPumpCooldownRemaining = right_pump_cooldown_remaining;
+  const leftReservoirPumpCooldownRemaining = left_pump_cooldown_remaining;
+  const rightReservoirHeatingStartupWaitActive =
+    right_heating_startup_wait_active;
+  const leftReservoirHeatingStartupWaitActive =
+    left_heating_startup_wait_active;
+  const rightReservoirHeatingStartupWaitRemaining =
     right_heating_startup_wait_remaining;
-  const reservoir2HeatingStartupWaitRemaining =
+  const leftReservoirHeatingStartupWaitRemaining =
     left_heating_startup_wait_remaining;
-  const reservoir1MaxRevolutions =
+  const rightReservoirMaxRevolutions =
     state?.fan_states.right.max_revolutions ?? 100;
-  const reservoir2MaxRevolutions =
+  const leftReservoirMaxRevolutions =
     state?.fan_states.left.max_revolutions ?? 100;
 
   const renderThermalDelay = (value: number) =>
@@ -75,7 +78,7 @@ export function Aquapath1ControlPage() {
     <Page>
       <ControlGrid columns={2}>
         <ControlCard title="Left Reservoir">
-          <div className="grid grid-rows-5 gap-4">
+          <div className="grid min-w-0 grid-rows-5 gap-4 overflow-hidden">
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Flow"
@@ -99,7 +102,7 @@ export function Aquapath1ControlPage() {
                 <EditValue
                   title="Set Target Temperature"
                   min={minSettableTemperature}
-                  value={reservoir2TargetTemperature}
+                  value={leftReservoirTargetTemperature}
                   max={80}
                   unit="C"
                   step={0.1}
@@ -113,7 +116,7 @@ export function Aquapath1ControlPage() {
                 />
               </Label>
 
-              {reservoir2HeaterOn && (
+              {leftReservoirHeaterOn && (
                 <Badge
                   variant="default"
                   className="h-18 min-w-28 justify-center self-end border-transparent bg-red-500 px-4 text-base text-white [&>svg]:size-5"
@@ -123,7 +126,7 @@ export function Aquapath1ControlPage() {
                 </Badge>
               )}
 
-              {reservoir2FanOn && (
+              {leftReservoirFanOn && (
                 <Badge
                   variant="secondary"
                   className="h-18 min-w-28 justify-center self-end border-transparent bg-sky-100 px-4 text-base text-sky-800 [&>svg]:size-5"
@@ -133,17 +136,17 @@ export function Aquapath1ControlPage() {
                 </Badge>
               )}
 
-              {(reservoir2PumpCooldownActive ||
-                reservoir2HeatingStartupWaitActive) && (
+              {(leftReservoirPumpCooldownActive ||
+                leftReservoirHeatingStartupWaitActive) && (
                 <Badge
                   variant="secondary"
                   className="h-18 min-w-40 justify-center self-end border-transparent bg-cyan-100 px-4 text-base text-cyan-900 [&>svg]:size-5"
                 >
                   <Icon name="lu:WavesHorizontal" className="size-5" />
                   {renderThermalDelay(
-                    reservoir2PumpCooldownActive
-                      ? reservoir2PumpCooldownRemaining
-                      : reservoir2HeatingStartupWaitRemaining,
+                    leftReservoirPumpCooldownActive
+                      ? leftReservoirPumpCooldownRemaining
+                      : leftReservoirHeatingStartupWaitRemaining,
                   )}
                 </Badge>
               )}
@@ -156,7 +159,7 @@ export function Aquapath1ControlPage() {
                 timeseries={left_revolutions}
                 renderValue={(value) =>
                   (
-                    (value / Math.max(reservoir2MaxRevolutions, 1)) *
+                    (value / Math.max(leftReservoirMaxRevolutions, 1)) *
                     100
                   ).toFixed(1)
                 }
@@ -175,7 +178,7 @@ export function Aquapath1ControlPage() {
             <div className="flex flex-row">
               <Label label="Pump">
                 <SelectionGroup<"On" | "Off">
-                  value={reservoir2TargetFlow ? "On" : "Off"}
+                  value={leftReservoirTargetFlow ? "On" : "Off"}
                   orientation="vertical"
                   className="grid h-full grid-cols-2 gap-2"
                   options={{
@@ -202,7 +205,7 @@ export function Aquapath1ControlPage() {
         </ControlCard>
 
         <ControlCard title="Right Reservoir">
-          <div className="grid grid-rows-5 gap-4">
+          <div className="grid min-w-0 grid-rows-5 gap-4 overflow-hidden">
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Flow"
@@ -226,7 +229,7 @@ export function Aquapath1ControlPage() {
                 <EditValue
                   title="Set Target Temperature"
                   min={minSettableTemperature}
-                  value={reservoir1TargetTemperature}
+                  value={rightReservoirTargetTemperature}
                   max={80}
                   unit="C"
                   step={0.1}
@@ -240,7 +243,7 @@ export function Aquapath1ControlPage() {
                 />
               </Label>
 
-              {reservoir1HeaterOn && (
+              {rightReservoirHeaterOn && (
                 <Badge
                   variant="default"
                   className="h-18 min-w-28 justify-center self-end border-transparent bg-red-500 px-4 text-base text-white [&>svg]:size-5"
@@ -250,7 +253,7 @@ export function Aquapath1ControlPage() {
                 </Badge>
               )}
 
-              {reservoir1FanOn && (
+              {rightReservoirFanOn && (
                 <Badge
                   variant="secondary"
                   className="h-18 min-w-28 justify-center self-end border-transparent bg-sky-100 px-4 text-base text-sky-800 [&>svg]:size-5"
@@ -260,17 +263,17 @@ export function Aquapath1ControlPage() {
                 </Badge>
               )}
 
-              {(reservoir1PumpCooldownActive ||
-                reservoir1HeatingStartupWaitActive) && (
+              {(rightReservoirPumpCooldownActive ||
+                rightReservoirHeatingStartupWaitActive) && (
                 <Badge
                   variant="secondary"
                   className="h-18 min-w-40 justify-center self-end border-transparent bg-cyan-100 px-4 text-base text-cyan-900 [&>svg]:size-5"
                 >
                   <Icon name="lu:WavesHorizontal" className="size-5" />
                   {renderThermalDelay(
-                    reservoir1PumpCooldownActive
-                      ? reservoir1PumpCooldownRemaining
-                      : reservoir1HeatingStartupWaitRemaining,
+                    rightReservoirPumpCooldownActive
+                      ? rightReservoirPumpCooldownRemaining
+                      : rightReservoirHeatingStartupWaitRemaining,
                   )}
                 </Badge>
               )}
@@ -283,7 +286,7 @@ export function Aquapath1ControlPage() {
                 timeseries={right_revolutions}
                 renderValue={(value) =>
                   (
-                    (value / Math.max(reservoir1MaxRevolutions, 1)) *
+                    (value / Math.max(rightReservoirMaxRevolutions, 1)) *
                     100
                   ).toFixed(1)
                 }
@@ -302,7 +305,7 @@ export function Aquapath1ControlPage() {
             <div className="flex flex-row">
               <Label label="Pump">
                 <SelectionGroup<"On" | "Off">
-                  value={reservoir1TargetFlow ? "On" : "Off"}
+                  value={rightReservoirTargetFlow ? "On" : "Off"}
                   orientation="vertical"
                   className="grid h-full grid-cols-2 gap-2"
                   options={{

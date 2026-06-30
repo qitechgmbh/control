@@ -29,9 +29,9 @@ export function Aquapath1GraphPage() {
 
   const syncHook = useGraphSync("aquapath-group");
 
-  const reservoir1TempTarget =
+  const rightReservoirTempTarget =
     state?.temperature_states?.right.target_temperature ?? 0;
-  const reservoir2TempTarget =
+  const leftReservoirTempTarget =
     state?.temperature_states?.left.target_temperature ?? 0;
 
   return (
@@ -53,7 +53,7 @@ export function Aquapath1GraphPage() {
           syncHook={syncHook}
           temp_in={right_temperature}
           temp_out={right_temp_reservoir}
-          targetTemp={reservoir1TempTarget}
+          targetTemp={rightReservoirTempTarget}
           targetSeries={targetRightTemperature}
           name={"Right Reservoir Temperature"}
           id={"reservoir_1_temp"}
@@ -62,21 +62,21 @@ export function Aquapath1GraphPage() {
           syncHook={syncHook}
           temp_in={left_temperature}
           temp_out={left_temp_reservoir}
-          targetTemp={reservoir2TempTarget}
+          targetTemp={leftReservoirTempTarget}
           targetSeries={targetLeftTemperature}
           name={"Left Reservoir Temperature"}
           id={"reservoir_2_temp"}
         />
         <PowerGraph
           syncHook={syncHook}
-          reservoir1Power={right_power}
-          reservoir2Power={left_power}
+          rightReservoirPower={right_power}
+          leftReservoirPower={left_power}
           id={"aquapath_power"}
         />
         <EnergyGraph
           syncHook={syncHook}
-          reservoir1Energy={scaleTimeSeries(right_total_energy, 1 / 1000)}
-          reservoir2Energy={scaleTimeSeries(left_total_energy, 1 / 1000)}
+          rightReservoirEnergy={scaleTimeSeries(right_total_energy, 1 / 1000)}
+          leftReservoirEnergy={scaleTimeSeries(left_total_energy, 1 / 1000)}
           id={"aquapath_energy"}
         />
       </div>
@@ -251,13 +251,13 @@ export function TemperatureGraph({
 
 export function PowerGraph({
   syncHook,
-  reservoir1Power,
-  reservoir2Power,
+  rightReservoirPower,
+  leftReservoirPower,
   id,
 }: {
   syncHook: ReturnType<typeof useGraphSync>;
-  reservoir1Power: TimeSeries | null;
-  reservoir2Power: TimeSeries | null;
+  rightReservoirPower: TimeSeries | null;
+  leftReservoirPower: TimeSeries | null;
   id: string;
 }) {
   const config: GraphConfig = {
@@ -272,19 +272,19 @@ export function PowerGraph({
   };
 
   const powerData = [
-    ...(reservoir1Power
+    ...(rightReservoirPower
       ? [
           {
-            newData: reservoir1Power,
+            newData: rightReservoirPower,
             title: "Right Reservoir",
             color: "#f97316",
           },
         ]
       : []),
-    ...(reservoir2Power
+    ...(leftReservoirPower
       ? [
           {
-            newData: reservoir2Power,
+            newData: leftReservoirPower,
             title: "Left Reservoir",
             color: "#ef4444",
           },
@@ -306,13 +306,13 @@ export function PowerGraph({
 
 export function EnergyGraph({
   syncHook,
-  reservoir1Energy,
-  reservoir2Energy,
+  rightReservoirEnergy,
+  leftReservoirEnergy,
   id,
 }: {
   syncHook: ReturnType<typeof useGraphSync>;
-  reservoir1Energy: TimeSeries | null;
-  reservoir2Energy: TimeSeries | null;
+  rightReservoirEnergy: TimeSeries | null;
+  leftReservoirEnergy: TimeSeries | null;
   id: string;
 }) {
   const config: GraphConfig = {
@@ -327,19 +327,19 @@ export function EnergyGraph({
   };
 
   const energyData = [
-    ...(reservoir1Energy
+    ...(rightReservoirEnergy
       ? [
           {
-            newData: reservoir1Energy,
+            newData: rightReservoirEnergy,
             title: "Right Reservoir",
             color: "#0f766e",
           },
         ]
       : []),
-    ...(reservoir2Energy
+    ...(leftReservoirEnergy
       ? [
           {
-            newData: reservoir2Energy,
+            newData: leftReservoirEnergy,
             title: "Left Reservoir",
             color: "#14b8a6",
           },
