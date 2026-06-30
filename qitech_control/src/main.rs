@@ -1,3 +1,4 @@
+use anyhow::bail;
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
 use machine_implementations::MACHINE_LASER_V1;
@@ -13,9 +14,7 @@ use qitech_lib::{
 };
 use qitech_lib::{
     ethercat_hal::interface_discovery::{LinkType, list_ethernet_interfaces, test_interface},
-    ethercat_hal::{
-        BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer, TripleBufProducer,
-    },
+    ethercat_hal::{BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer},
     machines::MachineIdentificationUnique,
 };
 #[cfg(not(feature = "mock"))]
@@ -41,8 +40,8 @@ pub mod persist;
 fn setup_ethercat(
     state: Arc<SharedAppState>,
     main_state: &mut MainState,
-    eth_control: &EtherCATControl<Arc<Mailbox>, TripleBufProducer, TripleBufConsumer, Arc<Mailbox>>,
-) {
+    eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
+) -> Result<(), anyhow::Error> {
     let _res = eth_control
         .channel
         .request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
@@ -60,13 +59,14 @@ fn setup_ethercat(
             .map_or(false, |h| h.is_finished())
             || std::time::Instant::now() >= deadline
         {
-            return;
+            bail!("No response from state machine Timeout");
         }
         std::thread::sleep(Duration::from_millis(50));
-        // Happy path: bus is in PreOp and subdevices have been enumerated.
-        let preop_ready = eth_control.controller.get_state()
+
+        let preop_ready = eth_control.app_handle.get_state()
             == qitech_lib::ethercat_hal::EtherCATState::PreOp
-            && eth_control.controller.get_subdevice_count() > 0;
+            && eth_control.app_handle.get_subdevice_count() > 0;
+
         if preop_ready {
             stable_ticks += 1
         } else {
@@ -77,10 +77,10 @@ fn setup_ethercat(
     let mut idents = vec![];
     println!(
         "Initialized {} subdevices",
-        eth_control.controller.get_subdevice_count()
+        eth_control.app_handle.get_subdevice_count()
     );
 
-    for meta in eth_control.controller.get_subdevices() {
+    for meta in eth_control.app_handle.try_get_subdevices_vec_sync()? {
         let dev = device_from_subdevice_identity_rc(&meta);
 
         let dev = match dev {
@@ -112,7 +112,8 @@ fn setup_ethercat(
             println!("Could not read device identifications from eeprom: {:?}", e);
         }
     };
-    let _res = state.fill_ethercat_metadata(eth_control.controller.clone(), idents);
+    let _res = state.fill_ethercat_metadata(eth_control, idents);
+    Ok(())
 }
 
 fn add_laser(
@@ -183,26 +184,27 @@ fn send_machines_event(state: Arc<SharedAppState>) {
 
 fn finalize_ethercat(
     main_state: &mut MainState,
-    eth_control: &EtherCATControl<Arc<Mailbox>, TripleBufProducer, TripleBufConsumer, Arc<Mailbox>>,
-) {
+    eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
+) -> Result<(), anyhow::Error> {
     let _res = eth_control
         .channel
         .request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
-    while !eth_control.controller.is_all_operational() {
+    while !eth_control.app_handle.check_all_op() {
         if eth_control
             .join_handle
             .as_ref()
             .map_or(false, |h| h.is_finished())
         {
             // State machine died before reaching OP — bail so main_logic can exit cleanly.
-            return;
+            bail!("Failed to reach OP State!");
         }
         std::thread::sleep(Duration::from_millis(50));
     }
+
+    let subdevices = eth_control.app_handle.try_get_subdevices_vec_sync()?;
+
     for meta in &mut main_state.subdevices {
-        let m = eth_control
-            .controller
-            .get_subdevices()
+        let m = subdevices
             .iter()
             .find(|m| m.device_address == meta.0.device_address)
             .expect("Ethercat Device Suddenly Missing in finalize_ethercat");
@@ -212,6 +214,7 @@ fn finalize_ethercat(
         meta.0.start_rx = m.start_rx;
         meta.0.end_rx = m.end_rx;
     }
+    Ok(())
 }
 
 fn send_ethercat_devices_event(state: Arc<SharedAppState>) {
@@ -276,9 +279,7 @@ fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainSt
     }
 }
 
-fn optimized_ethercat_init(
-    interface: &str,
-) -> EtherCATControl<Arc<Mailbox>, TripleBufProducer, TripleBufConsumer, Arc<Mailbox>> {
+fn optimized_ethercat_init(interface: &str) -> EtherCATControl<TripleBufConsumer, Arc<Mailbox>> {
     let target_cycle_time_us: u64 = 1000;
     let dc_config: DcConfiguration = DcConfiguration {
         start_delay: Duration::from_millis(100),
@@ -288,11 +289,12 @@ fn optimized_ethercat_init(
     };
 
     let opt_config: RtOptimizationConfig = RtOptimizationConfig {
-        ethercat_loop_thread_core: 2,
+        ethercat_loop_thread_core: 3,
         ethercat_loop_thread_priority: 99,
         ethercat_io_thread_core: 3,
-        ethercat_io_thread_priority: 99,
-        pin_irq_core: None,
+        ethercat_io_thread_priority: 50,
+        pin_irq_core: Some(3),
+        lock_memory: true,
     };
 
     let config: MasterConfiguration = MasterConfiguration {
@@ -393,7 +395,7 @@ fn main_logic() {
     let state = Arc::new(shared_state);
     match &eth_control {
         Some(ecat) => {
-            send_ecat_state(state.clone(), ecat.controller.get_state().into());
+            send_ecat_state(state.clone(), ecat.app_handle.get_state().into());
         }
         None => (),
     }
@@ -401,13 +403,15 @@ fn main_logic() {
     setup_api_and_websock(state.clone());
 
     match &eth_control {
-        Some(control) => setup_ethercat(state.clone(), &mut main_state, control),
+        Some(control) => {
+            setup_ethercat(state.clone(), &mut main_state, control).expect("setup_ethercat failed");
+        }
         None => (),
     };
 
     match &eth_control {
         Some(ecat) => {
-            send_ecat_state(state.clone(), ecat.controller.get_state().into());
+            send_ecat_state(state.clone(), ecat.app_handle.get_state().into());
         }
         None => (),
     }
@@ -429,8 +433,8 @@ fn main_logic() {
     // finalize_ethercat transitions to OP and waits until all subdevices confirm OP
     match &eth_control {
         Some(ecat) => {
-            finalize_ethercat(&mut main_state, ecat);
-            send_ecat_state(state.clone(), ecat.controller.get_state().into());
+            finalize_ethercat(&mut main_state, ecat).expect("finalize_ethercat failed");
+            send_ecat_state(state.clone(), ecat.app_handle.get_state().into());
         }
         None => (),
     };

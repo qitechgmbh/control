@@ -2,38 +2,33 @@
   pkg-config,
   libudev-zero,
   libpcap,
-  craneLib,
+  rustPlatform,
 }:
+rustPlatform.buildRustPackage (finalAttrs: {
+  pname = "server";
+  version = (builtins.fromJSON (builtins.readFile ../../electron/package.json)).version;
 
-let
-  commonArgs = {
-    pname = "server";
-    version = (builtins.fromJSON (builtins.readFile ../../electron/package.json)).version;
-    strictDeps = true;
+  src = ../..;
 
-    nativeBuildInputs = [ pkg-config ];
-
-    buildInputs = [
-      libpcap
-      libudev-zero
-    ];
-
-    src = ../..;
-
-    CARGO_BUILD_JOBS =
-      if (builtins.tryEval (builtins.getEnv "CARGO_BUILD_JOBS")).success then
-        builtins.getEnv "CARGO_BUILD_JOBS"
-      else
-        "2";
-
-    cargoExtraArgs = "--features io-uring --no-default-features";
+  cargoLock = {
+    lockFile = ../../Cargo.lock;
+    allowBuiltinFetchGit = true;
   };
 
-  cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-in
-craneLib.buildPackage (
-  commonArgs
-  // {
-    inherit cargoArtifacts;
-  }
-)
+  nativeBuildInputs = [ pkg-config ];
+
+  buildInputs = [
+    libpcap
+    libudev-zero
+  ];
+
+  doCheck = false;
+
+  CARGO_BUILD_JOBS =
+    if (builtins.tryEval (builtins.getEnv "CARGO_BUILD_JOBS")).success then
+      builtins.getEnv "CARGO_BUILD_JOBS"
+    else
+      "2";
+
+  cargoExtraArgs = "--features io-uring --no-default-features";
+})
