@@ -427,7 +427,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=f06c14b3808b39b3bf6b9379be58de45e0632183#f06c14b3808b39b3bf6b9379be58de45e0632183"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bd119cb15f9d232c0dab41c859c4cd9887f1b6c1#bd119cb15f9d232c0dab41c859c4cd9887f1b6c1"
 dependencies = [
  "anyhow",
  "libc",
@@ -815,7 +815,7 @@ dependencies = [
 [[package]]
 name = "ethercat_hal"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=f06c14b3808b39b3bf6b9379be58de45e0632183#f06c14b3808b39b3bf6b9379be58de45e0632183"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bd119cb15f9d232c0dab41c859c4cd9887f1b6c1#bd119cb15f9d232c0dab41c859c4cd9887f1b6c1"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -838,7 +838,7 @@ dependencies = [
 [[package]]
 name = "ethercat_hal_derive"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=f06c14b3808b39b3bf6b9379be58de45e0632183#f06c14b3808b39b3bf6b9379be58de45e0632183"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bd119cb15f9d232c0dab41c859c4cd9887f1b6c1#bd119cb15f9d232c0dab41c859c4cd9887f1b6c1"
 dependencies = [
  "deluxe",
  "proc-macro2",
@@ -1517,7 +1517,7 @@ dependencies = [
 [[package]]
 name = "machines"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=f06c14b3808b39b3bf6b9379be58de45e0632183#f06c14b3808b39b3bf6b9379be58de45e0632183"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bd119cb15f9d232c0dab41c859c4cd9887f1b6c1#bd119cb15f9d232c0dab41c859c4cd9887f1b6c1"
 
 [[package]]
 name = "matchit"
@@ -1583,7 +1583,7 @@ dependencies = [
 [[package]]
 name = "modbus"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=f06c14b3808b39b3bf6b9379be58de45e0632183#f06c14b3808b39b3bf6b9379be58de45e0632183"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bd119cb15f9d232c0dab41c859c4cd9887f1b6c1#bd119cb15f9d232c0dab41c859c4cd9887f1b6c1"
 dependencies = [
  "anyhow",
  "common",
@@ -1907,7 +1907,7 @@ dependencies = [
 [[package]]
 name = "qitech_lib"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=f06c14b3808b39b3bf6b9379be58de45e0632183#f06c14b3808b39b3bf6b9379be58de45e0632183"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bd119cb15f9d232c0dab41c859c4cd9887f1b6c1#bd119cb15f9d232c0dab41c859c4cd9887f1b6c1"
 dependencies = [
  "bitvec",
  "common",
@@ -2196,7 +2196,7 @@ dependencies = [
 [[package]]
 name = "serial"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=f06c14b3808b39b3bf6b9379be58de45e0632183#f06c14b3808b39b3bf6b9379be58de45e0632183"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bd119cb15f9d232c0dab41c859c4cd9887f1b6c1#bd119cb15f9d232c0dab41c859c4cd9887f1b6c1"
 dependencies = [
  "anyhow",
  "tokio",
@@ -2830,7 +2830,7 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 [[package]]
 name = "units"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=f06c14b3808b39b3bf6b9379be58de45e0632183#f06c14b3808b39b3bf6b9379be58de45e0632183"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=bd119cb15f9d232c0dab41c859c4cd9887f1b6c1#bd119cb15f9d232c0dab41c859c4cd9887f1b6c1"
 dependencies = [
  "uom",
 ]
