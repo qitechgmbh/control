@@ -1,6 +1,6 @@
 # Architecture
 
-QiTech Control is built from three parts that run independently and exchange data only by passing messages: the **EtherCAT loop**, the **machine loop**, and the **async runtime**. The machine loop sits in the middle, it exchanges the process image with the EtherCAT loop below it, and exchanges commands and live values with the async runtime above it. The EtherCAT loop and the async runtime never talk to each other directly. Keeping the three separate is what lets the hardware run on a fixed cycle while the operator interface and the network run freely.
+QiTech Control is split into two sides that share no locks and communicate only by passing messages: a **real-time side** that drives the hardware on a fixed cycle, and a **non-real-time side** that serves the operator interface, the live-data feed, and device discovery. That separation is what lets the control loop hold its cycle while the interface and the network run freely.
 
 ## The EtherCAT loop
 
