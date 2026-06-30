@@ -17,8 +17,6 @@ pub struct LiveValuesEvent {
     pub right_flow: f64,
     pub left_temperature: f64,
     pub right_temperature: f64,
-    pub left_temp_reservoir: f64,
-    pub right_temp_reservoir: f64,
     pub left_revolutions: f64,
     pub right_revolutions: f64,
     pub left_power: f64,

@@ -122,8 +122,6 @@ impl AquaPathV1 {
                 .get::<degree_celsius>(),
             left_flow: self.left_controller.current_flow.get::<liter_per_minute>(),
             right_flow: self.right_controller.current_flow.get::<liter_per_minute>(),
-            left_temp_reservoir: self.left_controller.temp_reservoir.get::<degree_celsius>(),
-            right_temp_reservoir: self.right_controller.temp_reservoir.get::<degree_celsius>(),
             left_revolutions: self
                 .left_controller
                 .current_revolutions

@@ -17,8 +17,6 @@ export function Aquapath1GraphPage() {
     right_flow,
     left_temperature,
     right_temperature,
-    left_temp_reservoir,
-    right_temp_reservoir,
     left_power,
     right_power,
     left_total_energy,
@@ -51,8 +49,7 @@ export function Aquapath1GraphPage() {
         />
         <TemperatureGraph
           syncHook={syncHook}
-          temp_in={right_temperature}
-          temp_out={right_temp_reservoir}
+          temperature={right_temperature}
           targetTemp={rightReservoirTempTarget}
           targetSeries={targetRightTemperature}
           name={"Right Reservoir Temperature"}
@@ -60,8 +57,7 @@ export function Aquapath1GraphPage() {
         />
         <TemperatureGraph
           syncHook={syncHook}
-          temp_in={left_temperature}
-          temp_out={left_temp_reservoir}
+          temperature={left_temperature}
           targetTemp={leftReservoirTempTarget}
           targetSeries={targetLeftTemperature}
           name={"Left Reservoir Temperature"}
@@ -163,16 +159,14 @@ export function FlowGraph({
 }
 export function TemperatureGraph({
   syncHook,
-  temp_in,
-  temp_out,
+  temperature,
   targetTemp,
   targetSeries,
   name,
   id,
 }: {
   syncHook: ReturnType<typeof useGraphSync>;
-  temp_in: TimeSeries | null;
-  temp_out: TimeSeries | null;
+  temperature: TimeSeries | null;
   targetTemp: number;
   targetSeries: TimeSeries | null;
   name: string;
@@ -191,51 +185,27 @@ export function TemperatureGraph({
     lines: [],
   };
 
-  const combinedData = [
-    ...(temp_in
-      ? [
-          {
-            newData: temp_in,
-            title: "Temperature In",
-            color: "#3b82f6",
-            lines: [
-              {
-                type: "target" as const,
-                value: targetTemp,
-                label: "Target Temperature",
-                targetSeries: targetSeries ?? undefined,
-                color: "#3b82f6",
-                show: true,
-                width: 2,
-                dash: [5, 5],
-              },
-            ],
-          },
-        ]
-      : []),
-
-    ...(temp_out
-      ? [
-          {
-            newData: temp_out,
-            title: "Temperature Out",
-            color: "#f87171",
-            lines: [
-              {
-                type: "target" as const,
-                value: targetTemp,
-                label: "Target Temperature",
-                targetSeries: targetSeries ?? undefined,
-                color: "#f87171",
-                show: true,
-                width: 2,
-                dash: [5, 5],
-              },
-            ],
-          },
-        ]
-      : []),
-  ];
+  const combinedData = temperature
+    ? [
+        {
+          newData: temperature,
+          title: "Temperature",
+          color: "#3b82f6",
+          lines: [
+            {
+              type: "target" as const,
+              value: targetTemp,
+              label: "Target Temperature",
+              targetSeries: targetSeries ?? undefined,
+              color: "#3b82f6",
+              show: true,
+              width: 2,
+              dash: [5, 5],
+            },
+          ],
+        },
+      ]
+    : [];
 
   return (
     <AutoSyncedBigGraph

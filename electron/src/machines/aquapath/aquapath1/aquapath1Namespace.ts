@@ -110,8 +110,6 @@ export const liveValuesEventDataSchema = z.object({
   right_flow: z.number(),
   left_temperature: z.number(),
   right_temperature: z.number(),
-  left_temp_reservoir: z.number(),
-  right_temp_reservoir: z.number(),
   left_revolutions: z.number(),
   right_revolutions: z.number(),
   right_power: z.number(),
@@ -175,9 +173,6 @@ export type Aquapath1NamespaceStore = {
   left_temperature: TimeSeries;
   right_temperature: TimeSeries;
 
-  left_temp_reservoir: TimeSeries;
-  right_temp_reservoir: TimeSeries;
-
   left_revolutions: TimeSeries;
   right_revolutions: TimeSeries;
 
@@ -207,10 +202,6 @@ export type Aquapath1NamespaceStore = {
 const { initialTimeSeries: left_temperature, insert: addTemperature1 } =
   createTimeSeries();
 const { initialTimeSeries: right_temperature, insert: addTemperature2 } =
-  createTimeSeries();
-const { initialTimeSeries: left_temp_reservoir, insert: addTempReserv1 } =
-  createTimeSeries();
-const { initialTimeSeries: right_temp_reservoir, insert: addTempReserv2 } =
   createTimeSeries();
 const { initialTimeSeries: left_flow, insert: addFlow1 } = createTimeSeries();
 const { initialTimeSeries: right_flow, insert: addFlow2 } = createTimeSeries();
@@ -253,8 +244,6 @@ export const createAquapath1NamespaceStore =
         right_temperature: right_temperature,
         left_flow: left_flow,
         right_flow: right_flow,
-        left_temp_reservoir: left_temp_reservoir,
-        right_temp_reservoir: right_temp_reservoir,
         left_revolutions: left_revolutions,
         right_revolutions: right_revolutions,
         right_power: right_power,
@@ -375,14 +364,6 @@ export function aquapath1MessageHandler(
           }),
           right_flow: addFlow2(state.right_flow, {
             value: liveValuesEvent.data.right_flow,
-            timestamp: event.ts,
-          }),
-          left_temp_reservoir: addTempReserv1(state.left_temp_reservoir, {
-            value: liveValuesEvent.data.left_temp_reservoir,
-            timestamp: event.ts,
-          }),
-          right_temp_reservoir: addTempReserv2(state.right_temp_reservoir, {
-            value: liveValuesEvent.data.right_temp_reservoir,
             timestamp: event.ts,
           }),
           left_revolutions: addFan1(state.left_revolutions, {
