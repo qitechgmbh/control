@@ -487,7 +487,10 @@ impl RewindControlState {
     pub fn update_puller_command(&mut self, target: Velocity, dt_s: f64) {
         let ramp = self.config.puller_ramp;
         let source_recovery = source_needs_recovery(self.source_arm);
-        let constrained_target = target.get::<meter_per_minute>();
+        let mut constrained_target = target.get::<meter_per_minute>();
+        if takeup_needs_recovery(self.takeup_arm) {
+            constrained_target *= takeup_low_recovery_target_scale(self.takeup_arm);
+        }
 
         let rate = if constrained_target >= self.puller_command_m_per_min {
             if source_recovery {
@@ -618,6 +621,28 @@ fn source_low_recovery_progress(source_arm: ArmState) -> f64 {
 
 fn source_needs_recovery(source_arm: ArmState) -> bool {
     source_low_recovery_angle(source_arm) < SOURCE_LOW_RECOVERY_EXIT_DEG
+}
+
+const TAKEUP_LOW_RECOVERY_EXIT_DEG: f64 = 50.0;
+const TAKEUP_LOW_FULL_RECOVERY_DEG: f64 = 24.0;
+
+fn takeup_low_recovery_angle(takeup_arm: ArmState) -> f64 {
+    takeup_arm.raw_deg.min(takeup_arm.filtered_deg)
+}
+
+fn takeup_needs_recovery(takeup_arm: ArmState) -> bool {
+    takeup_low_recovery_angle(takeup_arm) < TAKEUP_LOW_RECOVERY_EXIT_DEG
+}
+
+fn takeup_low_recovery_target_scale(takeup_arm: ArmState) -> f64 {
+    const MIN_SCALE: f64 = 0.20;
+
+    let recovery_angle_deg = takeup_low_recovery_angle(takeup_arm);
+    let recovery_span =
+        (TAKEUP_LOW_RECOVERY_EXIT_DEG - TAKEUP_LOW_FULL_RECOVERY_DEG).max(f64::EPSILON);
+    let progress =
+        ((TAKEUP_LOW_RECOVERY_EXIT_DEG - recovery_angle_deg) / recovery_span).clamp(0.0, 1.0);
+    1.0 - (1.0 - MIN_SCALE) * progress
 }
 
 fn source_target_rpm(
