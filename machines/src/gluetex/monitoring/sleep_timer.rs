@@ -26,9 +26,11 @@ impl SleepTimer {
     }
 
     /// Check if sleep timer has expired
-    /// Only counts down in Setup mode
+    /// Only counts down in Setup mode, and never while a heating zone is auto-tuning
+    /// (auto-tune runs unattended for up to an hour; a safety stop would disable the
+    /// heaters and kill the tune partway through)
     /// Returns true if timer just triggered (state change)
-    pub fn check(&mut self, operation_mode: OperationMode) -> bool {
+    pub fn check(&mut self, operation_mode: OperationMode, autotuning_active: bool) -> bool {
         let now = Instant::now();
 
         if !self.config.enabled {
@@ -36,9 +38,9 @@ impl SleepTimer {
             return false;
         }
 
-        // Only count down in Setup mode
-        // Reset timer when not in Setup mode
-        if operation_mode != OperationMode::Setup {
+        // Only count down in Setup mode, and not while auto-tuning is running
+        // Reset timer otherwise
+        if operation_mode != OperationMode::Setup || autotuning_active {
             self.last_activity_time = now;
             self.triggered = false;
             return false;
@@ -103,7 +105,7 @@ mod tests {
         timer.config.timeout_seconds = 5;
         timer.last_activity_time = Instant::now() - Duration::from_secs(6);
 
-        let changed = timer.check(OperationMode::Setup);
+        let changed = timer.check(OperationMode::Setup, false);
         assert!(changed, "timer should report state change when it expires");
         assert!(timer.triggered, "timer should be marked as triggered");
         assert_eq!(timer.get_remaining_seconds(OperationMode::Setup), 0);
@@ -117,7 +119,7 @@ mod tests {
         timer.triggered = true;
         timer.last_activity_time = Instant::now() - Duration::from_secs(10);
 
-        let changed = timer.check(OperationMode::Production);
+        let changed = timer.check(OperationMode::Production, false);
         assert!(!changed, "no trigger transition should be reported");
         assert!(
             !timer.triggered,
@@ -133,9 +135,45 @@ mod tests {
         timer.config.timeout_seconds = 5;
         timer.last_activity_time = Instant::now() - Duration::from_secs(10);
 
-        let changed = timer.check(OperationMode::Setup);
+        let changed = timer.check(OperationMode::Setup, false);
         assert!(!changed);
         assert!(!timer.triggered);
         assert_eq!(timer.get_remaining_seconds(OperationMode::Setup), 0);
+    }
+
+    #[test]
+    fn check_does_not_trigger_while_autotuning_and_resets() {
+        let mut timer = SleepTimer::new();
+        timer.config.enabled = true;
+        timer.config.timeout_seconds = 5;
+        timer.last_activity_time = Instant::now() - Duration::from_secs(10);
+
+        let changed = timer.check(OperationMode::Setup, true);
+        assert!(
+            !changed,
+            "sleep timer must not fire while a heating zone is auto-tuning"
+        );
+        assert!(!timer.triggered);
+        assert_eq!(
+            timer.get_remaining_seconds(OperationMode::Setup),
+            5,
+            "remaining time should hold steady since last_activity_time keeps resetting"
+        );
+    }
+
+    #[test]
+    fn check_resumes_counting_down_after_autotuning_ends() {
+        let mut timer = SleepTimer::new();
+        timer.config.enabled = true;
+        timer.config.timeout_seconds = 5;
+        timer.last_activity_time = Instant::now() - Duration::from_secs(10);
+
+        // While auto-tuning is active the timer is held at bay.
+        assert!(!timer.check(OperationMode::Setup, true));
+
+        // Once auto-tuning ends, the timer starts counting down fresh rather
+        // than immediately firing on the stale elapsed time.
+        assert!(!timer.check(OperationMode::Setup, false));
+        assert_eq!(timer.get_remaining_seconds(OperationMode::Setup), 5);
     }
 }

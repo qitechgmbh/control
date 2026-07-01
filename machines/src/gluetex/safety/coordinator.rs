@@ -174,8 +174,14 @@ pub fn run_heater_overtemperature_check(machine: &mut Gluetex) -> bool {
 }
 
 /// Check sleep timer; may trigger a full safety stop.
+/// Suppressed while a heating zone is auto-tuning, since a full stop would
+/// disable the heaters and abort the tune partway through.
 pub fn run_sleep_timer_check(machine: &mut Gluetex) -> bool {
-    if machine.sleep_timer.check(machine.operation_mode) {
+    let autotuning_active = machine.heaters.any_autotuning();
+    if machine
+        .sleep_timer
+        .check(machine.operation_mode, autotuning_active)
+    {
         machine.apply_safety_stop(Gluetex::safety_stop_full(StopReason::SleepTimer));
         tracing::info!("Entered sleep mode due to inactivity");
         true
