@@ -274,15 +274,11 @@ export function Winder2ControlPage() {
                   children: "Fixed",
                   icon: "lu:Crosshair",
                 },
-                ...(adaptivePullerEnabled
-                  ? {
-                      Diameter: {
-                        children: "Adaptive",
-                        icon: "lu:Brain",
-                        disabled: false,
-                      },
-                    }
-                  : {}),
+                Diameter: {
+                  children: "Adaptive",
+                    icon: "lu:Brain",
+                    disabled: false,
+                },}
               }}
               onChange={(value) => {
                 // When switching back to fixed mode, seed the target speed from
