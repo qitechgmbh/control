@@ -13,7 +13,6 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::{
     ethercat_hal::io::digital_output::DigitalOutputDevice,
     units::{
-        angle::degree,
         angular_velocity::revolution_per_minute,
         f64::*,
         length::{meter, millimeter},
@@ -161,20 +160,11 @@ impl Rewinder {
                     self.puller_speed_controller
                         .set_target_speed(self.rewind_control.puller_command_speed());
                 }
-                let angular_velocity = if matches!(self.mode, RewinderMode::Rewind) {
-                    self.takeup_spool_speed_controller.update_speed_for_angle(
-                        t,
-                        Angle::new::<degree>(self.rewind_control.takeup_arm.filtered_deg),
-                        &self.takeup_tension_arm,
-                        &self.puller_speed_controller,
-                    )
-                } else {
-                    self.takeup_spool_speed_controller.update_speed(
-                        t,
-                        &self.takeup_tension_arm,
-                        &self.puller_speed_controller,
-                    )
-                };
+                let angular_velocity = self.takeup_spool_speed_controller.update_speed(
+                    t,
+                    &self.takeup_tension_arm,
+                    &self.puller_speed_controller,
+                );
                 if matches!(self.mode, RewinderMode::Rewind) {
                     self.puller_speed_controller.set_target_speed(target_speed);
                 }

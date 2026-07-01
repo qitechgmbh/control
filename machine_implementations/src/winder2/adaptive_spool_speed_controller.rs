@@ -190,18 +190,11 @@ impl AdaptiveSpoolSpeedController {
         tension_arm: &TensionArm,
         puller_speed_controller: &PullerSpeedController,
     ) -> AngularVelocity {
-        self.calculate_speed_for_angle(t, tension_arm.get_angle().unwrap(), puller_speed_controller)
-    }
-
-    fn calculate_speed_for_angle(
-        &mut self,
-        t: Instant,
-        tension_arm_angle: Angle,
-        puller_speed_controller: &PullerSpeedController,
-    ) -> AngularVelocity {
         let min_speed = AngularVelocity::ZERO;
         let max_speed = self.get_max_speed(puller_speed_controller).abs();
 
+        // Calculate filament tension from arm angle
+        let tension_arm_angle = tension_arm.get_angle().unwrap();
         let (clamped_angle, clamping_state) = clamp_revolution_uom(
             tension_arm_angle,
             self.filament_calc.get_max_angle(), // Inverted because min angle = max tension
@@ -360,28 +353,6 @@ impl AdaptiveSpoolSpeedController {
         let accelerated_speed = self.accelerate_speed(enabled_speed, puller_speed_controller, t);
 
         // Store speed before clamping to preserve the actual commanded value
-        self.last_speed = accelerated_speed;
-
-        self.clamp_speed(accelerated_speed)
-    }
-
-    pub fn update_speed_for_angle(
-        &mut self,
-        t: Instant,
-        tension_arm_angle: Angle,
-        puller_speed_controller: &PullerSpeedController,
-    ) -> AngularVelocity {
-        let target_speed =
-            self.calculate_speed_for_angle(t, tension_arm_angle, puller_speed_controller);
-
-        let enabled_speed = if self.enabled {
-            target_speed
-        } else {
-            AngularVelocity::ZERO
-        };
-
-        let accelerated_speed = self.accelerate_speed(enabled_speed, puller_speed_controller, t);
-
         self.last_speed = accelerated_speed;
 
         self.clamp_speed(accelerated_speed)

@@ -197,23 +197,6 @@ impl SpoolSpeedController {
         }
     }
 
-    pub fn update_speed_for_angle(
-        &mut self,
-        t: Instant,
-        tension_arm_angle: Angle,
-        tension_arm: &TensionArm,
-        puller_speed_controller: &PullerSpeedController,
-    ) -> AngularVelocity {
-        match self.r#type {
-            SpoolSpeedControllerType::Adaptive => self.adaptive_controller.update_speed_for_angle(
-                t,
-                tension_arm_angle,
-                puller_speed_controller,
-            ),
-            SpoolSpeedControllerType::MinMax => self.minmax_controller.update_speed(t, tension_arm),
-        }
-    }
-
     // Adaptive controller parameter getters and setters
     pub const fn get_adaptive_tension_target(&self) -> f64 {
         self.adaptive_controller.get_tension_target()
