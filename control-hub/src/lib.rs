@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
+use machine_core::property::PropertyBatch;
 use tokio::sync::watch;
 use arc_swap::ArcSwap;
 use clickhouse::Client;
 use machine_core::MachineIdentification;
 use machine_core::MachineSpec;
-use machine_core::property::ExportedPropertySet;
-use machine_core::property::PropertySet;
 use tokio::join;
 use tokio::signal::unix::SignalKind;
 use tokio::signal::unix::signal;
@@ -30,14 +29,8 @@ pub struct SharedState {
     pub machine_specs: Arc<HashMap<MachineIdentification, MachineSpec>>,
     pub machine_names: Arc<HashMap<String, MachineIdentification>>,
     pub machine_registry: Arc<ArcSwap<HashSet<u64>>>,
-    pub snapshot_tx: broadcast::Sender<PropertyMessage>,
+    pub snapshot_tx: broadcast::Sender<Arc<PropertyBatch>>,
     pub shutdown_rx: watch::Receiver<()>,
-}
-
-#[derive(Debug, Clone)]
-pub enum PropertyMessage {
-    Native(Arc<PropertySet>),
-    Exported(Arc<ExportedPropertySet>),
 }
 
 #[derive(Debug)]
@@ -134,7 +127,7 @@ include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
 async fn init_state(
     database_config: DatabaseConfig,
-    snapshot_tx: broadcast::Sender<PropertyMessage>,
+    snapshot_tx: broadcast::Sender<Arc<PropertyBatch>>,
     shutdown_rx: watch::Receiver<()>
 ) -> Result<SharedState, String> {
     let mut client = Client::default()
@@ -163,7 +156,7 @@ fn init_specs() -> Arc<HashMap<MachineIdentification, MachineSpec>> {
     let mut specs: HashMap<MachineIdentification, MachineSpec> = Default::default();
 
     for schema_yaml in generated::machine_schemas() {
-        let spec = yaml_serde::from_str::<MachineSpec>(&schema_yaml).unwrap();
+        let spec = yaml_serde::from_str::<MachineSpec>(schema_yaml).unwrap();
         specs.insert(spec.identification, spec);
     }
 

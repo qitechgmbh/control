@@ -1,5 +1,3 @@
-[workspace]
-
 [package]
 name = "control_hub"
 version = "0.1.0"

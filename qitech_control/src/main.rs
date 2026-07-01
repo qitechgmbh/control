@@ -1,11 +1,12 @@
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
+use machine_core::property::PropertyAllocator;
 use machine_implementations::{MACHINE_LASER_V1, MachineNewArgs};
 use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
 #[cfg(not(feature = "mock"))]
-use property::Allocator;
+use machine_core::property;
 #[cfg(not(feature = "mock"))]
 use qitech_lib::ethercat_hal::{
     DcConfiguration, MasterConfiguration, RtOptimizationConfig, init_ethercat,
@@ -208,7 +209,11 @@ fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainSt
         }
 
         let hardware = main_state.hardware.get(key).unwrap().clone();
-        let properties = property::Allocator::new(&mut main_state.properties, *key);
+        let properties = PropertyAllocator::new(
+            &mut main_state.properties.float, 
+            &mut main_state.properties.int, 
+            *key,
+        );
 
         let args = MachineNewArgs {
             ident: *key,
@@ -276,7 +281,8 @@ pub fn remove_machine(
     main_state.machines.remove(index);
 
     // free up all slots the machine used
-    main_state.properties.remove_where_machine_uid(ident.as_u64());
+    main_state.properties.float.remove_by_ident(ident.as_u64());
+    main_state.properties.int.remove_by_ident(ident.as_u64());
 
     let mut guard = shared_state
         .machines
@@ -381,22 +387,8 @@ fn main_logic() {
     let mut prev_property_export_ts = std::time::Instant::now();
     let property_export_interval = Duration::from_secs_f64(1.0 / 32.0);
 
-    let mut allocator = Allocator::new(
-        &mut main_state.properties, 
-        MachineIdentificationUnique { 
-            machine_ident: MachineIdentification {
-                vendor: 0,
-                machine: 0,
-            }, 
-            serial: 0 
-    });
-
-    let mut prop = allocator.add_bool("hello.world", false).unwrap();
-
     loop {
         let now = std::time::Instant::now();
-
-        prop.set(true);
 
         if let Some(control) = &mut eth_control {
             write_ecat_inputs(&mut control.app_handle, main_state.subdevices.clone());
@@ -425,7 +417,8 @@ fn main_logic() {
             };
 
             // reset the dirty flags since we exported the dirty ones
-            main_state.properties.clear_dirty_flags();
+            main_state.properties.float.reset_dirty_flags();
+            main_state.properties.int.reset_dirty_flags();
 
             // reset interval
             prev_property_export_ts = now;

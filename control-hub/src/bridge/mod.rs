@@ -1,17 +1,18 @@
 use std::collections::HashSet;
-use machine_core::property::PropertySetView;
+
+use machine_core::property::PropertyBatch;
 
 // pub mod local;
 pub mod remote;
 
-pub fn update_registry(view: PropertySetView<'_>, registry: &mut HashSet<u64>) -> bool {
+pub fn update_registry(batch: &PropertyBatch, registry: &mut HashSet<u64>) -> bool {
     let mut changed = false;
 
-    for prop in view.float {
+    for prop in &batch.floats {
         changed |= registry.insert(prop.ident);
     }
 
-    for prop in view.integer {
+    for prop in &batch.integers {
         changed |= registry.insert(prop.ident);
     }
 

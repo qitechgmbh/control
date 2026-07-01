@@ -1,6 +1,6 @@
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 use chrono::{DateTime, Utc};
-use machine_core::property::{PropertySetView};
+use machine_core::property::PropertyBatch;
 use tokio::{
     sync::broadcast,
     time::{Duration, timeout},
@@ -8,7 +8,7 @@ use tokio::{
 
 use clickhouse::{self, Client, Row, insert::Insert};
 
-use crate::{PropertyMessage, SharedState};
+use crate::SharedState;
 
 pub struct Config {
     pub export_interval: Duration,
@@ -53,7 +53,7 @@ impl Inserts {
 
 pub async fn run(
     state: SharedState,
-    mut rx: broadcast::Receiver<PropertyMessage>,
+    mut rx: broadcast::Receiver<Arc<PropertyBatch>>,
     config: Config,
 ) -> clickhouse::error::Result<()> {
     let mut last_export_ts = Instant::now();
@@ -65,7 +65,7 @@ pub async fn run(
             let now = Instant::now();
 
             if now.duration_since(last_export_ts) >= config.export_interval {
-                println!("Exporting");
+                // println!("Exporting");
                 inserts.end().await?;
                 last_export_ts = now;
                 break;
@@ -76,7 +76,7 @@ pub async fn run(
                 let now = Utc::now();
 
                 match result {
-                    Ok(set) => map_message(&mut inserts, set, now).await?,
+                    Ok(batch) => map_message(&mut inserts, batch, now).await?,
                     Err(e) => match e {
                         RecvError::Closed => return Ok(()),
                         RecvError::Lagged(count) => {
@@ -92,29 +92,24 @@ pub async fn run(
 
 async fn map_message(
     inserts: &mut Inserts, 
-    msg: PropertyMessage,
+    batch: Arc<PropertyBatch>,
     now: DateTime<Utc>,
 ) -> clickhouse::error::Result<()> {
-    let view = match &msg {
-        PropertyMessage::Native(set) => PropertySetView::native_dirty(&set),
-        PropertyMessage::Exported(set) => PropertySetView::exported(&set),
-    };
-
-    for entry in view.float {
+    for entry in &batch.floats {
         inserts.float.write(&PropertyRow {
             ts: now,
             ident: entry.ident,
-            name: entry.name.into(),
-            value: *entry.value,
+            name: entry.name.clone(),
+            value: entry.value,
         }).await?;
     }
 
-    for entry in view.integer {
+    for entry in &batch.integers {
         inserts.integer.write(&PropertyRow {
             ts: now,
             ident: entry.ident,
-            name: entry.name.into(),
-            value: *entry.value,
+            name: entry.name.clone(),
+            value: entry.value,
         }).await?;
     }
 

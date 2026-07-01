@@ -1,4 +1,4 @@
-use property::{BoolProperty, LengthProperty};
+use machine_core::property::{BoolProperty, LengthProperty};
 
 use crate::{
     MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH,

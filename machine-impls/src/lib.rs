@@ -1,5 +1,6 @@
 use anyhow::Result;
 use control_core::socketio::namespace::Namespace;
+use machine_core::property;
 use qitech_lib::{
     ethercat_hal::{
         EtherCATThreadChannel,
@@ -223,7 +224,7 @@ impl MachineHardware {
 pub struct MachineNewArgs<'a> {
     pub ident: MachineIdentificationUnique,
     pub hardware: MachineHardware,
-    pub properties: property::Allocator<'a>,
+    pub properties: property::PropertyAllocator<'a>,
 }
 
 pub trait MachineNew: Sized {

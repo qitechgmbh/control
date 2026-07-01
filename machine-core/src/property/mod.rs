@@ -1,42 +1,43 @@
-const POOL_CAPACITY_MAX_FLOAT: usize = 1024;
-const POOL_CAPACITY_MAX_INTEGER: usize = 1024;
+const POOL_CAPACITY_I64: usize = 1024;
+const POOL_CAPACITY_F64: usize = 1024;
 
-mod property;
-pub use property::IntProperty;
-pub use property::FloatProperty;
-pub use property::BoolProperty;
-pub use property::EnumProperty;
-pub use property::LengthProperty;
+mod properties;
+pub use properties::{
+    IntProperty,
+    FloatProperty,
+    BoolProperty,
+    EnumProperty,
+    LengthProperty,
+};
 
 mod pool;
-pub use pool::PropertyPool;
-
-mod set;
-pub use set::PropertySet;
+use pool::PropertyPool;
+pub type IntPool = PropertyPool<i64, POOL_CAPACITY_I64>;
+pub type FloatPool = PropertyPool<f64, POOL_CAPACITY_F64>;
 
 mod allocator;
-pub use allocator::Allocator;
-pub use allocator::AllocatorError;
+pub use allocator::PropertyAllocator;
+pub use allocator::PropertyAllocatorError;
 
-mod view;
-pub use view::PropertySetView;
-pub use view::PropertyView;
-pub use view::PropertyBufferIter;
-
+#[cfg(feature = "serde")]
 mod export;
-pub use export::ExportedPropertyEntry;
-pub use export::ExportedPropertySet;
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg(feature = "serde")]
+pub use export::{
+    PropertyBatch,
+    PropertyBatchExporter
+};
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone)]
 pub struct PropertyEntry<T> {
     pub ident: u64,
-    pub name: &'static str,
+    pub name: String,
     pub value: T,
 }
 
 impl<T: Default> PropertyEntry<T> {
-    pub fn new(ident: u64, name: &'static str, value: T) -> Self {
+    pub fn new(ident: u64, name: String, value: T) -> Self {
         Self { ident, name, value }
     }
 }

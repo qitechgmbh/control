@@ -13,6 +13,7 @@ use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::NamespaceCacheingLogic,
 };
+use machine_core::property::{FloatPool, IntPool};
 use machine_implementations::{
     Hardware, IdentifiedEthercat, IdentifiedModbus, MachineHardware, MachineMessage, QiTechMachine,
     laser::LaserMachine,
@@ -21,7 +22,6 @@ use machine_implementations::{
         QiTechMachineIdentificationUnique,
     },
 };
-use property::PropertySet;
 use qitech_lib::{
     ethercat_hal::{
         Consumer, EtherCATThreadChannel, MetaSubdevice, Producer, controller::EtherCATController,
@@ -239,7 +239,13 @@ pub struct MainState {
     pub machines: Vec<Box<dyn QiTechMachine>>,
     pub machine_errors: HashMap<MachineIdentificationUnique, String>,
     pub machine_data_reg: MachineDataRegistry,
-    pub properties: Box<PropertySet>,
+    pub properties: Box<Properties>,
+}
+
+#[derive(Default, Clone)]
+pub struct Properties {
+    pub float: FloatPool,
+    pub int: IntPool,
 }
 
 impl MainState {

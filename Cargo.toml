@@ -2,11 +2,13 @@
 members = [
     "qitech_control",
     "control-core",
-    "machine-impls",
     "control-core-derive",
-    "property",
+    "control-hub",
+    "machine-core",
+    "machine-impls",
 #    "utils",
 ]
+
 exclude = []
 resolver = "2"
 

@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use machine_core::property::{ExportedPropertySet, PropertySetView};
+use machine_core::property::PropertyBatch;
 use tokio::{
     io::{self, AsyncReadExt},
     net::{UnixListener, UnixStream},
@@ -8,7 +8,7 @@ use tokio::{
     time::timeout,
 };
 
-use crate::{PropertyMessage, SharedState};
+use crate::SharedState;
 
 pub struct Config {
     pub socket_path: String,
@@ -93,7 +93,7 @@ async fn handle_client(state: &mut SharedState, mut stream: UnixStream) -> io::R
             return Ok(false);
         }
 
-        let set: ExportedPropertySet = match postcard::from_bytes(&buf) {
+        let batch: PropertyBatch = match postcard::from_bytes(&buf) {
             Ok(v) => v,
             Err(e) => {
                 eprintln!("Failed to deserialize message: {e}");
@@ -101,11 +101,11 @@ async fn handle_client(state: &mut SharedState, mut stream: UnixStream) -> io::R
             },
         };
 
-        if super::update_registry(PropertySetView::exported(&set), &mut registry) {
+        if super::update_registry(&batch, &mut registry) {
             state.machine_registry.swap(Arc::new(registry.clone()));
         }
 
-        if let Err(_) = sender.send(PropertyMessage::Exported(Arc::new(set))) {
+        if sender.send(Arc::new(batch)).is_err() {
             eprintln!("Failed to broadcast property set, all channels closed. Exiting...");
             return Ok(true);
         }

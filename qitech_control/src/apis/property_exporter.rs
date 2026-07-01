@@ -1,10 +1,10 @@
 use std::sync::Arc;
-use property::{DirtyPropertySetExportView, PropertySet};
+use machine_core::property::PropertyBatchExporter;
 use tokio::{io::AsyncWriteExt, net::UnixStream, sync::mpsc};
 
-use crate::app_state::get_async_runtime;
+use crate::app_state::{Properties, get_async_runtime};
 
-pub fn start() -> mpsc::Sender<Arc<PropertySet>> {
+pub fn start() -> mpsc::Sender<Arc<Properties>> {
     let rt = get_async_runtime();
 
     let stream = rt
@@ -19,7 +19,7 @@ pub fn start() -> mpsc::Sender<Arc<PropertySet>> {
 
 pub async fn task(
     mut stream: UnixStream,
-    mut receiver: mpsc::Receiver<Arc<PropertySet>>,
+    mut receiver: mpsc::Receiver<Arc<Properties>>,
 ) {
     loop {
         let Some(properties) = receiver.recv().await else {
@@ -42,7 +42,7 @@ pub async fn task(
     }
 }
 
-fn serialize_properties(properties: Arc<property::PropertySet>, buf: &mut [u8]) -> &[u8] {
-    let export_view = DirtyPropertySetExportView::from(properties.as_ref());
-    postcard::to_slice(&export_view, buf).expect("serialization failed")
+fn serialize_properties(properties: Arc<Properties>, buf: &mut [u8]) -> &[u8] {
+    let exporter = PropertyBatchExporter::new(true, &properties.float, &properties.int);
+    postcard::to_slice(&exporter, buf).expect("serialization failed")
 }

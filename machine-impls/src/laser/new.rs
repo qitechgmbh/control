@@ -19,21 +19,21 @@ impl MachineNew for LaserMachine {
         let (sender, receiver) = tokio::sync::mpsc::channel(2);
 
         // initalize properties
-        let diameter = props.add_length::<millimeter>("diameter", 0.0)?;
-        let x_diameter = props.add_length::<millimeter>("x_diameter", 0.0)?;
-        let y_diameter = props.add_length::<millimeter>("y_diameter", 0.0)?;
+        let diameter = props.add_length::<millimeter>("diameter", 0.0, true)?;
+        let x_diameter = props.add_length::<millimeter>("x_diameter", 0.0, true)?;
+        let y_diameter = props.add_length::<millimeter>("y_diameter", 0.0, true)?;
         
-        let in_tolerance = props.add_bool("input_tolerance", false)?;
-        let global_warning = props.add_bool("global_warning", false)?;
+        let in_tolerance = props.add_bool("input_tolerance", false, false)?;
+        let global_warning = props.add_bool("global_warning", false, false)?;
 
         let target_diameter = 
-            props.add_length::<millimeter>("config.target_diameter", 1.75)?;
+            props.add_length::<millimeter>("config.target_diameter", 1.75, false)?;
 
         let higher_tolerance = 
-            props.add_length::<millimeter>("config.higher_tolerance", 0.05)?;
+            props.add_length::<millimeter>("config.higher_tolerance", 0.05, false)?;
 
         let lower_tolerance = 
-            props.add_length::<millimeter>("config.lower_tolerance", 0.05)?;
+            props.add_length::<millimeter>("config.lower_tolerance", 0.05, false)?;
 
         let config = Config {
             target_diameter,

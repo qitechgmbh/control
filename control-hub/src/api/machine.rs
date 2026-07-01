@@ -12,6 +12,8 @@ pub async fn handle(
     State(state): State<Arc<SharedState>>,
     Path((name, serial)): Path<(String, u32)>,
 ) -> Result<Json<Map<String, Value>>, String> {
+    println!("wtf");
+
     let Some(ident) = state.machine_names.get(&name) else {
         return Err(format!("No such machine: {name}"));
     };

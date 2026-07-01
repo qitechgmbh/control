@@ -1,5 +1,3 @@
-[workspace]
-
 [package]
 name = "machine_core"
 version = "0.1.0"

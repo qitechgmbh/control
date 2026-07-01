@@ -3,6 +3,7 @@ use axum::routing::get;
 
 use crate::SharedState;
 
+mod types;
 mod property;
 mod machines;
 mod machine;

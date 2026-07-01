@@ -1,20 +1,21 @@
 use std::fmt::Debug;
-use super::{AllocatorError, PropertyEntry};
+use super::{PropertyAllocatorError, PropertyEntry};
 
 #[derive(Debug, Default, Clone)]
-pub struct PropertySlot<T: Debug> {
-    pub entry: Option<PropertyEntry<T>>,
-    pub dirty: bool,
+struct PropertySlot<T> {
+    entry: Option<PropertyEntry<T>>,
+    dirty: bool,
+    dirty_always: bool,
 }
 
-#[derive(Debug, Clone)]
-pub struct PropertyPool<T: Debug + Default, const CAPACITY: usize> {
+#[derive(Clone)]
+pub struct PropertyPool<T: Default, const CAPACITY: usize> {
     slots: [PropertySlot<T>; CAPACITY],
     last: usize,
 }
 
 impl<T: Debug + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
-    pub fn add(&mut self, entry: PropertyEntry<T>) -> Result<(*mut T, *mut bool), AllocatorError> {
+    pub fn add(&mut self, entry: PropertyEntry<T>, always_dirty: bool) -> Result<(*mut T, *mut bool), PropertyAllocatorError> {
         // try to find empty slot
         for i in 0..self.last {
             if self.slots[i].entry.is_none() {
@@ -33,6 +34,7 @@ impl<T: Debug + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
             let idx = self.last;
             self.slots[idx].entry = Some(entry);
             self.slots[idx].dirty = true;
+            self.slots[idx].dirty_always = always_dirty;
             self.last += 1;
 
             return Ok((
@@ -42,12 +44,12 @@ impl<T: Debug + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
         }
 
         // no space remaining
-        Err(AllocatorError)
+        Err(PropertyAllocatorError)
     }
 
-    pub fn remove(&mut self, index: usize) -> Result<(), AllocatorError> {
+    pub fn remove(&mut self, index: usize) -> Result<(), PropertyAllocatorError> {
         if index >= self.last {
-            return Err(AllocatorError);
+            return Err(PropertyAllocatorError);
         }
 
         // mark as unused
@@ -74,6 +76,11 @@ impl<T: Debug + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
         Ok(())
     }
 
+    pub fn remove_by_ident(&mut self, ident: u64) {
+        //TODO: implement
+        _ = ident;
+    }
+
     pub fn dirty_count(&self) -> usize {
         let mut count = 0;
         for item in &self.slots {
@@ -85,25 +92,18 @@ impl<T: Debug + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
         count
     }
 
-    pub fn clear_dirty_flags(&mut self) {
+    pub fn reset_dirty_flags(&mut self) {
         for item in &mut self.slots {
             item.dirty = false;
         }
     }
 
-    pub fn iter(&self) -> PropertyPoolIter<'_, T> {
+    pub fn iter(&self, dirty_only: bool) -> PropertyPoolIter<'_, T> {
         PropertyPoolIter {
             items: &self.slots,
             index: 0,
             last: self.last,
-        }
-    }
-
-    pub fn iter_dirty(&self) -> PropertyPoolDirtyIter<'_, T> {
-        PropertyPoolDirtyIter {
-            items: &self.slots,
-            index: 0,
-            last: self.last,
+            dirty_only,
         }
     }
 }
@@ -121,6 +121,7 @@ pub struct PropertyPoolIter<'a, T: Debug> {
     items: &'a [PropertySlot<T>],
     last: usize,
     index: usize,
+    dirty_only: bool,
 }
 
 impl<'a, T> Iterator for PropertyPoolIter<'a, T>
@@ -134,35 +135,7 @@ where
             let item = &self.items[self.index];
             self.index += 1;
 
-            let Some(entry) = &item.entry else {
-                continue;
-            };
-
-            return Some(entry);
-        }
-
-        None
-    }
-}
-
-pub struct PropertyPoolDirtyIter<'a, T: Debug> {
-    items: &'a [PropertySlot<T>],
-    last: usize,
-    index: usize,
-}
-
-impl<'a, T> Iterator for PropertyPoolDirtyIter<'a, T>
-where
-    T: Debug,
-{
-    type Item = &'a PropertyEntry<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while self.index < self.last {
-            let item = &self.items[self.index];
-            self.index += 1;
-
-            if !item.dirty {
+            if self.dirty_only && !item.dirty {
                 continue;
             }
 

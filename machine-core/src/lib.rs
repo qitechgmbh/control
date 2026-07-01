@@ -64,7 +64,7 @@ pub trait MachineNew: Sized {
 pub struct MachineNewArgs<'a> {
     pub ident: MachineIdentificationUnique,
     pub hardware: MachineHardware,
-    pub properties: property::Allocator<'a>,
+    pub properties: property::PropertyAllocator<'a>,
 }
 
 #[repr(align(64))]
@@ -81,12 +81,9 @@ pub struct MachineDataRegistry {
 
 impl MachineDataRegistry {
     pub fn zero_entry(&mut self, ident: MachineIdentificationUnique) {
-        match self.storage.get_mut(&ident) {
-            Some(m) => {
-                m.length = 0;
-                m.data.fill(0);
-            }
-            None => (),
+        if let Some(m) = self.storage.get_mut(&ident) {
+            m.length = 0;
+            m.data.fill(0);
         }
     }
 }

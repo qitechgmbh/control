@@ -11,7 +11,7 @@ fn main() {
     out.push_str("use std::collections::HashMap;\n\n");
     inject_schemas("../machine-schemas", &mut out);
     inject_vendors("../vendors.json", &mut out);
-    out.push_str("}");
+    out.push('}');
 
     fs::write(&file_path, out).unwrap();
 }
@@ -20,7 +20,7 @@ fn inject_schemas(dir: &str, out: &mut String) {
     out.push_str("pub fn machine_schemas() -> Vec<&'static str> {\n");
     out.push_str("vec![\n");
 
-    for entry in fs::read_dir(&dir).unwrap() {
+    for entry in fs::read_dir(dir).unwrap() {
         let path = entry.unwrap().path();
 
         if path.extension().and_then(|e| e.to_str()) != Some("yaml") {

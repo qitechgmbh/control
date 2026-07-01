@@ -17,10 +17,13 @@ pub(crate) async fn handle(
             &v.name
         } else { "N/A" };
 
+        let vendor: &str = state.vendors.get(&uid.ident.vendor_id).unwrap_or(&"N/A");
+
         items.push(Entry {
             name: name.into(),
-            vendor: "QiTech GmbH".into(),
+            vendor: vendor.into(),
             serial: uid.serial,
+            connected: true,
             last_active: Utc::now(),
         });
     }
@@ -33,5 +36,6 @@ pub(crate) struct Entry {
     name: String,
     vendor: String,
     serial: u32,
+    connected: bool,
     last_active: DateTime<Utc>,
 }
