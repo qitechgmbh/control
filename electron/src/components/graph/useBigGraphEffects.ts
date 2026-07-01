@@ -247,11 +247,9 @@ export function useBigGraphEffects({
     updateYAxisScale,
   ]);
 
-  // Create and initialize the chart once when data first becomes available.
-  // With mutable TimeSeries, the long buffer is mutated in place and never
-  // replaced — so we use primitives (validCount > 0) to detect the *first*
-  // data arrival, then rely on incremental updates (updateLiveData +
-  // processNewHistoricalData) for all subsequent changes.
+  // Create and initialize the chart when data becomes available.
+  // With mutable TimeSeries (no immer), we depend on validCount and lastTimestamp
+  // instead of the Series object reference, which no longer changes on each insert.
   useEffect(() => {
     if (!containerRef.current || !primarySeries?.newData?.long) {
       setIsChartCreated(false);
@@ -309,7 +307,11 @@ export function useBigGraphEffects({
       setIsChartCreated(false);
       chartCreatedRef.current = false;
     };
-  }, [containerRef.current]);
+  }, [
+    primarySeries?.newData?.long?.validCount,
+    primarySeries?.newData?.long?.lastTimestamp,
+    containerRef.current,
+  ]);
 
   // Process new historical data in live mode
   useEffect(() => {
