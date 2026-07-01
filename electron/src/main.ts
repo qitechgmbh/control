@@ -86,6 +86,12 @@ async function installExtensions() {
   }
 }
 
+// Forward memory-monitor snapshots from renderer to terminal stdout
+import { ipcMain } from "electron";
+ipcMain.on("memory-snapshot", (_event, line: string) => {
+  console.log(line);
+});
+
 app.whenReady().then(createWindow).then(installExtensions);
 
 //osX only
