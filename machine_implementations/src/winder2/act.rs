@@ -53,7 +53,6 @@ impl Machine for Winder2 {
                         self.laser_ident = Some(key.clone());
                     }
                 }
-                println!("failed to get laser!");
                 return;
             },
         };
@@ -65,7 +64,6 @@ impl Machine for Winder2 {
                 let lower = laser_data.state.laser_state.lower_tolerance;
                 let upper = laser_data.state.laser_state.higher_tolerance;
                 let last_speed = self.puller_speed_controller.last_speed;
-                println!("Found laser data!");
                 self.puller_speed_controller
                     .adaptive
                     .update_with_measurement(
