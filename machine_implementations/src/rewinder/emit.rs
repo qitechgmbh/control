@@ -9,7 +9,7 @@ use super::{
     },
 };
 use crate::winder2::spool_speed_controller::SpoolSpeedControllerType;
-use control_core::socketio::{event::BuildEvent, namespace::NamespaceCacheingLogic};
+use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::{
     ethercat_hal::io::digital_output::DigitalOutputDevice,
     units::{
