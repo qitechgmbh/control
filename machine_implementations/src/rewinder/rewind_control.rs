@@ -345,11 +345,11 @@ impl Default for PullerRampConfig {
     fn default() -> Self {
         Self {
             crawl_speed_m_per_min: 1.0,
-            normal_accel_m_per_min_s: 5.0,
+            normal_accel_m_per_min_s: 1.2,
             source_recovery_accel_min_m_per_min_s: 0.35,
             source_recovery_accel_max_m_per_min_s: 1.25,
-            warning_accel_m_per_min_s: 0.75,
-            normal_decel_m_per_min_s: 5.0,
+            warning_accel_m_per_min_s: 0.25,
+            normal_decel_m_per_min_s: 2.0,
         }
     }
 }
