@@ -279,7 +279,7 @@ export function Winder2ControlPage() {
                     icon: "lu:Brain",
                     disabled: false,
                 },}
-              }}
+              }
               onChange={(value) => {
                 // When switching back to fixed mode, seed the target speed from
                 // the current puller speed so there is no jump.
