@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use machine_core::property::PropertySetView;
 
-pub mod local;
+// pub mod local;
 pub mod remote;
 
 pub fn update_registry(view: PropertySetView<'_>, registry: &mut HashSet<u64>) -> bool {
@@ -12,14 +12,6 @@ pub fn update_registry(view: PropertySetView<'_>, registry: &mut HashSet<u64>) -
     }
 
     for prop in view.integer {
-        changed |= registry.insert(prop.ident);
-    }
-
-    for prop in view.boolean {
-        changed |= registry.insert(prop.ident);
-    }
-
-    for prop in view.string {
         changed |= registry.insert(prop.ident);
     }
 

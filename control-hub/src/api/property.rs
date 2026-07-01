@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use axum::{Json, extract::{Path, Query, State}};
 use chrono::{DateTime, Utc};
-use machine_core::{MachineIdentification, MachineIdentificationUnique, MachineSpec};
+use clickhouse::Row;
+use machine_core::{MachineIdentificationUnique, PropertySpec};
 use serde::{Deserialize, Serialize};
 
 use crate::SharedState;
@@ -86,7 +87,8 @@ pub enum Aggregation {
     Median,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum Samples {
     Float(Vec<Sample<f64>>),
     Integer(Vec<Sample<i64>>),
@@ -94,48 +96,50 @@ pub enum Samples {
     String(Vec<Sample<String>>),
 }
 
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Row)]
 pub struct Sample<T> {
     ts: u64,
     value: T
 }
 
-pub async fn handler(
+pub async fn handle(
     State(state): State<Arc<SharedState>>,
     Path((machine_name, serial, property_name)): Path<(String, u32, String)>,
-    Query(query): Query<PropertyQuery>,
+    Query(q): Query<PropertyQuery>,
 ) -> Result<Json<Samples>, String> {
-    let Some(spec) = find_spec_by_name(&state, &machine_name) else {
+    let Some(ident) = state.machine_names.get(&machine_name) else {
         return Err(format!("No such machine: {machine_name}"));
     };
+
+    let spec = state.machine_specs.get(ident)
+        .expect("if machines_names contains entry so must this!");
 
     let Some(property_spec) = spec.find_property(&property_name) else {
         return Err(format!("No such property: {machine_name}"));
     };
 
-   // spec.properties.get(k)
-
-    // spec.properties.get(k);
+    let table: &str = match property_spec {
+        PropertySpec::Integer { .. } | PropertySpec::Boolean => "integer",
+        PropertySpec::Float { .. } | PropertySpec::UoM { .. } => "float",
+    };
 
     let uid = MachineIdentificationUnique {
-        ident,
+        ident: *ident,
         serial,
     }.as_u64();
 
-    let mut sql = String::from(
-        r#"
+    let mut sql = format!(r#"
         SELECT ts, value
-        FROM properties_float
+        FROM properties_{table}
         WHERE ident = ?
         AND name = ?
-        "#,
-    );
+    "#,);
 
-    if from.is_some() {
+    if q.from.is_some() {
         sql.push_str(" AND ts >= ?");
     }
 
-    if to.is_some() {
+    if q.to.is_some() {
         sql.push_str(" AND ts <= ?");
     }
 
@@ -147,38 +151,32 @@ pub async fn handler(
         .bind(uid)
         .bind(property_name);
 
-    if let Some(from) = from {
+    if let Some(from) = q.from {
         query = query.bind(from);
     }
 
-    if let Some(to) = to {
+    if let Some(to) = q.to {
         query = query.bind(to);
     }
 
-    query = query.bind(limit);
+    query = query.bind(q.limit.unwrap_or(1000).min(1000));
 
-    let samples = query
-        .fetch_all::<Sample<f64>>()
-        .await
-        .map_err(|e| e.to_string())?;
+    match property_spec {
+        PropertySpec::Boolean | PropertySpec::Integer { .. } => {
+            let samples = query
+                .fetch_all::<Sample<i64>>()
+                .await
+                .map_err(|e| e.to_string())?;
 
-    print!("samples: {ident:?}\n");
+            Ok(Json(Samples::Integer(samples)))
+        },
+        PropertySpec::Float { .. } | PropertySpec::UoM  { .. } => {
+            let samples = query
+                .fetch_all::<Sample<f64>>()
+                .await
+                .map_err(|e| e.to_string())?;
 
-    Ok(Json(samples))
-}
-
-fn find_spec_by_name(state: &SharedState, name: &str) -> Option<&MachineSpec> {
-    for (ident, spec) in state.machine_specs.iter() {
-        if spec.name == name {
-            return Some(spec);
-        }
+            Ok(Json(Samples::Float(samples)))
+        },
     }
-
-    return None;
-}
-
-fn deconstruct_property_name(name: String) -> Vec<String> {
-    name.split('.')
-        .map(|s| s.to_string())
-        .collect()
 }

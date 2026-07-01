@@ -1,15 +1,13 @@
 use std::fmt::Debug;
 
 use super::{
-    ExportedPropertyEntry, ExportedPropertySet, PropertySet, StringPropertyValue,
+    ExportedPropertyEntry, ExportedPropertySet, PropertySet,
     pool::{PropertyPoolDirtyIter, PropertyPoolIter},
 };
 
 pub struct PropertySetView<'a> {
     pub float: PropertyBufferIter<'a, f64>,
     pub integer: PropertyBufferIter<'a, i64>,
-    pub boolean: PropertyBufferIter<'a, bool>,
-    pub string: PropertyBufferIter<'a, StringPropertyValue>,
 }
 
 impl<'a> PropertySetView<'a> {
@@ -17,8 +15,6 @@ impl<'a> PropertySetView<'a> {
         Self {
             float: PropertyBufferIter::Native(value.float.iter()),
             integer: PropertyBufferIter::Native(value.integer.iter()),
-            boolean: PropertyBufferIter::Native(value.boolean.iter()),
-            string: PropertyBufferIter::Native(value.string.iter()),
         }
     }
 
@@ -26,8 +22,6 @@ impl<'a> PropertySetView<'a> {
         Self {
             float: PropertyBufferIter::NativeDirty(value.float.iter_dirty()),
             integer: PropertyBufferIter::NativeDirty(value.integer.iter_dirty()),
-            boolean: PropertyBufferIter::NativeDirty(value.boolean.iter_dirty()),
-            string: PropertyBufferIter::NativeDirty(value.string.iter_dirty()),
         }
     }
 
@@ -35,8 +29,6 @@ impl<'a> PropertySetView<'a> {
         Self {
             float: PropertyBufferIter::Exported(value.float.iter()),
             integer: PropertyBufferIter::Exported(value.int.iter()),
-            boolean: PropertyBufferIter::Exported(value.bool.iter()),
-            string: PropertyBufferIter::Exported(value.string.iter()),
         }
     }
 }

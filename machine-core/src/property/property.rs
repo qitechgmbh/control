@@ -1,8 +1,6 @@
 use std::marker::PhantomData;
 use qitech_lib::units::{Length, length};
 
-use super::StringPropertyValue;
-
 #[derive(Debug)]
 pub struct SimpleProperty<T> {
     dirty: *mut bool,
@@ -30,9 +28,31 @@ impl<T: Copy> SimpleProperty<T> {
     }
 }
 
-pub type BoolProperty = SimpleProperty<bool>;
 pub type FloatProperty = SimpleProperty<f64>;
 pub type IntProperty = SimpleProperty<i64>;
+
+#[derive(Debug)]
+pub struct BoolProperty {
+    dirty: *mut bool,
+    value: *mut i64,
+}
+
+impl BoolProperty {
+    pub fn new(dirty: *mut bool, value: *mut i64) -> Self {
+       Self { dirty, value }
+    }
+
+    pub fn get(&self) -> bool {
+       unsafe { *self.value != 0 }
+    }
+
+    pub fn set(&mut self, value: bool) {
+        unsafe {
+            *self.value = if value { 1 } else { 0 };
+            *self.dirty = true;
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct EnumProperty<T: Copy + From<i64> + Into<i64>> {
@@ -54,26 +74,7 @@ impl<T: Copy + From<i64> + Into<i64>> EnumProperty<T> {
     }
 }
 
-#[derive(Debug)]
-pub struct StringProperty {
-    dirty: *mut bool,
-    value: *mut StringPropertyValue,
-}
-
-impl StringProperty {
-    pub fn get(&self) -> &StringPropertyValue {
-       unsafe { &*self.value }
-    }
-
-    pub fn set(&mut self, value: StringPropertyValue) {
-        unsafe {
-            *self.value = value;
-            *self.dirty = true;
-        }
-    }
-}
-
-// uom properties
+// > uom properties
 
 #[derive(Debug)]
 pub struct UomProperty<T: Copy + PartialOrd, ExportUnit> {

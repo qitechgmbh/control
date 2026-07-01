@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer, de};
 
-use crate::{MutationParameterType, PropertySpec, PropertySampling};
+use crate::{MutationParameterType, PropertySampling, PropertySpec, spec::UomUnit};
 
 #[derive(Deserialize)]
 struct PropertyHelper {
@@ -18,8 +18,6 @@ impl<'de> Deserialize<'de> for PropertySpec {
         let value = match helper.r#type.as_str() {
             "bool" => PropertySpec::Boolean,
 
-            "string" => PropertySpec::String,
-
             "int" => PropertySpec::Integer {
                 sampling: helper
                     .sampling
@@ -32,13 +30,15 @@ impl<'de> Deserialize<'de> for PropertySpec {
                     .ok_or_else(|| de::Error::missing_field("PropertySampling"))?,
             },
 
-            "millimeter" => PropertySpec::Millimeter {
+            "millimeter" => PropertySpec::UoM { 
+                unit: UomUnit::Millimeter,
                 sampling: helper
                     .sampling
                     .ok_or_else(|| de::Error::missing_field("PropertySampling"))?,
             },
 
-            "meter" => PropertySpec::Meter {
+            "meter" => PropertySpec::UoM { 
+                unit: UomUnit::Meter,
                 sampling: helper
                     .sampling
                     .ok_or_else(|| de::Error::missing_field("PropertySampling"))?,

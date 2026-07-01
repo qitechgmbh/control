@@ -12,6 +12,7 @@ pub struct MachineSpec {
 }
 
 impl MachineSpec {
+    // TODO: find property must respect SAMPLING
     pub fn find_property<'a>(
         &'a self,
         path: &str,
@@ -49,12 +50,18 @@ pub enum PropertySpecNode {
 #[derive(Debug)]
 pub enum PropertySpec {
     Boolean,
-    String,
     Integer{sampling: PropertySampling},
     Float{sampling: PropertySampling},
     UoM {
+        unit: UomUnit,
         sampling: PropertySampling
     },
+}
+
+#[derive(Debug)]
+pub enum UomUnit {
+    Millimeter,
+    Meter,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Deserialize))]

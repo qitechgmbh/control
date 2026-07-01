@@ -1,6 +1,6 @@
 use std::time::Instant;
 use chrono::{DateTime, Utc};
-use machine_core::property::{PropertySetView, StringPropertyValue};
+use machine_core::property::{PropertySetView};
 use tokio::{
     sync::broadcast,
     time::{Duration, timeout},
@@ -26,8 +26,6 @@ struct PropertyRow<T> {
 struct Inserts {
     pub float: Insert<PropertyRow<f64>>,
     pub integer: Insert<PropertyRow<i64>>,
-    pub boolean: Insert<PropertyRow<bool>>,
-    pub string: Insert<PropertyRow<StringPropertyValue>>,
 }
 
 impl Inserts {
@@ -40,23 +38,13 @@ impl Inserts {
             .insert::<PropertyRow<i64>>("properties_integer")
             .await?;
 
-        let boolean = client
-            .insert::<PropertyRow<bool>>("properties_bool")
-            .await?;
-
-        let string = client
-            .insert::<PropertyRow<StringPropertyValue>>("properties_string")
-            .await?;
-        
-        Ok(Self { float, integer, boolean, string })
+        Ok(Self { float, integer })
     }
 
     pub async fn end(self) -> clickhouse::error::Result<()> {
         tokio::try_join!(
             self.float.end(),
             self.integer.end(),
-            self.boolean.end(),
-            self.string.end(),
         )?;
 
         Ok(())
@@ -107,8 +95,6 @@ async fn map_message(
     msg: PropertyMessage,
     now: DateTime<Utc>,
 ) -> clickhouse::error::Result<()> {
-    // use PropertyMessage::*;
-
     let view = match &msg {
         PropertyMessage::Native(set) => PropertySetView::native_dirty(&set),
         PropertyMessage::Exported(set) => PropertySetView::exported(&set),
@@ -129,24 +115,6 @@ async fn map_message(
             ident: entry.ident,
             name: entry.name.into(),
             value: *entry.value,
-        }).await?;
-    }
-
-    for entry in view.boolean {
-        inserts.boolean.write(&PropertyRow {
-            ts: now,
-            ident: entry.ident,
-            name: entry.name.into(),
-            value: *entry.value,
-        }).await?;
-    }
-
-    for entry in view.string {
-        inserts.string.write(&PropertyRow {
-            ts: now,
-            ident: entry.ident,
-            name: entry.name.into(),
-            value: entry.value.clone(),
         }).await?;
     }
 

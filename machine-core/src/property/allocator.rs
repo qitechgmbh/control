@@ -23,8 +23,9 @@ impl<'a> Allocator<'a> {
         name: &'static str, 
         initial_value: bool
     ) -> Result<BoolProperty, AllocatorError> {
+        let initial_value = if initial_value {1} else {0};
         let entry = PropertyEntry::new(self.ident, name, initial_value);
-        let (value, dirty) = self.set.boolean.add(entry)?;
+        let (value, dirty) = self.set.integer.add(entry)?;
         Ok(BoolProperty::new(dirty, value))
     }
 

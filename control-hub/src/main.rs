@@ -1,5 +1,5 @@
 use std::time::Duration;
-use control_hub::{self, DatabaseConfig, bridge, exporter, rest_api};
+use control_hub::{self, DatabaseConfig, BridgeConfig, ExporterConfig, ApiConfig};
 
 #[tokio::main]
 async fn main() {
@@ -9,21 +9,21 @@ async fn main() {
         database: "qitech_ctrl".into(),
     };
 
-    let bridge_config = bridge::remote::Config { 
+    let bridge_config = BridgeConfig { 
         socket_path: "/tmp/qitech_ctrl_hub.sock".into()
     };
 
-    let exporter_config = exporter::Config { 
+    let exporter_config = ExporterConfig { 
         export_interval: Duration::from_millis(2500)
     };
 
-    let rest_api_config = rest_api::Config { 
+    let rest_api_config = ApiConfig { 
         address: "0.0.0.0:3000".into(),
     };
 
     control_hub::run_remote(
-        database_config, 
         bridge_config, 
+        database_config, 
         exporter_config, 
         rest_api_config
     ).await.unwrap();

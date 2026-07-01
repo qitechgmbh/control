@@ -39,7 +39,7 @@ properties:
       sampling: simple
 
 mutations:
-  set_target_diameter: 
+  set_target_diameter:
     value: 
       type: float
       min: 0.0
