@@ -32,7 +32,7 @@ import {
 import { getWinder2TraverseMax } from "./winder2Config";
 import { getWinder2AdaptivePullerSpeed } from "./winder2Config";
 
-export function Winder2_7031ControlPage() {
+export function Winder2ControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
   const traverseMax = getWinder2TraverseMax();
   const adaptivePullerEnabled = getWinder2AdaptivePullerSpeed();
@@ -274,17 +274,11 @@ export function Winder2_7031ControlPage() {
                   children: "Fixed",
                   icon: "lu:Crosshair",
                 },
-                ...(adaptivePullerEnabled
-                  ? {
-                      Diameter: {
-                        children: "Adaptive",
-                        icon: "lu:Brain",
-                        disabled:
-                          !state?.puller_state?.adaptive_reference_machine,
-                      },
-                    }
-                  : {}),
-              }}
+                Diameter: {
+                  children: "Adaptive",
+                    icon: "lu:Brain",
+                },}
+              }
               onChange={(value) => {
                 // When switching back to fixed mode, seed the target speed from
                 // the current puller speed so there is no jump.
