@@ -540,6 +540,14 @@ impl RewindControlState {
         self.takeup_follower.force_zero();
     }
 
+    pub fn decelerate_source_follower(&mut self, dt_s: f64) {
+        let rate = self.config.source_follower.emergency_slew_rpm_per_s;
+        self.source_follower.command_rpm = slew(self.source_follower.command_rpm, 0.0, rate, dt_s);
+        self.source_follower.target_rpm = 0.0;
+        self.source_follower.trim_rpm = 0.0;
+        self.source_follower.feed_forward_rpm = 0.0;
+    }
+
     pub fn source_recovery_active(&self) -> bool {
         source_needs_recovery(self.source_arm)
     }

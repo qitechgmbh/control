@@ -115,7 +115,7 @@ impl Rewinder {
             self.update_rewind_sequence(t);
         }
 
-        let angular_velocity = if self.puller_motion_permitted() {
+        let angular_velocity = if self.puller_speed_output_permitted() {
             if matches!(self.mode, RewinderMode::Rewind | RewinderMode::Prepare) {
                 let target_speed = self.puller_speed_controller.get_target_speed();
                 self.puller_speed_controller
@@ -151,7 +151,7 @@ impl Rewinder {
     }
 
     pub fn sync_takeup_spool_speed(&mut self, t: Instant) {
-        let angular_velocity = if self.takeup_spool_motion_permitted() {
+        let angular_velocity = if self.takeup_spool_speed_output_permitted() {
             if matches!(self.mode, RewinderMode::Prepare) {
                 self.rewind_control.takeup_command_angular_velocity()
             } else {
@@ -171,10 +171,7 @@ impl Rewinder {
                 angular_velocity
             }
         } else {
-            let angular_velocity = AngularVelocity::new::<revolution_per_minute>(0.0);
-            self.takeup_spool_speed_controller
-                .set_speed(angular_velocity);
-            angular_velocity
+            AngularVelocity::new::<revolution_per_minute>(0.0)
         };
 
         let directed_angular_velocity = if self.takeup_spool_speed_controller.get_forward() {
@@ -191,9 +188,13 @@ impl Rewinder {
     }
 
     pub fn sync_source_spool_speed(&mut self, _t: Instant) {
-        let angular_velocity = if self.source_spool_motion_permitted() {
+        let angular_velocity = if self.source_spool_speed_output_permitted() {
             if matches!(self.mode, RewinderMode::Pull) {
                 AngularVelocity::new::<revolution_per_minute>(self.pull_mode_source_assist_rpm())
+            } else if matches!(self.source_spool_mode, super::SourceSpoolMode::Hold) {
+                self.rewind_control
+                    .decelerate_source_follower(self.rewind_control.last_dt_s);
+                self.rewind_control.source_command_angular_velocity()
             } else {
                 self.rewind_control.source_command_angular_velocity()
             }

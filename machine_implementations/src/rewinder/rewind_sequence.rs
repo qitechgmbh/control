@@ -77,7 +77,9 @@ impl Rewinder {
             if !matches!(self.rewind_phase, RewindPhase::Idle) {
                 self.set_rewind_phase(RewindPhase::Idle, "mode is not Rewind");
             }
-            self.rewind_control.reset_motion();
+            if !matches!(self.mode, RewinderMode::Hold) {
+                self.rewind_control.reset_motion();
+            }
             return;
         }
 
