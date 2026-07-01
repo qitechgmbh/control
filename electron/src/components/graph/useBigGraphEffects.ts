@@ -115,6 +115,25 @@ export function useBigGraphEffects({
 }: UseBigGraphEffectsProps) {
   const [isChartCreated, setIsChartCreated] = useState(false);
 
+  // Cleanup returned by createChart (detaches DOM event handlers). Stored in a
+  // ref rather than returned from the creation effect below, since that effect's
+  // dependencies tick on every data update — an effect-returned cleanup would
+  // otherwise re-run (and tear down the chart) on every tick. Actual teardown
+  // only happens on unmount (see the dedicated cleanup effect) or when data
+  // disappears.
+  const chartCleanupRef = useRef<(() => void) | null>(null);
+
+  const destroyChart = () => {
+    chartCleanupRef.current?.();
+    chartCleanupRef.current = null;
+    uplotRef.current?.destroy();
+    uplotRef.current = null;
+    if (uplotRefOut) uplotRefOut.current = null;
+    stopAnimations(animationRefs);
+    setIsChartCreated(false);
+    chartCreatedRef.current = false;
+  };
+
   // Track the last synchronized state for comparison
   const lastSyncStateRef = useRef({
     timeWindow: selectedTimeWindow,
@@ -247,49 +266,59 @@ export function useBigGraphEffects({
     updateYAxisScale,
   ]);
 
-  // Create and initialize the chart when data becomes available.
-  // With mutable TimeSeries (no immer), we depend on validCount and lastTimestamp
-  // instead of the Series object reference, which no longer changes on each insert.
+  // Create the chart when data first becomes available.
+  // With mutable TimeSeries (no immer), inserts mutate in place and never produce
+  // a new `long` object reference, so we depend on validCount/lastTimestamp
+  // (primitives that do change on every insert) instead. This effect deliberately
+  // does NOT return a cleanup function: React would run that cleanup — and thus
+  // destroy the chart — before every re-run, i.e. on every long-buffer tick,
+  // which is exactly the periodic full rebuild that caused the graph to
+  // pause/stutter. Once a chart exists, subsequent ticks are handled
+  // incrementally by liveMode.processNewHistoricalData / updateLiveData below;
+  // true teardown is handled by the dedicated unmount effect further down.
   useEffect(() => {
     if (!containerRef.current || !primarySeries?.newData?.long) {
-      setIsChartCreated(false);
-      chartCreatedRef.current = false;
+      destroyChart();
+      return;
+    }
+
+    if (chartCreatedRef.current && uplotRef.current) {
       return;
     }
 
     const [timestamps] = seriesToUPlotData(primarySeries.newData.long);
     if (timestamps.length === 0) {
-      setIsChartCreated(false);
-      chartCreatedRef.current = false;
+      destroyChart();
       return;
     }
 
-    const cleanup = createChart({
-      containerRef,
-      uplotRef,
-      uplotRefOut,
-      newData,
-      config,
-      colors,
-      renderValue,
-      viewMode,
-      selectedTimeWindow,
-      isLiveMode,
-      startTimeRef,
-      manualScaleRef,
-      animationRefs,
-      handlerRefs,
-      graphId,
-      syncGraph,
-      getHistoricalEndTimestamp: historicalMode.getHistoricalEndTimestamp,
-      updateYAxisScale,
-      setViewMode,
-      setIsLiveMode,
-      setCursorValue,
-      setCursorValues,
-      visibleSeries,
-      showFromTimestamp,
-    });
+    chartCleanupRef.current =
+      createChart({
+        containerRef,
+        uplotRef,
+        uplotRefOut,
+        newData,
+        config,
+        colors,
+        renderValue,
+        viewMode,
+        selectedTimeWindow,
+        isLiveMode,
+        startTimeRef,
+        manualScaleRef,
+        animationRefs,
+        handlerRefs,
+        graphId,
+        syncGraph,
+        getHistoricalEndTimestamp: historicalMode.getHistoricalEndTimestamp,
+        updateYAxisScale,
+        setViewMode,
+        setIsLiveMode,
+        setCursorValue,
+        setCursorValues,
+        visibleSeries,
+        showFromTimestamp,
+      }) ?? null;
 
     setIsChartCreated(true);
     chartCreatedRef.current = true;
@@ -297,21 +326,20 @@ export function useBigGraphEffects({
     if (isLiveMode) {
       lastProcessedCountRef.current = timestamps.length;
     }
-
-    return () => {
-      cleanup?.();
-      uplotRef.current?.destroy();
-      uplotRef.current = null;
-      if (uplotRefOut) uplotRefOut.current = null;
-      stopAnimations(animationRefs);
-      setIsChartCreated(false);
-      chartCreatedRef.current = false;
-    };
   }, [
     primarySeries?.newData?.long?.validCount,
     primarySeries?.newData?.long?.lastTimestamp,
     containerRef.current,
   ]);
+
+  // Tear down the chart on unmount only. Split out from the creation effect
+  // above so that the frequent validCount/lastTimestamp ticks there can't
+  // trigger a destroy — see the comment on that effect for why.
+  useEffect(() => {
+    return () => {
+      destroyChart();
+    };
+  }, []);
 
   // Process new historical data in live mode
   useEffect(() => {
