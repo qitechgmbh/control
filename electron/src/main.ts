@@ -6,6 +6,10 @@ import {
   REACT_DEVELOPER_TOOLS,
 } from "electron-devtools-installer";
 
+// Enable precise memory monitoring in the Chromium renderer process.
+// Required for performance.memory to report accurate heap statistics.
+app.commandLine.appendSwitch("enable-precise-memory-info");
+
 const ARG1 = process.argv[1] ?? "./main.js";
 const DIR = path.dirname(ARG1);
 
