@@ -163,15 +163,7 @@ export function createChart({
       width: 2,
       spanGaps: true,
       show: isVisible, // Control visibility here
-      points: {
-        show: (_u, _seriesIdx, dataIdx) => {
-          return isVisible && dataIdx < animationRefs.realPointsCount.current;
-        },
-        size: 6,
-        stroke: color || defaultColors[index % defaultColors.length],
-        fill: color || defaultColors[index % defaultColors.length],
-        width: 2,
-      },
+      points: { show: false },
     });
   });
 
