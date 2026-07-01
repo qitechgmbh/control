@@ -15,6 +15,7 @@ use qitech_lib::{
     ethercat_hal::{BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer},
     machines::MachineIdentificationUnique,
 };
+use tokio_serial::available_ports;
 #[cfg(not(feature = "mock"))]
 use std::{sync::Arc, time::Duration};
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -352,6 +353,8 @@ pub fn remove_machines(
             main_state.hardware.remove(&ident);
             guard.remove(pos);
             drop(guard);
+            // If a machine has errored and is dropped remove the entry from the hashmap aswell
+            main_state.machine_data_reg.storage.remove(&ident);
             send_machines_event(shared_state.clone());
         }
         None => (),
