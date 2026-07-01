@@ -279,8 +279,7 @@ export function Winder2ControlPage() {
                       Diameter: {
                         children: "Adaptive",
                         icon: "lu:Brain",
-                        disabled:
-                          !state?.puller_state?.adaptive_reference_machine,
+                        disabled: false,
                       },
                     }
                   : {}),
