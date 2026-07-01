@@ -4,8 +4,21 @@
  * Logs periodic memory snapshots and fires warning/critical callbacks
  * to help detect and diagnose V8 heap OOM crashes before they happen.
  *
+ * Logs appear in both:
+ *  - Chromium DevTools console (renderer)
+ *  - Terminal where `npm start` was launched (via IPC to main process)
+ *
  * Requires `--enable-precise-memory-info` flag in Electron main process.
  */
+
+/** Lazy import — only available in Electron renderer, not in tests/JSDOM. */
+let ipcRenderer: Electron.IpcRenderer | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  ipcRenderer = window.require("electron").ipcRenderer;
+} catch {
+  // Not in Electron (tests, JSDOM, etc.) — IPC forwarding disabled
+}
 
 export interface MemorySnapshot {
   /** Total heap size in MB */
@@ -133,28 +146,35 @@ export class MemoryMonitor {
 
     const usageRatio = heapUsed / heapTotal;
 
-    // Log every check at debug level
-    console.debug(
+    // Build the status line
+    const statusLine =
       `[MemoryMonitor] Heap: ${heapUsed}MB / ${heapTotal}MB ` +
-        `(${Math.round(usageRatio * 100)}%) ` +
-        `| Growth: ${growthSinceLast > 0 ? "+" : ""}${growthSinceLast}MB`,
-    );
+      `(${Math.round(usageRatio * 100)}%) ` +
+      `| Growth: ${growthSinceLast > 0 ? "+" : ""}${growthSinceLast}MB`;
+
+    // Log to DevTools console
+    console.debug(statusLine);
+
+    // Forward to terminal via IPC (main process)
+    ipcRenderer?.send("memory-snapshot", statusLine);
 
     // Warning threshold
     if (usageRatio > this.options.warningThreshold) {
-      console.warn(
+      const warningLine =
         `[MemoryMonitor] WARNING: ${Math.round(usageRatio * 100)}% heap used ` +
-          `(${heapUsed}MB / ${heapTotal}MB)`,
-      );
+        `(${heapUsed}MB / ${heapTotal}MB)`;
+      console.warn(warningLine);
+      ipcRenderer?.send("memory-snapshot", warningLine);
     }
 
     // Critical threshold
     if (usageRatio > this.options.criticalThreshold) {
-      console.error(
+      const criticalLine =
         `[MemoryMonitor] CRITICAL: ${Math.round(usageRatio * 100)}% heap used ` +
-          `(${heapUsed}MB / ${heapTotal}MB)` +
-          `— application may crash soon!`,
-      );
+        `(${heapUsed}MB / ${heapTotal}MB)` +
+        ` — application may crash soon!`;
+      console.error(criticalLine);
+      ipcRenderer?.send("memory-snapshot", criticalLine);
       this.onCritical?.(snapshot);
     }
 
