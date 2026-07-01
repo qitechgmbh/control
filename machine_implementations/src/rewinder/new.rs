@@ -143,10 +143,6 @@ impl MachineNew for Rewinder {
         source_spool_speed_controller.set_adaptive_deacceleration_urgency_multiplier(20.0);
 
         let mut takeup_spool_speed_controller = super::SpoolSpeedController::new();
-        takeup_spool_speed_controller.set_adaptive_radius_learning_rate(0.05);
-        takeup_spool_speed_controller.set_adaptive_max_speed_multiplier(2.0);
-        takeup_spool_speed_controller.set_adaptive_acceleration_factor(0.05);
-        takeup_spool_speed_controller.set_adaptive_deacceleration_urgency_multiplier(6.0);
         let _ = takeup_spool_speed_controller
             .set_minmax_min_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
         let _ = takeup_spool_speed_controller
