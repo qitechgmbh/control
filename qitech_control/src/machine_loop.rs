@@ -58,6 +58,7 @@ pub fn run_machines(
 ) -> Option<usize> {
     let machine_count = machines.len();
     let mut machine_errored_i = None;
+
     for i in 0..machine_count {
         let machine = machines
             .get_mut(i)
@@ -85,5 +86,16 @@ pub fn run_machines(
             },
         }
     }
-    machine_errored_i
+
+    for i in 0..machine_count {
+        let machine = machines
+            .get_mut(i)
+            .expect("Machine should NEVER be NONE here (run_machines)!!");
+        machine.react(reg);            
+    }
+
+    if machine_errored_i.is_some() {
+        return machine_errored_i;
+    }
+    None
 }
