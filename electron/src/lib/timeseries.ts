@@ -1,5 +1,3 @@
-import { produce } from "immer";
-
 /**
  * Interface for a single data point
  */
@@ -238,44 +236,49 @@ export const createTimeSeries = (
     },
   };
 
+  /**
+   * Insert a value into the series **by direct mutation**.
+   *
+   * Previously used immer's `produce()` which cloned the entire circular buffer
+   * on every insert (~2,000 calls/sec caused V8 GC pressure and OOM crashes).
+   *
+   * Now mutates the same TimeSeries object in place and returns it.
+   * This is safe because the `ThrottledStoreUpdater` at the store level
+   * creates the immutable boundary — React sees a new state reference
+   * at ~30 FPS, so immutability of the TimeSeries itself is not required.
+   */
   const insert = (series: TimeSeries, value: TimeSeriesValue): TimeSeries => {
-    return produce(series, (draft) => {
-      draft.current = value;
+    series.current = value;
 
-      // Insert into short buffer only if enough time has passed (downsampling)
-      const shortSampleInterval = draft.short.sampleInterval;
-      const timeSinceLastShort = value.timestamp - draft.short.lastTimestamp;
+    // Insert into short buffer only if enough time has passed (downsampling)
+    const timeSinceLastShort = value.timestamp - series.short.lastTimestamp;
+    if (timeSinceLastShort >= series.short.sampleInterval) {
+      const oldVal = series.short.values[series.short.index];
+      const isOverwriting = oldVal && oldVal.timestamp > 0;
 
-      if (timeSinceLastShort >= shortSampleInterval) {
-        const shortOldValue = draft.short.values[draft.short.index];
-        const isShortOverwriting = shortOldValue && shortOldValue.timestamp > 0;
-
-        draft.short.values[draft.short.index] = value;
-        draft.short.index = (draft.short.index + 1) % draft.short.size;
-        draft.short.lastTimestamp = value.timestamp;
-
-        if (!isShortOverwriting) {
-          draft.short.validCount++;
-        }
+      series.short.values[series.short.index] = value;
+      series.short.index = (series.short.index + 1) % series.short.size;
+      series.short.lastTimestamp = value.timestamp;
+      if (!isOverwriting) {
+        series.short.validCount++;
       }
+    }
 
-      // Insert into long buffer only if enough time has passed (downsampling)
-      const longSampleInterval = draft.long.sampleInterval;
-      const timeSinceLastLong = value.timestamp - draft.long.lastTimestamp;
+    // Insert into long buffer only if enough time has passed (downsampling)
+    const timeSinceLastLong = value.timestamp - series.long.lastTimestamp;
+    if (timeSinceLastLong >= series.long.sampleInterval) {
+      const oldVal = series.long.values[series.long.index];
+      const isOverwriting = oldVal && oldVal.timestamp > 0;
 
-      if (timeSinceLastLong >= longSampleInterval) {
-        const longOldValue = draft.long.values[draft.long.index];
-        const isLongOverwriting = longOldValue && longOldValue.timestamp > 0;
-
-        draft.long.values[draft.long.index] = value;
-        draft.long.index = (draft.long.index + 1) % draft.long.size;
-        draft.long.lastTimestamp = value.timestamp;
-
-        if (!isLongOverwriting) {
-          draft.long.validCount++;
-        }
+      series.long.values[series.long.index] = value;
+      series.long.index = (series.long.index + 1) % series.long.size;
+      series.long.lastTimestamp = value.timestamp;
+      if (!isOverwriting) {
+        series.long.validCount++;
       }
-    });
+    }
+
+    return series; // same reference — immutability handled by caller's ThrottledStoreUpdater
   };
 
   return { initialTimeSeries, insert };
