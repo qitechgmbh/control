@@ -178,6 +178,7 @@ pub enum RewindPhase {
     Precharge,
     CrawlStart,
     Rewind,
+    RecoverTakeupHigh,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

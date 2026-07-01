@@ -4,6 +4,10 @@ use qitech_lib::units::{
 };
 use std::time::Instant;
 
+const TAKEUP_HIGH_RECOVERY_OVERSHOOT_DEG: f64 = 8.0;
+const TAKEUP_HIGH_RECOVERY_TIMEOUT_S: f64 = 2.0;
+const TAKEUP_OUTSIDE_RANGE_REASON: &str = "takeup tension arm is outside rewind range";
+
 impl Rewinder {
     fn set_rewind_phase(&mut self, phase: RewindPhase, reason: &str) {
         if self.rewind_phase != phase {
@@ -83,7 +87,9 @@ impl Rewinder {
             return;
         }
 
-        if let Some(reason) = self.active_rewind_block_reason() {
+        if let Some(reason) = self.active_rewind_block_reason()
+            && reason != TAKEUP_OUTSIDE_RANGE_REASON
+        {
             let angles = self.read_tension_arm_angles_deg().ok();
             self.hard_stop_to_standby(
                 reason.to_owned(),
@@ -104,14 +110,44 @@ impl Rewinder {
             .max(0.0);
 
         let source_fault = self.rewind_control.source_arm.zone.is_fault();
-        let takeup_fault = self.rewind_control.takeup_arm.zone.is_fault();
-        if source_fault || takeup_fault {
+        let takeup_fault_low = matches!(
+            self.rewind_control.takeup_arm.zone,
+            super::rewind_control::ArmZone::HardLow
+        );
+        let takeup_fault_high = matches!(
+            self.rewind_control.takeup_arm.zone,
+            super::rewind_control::ArmZone::HardHigh
+        );
+        let takeup_high_recovery_max =
+            self.rewind_control.config.takeup_arm.hard_max_deg + TAKEUP_HIGH_RECOVERY_OVERSHOOT_DEG;
+        let takeup_high_recovery_timed_out =
+            matches!(self.rewind_phase, RewindPhase::RecoverTakeupHigh)
+                && self.rewind_control.phase_elapsed(now).as_secs_f64()
+                    > TAKEUP_HIGH_RECOVERY_TIMEOUT_S;
+        let takeup_high_recoverable = takeup_fault_high
+            && takeup_angle <= takeup_high_recovery_max
+            && !takeup_high_recovery_timed_out;
+
+        if source_fault || takeup_fault_low || (takeup_fault_high && !takeup_high_recoverable) {
             self.hard_stop_to_standby(
-                self.rewind_hard_stop_reason(source_fault, takeup_fault),
+                self.rewind_hard_stop_reason(source_fault, takeup_fault_low || takeup_fault_high),
                 Some(source_angle),
                 Some(takeup_angle),
             );
             return;
+        }
+
+        if takeup_high_recoverable {
+            if !matches!(self.rewind_phase, RewindPhase::RecoverTakeupHigh) {
+                self.set_rewind_phase(
+                    RewindPhase::RecoverTakeupHigh,
+                    "takeup arm high, recovering before hard stop",
+                );
+            }
+        } else if matches!(self.rewind_phase, RewindPhase::RecoverTakeupHigh)
+            && takeup_angle <= self.rewind_control.config.takeup_arm.warning_max_deg
+        {
+            self.set_rewind_phase(RewindPhase::Rewind, "takeup arm recovered");
         }
 
         match self.rewind_phase {
@@ -146,6 +182,7 @@ impl Rewinder {
                 }
             }
             RewindPhase::Rewind => {}
+            RewindPhase::RecoverTakeupHigh => {}
         }
 
         let ui_target_m_per_min = self
@@ -157,6 +194,7 @@ impl Rewinder {
             RewindPhase::CrawlStart => ui_target_m_per_min
                 .min(self.rewind_control.config.puller_ramp.crawl_speed_m_per_min),
             RewindPhase::Rewind => ui_target_m_per_min,
+            RewindPhase::RecoverTakeupHigh => 0.0,
         };
 
         self.rewind_control.update_puller_command(
