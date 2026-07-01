@@ -116,7 +116,14 @@ impl Rewinder {
         }
 
         let angular_velocity = if self.puller_speed_output_permitted() {
-            if matches!(self.mode, RewinderMode::Rewind | RewinderMode::Prepare) {
+            if matches!(self.mode, RewinderMode::Hold) {
+                let target_speed = self.puller_speed_controller.get_target_speed();
+                self.puller_speed_controller
+                    .set_target_speed(Velocity::new::<meter_per_minute>(0.0));
+                let angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
+                self.puller_speed_controller.set_target_speed(target_speed);
+                angular_velocity
+            } else if matches!(self.mode, RewinderMode::Rewind | RewinderMode::Prepare) {
                 let target_speed = self.puller_speed_controller.get_target_speed();
                 self.puller_speed_controller
                     .set_target_speed(self.rewind_control.puller_command_speed());
@@ -154,6 +161,20 @@ impl Rewinder {
         let angular_velocity = if self.takeup_spool_speed_output_permitted() {
             if matches!(self.mode, RewinderMode::Prepare) {
                 self.rewind_control.takeup_command_angular_velocity()
+            } else if matches!(self.mode, RewinderMode::Hold) {
+                let deaccel_urgency = self
+                    .takeup_spool_speed_controller
+                    .get_adaptive_deacceleration_urgency_multiplier();
+                self.takeup_spool_speed_controller
+                    .set_adaptive_deacceleration_urgency_multiplier(1.0);
+                let angular_velocity = self.takeup_spool_speed_controller.update_speed(
+                    t,
+                    &self.takeup_tension_arm,
+                    &self.puller_speed_controller,
+                );
+                self.takeup_spool_speed_controller
+                    .set_adaptive_deacceleration_urgency_multiplier(deaccel_urgency);
+                angular_velocity
             } else {
                 let target_speed = self.puller_speed_controller.get_target_speed();
                 if matches!(self.mode, RewinderMode::Rewind) {

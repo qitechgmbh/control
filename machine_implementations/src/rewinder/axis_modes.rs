@@ -125,9 +125,7 @@ impl Rewinder {
                     puller.set_enabled(PULLER_PORT, false);
                     self.puller_speed_controller.set_enabled(false);
                 }
-                PullerMode::Hold => {
-                    self.puller_speed_controller.set_enabled(false);
-                }
+                PullerMode::Hold => {}
                 PullerMode::Pull => {}
             },
         }
