@@ -25,13 +25,11 @@ export function useAnimationRefs(): AnimationRefs {
     timestamps: number[];
     values: number[];
   }>({ timestamps: [], values: [] });
-  const realPointsCountRef = useRef(0);
 
   return {
     animationFrame: animationFrameRef,
     animationState: animationStateRef,
     lastRenderedData: lastRenderedDataRef,
-    realPointsCount: realPointsCountRef,
   };
 }
 
@@ -50,8 +48,6 @@ export function stopAnimations(refs: AnimationRefs): void {
 export function buildUPlotData(
   timestamps: number[],
   values: number[],
-  realPointsCount: number | undefined,
-  realPointsCountRef: React.RefObject<number>,
   config: {
     lines?: Array<Partial<GraphLine> & { show?: boolean; value: number }>;
   },
@@ -67,10 +63,6 @@ export function buildUPlotData(
     allSeriesData.forEach((seriesValues) => {
       uData.push(seriesValues);
     });
-  }
-
-  if (realPointsCount !== undefined) {
-    realPointsCountRef.current = realPointsCount;
   }
 
   // Add config lines
@@ -170,7 +162,6 @@ export function animateNewPoint(
         timestamps: [...animatedTimestamps],
         values: [...animatedValues],
       };
-      refs.realPointsCount.current = animatedTimestamps.length;
       refs.animationState.current.isAnimating = false;
     }
 
@@ -180,8 +171,6 @@ export function animateNewPoint(
     const animatedUData = buildUPlotData(
       animatedTimestamps,
       animatedValues,
-      animatedTimestamps.length,
-      refs.realPointsCount,
       config,
       allSeriesData,
     );
