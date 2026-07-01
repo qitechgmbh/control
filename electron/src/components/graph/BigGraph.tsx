@@ -196,23 +196,12 @@ export function BigGraph({
 
       if (uplotRef.current!.series[seriesIndex]) {
         uplotRef.current!.series[seriesIndex].show = isVisible;
-
-        // Update points visibility
-        if (uplotRef.current!.series[seriesIndex].points) {
-          uplotRef.current!.series[seriesIndex].points!.show = (
-            _u,
-            _seriesIdx,
-            dataIdx,
-          ) => {
-            return isVisible && dataIdx < animationRefs.realPointsCount.current;
-          };
-        }
       }
     });
 
     // Trigger lightweight redraw
     uplotRef.current.redraw();
-  }, [visibleSeries, newData, animationRefs.realPointsCount]);
+  }, [visibleSeries, newData]);
 
   // SEPARATE EFFECT FOR VISIBILITY UPDATES ONLY
   useEffect(() => {

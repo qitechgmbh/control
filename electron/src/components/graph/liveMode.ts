@@ -102,8 +102,6 @@ export function useLiveMode({
       const liveData = buildUPlotData(
         liveTimestamps,
         liveValues,
-        undefined,
-        animationRefs.realPointsCount,
         config,
         additionalSeriesValues,
       );
@@ -278,8 +276,6 @@ export function useLiveMode({
           const uData = buildUPlotData(
             timestamps,
             values,
-            undefined,
-            animationRefs.realPointsCount,
             config,
             additionalSeriesValues,
           );
