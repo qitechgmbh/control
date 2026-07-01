@@ -4,7 +4,6 @@ use crate::{
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
 use api::{LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, StateEvent};
-use control_core::socketio::event::BuildEvent;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use smol::channel::{Receiver, Sender};
 use std::time::Instant;
