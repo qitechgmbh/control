@@ -32,7 +32,7 @@ import {
 import { getWinder2TraverseMax } from "./winder2Config";
 import { getWinder2AdaptivePullerSpeed } from "./winder2Config";
 
-export function Winder2ControlPage() {
+export function Winder2_7031ControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
   const traverseMax = getWinder2TraverseMax();
   const adaptivePullerEnabled = getWinder2AdaptivePullerSpeed();
