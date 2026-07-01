@@ -974,9 +974,8 @@ export const createGluetexNamespaceStore =
         // Placeholder — replaced by gluetexMessageHandler once throttledUpdater is available
         reconfigureLongBuffers: () => {},
 
-        // Actions
-        clearSafetyStop: () =>
-          set({ lastSafetyStop: null, lastSafetyStopTs: null }),
+        // Placeholder — replaced by gluetexMessageHandler once throttledUpdater is available
+        clearSafetyStop: () => {},
       };
     });
 
@@ -1031,6 +1030,22 @@ export function gluetexMessageHandler(
         };
       });
       // Flush immediately so the store (and React) sees the new values right away.
+      throttledUpdater.forceSync();
+    },
+  });
+
+  // Wire up clearSafetyStop through the throttledUpdater so the buffer
+  // stays in sync with the store. Direct set() calls on the store are
+  // overwritten by the next throttled sync, causing the safety stop dialog
+  // to reappear immediately after acknowledging.
+  store.setState({
+    clearSafetyStop: () => {
+      throttledUpdater.updateWith((state) => ({
+        ...state,
+        lastSafetyStop: null,
+        lastSafetyStopTs: null,
+      }));
+      // Flush immediately so the store (and React) sees the cleared state right away.
       throttledUpdater.forceSync();
     },
   });

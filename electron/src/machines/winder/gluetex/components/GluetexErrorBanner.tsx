@@ -18,7 +18,8 @@ function decodeHeaterZones(zoneMask: number): number[] {
 }
 
 export function GluetexErrorBanner() {
-  const { lastSafetyStop, state, clearSafetyStop } = useGluetex();
+  const { lastSafetyStop, state, clearSafetyStop, resetSleepTimer } =
+    useGluetex();
 
   // Deduplicate by reason content, not timestamp. The backend emits SafetyStop
   // every control loop iteration while the condition is active, so timestamp-based
@@ -37,6 +38,7 @@ export function GluetexErrorBanner() {
   }, [currentReasonKey, showDialog]);
 
   const handleAcknowledge = () => {
+    resetSleepTimer();
     clearSafetyStop();
     setShowDialog(false);
   };

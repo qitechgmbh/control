@@ -1,3 +1,8 @@
+# Gluetex fix Sleep Timer acknowledgement
+_01.07.2026_
+
+- Fixed an issue, where the User was not able to acknowledge the sleep timer safety stop.
+
 # Gluetex bugfixes
 _25.06.2026_
 
