@@ -10,13 +10,14 @@ use qitech_lib::ethercat_hal::{
     DcConfiguration, MasterConfiguration, RtOptimizationConfig, init_ethercat,
 };
 use qitech_lib::{
-    ethercat_hal::devices::device_from_subdevice_identity_rc, serial::get_available_ports,
+    ethercat_hal::devices::device_from_subdevice_identity_rc,
 };
 use qitech_lib::{
     ethercat_hal::interface_discovery::{LinkType, list_ethernet_interfaces, test_interface},
     ethercat_hal::{BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer},
     machines::MachineIdentificationUnique,
 };
+use tokio_serial::available_ports;
 #[cfg(not(feature = "mock"))]
 use std::{sync::Arc, time::Duration};
 
@@ -145,7 +146,7 @@ fn add_laser(
         None => (),
     }
     // Port is not used right now, so check if port exists
-    let ports = get_available_ports()?;
+    let ports = available_ports()?;
     for port in ports {
         if port.port_name == "/dev/ttyUSB0" || port.port_name == "/dev/ttyUSB1" {
             main_state.generate_machine_hardware_from_serial(&port.port_name)?;
@@ -333,6 +334,8 @@ pub fn remove_machines(
             main_state.hardware.remove(&ident);
             guard.remove(pos);
             drop(guard);
+            // If a machine has errored and is dropped remove the entry from the hashmap aswell
+            main_state.machine_data_reg.storage.remove(&ident);
             send_machines_event(shared_state.clone());
         }
         None => (),
