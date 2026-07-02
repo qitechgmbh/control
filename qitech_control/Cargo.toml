@@ -17,6 +17,7 @@ serde_json = "1.0.149"
 socketioxide = { version = "0.15.2", features = ["msgpack"] }
 erased-serde = "0.4.10"
 axum = { version = "0.8.8", features = ["macros"] }
+tokio-serial = "5.0"
 
 [features]
 default = []
