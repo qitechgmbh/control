@@ -12,6 +12,7 @@ import {
   SpoolRegulationMode,
   StateEvent,
   useWinder2Namespace,
+  useWinder2NamespaceField,
   modeSchema,
   Mode,
   spoolRegulationModeSchema,
@@ -26,11 +27,13 @@ import { useEffect, useMemo } from "react";
 import { produce } from "immer";
 import { useMachines } from "@/client/useMachines";
 
-export function useWinder2() {
+// Shared machine-identification resolution used by both useWinder2() and
+// useWinder2State() below.
+function useWinder2MachineIdentification(): MachineIdentificationUnique {
   const { serial: serialString } = winder2SerialRoute.useParams();
 
   // Memoize the machine identification to keep it stable between renders
-  const machineIdentification: MachineIdentificationUnique = useMemo(() => {
+  return useMemo(() => {
     const serial = parseInt(serialString);
 
     if (isNaN(serial)) {
@@ -53,20 +56,21 @@ export function useWinder2() {
       serial,
     };
   }, [serialString]);
+}
 
+/**
+ * Core state/mutation logic, shared between useWinder2() (broad, includes
+ * every live-value TimeSeries — re-renders on every ~30Hz tick) and
+ * useWinder2State() (narrow — only state/settings, doesn't re-render on live
+ * ticks). Takes state/defaultState as already-resolved values so callers can
+ * choose how broadly or narrowly they subscribe to get them.
+ */
+function useWinder2Core(
+  machineIdentification: MachineIdentificationUnique,
+  state: StateEvent | null,
+  defaultState: StateEvent | null,
+) {
   const machine_identification_unique = machineIdentification;
-
-  // Get consolidated state and live values from namespace
-  const {
-    state,
-    defaultState,
-    traversePosition,
-    pullerSpeed,
-    targetPullerSpeed,
-    spoolRpm,
-    tensionArmAngle,
-    spoolProgress,
-  } = useWinder2Namespace(machineIdentification);
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -663,6 +667,8 @@ export function useWinder2() {
   }, [filteredMachines, state]);
 
   return {
+    machineIdentification,
+
     // Consolidated state
     state: stateOptimistic.value?.data,
 
@@ -671,14 +677,6 @@ export function useWinder2() {
 
     // Default state for initial values
     defaultState: defaultState?.data,
-
-    // Individual live values (TimeSeries)
-    traversePosition,
-    pullerSpeed,
-    targetPullerSpeed,
-    spoolRpm,
-    tensionArmAngle,
-    spoolProgress,
 
     // Loading states
     isLoading,
@@ -719,4 +717,61 @@ export function useWinder2() {
     setPullerAdaptiveAcceptedDifference,
     setPullerAdaptiveReferenceMachine,
   };
+}
+
+/**
+ * Broad hook: state/settings + every live-value TimeSeries. Re-renders on
+ * every ~30Hz live tick, since all fields are bundled into one combined
+ * store update regardless of which ones are actually read. Use this for
+ * pages that genuinely need the live values inline (e.g. graph pages driving
+ * BigGraph, which reads updated TimeSeries via props on every tick).
+ */
+export function useWinder2() {
+  const machineIdentification = useWinder2MachineIdentification();
+
+  const {
+    state,
+    defaultState,
+    traversePosition,
+    pullerSpeed,
+    targetPullerSpeed,
+    spoolRpm,
+    tensionArmAngle,
+    spoolProgress,
+  } = useWinder2Namespace(machineIdentification);
+
+  const core = useWinder2Core(machineIdentification, state, defaultState);
+
+  return {
+    ...core,
+    // Individual live values (TimeSeries)
+    traversePosition,
+    pullerSpeed,
+    targetPullerSpeed,
+    spoolRpm,
+    tensionArmAngle,
+    spoolProgress,
+  };
+}
+
+/**
+ * Narrow hook: state/settings only, no live-value TimeSeries fields. Only
+ * re-renders on StateEvent-driven changes (mode, settings), not on every
+ * ~30Hz LiveValuesEvent tick — use this from pages whose own layout doesn't
+ * need live values inline, pairing it with leaf components that call
+ * useWinder2NamespaceField directly for whichever single field they display.
+ */
+export function useWinder2State() {
+  const machineIdentification = useWinder2MachineIdentification();
+
+  const state = useWinder2NamespaceField(
+    machineIdentification,
+    (s) => s.state,
+  );
+  const defaultState = useWinder2NamespaceField(
+    machineIdentification,
+    (s) => s.defaultState,
+  );
+
+  return useWinder2Core(machineIdentification, state, defaultState);
 }

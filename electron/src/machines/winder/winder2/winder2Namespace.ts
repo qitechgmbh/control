@@ -8,6 +8,7 @@ import {
   handleUnhandledEventError,
   NamespaceId,
   createNamespaceHookImplementation,
+  createNamespaceSelectorHookImplementation,
   ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
@@ -379,6 +380,33 @@ const useWinder2NamespaceImplementation =
     createStore: createWinder2NamespaceStore,
     createEventHandler: winder2MessageHandler,
   });
+
+/**
+ * Selector variant: only re-renders the caller when the selected slice's
+ * reference changes, instead of on every namespace update. Use this from
+ * leaf components (e.g. a single live-value display or graph) so that a page
+ * showing many fields doesn't re-render entirely on every ~30Hz live tick.
+ */
+const useWinder2NamespaceFieldImplementation =
+  createNamespaceSelectorHookImplementation<Winder2NamespaceStore>({
+    createStore: createWinder2NamespaceStore,
+    createEventHandler: winder2MessageHandler,
+  });
+
+export function useWinder2NamespaceField<T>(
+  machine_identification_unique: MachineIdentificationUnique,
+  selector: (state: Winder2NamespaceStore) => T,
+): T {
+  const namespaceId: NamespaceId = useMemo(
+    () => ({
+      type: "machine",
+      machine_identification_unique,
+    }),
+    [machine_identification_unique],
+  );
+
+  return useWinder2NamespaceFieldImplementation(namespaceId, selector);
+}
 
 /**
  * Hook for a machine-specific Winder2 namespace

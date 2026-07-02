@@ -563,3 +563,64 @@ export function createNamespaceHookImplementation<S>({
     return store;
   };
 }
+
+/**
+ * Like createNamespaceHookImplementation, but only re-renders the caller when
+ * the *selected* slice's reference actually changes, instead of on every
+ * namespace update. Use this from leaf components that only need one field
+ * (e.g. a single live-value TimeSeries) — subscribing broadly from a page-level
+ * component causes every LiveValuesEvent tick to re-render the whole page,
+ * since every field is bundled into one combined store update regardless of
+ * which fields the caller actually reads.
+ */
+export function createNamespaceSelectorHookImplementation<S>({
+  createStore,
+  createEventHandler,
+}: NamespaceImplementationConfig<S>): <T>(
+  namespaceId: NamespaceId,
+  selector: (state: S) => T,
+) => T {
+  return function useNamespaceSelector<T>(
+    namespaceId: NamespaceId,
+    selector: (state: S) => T,
+  ): T {
+    const {
+      incrementNamespace,
+      decrementNamespace,
+      hasNamespace,
+      initNamespace,
+      getNamespace,
+    } = useSocketioStore();
+
+    // namespace initialization/incrementation/decrementation
+    useEffect(() => {
+      if (!hasNamespace(namespaceId)) {
+        initNamespace(namespaceId, createStore, createEventHandler);
+      } else {
+        incrementNamespace(namespaceId);
+      }
+      return () => {
+        decrementNamespace(namespaceId);
+      };
+    }, [namespaceId]);
+
+    const initialState = useMemo(() => createStore().getState(), [createStore]);
+
+    return useSyncExternalStore(
+      (callback) => {
+        if (hasNamespace(namespaceId)) {
+          return (
+            getNamespace(namespaceId)?.store.subscribe(callback) || (() => {})
+          );
+        }
+        return () => {};
+      },
+      () => {
+        const state = hasNamespace(namespaceId)
+          ? ((getNamespace(namespaceId)?.store.getState() as S) ?? initialState)
+          : initialState;
+        return selector(state);
+      },
+    );
+  };
+}
