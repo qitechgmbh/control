@@ -173,6 +173,10 @@ export interface CreateChartParams {
   /** Set to true immediately before any programmatic setVisibleRange call, so the
    * range-change subscription can distinguish it from a user pan/zoom gesture. */
   suppressRangeEventRef: React.RefObject<boolean>;
+  /** True only while a real pointer/wheel gesture is in progress on the chart.
+   * The range-change subscription requires this before treating a range change
+   * as user-driven, since resizes and other internal events can also fire it. */
+  isUserInteractingRef: React.RefObject<boolean>;
   graphId: string;
   syncGraph?: BigGraphProps["syncGraph"];
   getHistoricalEndTimestamp: () => number;

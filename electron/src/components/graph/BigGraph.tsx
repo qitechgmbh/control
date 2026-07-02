@@ -147,6 +147,7 @@ export function BigGraph({
     x: { min: number; max: number };
   } | null>(null);
   const suppressRangeEventRef = useRef(false);
+  const isUserInteractingRef = useRef(false);
   const lastProcessedCountRef = useRef(0);
 
   const colors = {
@@ -342,6 +343,7 @@ export function BigGraph({
     startTimeRef,
     manualScaleRef,
     suppressRangeEventRef,
+    isUserInteractingRef,
     lastProcessedCountRef,
     chartCreatedRef,
     newData,

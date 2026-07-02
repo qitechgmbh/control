@@ -29,6 +29,7 @@ interface UseBigGraphEffectsProps {
   startTimeRef: RefObject<number | null>;
   manualScaleRef: RefObject<{ x: { min: number; max: number } } | null>;
   suppressRangeEventRef: RefObject<boolean>;
+  isUserInteractingRef: RefObject<boolean>;
   lastProcessedCountRef: RefObject<number>;
   chartCreatedRef: RefObject<boolean>;
 
@@ -85,6 +86,7 @@ export function useBigGraphEffects({
   startTimeRef,
   manualScaleRef,
   suppressRangeEventRef,
+  isUserInteractingRef,
   lastProcessedCountRef,
   chartCreatedRef,
 
@@ -256,7 +258,7 @@ export function useBigGraphEffects({
       return;
     }
 
-    createChart({
+    const cleanupGestureListeners = createChart({
       containerRef,
       chartRef,
       chartRefOut,
@@ -271,6 +273,7 @@ export function useBigGraphEffects({
       startTimeRef,
       manualScaleRef,
       suppressRangeEventRef,
+      isUserInteractingRef,
       graphId,
       syncGraph,
       getHistoricalEndTimestamp: historicalMode.getHistoricalEndTimestamp,
@@ -290,6 +293,7 @@ export function useBigGraphEffects({
     }
 
     return () => {
+      cleanupGestureListeners?.();
       chartRef.current?.remove();
       chartRef.current = null;
       if (chartRefOut) chartRefOut.current = null;

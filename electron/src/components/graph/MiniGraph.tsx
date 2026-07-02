@@ -22,6 +22,10 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
   const seriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const lastUpdateTimestamp = useRef<number>(0);
   const isInitialized = useRef(false);
+  const pendingPoint = useRef<{ time: ReturnType<typeof msToTime>; value: number } | null>(
+    null,
+  );
+  const rafId = useRef<number | null>(null);
 
   // Initialize chart once
   useEffect(() => {
@@ -71,6 +75,11 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
     isInitialized.current = true;
 
     return () => {
+      if (rafId.current !== null) {
+        cancelAnimationFrame(rafId.current);
+        rafId.current = null;
+      }
+      pendingPoint.current = null;
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
@@ -80,16 +89,28 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
     // timeWindow (a stable config value) should ever cause re-initialization.
   }, [width, newData?.short?.timeWindow, renderValue]);
 
-  // Push the latest sample as a single incremental point
+  // Stash the latest sample and flush at most once per animation frame —
+  // dashboards mount many MiniGraph instances at once (e.g. 11 on a single
+  // page), each ticking at ~30Hz; calling update() unthrottled per instance
+  // reintroduces the redraw pressure the old uPlot version's RAF-throttle
+  // existed to avoid (update() does real bookkeeping work on every call,
+  // not just on the frame that actually repaints).
   useEffect(() => {
     const cur = newData?.current;
     if (!seriesRef.current || !cur) return;
     if (cur.timestamp <= lastUpdateTimestamp.current) return;
 
     lastUpdateTimestamp.current = cur.timestamp;
-    seriesRef.current.update({
-      time: msToTime(cur.timestamp),
-      value: cur.value,
+    pendingPoint.current = { time: msToTime(cur.timestamp), value: cur.value };
+
+    if (rafId.current !== null) return;
+    rafId.current = requestAnimationFrame(() => {
+      rafId.current = null;
+      const point = pendingPoint.current;
+      pendingPoint.current = null;
+      if (point) {
+        seriesRef.current?.update(point);
+      }
     });
   }, [newData?.current?.timestamp, newData?.current?.value]);
 

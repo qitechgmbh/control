@@ -110,6 +110,7 @@ export function createChart({
   startTimeRef,
   manualScaleRef,
   suppressRangeEventRef,
+  isUserInteractingRef,
   graphId,
   syncGraph,
   getHistoricalEndTimestamp,
@@ -119,7 +120,7 @@ export function createChart({
   setCursorValues,
   visibleSeries,
   showFromTimestamp,
-}: CreateChartParams): void {
+}: CreateChartParams): (() => void) | undefined {
   if (!containerRef.current) return;
 
   const allOriginalSeries = getAllTimeSeries(newData);
@@ -188,6 +189,11 @@ export function createChart({
       timeVisible: true,
       secondsVisible: true,
       tickMarkFormatter: formatTickMark,
+      // autoSize's ResizeObserver otherwise recomputes the visible range on
+      // every container resize (e.g. the header badge nudging sibling flex
+      // widths on live ticks), which the range-change subscription below
+      // can't tell apart from a real pan/zoom without this.
+      lockVisibleTimeRangeOnResize: true,
     },
     handleScroll: {
       mouseWheel: true,
@@ -209,6 +215,35 @@ export function createChart({
   if (chartRefOut) {
     chartRefOut.current = chart;
   }
+
+  // Positive gesture signal: the range-change subscription below requires
+  // this to be true before treating a range change as user-driven, so that
+  // resize-triggered (or other internal) range recomputes are ignored by
+  // default rather than misread as a pan/zoom.
+  const gestureContainer = containerRef.current;
+  let wheelIdleTimeout: ReturnType<typeof setTimeout> | null = null;
+  const handleGestureStart = () => {
+    isUserInteractingRef.current = true;
+  };
+  const handleGestureEnd = () => {
+    isUserInteractingRef.current = false;
+  };
+  const handleWheel = () => {
+    isUserInteractingRef.current = true;
+    if (wheelIdleTimeout) clearTimeout(wheelIdleTimeout);
+    wheelIdleTimeout = setTimeout(() => {
+      isUserInteractingRef.current = false;
+      wheelIdleTimeout = null;
+    }, 200);
+  };
+  gestureContainer.addEventListener("mousedown", handleGestureStart);
+  gestureContainer.addEventListener("touchstart", handleGestureStart, {
+    passive: true,
+  });
+  gestureContainer.addEventListener("wheel", handleWheel, { passive: true });
+  window.addEventListener("mouseup", handleGestureEnd);
+  window.addEventListener("touchend", handleGestureEnd);
+  window.addEventListener("touchcancel", handleGestureEnd);
 
   const defaultColors = DEFAULT_SERIES_COLORS;
   const dataSeries: ISeriesApi<"Line">[] = allOriginalSeries.map(
@@ -320,14 +355,19 @@ export function createChart({
     }
   });
 
-  // Fires on every visible-range change: user pan/zoom AND our own
-  // programmatic setVisibleRange calls. Suppress the latter via the ref flag
-  // set immediately before each programmatic call (see setVisibleRangeSilently).
+  // Fires on every visible-range change: user pan/zoom, our own programmatic
+  // setVisibleRange calls, AND internal events (e.g. autoSize's ResizeObserver
+  // recomputing the range on a container resize). Require a positive gesture
+  // signal (isUserInteractingRef) before treating this as user-driven — fail
+  // closed (ignore) rather than fail open (assume every non-suppressed event
+  // is a gesture), which previously caused resizes to spuriously drop the
+  // graph into manual/historical mode.
   chart.timeScale().subscribeVisibleTimeRangeChange((range) => {
     if (suppressRangeEventRef.current) {
       suppressRangeEventRef.current = false;
       return;
     }
+    if (!isUserInteractingRef.current) return;
     if (!range) return;
 
     const newMin = timeToMs(range.from);
@@ -343,6 +383,16 @@ export function createChart({
     syncGraph?.onZoomChange?.(graphId, { min: newMin, max: newMax });
     syncGraph?.onViewModeChange?.(graphId, "manual", false);
   });
+
+  return () => {
+    gestureContainer.removeEventListener("mousedown", handleGestureStart);
+    gestureContainer.removeEventListener("touchstart", handleGestureStart);
+    gestureContainer.removeEventListener("wheel", handleWheel);
+    window.removeEventListener("mouseup", handleGestureEnd);
+    window.removeEventListener("touchend", handleGestureEnd);
+    window.removeEventListener("touchcancel", handleGestureEnd);
+    if (wheelIdleTimeout) clearTimeout(wheelIdleTimeout);
+  };
 }
 
 // Helper function to get all valid TimeSeries from DataSeries
