@@ -16,6 +16,13 @@ type MiniGraphProps = {
 
 const HEIGHT = 64;
 
+// Sparklines this small don't need to redraw faster than this to look smooth,
+// and dashboards mount many MiniGraph instances at once (e.g. 11 on a single
+// page) — capping well below display refresh rate meaningfully cuts the
+// aggregate redraw work across all of them.
+const UPDATE_FPS_CAP = 20;
+const MIN_UPDATE_INTERVAL_MS = 1000 / UPDATE_FPS_CAP;
+
 export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
   const divRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -25,7 +32,8 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
   const pendingPoint = useRef<{ time: ReturnType<typeof msToTime>; value: number } | null>(
     null,
   );
-  const rafId = useRef<number | null>(null);
+  const flushTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFlushTime = useRef(0);
 
   // Initialize chart once
   useEffect(() => {
@@ -75,9 +83,9 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
     isInitialized.current = true;
 
     return () => {
-      if (rafId.current !== null) {
-        cancelAnimationFrame(rafId.current);
-        rafId.current = null;
+      if (flushTimeoutId.current !== null) {
+        clearTimeout(flushTimeoutId.current);
+        flushTimeoutId.current = null;
       }
       pendingPoint.current = null;
       chart.remove();
@@ -89,12 +97,13 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
     // timeWindow (a stable config value) should ever cause re-initialization.
   }, [width, newData?.short?.timeWindow, renderValue]);
 
-  // Stash the latest sample and flush at most once per animation frame —
+  // Stash the latest sample and flush at most once per UPDATE_FPS_CAP window —
   // dashboards mount many MiniGraph instances at once (e.g. 11 on a single
   // page), each ticking at ~30Hz; calling update() unthrottled per instance
   // reintroduces the redraw pressure the old uPlot version's RAF-throttle
-  // existed to avoid (update() does real bookkeeping work on every call,
-  // not just on the frame that actually repaints).
+  // existed to avoid (update() does real bookkeeping work on every call, not
+  // just on the frame that actually repaints). A fixed-interval throttle caps
+  // the redraw rate below display refresh rate, which RAF alone doesn't.
   useEffect(() => {
     const cur = newData?.current;
     if (!seriesRef.current || !cur) return;
@@ -103,15 +112,20 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
     lastUpdateTimestamp.current = cur.timestamp;
     pendingPoint.current = { time: msToTime(cur.timestamp), value: cur.value };
 
-    if (rafId.current !== null) return;
-    rafId.current = requestAnimationFrame(() => {
-      rafId.current = null;
+    if (flushTimeoutId.current !== null) return;
+
+    const elapsed = performance.now() - lastFlushTime.current;
+    const delay = Math.max(MIN_UPDATE_INTERVAL_MS - elapsed, 0);
+
+    flushTimeoutId.current = setTimeout(() => {
+      flushTimeoutId.current = null;
+      lastFlushTime.current = performance.now();
       const point = pendingPoint.current;
       pendingPoint.current = null;
       if (point) {
         seriesRef.current?.update(point);
       }
-    });
+    }, delay);
   }, [newData?.current?.timestamp, newData?.current?.value]);
 
   // Resize on width change
