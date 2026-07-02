@@ -27,6 +27,11 @@ export function startMemoryMonitor(): () => void {
     if (!jsHeapSizeLimit) return;
     const ratio = usedJSHeapSize / jsHeapSizeLimit;
 
+    console.log(
+      `[memoryMonitor] heap usage ${(ratio * 100).toFixed(1)}% of limit ` +
+        `(${(usedJSHeapSize / 1048576).toFixed(0)}MB / ${(jsHeapSizeLimit / 1048576).toFixed(0)}MB)`,
+    );
+
     if (ratio >= WARN_RATIO) {
       console.warn(
         `[memoryMonitor] heap usage ${(ratio * 100).toFixed(1)}% of limit ` +
