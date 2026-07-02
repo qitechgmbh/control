@@ -405,10 +405,10 @@ fn main_logic() {
         || std::env::args().any(|a| a == "preop");
     let mut shared_state = SharedAppState::new();
     let mut main_state = MainState::new();
-    //let interface = find_ethercat_interface(&shared_state);
-    //let eth_control = optimized_ethercat_init(&interface);
-    //shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
-    let mut eth_control : Option<EtherCATControl<TripleBufConsumer,Arc<Mailbox>>> = None;
+    let interface = find_ethercat_interface(&shared_state);
+    let eth_control = optimized_ethercat_init(&interface);
+    shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
+    let mut eth_control : Option<EtherCATControl<TripleBufConsumer,Arc<Mailbox>>> = Some(eth_control);
 
     let state = Arc::new(shared_state);
     match &eth_control {
