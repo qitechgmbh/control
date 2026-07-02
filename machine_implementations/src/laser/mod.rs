@@ -145,10 +145,7 @@ impl LaserMachine {
         self.emit_state();
     }
 
-    /*
-    ///
     /// Roundness = min(x, y) / max(x, y)
-    ///
     fn calculate_roundness(&mut self) -> Option<f64> {
         match (self.x_diameter, self.y_diameter) {
             (Some(x), Some(y)) => {
@@ -166,7 +163,7 @@ impl LaserMachine {
             }
             _ => None,
         }
-    }*/
+    }
 
     ///
     /// Calculates if the current diameter is inside of the tolerance
@@ -231,6 +228,7 @@ impl LaserMachine {
             None => (),
         };
         drop(laser);
+        self.roundness = self.calculate_roundness();
 
         if self.in_tolerance != self.calculate_in_tolerance() {
             self.did_change_state = true;
