@@ -9,13 +9,8 @@ import { toastError, toastZodError } from "@/components/Toast";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { FPS_30 } from "@/lib/constants";
 import { mainNamespaceStore } from "./mainNamespace";
-import { memoryMonitor } from "./memoryMonitor";
 import { router } from "@/routes/router";
 import { trimTimeSeriesFields } from "@/lib/timeseries";
-
-// Start periodic heap monitoring at 30s intervals.
-// Logs snapshots and warns at 60% / 85% heap usage thresholds.
-memoryMonitor.start();
 
 /**
  * Simple buffer-based store updater to limit React re-renders to ~30 FPS
