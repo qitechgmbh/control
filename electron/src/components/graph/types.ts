@@ -1,8 +1,7 @@
-import type uPlot from "uplot";
+import type { IChartApi, ISeriesApi } from "lightweight-charts";
 import { IconName } from "@/components/Icon";
 import { Unit } from "@/control/units";
 import { TimeSeries } from "@/lib/timeseries";
-import { RefObject } from "react";
 
 export type SwitchOrigin = "button" | "gesture";
 
@@ -94,8 +93,10 @@ export type BigGraphProps = {
   config: GraphConfig;
   graphId: string;
   syncGraph?: PropGraphSync;
-  /** Optional ref to receive the uPlot instance when chart is created (e.g. for marker positioning) */
-  uplotRefOut?: React.MutableRefObject<uPlot | null>;
+  /** Optional ref to receive the lightweight-charts instance when the chart is created (e.g. for marker/target-line overlay positioning) */
+  chartRefOut?: React.MutableRefObject<IChartApi | null>;
+  /** Optional ref to receive the chart's mount element (overlays position themselves against it) */
+  containerRefOut?: React.MutableRefObject<HTMLDivElement | null>;
 };
 
 export type TimeWindowOption = {
@@ -131,11 +132,28 @@ export interface HistoricalModeHandlers {
   switchToLiveMode: () => void;
 }
 
+/** A config line that is actually rendered as its own (possibly invisible) LineSeries. */
+export interface LineSeriesRef {
+  api: ISeriesApi<"Line">;
+  line: GraphLine;
+  /** True for time-varying dashed target lines, drawn via the overlay instead of natively. */
+  isOverlayDriven: boolean;
+}
+
+/** Chart-instance-scoped series handles, kept alongside the chart ref. */
+export interface SeriesRefs {
+  /** Index-aligned with getAllTimeSeries(newData). */
+  dataSeries: ISeriesApi<"Line">[];
+  /** One entry per visible config.lines entry, in order. */
+  lineSeries: LineSeriesRef[];
+}
+
 export interface CreateChartParams {
   containerRef: React.RefObject<HTMLDivElement | null>;
-  uplotRef: React.RefObject<uPlot | null>;
-  /** Optional ref to expose uPlot instance (e.g. for marker overlay positioning) */
-  uplotRefOut?: React.MutableRefObject<uPlot | null>;
+  chartRef: React.RefObject<IChartApi | null>;
+  /** Optional ref to expose the chart instance (e.g. for marker/target-line overlay positioning) */
+  chartRefOut?: React.MutableRefObject<IChartApi | null>;
+  seriesRefs: React.RefObject<SeriesRefs>;
   newData: BigGraphProps["newData"];
   config: BigGraphProps["config"];
   colors: {
@@ -151,14 +169,13 @@ export interface CreateChartParams {
   startTimeRef: React.RefObject<number | null>;
   manualScaleRef: React.RefObject<{
     x: { min: number; max: number };
-    y: { min: number; max: number };
   } | null>;
-  animationRefs: AnimationRefs;
-  handlerRefs: HandlerRefs;
+  /** Set to true immediately before any programmatic setVisibleRange call, so the
+   * range-change subscription can distinguish it from a user pan/zoom gesture. */
+  suppressRangeEventRef: React.RefObject<boolean>;
   graphId: string;
   syncGraph?: BigGraphProps["syncGraph"];
   getHistoricalEndTimestamp: () => number;
-  updateYAxisScale: (xMin?: number, xMax?: number) => void;
   setViewMode: React.Dispatch<
     React.SetStateAction<"default" | "all" | "manual">
   >;
@@ -167,39 +184,4 @@ export interface CreateChartParams {
   setCursorValues: React.Dispatch<React.SetStateAction<(number | null)[]>>;
   visibleSeries: boolean[];
   showFromTimestamp?: number | null;
-}
-
-export interface AnimationState {
-  isAnimating: boolean;
-  startTime: number;
-  fromValue: number;
-  toValue: number;
-  fromTimestamp: number;
-  toTimestamp: number;
-  targetIndex: number;
-}
-
-export interface AnimationRefs {
-  animationFrame: React.RefObject<number | null>;
-  animationState: React.RefObject<AnimationState>;
-  lastRenderedData: React.RefObject<{
-    timestamps: number[];
-    values: number[];
-  }>;
-  realPointsCount: React.RefObject<number>;
-}
-
-export interface HandlerRefs {
-  isUserZoomingRef: RefObject<boolean>;
-  isDraggingRef: RefObject<boolean>;
-  lastDragXRef: RefObject<number | null>;
-  isPinchingRef: RefObject<boolean>;
-  lastPinchDistanceRef: RefObject<number | null>;
-  pinchCenterRef: RefObject<{ x: number; y: number } | null>;
-  touchStartRef: RefObject<{
-    x: number;
-    y: number;
-    time: number;
-  } | null>;
-  touchDirectionRef: RefObject<"horizontal" | "vertical" | "unknown">;
 }

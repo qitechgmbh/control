@@ -11,8 +11,6 @@ export const DEFAULT_TIME_WINDOW_OPTIONS: TimeWindowOption[] = [
   { value: "all" as const, label: "Show All" },
 ];
 
-export const POINT_ANIMATION_DURATION = 1000;
-
 export const DEFAULT_COLORS = {
   primary: "#3b82f6",
   grid: "#e2e8f0",

@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useMemo, useState } from "react";
-import uPlot from "uplot";
+import type { IChartApi } from "lightweight-charts";
 import { TimeSeries } from "@/lib/timeseries";
+import { msToTime } from "../dataHelpers";
 import type { Marker } from "@/stores/markerStore";
 
 const MARKER_BOTTOM_EXTENSION_PX = 94;
@@ -34,19 +35,26 @@ type PlotBounds = {
   bottom: number;
 };
 
-function getPlotBounds(plot: uPlot): PlotBounds {
-  const dpr = window.devicePixelRatio || 1;
-  const left = plot.bbox.left / dpr;
-  const top = plot.bbox.top / dpr;
-  const width = plot.bbox.width / dpr;
-  const height = plot.bbox.height / dpr;
+function getPlotBounds(
+  chart: IChartApi,
+  container: HTMLDivElement,
+): PlotBounds {
+  const rect = container.getBoundingClientRect();
+  let priceScaleWidth = 0;
+  let timeScaleHeight = 0;
+  try {
+    priceScaleWidth = chart.priceScale("right").width();
+    timeScaleHeight = chart.timeScale().height();
+  } catch {
+    // Fall back to no inset if the API shape differs across versions.
+  }
 
   return {
-    left,
-    top,
-    width,
-    height,
-    bottom: top + height,
+    left: 0,
+    top: 0,
+    width: Math.max(rect.width - priceScaleWidth, 0),
+    height: Math.max(rect.height - timeScaleHeight, 0),
+    bottom: Math.max(rect.height - timeScaleHeight, 0),
   };
 }
 
@@ -54,8 +62,7 @@ function getMarkerBottom(bounds: PlotBounds): number {
   return bounds.bottom + MARKER_BOTTOM_EXTENSION_PX;
 }
 
-function buildClipRect(plot: uPlot): ClipRect {
-  const bounds = getPlotBounds(plot);
+function buildClipRect(bounds: PlotBounds): ClipRect {
   const clipBottom = getMarkerBottom(bounds);
 
   return {
@@ -100,33 +107,35 @@ function areMarkerPositionsEqual(
 }
 
 function buildMarkerPositions(
-  plot: uPlot,
+  chart: IChartApi,
+  container: HTMLDivElement,
   markers: Marker[],
-  _currentTimeSeries: TimeSeries | null,
 ): MarkerPosition[] {
-  const bounds = getPlotBounds(plot);
+  const bounds = getPlotBounds(chart, container);
   const markerBottom = getMarkerBottom(bounds);
   const lineTop = bounds.top + MARKER_TOP_OFFSET_PX;
   const labelY = lineTop - MARKER_LABEL_OFFSET_PX;
-  const xMin = plot.scales.x?.min ?? -Infinity;
-  const xMax = plot.scales.x?.max ?? Infinity;
+  const visibleRange = chart.timeScale().getVisibleRange();
+  const xMin = visibleRange ? (visibleRange.from as number) * 1000 : -Infinity;
+  const xMax = visibleRange ? (visibleRange.to as number) * 1000 : Infinity;
 
   return markers
     .filter((marker) => marker.timestamp >= xMin && marker.timestamp <= xMax)
     .map((marker) => {
       const markerCenterY = lineTop + (markerBottom - lineTop) / 2;
+      const rawX = chart
+        .timeScale()
+        .timeToCoordinate(msToTime(marker.timestamp));
+      const x = Math.max(
+        bounds.left,
+        Math.min(bounds.left + bounds.width, rawX ?? bounds.left),
+      );
 
       return {
         key: `${marker.timestamp}-${marker.name}`,
         name: marker.name,
         color: marker.color || "rgba(0, 0, 0, 0.7)",
-        x: Math.max(
-          bounds.left,
-          Math.min(
-            bounds.left + bounds.width,
-            plot.valToPos(marker.timestamp, "x", false),
-          ),
-        ),
+        x,
         y: markerCenterY,
         lineTop,
         plotTop: bounds.top,
@@ -137,11 +146,12 @@ function buildMarkerPositions(
 }
 
 export function MarkerOverlay({
-  uplotRef,
+  chartRef,
+  containerRef,
   markers,
-  currentTimeSeries,
 }: {
-  uplotRef: React.RefObject<uPlot | null>;
+  chartRef: React.RefObject<IChartApi | null>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   markers: Marker[];
   currentTimeSeries: TimeSeries | null;
 }) {
@@ -159,31 +169,29 @@ export function MarkerOverlay({
 
   useEffect(() => {
     let rafId: number | null = null;
-    let bootstrapRafId: number | null = null;
     let recalcScheduled = false;
-    let hooksAttached = false;
     let resizeObserver: ResizeObserver | null = null;
-    const removeHookFns: Array<() => void> = [];
+    let unsubscribeRange: (() => void) | null = null;
 
     const recalc = () => {
       recalcScheduled = false;
-      const plot = uplotRef.current;
-      if (!plot || stableMarkers.length === 0) {
+      const chart = chartRef.current;
+      const container = containerRef.current;
+      if (!chart || !container || stableMarkers.length === 0) {
         return;
       }
 
-      plot.syncRect();
       const nextPositions = buildMarkerPositions(
-        plot,
+        chart,
+        container,
         stableMarkers,
-        currentTimeSeries,
       );
 
       setPositions((prev) =>
         areMarkerPositionsEqual(prev, nextPositions) ? prev : nextPositions,
       );
 
-      const nextClipRect = buildClipRect(plot);
+      const nextClipRect = buildClipRect(getPlotBounds(chart, container));
 
       setClipRect((prev) =>
         isSameClipRect(prev, nextClipRect) ? prev : nextClipRect,
@@ -200,41 +208,18 @@ export function MarkerOverlay({
       return;
     }
 
-    const addHook = (plot: any, hookName: string, fn: () => void) => {
-      const hooks = plot.hooks?.[hookName];
-      if (!Array.isArray(hooks)) return;
-      hooks.push(fn);
-      removeHookFns.push(() => {
-        const idx = hooks.indexOf(fn);
-        if (idx >= 0) hooks.splice(idx, 1);
-      });
-    };
+    scheduleRecalc();
 
-    const attachHooks = () => {
-      if (hooksAttached) return true;
-      const plot = uplotRef.current as any;
-      if (!plot) return false;
+    const chart = chartRef.current;
+    if (chart) {
+      chart.timeScale().subscribeVisibleTimeRangeChange(scheduleRecalc);
+      unsubscribeRange = () =>
+        chart.timeScale().unsubscribeVisibleTimeRangeChange(scheduleRecalc);
+    }
 
-      addHook(plot, "setScale", scheduleRecalc);
-      addHook(plot, "setData", scheduleRecalc);
-
-      const rootElement = plot.root as HTMLElement | undefined;
-      if (rootElement && typeof ResizeObserver !== "undefined") {
-        resizeObserver = new ResizeObserver(() => scheduleRecalc());
-        resizeObserver.observe(rootElement);
-      }
-
-      hooksAttached = true;
-      scheduleRecalc();
-      return true;
-    };
-
-    if (!attachHooks()) {
-      const tryAttach = () => {
-        if (attachHooks()) return;
-        bootstrapRafId = window.requestAnimationFrame(tryAttach);
-      };
-      bootstrapRafId = window.requestAnimationFrame(tryAttach);
+    if (containerRef.current && typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => scheduleRecalc());
+      resizeObserver.observe(containerRef.current);
     }
 
     const onWindowResize = () => scheduleRecalc();
@@ -244,14 +229,11 @@ export function MarkerOverlay({
       if (rafId !== null) {
         window.cancelAnimationFrame(rafId);
       }
-      if (bootstrapRafId !== null) {
-        window.cancelAnimationFrame(bootstrapRafId);
-      }
-      removeHookFns.forEach((fn) => fn());
-      window.removeEventListener("resize", onWindowResize);
+      unsubscribeRange?.();
       resizeObserver?.disconnect();
+      window.removeEventListener("resize", onWindowResize);
     };
-  }, [uplotRef, stableMarkers, currentTimeSeries]);
+  }, [chartRef, containerRef, stableMarkers]);
 
   if (positions.length === 0 || !clipRect) {
     return null;

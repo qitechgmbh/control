@@ -1,40 +1,31 @@
 /* eslint-disable react-compiler/react-compiler */
 import { useRef, useCallback } from "react";
-import uPlot from "uplot";
+import type { IChartApi } from "lightweight-charts";
 import { seriesToUPlotData } from "@/lib/timeseries";
-import { getPrimarySeriesData, stopAnimations } from "./animation";
-import {
-  BigGraphProps,
-  HistoricalModeHandlers,
-  AnimationRefs,
-  SwitchOrigin,
-} from "./types";
+import { getPrimarySeriesData } from "./dataHelpers";
+import { setVisibleRangeSilently, setYAutoScale } from "./createChart";
+import { BigGraphProps, HistoricalModeHandlers, SwitchOrigin } from "./types";
 
 export function useHistoricalMode({
   newData,
-  uplotRef,
-  animationRefs,
+  chartRef,
+  suppressRangeEventRef,
   getCurrentLiveEndTimestamp,
-  updateYAxisScale,
   lastProcessedCountRef,
   manualScaleRef,
   syncHistoricalFreezeTimestamp,
 }: {
   newData: BigGraphProps["newData"];
-  uplotRef: React.RefObject<uPlot | null>;
-  animationRefs: AnimationRefs;
+  chartRef: React.RefObject<IChartApi | null>;
+  suppressRangeEventRef: React.RefObject<boolean>;
   getCurrentLiveEndTimestamp: () => number;
-  updateYAxisScale: (xMin?: number, xMax?: number) => void;
   lastProcessedCountRef: React.RefObject<number>;
   manualScaleRef: React.RefObject<{
     x: { min: number; max: number };
-    y: { min: number; max: number };
   } | null>;
   syncHistoricalFreezeTimestamp?: number | null;
 }): HistoricalModeHandlers {
   const localHistoricalFreezeTimestampRef = useRef<number | null>(null);
-  const localManualScale = useRef(manualScaleRef.current);
-  const isInHistoricalModeRef = useRef(false);
 
   // Capture the timestamp to freeze the historical view
   const captureHistoricalFreezeTimestamp = useCallback(() => {
@@ -61,117 +52,76 @@ export function useHistoricalMode({
   // Handle the time window for historical mode
   const handleHistoricalTimeWindow = useCallback(
     (timeWindow: number | "all") => {
-      if (!uplotRef.current) return;
+      if (!chartRef.current) return;
 
       const primaryData = getPrimarySeriesData(newData);
       if (!primaryData?.long) return;
 
-      const [timestamps, values] = seriesToUPlotData(primaryData.long);
+      const [timestamps] = seriesToUPlotData(primaryData.long);
       if (timestamps.length === 0) return;
 
       try {
         const endTimestamp = getHistoricalEndTimestamp();
-        let startTimestamp: number;
+        const startTimestamp =
+          timeWindow === "all"
+            ? Math.min(...timestamps)
+            : endTimestamp - timeWindow;
 
-        if (timeWindow === "all") {
-          startTimestamp = Math.min(...timestamps);
-        } else {
-          startTimestamp = endTimestamp - timeWindow;
-        }
-
-        // Calculate Y-axis range for the visible data
-        const visibleValues: number[] = [];
-        for (let i = 0; i < timestamps.length; i++) {
-          if (
-            timestamps[i] >= startTimestamp &&
-            timestamps[i] <= endTimestamp
-          ) {
-            visibleValues.push(values[i]);
-          }
-        }
-
-        let yMin: number, yMax: number;
-        if (visibleValues.length > 0) {
-          yMin = Math.min(...visibleValues);
-          yMax = Math.max(...visibleValues);
-          const range = yMax - yMin || Math.abs(yMax) * 0.1 || 1;
-          yMin -= range * 0.1;
-          yMax += range * 0.1;
-        } else {
-          yMin = -1;
-          yMax = 1;
-        }
-
-        // Update the chart scales
-        uplotRef.current.batch(() => {
-          uplotRef.current!.setScale("x", {
-            min: startTimestamp,
-            max: endTimestamp,
-          });
-          uplotRef.current!.setScale("y", { min: yMin, max: yMax });
+        setVisibleRangeSilently(chartRef.current, suppressRangeEventRef, {
+          min: startTimestamp,
+          max: endTimestamp,
         });
 
-        // Update manual scale references
-        localManualScale.current = {
+        manualScaleRef.current = {
           x: { min: startTimestamp, max: endTimestamp },
-          y: { min: yMin, max: yMax },
         };
-        manualScaleRef.current = localManualScale.current;
       } catch (error) {
         console.warn("Error in handleHistoricalTimeWindow:", error);
       }
     },
-    [uplotRef, newData, manualScaleRef, getHistoricalEndTimestamp],
+    [
+      chartRef,
+      newData,
+      manualScaleRef,
+      getHistoricalEndTimestamp,
+      suppressRangeEventRef,
+    ],
   );
 
   // Switch to historical mode
   const switchToHistoricalMode = useCallback(
     (origin?: SwitchOrigin) => {
-      isInHistoricalModeRef.current = true;
-
-      // Preserve current scale
-      if (origin === "gesture") {
-        try {
-          if (uplotRef.current) {
-            const xScale = uplotRef.current.scales.x;
-            const yScale = uplotRef.current.scales.y;
-            manualScaleRef.current = {
-              x: {
-                min: xScale?.min ?? 0,
-                max: xScale?.max ?? 0,
-              },
-              y: {
-                min: yScale?.min ?? 0,
-                max: yScale?.max ?? 1,
-              },
-            };
-          }
-        } catch (err) {
-          console.warn(
-            "Error preserving chart scales when switching to historical mode:",
-            err,
-          );
-        }
-      } else {
+      // "gesture" origin: manualScaleRef was already set by the chart's own
+      // range-change subscription at the moment of the zoom (or will shortly
+      // be set by the incoming xRange sync for sibling graphs) — leave it.
+      if (origin !== "gesture") {
         manualScaleRef.current = null;
       }
 
       captureHistoricalFreezeTimestamp();
-      stopAnimations(animationRefs);
-      lastProcessedCountRef.current = 0; // Reset processed count
+      lastProcessedCountRef.current = 0;
+
+      if (chartRef.current) {
+        setYAutoScale(chartRef.current, false);
+      }
     },
-    [captureHistoricalFreezeTimestamp, animationRefs, lastProcessedCountRef],
+    [
+      captureHistoricalFreezeTimestamp,
+      lastProcessedCountRef,
+      manualScaleRef,
+      chartRef,
+    ],
   );
 
   // Switch back to live mode
   const switchToLiveMode = useCallback(() => {
-    isInHistoricalModeRef.current = false;
-    localHistoricalFreezeTimestampRef.current = null; // Clear freeze timestamp
-    manualScaleRef.current = null; // Clear manual scale
-    lastProcessedCountRef.current = 0; // Reset processed count
-    stopAnimations(animationRefs);
+    localHistoricalFreezeTimestampRef.current = null;
+    manualScaleRef.current = null;
+    lastProcessedCountRef.current = 0;
 
-    if (uplotRef.current) {
+    if (chartRef.current) {
+      setYAutoScale(chartRef.current, true);
+
       const primaryData = getPrimarySeriesData(newData);
       if (primaryData?.long) {
         try {
@@ -180,12 +130,9 @@ export function useHistoricalMode({
             const currentLiveEnd = getCurrentLiveEndTimestamp();
             const recentStart = currentLiveEnd - 30 * 60 * 1000; // Last 30 minutes
 
-            uplotRef.current.batch(() => {
-              uplotRef.current!.setScale("x", {
-                min: recentStart,
-                max: currentLiveEnd,
-              });
-              updateYAxisScale(recentStart, currentLiveEnd);
+            setVisibleRangeSilently(chartRef.current, suppressRangeEventRef, {
+              min: recentStart,
+              max: currentLiveEnd,
             });
           }
         } catch (error) {
@@ -196,11 +143,10 @@ export function useHistoricalMode({
   }, [
     manualScaleRef,
     lastProcessedCountRef,
-    animationRefs,
-    uplotRef,
+    chartRef,
     newData,
     getCurrentLiveEndTimestamp,
-    updateYAxisScale,
+    suppressRangeEventRef,
   ]);
 
   return {

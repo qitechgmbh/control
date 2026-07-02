@@ -1,25 +1,16 @@
 import React, { useRef, useState, useCallback, useEffect } from "react";
-import uPlot from "uplot";
-import "uplot/dist/uPlot.min.css";
+import type { IChartApi } from "lightweight-charts";
 import { renderUnitSymbol, getUnitIcon } from "@/control/units";
 import { Icon } from "@/components/Icon";
-import { BigGraphProps, HandlerRefs, SeriesData } from "./types";
+import { BigGraphProps, SeriesData, SeriesRefs } from "./types";
 import { GraphExportData } from "./excelExport";
 import { DEFAULT_COLORS } from "./constants";
-import {
-  useAnimationRefs,
-  stopAnimations,
-  normalizeDataSeries,
-  getPrimarySeries,
-  formatDisplayValue,
-} from "./animation";
+import { normalizeDataSeries, formatDisplayValue } from "./dataHelpers";
 import { useLiveMode } from "./liveMode";
 import { useHistoricalMode } from "./historicalMode";
 import { useBigGraphEffects } from "./useBigGraphEffects";
 import { TouchButton } from "../touch/TouchButton";
-import { seriesToUPlotData } from "@/lib/timeseries";
 import { ControlCard } from "@/control/ControlCard";
-import { getAllTimeSeries } from "./createChart";
 import { TargetDashOverlay } from "./TargetDashOverlay";
 
 // Collects lines connected to visible series for rendering
@@ -93,7 +84,8 @@ export function BigGraph({
   config,
   graphId,
   syncGraph,
-  uplotRefOut,
+  chartRefOut,
+  containerRefOut,
   onRegisterForExport,
   onUnregisterFromExport,
 }: BigGraphProps & {
@@ -104,11 +96,9 @@ export function BigGraph({
   onUnregisterFromExport?: (graphId: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const uplotRef = useRef<uPlot | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesRefs = useRef<SeriesRefs>({ dataSeries: [], lineSeries: [] });
   const chartCreatedRef = useRef(false);
-
-  // Animation references for managing animations
-  const animationRefs = useAnimationRefs();
 
   // State for series visibility
   const normalizedSeries = normalizeDataSeries(newData);
@@ -155,21 +145,9 @@ export function BigGraph({
   const startTimeRef = useRef<number | null>(null);
   const manualScaleRef = useRef<{
     x: { min: number; max: number };
-    y: { min: number; max: number };
   } | null>(null);
+  const suppressRangeEventRef = useRef(false);
   const lastProcessedCountRef = useRef(0);
-
-  // Handler references for user interactions
-  const handlerRefs: HandlerRefs = {
-    isUserZoomingRef: useRef(false),
-    isDraggingRef: useRef(false),
-    lastDragXRef: useRef<number | null>(null),
-    isPinchingRef: useRef(false),
-    lastPinchDistanceRef: useRef<number | null>(null),
-    pinchCenterRef: useRef<{ x: number; y: number } | null>(null),
-    touchStartRef: useRef<{ x: number; y: number; time: number } | null>(null),
-    touchDirectionRef: useRef<"horizontal" | "vertical" | "unknown">("unknown"),
-  };
 
   const colors = {
     primary: enhancedConfig.colors?.primary ?? DEFAULT_COLORS.primary,
@@ -185,41 +163,19 @@ export function BigGraph({
 
   // FAST VISIBILITY UPDATE FUNCTION
   const updateSeriesVisibility = useCallback(() => {
-    if (!uplotRef.current || !visibleSeries) return;
+    if (!chartRef.current || !visibleSeries) return;
 
-    const allOriginalSeries = getAllTimeSeries(newData);
-
-    // Update visibility for each series
-    allOriginalSeries.forEach((_, index) => {
-      const seriesIndex = index + 1; // +1 because index 0 is time axis
-      const isVisible = visibleSeries[index];
-
-      if (uplotRef.current!.series[seriesIndex]) {
-        uplotRef.current!.series[seriesIndex].show = isVisible;
-
-        // Update points visibility
-        if (uplotRef.current!.series[seriesIndex].points) {
-          uplotRef.current!.series[seriesIndex].points!.show = (
-            _u,
-            _seriesIdx,
-            dataIdx,
-          ) => {
-            return isVisible && dataIdx < animationRefs.realPointsCount.current;
-          };
-        }
-      }
+    seriesRefs.current.dataSeries.forEach((series, index) => {
+      series.applyOptions({ visible: visibleSeries[index] });
     });
-
-    // Trigger lightweight redraw
-    uplotRef.current.redraw();
-  }, [visibleSeries, newData, animationRefs.realPointsCount]);
+  }, [visibleSeries]);
 
   // SEPARATE EFFECT FOR VISIBILITY UPDATES ONLY
   useEffect(() => {
-    if (uplotRef.current && chartCreatedRef.current) {
+    if (chartRef.current && chartCreatedRef.current) {
       updateSeriesVisibility();
     }
-  }, [visibleSeries, updateSeriesVisibility, newData]);
+  }, [visibleSeries, updateSeriesVisibility]);
 
   // Register export functionality for the graph
   useEffect(() => {
@@ -277,86 +233,15 @@ export function BigGraph({
     normalizedSeries.length,
   ]);
 
-  // Updates Y-axis scale dynamically based on visible data
-  const updateYAxisScale = useCallback(
-    (xMin?: number, xMax?: number) => {
-      if (!uplotRef.current) return;
-
-      const isInHistoricalMode = !isLiveMode || viewMode === "manual";
-      if (isInHistoricalMode) {
-        return;
-      }
-
-      const normalizedData = normalizeDataSeries(newData);
-      let allVisibleValues: number[] = [];
-
-      normalizedData.forEach((series, index) => {
-        if (!visibleSeries[index] || !series.newData?.long) return;
-
-        const [timestamps, values] = seriesToUPlotData(series.newData.long);
-        if (values.length === 0) return;
-
-        let seriesToInclude: number[] = [];
-
-        if (xMin !== undefined && xMax !== undefined) {
-          for (let i = 0; i < timestamps.length; i++) {
-            if (timestamps[i] >= xMin && timestamps[i] <= xMax) {
-              seriesToInclude.push(values[i]);
-            }
-          }
-        } else {
-          seriesToInclude = [...values];
-        }
-
-        allVisibleValues.push(...seriesToInclude);
-      });
-
-      enhancedConfig.lines?.forEach((line) => {
-        if (line.show !== false) {
-          allVisibleValues.push(line.value);
-        }
-      });
-
-      if (allVisibleValues.length === 0) {
-        const primarySeries = getPrimarySeries(newData);
-        if (primarySeries?.newData?.long) {
-          const [, values] = seriesToUPlotData(primarySeries.newData.long);
-          allVisibleValues = values;
-        }
-      }
-
-      if (allVisibleValues.length === 0) return;
-
-      const minY = Math.min(...allVisibleValues);
-      const maxY = Math.max(...allVisibleValues);
-      const range = maxY - minY || Math.abs(maxY) * 0.1 || 1;
-
-      const yRange = {
-        min: minY - range * 0.1,
-        max: maxY + range * 0.1,
-      };
-
-      try {
-        uplotRef.current.batch(() => {
-          uplotRef.current!.setScale("y", yRange);
-        });
-      } catch (error) {
-        console.warn("Error updating Y-axis scale:", error);
-      }
-    },
-    [enhancedConfig.lines, viewMode, isLiveMode, newData, visibleSeries],
-  );
-
   // Initialize live mode handlers
   const liveMode = useLiveMode({
     newData,
-    uplotRef,
-    config: enhancedConfig,
-    animationRefs,
+    chartRef,
+    seriesRefs,
     viewMode,
     selectedTimeWindow,
     startTimeRef,
-    updateYAxisScale,
+    suppressRangeEventRef,
     lastProcessedCountRef,
     chartCreatedRef,
   });
@@ -364,10 +249,9 @@ export function BigGraph({
   // Initialize historical mode handlers
   const historicalMode = useHistoricalMode({
     newData,
-    uplotRef,
-    animationRefs,
+    chartRef,
+    suppressRangeEventRef,
     getCurrentLiveEndTimestamp: liveMode.getCurrentLiveEndTimestamp,
-    updateYAxisScale,
     lastProcessedCountRef,
     manualScaleRef,
   });
@@ -375,10 +259,9 @@ export function BigGraph({
   // Handles time window changes
   const handleTimeWindowChangeInternal = useCallback(
     (newTimeWindow: number | "all", isSync: boolean = false) => {
-      stopAnimations(animationRefs);
       setSelectedTimeWindow(newTimeWindow);
 
-      if (!uplotRef.current) {
+      if (!chartRef.current) {
         return;
       }
 
@@ -403,7 +286,6 @@ export function BigGraph({
       }
     },
     [
-      animationRefs,
       isLiveMode,
       liveMode.handleLiveTimeWindow,
       historicalMode.handleHistoricalTimeWindow,
@@ -450,16 +332,17 @@ export function BigGraph({
     [normalizedSeries, cursorValues, cursorValue],
   );
 
-  // Applies effects for the graph (REMOVED visibleSeries from dependencies)
+  // Applies effects for the graph
   useBigGraphEffects({
     containerRef,
-    uplotRef,
-    uplotRefOut,
+    chartRef,
+    chartRefOut,
+    containerRefOut,
+    seriesRefs,
     startTimeRef,
     manualScaleRef,
+    suppressRangeEventRef,
     lastProcessedCountRef,
-    animationRefs,
-    handlerRefs,
     chartCreatedRef,
     newData,
     unit,
@@ -482,7 +365,6 @@ export function BigGraph({
     liveMode,
     historicalMode,
     colors,
-    updateYAxisScale,
     handleTimeWindowChangeInternal,
   });
 
@@ -599,9 +481,9 @@ export function BigGraph({
           >
             <div ref={containerRef} className="h-full w-full overflow-hidden" />
             <TargetDashOverlay
-              uplotRef={uplotRef}
-              newData={newData}
-              config={enhancedConfig}
+              chartRef={chartRef}
+              seriesRefs={seriesRefs}
+              containerRef={containerRef}
             />
           </div>
         </div>

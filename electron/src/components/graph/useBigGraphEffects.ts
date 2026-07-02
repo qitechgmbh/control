@@ -6,28 +6,30 @@ import {
   useRef,
   useState,
 } from "react";
-import uPlot from "uplot";
+import type { IChartApi } from "lightweight-charts";
 import { seriesToUPlotData } from "@/lib/timeseries";
-import { BigGraphProps, SeriesData, AnimationRefs, HandlerRefs } from "./types";
+import { BigGraphProps, SeriesData, SeriesRefs } from "./types";
 import { GraphExportData } from "./excelExport";
-import { getPrimarySeries, stopAnimations } from "./animation";
-import { createChart } from "./createChart";
+import { getPrimarySeries } from "./dataHelpers";
+import {
+  createChart,
+  setVisibleRangeSilently,
+  setYAutoScale,
+} from "./createChart";
 import { LiveModeHandlers } from "./liveMode";
 import { HistoricalModeHandlers } from "./historicalMode";
 
 interface UseBigGraphEffectsProps {
   // Refs
   containerRef: RefObject<HTMLDivElement | null>;
-  uplotRef: RefObject<uPlot | null>;
-  uplotRefOut?: MutableRefObject<uPlot | null>;
+  chartRef: RefObject<IChartApi | null>;
+  chartRefOut?: MutableRefObject<IChartApi | null>;
+  containerRefOut?: MutableRefObject<HTMLDivElement | null>;
+  seriesRefs: RefObject<SeriesRefs>;
   startTimeRef: RefObject<number | null>;
-  manualScaleRef: RefObject<{
-    x: { min: number; max: number };
-    y: { min: number; max: number };
-  } | null>;
+  manualScaleRef: RefObject<{ x: { min: number; max: number } } | null>;
+  suppressRangeEventRef: RefObject<boolean>;
   lastProcessedCountRef: RefObject<number>;
-  animationRefs: AnimationRefs;
-  handlerRefs: HandlerRefs;
   chartCreatedRef: RefObject<boolean>;
 
   // Props
@@ -68,7 +70,6 @@ interface UseBigGraphEffectsProps {
     axis: string;
     background: string;
   };
-  updateYAxisScale: (xMin?: number, xMax?: number) => void;
   handleTimeWindowChangeInternal: (
     newTimeWindow: number | "all",
     isSync?: boolean,
@@ -77,13 +78,14 @@ interface UseBigGraphEffectsProps {
 
 export function useBigGraphEffects({
   containerRef,
-  uplotRef,
-  uplotRefOut,
+  chartRef,
+  chartRefOut,
+  containerRefOut,
+  seriesRefs,
   startTimeRef,
   manualScaleRef,
+  suppressRangeEventRef,
   lastProcessedCountRef,
-  animationRefs,
-  handlerRefs,
   chartCreatedRef,
 
   newData,
@@ -110,7 +112,6 @@ export function useBigGraphEffects({
   liveMode,
   historicalMode,
   colors,
-  updateYAxisScale,
   handleTimeWindowChangeInternal,
 }: UseBigGraphEffectsProps) {
   const [isChartCreated, setIsChartCreated] = useState(false);
@@ -202,21 +203,13 @@ export function useBigGraphEffects({
         syncGraph.xRange.min !== lastState.xRange.min ||
         syncGraph.xRange.max !== lastState.xRange.max);
 
-    if (xRangeChanged && uplotRef.current) {
-      uplotRef.current.batch(() => {
-        uplotRef.current!.setScale("x", {
-          min: syncGraph.xRange?.min ?? 0,
-          max: syncGraph.xRange?.max ?? 0,
-        });
-
-        updateYAxisScale(
-          syncGraph.xRange?.min ?? 0,
-          syncGraph.xRange?.max ?? 0,
-        );
+    if (xRangeChanged && chartRef.current) {
+      setVisibleRangeSilently(chartRef.current, suppressRangeEventRef, {
+        min: syncGraph.xRange?.min ?? 0,
+        max: syncGraph.xRange?.max ?? 0,
       });
       manualScaleRef.current = {
         x: syncGraph.xRange ?? { min: 0, max: 1 },
-        y: manualScaleRef.current?.y ?? { min: 0, max: 1 },
       };
       hasChanges = true;
     }
@@ -225,8 +218,10 @@ export function useBigGraphEffects({
       if (syncGraph.viewMode === "manual") {
         setViewMode("manual");
         setIsLiveMode(false);
-        stopAnimations(animationRefs);
         lastProcessedCountRef.current = 0;
+        if (chartRef.current) {
+          setYAutoScale(chartRef.current, false);
+        }
       }
 
       lastSyncStateRef.current = {
@@ -244,7 +239,6 @@ export function useBigGraphEffects({
     syncGraph?.xRange?.max,
     historicalMode.switchToHistoricalMode,
     historicalMode.switchToLiveMode,
-    updateYAxisScale,
   ]);
 
   // Create and initialize the chart when data becomes available
@@ -262,10 +256,11 @@ export function useBigGraphEffects({
       return;
     }
 
-    const cleanup = createChart({
+    createChart({
       containerRef,
-      uplotRef,
-      uplotRefOut,
+      chartRef,
+      chartRefOut,
+      seriesRefs,
       newData,
       config,
       colors,
@@ -275,12 +270,10 @@ export function useBigGraphEffects({
       isLiveMode,
       startTimeRef,
       manualScaleRef,
-      animationRefs,
-      handlerRefs,
+      suppressRangeEventRef,
       graphId,
       syncGraph,
       getHistoricalEndTimestamp: historicalMode.getHistoricalEndTimestamp,
-      updateYAxisScale,
       setViewMode,
       setIsLiveMode,
       setCursorValue,
@@ -297,11 +290,9 @@ export function useBigGraphEffects({
     }
 
     return () => {
-      cleanup?.();
-      uplotRef.current?.destroy();
-      uplotRef.current = null;
-      if (uplotRefOut) uplotRefOut.current = null;
-      stopAnimations(animationRefs);
+      chartRef.current?.remove();
+      chartRef.current = null;
+      if (chartRefOut) chartRefOut.current = null;
       setIsChartCreated(false);
       chartCreatedRef.current = false;
     };
@@ -329,11 +320,10 @@ export function useBigGraphEffects({
   // Update chart with real-time data in live mode
   useEffect(() => {
     if (
-      !uplotRef.current ||
+      !chartRef.current ||
       !primarySeries?.newData?.current ||
       !isLiveMode ||
       !isChartCreated ||
-      animationRefs.animationState.current.isAnimating ||
       viewMode === "manual"
     )
       return;
@@ -349,15 +339,18 @@ export function useBigGraphEffects({
     liveMode.updateLiveData,
   ]);
 
-  // Recalculate Y-axis scale when series visibility changes
+  // Keep the Y auto-scale freeze state consistent with the current mode
+  // whenever series visibility (or chart creation) changes.
   useEffect(() => {
-    if (!uplotRef.current || !isChartCreated) return;
+    if (!chartRef.current || !isChartCreated) return;
+    setYAutoScale(chartRef.current, isLiveMode && viewMode !== "manual");
+  }, [visibleSeries, isChartCreated, isLiveMode, viewMode]);
 
-    const currentScale = uplotRef.current.scales.x;
-    if (currentScale?.min !== undefined && currentScale?.max !== undefined) {
-      updateYAxisScale(currentScale.min, currentScale.max);
-    } else {
-      updateYAxisScale();
+  // Expose the chart's mount element to the caller (e.g. marker overlay
+  // positioning), mirroring how chartRefOut is populated above.
+  useEffect(() => {
+    if (containerRefOut) {
+      containerRefOut.current = containerRef.current;
     }
-  }, [visibleSeries, isChartCreated, updateYAxisScale]);
+  }, [containerRefOut, isChartCreated]);
 }

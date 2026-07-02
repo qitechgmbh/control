@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState, useId } from "react";
-import uPlot from "uplot";
-import { BigGraphProps, GraphConfig } from "./types";
-import { getAllTimeSeries } from "./createChart";
+import React, { useEffect, useId, useState } from "react";
+import type { IChartApi, ISeriesApi, Time } from "lightweight-charts";
+import { SeriesRefs } from "./types";
 
 type OverlayLine = {
   key: string;
@@ -20,11 +19,11 @@ type ClipRect = {
 };
 
 function buildDashedLine(
-  plot: uPlot,
-  xData: number[],
-  yData: Array<number | null>,
+  chart: IChartApi,
+  series: ISeriesApi<"Line">,
+  points: readonly { time: Time; value: number }[],
 ): string {
-  if (xData.length < 2) {
+  if (points.length < 2) {
     return "";
   }
 
@@ -33,15 +32,13 @@ function buildDashedLine(
   let prevX = 0;
   let prevY = 0;
 
-  // Use CSS pixels (canvasPixels=false) because the SVG overlay is in CSS pixel space.
-  // u.valToPos(..., true) returns device pixels (DPR-scaled) which would misplace
-  // everything by a factor of devicePixelRatio on high-DPI displays.
-  for (let i = 0; i < xData.length; i++) {
-    const value = yData[i];
-    if (value === null || value === undefined) continue;
-
-    const x = plot.valToPos(xData[i], "x", false);
-    const y = plot.valToPos(value, "y", false);
+  // timeToCoordinate/priceToCoordinate already return CSS-pixel coordinates
+  // relative to the pane, which aligns with the overlay SVG's own coordinate
+  // space here — no device-pixel-ratio correction needed (unlike uPlot).
+  for (const point of points) {
+    const x = chart.timeScale().timeToCoordinate(point.time);
+    const y = series.priceToCoordinate(point.value);
+    if (x === null || y === null) continue;
 
     if (!started) {
       parts.push(`M ${x} ${y}`);
@@ -62,59 +59,20 @@ function buildDashedLine(
     prevY = y;
   }
 
-  // Extend the last step to the right edge of the plot area so the target line
-  // reaches the same boundary as the data series drawn by uPlot.
+  // Extend the last step to the right edge of the plot area (the current
+  // visible-range's right edge maps directly to the pane's right edge) so the
+  // target line reaches the same boundary as the data series.
   if (started) {
-    const dpr = window.devicePixelRatio || 1;
-    const rightEdge = (plot.bbox.left + plot.bbox.width) / dpr;
-    if (rightEdge > prevX) {
-      parts.push(`L ${rightEdge} ${prevY}`);
+    const visibleRange = chart.timeScale().getVisibleRange();
+    if (visibleRange) {
+      const rightEdge = chart.timeScale().timeToCoordinate(visibleRange.to);
+      if (rightEdge !== null && rightEdge > prevX) {
+        parts.push(`L ${rightEdge} ${prevY}`);
+      }
     }
   }
 
   return parts.join(" ");
-}
-
-function getHistoricalDashTargets(
-  data: BigGraphProps["newData"],
-  config: GraphConfig,
-): Array<{
-  dataIndex: number;
-  dash: number[];
-  color: string;
-  width: number;
-}> {
-  const allOriginalSeries = getAllTimeSeries(data);
-  const firstConfigLineDataIndex = 1 + allOriginalSeries.length;
-  let visibleLineIndex = 0;
-
-  const targets: Array<{
-    dataIndex: number;
-    dash: number[];
-    color: string;
-    width: number;
-  }> = [];
-
-  config.lines?.forEach((line) => {
-    if (line.show === false) return;
-
-    const dash = line.dash ?? (line.type === "threshold" ? [5, 5] : undefined);
-    const isHistoricalDashedTarget =
-      line.type === "target" && !!line.targetSeries && !!dash?.length;
-
-    if (isHistoricalDashedTarget) {
-      targets.push({
-        dataIndex: firstConfigLineDataIndex + visibleLineIndex,
-        dash: dash!,
-        color: line.color,
-        width: line.width ?? 1,
-      });
-    }
-
-    visibleLineIndex++;
-  });
-
-  return targets;
 }
 
 function areDashArraysEqual(a: number[], b: number[]): boolean {
@@ -152,87 +110,87 @@ function isSameClipRect(a: ClipRect | null, b: ClipRect): boolean {
 }
 
 export function TargetDashOverlay({
-  uplotRef,
-  newData,
-  config,
+  chartRef,
+  seriesRefs,
+  containerRef,
 }: {
-  uplotRef: React.RefObject<uPlot | null>;
-  newData: BigGraphProps["newData"];
-  config: GraphConfig;
+  chartRef: React.RefObject<IChartApi | null>;
+  seriesRefs: React.RefObject<SeriesRefs | null>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const targetMeta = useMemo(
-    () => getHistoricalDashTargets(newData, config),
-    [newData, config],
-  );
   const clipPathId = useId().replace(/:/g, "");
 
   const [lines, setLines] = useState<OverlayLine[]>([]);
   const [clipRect, setClipRect] = useState<ClipRect | null>(null);
 
   useEffect(() => {
-    if (targetMeta.length === 0) {
-      setLines([]);
-      setClipRect(null);
-    }
-  }, [targetMeta]);
-
-  useEffect(() => {
     let rafId: number | null = null;
-    let bootstrapRafId: number | null = null;
     let recalcScheduled = false;
-    let hooksAttached = false;
-    const removeHookFns: Array<() => void> = [];
     let resizeObserver: ResizeObserver | null = null;
+    let unsubscribeRange: (() => void) | null = null;
 
     const recalc = () => {
       recalcScheduled = false;
-      const plot = uplotRef.current;
-      if (!plot || targetMeta.length === 0) {
+      const chart = chartRef.current;
+      const refs = seriesRefs.current;
+      const container = containerRef.current;
+      if (!chart || !refs || !container) {
+        setLines((prev) => (prev.length === 0 ? prev : []));
         return;
       }
 
-      const xData = plot.data[0] as number[] | undefined;
-      if (!xData || xData.length < 2) {
+      const overlayEntries = refs.lineSeries.filter(
+        (entry) => entry.isOverlayDriven,
+      );
+      if (overlayEntries.length === 0) {
+        setLines((prev) => (prev.length === 0 ? prev : []));
         return;
       }
 
-      const nextLines = targetMeta
-        .map((meta, index) => {
-          const yData = plot.data[meta.dataIndex] as
-            | Array<number | null>
-            | undefined;
-          if (!yData || yData.length < 2) return null;
+      const nextLines = overlayEntries
+        .map((entry, index) => {
+          const points = entry.api.data() as ReadonlyArray<{
+            time: Time;
+            value: number;
+          }>;
+          if (points.length < 2) return null;
 
-          const d = buildDashedLine(plot, xData, yData);
+          const d = buildDashedLine(chart, entry.api, points);
           if (!d) return null;
 
           return {
-            key: `${meta.dataIndex}-${index}`,
-            color: meta.color,
-            width: meta.width,
-            dash: meta.dash,
+            key: `${index}`,
+            color: entry.line.color,
+            width: entry.line.width ?? 1,
+            dash: entry.line.dash ?? [5, 5],
             dashOffset: 0,
             d,
-          } as OverlayLine;
+          } satisfies OverlayLine;
         })
         .filter((line): line is OverlayLine => !!line);
 
-      if (nextLines.length > 0) {
-        setLines((prev) =>
-          areOverlayLinesEqual(prev, nextLines) ? prev : nextLines,
-        );
-        // u.bbox is in device pixels; divide by DPR to get CSS pixels for the SVG clip rect.
-        const dpr = window.devicePixelRatio || 1;
-        const nextClipRect: ClipRect = {
-          x: plot.bbox.left / dpr,
-          y: plot.bbox.top / dpr,
-          width: plot.bbox.width / dpr,
-          height: plot.bbox.height / dpr,
-        };
-        setClipRect((prev) =>
-          isSameClipRect(prev, nextClipRect) ? prev : nextClipRect,
-        );
+      setLines((prev) =>
+        areOverlayLinesEqual(prev, nextLines) ? prev : nextLines,
+      );
+
+      const rect = container.getBoundingClientRect();
+      let priceScaleWidth = 0;
+      let timeScaleHeight = 0;
+      try {
+        priceScaleWidth = chart.priceScale("right").width();
+        timeScaleHeight = chart.timeScale().height();
+      } catch {
+        // Fall back to no inset if the API shape differs across versions.
       }
+      const nextClipRect: ClipRect = {
+        x: 0,
+        y: 0,
+        width: Math.max(rect.width - priceScaleWidth, 0),
+        height: Math.max(rect.height - timeScaleHeight, 0),
+      };
+      setClipRect((prev) =>
+        isSameClipRect(prev, nextClipRect) ? prev : nextClipRect,
+      );
     };
 
     const scheduleRecalc = () => {
@@ -243,62 +201,30 @@ export function TargetDashOverlay({
 
     scheduleRecalc();
 
-    if (targetMeta.length === 0) {
-      return;
+    const chart = chartRef.current;
+    if (chart) {
+      chart.timeScale().subscribeVisibleTimeRangeChange(scheduleRecalc);
+      unsubscribeRange = () =>
+        chart.timeScale().unsubscribeVisibleTimeRangeChange(scheduleRecalc);
     }
 
-    const addHook = (plot: any, hookName: string, fn: () => void) => {
-      const hooks = plot.hooks?.[hookName];
-      if (!Array.isArray(hooks)) return;
-      hooks.push(fn);
-      removeHookFns.push(() => {
-        const idx = hooks.indexOf(fn);
-        if (idx >= 0) hooks.splice(idx, 1);
-      });
-    };
+    if (containerRef.current && typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => scheduleRecalc());
+      resizeObserver.observe(containerRef.current);
+    }
 
     const onWindowResize = () => scheduleRecalc();
     window.addEventListener("resize", onWindowResize);
-
-    const attachHooks = (): boolean => {
-      if (hooksAttached) return true;
-      const plot = uplotRef.current as any;
-      if (!plot) return false;
-
-      addHook(plot, "setScale", scheduleRecalc);
-      addHook(plot, "setData", scheduleRecalc);
-
-      const rootElement = plot.root as HTMLElement | undefined;
-      if (rootElement && typeof ResizeObserver !== "undefined") {
-        resizeObserver = new ResizeObserver(() => scheduleRecalc());
-        resizeObserver.observe(rootElement);
-      }
-
-      hooksAttached = true;
-      scheduleRecalc();
-      return true;
-    };
-
-    if (!attachHooks()) {
-      const tryAttach = () => {
-        if (attachHooks()) return;
-        bootstrapRafId = window.requestAnimationFrame(tryAttach);
-      };
-      bootstrapRafId = window.requestAnimationFrame(tryAttach);
-    }
 
     return () => {
       if (rafId !== null) {
         window.cancelAnimationFrame(rafId);
       }
-      if (bootstrapRafId !== null) {
-        window.cancelAnimationFrame(bootstrapRafId);
-      }
-      removeHookFns.forEach((fn) => fn());
-      window.removeEventListener("resize", onWindowResize);
+      unsubscribeRange?.();
       resizeObserver?.disconnect();
+      window.removeEventListener("resize", onWindowResize);
     };
-  }, [uplotRef, targetMeta]);
+  }, [chartRef, seriesRefs, containerRef]);
 
   if (lines.length === 0) {
     return null;

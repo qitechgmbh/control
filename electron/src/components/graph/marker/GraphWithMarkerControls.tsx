@@ -1,8 +1,9 @@
 import React, { useRef, useEffect } from "react";
-import type uPlot from "uplot";
+import type { IChartApi } from "lightweight-charts";
 import { AutoSyncedBigGraph } from "../SyncedComponents";
 import { useGraphSync } from "../useGraphSync";
 import { TimeSeries } from "@/lib/timeseries";
+import { timeToMs } from "../dataHelpers";
 import { Unit } from "@/control/units";
 import { type GraphConfig, GraphLine } from "../types";
 import { useMarkerManager } from "./useMarkerManager";
@@ -43,9 +44,11 @@ function GraphWithMarkerControlsContent({
   currentTimeSeries,
   machineId: providedMachineId,
   markers: providedMarkers,
-  uplotRefOut,
+  chartRefOut,
+  containerRefOut,
 }: GraphWithMarkerControlsProps & {
-  uplotRefOut: React.MutableRefObject<uPlot | null>;
+  chartRefOut: React.MutableRefObject<IChartApi | null>;
+  containerRefOut: React.MutableRefObject<HTMLDivElement | null>;
 }) {
   const { setMachineId, setCurrentTimestamp, setCurrentValue } =
     useMarkerContext();
@@ -65,7 +68,8 @@ function GraphWithMarkerControlsContent({
 
     if (!isLiveMode) {
       const updateHistoricalTimestamp = () => {
-        const xMax = uplotRefOut.current?.scales.x?.max;
+        const visibleRange = chartRefOut.current?.timeScale().getVisibleRange();
+        const xMax = visibleRange ? timeToMs(visibleRange.to) : undefined;
         if (xMax != null) {
           setCurrentTimestamp(xMax);
         } else if (curr?.timestamp != null) {
@@ -93,7 +97,7 @@ function GraphWithMarkerControlsContent({
     currentTimeSeries?.current?.value,
     setCurrentTimestamp,
     setCurrentValue,
-    uplotRefOut,
+    chartRefOut,
   ]);
 
   // Use provided markers or load from marker manager
@@ -113,10 +117,12 @@ function GraphWithMarkerControlsContent({
           unit={unit}
           renderValue={renderValue}
           graphId={graphId}
-          uplotRefOut={uplotRefOut}
+          chartRefOut={chartRefOut}
+          containerRefOut={containerRefOut}
         />
         <MarkerOverlay
-          uplotRef={uplotRefOut}
+          chartRef={chartRefOut}
+          containerRef={containerRefOut}
           markers={markers}
           currentTimeSeries={currentTimeSeries}
         />
@@ -126,9 +132,14 @@ function GraphWithMarkerControlsContent({
 }
 
 export function GraphWithMarkerControls(props: GraphWithMarkerControlsProps) {
-  const uplotRefOut = useRef<uPlot | null>(null);
+  const chartRefOut = useRef<IChartApi | null>(null);
+  const containerRefOut = useRef<HTMLDivElement | null>(null);
 
   return (
-    <GraphWithMarkerControlsContent {...props} uplotRefOut={uplotRefOut} />
+    <GraphWithMarkerControlsContent
+      {...props}
+      chartRefOut={chartRefOut}
+      containerRefOut={containerRefOut}
+    />
   );
 }
