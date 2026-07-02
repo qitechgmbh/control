@@ -26,7 +26,8 @@ use qitech_lib::{
 use std::{sync::Arc, time::Duration};
 
 #[cfg(not(feature = "mock"))]
-use crate::apis::property_exporter;
+mod property_exporter;
+
 #[cfg(not(feature = "mock"))]
 use crate::app_state::MainState;
 use crate::{

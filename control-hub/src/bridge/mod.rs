@@ -1,9 +1,12 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, io};
 
 use machine_core::property::PropertyBatch;
 
+use crate::SharedState;
+
 // pub mod local;
-pub mod remote;
+pub mod unix;
+pub mod embedded;
 
 pub fn update_registry(batch: &PropertyBatch, registry: &mut HashSet<u64>) -> bool {
     let mut changed = false;
@@ -17,4 +20,11 @@ pub fn update_registry(batch: &PropertyBatch, registry: &mut HashSet<u64>) -> bo
     }
 
     changed
+}
+
+pub trait Bridge
+where
+    Self: Send + 'static,
+{
+    fn run(self, state: SharedState) -> impl Future<Output = io::Result<()>> + Send;
 }

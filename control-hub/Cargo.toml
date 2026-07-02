@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev  = "1058e40d9d63c234e55510aefe35b54938bf0a41" }
-machine_core = { path = "../machine-core", features = ["serde"]}
+machine_core = { path = "../machine-core", features = ["schema"]}
 
 uom = { version = "0.37.0", default-features = false, features = [ "f64" ] }
 heapless = { version = "0.9.3" }
@@ -27,8 +27,10 @@ prost="0.14.4"
 once_cell = "1"
 arc-swap = "1.9.2"
 
+rust_xlsxwriter="0.96.0"
+
 [build-dependencies]
-machine_core = { path = "../machine-core", features = ["serde"]}
+machine_core = { path = "../machine-core", features = ["schema"]}
 
 prost-build = "0.14.4"
 serde = { version = "1", features = ["derive"] }

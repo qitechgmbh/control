@@ -27,6 +27,14 @@ tonic = { version = "0.13.1", optional = true }
 heapless="0.9.3"
 uom = { version = "0.37.0", default-features = false, features = [ "f64" ] }
 
+[build-dependencies]
+machine_core = { path = "../machine-core", features = ["schema"]}
+
+prost-build = "0.14.4"
+serde = { version = "1", features = ["derive"] }
+yaml_serde = "0.10.4"
+serde_json = { version = "1.0.150"}
+
 [dev-dependencies]
 approx = "0.5.1"
 

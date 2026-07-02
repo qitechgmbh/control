@@ -8,7 +8,7 @@ edition = "2024"
 qitech_lib = { workspace = true }
 machine_implementations = { path = "../machine-impls" }
 control_core = { path = "../control-core" }
-machine_core = { path = "../machine-core", features = ["serde"]}
+machine_core = { path = "../machine-core", features = ["schema"]}
 
 # external deps
 tokio = { version = "1.50.0", features = ["rt", "rt-multi-thread", "macros", "time","sync"] }

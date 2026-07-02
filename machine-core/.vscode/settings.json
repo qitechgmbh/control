@@ -1,4 +1,3 @@
 {
-  "rust-analyzer.cargo.allFeatures": true,
-  "rust-analyzer.cargo.allTargets": true
+    "rust-analyzer.cargo.features": ["schema"]
 }

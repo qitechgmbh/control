@@ -17,7 +17,10 @@ qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev  = "105
 [features]
 default = []
 
-serde = [
+serde = [ "dep:serde" ]
+
+schema = [
+    "serde",
     "dep:serde",
     "heapless/serde",
 ]

@@ -1,14 +1,40 @@
-use serde::{Deserialize, Deserializer, de};
+use serde::{Deserialize, Deserializer, de::{self, DeserializeOwned}};
 
-use crate::{MutationParameterType, PropertySampling, PropertySpec, spec::UomUnit};
+use crate::{
+    PropertySchema, 
+    schema::{PropertyLimits, PropertyRepresentation, PropertyTarget, UomUnit}
+};
 
 #[derive(Deserialize)]
 struct PropertyHelper {
     r#type: String,
-    sampling: Option<PropertySampling>,
+    repr: Option<PropertyRepresentation>,
+    target: Option<PropertyTarget>,
+    limits: Option<PropertyLimitsHelper>,
 }
 
-impl<'de> Deserialize<'de> for PropertySpec {
+#[derive(Deserialize)]
+struct PropertyLimitsHelper {
+    min: Option<yaml_serde::Value>,
+    max: Option<yaml_serde::Value>,
+}
+
+impl PropertyLimitsHelper {
+    pub fn to_limits<T>(&self) -> Result<PropertyLimits<T>, yaml_serde::Error>
+    where
+        T: Clone + DeserializeOwned,
+    {
+        let min = self.min.clone().map(T::deserialize);
+        let max = self.max.clone().map(T::deserialize);
+
+        let min = min.transpose()?;
+        let max = max.transpose()?;
+
+        Ok(PropertyLimits { min, max })
+    }
+}
+
+impl<'de> Deserialize<'de> for PropertySchema {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -16,32 +42,47 @@ impl<'de> Deserialize<'de> for PropertySpec {
         let helper = PropertyHelper::deserialize(deserializer)?;
 
         let value = match helper.r#type.as_str() {
-            "bool" => PropertySpec::Boolean,
+            "bool" => PropertySchema::Boolean,
 
-            "int" => PropertySpec::Integer {
-                sampling: helper
-                    .sampling
-                    .ok_or_else(|| de::Error::missing_field("PropertySampling"))?,
+            "int" => {
+                let repr = helper.repr.unwrap_or_default();
+
+                let limits: PropertyLimits<i64> = match helper.limits {
+                    Some(v) => v.to_limits()?,
+                    None => PropertyLimits { min: None, max: None },
+                };
+
+                let target = helper.target.unwrap_or_default();
+                PropertySchema::Integer { repr, limits, target }
+            }
+
+            "float" => PropertySchema::Float {
+                repr: helper.repr.unwrap_or_default(),
+                limits: PropertyLimits {
+                    min: Some(0.0), // TODO: implement
+                    max: Some(0.0),
+                },
+                target: helper.target.unwrap_or_default(),
             },
 
-            "float" => PropertySpec::Float {
-                sampling: helper
-                    .sampling
-                    .ok_or_else(|| de::Error::missing_field("PropertySampling"))?,
-            },
-
-            "millimeter" => PropertySpec::UoM { 
+            "millimeter" => PropertySchema::UoM { 
                 unit: UomUnit::Millimeter,
-                sampling: helper
-                    .sampling
-                    .ok_or_else(|| de::Error::missing_field("PropertySampling"))?,
+                repr: helper.repr.unwrap_or_default(),
+                limits: PropertyLimits {
+                    min: Some(0.0), // TODO: implement
+                    max: Some(0.0),
+                },
+                target: helper.target.unwrap_or_default(),
             },
 
-            "meter" => PropertySpec::UoM { 
+            "meter" => PropertySchema::UoM { 
                 unit: UomUnit::Meter,
-                sampling: helper
-                    .sampling
-                    .ok_or_else(|| de::Error::missing_field("PropertySampling"))?,
+                repr: helper.repr.unwrap_or_default(),
+                limits: PropertyLimits {
+                    min: Some(0.0), // TODO: implement
+                    max: Some(0.0),
+                },
+                target: helper.target.unwrap_or_default(),
             },
 
             other => {
@@ -63,6 +104,7 @@ impl<'de> Deserialize<'de> for PropertySpec {
     }
 }
 
+/*
 impl<'de> Deserialize<'de> for MutationParameterType {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -154,6 +196,7 @@ impl<'de> Deserialize<'de> for MutationParameterType {
     }
 }
 
+
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum MutationParameterHelper {
@@ -186,9 +229,11 @@ pub enum Number {
     Float(f64),
 }
 
+*/
+
 #[cfg(test)]
 mod test {
-    use crate::MachineSpec;
+    use crate::MachineSchema;
 
     const X: &str = r#"
 name: laser_v1
@@ -247,7 +292,7 @@ mutations:
 
     #[test]
     pub fn run() {
-        let v = yaml_serde::from_str::<MachineSpec>(X);
+        let v = yaml_serde::from_str::<MachineSchema>(X);
 
         println!("v: {v:?}");
     }

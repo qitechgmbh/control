@@ -14,7 +14,7 @@ pub async fn handle(
 ) -> Result<Json<Map<String, Value>>, String> {
     println!("wtf");
 
-    let Some(ident) = state.machine_names.get(&name) else {
+    let Some(ident) = state.machine_slugs.get(&name) else {
         return Err(format!("No such machine: {name}"));
     };
 

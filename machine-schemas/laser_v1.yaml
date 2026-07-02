@@ -4,16 +4,23 @@ identification:
   vendor_id: 1
   machine_id: 6
 
+#  | range | deviation
 properties:
   diameter:
     type: millimeter
-    sampling: simple
+    repr: latest
+    target: exact
+    limits: 
+      min: 0
+      max: 10
 
   x_diameter:
+    desc: "Measured diameter in the x-axis of the laser"
     type: millimeter
     sampling: simple
 
   y_diameter: 
+    desc: "Measured diameter in the y-axis of the laser"
     type: millimeter
     sampling: simple
 
@@ -38,15 +45,25 @@ properties:
       type: millimeter
       sampling: simple
 
-mutations:
-  set_target_diameter:
-    value: 
-      type: float
-      min: 0.0
-      max: 1.0
+# mutations:
+#   set_target_diameter:
+#     value: 
+#       type: float
+#       min: 0.0
+#       max: 1.0
+# 
+#   set_lower_tolerance:
+#     value: float
+# 
+#   set_higher_tolerance: 
+#     value: float
 
-  set_lower_tolerance:
-    value: float
+descriptions: 
+  diameter: 
+    en-US: "Measured diameter of the laser"
+  
+  x_diameter: 
+    en-US: "Measured diameter of the x-axis of the laser"
 
-  set_higher_tolerance: 
-    value: float
+  y_diameter: 
+    en-US: "Measured diameter of the x-axis of the laser"

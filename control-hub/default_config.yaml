@@ -1,0 +1,10 @@
+database:
+  url: http://localhost:8123
+  user: default
+  name: qitech_ctrl
+
+exporter:
+  interval: 1.5s
+
+api: 
+  address: 0.0.0.0:3000

@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{path::Path, sync::Arc, time::Duration};
 
 use machine_core::property::PropertyBatch;
 use tokio::{
@@ -8,45 +8,57 @@ use tokio::{
     time::timeout,
 };
 
-use crate::SharedState;
+use crate::{SharedState, bridge::Bridge};
 
-pub struct Config {
-    pub socket_path: String,
+pub struct UnixBridge {
+    listener: UnixListener,
 }
 
-pub async fn run(mut state: SharedState, config: Config) -> io::Result<()> {
-    if std::fs::exists(&config.socket_path)? {
-        std::fs::remove_file(&config.socket_path)?;
+impl UnixBridge {
+    pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Self> {
+        if std::fs::exists(&path)? {
+            std::fs::remove_file(&path)?;
+        }
+
+        let listener = UnixListener::bind(&path)?;
+
+        Ok(Self { listener })
     }
+}
 
-    let listener = UnixListener::bind(config.socket_path)?;
+impl Bridge for UnixBridge {
+    fn run(self, mut state: SharedState) -> impl Future<Output = io::Result<()>> + Send {
+        let listener = self.listener;
 
-    loop {
-        let stream = select! {
-            biased;
+        async move {
+            loop {
+                let stream = tokio::select! {
+                    biased;
 
-            _ = state.shutdown_rx.changed() => {
-                println!("shutdown_signal changed, shutting down");
-                return Ok(());
-            }
+                    _ = state.shutdown_rx.changed() => {
+                        println!("Received shutdown signal, shutting down...");
+                        return Ok(());
+                    }
 
-            res = listener.accept() => {
-                let (stream, _) = match res {
-                    Ok(v) => v,
-                    Err(e) => {
-                        eprintln!("Failed to accept connection: {e}");
-                        continue;
+                    res = listener.accept() => {
+                        let (stream, _) = match res {
+                            Ok(v) => v,
+                            Err(e) => {
+                                eprintln!("Failed to accept connection: {e}");
+                                continue;
+                            }
+                        };
+
+                        stream
                     }
                 };
 
-                stream
+                let should_exit = handle_client(&mut state, stream).await?;
+
+                if should_exit {
+                    return Ok(());
+                }
             }
-        };
-
-        let should_exit = handle_client(&mut state, stream).await?;
-
-        if should_exit {
-            return Ok(());
         }
     }
 }

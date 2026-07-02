@@ -8,6 +8,45 @@ use qitech_lib::{
     units::{length::millimeter},
 };
 
+// include(VAR OUT, "properties/laser_v1.rs");
+// property::Diameter
+// property::
+
+// generated::properties::laser_v1::;
+
+/*
+pub struct Properties {
+    diameter: Diameter,
+}
+
+impl Properties {
+    pub fn 
+}
+
+pub struct Diameter {
+    inner: SimpleProperty<f64>,
+    pub target: PropertyTarget,
+}
+
+impl Property for Diameter {
+    pub fn init(allocator: &PropertyAllocator) -> Self {
+
+    }
+
+    pub fn sample() {
+    }
+}
+
+pub struct PropertyTarget {
+
+}
+
+impl PropertyTarget {
+
+}
+
+*/
+
 impl MachineNew for LaserMachine {
     fn new(args: MachineNewArgs) -> Result<Self, Error> {
         let hw = args.hardware;
@@ -18,12 +57,22 @@ impl MachineNew for LaserMachine {
         let laser = hw.try_get_serial_device_by_index::<LaserDevice>(0)?;
         let (sender, receiver) = tokio::sync::mpsc::channel(2);
 
+        // let diameter_target = diameter.attach_target(export: bool);
+        // let diameter_target = diameter.attach_target_with_tolerance();
+
+        // let properties = args.properties.init::<Properties>();
+        // Self { 
+        //    diameter: properties.diameter 
+        // }
+
         // initalize properties
         let diameter = props.add_length::<millimeter>("diameter", 0.0, true)?;
         let x_diameter = props.add_length::<millimeter>("x_diameter", 0.0, true)?;
         let y_diameter = props.add_length::<millimeter>("y_diameter", 0.0, true)?;
         
-        let in_tolerance = props.add_bool("input_tolerance", false, false)?;
+        // diameter_target = diameter.
+
+        let in_tolerance = props.add_bool("in_tolerance", false, false)?;
         let global_warning = props.add_bool("global_warning", false, false)?;
 
         let target_diameter = 

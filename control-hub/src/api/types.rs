@@ -1,7 +1,43 @@
 use std::{str::FromStr};
 
-use chrono::Duration;
+use chrono::{DateTime, Duration, Utc};
+use machine_core::PropertySchema;
 use serde::{Deserialize, de};
+
+#[derive(Clone, Copy)]
+pub enum Table {
+    Float,
+    Integer,
+}
+
+impl Table {
+    pub fn from_property_spec(spec: &PropertySchema) -> Self {
+        use PropertySchema::*;
+
+        match spec {
+            Integer { .. } | Boolean => Table::Integer,
+            Float { .. } | UoM { .. } => Table::Float,
+        }
+    }
+
+    pub fn to_str(self) -> &'static str {
+        match self {
+            Table::Float => "float",
+            Table::Integer =>"integer",
+        }
+    }
+}
+
+pub struct TimeSpan {
+    pub from: Option<DateTime<Utc>>,
+    pub to: Option<DateTime<Utc>>,
+}
+
+impl TimeSpan {
+    pub fn new(from: Option<DateTime<Utc>>, to: Option<DateTime<Utc>>) -> Self {
+        Self { from, to }
+    }
+}
 
 #[derive(Clone, Default)]
 pub struct Interval {
@@ -25,7 +61,7 @@ impl Interval {
         Duration::seconds(seconds)
     }
 
-    pub fn to_clickhouse_interval(&self) -> String {
+    pub fn to_ch(&self) -> String {
         let mut parts = Vec::new();
 
         if self.week > 0 {
@@ -114,6 +150,16 @@ pub enum Ordering {
     Descending,
 }
 
+impl Ordering {
+    pub fn to_ch(self) -> &'static str {
+        use Ordering::*;
+        match self {
+            Ascending => "ASC",
+            Descending => "DESC",
+        }
+    }
+}
+
 // format
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -123,9 +169,9 @@ pub enum ResponseFormat {
 }
 
 // aggregation
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Copy, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum Aggregation {
+pub enum AggregationOperation {
     Min,
     Max,
     #[serde(rename = "avg")]
@@ -135,4 +181,26 @@ pub enum Aggregation {
     Count,
     First,
     Last,
+}
+
+impl AggregationOperation {
+    pub fn to_ch(self) -> &'static str {
+        use AggregationOperation::*;
+        match self {
+            Average => "avg(value)",
+            Median => "median(value)",
+            Min => "min(value)",
+            Max => "max(value)",
+            Sum => "sum(value)",
+            Count => "count()",
+            First => "argMin(value, ts)",
+            Last => "argMax(value, ts)",
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct Aggregation {
+    pub operation: AggregationOperation,
+    pub interval: Interval,
 }

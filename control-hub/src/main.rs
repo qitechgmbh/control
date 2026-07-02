@@ -1,30 +1,36 @@
 use std::time::Duration;
-use control_hub::{self, DatabaseConfig, BridgeConfig, ExporterConfig, ApiConfig};
+use control_hub::{self, ApiConfig, Config, DatabaseConfig, ExporterConfig, UnixBridge};
+use tokio::{signal::unix::{SignalKind, signal}, sync::watch};
 
 #[tokio::main]
 async fn main() {
-    let database_config = DatabaseConfig { 
-        url: "http://localhost:8123".into(), 
-        user: "default".into(), 
-        database: "qitech_ctrl".into(),
+    let config = Config { 
+            database: DatabaseConfig { 
+            url: "http://localhost:8123".into(), 
+            user: "default".into(), 
+            database: "qitech_ctrl".into(),
+        }, 
+        exporter: ExporterConfig {
+            export_interval: Duration::from_millis(2500)
+        },
+        api: ApiConfig { 
+            address: "0.0.0.0:3000".into(),
+        }
     };
 
-    let bridge_config = BridgeConfig { 
-        socket_path: "/tmp/qitech_ctrl_hub.sock".into()
+    let (shutdown_tx, shutdown_rx) = watch::channel(());
+
+    // install abort handler for graceful shutdown 
+    if let Ok(mut sigterm) = signal(SignalKind::terminate()) {
+        tokio::spawn({
+            async move {
+                sigterm.recv().await;
+                println!("SIGTERM received -> broadcasting shutdown");
+                let _ = shutdown_tx.send(());
+            }
+        });
     };
 
-    let exporter_config = ExporterConfig { 
-        export_interval: Duration::from_millis(2500)
-    };
-
-    let rest_api_config = ApiConfig { 
-        address: "0.0.0.0:3000".into(),
-    };
-
-    control_hub::run_remote(
-        bridge_config, 
-        database_config, 
-        exporter_config, 
-        rest_api_config
-    ).await.unwrap();
+    let bridge = UnixBridge::new("/tmp/qitech_ctrl_hub.sock").unwrap();
+    control_hub::run(config, bridge, shutdown_rx).await.unwrap();
 }

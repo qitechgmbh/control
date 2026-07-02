@@ -3,15 +3,16 @@ use std::collections::HashMap;
 
 const MAX_DATA_LEN: usize = 2048;
 
-mod spec;
-pub use spec::MachineSpec;
-pub use spec::MutationParameterType;
-pub use spec::PropertySpecNode;
-pub use spec::PropertySpec;
-pub use spec::PropertySampling;
+#[cfg(feature = "schema")]
+mod schema;
 
-#[cfg(feature = "serde")]
-mod spec_serde;
+#[cfg(feature = "schema")]
+pub use schema::{
+    MachineSchema,
+    // MutationParameterType,
+    PropertySchemaNode,
+    PropertySchema,
+};
 
 mod hardware;
 pub use hardware::Hardware;
@@ -91,5 +92,5 @@ impl MachineDataRegistry {
 #[derive(Debug, Clone)]
 pub enum MachineError {
     RecoverableFailure(String),
-    IrrecoverableFailure(String), // irrecoverable
+    IrrecoverableFailure(String),
 }
