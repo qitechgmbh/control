@@ -15,6 +15,12 @@ app.commandLine.appendSwitch("js-flags", "--max-old-space-size=4096");
 // Set consistent app ID for Windows taskbar and GNOME dock integration
 app.setAppUserModelId("de.qitech.control-electron");
 
+// Raise the renderer's V8 old-space heap ceiling from Chromium's implicit
+// default to 3GB, and enable non-bucketed performance.memory readings so
+// the heap tracker (see client/memoryMonitor.ts) can react accurately.
+app.commandLine.appendSwitch("js-flags", "--max-old-space-size=3072");
+app.commandLine.appendSwitch("enable-precise-memory-info");
+
 // Ensure single instance
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {

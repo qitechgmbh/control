@@ -10,6 +10,7 @@ import { MachineIdentificationUnique } from "@/machines/types";
 import { FPS_30 } from "@/lib/constants";
 import { mainNamespaceStore } from "./mainNamespace";
 import { router } from "@/routes/router";
+import { trimTimeSeriesFields } from "@/lib/timeseries";
 
 /**
  * Simple buffer-based store updater to limit React re-renders to ~30 FPS
@@ -511,6 +512,19 @@ export type NamespaceImplementationResult<S> = (namespaceId: NamespaceId) => S;
 
 export function useBackendConnected(): boolean {
   return useSocketioStore((s) => s.backendConnected);
+}
+
+/**
+ * Trims the oldest `cutMs` of graph history from every active machine namespace's
+ * TimeSeries fields, to relieve renderer heap pressure. See client/memoryMonitor.ts.
+ */
+export function trimAllNamespaceTimeSeries(cutMs: number): void {
+  const { namespaces } = useSocketioStore.getState();
+  for (const ns of Object.values(namespaces)) {
+    ns.store.setState((state) =>
+      trimTimeSeriesFields(state as Record<string, unknown>, cutMs),
+    );
+  }
 }
 
 export function createNamespaceHookImplementation<S>({

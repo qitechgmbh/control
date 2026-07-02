@@ -305,6 +305,75 @@ export function resetSeries(series: Series): void {
   series.validCount = 0;
 }
 
+/** Retention window never shrinks below this, so repeated trims can't erase a series. */
+export const MIN_RETENTION_MS = 50 * 60 * 1000; // 50 min
+
+/**
+ * Shrinks a series' retention window by cutMs (down to minRetentionMs), reallocating
+ * a smaller `values` array so the discarded entries are actually freed on next GC
+ * rather than just being ignored by readers.
+ */
+export function trimSeries(
+  series: Series,
+  cutMs: number,
+  minRetentionMs: number = MIN_RETENTION_MS,
+): Series {
+  const newTimeWindow = Math.max(series.timeWindow - cutMs, minRetentionMs);
+  if (newTimeWindow >= series.timeWindow) return series; // already at floor
+
+  const [timestamps, values] = extractDataFromSeries(series, newTimeWindow);
+  const newSize = Math.max(1, Math.ceil(newTimeWindow / series.sampleInterval));
+
+  const newValues: (TimeSeriesValue | null)[] = Array.from(
+    { length: newSize },
+    () => ({ value: 0, timestamp: 0 }),
+  );
+  const count = Math.min(timestamps.length, newSize);
+  for (let i = 0; i < count; i++) {
+    newValues[i] = { value: values[i], timestamp: timestamps[i] };
+  }
+
+  return {
+    ...series,
+    values: newValues,
+    size: newSize,
+    index: count % newSize,
+    validCount: count,
+    timeWindow: newTimeWindow,
+  };
+}
+
+/**
+ * Trims the `long` series of every TimeSeries-shaped field on a namespace store's
+ * state object. Duck-types fields rather than requiring per-machine registration,
+ * so it works generically across every machine's store.
+ */
+function isTimeSeries(value: unknown): value is TimeSeries {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "current" in value &&
+    "long" in value &&
+    "short" in value
+  );
+}
+
+export function trimTimeSeriesFields<S extends Record<string, unknown>>(
+  state: S,
+  cutMs: number,
+): Partial<S> {
+  const patch: Partial<S> = {};
+  for (const [key, value] of Object.entries(state)) {
+    if (isTimeSeries(value)) {
+      (patch as Record<string, unknown>)[key] = {
+        ...value,
+        long: trimSeries(value.long, cutMs),
+      };
+    }
+  }
+  return patch;
+}
+
 /**
  * Aligns target series values with a given set of timestamps.
  * For each timestamp in dataTimestamps, finds the most recent target value
