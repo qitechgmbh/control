@@ -306,7 +306,7 @@ export function resetSeries(series: Series): void {
 }
 
 /** Retention window never shrinks below this, so repeated trims can't erase a series. */
-export const MIN_RETENTION_MS = 50 * 60 * 1000; // 50 min
+export const MIN_RETENTION_MS = 40 * 60 * 1000; // 40 min
 
 /**
  * Shrinks a series' retention window by cutMs (down to minRetentionMs), reallocating
