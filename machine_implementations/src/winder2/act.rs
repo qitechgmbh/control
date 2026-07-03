@@ -1,6 +1,6 @@
-use qitech_lib::machines::{Machine, MachineError, MachineIdentificationUnique};
 use super::Winder2;
-use crate::{MACHINE_LASER_V1, MachineApi, laser::LaserData};
+use crate::{MachineApi, laser::LaserData};
+use qitech_lib::machines::{Machine, MachineError, MachineIdentificationUnique};
 use std::time::{Duration, Instant};
 
 impl Machine for Winder2 {
@@ -43,13 +43,11 @@ impl Machine for Winder2 {
     }
 
     fn react(&mut self, registry: &qitech_lib::machines::MachineDataRegistry) {
-        let laser_data : Result<LaserData, &'static str> = match self.laser_ident {
-            Some(ident) => {
-                registry.load(&ident)
-            },
+        let laser_data: Result<LaserData, &'static str> = match self.laser_ident {
+            Some(ident) => registry.load(&ident),
             None => {
                 return;
-            },
+            }
         };
 
         match laser_data {
@@ -68,11 +66,11 @@ impl Machine for Winder2 {
                         upper,
                         last_speed,
                         Instant::now(),
-                );                    
+                    );
             }
             Err(_e) => {
                 self.laser_ident = None;
-            },
+            }
         }
     }
 }

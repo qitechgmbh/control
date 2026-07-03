@@ -1,5 +1,5 @@
 #[cfg(not(feature = "mock-machine"))]
-use crate::{machine_identification::QiTechMachineIdentificationUnique};
+use crate::machine_identification::QiTechMachineIdentificationUnique;
 use crate::winder2::Winder2Mode;
 
 pub use super::api::{
@@ -548,19 +548,17 @@ impl Winder2 {
             .set_tolerance_limit(Length::new::<millimeter>(value));
         self.emit_state();
     }
-    
+
     pub fn puller_set_adaptive_reference_machine(
         &mut self,
         machine_uid: Option<QiTechMachineIdentificationUnique>,
     ) -> Result<(), anyhow::Error> {
-
         let machine_uid = match machine_uid {
             Some(muid) => muid,
-            None => 
-            {
+            None => {
                 self.emit_state();
                 return Ok(());
-            },
+            }
         };
         self.laser_ident = Some(machine_uid.into());
         self.emit_state();

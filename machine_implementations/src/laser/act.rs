@@ -5,7 +5,7 @@ use qitech_lib::machines::{
 };
 use std::time::{Duration, Instant};
 
-const REG_ERR_MESSAGE : &str = "Laser Couldnt write to the MachineDataRegistry";
+const REG_ERR_MESSAGE: &str = "Laser Couldnt write to the MachineDataRegistry";
 impl Machine for LaserMachine {
     fn act(&mut self, reg: Option<&mut MachineDataRegistry>) -> Result<(), MachineError> {
         let now: Instant = std::time::Instant::now();
@@ -34,21 +34,21 @@ impl Machine for LaserMachine {
             None => (),
         };
 
-
         match reg {
             Some(reg) => {
-                let data = LaserData{ live_values: self.get_live_values(), state: self.get_state()};
+                let data = LaserData {
+                    live_values: self.get_live_values(),
+                    state: self.get_state(),
+                };
                 let res = reg.store(self.machine_identification_unique, &data);
                 if res.is_err() {
-                    self.error = Some(MachineError::RecoverableFailure(REG_ERR_MESSAGE.to_string()));
+                    self.error = Some(MachineError::RecoverableFailure(
+                        REG_ERR_MESSAGE.to_string(),
+                    ));
                 }
-            },
-            None => {
-                ()
-            },
+            }
+            None => (),
         };
-
-
 
         Ok(())
     }

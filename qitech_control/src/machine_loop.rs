@@ -91,7 +91,7 @@ pub fn run_machines(
         let machine = machines
             .get_mut(i)
             .expect("Machine should NEVER be NONE here (run_machines)!!");
-        machine.react(reg);            
+        machine.react(reg);
     }
 
     if machine_errored_i.is_some() {

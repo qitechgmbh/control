@@ -15,11 +15,11 @@ use qitech_lib::{
     ethercat_hal::{BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer},
     machines::MachineIdentificationUnique,
 };
-use tokio_serial::available_ports;
 #[cfg(not(feature = "mock"))]
 use std::{sync::Arc, time::Duration};
 use tokio::sync::mpsc::{Receiver, Sender};
-use tokio_serial::{SerialPortInfo, available_ports};
+use tokio_serial::SerialPortInfo;
+use tokio_serial::available_ports;
 
 #[cfg(not(feature = "mock"))]
 use crate::app_state::MainState;

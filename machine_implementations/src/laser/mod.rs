@@ -1,29 +1,37 @@
 use crate::{MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
+use postcard::from_bytes;
+use postcard::to_slice;
 use qitech_lib::{
-    machines::{ConvertMachineData, MachineData, MachineError, MachineIdentification, MachineIdentificationUnique}, modbus::{
+    machines::{
+        ConvertMachineData, MachineData, MachineError, MachineIdentification,
+        MachineIdentificationUnique,
+    },
+    modbus::{
         ModbusDevice,
         devices::qitech_laser::{LaserDevice, LaserError},
-    }, units::{Length, length::millimeter},
+    },
+    units::{Length, length::millimeter},
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    any::TypeId, cell::RefCell, rc::Rc, time::{Duration, Instant},
+    any::TypeId,
+    cell::RefCell,
+    rc::Rc,
+    time::{Duration, Instant},
 };
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
-use postcard::from_bytes;
-use postcard::to_slice;
 
 pub mod act;
 pub mod api;
 pub mod new;
 
-#[derive(Debug, Serialize, Deserialize,Default)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct LaserData {
-    pub live_values : LiveValuesEvent,
-    pub state : StateEvent,
+    pub live_values: LiveValuesEvent,
+    pub state: StateEvent,
 }
 
 impl ConvertMachineData for LaserData {
