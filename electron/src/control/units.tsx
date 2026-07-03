@@ -35,7 +35,7 @@ export function getUnitIcon(unit: Unit): IconName {
     case "kWh":
       return "lu:BatteryFull";
     case "l/min":
-      return "lu:Waves";
+      return "lu:WavesHorizontal";
     case "%":
       return "lu:ChartNoAxesColumn";
     case "µs":
