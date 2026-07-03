@@ -42,6 +42,7 @@ export function useAquapath1() {
   const {
     state,
     defaultState,
+    swapSides,
     front_temperature,
     back_temperature,
     front_flow,
@@ -386,6 +387,20 @@ export function useAquapath1() {
     );
   };
 
+  const setSwapSides = (value: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.swap_sides = value;
+      },
+      () => {
+        requestSetSwapSides({
+          machine_identification_unique: machineIdentification,
+          data: { SetSwapSides: value },
+        });
+      },
+    );
+  };
+
   // Mutation hooks
   const { request: requestAquapathMode } = useMachineMutation(
     z.object({ SetAquaPathMode: z.enum(["Standby", "Auto"]) }),
@@ -455,6 +470,10 @@ export function useAquapath1() {
     z.object({ SetBackPumpCooldownMinTemperature: z.number() }),
   );
 
+  const { request: requestSetSwapSides } = useMachineMutation(
+    z.object({ SetSwapSides: z.boolean() }),
+  );
+
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
     producer: (current: StateEvent) => void,
@@ -470,6 +489,9 @@ export function useAquapath1() {
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
+
+    // Side swap state
+    swapSides,
 
     // Default state for initial values
     defaultState: defaultState?.data,
@@ -524,5 +546,6 @@ export function useAquapath1() {
     setBackThermalFlowSettleDuration,
     setFrontPumpCooldownMinTemperature,
     setBackPumpCooldownMinTemperature,
+    setSwapSides,
   };
 }

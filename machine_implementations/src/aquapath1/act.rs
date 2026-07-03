@@ -30,11 +30,13 @@ impl Machine for AquaPathV1 {
         let back_notices = self.back_controller.drain_notices();
 
         for notice in front_notices.iter().copied() {
-            self.emit_controller_notice("Reservoir 2 (Front)", notice);
+            let label = self.front_side_label();
+            self.emit_controller_notice(label, notice);
         }
 
         for notice in back_notices.iter().copied() {
-            self.emit_controller_notice("Reservoir 1 (Back)", notice);
+            let label = self.back_side_label();
+            self.emit_controller_notice(label, notice);
         }
 
         if !front_notices.is_empty() || !back_notices.is_empty() {

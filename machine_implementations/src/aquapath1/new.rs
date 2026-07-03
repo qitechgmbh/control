@@ -2,6 +2,7 @@ use super::{
     AquaPathV1, AquaPathV1Mode,
     api::AquaPathV1Namespace,
     controller::{Controller, ControllerConfig},
+    persist,
 };
 use super::{Flow, Temperature};
 use crate::{MachineHardware, MachineNew};
@@ -106,6 +107,8 @@ impl MachineNew for AquaPathV1 {
             BACK_TEMP_SENSOR_PORT,
         );
 
+        let settings = persist::load_settings(hw.identification.serial);
+
         let mut machine = Self {
             api_receiver: receiver,
             api_sender: sender,
@@ -116,6 +119,7 @@ impl MachineNew for AquaPathV1 {
             last_measurement_emit: Instant::now(),
             front_controller,
             back_controller,
+            swap_sides: settings.swap_sides,
         };
         machine.emit_state();
         Ok(machine)

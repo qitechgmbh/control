@@ -137,6 +137,7 @@ export const liveValuesEventDataSchema = z.object({
  */
 export const stateEventDataSchema = z.object({
   is_default_state: z.boolean(),
+  swap_sides: z.boolean().optional().default(false),
   mode_state: modeStateSchema,
   ambient_temperature_calibration: z.number().optional().default(22),
   flow_states: flowStatesSchema,
@@ -168,6 +169,8 @@ export type Aquapath1NamespaceStore = {
   // Single state event from server
   state: StateEvent | null;
   defaultState: StateEvent | null;
+
+  swapSides: boolean;
 
   front_flow: TimeSeries;
   back_flow: TimeSeries;
@@ -249,6 +252,7 @@ export const createAquapath1NamespaceStore =
       return {
         state: null,
         defaultState: null,
+        swapSides: false,
         front_temperature: front_temperature,
         back_temperature: back_temperature,
         front_flow: front_flow,
@@ -313,6 +317,7 @@ export function aquapath1MessageHandler(
         updateStore((state) => ({
           ...state,
           state: stateEvent,
+          swapSides: stateEvent.data.swap_sides ?? false,
           // only set default state if is_default_state is true
           defaultState: stateEvent.data.is_default_state
             ? stateEvent

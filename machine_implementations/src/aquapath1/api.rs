@@ -1,4 +1,4 @@
-use super::{AquaPathV1, AquaPathV1Mode, controller::CoolingMode};
+use super::{AquaPathV1, AquaPathV1Mode, controller::CoolingMode, persist};
 use crate::{MachineApi, MachineMessage, MachineValues};
 use control_core::socketio::{
     event::{Event, GenericEvent},
@@ -48,6 +48,7 @@ impl LiveValuesEvent {
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
     pub is_default_state: bool,
+    pub swap_sides: bool,
     /// mode state
     pub mode_state: ModeState,
     pub ambient_temperature_calibration: f64,
@@ -179,6 +180,8 @@ enum Mutation {
     //Mode
     SetAquaPathMode(AquaPathV1Mode),
 
+    SetSwapSides(bool),
+
     SetFrontTemperature(f64),
     SetBackTemperature(f64),
 
@@ -274,6 +277,21 @@ impl MachineApi for AquaPathV1 {
         let control: Mutation = serde_json::from_value(request_body)?;
         match control {
             Mutation::SetAquaPathMode(mode) => self.set_mode_state(mode),
+            Mutation::SetSwapSides(value) => {
+                if self.mode != AquaPathV1Mode::Standby {
+                    anyhow::bail!("Side swap can only be changed in Standby mode");
+                }
+                self.swap_sides = value;
+                self.emit_state();
+                if let Err(e) = persist::save_settings(
+                    self.machine_identification_unique.serial,
+                    &persist::AquaPathV1Settings {
+                        swap_sides: value,
+                    },
+                ) {
+                    tracing::warn!("Failed to persist swap_sides setting: {e}");
+                }
+            }
             Mutation::SetBackTemperature(temperature) => {
                 self.set_target_temperature(temperature, super::AquaPathSideType::Back)
             }

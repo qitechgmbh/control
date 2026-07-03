@@ -16,6 +16,8 @@ export function Aquapath1SettingsPage() {
 
   const {
     state,
+    swapSides,
+    setSwapSides,
     setFrontRevolutions,
     setBackRevolutions,
     setFrontHeatingTolerance,
@@ -62,7 +64,29 @@ export function Aquapath1SettingsPage() {
             />
           </Label>
         </ControlCard>
-
+        <ControlCard title="Side Swap">
+          <div className="flex flex-col gap-3">
+            <Label label="Swap Left / Right Reservoirs">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 rounded border-zinc-300 text-primary focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  checked={swapSides ?? false}
+                  disabled={!isStandby}
+                  onChange={(e) => setSwapSides(e.target.checked)}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {swapSides ? "Sides swapped" : "Normal"}
+                </span>
+              </div>
+            </Label>
+            <p className="text-muted-foreground text-sm">
+              Swap the software mapping when physical wiring is reversed. All
+              front/back labels, controls, and sensor readings are mirrored. Only
+              available in Standby mode.
+            </p>
+          </div>
+        </ControlCard>
         <ControlCard title="Reservoir 2 (Front) Fan Revolutions">
           <Label label="Set Max Revolution Speed">
             <EditValue
