@@ -1,15 +1,22 @@
 use crate::{MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
+use postcard::from_bytes;
+use postcard::to_slice;
 use qitech_lib::{
-    machines::{MachineError, MachineIdentification, MachineIdentificationUnique},
+    machines::{
+        ConvertMachineData, MachineData, MachineError, MachineIdentification,
+        MachineIdentificationUnique,
+    },
     modbus::{
         ModbusDevice,
         devices::qitech_laser::{LaserDevice, LaserError},
     },
     units::{Length, length::millimeter},
 };
+use serde::{Deserialize, Serialize};
 use std::{
+    any::TypeId,
     cell::RefCell,
     rc::Rc,
     time::{Duration, Instant},
@@ -20,6 +27,35 @@ use tokio::sync::mpsc::Sender;
 pub mod act;
 pub mod api;
 pub mod new;
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct LaserData {
+    pub live_values: LiveValuesEvent,
+    pub state: StateEvent,
+}
+
+impl ConvertMachineData for LaserData {
+    fn to_machine_data(&self, data: &mut MachineData) -> Result<(), &'static str> {
+        let serialized_bytes =
+            to_slice(self, &mut data.data).map_err(|_| "Postcard serialization failed")?;
+        data.type_id = TypeId::of::<Self>();
+        data.length = serialized_bytes.len();
+        Ok(())
+    }
+
+    fn from_machine_data(machine_data: &MachineData, out: &mut Self) -> Result<(), &'static str> {
+        if machine_data.type_id != TypeId::of::<Self>() {
+            return Err("Typeid Mismatch");
+        }
+        if machine_data.length == 0 {
+            return Err("Empty buffer data");
+        }
+        let deserialized: Self =
+            from_bytes(&machine_data.data).map_err(|_| "Postcard deserialization failed")?;
+        *out = deserialized;
+        Ok(())
+    }
+}
 
 pub enum LaserRequestState {
     Waiting(Instant),
@@ -145,10 +181,7 @@ impl LaserMachine {
         self.emit_state();
     }
 
-    /*
-    ///
     /// Roundness = min(x, y) / max(x, y)
-    ///
     fn calculate_roundness(&mut self) -> Option<f64> {
         match (self.x_diameter, self.y_diameter) {
             (Some(x), Some(y)) => {
@@ -166,7 +199,7 @@ impl LaserMachine {
             }
             _ => None,
         }
-    }*/
+    }
 
     ///
     /// Calculates if the current diameter is inside of the tolerance
@@ -231,6 +264,7 @@ impl LaserMachine {
             None => (),
         };
         drop(laser);
+        self.roundness = self.calculate_roundness();
 
         if self.in_tolerance != self.calculate_in_tolerance() {
             self.did_change_state = true;

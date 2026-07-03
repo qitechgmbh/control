@@ -1,8 +1,7 @@
-use qitech_lib::machines::{Machine, MachineError, MachineIdentificationUnique};
-
 use super::Winder2;
-use crate::MachineApi;
-use std::time::Duration;
+use crate::{MachineApi, laser::LaserData};
+use qitech_lib::machines::{Machine, MachineError, MachineIdentificationUnique};
+use std::time::{Duration, Instant};
 
 impl Machine for Winder2 {
     fn get_identification(&self) -> MachineIdentificationUnique {
@@ -43,5 +42,35 @@ impl Machine for Winder2 {
         Ok(())
     }
 
-    fn react(&mut self, _registry: &qitech_lib::machines::MachineDataRegistry) {}
+    fn react(&mut self, registry: &qitech_lib::machines::MachineDataRegistry) {
+        let laser_data: Result<LaserData, &'static str> = match self.laser_ident {
+            Some(ident) => registry.load(&ident),
+            None => {
+                return;
+            }
+        };
+
+        match laser_data {
+            Ok(laser_data) => {
+                let current = laser_data.live_values.diameter;
+                let target = laser_data.state.laser_state.target_diameter;
+                let lower = laser_data.state.laser_state.lower_tolerance;
+                let upper = laser_data.state.laser_state.higher_tolerance;
+                let last_speed = self.puller_speed_controller.last_speed;
+                self.puller_speed_controller
+                    .adaptive
+                    .update_with_measurement(
+                        current,
+                        target,
+                        lower,
+                        upper,
+                        last_speed,
+                        Instant::now(),
+                    );
+            }
+            Err(_e) => {
+                self.laser_ident = None;
+            }
+        }
+    }
 }

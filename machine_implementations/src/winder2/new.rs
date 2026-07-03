@@ -175,6 +175,7 @@ impl Winder2 {
             },
             machine_identification_unique: hw.identification,
             laser_enabled: false,
+            laser_ident: None,
         };
 
         // initialize events
@@ -299,6 +300,7 @@ impl Winder2 {
             },
             machine_identification_unique: hw.identification,
             laser_enabled: false,
+            laser_ident: None,
         };
 
         // initialize events

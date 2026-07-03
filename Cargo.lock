@@ -175,6 +175,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "atomic-polyfill"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8cf2bce30dfe09ef0bfaef228b9d414faaf7e563035494d7fe092dba54b300f4"
+dependencies = [
+ "critical-section",
+]
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -415,6 +424,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
+name = "cobs"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fa961b519f0b462e3a3b4a34b64d119eeaca1d59af726fe450bbba07a9fc0a1"
+dependencies = [
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "colored"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -427,7 +445,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=52580d413ca482c535ab46f1ed73b7bc2ed58ca5#52580d413ca482c535ab46f1ed73b7bc2ed58ca5"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=657ca9a2a89c928108626d12bb7476dab4071dbe#657ca9a2a89c928108626d12bb7476dab4071dbe"
 dependencies = [
  "anyhow",
  "libc",
@@ -714,6 +732,12 @@ dependencies = [
 
 [[package]]
 name = "embedded-io"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef1a6892d9eef45c8fa6b9e0086428a2cca8491aca8f787c534a3d6d0bcb3ced"
+
+[[package]]
+name = "embedded-io"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
@@ -724,7 +748,7 @@ version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ff09972d4073aa8c299395be75161d582e7629cd663171d62af73c8d50dba3f"
 dependencies = [
- "embedded-io",
+ "embedded-io 0.6.1",
 ]
 
 [[package]]
@@ -805,7 +829,7 @@ dependencies = [
 [[package]]
 name = "ethercat_hal"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=52580d413ca482c535ab46f1ed73b7bc2ed58ca5#52580d413ca482c535ab46f1ed73b7bc2ed58ca5"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=657ca9a2a89c928108626d12bb7476dab4071dbe#657ca9a2a89c928108626d12bb7476dab4071dbe"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -828,7 +852,7 @@ dependencies = [
 [[package]]
 name = "ethercat_hal_derive"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=52580d413ca482c535ab46f1ed73b7bc2ed58ca5#52580d413ca482c535ab46f1ed73b7bc2ed58ca5"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=657ca9a2a89c928108626d12bb7476dab4071dbe#657ca9a2a89c928108626d12bb7476dab4071dbe"
 dependencies = [
  "deluxe",
  "proc-macro2",
@@ -850,7 +874,7 @@ dependencies = [
  "embedded-io-async",
  "ethercrab-wire 0.2.0",
  "futures-lite",
- "heapless",
+ "heapless 0.8.0",
  "io-uring",
  "libc",
  "log",
@@ -861,7 +885,7 @@ dependencies = [
  "slab",
  "smallvec",
  "smlang",
- "spin",
+ "spin 0.10.0",
  "timerfd",
 ]
 
@@ -879,7 +903,7 @@ dependencies = [
  "embedded-io-async",
  "ethercrab-wire 0.3.0",
  "futures-lite",
- "heapless",
+ "heapless 0.8.0",
  "io-uring",
  "libc",
  "lock_api",
@@ -891,7 +915,7 @@ dependencies = [
  "slab",
  "smallvec",
  "smlang",
- "spin",
+ "spin 0.10.0",
  "timerfd",
 ]
 
@@ -901,7 +925,7 @@ version = "0.2.0"
 source = "git+https://github.com/v-morlock/ethercrab?branch=main#d297d13389d85a4edb4e69cc98f9dd7f12626cac"
 dependencies = [
  "ethercrab-wire-derive 0.2.0",
- "heapless",
+ "heapless 0.8.0",
 ]
 
 [[package]]
@@ -910,7 +934,7 @@ version = "0.3.0"
 source = "git+https://github.com/ethercrab-rs/ethercrab?branch=main#4c7d36157fa5caab3194df494e92e08551cd2e43"
 dependencies = [
  "ethercrab-wire-derive 0.3.0",
- "heapless",
+ "heapless 0.8.0",
 ]
 
 [[package]]
@@ -1178,6 +1202,15 @@ dependencies = [
 
 [[package]]
 name = "hash32"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0c35f58762feb77d74ebe43bdbc3210f09be9fe6742234d573bacc26ed92b67"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
+name = "hash32"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47d60b12902ba28e2730cd37e95b8c9223af2808df9e902d4df49588d1470606"
@@ -1193,11 +1226,25 @@ checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
 
 [[package]]
 name = "heapless"
+version = "0.7.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cdc6457c0eb62c71aac4bc17216026d8410337c4126773b9c5daba343f17964f"
+dependencies = [
+ "atomic-polyfill",
+ "hash32 0.2.1",
+ "rustc_version",
+ "serde",
+ "spin 0.9.8",
+ "stable_deref_trait",
+]
+
+[[package]]
+name = "heapless"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bfb9eb618601c89945a70e254898da93b13be0388091d42117462b265bb3fad"
 dependencies = [
- "hash32",
+ "hash32 0.3.1",
  "stable_deref_trait",
 ]
 
@@ -1495,6 +1542,7 @@ dependencies = [
  "control_core",
  "euclid",
  "lazy_static",
+ "postcard",
  "qitech_lib",
  "serde",
  "serde_json",
@@ -1506,7 +1554,7 @@ dependencies = [
 [[package]]
 name = "machines"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=52580d413ca482c535ab46f1ed73b7bc2ed58ca5#52580d413ca482c535ab46f1ed73b7bc2ed58ca5"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=657ca9a2a89c928108626d12bb7476dab4071dbe#657ca9a2a89c928108626d12bb7476dab4071dbe"
 
 [[package]]
 name = "matchit"
@@ -1572,7 +1620,7 @@ dependencies = [
 [[package]]
 name = "modbus"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=52580d413ca482c535ab46f1ed73b7bc2ed58ca5#52580d413ca482c535ab46f1ed73b7bc2ed58ca5"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=657ca9a2a89c928108626d12bb7476dab4071dbe#657ca9a2a89c928108626d12bb7476dab4071dbe"
 dependencies = [
  "anyhow",
  "common",
@@ -1838,6 +1886,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "postcard"
+version = "1.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6764c3b5dd454e283a30e6dfe78e9b31096d9e32036b5d1eaac7a6119ccb9a24"
+dependencies = [
+ "cobs",
+ "embedded-io 0.4.0",
+ "embedded-io 0.6.1",
+ "heapless 0.7.17",
+ "serde",
+]
+
+[[package]]
 name = "ppv-lite86"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1889,6 +1950,7 @@ dependencies = [
  "serde_json",
  "socketioxide",
  "tokio",
+ "tokio-serial",
  "tower-http",
  "tracing",
 ]
@@ -1896,7 +1958,7 @@ dependencies = [
 [[package]]
 name = "qitech_lib"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=52580d413ca482c535ab46f1ed73b7bc2ed58ca5#52580d413ca482c535ab46f1ed73b7bc2ed58ca5"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=657ca9a2a89c928108626d12bb7476dab4071dbe#657ca9a2a89c928108626d12bb7476dab4071dbe"
 dependencies = [
  "bitvec",
  "common",
@@ -1904,7 +1966,6 @@ dependencies = [
  "ethercat_hal_derive",
  "machines",
  "modbus",
- "serial",
  "tokio",
  "units",
 ]
@@ -2053,6 +2114,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustc_version"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
+dependencies = [
+ "semver",
+]
+
+[[package]]
 name = "rustix"
 version = "0.38.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2115,6 +2185,12 @@ dependencies = [
  "quote",
  "syn 2.0.118",
 ]
+
+[[package]]
+name = "semver"
+version = "1.0.28"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd"
 
 [[package]]
 name = "serde"
@@ -2180,17 +2256,6 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
-]
-
-[[package]]
-name = "serial"
-version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=52580d413ca482c535ab46f1ed73b7bc2ed58ca5#52580d413ca482c535ab46f1ed73b7bc2ed58ca5"
-dependencies = [
- "anyhow",
- "tokio",
- "tokio-modbus",
- "tokio-serial",
 ]
 
 [[package]]
@@ -2386,6 +2451,15 @@ dependencies = [
 
 [[package]]
 name = "spin"
+version = "0.9.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
+dependencies = [
+ "lock_api",
+]
+
+[[package]]
+name = "spin"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5fe4ccb98d9c292d56fec89a5e07da7fc4cf0dc11e156b41793132775d3e591"
@@ -2577,12 +2651,13 @@ dependencies = [
 
 [[package]]
 name = "tokio-serial"
-version = "5.4.5"
+version = "5.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa1d5427f11ba7c5e6384521cfd76f2d64572ff29f3f4f7aa0f496282923fdc8"
+checksum = "dd00f5f8b1e01c3e5afccd9e42ed80c2ad2df6d007877f29f8592c62e69cd116"
 dependencies = [
  "cfg-if",
- "futures",
+ "futures-core",
+ "futures-sink",
  "log",
  "mio-serial",
  "serialport",
@@ -2819,7 +2894,7 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 [[package]]
 name = "units"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=52580d413ca482c535ab46f1ed73b7bc2ed58ca5#52580d413ca482c535ab46f1ed73b7bc2ed58ca5"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=657ca9a2a89c928108626d12bb7476dab4071dbe#657ca9a2a89c928108626d12bb7476dab4071dbe"
 dependencies = [
  "uom",
 ]
