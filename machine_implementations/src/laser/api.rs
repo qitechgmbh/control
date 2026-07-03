@@ -13,7 +13,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use tracing::instrument;
 
-#[derive(Serialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct LiveValuesEvent {
     /// diameter measurement in mm
     pub diameter: f64,
@@ -28,7 +28,7 @@ impl LiveValuesEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct StateEvent {
     pub is_default_state: bool,
     /// laser state
@@ -41,7 +41,7 @@ impl StateEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct LaserState {
     /// higher tolerance in mm
     pub higher_tolerance: f64,
