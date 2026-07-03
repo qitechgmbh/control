@@ -3,7 +3,6 @@ members = [
     "qitech_control",
     "control-core",
     "machine_implementations",
-#    "utils",
 ]
 exclude = []
 resolver = "2"
