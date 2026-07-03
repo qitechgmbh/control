@@ -4,49 +4,22 @@ identification:
   vendor_id: 1
   machine_id: 6
 
-#  | range | deviation
 properties:
   diameter:
     type: millimeter
-    repr: latest
-    target: exact
-    limits: 
-      min: 0
-      max: 10
+    target: deviation
 
-  x_diameter:
-    desc: "Measured diameter in the x-axis of the laser"
-    type: millimeter
-    sampling: simple
+  x_diameter: millimeter
+  y_diameter: millimeter
 
-  y_diameter: 
-    desc: "Measured diameter in the y-axis of the laser"
-    type: millimeter
-    sampling: simple
+  global_warning: bool
 
-  input_tolerance:
-    type: millimeter
-    sampling: simple
-
-  global_warning: 
-    type: bool
-    sampling: simple
-
-  config: 
-    target_diameter:
-      type: millimeter
-      sampling: simple
-
-    higher_tolerance:
-      type: millimeter
-      sampling: simple
-
-    lower_tolerance:
-      type: millimeter
-      sampling: simple
-
+mutations:
 # mutations:
 #   set_target_diameter:
+#     items: 
+#       type: millimeter
+# 
 #     value: 
 #       type: float
 #       min: 0.0
@@ -58,12 +31,18 @@ properties:
 #   set_higher_tolerance: 
 #     value: float
 
-descriptions: 
-  diameter: 
+descriptions:
+  diameter:
     en-US: "Measured diameter of the laser"
-  
-  x_diameter: 
-    en-US: "Measured diameter of the x-axis of the laser"
+    pt-BR: "Diâmetro medido do laser"
+    de-DE: "Gemessener Durchmesser des Lasers"
 
-  y_diameter: 
+  x_diameter:
     en-US: "Measured diameter of the x-axis of the laser"
+    pt-BR: "Diâmetro medido no eixo X do laser"
+    de-DE: "Gemessener Durchmesser entlang der X-Achse des Lasers"
+
+  y_diameter:
+    en-US: "Measured diameter of the y-axis of the laser"
+    pt-BR: "Diâmetro medido no eixo Y do laser"
+    de-DE: "Gemessener Durchmesser entlang der Y-Achse des Lasers"

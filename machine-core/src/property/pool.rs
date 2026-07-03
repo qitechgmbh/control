@@ -2,29 +2,53 @@ use std::fmt::Debug;
 use super::{PropertyAllocatorError, PropertyEntry};
 
 #[derive(Debug, Default, Clone)]
-struct PropertySlot<T> {
-    entry: Option<PropertyEntry<T>>,
+pub struct PropertySlot<T: Clone> {
+    entry: PropertyEntry<T>,
     dirty: bool,
-    dirty_always: bool,
+    default_value: T,
+    can_reset_dirty: bool,
+    can_reset_value: bool,
+}
+
+impl<T: Clone> PropertySlot<T>  {
+    pub fn new(    
+        entry: PropertyEntry<T>,
+        dirty: bool,
+        default_value: T,
+        can_reset_dirty: bool,
+        can_reset_value: bool
+    ) -> Self {
+        Self { entry, dirty, default_value, can_reset_dirty, can_reset_value }
+    }
+
+    fn reset(&mut self) {
+        if self.can_reset_dirty {
+            self.dirty = false;
+        }
+
+        if self.can_reset_value {
+            self.entry.value = self.default_value.clone();
+        }
+    }
 }
 
 #[derive(Clone)]
-pub struct PropertyPool<T: Default, const CAPACITY: usize> {
-    slots: [PropertySlot<T>; CAPACITY],
+pub struct PropertyPool<T: Clone + Default, const CAPACITY: usize> {
+    slots: [Option<PropertySlot<T>>; CAPACITY],
     last: usize,
 }
 
-impl<T: Debug + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
-    pub fn add(&mut self, entry: PropertyEntry<T>, always_dirty: bool) -> Result<(*mut T, *mut bool), PropertyAllocatorError> {
+impl<T: Clone + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
+    pub fn add(&mut self, slot: PropertySlot<T>) -> Result<(*mut T, *mut bool), PropertyAllocatorError> {
         // try to find empty slot
         for i in 0..self.last {
-            if self.slots[i].entry.is_none() {
-                self.slots[i].entry = Some(entry);
-                self.slots[i].dirty = true;
+            if self.slots[i].is_none() {
+                self.slots[i] = Some(slot);
+                let slot_ref = self.slots[i].as_mut().expect("Just inserted");
 
                 return Ok((
-                    &mut self.slots[i].entry.as_mut().expect("must be Some").value,
-                    &mut self.slots[i].dirty,
+                    &mut slot_ref.entry.value,
+                    &mut slot_ref.dirty,
                 ));
             }
         }
@@ -32,14 +56,14 @@ impl<T: Debug + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
         // append if space available
         if self.last < CAPACITY {
             let idx = self.last;
-            self.slots[idx].entry = Some(entry);
-            self.slots[idx].dirty = true;
-            self.slots[idx].dirty_always = always_dirty;
+            self.slots[idx] = Some(slot);
             self.last += 1;
+            
+            let slot_ref = self.slots[idx].as_mut().expect("Just inserted");
 
             return Ok((
-                &mut self.slots[idx].entry.as_mut().expect("must be Some").value,
-                &mut self.slots[idx].dirty,
+                &mut slot_ref.entry.value,
+                &mut slot_ref.dirty,
             ));
         }
 
@@ -53,8 +77,7 @@ impl<T: Debug + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
         }
 
         // mark as unused
-        self.slots[index].entry = None;
-        self.slots[index].dirty = false;
+        self.slots[index] = None;
 
         // if removing the last active element, shrink `last`
         if index == self.last.saturating_sub(1) {
@@ -64,7 +87,7 @@ impl<T: Debug + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
             while self.last > 0 {
                 let i = self.last - 1;
 
-                if self.slots[i].entry.is_some() {
+                if self.slots[i].is_some() {
                     self.last = i;
                     break;
                 }
@@ -84,17 +107,17 @@ impl<T: Debug + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
     pub fn dirty_count(&self) -> usize {
         let mut count = 0;
         for item in &self.slots {
-            if item.dirty {
-                count += 1;
-            }
+            let Some(slot) = item else { continue };
+            if slot.dirty { count += 1 }
         }
 
         count
     }
 
-    pub fn reset_dirty_flags(&mut self) {
+    pub fn reset_properties(&mut self) {
         for item in &mut self.slots {
-            item.dirty = false;
+            let Some(slot) = item else { continue };
+            slot.reset();
         }
     }
 
@@ -108,23 +131,23 @@ impl<T: Debug + Default, const CAPACITY: usize> PropertyPool<T, CAPACITY> {
     }
 }
 
-impl<T: Debug + Default, const CAPACITY: usize> Default for PropertyPool<T, CAPACITY> {
+impl<T: Clone + Default, const CAPACITY: usize> Default for PropertyPool<T, CAPACITY> {
     fn default() -> Self {
         Self {
-            slots: std::array::from_fn(|_| PropertySlot::default()),
+            slots: std::array::from_fn(|_| Default::default()),
             last: 0,
         }
     }
 }
 
-pub struct PropertyPoolIter<'a, T: Debug> {
-    items: &'a [PropertySlot<T>],
+pub struct PropertyPoolIter<'a, T: Clone> {
+    items: &'a [Option<PropertySlot<T>>],
     last: usize,
     index: usize,
     dirty_only: bool,
 }
 
-impl<'a, T> Iterator for PropertyPoolIter<'a, T>
+impl<'a, T: Clone> Iterator for PropertyPoolIter<'a, T>
 where
     T: Debug,
 {
@@ -135,15 +158,15 @@ where
             let item = &self.items[self.index];
             self.index += 1;
 
-            if self.dirty_only && !item.dirty {
-                continue;
-            }
-
-            let Some(entry) = &item.entry else {
+            let Some(slot) = item else {
                 continue;
             };
 
-            return Some(entry);
+            if self.dirty_only && !slot.dirty {
+                continue;
+            }
+
+            return Some(&slot.entry);
         }
 
         None

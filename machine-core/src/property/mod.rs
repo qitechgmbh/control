@@ -19,17 +19,16 @@ mod allocator;
 pub use allocator::PropertyAllocator;
 pub use allocator::PropertyAllocatorError;
 
-#[cfg(feature = "serde")]
 mod export;
 
-#[cfg(feature = "serde")]
 pub use export::{
     PropertyBatch,
     PropertyBatchExporter
 };
+use serde::Deserialize;
+use serde::Serialize;
 
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct PropertyEntry<T> {
     pub ident: u64,
     pub name: String,

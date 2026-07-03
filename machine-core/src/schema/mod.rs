@@ -1,28 +1,29 @@
 use std::collections::HashMap;
 use serde::Deserialize;
 
-// use indexmap::IndexMap;
+use indexmap::IndexMap;
 use crate::MachineIdentification;
 
-mod serde_impl;
+mod serde_property;
+mod serde_mutation;
 
 #[derive(Debug, Deserialize)]
 pub struct MachineSchema {
     pub name: String,
     pub identification: MachineIdentification,
     pub properties: HashMap<String, PropertySchemaNode>,
-    // pub mutations: HashMap<String, IndexMap<String, MutationParameterType>>,
+
+    #[serde(default)]
+    pub mutations: HashMap<String, IndexMap<String, MutationParameterNode>>,
+
+    #[serde(default)]
     pub descriptions: HashMap<String, PropertyDescriptionNode>
 }
 
 impl MachineSchema {
     // TODO: find property must account for repr
-    pub fn find_property<'a>(
-        &'a self,
-        path: &str,
-    ) -> Option<&'a PropertySchema> {
+    pub fn find_property_schema(&self, path: &str) -> Option<&PropertySchema> {
         let mut parts = path.split('.');
-
         let mut current = self.properties.get(parts.next()?)?;
 
         for part in parts {
@@ -30,23 +31,43 @@ impl MachineSchema {
                 PropertySchemaNode::Group(map) => {
                     current = map.get(part)?;
                 }
-                PropertySchemaNode::Property(_) => {
+                PropertySchemaNode::Value(_) => {
                     return None;
                 }
             }
         }
 
         match current {
-            PropertySchemaNode::Property(p) => Some(p),
+            PropertySchemaNode::Value(p) => Some(p),
             PropertySchemaNode::Group(_) => None,
+        }
+    }
+
+    pub fn find_property_description(&self, path: &str) -> Option<&HashMap<String, String>> {
+        let mut parts = path.split('.');
+        let mut current = self.descriptions.get(parts.next()?)?;
+
+        for part in parts {
+            match current {
+                PropertyDescriptionNode::Group(map) => {
+                    current = map.get(part)?;
+                }
+                PropertyDescriptionNode::Value(_) => {
+                    return None;
+                }
+            }
+        }
+
+        match current {
+            PropertyDescriptionNode::Value(p) => Some(p),
+            PropertyDescriptionNode::Group(_) => None,
         }
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
+#[derive(Debug)]
 pub enum PropertySchemaNode {
-    Property(PropertySchema),
+    Value(PropertySchema),
     Group(HashMap<String, PropertySchemaNode>),
 }
 
@@ -71,8 +92,7 @@ pub enum PropertySchema {
     },
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Default)]
 pub struct PropertyLimits<T> {
     pub min: Option<T>,
     pub max: Option<T>,
@@ -82,6 +102,7 @@ pub struct PropertyLimits<T> {
 #[serde(rename_all = "lowercase")]
 pub enum PropertyTarget {
     #[default]
+    None,
     Exact,
     Range,
     Deviation,
@@ -101,19 +122,38 @@ pub enum PropertyRepresentation {
     MinMax,
 }
 
-/*
-#[derive(Debug)]
-pub enum MutationParameterType {
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum MutationParameterNode {
+    Object(HashMap<String, MutationParameterNode>),
+    List(Box<MutationParameterNode>),
+    Enum(Vec<String>),
+    Boolean,
     Float{ min: Option<f64>, max: Option<f64> },
     Integer{ min: Option<i64>, max: Option<i64> },
-    Boolean,
-    String
+    String,
+    // UoM { unit: UomUnit, min: Option<f64>, max: Option<f64> },
 }
-*/
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum PropertyDescriptionNode {
     Value(HashMap<String, String>),
     Group(HashMap<String, PropertyDescriptionNode>),
+}
+
+#[cfg(test)]
+mod test {
+    use crate::MachineSchema;
+
+    const DATA: &str = include_str!("../../../machine-schemas/laser_v1.yaml");
+
+    #[test]
+    pub fn run() {
+        let v = yaml_serde::from_str::<MachineSchema>(DATA).unwrap();
+
+        println!("v: {:?}", v.descriptions);
+
+        panic!("oh no!");
+    }
 }

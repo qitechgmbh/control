@@ -418,8 +418,8 @@ fn main_logic() {
             };
 
             // reset the dirty flags since we exported the dirty ones
-            main_state.properties.float.reset_dirty_flags();
-            main_state.properties.int.reset_dirty_flags();
+            main_state.properties.float.reset_properties();
+            main_state.properties.int.reset_properties();
 
             // reset interval
             prev_property_export_ts = now;

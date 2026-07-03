@@ -26,10 +26,10 @@ impl<'a> PropertyAllocator<'a> {
     pub fn add_bool(
         &mut self, 
         name: &'static str, 
-        initial_value: bool,
+        default_value: bool,
         always_dirty: bool,
     ) -> Result<BoolProperty, PropertyAllocatorError> {
-        let initial_value = if initial_value {1} else {0};
+        let initial_value = if default_value {1} else {0};
         let entry = PropertyEntry::new(self.ident, name.into(), initial_value);
         let (value, dirty) = self.pool_i64.add(entry, always_dirty)?;
         Ok(BoolProperty::new(dirty, value))

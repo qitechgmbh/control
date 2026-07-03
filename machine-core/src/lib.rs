@@ -59,7 +59,7 @@ pub trait Machine {
 }
 
 pub trait MachineNew: Sized {
-    fn new<'a>(args: MachineNewArgs<'a>) -> anyhow::Result<Self>;
+    fn new(args: MachineNewArgs) -> anyhow::Result<Self>;
 }
 
 pub struct MachineNewArgs<'a> {
