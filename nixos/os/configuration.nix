@@ -181,7 +181,7 @@ in
 
   services.libinput.enable = true;
   services.libinput.touchpad.tapping = true;
-  services.touchegg.enable = true;
+  services.touchegg.enable = false;
 
   # Enable the QiTech Control server
   services.qitech = {
