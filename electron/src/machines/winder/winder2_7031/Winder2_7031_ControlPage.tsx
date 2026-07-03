@@ -274,11 +274,17 @@ export function Winder2_7031ControlPage() {
                   children: "Fixed",
                   icon: "lu:Crosshair",
                 },
-                Diameter: {
-                  children: "Adaptive",
-                    icon: "lu:Brain",
-                },}
-              }
+                ...(adaptivePullerEnabled
+                  ? {
+                      Diameter: {
+                        children: "Adaptive",
+                        icon: "lu:Brain",
+                        disabled:
+                          !state?.puller_state?.adaptive_reference_machine,
+                      },
+                    }
+                  : {}),
+              }}
               onChange={(value) => {
                 // When switching back to fixed mode, seed the target speed from
                 // the current puller speed so there is no jump.
