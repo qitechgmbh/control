@@ -48,11 +48,6 @@ impl Machine for Winder2 {
                 registry.load(&ident)
             },
             None => {
-                for (key,_) in &registry.storage {
-                    if key.machine_ident.machine == MACHINE_LASER_V1 {
-                        self.laser_ident = Some(key.clone());
-                    }
-                }
                 return;
             },
         };
@@ -76,12 +71,7 @@ impl Machine for Winder2 {
                 );                    
             }
             Err(_e) => {
-                // Try to get the laser ident
-                for (key,_) in &registry.storage {
-                    if key.machine_ident.machine == MACHINE_LASER_V1 {
-                        self.laser_ident = Some(key.clone());
-                    }
-                }
+                self.laser_ident = None;
             },
         }
     }
