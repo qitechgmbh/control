@@ -9,6 +9,9 @@ import {
 const ARG1 = process.argv[1] ?? "./main.js";
 const DIR = path.dirname(ARG1);
 
+// Increase V8 heap limit to 4 GB for the renderer (Chromium) process
+app.commandLine.appendSwitch("js-flags", "--max-old-space-size=4096");
+
 // Set consistent app ID for Windows taskbar and GNOME dock integration
 app.setAppUserModelId("de.qitech.control-electron");
 
