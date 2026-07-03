@@ -5,22 +5,20 @@ use machine_implementations::MACHINE_LASER_V1;
 use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
+use qitech_lib::ethercat_hal::devices::device_from_subdevice_identity_rc;
 #[cfg(not(feature = "mock"))]
 use qitech_lib::ethercat_hal::{
     DcConfiguration, MasterConfiguration, RtOptimizationConfig, init_ethercat,
-};
-use qitech_lib::{
-    ethercat_hal::devices::device_from_subdevice_identity_rc,
 };
 use qitech_lib::{
     ethercat_hal::interface_discovery::{LinkType, list_ethernet_interfaces, test_interface},
     ethercat_hal::{BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer},
     machines::MachineIdentificationUnique,
 };
-use tokio::sync::mpsc::{Receiver, Sender};
-use tokio_serial::{SerialPortInfo, available_ports};
 #[cfg(not(feature = "mock"))]
 use std::{sync::Arc, time::Duration};
+use tokio::sync::mpsc::{Receiver, Sender};
+use tokio_serial::{SerialPortInfo, available_ports};
 
 #[cfg(not(feature = "mock"))]
 use crate::app_state::MainState;
@@ -39,7 +37,7 @@ mod machine_loop;
 mod mock;
 pub mod persist;
 
-fn detect_serial(rx : Receiver<()>, tx_ports : Sender<Vec<SerialPortInfo>>) {    
+fn detect_serial(rx: Receiver<()>, tx_ports: Sender<Vec<SerialPortInfo>>) {
     get_async_runtime().spawn(async move {
         let mut rx = rx;
         loop {
@@ -54,10 +52,9 @@ fn detect_serial(rx : Receiver<()>, tx_ports : Sender<Vec<SerialPortInfo>>) {
                 Err(_e) => vec![],
             };
             let _res = tx_ports.send(ports).await;
-        };
+        }
     });
 }
-
 
 fn setup_ethercat(
     state: Arc<SharedAppState>,
@@ -108,7 +105,7 @@ fn setup_ethercat(
         let dev = match dev {
             Ok(d) => d,
             Err(_) => {
-                println!("{:?} is not implemented", meta.get_name());
+                println!("Ecat {:?} is not implemented", meta.get_name());
                 continue;
             }
         };
@@ -141,7 +138,7 @@ fn setup_ethercat(
 fn add_laser(
     main_state: &mut MainState,
     shared_state: Arc<SharedAppState>,
-    rx_ports : &mut Receiver<Vec<SerialPortInfo>>
+    rx_ports: &mut Receiver<Vec<SerialPortInfo>>,
 ) -> Result<(), anyhow::Error> {
     let ports = rx_ports.try_recv()?;
     let machine_index_to_remove = main_state
@@ -184,7 +181,7 @@ fn add_laser(
 fn laser_hotplug(
     main_state: &mut MainState,
     shared_state: Arc<SharedAppState>,
-    rx_ports : &mut Receiver<Vec<SerialPortInfo>>
+    rx_ports: &mut Receiver<Vec<SerialPortInfo>>,
 ) -> Result<(), anyhow::Error> {
     match main_state
         .machines
@@ -205,7 +202,10 @@ fn send_machines_event(state: Arc<SharedAppState>) {
     });
 }
 
-fn finalize_ethercat(main_state: &mut MainState, eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>) -> Result<(), anyhow::Error> {
+fn finalize_ethercat(
+    main_state: &mut MainState,
+    eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
+) -> Result<(), anyhow::Error> {
     let _res = eth_control
         .channel
         .request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
@@ -289,7 +289,8 @@ fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainSt
             }
             Err(e) => {
                 if !main_state.machine_errors.contains_key(key) {
-                    let _res = state.add_machine_sync(key.clone().into(), Some(e.to_string()), None);
+                    let _res =
+                        state.add_machine_sync(key.clone().into(), Some(e.to_string()), None);
                 }
                 main_state.machine_errors.insert(*key, e.to_string());
             }
@@ -408,7 +409,8 @@ fn main_logic() {
     let interface = find_ethercat_interface(&shared_state);
     let eth_control = optimized_ethercat_init(&interface);
     shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
-    let mut eth_control : Option<EtherCATControl<TripleBufConsumer,Arc<Mailbox>>> = Some(eth_control);
+    let mut eth_control: Option<EtherCATControl<TripleBufConsumer, Arc<Mailbox>>> =
+        Some(eth_control);
 
     let state = Arc::new(shared_state);
     match &eth_control {
@@ -420,9 +422,9 @@ fn main_logic() {
 
     setup_api_and_websock(state.clone());
 
-    let (tx,rx) = tokio::sync::mpsc::channel(2);
-    let (tx_ports,mut rx_ports) = tokio::sync::mpsc::channel(2);
-    detect_serial(rx,tx_ports);
+    let (tx, rx) = tokio::sync::mpsc::channel(2);
+    let (tx_ports, mut rx_ports) = tokio::sync::mpsc::channel(2);
+    detect_serial(rx, tx_ports);
 
     match &eth_control {
         Some(control) => {
@@ -484,7 +486,6 @@ fn main_logic() {
             None => (),
         };
 
-        
         let machines_to_remove =
             run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
         if machines_to_remove.is_some() {
