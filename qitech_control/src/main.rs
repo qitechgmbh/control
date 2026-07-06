@@ -18,7 +18,8 @@ use qitech_lib::{
 #[cfg(not(feature = "mock"))]
 use std::{sync::Arc, time::Duration};
 use tokio::sync::mpsc::{Receiver, Sender};
-use tokio_serial::{SerialPortInfo, available_ports};
+use tokio_serial::SerialPortInfo;
+use tokio_serial::available_ports;
 
 #[cfg(not(feature = "mock"))]
 use crate::app_state::MainState;
@@ -352,6 +353,8 @@ pub fn remove_machines(
             main_state.hardware.remove(&ident);
             guard.remove(pos);
             drop(guard);
+            // If a machine has errored and is dropped remove the entry from the hashmap aswell
+            main_state.machine_data_reg.storage.remove(&ident);
             send_machines_event(shared_state.clone());
         }
         None => (),

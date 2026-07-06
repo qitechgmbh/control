@@ -102,6 +102,7 @@ pub struct Winder2 {
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
+    laser_ident: Option<MachineIdentificationUnique>,
 }
 
 impl Winder2 {

@@ -104,6 +104,8 @@ in
 
   # Enable networking
   networking.networkmanager.enable = true;
+  # ... but do not interfere with ethercat
+  networking.networkmanager.unmanaged = [ "type:ethernet" ];
 
   # Enable the X11 windowing system.
   services.displayManager.gdm = {
@@ -181,7 +183,7 @@ in
 
   services.libinput.enable = true;
   services.libinput.touchpad.tapping = true;
-  services.touchegg.enable = true;
+  services.touchegg.enable = false;
 
   # Enable the QiTech Control server
   services.qitech = {

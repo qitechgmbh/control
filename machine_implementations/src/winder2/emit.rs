@@ -1,3 +1,5 @@
+#[cfg(not(feature = "mock-machine"))]
+use crate::machine_identification::QiTechMachineIdentificationUnique;
 use crate::winder2::Winder2Mode;
 
 pub use super::api::{
@@ -11,6 +13,7 @@ use super::{
 pub use control_core::socketio::event::BuildEvent;
 pub use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
+#[cfg(not(feature = "mock-machine"))]
 pub use qitech_lib::units::{
     angle::degree,
     angular_velocity::revolution_per_minute,
@@ -270,7 +273,10 @@ impl Winder2 {
                     .adaptive
                     .tolerance_limit()
                     .get::<millimeter>(),
-                adaptive_reference_machine: None,
+                adaptive_reference_machine: match self.laser_ident {
+                    Some(ident) => Some(ident.into()),
+                    None => None,
+                },
             },
             mode_state: ModeState {
                 mode: self.mode.clone().into(),
@@ -542,62 +548,20 @@ impl Winder2 {
             .set_tolerance_limit(Length::new::<millimeter>(value));
         self.emit_state();
     }
-    /*
+
     pub fn puller_set_adaptive_reference_machine(
         &mut self,
-        machine_uid: Option<MachineIdentificationUnique>,
+        machine_uid: Option<QiTechMachineIdentificationUnique>,
     ) -> Result<(), anyhow::Error> {
-        match machine_uid {
-            Some(machine_uid) => {
-                if self
-                    .puller_reference_machine
-                    .as_ref()
-                    .is_some_and(|x| *x == machine_uid)
-                {
-                    return Ok(());
-                }
-                let main_sender = match &self.main_sender {
-                    Some(v) => v,
-                    None => {
-                        return Err(anyhow::anyhow!(
-                            "{:?} Failed to connect to {:?}",
-                            self.machine_identification_unique,
-                            machine_uid,
-                        ));
-                    }
-                };
-                main_sender.try_send(AsyncThreadMessage::SubscribeToMachine(
-                    MachineSubscriptionRequest {
-                        subscriber: self.machine_identification_unique,
-                        publisher: machine_uid,
-                    },
-                ))?;
-            }
+        let machine_uid = match machine_uid {
+            Some(muid) => muid,
             None => {
-                match self.puller_reference_machine.take() {
-                    Some(machine_uid) => {
-                        let main_sender = match &self.main_sender {
-                            Some(v) => v,
-                            None => {
-                                return Err(anyhow::anyhow!(
-                                    "{:?} Failed to connect to {:?}",
-                                    self.machine_identification_unique,
-                                    machine_uid,
-                                ));
-                            }
-                        };
-                        main_sender.try_send(AsyncThreadMessage::UnsubscribeFromMachine(
-                            MachineSubscriptionRequest {
-                                subscriber: self.machine_identification_unique,
-                                publisher: machine_uid,
-                            },
-                        ))?;
-                    }
-                    None => return Ok(()), // nothing to do
-                }
+                self.emit_state();
+                return Ok(());
             }
-        }
+        };
+        self.laser_ident = Some(machine_uid.into());
         self.emit_state();
         Ok(())
-    }*/
+    }
 }
