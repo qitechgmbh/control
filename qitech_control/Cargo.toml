@@ -10,7 +10,7 @@ machine_implementations = { path = "../machine_implementations" }
 control_core = { path = "../control-core" }
 bitvec = "1"
 tracing = "0.1.44"
-anyhow = "1.0.102"
+anyhow = "1.0.103"
 serde = "1.0.228"
 tower-http = {version = "0.6.8" ,features = ["cors","trace"]} 
 serde_json = "1.0.149"

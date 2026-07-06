@@ -139,7 +139,7 @@ export function Aquapath1ControlPage() {
                   variant="secondary"
                   className="h-18 min-w-40 justify-center self-end border-transparent bg-cyan-100 px-4 text-base text-cyan-900 [&>svg]:size-5"
                 >
-                  <Icon name="lu:Waves" className="size-5" />
+                  <Icon name="lu:WavesHorizontal" className="size-5" />
                   {renderThermalDelay(
                     reservoir1PumpCooldownActive
                       ? reservoir1PumpCooldownRemaining
@@ -266,7 +266,7 @@ export function Aquapath1ControlPage() {
                   variant="secondary"
                   className="h-18 min-w-40 justify-center self-end border-transparent bg-cyan-100 px-4 text-base text-cyan-900 [&>svg]:size-5"
                 >
-                  <Icon name="lu:Waves" className="size-5" />
+                  <Icon name="lu:WavesHorizontal" className="size-5" />
                   {renderThermalDelay(
                     reservoir2PumpCooldownActive
                       ? reservoir2PumpCooldownRemaining

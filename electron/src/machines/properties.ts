@@ -442,7 +442,7 @@ export const aquapath1: MachineProperties = {
   name: "Aquapath",
   version: "V1",
   slug: "aquapath1",
-  icon: "lu:Waves",
+  icon: "lu:WavesHorizontal",
   machine_identification: {
     vendor: VENDOR_QITECH,
     machine: 0x0009,

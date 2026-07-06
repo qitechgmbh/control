@@ -7,7 +7,7 @@ edition = "2024"
 workspace = true
 
 [dependencies]
-anyhow = "1.0.102"
+anyhow = "1.0.103"
 
 axum = "0.8.9"
 

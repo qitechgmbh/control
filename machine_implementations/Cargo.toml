@@ -7,8 +7,8 @@ edition = "2024"
 qitech_lib = { workspace = true }
 control_core = { path = "../control-core" }
 
+anyhow = "1.0.103"
 serde = { version = "1.0.217", features = ["derive"] }
-anyhow = "1.0.102"
 bitvec = "1.0.1"
 lazy_static = "1.5.0"
 euclid = "0.22.13"
