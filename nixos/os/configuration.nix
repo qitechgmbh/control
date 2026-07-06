@@ -104,6 +104,8 @@ in
 
   # Enable networking
   networking.networkmanager.enable = true;
+  # ... but do not interfere with ethercat
+  networking.networkmanager.unmanaged = [ "type:ethernet" ];
 
   # Enable the X11 windowing system.
   services.displayManager.gdm = {
