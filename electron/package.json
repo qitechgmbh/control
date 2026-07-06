@@ -9,7 +9,7 @@
     "glob": "^13.0.0"
   },
   "scripts": {
-    "start": "vite",
+    "start": "NODE_OPTIONS='--max-old-space-size=4096' vite",
     "build": "vite build",
     "lint": "eslint .",
     "lint:write": "eslint . --fix",
