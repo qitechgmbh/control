@@ -67,7 +67,9 @@ impl MachineAct for Gluetex {
         // update all temperature controllers
         self.heaters.update_all(now);
 
-        let _ = super::safety::run_heater_overtemperature_check(self);
+        if super::safety::run_heater_overtemperature_check(self) {
+            self.emit_state();
+        }
 
         // update status output based on current activity
         self.update_status_output();

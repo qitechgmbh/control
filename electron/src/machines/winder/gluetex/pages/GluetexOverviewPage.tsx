@@ -77,7 +77,8 @@ export function GluetexOverviewPage() {
 
   // Production mode is blocked while any safety message is pending
   // acknowledgement — mirrors the backend's own SetOperationMode gate.
-  const hasPendingSafetyMessages = (state?.pending_safety_messages?.length ?? 0) > 0;
+  const hasPendingSafetyMessages =
+    (state?.pending_safety_messages?.length ?? 0) > 0;
 
   const handleResetProgress = () => {
     resetSpoolProgress();
@@ -446,16 +447,23 @@ export function GluetexOverviewPage() {
                 icon: "lu:ChevronsLeft",
                 isActiveClassName: "bg-green-600",
                 className: "h-full",
+                disabled: hasPendingSafetyMessages,
               },
               Wind: {
                 children: "Wind",
                 icon: "lu:RefreshCcw",
                 isActiveClassName: "bg-green-600",
-                disabled: !state?.mode_state?.can_wind,
+                disabled:
+                  !state?.mode_state?.can_wind || hasPendingSafetyMessages,
                 className: "h-full",
               },
             }}
           />
+          {hasPendingSafetyMessages && (
+            <div className="rounded bg-orange-50 p-2 text-center text-sm text-orange-600">
+              Pull/Wind disabled: safety message awaiting acknowledgement
+            </div>
+          )}
         </ControlCard>
 
         {/* Row 3 col 2: Control Mode */}
@@ -491,7 +499,9 @@ export function GluetexOverviewPage() {
               <div className="rounded bg-orange-50 p-2 text-center text-sm text-orange-600">
                 Production mode is disabled:{" "}
                 {state?.pending_safety_messages?.length} safety message
-                {(state?.pending_safety_messages?.length ?? 0) > 1 ? "s" : ""}{" "}
+                {(state?.pending_safety_messages?.length ?? 0) > 1
+                  ? "s"
+                  : ""}{" "}
                 awaiting acknowledgement
               </div>
             )}

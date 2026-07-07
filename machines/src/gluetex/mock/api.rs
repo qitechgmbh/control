@@ -384,12 +384,14 @@ impl MachineApi for Gluetex {
                 self.pending_safety_messages.clear();
             }
             Mutation::DebugTriggerSafetyMessage(reason) => {
-                use crate::gluetex::api::{Mode, OperationMode, SafetyMessageSeverity, SafetyMessageState, SafetyStopReason};
+                use crate::gluetex::api::{
+                    Mode, OperationMode, SafetyMessageSeverity, SafetyMessageState,
+                    SafetyStopReason,
+                };
 
                 let severity = match reason {
-                    SafetyStopReason::HeaterOverTemperature { .. } | SafetyStopReason::SleepTimer => {
-                        SafetyMessageSeverity::Full
-                    }
+                    SafetyStopReason::HeaterOverTemperature { .. }
+                    | SafetyStopReason::SleepTimer => SafetyMessageSeverity::Full,
                     _ => SafetyMessageSeverity::MotorsOnly,
                 };
 

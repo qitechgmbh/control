@@ -107,28 +107,32 @@ impl Gluetex {
     /// Implement Mode
     pub fn set_mode(&mut self, mode: &GluetexMode) {
         let entering_active_mode = matches!(mode, GluetexMode::Wind | GluetexMode::Pull);
-        if entering_active_mode && !self.pending_safety.is_empty() {
+        let blocked_by_pending_safety = entering_active_mode && !self.pending_safety.is_empty();
+
+        if blocked_by_pending_safety {
             tracing::warn!(
                 ?mode,
                 pending = self.pending_safety.len(),
                 "refusing mode transition while safety messages are pending acknowledgement"
             );
-            return;
+        } else {
+            let should_update = *mode != GluetexMode::Wind || self.can_wind();
+
+            if should_update {
+                tracing::info!(old = ?self.mode, new = ?mode, "mode transition");
+                // all transitions are allowed
+                self.mode = mode.clone();
+
+                // Apply the mode changes to the spool, puller, slave puller, and traverse
+                self.set_spool_mode(mode);
+                self.set_puller_mode(mode);
+                self.set_slave_puller_mode(mode);
+                self.set_traverse_mode(mode);
+            }
         }
-
-        let should_update = *mode != GluetexMode::Wind || self.can_wind();
-
-        if should_update {
-            tracing::info!(old = ?self.mode, new = ?mode, "mode transition");
-            // all transitions are allowed
-            self.mode = mode.clone();
-
-            // Apply the mode changes to the spool, puller, slave puller, and traverse
-            self.set_spool_mode(mode);
-            self.set_puller_mode(mode);
-            self.set_slave_puller_mode(mode);
-            self.set_traverse_mode(mode);
-        }
+        // Always emit, even when the transition was refused — otherwise a
+        // client that already optimistically applied the requested mode
+        // never receives a corrective StateEvent and is stuck showing it.
         self.update_status_output();
         self.emit_state();
     }
@@ -140,6 +144,10 @@ impl Gluetex {
                 pending = self.pending_safety.len(),
                 "refusing to enter Production mode while safety messages are pending acknowledgement"
             );
+            // Emit anyway so a client that already optimistically applied
+            // the requested operation mode gets a corrective StateEvent
+            // instead of being stuck showing the rejected mode.
+            self.emit_state();
             return;
         }
 

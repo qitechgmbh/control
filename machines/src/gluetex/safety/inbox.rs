@@ -103,13 +103,20 @@ impl SafetyInbox {
     /// Union a freshly observed zone mask into an already-pending
     /// `HeaterOverTemperature` message without treating it as a new
     /// occurrence (used while the monitor stays latched and additional zones
-    /// go over temperature).
-    pub fn touch_heater_overtemp_zone_mask(&mut self, zones: u8) {
+    /// go over temperature). Returns whether the mask actually gained any
+    /// new zone bits, so the caller knows whether to emit state.
+    pub fn touch_heater_overtemp_zone_mask(&mut self, zones: u8) -> bool {
+        let mut changed = false;
         for m in &mut self.messages {
             if let StopReason::HeaterOverTemperature { zones: existing } = &mut m.reason {
-                *existing |= zones;
+                let updated = *existing | zones;
+                if updated != *existing {
+                    changed = true;
+                    *existing = updated;
+                }
             }
         }
+        changed
     }
 
     /// Remove and return the message with the given id, if pending.

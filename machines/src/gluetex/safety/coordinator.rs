@@ -61,10 +61,11 @@ pub fn run_tension_and_voltage_checks(machine: &mut Gluetex) -> bool {
         .check(optris_1_voltage, machine.operation_mode);
     state_changed |= optris_1_changed;
     if optris_1_trigger && optris_1_changed {
-        tracing::warn!(optris_1_voltage, "Optris 1 voltage monitor triggered — safety stop");
-        machine.record_safety_message(Gluetex::safety_stop_motors_only(
-            StopReason::Optris1Voltage,
-        ));
+        tracing::warn!(
+            optris_1_voltage,
+            "Optris 1 voltage monitor triggered — safety stop"
+        );
+        machine.record_safety_message(Gluetex::safety_stop_motors_only(StopReason::Optris1Voltage));
     }
 
     let optris_2_voltage = read_optris_voltage(&machine.optris_2);
@@ -73,10 +74,11 @@ pub fn run_tension_and_voltage_checks(machine: &mut Gluetex) -> bool {
         .check(optris_2_voltage, machine.operation_mode);
     state_changed |= optris_2_changed;
     if optris_2_trigger && optris_2_changed {
-        tracing::warn!(optris_2_voltage, "Optris 2 voltage monitor triggered — safety stop");
-        machine.record_safety_message(Gluetex::safety_stop_motors_only(
-            StopReason::Optris2Voltage,
-        ));
+        tracing::warn!(
+            optris_2_voltage,
+            "Optris 2 voltage monitor triggered — safety stop"
+        );
+        machine.record_safety_message(Gluetex::safety_stop_motors_only(StopReason::Optris2Voltage));
     }
 
     state_changed
@@ -149,10 +151,9 @@ pub fn run_heater_overtemperature_check(machine: &mut Gluetex) -> bool {
         .any(|m| matches!(m.reason, StopReason::HeaterOverTemperature { .. }));
 
     if already_pending {
-        machine
+        return machine
             .pending_safety
             .touch_heater_overtemp_zone_mask(zone_mask);
-        return false;
     }
 
     tracing::warn!(
@@ -171,9 +172,9 @@ pub fn run_heater_overtemperature_check(machine: &mut Gluetex) -> bool {
         zone_mask,
         "heater over-temperature — safety stop"
     );
-    machine.record_safety_message(Gluetex::safety_stop_full(StopReason::HeaterOverTemperature {
-        zones: zone_mask,
-    }));
+    machine.record_safety_message(Gluetex::safety_stop_full(
+        StopReason::HeaterOverTemperature { zones: zone_mask },
+    ));
     true
 }
 

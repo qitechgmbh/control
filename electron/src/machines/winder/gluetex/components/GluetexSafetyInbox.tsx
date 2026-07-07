@@ -44,7 +44,11 @@ function reasonKind(reason: unknown): ReasonKind {
         return "Unknown";
     }
   }
-  if (typeof reason === "object" && reason !== null && "HeaterOverTemperature" in reason) {
+  if (
+    typeof reason === "object" &&
+    reason !== null &&
+    "HeaterOverTemperature" in reason
+  ) {
     return "HeaterOverTemperature";
   }
   return "Unknown";
@@ -207,7 +211,8 @@ export function GluetexSafetyInbox() {
           </div>
           <DialogDescription className="sr-only">
             {pendingSafetyMessages.length} pending safety message
-            {pendingSafetyMessages.length > 1 ? "s" : ""} require acknowledgement
+            {pendingSafetyMessages.length > 1 ? "s" : ""} require
+            acknowledgement
           </DialogDescription>
         </DialogHeader>
 
@@ -216,9 +221,7 @@ export function GluetexSafetyInbox() {
             <SafetyMessageCard
               key={message.id}
               message={message}
-              firstSeenAt={
-                firstSeenRef.current.get(message.id) ?? Date.now()
-              }
+              firstSeenAt={firstSeenRef.current.get(message.id) ?? Date.now()}
               onAcknowledge={() => acknowledgeSafetyMessage(message.id)}
             />
           ))}

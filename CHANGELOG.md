@@ -1,3 +1,8 @@
+# Gluetex Safety Message System Overhaul
+_07.07.2026_
+
+- Overhauled the safety message system with a new Inbox that tracks event timing and occurrence counts. Should fix being unable to close the message.
+
 # Gluetex fix Sleep Timer acknowledgement
 _01.07.2026_
 
