@@ -38,13 +38,6 @@ pub fn bring_up_interface(iface: &str) -> std::io::Result<()> {
 
 /// Fails if run by non root user
 pub fn set_all_ethernet_up() -> bool {
-    unsafe {
-        if libc::getuid() != 0 {
-            eprintln!("Must be run as root.");
-            return false;
-        }
-    }
-
     // Scan sysfs directory for ethernet devices
     if let Ok(entries) = fs::read_dir("/sys/class/net/") {
         for entry in entries.flatten() {
