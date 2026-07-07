@@ -75,19 +75,9 @@ export function GluetexOverviewPage() {
     return "bg-gray-300";
   };
 
-  // Helper function to check if any monitoring is triggered in setup mode
-  const isAnyMonitoringTriggered = () => {
-    if (!state) return false;
-    return (
-      state.winder_tension_arm_monitor_state?.triggered ||
-      state.tape_feeder_tension_arm_monitor_state?.triggered ||
-      state.inlet_feeder_tension_arm_monitor_state?.triggered ||
-      state.optris_1_monitor_state?.triggered ||
-      state.optris_2_monitor_state?.triggered ||
-      state.sleep_timer_state?.triggered ||
-      false
-    );
-  };
+  // Production mode is blocked while any safety message is pending
+  // acknowledgement — mirrors the backend's own SetOperationMode gate.
+  const hasPendingSafetyMessages = (state?.pending_safety_messages?.length ?? 0) > 0;
 
   const handleResetProgress = () => {
     resetSpoolProgress();
@@ -490,17 +480,19 @@ export function GluetexOverviewPage() {
                   ? "default"
                   : "outline"
               }
-              disabled={isDisabled || isAnyMonitoringTriggered()}
+              disabled={isDisabled || hasPendingSafetyMessages}
               className="h-20 text-lg"
               icon="lu:ShieldCheck"
               onClick={() => setOperationMode("Production")}
             >
               Production Mode
             </TouchButton>
-            {isAnyMonitoringTriggered() && (
+            {hasPendingSafetyMessages && (
               <div className="rounded bg-orange-50 p-2 text-center text-sm text-orange-600">
-                Production mode is disabled because monitoring alert is
-                triggered
+                Production mode is disabled:{" "}
+                {state?.pending_safety_messages?.length} safety message
+                {(state?.pending_safety_messages?.length ?? 0) > 1 ? "s" : ""}{" "}
+                awaiting acknowledgement
               </div>
             )}
           </div>

@@ -106,6 +106,16 @@ impl Gluetex {
     }
     /// Implement Mode
     pub fn set_mode(&mut self, mode: &GluetexMode) {
+        let entering_active_mode = matches!(mode, GluetexMode::Wind | GluetexMode::Pull);
+        if entering_active_mode && !self.pending_safety.is_empty() {
+            tracing::warn!(
+                ?mode,
+                pending = self.pending_safety.len(),
+                "refusing mode transition while safety messages are pending acknowledgement"
+            );
+            return;
+        }
+
         let should_update = *mode != GluetexMode::Wind || self.can_wind();
 
         if should_update {
@@ -125,6 +135,14 @@ impl Gluetex {
 
     /// Set operation mode (safety monitoring level)
     pub fn set_operation_mode(&mut self, mode: &super::OperationMode) {
+        if *mode == super::OperationMode::Production && !self.pending_safety.is_empty() {
+            tracing::warn!(
+                pending = self.pending_safety.len(),
+                "refusing to enter Production mode while safety messages are pending acknowledgement"
+            );
+            return;
+        }
+
         tracing::info!(old = ?self.operation_mode, new = ?mode, "operation mode change");
         self.operation_mode = mode.clone();
         // Reset activity timer when changing operation mode
@@ -633,6 +651,19 @@ impl Gluetex {
                 remaining_seconds: self.get_sleep_timer_remaining_seconds(),
                 triggered: self.sleep_timer.triggered,
             },
+            pending_safety_messages: {
+                let now = Instant::now();
+                self.pending_safety
+                    .iter()
+                    .map(|m| api::SafetyMessageState {
+                        id: m.id,
+                        reason: m.reason.into(),
+                        severity: m.severity.into(),
+                        age_ms: now.duration_since(m.first_occurred_at).as_millis() as u64,
+                        occurrence_count: m.occurrence_count,
+                    })
+                    .collect()
+            },
             order_info_state: api::OrderInfoState {
                 order_number: self.order_info.order_number,
                 serial_number: self.order_info.serial_number,
@@ -1075,8 +1106,13 @@ impl Gluetex {
         }
     }
 
-    pub(crate) fn emit_safety_stop(&mut self, stop: super::safety::SafetyStop) {
+    /// Emit a transient "a new distinct safety message was just raised"
+    /// notice. Uncached (see `GluetexEvents::event_cache_fn`) — the durable
+    /// pending list lives in `StateEvent`, which is emitted right after this
+    /// by the caller.
+    pub(crate) fn emit_safety_message_raised(&mut self, id: u64, stop: super::safety::SafetyStop) {
         let event = api::SafetyStopEvent {
+            id,
             reason: stop.reason().into(),
             heaters_disabled: stop.disables_heaters(),
         }

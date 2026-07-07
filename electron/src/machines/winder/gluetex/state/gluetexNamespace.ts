@@ -360,6 +360,24 @@ export const sleepTimerStateSchema = z.object({
 });
 
 /**
+ * Safety message severity (from backend)
+ */
+export const safetyMessageSeveritySchema = z.enum(["MotorsOnly", "Full"]);
+export type SafetyMessageSeverity = z.infer<typeof safetyMessageSeveritySchema>;
+
+/**
+ * A single currently-pending (unacknowledged) safety message (from backend)
+ */
+export const safetyMessageStateSchema = z.object({
+  id: z.number(),
+  reason: z.unknown(),
+  severity: safetyMessageSeveritySchema,
+  age_ms: z.number(),
+  occurrence_count: z.number(),
+});
+export type SafetyMessageState = z.infer<typeof safetyMessageStateSchema>;
+
+/**
  * Order information state schema (from backend)
  */
 export const orderInfoStateSchema = z.object({
@@ -396,6 +414,7 @@ export const stateEventDataSchema = z.object({
   optris_2_monitor_state: voltageMonitorStateSchema,
   bandueberwachung_monitor_state: bandMonitorStateSchema,
   sleep_timer_state: sleepTimerStateSchema,
+  pending_safety_messages: z.array(safetyMessageStateSchema),
   order_info_state: orderInfoStateSchema,
   valve_state: z.object({
     enabled: z.boolean(),
@@ -425,6 +444,7 @@ export const heatingAutoTuneCompleteEventSchema = eventSchema(
 );
 
 export const safetyStopEventDataSchema = z.object({
+  id: z.number(),
   reason: z.unknown(),
   heaters_disabled: z.boolean(),
 });
@@ -598,9 +618,6 @@ export type GluetexNamespaceStore = {
   longBufferSampleInterval: number;
   longBufferRetention: number;
   reconfigureLongBuffers: (sampleInterval: number, retention: number) => void;
-
-  // Actions
-  clearSafetyStop: () => void;
 };
 
 // Constants for time durations
@@ -902,6 +919,7 @@ const DEFAULT_BACKEND_EXTENDED_STATE: ExtendedStateEvent = {
       remaining_seconds: 0,
       triggered: false,
     },
+    pending_safety_messages: [],
     order_info_state: {
       order_number: 0,
       serial_number: 0,
@@ -973,9 +991,6 @@ export const createGluetexNamespaceStore =
         longBufferRetention: persistedGraphConfig.retention,
         // Placeholder — replaced by gluetexMessageHandler once throttledUpdater is available
         reconfigureLongBuffers: () => {},
-
-        // Placeholder — replaced by gluetexMessageHandler once throttledUpdater is available
-        clearSafetyStop: () => {},
       };
     });
 
@@ -1030,22 +1045,6 @@ export function gluetexMessageHandler(
         };
       });
       // Flush immediately so the store (and React) sees the new values right away.
-      throttledUpdater.forceSync();
-    },
-  });
-
-  // Wire up clearSafetyStop through the throttledUpdater so the buffer
-  // stays in sync with the store. Direct set() calls on the store are
-  // overwritten by the next throttled sync, causing the safety stop dialog
-  // to reappear immediately after acknowledging.
-  store.setState({
-    clearSafetyStop: () => {
-      throttledUpdater.updateWith((state) => ({
-        ...state,
-        lastSafetyStop: null,
-        lastSafetyStopTs: null,
-      }));
-      // Flush immediately so the store (and React) sees the cleared state right away.
       throttledUpdater.forceSync();
     },
   });

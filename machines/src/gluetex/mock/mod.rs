@@ -11,7 +11,7 @@ pub mod new;
 use super::api::{
     AddonMotor5State, AddonMotorState, AddonMotorTensionControlState, BandMonitorState,
     ConnectedMachineState, ExtraOutputsState, GluetexNamespace, HeatingPidStates, HeatingStates,
-    LiveValuesEvent, ModeState, OrderInfoState, PullerState, SleepTimerState,
+    LiveValuesEvent, ModeState, OrderInfoState, PullerState, SafetyMessageState, SleepTimerState,
     SpoolAutomaticActionState, SpoolSpeedControllerState, StateEvent, TensionArmMonitorState,
     TensionArmState, TraverseState, ValveState, VoltageMonitorState,
 };
@@ -60,6 +60,8 @@ pub struct Gluetex {
     order_info_state: OrderInfoState,
     extra_outputs_state: ExtraOutputsState,
     valve_state: ValveState,
+    pending_safety_messages: Vec<SafetyMessageState>,
+    next_safety_message_id: u64,
 
     live_values: LiveValuesEvent,
 
@@ -142,6 +144,7 @@ impl Gluetex {
             order_info_state: self.order_info_state.clone(),
             extra_outputs_state: self.extra_outputs_state.clone(),
             valve_state: self.valve_state.clone(),
+            pending_safety_messages: self.pending_safety_messages.clone(),
         }
     }
 

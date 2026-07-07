@@ -31,3 +31,18 @@ impl SafetyStop {
         matches!(self, SafetyStop::Full { .. })
     }
 }
+
+impl StopReason {
+    /// Default severity for this reason when synthesized without an
+    /// explicit `SafetyStop` payload (used by the `DebugTriggerSafetyMessage`
+    /// test/commissioning hook to mirror what the real detection path would
+    /// produce for each reason).
+    pub const fn default_stop(self) -> SafetyStop {
+        match self {
+            StopReason::HeaterOverTemperature { .. } | StopReason::SleepTimer => {
+                SafetyStop::Full { reason: self }
+            }
+            _ => SafetyStop::MotorsOnly { reason: self },
+        }
+    }
+}

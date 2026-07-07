@@ -96,7 +96,6 @@ export function useGluetex() {
     longBufferSampleInterval,
     longBufferRetention,
     reconfigureLongBuffers,
-    clearSafetyStop,
   } = useGluetexNamespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -128,6 +127,12 @@ export function useGluetex() {
   );
   const { request: requestOperationModeSet } = useMachineMutation(
     z.object({ SetOperationMode: operationModeSchema }),
+  );
+  const { request: requestAcknowledgeSafetyMessage } = useMachineMutation(
+    z.object({ AcknowledgeSafetyMessage: z.number() }),
+  );
+  const { request: requestAcknowledgeAllSafetyMessages } = useMachineMutation(
+    z.literal("AcknowledgeAllSafetyMessages"),
   );
   const { request: requestTensionArmZero } = useMachineMutation(
     z.literal("ZeroTensionArmAngle"),
@@ -606,6 +611,33 @@ export function useGluetex() {
         requestOperationModeSet({
           machine_identification_unique: machineIdentification,
           data: { SetOperationMode: mode },
+        }),
+    );
+  };
+
+  const acknowledgeSafetyMessage = (id: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pending_safety_messages =
+          current.data.pending_safety_messages.filter((m) => m.id !== id);
+      },
+      () =>
+        requestAcknowledgeSafetyMessage({
+          machine_identification_unique: machineIdentification,
+          data: { AcknowledgeSafetyMessage: id },
+        }),
+    );
+  };
+
+  const acknowledgeAllSafetyMessages = () => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pending_safety_messages = [];
+      },
+      () =>
+        requestAcknowledgeAllSafetyMessages({
+          machine_identification_unique: machineIdentification,
+          data: "AcknowledgeAllSafetyMessages",
         }),
     );
   };
@@ -1883,7 +1915,6 @@ export function useGluetex() {
     estimatedMinutesRemaining,
     lastSafetyStop,
     lastSafetyStopTs,
-    clearSafetyStop,
 
     // Live values (TimeSeries)
     traversePosition,
@@ -1918,6 +1949,8 @@ export function useGluetex() {
     enableTraverseLaserpointer,
     setMode,
     setOperationMode,
+    acknowledgeSafetyMessage,
+    acknowledgeAllSafetyMessages,
     zeroTensionArmAngle,
     setTraverseLimitInner,
     setTraverseLimitOuter,

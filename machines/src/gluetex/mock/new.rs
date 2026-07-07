@@ -132,6 +132,8 @@ impl MachineNewTrait for Gluetex {
             order_info_state: OrderInfoState::default(),
             extra_outputs_state: ExtraOutputsState::default(),
             valve_state: ValveState::default(),
+            pending_safety_messages: Vec::new(),
+            next_safety_message_id: 0,
             live_values,
             api_receiver: receiver,
             api_sender: sender,

@@ -377,6 +377,56 @@ impl MachineApi for Gluetex {
             Mutation::SetValveOffDistanceMm(value) => {
                 self.valve_state.off_distance_mm = value;
             }
+            Mutation::AcknowledgeSafetyMessage(id) => {
+                self.pending_safety_messages.retain(|m| m.id != id);
+            }
+            Mutation::AcknowledgeAllSafetyMessages => {
+                self.pending_safety_messages.clear();
+            }
+            Mutation::DebugTriggerSafetyMessage(reason) => {
+                use crate::gluetex::api::{Mode, OperationMode, SafetyMessageSeverity, SafetyMessageState, SafetyStopReason};
+
+                let severity = match reason {
+                    SafetyStopReason::HeaterOverTemperature { .. } | SafetyStopReason::SleepTimer => {
+                        SafetyMessageSeverity::Full
+                    }
+                    _ => SafetyMessageSeverity::MotorsOnly,
+                };
+
+                let key = std::mem::discriminant(&reason);
+                if let Some(existing) = self
+                    .pending_safety_messages
+                    .iter_mut()
+                    .find(|m| std::mem::discriminant(&m.reason) == key)
+                {
+                    existing.occurrence_count += 1;
+                    if let (
+                        SafetyStopReason::HeaterOverTemperature {
+                            zones: existing_zones,
+                        },
+                        SafetyStopReason::HeaterOverTemperature { zones: new_zones },
+                    ) = (&mut existing.reason, &reason)
+                    {
+                        *existing_zones |= new_zones;
+                    }
+                } else {
+                    let id = self.next_safety_message_id;
+                    self.next_safety_message_id += 1;
+                    self.pending_safety_messages.push(SafetyMessageState {
+                        id,
+                        reason,
+                        severity: severity.clone(),
+                        age_ms: 0,
+                        occurrence_count: 1,
+                    });
+                }
+
+                self.mode_state.operation_mode = OperationMode::Setup;
+                self.mode_state.mode = Mode::Hold;
+                if matches!(severity, SafetyMessageSeverity::Full) {
+                    self.heating_states.enabled = false;
+                }
+            }
         }
 
         self.emit_state();

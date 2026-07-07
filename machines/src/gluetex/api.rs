@@ -68,7 +68,7 @@ pub struct HeatingAutoTuneCompleteEvent {
     pub kd: f64,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum SafetyStopReason {
     WinderTensionArm,
     TapeFeederTensionArm,
@@ -97,10 +97,57 @@ impl From<super::safety::StopReason> for SafetyStopReason {
     }
 }
 
+impl From<SafetyStopReason> for super::safety::StopReason {
+    fn from(reason: SafetyStopReason) -> Self {
+        match reason {
+            SafetyStopReason::WinderTensionArm => Self::WinderTensionArm,
+            SafetyStopReason::TapeFeederTensionArm => Self::TapeFeederTensionArm,
+            SafetyStopReason::InletTensionArm => Self::InletTensionArm,
+            SafetyStopReason::Optris1Voltage => Self::Optris1Voltage,
+            SafetyStopReason::Optris2Voltage => Self::Optris2Voltage,
+            SafetyStopReason::HeaterOverTemperature { zones } => {
+                Self::HeaterOverTemperature { zones }
+            }
+            SafetyStopReason::Bandueberwachung => Self::Bandueberwachung,
+            SafetyStopReason::SleepTimer => Self::SleepTimer,
+        }
+    }
+}
+
 #[derive(Serialize, Debug, Clone, BuildEvent)]
 pub struct SafetyStopEvent {
+    pub id: u64,
     pub reason: SafetyStopReason,
     pub heaters_disabled: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub enum SafetyMessageSeverity {
+    MotorsOnly,
+    Full,
+}
+
+impl From<super::safety::SafetySeverity> for SafetyMessageSeverity {
+    fn from(severity: super::safety::SafetySeverity) -> Self {
+        match severity {
+            super::safety::SafetySeverity::MotorsOnly => Self::MotorsOnly,
+            super::safety::SafetySeverity::Full => Self::Full,
+        }
+    }
+}
+
+/// A single currently-pending (unacknowledged) safety message, as embedded
+/// in `StateEvent::pending_safety_messages`.
+#[derive(Serialize, Debug, Clone)]
+pub struct SafetyMessageState {
+    pub id: u64,
+    pub reason: SafetyStopReason,
+    pub severity: SafetyMessageSeverity,
+    /// Milliseconds since this message was first raised, computed fresh at
+    /// emission time (an `Instant` has no fixed epoch so it isn't wired
+    /// directly).
+    pub age_ms: u64,
+    pub occurrence_count: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -217,6 +264,14 @@ pub enum Mutation {
     // Mode
     SetMode(Mode),
     SetOperationMode(OperationMode),
+
+    // Safety Inbox
+    AcknowledgeSafetyMessage(u64),
+    AcknowledgeAllSafetyMessages,
+    /// Test/commissioning hook: synthesize a safety message via the exact
+    /// same path a real detection would use, without needing to physically
+    /// induce the fault. Not wired into any shipped UI.
+    DebugTriggerSafetyMessage(SafetyStopReason),
 
     // Connected Machine
     SetConnectedMachine(MachineIdentificationUnique),
@@ -420,6 +475,8 @@ pub struct StateEvent {
     pub bandueberwachung_monitor_state: BandMonitorState,
     /// sleep timer state
     pub sleep_timer_state: SleepTimerState,
+    /// currently pending (unacknowledged) safety messages
+    pub pending_safety_messages: Vec<SafetyMessageState>,
     /// order information state
     pub order_info_state: OrderInfoState,
     /// extra outputs state
@@ -765,7 +822,11 @@ impl CacheableEvents<Self> for GluetexEvents {
             Self::LiveValues(_) => cache_first_and_last,
             Self::State(_) => cache_first_and_last,
             Self::HeatingAutoTuneComplete(_) => cache_first_and_last,
-            Self::SafetyStop(_) => cache_first_and_last,
+            // Transient "a new distinct message was just raised" notice —
+            // the durable pending list lives in StateEvent, which is already
+            // cached and replayed in full. A late-joining client doesn't
+            // need old fault notifications replayed, only the current list.
+            Self::SafetyStop(_) => Box::new(|_, _| {}),
         }
     }
 }
@@ -797,6 +858,12 @@ impl MachineApi for Gluetex {
             Mutation::EnableTraverseLaserpointer(enable) => self.set_laser(enable),
             Mutation::SetMode(mode) => self.set_mode(&mode.into()),
             Mutation::SetOperationMode(mode) => self.set_operation_mode(&mode.into()),
+            Mutation::AcknowledgeSafetyMessage(id) => self.acknowledge_safety_message(id),
+            Mutation::AcknowledgeAllSafetyMessages => self.acknowledge_all_safety_messages(),
+            Mutation::DebugTriggerSafetyMessage(reason) => {
+                let reason: super::safety::StopReason = reason.into();
+                self.record_safety_message(reason.default_stop());
+            }
             Mutation::SetTraverseLimitOuter(limit) => self.traverse_set_limit_outer(limit),
             Mutation::SetTraverseLimitInner(limit) => self.traverse_set_limit_inner(limit),
             Mutation::SetTraverseStepSize(size) => self.traverse_set_step_size(size),

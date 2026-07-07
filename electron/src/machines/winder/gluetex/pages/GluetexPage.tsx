@@ -1,13 +1,13 @@
 import { Topbar } from "@/components/Topbar";
 import { gluetexRoute } from "@/routes/routes";
 import React from "react";
-import { GluetexErrorBanner } from "../components/GluetexErrorBanner";
+import { GluetexSafetyInbox } from "../components/GluetexSafetyInbox";
 
 export function GluetexPage() {
   const { serial } = gluetexRoute.useParams();
   return (
     <>
-      <GluetexErrorBanner />
+      <GluetexSafetyInbox />
       <Topbar
         pathname={`/_sidebar/machines/gluetex/${serial}`}
         items={[

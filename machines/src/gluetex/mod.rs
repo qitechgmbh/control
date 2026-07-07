@@ -264,6 +264,15 @@ pub struct Gluetex {
     pub bandueberwachung_not_active_since: Option<std::time::Instant>,
     pub sleep_timer: SleepTimer,
 
+    /// Currently pending (unacknowledged) safety messages.
+    pub pending_safety: safety::SafetyInbox,
+    /// Whether the aggregate safety-stop side effects (Setup+Hold+motors
+    /// off, and heaters off while any Full-severity message is pending) are
+    /// currently applied. Tracked separately from `pending_safety.is_empty()`
+    /// so `reconcile_safety_stops` only performs the actual mode/motor
+    /// transition once, on the empty->non-empty edge, instead of every tick.
+    pub safety_engaged: bool,
+
     // Distance tracking for optris voltage delay
     /// Last recorded distance for optris 1 voltage delay calculation
     pub optris_1_last_distance_mm: f64,

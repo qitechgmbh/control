@@ -646,6 +646,8 @@ impl MachineNewTrait for Gluetex {
                 bandueberwachung_triggered: false,
                 bandueberwachung_not_active_since: None,
                 sleep_timer: super::SleepTimer::new(),
+                pending_safety: super::safety::SafetyInbox::default(),
+                safety_engaged: false,
                 optris_1_last_distance_mm: 0.0,
                 optris_2_last_distance_mm: 0.0,
                 order_info: super::OrderInfo::default(),
