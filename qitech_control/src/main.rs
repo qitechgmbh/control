@@ -17,11 +17,9 @@ use qitech_lib::{
 };
 #[cfg(not(feature = "mock"))]
 use std::{sync::Arc, time::Duration};
-use tokio::sync::mpsc::{Receiver};
+use tokio::sync::mpsc::Receiver;
 use tokio_serial::SerialPortInfo;
 
-#[cfg(not(feature = "mock"))]
-use crate::{app_state::MainState, interfaces::{detect_serial, set_all_ethernet_up}};
 use crate::{
     apis::socketio::main_namespace::{
         ethercat_devices_event::EcatState,
@@ -29,14 +27,19 @@ use crate::{
     },
     app_state::get_async_runtime,
 };
+#[cfg(not(feature = "mock"))]
+use crate::{
+    app_state::MainState,
+    interfaces::{detect_serial, set_all_ethernet_up},
+};
 
 pub mod apis;
 mod app_state;
+mod interfaces;
 mod machine_loop;
 #[cfg(feature = "mock")]
 mod mock;
 pub mod persist;
-mod interfaces;
 
 fn setup_ethercat(
     state: Arc<SharedAppState>,
@@ -390,7 +393,7 @@ fn main_logic() {
         || std::env::args().any(|a| a == "preop");
     let mut shared_state = SharedAppState::new();
     let mut main_state = MainState::new();
-    
+
     // By default all ethernet is unmanaged, so NM does not set them to UP and are permanently DOWN
     // So we do it for all Ethernet interfaces instead
     match set_all_ethernet_up() {

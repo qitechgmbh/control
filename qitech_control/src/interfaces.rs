@@ -1,5 +1,5 @@
-use std::{fs, os::unix::io::AsRawFd};
 use qitech_lib::common::get_async_runtime;
+use std::{fs, os::unix::io::AsRawFd};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio_serial::{SerialPortInfo, available_ports};
 
@@ -19,7 +19,10 @@ pub fn bring_up_interface(iface: &str) -> std::io::Result<()> {
     let mut ifr_name = [0u8; libc::IFNAMSIZ];
     let bytes = iface.as_bytes();
     if bytes.len() >= libc::IFNAMSIZ {
-        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Interface name too long"));
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Interface name too long",
+        ));
     }
     ifr_name[..bytes.len()].copy_from_slice(bytes);
     let ifr = IfReq {
@@ -52,8 +55,6 @@ pub fn set_all_ethernet_up() -> bool {
     }
     true
 }
-
-
 
 pub fn detect_serial(rx: Receiver<()>, tx_ports: Sender<Vec<SerialPortInfo>>) {
     get_async_runtime().spawn(async move {
