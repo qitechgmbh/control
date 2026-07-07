@@ -42,8 +42,8 @@ export const tempStateSchema = z.object({
  * Cooling states schema
  */
 export const tempStatesSchema = z.object({
-  front: tempStateSchema,
-  back: tempStateSchema,
+  left: tempStateSchema,
+  right: tempStateSchema,
 });
 
 export const flowStateSchema = z.object({
@@ -51,8 +51,8 @@ export const flowStateSchema = z.object({
   should_flow: z.boolean(),
 });
 export const flowStatesSchema = z.object({
-  front: flowStateSchema,
-  back: flowStateSchema,
+  left: flowStateSchema,
+  right: flowStateSchema,
 });
 
 export const fanStateSchema = z.object({
@@ -60,8 +60,8 @@ export const fanStateSchema = z.object({
   max_revolutions: z.number(),
 });
 export const fanStatesSchema = z.object({
-  back: fanStateSchema,
-  front: fanStateSchema,
+  right: fanStateSchema,
+  left: fanStateSchema,
 });
 
 export const coolingModeSchema = z.enum(["Low", "Ramp", "Max"]);
@@ -69,8 +69,8 @@ export const coolingModeStateSchema = z.object({
   mode: coolingModeSchema.nullable(),
 });
 export const coolingModeStatesSchema = z.object({
-  back: coolingModeStateSchema,
-  front: coolingModeStateSchema,
+  right: coolingModeStateSchema,
+  left: coolingModeStateSchema,
 });
 
 export const toleranceStateSchema = z.object({
@@ -78,8 +78,8 @@ export const toleranceStateSchema = z.object({
   cooling: z.number(),
 });
 export const toleranceStatesSchema = z.object({
-  back: toleranceStateSchema,
-  front: toleranceStateSchema,
+  right: toleranceStateSchema,
+  left: toleranceStateSchema,
 });
 
 export const pidStateSchema = z.object({
@@ -89,8 +89,8 @@ export const pidStateSchema = z.object({
 });
 
 export const pidStatesSchema = z.object({
-  back: pidStateSchema,
-  front: pidStateSchema,
+  right: pidStateSchema,
+  left: pidStateSchema,
 });
 
 export const thermalSafetyStateSchema = z.object({
@@ -99,37 +99,35 @@ export const thermalSafetyStateSchema = z.object({
 });
 
 export const thermalSafetyStatesSchema = z.object({
-  back: thermalSafetyStateSchema,
-  front: thermalSafetyStateSchema,
+  right: thermalSafetyStateSchema,
+  left: thermalSafetyStateSchema,
 });
 /**
  * Live values event schema (time-series data)
  */
 export const liveValuesEventDataSchema = z.object({
-  front_flow: z.number(),
-  back_flow: z.number(),
-  front_temperature: z.number(),
-  back_temperature: z.number(),
-  front_temp_reservoir: z.number(),
-  back_temp_reservoir: z.number(),
-  front_revolutions: z.number(),
-  back_revolutions: z.number(),
-  back_power: z.number(),
-  front_power: z.number(),
-  front_heating: z.boolean().optional().default(false),
-  back_heating: z.boolean().optional().default(false),
-  front_cooling_mode: coolingModeSchema.nullable().optional().default(null),
-  back_cooling_mode: coolingModeSchema.nullable().optional().default(null),
-  front_pump_cooldown_active: z.boolean().optional().default(false),
-  back_pump_cooldown_active: z.boolean().optional().default(false),
-  front_pump_cooldown_remaining: z.number().optional().default(0),
-  back_pump_cooldown_remaining: z.number().optional().default(0),
-  front_heating_startup_wait_active: z.boolean().optional().default(false),
-  back_heating_startup_wait_active: z.boolean().optional().default(false),
-  front_heating_startup_wait_remaining: z.number().optional().default(0),
-  back_heating_startup_wait_remaining: z.number().optional().default(0),
-  front_total_energy: z.number(),
-  back_total_energy: z.number(),
+  left_flow: z.number(),
+  right_flow: z.number(),
+  left_temperature: z.number(),
+  right_temperature: z.number(),
+  left_revolutions: z.number(),
+  right_revolutions: z.number(),
+  right_power: z.number(),
+  left_power: z.number(),
+  left_heating: z.boolean().optional().default(false),
+  right_heating: z.boolean().optional().default(false),
+  left_cooling_mode: coolingModeSchema.nullable().optional().default(null),
+  right_cooling_mode: coolingModeSchema.nullable().optional().default(null),
+  left_pump_cooldown_active: z.boolean().optional().default(false),
+  right_pump_cooldown_active: z.boolean().optional().default(false),
+  left_pump_cooldown_remaining: z.number().optional().default(0),
+  right_pump_cooldown_remaining: z.number().optional().default(0),
+  left_heating_startup_wait_active: z.boolean().optional().default(false),
+  right_heating_startup_wait_active: z.boolean().optional().default(false),
+  left_heating_startup_wait_remaining: z.number().optional().default(0),
+  right_heating_startup_wait_remaining: z.number().optional().default(0),
+  left_total_energy: z.number(),
+  right_total_energy: z.number(),
 });
 
 /**
@@ -169,74 +167,67 @@ export type Aquapath1NamespaceStore = {
   state: StateEvent | null;
   defaultState: StateEvent | null;
 
-  front_flow: TimeSeries;
-  back_flow: TimeSeries;
+  left_flow: TimeSeries;
+  right_flow: TimeSeries;
 
-  front_temperature: TimeSeries;
-  back_temperature: TimeSeries;
+  left_temperature: TimeSeries;
+  right_temperature: TimeSeries;
 
-  front_temp_reservoir: TimeSeries;
-  back_temp_reservoir: TimeSeries;
+  left_revolutions: TimeSeries;
+  right_revolutions: TimeSeries;
 
-  front_revolutions: TimeSeries;
-  back_revolutions: TimeSeries;
-
-  front_power: TimeSeries;
-  back_power: TimeSeries;
+  left_power: TimeSeries;
+  right_power: TimeSeries;
   combinedPower: TimeSeries;
 
-  front_total_energy: TimeSeries;
-  back_total_energy: TimeSeries;
+  left_total_energy: TimeSeries;
+  right_total_energy: TimeSeries;
   totalEnergyKWh: TimeSeries;
-  front_heating: boolean;
-  back_heating: boolean;
-  front_cooling_mode: "Low" | "Ramp" | "Max" | null;
-  back_cooling_mode: "Low" | "Ramp" | "Max" | null;
-  front_pump_cooldown_active: boolean;
-  back_pump_cooldown_active: boolean;
-  front_pump_cooldown_remaining: number;
-  back_pump_cooldown_remaining: number;
-  front_heating_startup_wait_active: boolean;
-  back_heating_startup_wait_active: boolean;
-  front_heating_startup_wait_remaining: number;
-  back_heating_startup_wait_remaining: number;
-  targetFrontTemperature: TimeSeries;
-  targetBackTemperature: TimeSeries;
+  left_heating: boolean;
+  right_heating: boolean;
+  left_cooling_mode: "Low" | "Ramp" | "Max" | null;
+  right_cooling_mode: "Low" | "Ramp" | "Max" | null;
+  left_pump_cooldown_active: boolean;
+  right_pump_cooldown_active: boolean;
+  left_pump_cooldown_remaining: number;
+  right_pump_cooldown_remaining: number;
+  left_heating_startup_wait_active: boolean;
+  right_heating_startup_wait_active: boolean;
+  left_heating_startup_wait_remaining: number;
+  right_heating_startup_wait_remaining: number;
+  targetLeftTemperature: TimeSeries;
+  targetRightTemperature: TimeSeries;
 };
 
-const { initialTimeSeries: front_temperature, insert: addTemperature1 } =
+const { initialTimeSeries: left_temperature, insert: addTemperature1 } =
   createTimeSeries();
-const { initialTimeSeries: back_temperature, insert: addTemperature2 } =
+const { initialTimeSeries: right_temperature, insert: addTemperature2 } =
   createTimeSeries();
-const { initialTimeSeries: front_temp_reservoir, insert: addTempReserv1 } =
+const { initialTimeSeries: left_flow, insert: addFlow1 } = createTimeSeries();
+const { initialTimeSeries: right_flow, insert: addFlow2 } = createTimeSeries();
+const { initialTimeSeries: left_revolutions, insert: addFan1 } =
   createTimeSeries();
-const { initialTimeSeries: back_temp_reservoir, insert: addTempReserv2 } =
+const { initialTimeSeries: right_revolutions, insert: addFan2 } =
   createTimeSeries();
-const { initialTimeSeries: front_flow, insert: addFlow1 } = createTimeSeries();
-const { initialTimeSeries: back_flow, insert: addFlow2 } = createTimeSeries();
-const { initialTimeSeries: front_revolutions, insert: addFan1 } =
+const { initialTimeSeries: left_power, insert: addLeftPower } =
   createTimeSeries();
-const { initialTimeSeries: back_revolutions, insert: addFan2 } =
-  createTimeSeries();
-const { initialTimeSeries: front_power, insert: addFrontPower } =
-  createTimeSeries();
-const { initialTimeSeries: back_power, insert: addBackPower } =
+const { initialTimeSeries: right_power, insert: addRightPower } =
   createTimeSeries();
 const { initialTimeSeries: combinedPower, insert: addCombinedPower } =
   createTimeSeries();
-const { initialTimeSeries: front_total_energy, insert: addFrontEnergy } =
+const { initialTimeSeries: left_total_energy, insert: addLeftEnergy } =
   createTimeSeries();
-const { initialTimeSeries: back_total_energy, insert: addBackEnergy } =
+const { initialTimeSeries: right_total_energy, insert: addRightEnergy } =
   createTimeSeries();
 const { initialTimeSeries: totalEnergyKWh, insert: addTotalEnergyKWh } =
   createTimeSeries();
 const {
-  initialTimeSeries: targetFrontTemperature,
-  insert: addTargetFrontTemperature,
+  initialTimeSeries: targetLeftTemperature,
+  insert: addTargetLeftTemperature,
 } = createTimeSeries();
 const {
-  initialTimeSeries: targetBackTemperature,
-  insert: addTargetBackTemperature,
+  initialTimeSeries: targetRightTemperature,
+  insert: addTargetRightTemperature,
 } = createTimeSeries();
 
 /**
@@ -249,34 +240,32 @@ export const createAquapath1NamespaceStore =
       return {
         state: null,
         defaultState: null,
-        front_temperature: front_temperature,
-        back_temperature: back_temperature,
-        front_flow: front_flow,
-        back_flow: back_flow,
-        front_temp_reservoir: front_temp_reservoir,
-        back_temp_reservoir: back_temp_reservoir,
-        front_revolutions: front_revolutions,
-        back_revolutions: back_revolutions,
-        back_power: back_power,
-        front_power: front_power,
+        left_temperature: left_temperature,
+        right_temperature: right_temperature,
+        left_flow: left_flow,
+        right_flow: right_flow,
+        left_revolutions: left_revolutions,
+        right_revolutions: right_revolutions,
+        right_power: right_power,
+        left_power: left_power,
         combinedPower: combinedPower,
-        front_total_energy: front_total_energy,
-        back_total_energy: back_total_energy,
+        left_total_energy: left_total_energy,
+        right_total_energy: right_total_energy,
         totalEnergyKWh: totalEnergyKWh,
-        front_heating: false,
-        back_heating: false,
-        front_cooling_mode: null,
-        back_cooling_mode: null,
-        front_pump_cooldown_active: false,
-        back_pump_cooldown_active: false,
-        front_pump_cooldown_remaining: 0,
-        back_pump_cooldown_remaining: 0,
-        front_heating_startup_wait_active: false,
-        back_heating_startup_wait_active: false,
-        front_heating_startup_wait_remaining: 0,
-        back_heating_startup_wait_remaining: 0,
-        targetFrontTemperature: targetFrontTemperature,
-        targetBackTemperature: targetBackTemperature,
+        left_heating: false,
+        right_heating: false,
+        left_cooling_mode: null,
+        right_cooling_mode: null,
+        left_pump_cooldown_active: false,
+        right_pump_cooldown_active: false,
+        left_pump_cooldown_remaining: 0,
+        right_pump_cooldown_remaining: 0,
+        left_heating_startup_wait_active: false,
+        right_heating_startup_wait_active: false,
+        left_heating_startup_wait_remaining: 0,
+        right_heating_startup_wait_remaining: 0,
+        targetLeftTemperature: targetLeftTemperature,
+        targetRightTemperature: targetRightTemperature,
       };
     });
   };
@@ -306,10 +295,10 @@ export function aquapath1MessageHandler(
       if (eventName === "StateEvent") {
         const stateEvent = stateEventSchema.parse(event);
         const timestamp = event.ts;
-        const nextTargetFrontTemperature =
-          stateEvent.data.temperature_states.front.target_temperature;
-        const nextTargetBackTemperature =
-          stateEvent.data.temperature_states.back.target_temperature;
+        const nextTargetLeftTemperature =
+          stateEvent.data.temperature_states.left.target_temperature;
+        const nextTargetRightTemperature =
+          stateEvent.data.temperature_states.right.target_temperature;
         updateStore((state) => ({
           ...state,
           state: stateEvent,
@@ -317,20 +306,20 @@ export function aquapath1MessageHandler(
           defaultState: stateEvent.data.is_default_state
             ? stateEvent
             : state.defaultState,
-          targetFrontTemperature:
-            state.targetFrontTemperature.current?.value ===
-            nextTargetFrontTemperature
-              ? state.targetFrontTemperature
-              : addTargetFrontTemperature(state.targetFrontTemperature, {
-                  value: nextTargetFrontTemperature,
+          targetLeftTemperature:
+            state.targetLeftTemperature.current?.value ===
+            nextTargetLeftTemperature
+              ? state.targetLeftTemperature
+              : addTargetLeftTemperature(state.targetLeftTemperature, {
+                  value: nextTargetLeftTemperature,
                   timestamp,
                 }),
-          targetBackTemperature:
-            state.targetBackTemperature.current?.value ===
-            nextTargetBackTemperature
-              ? state.targetBackTemperature
-              : addTargetBackTemperature(state.targetBackTemperature, {
-                  value: nextTargetBackTemperature,
+          targetRightTemperature:
+            state.targetRightTemperature.current?.value ===
+            nextTargetRightTemperature
+              ? state.targetRightTemperature
+              : addTargetRightTemperature(state.targetRightTemperature, {
+                  value: nextTargetRightTemperature,
                   timestamp,
                 }),
         }));
@@ -361,87 +350,79 @@ export function aquapath1MessageHandler(
 
         updateStore((state) => ({
           ...state,
-          front_temperature: addTemperature1(state.front_temperature, {
-            value: liveValuesEvent.data.front_temperature,
+          left_temperature: addTemperature1(state.left_temperature, {
+            value: liveValuesEvent.data.left_temperature,
             timestamp: event.ts,
           }),
-          back_temperature: addTemperature2(state.back_temperature, {
-            value: liveValuesEvent.data.back_temperature,
+          right_temperature: addTemperature2(state.right_temperature, {
+            value: liveValuesEvent.data.right_temperature,
             timestamp: event.ts,
           }),
-          front_flow: addFlow1(state.front_flow, {
-            value: liveValuesEvent.data.front_flow,
+          left_flow: addFlow1(state.left_flow, {
+            value: liveValuesEvent.data.left_flow,
             timestamp: event.ts,
           }),
-          back_flow: addFlow2(state.back_flow, {
-            value: liveValuesEvent.data.back_flow,
+          right_flow: addFlow2(state.right_flow, {
+            value: liveValuesEvent.data.right_flow,
             timestamp: event.ts,
           }),
-          front_temp_reservoir: addTempReserv1(state.front_temp_reservoir, {
-            value: liveValuesEvent.data.front_temp_reservoir,
+          left_revolutions: addFan1(state.left_revolutions, {
+            value: liveValuesEvent.data.left_revolutions,
             timestamp: event.ts,
           }),
-          back_temp_reservoir: addTempReserv2(state.back_temp_reservoir, {
-            value: liveValuesEvent.data.back_temp_reservoir,
+          right_revolutions: addFan2(state.right_revolutions, {
+            value: liveValuesEvent.data.right_revolutions,
             timestamp: event.ts,
           }),
-          front_revolutions: addFan1(state.front_revolutions, {
-            value: liveValuesEvent.data.front_revolutions,
+          left_power: addLeftPower(state.left_power, {
+            value: liveValuesEvent.data.left_power,
             timestamp: event.ts,
           }),
-          back_revolutions: addFan2(state.back_revolutions, {
-            value: liveValuesEvent.data.back_revolutions,
-            timestamp: event.ts,
-          }),
-          front_power: addFrontPower(state.front_power, {
-            value: liveValuesEvent.data.front_power,
-            timestamp: event.ts,
-          }),
-          back_power: addBackPower(state.back_power, {
-            value: liveValuesEvent.data.back_power,
+          right_power: addRightPower(state.right_power, {
+            value: liveValuesEvent.data.right_power,
             timestamp: event.ts,
           }),
           combinedPower: addCombinedPower(state.combinedPower, {
             value:
-              liveValuesEvent.data.front_power +
-              liveValuesEvent.data.back_power,
+              liveValuesEvent.data.left_power +
+              liveValuesEvent.data.right_power,
             timestamp: event.ts,
           }),
-          front_total_energy: addFrontEnergy(state.front_total_energy, {
-            value: liveValuesEvent.data.front_total_energy,
+          left_total_energy: addLeftEnergy(state.left_total_energy, {
+            value: liveValuesEvent.data.left_total_energy,
             timestamp: event.ts,
           }),
-          back_total_energy: addBackEnergy(state.back_total_energy, {
-            value: liveValuesEvent.data.back_total_energy,
+          right_total_energy: addRightEnergy(state.right_total_energy, {
+            value: liveValuesEvent.data.right_total_energy,
             timestamp: event.ts,
           }),
           totalEnergyKWh: addTotalEnergyKWh(state.totalEnergyKWh, {
             value:
-              (liveValuesEvent.data.front_total_energy +
-                liveValuesEvent.data.back_total_energy) /
+              (liveValuesEvent.data.left_total_energy +
+                liveValuesEvent.data.right_total_energy) /
               1000,
             timestamp: event.ts,
           }),
-          front_heating: liveValuesEvent.data.front_heating,
-          back_heating: liveValuesEvent.data.back_heating,
-          front_cooling_mode: liveValuesEvent.data.front_cooling_mode,
-          back_cooling_mode: liveValuesEvent.data.back_cooling_mode,
-          front_pump_cooldown_active:
-            liveValuesEvent.data.front_pump_cooldown_active,
-          back_pump_cooldown_active:
-            liveValuesEvent.data.back_pump_cooldown_active,
-          front_pump_cooldown_remaining:
-            liveValuesEvent.data.front_pump_cooldown_remaining,
-          back_pump_cooldown_remaining:
-            liveValuesEvent.data.back_pump_cooldown_remaining,
-          front_heating_startup_wait_active:
-            liveValuesEvent.data.front_heating_startup_wait_active,
-          back_heating_startup_wait_active:
-            liveValuesEvent.data.back_heating_startup_wait_active,
-          front_heating_startup_wait_remaining:
-            liveValuesEvent.data.front_heating_startup_wait_remaining,
-          back_heating_startup_wait_remaining:
-            liveValuesEvent.data.back_heating_startup_wait_remaining,
+          left_heating: liveValuesEvent.data.left_heating,
+          right_heating: liveValuesEvent.data.right_heating,
+          left_cooling_mode: liveValuesEvent.data.left_cooling_mode,
+          right_cooling_mode: liveValuesEvent.data.right_cooling_mode,
+          left_pump_cooldown_active:
+            liveValuesEvent.data.left_pump_cooldown_active,
+          right_pump_cooldown_active:
+            liveValuesEvent.data.right_pump_cooldown_active,
+          left_pump_cooldown_remaining:
+            liveValuesEvent.data.left_pump_cooldown_remaining,
+          right_pump_cooldown_remaining:
+            liveValuesEvent.data.right_pump_cooldown_remaining,
+          left_heating_startup_wait_active:
+            liveValuesEvent.data.left_heating_startup_wait_active,
+          right_heating_startup_wait_active:
+            liveValuesEvent.data.right_heating_startup_wait_active,
+          left_heating_startup_wait_remaining:
+            liveValuesEvent.data.left_heating_startup_wait_remaining,
+          right_heating_startup_wait_remaining:
+            liveValuesEvent.data.right_heating_startup_wait_remaining,
         }));
       } else {
         handleUnhandledEventError(eventName);

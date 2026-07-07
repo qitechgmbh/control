@@ -13,30 +13,28 @@ use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct LiveValuesEvent {
-    pub front_flow: f64,
-    pub back_flow: f64,
-    pub front_temperature: f64,
-    pub back_temperature: f64,
-    pub front_temp_reservoir: f64,
-    pub back_temp_reservoir: f64,
-    pub front_revolutions: f64,
-    pub back_revolutions: f64,
-    pub front_power: f64,
-    pub back_power: f64,
-    pub front_heating: bool,
-    pub back_heating: bool,
-    pub front_cooling_mode: Option<CoolingMode>,
-    pub back_cooling_mode: Option<CoolingMode>,
-    pub front_pump_cooldown_active: bool,
-    pub back_pump_cooldown_active: bool,
-    pub front_pump_cooldown_remaining: f64,
-    pub back_pump_cooldown_remaining: f64,
-    pub front_heating_startup_wait_active: bool,
-    pub back_heating_startup_wait_active: bool,
-    pub front_heating_startup_wait_remaining: f64,
-    pub back_heating_startup_wait_remaining: f64,
-    pub front_total_energy: f64,
-    pub back_total_energy: f64,
+    pub left_flow: f64,
+    pub right_flow: f64,
+    pub left_temperature: f64,
+    pub right_temperature: f64,
+    pub left_revolutions: f64,
+    pub right_revolutions: f64,
+    pub left_power: f64,
+    pub right_power: f64,
+    pub left_heating: bool,
+    pub right_heating: bool,
+    pub left_cooling_mode: Option<CoolingMode>,
+    pub right_cooling_mode: Option<CoolingMode>,
+    pub left_pump_cooldown_active: bool,
+    pub right_pump_cooldown_active: bool,
+    pub left_pump_cooldown_remaining: f64,
+    pub right_pump_cooldown_remaining: f64,
+    pub left_heating_startup_wait_active: bool,
+    pub right_heating_startup_wait_active: bool,
+    pub left_heating_startup_wait_remaining: f64,
+    pub right_heating_startup_wait_remaining: f64,
+    pub left_total_energy: f64,
+    pub right_total_energy: f64,
 }
 
 impl LiveValuesEvent {
@@ -85,8 +83,8 @@ impl NoticeEvent {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct TempStates {
-    pub front: TempState,
-    pub back: TempState,
+    pub left: TempState,
+    pub right: TempState,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -101,8 +99,8 @@ pub struct ModeState {
 }
 #[derive(Serialize, Debug, Clone)]
 pub struct FlowStates {
-    pub front: FlowState,
-    pub back: FlowState,
+    pub left: FlowState,
+    pub right: FlowState,
 }
 #[derive(Serialize, Debug, Clone)]
 pub struct FlowState {
@@ -117,8 +115,8 @@ pub struct FanState {
 }
 #[derive(Serialize, Debug, Clone)]
 pub struct FanStates {
-    pub front: FanState,
-    pub back: FanState,
+    pub left: FanState,
+    pub right: FanState,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -128,8 +126,8 @@ pub struct CoolingModeState {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct CoolingModeStates {
-    pub front: CoolingModeState,
-    pub back: CoolingModeState,
+    pub left: CoolingModeState,
+    pub right: CoolingModeState,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -139,8 +137,8 @@ pub struct ToleranceState {
 }
 #[derive(Serialize, Debug, Clone)]
 pub struct ToleranceStates {
-    pub front: ToleranceState,
-    pub back: ToleranceState,
+    pub left: ToleranceState,
+    pub right: ToleranceState,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -152,8 +150,8 @@ pub struct PidState {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct PidStates {
-    pub front: PidState,
-    pub back: PidState,
+    pub left: PidState,
+    pub right: PidState,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -164,8 +162,8 @@ pub struct ThermalSafetyState {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct ThermalSafetyStates {
-    pub front: ThermalSafetyState,
-    pub back: ThermalSafetyState,
+    pub left: ThermalSafetyState,
+    pub right: ThermalSafetyState,
 }
 
 pub enum AquaPathV1Events {
@@ -179,29 +177,29 @@ enum Mutation {
     //Mode
     SetAquaPathMode(AquaPathV1Mode),
 
-    SetFrontTemperature(f64),
-    SetBackTemperature(f64),
+    SetLeftTemperature(f64),
+    SetRightTemperature(f64),
 
-    SetFrontFlow(bool),
-    SetBackFlow(bool),
+    SetLeftFlow(bool),
+    SetRightFlow(bool),
 
-    SetFrontRevolutions(f64),
-    SetBackRevolutions(f64),
+    SetLeftRevolutions(f64),
+    SetRightRevolutions(f64),
 
-    SetFrontHeatingTolerance(f64),
-    SetBackHeatingTolerance(f64),
-    SetFrontCoolingTolerance(f64),
-    SetBackCoolingTolerance(f64),
-    SetFrontPidKp(f64),
-    SetFrontPidKi(f64),
-    SetFrontPidKd(f64),
-    SetBackPidKp(f64),
-    SetBackPidKi(f64),
-    SetBackPidKd(f64),
-    SetFrontThermalFlowSettleDuration(f64),
-    SetBackThermalFlowSettleDuration(f64),
-    SetFrontPumpCooldownMinTemperature(f64),
-    SetBackPumpCooldownMinTemperature(f64),
+    SetLeftHeatingTolerance(f64),
+    SetRightHeatingTolerance(f64),
+    SetLeftCoolingTolerance(f64),
+    SetRightCoolingTolerance(f64),
+    SetLeftPidKp(f64),
+    SetLeftPidKi(f64),
+    SetLeftPidKd(f64),
+    SetRightPidKp(f64),
+    SetRightPidKi(f64),
+    SetRightPidKd(f64),
+    SetLeftThermalFlowSettleDuration(f64),
+    SetRightThermalFlowSettleDuration(f64),
+    SetLeftPumpCooldownMinTemperature(f64),
+    SetRightPumpCooldownMinTemperature(f64),
     SetAmbientTemperatureCalibration(f64),
 }
 
@@ -274,67 +272,67 @@ impl MachineApi for AquaPathV1 {
         let control: Mutation = serde_json::from_value(request_body)?;
         match control {
             Mutation::SetAquaPathMode(mode) => self.set_mode_state(mode),
-            Mutation::SetBackTemperature(temperature) => {
-                self.set_target_temperature(temperature, super::AquaPathSideType::Back)
+            Mutation::SetRightTemperature(temperature) => {
+                self.set_target_temperature(temperature, super::AquaPathSideType::Right)
             }
 
-            Mutation::SetFrontTemperature(temperature) => {
-                self.set_target_temperature(temperature, super::AquaPathSideType::Front)
+            Mutation::SetLeftTemperature(temperature) => {
+                self.set_target_temperature(temperature, super::AquaPathSideType::Left)
             }
 
-            Mutation::SetBackFlow(should_pump) => {
-                self.set_should_pump(should_pump, super::AquaPathSideType::Back)
+            Mutation::SetRightFlow(should_pump) => {
+                self.set_should_pump(should_pump, super::AquaPathSideType::Right)
             }
-            Mutation::SetFrontFlow(should_pump) => {
-                self.set_should_pump(should_pump, super::AquaPathSideType::Front)
+            Mutation::SetLeftFlow(should_pump) => {
+                self.set_should_pump(should_pump, super::AquaPathSideType::Left)
             }
-            Mutation::SetBackRevolutions(revolution) => {
-                self.set_max_revolutions(revolution, super::AquaPathSideType::Back)
+            Mutation::SetRightRevolutions(revolution) => {
+                self.set_max_revolutions(revolution, super::AquaPathSideType::Right)
             }
-            Mutation::SetFrontRevolutions(revolutions) => {
-                self.set_max_revolutions(revolutions, super::AquaPathSideType::Front)
+            Mutation::SetLeftRevolutions(revolutions) => {
+                self.set_max_revolutions(revolutions, super::AquaPathSideType::Left)
             }
-            Mutation::SetBackHeatingTolerance(tolerance) => {
-                self.set_heating_tolerance(tolerance, super::AquaPathSideType::Back)
+            Mutation::SetRightHeatingTolerance(tolerance) => {
+                self.set_heating_tolerance(tolerance, super::AquaPathSideType::Right)
             }
-            Mutation::SetFrontHeatingTolerance(tolerance) => {
-                self.set_heating_tolerance(tolerance, super::AquaPathSideType::Front)
+            Mutation::SetLeftHeatingTolerance(tolerance) => {
+                self.set_heating_tolerance(tolerance, super::AquaPathSideType::Left)
             }
-            Mutation::SetBackCoolingTolerance(tolerance) => {
-                self.set_cooling_tolerance(tolerance, super::AquaPathSideType::Back);
+            Mutation::SetRightCoolingTolerance(tolerance) => {
+                self.set_cooling_tolerance(tolerance, super::AquaPathSideType::Right);
             }
-            Mutation::SetFrontCoolingTolerance(tolerance) => {
-                self.set_cooling_tolerance(tolerance, super::AquaPathSideType::Front);
+            Mutation::SetLeftCoolingTolerance(tolerance) => {
+                self.set_cooling_tolerance(tolerance, super::AquaPathSideType::Left);
             }
-            Mutation::SetFrontPidKp(value) => {
-                self.set_pid_kp(value, super::AquaPathSideType::Front);
+            Mutation::SetLeftPidKp(value) => {
+                self.set_pid_kp(value, super::AquaPathSideType::Left);
             }
-            Mutation::SetFrontPidKi(value) => {
-                self.set_pid_ki(value, super::AquaPathSideType::Front);
+            Mutation::SetLeftPidKi(value) => {
+                self.set_pid_ki(value, super::AquaPathSideType::Left);
             }
-            Mutation::SetFrontPidKd(value) => {
-                self.set_pid_kd(value, super::AquaPathSideType::Front);
+            Mutation::SetLeftPidKd(value) => {
+                self.set_pid_kd(value, super::AquaPathSideType::Left);
             }
-            Mutation::SetBackPidKp(value) => {
-                self.set_pid_kp(value, super::AquaPathSideType::Back);
+            Mutation::SetRightPidKp(value) => {
+                self.set_pid_kp(value, super::AquaPathSideType::Right);
             }
-            Mutation::SetBackPidKi(value) => {
-                self.set_pid_ki(value, super::AquaPathSideType::Back);
+            Mutation::SetRightPidKi(value) => {
+                self.set_pid_ki(value, super::AquaPathSideType::Right);
             }
-            Mutation::SetBackPidKd(value) => {
-                self.set_pid_kd(value, super::AquaPathSideType::Back);
+            Mutation::SetRightPidKd(value) => {
+                self.set_pid_kd(value, super::AquaPathSideType::Right);
             }
-            Mutation::SetFrontThermalFlowSettleDuration(value) => {
-                self.set_thermal_flow_settle_duration(value, super::AquaPathSideType::Front);
+            Mutation::SetLeftThermalFlowSettleDuration(value) => {
+                self.set_thermal_flow_settle_duration(value, super::AquaPathSideType::Left);
             }
-            Mutation::SetBackThermalFlowSettleDuration(value) => {
-                self.set_thermal_flow_settle_duration(value, super::AquaPathSideType::Back);
+            Mutation::SetRightThermalFlowSettleDuration(value) => {
+                self.set_thermal_flow_settle_duration(value, super::AquaPathSideType::Right);
             }
-            Mutation::SetFrontPumpCooldownMinTemperature(value) => {
-                self.set_pump_cooldown_min_temperature(value, super::AquaPathSideType::Front);
+            Mutation::SetLeftPumpCooldownMinTemperature(value) => {
+                self.set_pump_cooldown_min_temperature(value, super::AquaPathSideType::Left);
             }
-            Mutation::SetBackPumpCooldownMinTemperature(value) => {
-                self.set_pump_cooldown_min_temperature(value, super::AquaPathSideType::Back);
+            Mutation::SetRightPumpCooldownMinTemperature(value) => {
+                self.set_pump_cooldown_min_temperature(value, super::AquaPathSideType::Right);
             }
             Mutation::SetAmbientTemperatureCalibration(ambient_temp) => {
                 self.set_ambient_temperature_calibration(ambient_temp);

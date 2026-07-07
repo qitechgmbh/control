@@ -114,7 +114,6 @@ pub struct Controller {
     pub temperature: Temperature,
     pub target_temperature: ThermodynamicTemperature,
     pub current_temperature: ThermodynamicTemperature,
-    pub temp_reservoir: ThermodynamicTemperature,
     pub min_temperature: ThermodynamicTemperature,
     pub max_temperature: ThermodynamicTemperature,
 
@@ -211,7 +210,6 @@ impl Controller {
             last_cooling_switch: now,
             target_temperature: target_tempetature,
             current_temperature: ThermodynamicTemperature::new::<degree_celsius>(25.0),
-            temp_reservoir: ThermodynamicTemperature::new::<degree_celsius>(25.0),
             min_temperature: ThermodynamicTemperature::new::<degree_celsius>(10.0),
             max_temperature: ThermodynamicTemperature::new::<degree_celsius>(80.0),
             temperature: temp,
@@ -627,7 +625,6 @@ impl Controller {
         self.flow.should_pump = should_flow;
 
         self.current_temperature = self.get_temp_in();
-        self.temp_reservoir = self.current_temperature;
 
         let pump_cooldown_min_temperature = self.config.pump_cooldown_min_temperature;
         let pump_is_still_hot = self.current_temperature.get::<degree_celsius>()

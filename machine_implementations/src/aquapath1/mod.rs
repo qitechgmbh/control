@@ -35,8 +35,8 @@ pub enum AquaPathV1Mode {
 }
 
 pub enum AquaPathSideType {
-    Front,
-    Back,
+    Left,
+    Right,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -83,8 +83,8 @@ pub struct AquaPathV1 {
     mode: AquaPathV1Mode,
     ambient_temperature_calibration: ThermodynamicTemperature,
     last_measurement_emit: Instant,
-    front_controller: Controller,
-    back_controller: Controller,
+    left_controller: Controller,
+    right_controller: Controller,
 }
 
 impl AquaPathV1 {
@@ -112,58 +112,56 @@ impl AquaPathV1 {
     pub fn get_live_values(&self) -> LiveValuesEvent {
         let now = Instant::now();
         LiveValuesEvent {
-            front_temperature: self
-                .front_controller
+            left_temperature: self
+                .left_controller
                 .current_temperature
                 .get::<degree_celsius>(),
-            back_temperature: self
-                .back_controller
+            right_temperature: self
+                .right_controller
                 .current_temperature
                 .get::<degree_celsius>(),
-            front_flow: self.front_controller.current_flow.get::<liter_per_minute>(),
-            back_flow: self.back_controller.current_flow.get::<liter_per_minute>(),
-            front_temp_reservoir: self.front_controller.temp_reservoir.get::<degree_celsius>(),
-            back_temp_reservoir: self.back_controller.temp_reservoir.get::<degree_celsius>(),
-            front_revolutions: self
-                .front_controller
+            left_flow: self.left_controller.current_flow.get::<liter_per_minute>(),
+            right_flow: self.right_controller.current_flow.get::<liter_per_minute>(),
+            left_revolutions: self
+                .left_controller
                 .current_revolutions
                 .get::<revolution_per_minute>(),
-            back_revolutions: self
-                .back_controller
+            right_revolutions: self
+                .right_controller
                 .current_revolutions
                 .get::<revolution_per_minute>(),
-            front_power: self.front_controller.get_current_power(),
-            back_power: self.back_controller.get_current_power(),
-            front_heating: self.front_controller.temperature.heating,
-            back_heating: self.back_controller.temperature.heating,
-            front_cooling_mode: self.front_controller.cooling_mode,
-            back_cooling_mode: self.back_controller.cooling_mode,
-            front_pump_cooldown_active: self.front_controller.is_pump_cooldown_active(now),
-            back_pump_cooldown_active: self.back_controller.is_pump_cooldown_active(now),
-            front_pump_cooldown_remaining: self
-                .front_controller
+            left_power: self.left_controller.get_current_power(),
+            right_power: self.right_controller.get_current_power(),
+            left_heating: self.left_controller.temperature.heating,
+            right_heating: self.right_controller.temperature.heating,
+            left_cooling_mode: self.left_controller.cooling_mode,
+            right_cooling_mode: self.right_controller.cooling_mode,
+            left_pump_cooldown_active: self.left_controller.is_pump_cooldown_active(now),
+            right_pump_cooldown_active: self.right_controller.is_pump_cooldown_active(now),
+            left_pump_cooldown_remaining: self
+                .left_controller
                 .get_pump_cooldown_remaining(now)
                 .as_secs_f64(),
-            back_pump_cooldown_remaining: self
-                .back_controller
+            right_pump_cooldown_remaining: self
+                .right_controller
                 .get_pump_cooldown_remaining(now)
                 .as_secs_f64(),
-            front_heating_startup_wait_active: self
-                .front_controller
+            left_heating_startup_wait_active: self
+                .left_controller
                 .is_heating_startup_wait_active(now),
-            back_heating_startup_wait_active: self
-                .back_controller
+            right_heating_startup_wait_active: self
+                .right_controller
                 .is_heating_startup_wait_active(now),
-            front_heating_startup_wait_remaining: self
-                .front_controller
+            left_heating_startup_wait_remaining: self
+                .left_controller
                 .get_heating_startup_wait_remaining(now)
                 .as_secs_f64(),
-            back_heating_startup_wait_remaining: self
-                .back_controller
+            right_heating_startup_wait_remaining: self
+                .right_controller
                 .get_heating_startup_wait_remaining(now)
                 .as_secs_f64(),
-            front_total_energy: self.front_controller.get_total_energy(),
-            back_total_energy: self.back_controller.get_total_energy(),
+            left_total_energy: self.left_controller.get_total_energy(),
+            right_total_energy: self.right_controller.get_total_energy(),
         }
     }
 
@@ -187,120 +185,120 @@ impl AquaPathV1 {
             default_pid_ki: Self::DEFAULT_PID_KI,
             default_pid_kd: Self::DEFAULT_PID_KD,
             temperature_states: TempStates {
-                front: TempState {
+                left: TempState {
                     temperature: self
-                        .front_controller
+                        .left_controller
                         .current_temperature
                         .get::<degree_celsius>(),
 
                     target_temperature: self
-                        .front_controller
+                        .left_controller
                         .target_temperature
                         .get::<degree_celsius>(),
                 },
-                back: TempState {
+                right: TempState {
                     temperature: self
-                        .back_controller
+                        .right_controller
                         .current_temperature
                         .get::<degree_celsius>(),
                     target_temperature: self
-                        .back_controller
+                        .right_controller
                         .target_temperature
                         .get::<degree_celsius>(),
                 },
             },
             flow_states: FlowStates {
-                front: FlowState {
-                    flow: self.front_controller.current_flow.get::<liter_per_minute>(),
-                    should_flow: self.front_controller.should_pump,
+                left: FlowState {
+                    flow: self.left_controller.current_flow.get::<liter_per_minute>(),
+                    should_flow: self.left_controller.should_pump,
                 },
-                back: FlowState {
-                    flow: self.back_controller.current_flow.get::<liter_per_minute>(),
-                    should_flow: self.back_controller.should_pump,
+                right: FlowState {
+                    flow: self.right_controller.current_flow.get::<liter_per_minute>(),
+                    should_flow: self.right_controller.should_pump,
                 },
             },
             fan_states: FanStates {
-                front: FanState {
+                left: FanState {
                     revolutions: self
-                        .front_controller
+                        .left_controller
                         .max_revolutions
                         .get::<revolution_per_minute>(),
                     max_revolutions: self
-                        .front_controller
+                        .left_controller
                         .max_revolutions
                         .get::<revolution_per_minute>(),
                 },
-                back: FanState {
+                right: FanState {
                     revolutions: self
-                        .back_controller
+                        .right_controller
                         .max_revolutions
                         .get::<revolution_per_minute>(),
                     max_revolutions: self
-                        .back_controller
+                        .right_controller
                         .max_revolutions
                         .get::<revolution_per_minute>(),
                 },
             },
             cooling_mode_states: CoolingModeStates {
-                front: CoolingModeState {
-                    mode: self.front_controller.cooling_mode,
+                left: CoolingModeState {
+                    mode: self.left_controller.cooling_mode,
                 },
-                back: CoolingModeState {
-                    mode: self.back_controller.cooling_mode,
+                right: CoolingModeState {
+                    mode: self.right_controller.cooling_mode,
                 },
             },
             tolerance_states: ToleranceStates {
-                front: ToleranceState {
+                left: ToleranceState {
                     heating: self
-                        .front_controller
+                        .left_controller
                         .heating_tolerance
                         .get::<degree_celsius>(),
                     cooling: self
-                        .front_controller
+                        .left_controller
                         .cooling_tolerance
                         .get::<degree_celsius>(),
                 },
-                back: ToleranceState {
+                right: ToleranceState {
                     heating: self
-                        .back_controller
+                        .right_controller
                         .heating_tolerance
                         .get::<degree_celsius>(),
                     cooling: self
-                        .back_controller
+                        .right_controller
                         .cooling_tolerance
                         .get::<degree_celsius>(),
                 },
             },
             pid_states: PidStates {
-                front: PidState {
-                    kp: self.front_controller.get_pid_kp(),
-                    ki: self.front_controller.get_pid_ki(),
-                    kd: self.front_controller.get_pid_kd(),
+                left: PidState {
+                    kp: self.left_controller.get_pid_kp(),
+                    ki: self.left_controller.get_pid_ki(),
+                    kd: self.left_controller.get_pid_kd(),
                 },
-                back: PidState {
-                    kp: self.back_controller.get_pid_kp(),
-                    ki: self.back_controller.get_pid_ki(),
-                    kd: self.back_controller.get_pid_kd(),
+                right: PidState {
+                    kp: self.right_controller.get_pid_kp(),
+                    ki: self.right_controller.get_pid_ki(),
+                    kd: self.right_controller.get_pid_kd(),
                 },
             },
             thermal_safety_states: ThermalSafetyStates {
-                front: ThermalSafetyState {
+                left: ThermalSafetyState {
                     thermal_delay: self
-                        .front_controller
+                        .left_controller
                         .get_thermal_flow_settle_duration()
                         .as_secs_f64(),
                     cooldown_min_temperature: self
-                        .front_controller
+                        .left_controller
                         .get_pump_cooldown_min_temperature()
                         .get::<degree_celsius>(),
                 },
-                back: ThermalSafetyState {
+                right: ThermalSafetyState {
                     thermal_delay: self
-                        .back_controller
+                        .right_controller
                         .get_thermal_flow_settle_duration()
                         .as_secs_f64(),
                     cooldown_min_temperature: self
-                        .back_controller
+                        .right_controller
                         .get_pump_cooldown_min_temperature()
                         .get::<degree_celsius>(),
                 },
@@ -373,33 +371,33 @@ impl std::fmt::Display for AquaPathV1 {
 }
 impl AquaPathV1 {
     fn request_pump_off(&mut self) {
-        self.front_controller.set_should_pump(false);
-        self.back_controller.set_should_pump(false);
+        self.left_controller.set_should_pump(false);
+        self.right_controller.set_should_pump(false);
     }
 
     fn turn_cooling_off(&mut self) {
-        self.front_controller.disable_cooling();
-        self.back_controller.disable_cooling();
+        self.left_controller.disable_cooling();
+        self.right_controller.disable_cooling();
     }
 
     fn turn_cooling_on(&mut self) {
-        self.front_controller.allow_cooling();
-        self.back_controller.allow_cooling();
+        self.left_controller.allow_cooling();
+        self.right_controller.allow_cooling();
     }
 
     fn turn_heating_off(&mut self) {
-        self.front_controller.disallow_heating();
-        self.back_controller.disallow_heating();
+        self.left_controller.disallow_heating();
+        self.right_controller.disallow_heating();
     }
 
     fn turn_heating_on(&mut self) {
-        self.front_controller.allow_heating();
-        self.back_controller.allow_heating();
+        self.left_controller.allow_heating();
+        self.right_controller.allow_heating();
     }
 
     fn turn_pump_on(&mut self) {
-        self.front_controller.allow_pump();
-        self.back_controller.allow_pump();
+        self.left_controller.allow_pump();
+        self.right_controller.allow_pump();
     }
 
     fn turn_off_all(&mut self) {
@@ -451,29 +449,15 @@ impl AquaPathV1 {
 impl AquaPathV1 {
     fn get_min_settable_temperature(&self) -> ThermodynamicTemperature {
         let ambient = self.ambient_temperature_calibration.get::<degree_celsius>();
-        let min = self
-            .front_controller
-            .min_temperature
-            .get::<degree_celsius>();
-        let max = self
-            .front_controller
-            .max_temperature
-            .get::<degree_celsius>();
+        let min = self.left_controller.min_temperature.get::<degree_celsius>();
+        let max = self.left_controller.max_temperature.get::<degree_celsius>();
         ThermodynamicTemperature::new::<degree_celsius>(ambient.max(min).min(max))
     }
 
     fn set_ambient_temperature_calibration(&mut self, ambient_temperature: f64) {
         let clamped = ambient_temperature
-            .max(
-                self.front_controller
-                    .min_temperature
-                    .get::<degree_celsius>(),
-            )
-            .min(
-                self.front_controller
-                    .max_temperature
-                    .get::<degree_celsius>(),
-            );
+            .max(self.left_controller.min_temperature.get::<degree_celsius>())
+            .min(self.left_controller.max_temperature.get::<degree_celsius>());
         self.ambient_temperature_calibration =
             ThermodynamicTemperature::new::<degree_celsius>(clamped);
 
@@ -482,20 +466,20 @@ impl AquaPathV1 {
         let min_settable_temperature = min_settable.get::<degree_celsius>();
 
         if self
-            .front_controller
+            .left_controller
             .target_temperature
             .get::<degree_celsius>()
             < min_settable_temperature
         {
-            self.front_controller.set_target_temperature(min_settable);
+            self.left_controller.set_target_temperature(min_settable);
         }
         if self
-            .back_controller
+            .right_controller
             .target_temperature
             .get::<degree_celsius>()
             < min_settable_temperature
         {
-            self.back_controller.set_target_temperature(min_settable);
+            self.right_controller.set_target_temperature(min_settable);
         }
 
         self.emit_state();
@@ -503,24 +487,21 @@ impl AquaPathV1 {
 
     fn set_target_temperature(&mut self, temperature: f64, cooling_type: AquaPathSideType) {
         let min_settable = self.get_min_settable_temperature().get::<degree_celsius>();
-        let max_settable = self
-            .front_controller
-            .max_temperature
-            .get::<degree_celsius>();
+        let max_settable = self.left_controller.max_temperature.get::<degree_celsius>();
         let clamped_target = temperature.max(min_settable).min(max_settable);
         let target_temp = ThermodynamicTemperature::new::<degree_celsius>(clamped_target);
 
         match cooling_type {
-            AquaPathSideType::Back => self.back_controller.set_target_temperature(target_temp),
-            AquaPathSideType::Front => self.front_controller.set_target_temperature(target_temp),
+            AquaPathSideType::Right => self.right_controller.set_target_temperature(target_temp),
+            AquaPathSideType::Left => self.left_controller.set_target_temperature(target_temp),
         }
         self.emit_state();
     }
 
     fn set_should_pump(&mut self, should_pump: bool, cooling_type: AquaPathSideType) {
         match cooling_type {
-            AquaPathSideType::Back => self.back_controller.set_should_pump(should_pump),
-            AquaPathSideType::Front => self.front_controller.set_should_pump(should_pump),
+            AquaPathSideType::Right => self.right_controller.set_should_pump(should_pump),
+            AquaPathSideType::Left => self.left_controller.set_should_pump(should_pump),
         }
         self.emit_state();
     }
@@ -529,11 +510,11 @@ impl AquaPathV1 {
 impl AquaPathV1 {
     fn set_max_revolutions(&mut self, revolutions: f64, fan_type: AquaPathSideType) {
         match fan_type {
-            AquaPathSideType::Back => self
-                .back_controller
+            AquaPathSideType::Right => self
+                .right_controller
                 .set_max_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
-            AquaPathSideType::Front => self
-                .front_controller
+            AquaPathSideType::Left => self
+                .left_controller
                 .set_max_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
         }
         self.emit_state();
@@ -550,9 +531,9 @@ impl AquaPathV1 {
 
     fn set_heating_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
         match tolerance_type {
-            AquaPathSideType::Back => {
+            AquaPathSideType::Right => {
                 let fallback = self
-                    .back_controller
+                    .right_controller
                     .heating_tolerance
                     .get::<degree_celsius>();
                 let value = Self::sanitize_clamped(
@@ -561,12 +542,12 @@ impl AquaPathV1 {
                     Self::TOLERANCE_MAX,
                     fallback,
                 );
-                self.back_controller
+                self.right_controller
                     .set_heating_tolerance(ThermodynamicTemperature::new::<degree_celsius>(value))
             }
-            AquaPathSideType::Front => {
+            AquaPathSideType::Left => {
                 let fallback = self
-                    .front_controller
+                    .left_controller
                     .heating_tolerance
                     .get::<degree_celsius>();
                 let value = Self::sanitize_clamped(
@@ -575,7 +556,7 @@ impl AquaPathV1 {
                     Self::TOLERANCE_MAX,
                     fallback,
                 );
-                self.front_controller
+                self.left_controller
                     .set_heating_tolerance(ThermodynamicTemperature::new::<degree_celsius>(value))
             }
         }
@@ -585,9 +566,9 @@ impl AquaPathV1 {
 
     fn set_cooling_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
         match tolerance_type {
-            AquaPathSideType::Back => {
+            AquaPathSideType::Right => {
                 let fallback = self
-                    .back_controller
+                    .right_controller
                     .cooling_tolerance
                     .get::<degree_celsius>();
                 let value = Self::sanitize_clamped(
@@ -596,12 +577,12 @@ impl AquaPathV1 {
                     Self::TOLERANCE_MAX,
                     fallback,
                 );
-                self.back_controller
+                self.right_controller
                     .set_cooling_tolerance(ThermodynamicTemperature::new::<degree_celsius>(value))
             }
-            AquaPathSideType::Front => {
+            AquaPathSideType::Left => {
                 let fallback = self
-                    .front_controller
+                    .left_controller
                     .cooling_tolerance
                     .get::<degree_celsius>();
                 let value = Self::sanitize_clamped(
@@ -610,7 +591,7 @@ impl AquaPathV1 {
                     Self::TOLERANCE_MAX,
                     fallback,
                 );
-                self.front_controller
+                self.left_controller
                     .set_cooling_tolerance(ThermodynamicTemperature::new::<degree_celsius>(value))
             }
         }
@@ -620,39 +601,39 @@ impl AquaPathV1 {
 
     fn set_pid_kp(&mut self, value: f64, side: AquaPathSideType) {
         let current = match side {
-            AquaPathSideType::Back => self.back_controller.get_pid_kp(),
-            AquaPathSideType::Front => self.front_controller.get_pid_kp(),
+            AquaPathSideType::Right => self.right_controller.get_pid_kp(),
+            AquaPathSideType::Left => self.left_controller.get_pid_kp(),
         };
         let value = Self::sanitize_clamped(value, Self::PID_MIN, Self::PID_MAX, current);
         match side {
-            AquaPathSideType::Back => self.back_controller.set_pid_kp(value),
-            AquaPathSideType::Front => self.front_controller.set_pid_kp(value),
+            AquaPathSideType::Right => self.right_controller.set_pid_kp(value),
+            AquaPathSideType::Left => self.left_controller.set_pid_kp(value),
         }
         self.emit_state();
     }
 
     fn set_pid_ki(&mut self, value: f64, side: AquaPathSideType) {
         let current = match side {
-            AquaPathSideType::Back => self.back_controller.get_pid_ki(),
-            AquaPathSideType::Front => self.front_controller.get_pid_ki(),
+            AquaPathSideType::Right => self.right_controller.get_pid_ki(),
+            AquaPathSideType::Left => self.left_controller.get_pid_ki(),
         };
         let value = Self::sanitize_clamped(value, Self::PID_MIN, Self::PID_MAX, current);
         match side {
-            AquaPathSideType::Back => self.back_controller.set_pid_ki(value),
-            AquaPathSideType::Front => self.front_controller.set_pid_ki(value),
+            AquaPathSideType::Right => self.right_controller.set_pid_ki(value),
+            AquaPathSideType::Left => self.left_controller.set_pid_ki(value),
         }
         self.emit_state();
     }
 
     fn set_pid_kd(&mut self, value: f64, side: AquaPathSideType) {
         let current = match side {
-            AquaPathSideType::Back => self.back_controller.get_pid_kd(),
-            AquaPathSideType::Front => self.front_controller.get_pid_kd(),
+            AquaPathSideType::Right => self.right_controller.get_pid_kd(),
+            AquaPathSideType::Left => self.left_controller.get_pid_kd(),
         };
         let value = Self::sanitize_clamped(value, Self::PID_MIN, Self::PID_MAX, current);
         match side {
-            AquaPathSideType::Back => self.back_controller.set_pid_kd(value),
-            AquaPathSideType::Front => self.front_controller.set_pid_kd(value),
+            AquaPathSideType::Right => self.right_controller.set_pid_kd(value),
+            AquaPathSideType::Left => self.left_controller.set_pid_kd(value),
         }
         self.emit_state();
     }
@@ -663,12 +644,12 @@ impl AquaPathV1 {
         }
 
         let current = match side {
-            AquaPathSideType::Back => self
-                .back_controller
+            AquaPathSideType::Right => self
+                .right_controller
                 .get_thermal_flow_settle_duration()
                 .as_secs_f64(),
-            AquaPathSideType::Front => self
-                .front_controller
+            AquaPathSideType::Left => self
+                .left_controller
                 .get_thermal_flow_settle_duration()
                 .as_secs_f64(),
         };
@@ -681,11 +662,11 @@ impl AquaPathV1 {
         let duration = std::time::Duration::from_secs_f64(value);
 
         match side {
-            AquaPathSideType::Back => self
-                .back_controller
+            AquaPathSideType::Right => self
+                .right_controller
                 .set_thermal_flow_settle_duration(duration),
-            AquaPathSideType::Front => self
-                .front_controller
+            AquaPathSideType::Left => self
+                .left_controller
                 .set_thermal_flow_settle_duration(duration),
         }
         self.emit_state();
@@ -697,12 +678,12 @@ impl AquaPathV1 {
         }
 
         let current = match side {
-            AquaPathSideType::Back => self
-                .back_controller
+            AquaPathSideType::Right => self
+                .right_controller
                 .get_pump_cooldown_min_temperature()
                 .get::<degree_celsius>(),
-            AquaPathSideType::Front => self
-                .front_controller
+            AquaPathSideType::Left => self
+                .left_controller
                 .get_pump_cooldown_min_temperature()
                 .get::<degree_celsius>(),
         };
@@ -715,11 +696,11 @@ impl AquaPathV1 {
         let temperature = ThermodynamicTemperature::new::<degree_celsius>(value);
 
         match side {
-            AquaPathSideType::Back => self
-                .back_controller
+            AquaPathSideType::Right => self
+                .right_controller
                 .set_pump_cooldown_min_temperature(temperature),
-            AquaPathSideType::Front => self
-                .front_controller
+            AquaPathSideType::Left => self
+                .left_controller
                 .set_pump_cooldown_min_temperature(temperature),
         }
         self.emit_state();
