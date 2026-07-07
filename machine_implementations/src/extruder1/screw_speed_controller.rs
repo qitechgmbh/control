@@ -278,6 +278,48 @@ impl ScrewSpeedController {
         }
 
         if !self.uses_rpm && is_extruding {
+            // --- PID auto-tune active? ---
+            let mut tuner_done = false;
+            if let Some(ref mut tuner) = self.pid_autotuner {
+                if tuner.is_running() {
+                    let pressure_bar = measured_pressure.get::<bar>();
+                    let duty = tuner.update(pressure_bar, now);
+
+                    // Duty > 0 → drive high; duty == 0 → drive low
+                    let target_freq = if duty > 0.0 {
+                        self.autotune_high_frequency
+                    } else {
+                        self.autotune_low_frequency
+                    };
+                    self.inverter.set_frequency_target(target_freq);
+                    self.frequency = target_freq;
+                    self.last_update = now;
+                    return;
+                } else if tuner.is_completed() {
+                    // Apply the computed PID gains and switch back to normal control
+                    if let Ok(result) = tuner.result() {
+                        self.pid.configure(result.ki, result.kp, result.kd);
+                        tracing::info!(
+                            "Pressure PID auto-tune completed: kp={:.4}, ki={:.4}, kd={:.4}",
+                            result.kp,
+                            result.ki,
+                            result.kd,
+                        );
+                    }
+                    tuner_done = true;
+                } else if tuner.is_failed() {
+                    tracing::warn!("Pressure PID auto-tune failed");
+                    tuner_done = true;
+                }
+            }
+            if tuner_done {
+                self.pid_autotuner = None;
+                // Sync frequency to current inverter state before resuming PID control
+                self.frequency = self.inverter.motor_status.frequency;
+                self.pid.reset();
+            }
+
+            // Normal PID pressure regulation
             let error = self.target_pressure - measured_pressure;
             let freq_change = self.pid.update(error.get::<bar>(), now);
 
