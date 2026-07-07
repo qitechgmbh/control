@@ -18,6 +18,7 @@ socketioxide = { version = "0.15.2", features = ["msgpack"] }
 erased-serde = "0.4.10"
 axum = { version = "0.8.8", features = ["macros"] }
 tokio-serial = "5.5.0"
+libc = "0.2.186"
 
 [features]
 default = []
