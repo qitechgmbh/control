@@ -1944,6 +1944,7 @@ dependencies = [
  "bitvec",
  "control_core",
  "erased-serde",
+ "libc",
  "machine_implementations",
  "qitech_lib",
  "serde",
