@@ -205,6 +205,140 @@ impl FollowerConfig {
 }
 
 #[derive(Debug, Clone, Copy)]
+pub struct DancerConfig {
+    pub initial_ratio_rpm_per_m_per_min: f64,
+    pub min_ratio_rpm_per_m_per_min: f64,
+    pub max_ratio_rpm_per_m_per_min: f64,
+    pub kp_rpm_per_deg: f64,
+    pub kd_rpm_per_deg_per_s: f64,
+    pub deadband_deg: f64,
+    pub max_trim_rpm: f64,
+    pub max_trim_feed_forward_fraction: f64,
+    pub max_rpm: f64,
+    pub slew_rpm_per_s: f64,
+    pub emergency_slew_rpm_per_s: f64,
+    pub learning_min_line_speed_m_per_min: f64,
+    pub learning_gain_rpm_per_m_per_min_per_deg_s: f64,
+}
+
+impl DancerConfig {
+    pub const TAKEUP: Self = Self {
+        initial_ratio_rpm_per_m_per_min: 3.8,
+        min_ratio_rpm_per_m_per_min: 1.2,
+        max_ratio_rpm_per_m_per_min: 9.0,
+        kp_rpm_per_deg: 1.3,
+        kd_rpm_per_deg_per_s: 0.35,
+        deadband_deg: 2.0,
+        max_trim_rpm: 28.0,
+        max_trim_feed_forward_fraction: 0.65,
+        max_rpm: 180.0,
+        slew_rpm_per_s: 45.0,
+        emergency_slew_rpm_per_s: 90.0,
+        learning_min_line_speed_m_per_min: 4.0,
+        learning_gain_rpm_per_m_per_min_per_deg_s: 0.002,
+    };
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct DancerState {
+    pub ratio_rpm_per_m_per_min: f64,
+    pub feed_forward_rpm: f64,
+    pub correction_rpm: f64,
+    pub target_rpm: f64,
+    pub command_rpm: f64,
+    pub learning_active: bool,
+}
+
+impl DancerState {
+    pub fn new(config: DancerConfig) -> Self {
+        Self {
+            ratio_rpm_per_m_per_min: config.initial_ratio_rpm_per_m_per_min,
+            feed_forward_rpm: 0.0,
+            correction_rpm: 0.0,
+            target_rpm: 0.0,
+            command_rpm: 0.0,
+            learning_active: false,
+        }
+    }
+
+    pub fn force_zero(&mut self) {
+        self.feed_forward_rpm = 0.0;
+        self.correction_rpm = 0.0;
+        self.target_rpm = 0.0;
+        self.command_rpm = 0.0;
+        self.learning_active = false;
+    }
+
+    pub fn reset(&mut self, config: DancerConfig) {
+        *self = Self::new(config);
+    }
+
+    pub fn update(
+        &mut self,
+        config: DancerConfig,
+        arm_config: ArmConfig,
+        arm_state: ArmState,
+        line_speed_m_per_min: f64,
+        dt_s: f64,
+    ) {
+        let line_speed_m_per_min = line_speed_m_per_min.max(0.0);
+        self.feed_forward_rpm = line_speed_m_per_min * self.ratio_rpm_per_m_per_min;
+
+        let signed_error = arm_config.target_deg - arm_state.filtered_deg;
+        let effective_error = deadband(signed_error, config.deadband_deg);
+        let trim_limit_rpm = config
+            .max_trim_rpm
+            .max(self.feed_forward_rpm * config.max_trim_feed_forward_fraction);
+        self.correction_rpm = (effective_error * config.kp_rpm_per_deg
+            - arm_state.rate_deg_per_s * config.kd_rpm_per_deg_per_s)
+            .clamp(-trim_limit_rpm, trim_limit_rpm);
+
+        let mut target_rpm = self.feed_forward_rpm + self.correction_rpm;
+        target_rpm = match arm_state.zone {
+            ArmZone::HardHigh | ArmZone::EmergencyHigh => target_rpm.min(0.0),
+            ArmZone::WarningHigh => target_rpm.min(self.feed_forward_rpm * 0.35),
+            ArmZone::HardLow | ArmZone::EmergencyLow => {
+                target_rpm.max(self.feed_forward_rpm + trim_limit_rpm * 0.75)
+            }
+            ArmZone::WarningLow => target_rpm.max(self.feed_forward_rpm + trim_limit_rpm * 0.35),
+            ArmZone::Comfort => target_rpm,
+        };
+        self.target_rpm = target_rpm.clamp(0.0, config.max_rpm);
+
+        let slew_rpm_per_s = if matches!(
+            arm_state.zone,
+            ArmZone::WarningLow
+                | ArmZone::EmergencyLow
+                | ArmZone::HardLow
+                | ArmZone::WarningHigh
+                | ArmZone::EmergencyHigh
+                | ArmZone::HardHigh
+        ) {
+            config.emergency_slew_rpm_per_s
+        } else {
+            config.slew_rpm_per_s
+        };
+        self.command_rpm = slew(self.command_rpm, self.target_rpm, slew_rpm_per_s, dt_s)
+            .clamp(0.0, config.max_rpm);
+
+        self.learning_active = line_speed_m_per_min >= config.learning_min_line_speed_m_per_min
+            && matches!(arm_state.zone, ArmZone::Comfort)
+            && arm_state.rate_deg_per_s.abs() <= 4.0
+            && dt_s > 0.0;
+
+        if self.learning_active {
+            let persistent_error = deadband(signed_error, config.deadband_deg * 3.0);
+            self.ratio_rpm_per_m_per_min = (self.ratio_rpm_per_m_per_min
+                + persistent_error * config.learning_gain_rpm_per_m_per_min_per_deg_s * dt_s)
+                .clamp(
+                    config.min_ratio_rpm_per_m_per_min,
+                    config.max_ratio_rpm_per_m_per_min,
+                );
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
 pub struct FollowerState {
     pub ratio_rpm_per_m_per_min: f64,
     pub feed_forward_rpm: f64,
@@ -359,6 +493,7 @@ pub struct RewindControlConfig {
     pub source_arm: ArmConfig,
     pub takeup_arm: ArmConfig,
     pub source_follower: FollowerConfig,
+    pub takeup_dancer: DancerConfig,
     pub puller_ramp: PullerRampConfig,
     pub prepare: PrepareConfig,
     pub precharge_duration: Duration,
@@ -371,6 +506,7 @@ impl Default for RewindControlConfig {
             source_arm: ArmConfig::SOURCE,
             takeup_arm: ArmConfig::TAKEUP,
             source_follower: FollowerConfig::SOURCE,
+            takeup_dancer: DancerConfig::TAKEUP,
             puller_ramp: PullerRampConfig::default(),
             prepare: PrepareConfig::default(),
             precharge_duration: Duration::from_secs(1),
@@ -385,7 +521,7 @@ pub struct RewindControlState {
     pub source_arm: ArmState,
     pub takeup_arm: ArmState,
     pub source_follower: FollowerState,
-    pub takeup_follower: FollowerState,
+    pub takeup_dancer: DancerState,
     pub puller_command_m_per_min: f64,
     pub puller_accel_m_per_min_s: f64,
     pub last_dt_s: f64,
@@ -402,7 +538,7 @@ impl RewindControlState {
             source_arm: ArmState::default(),
             takeup_arm: ArmState::default(),
             source_follower: FollowerState::new(config.source_follower),
-            takeup_follower: FollowerState::command_state(),
+            takeup_dancer: DancerState::new(config.takeup_dancer),
             config,
             puller_command_m_per_min: 0.0,
             puller_accel_m_per_min_s: 0.0,
@@ -419,7 +555,7 @@ impl RewindControlState {
         self.source_arm.reset();
         self.takeup_arm.reset();
         self.source_follower.reset(self.config.source_follower);
-        self.takeup_follower.force_zero();
+        self.takeup_dancer.reset(self.config.takeup_dancer);
         self.puller_command_m_per_min = 0.0;
         self.puller_accel_m_per_min_s = 0.0;
         self.last_dt_s = 0.0;
@@ -432,7 +568,7 @@ impl RewindControlState {
 
     pub fn reset_motion(&mut self) {
         self.source_follower.force_zero();
-        self.takeup_follower.force_zero();
+        self.takeup_dancer.force_zero();
         self.puller_command_m_per_min = 0.0;
         self.puller_accel_m_per_min_s = 0.0;
         self.last_dt_s = 0.0;
@@ -481,7 +617,7 @@ impl RewindControlState {
     }
 
     pub fn takeup_command_angular_velocity(&self) -> AngularVelocity {
-        AngularVelocity::new::<revolution_per_minute>(self.takeup_follower.command_rpm)
+        AngularVelocity::new::<revolution_per_minute>(self.takeup_dancer.command_rpm)
     }
 
     pub fn update_puller_command(&mut self, target: Velocity, dt_s: f64) {
@@ -540,7 +676,13 @@ impl RewindControlState {
             dt_s,
             learning_allowed,
         );
-        self.takeup_follower.force_zero();
+        self.takeup_dancer.update(
+            self.config.takeup_dancer,
+            self.config.takeup_arm,
+            self.takeup_arm,
+            line_speed_m_per_min,
+            dt_s,
+        );
     }
 
     pub fn decelerate_source_follower(&mut self, dt_s: f64) {

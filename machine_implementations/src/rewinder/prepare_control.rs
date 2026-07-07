@@ -58,7 +58,7 @@ impl RewindControlState {
         self.source_arm.reset();
         self.takeup_arm.reset();
         self.source_follower.force_zero();
-        self.takeup_follower.force_zero();
+        self.takeup_dancer.force_zero();
         self.puller_command_m_per_min = 0.0;
         self.puller_accel_m_per_min_s = 0.0;
         self.last_dt_s = 0.0;
@@ -168,15 +168,15 @@ impl RewindControlState {
             0.0
         };
 
-        self.takeup_follower.command_rpm = slew(
-            self.takeup_follower.command_rpm,
+        self.takeup_dancer.command_rpm = slew(
+            self.takeup_dancer.command_rpm,
             takeup_rpm.clamp(0.0, prepare.takeup_max_rpm),
             prepare.slew_rpm_per_s,
             dt_s,
         );
-        self.takeup_follower.target_rpm = takeup_rpm;
-        self.takeup_follower.trim_rpm = takeup_rpm;
-        self.takeup_follower.feed_forward_rpm = 0.0;
+        self.takeup_dancer.target_rpm = takeup_rpm;
+        self.takeup_dancer.correction_rpm = takeup_rpm;
+        self.takeup_dancer.feed_forward_rpm = 0.0;
 
         self.source_follower.command_rpm = slew(
             self.source_follower.command_rpm,

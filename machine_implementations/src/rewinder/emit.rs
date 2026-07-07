@@ -139,13 +139,16 @@ impl Rewinder {
         let actual_line_speed = self.puller_angular_velocity_to_line_speed(angular_velocity);
         if matches!(
             self.rewind_phase,
-            RewindPhase::Precharge | RewindPhase::CrawlStart | RewindPhase::Rewind
+            RewindPhase::Precharge
+                | RewindPhase::CrawlStart
+                | RewindPhase::Rewind
+                | RewindPhase::RecoverTakeupHigh
         ) {
             self.rewind_control
                 .update_followers(actual_line_speed.abs(), self.rewind_control.last_dt_s);
         } else if !matches!(self.mode, RewinderMode::Prepare) {
             self.rewind_control.source_follower.force_zero();
-            self.rewind_control.takeup_follower.force_zero();
+            self.rewind_control.takeup_dancer.force_zero();
         }
         let steps_per_second = self
             .puller_speed_controller
@@ -160,6 +163,16 @@ impl Rewinder {
     pub fn sync_takeup_spool_speed(&mut self, t: Instant) {
         let angular_velocity = if self.takeup_spool_speed_output_permitted() {
             if matches!(self.mode, RewinderMode::Prepare) {
+                self.rewind_control.takeup_command_angular_velocity()
+            } else if matches!(self.mode, RewinderMode::Rewind)
+                && matches!(
+                    self.rewind_phase,
+                    RewindPhase::Precharge
+                        | RewindPhase::CrawlStart
+                        | RewindPhase::Rewind
+                        | RewindPhase::RecoverTakeupHigh
+                )
+            {
                 self.rewind_control.takeup_command_angular_velocity()
             } else if matches!(self.mode, RewinderMode::Hold) {
                 let deaccel_urgency = self

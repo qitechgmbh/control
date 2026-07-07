@@ -101,7 +101,9 @@ impl Rewinder {
                 || (self.rewind_motion_permitted()
                     && matches!(
                         self.rewind_phase,
-                        RewindPhase::CrawlStart | RewindPhase::Rewind
+                        RewindPhase::CrawlStart
+                            | RewindPhase::Rewind
+                            | RewindPhase::RecoverTakeupHigh
                     )))
     }
 
@@ -115,7 +117,10 @@ impl Rewinder {
                 || (self.rewind_motion_permitted()
                     && matches!(
                         self.rewind_phase,
-                        RewindPhase::Precharge | RewindPhase::CrawlStart | RewindPhase::Rewind
+                        RewindPhase::Precharge
+                            | RewindPhase::CrawlStart
+                            | RewindPhase::Rewind
+                            | RewindPhase::RecoverTakeupHigh
                     )))
     }
 
@@ -129,7 +134,10 @@ impl Rewinder {
                 || (self.rewind_motion_permitted()
                     && matches!(
                         self.rewind_phase,
-                        RewindPhase::Precharge | RewindPhase::CrawlStart | RewindPhase::Rewind
+                        RewindPhase::Precharge
+                            | RewindPhase::CrawlStart
+                            | RewindPhase::Rewind
+                            | RewindPhase::RecoverTakeupHigh
                     )))
     }
 
@@ -143,7 +151,9 @@ impl Rewinder {
                 || (self.rewind_motion_permitted()
                     && matches!(
                         self.rewind_phase,
-                        RewindPhase::CrawlStart | RewindPhase::Rewind
+                        RewindPhase::CrawlStart
+                            | RewindPhase::Rewind
+                            | RewindPhase::RecoverTakeupHigh
                     )))
     }
 
