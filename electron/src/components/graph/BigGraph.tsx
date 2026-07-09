@@ -1,26 +1,13 @@
 import React, { useRef, useState, useCallback, useEffect } from "react";
-import uPlot from "uplot";
-import "uplot/dist/uPlot.min.css";
 import { renderUnitSymbol, getUnitIcon } from "@/control/units";
 import { Icon } from "@/components/Icon";
-import { BigGraphProps, HandlerRefs, SeriesData } from "./types";
+import { BigGraphProps, SeriesData } from "./types";
 import { GraphExportData } from "./excelExport";
-import { DEFAULT_COLORS } from "./constants";
-import {
-  useAnimationRefs,
-  stopAnimations,
-  normalizeDataSeries,
-  getPrimarySeries,
-  formatDisplayValue,
-} from "./animation";
-import { useLiveMode } from "./liveMode";
-import { useHistoricalMode } from "./historicalMode";
-import { useBigGraphEffects } from "./useBigGraphEffects";
+import { DEFAULT_COLORS, DEFAULT_SERIES_COLORS } from "./constants";
+import { normalizeDataSeries, formatDisplayValue } from "./graphDataUtils";
+import { useLiveLineChart } from "./useLiveLineChart";
 import { TouchButton } from "../touch/TouchButton";
-import { seriesToUPlotData } from "@/lib/timeseries";
 import { ControlCard } from "@/control/ControlCard";
-import { getAllTimeSeries } from "./createChart";
-import { TargetDashOverlay } from "./TargetDashOverlay";
 
 // Collects lines connected to visible series for rendering
 const getVisibleLines = (data: any, visibleSeries: boolean[]) => {
@@ -93,7 +80,8 @@ export function BigGraph({
   config,
   graphId,
   syncGraph,
-  uplotRefOut,
+  markers,
+  chartRefOut,
   onRegisterForExport,
   onUnregisterFromExport,
 }: BigGraphProps & {
@@ -103,14 +91,6 @@ export function BigGraph({
   ) => void;
   onUnregisterFromExport?: (graphId: string) => void;
 }) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const uplotRef = useRef<uPlot | null>(null);
-  const chartCreatedRef = useRef(false);
-
-  // Animation references for managing animations
-  const animationRefs = useAnimationRefs();
-
-  // State for series visibility
   const normalizedSeries = normalizeDataSeries(newData);
   const latestExportContextRef = useRef({
     normalizedSeries,
@@ -118,9 +98,6 @@ export function BigGraph({
     unit,
     renderValue,
   });
-  const [visibleSeries, setVisibleSeries] = useState<boolean[]>(
-    new Array(normalizedSeries.length).fill(true),
-  );
 
   // Keep latest export context in a ref so export callbacks always read fresh data.
   useEffect(() => {
@@ -132,44 +109,28 @@ export function BigGraph({
     };
   }, [normalizedSeries, config, unit, renderValue]);
 
+  // State for series visibility
+  const [visibleSeries, setVisibleSeries] = useState<boolean[]>(() =>
+    new Array(normalizedSeries.length).fill(true),
+  );
+
   // Enhanced configuration with visible series lines
   const enhancedConfig = React.useMemo(() => {
     return mergeConfigWithVisibleLines(config, newData, visibleSeries);
   }, [config, newData, visibleSeries]);
 
-  // State for managing chart visibility and modes
-  const [viewMode, setViewMode] = useState<"default" | "all" | "manual">(
-    syncGraph?.viewMode ?? "default",
-  );
-  const [isLiveMode, setIsLiveMode] = useState(syncGraph?.isLiveMode ?? true);
   const [selectedTimeWindow, setSelectedTimeWindow] = useState<number | "all">(
     syncGraph?.timeWindow ?? enhancedConfig.defaultTimeWindow ?? 30 * 60 * 1000,
   );
 
-  // Cursor state for displaying values
-  const [cursorValue, setCursorValue] = useState<number | null>(null);
-  const [cursorValues, setCursorValues] = useState<(number | null)[]>(
-    new Array(normalizedSeries.length).fill(null),
-  );
-
-  const startTimeRef = useRef<number | null>(null);
-  const manualScaleRef = useRef<{
-    x: { min: number; max: number };
-    y: { min: number; max: number };
-  } | null>(null);
-  const lastProcessedCountRef = useRef(0);
-
-  // Handler references for user interactions
-  const handlerRefs: HandlerRefs = {
-    isUserZoomingRef: useRef(false),
-    isDraggingRef: useRef(false),
-    lastDragXRef: useRef<number | null>(null),
-    isPinchingRef: useRef(false),
-    lastPinchDistanceRef: useRef<number | null>(null),
-    pinchCenterRef: useRef<{ x: number; y: number } | null>(null),
-    touchStartRef: useRef<{ x: number; y: number; time: number } | null>(null),
-    touchDirectionRef: useRef<"horizontal" | "vertical" | "unknown">("unknown"),
-  };
+  // Time window is currently the only piece of sync state honored by the
+  // chart — live/historical freeze and manual-zoom sync land in a later
+  // migration phase, once LiveLineChart grows historical-mode support.
+  useEffect(() => {
+    if (syncGraph && syncGraph.timeWindow !== selectedTimeWindow) {
+      setSelectedTimeWindow(syncGraph.timeWindow);
+    }
+  }, [syncGraph, selectedTimeWindow]);
 
   const colors = {
     primary: enhancedConfig.colors?.primary ?? DEFAULT_COLORS.primary,
@@ -178,48 +139,59 @@ export function BigGraph({
     background: enhancedConfig.colors?.background ?? DEFAULT_COLORS.background,
   };
 
-  // Update cursor values when series length changes
-  useEffect(() => {
-    setCursorValues(new Array(normalizedSeries.length).fill(null));
-  }, [normalizedSeries.length]);
+  const { canvasRef, snapshot } = useLiveLineChart(
+    {
+      newData,
+      config: enhancedConfig,
+      colors,
+      renderValue,
+      selectedTimeWindow,
+      visibleSeries,
+      markers,
+    },
+    chartRefOut,
+  );
 
-  // FAST VISIBILITY UPDATE FUNCTION
-  const updateSeriesVisibility = useCallback(() => {
-    if (!uplotRef.current || !visibleSeries) return;
+  const cursorValue = snapshot?.cursorValue ?? null;
+  const cursorValues = snapshot?.cursorValues ?? [];
 
-    const allOriginalSeries = getAllTimeSeries(newData);
+  // Toggles visibility of a series
+  const toggleSeries = useCallback((index: number) => {
+    setVisibleSeries((prev) => {
+      const newVisibility = [...prev];
 
-    // Update visibility for each series
-    allOriginalSeries.forEach((_, index) => {
-      const seriesIndex = index + 1; // +1 because index 0 is time axis
-      const isVisible = visibleSeries[index];
+      const currentlyVisible = newVisibility.filter((visible) => visible);
+      const wouldHideAll =
+        newVisibility[index] && currentlyVisible.length === 1;
 
-      if (uplotRef.current!.series[seriesIndex]) {
-        uplotRef.current!.series[seriesIndex].show = isVisible;
-
-        // Update points visibility
-        if (uplotRef.current!.series[seriesIndex].points) {
-          uplotRef.current!.series[seriesIndex].points!.show = (
-            _u,
-            _seriesIdx,
-            dataIdx,
-          ) => {
-            return isVisible && dataIdx < animationRefs.realPointsCount.current;
-          };
-        }
+      if (wouldHideAll) {
+        return prev;
       }
+
+      newVisibility[index] = !newVisibility[index];
+      return newVisibility;
     });
+  }, []);
 
-    // Trigger lightweight redraw
-    uplotRef.current.redraw();
-  }, [visibleSeries, newData, animationRefs.realPointsCount]);
+  // Gets the display value for a series
+  const getSeriesDisplayValue = useCallback(
+    (seriesIndex: number) => {
+      const series = normalizedSeries[seriesIndex];
+      if (!series) return null;
 
-  // SEPARATE EFFECT FOR VISIBILITY UPDATES ONLY
-  useEffect(() => {
-    if (uplotRef.current && chartCreatedRef.current) {
-      updateSeriesVisibility();
-    }
-  }, [visibleSeries, updateSeriesVisibility, newData]);
+      if (normalizedSeries.length > 1) {
+        const value = cursorValues[seriesIndex];
+        return value !== undefined && value !== null
+          ? value
+          : series.newData?.current?.value;
+      } else {
+        return cursorValue !== null
+          ? cursorValue
+          : series.newData?.current?.value;
+      }
+    },
+    [normalizedSeries, cursorValues, cursorValue],
+  );
 
   // Register export functionality for the graph
   useEffect(() => {
@@ -277,218 +249,7 @@ export function BigGraph({
     normalizedSeries.length,
   ]);
 
-  // Updates Y-axis scale dynamically based on visible data
-  const updateYAxisScale = useCallback(
-    (xMin?: number, xMax?: number) => {
-      if (!uplotRef.current) return;
-
-      const isInHistoricalMode = !isLiveMode || viewMode === "manual";
-      if (isInHistoricalMode) {
-        return;
-      }
-
-      const normalizedData = normalizeDataSeries(newData);
-      let allVisibleValues: number[] = [];
-
-      normalizedData.forEach((series, index) => {
-        if (!visibleSeries[index] || !series.newData?.long) return;
-
-        const [timestamps, values] = seriesToUPlotData(series.newData.long);
-        if (values.length === 0) return;
-
-        let seriesToInclude: number[] = [];
-
-        if (xMin !== undefined && xMax !== undefined) {
-          for (let i = 0; i < timestamps.length; i++) {
-            if (timestamps[i] >= xMin && timestamps[i] <= xMax) {
-              seriesToInclude.push(values[i]);
-            }
-          }
-        } else {
-          seriesToInclude = [...values];
-        }
-
-        allVisibleValues.push(...seriesToInclude);
-      });
-
-      enhancedConfig.lines?.forEach((line) => {
-        if (line.show !== false) {
-          allVisibleValues.push(line.value);
-        }
-      });
-
-      if (allVisibleValues.length === 0) {
-        const primarySeries = getPrimarySeries(newData);
-        if (primarySeries?.newData?.long) {
-          const [, values] = seriesToUPlotData(primarySeries.newData.long);
-          allVisibleValues = values;
-        }
-      }
-
-      if (allVisibleValues.length === 0) return;
-
-      const minY = Math.min(...allVisibleValues);
-      const maxY = Math.max(...allVisibleValues);
-      const range = maxY - minY || Math.abs(maxY) * 0.1 || 1;
-
-      const yRange = {
-        min: minY - range * 0.1,
-        max: maxY + range * 0.1,
-      };
-
-      try {
-        uplotRef.current.batch(() => {
-          uplotRef.current!.setScale("y", yRange);
-        });
-      } catch (error) {
-        console.warn("Error updating Y-axis scale:", error);
-      }
-    },
-    [enhancedConfig.lines, viewMode, isLiveMode, newData, visibleSeries],
-  );
-
-  // Initialize live mode handlers
-  const liveMode = useLiveMode({
-    newData,
-    uplotRef,
-    config: enhancedConfig,
-    animationRefs,
-    viewMode,
-    selectedTimeWindow,
-    startTimeRef,
-    updateYAxisScale,
-    lastProcessedCountRef,
-    chartCreatedRef,
-  });
-
-  // Initialize historical mode handlers
-  const historicalMode = useHistoricalMode({
-    newData,
-    uplotRef,
-    animationRefs,
-    getCurrentLiveEndTimestamp: liveMode.getCurrentLiveEndTimestamp,
-    updateYAxisScale,
-    lastProcessedCountRef,
-    manualScaleRef,
-  });
-
-  // Handles time window changes
-  const handleTimeWindowChangeInternal = useCallback(
-    (newTimeWindow: number | "all", isSync: boolean = false) => {
-      stopAnimations(animationRefs);
-      setSelectedTimeWindow(newTimeWindow);
-
-      if (!uplotRef.current) {
-        return;
-      }
-
-      if (newTimeWindow === "all") {
-        setViewMode("all");
-        if (!isLiveMode) {
-          setIsLiveMode(true);
-          historicalMode.switchToLiveMode();
-        }
-        liveMode.handleLiveTimeWindow(newTimeWindow);
-      } else {
-        setViewMode("default");
-        if (isLiveMode) {
-          liveMode.handleLiveTimeWindow(newTimeWindow);
-        } else {
-          historicalMode.handleHistoricalTimeWindow(newTimeWindow);
-        }
-      }
-
-      if (!isSync && syncGraph?.onTimeWindowChange) {
-        syncGraph.onTimeWindowChange(graphId, newTimeWindow);
-      }
-    },
-    [
-      animationRefs,
-      isLiveMode,
-      liveMode.handleLiveTimeWindow,
-      historicalMode.handleHistoricalTimeWindow,
-      historicalMode.switchToLiveMode,
-      syncGraph,
-      graphId,
-    ],
-  );
-
-  // Toggles visibility of a series
-  const toggleSeries = useCallback((index: number) => {
-    setVisibleSeries((prev) => {
-      const newVisibility = [...prev];
-
-      const currentlyVisible = newVisibility.filter((visible) => visible);
-      const wouldHideAll =
-        newVisibility[index] && currentlyVisible.length === 1;
-
-      if (wouldHideAll) {
-        return prev;
-      }
-
-      newVisibility[index] = !newVisibility[index];
-      return newVisibility;
-    });
-  }, []);
-
-  // Gets the display value for a series
-  const getSeriesDisplayValue = useCallback(
-    (seriesIndex: number) => {
-      const series = normalizedSeries[seriesIndex];
-      if (!series) return null;
-
-      if (normalizedSeries.length > 1) {
-        return cursorValues[seriesIndex] !== null
-          ? cursorValues[seriesIndex]
-          : series.newData?.current?.value;
-      } else {
-        return cursorValue !== null
-          ? cursorValue
-          : series.newData?.current?.value;
-      }
-    },
-    [normalizedSeries, cursorValues, cursorValue],
-  );
-
-  // Applies effects for the graph (REMOVED visibleSeries from dependencies)
-  useBigGraphEffects({
-    containerRef,
-    uplotRef,
-    uplotRefOut,
-    startTimeRef,
-    manualScaleRef,
-    lastProcessedCountRef,
-    animationRefs,
-    handlerRefs,
-    chartCreatedRef,
-    newData,
-    unit,
-    renderValue,
-    config: enhancedConfig,
-    graphId,
-    syncGraph,
-    onRegisterForExport,
-    onUnregisterFromExport,
-    viewMode,
-    isLiveMode,
-    selectedTimeWindow,
-    visibleSeries, // Keep for initial creation
-    showFromTimestamp: syncGraph?.showFromTimestamp,
-    setSelectedTimeWindow,
-    setViewMode,
-    setIsLiveMode,
-    setCursorValue,
-    setCursorValues,
-    liveMode,
-    historicalMode,
-    colors,
-    updateYAxisScale,
-    handleTimeWindowChangeInternal,
-  });
-
   const displayValue = getSeriesDisplayValue(0);
-
-  const defaultColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
 
   return (
     <div className="h-[50vh] w-full">
@@ -525,7 +286,7 @@ export function BigGraph({
                   {normalizedSeries.map((series, index) => {
                     const seriesColor =
                       series.color ||
-                      defaultColors[index % defaultColors.length];
+                      DEFAULT_SERIES_COLORS[index % DEFAULT_SERIES_COLORS.length];
 
                     const displayValue = getSeriesDisplayValue(index);
                     const formattedValue = formatDisplayValue(
@@ -594,15 +355,10 @@ export function BigGraph({
 
         <div className="flex-1 overflow-hidden rounded-b-3xl pt-4">
           <div
-            className={`relative h-full w-full overflow-hidden transition-opacity duration-100`}
+            className="relative h-full w-full overflow-hidden"
             style={{ backgroundColor: colors.background }}
           >
-            <div ref={containerRef} className="h-full w-full overflow-hidden" />
-            <TargetDashOverlay
-              uplotRef={uplotRef}
-              newData={newData}
-              config={enhancedConfig}
-            />
+            <canvas ref={canvasRef} />
           </div>
         </div>
       </div>

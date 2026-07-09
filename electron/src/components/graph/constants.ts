@@ -19,3 +19,11 @@ export const DEFAULT_COLORS = {
   axis: "#64748b",
   background: "#ffffff",
 };
+
+export const DEFAULT_SERIES_COLORS = [
+  "#3b82f6",
+  "#ef4444",
+  "#10b981",
+  "#f59e0b",
+  "#8b5cf6",
+];

@@ -55,7 +55,8 @@
     "vite": "^8.1.0",
     "vite-plugin-electron": "^1.1.0",
     "vite-plugin-electron-renderer": "^1.0.0",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "vitest-canvas-mock": "^1.1.4"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -79,8 +80,13 @@
     "@tanstack/router-devtools": "^1.105.0",
     "@vitejs/plugin-react": "^6.0.2",
     "babel-plugin-react-compiler": "^1.0.0",
+    "chart.js": "^4.5.1",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "chartjs-plugin-annotation": "^3.1.0",
+    "chartjs-plugin-zoom": "^2.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
     "electron-devtools-installer": "^4.0.0",
     "electron-squirrel-startup": "^1.0.1",
     "eslint-plugin-react": "^7.37.5",
