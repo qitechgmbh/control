@@ -72,6 +72,28 @@ impl StepperVelocityWago750672 {
         dev.rxpdo.acceleration = acceleration;
     }
 
+    pub fn start_motor(&mut self) {
+        let mut dev = block_on(self.device.write());
+
+        if dev.initialized {
+            dev.state = InitState::StartPulseStart;
+        }
+    }
+
+    pub fn stop_motor(&mut self) {
+        let mut dev = block_on(self.device.write());
+
+        if dev.initialized {
+            dev.state = InitState::Ready;
+        }
+    }
+
+    pub fn get_state(self) -> InitState {
+        let dev = block_on(self.device.read());
+
+        dev.state.clone()
+    }
+
     #[allow(dead_code)]
     fn get_actual_velocity(&self) -> i16 {
         let dev = block_on(self.device.read());
@@ -84,14 +106,14 @@ impl StepperVelocityWago750672 {
         dev.rxpdo.acceleration
     }
 
-    pub fn set_freq_range_sel(&mut self, factor: u8) {
-        if self.enabled || factor > 3 {
+    pub fn set_freq_range_sel(&mut self, frequency: u8) {
+        if self.enabled || frequency > 3 {
             return;
         }
-        self.freq_range_sel = factor;
+        self.freq_range_sel = frequency;
         let mut dev = block_on(self.device.write());
         let c2 = ControlByteC2::from_bits(dev.rxpdo.control_byte2)
-            .with_freq_range(factor)
+            .with_freq_range(frequency)
             .bits();
         dev.rxpdo.control_byte2 = c2;
     }
