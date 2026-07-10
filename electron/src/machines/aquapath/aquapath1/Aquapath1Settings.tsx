@@ -115,6 +115,34 @@ export function Aquapath1SettingsPage() {
           </div>
         </ControlCard>
 
+        <ControlCard title="Left Reservoir Sensor Readings">
+          <Label label="Temperature Sensor Current">
+            <span className="text-muted-foreground text-sm">
+              {state?.temperature_states.left.sensor_ma.toFixed(2) ?? "N/A"}{" "}
+              mA
+            </span>
+          </Label>
+          <Label label="Flow Sensor Current">
+            <span className="text-muted-foreground text-sm">
+              {state?.flow_states.left.sensor_ma.toFixed(2) ?? "N/A"} mA
+            </span>
+          </Label>
+        </ControlCard>
+
+        <ControlCard title="Right Reservoir Sensor Readings">
+          <Label label="Temperature Sensor Current">
+            <span className="text-muted-foreground text-sm">
+              {state?.temperature_states.right.sensor_ma.toFixed(2) ?? "N/A"}{" "}
+              mA
+            </span>
+          </Label>
+          <Label label="Flow Sensor Current">
+            <span className="text-muted-foreground text-sm">
+              {state?.flow_states.right.sensor_ma.toFixed(2) ?? "N/A"} mA
+            </span>
+          </Label>
+        </ControlCard>
+
         <ControlCard title="Left Reservoir Temperature Tolerances">
           <Label label="Set Heating Tolerance">
             <EditValue

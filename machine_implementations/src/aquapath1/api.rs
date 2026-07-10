@@ -91,6 +91,7 @@ pub struct TempStates {
 pub struct TempState {
     pub temperature: f64,
     pub target_temperature: f64,
+    pub sensor_ma: f64,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -106,6 +107,7 @@ pub struct FlowStates {
 pub struct FlowState {
     pub flow: f64,
     pub should_flow: bool,
+    pub sensor_ma: f64,
 }
 
 #[derive(Serialize, Debug, Clone)]

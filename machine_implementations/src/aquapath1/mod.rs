@@ -195,6 +195,7 @@ impl AquaPathV1 {
                         .left_controller
                         .target_temperature
                         .get::<degree_celsius>(),
+                    sensor_ma: self.left_controller.get_temp_sensor_ma(),
                 },
                 right: TempState {
                     temperature: self
@@ -205,16 +206,19 @@ impl AquaPathV1 {
                         .right_controller
                         .target_temperature
                         .get::<degree_celsius>(),
+                    sensor_ma: self.right_controller.get_temp_sensor_ma(),
                 },
             },
             flow_states: FlowStates {
                 left: FlowState {
                     flow: self.left_controller.current_flow.get::<liter_per_minute>(),
                     should_flow: self.left_controller.should_pump,
+                    sensor_ma: self.left_controller.get_flow_sensor_ma(),
                 },
                 right: FlowState {
                     flow: self.right_controller.current_flow.get::<liter_per_minute>(),
                     should_flow: self.right_controller.should_pump,
+                    sensor_ma: self.right_controller.get_flow_sensor_ma(),
                 },
             },
             fan_states: FanStates {

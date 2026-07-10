@@ -37,6 +37,7 @@ export const modeStateSchema = z.object({
 export const tempStateSchema = z.object({
   temperature: z.number(),
   target_temperature: z.number(),
+  sensor_ma: z.number().optional().default(0),
 });
 /**
  * Cooling states schema
@@ -49,6 +50,7 @@ export const tempStatesSchema = z.object({
 export const flowStateSchema = z.object({
   flow: z.number(),
   should_flow: z.boolean(),
+  sensor_ma: z.number().optional().default(0),
 });
 export const flowStatesSchema = z.object({
   left: flowStateSchema,

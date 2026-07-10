@@ -3,7 +3,7 @@ use control_core::controllers::pid::PidController;
 use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
 use qitech_lib::ethercat_hal::io::analog_output::AnalogOutputDevice;
 use qitech_lib::ethercat_hal::io::as006::{
-    calculate_as006_flow_lpm, calculate_as006_temperature_celsius,
+    calculate_as006_flow_lpm, calculate_as006_temperature_celsius, get_current_ma,
 };
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use qitech_lib::units::{self, AngularVelocity};
@@ -317,6 +317,19 @@ impl Controller {
         ThermodynamicTemperature::new::<degree_celsius>(value)
     }
 
+    /// Raw 4-20mA current loop reading of the temperature sensor.
+    pub fn get_temp_sensor_ma(&self) -> f64 {
+        let guard = self.temp_and_flow_sensor.borrow();
+        let input = guard.get_input(self.temperature_sensor_port);
+        let range = guard.analog_input_range();
+        drop(guard);
+        let input_data = match input {
+            Ok(input_data) => input_data,
+            Err(_) => return 0.0,
+        };
+        get_current_ma(&input_data, &range).unwrap_or(0.0)
+    }
+
     pub fn disallow_cooling(&mut self) {
         self.cooling_allowed = false;
     }
@@ -397,6 +410,19 @@ impl Controller {
             Some(lpm) => VolumeRate::new::<liter_per_minute>(lpm),
             None => VolumeRate::new::<liter_per_minute>(0.0),
         }
+    }
+
+    /// Raw 4-20mA current loop reading of the flow sensor.
+    pub fn get_flow_sensor_ma(&self) -> f64 {
+        let guard = self.temp_and_flow_sensor.borrow();
+        let input = guard.get_input(self.flow_sensor_port);
+        let range = guard.analog_input_range();
+        drop(guard);
+        let input_data = match input {
+            Ok(input_data) => input_data,
+            Err(_) => return 0.0,
+        };
+        get_current_ma(&input_data, &range).unwrap_or(0.0)
     }
 
     pub fn get_current_revolutions(&self) -> AngularVelocity {
