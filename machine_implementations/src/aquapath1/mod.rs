@@ -109,29 +109,48 @@ impl AquaPathV1 {
     // in °C
     pub const PUMP_COOLDOWN_MIN_TEMPERATURE_MAX: f64 = 80.0;
 
+    fn round_to(value: f64, decimals: i32) -> f64 {
+        let factor = 10f64.powi(decimals);
+        (value * factor).round() / factor
+    }
+
     pub fn get_live_values(&self) -> LiveValuesEvent {
         let now = Instant::now();
         LiveValuesEvent {
-            left_temperature: self
-                .left_controller
-                .current_temperature
-                .get::<degree_celsius>(),
-            right_temperature: self
-                .right_controller
-                .current_temperature
-                .get::<degree_celsius>(),
-            left_flow: self.left_controller.current_flow.get::<liter_per_minute>(),
-            right_flow: self.right_controller.current_flow.get::<liter_per_minute>(),
-            left_revolutions: self
-                .left_controller
-                .current_revolutions
-                .get::<revolution_per_minute>(),
-            right_revolutions: self
-                .right_controller
-                .current_revolutions
-                .get::<revolution_per_minute>(),
-            left_power: self.left_controller.get_current_power(),
-            right_power: self.right_controller.get_current_power(),
+            left_temperature: Self::round_to(
+                self.left_controller
+                    .current_temperature
+                    .get::<degree_celsius>(),
+                1,
+            ),
+            right_temperature: Self::round_to(
+                self.right_controller
+                    .current_temperature
+                    .get::<degree_celsius>(),
+                1,
+            ),
+            left_flow: Self::round_to(
+                self.left_controller.current_flow.get::<liter_per_minute>(),
+                1,
+            ),
+            right_flow: Self::round_to(
+                self.right_controller.current_flow.get::<liter_per_minute>(),
+                1,
+            ),
+            left_revolutions: Self::round_to(
+                self.left_controller
+                    .current_revolutions
+                    .get::<revolution_per_minute>(),
+                0,
+            ),
+            right_revolutions: Self::round_to(
+                self.right_controller
+                    .current_revolutions
+                    .get::<revolution_per_minute>(),
+                0,
+            ),
+            left_power: Self::round_to(self.left_controller.get_current_power(), 0),
+            right_power: Self::round_to(self.right_controller.get_current_power(), 0),
             left_heating: self.left_controller.temperature.heating,
             right_heating: self.right_controller.temperature.heating,
             left_cooling_mode: self.left_controller.cooling_mode,
