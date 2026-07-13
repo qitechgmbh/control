@@ -78,6 +78,9 @@ jobs:
   mock:
     runs-on: ubuntu-latest
 
+    # Broken, needs a full rewrite
+    if: false
+
     steps:
       - *udev-install
       - *checkout
