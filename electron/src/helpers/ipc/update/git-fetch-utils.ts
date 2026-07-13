@@ -107,12 +107,8 @@ async function fetchWithRetry(
     } catch (error: any) {
       const msg = error?.message || String(error);
       if (/unable to resolve reference|reference broken/i.test(msg)) {
-        // A local ref is permanently corrupted (e.g. truncated by a power loss
-        // on the HMI mid-write) — no amount of retrying fixes that. Blow away
-        // the cached mirror and re-clone fresh, same fallback used by the
-        // "Apply Update" path in update-listeners.ts.
-        rmSync(repoPath, { recursive: true, force: true });
-        await importIfNotExists(owner, name);
+        await runGitCommand(["gc", "--prune=now"], repoPath);
+        await runGitCommand(["remote", "prune", "origin"], repoPath);
         continue;
       }
       if (attempt < maxRetries - 1 && /cannot lock ref/i.test(msg)) {
