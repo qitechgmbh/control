@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync, rmSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { gitAuthArgs } from "./token-store";
 
