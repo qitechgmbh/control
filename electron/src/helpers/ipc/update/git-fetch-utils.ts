@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import path from "node:path";
 import { gitAuthArgs } from "./token-store";
 
@@ -94,7 +94,11 @@ function deduplicateOp<T>(key: string, fn: () => Promise<T>): Promise<T> {
   return p;
 }
 
-async function fetchWithRetry(repoPath: string): Promise<void> {
+async function fetchWithRetry(
+  repoPath: string,
+  owner: string,
+  name: string,
+): Promise<void> {
   const maxRetries = 3;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
@@ -102,6 +106,11 @@ async function fetchWithRetry(repoPath: string): Promise<void> {
       return;
     } catch (error: any) {
       const msg = error?.message || String(error);
+      if (/unable to resolve reference|reference broken/i.test(msg)) {
+        await runGitCommand(["gc", "--prune=now"], repoPath);
+        await runGitCommand(["remote", "prune", "origin"], repoPath);
+        continue;
+      }
       if (attempt < maxRetries - 1 && /cannot lock ref/i.test(msg)) {
         // Back off and retry — the repo lock above means no concurrent fetches
         // are fighting us, so a transient OS-level lock clears on its own.
@@ -123,7 +132,7 @@ export async function fetchTargets(
     try {
       await importIfNotExists(owner, name);
 
-      await fetchWithRetry(repoPath);
+      await fetchWithRetry(repoPath, owner, name);
 
       // retrieve last 1000 commits from master branch
       const commitsRes = await runGitCommand(
