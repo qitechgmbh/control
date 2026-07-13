@@ -1,20 +1,11 @@
-# `3.0.0-rc2`
-_29.06.2026_
+# `3.0.0`
+_13.07.2026_
 
-## Aquapath
-- [#1462](https://github.com/qitechgmbh/control/pull/1462) Add a 5s grace period if the flow sensor registeres no flow
+We are proud to release the new 3.0.0 of QiTech Control. Notably, it is the first version built on QiTech Lib, delivering gains in efficiency, performance, and stability. Across the board, this release focuses on behind-the-scenes enhancements that make the overall experience smoother and more reliable. But watch out, because there are some breaking changes!
 
-## Winder
-- [#1461](https://github.com/qitechgmbh/control/pull/1461) change max dist between steps for winder to 50m
-
-## General
-- [#1457](https://github.com/qitechgmbh/control/pull/1457) Bump nixpkgs from `667d5cf` to `714a5f8`
-- [#1458](https://github.com/qitechgmbh/control/pull/1458) Bump home-manager from `7bfff44` to `868d0a6`
-
-# `3.0.0-rc1`
-_28.06.2026_
-
-This is the new 3.0 release of QiTech Control. Notably, it is the first version built on QiTech Lib, delivering gains in efficiency, performance, and stability. Across the board, this release focuses on behind-the-scenes enhancements that make the overall experience smoother and more reliable.
+## Breaking Changes
+- **Winder**: Traverse limit presets are broken: the presets for traverse limits will be in the incorrect position when updating to version 3.0, necessitating recalibration of your spool presets.
+- **Aquapath**: For certain customers, the left and right reservoirs may be swapped. If this occurs, please contact us.
 
 ## General
 - [#1385](https://github.com/qitechgmbh/control/pull/1385) Remove dependency on token for retrieving update targets and changelogs
@@ -25,46 +16,27 @@ This is the new 3.0 release of QiTech Control. Notably, it is the first version 
 - [#1453](https://github.com/qitechgmbh/control/pull/1453) Surface machine error to frontend
 - [#1454](https://github.com/qitechgmbh/control/pull/1454) Remove metrics from control
 - [#1451](https://github.com/qitechgmbh/control/pull/1451) Bug: missleading error message when no devices are detected
-
-## CI & NixOS
-- [#1379](https://github.com/qitechgmbh/control/pull/1379) NixOS 26.05
-- [#1380](https://github.com/qitechgmbh/control/pull/1380) NixOS CI fixes
-- [#1387](https://github.com/qitechgmbh/control/pull/1387) CI: run on staging branch
-- [#1398](https://github.com/qitechgmbh/control/pull/1398) Dependabot: add nix, target staging
-- [#1400](https://github.com/qitechgmbh/control/pull/1400) NixOS: make nix downloads more resillient
-- [#1407](https://github.com/qitechgmbh/control/pull/1407) Dev shell dev tools
-- [#1416](https://github.com/qitechgmbh/control/pull/1416) Dont rely on npmDepsHash and its cursed update script
-- [#1427](https://github.com/qitechgmbh/control/pull/1427) Dependabot: update nix update cron
-- [#1445](https://github.com/qitechgmbh/control/pull/1445) NixOS: remove unnecessary big stuff
-- [#1452](https://github.com/qitechgmbh/control/pull/1452) Fix electron CI
-
-## Dependencies
-- [#1381](https://github.com/qitechgmbh/control/pull/1381) NodeJS version unify
-- [#1391](https://github.com/qitechgmbh/control/pull/1391) qitech_lib post fixups
-- [#1401](https://github.com/qitechgmbh/control/pull/1401) Update qitech_lib to `8fb3982`
-- [#1382](https://github.com/qitechgmbh/control/pull/1382) Bump ws from 8.18.3 to 8.21.0
-- [#1396](https://github.com/qitechgmbh/control/pull/1396) Bump prettier from 3.8.1 to 3.8.4
-- [#1410](https://github.com/qitechgmbh/control/pull/1410) Bump nix-community/cache-nix-action from 6 to 7
-- [#1411](https://github.com/qitechgmbh/control/pull/1411) Bump actions/github-script from 7 to 9
-- [#1412](https://github.com/qitechgmbh/control/pull/1412) Bump actions/checkout from 4 to 6
-- [#1413](https://github.com/qitechgmbh/control/pull/1413) Bump actions/setup-node from 4 to 6
-- [#1414](https://github.com/qitechgmbh/control/pull/1414) Bump actions/upload-artifact from 7.0.0 to 7.0.1
-- [#1421](https://github.com/qitechgmbh/control/pull/1421) Bump crane
-- [#1425](https://github.com/qitechgmbh/control/pull/1425) Bump home-manager
-- [#1430](https://github.com/qitechgmbh/control/pull/1430) Bump actions/cache from 3 to 5
-- [#1431](https://github.com/qitechgmbh/control/pull/1431) Bump actions/checkout from 6 to 7
-- [#1432](https://github.com/qitechgmbh/control/pull/1432) Bump nixbuild/nix-quick-install-action from 34 to 35
-- [#1433](https://github.com/qitechgmbh/control/pull/1433) Bump quote from 1.0.45 to 1.0.46
-- [#1435](https://github.com/qitechgmbh/control/pull/1435) Bump syn from 2.0.117 to 2.0.118
-- [#1437](https://github.com/qitechgmbh/control/pull/1437) Bump nixpkgs
-- [#1438](https://github.com/qitechgmbh/control/pull/1438) Bump @radix-ui/react-label from 2.1.8 to 2.1.10
-- [#1441](https://github.com/qitechgmbh/control/pull/1441), [#1444](https://github.com/qitechgmbh/control/pull/1444) Bump nixpkgs
-- [#1443](https://github.com/qitechgmbh/control/pull/1443) Revert nixpkgs bump
-- [#1450](https://github.com/qitechgmbh/control/pull/1450) Staging electron deps
+- [#1464](https://github.com/qitechgmbh/control/pull/1464) Adapted code to fit new ecat handle API
+- [#1469](https://github.com/qitechgmbh/control/pull/1469) Drop control-core-derive
+- [#1479](https://github.com/qitechgmbh/control/pull/1479) Improved machine connection feature
+- [#1486](https://github.com/qitechgmbh/control/pull/1486) Make hotplug smarter
+- [#1485](https://github.com/qitechgmbh/control/pull/1485) Increase mem heap to 4GB
+- [#1488](https://github.com/qitechgmbh/control/pull/1488) Disable touch gestures
+- [#1492](https://github.com/qitechgmbh/control/pull/1492) Interface permanently down
+- [#1497](https://github.com/qitechgmbh/control/pull/1497) fetchWithRetry now detects permanent "unable to resolve" errors
 
 ## Winder
 - [#1446](https://github.com/qitechgmbh/control/pull/1446) Fix init for winder, update to newest Lib Main commit
+- [#1461](https://github.com/qitechgmbh/control/pull/1461) Change max dist between steps for winder to 50m
 
+## Aquapath
+- [#1462](https://github.com/qitechgmbh/control/pull/1462) Add a 5s grace period if the flow sensor registers no flow
+- [#1467](https://github.com/qitechgmbh/control/pull/1467) Change Aquapath naming scheme
+
+## Laser
+- [#1484](https://github.com/qitechgmbh/control/pull/1484) Fix laser roundness display
+
+**Full Changelog**: https://github.com/qitechgmbh/control/compare/2.17.0...3.0.0
 
 # `2.17.0`
 _26.05.2026_
