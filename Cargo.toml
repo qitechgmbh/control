@@ -1,21 +1,16 @@
 [workspace]
 members = [
-    "server",
-    "ethercat-hal",
-    "ethercat-hal-derive",
+    "qitech_control",
     "control-core",
-    "machines",
-    #"ethercat-eeprom-dump",
-    "control-core-derive",
-    "units",
-    "utils",
+    "machine_implementations",
 ]
 exclude = []
 resolver = "2"
 
-[workspace.lints.clippy]
-# Individual lints (priority 0)
+[workspace.dependencies]
+qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="657ca9a2a89c928108626d12bb7476dab4071dbe" }
 
+[workspace.lints.clippy]
 # don't lint poissbilities for let chains because they were introduces after Rust 1.86
 collapsible_if = "allow"
 

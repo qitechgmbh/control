@@ -2,23 +2,27 @@
   lib,
   buildNpmPackage,
   electron,
+  importNpmLock,
+  nodejs_22,
 }:
 
-buildNpmPackage rec {
+buildNpmPackage (finalAttrs: {
   pname = "qitech-control-electron";
-  version = "1.0.0";
+  version = (builtins.fromJSON (builtins.readFile (finalAttrs.srcs + "/package-lock.json"))).version;
 
   srcs = ../../electron;
   sourceRoot = "electron";
 
   ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
 
-  makeCacheWritable = true;
-  npmDepsHash = "sha256-DkzZWfCDsF51gk28Ag7J9+Rtbw+ue5+GG6UOYfoubOM=";
+  nodejs = nodejs_22;
   npmFlags = [
     "--no-audit"
     "--no-fund"
   ];
+
+  npmDeps = importNpmLock { npmRoot = ../../electron; };
+  npmConfigHook = importNpmLock.npmConfigHook;
 
   installPhase = ''
     runHook preInstall
@@ -76,4 +80,4 @@ buildNpmPackage rec {
     homepage = "https://qitech.de";
     platforms = platforms.linux;
   };
-}
+})

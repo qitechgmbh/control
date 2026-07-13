@@ -1,4 +1,4 @@
-use units::{
+use qitech_lib::units::{
     angle::revolution,
     angular_acceleration::radian_per_second_squared,
     angular_velocity::revolution_per_second,
@@ -89,11 +89,11 @@ impl AngularStepConverter {
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    use std::f64::EPSILON;
-    use units::{
+    use qitech_lib::units::{
         angle::degree, angular_acceleration::degree_per_second_squared,
         angular_velocity::degree_per_second,
     };
+    use std::f64::EPSILON;
 
     #[test]
     fn test_new() {

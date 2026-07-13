@@ -10,7 +10,7 @@ import { SetupPage } from "@/setup/SetupPage";
 import { EthercatPage } from "@/setup/EthercatPage";
 import { MachinesPage } from "@/setup/MachinesPage";
 import { ChangelogPage } from "@/setup/ChangelogPage";
-import { TroubleshootPage } from "@/setup/Trobleshoot";
+import { TroubleshootPage } from "@/setup/Troubleshoot";
 import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
 
 import { Winder2Page } from "@/machines/winder/winder2/Winder2Page";
@@ -82,9 +82,6 @@ import { IP20TestMachinePage } from "@/machines/minimal_machines/ip20testmachine
 import { IP20TestMachineControlPage } from "@/machines/minimal_machines/ip20testmachine/IP20TestMachineControlPage";
 import { TestMotorPage } from "@/machines/minimal_machines/motor_test_machine/TestMotorPage";
 import { TestMotorControlPage } from "@/machines/minimal_machines/motor_test_machine/TestMotorControlPage";
-
-import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
-import { MetricsControlPage } from "@/metrics/MetricsControlPage";
 
 import { WagoPower1Page } from "@/machines/wago_power/wago_power1/WagoPower1Page";
 import { WagoPower1ControlPage } from "@/machines/wago_power/wago_power1/WagoPower1ControlPage";
@@ -612,16 +609,6 @@ export const updateChooseVersionRoute = createRoute({
   path: "choose-version",
   component: () => <ChooseVersionPage />,
 });
-export const metricsRoute = createRoute({
-  getParentRoute: () => setupRoute,
-  path: "metrics",
-  component: () => (
-    <>
-      <MetricsControlPage />
-      <MetricsGraphsPage />
-    </>
-  ),
-});
 
 export const versionSearchSchema = z
   .object({
@@ -670,7 +657,6 @@ export const rootTree = RootRoute.addChildren([
         updateExecuteRoute,
       ]),
       troubleshootRoute,
-      metricsRoute,
     ]),
     machinesRoute.addChildren([
       laser1SerialRoute.addChildren([

@@ -1,19 +1,35 @@
-import { ipcMain } from "electron";
+import { dialog, ipcMain } from "electron";
 import {
+  UPDATE_FETCH_TARGETS_SEND,
   UPDATE_CANCEL,
   UPDATE_END,
   UPDATE_EXECUTE,
   UPDATE_LOG,
   UPDATE_STEP,
+  UPDATE_FETCH_TARGETS_RECV,
+  UPDATE_FETCH_CHANGELOG_SEND,
+  UPDATE_FETCH_CHANGELOG_RECV,
+  UPDATE_SAVE_TOKEN,
+  UPDATE_LOAD_TOKEN_FILE,
+  UPDATE_HAS_TOKEN,
+  UPDATE_CLEAR_TOKEN,
 } from "./update-channels";
 import { spawn, ChildProcess } from "child_process";
 import tkill from "@jub3i/tree-kill";
-import { existsSync, rmSync } from "fs";
+import { existsSync, readFileSync, rmSync } from "fs";
+import { GithubSource } from "@/setup/GithubSourceDialog";
+import { fetchChangelog, fetchTargets } from "./git-fetch-utils";
+import {
+  clearToken,
+  gitAuthArgs,
+  hasToken,
+  saveToken,
+  usbDefaultPath,
+} from "./token-store";
 
 type UpdateExecuteListenerParams = {
   githubRepoOwner: string;
   githubRepoName: string;
-  githubToken?: string;
   tag?: string;
   branch?: string;
   commit?: string;
@@ -23,6 +39,44 @@ type UpdateExecuteListenerParams = {
 let currentUpdateProcess: ChildProcess | null = null;
 
 export function addUpdateEventListeners() {
+  ipcMain.handle(
+    UPDATE_FETCH_TARGETS_SEND,
+    async (event, source: GithubSource) => {
+      try {
+        const result = await fetchTargets(
+          source.githubRepoOwner,
+          source.githubRepoName,
+        );
+        event.sender.send(UPDATE_FETCH_TARGETS_RECV, result);
+      } catch (error: any) {
+        event.sender.send(
+          UPDATE_FETCH_TARGETS_RECV,
+          `get update targets failed: ${error}`,
+        );
+      }
+    },
+  );
+
+  ipcMain.handle(
+    UPDATE_FETCH_CHANGELOG_SEND,
+    async (event, args: { source: GithubSource; ref: string }) => {
+      try {
+        const result = await fetchChangelog(
+          args.source.githubRepoOwner,
+          args.source.githubRepoName,
+          args.ref,
+        );
+
+        event.sender.send(UPDATE_FETCH_CHANGELOG_RECV, result);
+      } catch (error: any) {
+        event.sender.send(
+          UPDATE_FETCH_CHANGELOG_RECV,
+          `get update changelog failed: ${error}`,
+        );
+      }
+    },
+  );
+
   ipcMain.handle(
     UPDATE_EXECUTE,
     async (event, params: UpdateExecuteListenerParams) => {
@@ -43,6 +97,64 @@ export function addUpdateEventListeners() {
         });
     },
   );
+
+  // ── Token management handlers ────────────────────────────────────────────
+  ipcMain.handle(UPDATE_HAS_TOKEN, async () => {
+    return hasToken();
+  });
+
+  ipcMain.handle(UPDATE_SAVE_TOKEN, async (_event, token: string) => {
+    try {
+      saveToken(token);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error?.message ?? String(error) };
+    }
+  });
+
+  ipcMain.handle(UPDATE_CLEAR_TOKEN, async () => {
+    clearToken();
+    return { success: true };
+  });
+
+  ipcMain.handle(UPDATE_LOAD_TOKEN_FILE, async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ["openFile"],
+        defaultPath: usbDefaultPath(),
+        filters: [
+          { name: "Token files", extensions: ["txt"] },
+          { name: "All files", extensions: ["*"] },
+        ],
+      });
+
+      if (result.canceled || !result.filePaths[0]) {
+        return { success: false, error: "Cancelled" };
+      }
+
+      const filePath = result.filePaths[0];
+      const content = readFileSync(filePath, "utf8");
+
+      // Parse: take first non-empty trimmed line
+      const token = content
+        .split("\n")
+        .map((l) => l.trim())
+        .find((l) => l.length > 0);
+
+      if (!token || /\s/.test(token)) {
+        return {
+          success: false,
+          error: "File does not contain a valid token",
+        };
+      }
+
+      saveToken(token);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error?.message ?? String(error) };
+    }
+  });
+  // ────────────────────────────────────────────────────────────────────────
 
   ipcMain.handle(UPDATE_CANCEL, async (event) => {
     if (currentUpdateProcess) {
@@ -98,20 +210,12 @@ async function update(
   return new Promise((resolve, reject) => {
     (async () => {
       try {
-        const {
-          githubRepoOwner,
-          githubRepoName,
-          githubToken,
-          tag,
-          branch,
-          commit,
-        } = params;
+        const { githubRepoOwner, githubRepoName, tag, branch, commit } = params;
 
         // Implement your update logic here
         console.log("Update parameters:", {
           githubRepoOwner,
           githubRepoName,
-          githubToken,
           tag,
           branch,
           commit,
@@ -135,41 +239,71 @@ async function update(
           return;
         }
 
-        // 1. first make sure the clone path is empty by deleting it if it containsa .git folder
+        // 1. Prepare the repository. If a valid clone of the target repo already
+        // exists we reuse it via an incremental fetch + checkout (no full re-clone
+        // over the network); otherwise we fall back to a fresh clone.
         const repoDir = `${homeDir}/${githubRepoName}`;
 
-        // Clear repo (not tracked in progress UI)
-        const clearResult = await clearRepoDirectory(
-          `${homeDir}/${githubRepoName}`,
-          event,
-        );
-        if (!clearResult.success) {
-          event.sender.send(UPDATE_LOG, clearResult.error);
-          return;
-        }
-
-        // 2. clone the repository
         event.sender.send(UPDATE_STEP, {
           stepId: "clone-repo",
           status: "in-progress",
         });
-        const cloneResult = await cloneRepository(
-          {
-            githubRepoOwner,
-            githubRepoName,
-            githubToken,
-            tag,
-            branch,
-            commit,
-          },
-          event,
-        );
-        if (!cloneResult.success) {
+
+        let prepareResult: { success: boolean; error?: string };
+
+        if (await isValidCloneOf(repoDir, githubRepoOwner, githubRepoName)) {
+          // REUSE PATH — incremental update of the existing clone.
+          prepareResult = await updateRepository(
+            { githubRepoOwner, githubRepoName, tag, branch, commit },
+            event,
+          );
+
+          // Self-heal: if the incremental update fails (e.g. corrupt .git), fall
+          // back to a clean clear + clone before giving up.
+          if (!prepareResult.success) {
+            event.sender.send(
+              UPDATE_LOG,
+              terminalInfo(
+                "Incremental update failed, falling back to fresh clone",
+              ),
+            );
+            const clearResult = await clearRepoDirectory(repoDir, event);
+            if (!clearResult.success) {
+              event.sender.send(UPDATE_LOG, clearResult.error);
+              event.sender.send(UPDATE_STEP, {
+                stepId: "clone-repo",
+                status: "error",
+              });
+              return;
+            }
+            prepareResult = await cloneRepository(
+              { githubRepoOwner, githubRepoName, tag, branch, commit },
+              event,
+            );
+          }
+        } else {
+          // FRESH CLONE PATH — first run, corrupt, or wrong remote.
+          const clearResult = await clearRepoDirectory(repoDir, event);
+          if (!clearResult.success) {
+            event.sender.send(UPDATE_LOG, clearResult.error);
+            event.sender.send(UPDATE_STEP, {
+              stepId: "clone-repo",
+              status: "error",
+            });
+            return;
+          }
+          prepareResult = await cloneRepository(
+            { githubRepoOwner, githubRepoName, tag, branch, commit },
+            event,
+          );
+        }
+
+        if (!prepareResult.success) {
           event.sender.send(UPDATE_STEP, {
             stepId: "clone-repo",
             status: "error",
           });
-          event.sender.send(UPDATE_LOG, cloneResult.error);
+          event.sender.send(UPDATE_LOG, prepareResult.error);
           return;
         }
         event.sender.send(UPDATE_STEP, {
@@ -230,7 +364,6 @@ async function update(
 type CloneRepositoryParams = {
   githubRepoOwner: string;
   githubRepoName: string;
-  githubToken?: string;
   tag?: string;
   branch?: string;
   commit?: string;
@@ -264,12 +397,194 @@ async function clearRepoDirectory(
   }
 }
 
+// Run a git command and capture its stdout (used for read-only inspection like
+// `git remote get-url origin`). Unlike runCommand this does not stream to the UI.
+function captureGit(
+  args: string[],
+  workingDir: string,
+): Promise<{ success: boolean; stdout: string }> {
+  return new Promise((resolve) => {
+    try {
+      const child = spawn("git", args, {
+        cwd: workingDir,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+      });
+      let stdout = "";
+      child.stdout.on("data", (data) => {
+        stdout += data.toString();
+      });
+      child.on("error", () => resolve({ success: false, stdout: "" }));
+      child.on("close", (code) =>
+        resolve({ success: code === 0, stdout: stdout.trim() }),
+      );
+    } catch {
+      resolve({ success: false, stdout: "" });
+    }
+  });
+}
+
+// Normalize a GitHub URL to `owner/name` (lowercased, credentials and trailing
+// `.git` stripped) so we can compare an existing clone's remote against the target.
+function normalizeGithubRepo(url: string): string | null {
+  const match = url
+    .trim()
+    .toLowerCase()
+    .match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/);
+  if (!match) return null;
+  return `${match[1]}/${match[2]}`;
+}
+
+// Returns true if repoDir is an existing git clone whose origin points at the
+// target owner/name. Used to decide between the reuse and fresh-clone paths.
+async function isValidCloneOf(
+  repoDir: string,
+  owner: string,
+  name: string,
+): Promise<boolean> {
+  if (!existsSync(`${repoDir}/.git`)) return false;
+  const res = await captureGit(["remote", "get-url", "origin"], repoDir);
+  if (!res.success) return false;
+  const actual = normalizeGithubRepo(res.stdout);
+  return actual === `${owner}/${name}`.toLowerCase();
+}
+
+// Reuse an existing clone: fetch the requested ref incrementally, then force the
+// working tree to exactly match it (full clean checkout). Avoids re-downloading
+// the entire repository on every update.
+async function updateRepository(
+  params: CloneRepositoryParams,
+  event: Electron.IpcMainInvokeEvent,
+): Promise<{ success: boolean; error?: string }> {
+  const { githubRepoName, tag, branch, commit } = params;
+
+  const qitechControlEnv = process.env.QITECH_CONTROL_ENV;
+  const homeDir = qitechControlEnv ? "/home/qitech" : process.env.HOME;
+  if (!homeDir) {
+    return { success: false, error: terminalError("Home directory not found") };
+  }
+  const repoDir = `${homeDir}/${githubRepoName}`;
+
+  if (!tag && !branch && !commit) {
+    return {
+      success: false,
+      error: terminalError("No specific version specified!"),
+    };
+  }
+
+  try {
+    event.sender.send(
+      UPDATE_LOG,
+      terminalInfo(`Reusing existing repository at ${repoDir}`),
+    );
+
+    // Fetch the requested ref incrementally. Tags are always fetched so tag
+    // updates resolve; an explicit ref fetch makes sure single-branch clones
+    // still obtain the target branch/commit.
+    const fetchArgs = [
+      ...gitAuthArgs(),
+      "fetch",
+      "--force",
+      "--tags",
+      "origin",
+    ];
+    if (branch) {
+      fetchArgs.push(`${branch}:refs/remotes/origin/${branch}`);
+    } else if (commit) {
+      fetchArgs.push(commit);
+    }
+    const fetchRes = await runCommand("git", fetchArgs, repoDir, event);
+    if (!fetchRes.success) {
+      return {
+        success: false,
+        error: terminalError("Failed to fetch updates"),
+      };
+    }
+
+    // Check out the requested ref. `-f` discards any conflicting local state.
+    let checkoutArgs: string[];
+    if (tag) {
+      event.sender.send(UPDATE_LOG, terminalInfo(`Checking out tag: ${tag}`));
+      checkoutArgs = [
+        "-c",
+        "advice.detachedHead=false",
+        "checkout",
+        "-f",
+        `tags/${tag}`,
+      ];
+    } else if (branch) {
+      event.sender.send(
+        UPDATE_LOG,
+        terminalInfo(`Checking out branch: ${branch}`),
+      );
+      checkoutArgs = ["checkout", "-f", "-B", branch, `origin/${branch}`];
+    } else {
+      event.sender.send(
+        UPDATE_LOG,
+        terminalInfo(`Checking out commit: ${commit}`),
+      );
+      checkoutArgs = [
+        "-c",
+        "advice.detachedHead=false",
+        "checkout",
+        "-f",
+        commit as string,
+      ];
+    }
+    const checkoutRes = await runCommand("git", checkoutArgs, repoDir, event);
+    if (!checkoutRes.success) {
+      return {
+        success: false,
+        error: terminalError("Failed to checkout target version"),
+      };
+    }
+
+    // For a branch, fast-forward the working tree to the fetched remote tip.
+    if (branch) {
+      const resetBranch = await runCommand(
+        "git",
+        ["reset", "--hard", `origin/${branch}`],
+        repoDir,
+        event,
+      );
+      if (!resetBranch.success) {
+        return {
+          success: false,
+          error: terminalError(`Failed to reset to origin/${branch}`),
+        };
+      }
+    }
+
+    // Full clean checkout: wipe all untracked/ignored files so the tree matches
+    // a fresh clone.
+    const cleanRes = await runCommand("git", ["clean", "-fdx"], repoDir, event);
+    if (!cleanRes.success) {
+      return {
+        success: false,
+        error: terminalError("Failed to clean working tree"),
+      };
+    }
+
+    event.sender.send(
+      UPDATE_LOG,
+      terminalSuccess("Repository updated successfully"),
+    );
+    return { success: true, error: undefined };
+  } catch (error: any) {
+    // runCommand rejects with { success, error } on a non-zero exit; surface that.
+    const message =
+      typeof error?.error === "string"
+        ? error.error
+        : (error?.message ?? error?.toString?.() ?? "Unknown error");
+    return { success: false, error: terminalError(message) };
+  }
+}
+
 async function cloneRepository(
   params: CloneRepositoryParams,
   event: Electron.IpcMainInvokeEvent,
 ): Promise<{ success: boolean; error?: string }> {
-  const { githubRepoOwner, githubRepoName, githubToken, tag, branch, commit } =
-    params;
+  const { githubRepoOwner, githubRepoName, tag, branch, commit } = params;
 
   const qitechControlEnv = process.env.QITECH_CONTROL_ENV;
   const homeDir = qitechControlEnv ? "/home/qitech" : process.env.HOME;
@@ -279,12 +594,12 @@ async function cloneRepository(
   }
 
   // Construct repository URL
-  const repoUrl = githubToken
-    ? `https://${githubToken}@github.com/${githubRepoOwner}/${githubRepoName}.git`
-    : `https://github.com/${githubRepoOwner}/${githubRepoName}.git`;
+  const repoUrl = `https://github.com/${githubRepoOwner}/${githubRepoName}.git`;
 
-  // Determine clone arguments based on whether tag, branch, or commit is specified
-  const cloneArgs = ["clone", "--progress", repoUrl];
+  // Determine clone arguments based on whether tag, branch, or commit is specified.
+  // Auth args are prepended so private repos work without storing credentials
+  // in the on-disk git config (unlike a token-in-URL approach).
+  const cloneArgs = [...gitAuthArgs(), "clone", "--progress", repoUrl];
 
   if (tag) {
     // Clone a specific tag
@@ -347,7 +662,19 @@ async function runCommand(
   event: Electron.IpcMainInvokeEvent,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const completeCommand = `${cmd} ${args.join(" ")}`;
+    // Redact any `-c http.extraheader=...` value so the PAT never appears in
+    // the on-screen log stream.
+    const redactedArgs = args.map((arg, i) => {
+      if (
+        i > 0 &&
+        args[i - 1] === "-c" &&
+        arg.startsWith("http.extraheader=")
+      ) {
+        return "http.extraheader=***";
+      }
+      return arg;
+    });
+    const completeCommand = `${cmd} ${redactedArgs.join(" ")}`;
     const workingDirText = terminalGray(workingDir);
     event.sender.send(
       UPDATE_LOG,

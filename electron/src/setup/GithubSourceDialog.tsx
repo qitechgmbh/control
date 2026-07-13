@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/Icon";
 import { TouchButton } from "@/components/touch/TouchButton";
+import { Badge } from "@/components/ui/badge";
 
 type Props = {
   value: GithubSource;
@@ -33,7 +34,6 @@ type Props = {
 export const githubSourceSchema = z.object({
   githubRepoOwner: z.string().catch("qitechgmbh"),
   githubRepoName: z.string().catch("control"),
-  githubToken: z.string().optional(),
 });
 
 export type GithubSource = z.infer<typeof githubSourceSchema>;
@@ -41,12 +41,6 @@ export type GithubSource = z.infer<typeof githubSourceSchema>;
 export const defaultGithubSource: GithubSource = {
   githubRepoOwner: "qitechgmbh",
   githubRepoName: "control",
-  // This PAT only has read-only access to public qitechgmbh repos
-  // It's split into 3 parts to avoid being detected by secret scanning
-  githubToken:
-    "github_pat_" +
-    "11AG6Q4KQ0cfgyVayexvpp_" +
-    "XuYqnT8DHTiq0tN0VdWpKxhunrBPwydGlfPm7qUMEfM4V6T2YXRXuJ8AfDA",
 };
 
 export function GithubSourceDialog({ value, onChange }: Props) {
@@ -90,9 +84,48 @@ export function GithubSourceDialogContent({
   const onSubmit = (values: GithubSource) => {
     onChange({
       ...values,
-      githubToken: values.githubToken === "" ? undefined : values.githubToken,
     });
     setOpen(false);
+  };
+
+  // Token state
+  const [tokenSet, setTokenSet] = React.useState(false);
+  const [tokenInput, setTokenInput] = React.useState("");
+  const [tokenLoading, setTokenLoading] = React.useState(false);
+  const [tokenError, setTokenError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    window.update.hasToken().then(setTokenSet);
+  }, []);
+
+  const handleSaveToken = async () => {
+    setTokenLoading(true);
+    setTokenError(null);
+    const result = await window.update.saveToken(tokenInput.trim());
+    setTokenLoading(false);
+    if (result.success) {
+      setTokenSet(tokenInput.trim().length > 0);
+      setTokenInput("");
+    } else {
+      setTokenError(result.error ?? "Failed to save token");
+    }
+  };
+
+  const handleLoadFromUsb = async () => {
+    setTokenLoading(true);
+    setTokenError(null);
+    const result = await window.update.loadTokenFromFile();
+    setTokenLoading(false);
+    if (result.success) {
+      setTokenSet(true);
+    } else if (result.error !== "Cancelled") {
+      setTokenError(result.error ?? "Failed to load token from file");
+    }
+  };
+
+  const handleClearToken = async () => {
+    await window.update.clearToken();
+    setTokenSet(false);
   };
 
   return (
@@ -107,7 +140,7 @@ export function GithubSourceDialogContent({
       <Separator />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Gtihub Owner */}
+          {/* GitHub Owner */}
           <FormField
             control={form.control}
             name="githubRepoOwner"
@@ -139,31 +172,79 @@ export function GithubSourceDialogContent({
               </FormItem>
             )}
           />
-          {/* Github token */}
-          <FormField
-            control={form.control}
-            name="githubToken"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Github Token</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="github_pat_..."
-                    {...field}
-                    value={field.value || ""}
-                  />
-                </FormControl>
-                <FormDescription>Github token.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
           <Separator />
           <Button type="submit" disabled={!form.formState.isValid}>
             <Icon name="lu:Save" /> Save
           </Button>
         </form>
       </Form>
+
+      {/* ── GitHub Access Token ──────────────────────────────────────────── */}
+      <Separator />
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">GitHub Access Token</span>
+          {tokenSet ? (
+            <Badge variant="default" className="text-xs">
+              Token set
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="text-xs">
+              No token
+            </Badge>
+          )}
+        </div>
+        <p className="text-muted-foreground text-xs">
+          Required only for private repositories. The token is encrypted and
+          stored on disk.
+        </p>
+
+        {tokenSet ? (
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={handleClearToken}
+            disabled={tokenLoading}
+          >
+            <Icon name="lu:Trash2" /> Remove token
+          </Button>
+        ) : (
+          <div className="space-y-2">
+            {/* Manual entry */}
+            <div className="flex gap-2">
+              <Input
+                type="password"
+                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                value={tokenInput}
+                onChange={(e) => setTokenInput(e.target.value)}
+                className="font-mono text-xs"
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSaveToken}
+                disabled={tokenLoading || tokenInput.trim().length === 0}
+              >
+                <Icon name="lu:Save" /> Save
+              </Button>
+            </div>
+            {/* Load from USB */}
+            <TouchButton
+              type="button"
+              variant="outline"
+              icon="lu:Usb"
+              className="w-max"
+              onClick={handleLoadFromUsb}
+              disabled={tokenLoading}
+            >
+              Load from USB
+            </TouchButton>
+          </div>
+        )}
+
+        {tokenError && <p className="text-destructive text-xs">{tokenError}</p>}
+      </div>
     </DialogContent>
   );
 }

@@ -69,6 +69,9 @@ in
     package = pkgs.nixVersions.stable;
     settings = {
       experimental-features = "nix-command flakes";
+      cores = 2;
+      http-connections = 10;
+      download-attempts = 15;
     };
   };
 
@@ -101,13 +104,13 @@ in
 
   # Enable networking
   networking.networkmanager.enable = true;
-  networking.wireless.enable = lib.mkImageMediaOverride false;
+  # ... but do not interfere with ethercat
+  networking.networkmanager.unmanaged = [ "type:ethernet" ];
 
   # Enable the X11 windowing system.
   services.displayManager.gdm = {
     enable = true;
     autoSuspend = false;
-    wayland = true;
   };
   services.desktopManager.gnome.enable = true;
 
@@ -172,7 +175,6 @@ in
   services.pipewire = {
     enable = true;
     alsa.enable = true;
-    alsa.support32Bit = true;
     pulse.enable = true;
   };
 
@@ -181,7 +183,7 @@ in
 
   services.libinput.enable = true;
   services.libinput.touchpad.tapping = true;
-  services.touchegg.enable = true;
+  services.touchegg.enable = false;
 
   # Enable the QiTech Control server
   services.qitech = {
@@ -235,7 +237,12 @@ in
 
   documentation.doc.enable = false;
   services.gnome.core-apps.enable = false;
-  environment.gnome.excludePackages = [ pkgs.gnome-tour ];
+  services.gnome.localsearch.enable = false;
+  services.gnome.tinysparql.enable = false;
+  environment.gnome.excludePackages = [
+    pkgs.gnome-tour
+    pkgs.orca
+  ];
   environment.systemPackages = with pkgs; [
     # Bare minimum gnome desktop
     gnome-console
@@ -250,7 +257,7 @@ in
     htop
     wireshark
     pciutils
-    neofetch
+    fastfetch
     caddy
     # QiTech Frontend
     pkgs.qitechPackages.electron

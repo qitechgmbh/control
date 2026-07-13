@@ -6,6 +6,7 @@
     consoleMode = "max"; # Use the highest available resolution
   };
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.tmp.cleanOnBoot = true;
 
   imports = [
     ./configuration.nix

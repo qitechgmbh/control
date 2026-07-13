@@ -16,30 +16,30 @@ export function Aquapath1SettingsPage() {
 
   const {
     state,
-    setFrontRevolutions,
-    setBackRevolutions,
-    setFrontHeatingTolerance,
-    setFrontCoolingTolerance,
-    setBackHeatingTolerance,
-    setBackCoolingTolerance,
+    setLeftRevolutions,
+    setRightRevolutions,
+    setLeftHeatingTolerance,
+    setLeftCoolingTolerance,
+    setRightHeatingTolerance,
+    setRightCoolingTolerance,
     setAmbientTemperatureCalibration,
-    setFrontPidKp,
-    setFrontPidKi,
-    setFrontPidKd,
-    setBackPidKp,
-    setBackPidKi,
-    setBackPidKd,
-    setFrontThermalFlowSettleDuration,
-    setBackThermalFlowSettleDuration,
-    setFrontPumpCooldownMinTemperature,
-    setBackPumpCooldownMinTemperature,
+    setLeftPidKp,
+    setLeftPidKi,
+    setLeftPidKd,
+    setRightPidKp,
+    setRightPidKi,
+    setRightPidKd,
+    setLeftThermalFlowSettleDuration,
+    setRightThermalFlowSettleDuration,
+    setLeftPumpCooldownMinTemperature,
+    setRightPumpCooldownMinTemperature,
   } = useAquapath1();
-  const frontTemp = state?.temperature_states.front.temperature;
-  const backTemp = state?.temperature_states.back.temperature;
+  const leftTemp = state?.temperature_states.left.temperature;
+  const rightTemp = state?.temperature_states.right.temperature;
   const isStandby = state?.mode_state.mode === "Standby";
   const currentSensorAmbientCandidate =
-    frontTemp != null && backTemp != null
-      ? Math.min(frontTemp, backTemp)
+    leftTemp != null && rightTemp != null
+      ? Math.min(leftTemp, rightTemp)
       : undefined;
   const canApplySensorAmbient =
     currentSensorAmbientCandidate != null && currentSensorAmbientCandidate < 30;
@@ -47,33 +47,33 @@ export function Aquapath1SettingsPage() {
   return (
     <Page>
       <ControlGrid columns={2}>
-        <ControlCard title="Reservoir 1 (Back) Fan Revolutions">
+        <ControlCard title="Left Reservoir Fan Revolutions">
           <Label label="Set Max Revolution Speed">
             <EditValue
               title="Set Max Revolution Speed"
               min={0}
-              value={state?.fan_states.back.max_revolutions}
+              value={state?.fan_states.left.max_revolutions}
               max={100}
               unit="%"
               renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
-                setBackRevolutions(val);
+                setLeftRevolutions(val);
               }}
             />
           </Label>
         </ControlCard>
 
-        <ControlCard title="Reservoir 2 (Front) Fan Revolutions">
+        <ControlCard title="Right Reservoir Fan Revolutions">
           <Label label="Set Max Revolution Speed">
             <EditValue
               title="Set Max Revolution Speed"
               min={0}
-              value={state?.fan_states.front.max_revolutions}
+              value={state?.fan_states.right.max_revolutions}
               max={100}
               unit="%"
               renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
-                setFrontRevolutions(val);
+                setRightRevolutions(val);
               }}
             />
           </Label>
@@ -115,18 +115,18 @@ export function Aquapath1SettingsPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Reservoir 1 (Back) Temperature Tolerances">
+        <ControlCard title="Left Reservoir Temperature Tolerances">
           <Label label="Set Heating Tolerance">
             <EditValue
               title="Set Heating Tolerance"
               min={0}
-              value={state?.tolerance_states.back.heating}
+              value={state?.tolerance_states.left.heating}
               max={10}
               step={0.1}
               unit="C"
               renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
-                setBackHeatingTolerance(val);
+                setLeftHeatingTolerance(val);
               }}
             />
           </Label>
@@ -135,13 +135,13 @@ export function Aquapath1SettingsPage() {
             <EditValue
               title="Set Cooling Tolerance"
               min={0}
-              value={state?.tolerance_states.back.cooling}
+              value={state?.tolerance_states.left.cooling}
               max={10}
               step={0.1}
               unit="C"
               renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
-                setBackCoolingTolerance(val);
+                setLeftCoolingTolerance(val);
               }}
             />
           </Label>
@@ -150,8 +150,8 @@ export function Aquapath1SettingsPage() {
               type="button"
               size="sm"
               onClick={() => {
-                setBackHeatingTolerance(DEFAULT_HEATING_TOLERANCE_C);
-                setBackCoolingTolerance(DEFAULT_COOLING_TOLERANCE_C);
+                setLeftHeatingTolerance(DEFAULT_HEATING_TOLERANCE_C);
+                setLeftCoolingTolerance(DEFAULT_COOLING_TOLERANCE_C);
               }}
             >
               Reset to Default
@@ -159,19 +159,19 @@ export function Aquapath1SettingsPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Reservoir 1 (Back) Thermal Flow Safety">
+        <ControlCard title="Left Reservoir Thermal Flow Safety">
           <Label label="Thermal Safety Delay">
             <EditValue
-              title="Set Reservoir 1 Thermal Safety Delay"
+              title="Set Left Reservoir Thermal Safety Delay"
               min={0}
-              value={state?.thermal_safety_states.back.thermal_delay}
+              value={state?.thermal_safety_states.left.thermal_delay}
               max={30}
               step={0.5}
               unit="s"
               renderValue={(value) => value.toFixed(1)}
               disabled={!isStandby}
               onChange={(val) => {
-                setBackThermalFlowSettleDuration(val);
+                setLeftThermalFlowSettleDuration(val);
               }}
             />
           </Label>
@@ -185,33 +185,33 @@ export function Aquapath1SettingsPage() {
 
           <Label label="Pump Cooldown Min Temperature">
             <EditValue
-              title="Set Reservoir 1 Pump Cooldown Min Temperature"
+              title="Set Left Reservoir Pump Cooldown Min Temperature"
               min={10}
-              value={state?.thermal_safety_states.back.cooldown_min_temperature}
+              value={state?.thermal_safety_states.left.cooldown_min_temperature}
               max={80}
               step={0.5}
               unit="C"
               renderValue={(value) => value.toFixed(1)}
               disabled={!isStandby}
               onChange={(val) => {
-                setBackPumpCooldownMinTemperature(val);
+                setLeftPumpCooldownMinTemperature(val);
               }}
             />
           </Label>
         </ControlCard>
 
-        <ControlCard title="Reservoir 2 (Front) Temperature Tolerances">
+        <ControlCard title="Right Reservoir Temperature Tolerances">
           <Label label="Set Heating Tolerance">
             <EditValue
               title="Set Heating Tolerance"
               min={0}
-              value={state?.tolerance_states.front.heating}
+              value={state?.tolerance_states.right.heating}
               max={10}
               step={0.1}
               unit="C"
               renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
-                setFrontHeatingTolerance(val);
+                setRightHeatingTolerance(val);
               }}
             />
           </Label>
@@ -220,13 +220,13 @@ export function Aquapath1SettingsPage() {
             <EditValue
               title="Set Cooling Tolerance"
               min={0}
-              value={state?.tolerance_states.front.cooling}
+              value={state?.tolerance_states.right.cooling}
               max={10}
               step={0.1}
               unit="C"
               renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
-                setFrontCoolingTolerance(val);
+                setRightCoolingTolerance(val);
               }}
             />
           </Label>
@@ -235,8 +235,8 @@ export function Aquapath1SettingsPage() {
               type="button"
               size="sm"
               onClick={() => {
-                setFrontHeatingTolerance(DEFAULT_HEATING_TOLERANCE_C);
-                setFrontCoolingTolerance(DEFAULT_COOLING_TOLERANCE_C);
+                setRightHeatingTolerance(DEFAULT_HEATING_TOLERANCE_C);
+                setRightCoolingTolerance(DEFAULT_COOLING_TOLERANCE_C);
               }}
             >
               Reset to Default
@@ -244,19 +244,19 @@ export function Aquapath1SettingsPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Reservoir 2 (Front) Thermal Flow Safety">
+        <ControlCard title="Right Reservoir Thermal Flow Safety">
           <Label label="Thermal Safety Delay">
             <EditValue
-              title="Set Reservoir 2 Thermal Safety Delay"
+              title="Set Right Reservoir Thermal Safety Delay"
               min={0}
-              value={state?.thermal_safety_states.front.thermal_delay}
+              value={state?.thermal_safety_states.right.thermal_delay}
               max={30}
               step={0.5}
               unit="s"
               renderValue={(value) => value.toFixed(1)}
               disabled={!isStandby}
               onChange={(val) => {
-                setFrontThermalFlowSettleDuration(val);
+                setRightThermalFlowSettleDuration(val);
               }}
             />
           </Label>
@@ -270,10 +270,10 @@ export function Aquapath1SettingsPage() {
 
           <Label label="Pump Cooldown Min Temperature">
             <EditValue
-              title="Set Reservoir 2 Pump Cooldown Min Temperature"
+              title="Set Right Reservoir Pump Cooldown Min Temperature"
               min={10}
               value={
-                state?.thermal_safety_states.front.cooldown_min_temperature
+                state?.thermal_safety_states.right.cooldown_min_temperature
               }
               max={80}
               step={0.5}
@@ -281,51 +281,51 @@ export function Aquapath1SettingsPage() {
               renderValue={(value) => value.toFixed(1)}
               disabled={!isStandby}
               onChange={(val) => {
-                setFrontPumpCooldownMinTemperature(val);
+                setRightPumpCooldownMinTemperature(val);
               }}
             />
           </Label>
         </ControlCard>
 
-        <ControlCard title="Reservoir 1 (Back) PID Settings">
+        <ControlCard title="Left Reservoir PID Settings">
           <Label label="Set Kp">
             <EditValue
-              title="Set Reservoir 1 Kp"
+              title="Set Left Reservoir Kp"
               min={0}
-              value={state?.pid_states.back.kp}
+              value={state?.pid_states.left.kp}
               max={5}
               step={0.01}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => {
-                setBackPidKp(val);
+                setLeftPidKp(val);
               }}
             />
           </Label>
 
           <Label label="Set Ki">
             <EditValue
-              title="Set Reservoir 1 Ki"
+              title="Set Left Reservoir Ki"
               min={0}
-              value={state?.pid_states.back.ki}
+              value={state?.pid_states.left.ki}
               max={5}
               step={0.01}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => {
-                setBackPidKi(val);
+                setLeftPidKi(val);
               }}
             />
           </Label>
 
           <Label label="Set Kd">
             <EditValue
-              title="Set Reservoir 1 Kd"
+              title="Set Left Reservoir Kd"
               min={0}
-              value={state?.pid_states.back.kd}
+              value={state?.pid_states.left.kd}
               max={5}
               step={0.01}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => {
-                setBackPidKd(val);
+                setLeftPidKd(val);
               }}
             />
           </Label>
@@ -334,9 +334,9 @@ export function Aquapath1SettingsPage() {
               type="button"
               size="sm"
               onClick={() => {
-                setBackPidKp(DEFAULT_PID_KP);
-                setBackPidKi(DEFAULT_PID_KI);
-                setBackPidKd(DEFAULT_PID_KD);
+                setLeftPidKp(DEFAULT_PID_KP);
+                setLeftPidKi(DEFAULT_PID_KI);
+                setLeftPidKd(DEFAULT_PID_KD);
               }}
             >
               Reset to Default
@@ -344,45 +344,45 @@ export function Aquapath1SettingsPage() {
           </div>
         </ControlCard>
 
-        <ControlCard title="Reservoir 2 (Front) PID Settings">
+        <ControlCard title="Right Reservoir PID Settings">
           <Label label="Set Kp">
             <EditValue
-              title="Set Reservoir 2 Kp"
+              title="Set Right Reservoir Kp"
               min={0}
-              value={state?.pid_states.front.kp}
+              value={state?.pid_states.right.kp}
               max={5}
               step={0.01}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => {
-                setFrontPidKp(val);
+                setRightPidKp(val);
               }}
             />
           </Label>
 
           <Label label="Set Ki">
             <EditValue
-              title="Set Reservoir 2 Ki"
+              title="Set Right Reservoir Ki"
               min={0}
-              value={state?.pid_states.front.ki}
+              value={state?.pid_states.right.ki}
               max={5}
               step={0.01}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => {
-                setFrontPidKi(val);
+                setRightPidKi(val);
               }}
             />
           </Label>
 
           <Label label="Set Kd">
             <EditValue
-              title="Set Reservoir 2 Kd"
+              title="Set Right Reservoir Kd"
               min={0}
-              value={state?.pid_states.front.kd}
+              value={state?.pid_states.right.kd}
               max={5}
               step={0.01}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => {
-                setFrontPidKd(val);
+                setRightPidKd(val);
               }}
             />
           </Label>
@@ -391,9 +391,9 @@ export function Aquapath1SettingsPage() {
               type="button"
               size="sm"
               onClick={() => {
-                setFrontPidKp(DEFAULT_PID_KP);
-                setFrontPidKi(DEFAULT_PID_KI);
-                setFrontPidKd(DEFAULT_PID_KD);
+                setRightPidKp(DEFAULT_PID_KP);
+                setRightPidKi(DEFAULT_PID_KI);
+                setRightPidKd(DEFAULT_PID_KD);
               }}
             >
               Reset to Default

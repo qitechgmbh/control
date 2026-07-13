@@ -42,34 +42,32 @@ export function useAquapath1() {
   const {
     state,
     defaultState,
-    front_temperature,
-    back_temperature,
-    front_flow,
-    back_flow,
-    front_temp_reservoir,
-    back_temp_reservoir,
-    front_revolutions,
-    back_revolutions,
-    front_power,
-    back_power,
+    left_temperature,
+    right_temperature,
+    left_flow,
+    right_flow,
+    left_revolutions,
+    right_revolutions,
+    left_power,
+    right_power,
     combinedPower,
-    front_total_energy,
-    back_total_energy,
+    left_total_energy,
+    right_total_energy,
     totalEnergyKWh,
-    front_heating,
-    back_heating,
-    front_cooling_mode,
-    back_cooling_mode,
-    front_pump_cooldown_active,
-    back_pump_cooldown_active,
-    front_pump_cooldown_remaining,
-    back_pump_cooldown_remaining,
-    front_heating_startup_wait_active,
-    back_heating_startup_wait_active,
-    front_heating_startup_wait_remaining,
-    back_heating_startup_wait_remaining,
-    targetFrontTemperature,
-    targetBackTemperature,
+    left_heating,
+    right_heating,
+    left_cooling_mode,
+    right_cooling_mode,
+    left_pump_cooldown_active,
+    right_pump_cooldown_active,
+    left_pump_cooldown_remaining,
+    right_pump_cooldown_remaining,
+    left_heating_startup_wait_active,
+    right_heating_startup_wait_active,
+    left_heating_startup_wait_remaining,
+    right_heating_startup_wait_remaining,
+    targetLeftTemperature,
+    targetRightTemperature,
   } = useAquapath1Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -95,136 +93,136 @@ export function useAquapath1() {
     );
   };
 
-  const setFrontTemperature = (temperature: number) => {
+  const setLeftTemperature = (temperature: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.temperature_states.front.target_temperature = temperature;
+        current.data.temperature_states.left.target_temperature = temperature;
       },
       () =>
-        requestFrontTemperature({
+        requestLeftTemperature({
           machine_identification_unique: machineIdentification,
-          data: { SetFrontTemperature: temperature },
+          data: { SetLeftTemperature: temperature },
         }),
     );
   };
 
-  const setBackTemperature = (temperature: number) => {
+  const setRightTemperature = (temperature: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.temperature_states.back.target_temperature = temperature;
+        current.data.temperature_states.right.target_temperature = temperature;
       },
       () =>
-        requestBackTemperature({
+        requestRightTemperature({
           machine_identification_unique: machineIdentification,
-          data: { SetBackTemperature: temperature },
+          data: { SetRightTemperature: temperature },
         }),
     );
   };
 
-  const setFrontFlow = (flow: boolean) => {
+  const setLeftFlow = (flow: boolean) => {
     updateStateOptimistically(
       (current) => {
-        current.data.flow_states.front.should_flow = flow;
+        current.data.flow_states.left.should_flow = flow;
       },
       () =>
-        requestFrontFlow({
+        requestLeftFlow({
           machine_identification_unique: machineIdentification,
-          data: { SetFrontFlow: flow },
+          data: { SetLeftFlow: flow },
         }),
     );
   };
 
-  const setBackFlow = (flow: boolean) => {
+  const setRightFlow = (flow: boolean) => {
     updateStateOptimistically(
       (current) => {
-        current.data.flow_states.back.should_flow = flow;
+        current.data.flow_states.right.should_flow = flow;
       },
       () =>
-        requestBackFlow({
+        requestRightFlow({
           machine_identification_unique: machineIdentification,
-          data: { SetBackFlow: flow },
+          data: { SetRightFlow: flow },
         }),
     );
   };
 
-  const setFrontRevolutions = (revolutions: number) => {
+  const setLeftRevolutions = (revolutions: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.fan_states.front.revolutions = revolutions;
+        current.data.fan_states.left.revolutions = revolutions;
       },
       () => {
-        requestFrontRevolutions({
+        requestLeftRevolutions({
           machine_identification_unique: machineIdentification,
-          data: { SetFrontRevolutions: revolutions },
+          data: { SetLeftRevolutions: revolutions },
         });
       },
     );
   };
 
-  const setBackRevolutions = (revolutions: number) => {
+  const setRightRevolutions = (revolutions: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.fan_states.back.revolutions = revolutions;
+        current.data.fan_states.right.revolutions = revolutions;
       },
       () =>
-        requestBackRevolutions({
+        requestRightRevolutions({
           machine_identification_unique: machineIdentification,
-          data: { SetBackRevolutions: revolutions },
+          data: { SetRightRevolutions: revolutions },
         }),
     );
   };
 
-  const setFrontHeatingTolerance = (tolerance: number) => {
+  const setLeftHeatingTolerance = (tolerance: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.tolerance_states.front.heating = tolerance;
+        current.data.tolerance_states.left.heating = tolerance;
       },
       () => {
-        requestFrontHeatingTolerance({
+        requestLeftHeatingTolerance({
           machine_identification_unique: machineIdentification,
-          data: { SetFrontHeatingTolerance: tolerance },
+          data: { SetLeftHeatingTolerance: tolerance },
         });
       },
     );
   };
 
-  const setBackHeatingTolerance = (tolerance: number) => {
+  const setRightHeatingTolerance = (tolerance: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.tolerance_states.back.heating = tolerance;
+        current.data.tolerance_states.right.heating = tolerance;
       },
       () => {
-        requestBackHeatingTolerance({
+        requestRightHeatingTolerance({
           machine_identification_unique: machineIdentification,
-          data: { SetBackHeatingTolerance: tolerance },
+          data: { SetRightHeatingTolerance: tolerance },
         });
       },
     );
   };
 
-  const setFrontCoolingTolerance = (tolerance: number) => {
+  const setLeftCoolingTolerance = (tolerance: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.tolerance_states.front.cooling = tolerance;
+        current.data.tolerance_states.left.cooling = tolerance;
       },
       () => {
-        requestFrontCoolingTolerance({
+        requestLeftCoolingTolerance({
           machine_identification_unique: machineIdentification,
-          data: { SetFrontCoolingTolerance: tolerance },
+          data: { SetLeftCoolingTolerance: tolerance },
         });
       },
     );
   };
 
-  const setBackCoolingTolerance = (tolerance: number) => {
+  const setRightCoolingTolerance = (tolerance: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.tolerance_states.back.cooling = tolerance;
+        current.data.tolerance_states.right.cooling = tolerance;
       },
       () => {
-        requestBackCoolingTolerance({
+        requestRightCoolingTolerance({
           machine_identification_unique: machineIdentification,
-          data: { SetBackCoolingTolerance: tolerance },
+          data: { SetRightCoolingTolerance: tolerance },
         });
       },
     );
@@ -244,143 +242,143 @@ export function useAquapath1() {
     );
   };
 
-  const setFrontPidKp = (value: number) => {
+  const setLeftPidKp = (value: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.pid_states.front.kp = value;
+        current.data.pid_states.left.kp = value;
       },
       () => {
-        requestFrontPidKp({
+        requestLeftPidKp({
           machine_identification_unique: machineIdentification,
-          data: { SetFrontPidKp: value },
+          data: { SetLeftPidKp: value },
         });
       },
     );
   };
 
-  const setFrontPidKi = (value: number) => {
+  const setLeftPidKi = (value: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.pid_states.front.ki = value;
+        current.data.pid_states.left.ki = value;
       },
       () => {
-        requestFrontPidKi({
+        requestLeftPidKi({
           machine_identification_unique: machineIdentification,
-          data: { SetFrontPidKi: value },
+          data: { SetLeftPidKi: value },
         });
       },
     );
   };
 
-  const setFrontPidKd = (value: number) => {
+  const setLeftPidKd = (value: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.pid_states.front.kd = value;
+        current.data.pid_states.left.kd = value;
       },
       () => {
-        requestFrontPidKd({
+        requestLeftPidKd({
           machine_identification_unique: machineIdentification,
-          data: { SetFrontPidKd: value },
+          data: { SetLeftPidKd: value },
         });
       },
     );
   };
 
-  const setBackPidKp = (value: number) => {
+  const setRightPidKp = (value: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.pid_states.back.kp = value;
+        current.data.pid_states.right.kp = value;
       },
       () => {
-        requestBackPidKp({
+        requestRightPidKp({
           machine_identification_unique: machineIdentification,
-          data: { SetBackPidKp: value },
+          data: { SetRightPidKp: value },
         });
       },
     );
   };
 
-  const setBackPidKi = (value: number) => {
+  const setRightPidKi = (value: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.pid_states.back.ki = value;
+        current.data.pid_states.right.ki = value;
       },
       () => {
-        requestBackPidKi({
+        requestRightPidKi({
           machine_identification_unique: machineIdentification,
-          data: { SetBackPidKi: value },
+          data: { SetRightPidKi: value },
         });
       },
     );
   };
 
-  const setBackPidKd = (value: number) => {
+  const setRightPidKd = (value: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.pid_states.back.kd = value;
+        current.data.pid_states.right.kd = value;
       },
       () => {
-        requestBackPidKd({
+        requestRightPidKd({
           machine_identification_unique: machineIdentification,
-          data: { SetBackPidKd: value },
+          data: { SetRightPidKd: value },
         });
       },
     );
   };
 
-  const setFrontThermalFlowSettleDuration = (value: number) => {
+  const setLeftThermalFlowSettleDuration = (value: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.thermal_safety_states.front.thermal_delay = value;
+        current.data.thermal_safety_states.left.thermal_delay = value;
       },
       () => {
-        requestFrontThermalFlowSettleDuration({
+        requestLeftThermalFlowSettleDuration({
           machine_identification_unique: machineIdentification,
-          data: { SetFrontThermalFlowSettleDuration: value },
+          data: { SetLeftThermalFlowSettleDuration: value },
         });
       },
     );
   };
 
-  const setBackThermalFlowSettleDuration = (value: number) => {
+  const setRightThermalFlowSettleDuration = (value: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.thermal_safety_states.back.thermal_delay = value;
+        current.data.thermal_safety_states.right.thermal_delay = value;
       },
       () => {
-        requestBackThermalFlowSettleDuration({
+        requestRightThermalFlowSettleDuration({
           machine_identification_unique: machineIdentification,
-          data: { SetBackThermalFlowSettleDuration: value },
+          data: { SetRightThermalFlowSettleDuration: value },
         });
       },
     );
   };
 
-  const setFrontPumpCooldownMinTemperature = (value: number) => {
+  const setLeftPumpCooldownMinTemperature = (value: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.thermal_safety_states.front.cooldown_min_temperature =
+        current.data.thermal_safety_states.left.cooldown_min_temperature =
           value;
       },
       () => {
-        requestFrontPumpCooldownMinTemperature({
+        requestLeftPumpCooldownMinTemperature({
           machine_identification_unique: machineIdentification,
-          data: { SetFrontPumpCooldownMinTemperature: value },
+          data: { SetLeftPumpCooldownMinTemperature: value },
         });
       },
     );
   };
 
-  const setBackPumpCooldownMinTemperature = (value: number) => {
+  const setRightPumpCooldownMinTemperature = (value: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.thermal_safety_states.back.cooldown_min_temperature =
+        current.data.thermal_safety_states.right.cooldown_min_temperature =
           value;
       },
       () => {
-        requestBackPumpCooldownMinTemperature({
+        requestRightPumpCooldownMinTemperature({
           machine_identification_unique: machineIdentification,
-          data: { SetBackPumpCooldownMinTemperature: value },
+          data: { SetRightPumpCooldownMinTemperature: value },
         });
       },
     );
@@ -390,70 +388,70 @@ export function useAquapath1() {
   const { request: requestAquapathMode } = useMachineMutation(
     z.object({ SetAquaPathMode: z.enum(["Standby", "Auto"]) }),
   );
-  const { request: requestFrontTemperature } = useMachineMutation(
-    z.object({ SetFrontTemperature: z.number() }),
+  const { request: requestLeftTemperature } = useMachineMutation(
+    z.object({ SetLeftTemperature: z.number() }),
   );
-  const { request: requestBackTemperature } = useMachineMutation(
-    z.object({ SetBackTemperature: z.number() }),
+  const { request: requestRightTemperature } = useMachineMutation(
+    z.object({ SetRightTemperature: z.number() }),
   );
-  const { request: requestFrontFlow } = useMachineMutation(
-    z.object({ SetFrontFlow: z.boolean() }),
+  const { request: requestLeftFlow } = useMachineMutation(
+    z.object({ SetLeftFlow: z.boolean() }),
   );
-  const { request: requestBackFlow } = useMachineMutation(
-    z.object({ SetBackFlow: z.boolean() }),
+  const { request: requestRightFlow } = useMachineMutation(
+    z.object({ SetRightFlow: z.boolean() }),
   );
-  const { request: requestFrontRevolutions } = useMachineMutation(
-    z.object({ SetFrontRevolutions: z.number() }),
+  const { request: requestLeftRevolutions } = useMachineMutation(
+    z.object({ SetLeftRevolutions: z.number() }),
   );
-  const { request: requestBackRevolutions } = useMachineMutation(
-    z.object({ SetBackRevolutions: z.number() }),
+  const { request: requestRightRevolutions } = useMachineMutation(
+    z.object({ SetRightRevolutions: z.number() }),
   );
-  const { request: requestFrontHeatingTolerance } = useMachineMutation(
-    z.object({ SetFrontHeatingTolerance: z.number() }),
+  const { request: requestLeftHeatingTolerance } = useMachineMutation(
+    z.object({ SetLeftHeatingTolerance: z.number() }),
   );
-  const { request: requestFrontCoolingTolerance } = useMachineMutation(
-    z.object({ SetFrontCoolingTolerance: z.number() }),
+  const { request: requestLeftCoolingTolerance } = useMachineMutation(
+    z.object({ SetLeftCoolingTolerance: z.number() }),
   );
-  const { request: requestBackHeatingTolerance } = useMachineMutation(
-    z.object({ SetBackHeatingTolerance: z.number() }),
+  const { request: requestRightHeatingTolerance } = useMachineMutation(
+    z.object({ SetRightHeatingTolerance: z.number() }),
   );
-  const { request: requestBackCoolingTolerance } = useMachineMutation(
-    z.object({ SetBackCoolingTolerance: z.number() }),
+  const { request: requestRightCoolingTolerance } = useMachineMutation(
+    z.object({ SetRightCoolingTolerance: z.number() }),
   );
   const { request: requestAmbientTemperatureCalibration } = useMachineMutation(
     z.object({ SetAmbientTemperatureCalibration: z.number() }),
   );
-  const { request: requestFrontPidKp } = useMachineMutation(
-    z.object({ SetFrontPidKp: z.number() }),
+  const { request: requestLeftPidKp } = useMachineMutation(
+    z.object({ SetLeftPidKp: z.number() }),
   );
-  const { request: requestFrontPidKi } = useMachineMutation(
-    z.object({ SetFrontPidKi: z.number() }),
+  const { request: requestLeftPidKi } = useMachineMutation(
+    z.object({ SetLeftPidKi: z.number() }),
   );
-  const { request: requestFrontPidKd } = useMachineMutation(
-    z.object({ SetFrontPidKd: z.number() }),
+  const { request: requestLeftPidKd } = useMachineMutation(
+    z.object({ SetLeftPidKd: z.number() }),
   );
-  const { request: requestBackPidKp } = useMachineMutation(
-    z.object({ SetBackPidKp: z.number() }),
+  const { request: requestRightPidKp } = useMachineMutation(
+    z.object({ SetRightPidKp: z.number() }),
   );
-  const { request: requestBackPidKi } = useMachineMutation(
-    z.object({ SetBackPidKi: z.number() }),
+  const { request: requestRightPidKi } = useMachineMutation(
+    z.object({ SetRightPidKi: z.number() }),
   );
-  const { request: requestBackPidKd } = useMachineMutation(
-    z.object({ SetBackPidKd: z.number() }),
+  const { request: requestRightPidKd } = useMachineMutation(
+    z.object({ SetRightPidKd: z.number() }),
   );
-  const { request: requestFrontThermalFlowSettleDuration } = useMachineMutation(
-    z.object({ SetFrontThermalFlowSettleDuration: z.number() }),
+  const { request: requestLeftThermalFlowSettleDuration } = useMachineMutation(
+    z.object({ SetLeftThermalFlowSettleDuration: z.number() }),
   );
-  const { request: requestBackThermalFlowSettleDuration } = useMachineMutation(
-    z.object({ SetBackThermalFlowSettleDuration: z.number() }),
+  const { request: requestRightThermalFlowSettleDuration } = useMachineMutation(
+    z.object({ SetRightThermalFlowSettleDuration: z.number() }),
   );
-  const { request: requestFrontPumpCooldownMinTemperature } =
+  const { request: requestLeftPumpCooldownMinTemperature } = useMachineMutation(
+    z.object({ SetLeftPumpCooldownMinTemperature: z.number() }),
+  );
+  const { request: requestRightPumpCooldownMinTemperature } =
     useMachineMutation(
-      z.object({ SetFrontPumpCooldownMinTemperature: z.number() }),
+      z.object({ SetRightPumpCooldownMinTemperature: z.number() }),
     );
-  const { request: requestBackPumpCooldownMinTemperature } = useMachineMutation(
-    z.object({ SetBackPumpCooldownMinTemperature: z.number() }),
-  );
 
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
@@ -473,56 +471,54 @@ export function useAquapath1() {
 
     // Default state for initial values
     defaultState: defaultState?.data,
-    front_flow,
-    back_flow,
-    front_temperature,
-    back_temperature,
-    front_temp_reservoir,
-    back_temp_reservoir,
-    front_revolutions,
-    back_revolutions,
-    front_power,
-    back_power,
+    left_flow,
+    right_flow,
+    left_temperature,
+    right_temperature,
+    left_revolutions,
+    right_revolutions,
+    left_power,
+    right_power,
     combinedPower,
-    front_total_energy,
-    back_total_energy,
+    left_total_energy,
+    right_total_energy,
     totalEnergyKWh,
-    front_heating,
-    back_heating,
-    front_cooling_mode,
-    back_cooling_mode,
-    front_pump_cooldown_active,
-    back_pump_cooldown_active,
-    front_pump_cooldown_remaining,
-    back_pump_cooldown_remaining,
-    front_heating_startup_wait_active,
-    back_heating_startup_wait_active,
-    front_heating_startup_wait_remaining,
-    back_heating_startup_wait_remaining,
-    targetFrontTemperature,
-    targetBackTemperature,
+    left_heating,
+    right_heating,
+    left_cooling_mode,
+    right_cooling_mode,
+    left_pump_cooldown_active,
+    right_pump_cooldown_active,
+    left_pump_cooldown_remaining,
+    right_pump_cooldown_remaining,
+    left_heating_startup_wait_active,
+    right_heating_startup_wait_active,
+    left_heating_startup_wait_remaining,
+    right_heating_startup_wait_remaining,
+    targetLeftTemperature,
+    targetRightTemperature,
 
     setAquapathMode,
-    setFrontTemperature,
-    setBackTemperature,
-    setFrontFlow,
-    setBackFlow,
-    setFrontRevolutions,
-    setBackRevolutions,
-    setFrontHeatingTolerance,
-    setBackHeatingTolerance,
-    setFrontCoolingTolerance,
-    setBackCoolingTolerance,
+    setLeftTemperature,
+    setRightTemperature,
+    setLeftFlow,
+    setRightFlow,
+    setLeftRevolutions,
+    setRightRevolutions,
+    setLeftHeatingTolerance,
+    setRightHeatingTolerance,
+    setLeftCoolingTolerance,
+    setRightCoolingTolerance,
     setAmbientTemperatureCalibration,
-    setFrontPidKp,
-    setFrontPidKi,
-    setFrontPidKd,
-    setBackPidKp,
-    setBackPidKi,
-    setBackPidKd,
-    setFrontThermalFlowSettleDuration,
-    setBackThermalFlowSettleDuration,
-    setFrontPumpCooldownMinTemperature,
-    setBackPumpCooldownMinTemperature,
+    setLeftPidKp,
+    setLeftPidKi,
+    setLeftPidKd,
+    setRightPidKp,
+    setRightPidKi,
+    setRightPidKd,
+    setLeftThermalFlowSettleDuration,
+    setRightThermalFlowSettleDuration,
+    setLeftPumpCooldownMinTemperature,
+    setRightPumpCooldownMinTemperature,
   };
 }

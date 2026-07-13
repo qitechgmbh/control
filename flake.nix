@@ -2,15 +2,10 @@
   description = "QiTech Control";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
-
-    # Crane for Rust builds with dependency caching
-    crane = {
-      url = "github:ipetkov/crane";
-    };
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -19,7 +14,6 @@
     inputs@{
       self,
       nixpkgs,
-      crane,
       home-manager,
       ...
     }:
@@ -38,9 +32,7 @@
         (
           final: prev: {
             qitechPackages = {
-              server = prev.callPackage ./nixos/packages/server.nix {
-                craneLib = crane.mkLib final;
-              };
+              server = prev.callPackage ./nixos/packages/server.nix { };
               electron = prev.callPackage ./nixos/packages/electron.nix { };
               gitInfo = prev.callPackage ./nixos/gitInfo.nix { pkgs = prev; };
             };
@@ -50,9 +42,7 @@
       packages = forSystems (
         system: with (pkgs' system); rec {
           default = server;
-          server = callPackage ./nixos/packages/server.nix {
-            craneLib = crane.mkLib (pkgs' system);
-          };
+          server = callPackage ./nixos/packages/server.nix { };
           electron = callPackage ./nixos/packages/electron.nix { };
           iso-x86_64 =
             (nixpkgs.lib.nixosSystem {
@@ -90,11 +80,13 @@
               libudev-zero
               libpcap
               nodejs_22
-              nodePackages.npm
               lldb
               electron
+              # dev tools
               nixfmt
               nixd
+              rustfmt
+              rust-analyzer
             ];
 
             ELECTRON_SKIP_BINARY_DOWNLOAD = 1;

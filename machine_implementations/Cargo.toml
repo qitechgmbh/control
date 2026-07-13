@@ -1,0 +1,39 @@
+[package]
+name = "machine_implementations"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+qitech_lib = { workspace = true }
+control_core = { path = "../control-core" }
+
+anyhow = "1.0.103"
+serde = { version = "1.0.217", features = ["derive"] }
+bitvec = "1.0.1"
+lazy_static = "1.5.0"
+euclid = "0.22.13"
+
+tokio = { version = "1.50.0", features = ["sync"] }
+
+# web
+serde_json = "1.0.149"
+#tracing
+tracing = { version = "0.1.44", features = ["attributes"] }
+tonic = { version = "0.13.1", optional = true }
+
+postcard = { version = "1.0", features = ["alloc"] }
+
+[dev-dependencies]
+approx = "0.5.1"
+
+[features]
+default = ["tracing-fmt"]
+never_type = []
+tracing-fmt = []
+mock-machine = []
+memory-locking = []
+io-uring = []
+development-build = []
+
+[package.metadata.cargo-machete]
+ignored =  ["tonic"]
