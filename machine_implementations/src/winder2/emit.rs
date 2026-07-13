@@ -10,8 +10,8 @@ use super::{
     LASER_PORT, PULLER_PORT, SPOOL_PORT, TRAVERSE_PORT, TraverseMode, Winder2,
     api::PullerRegulationMode, spool_speed_controller,
 };
-pub use control_core::socketio::event::BuildEvent;
-pub use control_core::socketio::namespace::NamespaceCacheingLogic;
+pub use control_core_legacy::socketio::event::BuildEvent;
+pub use control_core_legacy::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 #[cfg(not(feature = "mock-machine"))]
 pub use qitech_lib::units::{

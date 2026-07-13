@@ -10,7 +10,7 @@ use crate::apis::socketio::{
     namespaces::Namespaces,
 };
 use anyhow::bail;
-use control_core::socketio::{
+use control_core_legacy::socketio::{
     event::{Event, GenericEvent},
     namespace::NamespaceCacheingLogic,
 };

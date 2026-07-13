@@ -1,5 +1,5 @@
 use crate::SharedAppState;
-use control_core::socketio::event::Event;
+use control_core_legacy::socketio::event::Event;
 use machine_implementations::machine_identification::DeviceIdentification;
 use qitech_lib::ethercat_hal::EtherCATState;
 use serde::{Deserialize, Serialize};

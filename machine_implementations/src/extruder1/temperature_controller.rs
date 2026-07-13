@@ -1,5 +1,5 @@
 use super::Heating;
-use control_core::controllers::pid::PidController;
+use control_core_legacy::controllers::pid::PidController;
 use qitech_lib::{
     ethercat_hal::io::{
         digital_output::DigitalOutputDevice, temperature_input::TemperatureInputDevice,

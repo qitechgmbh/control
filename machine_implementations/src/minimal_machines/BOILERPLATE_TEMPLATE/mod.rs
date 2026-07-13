@@ -10,7 +10,7 @@
 
 use std::time::Instant;
 
-use control_core::socketio::namespace::NamespaceCacheingLogic;
+use control_core_legacy::socketio::namespace::NamespaceCacheingLogic;
 use smol::channel::{Receiver, Sender};
 
 use crate::{

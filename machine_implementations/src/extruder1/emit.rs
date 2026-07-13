@@ -147,7 +147,7 @@ impl ExtruderV2 {
     }
 
     pub fn emit_state(&mut self) {
-        use control_core::{
+        use control_core_legacy::{
             helpers::hasher_serializer::hash_with_serde_model,
             socketio::namespace::NamespaceCacheingLogic,
         };
@@ -161,7 +161,7 @@ impl ExtruderV2 {
     }
 
     pub fn maybe_emit_state_event(&mut self) {
-        use control_core::helpers::hasher_serializer::hash_with_serde_model;
+        use control_core_legacy::helpers::hasher_serializer::hash_with_serde_model;
 
         let old_status_hash = match self.last_status_hash {
             Some(event) => event,
@@ -221,7 +221,7 @@ impl ExtruderV2 {
     }
 
     pub fn emit_live_values(&mut self) {
-        use control_core::socketio::namespace::NamespaceCacheingLogic;
+        use control_core_legacy::socketio::namespace::NamespaceCacheingLogic;
 
         let event = self.get_live_values().build();
         self.namespace.emit(ExtruderV2Events::LiveValues(event));

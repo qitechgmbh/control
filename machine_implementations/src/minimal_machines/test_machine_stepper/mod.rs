@@ -1,7 +1,7 @@
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
 use crate::minimal_machines::test_machine_stepper::api::{StateEvent, TestMachineStepperEvents};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
-use control_core::socketio::namespace::NamespaceCacheingLogic;
+use control_core_legacy::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::stepper_velocity_wago_750_671::StepperVelocityWago750671;
 use ethercat_hal::io::stepper_velocity_wago_750_672::StepperVelocityWago750672;
 use smol::channel::{Receiver, Sender};

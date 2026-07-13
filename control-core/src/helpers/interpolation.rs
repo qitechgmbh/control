@@ -17,7 +17,7 @@
 ///
 /// # Example
 /// ```rust
-/// use control_core::helpers::interpolation::normalize;
+/// use control_core_legacy::helpers::interpolation::normalize;
 /// let normalized = normalize(5.0, 0.0, 10.0); // Returns 0.5
 /// let clamped = normalize(-2.0, 0.0, 10.0);   // Returns 0.0 (clamped)
 /// ```
@@ -55,7 +55,7 @@ where
 ///
 /// # Example
 /// ```rust
-/// use control_core::helpers::interpolation::scale;
+/// use control_core_legacy::helpers::interpolation::scale;
 /// let scaled = scale(0.5, 0.0, 100.0); // Returns 50.0
 /// let negative_range = scale(0.25, -10.0, 10.0); // Returns -5.0
 /// ```
@@ -91,7 +91,7 @@ where
 ///
 /// # Example
 /// ```rust
-/// use control_core::helpers::interpolation::interpolate_hinge;
+/// use control_core_legacy::helpers::interpolation::interpolate_hinge;
 /// // Create a hinge at (0.3, 0.7)
 /// let result1 = interpolate_hinge(0.15, 0.3, 0.7); // Returns 0.35 (halfway to hinge)
 /// let result2 = interpolate_hinge(0.3, 0.3, 0.7);  // Returns 0.7 (at hinge)
@@ -155,7 +155,7 @@ where
 ///
 /// # Example
 /// ```rust
-/// use control_core::helpers::interpolation::interpolate_exponential;
+/// use control_core_legacy::helpers::interpolation::interpolate_exponential;
 /// let convex = interpolate_exponential(0.5, 2.0);   // Slow start, fast end
 /// let concave = interpolate_exponential(0.5, -2.0); // Fast start, slow end
 /// let linear = interpolate_exponential(0.5, 0.0);   // Linear (returns 0.5)
@@ -301,7 +301,7 @@ pub fn interpolate_exponential(normalized_value: f64, steepness: f64) -> f64 {
 ///
 /// # Example
 /// ```rust
-/// use control_core::helpers::interpolation::interpolate_inflected_exponential;
+/// use control_core_legacy::helpers::interpolation::interpolate_inflected_exponential;
 /// let y = interpolate_inflected_exponential(0.25, 2.0); // Gentle S-curve
 /// let y = interpolate_inflected_exponential(0.75, 5.0); // Sharp S-curve
 /// ```
@@ -431,7 +431,7 @@ pub fn interpolate_inflected_exponential(x: f64, steepness: f64) -> f64 {
 ///
 /// # Example
 /// ```rust
-/// use control_core::helpers::interpolation::invert;
+/// use control_core_legacy::helpers::interpolation::invert;
 /// let inverted = invert(0.3); // Returns 0.7
 /// let boundary = invert(0.0); // Returns 1.0
 /// let clamped = invert(1.5);  // Returns 0.0 (input clamped to 1.0 first)
@@ -455,7 +455,7 @@ pub fn invert(value: f64) -> f64 {
 ///
 /// # Example
 /// ```rust
-/// use control_core::helpers::interpolation::clip;
+/// use control_core_legacy::helpers::interpolation::clip;
 /// let normal = clip(0.5);  // Returns 0.5
 /// let low = clip(-0.3);    // Returns 0.0
 /// let high = clip(1.7);    // Returns 1.0

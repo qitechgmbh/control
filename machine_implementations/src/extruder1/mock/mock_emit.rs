@@ -7,7 +7,7 @@ use crate::extruder1::{
     mock::ExtruderV2,
 };
 
-use control_core::{
+use control_core_legacy::{
     helpers::hasher_serializer::hash_with_serde_model,
     socketio::{event::BuildEvent, namespace::NamespaceCacheingLogic},
 };

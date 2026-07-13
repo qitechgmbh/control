@@ -5,7 +5,7 @@ use super::{
     mitsubishi_cs80::{MitsubishiCS80, MotorStatus},
 };
 use crate::extruder1::mitsubishi_cs80::MitsubishiCS80Status;
-use control_core::{
+use control_core_legacy::{
     controllers::{
         clamping_timeagnostic_pid::ClampingTimeagnosticPidController,
         pid_autotuner::{AutoTuneConfig, PidAutoTuner},

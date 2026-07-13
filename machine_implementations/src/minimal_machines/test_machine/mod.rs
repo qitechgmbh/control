@@ -1,7 +1,7 @@
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
 use crate::minimal_machines::test_machine::api::{StateEvent, TestMachineEvents};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
-use control_core::socketio::namespace::NamespaceCacheingLogic;
+use control_core_legacy::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::digital_output::DigitalOutput;
 use smol::channel::{Receiver, Sender};
 use std::time::Instant;

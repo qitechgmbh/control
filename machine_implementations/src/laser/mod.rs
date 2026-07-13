@@ -1,6 +1,6 @@
 use crate::{MACHINE_LASER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
-use control_core::socketio::namespace::NamespaceCacheingLogic;
+use control_core_legacy::socketio::namespace::NamespaceCacheingLogic;
 use postcard::from_bytes;
 use postcard::to_slice;
 use qitech_lib::{
@@ -60,6 +60,12 @@ impl ConvertMachineData for LaserData {
 pub enum LaserRequestState {
     Waiting(Instant),
     NotWaiting,
+}
+
+pub struct Config {
+    target_diameter: Length,
+    higher_tolerance: Length,
+    lower_tolerance: Length,
 }
 
 pub struct LaserMachine {

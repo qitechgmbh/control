@@ -1,4 +1,4 @@
-use control_core::converters::angle_converter::{AngleConverter, AngleConverterUom};
+use control_core_legacy::converters::angle_converter::{AngleConverter, AngleConverterUom};
 use euclid::Point2D;
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::angle::radian;

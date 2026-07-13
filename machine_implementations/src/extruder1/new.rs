@@ -5,7 +5,7 @@ use super::{
 use crate::{
     MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, MachineHardware, MachineMessage, MachineNew,
 };
-use control_core::transmission::fixed::FixedTransmission;
+use control_core_legacy::transmission::fixed::FixedTransmission;
 use qitech_lib::ethercat_hal::{
     coe::ConfigurableDevice,
     devices::{

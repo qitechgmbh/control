@@ -1,5 +1,5 @@
 use crate::aquapath1::{Flow, Temperature};
-use control_core::controllers::pid::PidController;
+use control_core_legacy::controllers::pid::PidController;
 use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
 use qitech_lib::ethercat_hal::io::analog_output::AnalogOutputDevice;
 use qitech_lib::ethercat_hal::io::as006::{

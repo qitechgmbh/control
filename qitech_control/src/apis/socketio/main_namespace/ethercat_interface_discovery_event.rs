@@ -1,4 +1,4 @@
-use control_core::socketio::event::Event;
+use control_core_legacy::socketio::event::Event;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

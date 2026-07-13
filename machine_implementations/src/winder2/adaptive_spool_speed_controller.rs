@@ -4,7 +4,7 @@ use crate::winder2::{
 };
 
 use super::{clamp_revolution::Clamping, tension_arm::TensionArm};
-use control_core::{
+use control_core_legacy::{
     controllers::first_degree_motion::angular_acceleration_speed_controller::AngularAccelerationSpeedController,
     helpers::{interpolation::scale, moving_time_window::MovingTimeWindow},
 };

@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use control_core::socketio::namespace::NamespaceCacheingLogic;
+use control_core_legacy::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::{
     digital_input::DigitalInput, digital_output::DigitalOutput,
     stepper_velocity_wago_750_671::StepperVelocityWago750671,

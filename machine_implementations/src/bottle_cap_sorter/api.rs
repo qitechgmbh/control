@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{MachineApi, MachineMessage, MachineValues};
 
 use super::{ColorBoundsHsl, ColorBoundsState, Sorter1, Sorter1Mode};
-use control_core::socketio::{event::{Event, GenericEvent}, namespace::{CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event}};
+use control_core_legacy::socketio::{event::{Event, GenericEvent}, namespace::{CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event}};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::instrument;

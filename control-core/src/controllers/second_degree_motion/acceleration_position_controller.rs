@@ -279,7 +279,7 @@ impl AccelerationPositionController {
     ///
     /// # Example
     /// ```ignore
-    /// use control_core::controllers::second_degree_motion::acceleration_position_controller::AccelerationPositionController;
+    /// use control_core_legacy::controllers::second_degree_motion::acceleration_position_controller::AccelerationPositionController;
     ///
     /// let controller = AccelerationPositionController::new(
     ///     -10.0,      // min_speed: can move backwards at 10 units/s
@@ -456,7 +456,7 @@ impl AccelerationPositionController {
     ///
     /// # Example
     /// ```ignore
-    /// use control_core::controllers::second_degree_motion::acceleration_position_controller::AccelerationPositionController;
+    /// use control_core_legacy::controllers::second_degree_motion::acceleration_position_controller::AccelerationPositionController;
     ///
     /// let mut controller = AccelerationPositionController::new_simple(None, 10.0, 5.0)?;
     ///
@@ -883,7 +883,7 @@ impl AccelerationPositionController {
     ///
     /// # Example
     /// ```ignore
-    /// use control_core::controllers::second_degree_motion::acceleration_position_controller::AccelerationPositionController;
+    /// use control_core_legacy::controllers::second_degree_motion::acceleration_position_controller::AccelerationPositionController;
     ///
     /// let mut controller = AccelerationPositionController::new_simple(
     ///     Some(100.0), 10.0, 5.0

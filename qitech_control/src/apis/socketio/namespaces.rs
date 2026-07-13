@@ -1,19 +1,19 @@
 use super::{main_namespace::MainRoom, namespace_id::NamespaceId};
-use control_core::socketio::event::GenericEvent;
+use control_core_legacy::socketio::event::GenericEvent;
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::mpsc::Sender;
 
 pub struct Namespaces {
     pub main_namespace: MainRoom,
-    pub machine_namespaces: HashMap<NamespaceId, control_core::socketio::namespace::Namespace>,
+    pub machine_namespaces: HashMap<NamespaceId, control_core_legacy::socketio::namespace::Namespace>,
 }
 
 impl Namespaces {
     pub async fn apply_mut(
         &mut self,
         namespace_id: NamespaceId,
-    ) -> Result<&mut control_core::socketio::namespace::Namespace, anyhow::Error> {
+    ) -> Result<&mut control_core_legacy::socketio::namespace::Namespace, anyhow::Error> {
         match namespace_id.clone() {
             NamespaceId::Main => Ok(&mut self.main_namespace.namespace),
             NamespaceId::Machine(_) => {

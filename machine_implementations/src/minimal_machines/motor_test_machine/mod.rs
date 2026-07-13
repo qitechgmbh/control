@@ -1,7 +1,7 @@
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use crate::{MOTOR_TEST_MACHINE, VENDOR_QITECH};
-use control_core::socketio::namespace::NamespaceCacheingLogic;
+use control_core_legacy::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use smol::channel::{Receiver, Sender};
 

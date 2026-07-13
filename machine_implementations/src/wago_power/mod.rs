@@ -3,7 +3,7 @@ use crate::{
     machine_identification::MachineIdentification,
 };
 use anyhow::Result;
-use control_core::socketio::{
+use control_core_legacy::socketio::{
     event::{BuildEvent, GenericEvent},
     namespace::{
         CacheFn, CacheableEvents, NamespaceCacheingLogic, cache_duration,
@@ -16,7 +16,7 @@ use std::time::{Duration, Instant};
 
 #[cfg(not(feature = "mock-machine"))]
 mod imports {
-    pub use control_core::modbus::tcp::ModbusTcpDevice;
+    pub use control_core_legacy::modbus::tcp::ModbusTcpDevice;
     pub use smol::lock::Mutex;
     pub use std::net::SocketAddr;
     pub use units::{

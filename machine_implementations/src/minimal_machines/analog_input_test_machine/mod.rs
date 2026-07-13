@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use control_core::socketio::{event::Event, namespace::NamespaceCacheingLogic};
+use control_core_legacy::socketio::{event::Event, namespace::NamespaceCacheingLogic};
 use ethercat_hal::io::analog_input::AnalogInput;
 use smol::channel::{Receiver, Sender};
 

@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use crate::{DIGITAL_INPUT_TEST_MACHINE, MachineApi, MachineMessage, QiTechMachine, VENDOR_QITECH};
 use api::{DigitalInputTestMachineNamespace, StateEvent};
-use control_core::socketio::namespace::NamespaceCacheingLogic;
+use control_core_legacy::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::ethercat_hal::devices::el2004::EL2004;
 use qitech_lib::ethercat_hal::io::digital_input::DigitalInputDevice;
 use qitech_lib::machines::{

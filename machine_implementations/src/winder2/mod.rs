@@ -17,7 +17,7 @@ use crate::QiTechMachine;
 use crate::{MACHINE_WINDER_V1, VENDOR_QITECH};
 use api::SpoolAutomaticActionMode;
 use api::Winder2Namespace;
-use control_core::converters::angular_step_converter::AngularStepConverter;
+use control_core_legacy::converters::angular_step_converter::AngularStepConverter;
 use new::{PullerSpeedController, SpoolSpeedController, TensionArm, TraverseController};
 #[cfg(not(feature = "mock-machine"))]
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;

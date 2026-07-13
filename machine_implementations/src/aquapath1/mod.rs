@@ -10,7 +10,7 @@ use crate::{
     },
 };
 use api::{ToleranceState, ToleranceStates};
-use control_core::socketio::namespace::NamespaceCacheingLogic;
+use control_core_legacy::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::{
     machines::{MachineIdentification, MachineIdentificationUnique},
     units::{

@@ -57,7 +57,7 @@ impl MachineApi for ExtruderV2 {
 
     fn api_event_namespace(
         &mut self,
-    ) -> std::option::Option<control_core::socketio::namespace::Namespace> {
+    ) -> std::option::Option<control_core_legacy::socketio::namespace::Namespace> {
         self.namespace.namespace.clone()
     }
 

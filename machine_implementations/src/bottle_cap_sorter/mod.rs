@@ -129,7 +129,7 @@ impl ColorBoundsHsl {
 
 
 use api::{ConveyorBeltState, LiveValuesEvent, ModeState, Sorter1Events, Sorter1Namespace, StateEvent};
-use control_core::socketio::namespace::NamespaceCacheingLogic;
+use control_core_legacy::socketio::namespace::NamespaceCacheingLogic;
 use conveyer_belt_controller::ConveyorBeltController;
 use qitech_lib::{ethercat_hal::io::{digital_output::DigitalOutputDevice, stepper_velocity_el70x1::StepperVelocityEL70x1Device}, machines::{MachineIdentification, MachineIdentificationUnique}, units::{Length, Velocity, length::centimeter, time::second, velocity::meter_per_second}};
 use serde::{Deserialize, Serialize};

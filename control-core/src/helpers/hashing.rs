@@ -76,7 +76,7 @@ pub fn byte_folding_u8(bytes: &[u8]) -> u8 {
 /// # Examples
 ///
 /// ```
-/// use control_core::helpers::hashing::hash_djb2;
+/// use control_core_legacy::helpers::hashing::hash_djb2;
 ///
 /// let hash = hash_djb2(b"hello world");
 /// assert_ne!(hash, 0);

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use control_core::socketio::namespace::Namespace;
+use control_core_legacy::socketio::namespace::Namespace;
 use qitech_lib::{
     ethercat_hal::{
         EtherCATThreadChannel,

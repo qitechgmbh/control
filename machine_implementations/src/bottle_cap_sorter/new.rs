@@ -1,6 +1,6 @@
 use std::{collections::HashMap, time::Instant};
 use anyhow::Error;
-use control_core::converters::linear_step_converter::LinearStepConverter;
+use control_core_legacy::converters::linear_step_converter::LinearStepConverter;
 use qitech_lib::ethercat_hal::coe::ConfigurableDevice;
 use qitech_lib::ethercat_hal::devices::el7041_0052::EL7041_0052;
 use qitech_lib::ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;

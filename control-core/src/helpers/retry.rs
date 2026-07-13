@@ -19,7 +19,7 @@ use std::future::Future;
 /// # Examples
 ///
 /// ```rust
-/// use control_core::helpers::retry::retry_n_times;
+/// use control_core_legacy::helpers::retry::retry_n_times;
 ///
 /// let mut attempt = 0;
 /// let result = retry_n_times(3, || {
@@ -67,7 +67,7 @@ where
 /// # Examples
 ///
 /// ```rust
-/// use control_core::helpers::retry::retry_n_times_async;
+/// use control_core_legacy::helpers::retry::retry_n_times_async;
 /// use std::sync::Arc;
 /// use std::sync::atomic::{AtomicUsize, Ordering};
 ///
@@ -122,7 +122,7 @@ where
 /// # Examples
 ///
 /// ```rust
-/// use control_core::helpers::retry::retry_conditionally;
+/// use control_core_legacy::helpers::retry::retry_conditionally;
 ///
 /// let mut attempt = 0;
 /// let result = retry_conditionally(
@@ -177,7 +177,7 @@ where
 /// # Examples
 ///
 /// ```rust
-/// use control_core::helpers::retry::retry_conditionally_async;
+/// use control_core_legacy::helpers::retry::retry_conditionally_async;
 /// use std::sync::Arc;
 /// use std::sync::atomic::{AtomicUsize, Ordering};
 ///

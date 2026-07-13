@@ -1,4 +1,4 @@
-use control_core::socketio::{
+use control_core_legacy::socketio::{
     event::{Event, GenericEvent},
     namespace::{
         CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,

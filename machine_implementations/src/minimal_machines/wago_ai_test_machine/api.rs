@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use control_core::socketio::{
+use control_core_legacy::socketio::{
     event::{Event, GenericEvent},
     namespace::{
         CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
@@ -65,7 +65,7 @@ impl MachineApi for WagoAiTestMachine {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> Option<control_core::socketio::namespace::Namespace> {
+    fn api_event_namespace(&mut self) -> Option<control_core_legacy::socketio::namespace::Namespace> {
         self.namespace.namespace.clone()
     }
 }

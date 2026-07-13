@@ -3,7 +3,7 @@ use crate::winder2::{
     clamp_revolution::clamp_revolution_uom, filament_tension::FilamentTensionCalculator,
     puller_speed_controller::PullerSpeedController,
 };
-use control_core::{
+use control_core_legacy::{
     controllers::{
         first_degree_motion::angular_acceleration_speed_controller::AngularAccelerationSpeedController,
         second_degree_motion::acceleration_position_controller::MotionControllerError,

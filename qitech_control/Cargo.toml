@@ -6,8 +6,10 @@ edition = "2024"
 [dependencies]
 tokio = { version = "1.50.0", features = ["rt", "rt-multi-thread", "macros", "time","sync"] }
 qitech_lib = { workspace = true }
+
 machine_implementations = { path = "../machine_implementations" }
-control_core = { path = "../control-core" }
+control_core_legacy = { path = "../control-core" }
+
 bitvec = "1"
 tracing = "0.1.44"
 anyhow = "1.0.103"
@@ -19,6 +21,7 @@ erased-serde = "0.4.10"
 axum = { version = "0.8.8", features = ["macros"] }
 tokio-serial = "5.5.0"
 libc = "0.2.186"
+
 
 [features]
 default = []

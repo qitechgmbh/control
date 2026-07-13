@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use control_core::socketio::namespace::NamespaceCacheingLogic;
+use control_core_legacy::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::temperature_input::{TemperatureInput, TemperatureInputError};
 use smol::channel::{Receiver, Sender};
 

@@ -3,7 +3,7 @@ use crate::winder2::{
     minmax_spool_speed_controller::MinMaxSpoolSpeedController,
     puller_speed_controller::PullerSpeedController,
 };
-use control_core::controllers::second_degree_motion::acceleration_position_controller::MotionControllerError;
+use control_core_legacy::controllers::second_degree_motion::acceleration_position_controller::MotionControllerError;
 
 use super::tension_arm::TensionArm;
 use qitech_lib::units::f64::*;

@@ -10,7 +10,7 @@ use crate::{MachineMessage, extruder1::HeatingType};
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::{MachineApi, MachineValues};
-use control_core::socketio::{
+use control_core_legacy::socketio::{
     event::{Event, GenericEvent},
     namespace::{
         CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,

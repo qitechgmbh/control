@@ -1,6 +1,6 @@
 use bitvec::{order::Lsb0, slice::BitSlice};
-use control_core::modbus::modbus_serial_interface::ModbusSerialInterface;
-use control_core::modbus::{ModbusFunctionCode, ModbusRequest, ModbusResponse};
+use control_core_legacy::modbus::modbus_serial_interface::ModbusSerialInterface;
+use control_core_legacy::modbus::{ModbusFunctionCode, ModbusRequest, ModbusResponse};
 use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
 use qitech_lib::units::Frequency;
 use qitech_lib::units::electric_current::centiampere;

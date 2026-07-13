@@ -1,5 +1,5 @@
 use api::{StateEvent, WagoSerialMachineEvents, WagoSerialMachineNamespace};
-use control_core::socketio::namespace::NamespaceCacheingLogic;
+use control_core_legacy::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::serial_interface::SerialInterface;
 use smol::channel::{Receiver, Sender};
 use std::time::Instant;

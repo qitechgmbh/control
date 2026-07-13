@@ -1,5 +1,5 @@
 use super::{TRAVERSE_END_STOP_PORT, TRAVERSE_PORT};
-use control_core::converters::linear_step_converter::LinearStepConverter;
+use control_core_legacy::converters::linear_step_converter::LinearStepConverter;
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::angular_velocity::revolution_per_second;

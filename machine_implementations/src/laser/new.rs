@@ -8,6 +8,8 @@ use qitech_lib::{
     units::{ConstZero, Length, length::millimeter},
 };
 
+
+
 impl MachineNew for LaserMachine {
     fn new(hw: MachineHardware) -> Result<Self, Error> {
         println!("building laser machine");

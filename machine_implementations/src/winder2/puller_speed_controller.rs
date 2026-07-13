@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use control_core::{
+use control_core_legacy::{
     controllers::second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController,
     converters::linear_step_converter::LinearStepConverter,
 };

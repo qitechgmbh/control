@@ -462,7 +462,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "control_core"
+name = "control_core_legacy"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -1539,7 +1539,7 @@ dependencies = [
  "anyhow",
  "approx",
  "bitvec",
- "control_core",
+ "control_core_legacy",
  "euclid",
  "lazy_static",
  "postcard",
@@ -1942,7 +1942,7 @@ dependencies = [
  "anyhow",
  "axum",
  "bitvec",
- "control_core",
+ "control_core_legacy",
  "erased-serde",
  "libc",
  "machine_implementations",

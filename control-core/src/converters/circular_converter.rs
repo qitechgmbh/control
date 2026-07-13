@@ -13,7 +13,7 @@
 //! ## Examples
 //!
 //! ```rust
-//! use control_core::converters::circular_converter::CircularConverter;
+//! use control_core_legacy::converters::circular_converter::CircularConverter;
 //! use qitech_lib::units::{f64::{Length, Velocity}, length::meter, velocity::meter_per_second};
 //!
 //! let converter = CircularConverter::from_radius(Length::new::<meter>(0.1));

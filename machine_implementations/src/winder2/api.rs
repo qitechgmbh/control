@@ -1,7 +1,7 @@
 mod winder2_imports {
     pub use super::super::puller_speed_controller::{GearRatio, PullerRegulationMode};
     pub use super::super::{Winder2, Winder2Mode};
-    pub use control_core::socketio::{
+    pub use control_core_legacy::socketio::{
         event::{Event, GenericEvent},
         namespace::{
             CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,

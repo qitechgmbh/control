@@ -1,6 +1,6 @@
 use super::namespace_id::NamespaceId;
 use crate::SharedAppState;
-use control_core::socketio::namespace::Namespace;
+use control_core_legacy::socketio::namespace::Namespace;
 //use crate::apis::socketio::namespaces::Namespace;
 use machine_implementations::MachineMessage;
 use socketioxide::ParserConfig;

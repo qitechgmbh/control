@@ -1,5 +1,5 @@
 use crate::SharedAppState;
-use control_core::socketio::event::GenericEvent;
+use control_core_legacy::socketio::event::GenericEvent;
 use std::sync::Arc;
 use tracing::{error, info, instrument, trace};
 

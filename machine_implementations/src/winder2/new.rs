@@ -6,8 +6,8 @@ mod winder2_imports {
     pub use crate::winder2::spool_speed_controller::SpoolSpeedController;
     pub use crate::winder2::traverse_controller::TraverseController;
     pub use anyhow::Error;
-    pub use control_core::converters::angular_step_converter::AngularStepConverter;
-    pub use control_core::converters::linear_step_converter::LinearStepConverter;
+    pub use control_core_legacy::converters::angular_step_converter::AngularStepConverter;
+    pub use control_core_legacy::converters::linear_step_converter::LinearStepConverter;
 
     pub use qitech_lib::ethercat_hal::coe::ConfigurableDevice;
     pub use qitech_lib::ethercat_hal::devices::ek1100::EK1100;
