@@ -182,6 +182,8 @@ export type Aquapath1NamespaceStore = {
 
   left_total_energy: TimeSeries;
   right_total_energy: TimeSeries;
+  leftTotalEnergyKWh: TimeSeries;
+  rightTotalEnergyKWh: TimeSeries;
   totalEnergyKWh: TimeSeries;
   left_heating: boolean;
   right_heating: boolean;
@@ -219,6 +221,10 @@ const { initialTimeSeries: left_total_energy, insert: addLeftEnergy } =
   createTimeSeries();
 const { initialTimeSeries: right_total_energy, insert: addRightEnergy } =
   createTimeSeries();
+const { initialTimeSeries: leftTotalEnergyKWh, insert: addLeftEnergyKWh } =
+  createTimeSeries();
+const { initialTimeSeries: rightTotalEnergyKWh, insert: addRightEnergyKWh } =
+  createTimeSeries();
 const { initialTimeSeries: totalEnergyKWh, insert: addTotalEnergyKWh } =
   createTimeSeries();
 const {
@@ -251,6 +257,8 @@ export const createAquapath1NamespaceStore =
         combinedPower: combinedPower,
         left_total_energy: left_total_energy,
         right_total_energy: right_total_energy,
+        leftTotalEnergyKWh: leftTotalEnergyKWh,
+        rightTotalEnergyKWh: rightTotalEnergyKWh,
         totalEnergyKWh: totalEnergyKWh,
         left_heating: false,
         right_heating: false,
@@ -394,6 +402,14 @@ export function aquapath1MessageHandler(
           }),
           right_total_energy: addRightEnergy(state.right_total_energy, {
             value: liveValuesEvent.data.right_total_energy,
+            timestamp: event.ts,
+          }),
+          leftTotalEnergyKWh: addLeftEnergyKWh(state.leftTotalEnergyKWh, {
+            value: liveValuesEvent.data.left_total_energy / 1000,
+            timestamp: event.ts,
+          }),
+          rightTotalEnergyKWh: addRightEnergyKWh(state.rightTotalEnergyKWh, {
+            value: liveValuesEvent.data.right_total_energy / 1000,
             timestamp: event.ts,
           }),
           totalEnergyKWh: addTotalEnergyKWh(state.totalEnergyKWh, {

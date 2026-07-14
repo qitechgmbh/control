@@ -19,8 +19,8 @@ export function Aquapath1GraphPage() {
     right_temperature,
     left_power,
     right_power,
-    left_total_energy,
-    right_total_energy,
+    leftTotalEnergyKWh,
+    rightTotalEnergyKWh,
     targetLeftTemperature,
     targetRightTemperature,
   } = useAquapath1();
@@ -71,54 +71,14 @@ export function Aquapath1GraphPage() {
         />
         <EnergyGraph
           syncHook={syncHook}
-          rightReservoirEnergy={scaleTimeSeries(right_total_energy, 1 / 1000)}
-          leftReservoirEnergy={scaleTimeSeries(left_total_energy, 1 / 1000)}
+          rightReservoirEnergy={rightTotalEnergyKWh}
+          leftReservoirEnergy={leftTotalEnergyKWh}
           id={"aquapath_energy"}
         />
       </div>
       <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
     </Page>
   );
-}
-
-function scaleTimeSeries(
-  series: TimeSeries | null,
-  factor: number,
-): TimeSeries | null {
-  if (!series) {
-    return null;
-  }
-
-  return {
-    current: series.current
-      ? {
-          ...series.current,
-          value: series.current.value * factor,
-        }
-      : null,
-    short: {
-      ...series.short,
-      values: series.short.values.map((entry) =>
-        entry
-          ? {
-              ...entry,
-              value: entry.value * factor,
-            }
-          : entry,
-      ),
-    },
-    long: {
-      ...series.long,
-      values: series.long.values.map((entry) =>
-        entry
-          ? {
-              ...entry,
-              value: entry.value * factor,
-            }
-          : entry,
-      ),
-    },
-  };
 }
 
 export function FlowGraph({
