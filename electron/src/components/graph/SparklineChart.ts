@@ -131,7 +131,23 @@ export class SparklineChart {
           tooltip: { enabled: false },
         },
         scales: {
-          x: { type: "time", display: false, min: xMin, max: xMax },
+          x: {
+            // A hidden axis still runs Chart.js's tick pipeline every
+            // update: Scale.update() unconditionally formats every tick's
+            // label (line ~3936 in chart.js), and `type: "time"` routes
+            // that through the date-fns adapter's format() — real,
+            // measurable cost for labels nobody sees. `type: "linear"` is
+            // equivalent for positioning (x is already an epoch-ms number)
+            // but formats via cheap plain-number stringification instead.
+            // `ticks.display` also defaults to true independent of the
+            // scale's own `display: false`, so it has to be set here too
+            // or Chart.js still runs measureText()-based autoSkip sizing.
+            type: "linear",
+            display: false,
+            ticks: { display: false },
+            min: xMin,
+            max: xMax,
+          },
           y: {
             type: "linear",
             position: "right",
