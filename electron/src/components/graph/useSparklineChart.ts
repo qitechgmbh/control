@@ -5,7 +5,6 @@ import { SparklineChart, SparklineRange } from "./SparklineChart";
 type UseSparklineChartConfig = {
   newData: TimeSeries | null;
   width: number;
-  renderValue?: (value: number) => string;
   range?: SparklineRange;
 };
 
@@ -29,7 +28,6 @@ export function useSparklineChart(config: UseSparklineChartConfig) {
 
     chartRef.current = new SparklineChart(canvasRef.current, config.newData, {
       width: config.width,
-      renderValue: config.renderValue,
       range: config.range,
     });
 
@@ -38,13 +36,9 @@ export function useSparklineChart(config: UseSparklineChartConfig) {
       chartRef.current = null;
     };
     // Intentionally created once the first real data arrives, and never
-    // recreated on width/renderValue changes — those are pushed via the
-    // resize()/setRenderValue() effects below instead.
+    // recreated on width changes — those are pushed via the resize() effect
+    // below instead.
   }, [config.newData?.short?.timeWindow]);
-
-  useEffect(() => {
-    chartRef.current?.setRenderValue(config.renderValue);
-  }, [config.renderValue]);
 
   useEffect(() => {
     chartRef.current?.setRange(config.range);

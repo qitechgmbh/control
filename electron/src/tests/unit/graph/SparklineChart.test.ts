@@ -1,5 +1,8 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { SparklineChart, SPARKLINE_HEIGHT } from "@/components/graph/SparklineChart";
+import {
+  SparklineChart,
+  SPARKLINE_HEIGHT,
+} from "@/components/graph/SparklineChart";
 import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 
 function buildSeries(): TimeSeries {
@@ -63,14 +66,12 @@ test("pushLatest coalesces multiple calls within the same frame into one update"
   await new Promise((resolve) => requestAnimationFrame(resolve));
 });
 
-test("resize, setRenderValue, and destroy do not throw", () => {
+test("resize, setRange, and destroy do not throw", () => {
   const canvas = document.createElement("canvas");
   chart = new SparklineChart(canvas, buildSeries(), { width: 200 });
 
   expect(() => chart!.resize(300)).not.toThrow();
-  expect(() =>
-    chart!.setRenderValue((value) => `${value.toFixed(0)}u`),
-  ).not.toThrow();
+  expect(() => chart!.setRange({ min: 0, max: 100 })).not.toThrow();
   expect(() => chart!.destroy()).not.toThrow();
 
   // pushLatest after destroy is a no-op, not a crash.

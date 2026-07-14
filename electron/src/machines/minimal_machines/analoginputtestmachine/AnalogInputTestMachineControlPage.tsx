@@ -43,11 +43,7 @@ export function AnalogInputTestMachineControl(): React.JSX.Element {
         </ControlCard>
         <ControlCard title="Results">
           <div className="flex flex-row">
-            <MiniGraph
-              newData={seriesData}
-              width={500}
-              renderValue={(v) => v.toFixed(2)}
-            ></MiniGraph>
+            <MiniGraph newData={seriesData} width={500}></MiniGraph>
             <div className="flex flex-col justify-center">
               {seriesData.current?.value.toFixed(2)}mA
             </div>

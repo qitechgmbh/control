@@ -6,7 +6,6 @@ import { useSparklineChart } from "./useSparklineChart";
 type MiniGraphProps = {
   newData: TimeSeries | null;
   width: number;
-  renderValue?: (value: number) => string;
   /**
    * Fixed Y-axis bounds (e.g. a sensor's physical 0-to-rated-max). When
    * omitted, the graph auto-scales to the visible data as before.
@@ -14,16 +13,10 @@ type MiniGraphProps = {
   range?: SparklineRange;
 };
 
-export function MiniGraph({
-  newData,
-  width,
-  renderValue,
-  range,
-}: MiniGraphProps) {
+export function MiniGraph({ newData, width, range }: MiniGraphProps) {
   const { canvasRef } = useSparklineChart({
     newData,
     width,
-    renderValue,
     range,
   });
 

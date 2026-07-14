@@ -14,7 +14,6 @@ export type SparklineRange = { min: number; max: number };
 
 type SparklineChartInit = {
   width: number;
-  renderValue?: (value: number) => string;
   /**
    * Fixed Y-axis bounds. When set, the scale never recomputes from data:
    * no per-update min/max scan and no rescaling redraw, which matters for
@@ -48,7 +47,6 @@ function toPoints(timestamps: number[], values: number[]): SparklinePoint[] {
  */
 export class SparklineChart {
   #chart: Chart<"line", SparklinePoint[]>;
-  #renderValue?: (value: number) => string;
   #fixedRange?: SparklineRange;
   #lastUpdateTimestamp = 0;
   #lastDataHash = "";
@@ -63,7 +61,6 @@ export class SparklineChart {
     init: SparklineChartInit,
   ) {
     ensureChartJsRegistered();
-    this.#renderValue = init.renderValue;
     this.#fixedRange = init.range;
 
     const short = series.short;
@@ -142,22 +139,16 @@ export class SparklineChart {
             max: yMax,
             border: { color: "#ccc", width: 0.5 },
             grid: { color: "#ccc", lineWidth: 0.5 },
-            ticks: {
-              callback: (value) => this.#formatTick(Number(value)),
-            },
+            // Tick labels are hidden: the live value is already shown as a
+            // large number next to every mini graph, and Chart.js re-measures
+            // tick label text via canvas measureText() on every single
+            // update() call (uncached), which dominated CPU time once many
+            // of these charts redraw live in parallel.
+            ticks: { display: false },
           },
         },
       },
     };
-  }
-
-  #formatTick(value: number): string {
-    return this.#renderValue ? this.#renderValue(value) : value.toFixed(1);
-  }
-
-  setRenderValue(renderValue: ((value: number) => string) | undefined): void {
-    this.#renderValue = renderValue;
-    this.#chart.update("none");
   }
 
   setRange(range: SparklineRange | undefined): void {

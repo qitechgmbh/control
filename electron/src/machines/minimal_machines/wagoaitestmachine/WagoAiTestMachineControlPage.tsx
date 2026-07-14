@@ -42,11 +42,7 @@ export function WagoAiTestMachineControl(): React.JSX.Element {
         </ControlCard>
         <ControlCard title="Analog Input 1 (4-20mA)">
           <div className="flex flex-row">
-            <MiniGraph
-              newData={seriesData.ai1}
-              width={400}
-              renderValue={(v) => v.toFixed(2)}
-            ></MiniGraph>
+            <MiniGraph newData={seriesData.ai1} width={400}></MiniGraph>
             <div className="ml-4 flex flex-col justify-center">
               <div>{seriesData.ai1.current?.value.toFixed(2)} mA</div>
               {state.wiringErrors?.[0] && (
@@ -59,11 +55,7 @@ export function WagoAiTestMachineControl(): React.JSX.Element {
         </ControlCard>
         <ControlCard title="Analog Input 2 (4-20mA)">
           <div className="flex flex-row">
-            <MiniGraph
-              newData={seriesData.ai2}
-              width={400}
-              renderValue={(v) => v.toFixed(2)}
-            ></MiniGraph>
+            <MiniGraph newData={seriesData.ai2} width={400}></MiniGraph>
             <div className="ml-4 flex flex-col justify-center">
               <div>{seriesData.ai2.current?.value.toFixed(2)} mA</div>
               {state.wiringErrors?.[1] && (
@@ -76,11 +68,7 @@ export function WagoAiTestMachineControl(): React.JSX.Element {
         </ControlCard>
         <ControlCard title="Analog Input 3 (4-20mA)">
           <div className="flex flex-row">
-            <MiniGraph
-              newData={seriesData.ai3}
-              width={400}
-              renderValue={(v) => v.toFixed(2)}
-            ></MiniGraph>
+            <MiniGraph newData={seriesData.ai3} width={400}></MiniGraph>
             <div className="ml-4 flex flex-col justify-center">
               <div>{seriesData.ai3.current?.value.toFixed(2)} mA</div>
               {state.wiringErrors?.[2] && (
@@ -93,11 +81,7 @@ export function WagoAiTestMachineControl(): React.JSX.Element {
         </ControlCard>
         <ControlCard title="Analog Input 4 (4-20mA)">
           <div className="flex flex-row">
-            <MiniGraph
-              newData={seriesData.ai4}
-              width={400}
-              renderValue={(v) => v.toFixed(2)}
-            ></MiniGraph>
+            <MiniGraph newData={seriesData.ai4} width={400}></MiniGraph>
             <div className="ml-4 flex flex-col justify-center">
               <div>{seriesData.ai4.current?.value.toFixed(2)} mA</div>
               {state.wiringErrors?.[3] && (
