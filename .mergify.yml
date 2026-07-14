@@ -1,0 +1,10 @@
+pull_request_rules:
+  - name: Automatic merge
+    description: Merge updates
+    conditions:
+      - author = dependabot[bot]
+      - files = "flake.lock"
+      - check-success = "nix-check"
+    actions:
+      review:
+      merge:
