@@ -56,6 +56,9 @@ export async function restartBackendIntoPreop(): Promise<{
 export async function exportLogs(): Promise<{
   success: boolean;
   error?: string;
+  filePath?: string;
+  isRemovable?: boolean;
+  mountPath?: string;
 }> {
   try {
     return await window.troubleshoot.exportLogs();

@@ -6,6 +6,7 @@ import {
   TROUBLESHOOT_RESTART_BACKEND_INTO_PREOP,
   TROUBLESHOOT_EXPORT_LOGS,
 } from "./troubleshoot-channels";
+import { getRemovableVolumeRoot } from "../export/removable-media";
 
 import fs from "fs";
 import path from "path";
@@ -110,23 +111,33 @@ export function addTroubleshootEventListeners() {
 
       // 2. Wrap the exec in a typed Promise to match the backend restart pattern
       // This resolves the TS2794 error by explicitly defining the return type
-      return await new Promise<{ success: boolean; error?: string }>(
-        (resolve) => {
-          // Note: journalctl -xb usually requires sudo or journal group membership
-          exec(`journalctl -xb > "${filePath}"`, (error, stdout, stderr) => {
-            if (error) {
-              console.error("Exec error:", error);
-              resolve({
-                success: false,
-                error: error instanceof Error ? error.message : String(error),
-              });
-              return;
-            }
+      return await new Promise<{
+        success: boolean;
+        error?: string;
+        filePath?: string;
+        isRemovable?: boolean;
+        mountPath?: string;
+      }>((resolve) => {
+        // Note: journalctl -xb usually requires sudo or journal group membership
+        exec(`journalctl -xb > "${filePath}"`, (error, stdout, stderr) => {
+          if (error) {
+            console.error("Exec error:", error);
+            resolve({
+              success: false,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            return;
+          }
 
-            resolve({ success: true });
+          const mountPath = getRemovableVolumeRoot(filePath);
+          resolve({
+            success: true,
+            filePath,
+            isRemovable: mountPath !== null,
+            mountPath: mountPath ?? undefined,
           });
-        },
-      );
+        });
+      });
     } catch (error) {
       console.error("Failed to export logs: ", error);
       return {
