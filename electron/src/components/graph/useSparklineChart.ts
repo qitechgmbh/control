@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
 import { TimeSeries } from "@/lib/timeseries";
-import { SparklineChart } from "./SparklineChart";
+import { SparklineChart, SparklineRange } from "./SparklineChart";
 
 type UseSparklineChartConfig = {
   newData: TimeSeries | null;
   width: number;
   renderValue?: (value: number) => string;
+  range?: SparklineRange;
 };
 
 /**
@@ -29,6 +30,7 @@ export function useSparklineChart(config: UseSparklineChartConfig) {
     chartRef.current = new SparklineChart(canvasRef.current, config.newData, {
       width: config.width,
       renderValue: config.renderValue,
+      range: config.range,
     });
 
     return () => {
@@ -43,6 +45,10 @@ export function useSparklineChart(config: UseSparklineChartConfig) {
   useEffect(() => {
     chartRef.current?.setRenderValue(config.renderValue);
   }, [config.renderValue]);
+
+  useEffect(() => {
+    chartRef.current?.setRange(config.range);
+  }, [config.range?.min, config.range?.max]);
 
   useEffect(() => {
     chartRef.current?.resize(config.width);

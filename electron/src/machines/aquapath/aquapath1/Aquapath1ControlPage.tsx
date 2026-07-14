@@ -11,6 +11,16 @@ import { Icon } from "@/components/Icon";
 import { Label } from "@/control/Label";
 import { roundToDecimals } from "@/lib/decimal";
 
+// Fixed mini-graph Y-axis bounds, derived from hardware limits in
+// machine_implementations/src/aquapath1/controller.rs (max_flow,
+// heating_element_power, max_temperature) with a small headroom margin so
+// the trace never touches the axis edge. Fixed instead of auto-scaled so
+// the graphs don't rescan/rescale on every live tick.
+const FLOW_RANGE = { min: 0, max: 12 }; // hardware cap: 10 l/min
+const TEMPERATURE_RANGE = { min: 0, max: 85 }; // hardware cap: 80 C
+const HEATING_POWER_RANGE = { min: 0, max: 750 }; // rated: 700 W per side
+const TOTAL_HEATING_POWER_RANGE = { min: 0, max: 1500 }; // 2x rated 700 W
+
 export function Aquapath1ControlPage() {
   const {
     state,
@@ -85,6 +95,7 @@ export function Aquapath1ControlPage() {
                 unit="l/min"
                 timeseries={left_flow}
                 renderValue={(value) => value.toFixed(1)}
+                range={FLOW_RANGE}
               />
             </div>
 
@@ -94,6 +105,7 @@ export function Aquapath1ControlPage() {
                 unit="C"
                 timeseries={left_temperature}
                 renderValue={(value) => value.toFixed(1)}
+                range={TEMPERATURE_RANGE}
               />
             </div>
 
@@ -163,6 +175,7 @@ export function Aquapath1ControlPage() {
                     100
                   ).toFixed(1)
                 }
+                range={{ min: 0, max: leftReservoirMaxRevolutions }}
               />
             </div>
 
@@ -172,6 +185,7 @@ export function Aquapath1ControlPage() {
                 unit="W"
                 timeseries={left_power}
                 renderValue={(value) => roundToDecimals(value, 0)}
+                range={HEATING_POWER_RANGE}
               />
             </div>
 
@@ -212,6 +226,7 @@ export function Aquapath1ControlPage() {
                 unit="l/min"
                 timeseries={right_flow}
                 renderValue={(value) => value.toFixed(1)}
+                range={FLOW_RANGE}
               />
             </div>
 
@@ -221,6 +236,7 @@ export function Aquapath1ControlPage() {
                 unit="C"
                 timeseries={right_temperature}
                 renderValue={(value) => value.toFixed(1)}
+                range={TEMPERATURE_RANGE}
               />
             </div>
 
@@ -290,6 +306,7 @@ export function Aquapath1ControlPage() {
                     100
                   ).toFixed(1)
                 }
+                range={{ min: 0, max: rightReservoirMaxRevolutions }}
               />
             </div>
 
@@ -299,6 +316,7 @@ export function Aquapath1ControlPage() {
                 unit="W"
                 timeseries={right_power}
                 renderValue={(value) => roundToDecimals(value, 0)}
+                range={HEATING_POWER_RANGE}
               />
             </div>
 
@@ -360,6 +378,7 @@ export function Aquapath1ControlPage() {
             unit="W"
             renderValue={(value) => roundToDecimals(value, 0)}
             timeseries={combinedPower}
+            range={TOTAL_HEATING_POWER_RANGE}
           />
           <TimeSeriesValueNumeric
             label="Total Energy Consumption"

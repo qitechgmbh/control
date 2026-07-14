@@ -9,6 +9,7 @@ import {
 import { Label } from "./Label";
 import { TimeSeries } from "@/lib/timeseries";
 import { MiniGraph } from "@/components/graph/MiniGraph";
+import { SparklineRange } from "@/components/graph/SparklineChart";
 import {
   useContainerDimensions,
   useMaxContainerMaxDimension,
@@ -20,6 +21,11 @@ type Props = {
   timeseries: TimeSeries;
   icon?: IconName;
   renderValue?: (value: number) => string;
+  /**
+   * Fixed Y-axis bounds for the mini graph (e.g. a sensor's physical
+   * 0-to-rated-max). When omitted, the graph auto-scales to visible data.
+   */
+  range?: SparklineRange;
 };
 
 function _TimeSeriesValue({
@@ -28,6 +34,7 @@ function _TimeSeriesValue({
   icon,
   label,
   renderValue,
+  range,
 }: Props) {
   const value = timeseries.current?.value;
 
@@ -68,6 +75,7 @@ function _TimeSeriesValue({
           newData={timeseries}
           width={width}
           renderValue={renderValue}
+          range={range}
         />
       </div>
     </div>

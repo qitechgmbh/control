@@ -1,15 +1,28 @@
 import { Chart, type ChartConfiguration } from "chart.js";
-import { getSeriesMinMax, seriesToUPlotData, TimeSeries } from "@/lib/timeseries";
+import {
+  getSeriesMinMax,
+  seriesToUPlotData,
+  TimeSeries,
+} from "@/lib/timeseries";
 import { ensureChartJsRegistered } from "./chartSetup";
 
 export const SPARKLINE_HEIGHT = 64;
 
 type SparklinePoint = { x: number; y: number };
 type MutableScaleRange = { min?: number; max?: number };
+export type SparklineRange = { min: number; max: number };
 
 type SparklineChartInit = {
   width: number;
   renderValue?: (value: number) => string;
+  /**
+   * Fixed Y-axis bounds. When set, the scale never recomputes from data:
+   * no per-update min/max scan and no rescaling redraw, which matters for
+   * mini graphs that redraw on every live tick. Pass the machine's known
+   * physical range (e.g. a sensor's 0-to-rated-max) rather than leaving the
+   * scale to auto-fit noisy live data.
+   */
+  range?: SparklineRange;
 };
 
 function hashSeries(timestamps: number[], values: number[]): string {
@@ -36,6 +49,7 @@ function toPoints(timestamps: number[], values: number[]): SparklinePoint[] {
 export class SparklineChart {
   #chart: Chart<"line", SparklinePoint[]>;
   #renderValue?: (value: number) => string;
+  #fixedRange?: SparklineRange;
   #lastUpdateTimestamp = 0;
   #lastDataHash = "";
   #lastMinMax = { min: 0, max: 0 };
@@ -50,17 +64,28 @@ export class SparklineChart {
   ) {
     ensureChartJsRegistered();
     this.#renderValue = init.renderValue;
+    this.#fixedRange = init.range;
 
     const short = series.short;
     const [timestamps, values] = seriesToUPlotData(short);
-    const { min: minY, max: maxY } = getSeriesMinMax(short);
-    const range = maxY - minY || 1;
     const latestTimestamp =
       timestamps.length > 0 ? timestamps[timestamps.length - 1] : Date.now();
     const cutoff = latestTimestamp - short.timeWindow;
 
+    let yMin: number;
+    let yMax: number;
+    if (this.#fixedRange) {
+      yMin = this.#fixedRange.min;
+      yMax = this.#fixedRange.max;
+    } else {
+      const { min: minY, max: maxY } = getSeriesMinMax(short);
+      const dataRange = maxY - minY || 1;
+      this.#lastMinMax = { min: minY, max: maxY };
+      yMin = minY - dataRange * 0.1;
+      yMax = maxY + dataRange * 0.1;
+    }
+
     this.#lastDataHash = hashSeries(timestamps, values);
-    this.#lastMinMax = { min: minY, max: maxY };
     this.#lastUpdateTimestamp = series.current?.timestamp ?? 0;
 
     this.#chart = new Chart(
@@ -69,8 +94,8 @@ export class SparklineChart {
         toPoints(timestamps, values),
         cutoff,
         latestTimestamp,
-        minY - range * 0.1,
-        maxY + range * 0.1,
+        yMin,
+        yMax,
       ),
     );
     this.#chart.resize(init.width, SPARKLINE_HEIGHT);
@@ -135,6 +160,22 @@ export class SparklineChart {
     this.#chart.update("none");
   }
 
+  setRange(range: SparklineRange | undefined): void {
+    if (
+      range?.min === this.#fixedRange?.min &&
+      range?.max === this.#fixedRange?.max
+    ) {
+      return;
+    }
+    this.#fixedRange = range;
+    if (range) {
+      const yScale = this.#chart.options.scales!.y as MutableScaleRange;
+      yScale.min = range.min;
+      yScale.max = range.max;
+      this.#chart.update("none");
+    }
+  }
+
   /** Call whenever the live tick (newData.current.timestamp) advances. */
   pushLatest(series: TimeSeries): void {
     if (this.#destroyed) return;
@@ -163,15 +204,9 @@ export class SparklineChart {
     const dataHash = hashSeries(timestamps, values);
     if (dataHash === this.#lastDataHash) return;
 
-    const { min: minY, max: maxY } = getSeriesMinMax(short);
-    const scalesChanged =
-      minY !== this.#lastMinMax.min || maxY !== this.#lastMinMax.max;
-
     this.#lastUpdateTimestamp = current.timestamp;
     this.#lastDataHash = dataHash;
-    this.#lastMinMax = { min: minY, max: maxY };
 
-    const range = maxY - minY || 1;
     const cutoff = current.timestamp - short.timeWindow;
 
     this.#chart.data.datasets[0].data = toPoints(timestamps, values);
@@ -181,10 +216,20 @@ export class SparklineChart {
     xScale.min = cutoff;
     xScale.max = current.timestamp;
 
-    if (scalesChanged) {
-      const yScale = scales.y as MutableScaleRange;
-      yScale.min = minY - range * 0.1;
-      yScale.max = maxY + range * 0.1;
+    // Fixed-range charts skip the min/max scan and scale rewrite below
+    // entirely -- that's the performance win over auto-scaling.
+    if (!this.#fixedRange) {
+      const { min: minY, max: maxY } = getSeriesMinMax(short);
+      const scalesChanged =
+        minY !== this.#lastMinMax.min || maxY !== this.#lastMinMax.max;
+
+      if (scalesChanged) {
+        this.#lastMinMax = { min: minY, max: maxY };
+        const dataRange = maxY - minY || 1;
+        const yScale = scales.y as MutableScaleRange;
+        yScale.min = minY - dataRange * 0.1;
+        yScale.max = maxY + dataRange * 0.1;
+      }
     }
 
     this.#chart.update("none");

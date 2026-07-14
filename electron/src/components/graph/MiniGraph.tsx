@@ -1,16 +1,31 @@
 import React from "react";
 import { TimeSeries } from "@/lib/timeseries";
-import { SPARKLINE_HEIGHT } from "./SparklineChart";
+import { SPARKLINE_HEIGHT, SparklineRange } from "./SparklineChart";
 import { useSparklineChart } from "./useSparklineChart";
 
 type MiniGraphProps = {
   newData: TimeSeries | null;
   width: number;
   renderValue?: (value: number) => string;
+  /**
+   * Fixed Y-axis bounds (e.g. a sensor's physical 0-to-rated-max). When
+   * omitted, the graph auto-scales to the visible data as before.
+   */
+  range?: SparklineRange;
 };
 
-export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
-  const { canvasRef } = useSparklineChart({ newData, width, renderValue });
+export function MiniGraph({
+  newData,
+  width,
+  renderValue,
+  range,
+}: MiniGraphProps) {
+  const { canvasRef } = useSparklineChart({
+    newData,
+    width,
+    renderValue,
+    range,
+  });
 
   return (
     <div
