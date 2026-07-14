@@ -95,7 +95,7 @@ jobs:
       - name: Format
         run: nix fmt -- --fail-on-change
 
-  check:
+  nix-check:
     runs-on: ubuntu-latest
 
     steps:
