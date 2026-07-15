@@ -99,27 +99,6 @@ fn short_type_name<T: ?Sized>() -> &'static str {
 }
 
 impl MachineHardware {
-    /// Describes which EtherCAT devices (role + device address) are currently
-    /// assigned to this machine, for use in "device not found" error messages.
-    fn assigned_ethercat_roles_summary(&self) -> String {
-        let roles: Vec<String> = self
-            .hw
-            .iter()
-            .filter_map(|hw| match hw {
-                Hardware::Ethercat(identified) => Some(format!(
-                    "role {} (device address {})",
-                    identified.ident.role, identified.ident.device_address
-                )),
-                Hardware::Modbus(_) => None,
-            })
-            .collect();
-        if roles.is_empty() {
-            "none".to_string()
-        } else {
-            roles.join(", ")
-        }
-    }
-
     pub fn try_get_ethercat_device_by_index<T>(
         &self,
         index: usize,
@@ -142,8 +121,13 @@ impl MachineHardware {
                 ));
             }
         };
-        downcast_rc_refcell::<T>(identified_ethercat.hw.clone())
-            .with_context(|| format!("device at index {} is not a {}", index, short_type_name::<T>()))
+        downcast_rc_refcell::<T>(identified_ethercat.hw.clone()).with_context(|| {
+            format!(
+                "device at index {} is not a {}",
+                index,
+                short_type_name::<T>()
+            )
+        })
     }
 
     pub fn try_get_ethercat_meta_by_role(&self, role: u16) -> Result<u16, anyhow::Error> {
@@ -160,9 +144,8 @@ impl MachineHardware {
             }
         }
         Err(anyhow::anyhow!(
-            "missing EtherCAT device: no device with role {} is assigned to this machine (assigned devices: {})",
-            role,
-            self.assigned_ethercat_roles_summary()
+            "missing EtherCAT device: no device with role {} is assigned to this machine",
+            role
         ))
     }
 
@@ -225,10 +208,9 @@ impl MachineHardware {
             }
         }
         Err(anyhow::anyhow!(
-            "missing EtherCAT device: no device with role {} ({}) is assigned to this machine (assigned devices: {})",
+            "missing EtherCAT device: no device with role {} ({}) is assigned to this machine",
             role,
-            short_type_name::<T>(),
-            self.assigned_ethercat_roles_summary()
+            short_type_name::<T>()
         ))
     }
 
@@ -259,10 +241,9 @@ impl MachineHardware {
             }
         }
         Err(anyhow::anyhow!(
-            "missing EtherCAT device: no device with role {} ({}) is assigned to this machine (assigned devices: {})",
+            "missing EtherCAT device: no device with role {} ({}) is assigned to this machine",
             role,
-            short_type_name::<T>(),
-            self.assigned_ethercat_roles_summary()
+            short_type_name::<T>()
         ))
     }
 }
