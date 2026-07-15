@@ -67,17 +67,19 @@ interface UpdateContext {
   clearToken: () => Promise<{ success: boolean }>;
 }
 
+interface SaveFileResult {
+  success: boolean;
+  error?: string;
+  filePath?: string;
+  isRemovable?: boolean;
+  mountPath?: string;
+}
+
 interface TroubleshootContext {
   rebootHmi: () => Promise<{ success: boolean; error?: string }>;
   restartBackend: () => Promise<{ success: boolean; error?: string }>;
   restartBackendIntoPreop: () => Promise<{ success: boolean; error?: string }>;
-  exportLogs: () => Promise<{
-    success: boolean;
-    error?: string;
-    filePath?: string;
-    isRemovable?: boolean;
-    mountPath?: string;
-  }>;
+  exportLogs: () => Promise<SaveFileResult>;
 }
 
 interface FileExportContext {
@@ -86,13 +88,7 @@ interface FileExportContext {
     filters?: { name: string; extensions: string[] }[];
     content: string;
     encoding: "utf8" | "base64";
-  }) => Promise<{
-    success: boolean;
-    error?: string;
-    filePath?: string;
-    isRemovable?: boolean;
-    mountPath?: string;
-  }>;
+  }) => Promise<SaveFileResult>;
   ejectUsb: (
     mountPath: string,
   ) => Promise<{ success: boolean; error?: string }>;

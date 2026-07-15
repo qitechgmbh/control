@@ -7,20 +7,11 @@
  * @see src/helpers/troubleshoot_helpers.ts for the same pattern
  */
 
-export type SaveFileParams = {
-  suggestedName: string;
-  filters?: { name: string; extensions: string[] }[];
-  content: string;
-  encoding: "utf8" | "base64";
-};
-
-export type SaveFileResult = {
-  success: boolean;
-  error?: string;
-  filePath?: string;
-  isRemovable?: boolean;
-  mountPath?: string;
-};
+import type {
+  SaveFileParams,
+  SaveFileResult,
+} from "@/helpers/ipc/export/export-channels";
+export type { SaveFileParams, SaveFileResult };
 
 export async function saveFile(
   params: SaveFileParams,

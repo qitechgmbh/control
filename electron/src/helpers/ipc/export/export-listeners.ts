@@ -1,22 +1,12 @@
 import { ipcMain, dialog } from "electron";
 import fs from "fs";
-import { EXPORT_SAVE_FILE, EXPORT_EJECT_USB } from "./export-channels";
+import {
+  EXPORT_SAVE_FILE,
+  EXPORT_EJECT_USB,
+  SaveFileParams,
+  SaveFileResult,
+} from "./export-channels";
 import { getRemovableVolumeRoot, ejectVolume } from "./removable-media";
-
-type SaveFileParams = {
-  suggestedName: string;
-  filters?: { name: string; extensions: string[] }[];
-  content: string;
-  encoding: "utf8" | "base64";
-};
-
-type SaveFileResult = {
-  success: boolean;
-  error?: string;
-  filePath?: string;
-  isRemovable?: boolean;
-  mountPath?: string;
-};
 
 export function addExportEventListeners() {
   ipcMain.handle(

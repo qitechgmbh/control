@@ -183,18 +183,14 @@ export class ExcelExporter {
       .toLowerCase()
       .replace(/\s+/g, "_")}_export_${exportTimestamp}.xlsx`;
 
-    const result = await saveFile({
+    // Errors are surfaced via the returned result (ExportResultDialog),
+    // not an alert — the caller already renders that dialog on failure.
+    return await saveFile({
       suggestedName: filename,
       filters: [{ name: "Excel Files", extensions: ["xlsx"] }],
       content: bytesToBase64(new Uint8Array(buffer)),
       encoding: "base64",
     });
-
-    if (!result.success) {
-      alert(`Error exporting data to Excel: ${result.error}`);
-    }
-
-    return result;
   }
 }
 

@@ -7,6 +7,7 @@ import {
   TROUBLESHOOT_EXPORT_LOGS,
 } from "./troubleshoot-channels";
 import { getRemovableVolumeRoot } from "../export/removable-media";
+import { SaveFileResult } from "../export/export-channels";
 
 import fs from "fs";
 import path from "path";
@@ -109,15 +110,8 @@ export function addTroubleshootEventListeners() {
         return { success: false, error: "Export cancelled by user" };
       }
 
-      // 2. Wrap the exec in a typed Promise to match the backend restart pattern
-      // This resolves the TS2794 error by explicitly defining the return type
-      return await new Promise<{
-        success: boolean;
-        error?: string;
-        filePath?: string;
-        isRemovable?: boolean;
-        mountPath?: string;
-      }>((resolve) => {
+      // Wrap the exec in a typed Promise to match the backend restart pattern
+      return await new Promise<SaveFileResult>((resolve) => {
         // Note: journalctl -xb usually requires sudo or journal group membership
         exec(`journalctl -xb > "${filePath}"`, (error, stdout, stderr) => {
           if (error) {
