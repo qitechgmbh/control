@@ -273,11 +273,12 @@ fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainSt
                 main_state.machines.push(machine);
             }
             Err(e) => {
+                let message = format!("{:#}", e);
                 if !main_state.machine_errors.contains_key(key) {
                     let _res =
-                        state.add_machine_sync(key.clone().into(), Some(e.to_string()), None);
+                        state.add_machine_sync(key.clone().into(), Some(message.clone()), None);
                 }
-                main_state.machine_errors.insert(*key, e.to_string());
+                main_state.machine_errors.insert(*key, message);
             }
         };
     }
