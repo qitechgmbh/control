@@ -1,0 +1,28 @@
+name: Staging backmerge
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */2 * * 0'
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  electron:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          ref: 'staging'
+
+      - name: Merge master into staging
+        run: git merge master
+
+      - name: Push to staging
+        run: git push origin staging
