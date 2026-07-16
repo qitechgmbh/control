@@ -3,7 +3,7 @@
   buildNpmPackage,
   electron,
   importNpmLock,
-  nodejs_22,
+  nodejs_24,
 }:
 
 buildNpmPackage (finalAttrs: {
@@ -15,7 +15,7 @@ buildNpmPackage (finalAttrs: {
 
   ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
 
-  nodejs = nodejs_22;
+  nodejs = nodejs_24;
   npmFlags = [
     "--no-audit"
     "--no-fund"
