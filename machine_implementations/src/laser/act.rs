@@ -1,13 +1,11 @@
-use super::LaserMachine;
-use crate::{MachineApi, laser::LaserData};
-use qitech_lib::machines::{
-    Machine, MachineDataRegistry, MachineError, MachineIdentificationUnique,
-};
 use std::time::{Duration, Instant};
+use control_core::{MachineIdentificationUnique, machine::{Machine, MachineError}};
+use super::LaserMachine;
+use crate::MachineApi;
 
 const REG_ERR_MESSAGE: &str = "Laser Couldnt write to the MachineDataRegistry";
 impl Machine for LaserMachine {
-    fn act(&mut self, reg: Option<&mut MachineDataRegistry>) -> Result<(), MachineError> {
+    fn act(&mut self) -> Result<(), MachineError> {
         let now: Instant = std::time::Instant::now();
         let msg = self.api_receiver.try_recv();
         match msg {
@@ -34,26 +32,8 @@ impl Machine for LaserMachine {
             None => (),
         };
 
-        match reg {
-            Some(reg) => {
-                let data = LaserData {
-                    live_values: self.get_live_values(),
-                    state: self.get_state(),
-                };
-                let res = reg.store(self.machine_identification_unique, &data);
-                if res.is_err() {
-                    self.error = Some(MachineError::RecoverableFailure(
-                        REG_ERR_MESSAGE.to_string(),
-                    ));
-                }
-            }
-            None => (),
-        };
-
         Ok(())
     }
-
-    fn react(&mut self, _registry: &MachineDataRegistry) {}
 
     fn get_identification(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique

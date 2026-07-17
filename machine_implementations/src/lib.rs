@@ -1,4 +1,5 @@
 use anyhow::Result;
+use control_core::{MachineIdentificationUnique, machine::Machine};
 use control_core_legacy::socketio::namespace::Namespace;
 use qitech_lib::{
     ethercat_hal::{
@@ -6,7 +7,6 @@ use qitech_lib::{
         devices::{EthercatDevice, downcast_rc_refcell},
         machine_ident_read::MachineDeviceInfo,
     },
-    machines::{Machine, MachineIdentificationUnique},
     modbus::ModbusDevice,
 };
 use serde::Serialize;

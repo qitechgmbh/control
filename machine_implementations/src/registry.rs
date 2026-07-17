@@ -11,7 +11,7 @@ pub type MachineNewClosure =
     Box<dyn Fn(MachineHardware) -> Result<Box<dyn QiTechMachine>, Error> + Send + Sync>;
 
 pub struct MachineRegistry {
-    type_map: HashMap<TypeId, (Vec<MachineIdentification>, MachineNewClosure)>,
+    
 }
 
 impl Default for MachineRegistry {

@@ -403,6 +403,7 @@ fn main_logic() {
 
     let interface = find_ethercat_interface(&shared_state);
     let eth_control = optimized_ethercat_init(&interface);
+    
     shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
     let mut eth_control: Option<EtherCATControl<TripleBufConsumer, Arc<Mailbox>>> =
         Some(eth_control);
@@ -483,6 +484,7 @@ fn main_logic() {
 
         let machines_to_remove =
             run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
+            
         if machines_to_remove.is_some() {
             remove_machines(&mut main_state, state.clone(), machines_to_remove);
         }
