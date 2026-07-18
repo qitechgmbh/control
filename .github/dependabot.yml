@@ -21,13 +21,11 @@ updates:
           - "version-update:semver-minor"
 
   - package-ecosystem: "github-actions"
-    target-branch: staging
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
 
   - package-ecosystem: "nix"
-    target-branch: staging
     directory: "/"
     schedule:
       interval: "cron"
