@@ -112,7 +112,9 @@ export function createColumns(
     {
       accessorKey: "eeprom",
       header: "Edit Assignment",
-      cell: (row) => <DeviceEepromDialog device={row.row.original} />,
+      cell: (row) => (
+        <DeviceEepromDialog device={row.row.original} disabled={!isPreop} />
+      ),
     },
   ];
 }
