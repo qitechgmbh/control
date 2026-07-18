@@ -22,7 +22,7 @@ jobs:
           ref: 'staging'
 
       - name: Merge master into staging
-        run: git merge master
+        run: git merge origin/master
 
       - name: Push to staging
         run: git push origin staging
