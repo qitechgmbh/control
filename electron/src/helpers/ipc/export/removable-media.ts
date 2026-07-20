@@ -93,13 +93,18 @@ export async function ejectVolume(
     return await new Promise<{ success: boolean; error?: string }>(
       (resolve) => {
         const proc = spawn("sudo", ["umount", mountPath], { shell: false });
-        proc.on("close", (code) => {
-          if (code === 0) resolve({ success: true });
-          else
+        proc.on("close", async (code) => {
+          if (code === 0) {
+            resolve({ success: true });
+          } else {
+            // Last-resort: sync twice to flush pending writes
+            await run("sync");
+            await run("sync");
             resolve({
               success: false,
               error: `umount exited with code ${code}`,
             });
+          }
         });
         proc.on("error", (error) =>
           resolve({ success: false, error: error.message }),
