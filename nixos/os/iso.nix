@@ -5,7 +5,7 @@
   ...
 }:
 let
-  installScript = pkgs.writeShellScriptBin "qitech-setup" (builtins.readFile ../../nixos-setup.sh);
+  installScript = pkgs.writeShellScriptBin "qitech-setup" (builtins.readFile ../nixos-setup.sh);
   installScriptDesktopFile = pkgs.makeDesktopItem {
     name = "qitech-setup";
     exec = "${lib.getExe pkgs.gnome-console} -e ${lib.getExe installScript}";
