@@ -109,7 +109,7 @@ jobs:
       # cargo-cyclonedx tops out at spec 1.5; BSI TR-03183-2 requires CycloneDX >= 1.6,
       # so the SBOM is generated at 1.5 and then upgraded via `cyclonedx convert`.
       - name: Generate CycloneDX SBOM
-        run: cargo cyclonedx --all --format json --spec-version 1.5 --override-filename sbom --target-dir qitech_control
+        run: cargo cyclonedx --all --format json --spec-version 1.5 --override-filename sbom
 
       - name: Upgrade SBOM to spec 1.6 and mark dependency-graph completeness
         run: |
