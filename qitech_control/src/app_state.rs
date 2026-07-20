@@ -16,6 +16,8 @@ use control_core::socketio::{
 };
 use machine_implementations::{
     Hardware, IdentifiedEthercat, IdentifiedModbus, MachineHardware, MachineMessage, QiTechMachine,
+    dryer::{DryerMachine, device::DryerDevice},
+    dryer_smart::DryerSmartMachine,
     laser::LaserMachine,
     machine_identification::{
         DeviceHardwareIdentificationEthercat, DeviceIdentification, DeviceMachineIdentification,
@@ -281,6 +283,34 @@ impl MainState {
         let id_modbus: IdentifiedModbus = IdentifiedModbus { hw: laser_device };
         let ident = MachineIdentificationUnique {
             machine_ident: LaserMachine::MACHINE_IDENTIFICATION,
+            serial: 1,
+        };
+        let mut hw = MachineHardware {
+            hw: vec![],
+            identification: ident,
+            ethercat_interface: None,
+        };
+        hw.hw.push(Hardware::Modbus(id_modbus));
+        self.hardware.insert(ident, hw);
+        Ok(())
+    }
+
+    pub fn generate_machine_hardware_from_dryer_serial(
+        &mut self,
+        path: &str,
+    ) -> Result<(), anyhow::Error> {
+        let dryer_device = DryerDevice::new(path.to_owned(), 1, None)?;
+        // The V1/Smart variant is probed once at construction (see DryerDevice::new); pick
+        // the matching machine identification before the machine itself gets built.
+        let machine_ident = if dryer_device.is_smart {
+            DryerSmartMachine::MACHINE_IDENTIFICATION
+        } else {
+            DryerMachine::MACHINE_IDENTIFICATION
+        };
+        let dryer_device: Rc<RefCell<DryerDevice>> = Rc::new(RefCell::new(dryer_device));
+        let id_modbus: IdentifiedModbus = IdentifiedModbus { hw: dryer_device };
+        let ident = MachineIdentificationUnique {
+            machine_ident,
             serial: 1,
         };
         let mut hw = MachineHardware {

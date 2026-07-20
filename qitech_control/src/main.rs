@@ -1,7 +1,7 @@
 use anyhow::bail;
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
-use machine_implementations::MACHINE_LASER_V1;
+use machine_implementations::{MACHINE_DRYER_SMART, MACHINE_DRYER_V1, MACHINE_LASER_V1};
 use machine_implementations::registry::MACHINE_REGISTRY;
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
@@ -18,7 +18,7 @@ use qitech_lib::{
 #[cfg(not(feature = "mock"))]
 use std::{sync::Arc, time::Duration};
 use tokio::sync::mpsc::Receiver;
-use tokio_serial::SerialPortInfo;
+use tokio_serial::{SerialPortInfo, SerialPortType};
 
 use crate::{
     apis::socketio::main_namespace::{
@@ -176,6 +176,65 @@ fn laser_hotplug(
         true => Ok(()),
         false => {
             add_laser(main_state, shared_state.clone(), rx_ports)?;
+            Ok(())
+        }
+    }
+}
+
+/// CH340 USB-serial adapter used by the dryer's Modbus interface.
+const DRYER_USB_VID: u16 = 0x1a86;
+const DRYER_USB_PID: u16 = 0x7523;
+
+fn add_dryer(
+    main_state: &mut MainState,
+    shared_state: Arc<SharedAppState>,
+    rx_ports: &mut Receiver<Vec<SerialPortInfo>>,
+) -> Result<(), anyhow::Error> {
+    let ports = rx_ports.try_recv()?;
+
+    let machine_index_to_remove = main_state.machines.iter().position(|m| {
+        let id = m.get_identification().machine_ident.machine;
+        id == MACHINE_DRYER_V1 || id == MACHINE_DRYER_SMART
+    });
+    let machine_obj_index = shared_state.machines.try_read()?.iter().position(|m| {
+        let id = m.machine_identification_unique.machine_identification.machine;
+        id == MACHINE_DRYER_V1 || id == MACHINE_DRYER_SMART
+    });
+
+    if let Some(index) = machine_index_to_remove {
+        main_state.machines.remove(index);
+    }
+    if let Some(index) = machine_obj_index {
+        shared_state.machines.try_write()?.remove(index);
+    }
+
+    for port in ports {
+        let is_dryer_adapter = matches!(
+            port.port_type,
+            SerialPortType::UsbPort(ref usb) if usb.vid == DRYER_USB_VID && usb.pid == DRYER_USB_PID
+        );
+        if is_dryer_adapter {
+            main_state.generate_machine_hardware_from_dryer_serial(&port.port_name)?;
+            detect_and_build_machines(shared_state.clone(), main_state);
+            send_machines_event(shared_state);
+            break;
+        }
+    }
+    Ok(())
+}
+
+fn dryer_hotplug(
+    main_state: &mut MainState,
+    shared_state: Arc<SharedAppState>,
+    rx_ports: &mut Receiver<Vec<SerialPortInfo>>,
+) -> Result<(), anyhow::Error> {
+    match main_state.machines.iter().any(|x| {
+        let id = x.get_identification().machine_ident.machine;
+        id == MACHINE_DRYER_V1 || id == MACHINE_DRYER_SMART
+    }) {
+        true => Ok(()),
+        false => {
+            add_dryer(main_state, shared_state.clone(), rx_ports)?;
             Ok(())
         }
     }
@@ -421,6 +480,12 @@ fn main_logic() {
     let (tx_ports, mut rx_ports) = tokio::sync::mpsc::channel(2);
     detect_serial(rx, tx_ports);
 
+    // Separate hotplug-scan channel for the dryer so it doesn't race the laser's
+    // consumer for messages on the same mpsc::Receiver.
+    let (tx_dryer, rx_dryer) = tokio::sync::mpsc::channel(2);
+    let (tx_ports_dryer, mut rx_ports_dryer) = tokio::sync::mpsc::channel(2);
+    detect_serial(rx_dryer, tx_ports_dryer);
+
     match &eth_control {
         Some(control) => {
             setup_ethercat(state.clone(), &mut main_state, control).expect("setup_ethercat failed");
@@ -490,6 +555,8 @@ fn main_logic() {
         if now.duration_since(last_check) >= hotplug_duration {
             let _ = tx.try_send(());
             let _ = laser_hotplug(&mut main_state, state.clone(), &mut rx_ports);
+            let _ = tx_dryer.try_send(());
+            let _ = dryer_hotplug(&mut main_state, state.clone(), &mut rx_ports_dryer);
             last_check = now;
         }
 

@@ -14,6 +14,8 @@ use std::{cell::RefCell, rc::Rc};
 use tokio::sync::mpsc::Sender;
 
 pub mod aquapath1;
+pub mod dryer;
+pub mod dryer_smart;
 pub mod extruder1;
 pub mod laser;
 pub mod machine_identification;
@@ -31,6 +33,8 @@ pub const MACHINE_BUFFER_V1: u16 = 0x0008;
 pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
 pub const MACHINE_WAGO_POWER_V1: u16 = 0x000A;
 pub const MACHINE_EXTRUDER_V2: u16 = 0x0016;
+pub const MACHINE_DRYER_V1: u16 = 0x0010;
+pub const MACHINE_DRYER_SMART: u16 = 0x0012;
 pub const TEST_MACHINE: u16 = 0x0033;
 pub const IP20_TEST_MACHINE: u16 = 0x0034;
 pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;

@@ -5,6 +5,8 @@ use axum::routing::{get, post};
 use axum::{Extension, Json, Router, debug_handler};
 use machine_implementations::MachineMessage;
 use machine_implementations::aquapath1::AquaPathV1;
+use machine_implementations::dryer::DryerMachine;
+use machine_implementations::dryer_smart::DryerSmartMachine;
 use machine_implementations::extruder1::ExtruderV2;
 use machine_implementations::laser::LaserMachine;
 use machine_implementations::machine_identification::{
@@ -159,6 +161,12 @@ pub fn rest_api_router() -> Router<Arc<SharedAppState>> {
         ))
         .merge(make_machine_router(
             AquaPathV1::MACHINE_IDENTIFICATION.into(),
+        ))
+        .merge(make_machine_router(
+            DryerMachine::MACHINE_IDENTIFICATION.into(),
+        ))
+        .merge(make_machine_router(
+            DryerSmartMachine::MACHINE_IDENTIFICATION.into(),
         ))
     /*.merge(make_machine_router(TestMachine::MACHINE_IDENTIFICATION.into()))
     .merge(make_machine_router(WagoPower::MACHINE_IDENTIFICATION.into()))
