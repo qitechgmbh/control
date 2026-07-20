@@ -210,11 +210,11 @@ impl AquaPathV1 {
             flow_states: FlowStates {
                 left: FlowState {
                     flow: self.left_controller.current_flow.get::<liter_per_minute>(),
-                    should_flow: self.left_controller.should_pump,
+                    should_flow: self.left_controller.pump_requested,
                 },
                 right: FlowState {
                     flow: self.right_controller.current_flow.get::<liter_per_minute>(),
-                    should_flow: self.right_controller.should_pump,
+                    should_flow: self.right_controller.pump_requested,
                 },
             },
             fan_states: FanStates {
@@ -397,7 +397,11 @@ impl AquaPathV1 {
 
     fn turn_pump_on(&mut self) {
         self.left_controller.allow_pump();
+        self.left_controller
+            .set_should_pump(self.left_controller.pump_requested);
         self.right_controller.allow_pump();
+        self.right_controller
+            .set_should_pump(self.right_controller.pump_requested);
     }
 
     fn turn_off_all(&mut self) {
@@ -499,9 +503,20 @@ impl AquaPathV1 {
     }
 
     fn set_should_pump(&mut self, should_pump: bool, cooling_type: AquaPathSideType) {
+        let is_auto = self.mode == AquaPathV1Mode::Auto;
         match cooling_type {
-            AquaPathSideType::Right => self.right_controller.set_should_pump(should_pump),
-            AquaPathSideType::Left => self.left_controller.set_should_pump(should_pump),
+            AquaPathSideType::Right => {
+                self.right_controller.set_pump_requested(should_pump);
+                if is_auto {
+                    self.right_controller.set_should_pump(should_pump);
+                }
+            }
+            AquaPathSideType::Left => {
+                self.left_controller.set_pump_requested(should_pump);
+                if is_auto {
+                    self.left_controller.set_should_pump(should_pump);
+                }
+            }
         }
         self.emit_state();
     }
