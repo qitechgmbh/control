@@ -118,6 +118,7 @@ jobs:
       - name: Upload SBOM artifacts
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: rust-sbom
+          name: rust-sbom.json
           path: qitech_control/sbom.json
           if-no-files-found: error
+          archive: false
