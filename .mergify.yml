@@ -8,3 +8,7 @@ pull_request_rules:
     actions:
       review:
       merge:
+queue_rules: []
+merge_queue:
+  queue_controls_comment: false
+  status_comments: outcomes
