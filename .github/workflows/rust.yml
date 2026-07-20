@@ -95,20 +95,12 @@ jobs:
 
     steps:
       - *checkout
-      - *setup-rust
-      - *cargo-cache
 
-      - name: Install cargo-cyclonedx
-        run: cargo install cargo-cyclonedx --locked
+      - &nix-install
+        uses: nixbuild/nix-quick-install-action@v35
 
-      - name: Install cyclonedx-cli
-        env:
-          CYCLONEDX_CLI_VERSION: "0.32.0"
-          CYCLONEDX_CLI_SHA256: "454879e6a4a405c8a13bff49b8982adcb0596f3019b26b0811c66e4d7f0783e1"
-        run: |
-          curl -sSL -o /usr/local/bin/cyclonedx "https://github.com/CycloneDX/cyclonedx-cli/releases/download/v${CYCLONEDX_CLI_VERSION}/cyclonedx-linux-x64"
-          echo "${CYCLONEDX_CLI_SHA256}  /usr/local/bin/cyclonedx" | sha256sum -c -
-          chmod +x /usr/local/bin/cyclonedx
+      - name: Install cyclonedx
+        run: nix profile add nixpkgs#rustc nixpkgs#cargo nixpkgs#cargo-cyclonedx nixpkgs#cyclonedx-cli
 
       # cargo-cyclonedx tops out at spec 1.5; BSI TR-03183-2 requires CycloneDX >= 1.6,
       # so the SBOM is generated at 1.5 and then upgraded via `cyclonedx convert`.
