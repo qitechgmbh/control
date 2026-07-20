@@ -5,12 +5,18 @@
   "description": "Next Generation Machine Interface ",
   "main": ".vite/build/main.js",
   "private": true,
+  "license": "LGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qitechgmbh/control"
+  },
   "overrides": {
     "glob": "^13.0.0"
   },
   "scripts": {
     "start": "NODE_OPTIONS='--max-old-space-size=4096' vite",
     "build": "vite build",
+    "sbom": "cyclonedx-npm --output-format JSON --spec-version 1.6 --output-file sbom.json",
     "lint": "eslint .",
     "lint:write": "eslint . --fix",
     "format": "prettier --check .",
@@ -23,6 +29,7 @@
   },
   "author": "",
   "devDependencies": {
+    "@cyclonedx/cyclonedx-npm": "^6.0.0",
     "@electron/fuses": "^1.8.0",
     "@eslint/compat": "^2.0.2",
     "@eslint/js": "^9.39.4",

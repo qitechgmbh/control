@@ -89,3 +89,36 @@ jobs:
 
       - name: Mock Machine
         run: cargo build --features "development-build,mock-machine"
+
+  sbom:
+    runs-on: ubuntu-latest
+
+    steps:
+      - *checkout
+
+      - &nix-install
+        uses: nixbuild/nix-quick-install-action@v35
+
+      - name: Install cyclonedx
+        run: nix profile add nixpkgs#rustc nixpkgs#cargo nixpkgs#cargo-cyclonedx nixpkgs#cyclonedx-cli
+
+      # cargo-cyclonedx tops out at spec 1.5; BSI TR-03183-2 requires CycloneDX >= 1.6,
+      # so the SBOM is generated at 1.5 and then upgraded via `cyclonedx convert`.
+      - name: Generate CycloneDX SBOM
+        run: cargo cyclonedx --all --format json --spec-version 1.5 --override-filename sbom
+
+      - name: Upgrade SBOM to spec 1.6 and mark dependency-graph completeness
+        run: |
+          f=qitech_control/sbom.json
+          cyclonedx convert --input-file "$f" --output-file "$f" --output-version v1_6
+          jq '.compositions = [{"aggregate": "complete", "dependencies": [.metadata.component."bom-ref"]}]
+              | .metadata.component.manufacturer = {"url": ["https://github.com/qitechgmbh/control"]}' \
+            "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: rust-sbom.json
+          path: qitech_control/sbom.json
+          if-no-files-found: error
+          archive: false
