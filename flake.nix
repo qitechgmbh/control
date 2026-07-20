@@ -79,7 +79,7 @@
               pkg-config
               libudev-zero
               libpcap
-              nodejs_22
+              nodejs_24
               lldb
               electron
               # dev tools
@@ -98,7 +98,7 @@
             shellHook = ''
               echo "QiTech Control Development Environment"
               echo "Rust version: $(rustc --version)"
-              echo "Node version: $(${pkgs.nodejs_22}/bin/node --version)"
+              echo "Node version: $(node --version)"
             '';
           };
       });
