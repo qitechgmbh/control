@@ -1,0 +1,32 @@
+name: Staging backmerge
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */2 * * 0'
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  staging-backmerge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          ref: 'staging'
+          fetch-depth: 0
+
+      - name: Merge master into staging
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git merge origin/master
+
+      - name: Push to staging
+        run: git push origin staging
