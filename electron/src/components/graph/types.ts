@@ -3,6 +3,7 @@ import { IconName } from "@/components/Icon";
 import { Unit } from "@/control/units";
 import { TimeSeries } from "@/lib/timeseries";
 import { RefObject } from "react";
+import { ExportResultDialogProps } from "@/components/ExportResultDialog";
 
 export type SwitchOrigin = "button" | "gesture";
 
@@ -110,6 +111,7 @@ export type ControlProps = {
   onSwitchToLive: () => void;
   onSwitchToHistorical: (origin: SwitchOrigin) => void;
   onExport?: () => void | Promise<void>;
+  exportDialogProps?: ExportResultDialogProps;
   onAddMarker?: () => void;
   onManageMarkers?: () => void;
   timeWindowOptions?: TimeWindowOption[];

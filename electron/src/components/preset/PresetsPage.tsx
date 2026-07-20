@@ -6,8 +6,10 @@ import { Preset } from "@/lib/preset/preset";
 import { PresetCard } from "./PresetCard";
 import { PresetPreviewEntries } from "./PresetPreviewTable";
 import { NewPresetDialog } from "./NewPresetDialog";
-import { downloadJson } from "@/lib/download";
 import { JsonFileInput } from "../FileInput";
+import { ExportResultDialog } from "@/components/ExportResultDialog";
+import { saveFile } from "@/helpers/file_export_helpers";
+import { useExportDialog } from "@/hooks/useExportDialog";
 
 type PresetsPageProps<T> = UsePresetsParams<T> & {
   applyPreset: (preset: Preset<T>) => void;
@@ -31,6 +33,8 @@ export function PresetsPage<T>({
     defaultState,
   });
 
+  const { notifyResult, dialogProps } = useExportDialog();
+
   const handleOverwritePreset = (preset: Preset<T>) => {
     const msg = `Are you sure you want to overwrite the preset "${preset.name}" with the current settings? This cannot be undone.`;
 
@@ -51,10 +55,16 @@ export function PresetsPage<T>({
     presets.remove(preset);
   };
 
-  const handleExport = (preset: Preset<T>) => {
+  const handleExport = async (preset: Preset<T>) => {
     const data = { ...preset, id: undefined };
     const filename = `${preset.name}.preset.json`;
-    downloadJson(data, filename);
+    const result = await saveFile({
+      suggestedName: filename,
+      filters: [{ name: "Preset Files", extensions: ["json"] }],
+      content: JSON.stringify(data, null, 2),
+      encoding: "utf8",
+    });
+    notifyResult(result);
   };
 
   return (
@@ -97,6 +107,7 @@ export function PresetsPage<T>({
           />
         )}
       </ControlGrid>
+      <ExportResultDialog {...dialogProps} />
     </Page>
   );
 }
