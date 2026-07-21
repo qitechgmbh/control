@@ -6,7 +6,6 @@ use qitech_lib::{
 };
 use std::{cell::RefCell, rc::Rc};
 
-
 pub fn write_ecat_inputs<C: Consumer, P: Producer>(
     ecat: &mut EtherCATAppHandle<C, P>,
     subdevices: Vec<(MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)>,
@@ -14,7 +13,7 @@ pub fn write_ecat_inputs<C: Consumer, P: Producer>(
     while ecat.get_inputs().is_none() {
         std::hint::spin_loop();
     }
-    match ecat.get_inputs()  {
+    match ecat.get_inputs() {
         Some(inputs) => {
             for i in 0..subdevices.len() {
                 let meta_dev = subdevices[i].0;
@@ -28,9 +27,8 @@ pub fn write_ecat_inputs<C: Consumer, P: Producer>(
                 }
             }
             ecat.finish_read();
-        },
-        None => {
-        },
+        }
+        None => {}
     }
 }
 
