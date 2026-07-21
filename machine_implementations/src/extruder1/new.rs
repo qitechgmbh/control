@@ -9,17 +9,19 @@ use control_core::transmission::fixed::FixedTransmission;
 use qitech_lib::ethercat_hal::{
     coe::ConfigurableDevice,
     devices::{
-        ek1100::EK1100,
-        el2004::EL2004,
-        el3021::EL3021,
-        el3204::EL3204,
-        el6021::{EL6021, EL6021Configuration},
+        beckhoff_modules::ek1100::EK1100,
+        beckhoff_modules::el2004::EL2004,
+        beckhoff_modules::el3021::EL3021,
+        beckhoff_modules::el3204::EL3204,
+        beckhoff_modules::el6021::{EL6021, EL6021Configuration},
     },
 };
+
 use qitech_lib::units::{
     AngularVelocity, Pressure, ThermodynamicTemperature, angular_velocity::revolution_per_minute,
     pressure::bar, thermodynamic_temperature::degree_celsius,
 };
+
 use std::{
     cell::RefCell,
     rc::Rc,

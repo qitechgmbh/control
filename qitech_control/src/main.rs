@@ -12,7 +12,7 @@ use qitech_lib::ethercat_hal::{
 };
 use qitech_lib::{
     ethercat_hal::interface_discovery::{LinkType, list_ethernet_interfaces, test_interface},
-    ethercat_hal::{BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer},
+    ethercat_hal::{BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox},
     machines::MachineIdentificationUnique,
 };
 #[cfg(not(feature = "mock"))]
@@ -44,7 +44,7 @@ pub mod persist;
 fn setup_ethercat(
     state: Arc<SharedAppState>,
     main_state: &mut MainState,
-    eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
+    eth_control: &EtherCATControl<Arc<Mailbox>, Arc<Mailbox>>,
 ) -> Result<(), anyhow::Error> {
     let _res = eth_control
         .channel
@@ -189,7 +189,7 @@ fn send_machines_event(state: Arc<SharedAppState>) {
 
 fn finalize_ethercat(
     main_state: &mut MainState,
-    eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
+    eth_control: &EtherCATControl<Arc<Mailbox>, Arc<Mailbox>>,
 ) -> Result<(), anyhow::Error> {
     let _res = eth_control
         .channel
@@ -283,7 +283,7 @@ fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainSt
     }
 }
 
-fn optimized_ethercat_init(interface: &str) -> EtherCATControl<TripleBufConsumer, Arc<Mailbox>> {
+fn optimized_ethercat_init(interface: &str) -> EtherCATControl<Arc<Mailbox>, Arc<Mailbox>> {
     let target_cycle_time_us: u64 = 1000;
     let dc_config: DcConfiguration = DcConfiguration {
         start_delay: Duration::from_millis(100),
@@ -404,7 +404,7 @@ fn main_logic() {
     let interface = find_ethercat_interface(&shared_state);
     let eth_control = optimized_ethercat_init(&interface);
     shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
-    let mut eth_control: Option<EtherCATControl<TripleBufConsumer, Arc<Mailbox>>> =
+    let mut eth_control: Option<EtherCATControl<Arc<Mailbox>, Arc<Mailbox>>> =
         Some(eth_control);
 
     let state = Arc::new(shared_state);

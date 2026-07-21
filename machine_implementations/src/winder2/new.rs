@@ -10,25 +10,25 @@ mod winder2_imports {
     pub use control_core::converters::linear_step_converter::LinearStepConverter;
 
     pub use qitech_lib::ethercat_hal::coe::ConfigurableDevice;
-    pub use qitech_lib::ethercat_hal::devices::ek1100::EK1100;
-    pub use qitech_lib::ethercat_hal::devices::el2002::{EL2002, EL2002_IDENTITY_B, EL2002Port};
-    pub use qitech_lib::ethercat_hal::devices::el7031::coe::EL7031Configuration;
-    pub use qitech_lib::ethercat_hal::devices::el7031::pdo::EL7031PredefinedPdoAssignment;
-    pub use qitech_lib::ethercat_hal::devices::el7031::{
+    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::ek1100::EK1100;
+    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el2002::{EL2002, EL2002_IDENTITY_B, EL2002Port};
+    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031::coe::EL7031Configuration;
+    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031::pdo::EL7031PredefinedPdoAssignment;
+    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031::{
         EL7031, EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031DigitalInputPort, EL7031StepperPort,
     };
-    pub use qitech_lib::ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
-    pub use qitech_lib::ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
-    pub use qitech_lib::ethercat_hal::devices::el7031_0030::{
+    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031_0030::coe::EL7031_0030Configuration;
+    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
+    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031_0030::{
         self, EL7031_0030, EL7031_0030_IDENTITY_A, EL7031_0030AnalogInputPort,
         EL7031_0030StepperPort,
     };
-    pub use qitech_lib::ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
-    pub use qitech_lib::ethercat_hal::devices::el7041_0052::{
+    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7041_0052::coe::EL7041_0052Configuration;
+    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7041_0052::{
         EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port,
     };
     pub use qitech_lib::ethercat_hal::devices::{
-        ek1100::EK1100_IDENTITY_A, el2002::EL2002_IDENTITY_A,
+        beckhoff_modules::ek1100::EK1100_IDENTITY_A, beckhoff_modules::el2002::EL2002_IDENTITY_A,
     };
     pub use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
     pub use qitech_lib::ethercat_hal::io::digital_input::DigitalInputDevice;
