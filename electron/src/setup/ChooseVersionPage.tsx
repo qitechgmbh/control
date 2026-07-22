@@ -166,6 +166,9 @@ export function ChooseVersionPage() {
     branches?.filter((b) =>
       b.name.toLowerCase().includes(searchTerm.toLowerCase()),
     ) ?? [];
+  branches?.filter((b) =>
+    b.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  ) ?? [];
 
   return (
     <Page>
