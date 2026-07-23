@@ -732,13 +732,27 @@ impl Rewinder {
         matches!(self.mode, RewinderMode::Standby | RewinderMode::Hold)
     }
 
+    fn manual_traverse_command_permitted(&self) -> bool {
+        matches!(self.mode, RewinderMode::Hold)
+    }
+
     pub fn takeup_tension_arm_zero(&mut self) {
+        if !self.settings_edit_permitted() {
+            self.emit_state();
+            return;
+        }
+
         self.takeup_tension_arm.zero();
         self.emit_live_values();
         self.emit_state();
     }
 
     pub fn source_tension_arm_zero(&mut self) {
+        if !self.settings_edit_permitted() {
+            self.emit_state();
+            return;
+        }
+
         self.source_tension_arm.zero();
         self.emit_live_values();
         self.emit_state();
@@ -823,16 +837,31 @@ impl Rewinder {
     }
 
     pub fn traverse_goto_limit_inner(&mut self) {
+        if !self.manual_traverse_command_permitted() {
+            self.emit_state();
+            return;
+        }
+
         self.traverse_controller.goto_limit_inner();
         self.emit_state();
     }
 
     pub fn traverse_goto_limit_outer(&mut self) {
+        if !self.manual_traverse_command_permitted() {
+            self.emit_state();
+            return;
+        }
+
         self.traverse_controller.goto_limit_outer();
         self.emit_state();
     }
 
     pub fn traverse_goto_start_position(&mut self) {
+        if !self.manual_traverse_command_permitted() {
+            self.emit_state();
+            return;
+        }
+
         self.resume_traverse_position = None;
         self.traverse_controller
             .set_target_position(self.traverse_start_position);
@@ -841,6 +870,11 @@ impl Rewinder {
     }
 
     pub fn traverse_goto_home(&mut self) {
+        if !self.manual_traverse_command_permitted() {
+            self.emit_state();
+            return;
+        }
+
         self.traverse_controller.goto_home();
         self.emit_state();
     }

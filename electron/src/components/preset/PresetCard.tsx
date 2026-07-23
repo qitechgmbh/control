@@ -70,6 +70,7 @@ export type PresetCardProps<T> = {
   isReadOnly?: boolean;
   hideDate?: boolean;
   isActive?: boolean;
+  applyDisabled?: boolean;
 };
 
 export function PresetCard<T>({
@@ -82,6 +83,7 @@ export function PresetCard<T>({
   isReadOnly,
   hideDate,
   isActive,
+  applyDisabled,
 }: PresetCardProps<T>) {
   return (
     <div className="flex flex-row items-center gap-4 rounded-3xl border border-gray-200 bg-white p-4 shadow">
@@ -109,6 +111,7 @@ export function PresetCard<T>({
           onApply={onApply}
           previewEntries={previewEntries}
           hideDate={hideDate}
+          applyDisabled={applyDisabled}
         />
         {isReadOnly ? (
           <TouchButton variant="outline" icon="lu:Menu" disabled />
