@@ -236,7 +236,7 @@ impl Rewinder {
             self.update_rewind_sequence(t);
         }
 
-        let angular_velocity = if matches!(self.mode, RewinderMode::Hold) {
+        let angular_velocity = if self.hold_decelerating_from_rewind {
             self.rewind_control.decelerate_motion_at(t);
             let speed = self.rewind_control.puller_command_speed();
             let angular_velocity = self
@@ -289,7 +289,7 @@ impl Rewinder {
     }
 
     pub fn sync_takeup_spool_speed(&mut self, t: Instant) {
-        let angular_velocity = if matches!(self.mode, RewinderMode::Hold) {
+        let angular_velocity = if self.hold_decelerating_from_rewind {
             self.rewind_control.takeup_command_angular_velocity()
         } else if self.takeup_spool_speed_output_permitted() {
             if matches!(self.mode, RewinderMode::Prepare | RewinderMode::Rewind) {
@@ -334,7 +334,7 @@ impl Rewinder {
         let angular_velocity = if self.source_spool_speed_output_permitted() {
             if matches!(self.mode, RewinderMode::Pull) {
                 AngularVelocity::new::<revolution_per_minute>(self.pull_mode_source_assist_rpm())
-            } else if matches!(self.mode, RewinderMode::Hold) {
+            } else if self.hold_decelerating_from_rewind {
                 self.rewind_control.source_command_angular_velocity()
             } else {
                 self.rewind_control.source_command_angular_velocity()
