@@ -149,6 +149,11 @@ impl Rewinder {
     }
 
     pub fn set_laser(&mut self, value: bool) {
+        if !self.settings_edit_permitted() {
+            self.emit_state();
+            return;
+        }
+
         self.laser_enabled = value;
         let mut laser = self.get_laser();
         laser.set_output(LASER_PORT, value);
@@ -232,7 +237,7 @@ impl Rewinder {
     }
 
     pub fn sync_puller_speed(&mut self, t: Instant) {
-        if !self.update_prepare_control(t) {
+        if !self.hold_decelerating_from_rewind && !self.update_prepare_control(t) {
             self.update_rewind_sequence(t);
         }
 
@@ -262,10 +267,12 @@ impl Rewinder {
             AngularVelocity::new::<revolution_per_minute>(0.0)
         };
         let actual_line_speed = self.puller_angular_velocity_to_line_speed(angular_velocity);
-        if matches!(
-            self.rewind_phase,
-            RewindPhase::Precharge | RewindPhase::CrawlStart | RewindPhase::Rewind
-        ) {
+        if !self.hold_decelerating_from_rewind
+            && matches!(
+                self.rewind_phase,
+                RewindPhase::Precharge | RewindPhase::CrawlStart | RewindPhase::Rewind
+            )
+        {
             self.rewind_control.update_followers(
                 actual_line_speed.abs(),
                 self.takeup_spool_diameter_mm,
@@ -550,8 +557,13 @@ impl Rewinder {
     }
 
     pub fn puller_set_target_speed(&mut self, target_speed: f64) {
+        if !self.motion_command_edit_permitted() || !target_speed.is_finite() {
+            self.emit_state();
+            return;
+        }
+
         self.puller_speed_controller
-            .set_target_speed(Velocity::new::<meter_per_minute>(target_speed));
+            .set_target_speed(Velocity::new::<meter_per_minute>(target_speed.max(0.0)));
         if !self.puller_motion_permitted() {
             self.puller_speed_controller
                 .reset_speed(Velocity::new::<meter_per_minute>(0.0));
@@ -735,6 +747,10 @@ impl Rewinder {
 
     fn settings_edit_permitted(&self) -> bool {
         matches!(self.mode, RewinderMode::Standby | RewinderMode::Hold)
+    }
+
+    fn motion_command_edit_permitted(&self) -> bool {
+        !self.hold_decelerating_from_rewind
     }
 
     fn manual_traverse_command_permitted(&self) -> bool {

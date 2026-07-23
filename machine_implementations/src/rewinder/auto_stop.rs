@@ -23,6 +23,11 @@ impl Default for RewindAutomaticAction {
 
 impl Rewinder {
     pub fn reset_rewind_progress(&mut self, now: Instant) {
+        if self.hold_decelerating_from_rewind {
+            self.emit_state();
+            return;
+        }
+
         self.rewind_automatic_action.progress = Length::ZERO;
         self.rewind_automatic_action.progress_last_check = now;
     }
@@ -79,11 +84,21 @@ impl Rewinder {
     }
 
     pub fn set_rewind_automatic_required_meters(&mut self, meters: f64) {
+        if self.hold_decelerating_from_rewind || !meters.is_finite() {
+            self.emit_state();
+            return;
+        }
+
         self.rewind_automatic_action.target_length = Length::new::<meter>(meters.max(0.0));
         self.emit_state();
     }
 
     pub fn set_rewind_automatic_action(&mut self, mode: RewindAutomaticActionMode) {
+        if self.hold_decelerating_from_rewind {
+            self.emit_state();
+            return;
+        }
+
         self.rewind_automatic_action.mode = mode;
         self.emit_state();
     }
