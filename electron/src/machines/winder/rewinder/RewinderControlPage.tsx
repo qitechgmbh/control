@@ -11,12 +11,27 @@ import { StatusBadge } from "@/control/StatusBadge";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { TraverseBar } from "../TraverseBar";
-import { Mode } from "./rewinderNamespace";
 import { RewinderOverview } from "./RewinderOverview";
 import { useRewinder } from "./useRewinder";
-import React from "react";
 
-const traverseMax = 120;
+const TRAVERSE_MAX_MM = 180;
+const MAX_TARGET_SPEED_M_PER_MIN = 50;
+
+function formatEta(seconds: number): string {
+  if (seconds < 60) {
+    return `${Math.ceil(seconds)} s`;
+  }
+
+  const totalMinutes = Math.ceil(seconds / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours === 0) {
+    return `${totalMinutes} min`;
+  }
+
+  return minutes === 0 ? `${hours} h` : `${hours} h ${minutes} min`;
+}
 
 export function RewinderControlPage() {
   const {
@@ -37,16 +52,18 @@ export function RewinderControlPage() {
     zeroSourceTensionArm,
     setTraverseLimitInner,
     setTraverseLimitOuter,
+    setTraverseStartPosition,
     gotoTraverseHome,
     gotoTraverseLimitInner,
     gotoTraverseLimitOuter,
+    gotoTraverseStartPosition,
     setRewindAutomaticRequiredMeters,
     setRewindAutomaticAction,
     resetRewindProgress,
     enableTraverseLaserpointer,
+    hardStop,
   } = useRewinder();
 
-  const maxTargetSpeed = 50;
   const tensionArmsZeroed =
     state?.takeup_tension_arm_state.zeroed === true &&
     state?.source_tension_arm_state.zeroed === true;
@@ -59,14 +76,28 @@ export function RewinderControlPage() {
   // Laserpointer controlled via EL2002 digital output — same as winder2
   const laserOn = state?.traverse_state.laserpointer ?? false;
 
-  // Debug: preview filament line without a live machine connection
-  const [debugFilamentMode, setDebugFilamentMode] = React.useState<Mode | null>(
-    null,
-  );
-  const [debugCanRewind, setDebugCanRewind] = React.useState(false);
-  const DEBUG_MODES: Mode[] = ["Standby", "Hold", "Pull", "Prepare", "Rewind"];
-
   const isReady = state?.mode_state.can_rewind === true;
+  const isPreparing = state?.mode_state.mode === "Prepare";
+  const traverseMoveDisabled = isDisabled || isPreparing;
+  const requiredMeters =
+    state?.rewind_automatic_action_state.required_meters ?? 0;
+  const progressMeters = rewindProgress.current?.value ?? 0;
+  const remainingMeters = Math.max(requiredMeters - progressMeters, 0);
+  const lineSpeedMPerMin = Math.abs(pullerSpeed.current?.value ?? 0);
+  const autoStopEnabled =
+    state?.rewind_automatic_action_state.mode !== "NoAction" &&
+    requiredMeters > 0;
+  const etaSeconds =
+    autoStopEnabled && remainingMeters > 0 && lineSpeedMPerMin > 0.01
+      ? (remainingMeters / lineSpeedMPerMin) * 60
+      : null;
+  const etaText = !autoStopEnabled
+    ? "No auto stop"
+    : remainingMeters <= 0
+      ? "Reached"
+      : etaSeconds == null
+        ? "Waiting for movement"
+        : formatEta(etaSeconds);
 
   return (
     <Page>
@@ -80,36 +111,7 @@ export function RewinderControlPage() {
           pullerSpeed={pullerSpeed}
           takeupTensionArmAngle={takeupTensionArmAngle}
           sourceTensionArmAngle={sourceTensionArmAngle}
-          modeOverride={debugFilamentMode ?? undefined}
-          canRewindOverride={debugFilamentMode ? debugCanRewind : undefined}
         />
-        {/* Debug row: preview filament appearance per mode */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-gray-400">Filament debug:</span>
-          <button
-            onClick={() => setDebugFilamentMode(null)}
-            className={`rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${debugFilamentMode === null ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
-          >
-            Live
-          </button>
-          {DEBUG_MODES.map((m) => (
-            <button
-              key={m}
-              onClick={() => setDebugFilamentMode(m)}
-              className={`rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${debugFilamentMode === m ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
-            >
-              {m}
-            </button>
-          ))}
-          {debugFilamentMode === "Prepare" && (
-            <button
-              onClick={() => setDebugCanRewind((v) => !v)}
-              className={`rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${debugCanRewind ? "bg-green-600 text-white" : "bg-amber-500 text-white"}`}
-            >
-              {debugCanRewind ? "can_rewind: true" : "can_rewind: false"}
-            </button>
-          )}
-        </div>
       </ControlCard>
 
       {/* Bottom: 3-column row */}
@@ -129,6 +131,10 @@ export function RewinderControlPage() {
               )}
               {state?.traverse_state.is_homed !== true && (
                 <StatusBadge variant="error">Traverse Not Homed</StatusBadge>
+              )}
+              {(state?.takeup_spool_state.diameter_mm == null ||
+                state?.source_spool_state.diameter_mm == null) && (
+                <StatusBadge variant="error">Set Spool Diameters</StatusBadge>
               )}
             </div>
           </div>
@@ -161,7 +167,7 @@ export function RewinderControlPage() {
               Prepare: {
                 children: "Prepare",
                 icon: "lu:Crosshair",
-                isActiveClassName: "bg-green-600",
+                isActiveClassName: isReady ? "bg-green-600" : "bg-amber-500",
                 className: "min-h-16",
                 disabled: !tensionArmsZeroed,
               },
@@ -186,81 +192,80 @@ export function RewinderControlPage() {
             title="Target Speed"
             defaultValue={defaultState?.puller_state.target_speed}
             min={0}
-            max={maxTargetSpeed}
+            max={MAX_TARGET_SPEED_M_PER_MIN}
             renderValue={(value) => roundToDecimals(value, 2)}
             onChange={setPullerTargetSpeed}
           />
+          <TouchButton
+            variant="outline"
+            icon="lu:RotateCcw"
+            onClick={zeroTensionArms}
+            disabled={isDisabled}
+            isLoading={isLoading}
+          >
+            Zero Tension Arms
+          </TouchButton>
+          <TouchButton
+            variant="destructive"
+            icon="lu:OctagonX"
+            onClick={hardStop}
+            disabled={isDisabled || state?.mode_state.mode !== "Rewind"}
+            isLoading={isLoading}
+          >
+            Hard Stop
+          </TouchButton>
         </ControlCard>
 
-        {/* Middle column: Automatic Stop + Actions stacked */}
-        <div className="flex flex-col gap-4">
-          <ControlCard title="Automatic Stop">
-            <TimeSeriesValueNumeric
-              label="Progress"
-              unit="m"
-              timeseries={rewindProgress}
-              renderValue={(value) => roundToDecimals(value, 2)}
-            />
-            <EditValue
-              value={state?.rewind_automatic_action_state.required_meters}
-              unit="m"
-              title="Required Length"
-              defaultValue={
-                defaultState?.rewind_automatic_action_state.required_meters
-              }
-              min={0}
-              max={10000}
-              step={0.1}
-              renderValue={(value) => roundToDecimals(value, 1)}
-              onChange={setRewindAutomaticRequiredMeters}
-            />
-            <Label label="After Length">
-              <SelectionGroup
-                value={state?.rewind_automatic_action_state.mode}
-                disabled={isDisabled}
-                loading={isLoading}
-                options={{
-                  NoAction: { children: "No Action", icon: "lu:Minus" },
-                  Hold: { children: "Hold", icon: "lu:CirclePause" },
-                }}
-                onChange={(value) =>
-                  setRewindAutomaticAction(value as "NoAction" | "Hold")
-                }
-              />
-            </Label>
-            <TouchButton
-              variant="outline"
-              icon="lu:RotateCcw"
-              onClick={resetRewindProgress}
+        <ControlCard title="Automatic Stop">
+          <TimeSeriesValueNumeric
+            label="Progress"
+            unit="m"
+            timeseries={rewindProgress}
+            renderValue={(value) => roundToDecimals(value, 2)}
+          />
+          <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+            <div className="text-sm text-gray-500">Estimated Time</div>
+            <div className="font-mono text-2xl font-semibold text-gray-900">
+              {etaText}
+            </div>
+          </div>
+          <EditValue
+            value={state?.rewind_automatic_action_state.required_meters}
+            unit="m"
+            title="Required Length"
+            defaultValue={
+              defaultState?.rewind_automatic_action_state.required_meters
+            }
+            min={0}
+            max={10000}
+            step={0.1}
+            renderValue={(value) => roundToDecimals(value, 1)}
+            onChange={setRewindAutomaticRequiredMeters}
+          />
+          <Label label="After Length">
+            <SelectionGroup
+              value={state?.rewind_automatic_action_state.mode}
               disabled={isDisabled}
-              isLoading={isLoading}
-            >
-              Reset Progress
-            </TouchButton>
-          </ControlCard>
-
-          <ControlCard title="Actions">
-            <TouchButton
-              variant="outline"
-              icon="lu:RotateCcw"
-              onClick={zeroTensionArms}
-              disabled={isDisabled}
-              isLoading={isLoading}
-            >
-              Zero Tension Arms
-            </TouchButton>
-            <TouchButton
-              variant="outline"
-              icon="lu:MapPin"
-              onClick={() => {
-                // TODO: implement go to start position mutation
+              loading={isLoading}
+              options={{
+                NoAction: { children: "No Action", icon: "lu:Minus" },
+                Hold: { children: "Hold", icon: "lu:CirclePause" },
               }}
-              disabled={true}
-            >
-              Go to Start Position
-            </TouchButton>
-          </ControlCard>
-        </div>
+              onChange={(value) =>
+                setRewindAutomaticAction(value as "NoAction" | "Hold")
+              }
+            />
+          </Label>
+          <TouchButton
+            variant="outline"
+            icon="lu:RotateCcw"
+            onClick={resetRewindProgress}
+            disabled={isDisabled}
+            isLoading={isLoading}
+          >
+            Reset Progress
+          </TouchButton>
+        </ControlCard>
 
         {/* Traverse */}
         <ControlCard title="Traverse">
@@ -273,56 +278,95 @@ export function RewinderControlPage() {
           {state?.traverse_state && (
             <TraverseBar
               inside={0}
-              outside={traverseMax}
+              outside={TRAVERSE_MAX_MM}
               min={state.traverse_state.limit_inner}
               max={state.traverse_state.limit_outer}
               current={traversePosition.current?.value ?? 0}
             />
           )}
           <Label label="Outer Limit">
-            <EditValue
-              value={state?.traverse_state.limit_outer}
-              unit="mm"
-              title="Outer Limit"
-              defaultValue={defaultState?.traverse_state.limit_outer}
-              min={Math.max(0, (state?.traverse_state.limit_inner ?? 0) + 1)}
-              max={traverseMax}
-              renderValue={(value) => roundToDecimals(value, 0)}
-              onChange={setTraverseLimitOuter}
-            />
-            <TouchButton
-              variant="outline"
-              icon="lu:ArrowLeftToLine"
-              onClick={gotoTraverseLimitOuter}
-              disabled={isDisabled}
-              isLoading={isLoading}
-            >
-              Go to Outer Limit
-            </TouchButton>
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <EditValue
+                  value={state?.traverse_state.limit_outer}
+                  unit="mm"
+                  title="Outer Limit"
+                  defaultValue={defaultState?.traverse_state.limit_outer}
+                  min={Math.max(
+                    0,
+                    (state?.traverse_state.limit_inner ?? 0) + 1,
+                  )}
+                  max={TRAVERSE_MAX_MM}
+                  renderValue={(value) => roundToDecimals(value, 0)}
+                  onChange={setTraverseLimitOuter}
+                />
+              </div>
+              <TouchButton
+                variant="outline"
+                icon="lu:ArrowLeftToLine"
+                onClick={gotoTraverseLimitOuter}
+                disabled={traverseMoveDisabled}
+                isLoading={isLoading}
+              >
+                Go
+              </TouchButton>
+            </div>
+          </Label>
+          <Label label="Start Position">
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <EditValue
+                  value={state?.traverse_state.start_position}
+                  unit="mm"
+                  title="Start Position"
+                  defaultValue={defaultState?.traverse_state.start_position}
+                  min={state?.traverse_state.limit_inner ?? 0}
+                  max={state?.traverse_state.limit_outer ?? TRAVERSE_MAX_MM}
+                  renderValue={(value) => roundToDecimals(value, 0)}
+                  onChange={setTraverseStartPosition}
+                />
+              </div>
+              <TouchButton
+                variant="outline"
+                icon="lu:MapPin"
+                onClick={gotoTraverseStartPosition}
+                disabled={
+                  traverseMoveDisabled ||
+                  state?.traverse_state.is_homed !== true
+                }
+                isLoading={isLoading}
+              >
+                Go
+              </TouchButton>
+            </div>
           </Label>
           <Label label="Inner Limit">
-            <EditValue
-              value={state?.traverse_state.limit_inner}
-              unit="mm"
-              title="Inner Limit"
-              defaultValue={defaultState?.traverse_state.limit_inner}
-              min={0}
-              max={Math.min(
-                traverseMax,
-                (state?.traverse_state.limit_outer ?? traverseMax) - 1,
-              )}
-              renderValue={(value) => roundToDecimals(value, 0)}
-              onChange={setTraverseLimitInner}
-            />
-            <TouchButton
-              variant="outline"
-              icon="lu:ArrowRightToLine"
-              onClick={gotoTraverseLimitInner}
-              disabled={isDisabled}
-              isLoading={isLoading}
-            >
-              Go to Inner Limit
-            </TouchButton>
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <EditValue
+                  value={state?.traverse_state.limit_inner}
+                  unit="mm"
+                  title="Inner Limit"
+                  defaultValue={defaultState?.traverse_state.limit_inner}
+                  min={0}
+                  max={Math.min(
+                    TRAVERSE_MAX_MM,
+                    (state?.traverse_state.limit_outer ?? TRAVERSE_MAX_MM) - 1,
+                  )}
+                  renderValue={(value) => roundToDecimals(value, 0)}
+                  onChange={setTraverseLimitInner}
+                />
+              </div>
+              <TouchButton
+                variant="outline"
+                icon="lu:ArrowRightToLine"
+                onClick={gotoTraverseLimitInner}
+                disabled={traverseMoveDisabled}
+                isLoading={isLoading}
+              >
+                Go
+              </TouchButton>
+            </div>
           </Label>
           <Label label="Laserpointer">
             <SelectionGroupBoolean

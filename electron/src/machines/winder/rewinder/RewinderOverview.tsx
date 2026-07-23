@@ -4,7 +4,7 @@ import { TimeSeries } from "@/lib/timeseries";
 import React from "react";
 import { Spool } from "../Spool";
 import { TensionArm } from "../TensionArm";
-import { Mode, StateEvent } from "./rewinderNamespace";
+import { StateEvent } from "./rewinderNamespace";
 
 type Props = {
   state: StateEvent["data"] | undefined;
@@ -14,8 +14,6 @@ type Props = {
   pullerSpeed: TimeSeries;
   takeupTensionArmAngle: TimeSeries;
   sourceTensionArmAngle: TimeSeries;
-  modeOverride?: Mode;
-  canRewindOverride?: boolean;
 };
 
 // Two-wheel puller, styled like the tension arm wheel (gray-200 fill, black inner hub).
@@ -171,11 +169,9 @@ export function RewinderOverview({
   pullerSpeed,
   takeupTensionArmAngle,
   sourceTensionArmAngle,
-  modeOverride,
-  canRewindOverride,
 }: Props) {
-  const mode = modeOverride ?? state?.mode_state.mode;
-  const canRewind = canRewindOverride ?? state?.mode_state.can_rewind ?? false;
+  const mode = state?.mode_state.mode;
+  const canRewind = state?.mode_state.can_rewind ?? false;
   const ttaAngle = takeupTensionArmAngle.current?.value ?? 0;
   const staAngle = sourceTensionArmAngle.current?.value ?? 0;
 

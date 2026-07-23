@@ -7,16 +7,18 @@ use std::time::Instant;
 impl Rewinder {
     fn set_rewind_phase(&mut self, phase: RewindPhase, reason: &str) {
         if self.rewind_phase != phase {
-            println!(
+            tracing::debug!(
                 "Rewinder phase {:?} -> {:?}: {}",
-                self.rewind_phase, phase, reason
+                self.rewind_phase,
+                phase,
+                reason
             );
             self.rewind_control.start_phase(Instant::now());
         }
         self.rewind_phase = phase;
     }
 
-    fn hard_stop_to_standby(
+    pub(crate) fn hard_stop_to_standby(
         &mut self,
         reason: String,
         source_angle: Option<f64>,
@@ -32,6 +34,8 @@ impl Rewinder {
             .unwrap_or(false);
 
         tracing::warn!("Rewinder hard stop: {reason}");
+
+        self.save_current_traverse_as_resume_position();
 
         self.rewind_control.reset_motion();
         self.puller_speed_controller
@@ -59,6 +63,20 @@ impl Rewinder {
         self.emit_state();
     }
 
+    pub fn manual_hard_stop(&mut self) {
+        if !matches!(self.mode, RewinderMode::Rewind) {
+            self.emit_state();
+            return;
+        }
+
+        let angles = self.read_tension_arm_angles_deg().ok();
+        self.hard_stop_to_standby(
+            "manual hard stop".to_owned(),
+            angles.map(|(source_angle, _)| source_angle),
+            angles.map(|(_, takeup_angle)| takeup_angle),
+        );
+    }
+
     fn rewind_hard_stop_reason(
         &self,
         source_out_of_range: bool,
@@ -77,7 +95,9 @@ impl Rewinder {
             if !matches!(self.rewind_phase, RewindPhase::Idle) {
                 self.set_rewind_phase(RewindPhase::Idle, "mode is not Rewind");
             }
-            self.rewind_control.reset_motion();
+            if !matches!(self.mode, RewinderMode::Hold | RewinderMode::Prepare) {
+                self.rewind_control.reset_motion();
+            }
             return;
         }
 
@@ -125,7 +145,8 @@ impl Rewinder {
                     .config
                     .takeup_arm
                     .in_start_range(takeup_angle);
-                if source_ok && takeup_ok {
+                if source_ok && takeup_ok && self.traverse_at_active_rewind_start_position() {
+                    self.resume_traverse_position = None;
                     self.set_rewind_phase(RewindPhase::Precharge, "start angles validated");
                 }
             }
@@ -134,6 +155,7 @@ impl Rewinder {
                     >= self.rewind_control.config.precharge_duration
                 {
                     self.set_rewind_phase(RewindPhase::CrawlStart, "precharge settled");
+                    self.traverse_controller.start_traversing();
                 }
             }
             RewindPhase::CrawlStart => {
@@ -151,6 +173,7 @@ impl Rewinder {
             .get_target_speed()
             .get::<meter_per_minute>();
         let commanded_target_m_per_min = match self.rewind_phase {
+            _ if self.hold_decelerating_from_rewind => 0.0,
             RewindPhase::Precharge | RewindPhase::Validate | RewindPhase::Idle => 0.0,
             RewindPhase::CrawlStart => ui_target_m_per_min
                 .min(self.rewind_control.config.puller_ramp.crawl_speed_m_per_min),

@@ -26,6 +26,12 @@ export function RewinderPage() {
           title: "Graphs",
           icon: "lu:ChartLine",
         },
+        {
+          link: "presets",
+          activeLink: "presets",
+          title: "Presets",
+          icon: "lu:Save",
+        },
       ]}
     />
   );

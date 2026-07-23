@@ -21,7 +21,7 @@ impl Rewinder {
 
         let live_values = self.get_live_values();
         if matches!(self.mode, RewinderMode::Prepare) {
-            println!(
+            tracing::info!(
                 "Rewinder prepare: phase={:?} puller_command={:.2}m/min puller_actual={:.2}m/min takeup_angle={:.1}deg takeup_filtered={:.1}deg takeup_rate={:.1}deg/s takeup_cmd={:.1}rpm source_angle={:.1}deg source_filtered={:.1}deg source_rate={:.1}deg/s source_cmd={:.1}rpm",
                 self.rewind_control.prepare_phase,
                 self.rewind_control
@@ -44,7 +44,7 @@ impl Rewinder {
             return;
         }
 
-        println!(
+        tracing::info!(
             "Rewinder diag: phase={:?} puller_target={:.2}m/min puller_command={:.2}m/min puller_accel={:.2}m/min/s puller_actual={:.2}m/min takeup_angle={:.1}deg takeup_filtered={:.1}deg takeup_zone={:?} takeup_rate={:.1}deg/s takeup_controller={:.1}rpm source_angle={:.1}deg source_filtered={:.1}deg source_zone={:?} source_rate={:.1}deg/s source_recovery={} source_ff={:.1}rpm source_trim={:.1}rpm source_target={:.1}rpm source_cmd={:.1}rpm source_ratio={:.2} takeup_actual={:.1}rpm source_actual={:.1}rpm can_rewind={} reason={}",
             self.rewind_phase,
             self.puller_speed_controller

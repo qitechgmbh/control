@@ -63,8 +63,10 @@ export const traverseStateSchema = z.object({
   limit_outer: z.number(),
   position_in: z.number(),
   position_out: z.number(),
+  start_position: z.number(),
   is_going_in: z.boolean(),
   is_going_out: z.boolean(),
+  is_going_to_start: z.boolean(),
   is_homed: z.boolean(),
   is_going_home: z.boolean(),
   is_traversing: z.boolean(),
@@ -79,6 +81,7 @@ export const pullerStateSchema = z.object({
 
 export const takeupSpoolStateSchema = z.object({
   regulation_mode: spoolRegulationModeSchema,
+  diameter_mm: z.number().nullable(),
   minmax_min_speed: z.number(),
   minmax_max_speed: z.number(),
   adaptive_tension_target: z.number(),
@@ -89,6 +92,7 @@ export const takeupSpoolStateSchema = z.object({
 });
 
 export const sourceSpoolStateSchema = z.object({
+  diameter_mm: z.number().nullable(),
   adaptive_tension_target: z.number(),
 });
 
