@@ -13,6 +13,7 @@ import { roundToDecimals } from "@/lib/decimal";
 import React from "react";
 import { TraverseBar } from "../TraverseBar";
 import { RewinderOverview } from "./RewinderOverview";
+import { type Mode } from "./rewinderNamespace";
 import { useRewinder } from "./useRewinder";
 
 const TRAVERSE_MAX_MM = 180;
