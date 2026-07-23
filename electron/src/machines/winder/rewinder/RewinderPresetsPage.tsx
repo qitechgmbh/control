@@ -5,6 +5,7 @@ import {
 } from "@/components/preset/PresetPreviewTable";
 import { Preset } from "@/lib/preset/preset";
 import { rewinder } from "@/machines/properties";
+import React from "react";
 import { z } from "zod";
 import {
   prepareControlStateSchema,

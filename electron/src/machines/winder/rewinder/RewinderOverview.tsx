@@ -1,6 +1,7 @@
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { TimeSeries } from "@/lib/timeseries";
+import React from "react";
 import { Spool } from "../Spool";
 import { TensionArm } from "../TensionArm";
 import { StateEvent } from "./rewinderNamespace";

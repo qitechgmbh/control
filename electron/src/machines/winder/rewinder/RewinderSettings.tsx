@@ -5,6 +5,7 @@ import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { roundToDecimals } from "@/lib/decimal";
+import React from "react";
 import { useRewinder } from "./useRewinder";
 
 export function RewinderSettingsPage() {
