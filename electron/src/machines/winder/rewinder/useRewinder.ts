@@ -183,10 +183,29 @@ export function useRewinder() {
     serverRequest();
   };
 
+  const currentMode = stateOptimistic.value?.data.mode_state.mode;
+  const settingsEditPermitted =
+    currentMode === "Standby" || currentMode === "Hold";
+  const manualTraversePermitted =
+    currentMode === "Hold" &&
+    stateOptimistic.value?.data.traverse_state.is_homed === true;
+
   const setMode = (mode: Mode) => {
+    if (stateOptimistic.isOptimistic) {
+      return;
+    }
+
     if (
       mode === "Rewind" &&
       stateOptimistic.value?.data.mode_state.can_rewind !== true
+    ) {
+      return;
+    }
+
+    if (
+      mode === "Prepare" &&
+      (stateOptimistic.value?.data.takeup_tension_arm_state.zeroed !== true ||
+        stateOptimistic.value?.data.source_tension_arm_state.zeroed !== true)
     ) {
       return;
     }
@@ -212,6 +231,10 @@ export function useRewinder() {
   };
 
   const setPullerTargetSpeed = (targetSpeed: number) => {
+    if (stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.puller_state.target_speed = targetSpeed;
@@ -225,6 +248,10 @@ export function useRewinder() {
   };
 
   const setTakeupSpoolRegulationMode = (mode: SpoolRegulationMode) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.takeup_spool_state.regulation_mode = mode;
@@ -238,6 +265,10 @@ export function useRewinder() {
   };
 
   const setTakeupSpoolMinMaxMinSpeed = (speed: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.takeup_spool_state.minmax_min_speed = speed;
@@ -251,6 +282,10 @@ export function useRewinder() {
   };
 
   const setTakeupSpoolMinMaxMaxSpeed = (speed: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.takeup_spool_state.minmax_max_speed = speed;
@@ -264,6 +299,10 @@ export function useRewinder() {
   };
 
   const setTakeupTensionTarget = (target: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.takeup_spool_state.adaptive_tension_target = target;
@@ -277,6 +316,10 @@ export function useRewinder() {
   };
 
   const setTakeupSpoolAdaptiveRadiusLearningRate = (value: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.takeup_spool_state.adaptive_radius_learning_rate = value;
@@ -290,6 +333,10 @@ export function useRewinder() {
   };
 
   const setTakeupSpoolAdaptiveMaxSpeedMultiplier = (value: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.takeup_spool_state.adaptive_max_speed_multiplier = value;
@@ -303,6 +350,10 @@ export function useRewinder() {
   };
 
   const setTakeupSpoolAdaptiveAccelerationFactor = (value: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.takeup_spool_state.adaptive_acceleration_factor = value;
@@ -318,6 +369,10 @@ export function useRewinder() {
   const setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier = (
     value: number,
   ) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.takeup_spool_state.adaptive_deacceleration_urgency_multiplier =
@@ -334,6 +389,10 @@ export function useRewinder() {
   };
 
   const setTakeupSpoolDiameter = (diameterMm: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.takeup_spool_state.diameter_mm = diameterMm;
@@ -347,6 +406,10 @@ export function useRewinder() {
   };
 
   const setSourceSpoolDiameter = (diameterMm: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.source_spool_state.diameter_mm = diameterMm;
@@ -360,6 +423,10 @@ export function useRewinder() {
   };
 
   const setSourceTensionTarget = (target: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.source_spool_state.adaptive_tension_target = target;
@@ -376,6 +443,10 @@ export function useRewinder() {
     field: keyof StateEvent["data"]["takeup_tension_arm_control_state"],
     value: number,
   ) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     const currentConfig =
       stateOptimistic.value?.data.takeup_tension_arm_control_state;
     if (!currentConfig) return;
@@ -399,6 +470,10 @@ export function useRewinder() {
     field: keyof StateEvent["data"]["source_tension_arm_control_state"],
     value: number,
   ) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     const currentConfig =
       stateOptimistic.value?.data.source_tension_arm_control_state;
     if (!currentConfig) return;
@@ -422,6 +497,10 @@ export function useRewinder() {
     field: keyof StateEvent["data"]["prepare_control_state"],
     value: number,
   ) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     const currentConfig = stateOptimistic.value?.data.prepare_control_state;
     if (!currentConfig) return;
     const next = {
@@ -441,6 +520,10 @@ export function useRewinder() {
   };
 
   const setRewindAutomaticRequiredMeters = (meters: number) => {
+    if (stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.rewind_automatic_action_state.required_meters = meters;
@@ -454,6 +537,10 @@ export function useRewinder() {
   };
 
   const setRewindAutomaticAction = (mode: RewindAutomaticActionMode) => {
+    if (stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.rewind_automatic_action_state.mode = mode;
@@ -466,19 +553,33 @@ export function useRewinder() {
     );
   };
 
-  const resetRewindProgress = () =>
+  const resetRewindProgress = () => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     requestResetRewindProgress({
       machine_identification_unique: machineIdentification,
       data: "ResetRewindProgress",
     });
+  };
 
-  const hardStop = () =>
+  const hardStop = () => {
+    if (currentMode !== "Rewind" || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     requestHardStop({
       machine_identification_unique: machineIdentification,
       data: "HardStop",
     });
+  };
 
   const zeroTakeupTensionArm = () => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.takeup_tension_arm_state.zeroed = true;
@@ -492,6 +593,10 @@ export function useRewinder() {
   };
 
   const zeroSourceTensionArm = () => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.source_tension_arm_state.zeroed = true;
@@ -505,6 +610,10 @@ export function useRewinder() {
   };
 
   const setTraverseLimitInner = (limit: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.limit_inner = limit;
@@ -518,6 +627,10 @@ export function useRewinder() {
   };
 
   const setTraverseLimitOuter = (limit: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.limit_outer = limit;
@@ -531,6 +644,10 @@ export function useRewinder() {
   };
 
   const setTraverseStartPosition = (position: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.start_position = position;
@@ -544,6 +661,10 @@ export function useRewinder() {
   };
 
   const setTraverseStepSize = (stepSize: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.step_size = stepSize;
@@ -557,6 +678,10 @@ export function useRewinder() {
   };
 
   const setTraversePadding = (padding: number) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.padding = padding;
@@ -569,28 +694,52 @@ export function useRewinder() {
     );
   };
 
-  const gotoTraverseHome = () =>
+  const gotoTraverseHome = () => {
+    if (currentMode !== "Hold" || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     requestTraverseGotoHome({
       machine_identification_unique: machineIdentification,
       data: "GotoTraverseHome",
     });
-  const gotoTraverseLimitInner = () =>
+  };
+  const gotoTraverseLimitInner = () => {
+    if (!manualTraversePermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     requestTraverseGotoLimitInner({
       machine_identification_unique: machineIdentification,
       data: "GotoTraverseLimitInner",
     });
-  const gotoTraverseLimitOuter = () =>
+  };
+  const gotoTraverseLimitOuter = () => {
+    if (!manualTraversePermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     requestTraverseGotoLimitOuter({
       machine_identification_unique: machineIdentification,
       data: "GotoTraverseLimitOuter",
     });
-  const gotoTraverseStartPosition = () =>
+  };
+  const gotoTraverseStartPosition = () => {
+    if (!manualTraversePermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     requestTraverseGotoStartPosition({
       machine_identification_unique: machineIdentification,
       data: "GotoTraverseStartPosition",
     });
+  };
 
   const enableTraverseLaserpointer = (enabled: boolean) => {
+    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+      return;
+    }
+
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.laserpointer = enabled;
@@ -615,6 +764,8 @@ export function useRewinder() {
     rewindProgress,
     isLoading: stateOptimistic.isOptimistic,
     isDisabled: false,
+    settingsEditPermitted,
+    manualTraversePermitted,
     setMode,
     setPullerTargetSpeed,
     setTakeupSpoolRegulationMode,

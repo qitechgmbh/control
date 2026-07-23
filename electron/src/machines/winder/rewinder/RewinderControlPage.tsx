@@ -78,26 +78,40 @@ export function RewinderControlPage() {
 
   const isReady = state?.mode_state.can_rewind === true;
   const isPreparing = state?.mode_state.mode === "Prepare";
-  const traverseMoveDisabled = isDisabled || isPreparing;
+  const settingsEditable =
+    state?.mode_state.mode === "Standby" || state?.mode_state.mode === "Hold";
+  const settingsDisabled = isDisabled || isLoading || !settingsEditable;
+  const traverseSettingsDisabled =
+    isDisabled || isLoading || state?.mode_state.mode !== "Hold";
+  const manualTraverseAllowed =
+    state?.mode_state.mode === "Hold" &&
+    state?.traverse_state.is_homed === true;
+  const traverseMoveDisabled =
+    isDisabled || isLoading || !manualTraverseAllowed;
   const requiredMeters =
     state?.rewind_automatic_action_state.required_meters ?? 0;
   const progressMeters = rewindProgress.current?.value ?? 0;
   const remainingMeters = Math.max(requiredMeters - progressMeters, 0);
   const lineSpeedMPerMin = Math.abs(pullerSpeed.current?.value ?? 0);
+  const targetSpeedMPerMin = Math.abs(state?.puller_state.target_speed ?? 0);
   const autoStopEnabled =
     state?.rewind_automatic_action_state.mode !== "NoAction" &&
     requiredMeters > 0;
+  const etaSpeedMPerMin =
+    targetSpeedMPerMin > 0.01 ? targetSpeedMPerMin : lineSpeedMPerMin;
   const etaSeconds =
-    autoStopEnabled && remainingMeters > 0 && lineSpeedMPerMin > 0.01
-      ? (remainingMeters / lineSpeedMPerMin) * 60
+    autoStopEnabled && remainingMeters > 0 && etaSpeedMPerMin > 0.01
+      ? (remainingMeters / etaSpeedMPerMin) * 60
       : null;
   const etaText = !autoStopEnabled
-    ? "No auto stop"
-    : remainingMeters <= 0
-      ? "Reached"
-      : etaSeconds == null
-        ? "Waiting for movement"
-        : formatEta(etaSeconds);
+    ? "Auto stop off"
+    : requiredMeters <= 0
+      ? "Set target length"
+      : remainingMeters <= 0
+        ? "Target reached"
+        : etaSeconds == null
+          ? "Set line speed"
+          : formatEta(etaSeconds);
 
   return (
     <Page>
@@ -140,7 +154,7 @@ export function RewinderControlPage() {
           </div>
           <SelectionGroup<Mode>
             value={state?.mode_state.mode}
-            disabled={isDisabled}
+            disabled={isDisabled || isLoading}
             loading={isLoading}
             onChange={setMode}
             orientation="vertical"
@@ -169,7 +183,7 @@ export function RewinderControlPage() {
                 icon: "lu:Crosshair",
                 isActiveClassName: isReady ? "bg-green-600" : "bg-amber-500",
                 className: "min-h-16",
-                disabled: !tensionArmsZeroed,
+                disabled: !tensionArmsZeroed || isPreparing,
               },
               Rewind: {
                 children: "Rewind",
@@ -194,13 +208,14 @@ export function RewinderControlPage() {
             min={0}
             max={MAX_TARGET_SPEED_M_PER_MIN}
             renderValue={(value) => roundToDecimals(value, 2)}
+            disabled={isDisabled || isLoading}
             onChange={setPullerTargetSpeed}
           />
           <TouchButton
             variant="outline"
             icon="lu:RotateCcw"
             onClick={zeroTensionArms}
-            disabled={isDisabled}
+            disabled={settingsDisabled}
             isLoading={isLoading}
           >
             Zero Tension Arms
@@ -209,7 +224,9 @@ export function RewinderControlPage() {
             variant="destructive"
             icon="lu:OctagonX"
             onClick={hardStop}
-            disabled={isDisabled || state?.mode_state.mode !== "Rewind"}
+            disabled={
+              isDisabled || isLoading || state?.mode_state.mode !== "Rewind"
+            }
             isLoading={isLoading}
           >
             Hard Stop
@@ -240,12 +257,13 @@ export function RewinderControlPage() {
             max={10000}
             step={0.1}
             renderValue={(value) => roundToDecimals(value, 1)}
+            disabled={isDisabled || isLoading}
             onChange={setRewindAutomaticRequiredMeters}
           />
           <Label label="After Length">
             <SelectionGroup
               value={state?.rewind_automatic_action_state.mode}
-              disabled={isDisabled}
+              disabled={isDisabled || isLoading}
               loading={isLoading}
               options={{
                 NoAction: { children: "No Action", icon: "lu:Minus" },
@@ -260,7 +278,7 @@ export function RewinderControlPage() {
             variant="outline"
             icon="lu:RotateCcw"
             onClick={resetRewindProgress}
-            disabled={isDisabled}
+            disabled={settingsDisabled}
             isLoading={isLoading}
           >
             Reset Progress
@@ -297,6 +315,7 @@ export function RewinderControlPage() {
                     (state?.traverse_state.limit_inner ?? 0) + 1,
                   )}
                   max={TRAVERSE_MAX_MM}
+                  disabled={traverseSettingsDisabled}
                   renderValue={(value) => roundToDecimals(value, 0)}
                   onChange={setTraverseLimitOuter}
                 />
@@ -322,6 +341,7 @@ export function RewinderControlPage() {
                   defaultValue={defaultState?.traverse_state.start_position}
                   min={state?.traverse_state.limit_inner ?? 0}
                   max={state?.traverse_state.limit_outer ?? TRAVERSE_MAX_MM}
+                  disabled={traverseSettingsDisabled}
                   renderValue={(value) => roundToDecimals(value, 0)}
                   onChange={setTraverseStartPosition}
                 />
@@ -353,6 +373,7 @@ export function RewinderControlPage() {
                     TRAVERSE_MAX_MM,
                     (state?.traverse_state.limit_outer ?? TRAVERSE_MAX_MM) - 1,
                   )}
+                  disabled={traverseSettingsDisabled}
                   renderValue={(value) => roundToDecimals(value, 0)}
                   onChange={setTraverseLimitInner}
                 />
@@ -372,6 +393,7 @@ export function RewinderControlPage() {
             <SelectionGroupBoolean
               value={laserOn}
               onChange={enableTraverseLaserpointer}
+              disabled={settingsDisabled}
               optionTrue={{
                 children: "On",
                 icon: "lu:Lightbulb",
@@ -385,7 +407,9 @@ export function RewinderControlPage() {
               variant="outline"
               icon="lu:House"
               onClick={gotoTraverseHome}
-              disabled={isDisabled}
+              disabled={
+                isDisabled || isLoading || state?.mode_state.mode !== "Hold"
+              }
               isLoading={isLoading}
             >
               Go to Home

@@ -121,6 +121,8 @@ export function RewinderPresetsPage() {
   const {
     state,
     defaultState,
+    isLoading,
+    settingsEditPermitted,
     setPullerTargetSpeed,
     setRewindAutomaticRequiredMeters,
     setRewindAutomaticAction,
@@ -147,6 +149,10 @@ export function RewinderPresetsPage() {
   } = useRewinder();
 
   const applyPreset = (preset: Preset<RewinderPresetData>) => {
+    if (!settingsEditPermitted || isLoading) {
+      return;
+    }
+
     const data = preset.data ?? {};
     const traverse = data.traverse_state ?? {};
     const puller = data.puller_state ?? {};
@@ -345,6 +351,7 @@ export function RewinderPresetsPage() {
       defaultState={toPresetData(defaultState)}
       applyPreset={applyPreset}
       previewEntries={previewEntries}
+      applyDisabled={!settingsEditPermitted || isLoading}
     />
   );
 }

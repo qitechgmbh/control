@@ -18,6 +18,7 @@ export type PresetShowDialogProps<T> = {
   previewEntries: PresetPreviewEntries<T>;
   onApply: (preset: Preset<T>) => void;
   hideDate?: boolean;
+  applyDisabled?: boolean;
 };
 
 export function PresetShowDialog<T>({
@@ -25,6 +26,7 @@ export function PresetShowDialog<T>({
   onApply,
   previewEntries,
   hideDate,
+  applyDisabled,
 }: PresetShowDialogProps<T>) {
   const [open, setOpen] = useState(false);
 
@@ -78,6 +80,7 @@ export function PresetShowDialog<T>({
             className="h-21 flex-1 flex-shrink-0"
             onClick={() => handleApply(preset)}
             icon="lu:HardDriveDownload"
+            disabled={applyDisabled}
           >
             Apply to Machine
           </TouchButton>
