@@ -4,7 +4,7 @@ import { TimeSeries } from "@/lib/timeseries";
 import React from "react";
 import { Spool } from "../Spool";
 import { TensionArm } from "../TensionArm";
-import { StateEvent } from "./rewinderNamespace";
+import { type Mode, type StateEvent } from "./rewinderNamespace";
 
 type Props = {
   state: StateEvent["data"] | undefined;
