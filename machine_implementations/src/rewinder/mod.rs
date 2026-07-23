@@ -78,7 +78,13 @@ pub struct Rewinder {
     pub takeup_spool_step_converter: AngularStepConverter,
     pub source_spool_step_converter: AngularStepConverter,
     pub traverse_controller: TraverseController,
+    pub traverse_start_position: Length,
+    pub resume_traverse_position: Option<Length>,
+    pub takeup_spool_diameter_mm: Option<f64>,
+    pub source_spool_diameter_mm: Option<f64>,
     pub rewind_phase: RewindPhase,
+    pub hold_decelerating_from_rewind: bool,
+    pub pending_mode_after_rewind_deceleration: Option<RewinderMode>,
     pub rewind_control: RewindControlState,
     pub rewind_automatic_action: auto_stop::RewindAutomaticAction,
     emitted_default_state: bool,
@@ -98,26 +104,37 @@ impl Rewinder {
     pub fn puller_motion_permitted(&self) -> bool {
         matches!(self.puller_mode, PullerMode::Pull)
             && (matches!(self.mode, RewinderMode::Pull | RewinderMode::Prepare)
+                || self.hold_decelerating_from_rewind
                 || (self.rewind_motion_permitted()
                     && matches!(
                         self.rewind_phase,
                         RewindPhase::CrawlStart | RewindPhase::Rewind
                     )))
+    }
+
+    pub fn puller_speed_output_permitted(&self) -> bool {
+        !matches!(self.puller_mode, PullerMode::Standby)
     }
 
     pub fn takeup_spool_motion_permitted(&self) -> bool {
         matches!(self.takeup_spool_mode, TakeupSpoolMode::Drive)
             && (matches!(self.mode, RewinderMode::Prepare)
+                || self.hold_decelerating_from_rewind
                 || (self.rewind_motion_permitted()
                     && matches!(
                         self.rewind_phase,
                         RewindPhase::Precharge | RewindPhase::CrawlStart | RewindPhase::Rewind
                     )))
+    }
+
+    pub fn takeup_spool_speed_output_permitted(&self) -> bool {
+        !matches!(self.takeup_spool_mode, TakeupSpoolMode::Standby)
     }
 
     pub fn source_spool_motion_permitted(&self) -> bool {
         matches!(self.source_spool_mode, SourceSpoolMode::Drive)
             && (matches!(self.mode, RewinderMode::Pull | RewinderMode::Prepare)
+                || self.hold_decelerating_from_rewind
                 || (self.rewind_motion_permitted()
                     && matches!(
                         self.rewind_phase,
@@ -125,9 +142,15 @@ impl Rewinder {
                     )))
     }
 
+    pub fn source_spool_speed_output_permitted(&self) -> bool {
+        !matches!(self.source_spool_mode, SourceSpoolMode::Standby)
+    }
+
     pub fn traverse_motion_permitted(&self) -> bool {
         !matches!(self.traverse_mode, TraverseMode::Standby)
-            && (matches!(self.mode, RewinderMode::Hold)
+            && (matches!(self.mode, RewinderMode::Hold | RewinderMode::Prepare)
+                || (self.rewind_motion_permitted()
+                    && self.traverse_controller.is_going_to_target())
                 || (self.rewind_motion_permitted()
                     && matches!(
                         self.rewind_phase,
@@ -135,8 +158,40 @@ impl Rewinder {
                     )))
     }
 
+    pub fn traverse_at_start_position(&self) -> bool {
+        self.traverse_at_position(self.traverse_start_position)
+    }
+
+    pub fn active_rewind_start_position(&self) -> Length {
+        self.resume_traverse_position
+            .unwrap_or(self.traverse_start_position)
+    }
+
+    pub fn traverse_at_active_rewind_start_position(&self) -> bool {
+        self.traverse_at_position(self.active_rewind_start_position())
+    }
+
+    pub fn traverse_at_position(&self, target: Length) -> bool {
+        self.traverse_controller
+            .get_current_position()
+            .map(|position| (position - target).abs() <= Length::new::<millimeter>(0.5))
+            .unwrap_or(false)
+    }
+
     fn validate_traverse_limits(inner: Length, outer: Length) -> bool {
         outer > inner + Length::new::<millimeter>(0.9)
+    }
+
+    pub fn clamp_traverse_position(&self, position: Length) -> Length {
+        let inner = self.traverse_controller.get_limit_inner();
+        let outer = self.traverse_controller.get_limit_outer();
+        if position < inner {
+            inner
+        } else if position > outer {
+            outer
+        } else {
+            position
+        }
     }
 
     pub fn sync_traverse_speed(&mut self) {
@@ -212,9 +267,9 @@ pub enum TraverseMode {
 impl From<RewinderMode> for TraverseMode {
     fn from(mode: RewinderMode) -> Self {
         match mode {
-            RewinderMode::Hold => Self::Hold,
+            RewinderMode::Hold | RewinderMode::Prepare => Self::Hold,
             RewinderMode::Rewind => Self::Traverse,
-            RewinderMode::Standby | RewinderMode::Pull | RewinderMode::Prepare => Self::Standby,
+            RewinderMode::Standby | RewinderMode::Pull => Self::Standby,
         }
     }
 }

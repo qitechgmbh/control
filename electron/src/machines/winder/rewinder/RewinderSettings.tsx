@@ -5,7 +5,6 @@ import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { roundToDecimals } from "@/lib/decimal";
-import React from "react";
 import { useRewinder } from "./useRewinder";
 
 export function RewinderSettingsPage() {
@@ -24,17 +23,41 @@ export function RewinderSettingsPage() {
     setTakeupSpoolAdaptiveMaxSpeedMultiplier,
     setTakeupSpoolAdaptiveAccelerationFactor,
     setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier,
+    setTakeupSpoolDiameter,
+    setSourceSpoolDiameter,
+    setSourceTensionTarget,
     setTakeupTensionArmControl,
     setSourceTensionArmControl,
     setPrepareControl,
   } = useRewinder();
-  const settingsDisabled = isDisabled;
-  const angleSettingsDisabled = isDisabled;
+  const settingsEditable =
+    state?.mode_state.mode === "Standby" || state?.mode_state.mode === "Hold";
+  const settingsDisabled = isDisabled || !settingsEditable;
+  const angleSettingsDisabled = settingsDisabled;
 
   return (
     <Page>
       <ControlGrid>
         <ControlCard title="Takeup Spool">
+          <Label label="Diameter">
+            <EditValue
+              value={state?.takeup_spool_state.diameter_mm ?? 100}
+              title="Takeup Spool Diameter"
+              unit="mm"
+              step={1}
+              min={10}
+              max={500}
+              disabled={settingsDisabled}
+              defaultValue={defaultState?.takeup_spool_state.diameter_mm ?? 100}
+              renderValue={(value) => roundToDecimals(value, 0)}
+              onChange={setTakeupSpoolDiameter}
+            />
+            {state?.takeup_spool_state.diameter_mm == null ? (
+              <span className="text-sm text-amber-600">
+                Not set yet. Confirm for better takeup feed-forward.
+              </span>
+            ) : null}
+          </Label>
           <Label label="Speed Algorithm">
             <SelectionGroup
               value={state?.takeup_spool_state.regulation_mode}
@@ -179,6 +202,47 @@ export function RewinderSettingsPage() {
               </Label>
             </div>
           )}
+        </ControlCard>
+
+        <ControlCard title="Source Spool">
+          <div className="flex flex-row flex-wrap gap-4">
+            <Label label="Diameter">
+              <EditValue
+                value={state?.source_spool_state.diameter_mm ?? 100}
+                title="Source Spool Diameter"
+                unit="mm"
+                step={1}
+                min={10}
+                max={500}
+                disabled={settingsDisabled}
+                defaultValue={
+                  defaultState?.source_spool_state.diameter_mm ?? 100
+                }
+                renderValue={(value) => roundToDecimals(value, 0)}
+                onChange={setSourceSpoolDiameter}
+              />
+              {state?.source_spool_state.diameter_mm == null ? (
+                <span className="text-sm text-amber-600">
+                  Not set yet. Confirm for better source feed-forward.
+                </span>
+              ) : null}
+            </Label>
+            <Label label="Tension Target">
+              <EditValue
+                value={state?.source_spool_state.adaptive_tension_target}
+                title="Source Tension Target"
+                step={0.01}
+                min={0}
+                max={1}
+                disabled={settingsDisabled}
+                defaultValue={
+                  defaultState?.source_spool_state.adaptive_tension_target
+                }
+                renderValue={(value) => roundToDecimals(value, 2)}
+                onChange={setSourceTensionTarget}
+              />
+            </Label>
+          </div>
         </ControlCard>
 
         <ControlCard title="Takeup Tension Arm">

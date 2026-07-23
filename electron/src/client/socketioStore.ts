@@ -11,6 +11,7 @@ import { FPS_30 } from "@/lib/constants";
 import { mainNamespaceStore } from "./mainNamespace";
 import { router } from "@/routes/router";
 import { trimTimeSeriesFields } from "@/lib/timeseries";
+import { frontendDiagnostic } from "./frontendDiagnostics";
 
 /**
  * Simple buffer-based store updater to limit React re-renders to ~30 FPS
@@ -311,6 +312,10 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
     // add handlers
     socket.on("connect", () => {
       console.log(`Connected to ${namespace_path}`);
+      frontendDiagnostic("socket.connect", {
+        namespace: namespace_path,
+        socketId: socket.id,
+      });
       resetStore(set);
       if (namespace_path === "/main") {
         set(
@@ -322,6 +327,12 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
     });
     socket.on("disconnect", (reason) => {
       console.debug(`Disconnected from ${namespace_path}: ${reason}`);
+      frontendDiagnostic("socket.disconnect", {
+        namespace: namespace_path,
+        reason,
+        socketId: socket.id,
+        namespaceCount: Object.keys(get().namespaces).length,
+      });
       resetStore(set);
       if (namespace_path === "/main") {
         mainNamespaceStore.setState({
@@ -352,6 +363,12 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
           }
         }, 500);
       }
+    });
+    socket.on("connect_error", (error) => {
+      frontendDiagnostic("socket.connect_error", {
+        namespace: namespace_path,
+        message: error.message,
+      });
     });
     socket.on("event", (event: unknown) => {
       const event_parsed = eventSchema(z.any()).safeParse(event);

@@ -58,10 +58,13 @@ pub enum Mutation {
     SetTakeupSpoolAdaptiveMaxSpeedMultiplier(f64),
     SetTakeupSpoolAdaptiveAccelerationFactor(f64),
     SetTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier(f64),
+    SetTakeupSpoolDiameter(f64),
+    SetSourceSpoolDiameter(f64),
     SetSourceTensionTarget(f64),
     SetTakeupTensionArmControl(TensionArmControlState),
     SetSourceTensionArmControl(TensionArmControlState),
     SetPrepareControl(PrepareControlState),
+    HardStop,
     SetRewindAutomaticRequiredMeters(f64),
     SetRewindAutomaticAction(RewindAutomaticActionMode),
     ResetRewindProgress,
@@ -69,10 +72,12 @@ pub enum Mutation {
     ZeroSourceTensionArm,
     SetTraverseLimitOuter(f64),
     SetTraverseLimitInner(f64),
+    SetTraverseStartPosition(f64),
     SetTraverseStepSize(f64),
     SetTraversePadding(f64),
     GotoTraverseLimitOuter,
     GotoTraverseLimitInner,
+    GotoTraverseStartPosition,
     GotoTraverseHome,
     EnableTraverseLaserpointer(bool),
 }
@@ -147,8 +152,10 @@ pub struct TraverseState {
     pub limit_outer: f64,
     pub position_in: f64,
     pub position_out: f64,
+    pub start_position: f64,
     pub is_going_in: bool,
     pub is_going_out: bool,
+    pub is_going_to_start: bool,
     pub is_homed: bool,
     pub is_going_home: bool,
     pub is_traversing: bool,
@@ -165,6 +172,7 @@ pub struct PullerState {
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct TakeupSpoolState {
     pub regulation_mode: SpoolSpeedControllerType,
+    pub diameter_mm: Option<f64>,
     pub minmax_min_speed: f64,
     pub minmax_max_speed: f64,
     pub adaptive_tension_target: f64,
@@ -176,6 +184,7 @@ pub struct TakeupSpoolState {
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct SourceSpoolState {
+    pub diameter_mm: Option<f64>,
     pub adaptive_tension_target: f64,
 }
 
@@ -287,6 +296,8 @@ impl MachineApi for super::Rewinder {
             Mutation::SetTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier(value) => {
                 self.takeup_spool_set_adaptive_deacceleration_urgency_multiplier(value)
             }
+            Mutation::SetTakeupSpoolDiameter(value) => self.takeup_spool_set_diameter(value),
+            Mutation::SetSourceSpoolDiameter(value) => self.source_spool_set_diameter(value),
             Mutation::SetSourceTensionTarget(target) => {
                 self.source_spool_set_adaptive_tension_target(target)
             }
@@ -297,6 +308,7 @@ impl MachineApi for super::Rewinder {
                 self.set_source_tension_arm_control(config)
             }
             Mutation::SetPrepareControl(config) => self.set_prepare_control(config),
+            Mutation::HardStop => self.manual_hard_stop(),
             Mutation::SetRewindAutomaticRequiredMeters(meters) => {
                 self.set_rewind_automatic_required_meters(meters)
             }
@@ -306,10 +318,14 @@ impl MachineApi for super::Rewinder {
             Mutation::ZeroSourceTensionArm => self.source_tension_arm_zero(),
             Mutation::SetTraverseLimitOuter(limit) => self.traverse_set_limit_outer(limit),
             Mutation::SetTraverseLimitInner(limit) => self.traverse_set_limit_inner(limit),
+            Mutation::SetTraverseStartPosition(position) => {
+                self.traverse_set_start_position(position)
+            }
             Mutation::SetTraverseStepSize(size) => self.traverse_set_step_size(size),
             Mutation::SetTraversePadding(padding) => self.traverse_set_padding(padding),
             Mutation::GotoTraverseLimitOuter => self.traverse_goto_limit_outer(),
             Mutation::GotoTraverseLimitInner => self.traverse_goto_limit_inner(),
+            Mutation::GotoTraverseStartPosition => self.traverse_goto_start_position(),
             Mutation::GotoTraverseHome => self.traverse_goto_home(),
             Mutation::EnableTraverseLaserpointer(enable) => self.set_laser(enable),
         }

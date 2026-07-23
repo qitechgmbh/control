@@ -17,7 +17,11 @@ impl Rewinder {
     /// mode is converted into an axis mode, then only the required hardware
     /// transitions are applied.
     fn set_takeup_spool_mode(&mut self, mode: &RewinderMode) {
-        let mode: TakeupSpoolMode = mode.clone().into();
+        let mode = if matches!(mode, RewinderMode::Hold) && self.hold_decelerating_from_rewind {
+            TakeupSpoolMode::Drive
+        } else {
+            mode.clone().into()
+        };
         let spool = &mut *self.takeup_spool.borrow_mut();
 
         match self.takeup_spool_mode {
@@ -57,7 +61,11 @@ impl Rewinder {
 
     /// Apply mode changes to the source spool.
     fn set_source_spool_mode(&mut self, mode: &RewinderMode) {
-        let mode: SourceSpoolMode = mode.clone().into();
+        let mode = if matches!(mode, RewinderMode::Hold) && self.hold_decelerating_from_rewind {
+            SourceSpoolMode::Drive
+        } else {
+            mode.clone().into()
+        };
         let spool = &mut *self.source_spool.borrow_mut();
 
         match self.source_spool_mode {
@@ -97,7 +105,11 @@ impl Rewinder {
 
     /// Apply mode changes to the puller.
     fn set_puller_mode(&mut self, mode: &RewinderMode) {
-        let mode: PullerMode = mode.clone().into();
+        let mode = if matches!(mode, RewinderMode::Hold) && self.hold_decelerating_from_rewind {
+            PullerMode::Pull
+        } else {
+            mode.clone().into()
+        };
         let puller = &mut *self.puller.borrow_mut();
 
         match self.puller_mode {
@@ -139,14 +151,12 @@ impl Rewinder {
     fn set_traverse_mode(&mut self, mode: &RewinderMode) {
         let mode: TraverseMode = mode.clone().into();
         let traverse = &mut *self.traverse.borrow_mut();
-
         match self.traverse_mode {
             TraverseMode::Standby => match mode {
                 TraverseMode::Standby => {}
                 TraverseMode::Hold => {
                     traverse.set_enabled(TRAVERSE_PORT, true);
                     self.traverse_controller.set_enabled(true);
-                    self.traverse_controller.goto_home();
                 }
                 TraverseMode::Traverse => {
                     traverse.set_enabled(TRAVERSE_PORT, true);
@@ -170,7 +180,7 @@ impl Rewinder {
                     self.traverse_controller.set_enabled(false);
                 }
                 TraverseMode::Hold => {
-                    self.traverse_controller.goto_home();
+                    self.traverse_controller.stop();
                 }
                 TraverseMode::Traverse => {}
             },

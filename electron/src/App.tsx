@@ -10,6 +10,7 @@ import { Toaster } from "./components/ui/sonner";
 import { enableMapSet } from "immer";
 import { GlobalLaserToastManager } from "./setup/GlobalLaserToastManager";
 import { startMemoryMonitor } from "./client/memoryMonitor";
+import { installFrontendDiagnostics } from "./client/frontendDiagnostics";
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -21,6 +22,10 @@ export default function App() {
 
   useEffect(() => {
     return startMemoryMonitor();
+  }, []);
+
+  useEffect(() => {
+    return installFrontendDiagnostics();
   }, []);
 
   return (
