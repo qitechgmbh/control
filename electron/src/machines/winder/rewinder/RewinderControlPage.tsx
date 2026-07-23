@@ -83,6 +83,8 @@ export function RewinderControlPage() {
     !isDecelerating &&
     (state?.mode_state.mode === "Standby" || state?.mode_state.mode === "Hold");
   const commandsDisabled = isDisabled || isLoading;
+  const modeSelectionDisabled = commandsDisabled;
+  const motionCommandDisabled = commandsDisabled || isDecelerating;
   const settingsDisabled = commandsDisabled || !settingsEditable;
   const traverseSettingsDisabled = settingsDisabled;
   const manualTraverseAllowed =
@@ -159,7 +161,7 @@ export function RewinderControlPage() {
           </div>
           <SelectionGroup<Mode>
             value={state?.mode_state.mode}
-            disabled={commandsDisabled}
+            disabled={modeSelectionDisabled}
             onChange={setMode}
             orientation="vertical"
             className="grid grid-cols-2 gap-2"
@@ -181,20 +183,21 @@ export function RewinderControlPage() {
                 icon: "lu:ArrowRight",
                 isActiveClassName: "bg-green-600",
                 className: "min-h-16",
+                disabled: isDecelerating,
               },
               Prepare: {
                 children: "Prepare",
                 icon: "lu:Crosshair",
                 isActiveClassName: isReady ? "bg-green-600" : "bg-amber-500",
                 className: "min-h-16",
-                disabled: !tensionArmsZeroed,
+                disabled: isDecelerating || !tensionArmsZeroed,
               },
               Rewind: {
                 children: "Rewind",
                 icon: "lu:RefreshCw",
                 isActiveClassName: "bg-green-600",
                 className: "col-span-2 min-h-16",
-                disabled: !isReady,
+                disabled: isDecelerating || !isReady,
               },
             }}
           />
@@ -212,7 +215,7 @@ export function RewinderControlPage() {
             min={0}
             max={MAX_TARGET_SPEED_M_PER_MIN}
             renderValue={(value) => roundToDecimals(value, 2)}
-            disabled={commandsDisabled}
+            disabled={motionCommandDisabled}
             onChange={setPullerTargetSpeed}
           />
           <TouchButton
@@ -228,7 +231,10 @@ export function RewinderControlPage() {
             variant="destructive"
             icon="lu:OctagonX"
             onClick={hardStop}
-            disabled={commandsDisabled || state?.mode_state.mode !== "Rewind"}
+            disabled={
+              commandsDisabled ||
+              (!isDecelerating && state?.mode_state.mode !== "Rewind")
+            }
             isLoading={isLoading}
           >
             Hard Stop
@@ -259,13 +265,13 @@ export function RewinderControlPage() {
             max={10000}
             step={0.1}
             renderValue={(value) => roundToDecimals(value, 1)}
-            disabled={commandsDisabled}
+            disabled={motionCommandDisabled}
             onChange={setRewindAutomaticRequiredMeters}
           />
           <Label label="After Length">
             <SelectionGroup
               value={state?.rewind_automatic_action_state.mode}
-              disabled={commandsDisabled}
+              disabled={motionCommandDisabled}
               options={{
                 NoAction: { children: "No Action", icon: "lu:Minus" },
                 Hold: { children: "Hold", icon: "lu:CirclePause" },

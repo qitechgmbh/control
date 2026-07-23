@@ -197,6 +197,12 @@ export function useRewinder() {
 
   const setMode = (mode: Mode) => {
     if (isDecelerating) {
+      if (mode === "Hold" || mode === "Standby") {
+        void requestModeSet({
+          machine_identification_unique: machineIdentification,
+          data: { SetMode: mode },
+        });
+      }
       return;
     }
 
@@ -561,8 +567,7 @@ export function useRewinder() {
 
   const hardStop = () => {
     if (
-      isDecelerating ||
-      currentMode !== "Rewind" ||
+      (!isDecelerating && currentMode !== "Rewind") ||
       stateOptimistic.isOptimistic
     ) {
       return;
