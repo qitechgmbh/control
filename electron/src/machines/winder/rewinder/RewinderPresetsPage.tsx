@@ -235,12 +235,12 @@ export function RewinderPresetsPage() {
       traverse.limit_inner ?? defaults?.traverse_state.limit_inner ?? 22.0,
     );
     setTraverseLimitOuter(
-      traverse.limit_outer ?? defaults?.traverse_state.limit_outer ?? 180.0,
+      traverse.limit_outer ?? defaults?.traverse_state.limit_outer ?? 92.0,
     );
     setTraverseStartPosition(
       traverse.start_position ??
         defaults?.traverse_state.start_position ??
-        180.0,
+        92.0,
     );
     setTraverseStepSize(
       traverse.step_size ?? defaults?.traverse_state.step_size ?? 5.0,

@@ -13,6 +13,8 @@ export function RewinderSettingsPage() {
     defaultState,
     isDisabled,
     isLoading,
+    settingsEditPermitted,
+    prepareSettingsEditPermitted,
     setTraverseStepSize,
     setTraversePadding,
     setTakeupSpoolRegulationMode,
@@ -30,10 +32,9 @@ export function RewinderSettingsPage() {
     setSourceTensionArmControl,
     setPrepareControl,
   } = useRewinder();
-  const settingsEditable =
-    state?.mode_state.mode === "Standby" || state?.mode_state.mode === "Hold";
-  const settingsDisabled = isDisabled || !settingsEditable;
-  const angleSettingsDisabled = settingsDisabled;
+  const settingsDisabled = isDisabled || isLoading || !settingsEditPermitted;
+  const prepareSettingsDisabled =
+    isDisabled || isLoading || !prepareSettingsEditPermitted;
 
   return (
     <Page>
@@ -255,7 +256,7 @@ export function RewinderSettingsPage() {
                 step={1}
                 min={-45}
                 max={120}
-                disabled={angleSettingsDisabled}
+                disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.takeup_tension_arm_control_state.hard_min_angle
                 }
@@ -273,7 +274,7 @@ export function RewinderSettingsPage() {
                 step={1}
                 min={-45}
                 max={135}
-                disabled={angleSettingsDisabled}
+                disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.takeup_tension_arm_control_state.hard_max_angle
                 }
@@ -291,7 +292,7 @@ export function RewinderSettingsPage() {
                 step={1}
                 min={-45}
                 max={120}
-                disabled={angleSettingsDisabled}
+                disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.takeup_tension_arm_control_state.start_min_angle
                 }
@@ -309,7 +310,7 @@ export function RewinderSettingsPage() {
                 step={1}
                 min={-45}
                 max={135}
-                disabled={angleSettingsDisabled}
+                disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.takeup_tension_arm_control_state.start_max_angle
                 }
@@ -327,7 +328,7 @@ export function RewinderSettingsPage() {
                 step={1}
                 min={-45}
                 max={135}
-                disabled={angleSettingsDisabled}
+                disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.takeup_tension_arm_control_state.target_angle
                 }
@@ -350,7 +351,7 @@ export function RewinderSettingsPage() {
                 step={1}
                 min={-45}
                 max={120}
-                disabled={angleSettingsDisabled}
+                disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.source_tension_arm_control_state.hard_min_angle
                 }
@@ -368,7 +369,7 @@ export function RewinderSettingsPage() {
                 step={1}
                 min={-45}
                 max={135}
-                disabled={angleSettingsDisabled}
+                disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.source_tension_arm_control_state.hard_max_angle
                 }
@@ -386,7 +387,7 @@ export function RewinderSettingsPage() {
                 step={1}
                 min={-45}
                 max={120}
-                disabled={angleSettingsDisabled}
+                disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.source_tension_arm_control_state.start_min_angle
                 }
@@ -404,7 +405,7 @@ export function RewinderSettingsPage() {
                 step={1}
                 min={-45}
                 max={135}
-                disabled={angleSettingsDisabled}
+                disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.source_tension_arm_control_state.start_max_angle
                 }
@@ -422,7 +423,7 @@ export function RewinderSettingsPage() {
                 step={1}
                 min={-45}
                 max={135}
-                disabled={angleSettingsDisabled}
+                disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.source_tension_arm_control_state.target_angle
                 }
@@ -445,7 +446,7 @@ export function RewinderSettingsPage() {
                 step={0.5}
                 min={1}
                 max={20}
-                disabled={angleSettingsDisabled}
+                disabled={prepareSettingsDisabled}
                 defaultValue={
                   defaultState?.prepare_control_state.tolerance_angle
                 }
@@ -463,7 +464,7 @@ export function RewinderSettingsPage() {
                 step={0.5}
                 min={0.1}
                 max={30}
-                disabled={angleSettingsDisabled}
+                disabled={prepareSettingsDisabled}
                 defaultValue={defaultState?.prepare_control_state.settle_rate}
                 renderValue={(value) => roundToDecimals(value, 1)}
                 onChange={(value) => setPrepareControl("settle_rate", value)}
