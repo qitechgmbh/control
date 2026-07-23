@@ -10,6 +10,7 @@ import {
 import { StatusBadge } from "@/control/StatusBadge";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { roundToDecimals } from "@/lib/decimal";
+import React from "react";
 import { TraverseBar } from "../TraverseBar";
 import { RewinderOverview } from "./RewinderOverview";
 import { useRewinder } from "./useRewinder";
