@@ -1,5 +1,3 @@
-import { produce } from "immer";
-
 /**
  * Interface for a single data point
  */
@@ -238,44 +236,49 @@ export const createTimeSeries = (
     },
   };
 
+  /**
+   * Insert a value into the series **by direct mutation**.
+   *
+   * Previously used immer's `produce()` which cloned the entire circular buffer
+   * on every insert (~2,000 calls/sec caused V8 GC pressure and OOM crashes).
+   *
+   * Now mutates the same TimeSeries object in place and returns it.
+   * This is safe because the `ThrottledStoreUpdater` at the store level
+   * creates the immutable boundary — React sees a new state reference
+   * at ~30 FPS, so immutability of the TimeSeries itself is not required.
+   */
   const insert = (series: TimeSeries, value: TimeSeriesValue): TimeSeries => {
-    return produce(series, (draft) => {
-      draft.current = value;
+    series.current = value;
 
-      // Insert into short buffer only if enough time has passed (downsampling)
-      const shortSampleInterval = draft.short.sampleInterval;
-      const timeSinceLastShort = value.timestamp - draft.short.lastTimestamp;
+    // Insert into short buffer only if enough time has passed (downsampling)
+    const timeSinceLastShort = value.timestamp - series.short.lastTimestamp;
+    if (timeSinceLastShort >= series.short.sampleInterval) {
+      const oldVal = series.short.values[series.short.index];
+      const isOverwriting = oldVal && oldVal.timestamp > 0;
 
-      if (timeSinceLastShort >= shortSampleInterval) {
-        const shortOldValue = draft.short.values[draft.short.index];
-        const isShortOverwriting = shortOldValue && shortOldValue.timestamp > 0;
-
-        draft.short.values[draft.short.index] = value;
-        draft.short.index = (draft.short.index + 1) % draft.short.size;
-        draft.short.lastTimestamp = value.timestamp;
-
-        if (!isShortOverwriting) {
-          draft.short.validCount++;
-        }
+      series.short.values[series.short.index] = value;
+      series.short.index = (series.short.index + 1) % series.short.size;
+      series.short.lastTimestamp = value.timestamp;
+      if (!isOverwriting) {
+        series.short.validCount++;
       }
+    }
 
-      // Insert into long buffer only if enough time has passed (downsampling)
-      const longSampleInterval = draft.long.sampleInterval;
-      const timeSinceLastLong = value.timestamp - draft.long.lastTimestamp;
+    // Insert into long buffer only if enough time has passed (downsampling)
+    const timeSinceLastLong = value.timestamp - series.long.lastTimestamp;
+    if (timeSinceLastLong >= series.long.sampleInterval) {
+      const oldVal = series.long.values[series.long.index];
+      const isOverwriting = oldVal && oldVal.timestamp > 0;
 
-      if (timeSinceLastLong >= longSampleInterval) {
-        const longOldValue = draft.long.values[draft.long.index];
-        const isLongOverwriting = longOldValue && longOldValue.timestamp > 0;
-
-        draft.long.values[draft.long.index] = value;
-        draft.long.index = (draft.long.index + 1) % draft.long.size;
-        draft.long.lastTimestamp = value.timestamp;
-
-        if (!isLongOverwriting) {
-          draft.long.validCount++;
-        }
+      series.long.values[series.long.index] = value;
+      series.long.index = (series.long.index + 1) % series.long.size;
+      series.long.lastTimestamp = value.timestamp;
+      if (!isOverwriting) {
+        series.long.validCount++;
       }
-    });
+    }
+
+    return series; // same reference — immutability handled by caller's ThrottledStoreUpdater
   };
 
   return { initialTimeSeries, insert };
@@ -303,6 +306,75 @@ export function resetSeries(series: Series): void {
   series.index = 0;
   series.lastTimestamp = 0;
   series.validCount = 0;
+}
+
+/** Retention window never shrinks below this, so repeated trims can't erase a series. */
+export const MIN_RETENTION_MS = 40 * 60 * 1000; // 40 min
+
+/**
+ * Shrinks a series' retention window by cutMs (down to minRetentionMs), reallocating
+ * a smaller `values` array so the discarded entries are actually freed on next GC
+ * rather than just being ignored by readers.
+ */
+export function trimSeries(
+  series: Series,
+  cutMs: number,
+  minRetentionMs: number = MIN_RETENTION_MS,
+): Series {
+  const newTimeWindow = Math.max(series.timeWindow - cutMs, minRetentionMs);
+  if (newTimeWindow >= series.timeWindow) return series; // already at floor
+
+  const [timestamps, values] = extractDataFromSeries(series, newTimeWindow);
+  const newSize = Math.max(1, Math.ceil(newTimeWindow / series.sampleInterval));
+
+  const newValues: (TimeSeriesValue | null)[] = Array.from(
+    { length: newSize },
+    () => ({ value: 0, timestamp: 0 }),
+  );
+  const count = Math.min(timestamps.length, newSize);
+  for (let i = 0; i < count; i++) {
+    newValues[i] = { value: values[i], timestamp: timestamps[i] };
+  }
+
+  return {
+    ...series,
+    values: newValues,
+    size: newSize,
+    index: count % newSize,
+    validCount: count,
+    timeWindow: newTimeWindow,
+  };
+}
+
+/**
+ * Trims the `long` series of every TimeSeries-shaped field on a namespace store's
+ * state object. Duck-types fields rather than requiring per-machine registration,
+ * so it works generically across every machine's store.
+ */
+function isTimeSeries(value: unknown): value is TimeSeries {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "current" in value &&
+    "long" in value &&
+    "short" in value
+  );
+}
+
+export function trimTimeSeriesFields<S extends Record<string, unknown>>(
+  state: S,
+  cutMs: number,
+): Partial<S> {
+  const patch: Partial<S> = {};
+  for (const [key, value] of Object.entries(state)) {
+    if (isTimeSeries(value)) {
+      (patch as Record<string, unknown>)[key] = {
+        ...value,
+        long: trimSeries(value.long, cutMs),
+      };
+    }
+  }
+  return patch;
 }
 
 /**

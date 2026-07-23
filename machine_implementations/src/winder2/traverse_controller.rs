@@ -8,12 +8,15 @@ use qitech_lib::units::length::millimeter;
 use qitech_lib::units::velocity::millimeter_per_second;
 use std::time::Instant;
 
+const FINE_HOME_START_DISTANCE_MM: f64 = 5.0;
+
 #[derive(Debug)]
 pub struct TraverseController {
     enabled: bool,
     position: Length,
     limit_inner: Length,
     limit_outer: Length,
+    target_position: Length,
     step_size: Length,
     padding: Length,
     state: State,
@@ -42,6 +45,11 @@ pub enum State {
     ///
     /// After reaching the outer limit, the state will change to [`State::Idle`]
     GoingOut,
+
+    /// Going to the configured target position.
+    ///
+    /// After reaching the target, the state will change to [`State::Idle`].
+    GoingToTarget,
 
     /// Homing is in progress
     ///
@@ -95,12 +103,23 @@ pub enum HomingState {
 }
 
 impl TraverseController {
+    fn clamp_position(position: Length, min: Length, max: Length) -> Length {
+        if position < min {
+            min
+        } else if position > max {
+            max
+        } else {
+            position
+        }
+    }
+
     pub fn new(limit_inner: Length, limit_outer: Length, microsteps: u8) -> Self {
         Self {
             enabled: false,
             position: Length::ZERO,
             limit_inner,
             limit_outer,
+            target_position: limit_outer,
             step_size: Length::new::<millimeter>(1.75), // Default step size
             padding: Length::new::<millimeter>(0.88),   // Default padding
             state: State::NotHomed,
@@ -147,6 +166,14 @@ impl TraverseController {
         self.limit_outer
     }
 
+    pub fn set_target_position(&mut self, position: Length) {
+        self.target_position = Self::clamp_position(position, self.limit_inner, self.limit_outer);
+    }
+
+    pub fn get_target_position(&self) -> Length {
+        self.target_position
+    }
+
     pub fn get_step_size(&self) -> Length {
         self.step_size
     }
@@ -184,8 +211,25 @@ impl TraverseController {
         self.state = State::GoingOut;
     }
 
-    pub const fn goto_home(&mut self) {
-        self.state = State::Homing(HomingState::Initialize);
+    pub fn goto_target_position(&mut self) {
+        self.target_position =
+            Self::clamp_position(self.target_position, self.limit_inner, self.limit_outer);
+        self.state = State::GoingToTarget;
+    }
+
+    pub fn goto_home(&mut self) {
+        let close_to_home = self.is_homed()
+            && self.position <= Length::new::<millimeter>(FINE_HOME_START_DISTANCE_MM);
+
+        self.state = if close_to_home {
+            State::Homing(HomingState::FindEndtopFine)
+        } else {
+            State::Homing(HomingState::Initialize)
+        };
+    }
+
+    pub const fn stop(&mut self) {
+        self.state = State::Idle;
     }
 
     pub const fn start_traversing(&mut self) {
@@ -205,6 +249,10 @@ impl TraverseController {
     pub const fn is_going_out(&self) -> bool {
         // [`State::GoingOut`]
         matches!(self.state, State::GoingOut)
+    }
+
+    pub const fn is_going_to_target(&self) -> bool {
+        matches!(self.state, State::GoingToTarget)
     }
 
     pub const fn is_going_home(&self) -> bool {
@@ -263,6 +311,7 @@ impl TraverseController {
             State::Idle => !matches!(old_state, State::Idle),
             State::GoingIn => !matches!(old_state, State::GoingIn),
             State::GoingOut => !matches!(old_state, State::GoingOut),
+            State::GoingToTarget => !matches!(old_state, State::GoingToTarget),
             State::Homing(_) => !matches!(old_state, State::Homing(_)),
             State::Traversing(_) => !matches!(old_state, State::Traversing(_)),
         }
@@ -301,6 +350,11 @@ impl TraverseController {
                 // If outer limit is reached
                 if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.01)) {
                     // Put Into Idle
+                    self.state = State::Idle;
+                }
+            }
+            State::GoingToTarget => {
+                if self.is_at_position(self.target_position, Length::new::<millimeter>(0.05)) {
                     self.state = State::Idle;
                 }
             }
@@ -432,6 +486,15 @@ impl TraverseController {
                     },
                 )
             }
+            State::GoingToTarget => self.speed_to_position(
+                self.target_position,
+                match self.distance_to_position(self.target_position).abs()
+                    > Length::new::<millimeter>(1.0)
+                {
+                    true => Velocity::new::<millimeter_per_second>(100.0),
+                    false => Velocity::new::<millimeter_per_second>(10.0),
+                },
+            ),
             State::Homing(homing_state) => match homing_state {
                 HomingState::Initialize => Velocity::ZERO,
                 HomingState::EscapeEndstop => {
