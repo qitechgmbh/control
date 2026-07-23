@@ -4,7 +4,6 @@ import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { rewinder } from "@/machines/properties";
 import { rewinderSerialRoute } from "@/routes/routes";
-import { produce } from "immer";
 import { useEffect, useMemo } from "react";
 import { z } from "zod";
 import {
@@ -173,25 +172,35 @@ export function useRewinder() {
   );
 
   const updateStateOptimistically = (
-    producer: (current: StateEvent) => void,
+    _producer: (current: StateEvent) => void,
     serverRequest: () => void,
   ) => {
-    const currentState = stateOptimistic.value;
-    if (currentState && !stateOptimistic.isOptimistic) {
-      stateOptimistic.setOptimistic(produce(currentState, producer));
-    }
     serverRequest();
   };
 
   const currentMode = stateOptimistic.value?.data.mode_state.mode;
+  const isDecelerating =
+    stateOptimistic.value?.data.mode_state.is_decelerating === true;
   const settingsEditPermitted =
-    currentMode === "Standby" || currentMode === "Hold";
+    !isDecelerating && (currentMode === "Standby" || currentMode === "Hold");
+  const prepareSettingsEditPermitted =
+    !isDecelerating && (currentMode === "Standby" || currentMode === "Hold");
+  const progressResetPermitted =
+    !isDecelerating &&
+    (currentMode === "Standby" ||
+      currentMode === "Hold" ||
+      currentMode === "Rewind");
   const manualTraversePermitted =
+    !isDecelerating &&
     currentMode === "Hold" &&
     stateOptimistic.value?.data.traverse_state.is_homed === true;
 
   const setMode = (mode: Mode) => {
-    if (stateOptimistic.isOptimistic) {
+    if (isDecelerating) {
+      return;
+    }
+
+    if (mode === currentMode) {
       return;
     }
 
@@ -210,28 +219,14 @@ export function useRewinder() {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        if (
-          current.data.mode_state.mode === "Rewind" &&
-          mode === "Hold" &&
-          traversePosition.current?.value !== undefined
-        ) {
-          current.data.traverse_state.start_position =
-            traversePosition.current.value;
-        }
-        current.data.mode_state.mode = mode;
-      },
-      () =>
-        void requestModeSet({
-          machine_identification_unique: machineIdentification,
-          data: { SetMode: mode },
-        }),
-    );
+    void requestModeSet({
+      machine_identification_unique: machineIdentification,
+      data: { SetMode: mode },
+    });
   };
 
   const setPullerTargetSpeed = (targetSpeed: number) => {
-    if (stateOptimistic.isOptimistic) {
+    if (isDecelerating || stateOptimistic.isOptimistic) {
       return;
     }
 
@@ -497,7 +492,7 @@ export function useRewinder() {
     field: keyof StateEvent["data"]["prepare_control_state"],
     value: number,
   ) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!prepareSettingsEditPermitted || stateOptimistic.isOptimistic) {
       return;
     }
 
@@ -520,7 +515,7 @@ export function useRewinder() {
   };
 
   const setRewindAutomaticRequiredMeters = (meters: number) => {
-    if (stateOptimistic.isOptimistic) {
+    if (isDecelerating || stateOptimistic.isOptimistic) {
       return;
     }
 
@@ -537,24 +532,24 @@ export function useRewinder() {
   };
 
   const setRewindAutomaticAction = (mode: RewindAutomaticActionMode) => {
-    if (stateOptimistic.isOptimistic) {
+    if (isDecelerating) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.rewind_automatic_action_state.mode = mode;
-      },
-      () =>
-        void requestSetRewindAutomaticAction({
-          machine_identification_unique: machineIdentification,
-          data: { SetRewindAutomaticAction: mode },
-        }),
-    );
+    if (
+      mode === stateOptimistic.value?.data.rewind_automatic_action_state.mode
+    ) {
+      return;
+    }
+
+    void requestSetRewindAutomaticAction({
+      machine_identification_unique: machineIdentification,
+      data: { SetRewindAutomaticAction: mode },
+    });
   };
 
   const resetRewindProgress = () => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!progressResetPermitted || stateOptimistic.isOptimistic) {
       return;
     }
 
@@ -565,7 +560,11 @@ export function useRewinder() {
   };
 
   const hardStop = () => {
-    if (currentMode !== "Rewind" || stateOptimistic.isOptimistic) {
+    if (
+      isDecelerating ||
+      currentMode !== "Rewind" ||
+      stateOptimistic.isOptimistic
+    ) {
       return;
     }
 
@@ -695,7 +694,11 @@ export function useRewinder() {
   };
 
   const gotoTraverseHome = () => {
-    if (currentMode !== "Hold" || stateOptimistic.isOptimistic) {
+    if (
+      isDecelerating ||
+      currentMode !== "Hold" ||
+      stateOptimistic.isOptimistic
+    ) {
       return;
     }
 
@@ -764,7 +767,10 @@ export function useRewinder() {
     rewindProgress,
     isLoading: stateOptimistic.isOptimistic,
     isDisabled: false,
+    isDecelerating,
     settingsEditPermitted,
+    prepareSettingsEditPermitted,
+    progressResetPermitted,
     manualTraversePermitted,
     setMode,
     setPullerTargetSpeed,

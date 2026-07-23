@@ -37,6 +37,10 @@ impl Rewinder {
             return;
         }
 
+        if &self.mode == mode {
+            return;
+        }
+
         let should_update = match mode {
             RewinderMode::Rewind => self.can_rewind(),
             RewinderMode::Prepare => self.prepare_block_reason().is_none(),
@@ -454,6 +458,7 @@ impl Rewinder {
             mode_state: ModeState {
                 mode: displayed_mode.into(),
                 can_rewind,
+                is_decelerating: self.hold_decelerating_from_rewind,
             },
             traverse_state: TraverseState {
                 limit_inner: self
