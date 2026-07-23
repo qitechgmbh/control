@@ -1,6 +1,6 @@
 use super::{
     Rewinder, RewinderMode,
-    rewind_control::{RewindControlState, deadband, slew},
+    rewind_control::{RewindControlState, deadband, move_toward},
 };
 use std::time::{Duration, Instant};
 
@@ -11,7 +11,7 @@ pub struct PrepareConfig {
     pub settle_duration: Duration,
     pub relax_duration: Duration,
     pub puller_kp_m_per_min_per_deg: f64,
-    pub puller_slew_m_per_min_s: f64,
+    pub puller_max_speed_change_m_per_min_s: f64,
     pub puller_max_m_per_min: f64,
     pub source_kp_rpm_per_deg: f64,
     pub source_kd_rpm_per_deg_per_s: f64,
@@ -19,7 +19,7 @@ pub struct PrepareConfig {
     pub takeup_kd_rpm_per_deg_per_s: f64,
     pub source_max_rpm: f64,
     pub takeup_max_rpm: f64,
-    pub slew_rpm_per_s: f64,
+    pub max_rpm_change_per_s: f64,
     pub takeup_puller_inhibit_deg: f64,
     pub source_high_puller_inhibit_deg: f64,
 }
@@ -32,7 +32,7 @@ impl Default for PrepareConfig {
             settle_duration: Duration::from_millis(150),
             relax_duration: Duration::from_millis(150),
             puller_kp_m_per_min_per_deg: 0.018,
-            puller_slew_m_per_min_s: 0.12,
+            puller_max_speed_change_m_per_min_s: 0.12,
             puller_max_m_per_min: 0.22,
             source_kp_rpm_per_deg: 0.28,
             source_kd_rpm_per_deg_per_s: 0.22,
@@ -40,7 +40,7 @@ impl Default for PrepareConfig {
             takeup_kd_rpm_per_deg_per_s: 0.30,
             source_max_rpm: 7.0,
             takeup_max_rpm: 6.0,
-            slew_rpm_per_s: 5.0,
+            max_rpm_change_per_s: 5.0,
             takeup_puller_inhibit_deg: 32.0,
             source_high_puller_inhibit_deg: 60.0,
         }
@@ -156,10 +156,10 @@ impl RewindControlState {
     ) {
         let prepare = self.config.prepare;
         let previous_puller = self.puller_command_m_per_min;
-        self.puller_command_m_per_min = slew(
+        self.puller_command_m_per_min = move_toward(
             self.puller_command_m_per_min,
             puller_m_per_min.clamp(0.0, prepare.puller_max_m_per_min),
-            prepare.puller_slew_m_per_min_s,
+            prepare.puller_max_speed_change_m_per_min_s,
             dt_s,
         );
         self.puller_accel_m_per_min_s = if dt_s > 0.0 {
@@ -168,20 +168,20 @@ impl RewindControlState {
             0.0
         };
 
-        self.takeup_follower.command_rpm = slew(
+        self.takeup_follower.command_rpm = move_toward(
             self.takeup_follower.command_rpm,
             takeup_rpm.clamp(0.0, prepare.takeup_max_rpm),
-            prepare.slew_rpm_per_s,
+            prepare.max_rpm_change_per_s,
             dt_s,
         );
         self.takeup_follower.target_rpm = takeup_rpm;
         self.takeup_follower.trim_rpm = takeup_rpm;
         self.takeup_follower.feed_forward_rpm = 0.0;
 
-        self.source_follower.command_rpm = slew(
+        self.source_follower.command_rpm = move_toward(
             self.source_follower.command_rpm,
             source_rpm.clamp(0.0, prepare.source_max_rpm),
-            prepare.slew_rpm_per_s,
+            prepare.max_rpm_change_per_s,
             dt_s,
         );
         self.source_follower.target_rpm = source_rpm;
@@ -278,6 +278,28 @@ impl Rewinder {
             return false;
         }
 
+        if !self.traverse_controller.is_homed() {
+            self.traverse_controller.goto_home();
+            self.rewind_control
+                .decelerate_motion(self.rewind_control.last_dt_s);
+            return true;
+        }
+
+        if self.traverse_controller.is_going_home() {
+            self.rewind_control
+                .decelerate_motion(self.rewind_control.last_dt_s);
+            return true;
+        }
+
+        if !self.traverse_at_start_position() {
+            self.traverse_controller
+                .set_target_position(self.traverse_start_position);
+            self.traverse_controller.goto_target_position();
+            self.rewind_control
+                .decelerate_motion(self.rewind_control.last_dt_s);
+            return true;
+        }
+
         let Ok((source_angle, takeup_angle)) = self.read_tension_arm_angles_deg() else {
             self.rewind_control.reset_motion();
             return true;
@@ -289,8 +311,7 @@ impl Rewinder {
         let prepared = self.rewind_control.update_prepare_commands(now, dt_s);
 
         if prepared {
-            println!("Rewinder Prepare complete: holding settled start angles");
-            self.set_mode(&RewinderMode::Hold);
+            self.rewind_control.decelerate_motion(dt_s);
         }
 
         true

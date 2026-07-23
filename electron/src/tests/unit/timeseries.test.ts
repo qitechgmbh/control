@@ -29,7 +29,9 @@ describe("trimSeries", () => {
     const trimmed = trimSeries(long, cutMs, 0);
 
     expect(trimmed.timeWindow).toBe(long.timeWindow - cutMs);
-    expect(trimmed.size).toBe(Math.ceil(trimmed.timeWindow / trimmed.sampleInterval));
+    expect(trimmed.size).toBe(
+      Math.ceil(trimmed.timeWindow / trimmed.sampleInterval),
+    );
     expect(trimmed.values.length).toBe(trimmed.size);
   });
 
@@ -78,7 +80,9 @@ describe("trimSeries", () => {
     // Discarded: the oldest 10 min of data must not survive the trim.
     const cutoff = long.lastTimestamp - trimmed.timeWindow;
     const oldestSurviving = Math.min(
-      ...trimmed.values.filter((v) => v && v.timestamp > 0).map((v) => v!.timestamp),
+      ...trimmed.values
+        .filter((v) => v && v.timestamp > 0)
+        .map((v) => v!.timestamp),
     );
     expect(oldestSurviving).toBeGreaterThanOrEqual(cutoff);
 

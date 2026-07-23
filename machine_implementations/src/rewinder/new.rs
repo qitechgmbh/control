@@ -178,10 +178,16 @@ impl MachineNew for Rewinder {
             source_spool_step_converter: AngularStepConverter::new(200),
             traverse_controller: super::TraverseController::new(
                 Length::new::<millimeter>(22.0),
-                Length::new::<millimeter>(92.0),
+                Length::new::<millimeter>(180.0),
                 64,
             ),
+            traverse_start_position: Length::new::<millimeter>(180.0),
+            resume_traverse_position: None,
+            takeup_spool_diameter_mm: None,
+            source_spool_diameter_mm: None,
             rewind_phase: RewindPhase::Idle,
+            hold_decelerating_from_rewind: false,
+            pending_mode_after_rewind_deceleration: None,
             rewind_control: super::rewind_control::RewindControlState::new(
                 super::rewind_control::RewindControlConfig::default(),
             ),
