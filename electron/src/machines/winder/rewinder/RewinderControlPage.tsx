@@ -46,6 +46,8 @@ export function RewinderControlPage() {
     rewindProgress,
     isLoading,
     isDisabled,
+    isDecelerating,
+    progressResetPermitted,
     setMode,
     setPullerTargetSpeed,
     zeroTakeupTensionArm,
@@ -77,13 +79,14 @@ export function RewinderControlPage() {
   const laserOn = state?.traverse_state.laserpointer ?? false;
 
   const isReady = state?.mode_state.can_rewind === true;
-  const isPreparing = state?.mode_state.mode === "Prepare";
   const settingsEditable =
-    state?.mode_state.mode === "Standby" || state?.mode_state.mode === "Hold";
-  const settingsDisabled = isDisabled || isLoading || !settingsEditable;
-  const traverseSettingsDisabled =
-    isDisabled || isLoading || state?.mode_state.mode !== "Hold";
+    !isDecelerating &&
+    (state?.mode_state.mode === "Standby" || state?.mode_state.mode === "Hold");
+  const commandsDisabled = isDisabled || isLoading;
+  const settingsDisabled = commandsDisabled || !settingsEditable;
+  const traverseSettingsDisabled = settingsDisabled;
   const manualTraverseAllowed =
+    !isDecelerating &&
     state?.mode_state.mode === "Hold" &&
     state?.traverse_state.is_homed === true;
   const traverseMoveDisabled =
@@ -135,7 +138,9 @@ export function RewinderControlPage() {
           <div className="flex items-start justify-between gap-2">
             <h2 className="text-2xl font-bold">Run</h2>
             <div className="flex flex-wrap justify-end gap-2">
-              {isReady ? (
+              {isDecelerating ? (
+                <StatusBadge variant="warning">Decelerating</StatusBadge>
+              ) : isReady ? (
                 <StatusBadge variant="success">Ready</StatusBadge>
               ) : (
                 <StatusBadge variant="error">Not Ready</StatusBadge>
@@ -154,8 +159,7 @@ export function RewinderControlPage() {
           </div>
           <SelectionGroup<Mode>
             value={state?.mode_state.mode}
-            disabled={isDisabled || isLoading}
-            loading={isLoading}
+            disabled={commandsDisabled}
             onChange={setMode}
             orientation="vertical"
             className="grid grid-cols-2 gap-2"
@@ -183,7 +187,7 @@ export function RewinderControlPage() {
                 icon: "lu:Crosshair",
                 isActiveClassName: isReady ? "bg-green-600" : "bg-amber-500",
                 className: "min-h-16",
-                disabled: !tensionArmsZeroed || isPreparing,
+                disabled: !tensionArmsZeroed,
               },
               Rewind: {
                 children: "Rewind",
@@ -208,7 +212,7 @@ export function RewinderControlPage() {
             min={0}
             max={MAX_TARGET_SPEED_M_PER_MIN}
             renderValue={(value) => roundToDecimals(value, 2)}
-            disabled={isDisabled || isLoading}
+            disabled={commandsDisabled}
             onChange={setPullerTargetSpeed}
           />
           <TouchButton
@@ -224,9 +228,7 @@ export function RewinderControlPage() {
             variant="destructive"
             icon="lu:OctagonX"
             onClick={hardStop}
-            disabled={
-              isDisabled || isLoading || state?.mode_state.mode !== "Rewind"
-            }
+            disabled={commandsDisabled || state?.mode_state.mode !== "Rewind"}
             isLoading={isLoading}
           >
             Hard Stop
@@ -257,14 +259,13 @@ export function RewinderControlPage() {
             max={10000}
             step={0.1}
             renderValue={(value) => roundToDecimals(value, 1)}
-            disabled={isDisabled || isLoading}
+            disabled={commandsDisabled}
             onChange={setRewindAutomaticRequiredMeters}
           />
           <Label label="After Length">
             <SelectionGroup
               value={state?.rewind_automatic_action_state.mode}
-              disabled={isDisabled || isLoading}
-              loading={isLoading}
+              disabled={commandsDisabled}
               options={{
                 NoAction: { children: "No Action", icon: "lu:Minus" },
                 Hold: { children: "Hold", icon: "lu:CirclePause" },
@@ -278,8 +279,7 @@ export function RewinderControlPage() {
             variant="outline"
             icon="lu:RotateCcw"
             onClick={resetRewindProgress}
-            disabled={settingsDisabled}
-            isLoading={isLoading}
+            disabled={commandsDisabled || !progressResetPermitted}
           >
             Reset Progress
           </TouchButton>
@@ -407,9 +407,7 @@ export function RewinderControlPage() {
               variant="outline"
               icon="lu:House"
               onClick={gotoTraverseHome}
-              disabled={
-                isDisabled || isLoading || state?.mode_state.mode !== "Hold"
-              }
+              disabled={commandsDisabled || state?.mode_state.mode !== "Hold"}
               isLoading={isLoading}
             >
               Go to Home

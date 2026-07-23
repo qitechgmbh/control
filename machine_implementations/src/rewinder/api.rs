@@ -144,6 +144,7 @@ impl StateEvent {
 pub struct ModeState {
     pub mode: Mode,
     pub can_rewind: bool,
+    pub is_decelerating: bool,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
