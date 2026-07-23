@@ -1,8 +1,10 @@
 use anyhow::bail;
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
-use machine_implementations::{MACHINE_DRYER_SMART, MACHINE_DRYER_V1, MACHINE_LASER_V1};
 use machine_implementations::registry::MACHINE_REGISTRY;
+use machine_implementations::{
+    MACHINE_DRYER_SMART, MACHINE_DRYER_V1, MACHINE_LASER_V1, laser::LaserMachine,
+};
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
 use qitech_lib::ethercat_hal::devices::device_from_subdevice_identity_rc;
@@ -14,10 +16,12 @@ use qitech_lib::{
     ethercat_hal::interface_discovery::{LinkType, list_ethernet_interfaces, test_interface},
     ethercat_hal::{BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer},
     machines::MachineIdentificationUnique,
+    modbus::{ModbusType, Parity, SerialDeviceMeta, create_modbus_device_context},
 };
 #[cfg(not(feature = "mock"))]
 use std::{sync::Arc, time::Duration};
 use tokio::sync::mpsc::Receiver;
+use tokio_modbus::{Request, Response, client::Client};
 use tokio_serial::{SerialPortInfo, SerialPortType};
 
 use crate::{
@@ -120,6 +124,60 @@ fn setup_ethercat(
     Ok(())
 }
 
+const CH340_VID: u16 = 0x1a86;
+const CH340_PID: u16 = 0x7523;
+
+fn is_ch340_port(port: &SerialPortInfo) -> bool {
+    matches!(
+        port.port_type,
+        SerialPortType::UsbPort(ref usb) if usb.vid == CH340_VID && usb.pid == CH340_PID
+    )
+}
+
+fn unclaimed_ch340_ports(
+    ports: Vec<SerialPortInfo>,
+    main_state: &MainState,
+) -> Vec<SerialPortInfo> {
+    ports
+        .into_iter()
+        .filter(is_ch340_port)
+        .filter(|port| {
+            !main_state
+                .claimed_serial_ports
+                .contains_key(&port.port_name)
+        })
+        .collect()
+}
+
+fn probe_is_laser(path: &str) -> bool {
+    let meta = SerialDeviceMeta {
+        path: path.to_owned(),
+        device_name: None,
+        slave_id: 1,
+        baudrate: 38_400,
+        bits: 8,
+        stop_bits: 1,
+        parity: Parity::None,
+        modbus_type: ModbusType::Rtu,
+    };
+    let rt = get_async_runtime();
+    let _guard = rt.enter();
+    let Ok(mut ctx) = create_modbus_device_context(&meta) else {
+        return false;
+    };
+    rt.block_on(async {
+        let result = tokio::time::timeout(
+            Duration::from_millis(500),
+            ctx.call(Request::ReadInputRegisters(0x0E, 3)),
+        )
+        .await;
+        matches!(
+            result,
+            Ok(Ok(Ok(Response::ReadInputRegisters(ref regs)))) if regs.len() == 3
+        )
+    })
+}
+
 fn add_laser(
     main_state: &mut MainState,
     shared_state: Arc<SharedAppState>,
@@ -150,15 +208,25 @@ fn add_laser(
         }
         None => (),
     }
+    main_state
+        .claimed_serial_ports
+        .retain(|_, ident| ident.machine_ident.machine != MACHINE_LASER_V1);
 
-    // Port is not used right now, so check if port exists
-    for port in ports {
-        if port.port_name == "/dev/ttyUSB0" || port.port_name == "/dev/ttyUSB1" {
-            main_state.generate_machine_hardware_from_serial(&port.port_name)?;
-            detect_and_build_machines(shared_state.clone(), main_state);
-            send_machines_event(shared_state);
-            break;
+    for port in unclaimed_ch340_ports(ports, main_state) {
+        if !probe_is_laser(&port.port_name) {
+            continue;
         }
+        main_state.generate_machine_hardware_from_serial(&port.port_name)?;
+        main_state.claimed_serial_ports.insert(
+            port.port_name.clone(),
+            MachineIdentificationUnique {
+                machine_ident: LaserMachine::MACHINE_IDENTIFICATION,
+                serial: 1,
+            },
+        );
+        detect_and_build_machines(shared_state.clone(), main_state);
+        send_machines_event(shared_state);
+        break;
     }
     Ok(())
 }
@@ -181,10 +249,6 @@ fn laser_hotplug(
     }
 }
 
-/// CH340 USB-serial adapter used by the dryer's Modbus interface.
-const DRYER_USB_VID: u16 = 0x1a86;
-const DRYER_USB_PID: u16 = 0x7523;
-
 fn add_dryer(
     main_state: &mut MainState,
     shared_state: Arc<SharedAppState>,
@@ -197,7 +261,10 @@ fn add_dryer(
         id == MACHINE_DRYER_V1 || id == MACHINE_DRYER_SMART
     });
     let machine_obj_index = shared_state.machines.try_read()?.iter().position(|m| {
-        let id = m.machine_identification_unique.machine_identification.machine;
+        let id = m
+            .machine_identification_unique
+            .machine_identification
+            .machine;
         id == MACHINE_DRYER_V1 || id == MACHINE_DRYER_SMART
     });
 
@@ -207,17 +274,22 @@ fn add_dryer(
     if let Some(index) = machine_obj_index {
         shared_state.machines.try_write()?.remove(index);
     }
+    main_state.claimed_serial_ports.retain(|_, ident| {
+        ident.machine_ident.machine != MACHINE_DRYER_V1
+            && ident.machine_ident.machine != MACHINE_DRYER_SMART
+    });
 
-    for port in ports {
-        let is_dryer_adapter = matches!(
-            port.port_type,
-            SerialPortType::UsbPort(ref usb) if usb.vid == DRYER_USB_VID && usb.pid == DRYER_USB_PID
-        );
-        if is_dryer_adapter {
-            main_state.generate_machine_hardware_from_dryer_serial(&port.port_name)?;
-            detect_and_build_machines(shared_state.clone(), main_state);
-            send_machines_event(shared_state);
-            break;
+    for port in unclaimed_ch340_ports(ports, main_state) {
+        match main_state.generate_machine_hardware_from_dryer_serial(&port.port_name) {
+            Ok(ident) => {
+                main_state
+                    .claimed_serial_ports
+                    .insert(port.port_name.clone(), ident);
+                detect_and_build_machines(shared_state.clone(), main_state);
+                send_machines_event(shared_state);
+                break;
+            }
+            Err(_) => continue,
         }
     }
     Ok(())

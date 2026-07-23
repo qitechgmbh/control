@@ -12,6 +12,7 @@ use tokio::task::JoinHandle;
 use tokio_modbus::{
     Request, Response,
     client::{Client, Context},
+    prelude::ReadCode,
 };
 
 pub const SMART_HW_ID: u16 = 4331;
@@ -162,6 +163,37 @@ impl ModbusDevice for DryerDevice {
         let rt = get_async_runtime();
         let _guard = rt.enter();
         let mut ctx = create_modbus_device_context(&meta)?;
+
+        let identified_by_device_id = rt.block_on(async {
+            let result = tokio::time::timeout(
+                Duration::from_millis(500),
+                ctx.call(Request::ReadDeviceIdentification(ReadCode::Basic, 0)),
+            )
+            .await;
+            match result {
+                Ok(Ok(Ok(Response::ReadDeviceIdentification(resp)))) => resp
+                    .device_id_objects
+                    .iter()
+                    .any(|obj| obj.value_as_str().is_some_and(|s| s.contains("Dryplus"))),
+                _ => false,
+            }
+        });
+
+        let identity_ok = identified_by_device_id
+            || rt.block_on(async {
+                let result = tokio::time::timeout(
+                    Duration::from_millis(500),
+                    ctx.call(Request::ReadInputRegisters(0x00, 0x21)),
+                )
+                .await;
+                matches!(
+                    result,
+                    Ok(Ok(Ok(Response::ReadInputRegisters(ref regs)))) if regs.len() == 0x21
+                )
+            });
+        if !identity_ok {
+            return Err(anyhow!("no dryer responded on {}", meta.path));
+        }
 
         // Probe holding register 2000 once, synchronously, to tell V1 and Smart hardware
         // apart before the machine layer picks which machine type to construct.

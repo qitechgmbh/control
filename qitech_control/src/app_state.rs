@@ -257,6 +257,7 @@ pub struct MainState {
     pub machines: Vec<Box<dyn QiTechMachine>>,
     pub machine_errors: HashMap<MachineIdentificationUnique, String>,
     pub machine_data_reg: MachineDataRegistry,
+    pub claimed_serial_ports: HashMap<String, MachineIdentificationUnique>,
 }
 
 impl MainState {
@@ -271,6 +272,7 @@ impl MainState {
             subdevices: vec![],
             hardware: HashMap::new(),
             machine_errors: HashMap::new(),
+            claimed_serial_ports: HashMap::new(),
         }
     }
 
@@ -298,7 +300,7 @@ impl MainState {
     pub fn generate_machine_hardware_from_dryer_serial(
         &mut self,
         path: &str,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<MachineIdentificationUnique, anyhow::Error> {
         let dryer_device = DryerDevice::new(path.to_owned(), 1, None)?;
         // The V1/Smart variant is probed once at construction (see DryerDevice::new); pick
         // the matching machine identification before the machine itself gets built.
@@ -320,7 +322,7 @@ impl MainState {
         };
         hw.hw.push(Hardware::Modbus(id_modbus));
         self.hardware.insert(ident, hw);
-        Ok(())
+        Ok(ident)
     }
 
     pub fn generate_machine_hardware_from_ethercat(

@@ -1952,6 +1952,7 @@ dependencies = [
  "serde_json",
  "socketioxide",
  "tokio",
+ "tokio-modbus",
  "tokio-serial",
  "tower-http",
  "tracing",
