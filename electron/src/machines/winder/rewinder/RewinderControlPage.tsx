@@ -10,6 +10,7 @@ import {
 import { StatusBadge } from "@/control/StatusBadge";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { roundToDecimals } from "@/lib/decimal";
+import { formatDurationSeconds } from "@/lib/time";
 import React from "react";
 import { TraverseBar } from "../TraverseBar";
 import { RewinderOverview } from "./RewinderOverview";
@@ -18,22 +19,6 @@ import { useRewinder } from "./useRewinder";
 
 const TRAVERSE_MAX_MM = 180;
 const MAX_TARGET_SPEED_M_PER_MIN = 50;
-
-function formatEta(seconds: number): string {
-  if (seconds < 60) {
-    return `${Math.ceil(seconds)} s`;
-  }
-
-  const totalMinutes = Math.ceil(seconds / 60);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  if (hours === 0) {
-    return `${totalMinutes} min`;
-  }
-
-  return minutes === 0 ? `${hours} h` : `${hours} h ${minutes} min`;
-}
 
 export function RewinderControlPage() {
   const {
@@ -118,7 +103,7 @@ export function RewinderControlPage() {
         ? "Target reached"
         : etaSeconds == null
           ? "Set line speed"
-          : formatEta(etaSeconds);
+          : formatDurationSeconds(etaSeconds);
 
   return (
     <Page>
@@ -278,8 +263,8 @@ export function RewinderControlPage() {
                 NoAction: { children: "No Action", icon: "lu:Minus" },
                 Hold: { children: "Hold", icon: "lu:CirclePause" },
               }}
-              onChange={(value) =>
-                setRewindAutomaticAction(value as "NoAction" | "Hold")
+              onChange={(value: "NoAction" | "Hold") =>
+                setRewindAutomaticAction(value)
               }
             />
           </Label>

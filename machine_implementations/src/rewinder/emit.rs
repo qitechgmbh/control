@@ -463,7 +463,7 @@ impl Rewinder {
         StateEvent {
             is_default_state,
             mode_state: ModeState {
-                mode: displayed_mode.into(),
+                mode: displayed_mode,
                 can_rewind,
                 is_decelerating: self.hold_decelerating_from_rewind,
             },

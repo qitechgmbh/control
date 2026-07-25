@@ -1,11 +1,13 @@
 use super::prepare_control::{PrepareConfig, PreparePhase};
 use qitech_lib::units::{
-    angular_velocity::revolution_per_minute, f64::*, velocity::meter_per_minute,
+    angular_velocity::revolution_per_minute,
+    f64::*,
+    length::{meter, millimeter},
+    velocity::meter_per_minute,
 };
 use std::f64::consts::PI;
 use std::time::{Duration, Instant};
 
-const MILLIMETERS_PER_METER: f64 = 1000.0;
 const MAX_CONTROL_DT_S: f64 = 0.2;
 const RATIO_LEARNING_DEADBAND_MULTIPLIER: f64 = 3.0;
 const RATIO_LEARNING_MAX_COMMAND_FRACTION: f64 = 0.95;
@@ -772,7 +774,10 @@ pub(crate) fn move_toward(current: f64, target: f64, rate_per_s: f64, dt_s: f64)
 
 fn feed_forward_ratio(diameter_mm: Option<f64>, fallback_ratio_rpm_per_m_per_min: f64) -> f64 {
     match diameter_mm {
-        Some(diameter_mm) if diameter_mm > 0.0 => MILLIMETERS_PER_METER / (PI * diameter_mm),
+        Some(diameter_mm) if diameter_mm > 0.0 => {
+            let diameter_m = Length::new::<millimeter>(diameter_mm).get::<meter>();
+            1.0 / (PI * diameter_m)
+        }
         _ => fallback_ratio_rpm_per_m_per_min,
     }
 }
