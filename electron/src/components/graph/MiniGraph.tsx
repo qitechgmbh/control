@@ -2,20 +2,77 @@ import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import {
+  Series,
   getSeriesMinMax,
   seriesToUPlotData,
   TimeSeries,
+  TimeSeriesValue,
 } from "@/lib/timeseries";
 
 type MiniGraphProps = {
   newData: TimeSeries | null;
   width: number;
   renderValue?: (value: number) => string;
+  sampleInterval?: number;
+  valuePrecision?: number;
 };
 
 const HEIGHT = 64;
 
-export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
+function roundValue(value: number, precision: number | undefined): number {
+  if (precision === undefined) {
+    return value;
+  }
+  const factor = 10 ** precision;
+  return Math.round(value * factor) / factor;
+}
+
+function downsampleSeries(
+  series: Series,
+  sampleInterval: number | undefined,
+  valuePrecision: number | undefined,
+): Series {
+  if (sampleInterval === undefined && valuePrecision === undefined) {
+    return series;
+  }
+
+  const [timestamps, values] = seriesToUPlotData(series);
+  const filteredValues: TimeSeriesValue[] = [];
+  let lastTimestamp = Number.NEGATIVE_INFINITY;
+
+  timestamps.forEach((timestamp, index) => {
+    if (
+      sampleInterval !== undefined &&
+      timestamp - lastTimestamp < sampleInterval &&
+      index !== timestamps.length - 1
+    ) {
+      return;
+    }
+
+    filteredValues.push({
+      timestamp,
+      value: roundValue(values[index], valuePrecision),
+    });
+    lastTimestamp = timestamp;
+  });
+
+  return {
+    ...series,
+    values: filteredValues,
+    index: filteredValues.length,
+    size: filteredValues.length,
+    lastTimestamp: filteredValues.at(-1)?.timestamp ?? series.lastTimestamp,
+    validCount: filteredValues.length,
+  };
+}
+
+export function MiniGraph({
+  newData,
+  width,
+  renderValue,
+  sampleInterval,
+  valuePrecision,
+}: MiniGraphProps) {
   const divRef = useRef<HTMLDivElement | null>(null);
   const uplotRef = useRef<uPlot | null>(null);
 
@@ -44,9 +101,16 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
       : (u: uPlot, ticks: number[]) => ticks.map((v) => v.toFixed(1));
   }, [renderValue]);
 
+  const shortSeries = useMemo(() => {
+    if (!newData?.short) {
+      return null;
+    }
+    return downsampleSeries(newData.short, sampleInterval, valuePrecision);
+  }, [newData?.short, sampleInterval, valuePrecision]);
+
   // Ultra-efficient update function
   const updateChart = useCallback(() => {
-    if (!uplotRef.current || !newData?.short || !newData?.current) {
+    if (!uplotRef.current || !shortSeries || !newData?.current) {
       pendingUpdate.current = false;
       return;
     }
@@ -59,7 +123,7 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
       return;
     }
 
-    const short = newData.short;
+    const short = shortSeries;
     const timeWindow = short.timeWindow;
 
     // Get data
@@ -106,7 +170,7 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
     });
 
     pendingUpdate.current = false;
-  }, [newData, hashData]);
+  }, [newData?.current, shortSeries, hashData]);
 
   // RAF-throttled update scheduler
   const scheduleUpdate = useCallback(() => {
@@ -123,10 +187,10 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
 
   // Initialize chart only once
   useEffect(() => {
-    if (!divRef.current || !newData?.short?.timeWindow || isInitialized.current)
+    if (!divRef.current || !shortSeries?.timeWindow || isInitialized.current)
       return;
 
-    const short = newData.short;
+    const short = shortSeries;
     const timeWindow = short.timeWindow;
 
     // Get initial data
@@ -198,7 +262,7 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
       isInitialized.current = false;
       pendingUpdate.current = false;
     };
-  }, [width, newData?.short?.timeWindow, hashData, tickFormatter]);
+  }, [width, shortSeries?.timeWindow, hashData, tickFormatter]);
 
   // Trigger updates only when timestamp changes
   useEffect(() => {

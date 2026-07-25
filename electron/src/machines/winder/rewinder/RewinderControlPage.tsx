@@ -19,6 +19,10 @@ import { useRewinder } from "./useRewinder";
 
 const TRAVERSE_MAX_MM = 180;
 const MAX_TARGET_SPEED_M_PER_MIN = 50;
+const MINI_GRAPH_SAMPLE_INTERVAL_MS = 250;
+const MINI_GRAPH_SPEED_PRECISION = 1;
+const MINI_GRAPH_POSITION_PRECISION = 0;
+const MINI_GRAPH_PROGRESS_PRECISION = 2;
 
 export function RewinderControlPage() {
   const {
@@ -193,6 +197,8 @@ export function RewinderControlPage() {
             unit="m/min"
             timeseries={pullerSpeed}
             renderValue={(value) => roundToDecimals(value, 2)}
+            miniGraphSampleInterval={MINI_GRAPH_SAMPLE_INTERVAL_MS}
+            miniGraphValuePrecision={MINI_GRAPH_SPEED_PRECISION}
           />
           <EditValue
             value={state?.puller_state.target_speed}
@@ -234,6 +240,8 @@ export function RewinderControlPage() {
             unit="m"
             timeseries={rewindProgress}
             renderValue={(value) => roundToDecimals(value, 2)}
+            miniGraphSampleInterval={MINI_GRAPH_SAMPLE_INTERVAL_MS}
+            miniGraphValuePrecision={MINI_GRAPH_PROGRESS_PRECISION}
           />
           <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
             <div className="text-sm text-gray-500">Estimated Time</div>
@@ -285,6 +293,8 @@ export function RewinderControlPage() {
             unit="mm"
             timeseries={traversePosition}
             renderValue={(value) => roundToDecimals(value, 1)}
+            miniGraphSampleInterval={MINI_GRAPH_SAMPLE_INTERVAL_MS}
+            miniGraphValuePrecision={MINI_GRAPH_POSITION_PRECISION}
           />
           {state?.traverse_state && (
             <TraverseBar
