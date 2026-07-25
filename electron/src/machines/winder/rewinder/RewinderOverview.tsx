@@ -16,6 +16,12 @@ type Props = {
   sourceTensionArmAngle: TimeSeries;
 };
 
+const MINI_GRAPH_SAMPLE_INTERVAL_MS = 250;
+const MINI_GRAPH_RPM_PRECISION = 0;
+const MINI_GRAPH_POSITION_PRECISION = 0;
+const MINI_GRAPH_ANGLE_PRECISION = 0;
+const MINI_GRAPH_SPEED_PRECISION = 1;
+
 function PullerIcon() {
   return (
     <div className="flex w-full justify-center">
@@ -202,36 +208,48 @@ export function RewinderOverview({
           unit="rpm"
           timeseries={takeupSpoolRpm}
           renderValue={(v) => roundToDecimals(v, 0)}
+          miniGraphSampleInterval={MINI_GRAPH_SAMPLE_INTERVAL_MS}
+          miniGraphValuePrecision={MINI_GRAPH_RPM_PRECISION}
         />
         <TimeSeriesValueNumeric
           label="Position"
           unit="mm"
           timeseries={traversePosition}
           renderValue={(v) => roundToDecimals(v, 1)}
+          miniGraphSampleInterval={MINI_GRAPH_SAMPLE_INTERVAL_MS}
+          miniGraphValuePrecision={MINI_GRAPH_POSITION_PRECISION}
         />
         <TimeSeriesValueNumeric
           label="TU Angle"
           unit="deg"
           timeseries={takeupTensionArmAngle}
           renderValue={(v) => roundDegreesToDecimals(v, 0)}
+          miniGraphSampleInterval={MINI_GRAPH_SAMPLE_INTERVAL_MS}
+          miniGraphValuePrecision={MINI_GRAPH_ANGLE_PRECISION}
         />
         <TimeSeriesValueNumeric
           label="Speed"
           unit="m/min"
           timeseries={pullerSpeed}
           renderValue={(v) => roundToDecimals(v, 2)}
+          miniGraphSampleInterval={MINI_GRAPH_SAMPLE_INTERVAL_MS}
+          miniGraphValuePrecision={MINI_GRAPH_SPEED_PRECISION}
         />
         <TimeSeriesValueNumeric
           label="Src Angle"
           unit="deg"
           timeseries={sourceTensionArmAngle}
           renderValue={(v) => roundDegreesToDecimals(v, 0)}
+          miniGraphSampleInterval={MINI_GRAPH_SAMPLE_INTERVAL_MS}
+          miniGraphValuePrecision={MINI_GRAPH_ANGLE_PRECISION}
         />
         <TimeSeriesValueNumeric
           label="Source"
           unit="rpm"
           timeseries={sourceSpoolRpm}
           renderValue={(v) => roundToDecimals(v, 0)}
+          miniGraphSampleInterval={MINI_GRAPH_SAMPLE_INTERVAL_MS}
+          miniGraphValuePrecision={MINI_GRAPH_RPM_PRECISION}
         />
       </div>
     </div>
