@@ -186,6 +186,7 @@ export interface AnimationRefs {
     timestamps: number[];
     values: number[];
   }>;
+  realPointsCount: React.RefObject<number>;
 }
 
 export interface HandlerRefs {

@@ -9,8 +9,6 @@ import { RouterProvider } from "@tanstack/react-router";
 import { Toaster } from "./components/ui/sonner";
 import { enableMapSet } from "immer";
 import { GlobalLaserToastManager } from "./setup/GlobalLaserToastManager";
-import { startMemoryMonitor } from "./client/memoryMonitor";
-import { installFrontendDiagnostics } from "./client/frontendDiagnostics";
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -19,14 +17,6 @@ export default function App() {
     syncThemeWithLocal();
     updateAppLanguage(i18n);
   }, [i18n]);
-
-  useEffect(() => {
-    return startMemoryMonitor();
-  }, []);
-
-  useEffect(() => {
-    return installFrontendDiagnostics();
-  }, []);
 
   return (
     <>

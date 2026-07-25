@@ -20,7 +20,6 @@ import {
 import { useRef } from "react";
 import { rustEnum } from "@/lib/types";
 import { produce } from "immer"; // <-- Added Import for state updates
-import { frontendDiagnostic } from "./frontendDiagnostics";
 
 export type EthercatDevices = z.infer<typeof ethercatDevicesSchema>;
 export const ethercatDevicesSchema = z.object({
@@ -137,19 +136,6 @@ export function mainMessageHandler(
 
     try {
       if (eventName === "EthercatDevicesEvent") {
-        const parsed = ethercatDevicesEventSchema.safeParse(event);
-        const data = parsed.success ? parsed.data.data : undefined;
-        frontendDiagnostic("main.ethercat_devices_event", {
-          state:
-            data && "Initializing" in data
-              ? "Initializing"
-              : data && "Done" in data
-                ? "Done"
-                : data && "Error" in data
-                  ? "Error"
-                  : "Unknown",
-          deviceCount: data && "Done" in data ? data.Done.devices.length : null,
-        });
         store.setState((state) => ({
           ...state,
           ethercatDevices: event,
@@ -162,12 +148,6 @@ export function mainMessageHandler(
       } else if (eventName === "MachinesEvent") {
         const validatedEvent = machinesEventSchema.parse(event);
         const currentMachinesState = store.getState().machines;
-        frontendDiagnostic("main.machines_event", {
-          machineCount: validatedEvent.data.machines.length,
-          serials: validatedEvent.data.machines.map(
-            (machine) => machine.machine_identification_unique.serial,
-          ),
-        });
 
         if (currentMachinesState) {
           const oldMachines = currentMachinesState.data.machines;
@@ -195,10 +175,6 @@ export function mainMessageHandler(
             // Access your global socketio store state out of context
             const socketStoreState = useSocketioStore.getState();
             const namespace = socketStoreState.namespaces[namespace_path];
-            frontendDiagnostic("main.machine_removed", {
-              namespace: namespace_path,
-              serial: machine.machine_identification_unique.serial,
-            });
 
             if (namespace) {
               console.log(
