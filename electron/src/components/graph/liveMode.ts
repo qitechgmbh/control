@@ -14,16 +14,17 @@ import {
   AnimationRefs,
 } from "./types";
 
-// Retrieve all series data as an array of number arrays, preserving alignment
-// with normalizeDataSeries. Series with no long data get empty arrays so that
-// indices stay consistent — the caller fills gaps with current/last-known values.
+// Retrieve all series data as an array of number arrays
 function getAllSeriesData(data: BigGraphProps["newData"]): number[][] {
   const normalized = normalizeDataSeries(data);
-  return normalized.map((series) => {
-    if (!series.newData?.long) return [];
-    const [, values] = seriesToUPlotData(series.newData.long);
-    return values;
-  });
+  return normalized
+    .filter((series) => series.newData !== null)
+    .map((series) => {
+      if (!series.newData?.long) return [];
+      const [, values] = seriesToUPlotData(series.newData.long);
+      return values;
+    })
+    .filter((values) => values.length > 0);
 }
 
 export function useLiveMode({
@@ -102,6 +103,8 @@ export function useLiveMode({
       const liveData = buildUPlotData(
         liveTimestamps,
         liveValues,
+        undefined,
+        animationRefs.realPointsCount,
         config,
         additionalSeriesValues,
       );
@@ -276,6 +279,8 @@ export function useLiveMode({
           const uData = buildUPlotData(
             timestamps,
             values,
+            undefined,
+            animationRefs.realPointsCount,
             config,
             additionalSeriesValues,
           );

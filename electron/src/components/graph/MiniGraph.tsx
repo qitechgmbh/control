@@ -1,7 +1,11 @@
 import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
-import { seriesToUPlotData, TimeSeries } from "@/lib/timeseries";
+import {
+  getSeriesMinMax,
+  seriesToUPlotData,
+  TimeSeries,
+} from "@/lib/timeseries";
 
 type MiniGraphProps = {
   newData: TimeSeries | null;
@@ -10,99 +14,6 @@ type MiniGraphProps = {
 };
 
 const HEIGHT = 64;
-const MIN_UPDATE_INTERVAL_MS = 1000;
-const MAX_RENDER_POINTS = 32;
-const GRAPH_SMOOTHING_WINDOW = 3;
-const SCALE_PADDING_RATIO = 0.25;
-const SCALE_SHRINK_THRESHOLD = 4;
-
-function quantizeValue(value: number, renderValue?: (value: number) => string) {
-  if (!renderValue) {
-    return Math.round(value * 10) / 10;
-  }
-
-  const rendered = renderValue(value);
-  const numeric = Number(rendered);
-  return Number.isFinite(numeric) ? numeric : value;
-}
-
-function getMinMax(values: number[]): { min: number; max: number } {
-  if (values.length === 0) {
-    return { min: 0, max: 0 };
-  }
-
-  return {
-    min: Math.min(...values),
-    max: Math.max(...values),
-  };
-}
-
-function paddedScale(min: number, max: number): { min: number; max: number } {
-  const range = max - min || 1;
-  return {
-    min: min - range * SCALE_PADDING_RATIO,
-    max: max + range * SCALE_PADDING_RATIO,
-  };
-}
-
-function shouldUpdateScale(
-  current: { min: number; max: number },
-  next: { min: number; max: number },
-): boolean {
-  if (next.min < current.min || next.max > current.max) {
-    return true;
-  }
-
-  const nextRange = next.max - next.min || 1;
-  const currentRange = current.max - current.min || 1;
-  return currentRange > nextRange * SCALE_SHRINK_THRESHOLD;
-}
-
-function smoothValues(values: number[]): number[] {
-  if (values.length <= 2 || GRAPH_SMOOTHING_WINDOW <= 1) {
-    return values;
-  }
-
-  const halfWindow = Math.floor(GRAPH_SMOOTHING_WINDOW / 2);
-  return values.map((_, index) => {
-    const start = Math.max(0, index - halfWindow);
-    const end = Math.min(values.length, index + halfWindow + 1);
-    let sum = 0;
-
-    for (let i = start; i < end; i++) {
-      sum += values[i];
-    }
-
-    return sum / (end - start);
-  });
-}
-
-function compactSeries(
-  timestamps: number[],
-  values: number[],
-): [number[], number[]] {
-  if (timestamps.length <= MAX_RENDER_POINTS) {
-    return [timestamps, values];
-  }
-
-  const bucketSize = Math.ceil(timestamps.length / MAX_RENDER_POINTS);
-  const compactTimestamps: number[] = [];
-  const compactValues: number[] = [];
-
-  for (let start = 0; start < timestamps.length; start += bucketSize) {
-    const end = Math.min(start + bucketSize, timestamps.length);
-    let sum = 0;
-
-    for (let i = start; i < end; i++) {
-      sum += values[i];
-    }
-
-    compactTimestamps.push(timestamps[end - 1]);
-    compactValues.push(sum / (end - start));
-  }
-
-  return [compactTimestamps, compactValues];
-}
 
 export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
   const divRef = useRef<HTMLDivElement | null>(null);
@@ -111,7 +22,7 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
   // Performance tracking refs
   const lastUpdateTimestamp = useRef<number>(0);
   const lastDataHash = useRef<string>("");
-  const yScale = useRef<{ min: number; max: number }>({ min: 0, max: 0 });
+  const lastMinMax = useRef<{ min: number; max: number }>({ min: 0, max: 0 });
   const rafId = useRef<number>(0);
   const isInitialized = useRef<boolean>(false);
   const pendingUpdate = useRef<boolean>(false);
@@ -148,57 +59,54 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
       return;
     }
 
-    if (cur.timestamp - lastUpdateTimestamp.current < MIN_UPDATE_INTERVAL_MS) {
-      pendingUpdate.current = false;
-      return;
-    }
-
     const short = newData.short;
     const timeWindow = short.timeWindow;
 
     // Get data
-    const [timestamps, rawValues] = seriesToUPlotData(short);
-    const values = rawValues.map((value) => quantizeValue(value, renderValue));
-    const [plotTimestamps, compactValues] = compactSeries(timestamps, values);
-    const plotValues = smoothValues(compactValues);
+    const [timestamps, values] = seriesToUPlotData(short);
 
-    if (plotTimestamps.length === 0) {
+    if (timestamps.length === 0) {
       pendingUpdate.current = false;
       return;
     }
 
     // Check if data actually changed using hash
-    const dataHash = hashData(plotTimestamps, plotValues);
+    const dataHash = hashData(timestamps, values);
     if (dataHash === lastDataHash.current) {
       pendingUpdate.current = false;
       return;
     }
 
     // Get min/max and check if scales need updating
-    const { min: minY, max: maxY } = getMinMax(plotValues);
-    const nextScale = paddedScale(minY, maxY);
-    const scalesChanged = shouldUpdateScale(yScale.current, nextScale);
+    const { min: minY, max: maxY } = getSeriesMinMax(short);
+    const scalesChanged =
+      minY !== lastMinMax.current.min || maxY !== lastMinMax.current.max;
 
     // Update tracking vars
     lastUpdateTimestamp.current = cur.timestamp;
     lastDataHash.current = dataHash;
+    lastMinMax.current = { min: minY, max: maxY };
+
+    const range = maxY - minY || 1;
     const cutoff = cur.timestamp - timeWindow;
 
     // Batch all updates to minimize redraws
     uplotRef.current.batch(() => {
       // Always update data and x-scale (time moves forward)
-      uplotRef.current!.setData([plotTimestamps, plotValues]);
+      uplotRef.current!.setData([timestamps, values]);
       uplotRef.current!.setScale("x", { min: cutoff, max: cur.timestamp });
 
       // Only update y-scale if min/max changed
       if (scalesChanged) {
-        yScale.current = nextScale;
-        uplotRef.current!.setScale("y", nextScale);
+        uplotRef.current!.setScale("y", {
+          min: minY - range * 0.1,
+          max: maxY + range * 0.1,
+        });
       }
     });
 
     pendingUpdate.current = false;
-  }, [newData, hashData, renderValue]);
+  }, [newData, hashData]);
 
   // RAF-throttled update scheduler
   const scheduleUpdate = useCallback(() => {
@@ -222,28 +130,18 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
     const timeWindow = short.timeWindow;
 
     // Get initial data
-    const [allTimestamps, rawAllValues] = seriesToUPlotData(short);
-    const allValues = rawAllValues.map((value) =>
-      quantizeValue(value, renderValue),
-    );
-    const [plotTimestamps, compactValues] = compactSeries(
-      allTimestamps,
-      allValues,
-    );
-    const plotValues = smoothValues(compactValues);
-    const { min: minY, max: maxY } = getMinMax(plotValues);
-    const initialScale = paddedScale(minY, maxY);
+    const [allTimestamps, allValues] = seriesToUPlotData(short);
+    const { min: minY, max: maxY } = getSeriesMinMax(short);
+    const range = maxY - minY || 1;
 
     // Initialize tracking
-    const dataHash = hashData(plotTimestamps, plotValues);
+    const dataHash = hashData(allTimestamps, allValues);
     lastDataHash.current = dataHash;
-    yScale.current = initialScale;
+    lastMinMax.current = { min: minY, max: maxY };
 
     const now = Date.now();
     const latestTimestamp =
-      plotTimestamps.length > 0
-        ? plotTimestamps[plotTimestamps.length - 1]
-        : now;
+      allTimestamps.length > 0 ? allTimestamps[allTimestamps.length - 1] : now;
     const cutoff = latestTimestamp - timeWindow;
 
     const opts: uPlot.Options = {
@@ -260,8 +158,8 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
         },
         y: {
           auto: false,
-          min: initialScale.min,
-          max: initialScale.max,
+          min: minY - range * 0.1,
+          max: maxY + range * 0.1,
         },
       },
       axes: [
@@ -286,7 +184,7 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
 
     uplotRef.current = new uPlot(
       opts,
-      [plotTimestamps, plotValues],
+      [allTimestamps, allValues],
       divRef.current,
     );
     isInitialized.current = true;
@@ -300,7 +198,7 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
       isInitialized.current = false;
       pendingUpdate.current = false;
     };
-  }, [width, newData?.short?.timeWindow, hashData, tickFormatter, renderValue]);
+  }, [width, newData?.short?.timeWindow, hashData, tickFormatter]);
 
   // Trigger updates only when timestamp changes
   useEffect(() => {

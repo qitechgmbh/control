@@ -247,9 +247,7 @@ export function useBigGraphEffects({
     updateYAxisScale,
   ]);
 
-  // Create and initialize the chart when data becomes available.
-  // With mutable TimeSeries (no immer), we depend on validCount and lastTimestamp
-  // instead of the Series object reference, which no longer changes on each insert.
+  // Create and initialize the chart when data becomes available
   useEffect(() => {
     if (!containerRef.current || !primarySeries?.newData?.long) {
       setIsChartCreated(false);
@@ -307,11 +305,7 @@ export function useBigGraphEffects({
       setIsChartCreated(false);
       chartCreatedRef.current = false;
     };
-  }, [
-    primarySeries?.newData?.long?.validCount,
-    primarySeries?.newData?.long?.lastTimestamp,
-    containerRef.current,
-  ]);
+  }, [primarySeries?.newData?.long, containerRef.current]);
 
   // Process new historical data in live mode
   useEffect(() => {

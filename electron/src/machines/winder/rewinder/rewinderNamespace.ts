@@ -19,11 +19,6 @@ import {
 import { useMemo } from "react";
 import { toastError } from "@/components/Toast";
 
-const REWINDER_TIMESERIES_CONFIG = {
-  sampleIntervalShort: 1000,
-  retentionDurationShort: 15000,
-};
-
 export const modeSchema = z.enum([
   "Standby",
   "Hold",
@@ -163,23 +158,23 @@ export type RewinderNamespaceStore = {
 };
 
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
-  createTimeSeries(REWINDER_TIMESERIES_CONFIG);
+  createTimeSeries();
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
-  createTimeSeries(REWINDER_TIMESERIES_CONFIG);
+  createTimeSeries();
 const { initialTimeSeries: takeupSpoolRpm, insert: addTakeupSpoolRpm } =
-  createTimeSeries(REWINDER_TIMESERIES_CONFIG);
+  createTimeSeries();
 const { initialTimeSeries: sourceSpoolRpm, insert: addSourceSpoolRpm } =
-  createTimeSeries(REWINDER_TIMESERIES_CONFIG);
+  createTimeSeries();
 const {
   initialTimeSeries: takeupTensionArmAngle,
   insert: addTakeupTensionArmAngle,
-} = createTimeSeries(REWINDER_TIMESERIES_CONFIG);
+} = createTimeSeries();
 const {
   initialTimeSeries: sourceTensionArmAngle,
   insert: addSourceTensionArmAngle,
-} = createTimeSeries(REWINDER_TIMESERIES_CONFIG);
+} = createTimeSeries();
 const { initialTimeSeries: rewindProgress, insert: addRewindProgress } =
-  createTimeSeries(REWINDER_TIMESERIES_CONFIG);
+  createTimeSeries();
 
 function formatHardStopAngle(
   label: string,

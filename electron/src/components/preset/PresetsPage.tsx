@@ -14,7 +14,6 @@ import { useExportDialog } from "@/hooks/useExportDialog";
 type PresetsPageProps<T> = UsePresetsParams<T> & {
   applyPreset: (preset: Preset<T>) => void;
   previewEntries: PresetPreviewEntries<T>;
-  applyDisabled?: boolean;
 };
 
 export function PresetsPage<T>({
@@ -25,7 +24,6 @@ export function PresetsPage<T>({
   schemaVersion,
   previewEntries,
   defaultState,
-  applyDisabled,
 }: PresetsPageProps<T>) {
   const presets = usePresets<T>({
     machine_identification,
@@ -93,7 +91,6 @@ export function PresetsPage<T>({
               previewEntries={previewEntries}
               isReadOnly={isLatest}
               isActive={presets.isActive(preset)}
-              applyDisabled={applyDisabled}
             />
           );
         })}
@@ -107,7 +104,6 @@ export function PresetsPage<T>({
             isReadOnly
             hideDate
             isActive={presets.isActive(presets.defaultPreset)}
-            applyDisabled={applyDisabled}
           />
         )}
       </ControlGrid>
