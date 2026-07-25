@@ -1,5 +1,5 @@
 use super::{
-    Rewinder, RewinderMode,
+    Mode, Rewinder,
     rewind_control::{RewindControlState, deadband, move_toward},
 };
 use std::time::{Duration, Instant};
@@ -274,7 +274,7 @@ fn prepare_puller_command(
 
 impl Rewinder {
     pub(crate) fn update_prepare_control(&mut self, now: Instant) -> bool {
-        if !matches!(self.mode, RewinderMode::Prepare) {
+        if !matches!(self.mode, Mode::Prepare) {
             return false;
         }
 

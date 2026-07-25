@@ -1,5 +1,5 @@
 use super::{
-    EK1100_ROLE, EL2002_ROLE, PULLER_ROLE, PullerMode, RewindPhase, Rewinder, RewinderMode,
+    EK1100_ROLE, EL2002_ROLE, Mode, PULLER_ROLE, PullerMode, RewindPhase, Rewinder,
     SOURCE_SPOOL_ROLE, SourceSpoolMode, TAKEUP_SPOOL_ROLE, TRAVERSE_ROLE, TakeupSpoolMode,
     TraverseMode,
 };
@@ -161,9 +161,8 @@ impl MachineNew for Rewinder {
             source_tension_arm: super::TensionArm::new(source_spool.0.clone()),
             namespace: super::api::RewinderNamespace { namespace: None },
             last_measurement_emit: Instant::now(),
-            last_rewind_diagnostics_log: Instant::now(),
             machine_identification_unique: hw.identification,
-            mode: RewinderMode::Standby,
+            mode: Mode::Standby,
             takeup_spool_mode: TakeupSpoolMode::Standby,
             source_spool_mode: SourceSpoolMode::Standby,
             traverse_mode: TraverseMode::Standby,
@@ -183,8 +182,8 @@ impl MachineNew for Rewinder {
             ),
             traverse_start_position: Length::new::<millimeter>(92.0),
             resume_traverse_position: None,
-            takeup_spool_diameter_mm: None,
-            source_spool_diameter_mm: None,
+            takeup_spool_diameter: None,
+            source_spool_diameter: None,
             rewind_phase: RewindPhase::Idle,
             hold_decelerating_from_rewind: false,
             pending_mode_after_rewind_deceleration: None,

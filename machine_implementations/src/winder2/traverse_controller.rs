@@ -8,8 +8,6 @@ use qitech_lib::units::length::millimeter;
 use qitech_lib::units::velocity::millimeter_per_second;
 use std::time::Instant;
 
-const FINE_HOME_START_DISTANCE_MM: f64 = 5.0;
-
 #[derive(Debug)]
 pub struct TraverseController {
     enabled: bool,
@@ -217,15 +215,8 @@ impl TraverseController {
         self.state = State::GoingToTarget;
     }
 
-    pub fn goto_home(&mut self) {
-        let close_to_home = self.is_homed()
-            && self.position <= Length::new::<millimeter>(FINE_HOME_START_DISTANCE_MM);
-
-        self.state = if close_to_home {
-            State::Homing(HomingState::FindEndtopFine)
-        } else {
-            State::Homing(HomingState::Initialize)
-        };
+    pub const fn goto_home(&mut self) {
+        self.state = State::Homing(HomingState::Initialize);
     }
 
     pub const fn stop(&mut self) {

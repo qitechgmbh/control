@@ -1,7 +1,7 @@
 use super::rewind_control::ArmConfig;
 use super::{
-    LASER_PORT, PULL_MODE_SOURCE_ASSIST_MAX_RPM, PULL_MODE_SOURCE_ASSIST_RPM_PER_M_PER_MIN,
-    PULLER_PORT, RewindPhase, Rewinder, RewinderMode, SOURCE_SPOOL_PORT, TAKEUP_SPOOL_PORT,
+    LASER_PORT, Mode, PULL_MODE_SOURCE_ASSIST_MAX_RPM, PULL_MODE_SOURCE_ASSIST_RPM_PER_M_PER_MIN,
+    PULLER_PORT, RewindPhase, Rewinder, SOURCE_SPOOL_PORT, TAKEUP_SPOOL_PORT,
     api::{
         HardStopEvent, LiveValuesEvent, ModeState, PrepareControlState, PullerState,
         RewindAutomaticActionState, RewinderEvents, SourceSpoolState, StateEvent, TakeupSpoolState,
@@ -23,9 +23,9 @@ use std::cell::RefMut;
 use std::time::Instant;
 
 impl Rewinder {
-    pub fn set_mode(&mut self, mode: &RewinderMode) {
+    pub fn set_mode(&mut self, mode: &Mode) {
         if self.hold_decelerating_from_rewind {
-            if matches!(mode, RewinderMode::Hold | RewinderMode::Standby) {
+            if matches!(mode, Mode::Hold | Mode::Standby) {
                 self.pending_mode_after_rewind_deceleration = Some(mode.clone());
             } else {
                 tracing::warn!(
@@ -42,22 +42,19 @@ impl Rewinder {
         }
 
         let should_update = match mode {
-            RewinderMode::Rewind => self.can_rewind(),
-            RewinderMode::Prepare => self.prepare_block_reason().is_none(),
-            RewinderMode::Standby | RewinderMode::Hold | RewinderMode::Pull => true,
+            Mode::Rewind => self.can_rewind(),
+            Mode::Prepare => self.prepare_block_reason().is_none(),
+            Mode::Standby | Mode::Hold | Mode::Pull => true,
         };
         if should_update {
             let entering_rewind =
-                !matches!(self.mode, RewinderMode::Rewind) && matches!(mode, RewinderMode::Rewind);
-            let exiting_rewind =
-                matches!(self.mode, RewinderMode::Rewind) && !matches!(mode, RewinderMode::Rewind);
-            let entering_pull =
-                !matches!(self.mode, RewinderMode::Pull) && matches!(mode, RewinderMode::Pull);
-            let entering_prepare = !matches!(self.mode, RewinderMode::Prepare)
-                && matches!(mode, RewinderMode::Prepare);
-            let entering_hold =
-                !matches!(self.mode, RewinderMode::Hold) && matches!(mode, RewinderMode::Hold);
-            let hold_from_standby = entering_hold && matches!(self.mode, RewinderMode::Standby);
+                !matches!(self.mode, Mode::Rewind) && matches!(mode, Mode::Rewind);
+            let exiting_rewind = matches!(self.mode, Mode::Rewind) && !matches!(mode, Mode::Rewind);
+            let entering_pull = !matches!(self.mode, Mode::Pull) && matches!(mode, Mode::Pull);
+            let entering_prepare =
+                !matches!(self.mode, Mode::Prepare) && matches!(mode, Mode::Prepare);
+            let entering_hold = !matches!(self.mode, Mode::Hold) && matches!(mode, Mode::Hold);
+            let hold_from_standby = entering_hold && matches!(self.mode, Mode::Standby);
             if exiting_rewind {
                 self.save_current_traverse_as_start_position();
                 self.pending_mode_after_rewind_deceleration = Some(mode.clone());
@@ -69,12 +66,12 @@ impl Rewinder {
             if entering_hold {
                 self.rewind_control.reset_motion();
                 self.capture_hold_deceleration_state();
-            } else if !matches!(mode, RewinderMode::Hold) {
+            } else if !matches!(mode, Mode::Hold) {
                 self.hold_decelerating_from_rewind = false;
                 self.pending_mode_after_rewind_deceleration = None;
             }
             self.mode = mode.clone();
-            self.rewind_phase = if matches!(mode, RewinderMode::Rewind) {
+            self.rewind_phase = if matches!(mode, Mode::Rewind) {
                 RewindPhase::Validate
             } else {
                 RewindPhase::Idle
@@ -127,15 +124,15 @@ impl Rewinder {
                 self.traverse_controller.set_target_position(start_position);
                 self.traverse_controller.goto_target_position();
             }
-            if matches!(mode, RewinderMode::Pull) {
+            if matches!(mode, Mode::Pull) {
                 self.rewind_control.reset_motion();
             }
-        } else if matches!(mode, RewinderMode::Rewind) {
+        } else if matches!(mode, Mode::Rewind) {
             tracing::warn!(
                 "Rewinder rejected Rewind: {}",
                 self.rewind_block_reason().unwrap_or("unknown reason")
             );
-        } else if matches!(mode, RewinderMode::Prepare) {
+        } else if matches!(mode, Mode::Prepare) {
             tracing::warn!(
                 "Rewinder rejected Prepare: {}",
                 self.prepare_block_reason().unwrap_or("unknown reason")
@@ -223,12 +220,12 @@ impl Rewinder {
             let target_mode = self
                 .pending_mode_after_rewind_deceleration
                 .take()
-                .unwrap_or(RewinderMode::Hold);
+                .unwrap_or(Mode::Hold);
             self.hold_decelerating_from_rewind = false;
             self.mode = target_mode.clone();
             self.rewind_phase = RewindPhase::Idle;
             self.rewind_control.reset_motion();
-            if matches!(target_mode, RewinderMode::Prepare) {
+            if matches!(target_mode, Mode::Prepare) {
                 self.rewind_control.reset_for_prepare(Instant::now());
             }
             self.apply_mode_to_axes(&target_mode);
@@ -253,7 +250,7 @@ impl Rewinder {
                 -angular_velocity
             }
         } else if self.puller_speed_output_permitted() {
-            if matches!(self.mode, RewinderMode::Rewind | RewinderMode::Prepare) {
+            if matches!(self.mode, Mode::Rewind | Mode::Prepare) {
                 let target_speed = self.puller_speed_controller.get_target_speed();
                 self.puller_speed_controller
                     .set_target_speed(self.rewind_control.puller_command_speed());
@@ -275,12 +272,11 @@ impl Rewinder {
         {
             self.rewind_control.update_followers(
                 actual_line_speed.abs(),
-                self.takeup_spool_diameter_mm,
-                self.source_spool_diameter_mm,
+                self.takeup_spool_diameter,
+                self.source_spool_diameter,
                 self.rewind_control.last_dt_s,
             );
-        } else if !matches!(self.mode, RewinderMode::Prepare) && !self.hold_decelerating_from_rewind
-        {
+        } else if !matches!(self.mode, Mode::Prepare) && !self.hold_decelerating_from_rewind {
             self.rewind_control.source_follower.force_zero();
             self.rewind_control.takeup_follower.force_zero();
         }
@@ -299,7 +295,7 @@ impl Rewinder {
         let angular_velocity = if self.hold_decelerating_from_rewind {
             self.rewind_control.takeup_command_angular_velocity()
         } else if self.takeup_spool_speed_output_permitted() {
-            if matches!(self.mode, RewinderMode::Prepare | RewinderMode::Rewind) {
+            if matches!(self.mode, Mode::Prepare | Mode::Rewind) {
                 self.rewind_control.takeup_command_angular_velocity()
             } else {
                 let angular_velocity = self.takeup_spool_speed_controller.update_speed(
@@ -315,10 +311,8 @@ impl Rewinder {
                 .set_speed(angular_velocity);
             angular_velocity
         };
-        if matches!(
-            self.mode,
-            RewinderMode::Hold | RewinderMode::Prepare | RewinderMode::Rewind
-        ) || !self.takeup_spool_speed_output_permitted()
+        if matches!(self.mode, Mode::Hold | Mode::Prepare | Mode::Rewind)
+            || !self.takeup_spool_speed_output_permitted()
         {
             self.takeup_spool_speed_controller
                 .set_speed(angular_velocity);
@@ -339,7 +333,7 @@ impl Rewinder {
 
     pub fn sync_source_spool_speed(&mut self, _t: Instant) {
         let angular_velocity = if self.source_spool_speed_output_permitted() {
-            if matches!(self.mode, RewinderMode::Pull) {
+            if matches!(self.mode, Mode::Pull) {
                 AngularVelocity::new::<revolution_per_minute>(self.pull_mode_source_assist_rpm())
             } else if self.hold_decelerating_from_rewind {
                 self.rewind_control.source_command_angular_velocity()
@@ -446,7 +440,7 @@ impl Rewinder {
         self.emitted_default_state = true;
         let can_rewind = if self.hold_decelerating_from_rewind {
             false
-        } else if matches!(self.mode, RewinderMode::Rewind) {
+        } else if matches!(self.mode, Mode::Rewind) {
             self.active_rewind_block_reason().is_none()
         } else {
             self.can_rewind()
@@ -455,7 +449,7 @@ impl Rewinder {
         let displayed_mode = if self.hold_decelerating_from_rewind {
             self.pending_mode_after_rewind_deceleration
                 .clone()
-                .unwrap_or(RewinderMode::Hold)
+                .unwrap_or(Mode::Hold)
         } else {
             self.mode.clone()
         };
@@ -501,7 +495,9 @@ impl Rewinder {
             },
             takeup_spool_state: TakeupSpoolState {
                 regulation_mode: self.takeup_spool_speed_controller.get_type().clone(),
-                diameter_mm: self.takeup_spool_diameter_mm,
+                diameter_mm: self
+                    .takeup_spool_diameter
+                    .map(|diameter| diameter.get::<millimeter>()),
                 minmax_min_speed: self
                     .takeup_spool_speed_controller
                     .get_minmax_min_speed()
@@ -527,7 +523,9 @@ impl Rewinder {
                     .get_adaptive_deacceleration_urgency_multiplier(),
             },
             source_spool_state: SourceSpoolState {
-                diameter_mm: self.source_spool_diameter_mm,
+                diameter_mm: self
+                    .source_spool_diameter
+                    .map(|diameter| diameter.get::<millimeter>()),
                 adaptive_tension_target: self
                     .source_spool_speed_controller
                     .get_adaptive_tension_target(),
@@ -675,7 +673,7 @@ impl Rewinder {
             && diameter_mm.is_finite()
             && (10.0..=500.0).contains(&diameter_mm)
         {
-            self.takeup_spool_diameter_mm = Some(diameter_mm);
+            self.takeup_spool_diameter = Some(Length::new::<millimeter>(diameter_mm));
         }
         self.emit_state();
     }
@@ -685,7 +683,7 @@ impl Rewinder {
             && diameter_mm.is_finite()
             && (10.0..=500.0).contains(&diameter_mm)
         {
-            self.source_spool_diameter_mm = Some(diameter_mm);
+            self.source_spool_diameter = Some(Length::new::<millimeter>(diameter_mm));
         }
         self.emit_state();
     }
@@ -746,7 +744,7 @@ impl Rewinder {
     }
 
     fn settings_edit_permitted(&self) -> bool {
-        matches!(self.mode, RewinderMode::Standby | RewinderMode::Hold)
+        matches!(self.mode, Mode::Standby | Mode::Hold)
     }
 
     fn motion_command_edit_permitted(&self) -> bool {
@@ -754,7 +752,7 @@ impl Rewinder {
     }
 
     fn manual_traverse_command_permitted(&self) -> bool {
-        matches!(self.mode, RewinderMode::Hold)
+        matches!(self.mode, Mode::Hold)
     }
 
     pub fn takeup_tension_arm_zero(&mut self) {

@@ -157,24 +157,31 @@ export type RewinderNamespaceStore = {
   rewindProgress: TimeSeries;
 };
 
+const REWINDER_TIMESERIES_CONFIG = {
+  sampleIntervalShort: 250,
+};
+
+const createRewinderTimeSeries = () =>
+  createTimeSeries(REWINDER_TIMESERIES_CONFIG);
+
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
-  createTimeSeries();
+  createRewinderTimeSeries();
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
-  createTimeSeries();
+  createRewinderTimeSeries();
 const { initialTimeSeries: takeupSpoolRpm, insert: addTakeupSpoolRpm } =
-  createTimeSeries();
+  createRewinderTimeSeries();
 const { initialTimeSeries: sourceSpoolRpm, insert: addSourceSpoolRpm } =
-  createTimeSeries();
+  createRewinderTimeSeries();
 const {
   initialTimeSeries: takeupTensionArmAngle,
   insert: addTakeupTensionArmAngle,
-} = createTimeSeries();
+} = createRewinderTimeSeries();
 const {
   initialTimeSeries: sourceTensionArmAngle,
   insert: addSourceTensionArmAngle,
-} = createTimeSeries();
+} = createRewinderTimeSeries();
 const { initialTimeSeries: rewindProgress, insert: addRewindProgress } =
-  createTimeSeries();
+  createRewinderTimeSeries();
 
 function formatHardStopAngle(
   label: string,

@@ -16,10 +16,6 @@ type Props = {
   sourceTensionArmAngle: TimeSeries;
 };
 
-// Two-wheel puller, styled like the tension arm wheel (gray-200 fill, black inner hub).
-// Explicit SVG width/height so layout is predictable:
-//   container 48×128px, viewBox 96×200, scale=0.5 (width-constrained),
-//   vertical offset=(128-100)/2=14px → top circle bottom y=64, bottom circle top y=68, mid=66.
 function PullerIcon() {
   return (
     <div className="flex w-full justify-center">
@@ -53,8 +49,6 @@ function PullerIcon() {
   );
 }
 
-// Traverse guide wheel positioned near the top of its 128×128 box so the filament
-// can pass over the top (trY=4 in the overlay).
 function TraverseGuide() {
   return (
     <div className="flex w-full justify-center">
@@ -78,24 +72,12 @@ function TraverseGuide() {
   );
 }
 
-// TensionArm rotates around div center (64,64) in a 128×128 box.
-// Wheel center offset from div center = 32.6px; wheel radius = 31.4px.
-// armWheelBottom gives the y of the wheel's lowest point — where the filament rides under it.
 function armWheelBottom(angleDeg: number): number {
   const r = (angleDeg * Math.PI) / 180;
-  return 64 + 32.6 * Math.cos(r) + 31; // wheel center y + radius
+  return 64 + 32.6 * Math.cos(r) + 31;
 }
 
-// SVG overlay: viewBox "0 0 600 128", preserveAspectRatio="none", positioned absolute bottom-0.
-// 6 equal columns → centers x = 50,150,250,350,450,550 (TS, TR, TTA, PUL, STA, SS).
-// y maps 1:1 to pixels within the h-32 component row.
-//
-// Key y-anchors (all in overlay pixels):
-//   - Source/Takeup spool: bottom=128, top=0
-//   - Tension arm wheel bottom: 64 + 32.6*cos(θ) + 31  (≈128 at θ=0°, rises as arm lifts)
-//   - Puller midpoint between wheels: 66  (from xMidYMid meet layout of 96×200 viewBox in 48×128px)
-//   - Traverse wheel top: 4  (circle cy=32 r=28 in 128×128 box)
-const COL_CENTERS = [50, 150, 250, 350, 450, 550]; // TS, TR, TTA, PUL, STA, SS
+const COL_CENTERS = [50, 150, 250, 350, 450, 550];
 
 function FilamentPath({
   mode,
@@ -111,22 +93,17 @@ function FilamentPath({
   if (!mode || mode === "Standby") return null;
 
   const [xTS, xTR, xTTA, xPUL, xSTA, xSS] = COL_CENTERS;
-  const staBot = armWheelBottom(staAngle); // bottom of source TA wheel
-  const ttaBot = armWheelBottom(ttaAngle); // bottom of takeup TA wheel
-  const pulY = 66; // midpoint between puller wheels
-  const trY = 4; // top of traverse wheel
+  const staBot = armWheelBottom(staAngle);
+  const ttaBot = armWheelBottom(ttaAngle);
+  const pulY = 66;
+  const trY = 4;
 
   const d = [
-    `M ${xSS},128`, // source spool bottom
-    // Horizontal exit from spool, then curve under STA wheel bottom
+    `M ${xSS},128`,
     `C ${xSS - 40},128 ${xSTA + 40},${staBot} ${xSTA},${staBot}`,
-    // Rise from STA bottom to between puller wheels
     `C ${xSTA - 50},${staBot} ${xPUL + 50},${pulY} ${xPUL},${pulY}`,
-    // Dip from puller to under TTA wheel bottom
     `C ${xPUL - 50},${pulY} ${xTTA + 50},${ttaBot} ${xTTA},${ttaBot}`,
-    // Rise from TTA bottom to over traverse wheel top
     `C ${xTTA - 30},${ttaBot} ${xTR + 30},${trY} ${xTR},${trY}`,
-    // Nearly horizontal to takeup spool top
     `C ${xTR - 30},${trY} ${xTS + 30},0 ${xTS},0`,
   ].join(" ");
 
@@ -177,7 +154,6 @@ export function RewinderOverview({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Machine parts row with absolute SVG filament overlay */}
       <div className="relative">
         <div className="flex items-start">
           <div className="flex flex-1 flex-col items-center gap-1">
@@ -206,8 +182,6 @@ export function RewinderOverview({
           </div>
         </div>
 
-        {/* SVG covers only the h-32 component area (bottom of the relative container).
-            viewBox y=0 aligns with the top of the Spool/TensionArm components. */}
         <svg
           viewBox="0 0 600 128"
           preserveAspectRatio="none"
@@ -222,7 +196,6 @@ export function RewinderOverview({
         </svg>
       </div>
 
-      {/* Live values aligned with part positions */}
       <div className="grid grid-cols-6 gap-4">
         <TimeSeriesValueNumeric
           label="Takeup"
