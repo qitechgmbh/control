@@ -1,18 +1,12 @@
-use super::{RewindPhase, Rewinder, RewinderMode, api::HardStopEvent};
+use super::{Mode, RewindPhase, Rewinder, api::HardStopEvent};
 use qitech_lib::units::{
     angular_velocity::revolution_per_minute, f64::*, velocity::meter_per_minute,
 };
 use std::time::Instant;
 
 impl Rewinder {
-    fn set_rewind_phase(&mut self, phase: RewindPhase, reason: &str) {
+    fn set_rewind_phase(&mut self, phase: RewindPhase, _reason: &str) {
         if self.rewind_phase != phase {
-            tracing::debug!(
-                "Rewinder phase {:?} -> {:?}: {}",
-                self.rewind_phase,
-                phase,
-                reason
-            );
             self.rewind_control.start_phase(Instant::now());
         }
         self.rewind_phase = phase;
@@ -57,16 +51,16 @@ impl Rewinder {
             takeup_out_of_range,
         });
 
-        self.mode = RewinderMode::Standby;
+        self.mode = Mode::Standby;
         self.rewind_phase = RewindPhase::Idle;
         self.hold_decelerating_from_rewind = false;
         self.pending_mode_after_rewind_deceleration = None;
-        self.apply_mode_to_axes(&RewinderMode::Standby);
+        self.apply_mode_to_axes(&Mode::Standby);
         self.emit_state();
     }
 
     pub fn manual_hard_stop(&mut self) {
-        if !matches!(self.mode, RewinderMode::Rewind) {
+        if !matches!(self.mode, Mode::Rewind) {
             self.emit_state();
             return;
         }
@@ -93,11 +87,11 @@ impl Rewinder {
     }
 
     pub(crate) fn update_rewind_sequence(&mut self, now: Instant) {
-        if !matches!(self.mode, RewinderMode::Rewind) {
+        if !matches!(self.mode, Mode::Rewind) {
             if !matches!(self.rewind_phase, RewindPhase::Idle) {
                 self.set_rewind_phase(RewindPhase::Idle, "mode is not Rewind");
             }
-            if !matches!(self.mode, RewinderMode::Hold | RewinderMode::Prepare) {
+            if !matches!(self.mode, Mode::Hold | Mode::Prepare) {
                 self.rewind_control.reset_motion();
             }
             return;

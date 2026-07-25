@@ -1,10 +1,10 @@
 use super::{
-    PULLER_PORT, PullerMode, Rewinder, RewinderMode, SOURCE_SPOOL_PORT, SourceSpoolMode,
-    TAKEUP_SPOOL_PORT, TRAVERSE_PORT, TakeupSpoolMode, TraverseMode,
+    Mode, PULLER_PORT, PullerMode, Rewinder, SOURCE_SPOOL_PORT, SourceSpoolMode, TAKEUP_SPOOL_PORT,
+    TRAVERSE_PORT, TakeupSpoolMode, TraverseMode,
 };
 
 impl Rewinder {
-    pub(super) fn apply_mode_to_axes(&mut self, mode: &RewinderMode) {
+    pub(super) fn apply_mode_to_axes(&mut self, mode: &Mode) {
         self.set_takeup_spool_mode(mode);
         self.set_source_spool_mode(mode);
         self.set_puller_mode(mode);
@@ -16,8 +16,8 @@ impl Rewinder {
     /// This mirrors Winder2's transition-matrix style: the high-level machine
     /// mode is converted into an axis mode, then only the required hardware
     /// transitions are applied.
-    fn set_takeup_spool_mode(&mut self, mode: &RewinderMode) {
-        let mode = if matches!(mode, RewinderMode::Hold) && self.hold_decelerating_from_rewind {
+    fn set_takeup_spool_mode(&mut self, mode: &Mode) {
+        let mode = if matches!(mode, Mode::Hold) && self.hold_decelerating_from_rewind {
             TakeupSpoolMode::Drive
         } else {
             mode.clone().into()
@@ -60,8 +60,8 @@ impl Rewinder {
     }
 
     /// Apply mode changes to the source spool.
-    fn set_source_spool_mode(&mut self, mode: &RewinderMode) {
-        let mode = if matches!(mode, RewinderMode::Hold) && self.hold_decelerating_from_rewind {
+    fn set_source_spool_mode(&mut self, mode: &Mode) {
+        let mode = if matches!(mode, Mode::Hold) && self.hold_decelerating_from_rewind {
             SourceSpoolMode::Drive
         } else {
             mode.clone().into()
@@ -104,8 +104,8 @@ impl Rewinder {
     }
 
     /// Apply mode changes to the puller.
-    fn set_puller_mode(&mut self, mode: &RewinderMode) {
-        let mode = if matches!(mode, RewinderMode::Hold) && self.hold_decelerating_from_rewind {
+    fn set_puller_mode(&mut self, mode: &Mode) {
+        let mode = if matches!(mode, Mode::Hold) && self.hold_decelerating_from_rewind {
             PullerMode::Pull
         } else {
             mode.clone().into()
@@ -148,7 +148,7 @@ impl Rewinder {
     }
 
     /// Apply mode changes to the traverse.
-    fn set_traverse_mode(&mut self, mode: &RewinderMode) {
+    fn set_traverse_mode(&mut self, mode: &Mode) {
         let mode: TraverseMode = mode.clone().into();
         let traverse = &mut *self.traverse.borrow_mut();
         match self.traverse_mode {

@@ -47,6 +47,12 @@ const schemas = new Map([[1, rewinderPresetDataSchema]]);
 const renderNumber = (value: number | undefined, digits = 1) =>
   value?.toFixed(digits);
 
+const presetValue = <T,>(
+  presetValue: T | null | undefined,
+  defaultValue: T | null | undefined,
+  fallback: T,
+) => presetValue ?? defaultValue ?? fallback;
+
 const previewEntries: PresetPreviewEntries<RewinderPresetData> = [
   {
     name: "Line Speed",
@@ -165,164 +171,194 @@ export function RewinderPresetsPage() {
     const prepare = data.prepare_control_state ?? {};
     const defaults = defaultState;
 
+    const applyTakeupArm = (
+      field: keyof NonNullable<
+        RewinderPresetData["takeup_tension_arm_control_state"]
+      >,
+      fallback: number,
+    ) =>
+      setTakeupTensionArmControl(
+        field,
+        presetValue(
+          takeupArm[field],
+          defaults?.takeup_tension_arm_control_state[field],
+          fallback,
+        ),
+      );
+    const applySourceArm = (
+      field: keyof NonNullable<
+        RewinderPresetData["source_tension_arm_control_state"]
+      >,
+      fallback: number,
+    ) =>
+      setSourceTensionArmControl(
+        field,
+        presetValue(
+          sourceArm[field],
+          defaults?.source_tension_arm_control_state[field],
+          fallback,
+        ),
+      );
+    const applyPrepare = (
+      field: keyof NonNullable<RewinderPresetData["prepare_control_state"]>,
+      fallback: number,
+    ) =>
+      setPrepareControl(
+        field,
+        presetValue(
+          prepare[field],
+          defaults?.prepare_control_state[field],
+          fallback,
+        ),
+      );
+
     setPullerTargetSpeed(
-      puller.target_speed ?? defaults?.puller_state.target_speed ?? 10.0,
+      presetValue(
+        puller.target_speed,
+        defaults?.puller_state.target_speed,
+        10.0,
+      ),
     );
     setRewindAutomaticRequiredMeters(
-      automatic.required_meters ??
-        defaults?.rewind_automatic_action_state.required_meters ??
+      presetValue(
+        automatic.required_meters,
+        defaults?.rewind_automatic_action_state.required_meters,
         100.0,
+      ),
     );
     setRewindAutomaticAction(
-      automatic.mode ??
-        defaults?.rewind_automatic_action_state.mode ??
+      presetValue(
+        automatic.mode,
+        defaults?.rewind_automatic_action_state.mode,
         "NoAction",
+      ),
     );
 
     setTakeupSpoolDiameter(
-      takeup.diameter_mm ?? defaults?.takeup_spool_state.diameter_mm ?? 100,
+      presetValue(
+        takeup.diameter_mm,
+        defaults?.takeup_spool_state.diameter_mm,
+        100,
+      ),
     );
     setSourceSpoolDiameter(
-      source.diameter_mm ?? defaults?.source_spool_state.diameter_mm ?? 100,
+      presetValue(
+        source.diameter_mm,
+        defaults?.source_spool_state.diameter_mm,
+        100,
+      ),
     );
     setTakeupSpoolRegulationMode(
-      takeup.regulation_mode ??
-        defaults?.takeup_spool_state.regulation_mode ??
+      presetValue(
+        takeup.regulation_mode,
+        defaults?.takeup_spool_state.regulation_mode,
         "Adaptive",
+      ),
     );
     setTakeupSpoolMinMaxMinSpeed(
-      takeup.minmax_min_speed ??
-        defaults?.takeup_spool_state.minmax_min_speed ??
+      presetValue(
+        takeup.minmax_min_speed,
+        defaults?.takeup_spool_state.minmax_min_speed,
         5.0,
+      ),
     );
     setTakeupSpoolMinMaxMaxSpeed(
-      takeup.minmax_max_speed ??
-        defaults?.takeup_spool_state.minmax_max_speed ??
+      presetValue(
+        takeup.minmax_max_speed,
+        defaults?.takeup_spool_state.minmax_max_speed,
         50.0,
+      ),
     );
     setTakeupTensionTarget(
-      takeup.adaptive_tension_target ??
-        defaults?.takeup_spool_state.adaptive_tension_target ??
+      presetValue(
+        takeup.adaptive_tension_target,
+        defaults?.takeup_spool_state.adaptive_tension_target,
         0.5,
+      ),
     );
     setTakeupSpoolAdaptiveRadiusLearningRate(
-      takeup.adaptive_radius_learning_rate ??
-        defaults?.takeup_spool_state.adaptive_radius_learning_rate ??
+      presetValue(
+        takeup.adaptive_radius_learning_rate,
+        defaults?.takeup_spool_state.adaptive_radius_learning_rate,
         0.1,
+      ),
     );
     setTakeupSpoolAdaptiveMaxSpeedMultiplier(
-      takeup.adaptive_max_speed_multiplier ??
-        defaults?.takeup_spool_state.adaptive_max_speed_multiplier ??
+      presetValue(
+        takeup.adaptive_max_speed_multiplier,
+        defaults?.takeup_spool_state.adaptive_max_speed_multiplier,
         2.0,
+      ),
     );
     setTakeupSpoolAdaptiveAccelerationFactor(
-      takeup.adaptive_acceleration_factor ??
-        defaults?.takeup_spool_state.adaptive_acceleration_factor ??
+      presetValue(
+        takeup.adaptive_acceleration_factor,
+        defaults?.takeup_spool_state.adaptive_acceleration_factor,
         1.5,
+      ),
     );
     setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier(
-      takeup.adaptive_deacceleration_urgency_multiplier ??
-        defaults?.takeup_spool_state
-          .adaptive_deacceleration_urgency_multiplier ??
+      presetValue(
+        takeup.adaptive_deacceleration_urgency_multiplier,
+        defaults?.takeup_spool_state.adaptive_deacceleration_urgency_multiplier,
         2.0,
+      ),
     );
     setSourceTensionTarget(
-      source.adaptive_tension_target ??
-        defaults?.source_spool_state.adaptive_tension_target ??
+      presetValue(
+        source.adaptive_tension_target,
+        defaults?.source_spool_state.adaptive_tension_target,
         0.5,
+      ),
     );
 
     setTraverseLimitInner(
-      traverse.limit_inner ?? defaults?.traverse_state.limit_inner ?? 22.0,
+      presetValue(
+        traverse.limit_inner,
+        defaults?.traverse_state.limit_inner,
+        22.0,
+      ),
     );
     setTraverseLimitOuter(
-      traverse.limit_outer ?? defaults?.traverse_state.limit_outer ?? 92.0,
+      presetValue(
+        traverse.limit_outer,
+        defaults?.traverse_state.limit_outer,
+        92.0,
+      ),
     );
     setTraverseStartPosition(
-      traverse.start_position ??
-        defaults?.traverse_state.start_position ??
+      presetValue(
+        traverse.start_position,
+        defaults?.traverse_state.start_position,
         92.0,
+      ),
     );
     setTraverseStepSize(
-      traverse.step_size ?? defaults?.traverse_state.step_size ?? 5.0,
+      presetValue(traverse.step_size, defaults?.traverse_state.step_size, 5.0),
     );
     setTraversePadding(
-      traverse.padding ?? defaults?.traverse_state.padding ?? 10.0,
+      presetValue(traverse.padding, defaults?.traverse_state.padding, 10.0),
     );
     enableTraverseLaserpointer(
-      traverse.laserpointer ?? defaults?.traverse_state.laserpointer ?? false,
+      presetValue(
+        traverse.laserpointer,
+        defaults?.traverse_state.laserpointer,
+        false,
+      ),
     );
 
-    setTakeupTensionArmControl(
-      "hard_min_angle",
-      takeupArm.hard_min_angle ??
-        defaults?.takeup_tension_arm_control_state.hard_min_angle ??
-        15,
-    );
-    setTakeupTensionArmControl(
-      "hard_max_angle",
-      takeupArm.hard_max_angle ??
-        defaults?.takeup_tension_arm_control_state.hard_max_angle ??
-        85,
-    );
-    setTakeupTensionArmControl(
-      "start_min_angle",
-      takeupArm.start_min_angle ??
-        defaults?.takeup_tension_arm_control_state.start_min_angle ??
-        35,
-    );
-    setTakeupTensionArmControl(
-      "start_max_angle",
-      takeupArm.start_max_angle ??
-        defaults?.takeup_tension_arm_control_state.start_max_angle ??
-        65,
-    );
-    setTakeupTensionArmControl(
-      "target_angle",
-      takeupArm.target_angle ??
-        defaults?.takeup_tension_arm_control_state.target_angle ??
-        50,
-    );
-    setSourceTensionArmControl(
-      "hard_min_angle",
-      sourceArm.hard_min_angle ??
-        defaults?.source_tension_arm_control_state.hard_min_angle ??
-        20,
-    );
-    setSourceTensionArmControl(
-      "hard_max_angle",
-      sourceArm.hard_max_angle ??
-        defaults?.source_tension_arm_control_state.hard_max_angle ??
-        90,
-    );
-    setSourceTensionArmControl(
-      "start_min_angle",
-      sourceArm.start_min_angle ??
-        defaults?.source_tension_arm_control_state.start_min_angle ??
-        35,
-    );
-    setSourceTensionArmControl(
-      "start_max_angle",
-      sourceArm.start_max_angle ??
-        defaults?.source_tension_arm_control_state.start_max_angle ??
-        70,
-    );
-    setSourceTensionArmControl(
-      "target_angle",
-      sourceArm.target_angle ??
-        defaults?.source_tension_arm_control_state.target_angle ??
-        55,
-    );
-    setPrepareControl(
-      "tolerance_angle",
-      prepare.tolerance_angle ??
-        defaults?.prepare_control_state.tolerance_angle ??
-        3.0,
-    );
-    setPrepareControl(
-      "settle_rate",
-      prepare.settle_rate ?? defaults?.prepare_control_state.settle_rate ?? 0.5,
-    );
+    applyTakeupArm("hard_min_angle", 15);
+    applyTakeupArm("hard_max_angle", 85);
+    applyTakeupArm("start_min_angle", 35);
+    applyTakeupArm("start_max_angle", 65);
+    applyTakeupArm("target_angle", 50);
+    applySourceArm("hard_min_angle", 20);
+    applySourceArm("hard_max_angle", 90);
+    applySourceArm("start_min_angle", 35);
+    applySourceArm("start_max_angle", 70);
+    applySourceArm("target_angle", 55);
+    applyPrepare("tolerance_angle", 3.0);
+    applyPrepare("settle_rate", 0.5);
   };
 
   const toPresetData = (s: typeof state): RewinderPresetData => ({
@@ -352,7 +388,6 @@ export function RewinderPresetsPage() {
       defaultState={toPresetData(defaultState)}
       applyPreset={applyPreset}
       previewEntries={previewEntries}
-      applyDisabled={!settingsEditPermitted || isLoading}
     />
   );
 }

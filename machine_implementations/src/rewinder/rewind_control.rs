@@ -1,9 +1,6 @@
 use super::prepare_control::{PrepareConfig, PreparePhase};
 use qitech_lib::units::{
-    angular_velocity::revolution_per_minute,
-    f64::*,
-    length::{meter, millimeter},
-    velocity::meter_per_minute,
+    angular_velocity::revolution_per_minute, f64::*, length::meter, velocity::meter_per_minute,
 };
 use std::f64::consts::PI;
 use std::time::{Duration, Instant};
@@ -291,7 +288,7 @@ pub struct FollowerState {
     pub learning_active: bool,
     ratio_min_rpm_per_m_per_min: f64,
     ratio_max_rpm_per_m_per_min: f64,
-    last_diameter_mm: Option<f64>,
+    last_diameter: Option<Length>,
 }
 
 impl FollowerState {
@@ -305,7 +302,7 @@ impl FollowerState {
             learning_active: false,
             ratio_min_rpm_per_m_per_min: config.min_ratio_rpm_per_m_per_min,
             ratio_max_rpm_per_m_per_min: config.max_ratio_rpm_per_m_per_min,
-            last_diameter_mm: None,
+            last_diameter: None,
         }
     }
 
@@ -321,19 +318,18 @@ impl FollowerState {
         self.learning_active = false;
     }
 
-    fn sync_ratio_baseline(&mut self, config: FollowerConfig, diameter_mm: Option<f64>) {
-        if self.last_diameter_mm == diameter_mm {
+    fn sync_ratio_baseline(&mut self, config: FollowerConfig, diameter: Option<Length>) {
+        if self.last_diameter == diameter {
             return;
         }
 
-        let baseline_ratio =
-            feed_forward_ratio(diameter_mm, config.initial_ratio_rpm_per_m_per_min);
+        let baseline_ratio = feed_forward_ratio(diameter, config.initial_ratio_rpm_per_m_per_min);
         self.ratio_rpm_per_m_per_min = baseline_ratio;
         self.ratio_min_rpm_per_m_per_min =
             config.min_ratio_rpm_per_m_per_min.min(baseline_ratio * 0.6);
         self.ratio_max_rpm_per_m_per_min =
             config.max_ratio_rpm_per_m_per_min.max(baseline_ratio * 1.6);
-        self.last_diameter_mm = diameter_mm;
+        self.last_diameter = diameter;
     }
 
     pub fn update_source(
@@ -342,11 +338,11 @@ impl FollowerState {
         arm_config: ArmConfig,
         arm_state: ArmState,
         line_speed_m_per_min: f64,
-        diameter_mm: Option<f64>,
+        diameter: Option<Length>,
         dt_s: f64,
         learning_allowed: bool,
     ) {
-        self.sync_ratio_baseline(config, diameter_mm);
+        self.sync_ratio_baseline(config, diameter);
         self.feed_forward_rpm =
             feed_forward_rpm(line_speed_m_per_min, self.ratio_rpm_per_m_per_min);
 
@@ -421,11 +417,11 @@ impl FollowerState {
         arm_config: ArmConfig,
         arm_state: ArmState,
         line_speed_m_per_min: f64,
-        diameter_mm: Option<f64>,
+        diameter: Option<Length>,
         dt_s: f64,
         learning_allowed: bool,
     ) {
-        self.sync_ratio_baseline(config, diameter_mm);
+        self.sync_ratio_baseline(config, diameter);
         self.feed_forward_rpm =
             feed_forward_rpm(line_speed_m_per_min, self.ratio_rpm_per_m_per_min);
 
@@ -727,8 +723,8 @@ impl RewindControlState {
     pub fn update_followers(
         &mut self,
         line_speed: Velocity,
-        takeup_diameter_mm: Option<f64>,
-        source_diameter_mm: Option<f64>,
+        takeup_diameter: Option<Length>,
+        source_diameter: Option<Length>,
         dt_s: f64,
     ) {
         let line_speed_m_per_min = line_speed.get::<meter_per_minute>();
@@ -739,7 +735,7 @@ impl RewindControlState {
             self.config.source_arm,
             self.source_arm,
             line_speed_m_per_min,
-            source_diameter_mm,
+            source_diameter,
             dt_s,
             learning_allowed,
         );
@@ -748,7 +744,7 @@ impl RewindControlState {
             self.config.takeup_arm,
             self.takeup_arm,
             line_speed_m_per_min,
-            takeup_diameter_mm,
+            takeup_diameter,
             dt_s,
             learning_allowed,
         );
@@ -772,11 +768,10 @@ pub(crate) fn move_toward(current: f64, target: f64, rate_per_s: f64, dt_s: f64)
     current + (target - current).clamp(-max_delta, max_delta)
 }
 
-fn feed_forward_ratio(diameter_mm: Option<f64>, fallback_ratio_rpm_per_m_per_min: f64) -> f64 {
-    match diameter_mm {
-        Some(diameter_mm) if diameter_mm > 0.0 => {
-            let diameter_m = Length::new::<millimeter>(diameter_mm).get::<meter>();
-            1.0 / (PI * diameter_m)
+fn feed_forward_ratio(diameter: Option<Length>, fallback_ratio_rpm_per_m_per_min: f64) -> f64 {
+    match diameter {
+        Some(diameter) if diameter > Length::new::<meter>(0.0) => {
+            1.0 / (PI * diameter.get::<meter>())
         }
         _ => fallback_ratio_rpm_per_m_per_min,
     }

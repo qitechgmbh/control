@@ -11,11 +11,11 @@ use serde_json::Value;
 use std::sync::Arc;
 use tracing::instrument;
 
-use super::RewinderMode;
+use super::Mode;
 
 #[derive(Deserialize, Serialize)]
 pub enum Mutation {
-    SetMode(RewinderMode),
+    SetMode(Mode),
     SetPullerTargetSpeed(f64),
     SetTakeupSpoolRegulationMode(SpoolSpeedControllerType),
     SetTakeupSpoolMinMaxMinSpeed(f64),
@@ -109,7 +109,7 @@ impl StateEvent {
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct ModeState {
-    pub mode: RewinderMode,
+    pub mode: Mode,
     pub can_rewind: bool,
     pub is_decelerating: bool,
 }

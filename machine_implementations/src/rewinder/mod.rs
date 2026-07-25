@@ -2,7 +2,6 @@ pub mod act;
 pub mod api;
 pub mod auto_stop;
 pub mod axis_modes;
-pub mod diagnostics;
 pub mod emit;
 pub mod new;
 pub mod prepare_control;
@@ -36,7 +35,6 @@ pub const LASER_PORT: usize = 0;
 pub const PULLER_PORT: usize = 0;
 pub const TAKEUP_SPOOL_PORT: usize = 0;
 pub const SOURCE_SPOOL_PORT: usize = 0;
-pub const DIAGNOSTIC_LOGS_ENABLED: bool = false;
 
 pub const EK1100_ROLE: u16 = 0;
 pub const EL2002_ROLE: u16 = 1;
@@ -65,10 +63,9 @@ pub struct Rewinder {
 
     namespace: RewinderNamespace,
     last_measurement_emit: Instant,
-    last_rewind_diagnostics_log: Instant,
     pub machine_identification_unique: MachineIdentificationUnique,
 
-    pub mode: RewinderMode,
+    pub mode: Mode,
     pub takeup_spool_mode: TakeupSpoolMode,
     pub source_spool_mode: SourceSpoolMode,
     pub traverse_mode: TraverseMode,
@@ -81,11 +78,11 @@ pub struct Rewinder {
     pub traverse_controller: TraverseController,
     pub traverse_start_position: Length,
     pub resume_traverse_position: Option<Length>,
-    pub takeup_spool_diameter_mm: Option<f64>,
-    pub source_spool_diameter_mm: Option<f64>,
+    pub takeup_spool_diameter: Option<Length>,
+    pub source_spool_diameter: Option<Length>,
     pub rewind_phase: RewindPhase,
     pub hold_decelerating_from_rewind: bool,
-    pub pending_mode_after_rewind_deceleration: Option<RewinderMode>,
+    pub pending_mode_after_rewind_deceleration: Option<Mode>,
     pub rewind_control: RewindControlState,
     pub rewind_automatic_action: auto_stop::RewindAutomaticAction,
     emitted_default_state: bool,
@@ -99,12 +96,12 @@ impl Rewinder {
     };
 
     pub fn rewind_motion_permitted(&self) -> bool {
-        matches!(self.mode, RewinderMode::Rewind)
+        matches!(self.mode, Mode::Rewind)
     }
 
     pub fn puller_motion_permitted(&self) -> bool {
         matches!(self.puller_mode, PullerMode::Pull)
-            && (matches!(self.mode, RewinderMode::Pull | RewinderMode::Prepare)
+            && (matches!(self.mode, Mode::Pull | Mode::Prepare)
                 || self.hold_decelerating_from_rewind
                 || (self.rewind_motion_permitted()
                     && matches!(
@@ -119,7 +116,7 @@ impl Rewinder {
 
     pub fn takeup_spool_motion_permitted(&self) -> bool {
         matches!(self.takeup_spool_mode, TakeupSpoolMode::Drive)
-            && (matches!(self.mode, RewinderMode::Prepare)
+            && (matches!(self.mode, Mode::Prepare)
                 || self.hold_decelerating_from_rewind
                 || (self.rewind_motion_permitted()
                     && matches!(
@@ -134,7 +131,7 @@ impl Rewinder {
 
     pub fn source_spool_motion_permitted(&self) -> bool {
         matches!(self.source_spool_mode, SourceSpoolMode::Drive)
-            && (matches!(self.mode, RewinderMode::Pull | RewinderMode::Prepare)
+            && (matches!(self.mode, Mode::Pull | Mode::Prepare)
                 || self.hold_decelerating_from_rewind
                 || (self.rewind_motion_permitted()
                     && matches!(
@@ -149,7 +146,7 @@ impl Rewinder {
 
     pub fn traverse_motion_permitted(&self) -> bool {
         !matches!(self.traverse_mode, TraverseMode::Standby)
-            && (matches!(self.mode, RewinderMode::Hold | RewinderMode::Prepare)
+            && (matches!(self.mode, Mode::Hold | Mode::Prepare)
                 || (self.rewind_motion_permitted()
                     && self.traverse_controller.is_going_to_target())
                 || (self.rewind_motion_permitted()
@@ -207,7 +204,7 @@ impl Rewinder {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
-pub enum RewinderMode {
+pub enum Mode {
     #[default]
     Standby,
     Hold,
@@ -232,12 +229,12 @@ pub enum TakeupSpoolMode {
     Drive,
 }
 
-impl From<RewinderMode> for TakeupSpoolMode {
-    fn from(mode: RewinderMode) -> Self {
+impl From<Mode> for TakeupSpoolMode {
+    fn from(mode: Mode) -> Self {
         match mode {
-            RewinderMode::Standby => Self::Standby,
-            RewinderMode::Hold | RewinderMode::Pull => Self::Hold,
-            RewinderMode::Prepare | RewinderMode::Rewind => Self::Drive,
+            Mode::Standby => Self::Standby,
+            Mode::Hold | Mode::Pull => Self::Hold,
+            Mode::Prepare | Mode::Rewind => Self::Drive,
         }
     }
 }
@@ -249,12 +246,12 @@ pub enum SourceSpoolMode {
     Drive,
 }
 
-impl From<RewinderMode> for SourceSpoolMode {
-    fn from(mode: RewinderMode) -> Self {
+impl From<Mode> for SourceSpoolMode {
+    fn from(mode: Mode) -> Self {
         match mode {
-            RewinderMode::Standby => Self::Standby,
-            RewinderMode::Hold => Self::Hold,
-            RewinderMode::Pull | RewinderMode::Prepare | RewinderMode::Rewind => Self::Drive,
+            Mode::Standby => Self::Standby,
+            Mode::Hold => Self::Hold,
+            Mode::Pull | Mode::Prepare | Mode::Rewind => Self::Drive,
         }
     }
 }
@@ -266,12 +263,12 @@ pub enum TraverseMode {
     Traverse,
 }
 
-impl From<RewinderMode> for TraverseMode {
-    fn from(mode: RewinderMode) -> Self {
+impl From<Mode> for TraverseMode {
+    fn from(mode: Mode) -> Self {
         match mode {
-            RewinderMode::Hold | RewinderMode::Prepare => Self::Hold,
-            RewinderMode::Rewind => Self::Traverse,
-            RewinderMode::Standby | RewinderMode::Pull => Self::Standby,
+            Mode::Hold | Mode::Prepare => Self::Hold,
+            Mode::Rewind => Self::Traverse,
+            Mode::Standby | Mode::Pull => Self::Standby,
         }
     }
 }
@@ -283,12 +280,12 @@ pub enum PullerMode {
     Pull,
 }
 
-impl From<RewinderMode> for PullerMode {
-    fn from(mode: RewinderMode) -> Self {
+impl From<Mode> for PullerMode {
+    fn from(mode: Mode) -> Self {
         match mode {
-            RewinderMode::Standby => Self::Standby,
-            RewinderMode::Hold => Self::Hold,
-            RewinderMode::Pull | RewinderMode::Prepare | RewinderMode::Rewind => Self::Pull,
+            Mode::Standby => Self::Standby,
+            Mode::Hold => Self::Hold,
+            Mode::Pull | Mode::Prepare | Mode::Rewind => Self::Pull,
         }
     }
 }
