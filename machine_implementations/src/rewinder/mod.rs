@@ -25,6 +25,7 @@ use qitech_lib::{
     units::{Length, length::millimeter},
 };
 use rewind_control::RewindControlState;
+use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, rc::Rc, time::Instant};
 #[cfg(not(feature = "mock-machine"))]
 use tokio::sync::mpsc::Receiver;
@@ -205,8 +206,9 @@ impl Rewinder {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
 pub enum RewinderMode {
+    #[default]
     Standby,
     Hold,
     Pull,

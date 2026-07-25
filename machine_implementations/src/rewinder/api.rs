@@ -1,4 +1,3 @@
-use super::RewinderMode;
 use crate::winder2::spool_speed_controller::SpoolSpeedControllerType;
 use crate::{MachineApi, MachineMessage, MachineValues};
 use control_core::socketio::{
@@ -12,43 +11,11 @@ use serde_json::Value;
 use std::sync::Arc;
 use tracing::instrument;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub enum Mode {
-    #[default]
-    Standby,
-    Hold,
-    Pull,
-    Prepare,
-    Rewind,
-}
-
-impl From<RewinderMode> for Mode {
-    fn from(mode: RewinderMode) -> Self {
-        match mode {
-            RewinderMode::Standby => Self::Standby,
-            RewinderMode::Hold => Self::Hold,
-            RewinderMode::Pull => Self::Pull,
-            RewinderMode::Prepare => Self::Prepare,
-            RewinderMode::Rewind => Self::Rewind,
-        }
-    }
-}
-
-impl From<Mode> for RewinderMode {
-    fn from(mode: Mode) -> Self {
-        match mode {
-            Mode::Standby => Self::Standby,
-            Mode::Hold => Self::Hold,
-            Mode::Pull => Self::Pull,
-            Mode::Prepare => Self::Prepare,
-            Mode::Rewind => Self::Rewind,
-        }
-    }
-}
+use super::RewinderMode;
 
 #[derive(Deserialize, Serialize)]
 pub enum Mutation {
-    SetMode(Mode),
+    SetMode(RewinderMode),
     SetPullerTargetSpeed(f64),
     SetTakeupSpoolRegulationMode(SpoolSpeedControllerType),
     SetTakeupSpoolMinMaxMinSpeed(f64),
@@ -142,7 +109,7 @@ impl StateEvent {
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct ModeState {
-    pub mode: Mode,
+    pub mode: RewinderMode,
     pub can_rewind: bool,
     pub is_decelerating: bool,
 }
@@ -271,7 +238,7 @@ impl MachineApi for super::Rewinder {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
-            Mutation::SetMode(mode) => self.set_mode(&mode.into()),
+            Mutation::SetMode(mode) => self.set_mode(&mode),
             Mutation::SetPullerTargetSpeed(speed) => self.puller_set_target_speed(speed),
             Mutation::SetTakeupSpoolRegulationMode(mode) => {
                 self.takeup_spool_set_regulation_mode(mode)
