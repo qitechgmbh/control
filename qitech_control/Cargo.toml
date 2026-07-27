@@ -2,6 +2,8 @@
 name = "qitech_control"
 version = "0.1.0"
 edition = "2024"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 tokio = { version = "1.50.0", features = ["rt", "rt-multi-thread", "macros", "time","sync"] }
