@@ -12,6 +12,7 @@ import {
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
+import { useMemo } from "react";
 
 export const scheduleDaySchema = z.object({
   start_time: z.number(),
@@ -169,9 +170,9 @@ const useDryerV1NamespaceImplementation =
 export function useDryerV1Namespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): DryerV1NamespaceStore {
-  const namespaceId: NamespaceId = {
-    type: "machine",
-    machine_identification_unique,
-  };
+  const namespaceId = useMemo<NamespaceId>(
+    () => ({ type: "machine", machine_identification_unique }),
+    [machine_identification_unique],
+  );
   return useDryerV1NamespaceImplementation(namespaceId);
 }
