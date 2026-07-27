@@ -22,9 +22,6 @@ use qitech_lib::{
 use std::cell::RefMut;
 use std::time::Instant;
 
-const STOPPED_PULLER_SPEED_M_PER_MIN: f64 = 0.02;
-const STOPPED_SPOOL_SPEED_RPM: f64 = 0.5;
-
 impl Rewinder {
     pub fn set_mode(&mut self, mode: &Mode) {
         if self.hold_decelerating_from_rewind {
@@ -239,7 +236,7 @@ impl Rewinder {
             return;
         }
 
-        if self.motion_outputs_stopped() {
+        if self.rewind_control.motion_commands_stopped() {
             let target_mode = self
                 .pending_mode_after_rewind_deceleration
                 .take()
@@ -254,45 +251,6 @@ impl Rewinder {
             self.apply_mode_to_axes(&target_mode);
             self.emit_state();
         }
-    }
-
-    fn motion_outputs_stopped(&self) -> bool {
-        let puller_steps_per_second = {
-            let puller = &*self.puller.borrow();
-            puller.get_speed(PULLER_PORT)
-        };
-        let puller_speed = self
-            .puller_speed_controller
-            .converter
-            .steps_to_angular_velocity(puller_steps_per_second as f64);
-        let puller_line_speed = self
-            .puller_angular_velocity_to_line_speed(puller_speed)
-            .get::<meter_per_minute>()
-            .abs();
-
-        let takeup_steps_per_second = {
-            let takeup_spool = &*self.takeup_spool.borrow();
-            takeup_spool.get_speed(TAKEUP_SPOOL_PORT)
-        };
-        let takeup_rpm = self
-            .takeup_spool_step_converter
-            .steps_to_angular_velocity(takeup_steps_per_second as f64)
-            .get::<revolution_per_minute>()
-            .abs();
-
-        let source_steps_per_second = {
-            let source_spool = &*self.source_spool.borrow();
-            source_spool.get_speed(SOURCE_SPOOL_PORT)
-        };
-        let source_rpm = self
-            .source_spool_step_converter
-            .steps_to_angular_velocity(source_steps_per_second as f64)
-            .get::<revolution_per_minute>()
-            .abs();
-
-        puller_line_speed <= STOPPED_PULLER_SPEED_M_PER_MIN
-            && takeup_rpm <= STOPPED_SPOOL_SPEED_RPM
-            && source_rpm <= STOPPED_SPOOL_SPEED_RPM
     }
 
     pub fn sync_puller_speed(&mut self, t: Instant) {

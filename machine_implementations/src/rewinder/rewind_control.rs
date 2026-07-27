@@ -20,6 +20,8 @@ const MAX_VALID_ARM_ANGLE_DEG: f64 = 180.0;
 const SOURCE_WARNING_LOW_MOVING_FLOOR_FRACTION: f64 = 0.05;
 const TAKEUP_LOW_MOVING_FLOOR_FRACTION: f64 = 0.45;
 const TAKEUP_WARNING_HIGH_MOVING_FLOOR_FRACTION: f64 = 0.05;
+const STOPPED_PULLER_SPEED_M_PER_MIN: f64 = 0.02;
+const STOPPED_SPOOL_SPEED_RPM: f64 = 0.5;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ArmZone {
@@ -680,6 +682,12 @@ impl RewindControlState {
 
     pub fn takeup_command_angular_velocity(&self) -> AngularVelocity {
         AngularVelocity::new::<revolution_per_minute>(self.takeup_follower.command_rpm)
+    }
+
+    pub fn motion_commands_stopped(&self) -> bool {
+        self.puller_command_m_per_min <= STOPPED_PULLER_SPEED_M_PER_MIN
+            && self.source_follower.command_rpm <= STOPPED_SPOOL_SPEED_RPM
+            && self.takeup_follower.command_rpm <= STOPPED_SPOOL_SPEED_RPM
     }
 
     pub fn update_puller_command(&mut self, target: Velocity, dt_s: f64) {
