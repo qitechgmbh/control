@@ -18,6 +18,7 @@ impl Machine for Rewinder {
             self.act_machine_message(machine_message);
         }
 
+        self.update_hold_deceleration(now);
         self.sync_puller_speed(now);
         self.sync_takeup_spool_speed(now);
         self.sync_source_spool_speed(now);
