@@ -179,19 +179,27 @@ export function useRewinder() {
   };
 
   const currentMode = stateOptimistic.value?.data.mode_state.mode;
+  const isDecelerating =
+    stateOptimistic.value?.data.mode_state.is_decelerating === true;
   const settingsEditPermitted =
-    currentMode === "Standby" || currentMode === "Hold";
+    !isDecelerating && (currentMode === "Standby" || currentMode === "Hold");
   const prepareSettingsEditPermitted =
-    currentMode === "Standby" || currentMode === "Hold";
+    !isDecelerating && (currentMode === "Standby" || currentMode === "Hold");
   const progressResetPermitted =
-    currentMode === "Standby" ||
-    currentMode === "Hold" ||
-    currentMode === "Rewind";
+    !isDecelerating &&
+    (currentMode === "Standby" ||
+      currentMode === "Hold" ||
+      currentMode === "Rewind");
   const manualTraversePermitted =
+    !isDecelerating &&
     currentMode === "Hold" &&
     stateOptimistic.value?.data.traverse_state.is_homed === true;
 
   const setMode = (mode: Mode) => {
+    if (isDecelerating) {
+      return;
+    }
+
     if (mode === currentMode) {
       return;
     }
@@ -222,7 +230,7 @@ export function useRewinder() {
   };
 
   const setPullerTargetSpeed = (targetSpeed: number) => {
-    if (stateOptimistic.isOptimistic) {
+    if (isDecelerating || stateOptimistic.isOptimistic) {
       return;
     }
 
@@ -511,7 +519,7 @@ export function useRewinder() {
   };
 
   const setRewindAutomaticRequiredMeters = (meters: number) => {
-    if (stateOptimistic.isOptimistic) {
+    if (isDecelerating || stateOptimistic.isOptimistic) {
       return;
     }
 
@@ -528,6 +536,10 @@ export function useRewinder() {
   };
 
   const setRewindAutomaticAction = (mode: RewindAutomaticActionMode) => {
+    if (isDecelerating) {
+      return;
+    }
+
     if (
       mode === stateOptimistic.value?.data.rewind_automatic_action_state.mode
     ) {
@@ -682,7 +694,11 @@ export function useRewinder() {
   };
 
   const gotoTraverseHome = () => {
-    if (currentMode !== "Hold" || stateOptimistic.isOptimistic) {
+    if (
+      isDecelerating ||
+      currentMode !== "Hold" ||
+      stateOptimistic.isOptimistic
+    ) {
       return;
     }
 
@@ -751,6 +767,7 @@ export function useRewinder() {
     rewindProgress,
     isLoading: stateOptimistic.isOptimistic,
     isDisabled: false,
+    isDecelerating,
     settingsEditPermitted,
     prepareSettingsEditPermitted,
     progressResetPermitted,
