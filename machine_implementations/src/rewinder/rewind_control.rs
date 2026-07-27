@@ -605,33 +605,30 @@ impl RewindControlState {
     }
 
     pub fn decelerate_motion(&mut self, dt_s: f64) {
-        let rpm_rate = self
-            .config
-            .source_follower
-            .emergency_rpm_change_per_s
-            .max(self.config.prepare.max_rpm_change_per_s);
-        self.source_follower.command_rpm =
-            move_toward(self.source_follower.command_rpm, 0.0, rpm_rate, dt_s);
-        self.source_follower.target_rpm = 0.0;
-        self.source_follower.trim_rpm = 0.0;
-        self.source_follower.feed_forward_rpm = 0.0;
-        self.source_follower.learning_active = false;
-
-        self.takeup_follower.command_rpm = move_toward(
-            self.takeup_follower.command_rpm,
-            0.0,
-            self.config.prepare.max_rpm_change_per_s,
-            dt_s,
-        );
-        self.takeup_follower.target_rpm = 0.0;
-        self.takeup_follower.trim_rpm = 0.0;
-        self.takeup_follower.feed_forward_rpm = 0.0;
+        let previous_puller_command = self.puller_command_m_per_min;
         self.puller_command_m_per_min = move_toward(
             self.puller_command_m_per_min,
             0.0,
             self.config.puller_ramp.normal_decel_m_per_min_s,
             dt_s,
         );
+
+        let puller_ratio = if previous_puller_command > 0.0 {
+            (self.puller_command_m_per_min / previous_puller_command).clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+
+        self.source_follower.command_rpm *= puller_ratio;
+        self.source_follower.target_rpm = 0.0;
+        self.source_follower.trim_rpm = 0.0;
+        self.source_follower.feed_forward_rpm = 0.0;
+        self.source_follower.learning_active = false;
+
+        self.takeup_follower.command_rpm *= puller_ratio;
+        self.takeup_follower.target_rpm = 0.0;
+        self.takeup_follower.trim_rpm = 0.0;
+        self.takeup_follower.feed_forward_rpm = 0.0;
     }
 
     pub fn decelerate_motion_at(&mut self, now: Instant) {
