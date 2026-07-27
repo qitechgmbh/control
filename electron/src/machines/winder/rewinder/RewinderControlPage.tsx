@@ -37,6 +37,7 @@ export function RewinderControlPage() {
     rewindProgress,
     isLoading,
     isDisabled,
+    isDecelerating,
     progressResetPermitted,
     setMode,
     setPullerTargetSpeed,
@@ -70,19 +71,26 @@ export function RewinderControlPage() {
 
   const mode = state?.mode_state.mode;
   const isReady = state?.mode_state.can_rewind === true;
-  const settingsEditable = mode === "Standby" || mode === "Hold";
+  const settingsEditable =
+    !isDecelerating && (mode === "Standby" || mode === "Hold");
   const commandsDisabled = isDisabled || isLoading;
   const manualTraverseAllowed =
-    mode === "Hold" && state?.traverse_state.is_homed === true;
+    !isDecelerating &&
+    mode === "Hold" &&
+    state?.traverse_state.is_homed === true;
   const uiGuards = {
-    canChangeMode: !commandsDisabled,
-    canPull: !commandsDisabled && mode !== "Rewind",
-    canPrepare: !commandsDisabled && mode !== "Rewind" && tensionArmsZeroed,
-    canRewind: !commandsDisabled && isReady,
+    canChangeMode: !commandsDisabled && !isDecelerating,
+    canPull: !commandsDisabled && !isDecelerating && mode !== "Rewind",
+    canPrepare:
+      !commandsDisabled &&
+      !isDecelerating &&
+      mode !== "Rewind" &&
+      tensionArmsZeroed,
+    canRewind: !commandsDisabled && !isDecelerating && isReady,
     canEditSettings: !commandsDisabled && settingsEditable,
-    canEditMotion: !commandsDisabled,
+    canEditMotion: !commandsDisabled && !isDecelerating,
     canMoveTraverse: !commandsDisabled && manualTraverseAllowed,
-    canHomeTraverse: !commandsDisabled && mode === "Hold",
+    canHomeTraverse: !commandsDisabled && !isDecelerating && mode === "Hold",
     canHardStop: !commandsDisabled && mode === "Rewind",
     canResetProgress: !commandsDisabled && progressResetPermitted,
   };

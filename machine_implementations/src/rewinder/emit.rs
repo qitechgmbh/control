@@ -506,18 +506,10 @@ impl Rewinder {
             self.can_rewind()
         };
         self.last_can_rewind = can_rewind;
-        let displayed_mode = if self.hold_decelerating_from_rewind {
-            self.pending_mode_after_rewind_deceleration
-                .clone()
-                .unwrap_or(Mode::Hold)
-        } else {
-            self.mode.clone()
-        };
-
         StateEvent {
             is_default_state,
             mode_state: ModeState {
-                mode: displayed_mode,
+                mode: self.mode.clone(),
                 can_rewind,
                 is_decelerating: self.hold_decelerating_from_rewind,
             },
