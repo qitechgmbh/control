@@ -68,10 +68,8 @@ const { initialTimeSeries: init_temp_fan_inlet, insert: add_temp_fan_inlet } =
   createTimeSeries();
 const { initialTimeSeries: init_temp_safety, insert: add_temp_safety } =
   createTimeSeries();
-const {
-  initialTimeSeries: init_temp_return_air,
-  insert: add_temp_return_air,
-} = createTimeSeries();
+const { initialTimeSeries: init_temp_return_air, insert: add_temp_return_air } =
+  createTimeSeries();
 const { initialTimeSeries: init_power_process, insert: add_power_process } =
   createTimeSeries();
 const { initialTimeSeries: init_power_regen, insert: add_power_regen } =

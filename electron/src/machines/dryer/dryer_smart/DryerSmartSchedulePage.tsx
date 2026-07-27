@@ -1,14 +1,14 @@
 import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { SelectionGroup, SelectionGroupBoolean } from "@/control/SelectionGroup";
+import {
+  SelectionGroup,
+  SelectionGroupBoolean,
+} from "@/control/SelectionGroup";
 import { dryerSmart } from "@/machines/properties";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { dryerSmartSerialRoute } from "@/routes/routes";
-import {
-  useDryerSmartNamespace,
-  SmartTimerEntry,
-} from "./dryerSmartNamespace";
+import { useDryerSmartNamespace, SmartTimerEntry } from "./dryerSmartNamespace";
 import { useMachineMutate } from "@/client/useClient";
 import React, { useMemo } from "react";
 import { z } from "zod";
@@ -105,17 +105,12 @@ export function DryerSmartSchedulePage() {
       <ControlCard title="Timer Entries">
         <div className="flex flex-col divide-y divide-gray-100">
           {entries.map((entry, index) => (
-            <div
-              key={index}
-              className="flex flex-wrap items-center gap-4 py-3"
-            >
+            <div key={index} className="flex flex-wrap items-center gap-4 py-3">
               <SelectionGroupBoolean
                 value={entry.weekly}
                 optionTrue={{ children: "Weekly" }}
                 optionFalse={{ children: "Once" }}
-                onChange={(weekly) =>
-                  handleUpdate(index, { ...entry, weekly })
-                }
+                onChange={(weekly) => handleUpdate(index, { ...entry, weekly })}
               />
 
               {entry.weekly ? (

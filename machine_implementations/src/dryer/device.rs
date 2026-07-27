@@ -117,7 +117,10 @@ pub struct DryerDevice {
     pub smart_data: SmartData,
 
     tx: mpsc::Sender<ActorMessage>,
-    pending: Option<(oneshot::Receiver<Result<Response, anyhow::Error>>, PendingKind)>,
+    pending: Option<(
+        oneshot::Receiver<Result<Response, anyhow::Error>>,
+        PendingKind,
+    )>,
     write_queue: VecDeque<Request<'static>>,
     cycle: CycleStep,
     round_started_at: Instant,
@@ -270,7 +273,10 @@ impl ModbusDevice for DryerDevice {
             CycleStep::SmartTimers => {
                 let slots = self.smart_timer_slots;
                 (
-                    Request::ReadHoldingRegisters(SMART_REG_TIMER_BASE, slots * SMART_TIMER_ENTRY_REGS),
+                    Request::ReadHoldingRegisters(
+                        SMART_REG_TIMER_BASE,
+                        slots * SMART_TIMER_ENTRY_REGS,
+                    ),
                     PendingKind::SmartTimers(slots),
                     CycleStep::InputRegisters,
                 )
@@ -371,8 +377,9 @@ impl ModbusDevice for DryerDevice {
                         self.smart_data.sw_middle = regs[1];
                         self.smart_data.sw_minor = regs[2];
                         self.smart_data.timer_enabled = (regs[6] & 1) != 0;
-                        self.smart_timer_slots =
-                            regs[7].min(SMART_TIMER_MAX_SLOTS).max(SMART_TIMER_MIN_SLOTS);
+                        self.smart_timer_slots = regs[7]
+                            .min(SMART_TIMER_MAX_SLOTS)
+                            .max(SMART_TIMER_MIN_SLOTS);
                     }
                 }
             }
@@ -414,7 +421,11 @@ impl ModbusDevice for DryerDevice {
 }
 
 impl DryerDevice {
-    fn dispatch(&mut self, request: Request<'static>, kind: PendingKind) -> Result<(), anyhow::Error> {
+    fn dispatch(
+        &mut self,
+        request: Request<'static>,
+        kind: PendingKind,
+    ) -> Result<(), anyhow::Error> {
         let (reply_tx, reply_rx) = oneshot::channel();
         match self.tx.try_send(ActorMessage { request, reply_tx }) {
             Ok(()) => {
@@ -427,18 +438,24 @@ impl DryerDevice {
     }
 
     pub fn queue_set_start_stop(&mut self) {
-        self.write_queue.push_back(Request::WriteSingleCoil(COIL_START_STOP, true));
-        self.write_queue.push_back(Request::WriteSingleCoil(COIL_START_STOP, false));
-        self.write_queue.push_back(Request::WriteSingleCoil(COIL_SAVE_DATA, true));
-        self.write_queue.push_back(Request::WriteSingleCoil(COIL_SAVE_DATA, false));
+        self.write_queue
+            .push_back(Request::WriteSingleCoil(COIL_START_STOP, true));
+        self.write_queue
+            .push_back(Request::WriteSingleCoil(COIL_START_STOP, false));
+        self.write_queue
+            .push_back(Request::WriteSingleCoil(COIL_SAVE_DATA, true));
+        self.write_queue
+            .push_back(Request::WriteSingleCoil(COIL_SAVE_DATA, false));
     }
 
     pub fn queue_set_target_temperature(&mut self, temp_celsius: f64) {
         let clamped = (temp_celsius.round() as i64).clamp(50, 180) as u16;
         self.write_queue
             .push_back(Request::WriteSingleRegister(REG_TARGET_TEMP_WRITE, clamped));
-        self.write_queue.push_back(Request::WriteSingleCoil(COIL_APPLY_SETPOINT, true));
-        self.write_queue.push_back(Request::WriteSingleCoil(COIL_APPLY_SETPOINT, false));
+        self.write_queue
+            .push_back(Request::WriteSingleCoil(COIL_APPLY_SETPOINT, true));
+        self.write_queue
+            .push_back(Request::WriteSingleCoil(COIL_APPLY_SETPOINT, false));
     }
 
     /// Queues the temperature + air-volume writes for a material preset and returns the
@@ -451,11 +468,15 @@ impl DryerDevice {
         let temp = preset.recommended_temp().clamp(50, 180);
         self.queue_set_target_temperature(temp as f64);
 
-        let air_volume = (preset.specific_air_volume * throughput_kg_per_h).round().max(1.0) as u16;
+        let air_volume = (preset.specific_air_volume * throughput_kg_per_h)
+            .round()
+            .max(1.0) as u16;
         self.write_queue
             .push_back(Request::WriteSingleRegister(REG_AIR_VOLUME, air_volume));
-        self.write_queue.push_back(Request::WriteSingleCoil(COIL_SAVE_DATA, true));
-        self.write_queue.push_back(Request::WriteSingleCoil(COIL_SAVE_DATA, false));
+        self.write_queue
+            .push_back(Request::WriteSingleCoil(COIL_SAVE_DATA, true));
+        self.write_queue
+            .push_back(Request::WriteSingleCoil(COIL_SAVE_DATA, false));
         temp
     }
 
@@ -465,10 +486,14 @@ impl DryerDevice {
             values[i * 2] = day.start_time;
             values[14 + i * 2] = day.stop_time;
         }
+        self.write_queue.push_back(Request::WriteMultipleRegisters(
+            SCHEDULE_REG_START,
+            values.into(),
+        ));
         self.write_queue
-            .push_back(Request::WriteMultipleRegisters(SCHEDULE_REG_START, values.into()));
-        self.write_queue.push_back(Request::WriteSingleCoil(COIL_SAVE_DATA, true));
-        self.write_queue.push_back(Request::WriteSingleCoil(COIL_SAVE_DATA, false));
+            .push_back(Request::WriteSingleCoil(COIL_SAVE_DATA, true));
+        self.write_queue
+            .push_back(Request::WriteSingleCoil(COIL_SAVE_DATA, false));
     }
 
     pub fn queue_sync_clock(&mut self) {
@@ -509,8 +534,10 @@ impl DryerDevice {
 
     pub fn queue_write_timer_entry(&mut self, index: u8, entry: SmartTimerEntry) {
         let base = SMART_REG_TIMER_BASE + index as u16 * SMART_TIMER_ENTRY_REGS;
-        self.write_queue
-            .push_back(Request::WriteMultipleRegisters(base, Self::timer_entry_regs(&entry).into()));
+        self.write_queue.push_back(Request::WriteMultipleRegisters(
+            base,
+            Self::timer_entry_regs(&entry).into(),
+        ));
     }
 
     pub fn queue_write_new_timer_entry(&mut self, entry: SmartTimerEntry) {

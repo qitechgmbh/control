@@ -137,7 +137,9 @@ impl DryerSmartMachine {
     pub fn set_target_temperature(&mut self, temp_celsius: f64) {
         self.target_temperature = temp_celsius;
         self.target_temp_write_ts = Some(Instant::now());
-        self.dryer.borrow_mut().queue_set_target_temperature(temp_celsius);
+        self.dryer
+            .borrow_mut()
+            .queue_set_target_temperature(temp_celsius);
     }
 
     pub fn set_schedule(&mut self, schedule: WeeklySchedule) {
@@ -173,11 +175,15 @@ impl DryerSmartMachine {
     pub fn write_timer_entry(&mut self, index: u8, entry: SmartTimerEntry) {
         let idx = index as usize;
         while self.smart_data.timer_entries.len() <= idx {
-            self.smart_data.timer_entries.push(SmartTimerEntry::default());
+            self.smart_data
+                .timer_entries
+                .push(SmartTimerEntry::default());
         }
         self.smart_data.timer_entries[idx] = entry;
         self.smart_data_write_ts = Some(Instant::now());
-        self.dryer.borrow_mut().queue_write_timer_entry(index, entry);
+        self.dryer
+            .borrow_mut()
+            .queue_write_timer_entry(index, entry);
     }
 
     pub fn write_new_timer_entry(&mut self, entry: SmartTimerEntry) {

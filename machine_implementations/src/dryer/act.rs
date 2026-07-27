@@ -1,6 +1,8 @@
 use super::DryerMachine;
 use crate::MachineApi;
-use qitech_lib::machines::{Machine, MachineDataRegistry, MachineError, MachineIdentificationUnique};
+use qitech_lib::machines::{
+    Machine, MachineDataRegistry, MachineError, MachineIdentificationUnique,
+};
 use qitech_lib::modbus::ModbusDevice;
 use std::time::{Duration, Instant};
 

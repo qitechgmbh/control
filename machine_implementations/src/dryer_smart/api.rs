@@ -3,7 +3,9 @@ use crate::dryer::device::{SmartData, SmartTimerEntry, WeeklySchedule};
 use crate::{MachineApi, MachineMessage, MachineValues};
 use control_core::socketio::{
     event::{Event, GenericEvent},
-    namespace::{CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event},
+    namespace::{
+        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
+    },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -98,9 +100,16 @@ enum Mutation {
     },
     SyncClock,
     SetTimerEnabled(bool),
-    WriteTimerEntry { index: u8, entry: SmartTimerEntry },
-    WriteNewTimerEntry { entry: SmartTimerEntry },
-    DeleteTimerEntry { index: u8 },
+    WriteTimerEntry {
+        index: u8,
+        entry: SmartTimerEntry,
+    },
+    WriteNewTimerEntry {
+        entry: SmartTimerEntry,
+    },
+    DeleteTimerEntry {
+        index: u8,
+    },
 }
 
 impl MachineApi for DryerSmartMachine {
@@ -146,7 +155,8 @@ impl MachineApi for DryerSmartMachine {
             MachineMessage::RequestValues(sender) => {
                 sender
                     .send(MachineValues {
-                        state: serde_json::to_value(self.get_state()).expect("Failed to serialize state"),
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
                         live_values: serde_json::to_value(self.get_live_values())
                             .expect("Failed to serialize live values"),
                     })

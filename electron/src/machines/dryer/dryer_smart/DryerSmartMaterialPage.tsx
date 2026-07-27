@@ -80,9 +80,7 @@ export function DryerSmartMaterialPage() {
                 onClick={() => handleSelect(p.abbrev)}
                 className={[
                   "flex cursor-pointer flex-col gap-1 rounded-xl border p-3 hover:bg-gray-50",
-                  isSelected
-                    ? "border-blue-400 bg-blue-50"
-                    : "border-gray-200",
+                  isSelected ? "border-blue-400 bg-blue-50" : "border-gray-200",
                 ].join(" ")}
               >
                 <div className="flex items-center justify-between">
@@ -106,9 +104,7 @@ export function DryerSmartMaterialPage() {
                     />
                   </button>
                 </div>
-                <span className="truncate text-sm text-gray-500">
-                  {p.name}
-                </span>
+                <span className="truncate text-sm text-gray-500">{p.name}</span>
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span>
                     {p.temp_min === p.temp_max

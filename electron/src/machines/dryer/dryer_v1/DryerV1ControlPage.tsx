@@ -145,8 +145,9 @@ export function DryerV1ControlPage() {
     [serialString],
   );
 
-  const { liveValues, ts_temp_process } =
-    useDryerV1Namespace(machineIdentification);
+  const { liveValues, ts_temp_process } = useDryerV1Namespace(
+    machineIdentification,
+  );
   const v = liveValues?.data;
 
   const {
@@ -303,7 +304,9 @@ export function DryerV1ControlPage() {
           {scheduleControlled ? (
             <div className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700">
               <Icon name="lu:CalendarClock" className="size-4" />
-              <span>Schedule: stops at {formatMinutes(scheduledStopMins!)}</span>
+              <span>
+                Schedule: stops at {formatMinutes(scheduledStopMins!)}
+              </span>
             </div>
           ) : (
             <Label label="Target Time">
@@ -373,7 +376,9 @@ export function DryerV1ControlPage() {
             </div>
           )}
           {v?.alarm ? (
-            <StatusBadge variant="error">{getAlarmMessage(v.alarm)}</StatusBadge>
+            <StatusBadge variant="error">
+              {getAlarmMessage(v.alarm)}
+            </StatusBadge>
           ) : null}
           {v?.warning ? (
             <StatusBadge variant="warning">
@@ -690,8 +695,9 @@ function FlowRateCard({
           </div>
           <div className="mt-1 flex items-center justify-between border-t border-blue-200 pt-1">
             <span className="font-semibold text-blue-700">= Air Volume</span>
-            <span className="font-mono font-bold tabular-nums text-blue-900">
-              {(selectedPreset.specific_air_volume * throughput).toFixed(1)} m³/h
+            <span className="font-mono font-bold text-blue-900 tabular-nums">
+              {(selectedPreset.specific_air_volume * throughput).toFixed(1)}{" "}
+              m³/h
             </span>
           </div>
         </div>

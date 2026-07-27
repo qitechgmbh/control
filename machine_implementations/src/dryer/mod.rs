@@ -130,7 +130,9 @@ impl DryerMachine {
     pub fn set_target_temperature(&mut self, temp_celsius: f64) {
         self.target_temperature = temp_celsius;
         self.target_temp_write_ts = Some(Instant::now());
-        self.dryer.borrow_mut().queue_set_target_temperature(temp_celsius);
+        self.dryer
+            .borrow_mut()
+            .queue_set_target_temperature(temp_celsius);
     }
 
     pub fn set_schedule(&mut self, schedule: WeeklySchedule) {
