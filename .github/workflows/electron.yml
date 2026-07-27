@@ -78,3 +78,28 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+  sbom:
+    runs-on: ubuntu-latest
+
+    steps:
+      - *checkout
+      - *setup-node
+      - *install
+
+      - name: Generate CycloneDX SBOM
+        run: npm run sbom
+
+      - name: Mark dependency-graph completeness
+        run: |
+          jq '.compositions = [{"aggregate": "complete", "dependencies": [.metadata.component."bom-ref"]}]
+              | .metadata.component.manufacturer = {"url": ["https://github.com/qitechgmbh/control"]}' \
+            sbom.json > sbom.json.tmp && mv sbom.json.tmp sbom.json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: electron-sbom.json
+          path: electron/sbom.json
+          if-no-files-found: error
+          archive: false

@@ -13,3 +13,5 @@ electron/dist-electron/
 # nix
 result*
 .direnv/
+
+sbom.json
