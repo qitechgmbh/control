@@ -110,10 +110,6 @@ impl Rewinder {
                     )))
     }
 
-    pub fn puller_speed_output_permitted(&self) -> bool {
-        !matches!(self.puller_mode, PullerMode::Standby)
-    }
-
     pub fn takeup_spool_motion_permitted(&self) -> bool {
         matches!(self.takeup_spool_mode, TakeupSpoolMode::Drive)
             && (matches!(self.mode, Mode::Prepare)
@@ -125,10 +121,6 @@ impl Rewinder {
                     )))
     }
 
-    pub fn takeup_spool_speed_output_permitted(&self) -> bool {
-        !matches!(self.takeup_spool_mode, TakeupSpoolMode::Standby)
-    }
-
     pub fn source_spool_motion_permitted(&self) -> bool {
         matches!(self.source_spool_mode, SourceSpoolMode::Drive)
             && (matches!(self.mode, Mode::Pull | Mode::Prepare)
@@ -138,10 +130,6 @@ impl Rewinder {
                         self.rewind_phase,
                         RewindPhase::Precharge | RewindPhase::CrawlStart | RewindPhase::Rewind
                     )))
-    }
-
-    pub fn source_spool_speed_output_permitted(&self) -> bool {
-        !matches!(self.source_spool_mode, SourceSpoolMode::Standby)
     }
 
     pub fn traverse_motion_permitted(&self) -> bool {

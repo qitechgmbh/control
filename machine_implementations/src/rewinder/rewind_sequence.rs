@@ -1,7 +1,5 @@
 use super::{Mode, RewindPhase, Rewinder, api::HardStopEvent};
-use qitech_lib::units::{
-    angular_velocity::revolution_per_minute, f64::*, velocity::meter_per_minute,
-};
+use qitech_lib::units::{f64::*, velocity::meter_per_minute};
 use std::time::Instant;
 
 impl Rewinder {
@@ -31,13 +29,7 @@ impl Rewinder {
 
         self.save_current_traverse_as_resume_position();
 
-        self.rewind_control.reset_motion();
-        self.puller_speed_controller
-            .reset_speed(Velocity::new::<meter_per_minute>(0.0));
-        self.takeup_spool_speed_controller
-            .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
-        self.source_spool_speed_controller
-            .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
+        self.stop_motion_commands();
 
         self.emit_hard_stop(HardStopEvent {
             reason,
@@ -169,7 +161,6 @@ impl Rewinder {
             .get_target_speed()
             .get::<meter_per_minute>();
         let commanded_target_m_per_min = match self.rewind_phase {
-            _ if self.hold_decelerating_from_rewind => 0.0,
             RewindPhase::Precharge | RewindPhase::Validate | RewindPhase::Idle => 0.0,
             RewindPhase::CrawlStart => ui_target_m_per_min
                 .min(self.rewind_control.config.puller_ramp.crawl_speed_m_per_min),
