@@ -197,12 +197,6 @@ export function useRewinder() {
 
   const setMode = (mode: Mode) => {
     if (isDecelerating) {
-      if (mode === "Hold" || mode === "Standby") {
-        void requestModeSet({
-          machine_identification_unique: machineIdentification,
-          data: { SetMode: mode },
-        });
-      }
       return;
     }
 

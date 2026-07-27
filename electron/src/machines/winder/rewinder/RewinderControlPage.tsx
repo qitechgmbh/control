@@ -79,9 +79,13 @@ export function RewinderControlPage() {
     mode === "Hold" &&
     state?.traverse_state.is_homed === true;
   const uiGuards = {
-    canChangeMode: !commandsDisabled,
+    canChangeMode: !commandsDisabled && !isDecelerating,
     canPull: !commandsDisabled && !isDecelerating && mode !== "Rewind",
-    canPrepare: !commandsDisabled && !isDecelerating && tensionArmsZeroed,
+    canPrepare:
+      !commandsDisabled &&
+      !isDecelerating &&
+      mode !== "Rewind" &&
+      tensionArmsZeroed,
     canRewind: !commandsDisabled && !isDecelerating && isReady,
     canEditSettings: !commandsDisabled && settingsEditable,
     canEditMotion: !commandsDisabled && !isDecelerating,

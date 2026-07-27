@@ -5,6 +5,8 @@ use qitech_lib::machines::{
 };
 use std::time::Duration;
 
+const LIVE_VALUES_HZ: f64 = 15.0;
+
 impl Machine for Rewinder {
     fn get_identification(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique
@@ -30,7 +32,9 @@ impl Machine for Rewinder {
             self.emit_state();
         }
 
-        if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
+        if now.duration_since(self.last_measurement_emit)
+            > Duration::from_secs_f64(1.0 / LIVE_VALUES_HZ)
+        {
             self.emit_live_values();
             self.last_measurement_emit = now;
         }
