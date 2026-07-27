@@ -90,7 +90,7 @@ export function RewinderControlPage() {
     canEditSettings: !commandsDisabled && settingsEditable,
     canEditMotion: !commandsDisabled && !isDecelerating,
     canMoveTraverse: !commandsDisabled && manualTraverseAllowed,
-    canHomeTraverse: !commandsDisabled && mode === "Hold",
+    canHomeTraverse: !commandsDisabled && !isDecelerating && mode === "Hold",
     canHardStop: !commandsDisabled && (isDecelerating || mode === "Rewind"),
     canResetProgress: !commandsDisabled && progressResetPermitted,
   };
