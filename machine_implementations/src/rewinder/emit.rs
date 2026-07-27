@@ -25,14 +25,10 @@ use std::time::Instant;
 impl Rewinder {
     pub fn set_mode(&mut self, mode: &Mode) {
         if self.hold_decelerating_from_rewind {
-            if matches!(mode, Mode::Hold | Mode::Standby) {
-                self.pending_mode_after_rewind_deceleration = Some(mode.clone());
-            } else {
-                tracing::warn!(
-                    "Rewinder rejected {:?}: waiting for rewind deceleration to finish",
-                    mode
-                );
-            }
+            tracing::warn!(
+                "Rewinder rejected {:?}: waiting for rewind deceleration to finish",
+                mode
+            );
             self.emit_state();
             return;
         }
