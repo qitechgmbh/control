@@ -16,8 +16,12 @@ impl Machine for DryerMachine {
 
         {
             let mut dryer = self.dryer.borrow_mut();
-            let _ = dryer.handle_response();
-            let _ = dryer.send_next_request();
+            if let Err(e) = dryer.handle_response() {
+                return Err(MachineError::IrrecoverableFailure(e.to_string()));
+            }
+            if let Err(e) = dryer.send_next_request() {
+                return Err(MachineError::IrrecoverableFailure(e.to_string()));
+            }
         }
 
         if now.duration_since(self.last_emit) > Duration::from_secs(1) {

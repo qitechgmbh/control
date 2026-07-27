@@ -468,6 +468,9 @@ pub fn remove_machines(
             main_state.hardware.remove(&ident);
             guard.remove(pos);
             drop(guard);
+            main_state
+                .claimed_serial_ports
+                .retain(|_, claimed_ident| *claimed_ident != ident);
             // If a machine has errored and is dropped remove the entry from the hashmap aswell
             main_state.machine_data_reg.storage.remove(&ident);
             send_machines_event(shared_state.clone());

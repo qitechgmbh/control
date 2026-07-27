@@ -15,6 +15,25 @@ use tokio_modbus::{
     prelude::ReadCode,
 };
 
+#[derive(Debug)]
+pub enum DryerDeviceError {
+    IoErr(String),
+    Exception(String),
+    Timeout,
+}
+
+impl std::fmt::Display for DryerDeviceError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DryerDeviceError::IoErr(msg) => write!(f, "Modbus IO error: {msg}"),
+            DryerDeviceError::Exception(msg) => write!(f, "Modbus exception: {msg}"),
+            DryerDeviceError::Timeout => write!(f, "Modbus request timed out"),
+        }
+    }
+}
+
+impl std::error::Error for DryerDeviceError {}
+
 pub const SMART_HW_ID: u16 = 4331;
 const SMART_REG_HW_ID: u16 = 2000;
 const SMART_REG_SW_VERSION: u16 = 2002;
@@ -307,7 +326,13 @@ impl ModbusDevice for DryerDevice {
         let response = match result {
             Ok(response) => response,
             Err(e) => {
-                // transient IO/timeout/exception: skip this tick, the next poll round retries
+                // A genuine IO error means the port itself is gone (device unplugged) -
+                // propagate it so the machine gets removed instead of lingering forever.
+                // Timeouts/exceptions can be transient, so just skip this tick for those.
+                if matches!(e.downcast_ref::<DryerDeviceError>(), Some(DryerDeviceError::IoErr(_)))
+                {
+                    return Err(e);
+                }
                 tracing::debug!("dryer modbus request failed: {e}");
                 return Ok(());
             }
@@ -560,9 +585,13 @@ async fn run_dryer_actor(mut rx: mpsc::Receiver<ActorMessage>, mut ctx: Context)
         let response_result = tokio::time::timeout(REQUEST_TIMEOUT, ctx.call(msg.request)).await;
         let result = match response_result {
             Ok(Ok(Ok(response))) => Ok(response),
-            Ok(Ok(Err(exception))) => Err(anyhow!("Modbus exception: {:?}", exception)),
-            Ok(Err(io_err)) => Err(anyhow!("Modbus IO error: {io_err}")),
-            Err(_) => Err(anyhow!("Modbus request timed out")),
+            Ok(Ok(Err(exception))) => {
+                Err(anyhow::Error::new(DryerDeviceError::Exception(format!("{exception:?}"))))
+            }
+            Ok(Err(io_err)) => {
+                Err(anyhow::Error::new(DryerDeviceError::IoErr(io_err.to_string())))
+            }
+            Err(_) => Err(anyhow::Error::new(DryerDeviceError::Timeout)),
         };
         let _ = msg.reply_tx.send(result);
     }
