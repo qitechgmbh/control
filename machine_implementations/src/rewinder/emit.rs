@@ -56,6 +56,15 @@ impl Rewinder {
             let entering_hold = !matches!(self.mode, Mode::Hold) && matches!(mode, Mode::Hold);
             let hold_from_standby = entering_hold && matches!(self.mode, Mode::Standby);
             if exiting_rewind {
+                if !matches!(mode, Mode::Hold | Mode::Standby) {
+                    tracing::warn!(
+                        "Rewinder rejected {:?}: rewind can only decelerate into Hold or Standby",
+                        mode
+                    );
+                    self.emit_state();
+                    return;
+                }
+
                 self.save_current_traverse_as_start_position();
                 self.pending_mode_after_rewind_deceleration = Some(mode.clone());
                 self.hold_decelerating_from_rewind = true;
@@ -752,7 +761,7 @@ impl Rewinder {
     }
 
     fn manual_traverse_command_permitted(&self) -> bool {
-        matches!(self.mode, Mode::Hold)
+        matches!(self.mode, Mode::Hold) && self.traverse_controller.is_homed()
     }
 
     pub fn takeup_tension_arm_zero(&mut self) {

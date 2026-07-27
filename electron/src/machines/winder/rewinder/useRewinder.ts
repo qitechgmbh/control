@@ -225,6 +225,10 @@ export function useRewinder() {
       return;
     }
 
+    if (currentMode === "Rewind" && mode !== "Hold" && mode !== "Standby") {
+      return;
+    }
+
     void requestModeSet({
       machine_identification_unique: machineIdentification,
       data: { SetMode: mode },

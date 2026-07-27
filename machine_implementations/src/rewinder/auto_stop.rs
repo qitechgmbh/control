@@ -47,6 +47,11 @@ impl Rewinder {
     }
 
     pub fn stop_or_pull_rewind(&mut self, now: Instant) {
+        if self.hold_decelerating_from_rewind {
+            self.rewind_automatic_action.progress_last_check = now;
+            return;
+        }
+
         let can_progress = matches!(self.mode, Mode::Pull)
             || (matches!(self.mode, Mode::Rewind)
                 && matches!(
