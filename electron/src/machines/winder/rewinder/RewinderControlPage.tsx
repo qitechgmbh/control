@@ -37,7 +37,6 @@ export function RewinderControlPage() {
     rewindProgress,
     isLoading,
     isDisabled,
-    isDecelerating,
     progressResetPermitted,
     setMode,
     setPullerTargetSpeed,
@@ -71,27 +70,20 @@ export function RewinderControlPage() {
 
   const mode = state?.mode_state.mode;
   const isReady = state?.mode_state.can_rewind === true;
-  const settingsEditable =
-    !isDecelerating && (mode === "Standby" || mode === "Hold");
+  const settingsEditable = mode === "Standby" || mode === "Hold";
   const commandsDisabled = isDisabled || isLoading;
   const manualTraverseAllowed =
-    !isDecelerating &&
-    mode === "Hold" &&
-    state?.traverse_state.is_homed === true;
+    mode === "Hold" && state?.traverse_state.is_homed === true;
   const uiGuards = {
-    canChangeMode: !commandsDisabled && !isDecelerating,
-    canPull: !commandsDisabled && !isDecelerating && mode !== "Rewind",
-    canPrepare:
-      !commandsDisabled &&
-      !isDecelerating &&
-      mode !== "Rewind" &&
-      tensionArmsZeroed,
-    canRewind: !commandsDisabled && !isDecelerating && isReady,
+    canChangeMode: !commandsDisabled,
+    canPull: !commandsDisabled && mode !== "Rewind",
+    canPrepare: !commandsDisabled && mode !== "Rewind" && tensionArmsZeroed,
+    canRewind: !commandsDisabled && isReady,
     canEditSettings: !commandsDisabled && settingsEditable,
-    canEditMotion: !commandsDisabled && !isDecelerating,
+    canEditMotion: !commandsDisabled,
     canMoveTraverse: !commandsDisabled && manualTraverseAllowed,
-    canHomeTraverse: !commandsDisabled && !isDecelerating && mode === "Hold",
-    canHardStop: !commandsDisabled && (isDecelerating || mode === "Rewind"),
+    canHomeTraverse: !commandsDisabled && mode === "Hold",
+    canHardStop: !commandsDisabled && mode === "Rewind",
     canResetProgress: !commandsDisabled && progressResetPermitted,
   };
   const requiredMeters =
@@ -141,9 +133,7 @@ export function RewinderControlPage() {
           <div className="flex items-start justify-between gap-2">
             <h2 className="text-2xl font-bold">Run</h2>
             <div className="flex flex-wrap justify-end gap-2">
-              {isDecelerating ? (
-                <StatusBadge variant="warning">Decelerating</StatusBadge>
-              ) : isReady ? (
+              {isReady ? (
                 <StatusBadge variant="success">Ready</StatusBadge>
               ) : (
                 <StatusBadge variant="error">Not Ready</StatusBadge>
