@@ -11,7 +11,9 @@ mod winder2_imports {
 
     pub use qitech_lib::ethercat_hal::coe::ConfigurableDevice;
     pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::ek1100::EK1100;
-    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el2002::{EL2002, EL2002_IDENTITY_B, EL2002Port};
+    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el2002::{
+        EL2002, EL2002_IDENTITY_B, EL2002Port,
+    };
     pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031::coe::EL7031Configuration;
     pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031::pdo::EL7031PredefinedPdoAssignment;
     pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031::{

@@ -10,7 +10,6 @@ pub fn write_ecat_inputs<C: Consumer, P: Producer>(
     ecat: &mut EtherCATAppHandle<C, P>,
     subdevices: Vec<(MetaSubdevice, Rc<RefCell<dyn EthercatDevice>>)>,
 ) {
-
     let inputs = ecat
         .get_inputs()
         .expect("There should always be an input (latest state)");
