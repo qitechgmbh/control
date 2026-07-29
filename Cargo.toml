@@ -12,7 +12,7 @@ license = "LGPL-3.0-only"
 repository = "https://github.com/qitechgmbh/control"
 
 [workspace.dependencies]
-qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="9a5559bcf16336e01b2004bc939e2d48ec879c85" }
+qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="fffd0b1fbaf5e52c8d7ee6e809a5af7cbf8fc9ee" }
 
 [workspace.lints.clippy]
 # don't lint poissbilities for let chains because they were introduces after Rust 1.86
