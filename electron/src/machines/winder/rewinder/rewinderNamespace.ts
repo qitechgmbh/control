@@ -269,14 +269,13 @@ export function rewinderMessageHandler(
     try {
       if (event.name === "StateEvent") {
         const stateEvent = stateEventSchema.parse(event);
-        updateStore((state) => ({
+        store.setState((state) => ({
           ...state,
           state: stateEvent,
           defaultState: stateEvent.data.is_default_state
             ? stateEvent
             : state.defaultState,
         }));
-        throttledUpdater.forceSync();
       } else if (event.name === "HardStopEvent") {
         showHardStopToast(hardStopEventSchema.parse(event));
       } else if (event.name === "LiveValuesEvent") {
