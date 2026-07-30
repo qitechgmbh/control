@@ -53,6 +53,42 @@ const presetValue = <T,>(
   fallback: T,
 ) => presetValue ?? defaultValue ?? fallback;
 
+const presetFallback = {
+  targetSpeed: 10.0,
+  requiredMeters: 100.0,
+  takeupDiameter: 100,
+  sourceDiameter: 100,
+  takeupMinSpeed: 5.0,
+  takeupMaxSpeed: 50.0,
+  takeupTensionTarget: 0.5,
+  takeupRadiusLearningRate: 0.1,
+  takeupMaxSpeedMultiplier: 2.0,
+  takeupAccelerationFactor: 1.5,
+  takeupDeaccelerationUrgency: 2.0,
+  sourceTensionTarget: 0.5,
+  traverseInner: 22.0,
+  traverseOuter: 92.0,
+  traverseStart: 92.0,
+  traverseStep: 5.0,
+  traversePadding: 10.0,
+  takeupArm: {
+    hardMin: 15,
+    hardMax: 85,
+    startMin: 35,
+    startMax: 65,
+    target: 50,
+  },
+  sourceArm: {
+    hardMin: 20,
+    hardMax: 90,
+    startMin: 35,
+    startMax: 70,
+    target: 55,
+  },
+  prepareTolerance: 3.0,
+  prepareSettleRate: 0.5,
+} as const;
+
 const previewEntries: PresetPreviewEntries<RewinderPresetData> = [
   {
     name: "Line Speed",
@@ -216,14 +252,14 @@ export function RewinderPresetsPage() {
       presetValue(
         puller.target_speed,
         defaults?.puller_state.target_speed,
-        10.0,
+        presetFallback.targetSpeed,
       ),
     );
     setRewindAutomaticRequiredMeters(
       presetValue(
         automatic.required_meters,
         defaults?.rewind_automatic_action_state.required_meters,
-        100.0,
+        presetFallback.requiredMeters,
       ),
     );
     setRewindAutomaticAction(
@@ -238,14 +274,14 @@ export function RewinderPresetsPage() {
       presetValue(
         takeup.diameter_mm,
         defaults?.takeup_spool_state.diameter_mm,
-        100,
+        presetFallback.takeupDiameter,
       ),
     );
     setSourceSpoolDiameter(
       presetValue(
         source.diameter_mm,
         defaults?.source_spool_state.diameter_mm,
-        100,
+        presetFallback.sourceDiameter,
       ),
     );
     setTakeupSpoolRegulationMode(
@@ -259,56 +295,56 @@ export function RewinderPresetsPage() {
       presetValue(
         takeup.minmax_min_speed,
         defaults?.takeup_spool_state.minmax_min_speed,
-        5.0,
+        presetFallback.takeupMinSpeed,
       ),
     );
     setTakeupSpoolMinMaxMaxSpeed(
       presetValue(
         takeup.minmax_max_speed,
         defaults?.takeup_spool_state.minmax_max_speed,
-        50.0,
+        presetFallback.takeupMaxSpeed,
       ),
     );
     setTakeupTensionTarget(
       presetValue(
         takeup.adaptive_tension_target,
         defaults?.takeup_spool_state.adaptive_tension_target,
-        0.5,
+        presetFallback.takeupTensionTarget,
       ),
     );
     setTakeupSpoolAdaptiveRadiusLearningRate(
       presetValue(
         takeup.adaptive_radius_learning_rate,
         defaults?.takeup_spool_state.adaptive_radius_learning_rate,
-        0.1,
+        presetFallback.takeupRadiusLearningRate,
       ),
     );
     setTakeupSpoolAdaptiveMaxSpeedMultiplier(
       presetValue(
         takeup.adaptive_max_speed_multiplier,
         defaults?.takeup_spool_state.adaptive_max_speed_multiplier,
-        2.0,
+        presetFallback.takeupMaxSpeedMultiplier,
       ),
     );
     setTakeupSpoolAdaptiveAccelerationFactor(
       presetValue(
         takeup.adaptive_acceleration_factor,
         defaults?.takeup_spool_state.adaptive_acceleration_factor,
-        1.5,
+        presetFallback.takeupAccelerationFactor,
       ),
     );
     setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier(
       presetValue(
         takeup.adaptive_deacceleration_urgency_multiplier,
         defaults?.takeup_spool_state.adaptive_deacceleration_urgency_multiplier,
-        2.0,
+        presetFallback.takeupDeaccelerationUrgency,
       ),
     );
     setSourceTensionTarget(
       presetValue(
         source.adaptive_tension_target,
         defaults?.source_spool_state.adaptive_tension_target,
-        0.5,
+        presetFallback.sourceTensionTarget,
       ),
     );
 
@@ -316,28 +352,36 @@ export function RewinderPresetsPage() {
       presetValue(
         traverse.limit_inner,
         defaults?.traverse_state.limit_inner,
-        22.0,
+        presetFallback.traverseInner,
       ),
     );
     setTraverseLimitOuter(
       presetValue(
         traverse.limit_outer,
         defaults?.traverse_state.limit_outer,
-        92.0,
+        presetFallback.traverseOuter,
       ),
     );
     setTraverseStartPosition(
       presetValue(
         traverse.start_position,
         defaults?.traverse_state.start_position,
-        92.0,
+        presetFallback.traverseStart,
       ),
     );
     setTraverseStepSize(
-      presetValue(traverse.step_size, defaults?.traverse_state.step_size, 5.0),
+      presetValue(
+        traverse.step_size,
+        defaults?.traverse_state.step_size,
+        presetFallback.traverseStep,
+      ),
     );
     setTraversePadding(
-      presetValue(traverse.padding, defaults?.traverse_state.padding, 10.0),
+      presetValue(
+        traverse.padding,
+        defaults?.traverse_state.padding,
+        presetFallback.traversePadding,
+      ),
     );
     enableTraverseLaserpointer(
       presetValue(
@@ -347,18 +391,18 @@ export function RewinderPresetsPage() {
       ),
     );
 
-    applyTakeupArm("hard_min_angle", 15);
-    applyTakeupArm("hard_max_angle", 85);
-    applyTakeupArm("start_min_angle", 35);
-    applyTakeupArm("start_max_angle", 65);
-    applyTakeupArm("target_angle", 50);
-    applySourceArm("hard_min_angle", 20);
-    applySourceArm("hard_max_angle", 90);
-    applySourceArm("start_min_angle", 35);
-    applySourceArm("start_max_angle", 70);
-    applySourceArm("target_angle", 55);
-    applyPrepare("tolerance_angle", 3.0);
-    applyPrepare("settle_rate", 0.5);
+    applyTakeupArm("hard_min_angle", presetFallback.takeupArm.hardMin);
+    applyTakeupArm("hard_max_angle", presetFallback.takeupArm.hardMax);
+    applyTakeupArm("start_min_angle", presetFallback.takeupArm.startMin);
+    applyTakeupArm("start_max_angle", presetFallback.takeupArm.startMax);
+    applyTakeupArm("target_angle", presetFallback.takeupArm.target);
+    applySourceArm("hard_min_angle", presetFallback.sourceArm.hardMin);
+    applySourceArm("hard_max_angle", presetFallback.sourceArm.hardMax);
+    applySourceArm("start_min_angle", presetFallback.sourceArm.startMin);
+    applySourceArm("start_max_angle", presetFallback.sourceArm.startMax);
+    applySourceArm("target_angle", presetFallback.sourceArm.target);
+    applyPrepare("tolerance_angle", presetFallback.prepareTolerance);
+    applyPrepare("settle_rate", presetFallback.prepareSettleRate);
   };
 
   const toPresetData = (s: typeof state): RewinderPresetData => ({

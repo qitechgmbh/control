@@ -25,6 +25,7 @@ impl Rewinder {
     pub fn reset_rewind_progress(&mut self, now: Instant) {
         self.rewind_automatic_action.progress = Length::ZERO;
         self.rewind_automatic_action.progress_last_check = now;
+        self.emit_live_values();
     }
 
     pub fn update_rewind_progress(&mut self, now: Instant) {

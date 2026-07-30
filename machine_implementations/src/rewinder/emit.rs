@@ -89,41 +89,19 @@ impl Rewinder {
             };
             if entering_rewind && !resuming_motion_stop {
                 let now = Instant::now();
-                let zero_speed = Velocity::new::<meter_per_minute>(0.0);
                 self.rewind_control.reset_for_rewind(now);
-                self.puller_speed_controller.reset_speed(zero_speed);
-                self.takeup_spool_speed_controller
-                    .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
-                self.source_spool_speed_controller
-                    .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
+                self.reset_axis_speed_controllers();
             }
             if entering_pull {
-                self.puller_speed_controller
-                    .reset_speed(Velocity::new::<meter_per_minute>(0.0));
-                self.source_spool_speed_controller
-                    .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
-                let _ = self
-                    .source_spool
-                    .borrow_mut()
-                    .set_speed(SOURCE_SPOOL_PORT, 0.0);
+                self.reset_puller_speed_controller();
+                self.reset_source_spool_speed_controller();
+                self.command_source_spool_zero();
             }
             if entering_prepare {
                 let now = Instant::now();
                 self.rewind_control.reset_for_prepare(now);
-                self.puller_speed_controller
-                    .reset_speed(Velocity::new::<meter_per_minute>(0.0));
-                self.takeup_spool_speed_controller
-                    .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
-                self.source_spool_speed_controller
-                    .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
-                let _ = self
-                    .takeup_spool
-                    .borrow_mut()
-                    .set_speed(TAKEUP_SPOOL_PORT, 0.0);
-                let _ = self
-                    .source_spool
-                    .borrow_mut()
-                    .set_speed(SOURCE_SPOOL_PORT, 0.0);
+                self.reset_axis_speed_controllers();
+                self.command_spools_zero();
             }
             self.apply_mode_to_axes(mode);
             if hold_from_standby {
@@ -234,12 +212,47 @@ impl Rewinder {
 
     pub(crate) fn stop_motion_commands(&mut self) {
         self.rewind_control.reset_motion();
+        self.reset_axis_speed_controllers();
+    }
+
+    fn reset_axis_speed_controllers(&mut self) {
+        self.reset_puller_speed_controller();
+        self.reset_takeup_spool_speed_controller();
+        self.reset_source_spool_speed_controller();
+    }
+
+    fn reset_puller_speed_controller(&mut self) {
         self.puller_speed_controller
             .reset_speed(Velocity::new::<meter_per_minute>(0.0));
+    }
+
+    fn reset_takeup_spool_speed_controller(&mut self) {
         self.takeup_spool_speed_controller
             .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
+    }
+
+    fn reset_source_spool_speed_controller(&mut self) {
         self.source_spool_speed_controller
             .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
+    }
+
+    fn command_spools_zero(&mut self) {
+        self.command_takeup_spool_zero();
+        self.command_source_spool_zero();
+    }
+
+    fn command_takeup_spool_zero(&mut self) {
+        let _ = self
+            .takeup_spool
+            .borrow_mut()
+            .set_speed(TAKEUP_SPOOL_PORT, 0.0);
+    }
+
+    fn command_source_spool_zero(&mut self) {
+        let _ = self
+            .source_spool
+            .borrow_mut()
+            .set_speed(SOURCE_SPOOL_PORT, 0.0);
     }
 
     pub(crate) fn update_motion_stop(&mut self, now: Instant) {
