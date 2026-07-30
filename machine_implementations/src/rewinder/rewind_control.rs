@@ -186,9 +186,12 @@ impl ArmState {
 
 #[derive(Debug, Clone, Copy)]
 pub struct FollowerConfig {
+    /// Fallback spool rpm per line-speed unit when no diameter is available.
     pub initial_ratio_rpm_per_m_per_min: f64,
+    /// Learned ratio bounds. Diameter-derived ratios may widen these bounds.
     pub min_ratio_rpm_per_m_per_min: f64,
     pub max_ratio_rpm_per_m_per_min: f64,
+    /// Arm-angle correction around the diameter-based feed-forward rpm.
     pub kp_rpm_per_deg: f64,
     pub kd_rpm_per_deg_per_s: f64,
     pub deadband_deg: f64,
@@ -282,8 +285,11 @@ impl FollowerConfig {
 
 #[derive(Debug, Clone, Copy)]
 pub struct FollowerState {
+    /// Current spool rpm per m/min line speed. Seeded by diameter, then learned slowly.
     pub ratio_rpm_per_m_per_min: f64,
+    /// Diameter/ratio-based open-loop command before arm correction.
     pub feed_forward_rpm: f64,
+    /// Filtered tension-arm correction added to feed-forward.
     pub trim_rpm: f64,
     pub target_rpm: f64,
     pub command_rpm: f64,

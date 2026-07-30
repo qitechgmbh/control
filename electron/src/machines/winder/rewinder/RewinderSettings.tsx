@@ -8,6 +8,23 @@ import { roundToDecimals } from "@/lib/decimal";
 import React from "react";
 import { useRewinder } from "./useRewinder";
 
+const DEFAULT_SPOOL_DIAMETER_MM = 100;
+const MIN_SPOOL_DIAMETER_MM = 10;
+const MAX_SPOOL_DIAMETER_MM = 500;
+
+const MIN_RATIO = 0;
+const MAX_RATIO = 1;
+
+const MIN_ARM_MIN_ANGLE_DEG = -45;
+const MAX_ARM_MIN_ANGLE_DEG = 120;
+const MIN_ARM_MAX_ANGLE_DEG = -45;
+const MAX_ARM_MAX_ANGLE_DEG = 135;
+
+const MIN_PREPARE_TOLERANCE_DEG = 1;
+const MAX_PREPARE_TOLERANCE_DEG = 20;
+const MIN_PREPARE_RATE_DEG_PER_S = 0.1;
+const MAX_PREPARE_RATE_DEG_PER_S = 30;
+
 export function RewinderSettingsPage() {
   const {
     state,
@@ -43,14 +60,20 @@ export function RewinderSettingsPage() {
         <ControlCard title="Takeup Spool">
           <Label label="Diameter">
             <EditValue
-              value={state?.takeup_spool_state.diameter_mm ?? 100}
+              value={
+                state?.takeup_spool_state.diameter_mm ??
+                DEFAULT_SPOOL_DIAMETER_MM
+              }
               title="Takeup Spool Diameter"
               unit="mm"
               step={1}
-              min={10}
-              max={500}
+              min={MIN_SPOOL_DIAMETER_MM}
+              max={MAX_SPOOL_DIAMETER_MM}
               disabled={settingsDisabled}
-              defaultValue={defaultState?.takeup_spool_state.diameter_mm ?? 100}
+              defaultValue={
+                defaultState?.takeup_spool_state.diameter_mm ??
+                DEFAULT_SPOOL_DIAMETER_MM
+              }
               renderValue={(value) => roundToDecimals(value, 0)}
               onChange={setTakeupSpoolDiameter}
             />
@@ -82,8 +105,8 @@ export function RewinderSettingsPage() {
                   value={state?.takeup_spool_state.adaptive_tension_target}
                   title="Takeup Tension Target"
                   step={0.01}
-                  min={0}
-                  max={1}
+                  min={MIN_RATIO}
+                  max={MAX_RATIO}
                   disabled={settingsDisabled}
                   defaultValue={
                     defaultState?.takeup_spool_state.adaptive_tension_target
@@ -210,15 +233,19 @@ export function RewinderSettingsPage() {
           <div className="flex flex-row flex-wrap gap-4">
             <Label label="Diameter">
               <EditValue
-                value={state?.source_spool_state.diameter_mm ?? 100}
+                value={
+                  state?.source_spool_state.diameter_mm ??
+                  DEFAULT_SPOOL_DIAMETER_MM
+                }
                 title="Source Spool Diameter"
                 unit="mm"
                 step={1}
-                min={10}
-                max={500}
+                min={MIN_SPOOL_DIAMETER_MM}
+                max={MAX_SPOOL_DIAMETER_MM}
                 disabled={settingsDisabled}
                 defaultValue={
-                  defaultState?.source_spool_state.diameter_mm ?? 100
+                  defaultState?.source_spool_state.diameter_mm ??
+                  DEFAULT_SPOOL_DIAMETER_MM
                 }
                 renderValue={(value) => roundToDecimals(value, 0)}
                 onChange={setSourceSpoolDiameter}
@@ -234,8 +261,8 @@ export function RewinderSettingsPage() {
                 value={state?.source_spool_state.adaptive_tension_target}
                 title="Source Tension Target"
                 step={0.01}
-                min={0}
-                max={1}
+                min={MIN_RATIO}
+                max={MAX_RATIO}
                 disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.source_spool_state.adaptive_tension_target
@@ -255,8 +282,8 @@ export function RewinderSettingsPage() {
                 title="Takeup Hard Min"
                 unit="deg"
                 step={1}
-                min={-45}
-                max={120}
+                min={MIN_ARM_MIN_ANGLE_DEG}
+                max={MAX_ARM_MIN_ANGLE_DEG}
                 disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.takeup_tension_arm_control_state.hard_min_angle
@@ -273,8 +300,8 @@ export function RewinderSettingsPage() {
                 title="Takeup Hard Max"
                 unit="deg"
                 step={1}
-                min={-45}
-                max={135}
+                min={MIN_ARM_MAX_ANGLE_DEG}
+                max={MAX_ARM_MAX_ANGLE_DEG}
                 disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.takeup_tension_arm_control_state.hard_max_angle
@@ -291,8 +318,8 @@ export function RewinderSettingsPage() {
                 title="Takeup Start Min"
                 unit="deg"
                 step={1}
-                min={-45}
-                max={120}
+                min={MIN_ARM_MIN_ANGLE_DEG}
+                max={MAX_ARM_MIN_ANGLE_DEG}
                 disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.takeup_tension_arm_control_state.start_min_angle
@@ -309,8 +336,8 @@ export function RewinderSettingsPage() {
                 title="Takeup Start Max"
                 unit="deg"
                 step={1}
-                min={-45}
-                max={135}
+                min={MIN_ARM_MAX_ANGLE_DEG}
+                max={MAX_ARM_MAX_ANGLE_DEG}
                 disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.takeup_tension_arm_control_state.start_max_angle
@@ -327,8 +354,8 @@ export function RewinderSettingsPage() {
                 title="Takeup Target"
                 unit="deg"
                 step={1}
-                min={-45}
-                max={135}
+                min={MIN_ARM_MAX_ANGLE_DEG}
+                max={MAX_ARM_MAX_ANGLE_DEG}
                 disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.takeup_tension_arm_control_state.target_angle
@@ -350,8 +377,8 @@ export function RewinderSettingsPage() {
                 title="Source Hard Min"
                 unit="deg"
                 step={1}
-                min={-45}
-                max={120}
+                min={MIN_ARM_MIN_ANGLE_DEG}
+                max={MAX_ARM_MIN_ANGLE_DEG}
                 disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.source_tension_arm_control_state.hard_min_angle
@@ -368,8 +395,8 @@ export function RewinderSettingsPage() {
                 title="Source Hard Max"
                 unit="deg"
                 step={1}
-                min={-45}
-                max={135}
+                min={MIN_ARM_MAX_ANGLE_DEG}
+                max={MAX_ARM_MAX_ANGLE_DEG}
                 disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.source_tension_arm_control_state.hard_max_angle
@@ -386,8 +413,8 @@ export function RewinderSettingsPage() {
                 title="Source Start Min"
                 unit="deg"
                 step={1}
-                min={-45}
-                max={120}
+                min={MIN_ARM_MIN_ANGLE_DEG}
+                max={MAX_ARM_MIN_ANGLE_DEG}
                 disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.source_tension_arm_control_state.start_min_angle
@@ -404,8 +431,8 @@ export function RewinderSettingsPage() {
                 title="Source Start Max"
                 unit="deg"
                 step={1}
-                min={-45}
-                max={135}
+                min={MIN_ARM_MAX_ANGLE_DEG}
+                max={MAX_ARM_MAX_ANGLE_DEG}
                 disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.source_tension_arm_control_state.start_max_angle
@@ -422,8 +449,8 @@ export function RewinderSettingsPage() {
                 title="Source Target"
                 unit="deg"
                 step={1}
-                min={-45}
-                max={135}
+                min={MIN_ARM_MAX_ANGLE_DEG}
+                max={MAX_ARM_MAX_ANGLE_DEG}
                 disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.source_tension_arm_control_state.target_angle
@@ -445,8 +472,8 @@ export function RewinderSettingsPage() {
                 title="Prepare Tolerance"
                 unit="deg"
                 step={0.5}
-                min={1}
-                max={20}
+                min={MIN_PREPARE_TOLERANCE_DEG}
+                max={MAX_PREPARE_TOLERANCE_DEG}
                 disabled={prepareSettingsDisabled}
                 defaultValue={
                   defaultState?.prepare_control_state.tolerance_angle
@@ -463,8 +490,8 @@ export function RewinderSettingsPage() {
                 title="Prepare Settle Rate"
                 unit="deg/s"
                 step={0.5}
-                min={0.1}
-                max={30}
+                min={MIN_PREPARE_RATE_DEG_PER_S}
+                max={MAX_PREPARE_RATE_DEG_PER_S}
                 disabled={prepareSettingsDisabled}
                 defaultValue={defaultState?.prepare_control_state.settle_rate}
                 renderValue={(value) => roundToDecimals(value, 1)}

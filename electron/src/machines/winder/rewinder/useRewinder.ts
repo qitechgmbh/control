@@ -1,10 +1,9 @@
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { toastError } from "@/components/Toast";
-import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { rewinder } from "@/machines/properties";
 import { rewinderSerialRoute } from "@/routes/routes";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { z } from "zod";
 import {
   Mode,
@@ -57,14 +56,6 @@ export function useRewinder() {
     sourceTensionArmAngle,
     rewindProgress,
   } = useRewinderNamespace(machineIdentification);
-
-  const stateOptimistic = useStateOptimistic<StateEvent>();
-
-  useEffect(() => {
-    if (state) {
-      stateOptimistic.setReal(state);
-    }
-  }, [state]);
 
   const { request: requestModeSet } = useMachineMutation(
     z.object({ SetMode: modeSchema }),
@@ -171,16 +162,14 @@ export function useRewinder() {
     z.object({ EnableTraverseLaserpointer: z.boolean() }),
   );
 
-  const updateStateOptimistically = (
-    _producer: (current: StateEvent) => void,
-    serverRequest: () => void,
-  ) => {
-    serverRequest();
-  };
+  const withMachine = <T>(data: T) => ({
+    machine_identification_unique: machineIdentification,
+    data,
+  });
 
-  const currentMode = stateOptimistic.value?.data.mode_state.mode;
-  const motionStopped =
-    stateOptimistic.value?.data.mode_state.motion_stopped !== false;
+  const stateData = state?.data;
+  const currentMode = stateData?.mode_state.mode;
+  const motionStopped = stateData?.mode_state.motion_stopped !== false;
   const settingsEditPermitted =
     motionStopped && (currentMode === "Standby" || currentMode === "Hold");
   const prepareSettingsEditPermitted =
@@ -192,24 +181,21 @@ export function useRewinder() {
   const manualTraversePermitted =
     currentMode === "Hold" &&
     motionStopped &&
-    stateOptimistic.value?.data.traverse_state.is_homed === true;
+    stateData?.traverse_state.is_homed === true;
 
   const setMode = (mode: Mode) => {
     if (mode === currentMode) {
       return;
     }
 
-    if (
-      mode === "Rewind" &&
-      stateOptimistic.value?.data.mode_state.can_rewind !== true
-    ) {
+    if (mode === "Rewind" && stateData?.mode_state.can_rewind !== true) {
       return;
     }
 
     if (
       mode === "Prepare" &&
-      (stateOptimistic.value?.data.takeup_tension_arm_state.zeroed !== true ||
-        stateOptimistic.value?.data.source_tension_arm_state.zeroed !== true)
+      (stateData?.takeup_tension_arm_state.zeroed !== true ||
+        stateData?.source_tension_arm_state.zeroed !== true)
     ) {
       return;
     }
@@ -218,218 +204,126 @@ export function useRewinder() {
       return;
     }
 
-    void requestModeSet({
-      machine_identification_unique: machineIdentification,
-      data: { SetMode: mode },
-    });
+    void requestModeSet(withMachine({ SetMode: mode }));
   };
 
   const setPullerTargetSpeed = (targetSpeed: number) => {
-    if (stateOptimistic.isOptimistic) {
-      return;
-    }
-
-    updateStateOptimistically(
-      (current) => {
-        current.data.puller_state.target_speed = targetSpeed;
-      },
-      () =>
-        void requestPullerSetTargetSpeed({
-          machine_identification_unique: machineIdentification,
-          data: { SetPullerTargetSpeed: targetSpeed },
-        }),
+    void requestPullerSetTargetSpeed(
+      withMachine({ SetPullerTargetSpeed: targetSpeed }),
     );
   };
 
   const setTakeupSpoolRegulationMode = (mode: SpoolRegulationMode) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.takeup_spool_state.regulation_mode = mode;
-      },
-      () =>
-        void requestTakeupSpoolSetRegulationMode({
-          machine_identification_unique: machineIdentification,
-          data: { SetTakeupSpoolRegulationMode: mode },
-        }),
+    void requestTakeupSpoolSetRegulationMode(
+      withMachine({ SetTakeupSpoolRegulationMode: mode }),
     );
   };
 
   const setTakeupSpoolMinMaxMinSpeed = (speed: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.takeup_spool_state.minmax_min_speed = speed;
-      },
-      () =>
-        void requestTakeupSpoolSetMinMaxMinSpeed({
-          machine_identification_unique: machineIdentification,
-          data: { SetTakeupSpoolMinMaxMinSpeed: speed },
-        }),
+    void requestTakeupSpoolSetMinMaxMinSpeed(
+      withMachine({ SetTakeupSpoolMinMaxMinSpeed: speed }),
     );
   };
 
   const setTakeupSpoolMinMaxMaxSpeed = (speed: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.takeup_spool_state.minmax_max_speed = speed;
-      },
-      () =>
-        void requestTakeupSpoolSetMinMaxMaxSpeed({
-          machine_identification_unique: machineIdentification,
-          data: { SetTakeupSpoolMinMaxMaxSpeed: speed },
-        }),
+    void requestTakeupSpoolSetMinMaxMaxSpeed(
+      withMachine({ SetTakeupSpoolMinMaxMaxSpeed: speed }),
     );
   };
 
   const setTakeupTensionTarget = (target: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.takeup_spool_state.adaptive_tension_target = target;
-      },
-      () =>
-        void requestTakeupTensionTarget({
-          machine_identification_unique: machineIdentification,
-          data: { SetTakeupTensionTarget: target },
-        }),
+    void requestTakeupTensionTarget(
+      withMachine({ SetTakeupTensionTarget: target }),
     );
   };
 
   const setTakeupSpoolAdaptiveRadiusLearningRate = (value: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.takeup_spool_state.adaptive_radius_learning_rate = value;
-      },
-      () =>
-        void requestTakeupSpoolSetAdaptiveRadiusLearningRate({
-          machine_identification_unique: machineIdentification,
-          data: { SetTakeupSpoolAdaptiveRadiusLearningRate: value },
-        }),
+    void requestTakeupSpoolSetAdaptiveRadiusLearningRate(
+      withMachine({ SetTakeupSpoolAdaptiveRadiusLearningRate: value }),
     );
   };
 
   const setTakeupSpoolAdaptiveMaxSpeedMultiplier = (value: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.takeup_spool_state.adaptive_max_speed_multiplier = value;
-      },
-      () =>
-        void requestTakeupSpoolSetAdaptiveMaxSpeedMultiplier({
-          machine_identification_unique: machineIdentification,
-          data: { SetTakeupSpoolAdaptiveMaxSpeedMultiplier: value },
-        }),
+    void requestTakeupSpoolSetAdaptiveMaxSpeedMultiplier(
+      withMachine({ SetTakeupSpoolAdaptiveMaxSpeedMultiplier: value }),
     );
   };
 
   const setTakeupSpoolAdaptiveAccelerationFactor = (value: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.takeup_spool_state.adaptive_acceleration_factor = value;
-      },
-      () =>
-        void requestTakeupSpoolSetAdaptiveAccelerationFactor({
-          machine_identification_unique: machineIdentification,
-          data: { SetTakeupSpoolAdaptiveAccelerationFactor: value },
-        }),
+    void requestTakeupSpoolSetAdaptiveAccelerationFactor(
+      withMachine({ SetTakeupSpoolAdaptiveAccelerationFactor: value }),
     );
   };
 
   const setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier = (
     value: number,
   ) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.takeup_spool_state.adaptive_deacceleration_urgency_multiplier =
-          value;
-      },
-      () =>
-        void requestTakeupSpoolSetAdaptiveDeaccelerationUrgencyMultiplier({
-          machine_identification_unique: machineIdentification,
-          data: {
-            SetTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier: value,
-          },
-        }),
+    void requestTakeupSpoolSetAdaptiveDeaccelerationUrgencyMultiplier(
+      withMachine({
+        SetTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier: value,
+      }),
     );
   };
 
   const setTakeupSpoolDiameter = (diameterMm: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.takeup_spool_state.diameter_mm = diameterMm;
-      },
-      () =>
-        void requestTakeupSpoolSetDiameter({
-          machine_identification_unique: machineIdentification,
-          data: { SetTakeupSpoolDiameter: diameterMm },
-        }),
+    void requestTakeupSpoolSetDiameter(
+      withMachine({ SetTakeupSpoolDiameter: diameterMm }),
     );
   };
 
   const setSourceSpoolDiameter = (diameterMm: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.source_spool_state.diameter_mm = diameterMm;
-      },
-      () =>
-        void requestSourceSpoolSetDiameter({
-          machine_identification_unique: machineIdentification,
-          data: { SetSourceSpoolDiameter: diameterMm },
-        }),
+    void requestSourceSpoolSetDiameter(
+      withMachine({ SetSourceSpoolDiameter: diameterMm }),
     );
   };
 
   const setSourceTensionTarget = (target: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.source_spool_state.adaptive_tension_target = target;
-      },
-      () =>
-        void requestSourceTensionTarget({
-          machine_identification_unique: machineIdentification,
-          data: { SetSourceTensionTarget: target },
-        }),
+    void requestSourceTensionTarget(
+      withMachine({ SetSourceTensionTarget: target }),
     );
   };
 
@@ -437,26 +331,19 @@ export function useRewinder() {
     field: keyof StateEvent["data"]["takeup_tension_arm_control_state"],
     value: number,
   ) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    const currentConfig =
-      stateOptimistic.value?.data.takeup_tension_arm_control_state;
+    const currentConfig = stateData?.takeup_tension_arm_control_state;
     if (!currentConfig) return;
     const next = {
       ...currentConfig,
       [field]: value,
     };
-    updateStateOptimistically(
-      (current) => {
-        current.data.takeup_tension_arm_control_state = next;
-      },
-      () =>
-        void requestSetTakeupTensionArmControl({
-          machine_identification_unique: machineIdentification,
-          data: { SetTakeupTensionArmControl: next },
-        }),
+
+    void requestSetTakeupTensionArmControl(
+      withMachine({ SetTakeupTensionArmControl: next }),
     );
   };
 
@@ -464,26 +351,19 @@ export function useRewinder() {
     field: keyof StateEvent["data"]["source_tension_arm_control_state"],
     value: number,
   ) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    const currentConfig =
-      stateOptimistic.value?.data.source_tension_arm_control_state;
+    const currentConfig = stateData?.source_tension_arm_control_state;
     if (!currentConfig) return;
     const next = {
       ...currentConfig,
       [field]: value,
     };
-    updateStateOptimistically(
-      (current) => {
-        current.data.source_tension_arm_control_state = next;
-      },
-      () =>
-        void requestSetSourceTensionArmControl({
-          machine_identification_unique: machineIdentification,
-          data: { SetSourceTensionArmControl: next },
-        }),
+
+    void requestSetSourceTensionArmControl(
+      withMachine({ SetSourceTensionArmControl: next }),
     );
   };
 
@@ -491,263 +371,159 @@ export function useRewinder() {
     field: keyof StateEvent["data"]["prepare_control_state"],
     value: number,
   ) => {
-    if (!prepareSettingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!prepareSettingsEditPermitted) {
       return;
     }
 
-    const currentConfig = stateOptimistic.value?.data.prepare_control_state;
+    const currentConfig = stateData?.prepare_control_state;
     if (!currentConfig) return;
     const next = {
       ...currentConfig,
       [field]: value,
     };
-    updateStateOptimistically(
-      (current) => {
-        current.data.prepare_control_state = next;
-      },
-      () =>
-        void requestSetPrepareControl({
-          machine_identification_unique: machineIdentification,
-          data: { SetPrepareControl: next },
-        }),
-    );
+
+    void requestSetPrepareControl(withMachine({ SetPrepareControl: next }));
   };
 
   const setRewindAutomaticRequiredMeters = (meters: number) => {
-    if (stateOptimistic.isOptimistic) {
-      return;
-    }
-
-    updateStateOptimistically(
-      (current) => {
-        current.data.rewind_automatic_action_state.required_meters = meters;
-      },
-      () =>
-        void requestSetRewindAutomaticRequiredMeters({
-          machine_identification_unique: machineIdentification,
-          data: { SetRewindAutomaticRequiredMeters: meters },
-        }),
+    void requestSetRewindAutomaticRequiredMeters(
+      withMachine({ SetRewindAutomaticRequiredMeters: meters }),
     );
   };
 
   const setRewindAutomaticAction = (mode: RewindAutomaticActionMode) => {
-    if (
-      mode === stateOptimistic.value?.data.rewind_automatic_action_state.mode
-    ) {
+    if (mode === stateData?.rewind_automatic_action_state.mode) {
       return;
     }
 
-    void requestSetRewindAutomaticAction({
-      machine_identification_unique: machineIdentification,
-      data: { SetRewindAutomaticAction: mode },
-    });
+    void requestSetRewindAutomaticAction(
+      withMachine({ SetRewindAutomaticAction: mode }),
+    );
   };
 
   const resetRewindProgress = () => {
-    if (!progressResetPermitted || stateOptimistic.isOptimistic) {
+    if (!progressResetPermitted) {
       return;
     }
 
-    requestResetRewindProgress({
-      machine_identification_unique: machineIdentification,
-      data: "ResetRewindProgress",
-    });
+    requestResetRewindProgress(withMachine("ResetRewindProgress"));
   };
 
   const hardStop = () => {
-    if (currentMode !== "Rewind" || stateOptimistic.isOptimistic) {
+    if (currentMode !== "Rewind") {
       return;
     }
 
-    requestHardStop({
-      machine_identification_unique: machineIdentification,
-      data: "HardStop",
-    });
+    requestHardStop(withMachine("HardStop"));
   };
 
   const zeroTakeupTensionArm = () => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.takeup_tension_arm_state.zeroed = true;
-      },
-      () =>
-        void requestZeroTakeupTensionArm({
-          machine_identification_unique: machineIdentification,
-          data: "ZeroTakeupTensionArm",
-        }),
-    );
+    void requestZeroTakeupTensionArm(withMachine("ZeroTakeupTensionArm"));
   };
 
   const zeroSourceTensionArm = () => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.source_tension_arm_state.zeroed = true;
-      },
-      () =>
-        void requestZeroSourceTensionArm({
-          machine_identification_unique: machineIdentification,
-          data: "ZeroSourceTensionArm",
-        }),
-    );
+    void requestZeroSourceTensionArm(withMachine("ZeroSourceTensionArm"));
   };
 
   const setTraverseLimitInner = (limit: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.traverse_state.limit_inner = limit;
-      },
-      () =>
-        void requestTraverseSetLimitInner({
-          machine_identification_unique: machineIdentification,
-          data: { SetTraverseLimitInner: limit },
-        }),
+    void requestTraverseSetLimitInner(
+      withMachine({ SetTraverseLimitInner: limit }),
     );
   };
 
   const setTraverseLimitOuter = (limit: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.traverse_state.limit_outer = limit;
-      },
-      () =>
-        void requestTraverseSetLimitOuter({
-          machine_identification_unique: machineIdentification,
-          data: { SetTraverseLimitOuter: limit },
-        }),
+    void requestTraverseSetLimitOuter(
+      withMachine({ SetTraverseLimitOuter: limit }),
     );
   };
 
   const setTraverseStartPosition = (position: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.traverse_state.start_position = position;
-      },
-      () =>
-        void requestTraverseSetStartPosition({
-          machine_identification_unique: machineIdentification,
-          data: { SetTraverseStartPosition: position },
-        }),
+    void requestTraverseSetStartPosition(
+      withMachine({ SetTraverseStartPosition: position }),
     );
   };
 
   const setTraverseStepSize = (stepSize: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.traverse_state.step_size = stepSize;
-      },
-      () =>
-        void requestTraverseSetStepSize({
-          machine_identification_unique: machineIdentification,
-          data: { SetTraverseStepSize: stepSize },
-        }),
+    void requestTraverseSetStepSize(
+      withMachine({ SetTraverseStepSize: stepSize }),
     );
   };
 
   const setTraversePadding = (padding: number) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.traverse_state.padding = padding;
-      },
-      () =>
-        void requestTraverseSetPadding({
-          machine_identification_unique: machineIdentification,
-          data: { SetTraversePadding: padding },
-        }),
+    void requestTraverseSetPadding(
+      withMachine({ SetTraversePadding: padding }),
     );
   };
 
   const gotoTraverseHome = () => {
-    if (
-      currentMode !== "Hold" ||
-      !motionStopped ||
-      stateOptimistic.isOptimistic
-    ) {
+    if (currentMode !== "Hold" || !motionStopped) {
       return;
     }
 
-    requestTraverseGotoHome({
-      machine_identification_unique: machineIdentification,
-      data: "GotoTraverseHome",
-    });
+    requestTraverseGotoHome(withMachine("GotoTraverseHome"));
   };
   const gotoTraverseLimitInner = () => {
-    if (!manualTraversePermitted || stateOptimistic.isOptimistic) {
+    if (!manualTraversePermitted) {
       return;
     }
 
-    requestTraverseGotoLimitInner({
-      machine_identification_unique: machineIdentification,
-      data: "GotoTraverseLimitInner",
-    });
+    requestTraverseGotoLimitInner(withMachine("GotoTraverseLimitInner"));
   };
   const gotoTraverseLimitOuter = () => {
-    if (!manualTraversePermitted || stateOptimistic.isOptimistic) {
+    if (!manualTraversePermitted) {
       return;
     }
 
-    requestTraverseGotoLimitOuter({
-      machine_identification_unique: machineIdentification,
-      data: "GotoTraverseLimitOuter",
-    });
+    requestTraverseGotoLimitOuter(withMachine("GotoTraverseLimitOuter"));
   };
   const gotoTraverseStartPosition = () => {
-    if (!manualTraversePermitted || stateOptimistic.isOptimistic) {
+    if (!manualTraversePermitted) {
       return;
     }
 
-    requestTraverseGotoStartPosition({
-      machine_identification_unique: machineIdentification,
-      data: "GotoTraverseStartPosition",
-    });
+    requestTraverseGotoStartPosition(withMachine("GotoTraverseStartPosition"));
   };
 
   const enableTraverseLaserpointer = (enabled: boolean) => {
-    if (!settingsEditPermitted || stateOptimistic.isOptimistic) {
+    if (!settingsEditPermitted) {
       return;
     }
 
-    updateStateOptimistically(
-      (current) => {
-        current.data.traverse_state.laserpointer = enabled;
-      },
-      () =>
-        void requestEnableTraverseLaserpointer({
-          machine_identification_unique: machineIdentification,
-          data: { EnableTraverseLaserpointer: enabled },
-        }),
+    void requestEnableTraverseLaserpointer(
+      withMachine({ EnableTraverseLaserpointer: enabled }),
     );
   };
 
   return {
-    state: stateOptimistic.value?.data,
+    state: stateData,
     defaultState: defaultState?.data,
     traversePosition,
     pullerSpeed,
@@ -756,7 +532,7 @@ export function useRewinder() {
     takeupTensionArmAngle,
     sourceTensionArmAngle,
     rewindProgress,
-    isLoading: stateOptimistic.isOptimistic,
+    isLoading: false,
     isDisabled: false,
     motionStopped,
     settingsEditPermitted,
