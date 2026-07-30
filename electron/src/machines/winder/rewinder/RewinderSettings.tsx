@@ -32,6 +32,7 @@ export function RewinderSettingsPage() {
     isDisabled,
     isLoading,
     settingsEditPermitted,
+    spoolDiameterEditPermitted,
     prepareSettingsEditPermitted,
     setTraverseStepSize,
     setTraversePadding,
@@ -51,6 +52,8 @@ export function RewinderSettingsPage() {
     setPrepareControl,
   } = useRewinder();
   const settingsDisabled = isDisabled || isLoading || !settingsEditPermitted;
+  const spoolDiameterDisabled =
+    isDisabled || isLoading || !spoolDiameterEditPermitted;
   const prepareSettingsDisabled =
     isDisabled || isLoading || !prepareSettingsEditPermitted;
 
@@ -69,7 +72,7 @@ export function RewinderSettingsPage() {
               step={1}
               min={MIN_SPOOL_DIAMETER_MM}
               max={MAX_SPOOL_DIAMETER_MM}
-              disabled={settingsDisabled}
+              disabled={spoolDiameterDisabled}
               defaultValue={
                 defaultState?.takeup_spool_state.diameter_mm ??
                 DEFAULT_SPOOL_DIAMETER_MM
@@ -242,7 +245,7 @@ export function RewinderSettingsPage() {
                 step={1}
                 min={MIN_SPOOL_DIAMETER_MM}
                 max={MAX_SPOOL_DIAMETER_MM}
-                disabled={settingsDisabled}
+                disabled={spoolDiameterDisabled}
                 defaultValue={
                   defaultState?.source_spool_state.diameter_mm ??
                   DEFAULT_SPOOL_DIAMETER_MM
