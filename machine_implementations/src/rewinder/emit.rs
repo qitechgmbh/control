@@ -700,7 +700,7 @@ impl Rewinder {
     }
 
     pub fn takeup_spool_set_diameter(&mut self, diameter_mm: f64) {
-        if self.settings_edit_permitted()
+        if self.spool_diameter_edit_permitted()
             && diameter_mm.is_finite()
             && (10.0..=500.0).contains(&diameter_mm)
         {
@@ -710,7 +710,7 @@ impl Rewinder {
     }
 
     pub fn source_spool_set_diameter(&mut self, diameter_mm: f64) {
-        if self.settings_edit_permitted()
+        if self.spool_diameter_edit_permitted()
             && diameter_mm.is_finite()
             && (10.0..=500.0).contains(&diameter_mm)
         {
@@ -776,6 +776,11 @@ impl Rewinder {
 
     fn settings_edit_permitted(&self) -> bool {
         matches!(self.mode, Mode::Standby | Mode::Hold) && !self.motion_stop_requested()
+    }
+
+    fn spool_diameter_edit_permitted(&self) -> bool {
+        matches!(self.mode, Mode::Standby | Mode::Hold | Mode::Prepare)
+            && !self.motion_stop_requested()
     }
 
     fn manual_traverse_command_permitted(&self) -> bool {

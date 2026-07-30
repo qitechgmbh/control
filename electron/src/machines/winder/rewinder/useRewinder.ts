@@ -172,6 +172,11 @@ export function useRewinder() {
   const motionStopped = stateData?.mode_state.motion_stopped !== false;
   const settingsEditPermitted =
     motionStopped && (currentMode === "Standby" || currentMode === "Hold");
+  const spoolDiameterEditPermitted =
+    motionStopped &&
+    (currentMode === "Standby" ||
+      currentMode === "Hold" ||
+      currentMode === "Prepare");
   const prepareSettingsEditPermitted =
     motionStopped && (currentMode === "Standby" || currentMode === "Hold");
   const progressResetPermitted =
@@ -298,7 +303,7 @@ export function useRewinder() {
   };
 
   const setTakeupSpoolDiameter = (diameterMm: number) => {
-    if (!settingsEditPermitted) {
+    if (!spoolDiameterEditPermitted) {
       return;
     }
 
@@ -308,7 +313,7 @@ export function useRewinder() {
   };
 
   const setSourceSpoolDiameter = (diameterMm: number) => {
-    if (!settingsEditPermitted) {
+    if (!spoolDiameterEditPermitted) {
       return;
     }
 
@@ -536,6 +541,7 @@ export function useRewinder() {
     isDisabled: false,
     motionStopped,
     settingsEditPermitted,
+    spoolDiameterEditPermitted,
     prepareSettingsEditPermitted,
     progressResetPermitted,
     manualTraversePermitted,
