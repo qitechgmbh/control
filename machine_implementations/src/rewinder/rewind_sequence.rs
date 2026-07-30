@@ -45,8 +45,7 @@ impl Rewinder {
 
         self.mode = Mode::Standby;
         self.rewind_phase = RewindPhase::Idle;
-        self.hold_decelerating_from_rewind = false;
-        self.pending_mode_after_rewind_deceleration = None;
+        self.motion_stop_target_mode = None;
         self.apply_mode_to_axes(&Mode::Standby);
         self.emit_state();
     }

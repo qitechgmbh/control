@@ -81,8 +81,7 @@ pub struct Rewinder {
     pub takeup_spool_diameter: Option<Length>,
     pub source_spool_diameter: Option<Length>,
     pub rewind_phase: RewindPhase,
-    pub hold_decelerating_from_rewind: bool,
-    pub pending_mode_after_rewind_deceleration: Option<Mode>,
+    pub motion_stop_target_mode: Option<Mode>,
     pub rewind_control: RewindControlState,
     pub rewind_automatic_action: auto_stop::RewindAutomaticAction,
     emitted_default_state: bool,
@@ -95,6 +94,18 @@ impl Rewinder {
         machine: MACHINE_REWINDER_V1,
     };
 
+    pub fn motion_stop_requested(&self) -> bool {
+        self.motion_stop_target_mode.is_some()
+    }
+
+    pub fn displayed_can_rewind(&self) -> bool {
+        if self.motion_stop_requested() || matches!(self.mode, Mode::Rewind) {
+            self.active_rewind_block_reason().is_none()
+        } else {
+            self.can_rewind()
+        }
+    }
+
     pub fn rewind_motion_permitted(&self) -> bool {
         matches!(self.mode, Mode::Rewind)
     }
@@ -102,7 +113,7 @@ impl Rewinder {
     pub fn puller_motion_permitted(&self) -> bool {
         matches!(self.puller_mode, PullerMode::Pull)
             && (matches!(self.mode, Mode::Pull | Mode::Prepare)
-                || self.hold_decelerating_from_rewind
+                || self.motion_stop_requested()
                 || (self.rewind_motion_permitted()
                     && matches!(
                         self.rewind_phase,
@@ -113,7 +124,7 @@ impl Rewinder {
     pub fn takeup_spool_motion_permitted(&self) -> bool {
         matches!(self.takeup_spool_mode, TakeupSpoolMode::Drive)
             && (matches!(self.mode, Mode::Prepare)
-                || self.hold_decelerating_from_rewind
+                || self.motion_stop_requested()
                 || (self.rewind_motion_permitted()
                     && matches!(
                         self.rewind_phase,
@@ -124,7 +135,7 @@ impl Rewinder {
     pub fn source_spool_motion_permitted(&self) -> bool {
         matches!(self.source_spool_mode, SourceSpoolMode::Drive)
             && (matches!(self.mode, Mode::Pull | Mode::Prepare)
-                || self.hold_decelerating_from_rewind
+                || self.motion_stop_requested()
                 || (self.rewind_motion_permitted()
                     && matches!(
                         self.rewind_phase,

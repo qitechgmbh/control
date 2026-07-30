@@ -136,7 +136,7 @@ impl Rewinder {
     }
 
     /// Apply mode changes to the traverse.
-    fn set_traverse_mode(&mut self, mode: &Mode) {
+    pub(super) fn set_traverse_mode(&mut self, mode: &Mode) {
         let mode: TraverseMode = mode.clone().into();
         let traverse = &mut *self.traverse.borrow_mut();
         match self.traverse_mode {

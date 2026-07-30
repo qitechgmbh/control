@@ -56,7 +56,7 @@ export const hardStopEventDataSchema = z.object({
 export const modeStateSchema = z.object({
   mode: modeSchema,
   can_rewind: z.boolean(),
-  is_decelerating: z.boolean(),
+  motion_stopped: z.boolean(),
 });
 
 export const traverseStateSchema = z.object({
