@@ -23,6 +23,8 @@ const MINI_GRAPH_SAMPLE_INTERVAL_MS = 250;
 const MINI_GRAPH_SPEED_PRECISION = 1;
 const MINI_GRAPH_POSITION_PRECISION = 0;
 const MINI_GRAPH_PROGRESS_PRECISION = 2;
+const DISABLED_BUTTON_CLASS =
+  "disabled:opacity-35 disabled:grayscale disabled:blur-[0.3px]";
 
 export function RewinderControlPage() {
   const {
@@ -169,33 +171,33 @@ export function RewinderControlPage() {
                 children: "Standby",
                 icon: "lu:Power",
                 isActiveClassName: "bg-green-600",
-                className: "min-h-16",
+                className: `min-h-16 ${DISABLED_BUTTON_CLASS}`,
               },
               Hold: {
                 children: "Hold",
                 icon: "lu:CirclePause",
                 isActiveClassName: "bg-green-600",
-                className: "min-h-16",
+                className: `min-h-16 ${DISABLED_BUTTON_CLASS}`,
               },
               Pull: {
                 children: "Pull",
                 icon: "lu:ArrowRight",
                 isActiveClassName: "bg-green-600",
-                className: "min-h-16",
+                className: `min-h-16 ${DISABLED_BUTTON_CLASS}`,
                 disabled: !uiGuards.canPull,
               },
               Prepare: {
                 children: "Prepare",
                 icon: "lu:Crosshair",
                 isActiveClassName: isReady ? "bg-green-600" : "bg-amber-500",
-                className: "min-h-16",
+                className: `min-h-16 ${DISABLED_BUTTON_CLASS}`,
                 disabled: !uiGuards.canPrepare,
               },
               Rewind: {
                 children: "Rewind",
                 icon: "lu:RefreshCw",
                 isActiveClassName: "bg-green-600",
-                className: "col-span-2 min-h-16",
+                className: `col-span-2 min-h-16 ${DISABLED_BUTTON_CLASS}`,
                 disabled: !uiGuards.canRewind,
               },
             }}
@@ -225,6 +227,7 @@ export function RewinderControlPage() {
             onClick={zeroTensionArms}
             disabled={!uiGuards.canEditSettings}
             isLoading={isLoading}
+            className={DISABLED_BUTTON_CLASS}
           >
             Zero Tension Arms
           </TouchButton>
@@ -234,6 +237,7 @@ export function RewinderControlPage() {
             onClick={hardStop}
             disabled={!uiGuards.canHardStop}
             isLoading={isLoading}
+            className={DISABLED_BUTTON_CLASS}
           >
             Hard Stop
           </TouchButton>
@@ -286,6 +290,7 @@ export function RewinderControlPage() {
             icon="lu:RotateCcw"
             onClick={resetRewindProgress}
             disabled={!uiGuards.canResetProgress}
+            className={DISABLED_BUTTON_CLASS}
           >
             Reset Progress
           </TouchButton>
@@ -334,6 +339,7 @@ export function RewinderControlPage() {
                 onClick={gotoTraverseLimitOuter}
                 disabled={!uiGuards.canMoveTraverse}
                 isLoading={isLoading}
+                className={DISABLED_BUTTON_CLASS}
               >
                 Go
               </TouchButton>
@@ -360,6 +366,7 @@ export function RewinderControlPage() {
                 onClick={gotoTraverseStartPosition}
                 disabled={!uiGuards.canMoveTraverse}
                 isLoading={isLoading}
+                className={DISABLED_BUTTON_CLASS}
               >
                 Go
               </TouchButton>
@@ -389,6 +396,7 @@ export function RewinderControlPage() {
                 onClick={gotoTraverseLimitInner}
                 disabled={!uiGuards.canMoveTraverse}
                 isLoading={isLoading}
+                className={DISABLED_BUTTON_CLASS}
               >
                 Go
               </TouchButton>
@@ -414,6 +422,7 @@ export function RewinderControlPage() {
               onClick={gotoTraverseHome}
               disabled={!uiGuards.canHomeTraverse}
               isLoading={isLoading}
+              className={DISABLED_BUTTON_CLASS}
             >
               Go to Home
             </TouchButton>
