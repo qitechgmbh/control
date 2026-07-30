@@ -269,7 +269,7 @@ export function rewinderMessageHandler(
     try {
       if (event.name === "StateEvent") {
         const stateEvent = stateEventSchema.parse(event);
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           state: stateEvent,
           defaultState: stateEvent.data.is_default_state
