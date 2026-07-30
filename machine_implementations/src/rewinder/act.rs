@@ -18,7 +18,7 @@ impl Machine for Rewinder {
             self.act_machine_message(machine_message);
         }
 
-        self.update_hold_deceleration(now);
+        self.update_motion_stop(now);
         self.sync_puller_speed(now);
         self.sync_takeup_spool_speed(now);
         self.sync_source_spool_speed(now);
@@ -29,7 +29,7 @@ impl Machine for Rewinder {
             self.emit_state();
         }
 
-        if self.can_rewind() != self.last_can_rewind {
+        if self.displayed_can_rewind() != self.last_can_rewind {
             self.emit_state();
         }
 

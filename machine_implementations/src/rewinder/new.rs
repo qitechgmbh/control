@@ -185,8 +185,7 @@ impl MachineNew for Rewinder {
             takeup_spool_diameter: None,
             source_spool_diameter: None,
             rewind_phase: RewindPhase::Idle,
-            hold_decelerating_from_rewind: false,
-            pending_mode_after_rewind_deceleration: None,
+            motion_stop_target_mode: None,
             rewind_control: super::rewind_control::RewindControlState::new(
                 super::rewind_control::RewindControlConfig::default(),
             ),

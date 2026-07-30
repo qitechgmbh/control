@@ -24,20 +24,27 @@ use std::time::Instant;
 
 impl Rewinder {
     pub fn set_mode(&mut self, mode: &Mode) {
-        if self.hold_decelerating_from_rewind {
-            tracing::warn!(
-                "Rewinder rejected {:?}: waiting for rewind deceleration to finish",
-                mode
-            );
-            self.emit_state();
-            return;
-        }
-
         if &self.mode == mode {
             return;
         }
 
+        let resuming_motion_stop = self.motion_stop_requested() && matches!(mode, Mode::Rewind);
+        if self.motion_stop_requested() && !resuming_motion_stop {
+            if matches!(mode, Mode::Hold | Mode::Standby) {
+                self.mode = mode.clone();
+                self.motion_stop_target_mode = Some(mode.clone());
+            } else {
+                tracing::warn!(
+                    "Rewinder rejected {:?}: stop motion before changing to this mode",
+                    mode
+                );
+            }
+            self.emit_state();
+            return;
+        }
+
         let should_update = match mode {
+            Mode::Rewind if resuming_motion_stop => self.active_rewind_block_reason().is_none(),
             Mode::Rewind => self.can_rewind(),
             Mode::Prepare => self.prepare_block_reason().is_none(),
             Mode::Standby | Mode::Hold | Mode::Pull => true,
@@ -62,25 +69,25 @@ impl Rewinder {
                 }
 
                 self.save_current_traverse_as_start_position();
-                self.pending_mode_after_rewind_deceleration = Some(mode.clone());
-                self.hold_decelerating_from_rewind = true;
-                self.capture_hold_deceleration_state();
+                self.request_motion_stop(mode);
                 self.emit_state();
                 return;
             }
             if entering_hold {
                 self.stop_motion_commands();
-            } else if !matches!(mode, Mode::Hold) {
-                self.hold_decelerating_from_rewind = false;
-                self.pending_mode_after_rewind_deceleration = None;
             }
+            self.motion_stop_target_mode = None;
             self.mode = mode.clone();
             self.rewind_phase = if matches!(mode, Mode::Rewind) {
-                RewindPhase::Validate
+                if resuming_motion_stop {
+                    RewindPhase::Rewind
+                } else {
+                    RewindPhase::Validate
+                }
             } else {
                 RewindPhase::Idle
             };
-            if entering_rewind {
+            if entering_rewind && !resuming_motion_stop {
                 let now = Instant::now();
                 let zero_speed = Velocity::new::<meter_per_minute>(0.0);
                 self.rewind_control.reset_for_rewind(now);
@@ -123,10 +130,15 @@ impl Rewinder {
                 self.traverse_controller.goto_home();
             }
             if entering_rewind {
-                let start_position =
-                    self.clamp_traverse_position(self.active_rewind_start_position());
-                self.traverse_controller.set_target_position(start_position);
-                self.traverse_controller.goto_target_position();
+                if resuming_motion_stop {
+                    self.resume_traverse_position = None;
+                    self.traverse_controller.start_traversing();
+                } else {
+                    let start_position =
+                        self.clamp_traverse_position(self.active_rewind_start_position());
+                    self.traverse_controller.set_target_position(start_position);
+                    self.traverse_controller.goto_target_position();
+                }
             }
             if matches!(mode, Mode::Pull) {
                 self.rewind_control.reset_motion();
@@ -143,6 +155,14 @@ impl Rewinder {
             );
         }
         self.emit_state();
+    }
+
+    fn request_motion_stop(&mut self, target_mode: &Mode) {
+        self.mode = target_mode.clone();
+        self.rewind_phase = RewindPhase::Idle;
+        self.motion_stop_target_mode = Some(target_mode.clone());
+        self.capture_motion_stop_state();
+        self.set_traverse_mode(&Mode::Hold);
     }
 
     fn get_laser(&mut self) -> RefMut<'_, dyn DigitalOutputDevice> {
@@ -184,7 +204,7 @@ impl Rewinder {
         }
     }
 
-    fn capture_hold_deceleration_state(&mut self) {
+    fn capture_motion_stop_state(&mut self) {
         let puller_speed = self.measured_puller_line_speed();
         self.rewind_control.puller_command_m_per_min = puller_speed.get::<meter_per_minute>().abs();
 
@@ -222,26 +242,22 @@ impl Rewinder {
             .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
     }
 
-    pub(crate) fn update_hold_deceleration(&mut self, now: Instant) {
-        if !self.hold_decelerating_from_rewind {
+    pub(crate) fn update_motion_stop(&mut self, now: Instant) {
+        if !self.motion_stop_requested() {
             return;
         }
 
         self.rewind_control.decelerate_motion_at(now);
-        self.finish_hold_deceleration_if_stopped();
+        self.finish_motion_stop_if_stopped();
     }
 
-    fn finish_hold_deceleration_if_stopped(&mut self) {
-        if !self.hold_decelerating_from_rewind {
+    fn finish_motion_stop_if_stopped(&mut self) {
+        if !self.motion_stop_requested() {
             return;
         }
 
         if self.rewind_control.motion_commands_stopped() {
-            let target_mode = self
-                .pending_mode_after_rewind_deceleration
-                .take()
-                .unwrap_or(Mode::Hold);
-            self.hold_decelerating_from_rewind = false;
+            let target_mode = self.motion_stop_target_mode.take().unwrap_or(Mode::Hold);
             self.mode = target_mode.clone();
             self.rewind_phase = RewindPhase::Idle;
             self.stop_motion_commands();
@@ -254,11 +270,11 @@ impl Rewinder {
     }
 
     pub fn sync_puller_speed(&mut self, t: Instant) {
-        if !self.hold_decelerating_from_rewind && !self.update_prepare_control(t) {
+        if !self.motion_stop_requested() && !self.update_prepare_control(t) {
             self.update_rewind_sequence(t);
         }
 
-        let angular_velocity = if self.hold_decelerating_from_rewind {
+        let angular_velocity = if self.motion_stop_requested() {
             let speed = self.rewind_control.puller_command_speed();
             let directed_speed = if self.puller_speed_controller.forward {
                 speed
@@ -285,7 +301,7 @@ impl Rewinder {
             AngularVelocity::new::<revolution_per_minute>(0.0)
         };
         let actual_line_speed = self.puller_angular_velocity_to_line_speed(angular_velocity);
-        if !self.hold_decelerating_from_rewind
+        if !self.motion_stop_requested()
             && matches!(
                 self.rewind_phase,
                 RewindPhase::Precharge | RewindPhase::CrawlStart | RewindPhase::Rewind
@@ -297,7 +313,7 @@ impl Rewinder {
                 self.source_spool_diameter,
                 self.rewind_control.last_dt_s,
             );
-        } else if !matches!(self.mode, Mode::Prepare) && !self.hold_decelerating_from_rewind {
+        } else if !matches!(self.mode, Mode::Prepare) && !self.motion_stop_requested() {
             self.rewind_control.source_follower.force_zero();
             self.rewind_control.takeup_follower.force_zero();
         }
@@ -312,7 +328,7 @@ impl Rewinder {
     }
 
     pub fn sync_takeup_spool_speed(&mut self, t: Instant) {
-        let angular_velocity = if self.hold_decelerating_from_rewind {
+        let angular_velocity = if self.motion_stop_requested() {
             self.rewind_control.takeup_command_angular_velocity()
         } else if self.takeup_spool_motion_permitted() {
             if matches!(self.mode, Mode::Prepare | Mode::Rewind) {
@@ -351,8 +367,6 @@ impl Rewinder {
         let angular_velocity = if self.source_spool_motion_permitted() {
             if matches!(self.mode, Mode::Pull) {
                 AngularVelocity::new::<revolution_per_minute>(self.pull_mode_source_assist_rpm())
-            } else if self.hold_decelerating_from_rewind {
-                self.rewind_control.source_command_angular_velocity()
             } else {
                 self.rewind_control.source_command_angular_velocity()
             }
@@ -456,20 +470,14 @@ impl Rewinder {
     pub fn build_state_event(&mut self) -> StateEvent {
         let is_default_state = !self.emitted_default_state;
         self.emitted_default_state = true;
-        let can_rewind = if self.hold_decelerating_from_rewind {
-            false
-        } else if matches!(self.mode, Mode::Rewind) {
-            self.active_rewind_block_reason().is_none()
-        } else {
-            self.can_rewind()
-        };
+        let can_rewind = self.displayed_can_rewind();
         self.last_can_rewind = can_rewind;
         StateEvent {
             is_default_state,
             mode_state: ModeState {
                 mode: self.mode.clone(),
                 can_rewind,
-                is_decelerating: self.hold_decelerating_from_rewind,
+                motion_stopped: self.rewind_control.motion_commands_stopped(),
             },
             traverse_state: TraverseState {
                 limit_inner: self
@@ -565,7 +573,7 @@ impl Rewinder {
     }
 
     pub fn puller_set_target_speed(&mut self, target_speed: f64) {
-        if !self.motion_command_edit_permitted() || !target_speed.is_finite() {
+        if !target_speed.is_finite() {
             self.emit_state();
             return;
         }
@@ -754,15 +762,13 @@ impl Rewinder {
     }
 
     fn settings_edit_permitted(&self) -> bool {
-        matches!(self.mode, Mode::Standby | Mode::Hold)
-    }
-
-    fn motion_command_edit_permitted(&self) -> bool {
-        !self.hold_decelerating_from_rewind
+        matches!(self.mode, Mode::Standby | Mode::Hold) && !self.motion_stop_requested()
     }
 
     fn manual_traverse_command_permitted(&self) -> bool {
-        matches!(self.mode, Mode::Hold) && self.traverse_controller.is_homed()
+        matches!(self.mode, Mode::Hold)
+            && !self.motion_stop_requested()
+            && self.traverse_controller.is_homed()
     }
 
     pub fn takeup_tension_arm_zero(&mut self) {
