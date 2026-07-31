@@ -329,8 +329,10 @@ impl ModbusDevice for DryerDevice {
                 // A genuine IO error means the port itself is gone (device unplugged) -
                 // propagate it so the machine gets removed instead of lingering forever.
                 // Timeouts/exceptions can be transient, so just skip this tick for those.
-                if matches!(e.downcast_ref::<DryerDeviceError>(), Some(DryerDeviceError::IoErr(_)))
-                {
+                if matches!(
+                    e.downcast_ref::<DryerDeviceError>(),
+                    Some(DryerDeviceError::IoErr(_))
+                ) {
                     return Err(e);
                 }
                 tracing::debug!("dryer modbus request failed: {e}");
@@ -585,12 +587,12 @@ async fn run_dryer_actor(mut rx: mpsc::Receiver<ActorMessage>, mut ctx: Context)
         let response_result = tokio::time::timeout(REQUEST_TIMEOUT, ctx.call(msg.request)).await;
         let result = match response_result {
             Ok(Ok(Ok(response))) => Ok(response),
-            Ok(Ok(Err(exception))) => {
-                Err(anyhow::Error::new(DryerDeviceError::Exception(format!("{exception:?}"))))
-            }
-            Ok(Err(io_err)) => {
-                Err(anyhow::Error::new(DryerDeviceError::IoErr(io_err.to_string())))
-            }
+            Ok(Ok(Err(exception))) => Err(anyhow::Error::new(DryerDeviceError::Exception(
+                format!("{exception:?}"),
+            ))),
+            Ok(Err(io_err)) => Err(anyhow::Error::new(DryerDeviceError::IoErr(
+                io_err.to_string(),
+            ))),
             Err(_) => Err(anyhow::Error::new(DryerDeviceError::Timeout)),
         };
         let _ = msg.reply_tx.send(result);
