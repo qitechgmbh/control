@@ -8,6 +8,40 @@ use qitech_lib::{
 };
 use std::time::{Duration, Instant};
 
+struct LowPassFilter {
+    alpha: f64, // Smoothing factor (0.0 < alpha <= 1.0)
+    state: Option<f64>,
+}
+
+impl LowPassFilter {
+    /// Creates a low-pass filter.
+    /// - `alpha`: Smoothing coefficient between 0.0 and 1.0.
+    ///   - Lower alpha (e.g. 0.05) = stronger noise reduction, slower response (higher phase lag).
+    ///   - Higher alpha (e.g. 0.30) = weaker noise reduction, faster response.
+    fn new(alpha: f64) -> Self {
+        let alpha = alpha.clamp(0.001, 1.0);
+        Self { alpha, state: None }
+    }
+
+    fn update(&mut self, measurement: f64) -> f64 {
+        let input = measurement as f64;
+
+        let filtered_val = match self.state {
+            Some(prev) => self.alpha * input + (1.0 - self.alpha) * prev,
+            None => input, // Seed filter state with the first reading
+        };
+
+        self.state = Some(filtered_val);
+        filtered_val
+    }
+
+    /// Returns the internal float state of the filter.
+    fn current_val(&self) -> f64 {
+        self.state.unwrap_or(0.0)
+    }
+}
+
+
 pub struct TemperatureController {
     pub pid: PidController,
     pub heating: Heating,
@@ -22,6 +56,7 @@ pub struct TemperatureController {
     heating_element_wattage: f64,
     max_clamp: f64,
     target_temp_enabled: bool, // Sets whether the frontend should display a target temperature setter for this temp controller
+    filter : LowPassFilter,
 }
 
 impl TemperatureController {
@@ -58,6 +93,7 @@ impl TemperatureController {
             target_temp_enabled: true,
             digital_port,
             temperature_port,
+            filter : LowPassFilter { alpha: 0.08, state: None } 
         }
     }
 
@@ -92,15 +128,14 @@ impl TemperatureController {
         temperature_sensor: &dyn TemperatureInputDevice,
     ) {
         self.temperature_pid_output = 0.0;
-
         let temperature = temperature_sensor.get_input(self.temperature_port);
         self.heating.wiring_error = temperature.is_err();
         let temperature_celsius = match temperature {
             Ok(t) => ThermodynamicTemperature::new::<degree_celsius>(t.temperature as f64),
             Err(_e) => ThermodynamicTemperature::new::<degree_celsius>(0.0),
         };
-        self.heating.temperature = temperature_celsius;
-
+        self.filter.update(temperature_celsius.get::<degree_celsius>());
+        self.heating.temperature =  ThermodynamicTemperature::new::<degree_celsius>(self.filter.current_val());
         if self.heating.temperature > self.max_temperature {
             // disable the relais and return
             relais.set_output(self.digital_port, false);
@@ -108,7 +143,7 @@ impl TemperatureController {
             return;
         }
 
-        if self.heating_allowed {
+        if self.heating_allowed {            
             let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
                 - self.heating.temperature.get::<degree_celsius>();
 
