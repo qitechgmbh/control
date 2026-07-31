@@ -4,12 +4,13 @@ use crate::{
 };
 use anyhow::Result;
 use control_core::socketio::{
-    event::{Event, GenericEvent},
+    event::{BuildEvent, GenericEvent},
     namespace::{
         CacheFn, CacheableEvents, NamespaceCacheingLogic, cache_duration,
         cache_first_and_last_event,
     },
 };
+use control_core_derive::BuildEvent;
 use serde::*;
 use std::time::{Duration, Instant};
 
@@ -32,16 +33,10 @@ const MODBUS_DC_OFF: u16 = 0;
 const MODBUS_DC_ON: u16 = 1;
 const MODBUS_HICCUP_POWER: u16 = 1 << 8;
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, BuildEvent)]
 pub struct LiveValues {
     voltage: f64,
     current: f64,
-}
-
-impl LiveValues {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("LiveValues", self.clone())
-    }
 }
 
 impl CacheableEvents<Self> for LiveValues {
@@ -69,16 +64,10 @@ impl Mode {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, BuildEvent)]
 pub struct State {
     mode: Mode,
     is_default_state: bool,
-}
-
-impl State {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("State", self.clone())
-    }
 }
 
 impl CacheableEvents<Self> for State {
