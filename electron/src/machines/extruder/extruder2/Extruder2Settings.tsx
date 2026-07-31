@@ -245,9 +245,9 @@ export function Extruder2SettingsPage() {
                   <span className="text-sm">
                     Kp: {roundToDecimals(state.pid_autotune_state.result.kp, 4)}
                     &nbsp;&nbsp; Ki:{" "}
-                    {roundToDecimals(state.pid_autotune_state.result.ki, 4)}
+                    {roundToDecimals(state.pid_autotune_state.result.ki, 6)}
                     &nbsp;&nbsp; Kd:{" "}
-                    {roundToDecimals(state.pid_autotune_state.result.kd, 4)}
+                    {roundToDecimals(state.pid_autotune_state.result.kd, 6)}
                   </span>
                 </Label>
               )}
@@ -273,8 +273,8 @@ export function Extruder2SettingsPage() {
                   defaultValue={defaultState?.pid_settings.temperature.front.ki}
                   min={0}
                   max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
+                  step={0.000001}
+                  renderValue={(v) => roundToDecimals(v, 6)}
                   onChange={(v) => setTemperaturePidValue("front", "ki", v)}
                   title="Temperature PID KI"
                 />
@@ -285,8 +285,8 @@ export function Extruder2SettingsPage() {
                   defaultValue={defaultState?.pid_settings.temperature.front.kd}
                   min={0}
                   max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
+                  step={0.000001}
+                  renderValue={(v) => roundToDecimals(v, 6)}
                   onChange={(v) => setTemperaturePidValue("front", "kd", v)}
                   title="Temperature PID KD"
                 />
@@ -314,9 +314,9 @@ export function Extruder2SettingsPage() {
                     defaultState?.pid_settings.temperature.middle.ki
                   }
                   min={0}
-                  max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
+                  max={10}
+                  step={0.000001}
+                  renderValue={(v) => roundToDecimals(v, 6)}
                   onChange={(v) => setTemperaturePidValue("middle", "ki", v)}
                   title="Temperature PID KI"
                 />
@@ -329,8 +329,8 @@ export function Extruder2SettingsPage() {
                   }
                   min={0}
                   max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
+                  step={0.000001}
+                  renderValue={(v) => roundToDecimals(v, 6)}
                   onChange={(v) => setTemperaturePidValue("middle", "kd", v)}
                   title="Temperature PID KD"
                 />
@@ -355,8 +355,8 @@ export function Extruder2SettingsPage() {
                   defaultValue={defaultState?.pid_settings.temperature.back.ki}
                   min={0}
                   max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
+                  step={0.000001}
+                  renderValue={(v) => roundToDecimals(v, 6)}
                   onChange={(v) => setTemperaturePidValue("back", "ki", v)}
                   title="Temperature PID KI"
                 />
@@ -367,8 +367,8 @@ export function Extruder2SettingsPage() {
                   defaultValue={defaultState?.pid_settings.temperature.back.kd}
                   min={0}
                   max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
+                  step={0.000001}
+                  renderValue={(v) => roundToDecimals(v, 6)}
                   onChange={(v) => setTemperaturePidValue("back", "kd", v)}
                   title="Temperature PID KD"
                 />
@@ -397,8 +397,8 @@ export function Extruder2SettingsPage() {
                   }
                   min={0}
                   max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
+                  step={0.000001}
+                  renderValue={(v) => roundToDecimals(v, 6)}
                   onChange={(v) => setTemperaturePidValue("nozzle", "ki", v)}
                   title="Temperature PID KI"
                 />
@@ -411,8 +411,8 @@ export function Extruder2SettingsPage() {
                   }
                   min={0}
                   max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
+                  step={0.000001}
+                  renderValue={(v) => roundToDecimals(v, 6)}
                   onChange={(v) => setTemperaturePidValue("nozzle", "kd", v)}
                   title="Temperature PID KD"
                 />
