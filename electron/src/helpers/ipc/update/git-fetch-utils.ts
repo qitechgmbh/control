@@ -204,7 +204,7 @@ export async function fetchTargets(
         tags,
       };
     } catch (error: any) {
-      throw new Error(error?.message || String(error));
+      throw new Error(error?.message || String(error), { cause: error });
     }
   });
 }

@@ -16,7 +16,7 @@ export class SheetNameManager {
     unit: Unit | undefined,
   ): string {
     const unitSymbol = renderUnitSymbol(unit) || "";
-    let sheetName = "";
+    let sheetName: string;
 
     // Use unit-based name for generic series, otherwise use series title
     if (/^Series \d+$/i.test(seriesTitle)) {
