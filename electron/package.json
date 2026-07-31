@@ -11,7 +11,11 @@
     "url": "https://github.com/qitechgmbh/control"
   },
   "overrides": {
-    "glob": "^13.0.0"
+    "glob": "^13.0.0",
+    "@electron/asar": "^4.2.1",
+    "eslint-plugin-react": {
+      "eslint": "$eslint"
+    }
   },
   "scripts": {
     "start": "NODE_OPTIONS='--max-old-space-size=4096' vite",
@@ -32,7 +36,7 @@
     "@cyclonedx/cyclonedx-npm": "^6.0.0",
     "@electron/fuses": "^1.8.0",
     "@eslint/compat": "^2.0.2",
-    "@eslint/js": "^9.39.4",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4.0.6",
     "@testing-library/jest-dom": "^6.6.3",
@@ -46,9 +50,10 @@
     "@types/react-virtualized": "^9.22.2",
     "electron": "^43.1.1",
     "electron-playwright-helpers": "^1.7.1",
-    "eslint": "^9.39.4",
+    "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-compiler": "^19.1.0-rc.2",
     "globals": "^17.4.0",
     "jsdom": "^29.0.1",
@@ -90,7 +95,6 @@
     "clsx": "^2.1.1",
     "electron-devtools-installer": "^4.0.0",
     "electron-squirrel-startup": "^1.0.1",
-    "eslint-plugin-react": "^7.37.5",
     "i18next": "^26.3.2",
     "immer": "^11.1.4",
     "lucide-react": "^1.22.0",
