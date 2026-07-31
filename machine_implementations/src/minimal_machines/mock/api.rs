@@ -7,6 +7,7 @@ use control_core::socketio::{
         CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
     },
 };
+use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::channel::Sender;
@@ -33,7 +34,7 @@ impl LiveValuesEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, BuildEvent)]
 pub struct StateEvent {
     pub is_default_state: bool,
     /// sine wave frequencies in millihertz
@@ -42,12 +43,6 @@ pub struct StateEvent {
     pub frequency3: f64,
     /// mode state
     pub mode_state: ModeState,
-}
-
-impl StateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("StateEvent", self.clone())
-    }
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
