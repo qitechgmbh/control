@@ -28,5 +28,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git merge origin/master
 
-      - name: Push to staging
-        run: git push origin staging
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: CI/staging-backmerge
+          delete-branch: true
+          title: "Automatic backmerge of master commits into staging"
