@@ -11,7 +11,7 @@ use qitech_lib::{
     ethercat_hal::{
         EtherCATThreadChannel,
         coe::ConfigurableDevice,
-        devices::{
+        devices::beckhoff_modules::{
             ek1100::EK1100,
             el2002::EL2002,
             el7031::{EL7031, coe::EL7031Configuration, pdo::EL7031PredefinedPdoAssignment},

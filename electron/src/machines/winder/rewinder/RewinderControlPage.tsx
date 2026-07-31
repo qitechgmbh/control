@@ -19,6 +19,8 @@ import { useRewinder } from "./useRewinder";
 
 const TRAVERSE_MAX_MM = 180;
 const MAX_TARGET_SPEED_M_PER_MIN = 50;
+const renderTwoDecimals = (value: number) => roundToDecimals(value, 2);
+const renderOneDecimal = (value: number) => roundToDecimals(value, 1);
 
 export function RewinderControlPage() {
   const {
@@ -198,7 +200,7 @@ export function RewinderControlPage() {
             label="Line Speed"
             unit="m/min"
             timeseries={pullerSpeed}
-            renderValue={(value) => roundToDecimals(value, 2)}
+            renderValue={renderTwoDecimals}
           />
           <EditValue
             value={state?.puller_state.target_speed}
@@ -207,7 +209,7 @@ export function RewinderControlPage() {
             defaultValue={defaultState?.puller_state.target_speed}
             min={0}
             max={MAX_TARGET_SPEED_M_PER_MIN}
-            renderValue={(value) => roundToDecimals(value, 2)}
+            renderValue={renderTwoDecimals}
             disabled={!uiGuards.canEditMotion}
             onChange={setPullerTargetSpeed}
           />
@@ -236,7 +238,7 @@ export function RewinderControlPage() {
             label="Progress"
             unit="m"
             timeseries={rewindProgress}
-            renderValue={(value) => roundToDecimals(value, 2)}
+            renderValue={renderTwoDecimals}
           />
           <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
             <div className="text-sm text-gray-500">Estimated Time</div>
@@ -254,7 +256,7 @@ export function RewinderControlPage() {
             min={0}
             max={10000}
             step={0.1}
-            renderValue={(value) => roundToDecimals(value, 1)}
+            renderValue={renderOneDecimal}
             disabled={!uiGuards.canEditMotion}
             onChange={setRewindAutomaticRequiredMeters}
           />
@@ -287,7 +289,7 @@ export function RewinderControlPage() {
             label="Position"
             unit="mm"
             timeseries={traversePosition}
-            renderValue={(value) => roundToDecimals(value, 1)}
+            renderValue={renderOneDecimal}
           />
           {state?.traverse_state && (
             <TraverseBar

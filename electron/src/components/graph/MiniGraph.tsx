@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import {
@@ -18,7 +18,6 @@ const HEIGHT = 64;
 export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
   const divRef = useRef<HTMLDivElement | null>(null);
   const uplotRef = useRef<uPlot | null>(null);
-  const renderValueRef = useRef(renderValue);
 
   // Performance tracking refs
   const lastUpdateTimestamp = useRef<number>(0);
@@ -38,14 +37,12 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
     [],
   );
 
-  renderValueRef.current = renderValue;
-
-  const tickFormatter = useCallback((_u: uPlot, ticks: number[]) => {
-    const formatter = renderValueRef.current;
-    return formatter
-      ? ticks.map((value) => formatter(value))
-      : ticks.map((value) => value.toFixed(1));
-  }, []);
+  // Memoize the tick formatter to avoid recreating on every render
+  const tickFormatter = useMemo(() => {
+    return renderValue
+      ? (u: uPlot, ticks: number[]) => ticks.map((v) => renderValue(v))
+      : (u: uPlot, ticks: number[]) => ticks.map((v) => v.toFixed(1));
+  }, [renderValue]);
 
   // Ultra-efficient update function
   const updateChart = useCallback(() => {
@@ -201,7 +198,7 @@ export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
       isInitialized.current = false;
       pendingUpdate.current = false;
     };
-  }, [newData?.short?.timeWindow, hashData, tickFormatter]);
+  }, [width, newData?.short?.timeWindow, hashData, tickFormatter]);
 
   // Trigger updates only when timestamp changes
   useEffect(() => {
