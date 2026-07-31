@@ -20,8 +20,6 @@ type Props = {
   timeseries: TimeSeries;
   icon?: IconName;
   renderValue?: (value: number) => string;
-  miniGraphSampleInterval?: number;
-  miniGraphValuePrecision?: number;
 };
 
 function _TimeSeriesValue({
@@ -30,8 +28,6 @@ function _TimeSeriesValue({
   icon,
   label,
   renderValue,
-  miniGraphSampleInterval,
-  miniGraphValuePrecision,
 }: Props) {
   const value = timeseries.current?.value;
 
@@ -72,8 +68,6 @@ function _TimeSeriesValue({
           newData={timeseries}
           width={width}
           renderValue={renderValue}
-          sampleInterval={miniGraphSampleInterval}
-          valuePrecision={miniGraphValuePrecision}
         />
       </div>
     </div>

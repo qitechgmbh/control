@@ -1,80 +1,24 @@
-import React, { useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import {
-  Series,
   getSeriesMinMax,
   seriesToUPlotData,
   TimeSeries,
-  TimeSeriesValue,
 } from "@/lib/timeseries";
 
 type MiniGraphProps = {
   newData: TimeSeries | null;
   width: number;
   renderValue?: (value: number) => string;
-  sampleInterval?: number;
-  valuePrecision?: number;
 };
 
 const HEIGHT = 64;
 
-function roundValue(value: number, precision: number | undefined): number {
-  if (precision === undefined) {
-    return value;
-  }
-  const factor = 10 ** precision;
-  return Math.round(value * factor) / factor;
-}
-
-function downsampleSeries(
-  series: Series,
-  sampleInterval: number | undefined,
-  valuePrecision: number | undefined,
-): Series {
-  if (sampleInterval === undefined && valuePrecision === undefined) {
-    return series;
-  }
-
-  const [timestamps, values] = seriesToUPlotData(series);
-  const filteredValues: TimeSeriesValue[] = [];
-  let lastTimestamp = Number.NEGATIVE_INFINITY;
-
-  timestamps.forEach((timestamp, index) => {
-    if (
-      sampleInterval !== undefined &&
-      timestamp - lastTimestamp < sampleInterval &&
-      index !== timestamps.length - 1
-    ) {
-      return;
-    }
-
-    filteredValues.push({
-      timestamp,
-      value: roundValue(values[index], valuePrecision),
-    });
-    lastTimestamp = timestamp;
-  });
-
-  return {
-    ...series,
-    values: filteredValues,
-    index: filteredValues.length,
-    size: filteredValues.length,
-    lastTimestamp: filteredValues.at(-1)?.timestamp ?? series.lastTimestamp,
-    validCount: filteredValues.length,
-  };
-}
-
-export function MiniGraph({
-  newData,
-  width,
-  renderValue,
-  sampleInterval,
-  valuePrecision,
-}: MiniGraphProps) {
+export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
   const divRef = useRef<HTMLDivElement | null>(null);
   const uplotRef = useRef<uPlot | null>(null);
+  const renderValueRef = useRef(renderValue);
 
   // Performance tracking refs
   const lastUpdateTimestamp = useRef<number>(0);
@@ -94,23 +38,18 @@ export function MiniGraph({
     [],
   );
 
-  // Memoize the tick formatter to avoid recreating on every render
-  const tickFormatter = useMemo(() => {
-    return renderValue
-      ? (u: uPlot, ticks: number[]) => ticks.map((v) => renderValue(v))
-      : (u: uPlot, ticks: number[]) => ticks.map((v) => v.toFixed(1));
-  }, [renderValue]);
+  renderValueRef.current = renderValue;
 
-  const shortSeries = useMemo(() => {
-    if (!newData?.short) {
-      return null;
-    }
-    return downsampleSeries(newData.short, sampleInterval, valuePrecision);
-  }, [newData?.short, sampleInterval, valuePrecision]);
+  const tickFormatter = useCallback((_u: uPlot, ticks: number[]) => {
+    const formatter = renderValueRef.current;
+    return formatter
+      ? ticks.map((value) => formatter(value))
+      : ticks.map((value) => value.toFixed(1));
+  }, []);
 
   // Ultra-efficient update function
   const updateChart = useCallback(() => {
-    if (!uplotRef.current || !shortSeries || !newData?.current) {
+    if (!uplotRef.current || !newData?.short || !newData?.current) {
       pendingUpdate.current = false;
       return;
     }
@@ -123,7 +62,7 @@ export function MiniGraph({
       return;
     }
 
-    const short = shortSeries;
+    const short = newData.short;
     const timeWindow = short.timeWindow;
 
     // Get data
@@ -170,7 +109,7 @@ export function MiniGraph({
     });
 
     pendingUpdate.current = false;
-  }, [newData?.current, shortSeries, hashData]);
+  }, [newData, hashData]);
 
   // RAF-throttled update scheduler
   const scheduleUpdate = useCallback(() => {
@@ -187,10 +126,10 @@ export function MiniGraph({
 
   // Initialize chart only once
   useEffect(() => {
-    if (!divRef.current || !shortSeries?.timeWindow || isInitialized.current)
+    if (!divRef.current || !newData?.short?.timeWindow || isInitialized.current)
       return;
 
-    const short = shortSeries;
+    const short = newData.short;
     const timeWindow = short.timeWindow;
 
     // Get initial data
@@ -262,7 +201,7 @@ export function MiniGraph({
       isInitialized.current = false;
       pendingUpdate.current = false;
     };
-  }, [width, shortSeries?.timeWindow, hashData, tickFormatter]);
+  }, [newData?.short?.timeWindow, hashData, tickFormatter]);
 
   // Trigger updates only when timestamp changes
   useEffect(() => {
