@@ -137,6 +137,10 @@ function FilamentPath({
 }
 
 const LABEL = "text-center text-xs text-gray-400";
+const renderRpm = (value: number) => roundToDecimals(value, 0);
+const renderPosition = (value: number) => roundToDecimals(value, 1);
+const renderAngle = (value: number) => roundDegreesToDecimals(value, 0);
+const renderSpeed = (value: number) => roundToDecimals(value, 2);
 
 export function RewinderOverview({
   state,
@@ -201,37 +205,37 @@ export function RewinderOverview({
           label="Takeup"
           unit="rpm"
           timeseries={takeupSpoolRpm}
-          renderValue={(v) => roundToDecimals(v, 0)}
+          renderValue={renderRpm}
         />
         <TimeSeriesValueNumeric
           label="Position"
           unit="mm"
           timeseries={traversePosition}
-          renderValue={(v) => roundToDecimals(v, 1)}
+          renderValue={renderPosition}
         />
         <TimeSeriesValueNumeric
           label="TU Angle"
           unit="deg"
           timeseries={takeupTensionArmAngle}
-          renderValue={(v) => roundDegreesToDecimals(v, 0)}
+          renderValue={renderAngle}
         />
         <TimeSeriesValueNumeric
           label="Speed"
           unit="m/min"
           timeseries={pullerSpeed}
-          renderValue={(v) => roundToDecimals(v, 2)}
+          renderValue={renderSpeed}
         />
         <TimeSeriesValueNumeric
           label="Src Angle"
           unit="deg"
           timeseries={sourceTensionArmAngle}
-          renderValue={(v) => roundDegreesToDecimals(v, 0)}
+          renderValue={renderAngle}
         />
         <TimeSeriesValueNumeric
           label="Source"
           unit="rpm"
           timeseries={sourceSpoolRpm}
-          renderValue={(v) => roundToDecimals(v, 0)}
+          renderValue={renderRpm}
         />
       </div>
     </div>

@@ -70,6 +70,9 @@ lazy_static! {
         ]);
 
         #[cfg(not(feature = "mock-machine"))]
+        mc.register::<ExtruderV2>(vec![ExtruderV2::MACHINE_IDENTIFICATION]);
+
+        #[cfg(not(feature = "mock-machine"))]
         mc.register::<ExtruderV2>(vec![ExtruderV2::MACHINE_IDENTIFICATION, ExtruderV2::MACHINE_IDENTIFICATION_V3 ]);
 
         #[cfg(not(feature = "mock-machine"))]
