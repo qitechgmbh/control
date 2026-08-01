@@ -41,20 +41,19 @@ use qitech_lib::units::angle::degree;
 use qitech_lib::units::angular_velocity::revolution_per_minute;
 pub use winder2_imports::*;
 
-use crate::machines::winder_v3::api::GearRatio;
-use crate::machines::winder_v3::api::Measurements;
-use crate::machines::winder_v3::api::Mode;
-use crate::machines::winder_v3::api::ModeState;
-use crate::machines::winder_v3::api::Mutation;
-use crate::machines::winder_v3::api::PullerRegulationMode;
-use crate::machines::winder_v3::api::PullerState;
-use crate::machines::winder_v3::api::SpoolAutomaticActionMode;
-use crate::machines::winder_v3::api::SpoolAutomaticActionState;
-use crate::machines::winder_v3::api::SpoolSpeedControllerState;
-use crate::machines::winder_v3::api::States;
-use crate::machines::winder_v3::api::TensionArmState;
-use crate::machines::winder_v3::api::TraverseState;
-use crate::machines::winder_v3::spool_speed_controller::SpoolSpeedControllerType;
+use crate::machines::winder_v1::api::GearRatio;
+use crate::machines::winder_v1::api::Measurements;
+use crate::machines::winder_v1::api::Mode;
+use crate::machines::winder_v1::api::ModeState;
+use crate::machines::winder_v1::api::PullerRegulationMode;
+use crate::machines::winder_v1::api::PullerState;
+use crate::machines::winder_v1::api::SpoolAutomaticActionMode;
+use crate::machines::winder_v1::api::SpoolAutomaticActionState;
+use crate::machines::winder_v1::api::SpoolSpeedControllerState;
+use crate::machines::winder_v1::api::States;
+use crate::machines::winder_v1::api::TensionArmState;
+use crate::machines::winder_v1::api::TraverseState;
+use crate::machines::winder_v1::spool_speed_controller::SpoolSpeedControllerType;
 
 impl MachineBuild for Winder_V1 {
     fn build(ctx: BuildContext) -> BuildResult<Self> {

@@ -35,8 +35,8 @@ use qitech_lib::units::length::millimeter;
 use qitech_lib::units::velocity::meter_per_second;
 
 use crate::converters::angular_step_converter::AngularStepConverter;
-use crate::machines::winder_v3::api::Measurements;
-use crate::machines::winder_v3::api::States;
+use crate::machines::winder_v1::api::Measurements;
+use crate::machines::winder_v1::api::States;
 
 pub const TRAVERSE_PORT: usize = 0;
 pub const LASER_PORT: usize = 0;
@@ -72,7 +72,7 @@ impl Default for SpoolAutomaticAction {
 }
 
 impl MachineInterface for Winder_V1 {
-    const SCHEMA: &'static str = include_str!("../../../schemas/winder_v1_7031_0030_spool.yaml");
+    const SCHEMA: &'static str = include_str!("../../../../schemas/winder_v1_7031_0030_spool.yaml");
 }
 
 pub struct Winder_V1 {

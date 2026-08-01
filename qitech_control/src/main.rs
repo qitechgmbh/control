@@ -3,8 +3,6 @@ use std::time::Duration;
 
 use qitech_framework::MachineIdentificationUnique;
 use qitech_framework::Runtime;
-use qitech_framework::session::session;
-use qitech_framework::session::transport::DebugRuntimeTransport;
 use qitech_framework::runtime::EtherCATConfig;
 use qitech_framework::runtime::RuntimeConfiguration;
 
@@ -18,6 +16,7 @@ mod interface;
 mod machines;
 use machines::LaserV1;
 use machines::Winder_V1;
+use qitech_framework::session;
 use qitech_framework_tui::Tui;
 use qitech_framework_tui::TuiConfiguration;
 use qitech_lib::ethercat_hal::DcConfiguration;
@@ -48,8 +47,7 @@ pub fn main() -> anyhow::Result<()> {
 }
 
 fn run_headless(config: RuntimeConfiguration) -> anyhow::Result<()> {
-    // TODO: runtime::session::debug::new()
-    let session = DebugRuntimeTransport::start_session();
+    let session = session::debug::runtime();
     let rt = Runtime::init(config, session).unwrap();
     rt.run();
     Ok(())

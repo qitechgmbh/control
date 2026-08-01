@@ -24,8 +24,8 @@ use super::Winder_V1;
 use super::Winder2Mode;
 use super::api::PullerRegulationMode;
 pub use super::api::SpoolAutomaticActionMode;
-use crate::machines::winder_v3::api::GearRatio;
-use crate::machines::winder_v3::spool_speed_controller;
+use crate::machines::winder_v1::api::GearRatio;
+use crate::machines::winder_v1::spool_speed_controller;
 
 impl Winder_V1 {
     /// Implement Spool
