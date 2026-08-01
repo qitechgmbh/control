@@ -1,3 +1,0 @@
-pub mod acceleration_speed_controller;
-pub mod angular_acceleration_speed_controller;
-pub mod linear_acceleration_speed_controller;
