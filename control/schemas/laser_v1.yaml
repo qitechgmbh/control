@@ -1,0 +1,31 @@
+qms_version: 1.0
+revision: 1
+
+identification:
+  name: laser_v1
+  vendor_id: 1
+  machine_id: 6
+
+config:
+  diameter:
+    target: !millimeter
+      default: 1.75
+      range: 0..
+
+    tolerance:
+      upper: !millimeter
+        default: 0.05
+        range: 0..
+
+      lower: !millimeter
+        default: 0.05
+        range: 0..
+  
+state:
+  in_tolerance: !boolean
+
+measurements:
+  diameter: !millimeter
+  diameter_x: !millimeter
+  diameter_y: !millimeter
+  roundness: !millimeter

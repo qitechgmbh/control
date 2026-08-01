@@ -1,0 +1,87 @@
+qms_version: 1.0
+revision: 1
+
+identification:
+  name: winder_v1_7031_0030_spool
+  vendor_id: 1
+  machine_id: 98
+
+state:
+  traverse:
+    limit_inner: !millimeter
+    limit_outer: !millimeter
+    is_going_in: !boolean
+    is_going_out: !boolean
+    is_homed: !boolean
+    is_going_home: !boolean
+    is_traversing: !boolean
+    laserpointer: !boolean
+    step_size: !millimeter
+    padding: !millimeter
+    can_go_in: !boolean
+    can_go_out: !boolean
+    can_go_home: !boolean
+
+  puller:
+    regulation: !enum
+      variants: [speed, diameter]
+
+    target_speed: !meter_per_minute
+    forward: !boolean
+
+    gear_ratio: !enum 
+      variants: [one_to_one, one_to_five, one_to_ten]
+
+    adaptive_speed_delta_max: !float
+    adaptive_adjustment_distance: !millimeter
+    adaptive_change_per_step: !float
+    allowed_diameter_deviation: !millimeter
+
+  spool_automatic_action:
+    spool_required_meters: !meter
+    spool_automatic_action_mode: !enum
+      variants: [no_action, pull, hold]
+
+  mode:
+    mode: !enum
+      variants: [standby, pull, hold, wind]
+
+    can_wind: !boolean
+
+  tension_arm:
+    zeroed: !boolean
+
+  spool_speed_controller:
+    regulation_mode: !enum
+      variants: [adaptive, minmax]
+
+    minmax_min_speed: !revolution_per_minute
+    minmax_max_speed: !revolution_per_minute
+    adaptive_tension_target: !float
+    adaptive_radius_learning_rate: !float
+    adaptive_max_speed_multiplier: !float
+    adaptive_acceleration_factor: !float
+    adaptive_deacceleration_urgency_multiplier: !float
+    forward: !boolean
+
+measurements:
+  traverse:
+    position: !millimeter
+      nullable: true
+
+  puller: 
+    speed: !meter_per_minute
+      
+  spool: 
+    rpm: !revolution_per_minute
+
+    progress: !meter
+
+  tension_arm: 
+    angle: !degree
+
+commands:
+  traverse:
+    laserpointer:
+      set_enabled: !command
+        enabled: !boolean

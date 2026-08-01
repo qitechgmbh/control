@@ -1,9 +1,5 @@
 [workspace]
-members = [
-    "qitech_control",
-    "control-core",
-    "machine_implementations",
-]
+members = ["control"]
 exclude = []
 resolver = "2"
 
