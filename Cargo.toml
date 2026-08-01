@@ -1,5 +1,5 @@
 [workspace]
-members = ["control"]
+members = ["qitech_control"]
 exclude = []
 resolver = "2"
 
@@ -8,7 +8,12 @@ license = "LGPL-3.0-only"
 repository = "https://github.com/qitechgmbh/control"
 
 [workspace.dependencies]
-qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="fffd0b1fbaf5e52c8d7ee6e809a5af7cbf8fc9ee" }
+# --- lib ---
+qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="2ca54835250bcc5a24e50e20aa55ffc0f264033c" }
+
+# --- framework ---
+qitech_framework = { git = "ssh://git@github.com/qitechgmbh/control-v2.git", rev = "d89e893f3ee9ed3340ab6ba8220117a331a6e931", package = "qitech_framework" }
+qitech_framework_tui = { git = "ssh://git@github.com/qitechgmbh/control-v2.git", rev = "d89e893f3ee9ed3340ab6ba8220117a331a6e931", package = "qitech_framework_tui" }
 
 [workspace.lints.clippy]
 # don't lint poissbilities for let chains because they were introduces after Rust 1.86

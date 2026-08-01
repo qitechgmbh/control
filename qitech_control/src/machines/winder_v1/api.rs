@@ -22,9 +22,9 @@ use qitech_lib::units::Velocity;
 use qitech_lib::units::angle::degree;
 pub use winder2_imports::*;
 
-use crate::machines::winder_v3::PULLER_PORT;
-use crate::machines::winder_v3::SPOOL_PORT;
-use crate::machines::winder_v3::spool_speed_controller::SpoolSpeedControllerType;
+use crate::machines::winder_v1::PULLER_PORT;
+use crate::machines::winder_v1::SPOOL_PORT;
+use crate::machines::winder_v1::spool_speed_controller::SpoolSpeedControllerType;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub enum Mode {
