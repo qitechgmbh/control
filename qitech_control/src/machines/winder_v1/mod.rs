@@ -24,6 +24,7 @@ use qitech_framework::MachineIdentification;
 use qitech_framework::MachineIdentificationUnique;
 use qitech_framework::machine::MachineInterface;
 use qitech_framework::machine::SubscribedProperty;
+use qitech_framework::machine::resource::ConfigProperty;
 use qitech_framework::vendors;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 #[cfg(not(feature = "mock-machine"))]
@@ -53,30 +54,32 @@ pub struct LaserSubscription {
     upper: SubscribedProperty<Length>,
 }
 
-#[derive(Debug)]
 pub struct SpoolAutomaticAction {
     pub progress: Length,
     progress_last_check: Instant,
-    pub target_length: Length,
-    pub mode: SpoolAutomaticActionMode,
+    pub target_length: ConfigProperty<Length>,
+    pub mode: ConfigProperty<SpoolAutomaticActionMode>,
 }
 
-impl Default for SpoolAutomaticAction {
-    fn default() -> Self {
-        SpoolAutomaticAction {
-            progress: Length::new::<meter>(0.0),
-            progress_last_check: Instant::now(),
-            target_length: Length::new::<meter>(0.0),
-            mode: SpoolAutomaticActionMode::default(),
+impl SpoolAutomaticAction {
+    pub fn new(
+        target_length: ConfigProperty<Length>,
+        mode: ConfigProperty<SpoolAutomaticActionMode>,
+    ) -> Self {
+        Self { 
+            progress: Length::new::<meter>(0.0), 
+            progress_last_check: Instant::now(), 
+            target_length, 
+            mode 
         }
     }
 }
 
-impl MachineInterface for Winder_V1 {
+impl MachineInterface for WinderV1 {
     const SCHEMA: &'static str = include_str!("../../../../schemas/winder_v1_7031_0030_spool.yaml");
 }
 
-pub struct Winder_V1 {
+pub struct WinderV1 {
     // drivers
     pub traverse: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
     pub puller: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
@@ -111,7 +114,7 @@ pub struct Winder_V1 {
     pub configurations: Configurations,
 }
 
-impl Winder_V1 {
+impl WinderV1 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor_id: vendors::QITECH.id,
         machine_id: 6,
@@ -378,7 +381,7 @@ impl From<Winder2Mode> for PullerMode {
 }
 
 #[cfg(not(feature = "mock-machine"))]
-impl std::fmt::Display for Winder_V1 {
+impl std::fmt::Display for WinderV1 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Winder2")
     }
@@ -394,41 +397,41 @@ mod tests {
         // Test case 1: Valid limits with exactly 1.0mm difference (should pass)
         let inner = Length::new::<millimeter>(15.0);
         let outer = Length::new::<millimeter>(16.0);
-        assert!(Winder_V1::validate_traverse_limits(inner, outer));
+        assert!(WinderV1::validate_traverse_limits(inner, outer));
 
         // Test case 2: Invalid limits with exactly 0.9mm difference (should fail)
         let inner = Length::new::<millimeter>(15.0);
         let outer = Length::new::<millimeter>(15.9);
-        assert!(!Winder_V1::validate_traverse_limits(inner, outer));
+        assert!(!WinderV1::validate_traverse_limits(inner, outer));
 
         // Test case 3: Invalid limits with less than 0.9mm difference (should fail)
         let inner = Length::new::<millimeter>(15.0);
         let outer = Length::new::<millimeter>(15.5);
-        assert!(!Winder_V1::validate_traverse_limits(inner, outer));
+        assert!(!WinderV1::validate_traverse_limits(inner, outer));
 
         // Test case 4: Invalid limits where inner equals outer (should fail)
         let inner = Length::new::<millimeter>(20.0);
         let outer = Length::new::<millimeter>(20.0);
-        assert!(!Winder_V1::validate_traverse_limits(inner, outer));
+        assert!(!WinderV1::validate_traverse_limits(inner, outer));
 
         // Test case 5: Invalid limits where inner is greater than outer (should fail)
         let inner = Length::new::<millimeter>(25.0);
         let outer = Length::new::<millimeter>(20.0);
-        assert!(!Winder_V1::validate_traverse_limits(inner, outer));
+        assert!(!WinderV1::validate_traverse_limits(inner, outer));
 
         // Test case 6: Valid limits with large difference (should pass)
         let inner = Length::new::<millimeter>(10.0);
         let outer = Length::new::<millimeter>(80.0);
-        assert!(Winder_V1::validate_traverse_limits(inner, outer));
+        assert!(WinderV1::validate_traverse_limits(inner, outer));
 
         // Test case 7: Edge case - exactly 0.91mm difference (should pass)
         let inner = Length::new::<millimeter>(15.0);
         let outer = Length::new::<millimeter>(15.91);
-        assert!(Winder_V1::validate_traverse_limits(inner, outer));
+        assert!(WinderV1::validate_traverse_limits(inner, outer));
 
         // Test case 8: Edge case - exactly 0.89mm difference (should fail)
         let inner = Length::new::<millimeter>(15.0);
         let outer = Length::new::<millimeter>(15.89);
-        assert!(!Winder_V1::validate_traverse_limits(inner, outer));
+        assert!(!WinderV1::validate_traverse_limits(inner, outer));
     }
 }

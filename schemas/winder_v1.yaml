@@ -2,9 +2,9 @@ qms_version: 1.0
 revision: 1
 
 identification:
-  name: winder_v1_7031_0030_spool
+  name: winder_v1
   vendor_id: 1
-  machine_id: 98
+  machine_id: 2
 
 config:
   traverse:

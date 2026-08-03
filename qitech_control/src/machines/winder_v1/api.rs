@@ -1,20 +1,11 @@
 mod winder2_imports {
-    pub use std::time::Instant;
-
-    pub use serde::Deserialize;
-    pub use serde::Serialize;
-
-    pub use super::super::Winder_V1;
+    pub use super::super::WinderV1;
     pub use super::super::Winder2Mode;
     pub use super::super::puller_speed_controller::GearRatio;
     pub use super::super::puller_speed_controller::PullerRegulationMode;
 }
 
-use std::process::exit;
-
 use qitech_framework::EnumProperty;
-use qitech_framework::ScalarValue;
-use qitech_framework::machine::TypeWrapper;
 use qitech_framework::machine::error::CommandExecuteResult;
 use qitech_framework::machine::resource::ConfigProperty;
 use qitech_framework::machine::resource::Measurement;
@@ -24,9 +15,6 @@ use qitech_lib::units::AngularVelocity;
 use qitech_lib::units::Length;
 use qitech_lib::units::Velocity;
 use qitech_lib::units::angle::degree;
-use qitech_lib::units::length::meter;
-use qitech_lib::units::length::millimeter;
-use qitech_lib::units::velocity::meter_per_minute;
 pub use winder2_imports::*;
 
 use crate::machines::winder_v1::PULLER_PORT;
@@ -82,10 +70,6 @@ pub struct Configurations {
     pub spool_adaptive_max_speed_multiplier: ConfigProperty<f64>,
     pub spool_adaptive_acceleration_factor: ConfigProperty<f64>,
     pub spool_adaptive_deacceleration_urgency_multiplier: ConfigProperty<f64>,
-
-    // --- Spool Auto Stop/Pull ---
-    pub spool_automatic_required_meters: ConfigProperty<Length>,
-    pub spool_automatic_action: ConfigProperty<SpoolAutomaticActionMode>,
 }
 
 pub struct Measurements {
@@ -212,7 +196,7 @@ pub struct SpoolSpeedControllerState {
 }
 
 // --- resource updates ---
-impl Winder_V1 {
+impl WinderV1 {
     pub fn update_measurements(&mut self) {
         let angle_deg = self.tension_arm.get_angle().unwrap();
 
@@ -402,8 +386,8 @@ impl Winder_V1 {
 
     fn update_state_spool_automatic_action_state(&mut self) {
         // --- precompute spool automatic action state ---
-        let spool_required_meters = self.spool_automatic_action.target_length;
-        let spool_automatic_action_mode = self.spool_automatic_action.mode.clone();
+        let spool_required_meters = self.spool_automatic_action.target_length.get();
+        let spool_automatic_action_mode = self.spool_automatic_action.mode.get_ref().clone();
 
         // --- update spool automatic action state ---
         let s = &mut self.states.spool_automatic_action_state;
@@ -415,7 +399,7 @@ impl Winder_V1 {
 }
 
 // --- commands ---
-impl Winder_V1 {
+impl WinderV1 {
     // --- modes ---
     pub fn cmd_mode_standby(&mut self) -> CommandExecuteResult {
         self.set_mode(&Winder2Mode::Standby);

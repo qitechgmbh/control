@@ -15,7 +15,7 @@ mod interface;
 
 mod machines;
 use machines::LaserV1;
-use machines::Winder_V1;
+use machines::WinderV1;
 use qitech_framework::session;
 use qitech_framework_tui::Tui;
 use qitech_framework_tui::TuiConfiguration;
@@ -38,7 +38,7 @@ pub fn main() -> anyhow::Result<()> {
         .ethercat(ETHERCAT_CONFIG)
         .modbus_rtu_device("pci-0000:c6:00.0-usbv2-0:2:1.0-port0", laser_ident(1))
         .machine::<LaserV1>()
-        .machine::<Winder_V1>();
+        .machine::<WinderV1>();
 
     run_tui(config)
 }

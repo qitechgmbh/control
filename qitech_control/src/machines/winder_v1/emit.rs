@@ -20,14 +20,14 @@ use super::PULLER_PORT;
 use super::SPOOL_PORT;
 use super::TRAVERSE_PORT;
 use super::TraverseMode;
-use super::Winder_V1;
+use super::WinderV1;
 use super::Winder2Mode;
 use super::api::PullerRegulationMode;
 pub use super::api::SpoolAutomaticActionMode;
 use crate::machines::winder_v1::api::GearRatio;
 use crate::machines::winder_v1::spool_speed_controller;
 
-impl Winder_V1 {
+impl WinderV1 {
     /// Implement Spool
     /// called by `act`
     pub fn sync_spool_speed(&mut self, t: Instant) {
@@ -53,7 +53,7 @@ impl Winder_V1 {
 
     pub fn stop_or_pull_spool(&mut self, now: Instant) {
         if matches!(
-            self.spool_automatic_action.mode,
+            self.spool_automatic_action.mode.get_ref(),
             SpoolAutomaticActionMode::NoAction
         ) {
             self.calculate_spool_auto_progress_(now);
@@ -69,8 +69,8 @@ impl Winder_V1 {
             }
         }
 
-        if self.spool_automatic_action.progress >= self.spool_automatic_action.target_length {
-            match self.spool_automatic_action.mode {
+        if self.spool_automatic_action.progress >= self.spool_automatic_action.target_length.get() {
+            match self.spool_automatic_action.mode.get_ref() {
                 SpoolAutomaticActionMode::NoAction => (),
                 SpoolAutomaticActionMode::Pull => {
                     self.stop_or_pull_spool_reset(now);
@@ -245,14 +245,6 @@ impl Winder_V1 {
         self.tension_arm.zero();
     }
 
-    pub fn set_spool_automatic_required_meters(&mut self, meters: f64) {
-        self.spool_automatic_action.target_length = Length::new::<meter>(meters);
-    }
-
-    pub fn set_spool_automatic_mode(&mut self, mode: SpoolAutomaticActionMode) {
-        self.spool_automatic_action.mode = mode;
-    }
-
     pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
         self.puller_speed_controller
             .set_regulation_mode(puller_regulation_mode);
@@ -340,7 +332,7 @@ impl Winder_V1 {
 
 // Winder2 Extension
 #[cfg(not(feature = "mock-machine"))]
-impl Winder_V1 {
+impl WinderV1 {
     pub fn puller_set_adaptive_max_speed_change_percent(&mut self, value: f64) {
         self.puller_speed_controller
             .adaptive
