@@ -41,6 +41,7 @@ use qitech_lib::units::angle::degree;
 use qitech_lib::units::angular_velocity::revolution_per_minute;
 pub use winder2_imports::*;
 
+use crate::machines::winder_v1::SpoolAutomaticAction;
 use crate::machines::winder_v1::api::Configurations;
 use crate::machines::winder_v1::api::GearRatio;
 use crate::machines::winder_v1::api::Measurements;
@@ -298,7 +299,7 @@ impl WinderV1 {
                     .register()?,
                 64, // Microsteps
             ),
-            spool_automatic_action: super::SpoolAutomaticAction {
+            spool_automatic_action: SpoolAutomaticAction {
                 progress: Length::ZERO,
                 progress_last_check: Instant::now(),
                 target_length: ctx.config::<meter>("spool_automatic.required_meters")

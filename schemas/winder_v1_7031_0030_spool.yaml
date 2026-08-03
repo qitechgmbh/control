@@ -8,11 +8,12 @@ identification:
 
 config:
   traverse:
-    limit_inner: !millimeter
-      default: 22.0
+    limit:
+      inner: !millimeter
+        default: 22.0
 
-    limit_outer: !millimeter
-      default: 92.0
+      outer: !millimeter
+        default: 22.0
 
     step_size: !millimeter
       default: 1.75
@@ -25,7 +26,7 @@ config:
       variants: [speed, diameter]
       default: speed
 
-    target_speed: !meter_per_minute
+    speed_target: !meter_per_minute
       default: 1.0
 
     forward: !boolean
@@ -49,24 +50,39 @@ config:
         default: 0.01
 
   spool:
-    adaptive:
-      tension_target: !float
-        default: 0.7
+    direction: !boolean
 
-      radius_learning_rate: !float
-        default: 0.5
+    speed_regulation:
+      mode: !enum
+        variants: [adaptive, min_max]
+        default: [adaptive]
 
-      max_speed_multiplier: !float
-        default: 4.0
+      min_max:
+        speed:
+          min: !meter_per_minute
+            default: 0.0
 
-      acceleration_factor: !float
-        default: 0.2
+          max: !meter_per_minute
+            default: 0.0
 
-      deacceleration_urgency_multiplier: !float
-        default: 15.0
+      adaptive:
+        tension_target: !float
+          default: 0.7
+
+        radius_learning_rate: !float
+          default: 0.5
+
+        max_speed_multiplier: !float
+          default: 4.0
+
+        acceleration_factor: !float
+          default: 0.2
+
+        deacceleration_urgency_multiplier: !float
+          default: 15.0
 
   spool_automatic:
-    required_meters: !meter
+    length_target: !meter
       default: 250.0
 
     action: !enum

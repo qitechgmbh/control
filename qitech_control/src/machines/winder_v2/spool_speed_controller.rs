@@ -1,53 +1,55 @@
-use std::time::Instant;
-
-use qitech_framework::EnumProperty;
-use qitech_framework::machine::resource::ConfigProperty;
-use qitech_lib::units::f64::*;
-use serde::Deserialize;
-use serde::Serialize;
-
-use super::adaptive_spool_speed_controller::AdaptiveSpoolSpeedController;
-use super::minmax_spool_speed_controller::MinMaxSpoolSpeedController;
-use super::puller_speed_controller::PullerSpeedController;
-use super::tension_arm::TensionArm;
+use crate::machines::winder_v2::{
+    adaptive_spool_speed_controller::AdaptiveSpoolSpeedController,
+    minmax_spool_speed_controller::MinMaxSpoolSpeedController,
+    puller_speed_controller::PullerSpeedController,
+};
 use crate::controllers::second_degree_motion::acceleration_position_controller::MotionControllerError;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, EnumProperty)]
+use super::tension_arm::TensionArm;
+use qitech_lib::units::f64::*;
+use serde::{Deserialize, Serialize};
+use std::time::Instant;
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum SpoolSpeedControllerType {
     #[default]
     Adaptive,
     MinMax,
 }
 
+#[derive(Debug)]
 pub struct SpoolSpeedController {
     adaptive_controller: AdaptiveSpoolSpeedController,
     minmax_controller: MinMaxSpoolSpeedController,
-    r#type: ConfigProperty<SpoolSpeedControllerType>,
-    forward: ConfigProperty<bool>,
+    r#type: SpoolSpeedControllerType,
+    forward: bool,
+}
+
+impl Default for SpoolSpeedController {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SpoolSpeedController {
-    pub fn new(
-        r#type: ConfigProperty<SpoolSpeedControllerType>,
-        forward: ConfigProperty<bool>,
-    ) -> Self {
+    pub fn new() -> Self {
         Self {
             adaptive_controller: AdaptiveSpoolSpeedController::new(),
             minmax_controller: MinMaxSpoolSpeedController::new(),
-            r#type,
-            forward,
+            r#type: SpoolSpeedControllerType::Adaptive,
+            forward: true,
         }
     }
 
     pub fn get_speed(&self) -> AngularVelocity {
-        match self.r#type.get_ref() {
+        match self.r#type {
             SpoolSpeedControllerType::Adaptive => self.adaptive_controller.get_speed(),
             SpoolSpeedControllerType::MinMax => self.minmax_controller.get_speed(),
         }
     }
 
     pub fn set_speed(&mut self, speed: AngularVelocity) {
-        match self.r#type.get_ref() {
+        match self.r#type {
             SpoolSpeedControllerType::Adaptive => self.adaptive_controller.set_speed(speed),
             SpoolSpeedControllerType::MinMax => self.minmax_controller.set_speed(speed),
         }
@@ -58,39 +60,42 @@ impl SpoolSpeedController {
         self.minmax_controller.set_enabled(enabled);
     }
 
-    pub fn is_enabled(&self) -> bool {
-        match self.r#type.get_ref() {
+    pub const fn is_enabled(&self) -> bool {
+        match self.r#type {
             SpoolSpeedControllerType::Adaptive => self.adaptive_controller.is_enabled(),
             SpoolSpeedControllerType::MinMax => self.minmax_controller.is_enabled(),
         }
     }
 
-    pub fn on_type_changed(&mut self) -> Result<(), String> {
-        // Get the current speed from the active controller
-        let current_speed = match self.r#type.get_ref() {
-            SpoolSpeedControllerType::Adaptive => self.adaptive_controller.get_speed(),
-            SpoolSpeedControllerType::MinMax => self.minmax_controller.get_speed(),
-        };
+    pub fn set_type(&mut self, r#type: SpoolSpeedControllerType) {
+        // If we're switching to a different type, copy the current speed to the target controller
+        if std::mem::discriminant(&self.r#type) != std::mem::discriminant(&r#type) {
+            // Get the current speed from the active controller
+            let current_speed = match self.r#type {
+                SpoolSpeedControllerType::Adaptive => self.adaptive_controller.get_speed(),
+                SpoolSpeedControllerType::MinMax => self.minmax_controller.get_speed(),
+            };
 
-        // Set the speed in the target controller and reset it for smooth transition
-        match r#type {
-            SpoolSpeedControllerType::Adaptive => {
-                self.adaptive_controller.set_speed(current_speed);
-                self.adaptive_controller.reset();
-                self.adaptive_controller.set_speed(current_speed); // Set again after reset to maintain speed
-            }
-            SpoolSpeedControllerType::MinMax => {
-                self.minmax_controller.set_speed(current_speed);
-                self.minmax_controller.reset();
-                self.minmax_controller.set_speed(current_speed); // Set again after reset to maintain speed
+            // Set the speed in the target controller and reset it for smooth transition
+            match r#type {
+                SpoolSpeedControllerType::Adaptive => {
+                    self.adaptive_controller.set_speed(current_speed);
+                    self.adaptive_controller.reset();
+                    self.adaptive_controller.set_speed(current_speed); // Set again after reset to maintain speed
+                }
+                SpoolSpeedControllerType::MinMax => {
+                    self.minmax_controller.set_speed(current_speed);
+                    self.minmax_controller.reset();
+                    self.minmax_controller.set_speed(current_speed); // Set again after reset to maintain speed
+                }
             }
         }
 
-        Ok(())
+        self.r#type = r#type;
     }
 
-    pub fn get_type(&self) -> &SpoolSpeedControllerType {
-        self.r#type.get_ref()
+    pub const fn get_type(&self) -> &SpoolSpeedControllerType {
+        &self.r#type
     }
 
     pub fn set_minmax_min_speed(
@@ -121,7 +126,7 @@ impl SpoolSpeedController {
         tension_arm: &TensionArm,
         puller_speed_controller: &PullerSpeedController,
     ) -> AngularVelocity {
-        match self.r#type.get_ref() {
+        match self.r#type {
             SpoolSpeedControllerType::Adaptive => {
                 self.adaptive_controller
                     .update_speed(t, tension_arm, puller_speed_controller)
@@ -179,11 +184,11 @@ impl SpoolSpeedController {
             .set_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
     }
 
-    pub fn get_forward(&self) -> bool {
-        self.forward.get()
+    pub const fn get_forward(&self) -> bool {
+        self.forward
     }
 
-    pub fn set_forward(&mut self, forward: bool) {
-        self.forward.set(forward);
+    pub const fn set_forward(&mut self, forward: bool) {
+        self.forward = forward;
     }
 }

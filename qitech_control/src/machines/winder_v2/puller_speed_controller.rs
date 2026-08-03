@@ -1,24 +1,19 @@
 use std::time::Instant;
 
-use qitech_framework::EnumProperty;
-use qitech_framework::ScalarValue;
-use qitech_framework::machine::TypeWrapper;
-use qitech_framework::machine::resource::ConfigPropertyWriteConstraints;
-use qitech_framework::machine::resource::EnumConfigPropertyConstraints;
+use crate::{
+    controllers::second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController,
+    converters::linear_step_converter::LinearStepConverter,
+};
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::acceleration::meter_per_minute_per_second;
 use qitech_lib::units::f64::Length;
 use qitech_lib::units::f64::*;
 use qitech_lib::units::jerk::meter_per_minute_per_second_squared;
-use qitech_lib::units::length::meter;
-use qitech_lib::units::length::millimeter;
-use qitech_lib::units::velocity::meter_per_minute;
-use qitech_lib::units::velocity::meter_per_second;
+use qitech_lib::units::length::{meter, millimeter};
+use qitech_lib::units::velocity::{meter_per_minute, meter_per_second};
+use serde::{Deserialize, Serialize};
 
-use crate::controllers::second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController;
-use crate::converters::linear_step_converter::LinearStepConverter;
-
-#[derive(Debug, Clone, Copy, PartialEq, EnumProperty)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum GearRatio {
     OneToOne,
     OneToFive,
@@ -98,7 +93,6 @@ impl PullerSpeedController {
         self.target_speed = target;
     }
 
-    // TODO: finish on_changed callback then port
     pub fn set_regulation_mode(&mut self, regulation: PullerRegulationMode) {
         // Reset adaptive modulation when switching to Diameter mode
         // so it starts from the current target_speed without jumps
@@ -160,7 +154,7 @@ impl PullerSpeedController {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, EnumProperty)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum PullerRegulationMode {
     #[default]
     Speed,
