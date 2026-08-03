@@ -17,11 +17,13 @@ pub struct PidController {
     /// Derivative error
     ed: f64,
 
+    i_min : f64,
+    i_max : f64,
+
     last: Option<Instant>,
 }
-
 impl PidController {
-    pub const fn new(kp: f64, ki: f64, kd: f64) -> Self {
+    pub const fn new(kp: f64, ki: f64, kd: f64, i_min: f64, i_max : f64) -> Self {
         Self {
             kp,
             ki,
@@ -30,6 +32,9 @@ impl PidController {
             ei: 0.0,
             ed: 0.0,
             last: None,
+            i_min,
+            i_max,
+
         }
     }
 
@@ -81,12 +86,16 @@ impl PidController {
                 let ei = ep.mul_add(dt, self.ei);
                 let ed = (ep - self.ep) / dt;
 
+                let kp_signal = self.kp * ep;
+                let ki_signal = (self.ki * ei).clamp(self.i_min, self.i_max);
+                let kd_signal = self.kd * ed;
+
                 // Calculate signal
-                let signal = self.kd.mul_add(ed, self.kp.mul_add(ep, self.ki * ei));
+                let signal = kp_signal + ki_signal + kd_signal;
 
                 // Set values
                 self.ep = ep;
-                self.ei = ei;
+                self.ei = if self.ki != 0.0 { ki_signal / self.ki } else { 0.0 };
                 self.ed = ed;
                 self.last = Some(t);
 

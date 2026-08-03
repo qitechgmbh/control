@@ -80,7 +80,8 @@ impl TemperatureController {
         temperature_port: usize,
     ) -> Self {
         Self {
-            pid: PidController::new(kp, ki, kd),
+            //the max clamp for integral should be at max 20% of the total output 
+            pid: PidController::new(kp, ki, kd,0.0,max_clamp/5.0),
             target_temp,
             window_start: Instant::now(),
             heating,
