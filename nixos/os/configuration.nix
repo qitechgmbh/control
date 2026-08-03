@@ -52,9 +52,11 @@ in
     "oops=panic" # Treat kernel oops as panic for auto-recovery
     "usbcore.autosuspend=-1" # Possibly fixes dre disconnect issue?
 
-    "isolcpus=2,3" # Isolate cpus 2 and 3 from scheduler for better latency, 2 runs ethercatthread and 3 runs server control-loop
+    #"isolcpus=2,3" # Isolate cpus 2 and 3 from scheduler for better latency, 2 runs ethercatthread and 3 runs server control-loop
+    "isolcpus=managed_irq,2,3" # managed irq only, no domain flag
     "nohz_full=2,3" # In this mode, the periodic scheduler tick is stopped when only one task is running, reducing kernel interruptions on those CPUs.
-    "rcu_nocbs=2,3" # Moves RCU (Read-Copy Update) callback processing away from CPUs 2 and 3.
+    "irqaffinity=0,1" # keep hardware IRQs off RT cores
+    #"rcu_nocbs=2,3" # Moves RCU (Read-Copy Update) callback processing away from CPUs 2 and 3.
 
   ];
 
@@ -69,7 +71,7 @@ in
     package = pkgs.nixVersions.stable;
     settings = {
       experimental-features = "nix-command flakes";
-      cores = 2;
+      cores = 0; # was 2
       http-connections = 10;
       download-attempts = 15;
     };
@@ -170,6 +172,37 @@ in
     };
   };
 
+  # systemd slice for core cgroup-based isolation
+  systemd.slices.qitech = {
+    description = "QiTech realtime slice";
+    sliceConfig = {
+      AllowedCPUs = "2-3";
+      AllowedMemoryNodes = "0";
+    };
+  };
+
+  systemd.services.cpu-isolate = {
+    description = "Apply cpuset isolation for realtime cores";
+    wantedBy = [ "multi-user.target" ];
+    before = [ "qitech.service" ];
+    after = [ "systemd-udevd.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = pkgs.writeShellScript "cpu-isolate" ''
+        set -euo pipefail
+        systemctl set-property --runtime init.scope   AllowedCPUs=0-1
+        systemctl set-property --runtime system.slice AllowedCPUs=0-1
+        systemctl set-property --runtime user.slice   AllowedCPUs=0-1
+        systemctl set-property --runtime qitech.slice AllowedCPUs=2-3
+
+        CG=/sys/fs/cgroup/qitech.slice
+        echo "2-3" > "$CG/cpuset.cpus.exclusive"
+        echo isolated > "$CG/cpuset.cpus.partition"
+      '';
+    };
+  };
+
   # Enable sound with pipewire.
   security.rtkit.enable = true;
   services.pipewire = {
@@ -192,6 +225,9 @@ in
     group = "qitech-service";
     package = pkgs.qitechPackages.server;
   };
+
+  # Force the service into the RT slice
+  systemd.services.qitech.serviceConfig.Slice = lib.mkForce "qitech.slice";
 
   users.users.qitech = {
     isNormalUser = true;
