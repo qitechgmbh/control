@@ -2,6 +2,7 @@ import { Alert } from "@/components/Alert";
 import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import { TouchButton } from "@/components/touch/TouchButton";
+import { ExportResultDialog } from "@/components/ExportResultDialog";
 import { mainNamespaceStore } from "@/client/mainNamespace";
 import {
   rebootHmi,
@@ -9,6 +10,7 @@ import {
   restartBackendIntoPreop,
   exportLogs,
 } from "@/helpers/troubleshoot_helpers";
+import { useExportDialog } from "@/hooks/useExportDialog";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
@@ -17,6 +19,7 @@ export function TroubleshootPage() {
   const [isRestartLoading, setIsRestartLoading] = useState(false);
   const [isRestartPreopLoading, setIsRestartPreopLoading] = useState(false);
   const [isExportLoading, setIsExportLoading] = useState(false);
+  const { notifyResult, dialogProps } = useExportDialog();
 
   const handleRebootHmi = async () => {
     setIsRebootLoading(true);
@@ -71,11 +74,7 @@ export function TroubleshootPage() {
     setIsExportLoading(true);
     try {
       const result = await exportLogs();
-      if (result.success) {
-        toast.success("Export Logs initiated");
-      } else {
-        toast.error(`Failed to export Logs: ${result.error}`);
-      }
+      notifyResult(result);
     } catch (error) {
       toast.error(`Failed to export Logs: ${error}`);
     } finally {
@@ -134,6 +133,8 @@ export function TroubleshootPage() {
           Export Backend Service Logs
         </TouchButton>
       </div>
+
+      <ExportResultDialog {...dialogProps} />
     </Page>
   );
 }

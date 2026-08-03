@@ -9,7 +9,7 @@ type Props = {
 };
 
 export function StatusBadge({ variant, children }: Props) {
-  const badgeStyle = cva(["text-md"], {
+  const badgeStyle = cva(["text-md", "max-w-full", "whitespace-normal"], {
     variants: {
       variant: {
         error: "bg-red-500",
@@ -24,7 +24,7 @@ export function StatusBadge({ variant, children }: Props) {
         variant,
       })}
     >
-      <Icon name={icon} className="size-6" />
+      <Icon name={icon} className="size-6 shrink-0" />
       {children}
     </Badge>
   );
