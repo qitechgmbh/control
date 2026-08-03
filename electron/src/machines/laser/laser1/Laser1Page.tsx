@@ -27,10 +27,10 @@ export function Laser1Page() {
           icon: "lu:Settings",
         },
         {
-            link: "manual",
-            activeLink: "manual",
-            title: "Manual",
-            icon: "lu:BookOpen",
+          link: "manual",
+          activeLink: "manual",
+          title: "Manual",
+          icon: "lu:BookOpen",
         },
         {
           link: "presets",
