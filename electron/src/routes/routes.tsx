@@ -103,6 +103,7 @@ import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago75
 
 import { BottlecapsTestMachinePage } from "@/machines/minimal_machines/bottlecaps_test_machine/BottlecapsTestMachinePage";
 import { BottlecapsTestMachineControlPage } from "@/machines/minimal_machines/bottlecaps_test_machine/BottlecapsTestMachineControlPage";
+import { Laser1ManualPage } from "@/machines/laser/laser1/Laser1Manual";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -412,6 +413,12 @@ export const laser1ControlRoute = createRoute({
   component: () => <Laser1ControlPage />,
 });
 
+export const laser1ManualRoute = createRoute({
+  getParentRoute: () => laser1SerialRoute,
+  path: "manual",
+  component: () => <Laser1ManualPage />,
+});
+
 export const laser1GraphsRoute = createRoute({
   getParentRoute: () => laser1SerialRoute,
   path: "graphs",
@@ -661,6 +668,7 @@ export const rootTree = RootRoute.addChildren([
     machinesRoute.addChildren([
       laser1SerialRoute.addChildren([
         laser1ControlRoute,
+        laser1ManualRoute,
         laser1GraphsRoute,
         laser1PresetsRoute,
         laser1SettingsRoute,
