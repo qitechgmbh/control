@@ -1,7 +1,10 @@
 use std::time::Instant;
 
+use qitech_framework::EnumProperty;
 use qitech_framework::ScalarValue;
 use qitech_framework::machine::TypeWrapper;
+use qitech_framework::machine::resource::ConfigPropertyWriteConstraints;
+use qitech_framework::machine::resource::EnumConfigPropertyConstraints;
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::acceleration::meter_per_minute_per_second;
 use qitech_lib::units::f64::Length;
@@ -11,41 +14,15 @@ use qitech_lib::units::length::meter;
 use qitech_lib::units::length::millimeter;
 use qitech_lib::units::velocity::meter_per_minute;
 use qitech_lib::units::velocity::meter_per_second;
-use serde::Deserialize;
-use serde::Serialize;
 
 use crate::controllers::second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController;
 use crate::converters::linear_step_converter::LinearStepConverter;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, EnumProperty)]
 pub enum GearRatio {
     OneToOne,
     OneToFive,
     OneToTen,
-}
-
-impl TypeWrapper for GearRatio {
-    type Type = GearRatio;
-    type Input = GearRatio;
-
-    fn into_scalar(value: &Self::Type) -> ScalarValue {
-        ScalarValue::Enum(Some(
-            match value {
-                GearRatio::OneToOne => "one_to_one",
-                GearRatio::OneToFive => "one_to_five",
-                GearRatio::OneToTen => "one_to_ten",
-            }
-            .to_string(),
-        ))
-    }
-
-    fn convert_input(input: Self::Input) -> Self::Type {
-        input
-    }
-
-    fn deserialize_json(raw: &str) -> serde_json::Result<Self::Type> {
-        serde_json::from_str(raw)
-    }
 }
 
 impl GearRatio {
@@ -182,34 +159,11 @@ impl PullerSpeedController {
     }
 }
 
-#[derive(Deserialize, Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, EnumProperty)]
 pub enum PullerRegulationMode {
     #[default]
     Speed,
     Diameter,
-}
-
-impl TypeWrapper for PullerRegulationMode {
-    type Type = PullerRegulationMode;
-    type Input = PullerRegulationMode;
-
-    fn into_scalar(value: &Self::Type) -> ScalarValue {
-        ScalarValue::Enum(Some(
-            match value {
-                PullerRegulationMode::Speed => "speed",
-                PullerRegulationMode::Diameter => "diameter",
-            }
-            .to_string(),
-        ))
-    }
-
-    fn convert_input(input: Self::Input) -> Self::Type {
-        input
-    }
-
-    fn deserialize_json(raw: &str) -> serde_json::Result<Self::Type> {
-        serde_json::from_str(raw)
-    }
 }
 
 /// Controls adaptive puller speed based on laser diameter feedback.

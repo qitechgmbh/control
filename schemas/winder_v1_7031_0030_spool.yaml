@@ -83,5 +83,5 @@ measurements:
 commands:
   traverse:
     laserpointer:
-      set_enabled: !command
-        enabled: !boolean
+      enable: !command
+      disable: !command

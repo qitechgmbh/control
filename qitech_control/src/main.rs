@@ -24,7 +24,7 @@ use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
 
 pub fn main() -> anyhow::Result<()> {
-    interface::bring_up_all_ethernet();
+    // interface::bring_up_all_ethernet();
 
     let laser_ident = |serial: u16| MachineIdentificationUnique {
         identification: LaserV1::IDENTIFICATION,
