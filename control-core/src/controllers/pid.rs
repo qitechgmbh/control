@@ -83,7 +83,11 @@ impl PidController {
 
                 // Calculate errors
                 let ep = error;
-                let ei = ep.mul_add(dt, self.ei);
+                let ei = if error < 5.0 {
+                    ep.mul_add(dt, self.ei)
+                }else{
+                    0.0
+                };
                 let ed = (ep - self.ep) / dt;
 
                 let kp_signal = self.kp * ep;
