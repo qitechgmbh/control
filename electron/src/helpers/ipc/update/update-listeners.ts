@@ -331,12 +331,21 @@ async function update(
           status: "in-progress",
         });
 
-        const installResult = await runCommandWithStepTracking(
-          "./nixos-install.sh",
-          [],
-          repoDir,
-          event,
-        );
+        // Release isolated cores so the build can use all CPUs
+        await releaseCores(event);
+
+        let installResult: { success: boolean; error?: string };
+        try {
+          installResult = await runCommandWithStepTracking(
+            "./nixos-install.sh",
+            [],
+            repoDir,
+            event,
+          );
+        } finally {
+          // Always re-isolate, even on failure or cancellation
+          await isolateCores(event);
+        }
 
         if (!installResult.success) {
           // Mark current and remaining steps as error
@@ -1029,4 +1038,55 @@ function terminalInfo(text: string): string {
 
 function terminalGray(text: string): string {
   return terminalColor("gray", text);
+}
+
+// CPU isolation helpers
+
+const RT_CPUS = "2-3";
+const HK_CPUS = "0-1";
+const ALL_CPUS = "0-3";
+const QITECH_SLICE_CG = "/sys/fs/cgroup/qitech.slice";
+
+function runSimple(cmd: string, args: string[]): Promise<boolean> {
+  return new Promise((resolve) => {
+    const child = spawn(cmd, args, { stdio: "ignore" });
+    child.on("error", () => resolve(false));
+    child.on("close", (code) => resolve(code === 0));
+  });
+}
+
+async function releaseCores(
+  event: Electron.IpcMainInvokeEvent,
+): Promise<void> {
+  event.sender.send(UPDATE_LOG, terminalInfo("Releasing isolated cores for build..."));
+
+  // Drop the partition first, then widen all slices
+  await runSimple("sudo", ["bash", "-c",
+    `echo member > ${QITECH_SLICE_CG}/cpuset.cpus.partition 2>/dev/null || true; ` +
+    `echo "" > ${QITECH_SLICE_CG}/cpuset.cpus.exclusive 2>/dev/null || true`
+  ]);
+  await runSimple("sudo", ["systemctl", "set-property", "--runtime", "init.scope", `AllowedCPUs=${ALL_CPUS}`]);
+  await runSimple("sudo", ["systemctl", "set-property", "--runtime", "system.slice", `AllowedCPUs=${ALL_CPUS}`]);
+  await runSimple("sudo", ["systemctl", "set-property", "--runtime", "user.slice", `AllowedCPUs=${ALL_CPUS}`]);
+  await runSimple("sudo", ["systemctl", "set-property", "--runtime", "qitech.slice", `AllowedCPUs=${ALL_CPUS}`]);
+
+  event.sender.send(UPDATE_LOG, terminalSuccess("All cores available for build"));
+}
+
+async function isolateCores(
+  event: Electron.IpcMainInvokeEvent,
+): Promise<void> {
+  event.sender.send(UPDATE_LOG, terminalInfo("Re-isolating realtime cores..."));
+
+  // Restrict housekeeping slices first, then set partition
+  await runSimple("sudo", ["systemctl", "set-property", "--runtime", "init.scope", `AllowedCPUs=${HK_CPUS}`]);
+  await runSimple("sudo", ["systemctl", "set-property", "--runtime", "system.slice", `AllowedCPUs=${HK_CPUS}`]);
+  await runSimple("sudo", ["systemctl", "set-property", "--runtime", "user.slice", `AllowedCPUs=${HK_CPUS}`]);
+  await runSimple("sudo", ["systemctl", "set-property", "--runtime", "qitech.slice", `AllowedCPUs=${RT_CPUS}`]);
+  await runSimple("sudo", ["bash", "-c",
+    `echo "${RT_CPUS}" > ${QITECH_SLICE_CG}/cpuset.cpus.exclusive && ` +
+    `echo isolated > ${QITECH_SLICE_CG}/cpuset.cpus.partition`
+  ]);
+
+  event.sender.send(UPDATE_LOG, terminalSuccess("Realtime cores re-isolated"));
 }
