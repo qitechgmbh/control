@@ -2032,7 +2032,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework"
 version = "0.1.0"
-source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=00202e5d2b6ce28d2eff03e56b83e428225be186#00202e5d2b6ce28d2eff03e56b83e428225be186"
+source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=07fb84ac6c9bf4695c5272056269229041bd41a3#07fb84ac6c9bf4695c5272056269229041bd41a3"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2059,7 +2059,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_core"
 version = "0.1.0"
-source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=00202e5d2b6ce28d2eff03e56b83e428225be186#00202e5d2b6ce28d2eff03e56b83e428225be186"
+source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=07fb84ac6c9bf4695c5272056269229041bd41a3#07fb84ac6c9bf4695c5272056269229041bd41a3"
 dependencies = [
  "bytes",
  "chrono",
@@ -2080,7 +2080,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_macros"
 version = "0.1.0"
-source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=00202e5d2b6ce28d2eff03e56b83e428225be186#00202e5d2b6ce28d2eff03e56b83e428225be186"
+source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=07fb84ac6c9bf4695c5272056269229041bd41a3#07fb84ac6c9bf4695c5272056269229041bd41a3"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -2092,7 +2092,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_tui"
 version = "0.1.0"
-source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=00202e5d2b6ce28d2eff03e56b83e428225be186#00202e5d2b6ce28d2eff03e56b83e428225be186"
+source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=07fb84ac6c9bf4695c5272056269229041bd41a3#07fb84ac6c9bf4695c5272056269229041bd41a3"
 dependencies = [
  "anyhow",
  "bitvec",
