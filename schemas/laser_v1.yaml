@@ -10,16 +10,13 @@ config:
   diameter:
     target: !millimeter
       default: 1.75
-      range: 0..
 
     tolerance:
       upper: !millimeter
         default: 0.05
-        range: 0..
-
+  
       lower: !millimeter
         default: 0.05
-        range: 0..
   
 state:
   in_tolerance: !boolean

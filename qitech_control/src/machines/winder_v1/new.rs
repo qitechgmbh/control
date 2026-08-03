@@ -401,12 +401,12 @@ fn init_states(ctx: &mut BuildContext) -> BuildResult<States> {
 }
 
 fn init_commands(ctx: &mut BuildContext) -> BuildResult<()> {
-    // ctx.command("execute")
-    //     .execute_args(Winder_V1::execute_mutation)
-    //     .register()?;
+    ctx.command("traverse.laserpointer.enable")
+        .execute(Winder_V1::cmd_enable_traverse_laserpointer)
+        .register()?;
 
-    ctx.command("traverse.laserpointer.set_enabled")
-        .execute_args(Winder_V1::cmd_enable_traverse_laserpointer)
+    ctx.command("traverse.laserpointer.disable")
+        .execute(Winder_V1::cmd_disable_traverse_laserpointer)
         .register()?;
 
     Ok(())

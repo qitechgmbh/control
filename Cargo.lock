@@ -2032,7 +2032,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework"
 version = "0.1.0"
-source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=d89e893f3ee9ed3340ab6ba8220117a331a6e931#d89e893f3ee9ed3340ab6ba8220117a331a6e931"
+source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=21a680b68b2636d278cbaadec9a9fbc07d884c3a#21a680b68b2636d278cbaadec9a9fbc07d884c3a"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2043,6 +2043,7 @@ dependencies = [
  "qitech_framework_core",
  "qitech_framework_macros",
  "qitech_lib",
+ "regex",
  "serde",
  "serde_json",
  "serialport",
@@ -2058,9 +2059,8 @@ dependencies = [
 [[package]]
 name = "qitech_framework_core"
 version = "0.1.0"
-source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=d89e893f3ee9ed3340ab6ba8220117a331a6e931#d89e893f3ee9ed3340ab6ba8220117a331a6e931"
+source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=21a680b68b2636d278cbaadec9a9fbc07d884c3a#21a680b68b2636d278cbaadec9a9fbc07d884c3a"
 dependencies = [
- "async-trait",
  "bytes",
  "chrono",
  "crossbeam",
@@ -2068,7 +2068,6 @@ dependencies = [
  "indexmap",
  "postcard",
  "serde",
- "serde_json",
  "soa_derive",
  "thiserror 2.0.19",
  "tokio",
@@ -2081,8 +2080,9 @@ dependencies = [
 [[package]]
 name = "qitech_framework_macros"
 version = "0.1.0"
-source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=d89e893f3ee9ed3340ab6ba8220117a331a6e931#d89e893f3ee9ed3340ab6ba8220117a331a6e931"
+source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=21a680b68b2636d278cbaadec9a9fbc07d884c3a#21a680b68b2636d278cbaadec9a9fbc07d884c3a"
 dependencies = [
+ "heck 0.5.0",
  "proc-macro2",
  "qitech_framework_core",
  "quote",
@@ -2092,7 +2092,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_tui"
 version = "0.1.0"
-source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=d89e893f3ee9ed3340ab6ba8220117a331a6e931#d89e893f3ee9ed3340ab6ba8220117a331a6e931"
+source = "git+ssh://git@github.com/qitechgmbh/control-v2.git?rev=21a680b68b2636d278cbaadec9a9fbc07d884c3a#21a680b68b2636d278cbaadec9a9fbc07d884c3a"
 dependencies = [
  "anyhow",
  "bitvec",

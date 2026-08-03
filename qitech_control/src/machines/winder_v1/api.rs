@@ -10,6 +10,7 @@ mod winder2_imports {
     pub use super::super::puller_speed_controller::PullerRegulationMode;
 }
 
+use qitech_framework::EnumProperty;
 use qitech_framework::ScalarValue;
 use qitech_framework::machine::TypeWrapper;
 use qitech_framework::machine::error::CommandExecuteResult;
@@ -26,38 +27,13 @@ use crate::machines::winder_v1::PULLER_PORT;
 use crate::machines::winder_v1::SPOOL_PORT;
 use crate::machines::winder_v1::spool_speed_controller::SpoolSpeedControllerType;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, EnumProperty)]
 pub enum Mode {
     #[default]
     Standby,
     Hold,
     Pull,
     Wind,
-}
-
-impl TypeWrapper for Mode {
-    type Type = Mode;
-    type Input = Mode;
-
-    fn into_scalar(value: &Self::Type) -> ScalarValue {
-        ScalarValue::Enum(Some(
-            match value {
-                Mode::Standby => "standby",
-                Mode::Pull => "pull",
-                Mode::Hold => "hold",
-                Mode::Wind => "wind",
-            }
-            .to_string(),
-        ))
-    }
-
-    fn convert_input(input: Self::Input) -> Self::Type {
-        input
-    }
-
-    fn deserialize_json(raw: &str) -> serde_json::Result<Self::Type> {
-        serde_json::from_str(raw)
-    }
 }
 
 impl From<Winder2Mode> for Mode {
@@ -82,7 +58,6 @@ impl From<Mode> for Winder2Mode {
     }
 }
 
-#[derive(Deserialize)]
 pub enum Mutation {
     // Traverse
     /// Position in mm from home point
@@ -219,36 +194,12 @@ pub struct PullerState {
     pub allowed_diameter_deviation: StateProperty<Length>,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, EnumProperty)]
 pub enum SpoolAutomaticActionMode {
     #[default]
     NoAction,
     Pull,
     Hold,
-}
-
-impl TypeWrapper for SpoolAutomaticActionMode {
-    type Type = SpoolAutomaticActionMode;
-    type Input = SpoolAutomaticActionMode;
-
-    fn into_scalar(value: &Self::Type) -> ScalarValue {
-        ScalarValue::Enum(Some(
-            match value {
-                SpoolAutomaticActionMode::NoAction => "no_action",
-                SpoolAutomaticActionMode::Pull => "pull",
-                SpoolAutomaticActionMode::Hold => "hold",
-            }
-            .to_string(),
-        ))
-    }
-
-    fn convert_input(input: Self::Input) -> Self::Type {
-        input
-    }
-
-    fn deserialize_json(raw: &str) -> serde_json::Result<Self::Type> {
-        serde_json::from_str(raw)
-    }
 }
 
 pub struct SpoolAutomaticActionState {
@@ -494,8 +445,13 @@ impl Winder_V1 {
 
 // --- commands ---
 impl Winder_V1 {
-    pub fn cmd_enable_traverse_laserpointer(&mut self, value: bool) -> CommandExecuteResult {
-        self.set_laser(value);
+    pub fn cmd_enable_traverse_laserpointer(&mut self) -> CommandExecuteResult {
+        self.set_laser(true);
+        Ok(())
+    }
+
+    pub fn cmd_disable_traverse_laserpointer(&mut self) -> CommandExecuteResult {
+        self.set_laser(false);
         Ok(())
     }
 

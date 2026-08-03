@@ -1,7 +1,6 @@
 use std::time::Instant;
 
-use qitech_framework::ScalarValue;
-use qitech_framework::machine::TypeWrapper;
+use qitech_framework::EnumProperty;
 use qitech_lib::units::f64::*;
 use serde::Deserialize;
 use serde::Serialize;
@@ -12,36 +11,12 @@ use super::puller_speed_controller::PullerSpeedController;
 use super::tension_arm::TensionArm;
 use crate::controllers::second_degree_motion::acceleration_position_controller::MotionControllerError;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, EnumProperty)]
 pub enum SpoolSpeedControllerType {
     #[default]
     Adaptive,
     MinMax,
 }
-
-impl TypeWrapper for SpoolSpeedControllerType {
-    type Type = SpoolSpeedControllerType;
-    type Input = SpoolSpeedControllerType;
-
-    fn into_scalar(value: &Self::Type) -> ScalarValue {
-        ScalarValue::Enum(Some(
-            match value {
-                SpoolSpeedControllerType::Adaptive => "adaptive",
-                SpoolSpeedControllerType::MinMax => "minmax",
-            }
-            .to_string(),
-        ))
-    }
-
-    fn convert_input(input: Self::Input) -> Self::Type {
-        input
-    }
-
-    fn deserialize_json(raw: &str) -> serde_json::Result<Self::Type> {
-        serde_json::from_str(raw)
-    }
-}
-
 #[derive(Debug)]
 pub struct SpoolSpeedController {
     adaptive_controller: AdaptiveSpoolSpeedController,
