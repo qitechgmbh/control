@@ -41,6 +41,7 @@ use qitech_lib::units::angle::degree;
 use qitech_lib::units::angular_velocity::revolution_per_minute;
 pub use winder2_imports::*;
 
+use crate::machines::winder_v1::api::Configurations;
 use crate::machines::winder_v1::api::GearRatio;
 use crate::machines::winder_v1::api::Measurements;
 use crate::machines::winder_v1::api::Mode;
@@ -156,9 +157,19 @@ impl Winder_V1 {
                 ),
             ),
             traverse_controller: TraverseController::new(
-                Length::new::<millimeter>(22.0), // Default inner limit
-                Length::new::<millimeter>(92.0), // Default outer limit
-                64,                              // Microsteps
+                ctx.config::<millimeter>("traverse.limit_inner")
+                    .default(22.0)
+                    .register()?,
+                ctx.config::<millimeter>("traverse.limit_outer")
+                    .default(92.0)
+                    .register()?,
+                ctx.config::<millimeter>("traverse.step_size")
+                    .default(1.75)
+                    .register()?,
+                ctx.config::<millimeter>("traverse.padding")
+                    .default(0.88)
+                    .register()?,
+                64, // Microsteps
             ),
             spool_automatic_action: super::SpoolAutomaticAction {
                 progress: Length::ZERO,
@@ -171,6 +182,7 @@ impl Winder_V1 {
 
             measurements: init_measurements(&mut ctx)?,
             states: init_states(&mut ctx)?,
+            configurations: init_config(&mut ctx)?,
         })
     }
 
@@ -268,9 +280,19 @@ impl Winder_V1 {
                 ),
             ),
             traverse_controller: TraverseController::new(
-                Length::new::<millimeter>(22.0), // Default inner limit
-                Length::new::<millimeter>(92.0), // Default outer limit
-                64,                              // Microsteps
+                ctx.config::<millimeter>("traverse.limit_inner")
+                    .default(22.0)
+                    .register()?,
+                ctx.config::<millimeter>("traverse.limit_outer")
+                    .default(92.0)
+                    .register()?,
+                ctx.config::<millimeter>("traverse.step_size")
+                    .default(1.75)
+                    .register()?,
+                ctx.config::<millimeter>("traverse.padding")
+                    .default(0.88)
+                    .register()?,
+                64, // Microsteps
             ),
             spool_automatic_action: super::SpoolAutomaticAction {
                 progress: Length::ZERO,
@@ -283,6 +305,7 @@ impl Winder_V1 {
 
             measurements: init_measurements(&mut ctx)?,
             states: init_states(&mut ctx)?,
+            configurations: init_config(&mut ctx)?,
         })
     }
 }
@@ -400,13 +423,134 @@ fn init_states(ctx: &mut BuildContext) -> BuildResult<States> {
     })
 }
 
+fn init_config(ctx: &mut BuildContext) -> BuildResult<Configurations> {
+    Ok(Configurations {
+        // --- puller ---
+        puller_regulation_mode: ctx
+            .config::<PullerRegulationMode>("puller.regulation_mode")
+            .default(PullerRegulationMode::Speed)
+            .register()?,
+
+        puller_target_speed: ctx
+            .config::<meter_per_minute>("puller.target_speed")
+            .default(1.0)
+            .register()?,
+
+        puller_forward: ctx
+            .config::<bool>("puller.forward")
+            .default(true)
+            .register()?,
+
+        puller_gear_ratio: ctx
+            .config::<GearRatio>("puller.gear_ratio")
+            .default(GearRatio::OneToOne)
+            .register()?,
+
+        puller_adaptive_max_speed_change_percent: ctx
+            .config::<f64>("puller.adapative.max_speed_change_percent")
+            .default(33.0)
+            .register()?,
+
+        puller_adaptive_adjustment_interval_meters: ctx
+            .config::<meter>("puller.adapative.adjustment_interval")
+            .default(0.5)
+            .register()?,
+
+        puller_adaptive_step_percent: ctx
+            .config::<f64>("puller.adapative.step_percent")
+            .default(3.3)
+            .register()?,
+
+        puller_adaptive_accepted_difference: ctx
+            .config::<millimeter>("puller.adapative.accepted_difference")
+            .default(0.01)
+            .register()?,
+
+        // --- spool ---
+        spool_adaptive_tension_target: ctx
+            .config::<f64>("spool.adaptive.tension_target")
+            .default(0.7)
+            .register()?,
+
+        spool_adaptive_radius_learning_rate: ctx
+            .config::<f64>("spool.adaptive.radius_learning_rate")
+            .default(0.5)
+            .register()?,
+
+        spool_adaptive_max_speed_multiplier: ctx
+            .config::<f64>("spool.adaptive.max_speed_multiplier")
+            .default(4.0)
+            .register()?,
+
+        spool_adaptive_acceleration_factor: ctx
+            .config::<f64>("spool.adaptive.acceleration_factor")
+            .default(0.2)
+            .register()?,
+
+        spool_adaptive_deacceleration_urgency_multiplier: ctx
+            .config::<f64>("spool.adaptive.deacceleration_urgency_multiplier")
+            .default(15.0)
+            .register()?,
+
+        // --- Spool Auto Stop/Pull ---
+        spool_automatic_required_meters: ctx
+            .config::<meter>("spool_automatic.required_meters")
+            .default(0.0)
+            .register()?,
+
+        spool_automatic_action: ctx
+            .config::<SpoolAutomaticActionMode>("spool_automatic.action")
+            .default(SpoolAutomaticActionMode::NoAction)
+            .register()?,
+    })
+}
+
 fn init_commands(ctx: &mut BuildContext) -> BuildResult<()> {
+    // --- modes ---
+    ctx.command("set_mode.standby")
+        .execute(Winder_V1::cmd_mode_standby)
+        .register()?;
+
+    ctx.command("set_mode.hold")
+        .execute(Winder_V1::cmd_mode_hold)
+        .register()?;
+
+    ctx.command("set_mode.pull")
+        .execute(Winder_V1::cmd_mode_pull)
+        .register()?;
+
+    ctx.command("set_mode.wind")
+        .execute(Winder_V1::cmd_mode_wind)
+        .register()?;
+
+    // --- traverse goto ---
+    ctx.command("traverse.goto_home")
+        .can_execute(Winder_V1::can_go_home)
+        .execute(Winder_V1::cmd_traverse_home)
+        .register()?;
+
+    ctx.command("traverse.goto_limit_inner")
+        .can_execute(Winder_V1::can_go_in)
+        .execute(Winder_V1::cmd_goto_limit_inner)
+        .register()?;
+
+    ctx.command("traverse.goto_limit_outer")
+        .can_execute(Winder_V1::can_go_out)
+        .execute(Winder_V1::cmd_goto_limit_outer)
+        .register()?;
+
+    // --- traverse laser ---
     ctx.command("traverse.laserpointer.enable")
         .execute(Winder_V1::cmd_enable_traverse_laserpointer)
         .register()?;
 
     ctx.command("traverse.laserpointer.disable")
         .execute(Winder_V1::cmd_disable_traverse_laserpointer)
+        .register()?;
+
+    // --- tension arm ---
+    ctx.command("tension_arm.set_zero")
+        .execute(Winder_V1::cmd_tension_arm_set_zero)
         .register()?;
 
     Ok(())

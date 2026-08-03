@@ -35,6 +35,7 @@ use qitech_lib::units::length::millimeter;
 use qitech_lib::units::velocity::meter_per_second;
 
 use crate::converters::angular_step_converter::AngularStepConverter;
+use crate::machines::winder_v1::api::Configurations;
 use crate::machines::winder_v1::api::Measurements;
 use crate::machines::winder_v1::api::States;
 
@@ -107,6 +108,7 @@ pub struct Winder_V1 {
     // --- resource migration ---
     pub states: States,
     pub measurements: Measurements,
+    pub configurations: Configurations,
 }
 
 impl Winder_V1 {

@@ -10,10 +10,13 @@ mod winder2_imports {
     pub use super::super::puller_speed_controller::PullerRegulationMode;
 }
 
+use std::process::exit;
+
 use qitech_framework::EnumProperty;
 use qitech_framework::ScalarValue;
 use qitech_framework::machine::TypeWrapper;
 use qitech_framework::machine::error::CommandExecuteResult;
+use qitech_framework::machine::resource::ConfigProperty;
 use qitech_framework::machine::resource::Measurement;
 use qitech_framework::machine::resource::StateProperty;
 use qitech_lib::units::Angle;
@@ -21,6 +24,9 @@ use qitech_lib::units::AngularVelocity;
 use qitech_lib::units::Length;
 use qitech_lib::units::Velocity;
 use qitech_lib::units::angle::degree;
+use qitech_lib::units::length::meter;
+use qitech_lib::units::length::millimeter;
+use qitech_lib::units::velocity::meter_per_minute;
 pub use winder2_imports::*;
 
 use crate::machines::winder_v1::PULLER_PORT;
@@ -58,63 +64,28 @@ impl From<Mode> for Winder2Mode {
     }
 }
 
-pub enum Mutation {
-    // Traverse
-    /// Position in mm from home point
-    SetTraverseLimitOuter(f64),
-    /// Position in mm from home point
-    SetTraverseLimitInner(f64),
-    /// Step size in mm for traverse movement
-    SetTraverseStepSize(f64),
-    /// Padding in mm for traverse movement limits
-    SetTraversePadding(f64),
-    GotoTraverseLimitOuter,
-    GotoTraverseLimitInner,
-    /// Find home point
-    GotoTraverseHome,
-    EnableTraverseLaserpointer(bool),
+pub struct Configurations {
+    // --- puller ---
+    pub puller_regulation_mode: ConfigProperty<PullerRegulationMode>,
+    pub puller_target_speed: ConfigProperty<Velocity>,
+    pub puller_forward: ConfigProperty<bool>,
+    pub puller_gear_ratio: ConfigProperty<GearRatio>,
 
-    // Puller
-    /// on = speed, off = stop
-    SetPullerRegulationMode(PullerRegulationMode),
-    SetPullerTargetSpeed(f64),
-    SetPullerTargetDiameter(f64),
-    SetPullerForward(bool),
-    SetPullerGearRatio(GearRatio),
+    pub puller_adaptive_max_speed_change_percent: ConfigProperty<f64>,
+    pub puller_adaptive_adjustment_interval_meters: ConfigProperty<Length>,
+    pub puller_adaptive_step_percent: ConfigProperty<f64>,
+    pub puller_adaptive_accepted_difference: ConfigProperty<Length>,
 
-    // Spool Speed Controller
-    SetSpoolRegulationMode(SpoolSpeedControllerType),
-    SetSpoolMinMaxMinSpeed(f64),
-    SetSpoolMinMaxMaxSpeed(f64),
-    SetSpoolForward(bool),
+    // --- spool ---
+    pub spool_adaptive_tension_target: ConfigProperty<f64>,
+    pub spool_adaptive_radius_learning_rate: ConfigProperty<f64>,
+    pub spool_adaptive_max_speed_multiplier: ConfigProperty<f64>,
+    pub spool_adaptive_acceleration_factor: ConfigProperty<f64>,
+    pub spool_adaptive_deacceleration_urgency_multiplier: ConfigProperty<f64>,
 
-    // Adaptive Spool Speed Controller Parameters
-    SetSpoolAdaptiveTensionTarget(f64),
-    SetSpoolAdaptiveRadiusLearningRate(f64),
-    SetSpoolAdaptiveMaxSpeedMultiplier(f64),
-    SetSpoolAdaptiveAccelerationFactor(f64),
-    SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(f64),
-
-    // Spool Auto Stop/Pull
-    SetSpoolAutomaticRequiredMeters(f64),
-    SetSpoolAutomaticAction(SpoolAutomaticActionMode),
-    ResetSpoolProgress,
-
-    // Tension Arm
-    ZeroTensionArmAngle,
-
-    // Mode
-    SetMode(Mode),
-
-    // Set puller adaptive reference machine
-    /// Maximum speed change as a percentage of base speed (0.0–100.0)
-    SetPullerAdaptiveMaxSpeedChangePercent(f64),
-    /// Minimum meters between consecutive adjustments
-    SetPullerAdaptiveAdjustmentIntervalMeters(f64),
-    /// Step size per adjustment as a percentage of base speed (0.0–100.0)
-    SetPullerAdaptiveStepPercent(f64),
-    /// Inner deadzone: max deviation from target (mm) that requires no correction
-    SetPullerAdaptiveAcceptedDifference(f64),
+    // --- Spool Auto Stop/Pull ---
+    pub spool_automatic_required_meters: ConfigProperty<Length>,
+    pub spool_automatic_action: ConfigProperty<SpoolAutomaticActionMode>,
 }
 
 pub struct Measurements {
@@ -445,6 +416,48 @@ impl Winder_V1 {
 
 // --- commands ---
 impl Winder_V1 {
+    // --- modes ---
+    pub fn cmd_mode_standby(&mut self) -> CommandExecuteResult {
+        self.set_mode(&Winder2Mode::Standby);
+        Ok(())
+    }
+
+    pub fn cmd_mode_hold(&mut self) -> CommandExecuteResult {
+        self.set_mode(&Winder2Mode::Hold);
+        Ok(())
+    }
+
+    pub fn cmd_mode_pull(&mut self) -> CommandExecuteResult {
+        self.set_mode(&Winder2Mode::Pull);
+        Ok(())
+    }
+
+    pub fn cmd_mode_wind(&mut self) -> CommandExecuteResult {
+        self.set_mode(&Winder2Mode::Wind);
+        Ok(())
+    }
+
+    // --- misc ---
+    pub fn cmd_goto_limit_inner(&mut self) -> CommandExecuteResult {
+        self.traverse_goto_limit_inner();
+        Ok(())
+    }
+
+    pub fn cmd_goto_limit_outer(&mut self) -> CommandExecuteResult {
+        self.traverse_goto_limit_outer();
+        Ok(())
+    }
+
+    pub fn cmd_tension_arm_set_zero(&mut self) -> CommandExecuteResult {
+        self.tension_arm_zero();
+        Ok(())
+    }
+
+    pub fn cmd_traverse_home(&mut self) -> CommandExecuteResult {
+        self.traverse_goto_home();
+        Ok(())
+    }
+
     pub fn cmd_enable_traverse_laserpointer(&mut self) -> CommandExecuteResult {
         self.set_laser(true);
         Ok(())
@@ -455,6 +468,7 @@ impl Winder_V1 {
         Ok(())
     }
 
+    /*
     pub fn execute_mutation(&mut self, mutation: Mutation) -> CommandExecuteResult {
         match mutation {
             Mutation::EnableTraverseLaserpointer(enable) => self.set_laser(enable),
@@ -512,4 +526,5 @@ impl Winder_V1 {
 
         Ok(())
     }
+    */
 }

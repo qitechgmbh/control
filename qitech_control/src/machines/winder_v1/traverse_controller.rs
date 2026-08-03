@@ -1,5 +1,7 @@
+use std::fmt::Debug;
 use std::time::Instant;
 
+use qitech_framework::machine::resource::ConfigProperty;
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::angular_velocity::revolution_per_second;
@@ -13,20 +15,25 @@ use super::TRAVERSE_END_STOP_PORT;
 use super::TRAVERSE_PORT;
 use crate::converters::linear_step_converter::LinearStepConverter;
 
-#[derive(Debug)]
 pub struct TraverseController {
     enabled: bool,
     position: Length,
-    limit_inner: Length,
-    limit_outer: Length,
-    step_size: Length,
-    padding: Length,
+    limit_outer: ConfigProperty<Length>,
+    limit_inner: ConfigProperty<Length>,
+    step_size: ConfigProperty<Length>,
+    padding: ConfigProperty<Length>,
     state: State,
     fullstep_converter: LinearStepConverter,
     microstep_converter: LinearStepConverter,
     // A sticky flag if the [`State`] changed (not the sub states)
     // Needed to send state updates to the UI
     did_change_state: bool,
+}
+
+impl Debug for TraverseController {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TraverseController").finish()
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -100,14 +107,20 @@ pub enum HomingState {
 }
 
 impl TraverseController {
-    pub fn new(limit_inner: Length, limit_outer: Length, microsteps: u8) -> Self {
+    pub fn new(
+        limit_inner: ConfigProperty<Length>,
+        limit_outer: ConfigProperty<Length>,
+        step_size: ConfigProperty<Length>,
+        padding: ConfigProperty<Length>,
+        microsteps: u8,
+    ) -> Self {
         Self {
             enabled: false,
             position: Length::ZERO,
             limit_inner,
             limit_outer,
-            step_size: Length::new::<millimeter>(1.75), // Default step size
-            padding: Length::new::<millimeter>(0.88),   // Default padding
+            step_size,
+            padding,
             state: State::NotHomed,
             did_change_state: false,
             fullstep_converter: LinearStepConverter::from_circumference(
@@ -129,35 +142,35 @@ impl TraverseController {
     }
 
     pub fn set_limit_inner(&mut self, limit: Length) {
-        self.limit_inner = limit;
+        self.limit_inner.set(limit);
     }
 
     pub fn set_limit_outer(&mut self, limit: Length) {
-        self.limit_outer = limit;
+        self.limit_outer.set(limit);
     }
 
     pub fn set_step_size(&mut self, step_size: Length) {
-        self.step_size = step_size;
+        self.step_size.set(step_size);
     }
 
     pub fn set_padding(&mut self, padding: Length) {
-        self.padding = padding;
+        self.padding.set(padding);
     }
 
     pub fn get_limit_inner(&self) -> Length {
-        self.limit_inner
+        self.limit_inner.get()
     }
 
     pub fn get_limit_outer(&self) -> Length {
-        self.limit_outer
+        self.limit_outer.get()
     }
 
     pub fn get_step_size(&self) -> Length {
-        self.step_size
+        self.step_size.get()
     }
 
     pub fn get_padding(&self) -> Length {
-        self.padding
+        self.padding.get()
     }
 
     pub fn get_current_position(&self) -> Option<Length> {
@@ -297,14 +310,14 @@ impl TraverseController {
             State::Idle => {}
             State::GoingIn => {
                 // If inner limit is reached
-                if self.is_at_position(self.limit_inner, Length::new::<millimeter>(0.01)) {
+                if self.is_at_position(self.limit_inner.get(), Length::new::<millimeter>(0.01)) {
                     // Put Into Idle
                     self.state = State::Idle;
                 }
             }
             State::GoingOut => {
                 // If outer limit is reached
-                if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.01)) {
+                if self.is_at_position(self.limit_outer.get(), Length::new::<millimeter>(0.01)) {
                     // Put Into Idle
                     self.state = State::Idle;
                 }
@@ -381,21 +394,21 @@ impl TraverseController {
             State::Traversing(traversing_state) => match traversing_state {
                 TraversingState::GoingOut => {
                     // If outer limit is reached
-                    if self.position >= self.limit_outer - self.padding {
+                    if self.position >= self.limit_outer.get() - self.padding.get() {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingIn);
                     }
                 }
                 TraversingState::TraversingIn => {
                     // If inner limit is reached
-                    if self.position <= self.limit_inner + self.padding {
+                    if self.position <= self.limit_inner.get() + self.padding.get() {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingOut);
                     }
                 }
                 TraversingState::TraversingOut => {
                     // If outer limit is reached
-                    if self.position >= self.limit_outer - self.padding {
+                    if self.position >= self.limit_outer.get() - self.padding.get() {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingIn);
                     }
@@ -416,8 +429,8 @@ impl TraverseController {
             State::GoingIn => {
                 // Move in at a speed of 10-100 mm/s
                 self.speed_to_position(
-                    self.limit_inner,
-                    match self.distance_to_position(self.limit_inner).abs()
+                    self.limit_inner.get(),
+                    match self.distance_to_position(self.limit_inner.get()).abs()
                         > Length::new::<millimeter>(1.0)
                     {
                         true => Velocity::new::<millimeter_per_second>(100.0),
@@ -428,8 +441,8 @@ impl TraverseController {
             State::GoingOut => {
                 // Move out at a speed of 10-100 mm/s
                 self.speed_to_position(
-                    self.limit_outer,
-                    match self.distance_to_position(self.limit_outer).abs()
+                    self.limit_outer.get(),
+                    match self.distance_to_position(self.limit_outer.get()).abs()
                         > Length::new::<millimeter>(1.0)
                     {
                         true => Velocity::new::<millimeter_per_second>(100.0),
@@ -464,17 +477,18 @@ impl TraverseController {
                 TraversingState::GoingOut => {
                     // Move out at a speed of 100 mm/s
                     self.speed_to_position(
-                        self.limit_outer - self.padding + Length::new::<millimeter>(0.01),
+                        self.limit_outer.get() - self.padding.get()
+                            + Length::new::<millimeter>(0.01),
                         Velocity::new::<millimeter_per_second>(100.0),
                     )
                 }
                 TraversingState::TraversingIn => self.speed_to_position(
-                    self.limit_inner + self.padding - Length::new::<millimeter>(0.01),
-                    Self::calculate_traverse_speed(spool_speed, self.step_size),
+                    self.limit_inner.get() + self.padding.get() - Length::new::<millimeter>(0.01),
+                    Self::calculate_traverse_speed(spool_speed, self.step_size.get()),
                 ),
                 TraversingState::TraversingOut => self.speed_to_position(
-                    self.limit_outer - self.padding + Length::new::<millimeter>(0.01),
-                    Self::calculate_traverse_speed(spool_speed, self.step_size),
+                    self.limit_outer.get() - self.padding.get() + Length::new::<millimeter>(0.01),
+                    Self::calculate_traverse_speed(spool_speed, self.step_size.get()),
                 ),
             },
         }

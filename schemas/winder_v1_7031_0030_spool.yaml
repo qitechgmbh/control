@@ -6,6 +6,73 @@ identification:
   vendor_id: 1
   machine_id: 98
 
+config:
+  traverse:
+    limit_inner: !millimeter
+      default: 22.0
+
+    limit_outer: !millimeter
+      default: 92.0
+
+    step_size: !millimeter
+      default: 1.75
+
+    padding: !millimeter
+      default: 0.88
+
+  puller:
+    regulation_mode: !enum
+      variants: [speed, diameter]
+      default: speed
+
+    target_speed: !meter_per_minute
+      default: 1.0
+
+    forward: !boolean
+      default: true
+
+    gear_ratio: !enum
+      variants: [one_to_one, one_to_five, one_to_ten]
+      default: one_to_one
+
+    adapative:
+      max_speed_change_percent: !float
+        default: 33.0
+
+      adjustment_interval: !meter
+        default: 0.5
+
+      step_percent: !float
+        default: 3.3
+
+      accepted_difference: !millimeter
+        default: 0.01
+
+  spool:
+    adaptive:
+      tension_target: !float
+        default: 0.7
+
+      radius_learning_rate: !float
+        default: 0.5
+
+      max_speed_multiplier: !float
+        default: 4.0
+
+      acceleration_factor: !float
+        default: 0.2
+
+      deacceleration_urgency_multiplier: !float
+        default: 15.0
+
+  spool_automatic:
+    required_meters: !meter
+      default: 0.0
+
+    action: !enum
+      variants: [no_action, pull, hold]
+      default: no_action
+
 state:
   traverse:
     limit_inner: !millimeter
@@ -81,7 +148,20 @@ measurements:
     angle: !degree
 
 commands:
+  set_mode:
+    standby: !command
+    hold: !command
+    pull: !command
+    wind: !command
+
   traverse:
     laserpointer:
       enable: !command
       disable: !command
+
+    goto_home: !command
+    goto_limit_inner: !command
+    goto_limit_outer: !command
+
+  tension_arm: 
+    set_zero: !command
