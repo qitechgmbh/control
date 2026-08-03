@@ -3,6 +3,7 @@ import { PropGraphSync, SwitchOrigin } from "./types";
 import { GraphExportData, exportGraphsToExcel } from "./excelExport";
 import { useLogsStore } from "@/stores/logsStore";
 import { useGraphSettingsStore } from "@/stores/graphSettingsStore";
+import { useExportDialog } from "@/hooks/useExportDialog";
 
 export function useGraphSync(exportGroupId?: string) {
   const store = useGraphSettingsStore();
@@ -129,6 +130,8 @@ export function useGraphSync(exportGroupId?: string) {
     graphDataRef.current.delete(graphId);
   }, []);
 
+  const { notifyResult, dialogProps: exportDialogProps } = useExportDialog();
+
   const handleExport = useCallback(() => {
     if (graphDataRef.current.size === 0) {
       console.warn("No graphs registered for export");
@@ -139,10 +142,14 @@ export function useGraphSync(exportGroupId?: string) {
       graphDataRef.current,
       exportGroupId || "synced-graphs",
       logs,
-    ).catch((error) => {
-      console.error("Failed to export graphs:", error);
-    });
-  }, [exportGroupId]);
+    )
+      .then((result) => {
+        if (result) notifyResult(result);
+      })
+      .catch((error) => {
+        console.error("Failed to export graphs:", error);
+      });
+  }, [exportGroupId, notifyResult]);
 
   const handleTimeWindowChange = useCallback(
     (graphId: string, newTimeWindow: number | "all") => {
@@ -272,6 +279,7 @@ export function useGraphSync(exportGroupId?: string) {
     onSwitchToLive: handleSwitchToLive,
     onSwitchToHistorical: handleSwitchToHistorical,
     onExport: handleExport,
+    exportDialogProps,
     showFromTimestamp,
     onShowFromChange: handleShowFromChange,
   };

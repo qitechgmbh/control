@@ -8,6 +8,8 @@
  * @see src/helpers/update_helpers.ts for similar pattern
  */
 
+import type { SaveFileResult } from "@/helpers/ipc/export/export-channels";
+
 /**
  * Reboot the HMI panel
  */
@@ -53,10 +55,7 @@ export async function restartBackendIntoPreop(): Promise<{
   }
 }
 
-export async function exportLogs(): Promise<{
-  success: boolean;
-  error?: string;
-}> {
+export async function exportLogs(): Promise<SaveFileResult> {
   try {
     return await window.troubleshoot.exportLogs();
   } catch (error) {
