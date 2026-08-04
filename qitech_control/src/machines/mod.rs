@@ -11,3 +11,4 @@ pub use laser_v1::LaserV1;
 // pub use winder_v1::WinderV1;
 
 mod winder_v2;
+pub use winder_v2::WinderV1;

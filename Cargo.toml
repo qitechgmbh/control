@@ -9,7 +9,7 @@ repository = "https://github.com/qitechgmbh/control"
 
 [workspace.dependencies]
 # --- lib ---
-qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="2ca54835250bcc5a24e50e20aa55ffc0f264033c" }
+qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="530355c00baf6335f6085441c2a497d9ac060af6" }
 
 # --- framework ---
 qitech_framework = { path = "/home/entity/cloned-repos/control-v2/library" }

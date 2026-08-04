@@ -372,7 +372,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2ca54835250bcc5a24e50e20aa55ffc0f264033c#2ca54835250bcc5a24e50e20aa55ffc0f264033c"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=530355c00baf6335f6085441c2a497d9ac060af6#530355c00baf6335f6085441c2a497d9ac060af6"
 dependencies = [
  "anyhow",
  "libc",
@@ -827,7 +827,7 @@ dependencies = [
 [[package]]
 name = "ethercat_hal"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2ca54835250bcc5a24e50e20aa55ffc0f264033c#2ca54835250bcc5a24e50e20aa55ffc0f264033c"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=530355c00baf6335f6085441c2a497d9ac060af6#530355c00baf6335f6085441c2a497d9ac060af6"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -850,7 +850,7 @@ dependencies = [
 [[package]]
 name = "ethercat_hal_derive"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2ca54835250bcc5a24e50e20aa55ffc0f264033c#2ca54835250bcc5a24e50e20aa55ffc0f264033c"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=530355c00baf6335f6085441c2a497d9ac060af6#530355c00baf6335f6085441c2a497d9ac060af6"
 dependencies = [
  "deluxe",
  "proc-macro2",
@@ -861,7 +861,7 @@ dependencies = [
 [[package]]
 name = "ethercrab"
 version = "0.7.1"
-source = "git+https://github.com/kraemr/ethercrab?rev=e84f794db7f7ebe321a6608c7cd1808ca54a6eb0#e84f794db7f7ebe321a6608c7cd1808ca54a6eb0"
+source = "git+https://github.com/qitechgmbh/ethercrab-dc?rev=e84f794db7f7ebe321a6608c7cd1808ca54a6eb0#e84f794db7f7ebe321a6608c7cd1808ca54a6eb0"
 dependencies = [
  "async-io",
  "atomic-waker",
@@ -891,7 +891,7 @@ dependencies = [
 [[package]]
 name = "ethercrab-wire"
 version = "0.3.0"
-source = "git+https://github.com/kraemr/ethercrab?rev=e84f794db7f7ebe321a6608c7cd1808ca54a6eb0#e84f794db7f7ebe321a6608c7cd1808ca54a6eb0"
+source = "git+https://github.com/qitechgmbh/ethercrab-dc?rev=e84f794db7f7ebe321a6608c7cd1808ca54a6eb0#e84f794db7f7ebe321a6608c7cd1808ca54a6eb0"
 dependencies = [
  "ethercrab-wire-derive",
  "heapless 0.8.0",
@@ -900,7 +900,7 @@ dependencies = [
 [[package]]
 name = "ethercrab-wire-derive"
 version = "0.3.0"
-source = "git+https://github.com/kraemr/ethercrab?rev=e84f794db7f7ebe321a6608c7cd1808ca54a6eb0#e84f794db7f7ebe321a6608c7cd1808ca54a6eb0"
+source = "git+https://github.com/qitechgmbh/ethercrab-dc?rev=e84f794db7f7ebe321a6608c7cd1808ca54a6eb0#e84f794db7f7ebe321a6608c7cd1808ca54a6eb0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1526,7 +1526,7 @@ dependencies = [
 [[package]]
 name = "machines"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2ca54835250bcc5a24e50e20aa55ffc0f264033c#2ca54835250bcc5a24e50e20aa55ffc0f264033c"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=530355c00baf6335f6085441c2a497d9ac060af6#530355c00baf6335f6085441c2a497d9ac060af6"
 
 [[package]]
 name = "memchr"
@@ -1583,7 +1583,7 @@ dependencies = [
 [[package]]
 name = "modbus"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2ca54835250bcc5a24e50e20aa55ffc0f264033c#2ca54835250bcc5a24e50e20aa55ffc0f264033c"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=530355c00baf6335f6085441c2a497d9ac060af6#530355c00baf6335f6085441c2a497d9ac060af6"
 dependencies = [
  "anyhow",
  "common",
@@ -2117,7 +2117,7 @@ dependencies = [
 [[package]]
 name = "qitech_lib"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2ca54835250bcc5a24e50e20aa55ffc0f264033c#2ca54835250bcc5a24e50e20aa55ffc0f264033c"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=530355c00baf6335f6085441c2a497d9ac060af6#530355c00baf6335f6085441c2a497d9ac060af6"
 dependencies = [
  "bitvec",
  "common",
@@ -3196,7 +3196,7 @@ checksum = "b4ac048d71ede7ee76d585517add45da530660ef4390e49b098733c6e897f254"
 [[package]]
 name = "units"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=2ca54835250bcc5a24e50e20aa55ffc0f264033c#2ca54835250bcc5a24e50e20aa55ffc0f264033c"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=530355c00baf6335f6085441c2a497d9ac060af6#530355c00baf6335f6085441c2a497d9ac060af6"
 dependencies = [
  "uom",
 ]

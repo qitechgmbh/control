@@ -22,6 +22,7 @@ use qitech_framework_tui::TuiConfiguration;
 use qitech_lib::ethercat_hal::DcConfiguration;
 use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
+use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
 
 pub fn main() -> anyhow::Result<()> {
     interface::bring_up_all_ethernet();
@@ -36,7 +37,18 @@ pub fn main() -> anyhow::Result<()> {
         .requests_per_cycle_max(10)
         .export_interval(Duration::from_secs_f64(1.0 / 32.0))
         .ethercat(ETHERCAT_CONFIG)
-        .modbus_rtu_device("pci-0000:c6:00.0-usbv2-0:2:1.0-port0", laser_ident(1))
+        .modbus_rtu_device::<LaserDevice>(
+            "pci-0000:c6:00.0-usbv2-0:2.1:1.0-port0".to_string(),
+            laser_ident(1),
+            1,
+            None,
+        )
+        .modbus_rtu_device::<LaserDevice>(
+            "pci-0000:c6:00.0-usbv2-0:2.3:1.0-port0".to_string(),
+            laser_ident(2),
+            1,
+            None,
+        )
         .machine::<LaserV1>()
         .machine::<WinderV1>();
 
