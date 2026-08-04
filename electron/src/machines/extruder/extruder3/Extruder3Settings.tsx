@@ -25,11 +25,18 @@ export function Extruder3SettingsPage() {
     setTemperatureTargetEnabled,
     startPressurePidAutoTune,
     stopPressurePidAutoTune,
+    startThermalCouplingTest,
+    stopThermalCouplingTest,
   } = useExtruder3();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [tuneDelta, setTuneDelta] = useState(1.0);
   const [frequencyStepHz, setFrequencyStepHz] = useState(2.5);
+  const [couplingStepSize, setCouplingStepSize] = useState(0.15);
+  const [couplingSettleDurationSecs, setCouplingSettleDurationSecs] =
+    useState(180);
+  const [couplingStepDurationSecs, setCouplingStepDurationSecs] =
+    useState(420);
 
   return (
     <Page>
@@ -419,8 +426,214 @@ export function Extruder3SettingsPage() {
               </Label>
             </ControlCard>
           </ControlGrid>
+
+          <ControlCard title="Thermal Coupling Test (Debug)">
+            <Alert className="mt-2 border-yellow-500/50 bg-yellow-500/10">
+              <AlertTitle className="text-yellow-600">
+                Debug tool — read before running
+              </AlertTitle>
+              <AlertDescription>
+                Steps each of the 4 zones' duty cycle in turn (all 4 held
+                open-loop) and measures how every zone's temperature responds,
+                to help decide how to tune each zone's PID. Requires the
+                extruder to already be in <b>Heat</b> mode at a stable
+                temperature. Runs unattended for roughly{" "}
+                {Math.round(
+                  ((couplingSettleDurationSecs + couplingStepDurationSecs) *
+                    4) /
+                    60,
+                )}{" "}
+                minutes total. The over-temperature cutoff stays active
+                throughout, and you can stop it at any time.
+              </AlertDescription>
+            </Alert>
+            <Label label="Duty Step">
+              <EditValue
+                value={couplingStepSize}
+                defaultValue={0.15}
+                title="Duty Step"
+                description="Duty-cycle step applied to the zone under test (0-1)"
+                min={0.05}
+                max={0.5}
+                step={0.01}
+                renderValue={(v) => roundToDecimals(v, 2)}
+                onChange={setCouplingStepSize}
+              />
+            </Label>
+            <Label label="Settle Duration">
+              <EditValue
+                value={couplingSettleDurationSecs}
+                defaultValue={180}
+                unit="s"
+                title="Settle Duration"
+                description="How long to hold at baseline before recording, and between zones"
+                min={30}
+                max={1800}
+                step={10}
+                renderValue={(v) => roundToDecimals(v, 0)}
+                onChange={setCouplingSettleDurationSecs}
+              />
+            </Label>
+            <Label label="Step Duration">
+              <EditValue
+                value={couplingStepDurationSecs}
+                defaultValue={420}
+                unit="s"
+                title="Step Duration"
+                description="How long to hold the stepped duty before recording the response"
+                min={30}
+                max={3600}
+                step={10}
+                renderValue={(v) => roundToDecimals(v, 0)}
+                onChange={setCouplingStepDurationSecs}
+              />
+            </Label>
+            <Label label="Actions">
+              {state?.mode_state.mode !== "Heat" && (
+                <p className="mb-2 text-sm text-amber-600">
+                  Extruder must be in Heat mode to start the coupling test.
+                </p>
+              )}
+              <div className="flex gap-4">
+                <button
+                  onClick={() =>
+                    startThermalCouplingTest(
+                      couplingStepSize,
+                      couplingSettleDurationSecs,
+                      couplingStepDurationSecs,
+                    )
+                  }
+                  disabled={
+                    state?.mode_state.mode !== "Heat" ||
+                    state?.thermal_coupling_test_state.state === "settling" ||
+                    state?.thermal_coupling_test_state.state === "stepping" ||
+                    state?.thermal_coupling_test_state.state === "starting"
+                  }
+                  className="inline-block w-fit rounded bg-blue-600 px-4 py-4 text-base text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  Start Coupling Test
+                </button>
+                <button
+                  onClick={stopThermalCouplingTest}
+                  disabled={
+                    state?.thermal_coupling_test_state.state === "idle" ||
+                    state?.thermal_coupling_test_state.state === undefined
+                  }
+                  className="inline-block w-fit rounded bg-red-600 px-4 py-4 text-base text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  Stop
+                </button>
+              </div>
+            </Label>
+            <Label label="Status">
+              <div className="flex flex-col gap-2">
+                <span className="text-base capitalize">
+                  {(state?.thermal_coupling_test_state.state ?? "idle").replace(
+                    /_/g,
+                    " ",
+                  )}
+                  {state?.thermal_coupling_test_state.zone_under_test &&
+                    ` — ${state.thermal_coupling_test_state.zone_under_test}`}
+                  {` (${state?.thermal_coupling_test_state.zones_completed ?? 0}/4 zones done)`}
+                </span>
+                {state?.thermal_coupling_test_state.duration_secs ? (
+                  <>
+                    <div className="h-3 w-full rounded bg-slate-200">
+                      <div
+                        className="h-3 rounded bg-blue-500 transition-all"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            (100 *
+                              state.thermal_coupling_test_state.elapsed_secs) /
+                              state.thermal_coupling_test_state.duration_secs,
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-muted-foreground text-sm">
+                      {roundToDecimals(
+                        state.thermal_coupling_test_state.elapsed_secs,
+                        0,
+                      )}
+                      s / {state.thermal_coupling_test_state.duration_secs}s
+                    </span>
+                  </>
+                ) : null}
+                {state?.thermal_coupling_test_state.error && (
+                  <span className="text-sm text-red-600">
+                    {state.thermal_coupling_test_state.error}
+                  </span>
+                )}
+              </div>
+            </Label>
+            {state?.thermal_coupling_test_state.result && (
+              <>
+                <Label label="Gain Matrix (°C per unit duty step)">
+                  <ThermalCouplingMatrixTable
+                    zones={state.thermal_coupling_test_state.result.zones}
+                    matrix={state.thermal_coupling_test_state.result.gain_matrix}
+                    decimals={2}
+                  />
+                </Label>
+                <Label label="Relative Gain Array">
+                  <ThermalCouplingMatrixTable
+                    zones={state.thermal_coupling_test_state.result.zones}
+                    matrix={state.thermal_coupling_test_state.result.rga_matrix}
+                    decimals={2}
+                  />
+                </Label>
+              </>
+            )}
+          </ControlCard>
         </>
       )}
     </Page>
+  );
+}
+
+function ThermalCouplingMatrixTable({
+  zones,
+  matrix,
+  decimals,
+}: {
+  zones: readonly string[];
+  matrix: number[][];
+  decimals: number;
+}) {
+  return (
+    <table className="border-collapse text-sm">
+      <thead>
+        <tr>
+          <th className="border px-2 py-1 text-muted-foreground">
+            out ↓ / in →
+          </th>
+          {zones.map((zone) => (
+            <th key={zone} className="border px-2 py-1 capitalize">
+              {zone}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {matrix.map((row, i) => (
+          <tr key={zones[i]}>
+            <th className="border px-2 py-1 text-left capitalize">
+              {zones[i]}
+            </th>
+            {row.map((value, j) => (
+              <td
+                key={zones[j]}
+                className={`border px-2 py-1 text-right ${
+                  i === j ? "font-semibold" : ""
+                }`}
+              >
+                {Number.isNaN(value) ? "—" : roundToDecimals(value, decimals)}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
