@@ -14,8 +14,10 @@ use qitech_lib::units::length::{meter, millimeter};
 use qitech_lib::units::velocity::{meter_per_minute, meter_per_second};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, EnumProperty)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, PartialEq, EnumProperty)]
+#[allow(clippy::enum_variant_names)]
 pub enum GearRatio {
+    #[default]
     OneToOne,
     OneToFive,
     OneToTen,
@@ -29,12 +31,6 @@ impl GearRatio {
             GearRatio::OneToFive => 5.0,
             GearRatio::OneToTen => 10.0,
         }
-    }
-}
-
-impl Default for GearRatio {
-    fn default() -> Self {
-        GearRatio::OneToOne
     }
 }
 
@@ -148,10 +144,6 @@ impl PullerSpeedController {
     pub fn calc_angular_velocity(&mut self, t: Instant) -> AngularVelocity {
         let speed = self.update_speed(t);
         self.speed_to_angular_velocity(speed)
-    }
-
-    pub fn get_target_speed(&self) -> Velocity {
-        self.target_speed
     }
 }
 
@@ -271,7 +263,7 @@ impl AdaptiveSpeedAlgorithm {
     }
 
     pub fn set_increase_per_step(&mut self, value: f64) {
-        self.increase_per_step = value.max(0.0).min(1.0);
+        self.increase_per_step = value.clamp(0.0, 1.0);
     }
 
     pub fn adjustment_distance(&self) -> Length {
@@ -288,11 +280,6 @@ impl AdaptiveSpeedAlgorithm {
 
     pub fn set_tolerance_limit(&mut self, value: Length) {
         self.tolerance_limit = value.max(Length::ZERO);
-    }
-
-    /// Current modulation level in [-1.0, 1.0].
-    pub fn modulation(&self) -> f64 {
-        self.modulation
     }
 
     /// Reset modulation to zero so the algorithm starts fresh from the base speed.

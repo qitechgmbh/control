@@ -49,23 +49,9 @@ impl SpoolSpeedController {
         }
     }
 
-    pub fn set_speed(&mut self, speed: AngularVelocity) {
-        match self.r#type {
-            SpoolSpeedControllerType::Adaptive => self.adaptive_controller.set_speed(speed),
-            SpoolSpeedControllerType::MinMax => self.minmax_controller.set_speed(speed),
-        }
-    }
-
     pub const fn set_enabled(&mut self, enabled: bool) {
         self.adaptive_controller.set_enabled(enabled);
         self.minmax_controller.set_enabled(enabled);
-    }
-
-    pub const fn is_enabled(&self) -> bool {
-        match self.r#type {
-            SpoolSpeedControllerType::Adaptive => self.adaptive_controller.is_enabled(),
-            SpoolSpeedControllerType::MinMax => self.minmax_controller.is_enabled(),
-        }
     }
 
     pub fn set_type(&mut self, r#type: SpoolSpeedControllerType) {

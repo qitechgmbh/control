@@ -8,7 +8,7 @@ use qitech_lib::units::velocity::meter_per_minute;
 use qitech_lib::units::{Angle, AngularVelocity, Length, Velocity};
 
 use crate::machines::winder_v2::types::SpoolAutomaticActionMode;
-use crate::machines::winder_v2::{PULLER_PORT, SPOOL_PORT, WinderV1, Winder2Mode};
+use crate::machines::winder_v2::{PULLER_PORT, SPOOL_PORT, Winder2Mode, WinderV1};
 use crate::machines::winder_v2::{spool_speed_controller::SpoolSpeedControllerType, types::Mode};
 
 pub use super::puller_speed_controller::{GearRatio, PullerRegulationMode};
@@ -71,27 +71,17 @@ impl WinderV1 {
     }
 
     pub fn on_traverse_step_size_changed(&mut self) -> Result<(), String> {
-        self.traverse_set_step_size(
-            self.config_props
-                .traverse_step_size
-                .get_as::<millimeter>(),
-        );
+        self.traverse_set_step_size(self.config_props.traverse_step_size.get_as::<millimeter>());
         Ok(())
     }
 
     pub fn on_traverse_padding_changed(&mut self) -> Result<(), String> {
-        self.traverse_set_padding(
-            self.config_props
-                .traverse_padding
-                .get_as::<millimeter>(),
-        );
+        self.traverse_set_padding(self.config_props.traverse_padding.get_as::<millimeter>());
         Ok(())
     }
 
     pub fn on_puller_regulation_mode_changed(&mut self) -> Result<(), String> {
-        self.puller_set_regulation(
-            self.config_props.puller_regulation_mode.get(),
-        );
+        self.puller_set_regulation(self.config_props.puller_regulation_mode.get());
         Ok(())
     }
 
@@ -105,22 +95,16 @@ impl WinderV1 {
     }
 
     pub fn on_puller_forward_changed(&mut self) -> Result<(), String> {
-        self.puller_set_forward(
-            self.config_props.puller_forward.get(),
-        );
+        self.puller_set_forward(self.config_props.puller_forward.get());
         Ok(())
     }
 
     pub fn on_puller_gear_ratio_changed(&mut self) -> Result<(), String> {
-        self.puller_set_gear_ratio(
-            self.config_props.puller_gear_ratio.get(),
-        );
+        self.puller_set_gear_ratio(self.config_props.puller_gear_ratio.get());
         Ok(())
     }
 
-    pub fn on_puller_adaptive_max_speed_change_percent_changed(
-        &mut self,
-    ) -> Result<(), String> {
+    pub fn on_puller_adaptive_max_speed_change_percent_changed(&mut self) -> Result<(), String> {
         self.puller_set_adaptive_max_speed_change_percent(
             self.config_props
                 .puller_adaptive_max_speed_change_percent
@@ -129,9 +113,7 @@ impl WinderV1 {
         Ok(())
     }
 
-    pub fn on_puller_adaptive_adjustment_interval_changed(
-        &mut self,
-    ) -> Result<(), String> {
+    pub fn on_puller_adaptive_adjustment_interval_changed(&mut self) -> Result<(), String> {
         self.puller_set_adaptive_adjustment_interval_meters(
             self.config_props
                 .puller_adaptive_adjustment_interval
@@ -140,20 +122,12 @@ impl WinderV1 {
         Ok(())
     }
 
-    pub fn on_puller_adaptive_step_percent_changed(
-        &mut self,
-    ) -> Result<(), String> {
-        self.puller_set_adaptive_step_percent(
-            self.config_props
-                .puller_adaptive_step_percent
-                .get(),
-        );
+    pub fn on_puller_adaptive_step_percent_changed(&mut self) -> Result<(), String> {
+        self.puller_set_adaptive_step_percent(self.config_props.puller_adaptive_step_percent.get());
         Ok(())
     }
 
-    pub fn on_puller_adaptive_accepted_difference_changed(
-        &mut self,
-    ) -> Result<(), String> {
+    pub fn on_puller_adaptive_accepted_difference_changed(&mut self) -> Result<(), String> {
         self.puller_set_adaptive_accepted_difference(
             self.config_props
                 .puller_adaptive_accepted_difference
@@ -163,9 +137,7 @@ impl WinderV1 {
     }
 
     pub fn on_spool_regulation_mode_changed(&mut self) -> Result<(), String> {
-        self.spool_set_regulation_mode(
-            self.config_props.spool_regulation_mode.get(),
-        );
+        self.spool_set_regulation_mode(self.config_props.spool_regulation_mode.get());
         Ok(())
     }
 
@@ -174,8 +146,7 @@ impl WinderV1 {
             self.config_props
                 .spool_min_speed
                 .get_as::<meter_per_minute>(),
-        );
-        Ok(())
+        )
     }
 
     pub fn on_spool_max_speed_changed(&mut self) -> Result<(), String> {
@@ -183,57 +154,38 @@ impl WinderV1 {
             self.config_props
                 .spool_max_speed
                 .get_as::<meter_per_minute>(),
-        );
-        Ok(())
+        )
     }
 
     pub fn on_spool_forward_changed(&mut self) -> Result<(), String> {
-        self.spool_set_forward(
-            self.config_props.spool_forward.get(),
-        );
+        self.spool_set_forward(self.config_props.spool_forward.get());
         Ok(())
     }
 
-    pub fn on_spool_adaptive_tension_target_changed(
-        &mut self,
-    ) -> Result<(), String> {
+    pub fn on_spool_adaptive_tension_target_changed(&mut self) -> Result<(), String> {
         self.spool_set_adaptive_tension_target(
-            self.config_props
-                .spool_adaptive_tension_target
-                .get(),
+            self.config_props.spool_adaptive_tension_target.get(),
         );
         Ok(())
     }
 
-    pub fn on_spool_adaptive_radius_learning_rate_changed(
-        &mut self,
-    ) -> Result<(), String> {
+    pub fn on_spool_adaptive_radius_learning_rate_changed(&mut self) -> Result<(), String> {
         self.spool_set_adaptive_radius_learning_rate(
-            self.config_props
-                .spool_adaptive_radius_learning_rate
-                .get(),
+            self.config_props.spool_adaptive_radius_learning_rate.get(),
         );
         Ok(())
     }
 
-    pub fn on_spool_adaptive_max_speed_multiplier_changed(
-        &mut self,
-    ) -> Result<(), String> {
+    pub fn on_spool_adaptive_max_speed_multiplier_changed(&mut self) -> Result<(), String> {
         self.spool_set_adaptive_max_speed_multiplier(
-            self.config_props
-                .spool_adaptive_max_speed_multiplier
-                .get(),
+            self.config_props.spool_adaptive_max_speed_multiplier.get(),
         );
         Ok(())
     }
 
-    pub fn on_spool_adaptive_acceleration_factor_changed(
-        &mut self,
-    ) -> Result<(), String> {
+    pub fn on_spool_adaptive_acceleration_factor_changed(&mut self) -> Result<(), String> {
         self.spool_set_adaptive_acceleration_factor(
-            self.config_props
-                .spool_adaptive_acceleration_factor
-                .get(),
+            self.config_props.spool_adaptive_acceleration_factor.get(),
         );
         Ok(())
     }
@@ -249,9 +201,7 @@ impl WinderV1 {
         Ok(())
     }
 
-    pub fn on_spool_automatic_required_length_changed(
-        &mut self,
-    ) -> Result<(), String> {
+    pub fn on_spool_automatic_required_length_changed(&mut self) -> Result<(), String> {
         self.set_spool_automatic_required_meters(
             self.config_props
                 .spool_automatic_required_length
@@ -261,9 +211,7 @@ impl WinderV1 {
     }
 
     pub fn on_spool_automatic_action_changed(&mut self) -> Result<(), String> {
-        self.set_spool_automatic_mode(
-            self.config_props.spool_automatic_action.get(),
-        );
+        self.set_spool_automatic_mode(self.config_props.spool_automatic_action.get());
         Ok(())
     }
 }
@@ -392,8 +340,7 @@ impl WinderV1 {
     }
 
     pub fn cmd_tension_arm_set_zero(&mut self) -> CommandExecuteResult {
-        self.tension_arm_zero();
-        Ok(())
+        self.tension_arm_zero()
     }
 }
 

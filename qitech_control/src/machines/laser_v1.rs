@@ -46,9 +46,7 @@ pub struct LaserV1 {
 }
 
 impl MachineInterface for LaserV1 {
-    const SCHEMAS: &[&'static str] = &[
-        include_str!("../../../schemas/laser_v1.yaml")
-    ];
+    const SCHEMAS: &[&'static str] = &[include_str!("../../../schemas/laser_v1.yaml")];
 }
 
 impl MachineBuild for LaserV1 {

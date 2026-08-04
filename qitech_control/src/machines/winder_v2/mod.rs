@@ -104,9 +104,7 @@ pub struct WinderV1 {
 }
 
 impl MachineInterface for WinderV1 {
-    const SCHEMAS: &[&'static str] = &[
-        include_str!("../../../../schemas/winder_v2.yaml")
-    ];
+    const SCHEMAS: &[&'static str] = &[include_str!("../../../../schemas/winder_v2.yaml")];
 }
 
 impl WinderV1 {

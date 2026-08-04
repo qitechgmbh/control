@@ -198,7 +198,8 @@ fn init_el7031_0030(
         ..Default::default()
     };
 
-    dev.borrow_mut().write_config(interface.clone(), addr, &config)?;
+    dev.borrow_mut()
+        .write_config(interface.clone(), addr, &config)?;
     interface.enable_dc_sync0(addr)?;
     Ok(dev)
 }
@@ -222,7 +223,8 @@ fn init_el7041(
         ..Default::default()
     };
 
-    dev.borrow_mut().write_config(interface.clone(), addr, &config)?;
+    dev.borrow_mut()
+        .write_config(interface.clone(), addr, &config)?;
     interface.enable_dc_sync0(addr)?;
     Ok(dev)
 }
@@ -247,7 +249,8 @@ fn init_el7031(
         ..Default::default()
     };
 
-    dev.borrow_mut().write_config(interface.clone(), addr, &config)?;
+    dev.borrow_mut()
+        .write_config(interface.clone(), addr, &config)?;
     interface.enable_dc_sync0(addr)?;
     Ok(dev)
 }
@@ -273,7 +276,8 @@ fn init_el7031_0030_spool(
         ..Default::default()
     };
 
-    dev.borrow_mut().write_config(interface.clone(), addr, &config)?;
+    dev.borrow_mut()
+        .write_config(interface.clone(), addr, &config)?;
     interface.enable_dc_sync0(addr)?;
     Ok(dev)
 }

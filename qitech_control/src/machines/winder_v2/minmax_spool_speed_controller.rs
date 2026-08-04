@@ -1,7 +1,6 @@
 use super::{clamp_revolution::Clamping, tension_arm::TensionArm};
 use crate::machines::winder_v2::{
     clamp_revolution::clamp_revolution_uom, filament_tension::FilamentTensionCalculator,
-    puller_speed_controller::PullerSpeedController,
 };
 use crate::{
     controllers::{
@@ -20,12 +19,8 @@ use qitech_lib::units::angle::degree;
 use qitech_lib::units::angular_acceleration::{
     radian_per_second_squared, revolution_per_minute_per_second,
 };
-use qitech_lib::units::angular_velocity::{
-    radian_per_second, revolution_per_minute, revolution_per_second,
-};
+use qitech_lib::units::angular_velocity::{radian_per_second, revolution_per_minute};
 use qitech_lib::units::f64::*;
-use qitech_lib::units::length::meter;
-use qitech_lib::units::velocity::meter_per_second;
 
 #[derive(Debug)]
 pub struct MinMaxSpoolSpeedController {
@@ -209,10 +204,6 @@ impl MinMaxSpoolSpeedController {
         self.enabled = enabled;
     }
 
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     pub fn reset(&mut self) {
         self.last_speed = AngularVelocity::ZERO;
         self.acceleration_controller.reset(AngularVelocity::ZERO);
@@ -268,20 +259,5 @@ impl MinMaxSpoolSpeedController {
         self.last_speed = speed;
         // Also update the acceleration controller's current speed to ensure smooth transitions
         self.acceleration_controller.reset(speed);
-    }
-
-    /// derive the radius from the puller speed and the current angular speed
-    pub fn get_radius(&self, puller_speed_controller: &PullerSpeedController) -> Length {
-        let puller_speed: Velocity = puller_speed_controller.get_target_speed();
-        let angular_speed: AngularVelocity = self.last_speed;
-
-        // Calculate the radius using the formula: radius = speed / angular_speed
-        let radius =
-            puller_speed.get::<meter_per_second>() / angular_speed.get::<revolution_per_second>();
-
-        // Ensure the radius is a normal number, otherwise default to 0.0
-        let radius = Some(radius).filter(|&n| n.is_normal()).unwrap_or(0.0);
-
-        Length::new::<meter>(radius)
     }
 }

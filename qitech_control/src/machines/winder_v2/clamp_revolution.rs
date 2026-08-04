@@ -22,17 +22,6 @@ pub fn clamp_revolution_uom(value: Angle, min: Angle, max: Angle) -> (Angle, Cla
     (Angle::new::<revolution>(clamped_value.0), clamped_value.1)
 }
 
-// Note: Unlike [`clamp_revolution`], this function doesn't clamp values; it performs
-// a linear scaling even for values outside the range.
-pub fn scale_revolution_to_range(value: f64, min: f64, max: f64) -> f64 {
-    // we calculate the distance between min and max
-    let distance = revolution_distance(min, max);
-
-    // we scale the value to the distance
-
-    (value - min) / distance
-}
-
 // Clamps a revolution value to be within the specified range [min, max].
 // If the value is outside the range, it will be clamped to either min or max,
 // depending on which one it's closer to in the circular context.
@@ -155,98 +144,8 @@ fn revolution_in_range(value: f64, min: f64, max: f64) -> bool {
 mod tests {
     use core::f64;
 
-    use approx::assert_relative_eq;
-
     use super::*;
-
-    #[test]
-    fn test_scale_revolution_to_range() {
-        use approx::assert_relative_eq;
-        const EPSILON: f64 = f64::EPSILON;
-
-        // Basic test cases
-        {
-            // Example 1 from the documentation
-            // value = 0, min = 0, max = 0.5
-            let result = scale_revolution_to_range(0.0, 0.0, 0.5);
-            assert_relative_eq!(result, 0.0, epsilon = EPSILON);
-
-            // Example 2 from the documentation
-            // value = 0.5, min = 0.4, max = 0.6
-            let result = scale_revolution_to_range(0.5, 0.4, 0.6);
-            assert_relative_eq!(result, 0.5, epsilon = EPSILON);
-
-            // Value at max should return 1.0
-            let result = scale_revolution_to_range(0.5, 0.0, 0.5);
-            assert_relative_eq!(result, 1.0, epsilon = EPSILON);
-        }
-
-        // Test with ranges at different positions
-        {
-            // min = 0.2, max = 0.7
-            let result1 = scale_revolution_to_range(0.2, 0.2, 0.7);
-            assert_relative_eq!(result1, 0.0, epsilon = EPSILON);
-
-            let result2 = scale_revolution_to_range(0.45, 0.2, 0.7);
-            assert_relative_eq!(result2, 0.5, epsilon = EPSILON);
-
-            let result3 = scale_revolution_to_range(0.7, 0.2, 0.7);
-            assert_relative_eq!(result3, 1.0, epsilon = EPSILON);
-        }
-
-        // Test with values outside the min-max range
-        {
-            // Unlike normalize_revolution_to_range, this function doesn't clamp
-            // It just scales the value linearly, even if outside the range
-
-            // value < min: should give negative result
-            let result1 = scale_revolution_to_range(0.1, 0.2, 0.6);
-            assert_relative_eq!(result1, -0.25, epsilon = EPSILON);
-
-            // value > max: should give result > 1.0
-            let result2 = scale_revolution_to_range(0.7, 0.2, 0.6);
-            assert_relative_eq!(result2, 1.25, epsilon = EPSILON);
-        }
-
-        // Test with non-normalized values
-        {
-            // value = 1.3 (which would normalize to 0.3)
-            // min = 0.2, max = 0.6
-            // Should treat it as 1.3, not 0.3
-            let result = scale_revolution_to_range(1.3, 0.2, 0.6);
-            assert_relative_eq!(result, 2.75, epsilon = EPSILON * 5.0);
-
-            // value = -0.1 (which would normalize to 0.9)
-            // min = 0.2, max = 0.6
-            // Should treat it as -0.1, not 0.9
-            let result = scale_revolution_to_range(-0.1, 0.2, 0.6);
-            assert_relative_eq!(result, -0.75, epsilon = EPSILON);
-        }
-
-        // Edge case: min and max are the same
-        {
-            // This might cause a division by zero error if not handled properly
-            // Depending on the implementation, this test might need to be removed or modified
-
-            // For now, let's just check it doesn't crash
-            let result = scale_revolution_to_range(0.3, 0.5, 0.5);
-            // Just assert that we get some value (we can't know what it should be)
-            assert!(result.is_finite() || result.is_infinite() || result.is_nan());
-        }
-
-        // Test with small ranges (to check for floating point precision issues)
-        {
-            // min = 0.001, max = 0.002 (very small range)
-            let result1 = scale_revolution_to_range(0.001, 0.001, 0.002);
-            assert_relative_eq!(result1, 0.0, epsilon = EPSILON);
-
-            let result2 = scale_revolution_to_range(0.0015, 0.001, 0.002);
-            assert_relative_eq!(result2, 0.5, epsilon = EPSILON);
-
-            let result3 = scale_revolution_to_range(0.002, 0.001, 0.002);
-            assert_relative_eq!(result3, 1.0, epsilon = EPSILON);
-        }
-    }
+    use approx::assert_relative_eq;
 
     #[test]
     fn test_clamp_revolution() {
