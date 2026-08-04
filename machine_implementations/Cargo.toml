@@ -17,6 +17,7 @@ euclid = "0.22.13"
 
 tokio = { version = "1.50.0", features = ["sync", "rt"] }
 tokio-modbus = "0.17.0"
+libc = "0.2.186"
 
 # web
 serde_json = "1.0.149"

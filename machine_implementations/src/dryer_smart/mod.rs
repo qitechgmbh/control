@@ -226,6 +226,10 @@ impl DryerSmartMachine {
     }
 
     pub fn write_timer_entry(&mut self, index: u8, entry: SmartTimerEntry) {
+        if index as u16 >= self.dryer.borrow().smart_timer_slots() {
+            tracing::warn!("dryer timer index {index} out of bounds, ignoring write");
+            return;
+        }
         let idx = index as usize;
         while self.smart_data.timer_entries.len() <= idx {
             self.smart_data
@@ -246,6 +250,10 @@ impl DryerSmartMachine {
     }
 
     pub fn delete_timer_entry(&mut self, index: u8) {
+        if index as u16 >= self.dryer.borrow().smart_timer_slots() {
+            tracing::warn!("dryer timer index {index} out of bounds, ignoring delete");
+            return;
+        }
         let idx = index as usize;
         if idx < self.smart_data.timer_entries.len() {
             self.smart_data.timer_entries.remove(idx);

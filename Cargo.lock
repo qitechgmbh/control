@@ -1542,6 +1542,7 @@ dependencies = [
  "control_core",
  "euclid",
  "lazy_static",
+ "libc",
  "postcard",
  "qitech_lib",
  "serde",

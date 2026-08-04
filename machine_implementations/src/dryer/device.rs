@@ -424,9 +424,15 @@ impl ModbusDevice for DryerDevice {
                         }
                         let cycle = regs[base];
                         let flags = regs[base + 4];
+                        let day_bits = ((cycle >> 8) & 0xFF) as u8;
+                        let weekday = if day_bits == 0 {
+                            0
+                        } else {
+                            day_bits.trailing_zeros().min(6) as u8
+                        };
                         entries.push(SmartTimerEntry {
                             weekly: (cycle & 0xFF) != 0,
-                            weekday: (((cycle >> 8) & 0xFF) as u8).trailing_zeros() as u8,
+                            weekday,
                             hour_min: regs[base + 1],
                             year: regs[base + 2],
                             month_day: regs[base + 3],
@@ -555,7 +561,7 @@ impl DryerDevice {
 
     fn timer_entry_regs(entry: &SmartTimerEntry) -> Vec<u16> {
         vec![
-            (1u16 << entry.weekday) << 8 | (entry.weekly as u16),
+            (1u16 << entry.weekday.min(6)) << 8 | (entry.weekly as u16),
             entry.hour_min,
             entry.year,
             entry.month_day,
@@ -563,7 +569,18 @@ impl DryerDevice {
         ]
     }
 
+    pub fn smart_timer_slots(&self) -> u16 {
+        self.smart_timer_slots
+    }
+
     pub fn queue_write_timer_entry(&mut self, index: u8, entry: SmartTimerEntry) {
+        if index as u16 >= self.smart_timer_slots {
+            tracing::warn!(
+                "dryer timer index {index} out of bounds ({} slots), ignoring write",
+                self.smart_timer_slots
+            );
+            return;
+        }
         let base = SMART_REG_TIMER_BASE + index as u16 * SMART_TIMER_ENTRY_REGS;
         self.write_queue.push_back(Request::WriteMultipleRegisters(
             base,
@@ -579,6 +596,13 @@ impl DryerDevice {
     }
 
     pub fn queue_delete_timer_entry(&mut self, index: u8) {
+        if index as u16 >= self.smart_timer_slots {
+            tracing::warn!(
+                "dryer timer index {index} out of bounds ({} slots), ignoring delete",
+                self.smart_timer_slots
+            );
+            return;
+        }
         let base = SMART_REG_TIMER_BASE + index as u16 * SMART_TIMER_ENTRY_REGS;
         self.write_queue
             .push_back(Request::WriteMultipleRegisters(base, vec![0u16; 5].into()));
