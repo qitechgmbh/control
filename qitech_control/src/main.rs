@@ -6,7 +6,9 @@ use qitech_framework::Runtime;
 use qitech_framework::runtime::EtherCATConfig;
 use qitech_framework::runtime::RuntimeConfiguration;
 
-mod types;
+// TODO: migrate forward to RotationDirection
+// mod types;
+
 mod utils;
 
 mod controllers;
@@ -55,12 +57,12 @@ pub fn main() -> anyhow::Result<()> {
     run_tui(config)
 }
 
-fn run_headless(config: RuntimeConfiguration) -> anyhow::Result<()> {
-    let session = session::debug::runtime();
-    let rt = Runtime::init(config, session).unwrap();
-    rt.run();
-    Ok(())
-}
+// fn run_headless(config: RuntimeConfiguration) -> anyhow::Result<()> {
+//     let session = session::debug::runtime();
+//     let rt = Runtime::init(config, session).unwrap();
+//     rt.run();
+//     Ok(())
+// }
 
 fn run_tui(config: RuntimeConfiguration) -> anyhow::Result<()> {
     let (session_rt, session_tui) = session::crossbeam(64);

@@ -5,11 +5,11 @@ use qitech_framework::{
         error::{ActResult, SubscribeResult},
     },
 };
+use qitech_lib::units::length::millimeter;
 use std::time::Instant;
 
-use crate::machines::winder_v2::types::LaserSubscription;
-
 use super::WinderV1;
+use crate::machines::winder_v2::types::LaserSubscription;
 
 impl Machine for WinderV1 {
     fn act(&mut self) -> ActResult {
@@ -27,9 +27,22 @@ impl Machine for WinderV1 {
         // automatically stops or pulls after N Meters if enabled
         self.stop_or_pull_spool(now);
 
+        // ---
+        if let Some(laser) = &self.laser_subscription {
+            self.puller_speed_controller
+                .adaptive
+                .update_with_measurement(
+                    laser.current.get_as::<millimeter>(),
+                    laser.target.get_as::<millimeter>(),
+                    laser.lower.get_as::<millimeter>(),
+                    laser.upper.get_as::<millimeter>(),
+                    self.puller_speed_controller.last_speed,
+                    Instant::now(),
+                );
+        }
+
         // update the resources
         self.update_states();
-        
         self.update_measurements();
 
         Ok(())

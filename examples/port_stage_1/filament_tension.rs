@@ -101,14 +101,4 @@ impl FilamentTensionCalculator {
     pub fn get_max_angle(&self) -> Angle {
         self.max_angle
     }
-
-    // Get the minimum filament distance
-    pub fn get_min_distance(&self) -> Length {
-        self.min_distance
-    }
-
-    /// Get the maximum filament distance    
-    pub fn get_max_distance(&self) -> Length {
-        self.max_distance
-    }
 }

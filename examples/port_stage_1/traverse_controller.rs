@@ -19,9 +19,6 @@ pub struct TraverseController {
     state: State,
     fullstep_converter: LinearStepConverter,
     microstep_converter: LinearStepConverter,
-    // A sticky flag if the [`State`] changed (not the sub states)
-    // Needed to send state updates to the UI
-    did_change_state: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -104,7 +101,6 @@ impl TraverseController {
             step_size: Length::new::<millimeter>(1.75), // Default step size
             padding: Length::new::<millimeter>(0.88),   // Default padding
             state: State::NotHomed,
-            did_change_state: false,
             fullstep_converter: LinearStepConverter::from_circumference(
                 200,
                 Length::new::<millimeter>(32.0),
@@ -160,17 +156,6 @@ impl TraverseController {
             true => Some(self.position),
             false => None,
         }
-    }
-
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
-    pub const fn did_change_state(&mut self) -> bool {
-        let did_change = self.did_change_state;
-        // Reset the flag
-        self.did_change_state = false;
-        did_change
     }
 }
 
@@ -255,19 +240,6 @@ impl TraverseController {
         self.position = self.microstep_converter.steps_to_distance(steps as f64);
     }
 
-    /// Update the [`did_change_state`] flag
-    /// Only considers the major state not the sub states
-    const fn update_did_change_state(&mut self, old_state: &State) -> bool {
-        match self.state {
-            State::NotHomed => !matches!(old_state, State::NotHomed),
-            State::Idle => !matches!(old_state, State::Idle),
-            State::GoingIn => !matches!(old_state, State::GoingIn),
-            State::GoingOut => !matches!(old_state, State::GoingOut),
-            State::Homing(_) => !matches!(old_state, State::Homing(_)),
-            State::Traversing(_) => !matches!(old_state, State::Traversing(_)),
-        }
-    }
-
     /// Calculates a desired speed based on the current state and the end stop status.
     ///
     /// Positive speed moved out, negative speed moves in.
@@ -282,9 +254,6 @@ impl TraverseController {
         }
 
         self.sync_position(traverse);
-
-        // save state before
-        let old_state = self.state.clone();
 
         // Automatic Transitions
         match &self.state {
@@ -398,13 +367,7 @@ impl TraverseController {
             },
         }
 
-        // Set the [`did_change_state`] flag
-        if !self.did_change_state {
-            self.did_change_state = self.update_did_change_state(&old_state);
-        }
-
         // Speed
-
         match &self.state {
             State::NotHomed => Velocity::ZERO, // Not homed, no movement
             State::Idle => Velocity::ZERO,     // No movement in idle state

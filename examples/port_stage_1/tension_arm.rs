@@ -68,15 +68,15 @@ impl TensionArm {
         }
     }
 
-    pub fn zero(&mut self) {
+    pub fn zero(&mut self) -> Result<(), String> {
         match self.raw_angle() {
             Ok(angle) => {
                 self.zero = angle;
                 self.zeroed = true;
+                Ok(())
             }
-            Err(e) => {
-                // tracing::error!("Failed to zero tension_arm angle {:?}", e)
-            }
+            
+            Err(e) => Err(e.to_string())
         }
     }
 }

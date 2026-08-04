@@ -348,14 +348,6 @@ impl AdaptiveSpoolSpeedController {
         self.enabled = enabled;
     }
 
-    /// Returns whether the speed controller is currently enabled.
-    ///
-    /// # Returns
-    /// True if the controller is enabled, false if disabled
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     /// Resets the controller to initial state, clearing all learned parameters.
     ///
     /// Use this when starting a new winding operation or after significant
@@ -390,10 +382,6 @@ impl AdaptiveSpoolSpeedController {
     pub fn set_speed(&mut self, speed: AngularVelocity) {
         self.last_speed = speed;
         self.acceleration_controller.reset(speed);
-    }
-
-    pub fn get_speed_factor(&self) -> Length {
-        self.speed_factor
     }
 
     // Getters and setters for the new configurable parameters

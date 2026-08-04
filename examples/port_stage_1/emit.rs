@@ -1,8 +1,8 @@
 use crate::machines::winder_v2::types::{SpoolAutomaticActionMode, Winder2Mode};
 
 use super::{
-    LASER_PORT, SPOOL_PORT, TRAVERSE_PORT, TraverseMode, WinderV1,
-    api::PullerRegulationMode, spool_speed_controller,
+    LASER_PORT, SPOOL_PORT, TRAVERSE_PORT, TraverseMode, WinderV1, api::PullerRegulationMode,
+    spool_speed_controller,
 };
 
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
@@ -233,8 +233,8 @@ impl WinderV1 {
     }
 
     /// Implement Tension Arm
-    pub fn tension_arm_zero(&mut self) {
-        self.tension_arm.zero();
+    pub fn tension_arm_zero(&mut self) -> Result<(), String> {
+        self.tension_arm.zero()
     }
 
     pub fn set_spool_automatic_required_meters(&mut self, meters: f64) {
@@ -276,19 +276,17 @@ impl WinderV1 {
     }
 
     /// Set minimum speed for minmax mode in RPM
-    pub fn spool_set_minmax_min_speed(&mut self, min_speed_rpm: f64) {
+    pub fn spool_set_minmax_min_speed(&mut self, min_speed_rpm: f64) -> Result<(), String> {
         let min_speed = AngularVelocity::new::<revolution_per_minute>(min_speed_rpm);
-        if let Err(e) = self.spool_speed_controller.set_minmax_min_speed(min_speed) {
-            // tracing::error!("Failed to set spool min speed: {:?}", e);
-        }
+        self.spool_speed_controller.set_minmax_min_speed(min_speed)
+            .map_err(|e| e.to_string())
     }
 
     /// Set maximum speed for minmax mode in RPM
-    pub fn spool_set_minmax_max_speed(&mut self, max_speed_rpm: f64) {
+    pub fn spool_set_minmax_max_speed(&mut self, max_speed_rpm: f64) -> Result<(), String> {
         let max_speed = AngularVelocity::new::<revolution_per_minute>(max_speed_rpm);
-        if let Err(e) = self.spool_speed_controller.set_minmax_max_speed(max_speed) {
-            // tracing::error!("Failed to set spool max speed: {:?}", e);
-        }
+        self.spool_speed_controller.set_minmax_max_speed(max_speed)
+            .map_err(|e| e.to_string())
     }
 
     /// Set tension target for adaptive mode (0.0-1.0)
