@@ -26,6 +26,7 @@ impl Machine for DryerMachine {
 
         if now.duration_since(self.last_emit) > Duration::from_secs(1) {
             self.update();
+            self.check_auto_stop();
             self.emit_live_values();
             self.last_emit = now;
         }

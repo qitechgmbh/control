@@ -34,6 +34,10 @@ impl std::fmt::Display for DryerDeviceError {
 
 impl std::error::Error for DryerDeviceError {}
 
+pub fn is_running_status(status: u16) -> bool {
+    status != 1 && status != 5 && status != 6
+}
+
 pub const SMART_HW_ID: u16 = 4331;
 const SMART_REG_HW_ID: u16 = 2000;
 const SMART_REG_SW_VERSION: u16 = 2002;
@@ -613,4 +617,21 @@ fn days_to_ymd(days: u64) -> (u32, u32, u32) {
     let m = if mp < 10 { mp + 3 } else { mp - 9 };
     let y = if m <= 2 { y + 1 } else { y };
     (y as u32, m as u32, d as u32)
+}
+
+/// Local weekday (0=Mon..6=Sun, matching `WeeklySchedule`'s convention) and
+/// minutes-since-midnight, read from the OS clock. The frontend's schedule/auto-stop UI
+/// is built on the browser's local `Date`, which runs on this same machine - reading the
+/// OS local time here (rather than UTC) is what keeps the backend's decision in sync with
+/// what the user actually configured.
+pub fn local_weekday_and_minutes() -> (u8, u32) {
+    unsafe {
+        let t = libc::time(std::ptr::null_mut());
+        let mut tm: libc::tm = std::mem::zeroed();
+        libc::localtime_r(&t, &mut tm);
+        // libc::tm_wday is 0=Sunday..6=Saturday; WeeklySchedule is 0=Monday..6=Sunday.
+        let weekday = ((tm.tm_wday + 6) % 7) as u8;
+        let minutes = (tm.tm_hour * 60 + tm.tm_min) as u32;
+        (weekday, minutes)
+    }
 }

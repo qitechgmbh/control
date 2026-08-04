@@ -162,7 +162,6 @@ export function DryerSmartControlPage() {
   const timerStartRef = useRef<number | null>(null);
   const [remainingSec, setRemainingSec] = useState<number | null>(null);
   const prevStatusRef = useRef<number | undefined>(undefined);
-  const autoStopFiredRef = useRef(false);
 
   const scheduleRef = useRef(v?.schedule);
   scheduleRef.current = v?.schedule;
@@ -189,7 +188,6 @@ export function DryerSmartControlPage() {
     const nowRunning = isRunningStatus(v.status);
     if (!wasRunning && nowRunning) {
       timerStartRef.current = Date.now();
-      autoStopFiredRef.current = false;
     } else if (wasRunning && !nowRunning) {
       timerStartRef.current = null;
       setRemainingSec(null);
@@ -197,7 +195,7 @@ export function DryerSmartControlPage() {
     prevStatusRef.current = v.status;
   }, [v?.status]);
 
-  const handleStartStopRef = useRef<(next: boolean) => void>(() => {});
+
   useEffect(() => {
     const id = setInterval(() => {
       const schedule = scheduleRef.current;
@@ -211,12 +209,7 @@ export function DryerSmartControlPage() {
           const nowSec =
             now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
           if (stopSec > nowSec) {
-            const remaining = stopSec - nowSec;
-            setRemainingSec(remaining);
-            if (remaining <= 1 && !autoStopFiredRef.current) {
-              autoStopFiredRef.current = true;
-              handleStartStopRef.current(false);
-            }
+            setRemainingSec(stopSec - nowSec);
             return;
           }
         }
@@ -224,16 +217,9 @@ export function DryerSmartControlPage() {
 
       if (timerStartRef.current !== null) {
         const elapsedSec = (Date.now() - timerStartRef.current) / 1000;
-        const remaining = Math.max(
-          0,
-          targetTimeMinRef.current * 60 - elapsedSec,
+        setRemainingSec(
+          Math.max(0, targetTimeMinRef.current * 60 - elapsedSec),
         );
-        setRemainingSec(remaining);
-        if (remaining === 0 && !autoStopFiredRef.current) {
-          autoStopFiredRef.current = true;
-          timerStartRef.current = null;
-          handleStartStopRef.current(false);
-        }
       }
     }, 1000);
     return () => clearInterval(id);
@@ -283,7 +269,13 @@ export function DryerSmartControlPage() {
       data: { SetStartStop: next },
     });
   };
-  handleStartStopRef.current = handleStartStop;
+
+  useEffect(() => {
+    sendMutation({
+      machine_identification_unique: machineIdentification,
+      data: { SetDryingTimerMinutes: targetTimeMin },
+    });
+  }, [targetTimeMin, machineIdentification]);
 
   const handleTargetTemp = (temp: number) => {
     const rounded = Math.round(Math.max(50, Math.min(180, temp)));

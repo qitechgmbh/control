@@ -38,6 +38,8 @@ impl MachineNew for DryerSmartMachine {
             target_temp_write_ts: None,
             smart_data: Default::default(),
             smart_data_write_ts: None,
+            running_since: None,
+            drying_timer_minutes: 240,
         })
     }
 }

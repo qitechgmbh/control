@@ -1,4 +1,7 @@
-use crate::dryer::device::{DryerDevice, SmartData, SmartTimerEntry, WeeklySchedule};
+use crate::dryer::device::{
+    DryerDevice, SmartData, SmartTimerEntry, WeeklySchedule, is_running_status,
+    local_weekday_and_minutes,
+};
 use crate::dryer::material_presets::MATERIAL_PRESETS;
 use crate::{MACHINE_DRYER_SMART, QiTechMachine, VENDOR_QITECH};
 use api::{DryerSmartEvents, DryerSmartMachineNamespace, LiveValuesEvent, StateEvent};
@@ -44,6 +47,11 @@ pub struct DryerSmartMachine {
     smart_data: SmartData,
     /// Set when a timer-entry write is in flight; suppresses smart_data read-back for 5s
     smart_data_write_ts: Option<Instant>,
+
+    /// When the device last transitioned into a running state; None while not running.
+    running_since: Option<Instant>,
+    /// Configured drying-timer duration; only applies on days with no scheduled stop time.
+    drying_timer_minutes: u32,
 }
 
 impl DryerSmartMachine {
@@ -71,6 +79,7 @@ impl DryerSmartMachine {
             target_temperature: self.target_temperature,
             schedule: self.schedule,
             smart_data: self.smart_data.clone(),
+            drying_timer_minutes: self.drying_timer_minutes,
         }
     }
 
@@ -92,7 +101,14 @@ impl DryerSmartMachine {
         let dryer = self.dryer.borrow();
         if let Some(d) = &dryer.data {
             self.received_data = true;
+            let was_running = is_running_status(self.status);
             self.status = d.status;
+            let now_running = is_running_status(self.status);
+            if !was_running && now_running {
+                self.running_since = Some(Instant::now());
+            } else if was_running && !now_running {
+                self.running_since = None;
+            }
             self.temp_process = d.temp_process;
             self.temp_safety = d.temp_safety;
             self.temp_regen_in = d.temp_regen_in;
@@ -130,8 +146,45 @@ impl DryerSmartMachine {
         }
     }
 
-    pub fn set_start_stop(&mut self) {
-        self.dryer.borrow_mut().queue_set_start_stop();
+    /// COIL_START_STOP is a pulse that toggles the device, not a setpoint - only queue
+    /// the pulse if the device isn't already in the requested state, otherwise a
+    /// redundant call (e.g. a scheduled stop firing while already stopped) would
+    /// actually flip the device to the opposite state instead of doing nothing.
+    pub fn set_start_stop(&mut self, running: bool) {
+        if is_running_status(self.status) != running {
+            self.dryer.borrow_mut().queue_set_start_stop();
+        }
+    }
+
+    pub fn set_drying_timer_minutes(&mut self, minutes: u32) {
+        self.drying_timer_minutes = minutes;
+    }
+
+    /// Runs every tick from `act()` so the dryer stops on schedule even with no UI
+    /// connected. A scheduled stop time today takes priority over the drying timer,
+    /// matching the frontend's own precedence (the timer UI is hidden whenever a
+    /// schedule applies).
+    pub fn check_auto_stop(&mut self) {
+        if !is_running_status(self.status) {
+            return;
+        }
+
+        let (weekday, now_minutes) = local_weekday_and_minutes();
+        let scheduled_stop = self.schedule[weekday as usize].stop_time;
+        if scheduled_stop != 0 {
+            let stop_minutes = (scheduled_stop / 100) as u32 * 60 + (scheduled_stop % 100) as u32;
+            if now_minutes >= stop_minutes {
+                self.set_start_stop(false);
+            }
+            return;
+        }
+
+        if let Some(started) = self.running_since {
+            let target = Duration::from_secs(self.drying_timer_minutes as u64 * 60);
+            if started.elapsed() >= target {
+                self.set_start_stop(false);
+            }
+        }
     }
 
     pub fn set_target_temperature(&mut self, temp_celsius: f64) {

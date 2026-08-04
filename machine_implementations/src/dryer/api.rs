@@ -31,6 +31,7 @@ pub struct LiveValuesEvent {
     pub warning: u16,
     pub target_temperature: f64,
     pub schedule: WeeklySchedule,
+    pub drying_timer_minutes: u32,
 }
 
 impl LiveValuesEvent {
@@ -93,6 +94,7 @@ enum Mutation {
     SetStartStop(bool),
     SetTargetTemperature(f64),
     SetSchedule(WeeklySchedule),
+    SetDryingTimerMinutes(u32),
     ApplyMaterialPreset {
         abbrev: String,
         throughput_kg_per_h: f64,
@@ -103,9 +105,10 @@ impl MachineApi for DryerMachine {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
-            Mutation::SetStartStop(_) => self.set_start_stop(),
+            Mutation::SetStartStop(running) => self.set_start_stop(running),
             Mutation::SetTargetTemperature(temp) => self.set_target_temperature(temp),
             Mutation::SetSchedule(schedule) => self.set_schedule(schedule),
+            Mutation::SetDryingTimerMinutes(minutes) => self.set_drying_timer_minutes(minutes),
             Mutation::ApplyMaterialPreset {
                 abbrev,
                 throughput_kg_per_h,

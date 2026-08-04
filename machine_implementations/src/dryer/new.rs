@@ -36,6 +36,8 @@ impl MachineNew for DryerMachine {
             schedule: Default::default(),
             schedule_write_ts: None,
             target_temp_write_ts: None,
+            running_since: None,
+            drying_timer_minutes: 240,
         })
     }
 }
