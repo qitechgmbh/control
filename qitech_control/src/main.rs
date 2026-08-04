@@ -41,25 +41,32 @@ mod machine_loop;
 mod mock;
 pub mod persist;
 
-/// Print why the EtherCAT state machine gave up, if it recorded a reason.
+/// Join the state-machine thread and turn its return value into a descriptive error.
 ///
-/// The state-machine thread returns its `anyhow::Error` to nobody — we only ever observe that the
-/// thread finished. The AL status report it stores on the way out is the only way to find out
-/// which terminal refused the transition and why.
-fn print_ethercat_failure(eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>) {
-    match eth_control.app_handle.get_last_failure_sync() {
-        Some(report) => eprintln!("EtherCAT failure:\n{report}"),
-        None => eprintln!(
-            "EtherCAT failure: the state machine recorded no AL status report \
-             (it stopped before attempting a state transition)"
-        ),
+/// `ethercat_state_machine()` already builds a specific error on every transition failure (e.g.
+/// "EtherCAT SAFE-OP -> OP transition failed: ...", or the AL status codes at an OP ramp
+/// timeout) — it just goes nowhere today, since callers only ever check `is_finished()`. Joining
+/// the handle recovers it.
+///
+/// Only call this once `join_handle.is_finished()` is true: `.join()` blocks until the thread
+/// exits, and calling it earlier would stall the caller instead of polling.
+fn ethercat_thread_error(
+    eth_control: &mut EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
+) -> anyhow::Error {
+    match eth_control.join_handle.take() {
+        Some(handle) => match handle.join() {
+            Ok(Err(e)) => e.context("EtherCAT state machine thread exited with an error"),
+            Ok(Ok(())) => anyhow::anyhow!("EtherCAT state machine thread exited unexpectedly"),
+            Err(_) => anyhow::anyhow!("EtherCAT state machine thread panicked"),
+        },
+        None => anyhow::anyhow!("EtherCAT state machine thread already joined"),
     }
 }
 
 fn setup_ethercat(
     state: Arc<SharedAppState>,
     main_state: &mut MainState,
-    eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
+    eth_control: &mut EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
 ) -> Result<(), anyhow::Error> {
     let _res = eth_control
         .channel
@@ -71,14 +78,14 @@ fn setup_ethercat(
     let deadline = std::time::Instant::now() + Duration::from_secs(10);
     let mut stable_ticks: u32 = 0;
     while stable_ticks < 2 {
-        // State-machine thread died, or timeout — bail for a clean restart.
         if eth_control
             .join_handle
             .as_ref()
             .map_or(false, |h| h.is_finished())
-            || std::time::Instant::now() >= deadline
         {
-            print_ethercat_failure(eth_control);
+            return Err(ethercat_thread_error(eth_control));
+        }
+        if std::time::Instant::now() >= deadline {
             bail!("No response from state machine Timeout");
         }
         std::thread::sleep(Duration::from_millis(50));
@@ -205,7 +212,7 @@ fn send_machines_event(state: Arc<SharedAppState>) {
 
 fn finalize_ethercat(
     main_state: &mut MainState,
-    eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
+    eth_control: &mut EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
 ) -> Result<(), anyhow::Error> {
     let _res = eth_control
         .channel
@@ -216,9 +223,9 @@ fn finalize_ethercat(
             .as_ref()
             .map_or(false, |h| h.is_finished())
         {
-            // State machine died before reaching OP — bail so main_logic can exit cleanly.
-            print_ethercat_failure(eth_control);
-            bail!("Failed to reach OP State!");
+            // State machine died before reaching OP — surface why, then bail so
+            // main_logic can exit cleanly.
+            return Err(ethercat_thread_error(eth_control));
         }
         std::thread::sleep(Duration::from_millis(50));
     }
@@ -439,7 +446,7 @@ fn main_logic() {
     let (tx_ports, mut rx_ports) = tokio::sync::mpsc::channel(2);
     detect_serial(rx, tx_ports);
 
-    match &eth_control {
+    match &mut eth_control {
         Some(control) => {
             setup_ethercat(state.clone(), &mut main_state, control).expect("setup_ethercat failed");
         }
@@ -468,7 +475,7 @@ fn main_logic() {
     detect_and_build_machines(state.clone(), &mut main_state);
 
     // finalize_ethercat transitions to OP and waits until all subdevices confirm OP
-    match &eth_control {
+    match &mut eth_control {
         Some(ecat) => {
             finalize_ethercat(&mut main_state, ecat).expect("finalize_ethercat failed");
             send_ecat_state(state.clone(), ecat.app_handle.get_state().into());
