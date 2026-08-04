@@ -41,6 +41,21 @@ mod machine_loop;
 mod mock;
 pub mod persist;
 
+/// Print why the EtherCAT state machine gave up, if it recorded a reason.
+///
+/// The state-machine thread returns its `anyhow::Error` to nobody — we only ever observe that the
+/// thread finished. The AL status report it stores on the way out is the only way to find out
+/// which terminal refused the transition and why.
+fn print_ethercat_failure(eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>) {
+    match eth_control.app_handle.get_last_failure_sync() {
+        Some(report) => eprintln!("EtherCAT failure:\n{report}"),
+        None => eprintln!(
+            "EtherCAT failure: the state machine recorded no AL status report \
+             (it stopped before attempting a state transition)"
+        ),
+    }
+}
+
 fn setup_ethercat(
     state: Arc<SharedAppState>,
     main_state: &mut MainState,
@@ -63,6 +78,7 @@ fn setup_ethercat(
             .map_or(false, |h| h.is_finished())
             || std::time::Instant::now() >= deadline
         {
+            print_ethercat_failure(eth_control);
             bail!("No response from state machine Timeout");
         }
         std::thread::sleep(Duration::from_millis(50));
@@ -201,6 +217,7 @@ fn finalize_ethercat(
             .map_or(false, |h| h.is_finished())
         {
             // State machine died before reaching OP — bail so main_logic can exit cleanly.
+            print_ethercat_failure(eth_control);
             bail!("Failed to reach OP State!");
         }
         std::thread::sleep(Duration::from_millis(50));
