@@ -68,6 +68,10 @@ in
   nix = {
     package = pkgs.nixVersions.stable;
     settings = {
+      substituters = [ "https://qitech.cachix.org" ];
+      trusted-public-keys = [
+        "qitech.cachix.org-1:l7UTb2FOVAEpRTGTUQTBBPis0JhXZGiANPDKBRbO8Vo="
+      ];
       experimental-features = "nix-command flakes";
       cores = 2;
       http-connections = 10;
