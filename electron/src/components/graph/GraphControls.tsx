@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ControlProps } from "./types";
 import { DEFAULT_TIME_WINDOW_OPTIONS } from "./constants";
+import { ExportResultDialog } from "@/components/ExportResultDialog";
 
 export function GraphControls({
   timeWindow,
@@ -21,6 +22,7 @@ export function GraphControls({
   onSwitchToLive,
   onSwitchToHistorical,
   onExport,
+  exportDialogProps,
   onAddMarker,
   onManageMarkers,
   timeWindowOptions = DEFAULT_TIME_WINDOW_OPTIONS,
@@ -130,6 +132,7 @@ export function GraphControls({
           )}
         </div>
       </div>
+      {exportDialogProps && <ExportResultDialog {...exportDialogProps} />}
     </ControlCard>
   );
 }
@@ -176,6 +179,7 @@ export function FloatingControlPanel({
   onSwitchToLive,
   onSwitchToHistorical,
   onExport,
+  exportDialogProps,
   onAddMarker,
   onManageMarkers,
   timeWindowOptions = DEFAULT_TIME_WINDOW_OPTIONS,
@@ -303,6 +307,7 @@ export function FloatingControlPanel({
           />
         </div>
       </ControlCard>
+      {exportDialogProps && <ExportResultDialog {...exportDialogProps} />}
     </div>
   );
 }

@@ -8,6 +8,9 @@ import {
   ListRowRenderer,
   AutoSizer,
 } from "react-virtualized";
+import { saveFile } from "@/helpers/file_export_helpers";
+import { useExportDialog } from "@/hooks/useExportDialog";
+import { ExportResultDialog } from "@/components/ExportResultDialog";
 
 // Create cache (outside the component so it persists across renders)
 const cache = new CellMeasurerCache({
@@ -85,6 +88,7 @@ export function Terminal({
   const listRef = useRef<List>(null);
   const [copySuccess, setCopySuccess] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const { notifyResult, dialogProps } = useExportDialog();
 
   // Auto-scroll to bottom when new lines arrive
   useEffect(() => {
@@ -104,7 +108,7 @@ export function Terminal({
     }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!exportPrefix) return;
     const plainText = lines.map(stripColorCodes).join("\n");
     const timestamp = new Date()
@@ -112,17 +116,17 @@ export function Terminal({
       .replace(/[:.]/g, "-")
       .slice(0, -5);
     const filename = `${exportPrefix}_${timestamp}.log`;
-    const blob = new Blob([plainText], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    setExportSuccess(true);
-    setTimeout(() => setExportSuccess(false), 2000);
+    const result = await saveFile({
+      suggestedName: filename,
+      filters: [{ name: "Log Files", extensions: ["log"] }],
+      content: plainText,
+      encoding: "utf8",
+    });
+    notifyResult(result);
+    if (result.success) {
+      setExportSuccess(true);
+      setTimeout(() => setExportSuccess(false), 2000);
+    }
   };
 
   const rowRenderer: ListRowRenderer = ({ index, key, parent, style }) => {
@@ -221,6 +225,8 @@ export function Terminal({
         <div>{lines.length} lines</div>
         <div>{autoScroll ? "Auto-scroll enabled" : "Auto-scroll disabled"}</div>
       </div>
+
+      {exportPrefix && <ExportResultDialog {...dialogProps} />}
     </div>
   );
 }

@@ -15,6 +15,18 @@ import { DateFormatter } from "./excelDateFormatter";
 import { SheetNameManager } from "./excelSheetNameManager";
 import { DataSheetBuilder } from "./excelDataSheetBuilder";
 import { AnalysisSheetBuilder } from "./excelAnalysisSheetBuilder";
+import { saveFile, SaveFileResult } from "@/helpers/file_export_helpers";
+
+// The renderer runs with contextIsolation enabled, so the Node `Buffer`
+// global isn't available here — encode to base64 with browser APIs instead.
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
 
 export type { GraphExportData, PidSettings, PidData } from "./excelExportTypes";
 
@@ -43,7 +55,7 @@ export class ExcelExporter {
     groupId: string,
     logs: LogEntry[] = [],
     pidData?: PidData,
-  ): Promise<void> {
+  ): Promise<SaveFileResult | undefined> {
     try {
       // If PID data provider is available and no PID data provided, fetch it
       if (!pidData && this.pidDataProvider) {
@@ -136,7 +148,7 @@ export class ExcelExporter {
         bookType: "xlsx",
       });
 
-      this.triggerDownload(
+      return await this.saveWorkbook(
         xlsxBuffer,
         groupId,
         DateFormatter.getExportTimestamp(),
@@ -162,24 +174,23 @@ export class ExcelExporter {
     return filteredMap;
   }
 
-  private triggerDownload(
-    buffer: ArrayBuffer,
+  private async saveWorkbook(
+    buffer: Uint8Array,
     groupId: string,
     exportTimestamp: string,
-  ): void {
+  ): Promise<SaveFileResult> {
     const filename = `${groupId
       .toLowerCase()
       .replace(/\s+/g, "_")}_export_${exportTimestamp}.xlsx`;
 
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    // Errors are surfaced via the returned result (ExportResultDialog),
+    // not an alert — the caller already renders that dialog on failure.
+    return await saveFile({
+      suggestedName: filename,
+      filters: [{ name: "Excel Files", extensions: ["xlsx"] }],
+      content: bytesToBase64(new Uint8Array(buffer)),
+      encoding: "base64",
     });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.click();
-    window.URL.revokeObjectURL(url);
   }
 }
 
@@ -191,7 +202,7 @@ export async function exportGraphsToExcel(
   groupId: string,
   logs: LogEntry[] = [],
   pidData?: PidData,
-): Promise<void> {
+): Promise<SaveFileResult | undefined> {
   const exporter = new ExcelExporter();
-  await exporter.export(graphDataMap, groupId, logs, pidData);
+  return await exporter.export(graphDataMap, groupId, logs, pidData);
 }

@@ -87,6 +87,7 @@
               nixd
               rustfmt
               rust-analyzer
+              clippy
             ];
 
             ELECTRON_SKIP_BINARY_DOWNLOAD = 1;
