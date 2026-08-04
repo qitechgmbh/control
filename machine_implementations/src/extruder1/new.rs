@@ -198,6 +198,7 @@ impl MachineNew for ExtruderV2 {
             temperature_controller_middle,
             temperature_controller_back,
             temperature_controller_nozzle,
+            thermal_coupling_test: Default::default(),
             screw_speed_controller,
             emitted_default_state: false,
             last_status_hash: None,

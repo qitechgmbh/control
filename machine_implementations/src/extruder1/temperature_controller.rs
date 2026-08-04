@@ -57,6 +57,9 @@ pub struct TemperatureController {
     max_clamp: f64,
     target_temp_enabled: bool, // Sets whether the frontend should display a target temperature setter for this temp controller
     filter : LowPassFilter,
+    /// When set, overrides the PID and drives the PWM window at this fixed duty cycle
+    /// (0.0-1.0) instead. Used by the thermal coupling test to hold/step zones open-loop.
+    manual_duty: Option<f64>,
 }
 
 impl TemperatureController {
@@ -94,7 +97,8 @@ impl TemperatureController {
             target_temp_enabled: true,
             digital_port,
             temperature_port,
-            filter : LowPassFilter { alpha: 0.08, state: None } 
+            filter : LowPassFilter { alpha: 0.08, state: None },
+            manual_duty: None,
         }
     }
 
@@ -122,6 +126,22 @@ impl TemperatureController {
         self.temperature_pid_output * self.heating_element_wattage
     }
 
+    /// Overrides the PID and drives the PWM window at a fixed duty cycle (0.0-1.0).
+    /// Pass `None` to hand control back to the PID.
+    pub fn set_manual_duty(&mut self, duty: Option<f64>) {
+        self.manual_duty = duty;
+    }
+
+    pub fn get_manual_duty(&self) -> Option<f64> {
+        self.manual_duty
+    }
+
+    /// The duty cycle (0.0-1.0) applied on the last `update()` call, whether it came
+    /// from the PID or a manual override.
+    pub fn get_current_duty(&self) -> f64 {
+        self.temperature_pid_output
+    }
+
     pub fn update(
         &mut self,
         now: Instant,
@@ -144,13 +164,19 @@ impl TemperatureController {
             return;
         }
 
-        if self.heating_allowed {            
-            let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
-                - self.heating.temperature.get::<degree_celsius>();
+        if self.heating_allowed {
+            let duty = match self.manual_duty {
+                // Open-loop override: skip the PID and drive the requested duty directly.
+                Some(manual) => manual.clamp(0.0, self.max_clamp),
+                None => {
+                    let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
+                        - self.heating.temperature.get::<degree_celsius>();
 
-            let control = self.pid.update(error, now); // PID output
-            // Clamp PID output to 0.0 – 1.0 (as duty cycle)
-            let duty = control.clamp(0.0, self.max_clamp);
+                    let control = self.pid.update(error, now); // PID output
+                    // Clamp PID output to 0.0 – 1.0 (as duty cycle)
+                    control.clamp(0.0, self.max_clamp)
+                }
+            };
 
             self.temperature_pid_output = duty;
 

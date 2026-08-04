@@ -14,6 +14,7 @@ import { MachineIdentificationUnique } from "@/machines/types";
 import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 import { useMemo } from "react";
 import { pidAutoTuneStateSchema } from "../pidAutoTuneSchema";
+import { thermalCouplingTestStateSchema } from "../thermalCouplingTestSchema";
 
 // ========== Event Schema Definitions ==========
 
@@ -180,6 +181,7 @@ export const stateEventDataSchema = z.object({
   inverter_status_state: inverterStatusStateSchema,
   pid_settings: pidSettingsSchema,
   pid_autotune_state: pidAutoTuneStateSchema,
+  thermal_coupling_test_state: thermalCouplingTestStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========

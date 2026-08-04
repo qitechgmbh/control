@@ -5,6 +5,7 @@ pub mod mitsubishi_cs80;
 pub mod new;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
+pub mod thermal_coupling_test;
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::{MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, VENDOR_QITECH};
@@ -28,6 +29,8 @@ use std::time::Instant;
 #[cfg(not(feature = "mock-machine"))]
 use std::{cell::RefCell, rc::Rc};
 use temperature_controller::TemperatureController;
+#[cfg(not(feature = "mock-machine"))]
+use thermal_coupling_test::ThermalCouplingTest;
 use tokio::sync::mpsc::{Receiver, Sender};
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
@@ -85,6 +88,7 @@ pub struct ExtruderV2 {
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
     temperature_controller_nozzle: TemperatureController,
+    thermal_coupling_test: ThermalCouplingTest,
 
     /// Energy tracking for total consumption calculation
     total_energy_kwh: f64,

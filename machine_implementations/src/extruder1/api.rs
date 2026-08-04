@@ -105,6 +105,8 @@ pub struct StateEvent {
     pub pid_settings: PidSettingsStates,
     /// pressure PID auto-tuner state
     pub pid_autotune_state: PidAutoTuneState,
+    /// thermal coupling test state
+    pub thermal_coupling_test_state: ThermalCouplingTestState,
 }
 
 impl StateEvent {
@@ -246,6 +248,68 @@ impl Default for PidAutoTuneState {
     }
 }
 
+/// Parameters for starting a thermal coupling test.
+///
+/// The test steps one heating zone's duty cycle at a time (all four zones held
+/// open-loop) and records how all four zones' temperatures respond, in order to
+/// compute a steady-state gain matrix and Relative Gain Array (RGA) describing how
+/// strongly the zones thermally couple through the shared barrel.
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+pub struct ThermalCouplingTestConfig {
+    /// Duty-cycle step applied to the zone under test, 0.0–1.0 (e.g. `0.15` for a
+    /// 15 percentage-point step on top of that zone's baseline duty cycle).
+    pub step_size: f64,
+    /// Seconds to hold all zones at the shared baseline duty cycle before recording
+    /// the baseline temperatures. Applied once at the start, and again between
+    /// zones so the previous step's disturbance settles out first.
+    pub settle_duration_secs: f64,
+    /// Seconds to hold the stepped duty cycle before recording the response
+    /// temperatures of all four zones.
+    pub step_duration_secs: f64,
+}
+
+/// Steady-state gain matrix and Relative Gain Array from a completed thermal
+/// coupling test. Both matrices are indexed `[output_zone][input_zone]` in the
+/// order given by `zones`, e.g. `gain_matrix[i][j]` is how much zone `i`'s
+/// temperature (°C) changed per unit step of zone `j`'s duty cycle.
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct ThermalCouplingResult {
+    pub zones: [String; 4],
+    pub gain_matrix: [[f64; 4]; 4],
+    pub rga_matrix: [[f64; 4]; 4],
+}
+
+/// Live state of the thermal coupling test, broadcast as part of the machine state.
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct ThermalCouplingTestState {
+    /// One of: `"idle"`, `"settling"`, `"stepping"`, `"done"`, `"aborted"`
+    pub state: String,
+    /// Zone currently under test, if any (`"front"`, `"middle"`, `"back"`, `"nozzle"`)
+    pub zone_under_test: Option<String>,
+    pub elapsed_secs: f64,
+    pub duration_secs: f64,
+    /// How many of the 4 zones have already been stepped and recorded
+    pub zones_completed: usize,
+    /// Populated when `state == "aborted"`
+    pub error: Option<String>,
+    /// Populated when `state == "done"`
+    pub result: Option<ThermalCouplingResult>,
+}
+
+impl Default for ThermalCouplingTestState {
+    fn default() -> Self {
+        Self {
+            state: "idle".to_string(),
+            zone_under_test: None,
+            elapsed_secs: 0.0,
+            duration_secs: 0.0,
+            zones_completed: 0,
+            error: None,
+            result: None,
+        }
+    }
+}
+
 pub enum ExtruderV2Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
@@ -280,6 +344,11 @@ pub enum Mutation {
     /// Start pressure PID auto-tuning with bounded frequency excitation.
     StartPressurePidAutoTune(PressureAutoTuneConfig),
     StopPressurePidAutoTune {},
+
+    // Thermal Coupling Test
+    /// Start a thermal coupling measurement across all 4 heating zones.
+    StartThermalCouplingTest(ThermalCouplingTestConfig),
+    StopThermalCouplingTest {},
 
     // Reset
     ResetInverter(bool),
@@ -399,6 +468,12 @@ impl MachineApi for ExtruderV2 {
             }
             Mutation::StopPressurePidAutoTune {} => {
                 self.stop_pressure_pid_autotune();
+            }
+            Mutation::StartThermalCouplingTest(config) => {
+                self.start_thermal_coupling_test(config);
+            }
+            Mutation::StopThermalCouplingTest {} => {
+                self.stop_thermal_coupling_test();
             }
         }
         Ok(())

@@ -143,6 +143,7 @@ impl ExtruderV2 {
                     result,
                 }
             },
+            thermal_coupling_test_state: self.get_thermal_coupling_test_state(),
         }
     }
 

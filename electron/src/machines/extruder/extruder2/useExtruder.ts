@@ -372,6 +372,30 @@ export function useExtruder2() {
     });
   };
 
+  const startThermalCouplingTest = (
+    stepSize: number,
+    settleDurationSecs: number,
+    stepDurationSecs: number,
+  ) => {
+    requestStartThermalCouplingTest({
+      machine_identification_unique: machineIdentification,
+      data: {
+        StartThermalCouplingTest: {
+          step_size: stepSize,
+          settle_duration_secs: settleDurationSecs,
+          step_duration_secs: stepDurationSecs,
+        },
+      },
+    });
+  };
+
+  const stopThermalCouplingTest = () => {
+    requestStopThermalCouplingTest({
+      machine_identification_unique: machineIdentification,
+      data: { StopThermalCouplingTest: {} },
+    });
+  };
+
   // Mutation hooks
   const { request: requestInverterRotationDirection } = useMachineMutation(
     z.object({ SetInverterRotationDirection: z.boolean() }),
@@ -459,6 +483,20 @@ export function useExtruder2() {
     z.object({ StopPressurePidAutoTune: z.object({}) }),
   );
 
+  const { request: requestStartThermalCouplingTest } = useMachineMutation(
+    z.object({
+      StartThermalCouplingTest: z.object({
+        step_size: z.number(),
+        settle_duration_secs: z.number(),
+        step_duration_secs: z.number(),
+      }),
+    }),
+  );
+
+  const { request: requestStopThermalCouplingTest } = useMachineMutation(
+    z.object({ StopThermalCouplingTest: z.object({}) }),
+  );
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -516,5 +554,7 @@ export function useExtruder2() {
     resetInverter,
     startPressurePidAutoTune,
     stopPressurePidAutoTune,
+    startThermalCouplingTest,
+    stopThermalCouplingTest,
   };
 }
