@@ -195,7 +195,6 @@ export function DryerSmartControlPage() {
     prevStatusRef.current = v.status;
   }, [v?.status]);
 
-
   useEffect(() => {
     const id = setInterval(() => {
       const schedule = scheduleRef.current;
