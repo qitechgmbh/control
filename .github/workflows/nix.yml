@@ -29,12 +29,11 @@ jobs:
             keep-env-derivations = true
             keep-outputs = true
 
-      - uses: nix-community/cache-nix-action@v7
+      - &cachix
+        uses: cachix/cachix-action@v17
         with:
-          primary-key: nix-electron-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './electron/package-lock.json') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          purge: true
-          purge-prefixes: nix-electron-${{ runner.os }}-
+          name: qitech
+          authToken: '${{ secrets.CACHIX_TOKEN }}'
 
       - name: Build Electron in Nix
         run: nix build -L .#packages.x86_64-linux.electron
@@ -45,13 +44,7 @@ jobs:
     steps:
       - *checkout
       - *nix-install
-
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-server-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './Cargo.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          purge: true
-          purge-prefixes: nix-server-${{ runner.os }}-
+      - *cachix
 
       - name: Build Server in Nix
         run: nix build -L .#packages.x86_64-linux.server
@@ -64,18 +57,10 @@ jobs:
       - *checkout
       - *nix-install
 
-      - name: Use both Electron and Server Nix Store
-        uses: nix-community/cache-nix-action@v7
+      - uses: cachix/cachix-action@v17
         with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './Cargo.lock', './electron/package-lock.json') }}
-
-          # if no hit on the primary key, merge individual caches
-          restore-prefixes-all-matches: |
-            nix-electron-${{ runner.os }}-
-            nix-server-${{ runner.os }}-
-
-      - name: Save commit short hash
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          name: qitech
+          skipPush: true
 
       - name: Build Flake and System Configuration
         run: ./nixos-build-iso.sh
