@@ -84,12 +84,11 @@ export function SearchableSelect<T>({
     setActiveIndex(0);
   }, [filteredOptions.length]);
 
-  // Focus search input and show the on-screen keyboard when opened
+  // Focus search input when opened; on-screen keyboard stays hidden until requested
   useEffect(() => {
     if (open) {
       setTimeout(() => searchInputRef.current?.focus(), 0);
       setSearch("");
-      setKeyboardVisible(true);
     } else {
       setKeyboardVisible(false);
     }
@@ -158,7 +157,7 @@ export function SearchableSelect<T>({
   }, [groups, search, getOptionLabel]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -191,7 +190,6 @@ export function SearchableSelect<T>({
             placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            onFocus={() => setKeyboardVisible(true)}
             className="h-14 flex-1 touch-manipulation border-0 bg-transparent px-0 text-lg shadow-none focus-visible:ring-0"
           />
           <Button
