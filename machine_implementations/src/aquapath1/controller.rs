@@ -202,7 +202,8 @@ impl Controller {
     ) -> Self {
         let now = Instant::now();
         Self {
-            pid: PidController::new(kp, ki, kd),
+            // What should be set here? 
+            pid: PidController::new(kp, ki, kd,0.0,0.2),
             window_start: now,
             last_update: now,
             temperature_pid_output: 0.0,
