@@ -299,7 +299,7 @@ fn optimized_ethercat_init(interface: &str) -> EtherCATControl<TripleBufConsumer
         ethercat_io_thread_core: 3,
         ethercat_io_thread_priority: 50,
         pin_irq_core: Some(3),
-        lock_memory: true,
+        lock_memory: cfg!(target_os = "linux"),
     };
 
     let config: MasterConfiguration = MasterConfiguration {
