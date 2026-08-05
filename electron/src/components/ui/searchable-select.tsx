@@ -1,6 +1,5 @@
 import * as React from "react";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -158,18 +157,7 @@ export function SearchableSelect<T>({
   }, [groups, search, getOptionLabel]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      {/*
-        Blocks taps from reaching elements behind the popover (needed since this is
-        touch-first UI) without using Radix's `modal` prop, which locks
-        `document.body` globally and gets left stuck when nested inside another
-        modal Dialog (as this is in DeviceEepromDialog), freezing the whole app.
-      */}
-      {open &&
-        createPortal(
-          <div className="fixed inset-0 z-40" aria-hidden />,
-          document.body,
-        )}
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <button
           type="button"
