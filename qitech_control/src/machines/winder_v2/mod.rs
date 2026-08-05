@@ -48,6 +48,9 @@ pub const PULLER_PORT: usize = 0;
 pub const SPOOL_PORT: usize = 0;
 pub const TRAVERSE_END_STOP_PORT: usize = 0;
 
+pub const VARIANT_REGULAR: usize = 0;
+pub const VARIANT_7031_SPOOL: usize = 1;
+
 #[derive(Debug)]
 pub struct SpoolAutomaticAction {
     pub progress: Length,
@@ -67,7 +70,11 @@ impl Default for SpoolAutomaticAction {
     }
 }
 
-pub struct WinderV1 {
+pub type WinderV1_Regular = WinderV1<VARIANT_REGULAR>;
+
+pub type WinderV1_7031_Spool = WinderV1<VARIANT_7031_SPOOL>;
+
+pub struct WinderV1<const VARIANT: usize> {
     // drivers
     pub traverse: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
     pub puller: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
@@ -103,11 +110,11 @@ pub struct WinderV1 {
     pub laser_subscription: Option<LaserSubscription>,
 }
 
-impl MachineInterface for WinderV1 {
-    const SCHEMAS: &[&'static str] = &[include_str!("../../../../schemas/winder_v2.yaml")];
+impl MachineInterface for WinderV1<VARIANT_REGULAR> {
+    const SCHEMA: &'static str = include_str!("../../../../schemas/winder_v2.yaml");
 }
 
-impl WinderV1 {
+impl<const VARIANT: usize> WinderV1<VARIANT> {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor_id: vendors::QITECH.id,
         machine_id: 2,
@@ -140,7 +147,7 @@ impl WinderV1 {
     }
 
     /// Can go to inner limit capability check
-    pub fn can_go_in(&self) -> bool {
+    pub fn traverse_can_goto_limit_inner(&self) -> bool {
         // Check if traverse is homed, not in standby, not traversing
         // Allow changing direction (even when going out)
         // Disallow when homing is in progress
@@ -153,7 +160,7 @@ impl WinderV1 {
     }
 
     /// Can go to outer limit capability check
-    pub fn can_go_out(&self) -> bool {
+    pub fn traverse_can_goto_limit_outer(&self) -> bool {
         // Check if traverse is homed, not in standby, not traversing
         // Allow changing direction (even when going in)
         // Disallow when homing is in progress
@@ -166,7 +173,7 @@ impl WinderV1 {
     }
 
     /// Can go home capability check
-    pub fn can_go_home(&self) -> bool {
+    pub fn traverse_can_goto_home(&self) -> bool {
         // Check if not in standby, not traversing
         // Allow going home even when going in or out
         self.traverse_mode != TraverseMode::Standby

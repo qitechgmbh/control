@@ -17,7 +17,6 @@ mod interface;
 
 mod machines;
 use machines::LaserV1;
-use machines::WinderV1;
 use qitech_framework::session;
 use qitech_framework_tui::Tui;
 use qitech_framework_tui::TuiConfiguration;
@@ -25,6 +24,9 @@ use qitech_lib::ethercat_hal::DcConfiguration;
 use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
 use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
+
+use crate::machines::WinderV1_7031_Spool;
+use crate::machines::WinderV1_Regular;
 
 pub fn main() -> anyhow::Result<()> {
     interface::bring_up_all_ethernet();
@@ -52,7 +54,9 @@ pub fn main() -> anyhow::Result<()> {
             None,
         )
         .machine::<LaserV1>()
-        .machine::<WinderV1>();
+        .machine::<WinderV1_Regular>()
+        .machine::<WinderV1_7031_Spool>()
+        ;
 
     run_tui(config)
 }

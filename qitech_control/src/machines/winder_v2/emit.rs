@@ -1,11 +1,10 @@
 use crate::machines::winder_v2::types::{SpoolAutomaticActionMode, Winder2Mode};
 
 use super::{
-    LASER_PORT, SPOOL_PORT, TRAVERSE_PORT, TraverseMode, WinderV1, api::PullerRegulationMode,
+    SPOOL_PORT, TRAVERSE_PORT, TraverseMode, WinderV1, api::PullerRegulationMode,
     spool_speed_controller,
 };
 
-use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 #[cfg(not(feature = "mock-machine"))]
 pub use qitech_lib::units::{
     angular_velocity::revolution_per_minute,
@@ -13,7 +12,6 @@ pub use qitech_lib::units::{
     length::{meter, millimeter},
 };
 
-use std::cell::RefMut;
 pub use std::time::Instant;
 
 pub use qitech_lib::units::Velocity;
@@ -90,18 +88,6 @@ impl WinderV1 {
         }
     }
 
-    fn get_laser(&mut self) -> RefMut<'_, dyn DigitalOutputDevice> {
-        self.laser.borrow_mut()
-    }
-
-    /// Implement Traverse
-    pub fn set_laser(&mut self, value: bool) {
-        self.laser_enabled = value;
-        let mut laser = self.get_laser();
-        laser.set_output(LASER_PORT, value);
-        drop(laser);
-    }
-
     pub fn traverse_set_limit_inner(&mut self, limit: f64) {
         let new_inner = Length::new::<millimeter>(limit);
         let current_outer = self.traverse_controller.get_limit_outer();
@@ -138,19 +124,19 @@ impl WinderV1 {
     }
 
     pub fn traverse_goto_limit_inner(&mut self) {
-        if self.can_go_in() {
+        if self.traverse_can_goto_limit_inner() {
             self.traverse_controller.goto_limit_inner();
         }
     }
 
     pub fn traverse_goto_limit_outer(&mut self) {
-        if self.can_go_out() {
+        if self.traverse_can_goto_limit_outer() {
             self.traverse_controller.goto_limit_outer();
         }
     }
 
     pub fn traverse_goto_home(&mut self) {
-        if self.can_go_home() {
+        if self.traverse_can_goto_home() {
             self.traverse_controller.goto_home();
         }
     }

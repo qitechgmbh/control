@@ -8,7 +8,7 @@ use qitech_lib::units::velocity::meter_per_minute;
 use qitech_lib::units::{Angle, AngularVelocity, Length, Velocity};
 
 use crate::machines::winder_v2::types::SpoolAutomaticActionMode;
-use crate::machines::winder_v2::{PULLER_PORT, SPOOL_PORT, Winder2Mode, WinderV1};
+use crate::machines::winder_v2::{LASER_PORT, PULLER_PORT, SPOOL_PORT, Winder2Mode, WinderV1};
 use crate::machines::winder_v2::{spool_speed_controller::SpoolSpeedControllerType, types::Mode};
 
 pub use super::puller_speed_controller::{GearRatio, PullerRegulationMode};
@@ -323,14 +323,16 @@ impl WinderV1 {
         self.traverse_goto_limit_inner();
         Ok(())
     }
-
+1
     pub fn cmd_traverse_laser_enable(&mut self) -> CommandExecuteResult {
-        self.set_laser(true);
+        self.laser_enabled = true;
+        self.laser.borrow_mut().set_output(LASER_PORT, true);
         Ok(())
     }
 
     pub fn cmd_traverse_laser_disable(&mut self) -> CommandExecuteResult {
-        self.set_laser(false);
+        self.laser_enabled = false;
+        self.laser.borrow_mut().set_output(LASER_PORT, false);
         Ok(())
     }
 
@@ -435,9 +437,9 @@ impl WinderV1 {
         let step_size = self.traverse_controller.get_step_size();
         let padding = self.traverse_controller.get_padding();
 
-        let can_go_in = self.can_go_in();
-        let can_go_out = self.can_go_out();
-        let can_go_home = self.can_go_home();
+        let can_go_in = self.traverse_can_goto_limit_inner();
+        let can_go_out = self.traverse_can_goto_limit_outer();
+        let can_go_home = self.traverse_can_goto_home();
 
         // --- update traverse state_props ---
         let s = &mut self.state_props.traverse_state;

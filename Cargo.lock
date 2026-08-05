@@ -2098,7 +2098,6 @@ dependencies = [
  "heapless 0.9.3",
  "indexmap",
  "postcard",
- "qitech_framework",
  "qitech_framework_core",
  "qitech_lib",
  "ratatui",

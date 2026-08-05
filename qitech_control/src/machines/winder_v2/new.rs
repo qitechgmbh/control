@@ -43,6 +43,8 @@ use qitech_framework::machine::MachineBuild;
 use qitech_framework::machine::error::BuildResult;
 
 use crate::machines::winder_v2::SpoolAutomaticAction;
+use crate::machines::winder_v2::VARIANT_REGULAR;
+use crate::machines::winder_v2::VARIANT_7031_SPOOL;
 use crate::machines::winder_v2::WinderV1;
 use crate::machines::winder_v2::api::ConfigProperties;
 use crate::machines::winder_v2::api::GearRatio;
@@ -66,22 +68,8 @@ use crate::machines::winder_v2::types::SpoolMode;
 use crate::machines::winder_v2::types::TraverseMode;
 use crate::machines::winder_v2::types::Winder2Mode;
 
-impl MachineBuild for WinderV1 {
-    fn build(ctx: BuildContext) -> BuildResult<Self> {
-        let ident = ctx.ident_unique().identification;
-
-        if ident == WinderV1::MACHINE_IDENTIFICATION {
-            Self::new_normal(ctx)
-        } else if ident == WinderV1::MACHINE_IDENTIFICATION_7031_SPOOL {
-            Self::new_spool_7031(ctx)
-        } else {
-            Err(BuildError::UnexpectedMachineIdentification)
-        }
-    }
-}
-
-impl WinderV1 {
-    fn new_normal(ctx: BuildContext) -> BuildResult<Self> {
+impl MachineBuild for WinderV1<VARIANT_REGULAR> {
+    fn build(ctx: &mut BuildContext) -> BuildResult<Self> {
         let interface = ctx.get_ethercat_interface()?;
 
         init_ek1100(&ctx)?;
@@ -90,7 +78,7 @@ impl WinderV1 {
         let el7031 = init_el7031(&ctx, interface.clone())?;
         let el7031_0030 = init_el7031_0030(&ctx, interface.clone())?;
 
-        Self::new_any(
+        Self::new(
             ctx,
             el7031,
             el7031_0030.clone(),
@@ -99,8 +87,10 @@ impl WinderV1 {
             el2002,
         )
     }
+}
 
-    fn new_spool_7031(ctx: BuildContext) -> BuildResult<Self> {
+impl MachineBuild for WinderV1<VARIANT_7031_SPOOL> {
+    fn build(ctx: &mut BuildContext) -> BuildResult<Self> {
         let interface = ctx.get_ethercat_interface()?;
 
         init_ek1100(&ctx)?;
@@ -109,7 +99,7 @@ impl WinderV1 {
         let el7031 = init_el7031(&ctx, interface.clone())?;
         let el7031_0030_spool = init_el7031_0030_spool(&ctx, interface.clone())?;
 
-        Self::new_any(
+        Self::new(
             ctx,
             el7031,
             el7031_0030.clone(),
@@ -118,16 +108,18 @@ impl WinderV1 {
             el2002,
         )
     }
+}
 
-    fn new_any(
-        mut ctx: BuildContext,
+impl<const VARIANT: usize> WinderV1<VARIANT> {
+    fn new(
+        ctx: &mut BuildContext,
         traverse: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
         puller: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
         spool: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
         tension_arm: TensionArm,
         laser: Rc<RefCell<dyn DigitalOutputDevice>>,
     ) -> BuildResult<Self> {
-        init_commands(&mut ctx)?;
+        init_commands(ctx)?;
 
         Ok(Self {
             traverse,
@@ -160,9 +152,9 @@ impl WinderV1 {
                     Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
                 ),
             ),
-            config_props: init_config_properties(&mut ctx)?,
-            state_props: init_state_properties(&mut ctx)?,
-            measurements: init_measurements(&mut ctx)?,
+            config_props: init_config_properties(ctx)?,
+            state_props: init_state_properties(ctx)?,
+            measurements: init_measurements(ctx)?,
             laser_subscription: None,
         })
     }
@@ -557,14 +549,17 @@ fn init_commands(ctx: &mut BuildContext) -> BuildResult<()> {
 
     // --- traverse goto ---
     ctx.command("traverse.goto_home")
+        .can_execute(WinderV1::traverse_can_goto_home)
         .execute(WinderV1::cmd_traverse_goto_home)
         .register()?;
 
     ctx.command("traverse.goto_limit_inner")
+        .can_execute(WinderV1::traverse_can_goto_limit_inner)
         .execute(WinderV1::cmd_traverse_goto_limit_inner)
         .register()?;
 
     ctx.command("traverse.goto_limit_outer")
+        .can_execute(WinderV1::traverse_can_goto_limit_outer)
         .execute(WinderV1::cmd_traverse_goto_limit_outer)
         .register()?;
 
