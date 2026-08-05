@@ -2,12 +2,14 @@ import * as React from "react";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
 import { Icon } from "@/components/Icon";
+import { TouchKeyboard } from "@/components/touch/TouchKeyboard";
 
 export type SearchableSelectGroup<T> = {
   label: string;
@@ -52,6 +54,7 @@ export function SearchableSelect<T>({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -81,11 +84,14 @@ export function SearchableSelect<T>({
     setActiveIndex(0);
   }, [filteredOptions.length]);
 
-  // Focus search input when opened
+  // Focus search input and show the on-screen keyboard when opened
   useEffect(() => {
     if (open) {
       setTimeout(() => searchInputRef.current?.focus(), 0);
       setSearch("");
+      setKeyboardVisible(true);
+    } else {
+      setKeyboardVisible(false);
     }
   }, [open]);
 
@@ -94,6 +100,7 @@ export function SearchableSelect<T>({
       onChange(optionValue);
       setOpen(false);
       setSearch("");
+      setKeyboardVisible(false);
     },
     [onChange],
   );
@@ -157,7 +164,7 @@ export function SearchableSelect<T>({
           type="button"
           disabled={disabled}
           className={cn(
-            "flex h-12 w-full min-w-48 items-center justify-between rounded-md border px-3 py-1 text-base shadow-xs",
+            "flex h-14 w-full min-w-48 touch-manipulation items-center justify-between rounded-md border px-3 py-1 text-lg shadow-xs",
             "border-input bg-transparent",
             "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none",
             "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
@@ -168,34 +175,50 @@ export function SearchableSelect<T>({
           <span className="truncate">{selectedLabel || placeholder}</span>
           <Icon
             name="lu:ChevronsUpDown"
-            className="ml-2 h-4 w-4 shrink-0 opacity-50"
+            className="ml-2 h-5 w-5 shrink-0 opacity-50"
           />
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-[--radix-popover-trigger-width] p-0"
+        className="w-[--radix-popover-trigger-width] min-w-80 p-0"
         align="start"
         onKeyDown={handleKeyDown}
       >
-        <div className="flex items-center border-b px-3">
-          <Icon name="lu:Search" className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+        <div className="flex items-center gap-2 border-b px-3">
+          <Icon name="lu:Search" className="h-5 w-5 shrink-0 opacity-50" />
           <Input
             ref={searchInputRef}
             placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-10 border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0"
+            onFocus={() => setKeyboardVisible(true)}
+            className="h-14 flex-1 touch-manipulation border-0 bg-transparent px-0 text-lg shadow-none focus-visible:ring-0"
           />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 shrink-0 touch-manipulation"
+            onClick={() => setKeyboardVisible((current) => !current)}
+          >
+            <Icon
+              name={keyboardVisible ? "lu:KeyboardOff" : "lu:Keyboard"}
+              className="h-5 w-5"
+            />
+          </Button>
         </div>
-        <div ref={listRef} className="max-h-64 overflow-auto p-1">
+        <div
+          ref={listRef}
+          className="max-h-96 overflow-auto overscroll-contain p-1"
+        >
           {visibleGroups.length === 0 ? (
-            <div className="text-muted-foreground px-2 py-6 text-center text-sm">
+            <div className="text-muted-foreground px-2 py-6 text-center text-base">
               {emptyMessage}
             </div>
           ) : (
             visibleGroups.map((group) => (
               <div key={group.label}>
-                <div className="text-muted-foreground px-2 py-1.5 text-xs font-semibold">
+                <div className="text-muted-foreground px-2 py-2 text-sm font-semibold">
                   {group.label}
                 </div>
                 {group.options.map((option) => {
@@ -214,8 +237,8 @@ export function SearchableSelect<T>({
                       aria-selected={isSelected}
                       onClick={() => selectOption(optionValue)}
                       className={cn(
-                        "relative flex cursor-pointer items-center rounded-sm px-2 py-2 text-base",
-                        "hover:bg-accent hover:text-accent-foreground",
+                        "relative flex min-h-14 cursor-pointer touch-manipulation items-center rounded-sm px-3 py-3 text-lg select-none",
+                        "hover:bg-accent hover:text-accent-foreground active:bg-accent active:text-accent-foreground",
                         activeIndex === flatIndex &&
                           "bg-accent text-accent-foreground",
                         isSelected && "font-medium",
@@ -224,10 +247,10 @@ export function SearchableSelect<T>({
                       {isSelected && (
                         <Icon
                           name="lu:Check"
-                          className="mr-2 h-4 w-4 shrink-0"
+                          className="mr-2 h-5 w-5 shrink-0"
                         />
                       )}
-                      <span className={cn(!isSelected && "ml-6")}>
+                      <span className={cn(!isSelected && "ml-7")}>
                         {optionLabel}
                       </span>
                     </div>
@@ -237,6 +260,20 @@ export function SearchableSelect<T>({
             ))
           )}
         </div>
+        {keyboardVisible && (
+          <div className="border-t p-2">
+            <TouchKeyboard
+              value={search}
+              onChange={setSearch}
+              onEnter={() => {
+                if (filteredOptions[activeIndex]) {
+                  selectOption(getOptionValue(filteredOptions[activeIndex]));
+                }
+              }}
+              visible={keyboardVisible}
+            />
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
