@@ -1,5 +1,5 @@
 use super::Heating;
-use control_core::controllers::pid::PidController;
+use control_core::controllers::heater_pid::HeaterPidController;
 use qitech_lib::{
     ethercat_hal::io::{
         digital_output::DigitalOutputDevice, temperature_input::TemperatureInputDevice,
@@ -41,9 +41,8 @@ impl LowPassFilter {
     }
 }
 
-
 pub struct TemperatureController {
-    pub pid: PidController,
+    pub pid: HeaterPidController,
     pub heating: Heating,
     pub target_temp: ThermodynamicTemperature,
     pub digital_port: usize,
@@ -56,7 +55,7 @@ pub struct TemperatureController {
     heating_element_wattage: f64,
     max_clamp: f64,
     target_temp_enabled: bool, // Sets whether the frontend should display a target temperature setter for this temp controller
-    filter : LowPassFilter,
+    filter: LowPassFilter,
     /// When set, overrides the PID and drives the PWM window at this fixed duty cycle
     /// (0.0-1.0) instead. Used by the thermal coupling test to hold/step zones open-loop.
     manual_duty: Option<f64>,
@@ -81,10 +80,10 @@ impl TemperatureController {
         max_clamp: f64,
         digital_port: usize,
         temperature_port: usize,
+        min_deriv_time_secs: f64,
     ) -> Self {
         Self {
-            //the max clamp for integral should be at max 20% of the total output 
-            pid: PidController::new( kp, ki, kd,0.0, max_clamp/5.0 ),
+            pid: HeaterPidController::new(kp, ki, kd, max_clamp, min_deriv_time_secs),
             target_temp,
             window_start: Instant::now(),
             heating,
@@ -97,7 +96,10 @@ impl TemperatureController {
             target_temp_enabled: true,
             digital_port,
             temperature_port,
-            filter : LowPassFilter { alpha: 0.08, state: None },
+            filter: LowPassFilter {
+                alpha: 0.08,
+                state: None,
+            },
             manual_duty: None,
         }
     }
@@ -152,11 +154,17 @@ impl TemperatureController {
         let temperature = temperature_sensor.get_input(self.temperature_port);
         self.heating.wiring_error = temperature.is_err();
         let temperature_celsius = match temperature {
-            Ok(t) => ThermodynamicTemperature::new::<degree_celsius>(t.temperature as f64),
-            Err(_e) => ThermodynamicTemperature::new::<degree_celsius>(0.0),
+            Ok(t) => t.temperature as f64,
+            Err(_e) => {
+                // Sensor fault: don't fabricate a reading and drive the PID against it.
+                relais.set_output(self.digital_port, false);
+                self.heating.heating = false;
+                return;
+            }
         };
-        self.filter.update(temperature_celsius.get::<degree_celsius>());
-        self.heating.temperature =  ThermodynamicTemperature::new::<degree_celsius>(self.filter.current_val());
+        self.filter.update(temperature_celsius);
+        self.heating.temperature =
+            ThermodynamicTemperature::new::<degree_celsius>(self.filter.current_val());
         if self.heating.temperature > self.max_temperature {
             // disable the relais and return
             relais.set_output(self.digital_port, false);
@@ -169,10 +177,11 @@ impl TemperatureController {
                 // Open-loop override: skip the PID and drive the requested duty directly.
                 Some(manual) => manual.clamp(0.0, self.max_clamp),
                 None => {
-                    let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
-                        - self.heating.temperature.get::<degree_celsius>();
-
-                    let control = self.pid.update(error, now); // PID output
+                    let control = self.pid.update(
+                        self.heating.temperature.get::<degree_celsius>(),
+                        self.heating.target_temperature.get::<degree_celsius>(),
+                        now,
+                    ); // PID output
                     // Clamp PID output to 0.0 – 1.0 (as duty cycle)
                     control.clamp(0.0, self.max_clamp)
                 }

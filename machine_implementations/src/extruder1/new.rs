@@ -127,6 +127,7 @@ impl MachineNew for ExtruderV2 {
             1.0,
             0,
             0,
+            1.0,
         );
 
         let temperature_controller_middle = TemperatureController::new(
@@ -141,6 +142,7 @@ impl MachineNew for ExtruderV2 {
             1.0,
             1,
             1,
+            1.0,
         );
 
         let temperature_controller_back = TemperatureController::new(
@@ -155,6 +157,7 @@ impl MachineNew for ExtruderV2 {
             1.0,
             2,
             2,
+            1.0,
         );
 
         // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -170,6 +173,7 @@ impl MachineNew for ExtruderV2 {
             0.95,
             3,
             3,
+            1.0,
         );
 
         let inverter = MitsubishiCS80::new();
