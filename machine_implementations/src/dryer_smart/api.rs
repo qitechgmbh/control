@@ -118,14 +118,16 @@ impl MachineApi for DryerSmartMachine {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
-            Mutation::SetStartStop(running) => self.set_start_stop(running),
-            Mutation::SetTargetTemperature(temp) => self.set_target_temperature(temp),
-            Mutation::SetSchedule(schedule) => self.set_schedule(schedule),
-            Mutation::SetDryingTimerMinutes(minutes) => self.set_drying_timer_minutes(minutes),
+            Mutation::SetStartStop(running) => self.core.set_start_stop(running),
+            Mutation::SetTargetTemperature(temp) => self.core.set_target_temperature(temp),
+            Mutation::SetSchedule(schedule) => self.core.set_schedule(schedule),
+            Mutation::SetDryingTimerMinutes(minutes) => self.core.set_drying_timer_minutes(minutes),
             Mutation::ApplyMaterialPreset {
                 abbrev,
                 throughput_kg_per_h,
-            } => self.apply_material_preset(&abbrev, throughput_kg_per_h),
+            } => self
+                .core
+                .apply_material_preset(&abbrev, throughput_kg_per_h),
             Mutation::SyncClock => self.sync_system_clock(),
             Mutation::SetTimerEnabled(enabled) => self.set_timer_enabled(enabled),
             Mutation::WriteTimerEntry { index, entry } => self.write_timer_entry(index, entry),

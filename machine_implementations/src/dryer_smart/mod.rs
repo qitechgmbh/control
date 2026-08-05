@@ -1,14 +1,9 @@
-use crate::dryer::device::{
-    DryerDevice, SmartData, SmartTimerEntry, WeeklySchedule, is_running_status,
-    local_weekday_and_minutes,
-};
-use crate::dryer::material_presets::MATERIAL_PRESETS;
+use crate::dryer::core::DryerCore;
+use crate::dryer::device::SmartTimerEntry;
 use crate::{MACHINE_DRYER_SMART, QiTechMachine, VENDOR_QITECH};
 use api::{DryerSmartEvents, DryerSmartMachineNamespace, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::machines::{MachineIdentification, MachineIdentificationUnique};
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc::{Receiver, Sender};
 
@@ -21,37 +16,12 @@ pub struct DryerSmartMachine {
     api_sender: Sender<crate::MachineMessage>,
     machine_identification_unique: MachineIdentificationUnique,
     namespace: DryerSmartMachineNamespace,
-    last_emit: Instant,
-    received_data: bool,
 
-    dryer: Rc<RefCell<DryerDevice>>,
+    core: DryerCore,
 
-    status: u16,
-    temp_process: f64,
-    temp_safety: f64,
-    temp_regen_in: f64,
-    temp_regen_out: f64,
-    temp_fan_inlet: f64,
-    temp_return_air: f64,
-    temp_dew_point: f64,
-    pwm_fan1: f64,
-    pwm_fan2: f64,
-    power_process: f64,
-    power_regen: f64,
-    alarm: u16,
-    warning: u16,
-    target_temperature: f64,
-    schedule: WeeklySchedule,
-    schedule_write_ts: Option<Instant>,
-    target_temp_write_ts: Option<Instant>,
-    smart_data: SmartData,
+    smart_data: crate::dryer::device::SmartData,
     /// Set when a timer-entry write is in flight; suppresses smart_data read-back for 5s
     smart_data_write_ts: Option<Instant>,
-
-    /// When the device last transitioned into a running state; None while not running.
-    running_since: Option<Instant>,
-    /// Configured drying-timer duration; only applies on days with no scheduled stop time.
-    drying_timer_minutes: u32,
 }
 
 impl DryerSmartMachine {
@@ -62,29 +32,29 @@ impl DryerSmartMachine {
 
     pub fn get_live_values(&self) -> LiveValuesEvent {
         LiveValuesEvent {
-            status: self.status,
-            temp_process: self.temp_process,
-            temp_safety: self.temp_safety,
-            temp_regen_in: self.temp_regen_in,
-            temp_regen_out: self.temp_regen_out,
-            temp_fan_inlet: self.temp_fan_inlet,
-            temp_return_air: self.temp_return_air,
-            temp_dew_point: self.temp_dew_point,
-            pwm_fan1: self.pwm_fan1,
-            pwm_fan2: self.pwm_fan2,
-            power_process: self.power_process,
-            power_regen: self.power_regen,
-            alarm: self.alarm,
-            warning: self.warning,
-            target_temperature: self.target_temperature,
-            schedule: self.schedule,
+            status: self.core.status,
+            temp_process: self.core.temp_process,
+            temp_safety: self.core.temp_safety,
+            temp_regen_in: self.core.temp_regen_in,
+            temp_regen_out: self.core.temp_regen_out,
+            temp_fan_inlet: self.core.temp_fan_inlet,
+            temp_return_air: self.core.temp_return_air,
+            temp_dew_point: self.core.temp_dew_point,
+            pwm_fan1: self.core.pwm_fan1,
+            pwm_fan2: self.core.pwm_fan2,
+            power_process: self.core.power_process,
+            power_regen: self.core.power_regen,
+            alarm: self.core.alarm,
+            warning: self.core.warning,
+            target_temperature: self.core.target_temperature,
+            schedule: self.core.schedule,
             smart_data: self.smart_data.clone(),
-            drying_timer_minutes: self.drying_timer_minutes,
+            drying_timer_minutes: self.core.drying_timer_minutes,
         }
     }
 
     pub fn emit_live_values(&mut self) {
-        if !self.received_data {
+        if !self.core.received_data {
             return;
         }
         let event = self.get_live_values().build();
@@ -93,140 +63,38 @@ impl DryerSmartMachine {
 
     pub fn get_state(&self) -> StateEvent {
         StateEvent {
-            is_default_state: !self.received_data,
+            is_default_state: !self.core.received_data,
         }
     }
 
+    /// Runs the shared temp/status/schedule update, then layers the Smart-only
+    /// `smart_data` (firmware version, timer table) read-back on top.
     pub fn update(&mut self) {
-        let dryer = self.dryer.borrow();
-        if let Some(d) = &dryer.data {
-            self.received_data = true;
-            let was_running = is_running_status(self.status);
-            self.status = d.status;
-            let now_running = is_running_status(self.status);
-            if !was_running && now_running {
-                self.running_since = Some(Instant::now());
-            } else if was_running && !now_running {
-                self.running_since = None;
-            }
-            self.temp_process = d.temp_process;
-            self.temp_safety = d.temp_safety;
-            self.temp_regen_in = d.temp_regen_in;
-            self.temp_regen_out = d.temp_regen_out;
-            self.temp_fan_inlet = d.temp_fan_inlet;
-            self.temp_return_air = d.temp_return_air;
-            self.temp_dew_point = d.temp_dew_point;
-            self.pwm_fan1 = d.pwm_fan1;
-            self.pwm_fan2 = d.pwm_fan2;
-            self.power_process = d.power_process;
-            self.power_regen = d.power_regen;
-            self.alarm = d.alarm;
-            self.warning = d.warning;
-
-            let temp_write_settled = self
-                .target_temp_write_ts
-                .is_none_or(|ts| ts.elapsed() > Duration::from_secs(3));
-            if temp_write_settled {
-                self.target_temperature = d.target_temperature;
-            }
-
-            let schedule_write_settled = self
-                .schedule_write_ts
-                .is_none_or(|ts| ts.elapsed() > Duration::from_secs(5));
-            if schedule_write_settled {
-                self.schedule = d.schedule;
-            }
-        }
+        self.core.update();
 
         let smart_write_settled = self
             .smart_data_write_ts
             .is_none_or(|ts| ts.elapsed() > Duration::from_secs(5));
         if smart_write_settled {
-            self.smart_data = dryer.smart_data.clone();
-        }
-    }
-
-    /// COIL_START_STOP is a pulse that toggles the device, not a setpoint - only queue
-    /// the pulse if the device isn't already in the requested state, otherwise a
-    /// redundant call (e.g. a scheduled stop firing while already stopped) would
-    /// actually flip the device to the opposite state instead of doing nothing.
-    pub fn set_start_stop(&mut self, running: bool) {
-        if is_running_status(self.status) != running {
-            self.dryer.borrow_mut().queue_set_start_stop();
-        }
-    }
-
-    pub fn set_drying_timer_minutes(&mut self, minutes: u32) {
-        self.drying_timer_minutes = minutes;
-    }
-
-    /// Runs every tick from `act()` so the dryer stops on schedule even with no UI
-    /// connected. A scheduled stop time today takes priority over the drying timer,
-    /// matching the frontend's own precedence (the timer UI is hidden whenever a
-    /// schedule applies).
-    pub fn check_auto_stop(&mut self) {
-        if !is_running_status(self.status) {
-            return;
-        }
-
-        let (weekday, now_minutes) = local_weekday_and_minutes();
-        let scheduled_stop = self.schedule[weekday as usize].stop_time;
-        if scheduled_stop != 0 {
-            let stop_minutes = (scheduled_stop / 100) as u32 * 60 + (scheduled_stop % 100) as u32;
-            if now_minutes >= stop_minutes {
-                self.set_start_stop(false);
-            }
-            return;
-        }
-
-        if let Some(started) = self.running_since {
-            let target = Duration::from_secs(self.drying_timer_minutes as u64 * 60);
-            if started.elapsed() >= target {
-                self.set_start_stop(false);
-            }
-        }
-    }
-
-    pub fn set_target_temperature(&mut self, temp_celsius: f64) {
-        self.target_temperature = temp_celsius;
-        self.target_temp_write_ts = Some(Instant::now());
-        self.dryer
-            .borrow_mut()
-            .queue_set_target_temperature(temp_celsius);
-    }
-
-    pub fn set_schedule(&mut self, schedule: WeeklySchedule) {
-        self.schedule = schedule;
-        self.schedule_write_ts = Some(Instant::now());
-        self.dryer.borrow_mut().queue_set_schedule(schedule);
-    }
-
-    pub fn apply_material_preset(&mut self, abbrev: &str, throughput_kg_per_h: f64) {
-        match MATERIAL_PRESETS.iter().find(|p| p.abbrev == abbrev) {
-            Some(preset) => {
-                self.target_temp_write_ts = Some(Instant::now());
-                let temp = self
-                    .dryer
-                    .borrow_mut()
-                    .queue_apply_material_preset(preset, throughput_kg_per_h);
-                self.target_temperature = temp as f64;
-            }
-            None => tracing::warn!("Unknown dryer material preset abbrev: {abbrev}"),
+            self.smart_data = self.core.dryer.borrow().smart_data.clone();
         }
     }
 
     pub fn sync_system_clock(&mut self) {
-        self.dryer.borrow_mut().queue_sync_clock();
+        self.core.dryer.borrow_mut().queue_sync_clock();
     }
 
     pub fn set_timer_enabled(&mut self, enabled: bool) {
         self.smart_data.timer_enabled = enabled;
         self.smart_data_write_ts = Some(Instant::now());
-        self.dryer.borrow_mut().queue_set_timer_enabled(enabled);
+        self.core
+            .dryer
+            .borrow_mut()
+            .queue_set_timer_enabled(enabled);
     }
 
     pub fn write_timer_entry(&mut self, index: u8, entry: SmartTimerEntry) {
-        if index as u16 >= self.dryer.borrow().smart_timer_slots() {
+        if index as u16 >= self.core.dryer.borrow().smart_timer_slots() {
             tracing::warn!("dryer timer index {index} out of bounds, ignoring write");
             return;
         }
@@ -238,7 +106,8 @@ impl DryerSmartMachine {
         }
         self.smart_data.timer_entries[idx] = entry;
         self.smart_data_write_ts = Some(Instant::now());
-        self.dryer
+        self.core
+            .dryer
             .borrow_mut()
             .queue_write_timer_entry(index, entry);
     }
@@ -246,11 +115,14 @@ impl DryerSmartMachine {
     pub fn write_new_timer_entry(&mut self, entry: SmartTimerEntry) {
         self.smart_data.timer_entries.push(entry);
         self.smart_data_write_ts = Some(Instant::now());
-        self.dryer.borrow_mut().queue_write_new_timer_entry(entry);
+        self.core
+            .dryer
+            .borrow_mut()
+            .queue_write_new_timer_entry(entry);
     }
 
     pub fn delete_timer_entry(&mut self, index: u8) {
-        if index as u16 >= self.dryer.borrow().smart_timer_slots() {
+        if index as u16 >= self.core.dryer.borrow().smart_timer_slots() {
             tracing::warn!("dryer timer index {index} out of bounds, ignoring delete");
             return;
         }
@@ -259,7 +131,7 @@ impl DryerSmartMachine {
             self.smart_data.timer_entries.remove(idx);
         }
         self.smart_data_write_ts = Some(Instant::now());
-        self.dryer.borrow_mut().queue_delete_timer_entry(index);
+        self.core.dryer.borrow_mut().queue_delete_timer_entry(index);
     }
 }
 
