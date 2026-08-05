@@ -259,13 +259,31 @@ pub struct ThermalCouplingTestConfig {
     /// Duty-cycle step applied to the zone under test, 0.0–1.0 (e.g. `0.15` for a
     /// 15 percentage-point step on top of that zone's baseline duty cycle).
     pub step_size: f64,
-    /// Seconds to hold all zones at the shared baseline duty cycle before recording
-    /// the baseline temperatures. Applied once at the start, and again between
-    /// zones so the previous step's disturbance settles out first.
-    pub settle_duration_secs: f64,
-    /// Seconds to hold the stepped duty cycle before recording the response
-    /// temperatures of all four zones.
-    pub step_duration_secs: f64,
+    /// Safety ceiling (seconds) for holding all zones at the shared baseline duty
+    /// cycle before recording the baseline temperatures. The dwell normally ends
+    /// earlier, as soon as every zone's rate of change drops below
+    /// `settle_threshold_c_per_min`; this is only the maximum wait if a zone never
+    /// quite settles.
+    pub max_settle_duration_secs: f64,
+    /// Safety ceiling (seconds) for holding the stepped duty cycle before recording
+    /// the response temperatures. Like `max_settle_duration_secs`, the dwell
+    /// normally ends earlier once temperatures stop moving.
+    pub max_step_duration_secs: f64,
+    /// A zone counts as settled during the very first (bootstrap) dwell once its
+    /// temperature's rate of change stays below this many °C per minute for
+    /// several consecutive checks. Thick barrels with slow heat diffusion need a
+    /// low threshold or the test will move on before the real (slower)
+    /// neighboring-zone response shows up.
+    pub settle_threshold_c_per_min: f64,
+    /// How often (seconds) to sample the rate-of-change check.
+    pub check_interval_secs: f64,
+    /// After a step is reverted, how close (°C) each zone's temperature must get
+    /// back to the value recorded just before that step before the next zone is
+    /// tested. This is the more direct check used for every dwell after the
+    /// first: e.g. if a zone was at 150°C, got stepped up to 160°C, and duty was
+    /// then reverted, wait until it actually reads ~150°C again — not just until
+    /// it stops moving quickly.
+    pub settle_tolerance_c: f64,
 }
 
 /// Steady-state gain matrix and Relative Gain Array from a completed thermal
@@ -287,7 +305,11 @@ pub struct ThermalCouplingTestState {
     /// Zone currently under test, if any (`"front"`, `"middle"`, `"back"`, `"nozzle"`)
     pub zone_under_test: Option<String>,
     pub elapsed_secs: f64,
+    /// Safety-ceiling duration for the current dwell (not a fixed target — the
+    /// dwell usually ends earlier, once `stable` becomes true).
     pub duration_secs: f64,
+    /// Whether the current dwell's rate-of-change check currently reports settled.
+    pub stable: bool,
     /// How many of the 4 zones have already been stepped and recorded
     pub zones_completed: usize,
     /// Populated when `state == "aborted"`
@@ -303,6 +325,7 @@ impl Default for ThermalCouplingTestState {
             zone_under_test: None,
             elapsed_secs: 0.0,
             duration_secs: 0.0,
+            stable: false,
             zones_completed: 0,
             error: None,
             result: None,

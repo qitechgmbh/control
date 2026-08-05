@@ -380,18 +380,24 @@ export function useExtruder3() {
     });
   };
 
-  const startThermalCouplingTest = (
-    stepSize: number,
-    settleDurationSecs: number,
-    stepDurationSecs: number,
-  ) => {
+  const startThermalCouplingTest = (config: {
+    stepSize: number;
+    maxSettleDurationSecs: number;
+    maxStepDurationSecs: number;
+    settleThresholdCPerMin: number;
+    checkIntervalSecs: number;
+    settleToleranceC: number;
+  }) => {
     requestStartThermalCouplingTest({
       machine_identification_unique: machineIdentification,
       data: {
         StartThermalCouplingTest: {
-          step_size: stepSize,
-          settle_duration_secs: settleDurationSecs,
-          step_duration_secs: stepDurationSecs,
+          step_size: config.stepSize,
+          max_settle_duration_secs: config.maxSettleDurationSecs,
+          max_step_duration_secs: config.maxStepDurationSecs,
+          settle_threshold_c_per_min: config.settleThresholdCPerMin,
+          check_interval_secs: config.checkIntervalSecs,
+          settle_tolerance_c: config.settleToleranceC,
         },
       },
     });
@@ -495,8 +501,11 @@ export function useExtruder3() {
     z.object({
       StartThermalCouplingTest: z.object({
         step_size: z.number(),
-        settle_duration_secs: z.number(),
-        step_duration_secs: z.number(),
+        max_settle_duration_secs: z.number(),
+        max_step_duration_secs: z.number(),
+        settle_threshold_c_per_min: z.number(),
+        check_interval_secs: z.number(),
+        settle_tolerance_c: z.number(),
       }),
     }),
   );

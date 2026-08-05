@@ -20,6 +20,7 @@ export const thermalCouplingTestStateSchema = z.object({
   zone_under_test: z.string().nullable(),
   elapsed_secs: z.number(),
   duration_secs: z.number(),
+  stable: z.boolean(),
   zones_completed: z.number(),
   error: z.string().nullable(),
   result: thermalCouplingResultSchema.nullable(),

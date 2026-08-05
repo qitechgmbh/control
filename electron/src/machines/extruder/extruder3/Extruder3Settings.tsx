@@ -33,10 +33,18 @@ export function Extruder3SettingsPage() {
   const [tuneDelta, setTuneDelta] = useState(1.0);
   const [frequencyStepHz, setFrequencyStepHz] = useState(2.5);
   const [couplingStepSize, setCouplingStepSize] = useState(0.15);
-  const [couplingSettleDurationSecs, setCouplingSettleDurationSecs] =
-    useState(180);
-  const [couplingStepDurationSecs, setCouplingStepDurationSecs] =
-    useState(420);
+  const [couplingMaxSettleDurationSecs, setCouplingMaxSettleDurationSecs] =
+    useState(900);
+  const [couplingMaxStepDurationSecs, setCouplingMaxStepDurationSecs] =
+    useState(1800);
+  const [
+    couplingSettleThresholdCPerMin,
+    setCouplingSettleThresholdCPerMin,
+  ] = useState(0.5);
+  const [couplingCheckIntervalSecs, setCouplingCheckIntervalSecs] =
+    useState(30);
+  const [couplingSettleToleranceC, setCouplingSettleToleranceC] =
+    useState(0.5);
 
   return (
     <Page>
@@ -437,13 +445,17 @@ export function Extruder3SettingsPage() {
                 open-loop) and measures how every zone's temperature responds,
                 to help decide how to tune each zone's PID. Requires the
                 extruder to already be in <b>Heat</b> mode at a stable
-                temperature. Runs unattended for roughly{" "}
+                temperature. Each dwell ends as soon as temperatures actually
+                settle (not on a fixed timer) — the durations below are only
+                safety ceilings, so a slow-diffusing barrel gets as long as it
+                genuinely needs, up to{" "}
                 {Math.round(
-                  ((couplingSettleDurationSecs + couplingStepDurationSecs) *
+                  ((couplingMaxSettleDurationSecs +
+                    couplingMaxStepDurationSecs) *
                     4) /
                     60,
                 )}{" "}
-                minutes total. The over-temperature cutoff stays active
+                minutes worst case. The over-temperature cutoff stays active
                 throughout, and you can stop it at any time.
               </AlertDescription>
             </Alert>
@@ -460,32 +472,73 @@ export function Extruder3SettingsPage() {
                 onChange={setCouplingStepSize}
               />
             </Label>
-            <Label label="Settle Duration">
+            <Label label="Settle Threshold">
               <EditValue
-                value={couplingSettleDurationSecs}
-                defaultValue={180}
-                unit="s"
-                title="Settle Duration"
-                description="How long to hold at baseline before recording, and between zones"
-                min={30}
-                max={1800}
-                step={10}
-                renderValue={(v) => roundToDecimals(v, 0)}
-                onChange={setCouplingSettleDurationSecs}
+                value={couplingSettleThresholdCPerMin}
+                defaultValue={0.5}
+                title="Settle Threshold (°C/min)"
+                description="Only used for the very first dwell: max rate of change to count as stable"
+                min={0.05}
+                max={5}
+                step={0.05}
+                renderValue={(v) => roundToDecimals(v, 2)}
+                onChange={setCouplingSettleThresholdCPerMin}
               />
             </Label>
-            <Label label="Step Duration">
+            <Label label="Return Tolerance">
               <EditValue
-                value={couplingStepDurationSecs}
-                defaultValue={420}
+                value={couplingSettleToleranceC}
+                defaultValue={0.5}
+                unit="C"
+                title="Return Tolerance"
+                description="After reverting a step, how close to the pre-step temperature counts as fully returned"
+                min={0.1}
+                max={5}
+                step={0.1}
+                renderValue={(v) => roundToDecimals(v, 1)}
+                onChange={setCouplingSettleToleranceC}
+              />
+            </Label>
+            <Label label="Check Interval">
+              <EditValue
+                value={couplingCheckIntervalSecs}
+                defaultValue={30}
                 unit="s"
-                title="Step Duration"
-                description="How long to hold the stepped duty before recording the response"
-                min={30}
-                max={3600}
-                step={10}
+                title="Check Interval"
+                description="How often to sample the rate-of-change check"
+                min={5}
+                max={300}
+                step={5}
                 renderValue={(v) => roundToDecimals(v, 0)}
-                onChange={setCouplingStepDurationSecs}
+                onChange={setCouplingCheckIntervalSecs}
+              />
+            </Label>
+            <Label label="Max Settle Duration">
+              <EditValue
+                value={couplingMaxSettleDurationSecs}
+                defaultValue={900}
+                unit="s"
+                title="Max Settle Duration"
+                description="Safety ceiling: give up waiting to settle/return-to-baseline after this long"
+                min={60}
+                max={3600}
+                step={30}
+                renderValue={(v) => roundToDecimals(v, 0)}
+                onChange={setCouplingMaxSettleDurationSecs}
+              />
+            </Label>
+            <Label label="Max Step Duration">
+              <EditValue
+                value={couplingMaxStepDurationSecs}
+                defaultValue={1800}
+                unit="s"
+                title="Max Step Duration"
+                description="Safety ceiling: give up waiting for the stepped response to settle after this long"
+                min={60}
+                max={7200}
+                step={30}
+                renderValue={(v) => roundToDecimals(v, 0)}
+                onChange={setCouplingMaxStepDurationSecs}
               />
             </Label>
             <Label label="Actions">
@@ -497,11 +550,14 @@ export function Extruder3SettingsPage() {
               <div className="flex gap-4">
                 <button
                   onClick={() =>
-                    startThermalCouplingTest(
-                      couplingStepSize,
-                      couplingSettleDurationSecs,
-                      couplingStepDurationSecs,
-                    )
+                    startThermalCouplingTest({
+                      stepSize: couplingStepSize,
+                      maxSettleDurationSecs: couplingMaxSettleDurationSecs,
+                      maxStepDurationSecs: couplingMaxStepDurationSecs,
+                      settleThresholdCPerMin: couplingSettleThresholdCPerMin,
+                      checkIntervalSecs: couplingCheckIntervalSecs,
+                      settleToleranceC: couplingSettleToleranceC,
+                    })
                   }
                   disabled={
                     state?.mode_state.mode !== "Heat" ||
@@ -535,6 +591,12 @@ export function Extruder3SettingsPage() {
                   {state?.thermal_coupling_test_state.zone_under_test &&
                     ` — ${state.thermal_coupling_test_state.zone_under_test}`}
                   {` (${state?.thermal_coupling_test_state.zones_completed ?? 0}/4 zones done)`}
+                  {(state?.thermal_coupling_test_state.state === "settling" ||
+                    state?.thermal_coupling_test_state.state ===
+                      "stepping") &&
+                    (state.thermal_coupling_test_state.stable
+                      ? " — stable ✓"
+                      : " — waiting to settle…")}
                 </span>
                 {state?.thermal_coupling_test_state.duration_secs ? (
                   <>
@@ -557,6 +619,7 @@ export function Extruder3SettingsPage() {
                         0,
                       )}
                       s / {state.thermal_coupling_test_state.duration_secs}s
+                      max
                     </span>
                   </>
                 ) : null}

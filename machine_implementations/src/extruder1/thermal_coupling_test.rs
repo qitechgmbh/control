@@ -9,10 +9,14 @@
 
 use super::ExtruderV2Mode;
 use super::api::{ThermalCouplingResult, ThermalCouplingTestConfig, ThermalCouplingTestState};
-use std::time::Instant;
+use qitech_lib::units::thermodynamic_temperature::degree_celsius;
+use std::time::{Duration, Instant};
 
 pub const ZONE_COUNT: usize = 4;
 pub const ZONE_NAMES: [&str; ZONE_COUNT] = ["front", "middle", "back", "nozzle"];
+/// How many consecutive rate-of-change checks (each `check_interval_secs` apart)
+/// must fall below the threshold before a dwell is considered settled.
+const REQUIRED_STABLE_CHECKS: u32 = 2;
 
 #[derive(Debug, Clone)]
 pub enum ThermalCouplingPhase {
@@ -44,6 +48,10 @@ pub struct ThermalCouplingTest {
     /// gain_matrix[output_zone][input_zone], filled in one column per tested zone
     gain_matrix: [[f64; ZONE_COUNT]; ZONE_COUNT],
     result: Option<ThermalCouplingResult>,
+    /// Rate-of-change tracking for the current dwell (Settling or Stepping phase).
+    /// Reset every time a new dwell starts.
+    last_stability_check: Option<(Instant, [f64; ZONE_COUNT])>,
+    consecutive_stable_checks: u32,
 }
 
 impl Default for ThermalCouplingTest {
@@ -52,13 +60,18 @@ impl Default for ThermalCouplingTest {
             phase: ThermalCouplingPhase::Idle,
             config: ThermalCouplingTestConfig {
                 step_size: 0.0,
-                settle_duration_secs: 0.0,
-                step_duration_secs: 0.0,
+                max_settle_duration_secs: 0.0,
+                max_step_duration_secs: 0.0,
+                settle_threshold_c_per_min: 0.0,
+                check_interval_secs: 30.0,
+                settle_tolerance_c: 0.0,
             },
             baseline_duty: [0.0; ZONE_COUNT],
             baseline_temp: [0.0; ZONE_COUNT],
             gain_matrix: [[0.0; ZONE_COUNT]; ZONE_COUNT],
             result: None,
+            last_stability_check: None,
+            consecutive_stable_checks: 0,
         }
     }
 }
@@ -165,6 +178,60 @@ impl super::ExtruderV2 {
         }
     }
 
+    fn current_temps(&self) -> [f64; ZONE_COUNT] {
+        std::array::from_fn(|i| {
+            self.temperature_controller_by_index(i)
+                .heating
+                .temperature
+                .get::<degree_celsius>()
+        })
+    }
+
+    fn reset_stability_tracking(&mut self) {
+        self.thermal_coupling_test.last_stability_check = None;
+        self.thermal_coupling_test.consecutive_stable_checks = 0;
+    }
+
+    /// Rate-of-change based settle check, used only for the very first dwell of a
+    /// test (bootstrap, no prior baseline exists yet) and for the rising phase
+    /// after a step (target temperature unknown in advance, so there's nothing to
+    /// compare against besides "has it stopped moving").
+    fn check_stability(&mut self, now: Instant) -> bool {
+        let interval = Duration::from_secs_f64(self.thermal_coupling_test.config.check_interval_secs);
+        let temps = self.current_temps();
+
+        let Some((last_time, last_temps)) = self.thermal_coupling_test.last_stability_check else {
+            self.thermal_coupling_test.last_stability_check = Some((now, temps));
+            return false;
+        };
+
+        if now.duration_since(last_time) < interval {
+            return self.thermal_coupling_test.consecutive_stable_checks >= REQUIRED_STABLE_CHECKS;
+        }
+
+        let dt_minutes = now.duration_since(last_time).as_secs_f64() / 60.0;
+        let max_rate = (0..ZONE_COUNT)
+            .map(|i| ((temps[i] - last_temps[i]) / dt_minutes).abs())
+            .fold(0.0, f64::max);
+
+        self.thermal_coupling_test.last_stability_check = Some((now, temps));
+        if max_rate <= self.thermal_coupling_test.config.settle_threshold_c_per_min {
+            self.thermal_coupling_test.consecutive_stable_checks += 1;
+        } else {
+            self.thermal_coupling_test.consecutive_stable_checks = 0;
+        }
+        self.thermal_coupling_test.consecutive_stable_checks >= REQUIRED_STABLE_CHECKS
+    }
+
+    /// Used for every settle dwell after the first: are all 4 zones back within
+    /// tolerance of the values recorded just before the last step?
+    fn returned_to_baseline(&self) -> bool {
+        let tolerance = self.thermal_coupling_test.config.settle_tolerance_c;
+        let temps = self.current_temps();
+        (0..ZONE_COUNT)
+            .all(|i| (temps[i] - self.thermal_coupling_test.baseline_temp[i]).abs() <= tolerance)
+    }
+
     /// Starts a thermal coupling test. The extruder must already be in `Heat`
     /// mode (heating on, screw stopped) so that material flow doesn't confound
     /// the purely thermal measurement.
@@ -197,8 +264,6 @@ impl super::ExtruderV2 {
     /// Advances the thermal coupling test state machine. Called once per act
     /// tick; no-ops immediately unless a test is running.
     pub fn advance_thermal_coupling_test(&mut self, now: Instant) {
-        use qitech_lib::units::thermodynamic_temperature::degree_celsius;
-
         let is_active = !matches!(
             self.thermal_coupling_test.phase,
             ThermalCouplingPhase::Idle | ThermalCouplingPhase::Done | ThermalCouplingPhase::Aborted(_)
@@ -235,14 +300,37 @@ impl super::ExtruderV2 {
                     self.temperature_controller_by_index_mut(i)
                         .set_manual_duty(Some(duty));
                 }
+                self.reset_stability_tracking();
                 self.thermal_coupling_test.phase =
                     ThermalCouplingPhase::Settling { zone_index: 0, since: now };
                 self.emit_state();
             }
 
             ThermalCouplingPhase::Settling { zone_index, since } => {
-                if now.duration_since(since).as_secs_f64() >= self.thermal_coupling_test.config.settle_duration_secs
-                {
+                let max_duration = self.thermal_coupling_test.config.max_settle_duration_secs;
+                let elapsed = now.duration_since(since).as_secs_f64();
+
+                // The very first dwell has no prior baseline to return to, so it
+                // just confirms the frozen duty has naturally stopped drifting.
+                // Every dwell after a step instead waits for an actual return to
+                // the value recorded right before that step — a stronger check
+                // than "rate is low", since a slow-diffusing barrel can still be
+                // mid-transient even after its rate temporarily looks flat.
+                let settled = if zone_index == 0 {
+                    self.check_stability(now)
+                } else {
+                    self.returned_to_baseline()
+                };
+
+                if settled || elapsed >= max_duration {
+                    if !settled {
+                        tracing::warn!(
+                            "thermal coupling test: settle phase before zone {} hit the {:.0}s timeout without fully settling",
+                            ZONE_NAMES[zone_index],
+                            max_duration,
+                        );
+                    }
+                    self.reset_stability_tracking();
                     self.thermal_coupling_test.phase = ThermalCouplingPhase::RecordBaseline { zone_index };
                 }
             }
@@ -259,12 +347,25 @@ impl super::ExtruderV2 {
                     self.thermal_coupling_test.baseline_duty[zone_index] + self.thermal_coupling_test.config.step_size;
                 self.temperature_controller_by_index_mut(zone_index)
                     .set_manual_duty(Some(stepped_duty.clamp(0.0, 1.0)));
+                self.reset_stability_tracking();
                 self.thermal_coupling_test.phase = ThermalCouplingPhase::Stepping { zone_index, since: now };
                 self.emit_state();
             }
 
             ThermalCouplingPhase::Stepping { zone_index, since } => {
-                if now.duration_since(since).as_secs_f64() >= self.thermal_coupling_test.config.step_duration_secs {
+                let max_duration = self.thermal_coupling_test.config.max_step_duration_secs;
+                let elapsed = now.duration_since(since).as_secs_f64();
+                // Target temperature is unknown ahead of time here, so rate-of-change
+                // is the only available settle signal for the rising response.
+                let settled = self.check_stability(now);
+                if settled || elapsed >= max_duration {
+                    if !settled {
+                        tracing::warn!(
+                            "thermal coupling test: step phase for zone {} hit the {:.0}s timeout without settling",
+                            ZONE_NAMES[zone_index],
+                            max_duration,
+                        );
+                    }
                     self.thermal_coupling_test.phase = ThermalCouplingPhase::RecordStep { zone_index };
                 }
             }
@@ -309,28 +410,35 @@ impl super::ExtruderV2 {
                 "settling".to_string(),
                 Some(ZONE_NAMES[*zone_index].to_string()),
                 since.elapsed().as_secs_f64(),
-                t.config.settle_duration_secs,
+                t.config.max_settle_duration_secs,
             ),
             ThermalCouplingPhase::RecordBaseline { zone_index } => (
                 "settling".to_string(),
                 Some(ZONE_NAMES[*zone_index].to_string()),
-                t.config.settle_duration_secs,
-                t.config.settle_duration_secs,
+                t.config.max_settle_duration_secs,
+                t.config.max_settle_duration_secs,
             ),
             ThermalCouplingPhase::Stepping { zone_index, since } => (
                 "stepping".to_string(),
                 Some(ZONE_NAMES[*zone_index].to_string()),
                 since.elapsed().as_secs_f64(),
-                t.config.step_duration_secs,
+                t.config.max_step_duration_secs,
             ),
             ThermalCouplingPhase::RecordStep { zone_index } => (
                 "stepping".to_string(),
                 Some(ZONE_NAMES[*zone_index].to_string()),
-                t.config.step_duration_secs,
-                t.config.step_duration_secs,
+                t.config.max_step_duration_secs,
+                t.config.max_step_duration_secs,
             ),
             ThermalCouplingPhase::Done => ("done".to_string(), None, 0.0, 0.0),
             ThermalCouplingPhase::Aborted(_) => ("aborted".to_string(), None, 0.0, 0.0),
+        };
+        let stable = match &t.phase {
+            ThermalCouplingPhase::Settling { zone_index: 0, .. } | ThermalCouplingPhase::Stepping { .. } => {
+                t.consecutive_stable_checks >= REQUIRED_STABLE_CHECKS
+            }
+            ThermalCouplingPhase::Settling { .. } => self.returned_to_baseline(),
+            _ => false,
         };
         let zones_completed = match &t.phase {
             ThermalCouplingPhase::Settling { zone_index, .. }
@@ -349,6 +457,7 @@ impl super::ExtruderV2 {
             zone_under_test,
             elapsed_secs,
             duration_secs,
+            stable,
             zones_completed,
             error,
             result: t.result.clone(),
