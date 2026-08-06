@@ -5,6 +5,17 @@ use qitech_lib::machines::{
 };
 use std::time::{Duration, Instant};
 
+
+fn decouple_pid_values( decoupling_mat : &[[f64; 4]; 4], pid_outputs : &[f64;4] ) -> [f64;4] {
+    let mut adjusted_pid_outputs : [f64;4] = [0.0,0.0,0.0,0.0];    
+    for i in 0..4 {        
+        for j in 0..4 {
+            adjusted_pid_outputs[i] += decoupling_mat[i][j] * pid_outputs[j];
+        }
+    }
+    adjusted_pid_outputs
+}
+
 impl Machine for ExtruderV2 {
     fn act(&mut self, _registry: Option<&mut MachineDataRegistry>) -> Result<(), MachineError> {
         let now = Instant::now();
@@ -28,15 +39,29 @@ impl Machine for ExtruderV2 {
             let mut pressure_sensor = self.pressure_sensor.borrow_mut();
             let pressure_sensor_ref = &mut *pressure_sensor;
 
-            self.temperature_controller_back
-                .update(now, relais_ref, temp_sensor_ref);
-            self.temperature_controller_nozzle
-                .update(now, relais_ref, temp_sensor_ref);
-            self.temperature_controller_front
-                .update(now, relais_ref, temp_sensor_ref);
-            self.temperature_controller_middle
-                .update(now, relais_ref, temp_sensor_ref);
+            let nozzle_control_signal = self.temperature_controller_nozzle
+                .update_heating_pid(now, temp_sensor_ref);
 
+            let front_control_signal = self.temperature_controller_front
+                .update_heating_pid(now, temp_sensor_ref);
+
+            let middle_control_signal = self.temperature_controller_middle
+                .update_heating_pid(now, temp_sensor_ref);
+
+            let back_control_signal = self.temperature_controller_back
+                .update_heating_pid(now, temp_sensor_ref);
+            let pid_signals = [nozzle_control_signal,front_control_signal,middle_control_signal,back_control_signal];
+            let aqjusted_pid_signals = decouple_pid_values(&self.decoupling_matrix,&pid_signals);
+
+            self.temperature_controller_nozzle
+                .update_pwm_cycle(now, aqjusted_pid_signals[0],relais_ref);
+            self.temperature_controller_front
+                .update_pwm_cycle(now, aqjusted_pid_signals[1],relais_ref);
+            self.temperature_controller_middle
+                .update_pwm_cycle(now, aqjusted_pid_signals[2],relais_ref);
+            self.temperature_controller_back
+                .update_pwm_cycle(now, aqjusted_pid_signals[3],relais_ref);
+                
             if self.mode == super::ExtruderV2Mode::Extrude {
                 self.screw_speed_controller.update(
                     now,
@@ -54,10 +79,10 @@ impl Machine for ExtruderV2 {
             }
 
             if self.mode == super::ExtruderV2Mode::Standby {
-                self.temperature_controller_back.disable(relais_ref);
+                self.temperature_controller_nozzle.disable(relais_ref);
                 self.temperature_controller_front.disable(relais_ref);
                 self.temperature_controller_middle.disable(relais_ref);
-                self.temperature_controller_nozzle.disable(relais_ref);
+                self.temperature_controller_back.disable(relais_ref);                
             }
 
             if self.mode == super::ExtruderV2Mode::Extrude
@@ -65,10 +90,10 @@ impl Machine for ExtruderV2 {
             {
                 match self.mode {
                     ExtruderV2Mode::Standby => {
-                        self.temperature_controller_back.allow_heating();
-                        self.temperature_controller_front.allow_heating();
-                        self.temperature_controller_middle.allow_heating();
                         self.temperature_controller_nozzle.allow_heating();
+                        self.temperature_controller_front.allow_heating();                                            
+                        self.temperature_controller_middle.allow_heating();
+                        self.temperature_controller_back.allow_heating();                    
                     }
                     ExtruderV2Mode::Heat => (),
                     ExtruderV2Mode::Extrude => {

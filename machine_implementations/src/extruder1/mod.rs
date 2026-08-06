@@ -81,6 +81,7 @@ pub struct ExtruderV2 {
     pressure_sensor: Rc<RefCell<dyn AnalogInputDevice>>,
 
     screw_speed_controller: ScrewSpeedController,
+    decoupling_matrix: [[f64; 4]; 4],
     temperature_controller_front: TemperatureController,
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,

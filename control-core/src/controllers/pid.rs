@@ -98,7 +98,7 @@ impl PidController {
 
                 // Calculate signal
                 let signal = kp_signal + ki_signal + kd_signal;
-                println!("PID: {} {} {}",kp_signal,ki_signal,kd_signal);
+                // println!("PID: {} {} {}",kp_signal,ki_signal,kd_signal);
                 // Set values
                 self.ep = ep;
                 self.ei = if self.ki != 0.0 { ki_signal / self.ki } else { 0.0 };

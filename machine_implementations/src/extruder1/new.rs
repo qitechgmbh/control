@@ -206,6 +206,12 @@ impl MachineNew for ExtruderV2 {
             temperature_input: temperature_device.0,
             serial_interface: serial_device.0,
             pressure_sensor: pressure_sensor.0,
+            decoupling_matrix: [
+                [  1.000, -0.150,  0.050, -0.020 ], 
+                [ -0.100,  1.000, -0.250,  0.080 ],
+                [  0.030, -0.200,  1.000, -0.120 ],
+                [ -0.010,  0.060, -0.180,  1.000 ]
+            ],
         };
         extruder.emit_state();
         Ok(extruder)

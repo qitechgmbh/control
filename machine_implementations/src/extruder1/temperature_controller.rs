@@ -122,12 +122,7 @@ impl TemperatureController {
         self.temperature_pid_output * self.heating_element_wattage
     }
 
-    pub fn update(
-        &mut self,
-        now: Instant,
-        relais: &mut dyn DigitalOutputDevice,
-        temperature_sensor: &dyn TemperatureInputDevice,
-    ) {
+    pub fn update_heating_pid( &mut self,now: Instant,temperature_sensor: &dyn TemperatureInputDevice) -> f64 {
         self.temperature_pid_output = 0.0;
         let temperature = temperature_sensor.get_input(self.temperature_port);
         self.heating.wiring_error = temperature.is_err();
@@ -137,32 +132,39 @@ impl TemperatureController {
         };
         self.filter.update(temperature_celsius.get::<degree_celsius>());
         self.heating.temperature =  ThermodynamicTemperature::new::<degree_celsius>(self.filter.current_val());
+        
+        if self.heating_allowed && self.heating.wiring_error == false {            
+            let error: f64 = self.heating.target_temperature.get::<degree_celsius>() - self.heating.temperature.get::<degree_celsius>();
+            let control = self.pid.update(error, now);
+            control.clamp(0.0, self.max_clamp)
+        } else {
+            0.0
+        }
+    }
+
+    pub fn update_pwm_cycle(
+        &mut self,
+        now: Instant,
+        pid_output : f64,
+        relais: &mut dyn DigitalOutputDevice,
+    ) {        
         if self.heating.temperature > self.max_temperature {
             // disable the relais and return
             relais.set_output(self.digital_port, false);
             self.heating.heating = false;
+            self.temperature_pid_output = 0.0;
             return;
         }
 
-        if self.heating_allowed {            
-            let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
-                - self.heating.temperature.get::<degree_celsius>();
-
-            let control = self.pid.update(error, now); // PID output
-            // Clamp PID output to 0.0 – 1.0 (as duty cycle)
-            let duty = control.clamp(0.0, self.max_clamp);
-
-            self.temperature_pid_output = duty;
-
+        if self.heating_allowed {                        
+            self.temperature_pid_output = pid_output;
             let elapsed = now.duration_since(self.window_start);
-
             // Restart window if needed
             if elapsed >= self.pwm_period {
                 self.window_start = now;
             }
             // Compare duty cycle to elapsed time
-            let on_time = self.pwm_period.mul_f64(duty);
-
+            let on_time = self.pwm_period.mul_f64(pid_output);
             // Relay is ON if within duty cycle window
             let on = elapsed < on_time;
             relais.set_output(self.digital_port, on);
