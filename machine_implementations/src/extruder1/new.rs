@@ -116,8 +116,8 @@ impl MachineNew for ExtruderV2 {
 
         let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
         let temperature_controller_front = TemperatureController::new(
-            0.16,
-            0.0,
+            0.036,
+            0.000045,
             0.008,
             ThermodynamicTemperature::new::<degree_celsius>(150.0),
             extruder_max_temperature,
@@ -130,8 +130,8 @@ impl MachineNew for ExtruderV2 {
         );
 
         let temperature_controller_middle = TemperatureController::new(
-            0.16,
-            0.0,
+            0.036,
+            0.000045,
             0.008,
             ThermodynamicTemperature::new::<degree_celsius>(150.0),
             extruder_max_temperature,
@@ -144,8 +144,8 @@ impl MachineNew for ExtruderV2 {
         );
 
         let temperature_controller_back = TemperatureController::new(
-            0.16,
-            0.0,
+            0.036,
+            0.000055,
             0.008,
             ThermodynamicTemperature::new::<degree_celsius>(150.0),
             extruder_max_temperature,
@@ -159,9 +159,9 @@ impl MachineNew for ExtruderV2 {
 
         // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
         let temperature_controller_nozzle = TemperatureController::new(
-            0.16,
-            0.0,
-            0.008,
+            0.250,
+            0.000200,
+            0.005,
             ThermodynamicTemperature::new::<degree_celsius>(150.0),
             extruder_max_temperature,
             Heating::default(),

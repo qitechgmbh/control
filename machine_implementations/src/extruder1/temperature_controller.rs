@@ -147,7 +147,8 @@ impl TemperatureController {
         now: Instant,
         pid_output : f64,
         relais: &mut dyn DigitalOutputDevice,
-    ) {        
+    ) {
+        let clamped_output = pid_output.clamp(0.0, self.max_clamp) ;
         if self.heating.temperature > self.max_temperature {
             // disable the relais and return
             relais.set_output(self.digital_port, false);
@@ -157,14 +158,14 @@ impl TemperatureController {
         }
 
         if self.heating_allowed {                        
-            self.temperature_pid_output = pid_output;
+            self.temperature_pid_output = clamped_output;
             let elapsed = now.duration_since(self.window_start);
             // Restart window if needed
             if elapsed >= self.pwm_period {
                 self.window_start = now;
             }
             // Compare duty cycle to elapsed time
-            let on_time = self.pwm_period.mul_f64(pid_output);
+            let on_time = self.pwm_period.mul_f64(clamped_output);
             // Relay is ON if within duty cycle window
             let on = elapsed < on_time;
             relais.set_output(self.digital_port, on);
