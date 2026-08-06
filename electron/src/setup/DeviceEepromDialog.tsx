@@ -69,12 +69,6 @@ const formSchema = z.object({
 
 type FormSchema = z.infer<typeof formSchema>;
 
-/**
- * A terminal is unassigned when its EEPROM identification words are all zero.
- * The backend always reports a `device_machine_identification` for EtherCAT
- * subdevices (it mirrors the raw EEPROM words), so "no assignment" has to be
- * detected by value, not by absence.
- */
 export function isDeviceAssigned(device: Device): boolean {
   const dmi = device.device_identification.device_machine_identification;
   if (!dmi) return false;
@@ -160,9 +154,6 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
       },
     });
 
-  // Unassigning writes zeroed identification words, which is what the backend
-  // interprets as "no machine". Dropping the entry instead would leave the old
-  // values in the terminal's EEPROM.
   const performUnassign = () =>
     client.writeMachineDeviceIdentification({
       hardware_identification_ethercat: {
