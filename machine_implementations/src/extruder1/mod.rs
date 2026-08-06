@@ -1,6 +1,7 @@
 pub mod act;
 pub mod api;
 pub mod emit;
+pub mod heating_decoupling;
 pub mod mitsubishi_cs80;
 pub mod new;
 pub mod screw_speed_controller;
@@ -10,6 +11,8 @@ pub mod temperature_controller;
 use crate::{MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, VENDOR_QITECH};
 use crate::{MachineMessage, QiTechMachine};
 use api::ExtruderV2Namespace;
+#[cfg(not(feature = "mock-machine"))]
+use heating_decoupling::HeatingDecoupler;
 use qitech_lib::machines::MachineIdentification;
 use qitech_lib::machines::MachineIdentificationUnique;
 use qitech_lib::units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
@@ -85,6 +88,10 @@ pub struct ExtruderV2 {
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
     temperature_controller_nozzle: TemperatureController,
+
+    /// Mixes the four zone PID demands before they reach the heaters, to stop the zones
+    /// disturbing each other through the barrel.
+    heating_decoupler: HeatingDecoupler,
 
     /// Energy tracking for total consumption calculation
     total_energy_kwh: f64,

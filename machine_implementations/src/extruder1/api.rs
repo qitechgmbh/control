@@ -158,6 +158,11 @@ pub struct ExtruderSettingsState {
     pub pressure_limit: f64,
     pub pressure_limit_enabled: bool,
     pub nozzle_temperature_target_enabled: bool,
+    /// Whether the heating zone decoupling matrix is currently applied.
+    pub heating_decoupling_enabled: bool,
+    /// Whether this machine variant has a measured decoupling matrix at all. When false the
+    /// frontend hides the toggle, since enabling it would be a no-op.
+    pub heating_decoupling_available: bool,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
@@ -286,6 +291,9 @@ pub enum Mutation {
 
     // Toggle nozzle temperature target
     SetNozzleTemperatureTargetEnabled(bool),
+
+    // Toggle the heating zone decoupling matrix
+    SetHeatingDecouplingEnabled(bool),
 }
 
 #[derive(Debug)]
@@ -393,6 +401,9 @@ impl MachineApi for ExtruderV2 {
             }
             Mutation::SetNozzleTemperatureTargetEnabled(enabled) => {
                 self.set_nozzle_temperature_target_is_enabled(enabled);
+            }
+            Mutation::SetHeatingDecouplingEnabled(enabled) => {
+                self.set_heating_decoupling_enabled(enabled);
             }
             Mutation::StartPressurePidAutoTune(config) => {
                 self.start_pressure_pid_autotune(config);

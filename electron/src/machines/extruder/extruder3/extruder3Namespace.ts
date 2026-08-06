@@ -111,6 +111,10 @@ export const extruderSettingsStateSchema = z.object({
   pressure_limit: z.number(),
   pressure_limit_enabled: z.boolean(),
   nozzle_temperature_target_enabled: z.boolean(),
+  /** Whether the heating zone decoupling matrix is currently applied */
+  heating_decoupling_enabled: z.boolean(),
+  /** Whether this machine variant has a measured decoupling matrix at all */
+  heating_decoupling_available: z.boolean(),
 });
 
 /**

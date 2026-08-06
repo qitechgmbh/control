@@ -246,6 +246,20 @@ export function useExtruder2() {
     );
   };
 
+  const setHeatingDecouplingEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.extruder_settings_state.heating_decoupling_enabled =
+          enabled;
+      },
+      () =>
+        requestHeatingDecouplingEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetHeatingDecouplingEnabled: enabled },
+        }),
+    );
+  };
+
   const setPressurePidKp = (kp: number) => {
     updateStateOptimistically(
       (current) => {
@@ -421,6 +435,10 @@ export function useExtruder2() {
     z.object({ SetNozzleTemperatureTargetEnabled: z.boolean() }),
   );
 
+  const { request: requestHeatingDecouplingEnabled } = useMachineMutation(
+    z.object({ SetHeatingDecouplingEnabled: z.boolean() }),
+  );
+
   const { request: requestPressurePidSettings } = useMachineMutation(
     z.object({
       SetPressurePidSettings: z.object({
@@ -513,6 +531,7 @@ export function useExtruder2() {
     setPressurePidKd,
     setTemperaturePidValue,
     setTemperatureTargetEnabled,
+    setHeatingDecouplingEnabled,
     resetInverter,
     startPressurePidAutoTune,
     stopPressurePidAutoTune,

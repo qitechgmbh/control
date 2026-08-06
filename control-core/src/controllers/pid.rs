@@ -17,13 +17,13 @@ pub struct PidController {
     /// Derivative error
     ed: f64,
 
-    i_min : f64,
-    i_max : f64,
+    i_min: f64,
+    i_max: f64,
 
     last: Option<Instant>,
 }
 impl PidController {
-    pub const fn new(kp: f64, ki: f64, kd: f64, i_min: f64, i_max : f64) -> Self {
+    pub const fn new(kp: f64, ki: f64, kd: f64, i_min: f64, i_max: f64) -> Self {
         Self {
             kp,
             ki,
@@ -34,7 +34,6 @@ impl PidController {
             last: None,
             i_min,
             i_max,
-
         }
     }
 
@@ -83,10 +82,10 @@ impl PidController {
 
                 // Calculate errors
                 let ep = error;
-                
+
                 let ei = if error.abs() < 5.0 {
                     ep.mul_add(dt, self.ei)
-                }else{
+                } else {
                     self.ei
                 };
 
@@ -98,16 +97,33 @@ impl PidController {
 
                 // Calculate signal
                 let signal = kp_signal + ki_signal + kd_signal;
-                println!("PID: {} {} {}",kp_signal,ki_signal,kd_signal);
                 // Set values
                 self.ep = ep;
-                self.ei = if self.ki != 0.0 { ki_signal / self.ki } else { 0.0 };
+                self.ei = if self.ki != 0.0 {
+                    ki_signal / self.ki
+                } else {
+                    0.0
+                };
                 self.ed = ed;
                 self.last = Some(t);
 
                 signal
             }
         }
+    }
+
+    /// Feed the actually applied output back after the caller has clipped it, so the
+    /// integral term cannot wind up while the actuator is saturated.
+    ///
+    /// Call this after clipping the value returned by [`Self::update`] to the actuator's
+    /// real limits, passing both the unclipped signal and the value that was applied.
+    /// No-op when `ki` is zero or nothing was clipped away.
+    pub fn back_calculate(&mut self, unclipped_signal: f64, applied_signal: f64) {
+        if self.ki <= 0.0 || unclipped_signal == applied_signal {
+            return;
+        }
+        let excess = unclipped_signal - applied_signal;
+        self.ei = (self.ei - excess / self.ki).clamp(self.i_min / self.ki, self.i_max / self.ki);
     }
 
     pub const fn reset(&mut self) {

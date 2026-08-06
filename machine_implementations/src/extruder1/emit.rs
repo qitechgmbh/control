@@ -90,6 +90,8 @@ impl ExtruderV2 {
                 nozzle_temperature_target_enabled: self
                     .temperature_controller_nozzle
                     .get_temperature_target_enabled(),
+                heating_decoupling_enabled: self.heating_decoupler.is_enabled(),
+                heating_decoupling_available: self.heating_decoupler.is_available(),
             },
             inverter_status_state: InverterStatusState {
                 running: self.screw_speed_controller.inverter.status.running,
@@ -330,6 +332,11 @@ impl ExtruderV2 {
     pub fn set_nozzle_temperature_target_is_enabled(&mut self, enabled: bool) {
         self.temperature_controller_nozzle
             .set_temperature_target_enabled(enabled);
+        self.emit_state();
+    }
+
+    pub fn set_heating_decoupling_enabled(&mut self, enabled: bool) {
+        self.heating_decoupler.set_enabled(enabled);
         self.emit_state();
     }
 

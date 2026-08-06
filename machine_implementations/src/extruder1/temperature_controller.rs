@@ -41,7 +41,6 @@ impl LowPassFilter {
     }
 }
 
-
 pub struct TemperatureController {
     pub pid: PidController,
     pub heating: Heating,
@@ -55,8 +54,11 @@ pub struct TemperatureController {
     temperature_pid_output: f64,
     heating_element_wattage: f64,
     max_clamp: f64,
+    /// Raw PID signal from the most recent [`Self::compute_control`], kept so
+    /// [`Self::apply_output`] can back-calculate the integral against what was actually applied.
+    last_unclipped: f64,
     target_temp_enabled: bool, // Sets whether the frontend should display a target temperature setter for this temp controller
-    filter : LowPassFilter,
+    filter: LowPassFilter,
 }
 
 impl TemperatureController {
@@ -80,8 +82,8 @@ impl TemperatureController {
         temperature_port: usize,
     ) -> Self {
         Self {
-            //the max clamp for integral should be at max 20% of the total output 
-            pid: PidController::new( kp, ki, kd,0.0, max_clamp/5.0 ),
+            //the max clamp for integral should be at max 20% of the total output
+            pid: PidController::new(kp, ki, kd, 0.0, max_clamp / 5.0),
             target_temp,
             window_start: Instant::now(),
             heating,
@@ -91,10 +93,14 @@ impl TemperatureController {
             temperature_pid_output: 0.0,
             heating_element_wattage,
             max_clamp,
+            last_unclipped: 0.0,
             target_temp_enabled: true,
             digital_port,
             temperature_port,
-            filter : LowPassFilter { alpha: 0.08, state: None } 
+            filter: LowPassFilter {
+                alpha: 0.08,
+                state: None,
+            },
         }
     }
 
@@ -122,51 +128,82 @@ impl TemperatureController {
         self.temperature_pid_output * self.heating_element_wattage
     }
 
-    pub fn update(
+    /// Reads the thermocouple and runs this zone's PID, returning the raw (unclipped) demand.
+    ///
+    /// This is the first half of the control cycle. It is split from [`Self::apply_output`] so
+    /// the machine layer can mix all four zones' demands through the decoupling matrix in
+    /// between — see [`crate::extruder1::heating_decoupling`].
+    ///
+    /// Returns `None` when this zone must not be heated at all: over its maximum temperature, or
+    /// heating not currently allowed. The caller is still expected to call [`Self::apply_output`]
+    /// with that `None` so the relay is driven low.
+    pub fn compute_control(
         &mut self,
         now: Instant,
-        relais: &mut dyn DigitalOutputDevice,
         temperature_sensor: &dyn TemperatureInputDevice,
-    ) {
-        self.temperature_pid_output = 0.0;
+    ) -> Option<f64> {
         let temperature = temperature_sensor.get_input(self.temperature_port);
         self.heating.wiring_error = temperature.is_err();
         let temperature_celsius = match temperature {
             Ok(t) => ThermodynamicTemperature::new::<degree_celsius>(t.temperature as f64),
             Err(_e) => ThermodynamicTemperature::new::<degree_celsius>(0.0),
         };
-        self.filter.update(temperature_celsius.get::<degree_celsius>());
-        self.heating.temperature =  ThermodynamicTemperature::new::<degree_celsius>(self.filter.current_val());
-        if self.heating.temperature > self.max_temperature {
-            // disable the relais and return
+        self.filter
+            .update(temperature_celsius.get::<degree_celsius>());
+        self.heating.temperature =
+            ThermodynamicTemperature::new::<degree_celsius>(self.filter.current_val());
+
+        if self.heating.temperature > self.max_temperature || !self.heating_allowed {
+            self.last_unclipped = 0.0;
+            return None;
+        }
+
+        let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
+            - self.heating.temperature.get::<degree_celsius>();
+
+        let control = self.pid.update(error, now);
+        self.last_unclipped = control;
+        Some(control)
+    }
+
+    /// Drives the relay from a demand produced by [`Self::compute_control`], after the machine
+    /// layer has applied the decoupling matrix to it.
+    ///
+    /// `control` is clamped to this zone's duty-cycle limit and time-proportioned over the PWM
+    /// window. The clamped value is fed back into the PID's anti-windup, per the decoupling
+    /// procedure — the PID must integrate against what the heater actually did, not what the
+    /// decoupler asked for. `None` drives the relay low.
+    pub fn apply_output(
+        &mut self,
+        now: Instant,
+        relais: &mut dyn DigitalOutputDevice,
+        control: Option<f64>,
+    ) {
+        let Some(control) = control else {
+            self.temperature_pid_output = 0.0;
             relais.set_output(self.digital_port, false);
             self.heating.heating = false;
             return;
+        };
+
+        // Clamp to 0.0 – max_clamp (as duty cycle)
+        let duty = control.clamp(0.0, self.max_clamp);
+        self.temperature_pid_output = duty;
+
+        let elapsed = now.duration_since(self.window_start);
+
+        // Restart window if needed
+        if elapsed >= self.pwm_period {
+            self.window_start = now;
         }
+        // Compare duty cycle to elapsed time
+        let on_time = self.pwm_period.mul_f64(duty);
 
-        if self.heating_allowed {            
-            let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
-                - self.heating.temperature.get::<degree_celsius>();
+        // Relay is ON if within duty cycle window
+        let on = elapsed < on_time;
+        relais.set_output(self.digital_port, on);
+        self.heating.heating = on;
 
-            let control = self.pid.update(error, now); // PID output
-            // Clamp PID output to 0.0 – 1.0 (as duty cycle)
-            let duty = control.clamp(0.0, self.max_clamp);
-
-            self.temperature_pid_output = duty;
-
-            let elapsed = now.duration_since(self.window_start);
-
-            // Restart window if needed
-            if elapsed >= self.pwm_period {
-                self.window_start = now;
-            }
-            // Compare duty cycle to elapsed time
-            let on_time = self.pwm_period.mul_f64(duty);
-
-            // Relay is ON if within duty cycle window
-            let on = elapsed < on_time;
-            relais.set_output(self.digital_port, on);
-            self.heating.heating = on;
-        }
+        self.pid.back_calculate(self.last_unclipped, duty);
     }
 }

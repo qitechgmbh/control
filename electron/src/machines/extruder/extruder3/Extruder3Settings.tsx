@@ -23,6 +23,7 @@ export function Extruder3SettingsPage() {
     setPressurePidKd,
     setTemperaturePidValue,
     setTemperatureTargetEnabled,
+    setHeatingDecouplingEnabled,
     startPressurePidAutoTune,
     stopPressurePidAutoTune,
   } = useExtruder3();
@@ -85,6 +86,16 @@ export function Extruder3SettingsPage() {
             onChange={setTemperatureTargetEnabled}
           />
         </Label>
+        {state?.extruder_settings_state.heating_decoupling_available && (
+          <Label label="Heater Zone Decoupling">
+            <SelectionGroupBoolean
+              value={state?.extruder_settings_state.heating_decoupling_enabled}
+              optionTrue={{ children: "Enabled" }}
+              optionFalse={{ children: "Disabled" }}
+              onChange={setHeatingDecouplingEnabled}
+            />
+          </Label>
+        )}
         <Label label="Show Advanced PID Settings">
           <SelectionGroupBoolean
             value={showAdvanced}

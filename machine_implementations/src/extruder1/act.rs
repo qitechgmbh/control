@@ -1,4 +1,5 @@
 use crate::extruder1::ExtruderV2Mode;
+use crate::extruder1::heating_decoupling::{IDX_BACK, IDX_FRONT, IDX_MIDDLE, IDX_NOZZLE};
 use crate::{MachineApi, extruder1::ExtruderV2};
 use qitech_lib::machines::{
     Machine, MachineDataRegistry, MachineError, MachineIdentificationUnique,
@@ -28,14 +29,30 @@ impl Machine for ExtruderV2 {
             let mut pressure_sensor = self.pressure_sensor.borrow_mut();
             let pressure_sensor_ref = &mut *pressure_sensor;
 
-            self.temperature_controller_back
-                .update(now, relais_ref, temp_sensor_ref);
+            // Run all four zone PIDs, mix their demands through the decoupling matrix, then
+            // drive the relays. The array order is the one place the matrix's zone indices are
+            // bound to the controllers, so keep the IDX_* constants rather than bare literals.
+            let u_pid = [
+                self.temperature_controller_nozzle
+                    .compute_control(now, temp_sensor_ref),
+                self.temperature_controller_front
+                    .compute_control(now, temp_sensor_ref),
+                self.temperature_controller_middle
+                    .compute_control(now, temp_sensor_ref),
+                self.temperature_controller_back
+                    .compute_control(now, temp_sensor_ref),
+            ];
+
+            let u_actual = self.heating_decoupler.apply(u_pid);
+
             self.temperature_controller_nozzle
-                .update(now, relais_ref, temp_sensor_ref);
+                .apply_output(now, relais_ref, u_actual[IDX_NOZZLE]);
             self.temperature_controller_front
-                .update(now, relais_ref, temp_sensor_ref);
+                .apply_output(now, relais_ref, u_actual[IDX_FRONT]);
             self.temperature_controller_middle
-                .update(now, relais_ref, temp_sensor_ref);
+                .apply_output(now, relais_ref, u_actual[IDX_MIDDLE]);
+            self.temperature_controller_back
+                .apply_output(now, relais_ref, u_actual[IDX_BACK]);
 
             if self.mode == super::ExtruderV2Mode::Extrude {
                 self.screw_speed_controller.update(

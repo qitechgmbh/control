@@ -1,6 +1,10 @@
 use super::{
-    ExtruderV2, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
-    screw_speed_controller::ScrewSpeedController, temperature_controller::TemperatureController,
+    ExtruderV2, Heating,
+    api::ExtruderV2Namespace,
+    heating_decoupling::{EXTRUDER_V3_HEATER_DECOUPLING, HeatingDecoupler},
+    mitsubishi_cs80::MitsubishiCS80,
+    screw_speed_controller::ScrewSpeedController,
+    temperature_controller::TemperatureController,
 };
 use crate::{
     MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, MachineHardware, MachineMessage, MachineNew,
@@ -60,17 +64,22 @@ impl MachineNew for ExtruderV2 {
     fn new(hw: MachineHardware) -> Result<Self, anyhow::Error> {
         let motor_poles;
         let transmission;
+        let heating_decoupler;
 
         let roles = match hw.identification.machine_ident.machine {
             MACHINE_EXTRUDER_V1 => {
                 motor_poles = 4;
                 transmission = FixedTransmission::new(1.0 / 34.0);
+                // Cross-coupling between the heating zones has not been measured on this
+                // variant yet, so it runs four independent PIDs as before.
+                heating_decoupler = HeatingDecoupler::none();
                 ExtruderRoles::get_v2_roles()
             }
             MACHINE_EXTRUDER_V2 => {
                 println!("Setting up like its V3");
                 motor_poles = 2;
                 transmission = FixedTransmission::new(1.0 / 30.0);
+                heating_decoupler = HeatingDecoupler::new(EXTRUDER_V3_HEATER_DECOUPLING);
                 ExtruderRoles::get_v3_roles()
             }
             _ => {
@@ -198,6 +207,7 @@ impl MachineNew for ExtruderV2 {
             temperature_controller_middle,
             temperature_controller_back,
             temperature_controller_nozzle,
+            heating_decoupler,
             screw_speed_controller,
             emitted_default_state: false,
             last_status_hash: None,
