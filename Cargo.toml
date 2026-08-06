@@ -3,6 +3,7 @@ members = [
     "qitech_control",
     "control-core",
     "machine_implementations",
+    "vex",
 ]
 exclude = []
 resolver = "2"

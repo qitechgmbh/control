@@ -1,0 +1,175 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:a0afbc8f-8a6f-41fd-8511-6451df218870",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-08-06T13:46:12.680658+00:00",
+    "component": {
+      "bom-ref": "qitech-control-electron@3.0.0",
+      "type": "application",
+      "name": "qitech-control-electron",
+      "version": "3.0.0",
+      "purl": "pkg:npm/qitech-control-electron@3.0.0?vcs_url=git%2Bhttps%3A%2F%2Fgithub.com%2Fqitechgmbh%2Fcontrol.git",
+      "description": "Next Generation Machine Interface "
+    }
+  },
+  "vulnerabilities": [
+    {
+      "id": "CVE-2026-69185",
+      "source": {
+        "name": "NVD",
+        "url": "https://avd.aquasec.com/nvd/cve-2026-69185"
+      },
+      "ratings": [
+        {
+          "severity": "high",
+          "method": "CVSSv31"
+        }
+      ],
+      "analysis": {
+        "state": "",
+        "justification": null,
+        "response": [],
+        "detail": "Socket.IO enables bidirectional and low-latency communication for ever ...",
+        "firstIssued": null,
+        "lastUpdated": null
+      },
+      "affects": [
+        {
+          "ref": "qitech-control-electron@3.0.0|socket.io-parser@4.2.6"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-13697",
+      "source": {
+        "name": "NVD",
+        "url": "https://avd.aquasec.com/nvd/cve-2026-13697"
+      },
+      "ratings": [
+        {
+          "severity": "high",
+          "method": "CVSSv31"
+        }
+      ],
+      "analysis": {
+        "state": "",
+        "justification": null,
+        "response": [],
+        "detail": "undici: undici: Information disclosure and Denial of Service via malformed Cache-Control directives",
+        "firstIssued": null,
+        "lastUpdated": null
+      },
+      "affects": [
+        {
+          "ref": "qitech-control-electron@3.0.0|undici@7.28.0"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-14643",
+      "source": {
+        "name": "NVD",
+        "url": "https://avd.aquasec.com/nvd/cve-2026-14643"
+      },
+      "ratings": [
+        {
+          "severity": "medium",
+          "method": "CVSSv31"
+        }
+      ],
+      "analysis": {
+        "state": "",
+        "justification": null,
+        "response": [],
+        "detail": "undici: undici: Cross-user information disclosure due to improper Cache-Control directive parsing",
+        "firstIssued": null,
+        "lastUpdated": null
+      },
+      "affects": [
+        {
+          "ref": "qitech-control-electron@3.0.0|undici@7.28.0"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-15157",
+      "source": {
+        "name": "NVD",
+        "url": "https://avd.aquasec.com/nvd/cve-2026-15157"
+      },
+      "ratings": [
+        {
+          "severity": "medium",
+          "method": "CVSSv31"
+        }
+      ],
+      "analysis": {
+        "state": "",
+        "justification": null,
+        "response": [],
+        "detail": "undici: undici: HTTP header injection via unvalidated blob-like body type property",
+        "firstIssued": null,
+        "lastUpdated": null
+      },
+      "affects": [
+        {
+          "ref": "qitech-control-electron@3.0.0|undici@7.28.0"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-16728",
+      "source": {
+        "name": "NVD",
+        "url": "https://avd.aquasec.com/nvd/cve-2026-16728"
+      },
+      "ratings": [
+        {
+          "severity": "medium",
+          "method": "CVSSv31"
+        }
+      ],
+      "analysis": {
+        "state": "",
+        "justification": null,
+        "response": [],
+        "detail": "undici: undici: Response desynchronization via retry interceptor with mismatched Content-Length",
+        "firstIssued": null,
+        "lastUpdated": null
+      },
+      "affects": [
+        {
+          "ref": "qitech-control-electron@3.0.0|undici@7.28.0"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-16729",
+      "source": {
+        "name": "NVD",
+        "url": "https://avd.aquasec.com/nvd/cve-2026-16729"
+      },
+      "ratings": [
+        {
+          "severity": "medium",
+          "method": "CVSSv31"
+        }
+      ],
+      "analysis": {
+        "state": "",
+        "justification": null,
+        "response": [],
+        "detail": "undici: Undici: Cookie attribute injection allows bypassing security protections",
+        "firstIssued": null,
+        "lastUpdated": null
+      },
+      "affects": [
+        {
+          "ref": "qitech-control-electron@3.0.0|undici@7.28.0"
+        }
+      ]
+    }
+  ]
+}
