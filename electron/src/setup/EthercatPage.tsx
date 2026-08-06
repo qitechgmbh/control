@@ -9,7 +9,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import React, { useMemo, useState } from "react";
-import { DeviceEepromDialog } from "./DeviceEepromDialog";
+import { DeviceEepromDialog, isDeviceAssigned } from "./DeviceEepromDialog";
 import { getMachineProperties } from "@/machines/properties";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
 import {
@@ -69,18 +69,21 @@ export function createColumns(
       accessorKey: "qitech_machine",
       header: "Assigned Machine",
       cell: (row) => {
+        if (!isDeviceAssigned(row.row.original)) return "—";
         const machine_identification =
           row.row.original.device_identification.device_machine_identification
             ?.machine_identification_unique.machine_identification;
         if (!machine_identification) return "—";
         const machinePreset = getMachineProperties(machine_identification);
-        return machinePreset?.name + " " + machinePreset?.version;
+        if (!machinePreset) return "UNKNOWN " + machine_identification.machine;
+        return machinePreset.name + " " + machinePreset.version;
       },
     },
     {
       accessorKey: "qitech_serial",
       header: "Assigned Serial",
       cell: (row) => {
+        if (!isDeviceAssigned(row.row.original)) return "—";
         const serial =
           row.row.original.device_identification.device_machine_identification
             ?.machine_identification_unique.serial;
@@ -92,6 +95,7 @@ export function createColumns(
       accessorKey: "qitech_role",
       header: "Assigned Device Role",
       cell: (row) => {
+        if (!isDeviceAssigned(row.row.original)) return "—";
         const device_machine_identification =
           row.row.original.device_identification.device_machine_identification;
         const machine_identification =
