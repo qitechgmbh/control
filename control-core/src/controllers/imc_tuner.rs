@@ -67,8 +67,12 @@ pub struct ImcTunerConfig {
     pub max_duty: f64,
     /// Abort if the process variable moves further than this from its baseline.
     pub max_rise_celsius: f64,
-    /// Closed-loop time constant as a multiple of the process time constant. 0.5 is aggressive,
-    /// 1.0 is the textbook value, 2.0 is conservative.
+    /// Closed-loop time constant as a multiple of the process time constant, i.e. how fast the
+    /// tuned loop is asked to respond: a setpoint step reaches 63% at `theta + lambda_factor * tau`.
+    /// Lower is faster and less robust. 1.0 is the textbook IMC value; the operator-facing presets
+    /// run from 0.15 ("Extremely Aggressive") to 1.0 ("Conservative"), because these zones are
+    /// strongly lag-dominant and the textbook value leaves them very sluggish against the
+    /// cross-zone disturbances this machine actually has.
     pub lambda_factor: f64,
     /// Interval between recorded samples. Every call to [`ImcTuner::update`] is averaged into the
     /// pending sample, so the record is evenly spaced regardless of how fast the caller ticks.
@@ -874,7 +878,12 @@ fn search_grid(
 /// the PI and PID candidates.
 ///
 /// The closed-loop time constant is `lambda_factor * tau`, floored for robustness at `0.8 * theta`
-/// and `0.2 * tau` (Rivera).
+/// (Rivera) and at `0.15 * tau`.
+///
+/// The `tau` floor is the lower end of the operator-facing response-speed presets, deliberately:
+/// it exists to stop a hand-supplied `lambda_factor` from asking for a closed loop far faster than
+/// the plant, not to clip the presets. Raising it above 0.15 would silently collapse the fastest
+/// settings onto each other — the same `tau_c`, the same gains, under different labels.
 ///
 /// The PI integral time carries Skogestad's SIMC cap, `Ti = min(tau, 4 * (tau_c + theta))`. Plain
 /// IMC sets `Ti = tau`, and on a lag-dominant process that makes disturbance recovery very slow —
@@ -889,7 +898,7 @@ pub fn compute_gains(
         return None;
     }
     let theta = theta.max(0.0);
-    let tau_c = (lambda_factor * tau).max(0.8 * theta).max(0.2 * tau);
+    let tau_c = (lambda_factor * tau).max(0.8 * theta).max(0.15 * tau);
 
     let kc_pi = tau / (gp * (tau_c + theta));
     let ti_pi = tau.min(4.0 * (tau_c + theta));
@@ -1278,7 +1287,7 @@ mod tests {
     #[test]
     fn simc_cap_binds_only_on_the_aggressive_setting() {
         let (tau, theta, gp) = (300.0, 5.0, 250.0);
-        let (_, aggressive, _) = compute_gains(gp, tau, theta, 0.1).expect("gains");
+        let (_, aggressive, _) = compute_gains(gp, tau, theta, 0.15).expect("gains");
         let (_, moderate, _) = compute_gains(gp, tau, theta, 1.0).expect("gains");
 
         assert!(aggressive.ti < tau, "cap should bind, ti={}", aggressive.ti);
@@ -1287,6 +1296,31 @@ mod tests {
             "cap should not bind, ti={}",
             moderate.ti
         );
+    }
+
+    /// Every response-speed preset the UI offers must land on a distinct, monotonically increasing
+    /// `tau_c` for a representative zone. A robustness floor set above the fastest preset would
+    /// silently give two differently-labelled settings identical gains, which reads as a broken
+    /// control rather than as a floor doing its job.
+    #[test]
+    fn the_response_speed_presets_are_all_distinct() {
+        // Representative extruder zone: lag-dominant, tau/theta = 10.
+        let (tau, theta, gp) = (150.0, 15.0, 93.5);
+        let presets = [0.15, 0.25, 0.3, 0.5, 1.0];
+
+        let mut previous: Option<(f64, f64)> = None;
+        for factor in presets {
+            let (lambda, pi, _) = compute_gains(gp, tau, theta, factor).expect("gains");
+            assert!(
+                (lambda - factor * tau).abs() < 1e-9,
+                "lambda_factor {factor} was clipped by a floor: tau_c={lambda}"
+            );
+            if let Some((prev_lambda, prev_kc)) = previous {
+                assert!(lambda > prev_lambda, "tau_c must increase with the factor");
+                assert!(pi.kc < prev_kc, "a slower setting must give a smaller Kc");
+            }
+            previous = Some((lambda, pi.kc));
+        }
     }
 
     #[test]
