@@ -105,6 +105,29 @@ export const heatingStatesSchema = z.object({
 });
 
 /**
+ * Fixed heating power override state schema (debug/test)
+ */
+export const heatingPowerOverrideStateSchema = z.object({
+  enabled: z.boolean(),
+  watts: z.number(),
+  max_watts: z.number(),
+});
+
+export type HeatingPowerOverrideState = z.infer<
+  typeof heatingPowerOverrideStateSchema
+>;
+
+/**
+ * Fixed heating power override states schema
+ */
+export const heatingPowerOverrideStatesSchema = z.object({
+  nozzle: heatingPowerOverrideStateSchema,
+  front: heatingPowerOverrideStateSchema,
+  back: heatingPowerOverrideStateSchema,
+  middle: heatingPowerOverrideStateSchema,
+});
+
+/**
  * Extruder settings state schema
  */
 export const extruderSettingsStateSchema = z.object({
@@ -176,6 +199,7 @@ export const stateEventDataSchema = z.object({
   pressure_state: pressureStateSchema,
   screw_state: screwStateSchema,
   heating_states: heatingStatesSchema,
+  heating_power_override_states: heatingPowerOverrideStatesSchema,
   extruder_settings_state: extruderSettingsStateSchema,
   inverter_status_state: inverterStatusStateSchema,
   pid_settings: pidSettingsSchema,

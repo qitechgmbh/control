@@ -342,6 +342,28 @@ export function useExtruder2() {
     );
   };
 
+  /**
+   * Debug/test measure: drive a heating zone at a fixed wattage instead of regulating it.
+   * The zone runs open-loop while enabled and can overshoot its target temperature.
+   */
+  const setHeatingPowerOverride = (
+    zone: "front" | "middle" | "back" | "nozzle",
+    enabled: boolean,
+    watts: number,
+  ) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.heating_power_override_states[zone].enabled = enabled;
+        current.data.heating_power_override_states[zone].watts = watts;
+      },
+      () =>
+        requestHeatingPowerOverride({
+          machine_identification_unique: machineIdentification,
+          data: { SetHeatingPowerOverride: { zone, enabled, watts } },
+        }),
+    );
+  };
+
   const resetInverter = () => {
     // No optimistic update needed for reset
     requestResetInverter({
@@ -442,6 +464,16 @@ export function useExtruder2() {
     }),
   );
 
+  const { request: requestHeatingPowerOverride } = useMachineMutation(
+    z.object({
+      SetHeatingPowerOverride: z.object({
+        zone: z.string(),
+        enabled: z.boolean(),
+        watts: z.number(),
+      }),
+    }),
+  );
+
   const { request: requestResetInverter } = useMachineMutation(
     z.object({ ResetInverter: z.boolean() }),
   );
@@ -513,6 +545,7 @@ export function useExtruder2() {
     setPressurePidKd,
     setTemperaturePidValue,
     setTemperatureTargetEnabled,
+    setHeatingPowerOverride,
     resetInverter,
     startPressurePidAutoTune,
     stopPressurePidAutoTune,

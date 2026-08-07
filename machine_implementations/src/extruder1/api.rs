@@ -97,6 +97,8 @@ pub struct StateEvent {
     pub screw_state: ScrewState,
     /// heating states
     pub heating_states: HeatingStates,
+    /// fixed heating power overrides (debug/test)
+    pub heating_power_override_states: HeatingPowerOverrideStates,
     /// extruder settings state
     pub extruder_settings_state: ExtruderSettingsState,
     /// inverter status state
@@ -151,6 +153,35 @@ pub struct HeatingStates {
 pub struct HeatingState {
     pub target_temperature: f64,
     pub wiring_error: bool,
+}
+
+/// Debug/test override that pins one heating zone to a fixed output power instead of letting the
+/// temperature PID regulate it.
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct HeatingPowerOverrideState {
+    /// Whether the zone is currently driven at a fixed power
+    pub enabled: bool,
+    /// Fixed heating power in watts
+    pub watts: f64,
+    /// Highest power the zone can be driven at, i.e. element wattage capped by the duty limit
+    pub max_watts: f64,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct HeatingPowerOverrideStates {
+    pub nozzle: HeatingPowerOverrideState,
+    pub front: HeatingPowerOverrideState,
+    pub back: HeatingPowerOverrideState,
+    pub middle: HeatingPowerOverrideState,
+}
+
+/// Payload for setting the fixed-power debug override on a single heating zone.
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+pub struct HeatingPowerOverride {
+    /// One of `"front"`, `"middle"`, `"back"`, `"nozzle"`
+    pub zone: String,
+    pub enabled: bool,
+    pub watts: f64,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
@@ -286,6 +317,9 @@ pub enum Mutation {
 
     // Toggle nozzle temperature target
     SetNozzleTemperatureTargetEnabled(bool),
+
+    // Debug/test: drive one heating zone at a fixed wattage instead of regulating it
+    SetHeatingPowerOverride(HeatingPowerOverride),
 }
 
 #[derive(Debug)]
@@ -393,6 +427,9 @@ impl MachineApi for ExtruderV2 {
             }
             Mutation::SetNozzleTemperatureTargetEnabled(enabled) => {
                 self.set_nozzle_temperature_target_is_enabled(enabled);
+            }
+            Mutation::SetHeatingPowerOverride(override_settings) => {
+                self.set_heating_power_override(override_settings);
             }
             Mutation::StartPressurePidAutoTune(config) => {
                 self.start_pressure_pid_autotune(config);

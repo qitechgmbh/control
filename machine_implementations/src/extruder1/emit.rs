@@ -4,12 +4,24 @@ use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use crate::extruder1::{
     ExtruderV2, ExtruderV2Mode, HeatingType,
     api::{
-        ExtruderSettingsState, ExtruderV2Events, HeatingState, HeatingStates, InverterStatusState,
+        ExtruderSettingsState, ExtruderV2Events, HeatingPowerOverride, HeatingPowerOverrideState,
+        HeatingPowerOverrideStates, HeatingState, HeatingStates, InverterStatusState,
         LiveValuesEvent, ModeState, PidAutoTuneState, PidSettings, PidSettingsStates,
         PressureAutoTuneConfig, PressureState, RegulationState, RotationState, ScrewState,
         StateEvent, TemperaturePid,
     },
 };
+
+#[cfg(not(feature = "mock-machine"))]
+fn power_override_state(
+    controller: &crate::extruder1::temperature_controller::TemperatureController,
+) -> HeatingPowerOverrideState {
+    HeatingPowerOverrideState {
+        enabled: controller.get_power_override_enabled(),
+        watts: controller.get_power_override_watts(),
+        max_watts: controller.get_max_heating_power(),
+    }
+}
 
 #[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {
@@ -78,6 +90,12 @@ impl ExtruderV2 {
                         .get::<degree_celsius>(),
                     wiring_error: self.temperature_controller_middle.heating.wiring_error,
                 },
+            },
+            heating_power_override_states: HeatingPowerOverrideStates {
+                nozzle: power_override_state(&self.temperature_controller_nozzle),
+                front: power_override_state(&self.temperature_controller_front),
+                back: power_override_state(&self.temperature_controller_back),
+                middle: power_override_state(&self.temperature_controller_middle),
             },
             extruder_settings_state: ExtruderSettingsState {
                 pressure_limit: self
@@ -330,6 +348,32 @@ impl ExtruderV2 {
     pub fn set_nozzle_temperature_target_is_enabled(&mut self, enabled: bool) {
         self.temperature_controller_nozzle
             .set_temperature_target_enabled(enabled);
+        self.emit_state();
+    }
+
+    /// Debug/test measure: drive one heating zone at a fixed wattage instead of regulating it.
+    ///
+    /// The zone runs open-loop while this is enabled and can overshoot its target temperature —
+    /// only the per-zone maximum temperature cutoff still limits it.
+    pub fn set_heating_power_override(&mut self, settings: HeatingPowerOverride) {
+        let controller = match settings.zone.as_str() {
+            "front" => &mut self.temperature_controller_front,
+            "middle" => &mut self.temperature_controller_middle,
+            "back" => &mut self.temperature_controller_back,
+            "nozzle" => &mut self.temperature_controller_nozzle,
+            _ => {
+                tracing::warn!("Unknown zone: {}", settings.zone);
+                return;
+            }
+        };
+        controller.set_power_override(settings.enabled, settings.watts);
+        if settings.enabled {
+            tracing::warn!(
+                "Heating zone '{}' is running at a fixed {} W (debug override) — temperature is not regulated",
+                settings.zone,
+                settings.watts
+            );
+        }
         self.emit_state();
     }
 

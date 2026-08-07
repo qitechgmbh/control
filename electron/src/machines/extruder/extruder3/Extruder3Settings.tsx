@@ -8,6 +8,7 @@ import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder3 } from "./useExtruder";
 import { ControlGrid } from "@/control/ControlGrid";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { HeatingPowerOverrideZone } from "../HeatingPowerOverrideZone";
 
 export function Extruder3SettingsPage() {
   const {
@@ -22,6 +23,7 @@ export function Extruder3SettingsPage() {
     setPressurePidKi,
     setPressurePidKd,
     setTemperaturePidValue,
+    setHeatingPowerOverride,
     setTemperatureTargetEnabled,
     startPressurePidAutoTune,
     stopPressurePidAutoTune,
@@ -418,6 +420,55 @@ export function Extruder3SettingsPage() {
                 />
               </Label>
             </ControlCard>
+          </ControlGrid>
+          <Alert className="border-red-500/50 bg-red-500/10">
+            <AlertTitle className="text-red-600">
+              Heating Power Override — Debug / Test Only
+            </AlertTitle>
+            <AlertDescription>
+              An enabled zone is driven at a fixed power and ignores its target
+              temperature. Only the maximum temperature cutoff still limits it,
+              so never leave the machine unattended while an override is active
+              and stop the machine if a zone exceeds its maximum temperature.
+            </AlertDescription>
+          </Alert>
+          <ControlGrid>
+            <HeatingPowerOverrideZone
+              title="Fixed Heating Power (Front)"
+              zone="front"
+              overrideState={state?.heating_power_override_states.front}
+              defaultOverrideState={
+                defaultState?.heating_power_override_states.front
+              }
+              onChange={setHeatingPowerOverride}
+            />
+            <HeatingPowerOverrideZone
+              title="Fixed Heating Power (Middle)"
+              zone="middle"
+              overrideState={state?.heating_power_override_states.middle}
+              defaultOverrideState={
+                defaultState?.heating_power_override_states.middle
+              }
+              onChange={setHeatingPowerOverride}
+            />
+            <HeatingPowerOverrideZone
+              title="Fixed Heating Power (Back)"
+              zone="back"
+              overrideState={state?.heating_power_override_states.back}
+              defaultOverrideState={
+                defaultState?.heating_power_override_states.back
+              }
+              onChange={setHeatingPowerOverride}
+            />
+            <HeatingPowerOverrideZone
+              title="Fixed Heating Power (Nozzle)"
+              zone="nozzle"
+              overrideState={state?.heating_power_override_states.nozzle}
+              defaultOverrideState={
+                defaultState?.heating_power_override_states.nozzle
+              }
+              onChange={setHeatingPowerOverride}
+            />
           </ControlGrid>
         </>
       )}
