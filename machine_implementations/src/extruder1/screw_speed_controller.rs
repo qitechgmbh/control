@@ -87,7 +87,7 @@ impl ScrewSpeedController {
         self.inverter.status
     }
 
-    pub const fn get_motor_enabled(&mut self) -> bool {
+    pub const fn get_motor_enabled(&self) -> bool {
         self.motor_on
     }
 

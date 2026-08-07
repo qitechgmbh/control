@@ -8,6 +8,7 @@ import {
   previewSeparator,
 } from "@/components/preset/PresetPreviewTable";
 import { Preset } from "@/lib/preset/preset";
+import { TuneZone } from "../temperatureAutoTuneSchema";
 
 const extruder3PresetDataSchema = z
   .object({
@@ -28,12 +29,34 @@ const extruder3PresetDataSchema = z
     pidPressureKp: z.number(),
     pidPressureKi: z.number(),
     pidPressureKd: z.number(),
+
+    // Per-zone temperature PID gains, so a tuning session survives a restart.
+    // The schema is `.partial()`, so these are optional and presets saved before they existed
+    // still parse — no schemaVersion bump needed.
+    pidTempFrontKp: z.number(),
+    pidTempFrontKi: z.number(),
+    pidTempFrontKd: z.number(),
+    pidTempMiddleKp: z.number(),
+    pidTempMiddleKi: z.number(),
+    pidTempMiddleKd: z.number(),
+    pidTempBackKp: z.number(),
+    pidTempBackKi: z.number(),
+    pidTempBackKd: z.number(),
+    pidTempNozzleKp: z.number(),
+    pidTempNozzleKi: z.number(),
+    pidTempNozzleKd: z.number(),
   })
   .partial();
 
 type Extruder3 = z.infer<typeof extruder3PresetDataSchema>;
 
 const schemas = new Map([[1, extruder3PresetDataSchema]]);
+
+/** Compact one-line rendering of a zone's three gains, so the preview stays readable. */
+const formatZoneGains = (kp?: number, ki?: number, kd?: number) =>
+  kp === undefined
+    ? undefined
+    : `${kp.toPrecision(3)} / ${(ki ?? 0).toPrecision(3)} / ${(kd ?? 0).toPrecision(3)}`;
 
 const previewEntries: PresetPreviewEntries<Extruder3> = [
   {
@@ -103,6 +126,43 @@ const previewEntries: PresetPreviewEntries<Extruder3> = [
     name: "PID Pressue Kd",
     renderValue: (data: Extruder3) => data.pidPressureKd?.toFixed(4),
   },
+  previewSeparator,
+  {
+    name: "PID Temp Front (kp/ki/kd)",
+    renderValue: (data: Extruder3) =>
+      formatZoneGains(
+        data.pidTempFrontKp,
+        data.pidTempFrontKi,
+        data.pidTempFrontKd,
+      ),
+  },
+  {
+    name: "PID Temp Middle (kp/ki/kd)",
+    renderValue: (data: Extruder3) =>
+      formatZoneGains(
+        data.pidTempMiddleKp,
+        data.pidTempMiddleKi,
+        data.pidTempMiddleKd,
+      ),
+  },
+  {
+    name: "PID Temp Back (kp/ki/kd)",
+    renderValue: (data: Extruder3) =>
+      formatZoneGains(
+        data.pidTempBackKp,
+        data.pidTempBackKi,
+        data.pidTempBackKd,
+      ),
+  },
+  {
+    name: "PID Temp Nozzle (kp/ki/kd)",
+    renderValue: (data: Extruder3) =>
+      formatZoneGains(
+        data.pidTempNozzleKp,
+        data.pidTempNozzleKi,
+        data.pidTempNozzleKd,
+      ),
+  },
 ];
 
 export function Extruder3PresetsPage() {
@@ -126,7 +186,21 @@ export function Extruder3PresetsPage() {
     setPressurePidKd,
     setPressurePidKi,
     setPressurePidKp,
+    setTemperaturePidZone,
   } = useExtruder3();
+
+  /** Apply a zone's gains, falling back to the machine defaults for older presets. */
+  const applyZoneGains = (
+    zone: TuneZone,
+    gains: { kp?: number; ki?: number; kd?: number },
+  ) => {
+    const fallback = defaultState?.pid_settings.temperature[zone];
+    setTemperaturePidZone(zone, {
+      kp: gains.kp ?? fallback?.kp ?? 0.16,
+      ki: gains.ki ?? fallback?.ki ?? 0.0,
+      kd: gains.kd ?? fallback?.kd ?? 0.008,
+    });
+  };
 
   const toPresetData = (s?: typeof state): Extruder3 => ({
     targetFrontHeatingTemperature: s?.heating_states.front.target_temperature,
@@ -148,6 +222,19 @@ export function Extruder3PresetsPage() {
     pidPressureKp: s?.pid_settings.pressure.kp,
     pidPressureKi: s?.pid_settings.pressure.ki,
     pidPressureKd: s?.pid_settings.pressure.kd,
+
+    pidTempFrontKp: s?.pid_settings.temperature.front.kp,
+    pidTempFrontKi: s?.pid_settings.temperature.front.ki,
+    pidTempFrontKd: s?.pid_settings.temperature.front.kd,
+    pidTempMiddleKp: s?.pid_settings.temperature.middle.kp,
+    pidTempMiddleKi: s?.pid_settings.temperature.middle.ki,
+    pidTempMiddleKd: s?.pid_settings.temperature.middle.kd,
+    pidTempBackKp: s?.pid_settings.temperature.back.kp,
+    pidTempBackKi: s?.pid_settings.temperature.back.ki,
+    pidTempBackKd: s?.pid_settings.temperature.back.kd,
+    pidTempNozzleKp: s?.pid_settings.temperature.nozzle.kp,
+    pidTempNozzleKi: s?.pid_settings.temperature.nozzle.ki,
+    pidTempNozzleKd: s?.pid_settings.temperature.nozzle.kd,
   });
 
   const defaults = toPresetData(defaultState);
@@ -180,6 +267,30 @@ export function Extruder3PresetsPage() {
     setPressurePidKp(preset?.data?.pidPressureKp ?? 0.16);
     setPressurePidKi(preset?.data?.pidPressureKi ?? 0.0);
     setPressurePidKd(preset?.data?.pidPressureKd ?? 0.008);
+
+    // One mutation per zone rather than one per gain, so a preset does not fire twelve requests
+    // that race on optimistic state. Presets saved before these fields existed fall back to the
+    // machine defaults.
+    applyZoneGains("front", {
+      kp: preset?.data?.pidTempFrontKp,
+      ki: preset?.data?.pidTempFrontKi,
+      kd: preset?.data?.pidTempFrontKd,
+    });
+    applyZoneGains("middle", {
+      kp: preset?.data?.pidTempMiddleKp,
+      ki: preset?.data?.pidTempMiddleKi,
+      kd: preset?.data?.pidTempMiddleKd,
+    });
+    applyZoneGains("back", {
+      kp: preset?.data?.pidTempBackKp,
+      ki: preset?.data?.pidTempBackKi,
+      kd: preset?.data?.pidTempBackKd,
+    });
+    applyZoneGains("nozzle", {
+      kp: preset?.data?.pidTempNozzleKp,
+      ki: preset?.data?.pidTempNozzleKi,
+      kd: preset?.data?.pidTempNozzleKd,
+    });
   };
 
   return (

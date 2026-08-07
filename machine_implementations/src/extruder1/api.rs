@@ -107,6 +107,8 @@ pub struct StateEvent {
     pub pid_settings: PidSettingsStates,
     /// pressure PID auto-tuner state
     pub pid_autotune_state: PidAutoTuneState,
+    /// temperature (IMC step-test) auto-tuner state
+    pub temperature_autotune_state: TemperatureAutoTuneState,
 }
 
 impl StateEvent {
@@ -277,9 +279,137 @@ impl Default for PidAutoTuneState {
     }
 }
 
+/// Parameters for starting a temperature PID auto-tune run on one heating zone.
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+pub struct TemperatureAutoTuneConfig {
+    /// Zone to tune: `"nozzle"`, `"front"`, `"back"` or `"middle"`.
+    pub zone: String,
+    /// Step in duty cycle, as a fraction of full output (e.g. `0.10` for +10 percentage points).
+    /// Signed; negative is allowed when there is no upward headroom.
+    pub step_duty: f64,
+    /// Abort if the zone moves further than this from its baseline temperature.
+    pub max_rise_celsius: f64,
+    /// Closed-loop time constant as a multiple of the identified process time constant.
+    /// 0.5 aggressive, 1.0 moderate, 2.0 conservative.
+    pub lambda_factor: f64,
+}
+
+/// One tuning candidate, in both IMC and parallel-PID parameterisations.
+#[derive(Serialize, Debug, Clone, PartialEq, Default)]
+pub struct ImcGainsState {
+    pub kc: f64,
+    pub ti: f64,
+    pub td: f64,
+    pub kp: f64,
+    pub ki: f64,
+    pub kd: f64,
+}
+
+impl From<control_core::controllers::imc_tuner::ImcGains> for ImcGainsState {
+    fn from(g: control_core::controllers::imc_tuner::ImcGains) -> Self {
+        Self {
+            kc: g.kc,
+            ti: g.ti,
+            td: g.td,
+            kp: g.kp,
+            ki: g.ki,
+            kd: g.kd,
+        }
+    }
+}
+
+/// Identified model, fit diagnostics and both gain candidates from a completed run.
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct TemperatureAutoTuneResultState {
+    /// Steady-state gain in °C per unit of duty cycle.
+    pub process_gain: f64,
+    /// Fitted time constant in seconds.
+    pub time_constant: f64,
+    /// Fitted dead time in seconds.
+    pub dead_time: f64,
+    /// Classical 63.2% construction, shown as a cross-check.
+    pub tau_63: f64,
+    /// Dead time from the first threshold crossing, shown as a cross-check. Expect it above the
+    /// fitted value.
+    pub dead_time_threshold: f64,
+    pub rms_residual: f64,
+    pub fit_error_pct: f64,
+    pub is_good_fit: bool,
+    pub delta_pv: f64,
+    pub delta_u: f64,
+    pub lambda: f64,
+    pub noise_peak_to_peak: f64,
+    pub snr_ratio: f64,
+    pub is_confident: bool,
+    /// Step that would have reached the target signal-to-noise ratio, to guide a retry.
+    pub suggested_step_duty: f64,
+    pub pi: ImcGainsState,
+    pub pid: ImcGainsState,
+}
+
+/// Live state of the temperature auto-tuner, broadcast as part of the machine state.
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct TemperatureAutoTuneState {
+    /// Zone being tuned, if a run has been started.
+    pub zone: Option<String>,
+    /// One of `"idle"`, `"waiting_for_steady"`, `"baseline_hold"`, `"step"`, `"completed"`,
+    /// `"failed"`.
+    pub phase: String,
+    pub progress: f64,
+    pub elapsed_seconds: f64,
+    pub baseline_duty: f64,
+    pub baseline_temperature: f64,
+    pub current_duty: f64,
+    pub result: Option<TemperatureAutoTuneResultState>,
+    pub failure_reason: Option<String>,
+}
+
+impl Default for TemperatureAutoTuneState {
+    fn default() -> Self {
+        Self {
+            zone: None,
+            phase: "idle".to_string(),
+            progress: 0.0,
+            elapsed_seconds: 0.0,
+            baseline_duty: 0.0,
+            baseline_temperature: 0.0,
+            current_duty: 0.0,
+            result: None,
+            failure_reason: None,
+        }
+    }
+}
+
+/// One recorded point of a step test.
+#[derive(Serialize, Debug, Clone, Copy, PartialEq)]
+pub struct TemperatureAutoTuneSample {
+    pub t_seconds: f64,
+    pub temperature: f64,
+    pub duty: f64,
+}
+
+/// The recorded step-test curve.
+///
+/// Kept out of [`StateEvent`], which is rebuilt and re-emitted on every mutation — a 30-minute run
+/// is ~1800 samples. Sent whole rather than incrementally so the frontend stays stateless and the
+/// curve survives a page reload.
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct TemperatureAutoTuneTraceEvent {
+    pub zone: Option<String>,
+    pub phase: String,
+    pub samples: Vec<TemperatureAutoTuneSample>,
+}
+
+impl TemperatureAutoTuneTraceEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("TemperatureAutoTuneTraceEvent", self.clone())
+    }
+}
+
 pub enum ExtruderV2Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
+    TuneTrace(Event<TemperatureAutoTuneTraceEvent>),
 }
 
 #[derive(Deserialize, Serialize)]
@@ -320,6 +450,16 @@ pub enum Mutation {
 
     // Debug/test: drive one heating zone at a fixed wattage instead of regulating it
     SetHeatingPowerOverride(HeatingPowerOverride),
+
+    // Temperature PID Auto-Tune (IMC step test), one zone at a time
+    /// Start an IMC step test on one heating zone. Requires `Heat` mode with the screw stopped.
+    StartTemperaturePidAutoTune(TemperatureAutoTuneConfig),
+    StopTemperaturePidAutoTune {},
+    /// Push a completed run's gains into the tuned zone's PID.
+    /// `form` selects the candidate: `"pi"` or `"pid"`.
+    ApplyTemperatureAutoTuneResult {
+        form: String,
+    },
 }
 
 #[derive(Debug)]
@@ -345,6 +485,7 @@ impl CacheableEvents<Self> for ExtruderV2Events {
         match self {
             Self::LiveValues(event) => event.into(),
             Self::State(event) => event.into(),
+            Self::TuneTrace(event) => event.into(),
         }
     }
 
@@ -353,6 +494,7 @@ impl CacheableEvents<Self> for ExtruderV2Events {
         match self {
             Self::LiveValues(_) => cache_first_and_last,
             Self::State(_) => cache_first_and_last,
+            Self::TuneTrace(_) => cache_first_and_last,
         }
     }
 }
@@ -430,6 +572,15 @@ impl MachineApi for ExtruderV2 {
             }
             Mutation::SetHeatingPowerOverride(override_settings) => {
                 self.set_heating_power_override(override_settings);
+            }
+            Mutation::StartTemperaturePidAutoTune(config) => {
+                self.start_temperature_pid_autotune(config);
+            }
+            Mutation::StopTemperaturePidAutoTune {} => {
+                self.stop_temperature_pid_autotune();
+            }
+            Mutation::ApplyTemperatureAutoTuneResult { form } => {
+                self.apply_temperature_autotune_result(&form);
             }
             Mutation::StartPressurePidAutoTune(config) => {
                 self.start_pressure_pid_autotune(config);
