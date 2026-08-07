@@ -41,7 +41,6 @@ impl LowPassFilter {
     }
 }
 
-
 pub struct TemperatureController {
     pub pid: PidController,
     pub heating: Heating,
@@ -56,7 +55,12 @@ pub struct TemperatureController {
     heating_element_wattage: f64,
     max_clamp: f64,
     target_temp_enabled: bool, // Sets whether the frontend should display a target temperature setter for this temp controller
-    filter : LowPassFilter,
+    filter: LowPassFilter,
+    /// Debug/test only: drive the heating element at a fixed wattage instead of letting the PID
+    /// regulate towards the target temperature. The `max_temperature` cutoff still applies.
+    power_override_enabled: bool,
+    /// Fixed heating power in watts used while `power_override_enabled` is set
+    power_override_watts: f64,
 }
 
 impl TemperatureController {
@@ -80,8 +84,8 @@ impl TemperatureController {
         temperature_port: usize,
     ) -> Self {
         Self {
-            //the max clamp for integral should be at max 20% of the total output 
-            pid: PidController::new( kp, ki, kd,0.0, max_clamp/5.0 ),
+            //the max clamp for integral should be at max 20% of the total output
+            pid: PidController::new(kp, ki, kd, 0.0, max_clamp / 5.0),
             target_temp,
             window_start: Instant::now(),
             heating,
@@ -94,7 +98,12 @@ impl TemperatureController {
             target_temp_enabled: true,
             digital_port,
             temperature_port,
-            filter : LowPassFilter { alpha: 0.08, state: None } 
+            filter: LowPassFilter {
+                alpha: 0.08,
+                state: None,
+            },
+            power_override_enabled: false,
+            power_override_watts: 0.0,
         }
     }
 
@@ -122,6 +131,31 @@ impl TemperatureController {
         self.temperature_pid_output * self.heating_element_wattage
     }
 
+    /// Highest heating power this zone can be driven at, i.e. the element wattage capped by the
+    /// duty cycle limit. Used as the upper bound for the debug power override.
+    pub fn get_max_heating_power(&self) -> f64 {
+        self.heating_element_wattage * self.max_clamp
+    }
+
+    pub const fn get_power_override_enabled(&self) -> bool {
+        self.power_override_enabled
+    }
+
+    pub const fn get_power_override_watts(&self) -> f64 {
+        self.power_override_watts
+    }
+
+    /// Debug/test measure: pin the heating output to a fixed wattage, bypassing the PID.
+    ///
+    /// This drives the element open-loop, so the zone can overshoot its target temperature — only
+    /// the `max_temperature` cutoff in [`Self::update`] still limits it. The PID is reset on every
+    /// change so it starts clean once the override is turned off again.
+    pub fn set_power_override(&mut self, enabled: bool, watts: f64) {
+        self.power_override_enabled = enabled;
+        self.power_override_watts = watts.clamp(0.0, self.get_max_heating_power());
+        self.pid.reset();
+    }
+
     pub fn update(
         &mut self,
         now: Instant,
@@ -135,8 +169,10 @@ impl TemperatureController {
             Ok(t) => ThermodynamicTemperature::new::<degree_celsius>(t.temperature as f64),
             Err(_e) => ThermodynamicTemperature::new::<degree_celsius>(0.0),
         };
-        self.filter.update(temperature_celsius.get::<degree_celsius>());
-        self.heating.temperature =  ThermodynamicTemperature::new::<degree_celsius>(self.filter.current_val());
+        self.filter
+            .update(temperature_celsius.get::<degree_celsius>());
+        self.heating.temperature =
+            ThermodynamicTemperature::new::<degree_celsius>(self.filter.current_val());
         if self.heating.temperature > self.max_temperature {
             // disable the relais and return
             relais.set_output(self.digital_port, false);
@@ -144,13 +180,25 @@ impl TemperatureController {
             return;
         }
 
-        if self.heating_allowed {            
-            let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
-                - self.heating.temperature.get::<degree_celsius>();
+        if self.heating_allowed {
+            let duty = if self.power_override_enabled {
+                // Debug/test mode: hold a fixed heating power instead of regulating. Keep the PID
+                // reset so its integral doesn't wind up while it isn't driving the output.
+                self.pid.reset();
+                if self.heating_element_wattage > 0.0 {
+                    (self.power_override_watts / self.heating_element_wattage)
+                        .clamp(0.0, self.max_clamp)
+                } else {
+                    0.0
+                }
+            } else {
+                let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
+                    - self.heating.temperature.get::<degree_celsius>();
 
-            let control = self.pid.update(error, now); // PID output
-            // Clamp PID output to 0.0 – 1.0 (as duty cycle)
-            let duty = control.clamp(0.0, self.max_clamp);
+                let control = self.pid.update(error, now); // PID output
+                // Clamp PID output to 0.0 – 1.0 (as duty cycle)
+                control.clamp(0.0, self.max_clamp)
+            };
 
             self.temperature_pid_output = duty;
 
