@@ -56,7 +56,7 @@ const schemas = new Map([[1, extruder1PresetDataSchema]]);
 const formatZoneGains = (kp?: number, ki?: number, kd?: number) =>
   kp === undefined
     ? undefined
-    : `${kp.toPrecision(3)} / ${(ki ?? 0).toPrecision(3)} / ${(kd ?? 0).toPrecision(3)}`;
+    : `${kp.toPrecision(5)} / ${(ki ?? 0).toPrecision(5)} / ${(kd ?? 0).toPrecision(5)}`;
 
 const previewEntries: PresetPreviewEntries<Extruder2> = [
   {
