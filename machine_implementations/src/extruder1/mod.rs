@@ -10,6 +10,7 @@ pub mod temperature_controller;
 use crate::{MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, VENDOR_QITECH};
 use crate::{MachineMessage, QiTechMachine};
 use api::ExtruderV2Namespace;
+use control_core::controllers::imc_tuner::ImcTuner;
 use qitech_lib::machines::MachineIdentification;
 use qitech_lib::machines::MachineIdentificationUnique;
 use qitech_lib::units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
@@ -56,11 +57,33 @@ impl Default for Heating {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HeatingType {
     Nozzle,
     Front,
     Back,
     Middle,
+}
+
+impl HeatingType {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Nozzle => "nozzle",
+            Self::Front => "front",
+            Self::Back => "back",
+            Self::Middle => "middle",
+        }
+    }
+
+    pub fn from_zone_name(zone: &str) -> Option<Self> {
+        match zone {
+            "nozzle" => Some(Self::Nozzle),
+            "front" => Some(Self::Front),
+            "back" => Some(Self::Back),
+            "middle" => Some(Self::Middle),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(not(feature = "mock-machine"))]
@@ -85,6 +108,20 @@ pub struct ExtruderV2 {
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
     temperature_controller_nozzle: TemperatureController,
+
+    /// IMC step-test auto-tuner for the heating zones.
+    ///
+    /// One instance for the whole machine rather than one per zone: that is what enforces tuning a
+    /// single zone at a time, so the other three keep regulating and the identified model reflects
+    /// the machine as it actually runs.
+    temperature_tuner: ImcTuner,
+    /// Zone currently being tuned, if any.
+    temperature_tuner_zone: Option<HeatingType>,
+    /// Target temperature captured at the start of the run, so an operator changing it mid-test
+    /// can be detected and the run aborted.
+    temperature_tuner_setpoint: f64,
+    /// Last time the tuner trace was pushed to clients.
+    last_tune_trace_emit: Instant,
 
     /// Energy tracking for total consumption calculation
     total_energy_kwh: f64,
@@ -150,6 +187,34 @@ impl ExtruderV2 {
             self.total_energy_kwh += energy_delta_kwh;
         }
         self.last_energy_calculation_time = Some(now);
+    }
+
+    pub fn temperature_controller(&self, zone: HeatingType) -> &TemperatureController {
+        match zone {
+            HeatingType::Nozzle => &self.temperature_controller_nozzle,
+            HeatingType::Front => &self.temperature_controller_front,
+            HeatingType::Back => &self.temperature_controller_back,
+            HeatingType::Middle => &self.temperature_controller_middle,
+        }
+    }
+
+    pub fn temperature_controller_mut(&mut self, zone: HeatingType) -> &mut TemperatureController {
+        match zone {
+            HeatingType::Nozzle => &mut self.temperature_controller_nozzle,
+            HeatingType::Front => &mut self.temperature_controller_front,
+            HeatingType::Back => &mut self.temperature_controller_back,
+            HeatingType::Middle => &mut self.temperature_controller_middle,
+        }
+    }
+
+    pub const fn mode(&self) -> &ExtruderV2Mode {
+        &self.mode
+    }
+
+    /// Whether the screw is actually turning. Tuning requires it stopped: material flow is a large,
+    /// variable thermal load that an FOPDT step response cannot express.
+    fn screw_is_turning(&self) -> bool {
+        self.screw_speed_controller.get_motor_enabled()
     }
 
     fn turn_heating_off(&mut self, digital_out: &mut dyn DigitalOutputDevice) {

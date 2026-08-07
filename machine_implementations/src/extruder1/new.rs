@@ -5,6 +5,7 @@ use super::{
 use crate::{
     MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, MachineHardware, MachineMessage, MachineNew,
 };
+use control_core::controllers::imc_tuner::{ImcTuner, ImcTunerConfig};
 use control_core::transmission::fixed::FixedTransmission;
 use qitech_lib::ethercat_hal::{
     coe::ConfigurableDevice,
@@ -201,6 +202,13 @@ impl MachineNew for ExtruderV2 {
             screw_speed_controller,
             emitted_default_state: false,
             last_status_hash: None,
+
+            // Idle until an operator starts a run; the real configuration is built at that point
+            // from the selected zone's limits.
+            temperature_tuner: ImcTuner::new(ImcTunerConfig::default()),
+            temperature_tuner_zone: None,
+            temperature_tuner_setpoint: 0.0,
+            last_tune_trace_emit: Instant::now(),
 
             relais_output: digital_out_device.0,
             temperature_input: temperature_device.0,

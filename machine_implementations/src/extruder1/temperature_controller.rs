@@ -61,6 +61,12 @@ pub struct TemperatureController {
     power_override_enabled: bool,
     /// Fixed heating power in watts used while `power_override_enabled` is set
     power_override_watts: f64,
+    /// Duty commanded by the IMC auto-tuner while a step test owns this zone, as a fraction of
+    /// full output. `None` means the zone is under normal control.
+    ///
+    /// The tuner returns `None` in every non-running state and the caller applies that every tick,
+    /// so releasing the zone is structural — there is no restore step an abort path could skip.
+    tuner_duty: Option<f64>,
 }
 
 impl TemperatureController {
@@ -84,8 +90,11 @@ impl TemperatureController {
         temperature_port: usize,
     ) -> Self {
         Self {
-            //the max clamp for integral should be at max 20% of the total output
-            pid: PidController::new(kp, ki, kd, 0.0, max_clamp / 5.0),
+            // The integral needs the full output range: at production temperature a zone can need
+            // 30-50% duty just to hold setpoint, so a narrower clamp would leave permanent offset,
+            // and a non-negative lower bound could never unwind an overshoot. The back-calculation
+            // in PidController is what keeps this safe from windup.
+            pid: PidController::new(kp, ki, kd, -max_clamp, max_clamp),
             target_temp,
             window_start: Instant::now(),
             heating,
@@ -104,7 +113,54 @@ impl TemperatureController {
             },
             power_override_enabled: false,
             power_override_watts: 0.0,
+            tuner_duty: None,
         }
+    }
+
+    /// Current commanded duty cycle, 0.0 – `max_clamp`. This is what the auto-tuner captures as
+    /// the baseline output before it takes over.
+    pub const fn get_duty(&self) -> f64 {
+        self.temperature_pid_output
+    }
+
+    pub const fn get_max_clamp(&self) -> f64 {
+        self.max_clamp
+    }
+
+    pub fn get_temperature_celsius(&self) -> f64 {
+        self.heating.temperature.get::<degree_celsius>()
+    }
+
+    pub fn get_target_temperature_celsius(&self) -> f64 {
+        self.heating.target_temperature.get::<degree_celsius>()
+    }
+
+    pub fn get_max_temperature_celsius(&self) -> f64 {
+        self.max_temperature.get::<degree_celsius>()
+    }
+
+    /// Hand the output to the auto-tuner (`Some(duty)`) or give it back to the PID (`None`).
+    ///
+    /// On release the PID is reset, so it restarts without integral and derivative state left over
+    /// from before the test.
+    pub fn apply_tuner_command(&mut self, cmd: Option<f64>) {
+        if self.tuner_duty.is_some() && cmd.is_none() {
+            self.pid.reset();
+        }
+        self.tuner_duty = cmd.map(|duty| duty.clamp(0.0, self.max_clamp));
+    }
+
+    pub const fn is_tuner_driving(&self) -> bool {
+        self.tuner_duty.is_some()
+    }
+
+    /// Apply tuned gains together with the matching derivative filter.
+    ///
+    /// These are bundled deliberately: a non-zero `kd` without the filter turns the derivative term
+    /// into a noise amplifier, since `dt` is the sub-millisecond control-loop period.
+    pub const fn configure_pid(&mut self, ki: f64, kp: f64, kd: f64, derivative_filter_tc: f64) {
+        self.pid.configure(ki, kp, kd);
+        self.pid.set_derivative_filter(derivative_filter_tc);
     }
 
     pub fn set_target_temperature(&mut self, temp: ThermodynamicTemperature) {
@@ -181,7 +237,12 @@ impl TemperatureController {
         }
 
         if self.heating_allowed {
-            let duty = if self.power_override_enabled {
+            let duty = if let Some(tuner_duty) = self.tuner_duty {
+                // The auto-tuner owns the output for the duration of a step test. Keep the PID
+                // reset so it does not wind up while it is not driving.
+                self.pid.reset();
+                tuner_duty
+            } else if self.power_override_enabled {
                 // Debug/test mode: hold a fixed heating power instead of regulating. Keep the PID
                 // reset so its integral doesn't wind up while it isn't driving the output.
                 self.pid.reset();
@@ -192,10 +253,13 @@ impl TemperatureController {
                     0.0
                 }
             } else {
-                let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
-                    - self.heating.temperature.get::<degree_celsius>();
+                let measurement = self.heating.temperature.get::<degree_celsius>();
+                let error: f64 =
+                    self.heating.target_temperature.get::<degree_celsius>() - measurement;
 
-                let control = self.pid.update(error, now); // PID output
+                // Derivative on measurement, so changing a target temperature does not kick the
+                // derivative term.
+                let control = self.pid.update_with_measurement(error, measurement, now);
                 // Clamp PID output to 0.0 – 1.0 (as duty cycle)
                 control.clamp(0.0, self.max_clamp)
             };

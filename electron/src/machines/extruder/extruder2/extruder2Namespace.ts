@@ -14,6 +14,11 @@ import { MachineIdentificationUnique } from "@/machines/types";
 import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 import { useMemo } from "react";
 import { pidAutoTuneStateSchema } from "../pidAutoTuneSchema";
+import {
+  temperatureAutoTuneStateSchema,
+  temperatureAutoTuneTraceDataSchema,
+  TemperatureAutoTuneTraceData,
+} from "../temperatureAutoTuneSchema";
 
 // ========== Event Schema Definitions ==========
 
@@ -204,12 +209,16 @@ export const stateEventDataSchema = z.object({
   inverter_status_state: inverterStatusStateSchema,
   pid_settings: pidSettingsSchema,
   pid_autotune_state: pidAutoTuneStateSchema,
+  temperature_autotune_state: temperatureAutoTuneStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
 
 export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
 export const stateEventSchema = eventSchema(stateEventDataSchema);
+export const temperatureAutoTuneTraceEventSchema = eventSchema(
+  temperatureAutoTuneTraceDataSchema,
+);
 
 // ========== Type Inferences ==========
 
@@ -228,6 +237,9 @@ export type Extruder2NamespaceStore = {
   // Single state event from server
   state: StateEvent | null;
   defaultState: StateEvent | null;
+
+  /** Recorded curve from the running or most recent temperature auto-tune. */
+  tuneTrace: TemperatureAutoTuneTraceData | null;
 
   // Time series data for live values
   motorFrequency: TimeSeries;
@@ -460,6 +472,9 @@ export function extruder2MessageHandler(
             timestamp,
           }),
         }));
+      } else if (eventName === "TemperatureAutoTuneTraceEvent") {
+        const traceEvent = temperatureAutoTuneTraceEventSchema.parse(event);
+        updateStore((state) => ({ ...state, tuneTrace: traceEvent.data }));
       } else {
         handleUnhandledEventError(eventName);
       }
@@ -476,6 +491,7 @@ export const createExtruder2NamespaceStore =
       return {
         state: null,
         defaultState: null,
+        tuneTrace: null,
 
         motorCurrent,
         motorFrequency,

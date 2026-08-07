@@ -8,7 +8,9 @@ use crate::extruder1::{
         HeatingPowerOverrideStates, HeatingState, HeatingStates, InverterStatusState,
         LiveValuesEvent, ModeState, PidAutoTuneState, PidSettings, PidSettingsStates,
         PressureAutoTuneConfig, PressureState, RegulationState, RotationState, ScrewState,
-        StateEvent, TemperaturePid,
+        StateEvent, TemperatureAutoTuneConfig, TemperatureAutoTuneResultState,
+        TemperatureAutoTuneSample, TemperatureAutoTuneState, TemperatureAutoTuneTraceEvent,
+        TemperaturePid,
     },
 };
 
@@ -161,6 +163,7 @@ impl ExtruderV2 {
                     result,
                 }
             },
+            temperature_autotune_state: self.get_temperature_autotune_state(),
         }
     }
 
@@ -400,6 +403,244 @@ impl ExtruderV2 {
     pub fn stop_pressure_pid_autotune(&mut self) {
         self.screw_speed_controller.stop_autotune();
         self.emit_state();
+    }
+
+    /// Assemble the auto-tuner's current state for the frontend.
+    pub fn get_temperature_autotune_state(&self) -> TemperatureAutoTuneState {
+        use std::time::Instant;
+
+        let now = Instant::now();
+        let tuner = &self.temperature_tuner;
+        TemperatureAutoTuneState {
+            zone: self.temperature_tuner_zone.map(|z| z.as_str().to_string()),
+            phase: tuner.phase().to_string(),
+            progress: tuner.progress_percent(now),
+            elapsed_seconds: tuner.elapsed_seconds(now),
+            baseline_duty: tuner.baseline_duty(),
+            baseline_temperature: tuner.baseline_pv(),
+            current_duty: tuner.commanded_duty(),
+            result: tuner.result().map(|r| TemperatureAutoTuneResultState {
+                process_gain: r.process_gain,
+                time_constant: r.time_constant,
+                dead_time: r.dead_time,
+                tau_63: r.tau_63,
+                dead_time_threshold: r.dead_time_threshold,
+                rms_residual: r.rms_residual,
+                fit_error_pct: r.fit_error_pct,
+                is_good_fit: r.is_good_fit(),
+                delta_pv: r.delta_pv,
+                delta_u: r.delta_u,
+                lambda: r.lambda,
+                noise_peak_to_peak: r.noise_peak_to_peak,
+                snr_ratio: r.snr_ratio,
+                is_confident: r.is_confident(),
+                suggested_step_duty: r.suggested_step_duty,
+                pi: r.pi.into(),
+                pid: r.pid.into(),
+            }),
+            failure_reason: tuner.failure_reason().map(str::to_string),
+        }
+    }
+
+    pub fn emit_tune_trace(&mut self) {
+        use control_core::socketio::namespace::NamespaceCacheingLogic;
+
+        let event = TemperatureAutoTuneTraceEvent {
+            zone: self.temperature_tuner_zone.map(|z| z.as_str().to_string()),
+            phase: self.temperature_tuner.phase().to_string(),
+            samples: self
+                .temperature_tuner
+                .trace()
+                .iter()
+                .map(|s| TemperatureAutoTuneSample {
+                    t_seconds: s.t_seconds,
+                    temperature: s.pv,
+                    duty: s.duty,
+                })
+                .collect(),
+        }
+        .build();
+        self.namespace.emit(ExtruderV2Events::TuneTrace(event));
+    }
+
+    /// Start an IMC step test on one heating zone.
+    ///
+    /// Refused unless the machine is in `Heat` mode with the screw stopped: material flow is a
+    /// large, variable thermal load that an FOPDT step response cannot express.
+    pub fn start_temperature_pid_autotune(&mut self, config: TemperatureAutoTuneConfig) {
+        use control_core::controllers::imc_tuner::{ImcTuner, ImcTunerConfig, ImcTunerError};
+        use std::time::Instant;
+
+        let Some(zone) = HeatingType::from_zone_name(&config.zone) else {
+            tracing::warn!("temperature autotune: unknown zone {}", config.zone);
+            return;
+        };
+
+        if self.temperature_tuner.is_running() {
+            tracing::warn!("temperature autotune: a run is already in progress");
+            return;
+        }
+        if self.mode != ExtruderV2Mode::Heat {
+            tracing::warn!("temperature autotune: requires Heat mode");
+            return;
+        }
+        if self.screw_is_turning() {
+            tracing::warn!("temperature autotune: requires the screw to be stopped");
+            return;
+        }
+
+        let controller = self.temperature_controller(zone);
+        if controller.heating.wiring_error {
+            tracing::warn!(
+                "temperature autotune: zone {} has a wiring error",
+                config.zone
+            );
+            return;
+        }
+        if controller.get_power_override_enabled() {
+            tracing::warn!(
+                "temperature autotune: zone {} has a manual power override active",
+                config.zone
+            );
+            return;
+        }
+
+        let baseline_duty = controller.get_duty();
+        let setpoint = controller.get_target_temperature_celsius();
+        let max_duty = controller.get_max_clamp();
+        // Stop well short of the hard over-temperature cutoff, which is an emergency stop rather
+        // than a test limit.
+        let headroom_to_cutoff = controller.get_max_temperature_celsius() - 20.0 - setpoint;
+
+        let tuner_config = ImcTunerConfig {
+            step_duty: config.step_duty,
+            max_duty,
+            max_rise_celsius: config.max_rise_celsius.min(headroom_to_cutoff.max(1.0)),
+            lambda_factor: config.lambda_factor,
+            ..Default::default()
+        };
+
+        let mut tuner = ImcTuner::new(tuner_config);
+        match tuner.start(Instant::now(), baseline_duty, setpoint) {
+            Ok(()) => {
+                self.temperature_tuner = tuner;
+                self.temperature_tuner_zone = Some(zone);
+                self.temperature_tuner_setpoint = setpoint;
+            }
+            Err(ImcTunerError::NoHeadroom { available }) => {
+                tracing::warn!(
+                    "temperature autotune: zone {} has only {:.3} duty of headroom, step is {:.3}",
+                    config.zone,
+                    available,
+                    config.step_duty
+                );
+            }
+            Err(err) => {
+                tracing::warn!("temperature autotune: cannot start: {:?}", err);
+            }
+        }
+        self.emit_state();
+    }
+
+    pub fn stop_temperature_pid_autotune(&mut self) {
+        self.temperature_tuner.abort("operator stopped the run");
+        self.release_temperature_tuner_zone();
+        self.emit_state();
+    }
+
+    /// Push a completed run's gains into the tuned zone.
+    ///
+    /// The derivative filter is set from the same candidate rather than separately: a non-zero
+    /// `kd` without it turns the derivative term into a noise amplifier.
+    pub fn apply_temperature_autotune_result(&mut self, form: &str) {
+        let Some(zone) = self.temperature_tuner_zone else {
+            tracing::warn!("temperature autotune: no run to apply");
+            return;
+        };
+        let Some(result) = self.temperature_tuner.result() else {
+            tracing::warn!("temperature autotune: no result to apply");
+            return;
+        };
+        let gains = match form {
+            "pi" => result.pi,
+            "pid" => result.pid,
+            other => {
+                tracing::warn!("temperature autotune: unknown gain form {other}");
+                return;
+            }
+        };
+        let filter_tc = gains.derivative_filter_tc();
+        self.temperature_controller_mut(zone)
+            .configure_pid(gains.ki, gains.kp, gains.kd, filter_tc);
+        self.emit_state();
+    }
+
+    fn release_temperature_tuner_zone(&mut self) {
+        if let Some(zone) = self.temperature_tuner_zone {
+            self.temperature_controller_mut(zone)
+                .apply_tuner_command(None);
+        }
+    }
+
+    /// Advance the auto-tuner and apply its command to the zone under test.
+    ///
+    /// Called every act iteration. The machine-level guards live here because the tuner itself has
+    /// no view of mode, interlocks or sensor faults.
+    pub fn tick_temperature_tuner(&mut self, now: std::time::Instant) {
+        use std::time::Duration;
+
+        let Some(zone) = self.temperature_tuner_zone else {
+            return;
+        };
+        if !self.temperature_tuner.is_running() {
+            // Terminal state: make sure the zone is back under PID control. Idempotent, so it is
+            // safe to run every tick.
+            self.release_temperature_tuner_zone();
+            return;
+        }
+
+        // Guards the tuner cannot see for itself.
+        let controller = self.temperature_controller(zone);
+        let pv = controller.get_temperature_celsius();
+        let pid_duty = controller.get_duty();
+        let wiring_error = controller.heating.wiring_error;
+        let setpoint = controller.get_target_temperature_celsius();
+
+        let abort_reason = if wiring_error {
+            Some("temperature sensor wiring error")
+        } else if self.mode != ExtruderV2Mode::Heat {
+            Some("machine left Heat mode")
+        } else if self.screw_is_turning() {
+            Some("screw started turning")
+        } else if (setpoint - self.temperature_tuner_setpoint).abs() > f64::EPSILON {
+            Some("target temperature was changed during the run")
+        } else {
+            None
+        };
+
+        if let Some(reason) = abort_reason {
+            self.temperature_tuner.abort(reason);
+            self.release_temperature_tuner_zone();
+            self.emit_state();
+            return;
+        }
+
+        let command = self.temperature_tuner.update(pv, pid_duty, now);
+        self.temperature_controller_mut(zone)
+            .apply_tuner_command(command);
+
+        // The 30 Hz state emission is gated on the inverter status hash, so tuner transitions
+        // would otherwise never reach the UI.
+        if self.temperature_tuner.take_phase_changed() {
+            self.emit_state();
+            self.emit_tune_trace();
+            self.last_tune_trace_emit = now;
+        } else if self.temperature_tuner.is_running()
+            && now.duration_since(self.last_tune_trace_emit) > Duration::from_secs(2)
+        {
+            self.emit_tune_trace();
+            self.last_tune_trace_emit = now;
+        }
     }
 
     pub fn configure_temperature_pid(&mut self, settings: TemperaturePid) {

@@ -6,6 +6,7 @@ import { extruder3 } from "@/machines/properties";
 import { extruder3Route } from "@/routes/routes";
 import { z } from "zod";
 import { StateEvent, Mode, useExtruder3Namespace } from "./extruder3Namespace";
+import { TuneZone } from "../temperatureAutoTuneSchema";
 import { useEffect, useMemo } from "react";
 import { produce } from "immer";
 
@@ -41,6 +42,7 @@ export function useExtruder3() {
   const {
     state,
     defaultState,
+    tuneTrace,
     motorCurrent,
     motorFrequency,
     motorScrewRpm,
@@ -402,6 +404,70 @@ export function useExtruder3() {
     });
   };
 
+  /**
+   * Set all three gains for one zone in a single mutation.
+   *
+   * `setTemperaturePidValue` sends one gain at a time and rebuilds the payload from optimistic
+   * state on each call, so applying a whole preset that way races with itself.
+   * `SetTemperaturePidSettings` already carries all three, making a full preset four mutations
+   * instead of twelve.
+   */
+  const setTemperaturePidZone = (
+    zone: TuneZone,
+    gains: { kp: number; ki: number; kd: number },
+  ) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_settings.temperature[zone].kp = gains.kp;
+        current.data.pid_settings.temperature[zone].ki = gains.ki;
+        current.data.pid_settings.temperature[zone].kd = gains.kd;
+      },
+      () =>
+        requestTemperaturePidSettings({
+          machine_identification_unique: machineIdentification,
+          data: { SetTemperaturePidSettings: { ...gains, zone } },
+        }),
+    );
+  };
+
+  /**
+   * Start an IMC step test on one heating zone. The backend refuses unless the machine is in Heat
+   * mode with the screw stopped, and unless the zone has enough duty headroom for the step.
+   */
+  const startTemperaturePidAutoTune = (
+    zone: TuneZone,
+    stepDuty: number,
+    maxRiseCelsius: number,
+    lambdaFactor: number,
+  ) => {
+    requestStartTemperaturePidAutoTune({
+      machine_identification_unique: machineIdentification,
+      data: {
+        StartTemperaturePidAutoTune: {
+          zone,
+          step_duty: stepDuty,
+          max_rise_celsius: maxRiseCelsius,
+          lambda_factor: lambdaFactor,
+        },
+      },
+    });
+  };
+
+  const stopTemperaturePidAutoTune = () => {
+    requestStopTemperaturePidAutoTune({
+      machine_identification_unique: machineIdentification,
+      data: { StopTemperaturePidAutoTune: {} },
+    });
+  };
+
+  /** Push a completed run's gains into the tuned zone. */
+  const applyTemperatureAutoTuneResult = (form: "pi" | "pid") => {
+    requestApplyTemperatureAutoTuneResult({
+      machine_identification_unique: machineIdentification,
+      data: { ApplyTemperatureAutoTuneResult: { form } },
+    });
+  };
+
   // Mutation hooks
   const { request: requestInverterRotationDirection } = useMachineMutation(
     z.object({ SetInverterRotationDirection: z.boolean() }),
@@ -499,12 +565,36 @@ export function useExtruder3() {
     z.object({ StopPressurePidAutoTune: z.object({}) }),
   );
 
+  const { request: requestStartTemperaturePidAutoTune } = useMachineMutation(
+    z.object({
+      StartTemperaturePidAutoTune: z.object({
+        zone: z.string(),
+        step_duty: z.number(),
+        max_rise_celsius: z.number(),
+        lambda_factor: z.number(),
+      }),
+    }),
+  );
+
+  const { request: requestStopTemperaturePidAutoTune } = useMachineMutation(
+    z.object({ StopTemperaturePidAutoTune: z.object({}) }),
+  );
+
+  const { request: requestApplyTemperatureAutoTuneResult } = useMachineMutation(
+    z.object({
+      ApplyTemperatureAutoTuneResult: z.object({ form: z.string() }),
+    }),
+  );
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
 
     // Default state for initial values
     defaultState: defaultState?.data,
+
+    // Recorded curve from the running or most recent temperature auto-tune
+    tuneTrace,
 
     // Individual live values (TimeSeries)
     motorCurrent,
@@ -557,5 +647,9 @@ export function useExtruder3() {
     resetInverter,
     startPressurePidAutoTune,
     stopPressurePidAutoTune,
+    setTemperaturePidZone,
+    startTemperaturePidAutoTune,
+    stopTemperaturePidAutoTune,
+    applyTemperatureAutoTuneResult,
   };
 }

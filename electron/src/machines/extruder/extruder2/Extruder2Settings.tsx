@@ -9,6 +9,7 @@ import { useExtruder2 } from "./useExtruder";
 import { ControlGrid } from "@/control/ControlGrid";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { HeatingPowerOverrideZone } from "../HeatingPowerOverrideZone";
+import { TemperatureAutoTunePanel } from "../TemperatureAutoTunePanel";
 
 export function Extruder2SettingsPage() {
   const {
@@ -27,6 +28,10 @@ export function Extruder2SettingsPage() {
     setHeatingPowerOverride,
     startPressurePidAutoTune,
     stopPressurePidAutoTune,
+    tuneTrace,
+    startTemperaturePidAutoTune,
+    stopTemperaturePidAutoTune,
+    applyTemperatureAutoTuneResult,
   } = useExtruder2();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -468,6 +473,19 @@ export function Extruder2SettingsPage() {
                 defaultState?.heating_power_override_states.nozzle
               }
               onChange={setHeatingPowerOverride}
+            />
+          </ControlGrid>
+          <ControlGrid>
+            <TemperatureAutoTunePanel
+              tuneState={state?.temperature_autotune_state}
+              trace={tuneTrace}
+              canStart={
+                state?.mode_state.mode === "Heat" &&
+                !state?.inverter_status_state.running
+              }
+              onStart={startTemperaturePidAutoTune}
+              onStop={stopTemperaturePidAutoTune}
+              onApply={applyTemperatureAutoTuneResult}
             />
           </ControlGrid>
         </>
