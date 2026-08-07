@@ -84,7 +84,7 @@ impl PidController {
                 // Calculate errors
                 let ep = error;
                 
-                let ei = if error.abs() < 5.0 {
+                let ei = if error.abs() < 15.0 {
                     ep.mul_add(dt, self.ei)
                 }else{
                     self.ei
