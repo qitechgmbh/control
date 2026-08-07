@@ -14,7 +14,7 @@ impl Machine for DryerMachine {
         self.core.poll_device()?;
 
         if self.core.tick_due(Instant::now()) {
-            self.core.update();
+            self.update();
             self.core.check_auto_stop();
             self.emit_live_values();
         }

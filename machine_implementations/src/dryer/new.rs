@@ -41,6 +41,8 @@ impl MachineNew for DryerMachine {
                 running_since: None,
                 drying_timer_minutes: 240,
             },
+            smart_data: Default::default(),
+            smart_data_write_ts: None,
         })
     }
 }

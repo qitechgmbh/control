@@ -8,7 +8,7 @@ import {
 import { dryerSmart } from "@/machines/properties";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { dryerSmartSerialRoute } from "@/routes/routes";
-import { useDryerSmartNamespace, SmartTimerEntry } from "./dryerSmartNamespace";
+import { useDryerNamespace, SmartTimerEntry } from "../dryerNamespace";
 import { useMachineMutate } from "@/client/useClient";
 import React, { useMemo } from "react";
 import { z } from "zod";
@@ -57,7 +57,7 @@ export function DryerSmartSchedulePage() {
     [serialString],
   );
 
-  const { liveValues } = useDryerSmartNamespace(machineIdentification);
+  const { liveValues } = useDryerNamespace(machineIdentification);
   const timerEnabled = liveValues?.data.smart_data.timer_enabled ?? false;
   const entries = liveValues?.data.smart_data.timer_entries ?? [];
 

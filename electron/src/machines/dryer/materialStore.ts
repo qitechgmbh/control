@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 
 const RECENTLY_USED_MAX = 10;
 
-type MaterialStoreState = {
+export type MaterialStoreState = {
   favorites: string[];
   recentlyUsed: string[];
   selectedAbbrev: string | null;

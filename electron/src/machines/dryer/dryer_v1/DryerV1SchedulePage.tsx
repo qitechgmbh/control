@@ -4,7 +4,7 @@ import { TouchButton } from "@/components/touch/TouchButton";
 import { dryerV1 } from "@/machines/properties";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { dryerV1SerialRoute } from "@/routes/routes";
-import { useDryerV1Namespace, ScheduleDay } from "./dryerV1Namespace";
+import { useDryerNamespace, ScheduleDay } from "../dryerNamespace";
 import { useMachineMutate } from "@/client/useClient";
 import React, { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
@@ -48,7 +48,7 @@ export function DryerV1SchedulePage() {
     [serialString],
   );
 
-  const { liveValues } = useDryerV1Namespace(machineIdentification);
+  const { liveValues } = useDryerNamespace(machineIdentification);
   const serverSchedule = liveValues?.data.schedule;
 
   const [schedule, setSchedule] = useState<ScheduleDay[]>(emptySchedule);

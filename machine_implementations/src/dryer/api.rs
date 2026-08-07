@@ -1,5 +1,5 @@
 use super::DryerMachine;
-use super::device::WeeklySchedule;
+use super::device::{SmartData, SmartTimerEntry, WeeklySchedule};
 use crate::{MachineApi, MachineMessage, MachineValues};
 use control_core::socketio::{
     event::{Event, GenericEvent},
@@ -32,6 +32,10 @@ pub struct LiveValuesEvent {
     pub target_temperature: f64,
     pub schedule: WeeklySchedule,
     pub drying_timer_minutes: u32,
+    /// Whether this physical unit is a Smart-variant dryer (probed from the device at
+    /// connect time) - drives whether the frontend shows the Smart-only section.
+    pub is_smart: bool,
+    pub smart_data: SmartData,
 }
 
 impl LiveValuesEvent {
@@ -99,6 +103,20 @@ enum Mutation {
         abbrev: String,
         throughput_kg_per_h: f64,
     },
+    // Smart-only - no-ops on V1 hardware since DryerDevice never populates smart_data
+    // for a non-Smart unit and the frontend only exposes these on the Smart page.
+    SyncClock,
+    SetTimerEnabled(bool),
+    WriteTimerEntry {
+        index: u8,
+        entry: SmartTimerEntry,
+    },
+    WriteNewTimerEntry {
+        entry: SmartTimerEntry,
+    },
+    DeleteTimerEntry {
+        index: u8,
+    },
 }
 
 impl MachineApi for DryerMachine {
@@ -115,6 +133,11 @@ impl MachineApi for DryerMachine {
             } => self
                 .core
                 .apply_material_preset(&abbrev, throughput_kg_per_h),
+            Mutation::SyncClock => self.sync_system_clock(),
+            Mutation::SetTimerEnabled(enabled) => self.set_timer_enabled(enabled),
+            Mutation::WriteTimerEntry { index, entry } => self.write_timer_entry(index, entry),
+            Mutation::WriteNewTimerEntry { entry } => self.write_new_timer_entry(entry),
+            Mutation::DeleteTimerEntry { index } => self.delete_timer_entry(index),
         }
         Ok(())
     }
