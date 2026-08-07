@@ -257,7 +257,6 @@ pub struct MainState {
     pub machines: Vec<Box<dyn QiTechMachine>>,
     pub machine_errors: HashMap<MachineIdentificationUnique, String>,
     pub machine_data_reg: MachineDataRegistry,
-    pub claimed_serial_ports: HashMap<String, MachineIdentificationUnique>,
 }
 
 impl MainState {
@@ -272,7 +271,6 @@ impl MainState {
             subdevices: vec![],
             hardware: HashMap::new(),
             machine_errors: HashMap::new(),
-            claimed_serial_ports: HashMap::new(),
         }
     }
 

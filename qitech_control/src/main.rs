@@ -1,10 +1,8 @@
 use anyhow::bail;
 use apis::socketio::queue::start_socketio_queue;
 use app_state::SharedAppState;
+use machine_implementations::MACHINE_LASER_V1;
 use machine_implementations::registry::MACHINE_REGISTRY;
-use machine_implementations::{
-    MACHINE_DRYER_SMART, MACHINE_DRYER_V1, MACHINE_LASER_V1, laser::LaserMachine,
-};
 #[cfg(not(feature = "mock"))]
 use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
 use qitech_lib::ethercat_hal::devices::device_from_subdevice_identity_rc;
@@ -19,7 +17,8 @@ use qitech_lib::{
 };
 #[cfg(not(feature = "mock"))]
 use std::{sync::Arc, time::Duration};
-use tokio_serial::{SerialPortInfo, SerialPortType};
+use tokio::sync::mpsc::Receiver;
+use tokio_serial::SerialPortInfo;
 
 use crate::{
     apis::socketio::main_namespace::{
@@ -41,7 +40,6 @@ mod machine_loop;
 #[cfg(feature = "mock")]
 mod mock;
 pub mod persist;
-mod serial_probe;
 
 fn setup_ethercat(
     state: Arc<SharedAppState>,
@@ -122,125 +120,64 @@ fn setup_ethercat(
     Ok(())
 }
 
-const CH340_VID: u16 = 0x1a86;
-const CH340_PID: u16 = 0x7523;
-
-fn is_ch340_port(port: &SerialPortInfo) -> bool {
-    matches!(
-        port.port_type,
-        SerialPortType::UsbPort(ref usb) if usb.vid == CH340_VID && usb.pid == CH340_PID
-    )
-}
-
-fn unclaimed_ch340_ports(
-    ports: Vec<SerialPortInfo>,
-    main_state: &MainState,
-) -> Vec<SerialPortInfo> {
-    ports
-        .into_iter()
-        .filter(is_ch340_port)
-        .filter(|port| {
-            !main_state
-                .claimed_serial_ports
-                .contains_key(&port.port_name)
-        })
-        .collect()
-}
-
-/// Removes any existing bookkeeping for a machine kind (matched via `is_match` on the raw
-/// machine id) before it gets (re)claimed by a freshly probed port.
-fn clear_machine_state(
-    main_state: &mut MainState,
-    shared_state: &Arc<SharedAppState>,
-    is_match: impl Fn(u16) -> bool,
-) {
-    if let Some(index) = main_state
-        .machines
-        .iter()
-        .position(|m| is_match(m.get_identification().machine_ident.machine))
-    {
-        main_state.machines.remove(index);
-    }
-    if let Ok(mut list) = shared_state.machines.try_write() {
-        if let Some(index) = list.iter().position(|m| {
-            is_match(
-                m.machine_identification_unique
-                    .machine_identification
-                    .machine,
-            )
-        }) {
-            list.remove(index);
-        }
-    }
-    main_state
-        .claimed_serial_ports
-        .retain(|_, ident| !is_match(ident.machine_ident.machine));
-}
-
-/// Applies laser/dryer identities found by the background `serial_probe` task. The actual
-/// probing already happened off the real-time thread; this only does the (cheap, rare) work of
-/// registering a newly found machine.
-fn apply_probe_results(
+fn add_laser(
     main_state: &mut MainState,
     shared_state: Arc<SharedAppState>,
-    results: Vec<serial_probe::PortProbeResult>,
-) {
-    for result in results {
-        if main_state
-            .claimed_serial_ports
-            .contains_key(&result.port_name)
-        {
-            continue;
-        }
+    rx_ports: &mut Receiver<Vec<SerialPortInfo>>,
+) -> Result<(), anyhow::Error> {
+    let ports = rx_ports.try_recv()?;
+    let machine_index_to_remove = main_state
+        .machines
+        .iter()
+        .position(|m| m.get_identification().machine_ident.machine == MACHINE_LASER_V1);
+    let machine_obj_index = shared_state.machines.try_read()?.iter().position(|m| {
+        m.machine_identification_unique
+            .machine_identification
+            .machine
+            == MACHINE_LASER_V1
+    });
 
-        match result.kind {
-            serial_probe::ProbedDeviceKind::Laser => {
-                if main_state
-                    .machines
-                    .iter()
-                    .any(|m| m.get_identification().machine_ident.machine == MACHINE_LASER_V1)
-                {
-                    continue;
-                }
-                clear_machine_state(main_state, &shared_state, |id| id == MACHINE_LASER_V1);
-                if main_state
-                    .generate_machine_hardware_from_serial(&result.port_name)
-                    .is_err()
-                {
-                    continue;
-                }
-                main_state.claimed_serial_ports.insert(
-                    result.port_name.clone(),
-                    MachineIdentificationUnique {
-                        machine_ident: LaserMachine::MACHINE_IDENTIFICATION,
-                        serial: 1,
-                    },
-                );
-            }
-            serial_probe::ProbedDeviceKind::Dryer { .. } => {
-                if main_state.machines.iter().any(|m| {
-                    let id = m.get_identification().machine_ident.machine;
-                    id == MACHINE_DRYER_V1 || id == MACHINE_DRYER_SMART
-                }) {
-                    continue;
-                }
-                clear_machine_state(main_state, &shared_state, |id| {
-                    id == MACHINE_DRYER_V1 || id == MACHINE_DRYER_SMART
-                });
-                let ident = match main_state
-                    .generate_machine_hardware_from_dryer_serial(&result.port_name)
-                {
-                    Ok(ident) => ident,
-                    Err(_) => continue,
-                };
-                main_state
-                    .claimed_serial_ports
-                    .insert(result.port_name.clone(), ident);
-            }
+    match machine_index_to_remove {
+        Some(index) => {
+            main_state.machines.remove(index);
         }
+        None => (),
+    }
 
-        detect_and_build_machines(shared_state.clone(), main_state);
-        send_machines_event(shared_state.clone());
+    match machine_obj_index {
+        Some(index) => {
+            shared_state.machines.try_write()?.remove(index);
+        }
+        None => (),
+    }
+
+    // Port is not used right now, so check if port exists
+    for port in ports {
+        if port.port_name == "/dev/ttyUSB0" || port.port_name == "/dev/ttyUSB1" {
+            main_state.generate_machine_hardware_from_serial(&port.port_name)?;
+            detect_and_build_machines(shared_state.clone(), main_state);
+            send_machines_event(shared_state);
+            break;
+        }
+    }
+    Ok(())
+}
+
+fn laser_hotplug(
+    main_state: &mut MainState,
+    shared_state: Arc<SharedAppState>,
+    rx_ports: &mut Receiver<Vec<SerialPortInfo>>,
+) -> Result<(), anyhow::Error> {
+    match main_state
+        .machines
+        .iter()
+        .any(|x| x.get_identification().machine_ident.machine == MACHINE_LASER_V1)
+    {
+        true => Ok(()),
+        false => {
+            add_laser(main_state, shared_state.clone(), rx_ports)?;
+            Ok(())
+        }
     }
 }
 
@@ -400,9 +337,6 @@ pub fn remove_machines(
             main_state.hardware.remove(&ident);
             guard.remove(pos);
             drop(guard);
-            main_state
-                .claimed_serial_ports
-                .retain(|_, claimed_ident| *claimed_ident != ident);
             // If a machine has errored and is dropped remove the entry from the hashmap aswell
             main_state.machine_data_reg.storage.remove(&ident);
             send_machines_event(shared_state.clone());
@@ -487,14 +421,6 @@ fn main_logic() {
     let (tx_ports, mut rx_ports) = tokio::sync::mpsc::channel(2);
     detect_serial(rx, tx_ports);
 
-    // Candidate CH340 ports get probed for laser/dryer identity on a background tokio task
-    // (serial_probe::spawn_serial_probe), so the loop below never blocks on modbus timeouts
-    // while scanning for hotplugged devices - only the (rare, one-time) hardware construction
-    // once a device is actually confirmed still runs inline.
-    let (tx_probe_request, rx_probe_request) = tokio::sync::mpsc::channel(2);
-    let (tx_probe_result, mut rx_probe_result) = tokio::sync::mpsc::channel(2);
-    serial_probe::spawn_serial_probe(rx_probe_request, tx_probe_result);
-
     match &eth_control {
         Some(control) => {
             setup_ethercat(state.clone(), &mut main_state, control).expect("setup_ethercat failed");
@@ -563,15 +489,8 @@ fn main_logic() {
 
         if now.duration_since(last_check) >= hotplug_duration {
             let _ = tx.try_send(());
-            if let Ok(ports) = rx_ports.try_recv() {
-                let candidates = unclaimed_ch340_ports(ports, &main_state);
-                let _ = tx_probe_request.try_send(candidates);
-            }
+            let _ = laser_hotplug(&mut main_state, state.clone(), &mut rx_ports);
             last_check = now;
-        }
-
-        if let Ok(results) = rx_probe_result.try_recv() {
-            apply_probe_results(&mut main_state, state.clone(), results);
         }
 
         match &mut eth_control {
