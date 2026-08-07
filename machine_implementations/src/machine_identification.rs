@@ -115,6 +115,8 @@ impl MachineIdentification {
             x if x == DIGITAL_INPUT_TEST_MACHINE => "digital_input_test_machine".to_string(),
             x if x == WAGO_8CH_IO_TEST_MACHINE => "wago_8ch_io_test_machine".to_string(),
             x if x == TEST_MACHINE_BOTTLECAPS => "bottlecaps_test_machine".to_string(),
+            x if x == MACHINE_DRYER_V1 => "dryer_v1".to_string(),
+            x if x == MACHINE_DRYER_SMART => "dryer_smart".to_string(),
             _ => unreachable!("Unknown machine id {}", self.machine),
         }
     }
@@ -211,6 +213,8 @@ use crate::DIGITAL_INPUT_TEST_MACHINE;
 use crate::IP20_TEST_MACHINE;
 use crate::MACHINE_AQUAPATH_V1;
 use crate::MACHINE_BUFFER_V1;
+use crate::MACHINE_DRYER_SMART;
+use crate::MACHINE_DRYER_V1;
 use crate::MACHINE_EXTRUDER_V1;
 use crate::MACHINE_EXTRUDER_V2;
 use crate::MACHINE_LASER_V1;
