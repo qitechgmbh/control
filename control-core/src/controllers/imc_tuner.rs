@@ -103,10 +103,10 @@ impl Default for ImcTunerConfig {
             steady_band_celsius: 1.0,
             setpoint_band_celsius: 3.0,
             dead_time_threshold_celsius: 1.0,
-            waiting_timeout: Duration::from_secs(600),
-            baseline_timeout: Duration::from_secs(900),
-            step_timeout: Duration::from_secs(2400),
-            max_duration: Duration::from_secs(3600),
+            waiting_timeout: Duration::from_secs(1200),
+            baseline_timeout: Duration::from_secs(1800),
+            step_timeout: Duration::from_secs(4800),
+            max_duration: Duration::from_secs(7200),
         }
     }
 }
