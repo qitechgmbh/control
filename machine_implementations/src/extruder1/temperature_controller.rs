@@ -76,6 +76,13 @@ impl TemperatureController {
         self.disallow_heating();
     }
 
+    /// Temperature rate below which a zone counts as stalled, °C per second (0.3 °C/min).
+    ///
+    /// Well under the ~2-4 °C/min a zone moves at while actively heating, and above the steady
+    /// noise floor. Used for stall-aware integration: a zone that has stopped short of its
+    /// setpoint is allowed to keep integrating, so small tuned gains cannot deadlock below target.
+    const STALL_RATE_C_PER_SECOND: f64 = 0.005;
+
     pub fn new(
         kp: f64,
         ki: f64,
@@ -89,12 +96,17 @@ impl TemperatureController {
         digital_port: usize,
         temperature_port: usize,
     ) -> Self {
+        // The integral needs the full output range: at production temperature a zone can need
+        // 30-50% duty just to hold setpoint, so a narrower clamp would leave permanent offset,
+        // and a non-negative lower bound could never unwind an overshoot. The back-calculation
+        // in PidController is what keeps this safe from windup.
+        let mut pid = PidController::new(kp, ki, kd, -max_clamp, max_clamp);
+        // Without this, IMC-tuned gains (small kp) can settle permanently below setpoint: the
+        // proportional term alone cannot carry the heating load, and the integral would stay
+        // frozen outside the ±5 °C integration band.
+        pid.set_stall_integration(Self::STALL_RATE_C_PER_SECOND);
         Self {
-            // The integral needs the full output range: at production temperature a zone can need
-            // 30-50% duty just to hold setpoint, so a narrower clamp would leave permanent offset,
-            // and a non-negative lower bound could never unwind an overshoot. The back-calculation
-            // in PidController is what keeps this safe from windup.
-            pid: PidController::new(kp, ki, kd, -max_clamp, max_clamp),
+            pid,
             target_temp,
             window_start: Instant::now(),
             heating,

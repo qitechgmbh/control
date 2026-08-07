@@ -570,8 +570,16 @@ impl ExtruderV2 {
             }
         };
         let filter_tc = gains.derivative_filter_tc();
-        self.temperature_controller_mut(zone)
-            .configure_pid(gains.ki, gains.kp, gains.kd, filter_tc);
+        // The duty that was holding the zone at setpoint before the step — measured by the tune
+        // itself, and exactly the standing load the integral must carry from now on.
+        let baseline_duty = self.temperature_tuner.baseline_duty();
+        let controller = self.temperature_controller_mut(zone);
+        controller.configure_pid(gains.ki, gains.kp, gains.kd, filter_tc);
+        // `configure` resets the PID, so without this the output would collapse to the (small)
+        // proportional term alone and the zone would sag far below setpoint while a tiny ki
+        // rebuilds the load over tens of minutes. Seed the integral with the measured load
+        // instead, so regulation continues from where the tune left off.
+        controller.pid.preload_integral(baseline_duty);
         self.emit_state();
     }
 

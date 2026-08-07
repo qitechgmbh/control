@@ -1,8 +1,13 @@
 use std::time::Instant;
 
-/// Band around the setpoint, in error units, inside which the integral is allowed to accumulate.
+/// Default band around the setpoint, in error units, inside which the integral accumulates.
 /// Outside it the accumulator is frozen (not reset), so a large approach does not wind it up.
-const CONDITIONAL_INTEGRATION_BAND: f64 = 5.0;
+const DEFAULT_INTEGRATION_BAND: f64 = 15.0;
+
+/// Time constant of the filter on the measurement rate used for stall detection, in seconds.
+/// Deliberately slow — this signal answers "is the temperature still moving", not "what is the
+/// derivative right now", so lag is fine and noise immunity is everything.
+const STALL_RATE_FILTER_TC: f64 = 5.0;
 
 #[derive(Debug)]
 pub struct PidController {
@@ -34,6 +39,19 @@ pub struct PidController {
     /// Previous measurement, for derivative-on-measurement. `None` until the first such update.
     last_measurement: Option<f64>,
 
+    /// Measurement rate below which the process counts as stalled, in units per second.
+    /// `0.0` disables stall-aware integration, preserving the plain band-freeze behaviour.
+    ///
+    /// The band freeze alone has a failure mode with small gains: if the proportional term cannot
+    /// carry the standing load by itself, the process settles *outside* the band, where the
+    /// integral is frozen — so it can never accumulate the load, and the offset is permanent.
+    /// With a stall threshold set, a process that has stopped moving is allowed to integrate even
+    /// outside the band; as soon as it moves again the freeze returns, so approach windup stays
+    /// suppressed. The result is a ratchet that walks the output up to the standing load.
+    stall_rate_threshold: f64,
+    /// Filtered measurement rate, units per second, used for stall detection.
+    stall_rate: f64,
+
     last: Option<Instant>,
 }
 impl PidController {
@@ -50,6 +68,29 @@ impl PidController {
             i_max,
             derivative_filter_tc: 0.0,
             last_measurement: None,
+            stall_rate_threshold: 0.0,
+            stall_rate: 0.0,
+        }
+    }
+
+    /// Enable stall-aware integration: when the filtered measurement rate is below `threshold`
+    /// (units per second), the integral may accumulate even outside the integration band. Pass
+    /// `0.0` to disable and restore the plain band-freeze behaviour.
+    pub const fn set_stall_integration(&mut self, threshold: f64) {
+        self.stall_rate_threshold = if threshold > 0.0 { threshold } else { 0.0 };
+    }
+
+    /// Seed the integral so that its contribution to the output equals `contribution`.
+    ///
+    /// Used when tuned gains are applied while the process is at its operating point: the standing
+    /// output that was holding it there is known, and starting the integral from zero would drop
+    /// the output to the (small) proportional term alone — collapsing the process away from its
+    /// setpoint and, with a small integral gain, taking tens of minutes to recover.
+    ///
+    /// The contribution is clamped to the integral limits. A no-op while `ki` is zero.
+    pub fn preload_integral(&mut self, contribution: f64) {
+        if self.ki != 0.0 {
+            self.ei = contribution.clamp(self.i_min, self.i_max) / self.ki;
         }
     }
 
@@ -106,13 +147,13 @@ impl PidController {
                 // Calculate error
                 let ep = error;
 
-                // Calculate signal
-                let signal = self.kp * ep;
+                // Calculate signal. The integral is kept, not zeroed: `reset()` already cleared it
+                // unless it was deliberately seeded via `preload_integral`, in which case dropping
+                // it here would collapse the output for exactly the case the preload exists for.
+                let signal = (self.ki * self.ei).clamp(self.i_min, self.i_max) + self.kp * ep;
 
                 // Set values
                 self.ep = ep;
-                self.ei = 0.0;
-
                 self.ed = 0.0;
                 self.last_measurement = measurement;
                 self.last = Some(t);
@@ -134,7 +175,24 @@ impl PidController {
                 // Calculate errors
                 let ep = error;
 
-                let ei = if error.abs() < CONDITIONAL_INTEGRATION_BAND {
+                // Measurement rate for stall detection: d(pv)/dt when the measurement is
+                // available, -d(error)/dt otherwise (identical for a constant setpoint). Filtered
+                // slowly — it answers "is the process still moving", nothing faster.
+                let rate_raw = match (measurement, self.last_measurement) {
+                    (Some(pv), Some(prev)) => (pv - prev) / dt,
+                    _ => -(ep - self.ep) / dt,
+                };
+                let rate_alpha = dt / (STALL_RATE_FILTER_TC + dt);
+                self.stall_rate = rate_alpha.mul_add(rate_raw - self.stall_rate, self.stall_rate);
+
+                // Integrate inside the band, or — when stall-aware integration is enabled —
+                // whenever the process has stopped moving. A stalled process outside the band is
+                // one the proportional term alone cannot bring home; without this the integral
+                // stays frozen out there and the offset is permanent. The moment the process moves
+                // again the freeze returns, so approach windup stays suppressed.
+                let stalled = self.stall_rate_threshold > 0.0
+                    && self.stall_rate.abs() < self.stall_rate_threshold;
+                let ei = if error.abs() < DEFAULT_INTEGRATION_BAND || stalled {
                     ep.mul_add(dt, self.ei)
                 } else {
                     self.ei
@@ -183,6 +241,7 @@ impl PidController {
         self.ep = 0.0;
         self.ei = 0.0;
         self.ed = 0.0;
+        self.stall_rate = 0.0;
         self.last = None;
         self.last_measurement = None;
     }
@@ -359,6 +418,110 @@ mod tests {
         assert!(
             (outside - inside).abs() < 1e-3,
             "integral should freeze, not reset: {inside} -> {outside}"
+        );
+    }
+
+    /// Applying tuned gains at the operating point: the preloaded integral must carry the standing
+    /// output from the very first update, not collapse to the proportional term alone.
+    #[test]
+    fn preloaded_integral_survives_configure_and_first_update() {
+        let mut pid = PidController::new(0.16, 0.0, 0.008, -0.95, 0.95);
+        // Apply IMC-like gains (small kp, tiny ki), then seed with the measured standing load.
+        pid.configure(0.00005, 0.01, 0.0);
+        pid.preload_integral(0.37);
+
+        let t0 = Instant::now();
+        // First update, at setpoint: output should be the standing load, not ~zero.
+        let first = pid.update_with_measurement(0.0, 178.5, t0);
+        assert!(
+            (first - 0.37).abs() < 1e-9,
+            "expected the preloaded standing load, got {first}"
+        );
+        // And it must persist across subsequent updates.
+        let second = pid.update_with_measurement(0.0, 178.5, t0 + Duration::from_millis(100));
+        assert!((second - 0.37).abs() < 1e-6, "got {second}");
+    }
+
+    #[test]
+    fn preload_respects_the_integral_clamp_and_zero_ki() {
+        let mut pid = PidController::new(0.01, 0.00005, 0.0, -0.5, 0.5);
+        pid.preload_integral(0.9); // beyond i_max
+        let signal = pid.update(0.0, Instant::now());
+        assert!((signal - 0.5).abs() < 1e-9, "got {signal}");
+
+        let mut no_ki = PidController::new(0.01, 0.0, 0.0, -0.5, 0.5);
+        no_ki.preload_integral(0.9); // must be a no-op, not a division by zero
+        assert_eq!(no_ki.update(0.0, Instant::now()), 0.0);
+    }
+
+    /// The deadlock this exists for: with a small kp, the process stalls outside the ±5 °C band
+    /// where the plain freeze keeps the integral at zero forever. With stall-aware integration the
+    /// accumulator must grow once the measurement stops moving.
+    #[test]
+    fn stall_integration_unfreezes_a_stalled_process_outside_the_band() {
+        let mut pid = PidController::new(0.01, 0.00005, 0.0, -0.95, 0.95);
+        pid.set_stall_integration(0.005);
+
+        let t0 = Instant::now();
+        let dt = Duration::from_millis(100);
+        // Process stalled 38 °C below setpoint: constant measurement, constant error.
+        let mut signal = 0.0;
+        for i in 0..3000 {
+            signal = pid.update_with_measurement(38.0, 140.0, t0 + dt * i);
+        }
+        let p_only = 0.01 * 38.0;
+        assert!(
+            signal > p_only + 0.05,
+            "integral should accumulate while stalled: signal={signal}, P alone={p_only}"
+        );
+    }
+
+    /// While the process is actually moving toward setpoint, the freeze must stay in force — that
+    /// is the approach-windup protection the band exists for.
+    #[test]
+    fn stall_integration_stays_frozen_while_the_process_moves() {
+        let mut pid = PidController::new(0.01, 0.00005, 0.0, -0.95, 0.95);
+        pid.set_stall_integration(0.005);
+
+        let t0 = Instant::now();
+        let dt = Duration::from_millis(100);
+        // Heating at 3 °C/min — far above the stall threshold — from 100 °C below setpoint.
+        // Skip the first few seconds: the rate filter needs a moment to see the movement.
+        let mut integral_after_warmup = None;
+        let mut last_signal = 0.0;
+        for i in 0..6000_u32 {
+            let pv = 78.5 + f64::from(i) * 0.1 * (3.0 / 60.0);
+            let error = 178.5 - pv;
+            last_signal = pid.update_with_measurement(error, pv, t0 + dt * i);
+            let p = 0.01 * error;
+            if i == 600 {
+                integral_after_warmup = Some(last_signal - p);
+            }
+        }
+        let final_error = 178.5 - (78.5 + 6000.0 * 0.1 * (3.0 / 60.0));
+        let final_integral = last_signal - 0.01 * final_error;
+        let start_integral = integral_after_warmup.unwrap();
+        assert!(
+            (final_integral - start_integral).abs() < 0.01,
+            "integral should stay frozen while moving: {start_integral} -> {final_integral}"
+        );
+    }
+
+    /// With stall integration disabled (the default), behaviour outside the band is the plain
+    /// freeze — this is what keeps aquapath1 unchanged.
+    #[test]
+    fn stall_integration_is_off_by_default() {
+        let mut pid = PidController::new(0.01, 0.00005, 0.0, -0.95, 0.95);
+        let t0 = Instant::now();
+        let dt = Duration::from_millis(100);
+        let mut signal = 0.0;
+        for i in 0..3000 {
+            signal = pid.update_with_measurement(38.0, 140.0, t0 + dt * i);
+        }
+        let p_only = 0.01 * 38.0;
+        assert!(
+            (signal - p_only).abs() < 1e-6,
+            "default must keep the plain freeze: signal={signal}, P alone={p_only}"
         );
     }
 
