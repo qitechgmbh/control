@@ -110,12 +110,26 @@ export type TemperatureAutoTuneTraceData = z.infer<
   typeof temperatureAutoTuneTraceDataSchema
 >;
 
-/** Operator-facing response-speed presets, mapped to the IMC lambda factor. */
+/**
+ * Operator-facing response-speed presets, mapped to the IMC lambda factor.
+ *
+ * The factor sets the closed-loop time constant as `tau_c = lambda * tau`, i.e. how fast the loop
+ * is asked to follow a setpoint change: a step reaches 63% of its target at `theta + tau_c`. Lower
+ * is faster and less robust. The backend still floors `tau_c` at `0.8 * theta` for robustness, so
+ * on a dead-time-dominant zone the fastest settings may collapse onto each other.
+ *
+ * Keys are the factor as a string and must stay non-integer-like ("1.0", not "1") — `SelectionGroup`
+ * renders `Object.entries`, and JS hoists integer-like keys to the front of the iteration order.
+ */
 export const responseSpeeds = [
-  { label: "Aggressive", factor: 0.5 },
-  { label: "Moderate", factor: 1.0 },
-  { label: "Conservative", factor: 2.0 },
+  { key: "0.15", label: "Extremely Aggressive", factor: 0.15 },
+  { key: "0.25", label: "Aggressive", factor: 0.25 },
+  { key: "0.3", label: "Normal", factor: 0.3 },
+  { key: "0.5", label: "Moderate", factor: 0.5 },
+  { key: "1.0", label: "Conservative", factor: 1.0 },
 ] as const;
+
+export type ResponseSpeed = (typeof responseSpeeds)[number]["key"];
 
 /**
  * Reconstruct the fitted FOPDT curve so it can be overlaid on the recorded trace. A visible

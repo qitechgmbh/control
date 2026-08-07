@@ -11,6 +11,8 @@ import {
   TemperatureAutoTuneResult,
   TemperatureAutoTuneState,
   TemperatureAutoTuneTraceData,
+  ResponseSpeed,
+  responseSpeeds,
   tunePhaseLabels,
   TuneZone,
 } from "./temperatureAutoTuneSchema";
@@ -22,13 +24,9 @@ const ZONE_OPTIONS: Record<TuneZone, { children: string }> = {
   nozzle: { children: "Nozzle" },
 };
 
-/** Operator-facing response speed, mapped to the IMC lambda factor. */
-type ResponseSpeed = "0.5" | "1" | "2";
-const SPEED_OPTIONS: Record<ResponseSpeed, { children: string }> = {
-  "0.5": { children: "Aggressive" },
-  "1": { children: "Moderate" },
-  "2": { children: "Conservative" },
-};
+const SPEED_OPTIONS = Object.fromEntries(
+  responseSpeeds.map(({ key, label }) => [key, { children: label }]),
+) as Record<ResponseSpeed, { children: string }>;
 
 type Props = {
   tuneState?: TemperatureAutoTuneState;
@@ -71,7 +69,7 @@ export function TemperatureAutoTunePanel({
   const [zone, setZone] = useState<TuneZone>("middle");
   const [stepDuty, setStepDuty] = useState(10);
   const [maxRise, setMaxRise] = useState(30);
-  const [lambdaFactor, setLambdaFactor] = useState<ResponseSpeed>("1");
+  const [lambdaFactor, setLambdaFactor] = useState<ResponseSpeed>("0.3");
 
   const phase = tuneState?.phase ?? "idle";
   const isRunning = RUNNING_PHASES.includes(phase);
