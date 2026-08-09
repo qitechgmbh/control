@@ -1,14 +1,13 @@
 use super::rewind_control::ArmConfig;
 use super::{
     LASER_PORT, Mode, PULL_MODE_SOURCE_ASSIST_MAX_RPM, PULL_MODE_SOURCE_ASSIST_RPM_PER_M_PER_MIN,
-    PULLER_PORT, RewindPhase, Rewinder, SOURCE_SPOOL_PORT, TAKEUP_SPOOL_PORT,
+    PULLER_PORT, RewindPhase, Rewinder, SOURCE_SPOOL_PORT, TAKEUP_SPOOL_PORT, TraverseStart,
     api::{
         HardStopEvent, LiveValuesEvent, ModeState, PrepareControlState, PullerState,
         RewindAutomaticActionState, RewinderEvents, SourceSpoolState, StateEvent, TakeupSpoolState,
         TensionArmControlState, TensionArmState, TraverseState,
     },
 };
-use crate::winder2::spool_speed_controller::SpoolSpeedControllerType;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use qitech_lib::{
     ethercat_hal::io::digital_output::DigitalOutputDevice,
@@ -68,7 +67,7 @@ impl Rewinder {
                     return;
                 }
 
-                self.save_current_traverse_as_start_position();
+                self.save_current_traverse_as_resume_position();
                 self.request_motion_stop(mode);
                 self.emit_state();
                 return;
@@ -94,7 +93,6 @@ impl Rewinder {
             }
             if entering_pull {
                 self.reset_puller_speed_controller();
-                self.reset_source_spool_speed_controller();
                 self.command_source_spool_zero();
             }
             if entering_prepare {
@@ -148,28 +146,11 @@ impl Rewinder {
     }
 
     pub fn set_laser(&mut self, value: bool) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
         self.laser_enabled = value;
         let mut laser = self.get_laser();
         laser.set_output(LASER_PORT, value);
         drop(laser);
         self.emit_state();
-    }
-
-    pub(crate) fn save_current_traverse_as_start_position(&mut self) {
-        {
-            let traverse = &*self.traverse.borrow();
-            self.traverse_controller.sync_position(traverse);
-        }
-        if let Some(position) = self.traverse_controller.get_current_position() {
-            self.traverse_start_position = self.clamp_traverse_position(position);
-            self.traverse_controller
-                .set_target_position(self.traverse_start_position);
-        }
     }
 
     pub(crate) fn save_current_traverse_as_resume_position(&mut self) {
@@ -217,23 +198,11 @@ impl Rewinder {
 
     fn reset_axis_speed_controllers(&mut self) {
         self.reset_puller_speed_controller();
-        self.reset_takeup_spool_speed_controller();
-        self.reset_source_spool_speed_controller();
     }
 
     fn reset_puller_speed_controller(&mut self) {
         self.puller_speed_controller
             .reset_speed(Velocity::new::<meter_per_minute>(0.0));
-    }
-
-    fn reset_takeup_spool_speed_controller(&mut self) {
-        self.takeup_spool_speed_controller
-            .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
-    }
-
-    fn reset_source_spool_speed_controller(&mut self) {
-        self.source_spool_speed_controller
-            .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
     }
 
     fn command_spools_zero(&mut self) {
@@ -340,43 +309,23 @@ impl Rewinder {
         }
     }
 
-    pub fn sync_takeup_spool_speed(&mut self, t: Instant) {
+    pub fn sync_takeup_spool_speed(&mut self) {
         let angular_velocity = if self.motion_stop_requested() {
             self.rewind_control.takeup_command_angular_velocity()
         } else if self.takeup_spool_motion_permitted() {
-            if matches!(self.mode, Mode::Prepare | Mode::Rewind) {
-                self.rewind_control.takeup_command_angular_velocity()
-            } else {
-                let angular_velocity = self.takeup_spool_speed_controller.update_speed(
-                    t,
-                    &self.takeup_tension_arm,
-                    &self.puller_speed_controller,
-                );
-                angular_velocity
-            }
+            self.rewind_control.takeup_command_angular_velocity()
         } else {
-            let angular_velocity = AngularVelocity::new::<revolution_per_minute>(0.0);
-            self.takeup_spool_speed_controller
-                .set_speed(angular_velocity);
-            angular_velocity
-        };
-        self.takeup_spool_speed_controller
-            .set_speed(angular_velocity);
-
-        let directed_angular_velocity = if self.takeup_spool_speed_controller.get_forward() {
-            angular_velocity
-        } else {
-            -angular_velocity
+            AngularVelocity::new::<revolution_per_minute>(0.0)
         };
 
         let steps_per_second = self
             .takeup_spool_step_converter
-            .angular_velocity_to_steps(directed_angular_velocity);
+            .angular_velocity_to_steps(angular_velocity);
         let takeup_spool = &mut *self.takeup_spool.borrow_mut();
         let _ = takeup_spool.set_speed(TAKEUP_SPOOL_PORT, steps_per_second);
     }
 
-    pub fn sync_source_spool_speed(&mut self, _t: Instant) {
+    pub fn sync_source_spool_speed(&mut self) {
         let angular_velocity = if self.source_spool_motion_permitted() {
             if matches!(self.mode, Mode::Pull) {
                 AngularVelocity::new::<revolution_per_minute>(self.pull_mode_source_assist_rpm())
@@ -386,21 +335,9 @@ impl Rewinder {
         } else {
             AngularVelocity::new::<revolution_per_minute>(0.0)
         };
-        self.source_spool_speed_controller
-            .set_speed(angular_velocity);
-        let source_forward = self.takeup_spool_speed_controller.get_forward();
-        self.source_spool_speed_controller
-            .set_forward(source_forward);
-
-        let directed_angular_velocity = if source_forward {
-            angular_velocity
-        } else {
-            -angular_velocity
-        };
-
         let steps_per_second = self
             .source_spool_step_converter
-            .angular_velocity_to_steps(directed_angular_velocity);
+            .angular_velocity_to_steps(angular_velocity);
         let source_spool = &mut *self.source_spool.borrow_mut();
         let _ = source_spool.set_speed(SOURCE_SPOOL_PORT, steps_per_second);
     }
@@ -507,7 +444,11 @@ impl Rewinder {
                     .get_current_position()
                     .map(|position| position.get::<millimeter>())
                     .unwrap_or_default(),
-                start_position: self.traverse_start_position.get::<millimeter>(),
+                start: self.traverse_start,
+                start_position: self
+                    .configured_traverse_start_position()
+                    .get::<millimeter>(),
+                custom_start_position: self.traverse_start_position.get::<millimeter>(),
                 is_going_in: self.traverse_controller.is_going_in(),
                 is_going_out: self.traverse_controller.is_going_out(),
                 is_going_to_start: self.traverse_controller.is_going_to_target(),
@@ -525,41 +466,14 @@ impl Rewinder {
                     .get::<meter_per_minute>(),
             },
             takeup_spool_state: TakeupSpoolState {
-                regulation_mode: self.takeup_spool_speed_controller.get_type().clone(),
                 diameter_mm: self
                     .takeup_spool_diameter
                     .map(|diameter| diameter.get::<millimeter>()),
-                minmax_min_speed: self
-                    .takeup_spool_speed_controller
-                    .get_minmax_min_speed()
-                    .get::<revolution_per_minute>(),
-                minmax_max_speed: self
-                    .takeup_spool_speed_controller
-                    .get_minmax_max_speed()
-                    .get::<revolution_per_minute>(),
-                adaptive_tension_target: self
-                    .takeup_spool_speed_controller
-                    .get_adaptive_tension_target(),
-                adaptive_radius_learning_rate: self
-                    .takeup_spool_speed_controller
-                    .get_adaptive_radius_learning_rate(),
-                adaptive_max_speed_multiplier: self
-                    .takeup_spool_speed_controller
-                    .get_adaptive_max_speed_multiplier(),
-                adaptive_acceleration_factor: self
-                    .takeup_spool_speed_controller
-                    .get_adaptive_acceleration_factor(),
-                adaptive_deacceleration_urgency_multiplier: self
-                    .takeup_spool_speed_controller
-                    .get_adaptive_deacceleration_urgency_multiplier(),
             },
             source_spool_state: SourceSpoolState {
                 diameter_mm: self
                     .source_spool_diameter
                     .map(|diameter| diameter.get::<millimeter>()),
-                adaptive_tension_target: self
-                    .source_spool_speed_controller
-                    .get_adaptive_tension_target(),
             },
             rewind_automatic_action_state: RewindAutomaticActionState {
                 required_meters: self.rewind_automatic_action.target_length.get::<meter>(),
@@ -600,133 +514,17 @@ impl Rewinder {
         self.emit_state();
     }
 
-    pub fn takeup_spool_set_regulation_mode(&mut self, mode: SpoolSpeedControllerType) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
-        self.takeup_spool_speed_controller.set_type(mode);
-        self.takeup_spool_speed_controller
-            .set_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
-        self.emit_state();
-    }
-
-    pub fn takeup_spool_set_minmax_min_speed(&mut self, speed_rpm: f64) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
-        let speed = AngularVelocity::new::<revolution_per_minute>(speed_rpm);
-        if let Err(e) = self
-            .takeup_spool_speed_controller
-            .set_minmax_min_speed(speed)
-        {
-            tracing::error!("Failed to set takeup spool min speed: {:?}", e);
-        }
-        self.emit_state();
-    }
-
-    pub fn takeup_spool_set_minmax_max_speed(&mut self, speed_rpm: f64) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
-        let speed = AngularVelocity::new::<revolution_per_minute>(speed_rpm);
-        if let Err(e) = self
-            .takeup_spool_speed_controller
-            .set_minmax_max_speed(speed)
-        {
-            tracing::error!("Failed to set takeup spool max speed: {:?}", e);
-        }
-        self.emit_state();
-    }
-
-    pub fn takeup_spool_set_adaptive_tension_target(&mut self, tension_target: f64) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
-        self.takeup_spool_speed_controller
-            .set_adaptive_tension_target(tension_target);
-        self.emit_state();
-    }
-
-    pub fn takeup_spool_set_adaptive_radius_learning_rate(&mut self, value: f64) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
-        self.takeup_spool_speed_controller
-            .set_adaptive_radius_learning_rate(value);
-        self.emit_state();
-    }
-
-    pub fn takeup_spool_set_adaptive_max_speed_multiplier(&mut self, value: f64) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
-        self.takeup_spool_speed_controller
-            .set_adaptive_max_speed_multiplier(value);
-        self.emit_state();
-    }
-
-    pub fn takeup_spool_set_adaptive_acceleration_factor(&mut self, value: f64) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
-        self.takeup_spool_speed_controller
-            .set_adaptive_acceleration_factor(value);
-        self.emit_state();
-    }
-
-    pub fn takeup_spool_set_adaptive_deacceleration_urgency_multiplier(&mut self, value: f64) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
-        self.takeup_spool_speed_controller
-            .set_adaptive_deacceleration_urgency_multiplier(value);
-        self.emit_state();
-    }
-
     pub fn takeup_spool_set_diameter(&mut self, diameter_mm: f64) {
-        if self.spool_diameter_edit_permitted()
-            && diameter_mm.is_finite()
-            && (10.0..=500.0).contains(&diameter_mm)
-        {
+        if diameter_mm.is_finite() && (10.0..=500.0).contains(&diameter_mm) {
             self.takeup_spool_diameter = Some(Length::new::<millimeter>(diameter_mm));
         }
         self.emit_state();
     }
 
     pub fn source_spool_set_diameter(&mut self, diameter_mm: f64) {
-        if self.spool_diameter_edit_permitted()
-            && diameter_mm.is_finite()
-            && (10.0..=500.0).contains(&diameter_mm)
-        {
+        if diameter_mm.is_finite() && (10.0..=500.0).contains(&diameter_mm) {
             self.source_spool_diameter = Some(Length::new::<millimeter>(diameter_mm));
         }
-        self.emit_state();
-    }
-
-    pub fn source_spool_set_adaptive_tension_target(&mut self, tension_target: f64) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
-        self.source_spool_speed_controller
-            .set_adaptive_tension_target(tension_target);
         self.emit_state();
     }
 
@@ -739,11 +537,6 @@ impl Rewinder {
     }
 
     fn set_tension_arm_control(&mut self, source: bool, state: TensionArmControlState) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
         let current = if source {
             self.rewind_control.config.source_arm
         } else {
@@ -764,8 +557,7 @@ impl Rewinder {
     }
 
     pub fn set_prepare_control(&mut self, state: PrepareControlState) {
-        if self.settings_edit_permitted()
-            && (1.0..=20.0).contains(&state.tolerance_angle)
+        if (1.0..=20.0).contains(&state.tolerance_angle)
             && (0.1..=30.0).contains(&state.settle_rate)
         {
             self.rewind_control.config.prepare.settle_tolerance_deg = state.tolerance_angle;
@@ -774,13 +566,8 @@ impl Rewinder {
         self.emit_state();
     }
 
-    fn settings_edit_permitted(&self) -> bool {
+    fn tension_arm_zero_permitted(&self) -> bool {
         matches!(self.mode, Mode::Standby | Mode::Hold) && !self.motion_stop_requested()
-    }
-
-    fn spool_diameter_edit_permitted(&self) -> bool {
-        matches!(self.mode, Mode::Standby | Mode::Hold | Mode::Prepare)
-            && !self.motion_stop_requested()
     }
 
     fn manual_traverse_command_permitted(&self) -> bool {
@@ -790,7 +577,7 @@ impl Rewinder {
     }
 
     pub fn takeup_tension_arm_zero(&mut self) {
-        if !self.settings_edit_permitted() {
+        if !self.tension_arm_zero_permitted() {
             self.emit_state();
             return;
         }
@@ -801,7 +588,7 @@ impl Rewinder {
     }
 
     pub fn source_tension_arm_zero(&mut self) {
-        if !self.settings_edit_permitted() {
+        if !self.tension_arm_zero_permitted() {
             self.emit_state();
             return;
         }
@@ -812,11 +599,6 @@ impl Rewinder {
     }
 
     pub fn traverse_set_limit_inner(&mut self, limit: f64) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
         let new_inner = Length::new::<millimeter>(limit);
         let current_outer = self.traverse_controller.get_limit_outer();
         if Self::validate_traverse_limits(new_inner, current_outer) {
@@ -826,18 +608,11 @@ impl Rewinder {
             self.resume_traverse_position = self
                 .resume_traverse_position
                 .map(|position| self.clamp_traverse_position(position));
-            self.traverse_controller
-                .set_target_position(self.traverse_start_position);
         }
         self.emit_state();
     }
 
     pub fn traverse_set_limit_outer(&mut self, limit: f64) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
         let new_outer = Length::new::<millimeter>(limit);
         let current_inner = self.traverse_controller.get_limit_inner();
         if Self::validate_traverse_limits(current_inner, new_outer) {
@@ -847,43 +622,31 @@ impl Rewinder {
             self.resume_traverse_position = self
                 .resume_traverse_position
                 .map(|position| self.clamp_traverse_position(position));
-            self.traverse_controller
-                .set_target_position(self.traverse_start_position);
         }
+        self.emit_state();
+    }
+
+    pub fn traverse_set_start(&mut self, start: TraverseStart) {
+        self.traverse_start = start;
+        self.resume_traverse_position = None;
         self.emit_state();
     }
 
     pub fn traverse_set_start_position(&mut self, position: f64) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
         let position = Length::new::<millimeter>(position);
         self.traverse_start_position = self.clamp_traverse_position(position);
+        self.traverse_start = TraverseStart::Custom;
         self.resume_traverse_position = None;
-        self.traverse_controller
-            .set_target_position(self.traverse_start_position);
         self.emit_state();
     }
 
     pub fn traverse_set_step_size(&mut self, step_size: f64) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
         self.traverse_controller
             .set_step_size(Length::new::<millimeter>(step_size));
         self.emit_state();
     }
 
     pub fn traverse_set_padding(&mut self, padding: f64) {
-        if !self.settings_edit_permitted() {
-            self.emit_state();
-            return;
-        }
-
         self.traverse_controller
             .set_padding(Length::new::<millimeter>(padding));
         self.emit_state();
@@ -917,7 +680,7 @@ impl Rewinder {
 
         self.resume_traverse_position = None;
         self.traverse_controller
-            .set_target_position(self.traverse_start_position);
+            .set_target_position(self.configured_traverse_start_position());
         self.traverse_controller.goto_target_position();
         self.emit_state();
     }

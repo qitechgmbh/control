@@ -28,7 +28,6 @@ impl Rewinder {
                 }
                 TakeupSpoolMode::Drive => {
                     spool.set_enabled(TAKEUP_SPOOL_PORT, true);
-                    self.takeup_spool_speed_controller.set_enabled(true);
                 }
             },
             TakeupSpoolMode::Hold => match mode {
@@ -36,18 +35,13 @@ impl Rewinder {
                     spool.set_enabled(TAKEUP_SPOOL_PORT, false);
                 }
                 TakeupSpoolMode::Hold => {}
-                TakeupSpoolMode::Drive => {
-                    self.takeup_spool_speed_controller.set_enabled(true);
-                }
+                TakeupSpoolMode::Drive => {}
             },
             TakeupSpoolMode::Drive => match mode {
                 TakeupSpoolMode::Standby => {
                     spool.set_enabled(TAKEUP_SPOOL_PORT, false);
-                    self.takeup_spool_speed_controller.set_enabled(false);
                 }
-                TakeupSpoolMode::Hold => {
-                    self.takeup_spool_speed_controller.set_enabled(false);
-                }
+                TakeupSpoolMode::Hold => {}
                 TakeupSpoolMode::Drive => {}
             },
         }
@@ -68,7 +62,6 @@ impl Rewinder {
                 }
                 SourceSpoolMode::Drive => {
                     spool.set_enabled(SOURCE_SPOOL_PORT, true);
-                    self.source_spool_speed_controller.set_enabled(true);
                 }
             },
             SourceSpoolMode::Hold => match mode {
@@ -76,18 +69,13 @@ impl Rewinder {
                     spool.set_enabled(SOURCE_SPOOL_PORT, false);
                 }
                 SourceSpoolMode::Hold => {}
-                SourceSpoolMode::Drive => {
-                    self.source_spool_speed_controller.set_enabled(true);
-                }
+                SourceSpoolMode::Drive => {}
             },
             SourceSpoolMode::Drive => match mode {
                 SourceSpoolMode::Standby => {
                     spool.set_enabled(SOURCE_SPOOL_PORT, false);
-                    self.source_spool_speed_controller.set_enabled(false);
                 }
-                SourceSpoolMode::Hold => {
-                    self.source_spool_speed_controller.set_enabled(false);
-                }
+                SourceSpoolMode::Hold => {}
                 SourceSpoolMode::Drive => {}
             },
         }

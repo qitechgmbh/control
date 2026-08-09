@@ -36,14 +36,12 @@ export function RewinderControlPage() {
     isLoading,
     isDisabled,
     motionStopped,
-    progressResetPermitted,
     setMode,
     setPullerTargetSpeed,
     zeroTakeupTensionArm,
     zeroSourceTensionArm,
     setTraverseLimitInner,
     setTraverseLimitOuter,
-    setTraverseStartPosition,
     gotoTraverseHome,
     gotoTraverseLimitInner,
     gotoTraverseLimitOuter,
@@ -69,8 +67,6 @@ export function RewinderControlPage() {
 
   const mode = state?.mode_state.mode;
   const isReady = state?.mode_state.can_rewind === true;
-  const settingsEditable =
-    motionStopped && (mode === "Standby" || mode === "Hold");
   const commandsDisabled = isDisabled || isLoading;
   const manualTraverseAllowed =
     mode === "Hold" && motionStopped && state?.traverse_state.is_homed === true;
@@ -83,12 +79,16 @@ export function RewinderControlPage() {
       mode !== "Rewind" &&
       tensionArmsZeroed,
     canRewind: !commandsDisabled && isReady,
-    canEditSettings: !commandsDisabled && settingsEditable,
+    canEditSettings: !commandsDisabled,
+    canZeroTensionArms:
+      !commandsDisabled &&
+      motionStopped &&
+      (mode === "Standby" || mode === "Hold"),
     canEditMotion: !commandsDisabled,
     canMoveTraverse: !commandsDisabled && manualTraverseAllowed,
     canHomeTraverse: !commandsDisabled && motionStopped && mode === "Hold",
     canHardStop: !commandsDisabled && mode === "Rewind",
-    canResetProgress: !commandsDisabled && progressResetPermitted,
+    canResetProgress: !commandsDisabled,
   };
   const requiredMeters =
     state?.rewind_automatic_action_state.required_meters ?? 0;
@@ -217,7 +217,7 @@ export function RewinderControlPage() {
             variant="outline"
             icon="lu:RotateCcw"
             onClick={zeroTensionArms}
-            disabled={!uiGuards.canEditSettings}
+            disabled={!uiGuards.canZeroTensionArms}
             isLoading={isLoading}
           >
             Zero Tension Arms
@@ -331,19 +331,9 @@ export function RewinderControlPage() {
           </Label>
           <Label label="Start Position">
             <div className="flex items-center gap-2">
-              <div className="min-w-0 flex-1">
-                <EditValue
-                  value={state?.traverse_state.start_position}
-                  unit="mm"
-                  title="Start Position"
-                  defaultValue={defaultState?.traverse_state.start_position}
-                  min={state?.traverse_state.limit_inner ?? 0}
-                  max={state?.traverse_state.limit_outer ?? TRAVERSE_MAX_MM}
-                  disabled={!uiGuards.canEditSettings}
-                  renderValue={(value) => roundToDecimals(value, 0)}
-                  onChange={setTraverseStartPosition}
-                />
-              </div>
+              <span className="min-w-0 flex-1">
+                {state?.traverse_state.start_position.toFixed(0) ?? "--"} mm
+              </span>
               <TouchButton
                 variant="outline"
                 icon="lu:MapPin"

@@ -12,9 +12,6 @@ const DEFAULT_SPOOL_DIAMETER_MM = 100;
 const MIN_SPOOL_DIAMETER_MM = 10;
 const MAX_SPOOL_DIAMETER_MM = 500;
 
-const MIN_RATIO = 0;
-const MAX_RATIO = 1;
-
 const MIN_ARM_MIN_ANGLE_DEG = -45;
 const MAX_ARM_MIN_ANGLE_DEG = 120;
 const MIN_ARM_MAX_ANGLE_DEG = -45;
@@ -32,30 +29,17 @@ export function RewinderSettingsPage() {
     isDisabled,
     isLoading,
     settingsEditPermitted,
-    spoolDiameterEditPermitted,
-    prepareSettingsEditPermitted,
     setTraverseStepSize,
     setTraversePadding,
-    setTakeupSpoolRegulationMode,
-    setTakeupSpoolMinMaxMinSpeed,
-    setTakeupSpoolMinMaxMaxSpeed,
-    setTakeupTensionTarget,
-    setTakeupSpoolAdaptiveRadiusLearningRate,
-    setTakeupSpoolAdaptiveMaxSpeedMultiplier,
-    setTakeupSpoolAdaptiveAccelerationFactor,
-    setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier,
+    setTraverseStart,
+    setTraverseStartPosition,
     setTakeupSpoolDiameter,
     setSourceSpoolDiameter,
-    setSourceTensionTarget,
     setTakeupTensionArmControl,
     setSourceTensionArmControl,
     setPrepareControl,
   } = useRewinder();
   const settingsDisabled = isDisabled || isLoading || !settingsEditPermitted;
-  const spoolDiameterDisabled =
-    isDisabled || isLoading || !spoolDiameterEditPermitted;
-  const prepareSettingsDisabled =
-    isDisabled || isLoading || !prepareSettingsEditPermitted;
 
   return (
     <Page>
@@ -72,7 +56,7 @@ export function RewinderSettingsPage() {
               step={1}
               min={MIN_SPOOL_DIAMETER_MM}
               max={MAX_SPOOL_DIAMETER_MM}
-              disabled={spoolDiameterDisabled}
+              disabled={settingsDisabled}
               defaultValue={
                 defaultState?.takeup_spool_state.diameter_mm ??
                 DEFAULT_SPOOL_DIAMETER_MM
@@ -86,150 +70,6 @@ export function RewinderSettingsPage() {
               </span>
             ) : null}
           </Label>
-          <Label label="Speed Algorithm">
-            <SelectionGroup
-              value={state?.takeup_spool_state.regulation_mode}
-              disabled={settingsDisabled}
-              loading={isLoading}
-              options={{
-                Adaptive: { children: "Adaptive", icon: "lu:Brain" },
-                MinMax: { children: "Min/Max", icon: "lu:ArrowUpDown" },
-              }}
-              onChange={(value) =>
-                setTakeupSpoolRegulationMode(value as "Adaptive" | "MinMax")
-              }
-            />
-          </Label>
-
-          {state?.takeup_spool_state.regulation_mode === "Adaptive" && (
-            <div className="flex flex-row flex-wrap gap-4">
-              <Label label="Tension Target">
-                <EditValue
-                  value={state?.takeup_spool_state.adaptive_tension_target}
-                  title="Takeup Tension Target"
-                  step={0.01}
-                  min={MIN_RATIO}
-                  max={MAX_RATIO}
-                  disabled={settingsDisabled}
-                  defaultValue={
-                    defaultState?.takeup_spool_state.adaptive_tension_target
-                  }
-                  renderValue={(value) => roundToDecimals(value, 2)}
-                  onChange={setTakeupTensionTarget}
-                />
-              </Label>
-              <Label label="Learning Rate">
-                <EditValue
-                  value={
-                    state?.takeup_spool_state.adaptive_radius_learning_rate
-                  }
-                  title="Radius Learning Rate"
-                  step={0.001}
-                  min={0}
-                  max={100}
-                  disabled={settingsDisabled}
-                  defaultValue={
-                    defaultState?.takeup_spool_state
-                      .adaptive_radius_learning_rate
-                  }
-                  renderValue={(value) => roundToDecimals(value, 3)}
-                  onChange={setTakeupSpoolAdaptiveRadiusLearningRate}
-                />
-              </Label>
-              <Label label="Max Speed Multiplier">
-                <EditValue
-                  value={
-                    state?.takeup_spool_state.adaptive_max_speed_multiplier
-                  }
-                  title="Max Speed Multiplier"
-                  step={0.1}
-                  min={0.1}
-                  max={10}
-                  disabled={settingsDisabled}
-                  defaultValue={
-                    defaultState?.takeup_spool_state
-                      .adaptive_max_speed_multiplier
-                  }
-                  renderValue={(value) => roundToDecimals(value, 1)}
-                  onChange={setTakeupSpoolAdaptiveMaxSpeedMultiplier}
-                />
-              </Label>
-              <Label label="Acceleration Factor">
-                <EditValue
-                  value={state?.takeup_spool_state.adaptive_acceleration_factor}
-                  title="Acceleration Factor"
-                  step={0.01}
-                  min={0.01}
-                  max={100}
-                  disabled={settingsDisabled}
-                  defaultValue={
-                    defaultState?.takeup_spool_state
-                      .adaptive_acceleration_factor
-                  }
-                  renderValue={(value) => roundToDecimals(value, 2)}
-                  onChange={setTakeupSpoolAdaptiveAccelerationFactor}
-                />
-              </Label>
-              <Label label="Deaccel. Urgency">
-                <EditValue
-                  value={
-                    state?.takeup_spool_state
-                      .adaptive_deacceleration_urgency_multiplier
-                  }
-                  title="Deacceleration Urgency"
-                  step={0.5}
-                  min={1}
-                  max={100}
-                  disabled={settingsDisabled}
-                  defaultValue={
-                    defaultState?.takeup_spool_state
-                      .adaptive_deacceleration_urgency_multiplier
-                  }
-                  renderValue={(value) => roundToDecimals(value, 1)}
-                  onChange={
-                    setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier
-                  }
-                />
-              </Label>
-            </div>
-          )}
-
-          {state?.takeup_spool_state.regulation_mode === "MinMax" && (
-            <div className="flex flex-row flex-wrap gap-4">
-              <Label label="Min Speed">
-                <EditValue
-                  value={state?.takeup_spool_state.minmax_min_speed}
-                  title="Takeup Min Speed"
-                  unit="rpm"
-                  step={1}
-                  min={0}
-                  max={120}
-                  disabled={settingsDisabled}
-                  defaultValue={
-                    defaultState?.takeup_spool_state.minmax_min_speed
-                  }
-                  renderValue={(value) => roundToDecimals(value, 0)}
-                  onChange={setTakeupSpoolMinMaxMinSpeed}
-                />
-              </Label>
-              <Label label="Max Speed">
-                <EditValue
-                  value={state?.takeup_spool_state.minmax_max_speed}
-                  title="Takeup Max Speed"
-                  unit="rpm"
-                  step={1}
-                  min={5}
-                  max={180}
-                  disabled={settingsDisabled}
-                  defaultValue={
-                    defaultState?.takeup_spool_state.minmax_max_speed
-                  }
-                  renderValue={(value) => roundToDecimals(value, 0)}
-                  onChange={setTakeupSpoolMinMaxMaxSpeed}
-                />
-              </Label>
-            </div>
-          )}
         </ControlCard>
 
         <ControlCard title="Source Spool">
@@ -245,7 +85,7 @@ export function RewinderSettingsPage() {
                 step={1}
                 min={MIN_SPOOL_DIAMETER_MM}
                 max={MAX_SPOOL_DIAMETER_MM}
-                disabled={spoolDiameterDisabled}
+                disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.source_spool_state.diameter_mm ??
                   DEFAULT_SPOOL_DIAMETER_MM
@@ -258,21 +98,6 @@ export function RewinderSettingsPage() {
                   Not set yet. Confirm for better source feed-forward.
                 </span>
               ) : null}
-            </Label>
-            <Label label="Tension Target">
-              <EditValue
-                value={state?.source_spool_state.adaptive_tension_target}
-                title="Source Tension Target"
-                step={0.01}
-                min={MIN_RATIO}
-                max={MAX_RATIO}
-                disabled={settingsDisabled}
-                defaultValue={
-                  defaultState?.source_spool_state.adaptive_tension_target
-                }
-                renderValue={(value) => roundToDecimals(value, 2)}
-                onChange={setSourceTensionTarget}
-              />
             </Label>
           </div>
         </ControlCard>
@@ -477,7 +302,7 @@ export function RewinderSettingsPage() {
                 step={0.5}
                 min={MIN_PREPARE_TOLERANCE_DEG}
                 max={MAX_PREPARE_TOLERANCE_DEG}
-                disabled={prepareSettingsDisabled}
+                disabled={settingsDisabled}
                 defaultValue={
                   defaultState?.prepare_control_state.tolerance_angle
                 }
@@ -495,7 +320,7 @@ export function RewinderSettingsPage() {
                 step={0.5}
                 min={MIN_PREPARE_RATE_DEG_PER_S}
                 max={MAX_PREPARE_RATE_DEG_PER_S}
-                disabled={prepareSettingsDisabled}
+                disabled={settingsDisabled}
                 defaultValue={defaultState?.prepare_control_state.settle_rate}
                 renderValue={(value) => roundToDecimals(value, 1)}
                 onChange={(value) => setPrepareControl("settle_rate", value)}
@@ -505,6 +330,40 @@ export function RewinderSettingsPage() {
         </ControlCard>
 
         <ControlCard title="Traverse">
+          <Label label="Start Side">
+            <SelectionGroup
+              value={state?.traverse_state.start}
+              disabled={settingsDisabled}
+              loading={isLoading}
+              options={{
+                Left: { children: "Left Side", icon: "lu:ArrowLeftToLine" },
+                Right: {
+                  children: "Right Side",
+                  icon: "lu:ArrowRightToLine",
+                },
+                Custom: { children: "Custom", icon: "lu:MapPin" },
+              }}
+              onChange={setTraverseStart}
+            />
+          </Label>
+          {state?.traverse_state.start === "Custom" ? (
+            <Label label="Custom Start">
+              <EditValue
+                value={state.traverse_state.custom_start_position}
+                title="Custom Start Position"
+                unit="mm"
+                step={1}
+                min={state.traverse_state.limit_inner}
+                max={state.traverse_state.limit_outer}
+                disabled={settingsDisabled}
+                defaultValue={
+                  defaultState?.traverse_state.custom_start_position
+                }
+                renderValue={(value) => roundToDecimals(value, 0)}
+                onChange={setTraverseStartPosition}
+              />
+            </Label>
+          ) : null}
           <Label label="Step Size">
             <EditValue
               value={state?.traverse_state.step_size}

@@ -1,4 +1,3 @@
-use crate::winder2::spool_speed_controller::SpoolSpeedControllerType;
 use crate::{MachineApi, MachineMessage, MachineValues};
 use control_core::socketio::{
     event::{Event, GenericEvent},
@@ -11,23 +10,14 @@ use serde_json::Value;
 use std::sync::Arc;
 use tracing::instrument;
 
-use super::Mode;
+use super::{Mode, TraverseStart};
 
 #[derive(Deserialize, Serialize)]
 pub enum Mutation {
     SetMode(Mode),
     SetPullerTargetSpeed(f64),
-    SetTakeupSpoolRegulationMode(SpoolSpeedControllerType),
-    SetTakeupSpoolMinMaxMinSpeed(f64),
-    SetTakeupSpoolMinMaxMaxSpeed(f64),
-    SetTakeupTensionTarget(f64),
-    SetTakeupSpoolAdaptiveRadiusLearningRate(f64),
-    SetTakeupSpoolAdaptiveMaxSpeedMultiplier(f64),
-    SetTakeupSpoolAdaptiveAccelerationFactor(f64),
-    SetTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier(f64),
     SetTakeupSpoolDiameter(f64),
     SetSourceSpoolDiameter(f64),
-    SetSourceTensionTarget(f64),
     SetTakeupTensionArmControl(TensionArmControlState),
     SetSourceTensionArmControl(TensionArmControlState),
     SetPrepareControl(PrepareControlState),
@@ -39,6 +29,7 @@ pub enum Mutation {
     ZeroSourceTensionArm,
     SetTraverseLimitOuter(f64),
     SetTraverseLimitInner(f64),
+    SetTraverseStart(TraverseStart),
     SetTraverseStartPosition(f64),
     SetTraverseStepSize(f64),
     SetTraversePadding(f64),
@@ -120,7 +111,9 @@ pub struct TraverseState {
     pub limit_outer: f64,
     pub position_in: f64,
     pub position_out: f64,
+    pub start: TraverseStart,
     pub start_position: f64,
+    pub custom_start_position: f64,
     pub is_going_in: bool,
     pub is_going_out: bool,
     pub is_going_to_start: bool,
@@ -139,21 +132,12 @@ pub struct PullerState {
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct TakeupSpoolState {
-    pub regulation_mode: SpoolSpeedControllerType,
     pub diameter_mm: Option<f64>,
-    pub minmax_min_speed: f64,
-    pub minmax_max_speed: f64,
-    pub adaptive_tension_target: f64,
-    pub adaptive_radius_learning_rate: f64,
-    pub adaptive_max_speed_multiplier: f64,
-    pub adaptive_acceleration_factor: f64,
-    pub adaptive_deacceleration_urgency_multiplier: f64,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct SourceSpoolState {
     pub diameter_mm: Option<f64>,
-    pub adaptive_tension_target: f64,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, Default)]
@@ -240,35 +224,8 @@ impl MachineApi for super::Rewinder {
         match mutation {
             Mutation::SetMode(mode) => self.set_mode(&mode),
             Mutation::SetPullerTargetSpeed(speed) => self.puller_set_target_speed(speed),
-            Mutation::SetTakeupSpoolRegulationMode(mode) => {
-                self.takeup_spool_set_regulation_mode(mode)
-            }
-            Mutation::SetTakeupSpoolMinMaxMinSpeed(speed) => {
-                self.takeup_spool_set_minmax_min_speed(speed)
-            }
-            Mutation::SetTakeupSpoolMinMaxMaxSpeed(speed) => {
-                self.takeup_spool_set_minmax_max_speed(speed)
-            }
-            Mutation::SetTakeupTensionTarget(target) => {
-                self.takeup_spool_set_adaptive_tension_target(target)
-            }
-            Mutation::SetTakeupSpoolAdaptiveRadiusLearningRate(value) => {
-                self.takeup_spool_set_adaptive_radius_learning_rate(value)
-            }
-            Mutation::SetTakeupSpoolAdaptiveMaxSpeedMultiplier(value) => {
-                self.takeup_spool_set_adaptive_max_speed_multiplier(value)
-            }
-            Mutation::SetTakeupSpoolAdaptiveAccelerationFactor(value) => {
-                self.takeup_spool_set_adaptive_acceleration_factor(value)
-            }
-            Mutation::SetTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier(value) => {
-                self.takeup_spool_set_adaptive_deacceleration_urgency_multiplier(value)
-            }
             Mutation::SetTakeupSpoolDiameter(value) => self.takeup_spool_set_diameter(value),
             Mutation::SetSourceSpoolDiameter(value) => self.source_spool_set_diameter(value),
-            Mutation::SetSourceTensionTarget(target) => {
-                self.source_spool_set_adaptive_tension_target(target)
-            }
             Mutation::SetTakeupTensionArmControl(config) => {
                 self.set_takeup_tension_arm_control(config)
             }
@@ -286,6 +243,7 @@ impl MachineApi for super::Rewinder {
             Mutation::ZeroSourceTensionArm => self.source_tension_arm_zero(),
             Mutation::SetTraverseLimitOuter(limit) => self.traverse_set_limit_outer(limit),
             Mutation::SetTraverseLimitInner(limit) => self.traverse_set_limit_inner(limit),
+            Mutation::SetTraverseStart(start) => self.traverse_set_start(start),
             Mutation::SetTraverseStartPosition(position) => {
                 self.traverse_set_start_position(position)
             }

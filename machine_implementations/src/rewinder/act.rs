@@ -20,8 +20,8 @@ impl Machine for Rewinder {
 
         self.update_motion_stop(now);
         self.sync_puller_speed(now);
-        self.sync_takeup_spool_speed(now);
-        self.sync_source_spool_speed(now);
+        self.sync_takeup_spool_speed();
+        self.sync_source_spool_speed();
         self.sync_traverse_speed();
         self.stop_or_pull_rewind(now);
 

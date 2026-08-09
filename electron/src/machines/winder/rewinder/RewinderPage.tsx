@@ -15,16 +15,16 @@ export function RewinderPage() {
           icon: "lu:CirclePlay",
         },
         {
-          link: "settings",
-          activeLink: "settings",
-          title: "Settings",
-          icon: "lu:Settings",
-        },
-        {
           link: "graphs",
           activeLink: "graphs",
           title: "Graphs",
           icon: "lu:ChartLine",
+        },
+        {
+          link: "settings",
+          activeLink: "settings",
+          title: "Settings",
+          icon: "lu:Settings",
         },
         {
           link: "presets",

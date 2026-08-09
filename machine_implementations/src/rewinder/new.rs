@@ -25,8 +25,6 @@ use qitech_lib::{
         shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration},
     },
     units::{
-        angle::degree,
-        angular_velocity::revolution_per_minute,
         f64::*,
         length::{centimeter, millimeter},
         velocity::meter_per_minute,
@@ -130,24 +128,6 @@ impl MachineNew for Rewinder {
 
         let (api_sender, api_receiver) = tokio::sync::mpsc::channel(2);
 
-        let mut source_spool_speed_controller =
-            super::SpoolSpeedController::new_with_tension_range_and_response(
-                Angle::new::<degree>(super::rewind_control::ArmConfig::SOURCE.hard_max_deg),
-                Angle::new::<degree>(super::rewind_control::ArmConfig::SOURCE.hard_min_deg),
-                crate::winder2::spool_speed_controller::SpoolTensionResponse::Source,
-            );
-        source_spool_speed_controller.set_adaptive_tension_target(0.70);
-        source_spool_speed_controller.set_adaptive_radius_learning_rate(0.15);
-        source_spool_speed_controller.set_adaptive_max_speed_multiplier(2.0);
-        source_spool_speed_controller.set_adaptive_acceleration_factor(0.05);
-        source_spool_speed_controller.set_adaptive_deacceleration_urgency_multiplier(20.0);
-
-        let mut takeup_spool_speed_controller = super::SpoolSpeedController::new();
-        let _ = takeup_spool_speed_controller
-            .set_minmax_min_speed(AngularVelocity::new::<revolution_per_minute>(0.0));
-        let _ = takeup_spool_speed_controller
-            .set_minmax_max_speed(AngularVelocity::new::<revolution_per_minute>(90.0));
-
         let mut rewinder = Self {
             api_receiver,
             api_sender,
@@ -171,8 +151,6 @@ impl MachineNew for Rewinder {
                 Velocity::new::<meter_per_minute>(1.0),
                 LinearStepConverter::from_diameter(200, Length::new::<centimeter>(8.0)),
             ),
-            takeup_spool_speed_controller,
-            source_spool_speed_controller,
             takeup_spool_step_converter: AngularStepConverter::new(200),
             source_spool_step_converter: AngularStepConverter::new(200),
             traverse_controller: super::TraverseController::new(
@@ -180,6 +158,7 @@ impl MachineNew for Rewinder {
                 Length::new::<millimeter>(92.0),
                 64,
             ),
+            traverse_start: super::TraverseStart::Left,
             traverse_start_position: Length::new::<millimeter>(92.0),
             resume_traverse_position: None,
             takeup_spool_diameter: None,

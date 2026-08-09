@@ -1,20 +1,22 @@
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { toastError } from "@/components/Toast";
+import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { rewinder } from "@/machines/properties";
 import { rewinderSerialRoute } from "@/routes/routes";
-import { useMemo } from "react";
+import { produce } from "immer";
+import { useEffect, useMemo } from "react";
 import { z } from "zod";
 import {
   Mode,
   RewindAutomaticActionMode,
-  SpoolRegulationMode,
   StateEvent,
+  TraverseStart,
   modeSchema,
   prepareControlStateSchema,
   rewindAutomaticActionModeSchema,
-  spoolRegulationModeSchema,
   tensionArmControlStateSchema,
+  traverseStartSchema,
   useRewinderNamespace,
 } from "./rewinderNamespace";
 
@@ -57,51 +59,25 @@ export function useRewinder() {
     rewindProgress,
   } = useRewinderNamespace(machineIdentification);
 
+  const stateOptimistic = useStateOptimistic<StateEvent>();
+
+  useEffect(() => {
+    if (state) {
+      stateOptimistic.setReal(state);
+    }
+  }, [state]);
+
   const { request: requestModeSet } = useMachineMutation(
     z.object({ SetMode: modeSchema }),
   );
   const { request: requestPullerSetTargetSpeed } = useMachineMutation(
     z.object({ SetPullerTargetSpeed: z.number() }),
   );
-  const { request: requestTakeupSpoolSetRegulationMode } = useMachineMutation(
-    z.object({ SetTakeupSpoolRegulationMode: spoolRegulationModeSchema }),
-  );
-  const { request: requestTakeupSpoolSetMinMaxMinSpeed } = useMachineMutation(
-    z.object({ SetTakeupSpoolMinMaxMinSpeed: z.number() }),
-  );
-  const { request: requestTakeupSpoolSetMinMaxMaxSpeed } = useMachineMutation(
-    z.object({ SetTakeupSpoolMinMaxMaxSpeed: z.number() }),
-  );
-  const { request: requestTakeupTensionTarget } = useMachineMutation(
-    z.object({ SetTakeupTensionTarget: z.number() }),
-  );
-  const { request: requestTakeupSpoolSetAdaptiveRadiusLearningRate } =
-    useMachineMutation(
-      z.object({ SetTakeupSpoolAdaptiveRadiusLearningRate: z.number() }),
-    );
-  const { request: requestTakeupSpoolSetAdaptiveMaxSpeedMultiplier } =
-    useMachineMutation(
-      z.object({ SetTakeupSpoolAdaptiveMaxSpeedMultiplier: z.number() }),
-    );
-  const { request: requestTakeupSpoolSetAdaptiveAccelerationFactor } =
-    useMachineMutation(
-      z.object({ SetTakeupSpoolAdaptiveAccelerationFactor: z.number() }),
-    );
-  const {
-    request: requestTakeupSpoolSetAdaptiveDeaccelerationUrgencyMultiplier,
-  } = useMachineMutation(
-    z.object({
-      SetTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier: z.number(),
-    }),
-  );
   const { request: requestTakeupSpoolSetDiameter } = useMachineMutation(
     z.object({ SetTakeupSpoolDiameter: z.number() }),
   );
   const { request: requestSourceSpoolSetDiameter } = useMachineMutation(
     z.object({ SetSourceSpoolDiameter: z.number() }),
-  );
-  const { request: requestSourceTensionTarget } = useMachineMutation(
-    z.object({ SetSourceTensionTarget: z.number() }),
   );
   const { request: requestSetTakeupTensionArmControl } = useMachineMutation(
     z.object({ SetTakeupTensionArmControl: tensionArmControlStateSchema }),
@@ -140,6 +116,9 @@ export function useRewinder() {
   const { request: requestTraverseSetStartPosition } = useMachineMutation(
     z.object({ SetTraverseStartPosition: z.number() }),
   );
+  const { request: requestTraverseSetStart } = useMachineMutation(
+    z.object({ SetTraverseStart: traverseStartSchema }),
+  );
   const { request: requestTraverseSetStepSize } = useMachineMutation(
     z.object({ SetTraverseStepSize: z.number() }),
   );
@@ -167,22 +146,21 @@ export function useRewinder() {
     data,
   });
 
-  const stateData = state?.data;
+  const updateStateOptimistically = (
+    producer: (current: StateEvent) => void,
+    serverRequest: () => unknown | Promise<unknown>,
+  ) => {
+    const currentState = stateOptimistic.value;
+    if (currentState && !stateOptimistic.isOptimistic) {
+      stateOptimistic.setOptimistic(produce(currentState, producer));
+    }
+    void serverRequest();
+  };
+
+  const stateData = stateOptimistic.value?.data;
   const currentMode = stateData?.mode_state.mode;
   const motionStopped = stateData?.mode_state.motion_stopped !== false;
-  const settingsEditPermitted =
-    motionStopped && (currentMode === "Standby" || currentMode === "Hold");
-  const spoolDiameterEditPermitted =
-    motionStopped &&
-    (currentMode === "Standby" ||
-      currentMode === "Hold" ||
-      currentMode === "Prepare");
-  const prepareSettingsEditPermitted =
-    motionStopped && (currentMode === "Standby" || currentMode === "Hold");
-  const progressResetPermitted =
-    currentMode === "Standby" ||
-    currentMode === "Hold" ||
-    currentMode === "Rewind";
+  const settingsEditPermitted = stateData != null;
   const manualTraversePermitted =
     currentMode === "Hold" &&
     motionStopped &&
@@ -209,126 +187,55 @@ export function useRewinder() {
       return;
     }
 
-    void requestModeSet(withMachine({ SetMode: mode }));
+    updateStateOptimistically(
+      (current) => {
+        current.data.mode_state.mode = mode;
+      },
+      () => requestModeSet(withMachine({ SetMode: mode })),
+    );
   };
 
   const setPullerTargetSpeed = (targetSpeed: number) => {
-    void requestPullerSetTargetSpeed(
-      withMachine({ SetPullerTargetSpeed: targetSpeed }),
-    );
-  };
-
-  const setTakeupSpoolRegulationMode = (mode: SpoolRegulationMode) => {
-    if (!settingsEditPermitted) {
-      return;
-    }
-
-    void requestTakeupSpoolSetRegulationMode(
-      withMachine({ SetTakeupSpoolRegulationMode: mode }),
-    );
-  };
-
-  const setTakeupSpoolMinMaxMinSpeed = (speed: number) => {
-    if (!settingsEditPermitted) {
-      return;
-    }
-
-    void requestTakeupSpoolSetMinMaxMinSpeed(
-      withMachine({ SetTakeupSpoolMinMaxMinSpeed: speed }),
-    );
-  };
-
-  const setTakeupSpoolMinMaxMaxSpeed = (speed: number) => {
-    if (!settingsEditPermitted) {
-      return;
-    }
-
-    void requestTakeupSpoolSetMinMaxMaxSpeed(
-      withMachine({ SetTakeupSpoolMinMaxMaxSpeed: speed }),
-    );
-  };
-
-  const setTakeupTensionTarget = (target: number) => {
-    if (!settingsEditPermitted) {
-      return;
-    }
-
-    void requestTakeupTensionTarget(
-      withMachine({ SetTakeupTensionTarget: target }),
-    );
-  };
-
-  const setTakeupSpoolAdaptiveRadiusLearningRate = (value: number) => {
-    if (!settingsEditPermitted) {
-      return;
-    }
-
-    void requestTakeupSpoolSetAdaptiveRadiusLearningRate(
-      withMachine({ SetTakeupSpoolAdaptiveRadiusLearningRate: value }),
-    );
-  };
-
-  const setTakeupSpoolAdaptiveMaxSpeedMultiplier = (value: number) => {
-    if (!settingsEditPermitted) {
-      return;
-    }
-
-    void requestTakeupSpoolSetAdaptiveMaxSpeedMultiplier(
-      withMachine({ SetTakeupSpoolAdaptiveMaxSpeedMultiplier: value }),
-    );
-  };
-
-  const setTakeupSpoolAdaptiveAccelerationFactor = (value: number) => {
-    if (!settingsEditPermitted) {
-      return;
-    }
-
-    void requestTakeupSpoolSetAdaptiveAccelerationFactor(
-      withMachine({ SetTakeupSpoolAdaptiveAccelerationFactor: value }),
-    );
-  };
-
-  const setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier = (
-    value: number,
-  ) => {
-    if (!settingsEditPermitted) {
-      return;
-    }
-
-    void requestTakeupSpoolSetAdaptiveDeaccelerationUrgencyMultiplier(
-      withMachine({
-        SetTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier: value,
-      }),
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.target_speed = targetSpeed;
+      },
+      () =>
+        requestPullerSetTargetSpeed(
+          withMachine({ SetPullerTargetSpeed: targetSpeed }),
+        ),
     );
   };
 
   const setTakeupSpoolDiameter = (diameterMm: number) => {
-    if (!spoolDiameterEditPermitted) {
-      return;
-    }
-
-    void requestTakeupSpoolSetDiameter(
-      withMachine({ SetTakeupSpoolDiameter: diameterMm }),
-    );
-  };
-
-  const setSourceSpoolDiameter = (diameterMm: number) => {
-    if (!spoolDiameterEditPermitted) {
-      return;
-    }
-
-    void requestSourceSpoolSetDiameter(
-      withMachine({ SetSourceSpoolDiameter: diameterMm }),
-    );
-  };
-
-  const setSourceTensionTarget = (target: number) => {
     if (!settingsEditPermitted) {
       return;
     }
 
-    void requestSourceTensionTarget(
-      withMachine({ SetSourceTensionTarget: target }),
+    updateStateOptimistically(
+      (current) => {
+        current.data.takeup_spool_state.diameter_mm = diameterMm;
+      },
+      () =>
+        requestTakeupSpoolSetDiameter(
+          withMachine({ SetTakeupSpoolDiameter: diameterMm }),
+        ),
+    );
+  };
+
+  const setSourceSpoolDiameter = (diameterMm: number) => {
+    if (!settingsEditPermitted) {
+      return;
+    }
+
+    updateStateOptimistically(
+      (current) => {
+        current.data.source_spool_state.diameter_mm = diameterMm;
+      },
+      () =>
+        requestSourceSpoolSetDiameter(
+          withMachine({ SetSourceSpoolDiameter: diameterMm }),
+        ),
     );
   };
 
@@ -347,8 +254,14 @@ export function useRewinder() {
       [field]: value,
     };
 
-    void requestSetTakeupTensionArmControl(
-      withMachine({ SetTakeupTensionArmControl: next }),
+    updateStateOptimistically(
+      (current) => {
+        current.data.takeup_tension_arm_control_state = next;
+      },
+      () =>
+        requestSetTakeupTensionArmControl(
+          withMachine({ SetTakeupTensionArmControl: next }),
+        ),
     );
   };
 
@@ -367,8 +280,14 @@ export function useRewinder() {
       [field]: value,
     };
 
-    void requestSetSourceTensionArmControl(
-      withMachine({ SetSourceTensionArmControl: next }),
+    updateStateOptimistically(
+      (current) => {
+        current.data.source_tension_arm_control_state = next;
+      },
+      () =>
+        requestSetSourceTensionArmControl(
+          withMachine({ SetSourceTensionArmControl: next }),
+        ),
     );
   };
 
@@ -376,7 +295,7 @@ export function useRewinder() {
     field: keyof StateEvent["data"]["prepare_control_state"],
     value: number,
   ) => {
-    if (!prepareSettingsEditPermitted) {
+    if (!settingsEditPermitted) {
       return;
     }
 
@@ -387,12 +306,23 @@ export function useRewinder() {
       [field]: value,
     };
 
-    void requestSetPrepareControl(withMachine({ SetPrepareControl: next }));
+    updateStateOptimistically(
+      (current) => {
+        current.data.prepare_control_state = next;
+      },
+      () => requestSetPrepareControl(withMachine({ SetPrepareControl: next })),
+    );
   };
 
   const setRewindAutomaticRequiredMeters = (meters: number) => {
-    void requestSetRewindAutomaticRequiredMeters(
-      withMachine({ SetRewindAutomaticRequiredMeters: meters }),
+    updateStateOptimistically(
+      (current) => {
+        current.data.rewind_automatic_action_state.required_meters = meters;
+      },
+      () =>
+        requestSetRewindAutomaticRequiredMeters(
+          withMachine({ SetRewindAutomaticRequiredMeters: meters }),
+        ),
     );
   };
 
@@ -401,13 +331,19 @@ export function useRewinder() {
       return;
     }
 
-    void requestSetRewindAutomaticAction(
-      withMachine({ SetRewindAutomaticAction: mode }),
+    updateStateOptimistically(
+      (current) => {
+        current.data.rewind_automatic_action_state.mode = mode;
+      },
+      () =>
+        requestSetRewindAutomaticAction(
+          withMachine({ SetRewindAutomaticAction: mode }),
+        ),
     );
   };
 
   const resetRewindProgress = () => {
-    if (!progressResetPermitted) {
+    if (!stateData) {
       return;
     }
 
@@ -423,19 +359,35 @@ export function useRewinder() {
   };
 
   const zeroTakeupTensionArm = () => {
-    if (!settingsEditPermitted) {
+    if (
+      !motionStopped ||
+      (currentMode !== "Standby" && currentMode !== "Hold")
+    ) {
       return;
     }
 
-    void requestZeroTakeupTensionArm(withMachine("ZeroTakeupTensionArm"));
+    updateStateOptimistically(
+      (current) => {
+        current.data.takeup_tension_arm_state.zeroed = true;
+      },
+      () => requestZeroTakeupTensionArm(withMachine("ZeroTakeupTensionArm")),
+    );
   };
 
   const zeroSourceTensionArm = () => {
-    if (!settingsEditPermitted) {
+    if (
+      !motionStopped ||
+      (currentMode !== "Standby" && currentMode !== "Hold")
+    ) {
       return;
     }
 
-    void requestZeroSourceTensionArm(withMachine("ZeroSourceTensionArm"));
+    updateStateOptimistically(
+      (current) => {
+        current.data.source_tension_arm_state.zeroed = true;
+      },
+      () => requestZeroSourceTensionArm(withMachine("ZeroSourceTensionArm")),
+    );
   };
 
   const setTraverseLimitInner = (limit: number) => {
@@ -443,8 +395,14 @@ export function useRewinder() {
       return;
     }
 
-    void requestTraverseSetLimitInner(
-      withMachine({ SetTraverseLimitInner: limit }),
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.limit_inner = limit;
+      },
+      () =>
+        requestTraverseSetLimitInner(
+          withMachine({ SetTraverseLimitInner: limit }),
+        ),
     );
   };
 
@@ -453,8 +411,33 @@ export function useRewinder() {
       return;
     }
 
-    void requestTraverseSetLimitOuter(
-      withMachine({ SetTraverseLimitOuter: limit }),
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.limit_outer = limit;
+      },
+      () =>
+        requestTraverseSetLimitOuter(
+          withMachine({ SetTraverseLimitOuter: limit }),
+        ),
+    );
+  };
+
+  const setTraverseStart = (start: TraverseStart) => {
+    if (!settingsEditPermitted) {
+      return;
+    }
+
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.start = start;
+        current.data.traverse_state.start_position =
+          start === "Left"
+            ? current.data.traverse_state.limit_outer
+            : start === "Right"
+              ? current.data.traverse_state.limit_inner
+              : current.data.traverse_state.custom_start_position;
+      },
+      () => requestTraverseSetStart(withMachine({ SetTraverseStart: start })),
     );
   };
 
@@ -463,8 +446,16 @@ export function useRewinder() {
       return;
     }
 
-    void requestTraverseSetStartPosition(
-      withMachine({ SetTraverseStartPosition: position }),
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.start = "Custom";
+        current.data.traverse_state.start_position = position;
+        current.data.traverse_state.custom_start_position = position;
+      },
+      () =>
+        requestTraverseSetStartPosition(
+          withMachine({ SetTraverseStartPosition: position }),
+        ),
     );
   };
 
@@ -473,8 +464,14 @@ export function useRewinder() {
       return;
     }
 
-    void requestTraverseSetStepSize(
-      withMachine({ SetTraverseStepSize: stepSize }),
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.step_size = stepSize;
+      },
+      () =>
+        requestTraverseSetStepSize(
+          withMachine({ SetTraverseStepSize: stepSize }),
+        ),
     );
   };
 
@@ -483,8 +480,12 @@ export function useRewinder() {
       return;
     }
 
-    void requestTraverseSetPadding(
-      withMachine({ SetTraversePadding: padding }),
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.padding = padding;
+      },
+      () =>
+        requestTraverseSetPadding(withMachine({ SetTraversePadding: padding })),
     );
   };
 
@@ -522,8 +523,14 @@ export function useRewinder() {
       return;
     }
 
-    void requestEnableTraverseLaserpointer(
-      withMachine({ EnableTraverseLaserpointer: enabled }),
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.laserpointer = enabled;
+      },
+      () =>
+        requestEnableTraverseLaserpointer(
+          withMachine({ EnableTraverseLaserpointer: enabled }),
+        ),
     );
   };
 
@@ -537,27 +544,15 @@ export function useRewinder() {
     takeupTensionArmAngle,
     sourceTensionArmAngle,
     rewindProgress,
-    isLoading: false,
-    isDisabled: false,
+    isLoading: stateOptimistic.isOptimistic,
+    isDisabled: !stateOptimistic.isInitialized,
     motionStopped,
     settingsEditPermitted,
-    spoolDiameterEditPermitted,
-    prepareSettingsEditPermitted,
-    progressResetPermitted,
     manualTraversePermitted,
     setMode,
     setPullerTargetSpeed,
-    setTakeupSpoolRegulationMode,
-    setTakeupSpoolMinMaxMinSpeed,
-    setTakeupSpoolMinMaxMaxSpeed,
-    setTakeupTensionTarget,
-    setTakeupSpoolAdaptiveRadiusLearningRate,
-    setTakeupSpoolAdaptiveMaxSpeedMultiplier,
-    setTakeupSpoolAdaptiveAccelerationFactor,
-    setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier,
     setTakeupSpoolDiameter,
     setSourceSpoolDiameter,
-    setSourceTensionTarget,
     setTakeupTensionArmControl,
     setSourceTensionArmControl,
     setPrepareControl,
@@ -569,6 +564,7 @@ export function useRewinder() {
     zeroSourceTensionArm,
     setTraverseLimitInner,
     setTraverseLimitOuter,
+    setTraverseStart,
     setTraverseStartPosition,
     setTraverseStepSize,
     setTraversePadding,

@@ -24,7 +24,9 @@ const rewinderPresetDataSchema = z
       .pick({
         limit_inner: true,
         limit_outer: true,
+        start: true,
         start_position: true,
+        custom_start_position: true,
         step_size: true,
         padding: true,
         laserpointer: true,
@@ -58,14 +60,6 @@ const presetFallback = {
   requiredMeters: 100.0,
   takeupDiameter: 100,
   sourceDiameter: 100,
-  takeupMinSpeed: 5.0,
-  takeupMaxSpeed: 50.0,
-  takeupTensionTarget: 0.5,
-  takeupRadiusLearningRate: 0.1,
-  takeupMaxSpeedMultiplier: 2.0,
-  takeupAccelerationFactor: 1.5,
-  takeupDeaccelerationUrgency: 2.0,
-  sourceTensionTarget: 0.5,
   traverseInner: 22.0,
   traverseOuter: 92.0,
   traverseStart: 92.0,
@@ -118,20 +112,6 @@ const previewEntries: PresetPreviewEntries<RewinderPresetData> = [
     renderValue: (data) =>
       renderNumber(data.source_spool_state?.diameter_mm ?? undefined, 0),
   },
-  {
-    name: "Takeup Algorithm",
-    renderValue: (data) => data.takeup_spool_state?.regulation_mode,
-  },
-  {
-    name: "Takeup Tension Target",
-    renderValue: (data) =>
-      renderNumber(data.takeup_spool_state?.adaptive_tension_target, 2),
-  },
-  {
-    name: "Source Tension Target",
-    renderValue: (data) =>
-      renderNumber(data.source_spool_state?.adaptive_tension_target, 2),
-  },
   previewSeparator,
   {
     name: "Inner Traverse Limit",
@@ -144,9 +124,8 @@ const previewEntries: PresetPreviewEntries<RewinderPresetData> = [
     renderValue: (data) => renderNumber(data.traverse_state?.limit_outer, 1),
   },
   {
-    name: "Traverse Start",
-    unit: "mm",
-    renderValue: (data) => renderNumber(data.traverse_state?.start_position, 1),
+    name: "Traverse Start Side",
+    renderValue: (data) => data.traverse_state?.start,
   },
   {
     name: "Traverse Step",
@@ -171,17 +150,9 @@ export function RewinderPresetsPage() {
     setRewindAutomaticAction,
     setTakeupSpoolDiameter,
     setSourceSpoolDiameter,
-    setTakeupSpoolRegulationMode,
-    setTakeupSpoolMinMaxMinSpeed,
-    setTakeupSpoolMinMaxMaxSpeed,
-    setTakeupTensionTarget,
-    setTakeupSpoolAdaptiveRadiusLearningRate,
-    setTakeupSpoolAdaptiveMaxSpeedMultiplier,
-    setTakeupSpoolAdaptiveAccelerationFactor,
-    setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier,
-    setSourceTensionTarget,
     setTraverseLimitInner,
     setTraverseLimitOuter,
+    setTraverseStart,
     setTraverseStartPosition,
     setTraverseStepSize,
     setTraversePadding,
@@ -284,70 +255,6 @@ export function RewinderPresetsPage() {
         presetFallback.sourceDiameter,
       ),
     );
-    setTakeupSpoolRegulationMode(
-      presetValue(
-        takeup.regulation_mode,
-        defaults?.takeup_spool_state.regulation_mode,
-        "Adaptive",
-      ),
-    );
-    setTakeupSpoolMinMaxMinSpeed(
-      presetValue(
-        takeup.minmax_min_speed,
-        defaults?.takeup_spool_state.minmax_min_speed,
-        presetFallback.takeupMinSpeed,
-      ),
-    );
-    setTakeupSpoolMinMaxMaxSpeed(
-      presetValue(
-        takeup.minmax_max_speed,
-        defaults?.takeup_spool_state.minmax_max_speed,
-        presetFallback.takeupMaxSpeed,
-      ),
-    );
-    setTakeupTensionTarget(
-      presetValue(
-        takeup.adaptive_tension_target,
-        defaults?.takeup_spool_state.adaptive_tension_target,
-        presetFallback.takeupTensionTarget,
-      ),
-    );
-    setTakeupSpoolAdaptiveRadiusLearningRate(
-      presetValue(
-        takeup.adaptive_radius_learning_rate,
-        defaults?.takeup_spool_state.adaptive_radius_learning_rate,
-        presetFallback.takeupRadiusLearningRate,
-      ),
-    );
-    setTakeupSpoolAdaptiveMaxSpeedMultiplier(
-      presetValue(
-        takeup.adaptive_max_speed_multiplier,
-        defaults?.takeup_spool_state.adaptive_max_speed_multiplier,
-        presetFallback.takeupMaxSpeedMultiplier,
-      ),
-    );
-    setTakeupSpoolAdaptiveAccelerationFactor(
-      presetValue(
-        takeup.adaptive_acceleration_factor,
-        defaults?.takeup_spool_state.adaptive_acceleration_factor,
-        presetFallback.takeupAccelerationFactor,
-      ),
-    );
-    setTakeupSpoolAdaptiveDeaccelerationUrgencyMultiplier(
-      presetValue(
-        takeup.adaptive_deacceleration_urgency_multiplier,
-        defaults?.takeup_spool_state.adaptive_deacceleration_urgency_multiplier,
-        presetFallback.takeupDeaccelerationUrgency,
-      ),
-    );
-    setSourceTensionTarget(
-      presetValue(
-        source.adaptive_tension_target,
-        defaults?.source_spool_state.adaptive_tension_target,
-        presetFallback.sourceTensionTarget,
-      ),
-    );
-
     setTraverseLimitInner(
       presetValue(
         traverse.limit_inner,
@@ -362,13 +269,22 @@ export function RewinderPresetsPage() {
         presetFallback.traverseOuter,
       ),
     );
-    setTraverseStartPosition(
-      presetValue(
-        traverse.start_position,
-        defaults?.traverse_state.start_position,
-        presetFallback.traverseStart,
-      ),
+    const start = presetValue(
+      traverse.start,
+      defaults?.traverse_state.start,
+      "Left",
     );
+    if (start === "Custom" || (!traverse.start && traverse.start_position)) {
+      setTraverseStartPosition(
+        presetValue(
+          traverse.custom_start_position ?? traverse.start_position,
+          defaults?.traverse_state.custom_start_position,
+          presetFallback.traverseStart,
+        ),
+      );
+    } else {
+      setTraverseStart(start);
+    }
     setTraverseStepSize(
       presetValue(
         traverse.step_size,
@@ -409,7 +325,9 @@ export function RewinderPresetsPage() {
     traverse_state: {
       limit_inner: s?.traverse_state?.limit_inner,
       limit_outer: s?.traverse_state?.limit_outer,
+      start: s?.traverse_state?.start,
       start_position: s?.traverse_state?.start_position,
+      custom_start_position: s?.traverse_state?.custom_start_position,
       step_size: s?.traverse_state?.step_size,
       padding: s?.traverse_state?.padding,
       laserpointer: s?.traverse_state?.laserpointer,

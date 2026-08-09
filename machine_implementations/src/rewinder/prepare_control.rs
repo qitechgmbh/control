@@ -293,7 +293,7 @@ impl Rewinder {
 
         if !self.traverse_at_start_position() {
             self.traverse_controller
-                .set_target_position(self.traverse_start_position);
+                .set_target_position(self.configured_traverse_start_position());
             self.traverse_controller.goto_target_position();
             self.rewind_control
                 .decelerate_motion(self.rewind_control.last_dt_s);

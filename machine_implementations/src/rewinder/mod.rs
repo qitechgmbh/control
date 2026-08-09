@@ -10,8 +10,8 @@ pub mod rewind_sequence;
 pub mod tension_arms;
 
 use crate::winder2::{
-    puller_speed_controller::PullerSpeedController, spool_speed_controller::SpoolSpeedController,
-    tension_arm::TensionArm, traverse_controller::TraverseController,
+    puller_speed_controller::PullerSpeedController, tension_arm::TensionArm,
+    traverse_controller::TraverseController,
 };
 use crate::{MACHINE_REWINDER_V1, MachineMessage, QiTechMachine, VENDOR_QITECH};
 use api::RewinderNamespace;
@@ -71,11 +71,10 @@ pub struct Rewinder {
     pub traverse_mode: TraverseMode,
     pub puller_mode: PullerMode,
     pub puller_speed_controller: PullerSpeedController,
-    pub takeup_spool_speed_controller: SpoolSpeedController,
-    pub source_spool_speed_controller: SpoolSpeedController,
     pub takeup_spool_step_converter: AngularStepConverter,
     pub source_spool_step_converter: AngularStepConverter,
     pub traverse_controller: TraverseController,
+    pub traverse_start: TraverseStart,
     pub traverse_start_position: Length,
     pub resume_traverse_position: Option<Length>,
     pub takeup_spool_diameter: Option<Length>,
@@ -156,12 +155,20 @@ impl Rewinder {
     }
 
     pub fn traverse_at_start_position(&self) -> bool {
-        self.traverse_at_position(self.traverse_start_position)
+        self.traverse_at_position(self.configured_traverse_start_position())
+    }
+
+    pub fn configured_traverse_start_position(&self) -> Length {
+        match self.traverse_start {
+            TraverseStart::Left => self.traverse_controller.get_limit_outer(),
+            TraverseStart::Right => self.traverse_controller.get_limit_inner(),
+            TraverseStart::Custom => self.clamp_traverse_position(self.traverse_start_position),
+        }
     }
 
     pub fn active_rewind_start_position(&self) -> Length {
         self.resume_traverse_position
-            .unwrap_or(self.traverse_start_position)
+            .unwrap_or_else(|| self.configured_traverse_start_position())
     }
 
     pub fn traverse_at_active_rewind_start_position(&self) -> bool {
@@ -194,12 +201,22 @@ impl Rewinder {
     pub fn sync_traverse_speed(&mut self) {
         let traverse = &mut *self.traverse.borrow_mut();
         if self.traverse_motion_permitted() {
-            self.traverse_controller
-                .update_speed(traverse, self.takeup_spool_speed_controller.get_speed());
+            self.traverse_controller.update_speed(
+                traverse,
+                self.rewind_control.takeup_command_angular_velocity(),
+            );
         } else {
             let _ = traverse.set_speed(TRAVERSE_PORT, 0.0);
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum TraverseStart {
+    #[default]
+    Left,
+    Right,
+    Custom,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
