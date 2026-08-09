@@ -1,0 +1,272 @@
+.mm-page {
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.mm-overview {
+  width: 100%;
+  min-height: 360px;
+  overflow: hidden;
+}
+
+.mm-overview svg {
+  display: block;
+  width: 100%;
+  height: min(45vh, 480px);
+  min-height: 360px;
+}
+
+.mm-operator-overview .mm-overview {
+  min-height: 340px;
+}
+
+.mm-operator-overview .mm-overview svg {
+  height: min(42vh, 440px);
+  min-height: 340px;
+}
+
+.mm-color-input {
+  width: 52px;
+  height: 52px;
+  padding: 3px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.mm-result-color {
+  width: 100%;
+  min-height: 132px;
+  border: 5px solid #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 0 0 1px #d1d5db;
+}
+
+.mm-svg-label {
+  fill: #9ca3af;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.mm-svg-material {
+  fill: #111827;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.mm-hopper-shell {
+  fill: #f3f4f6;
+}
+
+.mm-hopper-outline {
+  fill: none;
+  stroke: #1f2937;
+  stroke-width: 3;
+}
+
+.mm-hopper-lid {
+  fill: #f8fafc;
+  stroke: #1f2937;
+  stroke-width: 3;
+}
+
+.mm-material-level-line {
+  stroke: #94a3b8;
+  stroke-width: 1.5;
+}
+
+.mm-feeder-throat {
+  fill: #94a3b8;
+  stroke: #111827;
+  stroke-width: 3;
+}
+
+.mm-feeder-motor {
+  fill: #334155;
+  stroke: #111827;
+  stroke-width: 3;
+}
+
+.mm-feeder-coupling {
+  fill: #64748b;
+  stroke: #111827;
+  stroke-width: 3;
+}
+
+.mm-dosing-channel {
+  fill: #cbd5e1;
+  stroke: #111827;
+  stroke-linejoin: miter;
+  stroke-width: 3;
+}
+
+.mm-dosing-window {
+  fill: #f8fafc;
+  stroke: #64748b;
+  stroke-width: 1.5;
+}
+
+.mm-auger-shaft {
+  stroke: #111827;
+  stroke-linecap: round;
+  stroke-width: 4;
+}
+
+.mm-auger-flights path {
+  fill: none;
+  stroke: #111827;
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+.mm-mixer-shaft.is-running {
+  animation: mm-motor-rotation 1.2s linear infinite;
+}
+
+.mm-auger-flights.is-running {
+  animation: mm-auger-motion 0.55s linear infinite;
+}
+
+.mm-motor-status {
+  fill: #f9fafb;
+  stroke: #e5e7eb;
+  stroke-width: 2;
+}
+
+.mm-motor-status.is-fault {
+  fill: #fef2f2;
+  stroke: #fca5a5;
+}
+
+.mm-motor-status.is-warning {
+  fill: #fffbeb;
+  stroke: #fbbf24;
+}
+
+.mm-status-dot {
+  fill: #9ca3af;
+}
+
+.mm-status-dot.is-running {
+  fill: #16a34a;
+}
+
+.mm-status-dot.is-warning {
+  fill: #f59e0b;
+}
+
+.mm-svg-status,
+.mm-svg-rpm {
+  fill: #374151;
+  font-size: 11px;
+}
+
+.mm-svg-rpm {
+  font-weight: 700;
+}
+
+.mm-svg-fault {
+  fill: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mm-svg-warning {
+  fill: #b45309;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mm-svg-ratio {
+  fill: #111827;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.mm-mixer-shell {
+  fill: #e5e7eb;
+  stroke: #1f2937;
+  stroke-width: 3;
+}
+
+.mm-mixer-lid,
+.mm-machine-foot,
+.mm-port-clamp {
+  fill: #9ca3af;
+  stroke: #111827;
+  stroke-width: 3;
+}
+
+.mm-mixer-port {
+  fill: #f8fafc;
+  stroke: #111827;
+  stroke-width: 4;
+}
+
+.mm-mixer-label {
+  fill: #111827;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.mm-mixer-shaft {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.mm-mixer-shaft circle:first-child {
+  fill: #d1d5db;
+  stroke: #111827;
+  stroke-width: 4;
+}
+
+.mm-mixer-shaft circle:nth-child(2) {
+  fill: #111827;
+}
+
+.mm-mixer-shaft path {
+  fill: none;
+  stroke: #111827;
+  stroke-linecap: round;
+  stroke-width: 5;
+}
+
+.mm-output-arrow {
+  fill: none;
+  stroke: #111827;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+@keyframes mm-motor-rotation {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes mm-auger-motion {
+  to {
+    transform: translateX(12px);
+  }
+}
+
+@media (max-width: 900px) {
+  .mm-overview {
+    overflow-x: auto;
+  }
+
+  .mm-overview svg {
+    width: 900px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-overview * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

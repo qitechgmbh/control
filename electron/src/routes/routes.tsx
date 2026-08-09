@@ -96,6 +96,11 @@ import { Wago750_553MachineControlPage } from "@/machines/minimal_machines/wago7
 
 import { Wago750460MachinePage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachinePage";
 import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachineControlPage";
+import { MixingMachinePreview } from "@/machines/mixing_machine/MixingMachinePreview";
+import {
+  MixingMachineVariant2,
+  MixingMachineVariant3,
+} from "@/machines/mixing_machine/MixingMachineVariants";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -247,6 +252,24 @@ export const sidebarRoute = createRoute({
 export const machinesRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "machines",
+});
+
+export const mixer1PreviewRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "mixer-1",
+  component: () => <MixingMachinePreview />,
+});
+
+export const mixer2PreviewRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "mixer-2",
+  component: () => <MixingMachineVariant2 />,
+});
+
+export const mixer3PreviewRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "mixer-3",
+  component: () => <MixingMachineVariant3 />,
 });
 
 export const extruder2Route = createRoute({
@@ -615,6 +638,9 @@ export const rootTree = RootRoute.addChildren([
       metricsRoute,
     ]),
     machinesRoute.addChildren([
+      mixer1PreviewRoute,
+      mixer2PreviewRoute,
+      mixer3PreviewRoute,
       laser1SerialRoute.addChildren([
         laser1ControlRoute,
         laser1GraphsRoute,

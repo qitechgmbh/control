@@ -98,6 +98,10 @@ export function SidebarLayout() {
       return;
     }
 
+    // Serial 0 is reserved for disconnected UI reference pages on prototype
+    // branches. It renders the real machine frontend without requiring hardware.
+    if (serialNumber === 0) return;
+
     // Check if machine still exists in the raw machines data
     const machineExists = machinesEvent.data.machines.some(
       (m) => m.machine_identification_unique.serial === serialNumber,
@@ -109,6 +113,30 @@ export function SidebarLayout() {
   }, [machines, machinesEvent, routerState.location.pathname, router]);
 
   const items: SidebarItemContent[] = [
+    {
+      link: "/_sidebar/machines/mixer-1",
+      activeLink: "/_sidebar/machines/mixer-1",
+      title: "Mixer 1",
+      icon: "lu:Blend",
+    },
+    {
+      link: "/_sidebar/machines/mixer-2",
+      activeLink: "/_sidebar/machines/mixer-2",
+      title: "Mixer 2",
+      icon: "lu:Gauge",
+    },
+    {
+      link: "/_sidebar/machines/mixer-3",
+      activeLink: "/_sidebar/machines/mixer-3",
+      title: "Mixer 3",
+      icon: "lu:Palette",
+    },
+    {
+      link: "/_sidebar/machines/extruder3/0/control",
+      activeLink: "/_sidebar/machines/extruder3/0",
+      title: "Extruder ref",
+      icon: "lu:Factory",
+    },
     ...machines.map((machine) => ({
       link: `/_sidebar/machines/${machine.slug}/${machine.machine_identification_unique.serial}/control`,
       activeLink: `/_sidebar/machines/${machine.slug}/${machine.machine_identification_unique.serial}`,
