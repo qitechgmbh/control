@@ -9,6 +9,7 @@ use crate::{
     utils::{interpolation::scale, moving_time_window::MovingTimeWindow},
 };
 use core::f64;
+use qitech_framework::machine::{ActErrorKind, ConfigProperty};
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::angle::degree;
 use qitech_lib::units::angular_acceleration::radian_per_second_squared;
@@ -23,7 +24,6 @@ use std::time::Instant;
 /// This controller monitors filament tension via the tension arm and learns the appropriate
 /// maximum speed based on puller speed and tension feedback. It uses closed-loop control
 /// to minimize tension error and applies smooth acceleration to prevent sudden motor commands.
-#[derive(Debug)]
 pub struct AdaptiveSpoolSpeedController {
     /// Last commanded angular velocity sent to the spool motor
     last_speed: AngularVelocity,
@@ -41,21 +41,15 @@ pub struct AdaptiveSpoolSpeedController {
     last_max_speed_factor_update: Option<Instant>,
 
     /// Target normalized tension value (0.0-1.0) that the controller tries to maintain
-    tension_target: f64,
+    tension_target: ConfigProperty<f64>,
     /// Proportional control gain for adaptive learning (negative: higher tension reduces speed)
-    radius_learning_rate: f64,
+    radius_learning_rate: ConfigProperty<f64>,
     /// Speed multiplier when tension is at minimum (max speed factor)
-    max_speed_multiplier: f64,
+    max_speed_multiplier: ConfigProperty<f64>,
     /// Base acceleration as a fraction of max possible speed (per second)
-    acceleration_factor: f64,
+    acceleration_factor: ConfigProperty<f64>,
     /// Urgency multiplier for near-zero target speeds
-    deacceleration_urgency_multiplier: f64,
-}
-
-impl Default for AdaptiveSpoolSpeedController {
-    fn default() -> Self {
-        Self::new()
-    }
+    deacceleration_urgency_multiplier: ConfigProperty<f64>,
 }
 
 impl AdaptiveSpoolSpeedController {
@@ -105,7 +99,13 @@ impl AdaptiveSpoolSpeedController {
     ///
     /// # Returns
     /// A new `AdaptiveSpoolSpeedController` instance ready for use.
-    pub fn new() -> Self {
+    pub fn new(
+        tension_target: ConfigProperty<f64>,
+        radius_learning_rate: ConfigProperty<f64>,
+        max_speed_multiplier: ConfigProperty<f64>,
+        acceleration_factor: ConfigProperty<f64>,
+        deacceleration_urgency_multiplier: ConfigProperty<f64>,
+    ) -> Self {
         let max_speed = AngularVelocity::new::<revolution_per_minute>(Self::INITIAL_MAX_SPEED_RPM);
 
         Self {
@@ -128,11 +128,11 @@ impl AdaptiveSpoolSpeedController {
             ),
             speed_factor: Length::new::<centimeter>(4.25),
             last_max_speed_factor_update: None,
-            tension_target: Self::TENSION_TARGET,
-            radius_learning_rate: Self::RADIUS_LEARNING_RATE,
-            max_speed_multiplier: Self::MAX_SPEED_MULTIPLIER,
-            acceleration_factor: Self::ACCELERATION_FACTOR,
-            deacceleration_urgency_multiplier: Self::DEACCELERATION_URGENCY_MULTIPLIER,
+            tension_target,
+            radius_learning_rate,
+            max_speed_multiplier,
+            acceleration_factor,
+            deacceleration_urgency_multiplier,
         }
     }
 
@@ -159,7 +159,7 @@ impl AdaptiveSpoolSpeedController {
         AngularVelocity::new::<radian_per_second>(
             (puller_speed_controller.last_speed.get::<meter_per_second>()
                 / self.speed_factor.get::<meter>())
-                * self.max_speed_multiplier,
+                * self.max_speed_multiplier.get(),
         )
     }
 
@@ -218,11 +218,11 @@ impl AdaptiveSpoolSpeedController {
         let max_speed_rad_s = current_max_speed.get::<radian_per_second>();
 
         // Base acceleration proportional to current max operating speed
-        let base_acceleration = max_speed_rad_s * self.acceleration_factor;
+        let base_acceleration = max_speed_rad_s * self.acceleration_factor.get();
 
         // Simple urgency factor - dramatically increases near zero
         let urgency_factor = if target_speed_rad_s.abs() < 0.1 {
-            self.deacceleration_urgency_multiplier * (1.0 / (target_speed_rad_s.abs() + 0.01))
+            self.deacceleration_urgency_multiplier.get() * (1.0 / (target_speed_rad_s.abs() + 0.01))
         } else {
             1.0
         };
@@ -287,10 +287,10 @@ impl AdaptiveSpoolSpeedController {
 
         // positive error means too much tension, so we reduce speed
         // negative error means too little tension, so we increase speed
-        let tension_error = filament_tension - self.tension_target;
+        let tension_error = filament_tension - self.tension_target.get();
 
         // Calculate proportional control adjustment
-        let proportional_gain = self.radius_learning_rate * delta_t;
+        let proportional_gain = self.radius_learning_rate.get() * delta_t;
         let factor_change = tension_error * proportional_gain;
 
         // Update the speed factor directly
@@ -352,16 +352,18 @@ impl AdaptiveSpoolSpeedController {
     ///
     /// Use this when starting a new winding operation or after significant
     /// process changes that would invalidate learned parameters.
-    pub fn reset(&mut self) {
+    pub fn reset(&mut self) -> Result<(), ActErrorKind> {
         self.last_speed = AngularVelocity::ZERO;
         self.acceleration_controller.reset(AngularVelocity::ZERO);
         self.speed_factor = Length::new::<centimeter>(4.25);
         self.last_max_speed_factor_update = None;
-        self.tension_target = Self::TENSION_TARGET;
-        self.radius_learning_rate = Self::RADIUS_LEARNING_RATE;
-        self.max_speed_multiplier = Self::MAX_SPEED_MULTIPLIER;
-        self.acceleration_factor = Self::ACCELERATION_FACTOR;
-        self.deacceleration_urgency_multiplier = Self::DEACCELERATION_URGENCY_MULTIPLIER;
+        self.tension_target.set(Self::TENSION_TARGET)?;
+        self.radius_learning_rate.set(Self::RADIUS_LEARNING_RATE)?;
+        self.max_speed_multiplier.set(Self::MAX_SPEED_MULTIPLIER)?;
+        self.acceleration_factor.set(Self::ACCELERATION_FACTOR)?;
+        self.deacceleration_urgency_multiplier
+            .set(Self::DEACCELERATION_URGENCY_MULTIPLIER)?;
+        Ok(())
     }
 
     /// Returns the last commanded speed from the controller.
@@ -382,49 +384,5 @@ impl AdaptiveSpoolSpeedController {
     pub fn set_speed(&mut self, speed: AngularVelocity) {
         self.last_speed = speed;
         self.acceleration_controller.reset(speed);
-    }
-
-    // Getters and setters for the new configurable parameters
-    pub const fn get_tension_target(&self) -> f64 {
-        self.tension_target
-    }
-
-    pub const fn set_tension_target(&mut self, tension_target: f64) {
-        self.tension_target = tension_target.clamp(0.0, 1.0);
-    }
-
-    pub const fn get_radius_learning_rate(&self) -> f64 {
-        self.radius_learning_rate
-    }
-
-    pub const fn set_radius_learning_rate(&mut self, radius_learning_rate: f64) {
-        self.radius_learning_rate = radius_learning_rate.max(0.0);
-    }
-
-    pub const fn get_max_speed_multiplier(&self) -> f64 {
-        self.max_speed_multiplier
-    }
-
-    pub const fn set_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
-        self.max_speed_multiplier = max_speed_multiplier.max(0.1);
-    }
-
-    pub const fn get_acceleration_factor(&self) -> f64 {
-        self.acceleration_factor
-    }
-
-    pub const fn set_acceleration_factor(&mut self, acceleration_factor: f64) {
-        self.acceleration_factor = acceleration_factor.clamp(0.01, 1.0);
-    }
-
-    pub const fn get_deacceleration_urgency_multiplier(&self) -> f64 {
-        self.deacceleration_urgency_multiplier
-    }
-
-    pub const fn set_deacceleration_urgency_multiplier(
-        &mut self,
-        deacceleration_urgency_multiplier: f64,
-    ) {
-        self.deacceleration_urgency_multiplier = deacceleration_urgency_multiplier.max(1.0);
     }
 }

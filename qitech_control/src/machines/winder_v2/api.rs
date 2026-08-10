@@ -32,13 +32,6 @@ pub struct ConfigProperties {
     pub spool_min_speed: ConfigProperty<AngularVelocity>,
     pub spool_max_speed: ConfigProperty<AngularVelocity>,
     pub spool_forward: ConfigProperty<bool>,
-
-    // --- adaptive spool speed controller ---
-    pub spool_adaptive_tension_target: ConfigProperty<f64>,
-    pub spool_adaptive_radius_learning_rate: ConfigProperty<f64>,
-    pub spool_adaptive_max_speed_multiplier: ConfigProperty<f64>,
-    pub spool_adaptive_acceleration_factor: ConfigProperty<f64>,
-    pub spool_adaptive_deacceleration_urgency_multiplier: ConfigProperty<f64>,
 }
 
 impl<const VARIANT: usize> WinderV1<VARIANT> {
@@ -133,43 +126,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         self.spool_set_forward(self.config_props.spool_forward.get());
         Ok(())
     }
-
-    pub fn on_spool_adaptive_tension_target_changed(&mut self) -> ActResult {
-        self.spool_set_adaptive_tension_target(
-            self.config_props.spool_adaptive_tension_target.get(),
-        );
-        Ok(())
-    }
-
-    pub fn on_spool_adaptive_radius_learning_rate_changed(&mut self) -> ActResult {
-        self.spool_set_adaptive_radius_learning_rate(
-            self.config_props.spool_adaptive_radius_learning_rate.get(),
-        );
-        Ok(())
-    }
-
-    pub fn on_spool_adaptive_max_speed_multiplier_changed(&mut self) -> ActResult {
-        self.spool_set_adaptive_max_speed_multiplier(
-            self.config_props.spool_adaptive_max_speed_multiplier.get(),
-        );
-        Ok(())
-    }
-
-    pub fn on_spool_adaptive_acceleration_factor_changed(&mut self) -> ActResult {
-        self.spool_set_adaptive_acceleration_factor(
-            self.config_props.spool_adaptive_acceleration_factor.get(),
-        );
-        Ok(())
-    }
-
-    pub fn on_spool_adaptive_deacceleration_urgency_multiplier_changed(&mut self) -> ActResult {
-        self.spool_set_adaptive_deacceleration_urgency_multiplier(
-            self.config_props
-                .spool_adaptive_deacceleration_urgency_multiplier
-                .get(),
-        );
-        Ok(())
-    }
 }
 
 pub struct StateProperties {
@@ -216,11 +172,6 @@ pub struct SpoolSpeedControllerStateProperties {
     pub regulation_mode: StateProperty<SpoolSpeedControllerType>,
     pub minmax_min_speed: StateProperty<AngularVelocity>,
     pub minmax_max_speed: StateProperty<AngularVelocity>,
-    pub adaptive_tension_target: StateProperty<f64>,
-    pub adaptive_radius_learning_rate: StateProperty<f64>,
-    pub adaptive_max_speed_multiplier: StateProperty<f64>,
-    pub adaptive_acceleration_factor: StateProperty<f64>,
-    pub adaptive_deacceleration_urgency_multiplier: StateProperty<f64>,
     pub forward: StateProperty<bool>,
 }
 
@@ -434,25 +385,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         let regulation_mode = *self.spool_speed_controller.get_type();
         let minmax_min_speed = self.spool_speed_controller.get_minmax_min_speed();
         let minmax_max_speed = self.spool_speed_controller.get_minmax_max_speed();
-
-        let adaptive_tension_target = self.spool_speed_controller.get_adaptive_tension_target();
-
-        let adaptive_radius_learning_rate = self
-            .spool_speed_controller
-            .get_adaptive_radius_learning_rate();
-
-        let adaptive_max_speed_multiplier = self
-            .spool_speed_controller
-            .get_adaptive_max_speed_multiplier();
-
-        let adaptive_acceleration_factor = self
-            .spool_speed_controller
-            .get_adaptive_acceleration_factor();
-
-        let adaptive_deacceleration_urgency_multiplier = self
-            .spool_speed_controller
-            .get_adaptive_deacceleration_urgency_multiplier();
-
         let forward = self.spool_speed_controller.get_forward();
 
         // --- update spool speed controller state ---
@@ -461,20 +393,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         s.regulation_mode.set(regulation_mode);
         s.minmax_min_speed.set(minmax_min_speed);
         s.minmax_max_speed.set(minmax_max_speed);
-
-        s.adaptive_tension_target.set(adaptive_tension_target);
-
-        s.adaptive_radius_learning_rate
-            .set(adaptive_radius_learning_rate);
-
-        s.adaptive_max_speed_multiplier
-            .set(adaptive_max_speed_multiplier);
-
-        s.adaptive_acceleration_factor
-            .set(adaptive_acceleration_factor);
-
-        s.adaptive_deacceleration_urgency_multiplier
-            .set(adaptive_deacceleration_urgency_multiplier);
 
         s.forward.set(forward);
     }

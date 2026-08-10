@@ -18,7 +18,6 @@ pub enum SpoolSpeedControllerType {
     MinMax,
 }
 
-#[derive(Debug)]
 pub struct SpoolSpeedController {
     adaptive_controller: AdaptiveSpoolSpeedController,
     minmax_controller: MinMaxSpoolSpeedController,
@@ -26,16 +25,10 @@ pub struct SpoolSpeedController {
     forward: bool,
 }
 
-impl Default for SpoolSpeedController {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl SpoolSpeedController {
-    pub fn new() -> Self {
+    pub fn new(adaptive_controller: AdaptiveSpoolSpeedController) -> Self {
         Self {
-            adaptive_controller: AdaptiveSpoolSpeedController::new(),
+            adaptive_controller,
             minmax_controller: MinMaxSpoolSpeedController::new(),
             r#type: SpoolSpeedControllerType::Adaptive,
             forward: true,
@@ -120,55 +113,6 @@ impl SpoolSpeedController {
             }
             SpoolSpeedControllerType::MinMax => self.minmax_controller.update_speed(t, tension_arm),
         }
-    }
-
-    // Adaptive controller parameter getters and setters
-    pub const fn get_adaptive_tension_target(&self) -> f64 {
-        self.adaptive_controller.get_tension_target()
-    }
-
-    pub const fn set_adaptive_tension_target(&mut self, tension_target: f64) {
-        self.adaptive_controller.set_tension_target(tension_target);
-    }
-
-    pub const fn get_adaptive_radius_learning_rate(&self) -> f64 {
-        self.adaptive_controller.get_radius_learning_rate()
-    }
-
-    pub const fn set_adaptive_radius_learning_rate(&mut self, radius_learning_rate: f64) {
-        self.adaptive_controller
-            .set_radius_learning_rate(radius_learning_rate);
-    }
-
-    pub const fn get_adaptive_max_speed_multiplier(&self) -> f64 {
-        self.adaptive_controller.get_max_speed_multiplier()
-    }
-
-    pub const fn set_adaptive_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
-        self.adaptive_controller
-            .set_max_speed_multiplier(max_speed_multiplier);
-    }
-
-    pub const fn get_adaptive_acceleration_factor(&self) -> f64 {
-        self.adaptive_controller.get_acceleration_factor()
-    }
-
-    pub const fn set_adaptive_acceleration_factor(&mut self, acceleration_factor: f64) {
-        self.adaptive_controller
-            .set_acceleration_factor(acceleration_factor);
-    }
-
-    pub const fn get_adaptive_deacceleration_urgency_multiplier(&self) -> f64 {
-        self.adaptive_controller
-            .get_deacceleration_urgency_multiplier()
-    }
-
-    pub const fn set_adaptive_deacceleration_urgency_multiplier(
-        &mut self,
-        deacceleration_urgency_multiplier: f64,
-    ) {
-        self.adaptive_controller
-            .set_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
     }
 
     pub const fn get_forward(&self) -> bool {

@@ -244,39 +244,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             .map_err(|e| e.to_string())
     }
 
-    /// Set tension target for adaptive mode (0.0-1.0)
-    pub fn spool_set_adaptive_tension_target(&mut self, tension_target: f64) {
-        self.spool_speed_controller
-            .set_adaptive_tension_target(tension_target);
-    }
-
-    /// Set radius learning rate for adaptive mode
-    pub fn spool_set_adaptive_radius_learning_rate(&mut self, radius_learning_rate: f64) {
-        self.spool_speed_controller
-            .set_adaptive_radius_learning_rate(radius_learning_rate);
-    }
-
-    /// Set max speed multiplier for adaptive mode
-    pub fn spool_set_adaptive_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
-        self.spool_speed_controller
-            .set_adaptive_max_speed_multiplier(max_speed_multiplier);
-    }
-
-    /// Set acceleration factor for adaptive mode
-    pub fn spool_set_adaptive_acceleration_factor(&mut self, acceleration_factor: f64) {
-        self.spool_speed_controller
-            .set_adaptive_acceleration_factor(acceleration_factor);
-    }
-
-    /// Set deacceleration urgency multiplier for adaptive mode
-    pub fn spool_set_adaptive_deacceleration_urgency_multiplier(
-        &mut self,
-        deacceleration_urgency_multiplier: f64,
-    ) {
-        self.spool_speed_controller
-            .set_adaptive_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
-    }
-
     /// Set forward rotation direction
     pub fn spool_set_forward(&mut self, forward: bool) {
         self.spool_speed_controller.set_forward(forward);

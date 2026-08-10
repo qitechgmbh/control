@@ -45,6 +45,7 @@ use crate::machines::winder_v2::SpoolAutomaticAction;
 use crate::machines::winder_v2::VARIANT_7031_SPOOL;
 use crate::machines::winder_v2::VARIANT_REGULAR;
 use crate::machines::winder_v2::WinderV1;
+use crate::machines::winder_v2::adaptive_spool_speed_controller::AdaptiveSpoolSpeedController;
 use crate::machines::winder_v2::api::ConfigProperties;
 use crate::machines::winder_v2::api::GearRatio;
 use crate::machines::winder_v2::api::Measurements;
@@ -119,6 +120,31 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     ) -> BuildResult<Self> {
         Self::init_commands(ctx)?;
 
+        let adaptive_spool_speed_controller = AdaptiveSpoolSpeedController::new(
+            ctx.config::<f64>("spool.adaptive.tension_target")
+                .minimum(0.0)
+                .maximum(1.0)
+                .default(0.7)
+                .build()?,
+            ctx.config::<f64>("spool.adaptive.radius_learning_rate")
+                .minimum(0.0)
+                .default(0.5)
+                .build()?,
+            ctx.config::<f64>("spool.adaptive.max_speed_multiplier")
+                .minimum(0.1)
+                .default(4.0)
+                .build()?,
+            ctx.config::<f64>("spool.adaptive.acceleration_factor")
+                .minimum(0.01)
+                .maximum(1.0)
+                .default(0.2)
+                .build()?,
+            ctx.config::<f64>("spool.adaptive.deacceleration_urgency_multiplier")
+                .minimum(1.0)
+                .default(15.0)
+                .build()?,
+        );
+
         Ok(Self {
             traverse,
             puller,
@@ -141,7 +167,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             spool_mode: SpoolMode::Standby,
             traverse_mode: TraverseMode::Standby,
             puller_mode: PullerMode::Standby,
-            spool_speed_controller: SpoolSpeedController::new(),
+            spool_speed_controller: SpoolSpeedController::new(adaptive_spool_speed_controller),
             spool_step_converter: AngularStepConverter::new(200),
             spool_automatic_action: SpoolAutomaticAction {
                 progress: Length::ZERO,
@@ -331,33 +357,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 .on_external_changed(Self::on_puller_adaptive_accepted_difference_changed)
                 .default(0.01)
                 .build()?,
-            spool_adaptive_tension_target: ctx
-                .config::<f64>("spool.adaptive.tension_target")
-                .on_external_changed(Self::on_spool_adaptive_tension_target_changed)
-                .default(0.7)
-                .build()?,
-            spool_adaptive_radius_learning_rate: ctx
-                .config::<f64>("spool.adaptive.radius_learning_rate")
-                .on_external_changed(Self::on_spool_adaptive_radius_learning_rate_changed)
-                .default(0.5)
-                .build()?,
-            spool_adaptive_max_speed_multiplier: ctx
-                .config::<f64>("spool.adaptive.max_speed_multiplier")
-                .on_external_changed(Self::on_spool_adaptive_max_speed_multiplier_changed)
-                .default(4.0)
-                .build()?,
-            spool_adaptive_acceleration_factor: ctx
-                .config::<f64>("spool.adaptive.acceleration_factor")
-                .on_external_changed(Self::on_spool_adaptive_acceleration_factor_changed)
-                .default(0.2)
-                .build()?,
-            spool_adaptive_deacceleration_urgency_multiplier: ctx
-                .config::<f64>("spool.adaptive.deacceleration_urgency_multiplier")
-                .on_external_changed(
-                    Self::on_spool_adaptive_deacceleration_urgency_multiplier_changed,
-                )
-                .default(15.0)
-                .build()?,
             spool_regulation_mode: ctx
                 .config::<SpoolSpeedControllerType>("spool.regulation_mode")
                 .on_external_changed(Self::on_spool_regulation_mode_changed)
@@ -434,21 +433,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                     .build()?,
                 minmax_max_speed: ctx
                     .state::<revolution_per_minute>("spool.minmax.speed_max")
-                    .build()?,
-                adaptive_tension_target: ctx
-                    .state::<f64>("spool.adaptive.tension_target")
-                    .build()?,
-                adaptive_radius_learning_rate: ctx
-                    .state::<f64>("spool.adaptive.radius_learning_rate")
-                    .build()?,
-                adaptive_max_speed_multiplier: ctx
-                    .state::<f64>("spool.adaptive.max_speed_multiplier")
-                    .build()?,
-                adaptive_acceleration_factor: ctx
-                    .state::<f64>("spool.adaptive.acceleration_factor")
-                    .build()?,
-                adaptive_deacceleration_urgency_multiplier: ctx
-                    .state::<f64>("spool.adaptive.deacceleration_urgency_multiplier")
                     .build()?,
                 forward: ctx.state::<bool>("spool.forward").build()?,
             },
