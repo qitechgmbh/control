@@ -26,7 +26,8 @@ use crate::machines::winder_v2::types::SpoolMode;
 use crate::machines::winder_v2::types::TraverseMode;
 use crate::machines::winder_v2::types::Winder2Mode;
 use qitech_framework::MachineIdentification;
-use qitech_framework::machine::MachineInterface;
+use qitech_framework::machine::MachineDescriptor;
+use qitech_framework::machine::OperationCapability;
 use qitech_framework::vendors;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 #[cfg(not(feature = "mock-machine"))]
@@ -70,8 +71,10 @@ impl Default for SpoolAutomaticAction {
     }
 }
 
+#[allow(non_camel_case_types)]
 pub type WinderV1_Regular = WinderV1<VARIANT_REGULAR>;
 
+#[allow(non_camel_case_types)]
 pub type WinderV1_7031_Spool = WinderV1<VARIANT_7031_SPOOL>;
 
 pub struct WinderV1<const VARIANT: usize> {
@@ -110,7 +113,21 @@ pub struct WinderV1<const VARIANT: usize> {
     pub laser_subscription: Option<LaserSubscription>,
 }
 
-impl MachineInterface for WinderV1<VARIANT_REGULAR> {
+impl MachineDescriptor for WinderV1<VARIANT_REGULAR> {
+    const IDENTIFICATION: MachineIdentification = MachineIdentification {
+        vendor_id: vendors::QITECH.id,
+        machine_id: 2,
+    };
+
+    const SCHEMA: &'static str = include_str!("../../../../schemas/winder_v2.yaml");
+}
+
+impl MachineDescriptor for WinderV1<VARIANT_7031_SPOOL> {
+    const IDENTIFICATION: MachineIdentification = MachineIdentification {
+        vendor_id: vendors::QITECH.id,
+        machine_id: 98,
+    };
+    
     const SCHEMA: &'static str = include_str!("../../../../schemas/winder_v2.yaml");
 }
 
@@ -147,39 +164,115 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     }
 
     /// Can go to inner limit capability check
-    pub fn traverse_can_goto_limit_inner(&self) -> bool {
-        // Check if traverse is homed, not in standby, not traversing
-        // Allow changing direction (even when going out)
-        // Disallow when homing is in progress
-        self.traverse_controller.is_homed()
-            && self.traverse_mode != TraverseMode::Standby
-            && !self.traverse_controller.is_going_in()
-            && !self.traverse_controller.is_going_home()
-            && !self.traverse_controller.is_traversing()
-            && self.mode != Winder2Mode::Wind
+    pub fn traverse_can_goto_limit_inner(&self) -> OperationCapability {
+        if !self.traverse_controller.is_homed() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is not homed".to_string(),
+            };
+        }
+
+        if self.traverse_mode == TraverseMode::Standby {
+            return OperationCapability::Forbidden {
+                reason: "traverse is in standby".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_going_in() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is already going in".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_going_home() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is currently homing".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_traversing() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is currently traversing".to_string(),
+            };
+        }
+
+        if self.mode == Winder2Mode::Wind {
+            return OperationCapability::Forbidden {
+                reason: "winder is in wind mode".to_string(),
+            };
+        }
+
+        OperationCapability::Allowed
     }
 
     /// Can go to outer limit capability check
-    pub fn traverse_can_goto_limit_outer(&self) -> bool {
-        // Check if traverse is homed, not in standby, not traversing
-        // Allow changing direction (even when going in)
-        // Disallow when homing is in progress
-        self.traverse_controller.is_homed()
-            && self.traverse_mode != TraverseMode::Standby
-            && !self.traverse_controller.is_going_out()
-            && !self.traverse_controller.is_going_home()
-            && !self.traverse_controller.is_traversing()
-            && self.mode != Winder2Mode::Wind
+    pub fn traverse_can_goto_limit_outer(&self) -> OperationCapability {
+        if !self.traverse_controller.is_homed() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is not homed".to_string(),
+            };
+        }
+
+        if self.traverse_mode == TraverseMode::Standby {
+            return OperationCapability::Forbidden {
+                reason: "traverse is in standby".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_going_out() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is already going out".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_going_home() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is currently homing".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_traversing() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is currently traversing".to_string(),
+            };
+        }
+
+        if self.mode == Winder2Mode::Wind {
+            return OperationCapability::Forbidden {
+                reason: "winder is in wind mode".to_string(),
+            };
+        }
+
+        OperationCapability::Allowed
     }
 
+
     /// Can go home capability check
-    pub fn traverse_can_goto_home(&self) -> bool {
-        // Check if not in standby, not traversing
-        // Allow going home even when going in or out
-        self.traverse_mode != TraverseMode::Standby
-            && !self.traverse_controller.is_going_home()
-            && !self.traverse_controller.is_traversing()
-            && self.mode != Winder2Mode::Wind
+    pub fn traverse_can_goto_home(&self) -> OperationCapability {
+        if self.traverse_mode == TraverseMode::Standby {
+            return OperationCapability::Forbidden {
+                reason: "traverse is in standby".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_going_home() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is already going home".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_traversing() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is currently traversing".to_string(),
+            };
+        }
+
+        if self.mode == Winder2Mode::Wind {
+            return OperationCapability::Forbidden {
+                reason: "winder is in wind mode".to_string(),
+            };
+        }
+
+        OperationCapability::Allowed
     }
 
     /// Apply the mode changes to the spool
@@ -319,7 +412,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 }
 
 #[cfg(not(feature = "mock-machine"))]
-impl std::fmt::Display for WinderV1 {
+impl<const VARIANT: usize> std::fmt::Display for WinderV1<VARIANT> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Winder2")
     }
@@ -335,41 +428,41 @@ mod tests {
         // Test case 1: Valid limits with exactly 1.0mm difference (should pass)
         let inner = Length::new::<millimeter>(15.0);
         let outer = Length::new::<millimeter>(16.0);
-        assert!(WinderV1::validate_traverse_limits(inner, outer));
+        assert!(WinderV1_Regular::validate_traverse_limits(inner, outer));
 
         // Test case 2: Invalid limits with exactly 0.9mm difference (should fail)
         let inner = Length::new::<millimeter>(15.0);
         let outer = Length::new::<millimeter>(15.9);
-        assert!(!WinderV1::validate_traverse_limits(inner, outer));
+        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
 
         // Test case 3: Invalid limits with less than 0.9mm difference (should fail)
         let inner = Length::new::<millimeter>(15.0);
         let outer = Length::new::<millimeter>(15.5);
-        assert!(!WinderV1::validate_traverse_limits(inner, outer));
+        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
 
         // Test case 4: Invalid limits where inner equals outer (should fail)
         let inner = Length::new::<millimeter>(20.0);
         let outer = Length::new::<millimeter>(20.0);
-        assert!(!WinderV1::validate_traverse_limits(inner, outer));
+        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
 
         // Test case 5: Invalid limits where inner is greater than outer (should fail)
         let inner = Length::new::<millimeter>(25.0);
         let outer = Length::new::<millimeter>(20.0);
-        assert!(!WinderV1::validate_traverse_limits(inner, outer));
+        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
 
         // Test case 6: Valid limits with large difference (should pass)
         let inner = Length::new::<millimeter>(10.0);
         let outer = Length::new::<millimeter>(80.0);
-        assert!(WinderV1::validate_traverse_limits(inner, outer));
+        assert!(WinderV1_Regular::validate_traverse_limits(inner, outer));
 
         // Test case 7: Edge case - exactly 0.91mm difference (should pass)
         let inner = Length::new::<millimeter>(15.0);
         let outer = Length::new::<millimeter>(15.91);
-        assert!(WinderV1::validate_traverse_limits(inner, outer));
+        assert!(WinderV1_Regular::validate_traverse_limits(inner, outer));
 
         // Test case 8: Edge case - exactly 0.89mm difference (should fail)
         let inner = Length::new::<millimeter>(15.0);
         let outer = Length::new::<millimeter>(15.89);
-        assert!(!WinderV1::validate_traverse_limits(inner, outer));
+        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
     }
 }

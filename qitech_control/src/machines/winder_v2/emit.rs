@@ -17,7 +17,7 @@ pub use std::time::Instant;
 pub use qitech_lib::units::Velocity;
 pub use qitech_lib::units::velocity::meter_per_minute;
 
-impl WinderV1 {
+impl<const VARIANT: usize> WinderV1<VARIANT> {
     /// Implement Spool
     /// called by `act`
     pub fn sync_spool_speed(&mut self, t: Instant) {
@@ -124,19 +124,19 @@ impl WinderV1 {
     }
 
     pub fn traverse_goto_limit_inner(&mut self) {
-        if self.traverse_can_goto_limit_inner() {
+        if self.traverse_can_goto_limit_inner().is_allowed() {
             self.traverse_controller.goto_limit_inner();
         }
     }
 
     pub fn traverse_goto_limit_outer(&mut self) {
-        if self.traverse_can_goto_limit_outer() {
+        if self.traverse_can_goto_limit_outer().is_allowed() {
             self.traverse_controller.goto_limit_outer();
         }
     }
 
     pub fn traverse_goto_home(&mut self) {
-        if self.traverse_can_goto_home() {
+        if self.traverse_can_goto_home().is_allowed() {
             self.traverse_controller.goto_home();
         }
     }
@@ -316,7 +316,7 @@ impl WinderV1 {
 
 // Winder2 Extension
 #[cfg(not(feature = "mock-machine"))]
-impl WinderV1 {
+impl<const VARIANT: usize> WinderV1<VARIANT> {
     pub fn puller_set_adaptive_max_speed_change_percent(&mut self, value: f64) {
         self.puller_speed_controller
             .adaptive

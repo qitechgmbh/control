@@ -9,20 +9,19 @@ identification:
 config:
   diameter:
     target: !millimeter
-      default: 1.75
 
     tolerance:
       upper: !millimeter
-        default: 0.05
-  
       lower: !millimeter
-        default: 0.05
   
 state:
   in_tolerance: !boolean
 
 measurements:
   diameter: !millimeter
-  diameter_x: !millimeter
-  diameter_y: !millimeter
-  roundness: !millimeter
+  diameter_x: !?millimeter
+  diameter_y: !?millimeter
+  roundness: !?float
+
+events: 
+  out_of_tolerance: !event

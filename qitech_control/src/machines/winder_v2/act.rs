@@ -1,8 +1,6 @@
 use qitech_framework::{
-    MachineIdentificationUnique,
-    machine::{
-        Machine, SubscribeContext,
-        error::{ActResult, SubscribeResult},
+    MachineIdentificationUnique, machine::{
+        Machine, SubscribeContext, SubscribeResult, ActResult,
     },
 };
 use qitech_lib::units::length::millimeter;
@@ -11,8 +9,8 @@ use std::time::Instant;
 use super::WinderV1;
 use crate::machines::winder_v2::types::LaserSubscription;
 
-impl Machine for WinderV1 {
-    fn act(&mut self) -> ActResult {
+impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
+    fn act(&mut self, now: Instant) -> ActResult {
         let now = Instant::now();
 
         // sync the spool speed
@@ -48,13 +46,13 @@ impl Machine for WinderV1 {
         Ok(())
     }
 
-    fn subscribe(&mut self, mut ctx: SubscribeContext) -> SubscribeResult<()> {
+    fn subscribe(&mut self, mut ctx: &mut SubscribeContext) -> SubscribeResult {
         self.laser_subscription = Some(LaserSubscription {
-            ident: ctx.producer(),
-            current: ctx.subscribe_measurement("diameter")?,
-            target: ctx.subscribe_config_property("diameter.target")?,
-            upper: ctx.subscribe_config_property("diameter.tolerance.upper")?,
-            lower: ctx.subscribe_config_property("diameter.tolerance.lower")?,
+            ident: ctx.provider(),
+            current: ctx.measurement("diameter")?,
+            target: ctx.config("diameter.target")?,
+            upper: ctx.config("diameter.tolerance.upper")?,
+            lower: ctx.config("diameter.tolerance.lower")?,
         });
 
         Ok(())

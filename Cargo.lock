@@ -1789,12 +1789,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "permutation"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df202b0b0f5b8e389955afd5f27b007b00fb948162953f1db9c70d2c7e3157d7"
-
-[[package]]
 name = "pest"
 version = "2.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2032,6 +2026,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework"
 version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=3e1a0439cd3f9d1879ab2674133023edd939fa48#3e1a0439cd3f9d1879ab2674133023edd939fa48"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2058,7 +2053,9 @@ dependencies = [
 [[package]]
 name = "qitech_framework_core"
 version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=3e1a0439cd3f9d1879ab2674133023edd939fa48#3e1a0439cd3f9d1879ab2674133023edd939fa48"
 dependencies = [
+ "anyhow",
  "bytes",
  "chrono",
  "crossbeam",
@@ -2066,7 +2063,6 @@ dependencies = [
  "indexmap",
  "postcard",
  "serde",
- "soa_derive",
  "thiserror 2.0.19",
  "tokio",
  "tokio-util",
@@ -2078,17 +2074,20 @@ dependencies = [
 [[package]]
 name = "qitech_framework_macros"
 version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=3e1a0439cd3f9d1879ab2674133023edd939fa48#3e1a0439cd3f9d1879ab2674133023edd939fa48"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
  "qitech_framework_core",
  "quote",
  "syn 3.0.3",
+ "toml 1.1.4+spec-1.1.0",
 ]
 
 [[package]]
 name = "qitech_framework_tui"
 version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=3e1a0439cd3f9d1879ab2674133023edd939fa48#3e1a0439cd3f9d1879ab2674133023edd939fa48"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2590,28 +2589,6 @@ dependencies = [
  "async-process",
  "blocking",
  "futures-lite",
-]
-
-[[package]]
-name = "soa_derive"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47e4eaf24a10828e918ed1e0265de81ad86800f16c6834df8e664b623dec4206"
-dependencies = [
- "permutation",
- "rustc_version",
- "soa_derive_internal",
-]
-
-[[package]]
-name = "soa_derive_internal"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "039896b91e8c5b22d8acdf2206c72904a83d58d138d10e4bca62c16fdae1b744"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
 ]
 
 [[package]]

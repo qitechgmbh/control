@@ -12,8 +12,8 @@ repository = "https://github.com/qitechgmbh/control"
 qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="530355c00baf6335f6085441c2a497d9ac060af6" }
 
 # --- framework ---
-qitech_framework = { path = "/home/entity/cloned-repos/control-v2/library" }
-qitech_framework_tui = { path = "/home/entity/cloned-repos/control-v2/tui" }
+qitech_framework = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="3e1a0439cd3f9d1879ab2674133023edd939fa48" }
+qitech_framework_tui = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="3e1a0439cd3f9d1879ab2674133023edd939fa48" }
 
 [workspace.lints.clippy]
 # don't lint poissbilities for let chains because they were introduces after Rust 1.86

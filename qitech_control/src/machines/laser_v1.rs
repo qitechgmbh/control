@@ -4,17 +4,19 @@ use std::time::Duration;
 use std::time::Instant;
 
 use qitech_framework::MachineIdentification;
+use qitech_framework::machine::ActErrorImpact;
 use qitech_framework::machine::BuildContext;
+use qitech_framework::machine::EventEmitter;
 use qitech_framework::machine::Machine;
 use qitech_framework::machine::MachineBuild;
-use qitech_framework::machine::MachineInterface;
-use qitech_framework::machine::error::ActError;
-use qitech_framework::machine::error::ActErrorKind;
-use qitech_framework::machine::error::ActResult;
-use qitech_framework::machine::error::BuildError;
-use qitech_framework::machine::resource::ConfigProperty;
-use qitech_framework::machine::resource::Measurement;
-use qitech_framework::machine::resource::StateProperty;
+use qitech_framework::machine::MachineDescriptor;
+use qitech_framework::machine::ActError;
+use qitech_framework::machine::ActErrorKind;
+use qitech_framework::machine::ActResult;
+use qitech_framework::machine::BuildError;
+use qitech_framework::machine::ConfigProperty;
+use qitech_framework::machine::Measurement;
+use qitech_framework::machine::StateProperty;
 use qitech_framework::vendors;
 use qitech_lib::modbus::ModbusDevice;
 use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
@@ -22,7 +24,6 @@ use qitech_lib::modbus::devices::qitech_laser::LaserError;
 use qitech_lib::units::Length;
 use qitech_lib::units::length::millimeter;
 
-// #[machine("laser_v1")]
 pub struct LaserV1 {
     // --- hardware ---
     device: Rc<RefCell<LaserDevice>>,
@@ -41,57 +42,68 @@ pub struct LaserV1 {
     diameter_y: Measurement<Option<Length>>,
     roundness: Measurement<Option<f64>>,
 
+    // --- events ---
+    out_of_tolerance: EventEmitter<()>,
+
     // -- misc ---
     last_request: Instant,
 }
 
-impl MachineInterface for LaserV1 {
-    const SCHEMAS: &[&'static str] = &[include_str!("../../../schemas/laser_v1.yaml")];
+impl MachineDescriptor for LaserV1 {
+    const SCHEMA: &'static str = include_str!("../../../schemas/laser_v1.yaml");
+    
+    const IDENTIFICATION: MachineIdentification = MachineIdentification {
+        vendor_id: vendors::QITECH.id,
+        machine_id: 6,
+    };
 }
 
 impl MachineBuild for LaserV1 {
-    fn build(mut ctx: BuildContext) -> Result<Self, BuildError> {
+    fn build(ctx: &mut BuildContext<'_>) -> Result<Self, BuildError> {
         let device = ctx.get_modbus_rtu_device::<LaserDevice>(0)?;
 
         let diameter_target = ctx
             .config::<millimeter>("diameter.target")
             .default(1.75)
-            .minimum(0.0)
-            .register()?;
+            .min(0.0)
+            .build()?;
 
         let diameter_tolerance_lower = ctx
             .config::<millimeter>("diameter.tolerance.lower")
             .default(0.05)
-            .minimum(0.0)
-            .register()?;
+            .min(0.0)
+            .build()?;
 
         let diameter_tolerance_upper = ctx
             .config::<millimeter>("diameter.tolerance.upper")
             .default(0.05)
-            .minimum(0.0)
-            .register()?;
+            .min(0.0)
+            .build()?;
 
         Ok(Self {
             device,
             diameter_target,
             diameter_tolerance_upper,
             diameter_tolerance_lower,
-            in_tolerance: ctx.state::<bool>("in_tolerance").register()?,
-            diameter: ctx.measurement::<millimeter>("diameter").register()?,
+            in_tolerance: ctx.state::<bool>("in_tolerance").build()?,
+            diameter: ctx.measurement::<millimeter>("diameter").build()?,
             diameter_x: ctx
                 .measurement::<Option<millimeter>>("diameter_x")
-                .register()?,
+                .build()?,
             diameter_y: ctx
                 .measurement::<Option<millimeter>>("diameter_y")
-                .register()?,
-            roundness: ctx.measurement::<Option<f64>>("roundness").register()?,
+                .build()?,
+            roundness: ctx.measurement::<Option<f64>>("roundness").build()?,
+            out_of_tolerance: ctx.event("out_of_tolerance").build()?,
             last_request: Instant::now(),
         })
     }
 }
 
 impl Machine for LaserV1 {
-    fn act(&mut self) -> ActResult {
+    fn act(&mut self, now: Instant) -> ActResult {
+        _ = now;
+        
         self.update_device()?;
 
         if let Some(m) = self.device.borrow().measurement.clone() {
@@ -108,7 +120,10 @@ impl Machine for LaserV1 {
         self.roundness.set(roundness);
 
         let in_tolerance = self.compute_in_tolerance();
-        self.in_tolerance.set(in_tolerance);
+        if self.in_tolerance.set(in_tolerance) && !in_tolerance {
+            // value changed from in tolerance -> out of tolerance
+            self.out_of_tolerance.emit(&());
+        };
 
         Ok(())
     }
@@ -128,18 +143,20 @@ impl LaserV1 {
             && let LaserError::IoErr() = laser_error
         {
             return Err(ActError {
-                recoverable: false,
                 kind: ActErrorKind::HardwareFault("Physical hardware I/O broke.".into()),
+                impact: ActErrorImpact::Irrecoverable,
             });
         }
 
         let now = Instant::now();
         if now.duration_since(self.last_request) > Duration::from_millis(6) {
             self.last_request = now;
-            let res = laser.send_next_request();
 
-            if res.is_err() {
-                println!("send_next_request {:?}", res);
+            if let Err(e) = laser.send_next_request() {
+                return Err(ActError {
+                    kind: ActErrorKind::HardwareFault(format!("Failed to send request: {e}")),
+                    impact: ActErrorImpact::Degraded,
+                });
             }
         }
 
@@ -167,13 +184,6 @@ impl LaserV1 {
 
     /// Calculates if the current diameter is inside of the tolerance
     fn compute_in_tolerance(&mut self) -> bool {
-        // const DIAMETER_EPSILON: f64 = 0.0001; // in mm
-        //
-        // // early return true if the diameter is 0 to prevent warning happening before start
-        // if self.diameter.get_as::<millimeter>() < DIAMETER_EPSILON {
-        //     return true;
-        // }
-
         let target = self.diameter_target.get();
         let top = target + self.diameter_tolerance_upper.get();
         let bottom = target - self.diameter_tolerance_lower.get();
