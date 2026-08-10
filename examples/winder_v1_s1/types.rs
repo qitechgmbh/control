@@ -1,4 +1,4 @@
-use qitech_framework::{EnumProperty, MachineIdentificationUnique, machine::SubscribedProperty};
+use qitech_framework::{EnumProperty, MachineIdentificationUnique, machine::RemoteProperty};
 use qitech_lib::units::Length;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, EnumProperty)]
@@ -104,8 +104,8 @@ impl From<Winder2Mode> for PullerMode {
 
 pub struct LaserSubscription {
     pub ident: MachineIdentificationUnique,
-    pub current: SubscribedProperty<Length>,
-    pub target: SubscribedProperty<Length>,
-    pub lower: SubscribedProperty<Length>,
-    pub upper: SubscribedProperty<Length>,
+    pub current: RemoteProperty<Length>,
+    pub target: RemoteProperty<Length>,
+    pub lower: RemoteProperty<Length>,
+    pub upper: RemoteProperty<Length>,
 }

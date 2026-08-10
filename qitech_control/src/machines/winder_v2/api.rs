@@ -26,7 +26,6 @@ pub struct ConfigProperties {
     // --- puller ---
     pub puller_regulation_mode: ConfigProperty<PullerRegulationMode>,
     pub puller_target_speed: ConfigProperty<Velocity>,
-    pub puller_forward: ConfigProperty<bool>,
     pub puller_gear_ratio: ConfigProperty<GearRatio>,
     pub puller_adaptive_max_speed_change_percent: ConfigProperty<f64>,
     pub puller_adaptive_adjustment_interval: ConfigProperty<Length>,
@@ -93,11 +92,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 .puller_target_speed
                 .get_as::<meter_per_minute>(),
         );
-        Ok(())
-    }
-
-    pub fn on_puller_forward_changed(&mut self) -> ActResult {
-        self.puller_set_forward(self.config_props.puller_forward.get());
         Ok(())
     }
 
@@ -248,7 +242,6 @@ pub struct TraverseStateProperties {
 pub struct PullerStateProperties {
     pub regulation: StateProperty<PullerRegulationMode>,
     pub target_speed: StateProperty<Velocity>,
-    pub forward: StateProperty<bool>,
     pub gear_ratio: StateProperty<GearRatio>,
     pub adaptive_speed_delta_max: StateProperty<f64>,
     pub adaptive_adjustment_distance: StateProperty<Length>,
@@ -471,7 +464,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         // --- precompute puller state ---
         let regulation = self.puller_speed_controller.regulation_mode;
         let target_speed = self.puller_speed_controller.target_speed;
-        let forward = self.puller_speed_controller.forward;
         let gear_ratio = self.puller_speed_controller.gear_ratio;
 
         let adaptive_speed_delta_max = self.puller_speed_controller.adaptive.speed_delta_max();
@@ -485,7 +477,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
         s.regulation.set(regulation);
         s.target_speed.set(target_speed);
-        s.forward.set(forward);
         s.gear_ratio.set(gear_ratio);
 
         s.adaptive_speed_delta_max.set(adaptive_speed_delta_max);

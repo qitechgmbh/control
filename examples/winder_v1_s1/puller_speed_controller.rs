@@ -5,6 +5,7 @@ use crate::{
     converters::linear_step_converter::LinearStepConverter,
 };
 use qitech_framework::EnumProperty;
+use qitech_framework::machine::ConfigProperty;
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::acceleration::meter_per_minute_per_second;
 use qitech_lib::units::f64::Length;
@@ -34,7 +35,6 @@ impl GearRatio {
     }
 }
 
-#[derive(Debug)]
 pub struct PullerSpeedController {
     enabled: bool,
     pub target_speed: Velocity,
@@ -43,7 +43,7 @@ pub struct PullerSpeedController {
 
     pub regulation_mode: PullerRegulationMode,
     /// Forward rotation direction. If false, applies negative sign to speed
-    pub forward: bool,
+    pub forward: ConfigProperty<bool>,
     /// Gear ratio for winding speed (1:5 or 1:10)
     pub gear_ratio: GearRatio,
     /// Linear acceleration controller to dampen speed change
@@ -54,7 +54,11 @@ pub struct PullerSpeedController {
 }
 
 impl PullerSpeedController {
-    pub fn new(target_speed: Velocity, converter: LinearStepConverter) -> Self {
+    pub fn new(
+        target_speed: Velocity,
+        converter: LinearStepConverter,
+        forward: ConfigProperty<bool>,
+    ) -> Self {
         let acceleration = Acceleration::new::<meter_per_minute_per_second>(5.0);
         let jerk = Jerk::new::<meter_per_minute_per_second_squared>(10.0);
         let speed = Velocity::new::<meter_per_minute>(50.0);
@@ -70,7 +74,7 @@ impl PullerSpeedController {
             target_speed,
             adaptive,
             regulation_mode: PullerRegulationMode::Speed,
-            forward: true,
+            forward,
             gear_ratio: GearRatio::default(),
             acceleration_controller: LinearJerkSpeedController::new_simple(
                 Some(speed),
@@ -99,10 +103,6 @@ impl PullerSpeedController {
         self.regulation_mode = regulation;
     }
 
-    pub const fn set_forward(&mut self, forward: bool) {
-        self.forward = forward;
-    }
-
     pub const fn set_gear_ratio(&mut self, gear_ratio: GearRatio) {
         self.gear_ratio = gear_ratio;
     }
@@ -123,7 +123,7 @@ impl PullerSpeedController {
         // Apply gear ratio multiplier
         let speed = base_speed * self.gear_ratio.multiplier();
 
-        let speed = if self.forward { speed } else { -speed };
+        let speed = if self.forward.get() { speed } else { -speed };
 
         let speed = self.acceleration_controller.update(speed, t);
 

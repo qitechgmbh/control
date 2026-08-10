@@ -243,11 +243,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         self.puller_speed_controller.set_target_speed(target_speed);
     }
 
-    /// Set forward direction
-    pub fn puller_set_forward(&mut self, forward: bool) {
-        self.puller_speed_controller.set_forward(forward);
-    }
-
     /// Set gear ratio for winding speed
     pub fn puller_set_gear_ratio(&mut self, gear_ratio: super::puller_speed_controller::GearRatio) {
         self.puller_speed_controller.set_gear_ratio(gear_ratio);

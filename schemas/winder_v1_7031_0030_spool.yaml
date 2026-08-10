@@ -65,7 +65,6 @@ state:
     regulation: !enum [speed, diameter]
 
     target_speed: !meter_per_minute
-    forward: !boolean
 
     gear_ratio: !enum [one_to_one, one_to_five, one_to_ten]
 

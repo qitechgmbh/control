@@ -1,11 +1,10 @@
 use crate::machines::winder_v2::types::{SpoolAutomaticActionMode, Winder2Mode};
 
 use super::{
-    LASER_PORT, SPOOL_PORT, TRAVERSE_PORT, TraverseMode, WinderV1, api::PullerRegulationMode,
+    SPOOL_PORT, TRAVERSE_PORT, TraverseMode, WinderV1, api::PullerRegulationMode,
     spool_speed_controller,
 };
 
-use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 #[cfg(not(feature = "mock-machine"))]
 pub use qitech_lib::units::{
     angular_velocity::revolution_per_minute,
@@ -13,13 +12,12 @@ pub use qitech_lib::units::{
     length::{meter, millimeter},
 };
 
-use std::cell::RefMut;
 pub use std::time::Instant;
 
 pub use qitech_lib::units::Velocity;
 pub use qitech_lib::units::velocity::meter_per_minute;
 
-impl WinderV1 {
+impl<const VARIANT: usize> WinderV1<VARIANT> {
     /// Implement Spool
     /// called by `act`
     pub fn sync_spool_speed(&mut self, t: Instant) {
@@ -90,18 +88,6 @@ impl WinderV1 {
         }
     }
 
-    fn get_laser(&mut self) -> RefMut<'_, dyn DigitalOutputDevice> {
-        self.laser.borrow_mut()
-    }
-
-    /// Implement Traverse
-    pub fn set_laser(&mut self, value: bool) {
-        self.laser_enabled = value;
-        let mut laser = self.get_laser();
-        laser.set_output(LASER_PORT, value);
-        drop(laser);
-    }
-
     pub fn traverse_set_limit_inner(&mut self, limit: f64) {
         let new_inner = Length::new::<millimeter>(limit);
         let current_outer = self.traverse_controller.get_limit_outer();
@@ -138,19 +124,19 @@ impl WinderV1 {
     }
 
     pub fn traverse_goto_limit_inner(&mut self) {
-        if self.can_go_in() {
+        if self.traverse_can_goto_limit_inner().is_allowed() {
             self.traverse_controller.goto_limit_inner();
         }
     }
 
     pub fn traverse_goto_limit_outer(&mut self) {
-        if self.can_go_out() {
+        if self.traverse_can_goto_limit_outer().is_allowed() {
             self.traverse_controller.goto_limit_outer();
         }
     }
 
     pub fn traverse_goto_home(&mut self) {
-        if self.can_go_home() {
+        if self.traverse_can_goto_home().is_allowed() {
             self.traverse_controller.goto_home();
         }
     }
@@ -257,11 +243,6 @@ impl WinderV1 {
         self.puller_speed_controller.set_target_speed(target_speed);
     }
 
-    /// Set forward direction
-    pub fn puller_set_forward(&mut self, forward: bool) {
-        self.puller_speed_controller.set_forward(forward);
-    }
-
     /// Set gear ratio for winding speed
     pub fn puller_set_gear_ratio(&mut self, gear_ratio: super::puller_speed_controller::GearRatio) {
         self.puller_speed_controller.set_gear_ratio(gear_ratio);
@@ -278,14 +259,16 @@ impl WinderV1 {
     /// Set minimum speed for minmax mode in RPM
     pub fn spool_set_minmax_min_speed(&mut self, min_speed_rpm: f64) -> Result<(), String> {
         let min_speed = AngularVelocity::new::<revolution_per_minute>(min_speed_rpm);
-        self.spool_speed_controller.set_minmax_min_speed(min_speed)
+        self.spool_speed_controller
+            .set_minmax_min_speed(min_speed)
             .map_err(|e| e.to_string())
     }
 
     /// Set maximum speed for minmax mode in RPM
     pub fn spool_set_minmax_max_speed(&mut self, max_speed_rpm: f64) -> Result<(), String> {
         let max_speed = AngularVelocity::new::<revolution_per_minute>(max_speed_rpm);
-        self.spool_speed_controller.set_minmax_max_speed(max_speed)
+        self.spool_speed_controller
+            .set_minmax_max_speed(max_speed)
             .map_err(|e| e.to_string())
     }
 
@@ -330,7 +313,7 @@ impl WinderV1 {
 
 // Winder2 Extension
 #[cfg(not(feature = "mock-machine"))]
-impl WinderV1 {
+impl<const VARIANT: usize> WinderV1<VARIANT> {
     pub fn puller_set_adaptive_max_speed_change_percent(&mut self, value: f64) {
         self.puller_speed_controller
             .adaptive
