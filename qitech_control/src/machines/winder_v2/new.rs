@@ -151,7 +151,9 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 mode: SpoolAutomaticActionMode::NoAction,
             },
             puller_speed_controller: PullerSpeedController::new(
-                Velocity::new::<meter_per_minute>(1.0),
+                ctx.config::<meter_per_minute>("puller.target_speed")
+                    .default(1.0)
+                    .build()?,
                 LinearStepConverter::from_diameter(
                     200,                            // Assuming 200 steps per revolution for the puller stepper,
                     Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
@@ -304,11 +306,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 .on_external_changed(Self::on_puller_gear_ratio_changed)
                 .default(GearRatio::OneToOne)
                 .build()?,
-            puller_target_speed: ctx
-                .config::<meter_per_minute>("puller.target_speed")
-                .on_external_changed(Self::on_puller_target_speed_changed)
-                .default(1.0)
-                .build()?,
             puller_adaptive_max_speed_change_percent: ctx
                 .config::<f64>("puller.adapative.max_speed_change_percent")
                 .on_external_changed(Self::on_puller_adaptive_max_speed_change_percent_changed)
@@ -409,9 +406,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             puller_state: PullerStateProperties {
                 regulation: ctx
                     .state::<PullerRegulationMode>("puller.regulation")
-                    .build()?,
-                target_speed: ctx
-                    .state::<meter_per_minute>("puller.target_speed")
                     .build()?,
                 gear_ratio: ctx.state::<GearRatio>("puller.gear_ratio").build()?,
                 adaptive_speed_delta_max: ctx

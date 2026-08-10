@@ -37,7 +37,7 @@ impl GearRatio {
 
 pub struct PullerSpeedController {
     enabled: bool,
-    pub target_speed: Velocity,
+    pub target_speed: ConfigProperty<Velocity>,
 
     pub adaptive: AdaptiveSpeedAlgorithm,
 
@@ -55,7 +55,7 @@ pub struct PullerSpeedController {
 
 impl PullerSpeedController {
     pub fn new(
-        target_speed: Velocity,
+        target_speed: ConfigProperty<Velocity>,
         converter: LinearStepConverter,
         forward: ConfigProperty<bool>,
     ) -> Self {
@@ -90,10 +90,6 @@ impl PullerSpeedController {
         self.enabled = enabled;
     }
 
-    pub fn set_target_speed(&mut self, target: Velocity) {
-        self.target_speed = target;
-    }
-
     pub fn set_regulation_mode(&mut self, regulation: PullerRegulationMode) {
         // Reset adaptive modulation when switching to Diameter mode
         // so it starts from the current target_speed without jumps
@@ -114,8 +110,8 @@ impl PullerSpeedController {
     fn update_speed(&mut self, t: Instant) -> Velocity {
         let base_speed = match self.enabled {
             true => match self.regulation_mode {
-                PullerRegulationMode::Speed => self.target_speed,
-                PullerRegulationMode::Diameter => self.adaptive.compute(self.target_speed),
+                PullerRegulationMode::Speed => self.target_speed.get(),
+                PullerRegulationMode::Diameter => self.adaptive.compute(self.target_speed.get()),
             },
             false => Velocity::ZERO,
         };

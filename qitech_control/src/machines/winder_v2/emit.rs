@@ -14,9 +14,6 @@ pub use qitech_lib::units::{
 
 pub use std::time::Instant;
 
-pub use qitech_lib::units::Velocity;
-pub use qitech_lib::units::velocity::meter_per_minute;
-
 impl<const VARIANT: usize> WinderV1<VARIANT> {
     /// Implement Spool
     /// called by `act`
@@ -224,13 +221,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
         self.puller_speed_controller
             .set_regulation_mode(puller_regulation_mode);
-    }
-
-    /// Set target speed in m/min
-    pub fn puller_set_target_speed(&mut self, target_speed: f64) {
-        // Convert m/min to velocity
-        let target_speed = Velocity::new::<meter_per_minute>(target_speed);
-        self.puller_speed_controller.set_target_speed(target_speed);
     }
 
     /// Set gear ratio for winding speed

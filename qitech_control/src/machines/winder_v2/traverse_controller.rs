@@ -141,10 +141,6 @@ impl TraverseController {
         self.limit_outer
     }
 
-    pub fn get_step_size(&self) -> Length {
-        self.step_size.get()
-    }
-
     pub fn get_current_position(&self) -> Option<Length> {
         match self.is_homed() {
             true => Some(self.position),

@@ -6,7 +6,6 @@ use qitech_framework::machine::{
 use qitech_lib::units::angle::degree;
 use qitech_lib::units::angular_velocity::revolution_per_minute;
 use qitech_lib::units::length::{meter, millimeter};
-use qitech_lib::units::velocity::meter_per_minute;
 use qitech_lib::units::{Angle, AngularVelocity, Length, Velocity};
 
 use crate::machines::winder_v2::types::SpoolAutomaticActionMode;
@@ -23,7 +22,6 @@ pub struct ConfigProperties {
 
     // --- puller ---
     pub puller_regulation_mode: ConfigProperty<PullerRegulationMode>,
-    pub puller_target_speed: ConfigProperty<Velocity>,
     pub puller_gear_ratio: ConfigProperty<GearRatio>,
     pub puller_adaptive_max_speed_change_percent: ConfigProperty<f64>,
     pub puller_adaptive_adjustment_interval: ConfigProperty<Length>,
@@ -71,15 +69,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
     pub fn on_puller_regulation_mode_changed(&mut self) -> ActResult {
         self.puller_set_regulation(self.config_props.puller_regulation_mode.get());
-        Ok(())
-    }
-
-    pub fn on_puller_target_speed_changed(&mut self) -> ActResult {
-        self.puller_set_target_speed(
-            self.config_props
-                .puller_target_speed
-                .get_as::<meter_per_minute>(),
-        );
         Ok(())
     }
 
@@ -228,7 +217,6 @@ pub struct TraverseStateProperties {
 
 pub struct PullerStateProperties {
     pub regulation: StateProperty<PullerRegulationMode>,
-    pub target_speed: StateProperty<Velocity>,
     pub gear_ratio: StateProperty<GearRatio>,
     pub adaptive_speed_delta_max: StateProperty<f64>,
     pub adaptive_adjustment_distance: StateProperty<Length>,
@@ -446,7 +434,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     fn update_state_puller(&mut self) {
         // --- precompute puller state ---
         let regulation = self.puller_speed_controller.regulation_mode;
-        let target_speed = self.puller_speed_controller.target_speed;
         let gear_ratio = self.puller_speed_controller.gear_ratio;
 
         let adaptive_speed_delta_max = self.puller_speed_controller.adaptive.speed_delta_max();
@@ -459,7 +446,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         let s = &mut self.state_props.puller_state;
 
         s.regulation.set(regulation);
-        s.target_speed.set(target_speed);
         s.gear_ratio.set(gear_ratio);
 
         s.adaptive_speed_delta_max.set(adaptive_speed_delta_max);
