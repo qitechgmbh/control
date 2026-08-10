@@ -118,11 +118,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         self.traverse_controller.set_step_size(step_size);
     }
 
-    pub fn traverse_set_padding(&mut self, padding: f64) {
-        let padding = Length::new::<millimeter>(padding);
-        self.traverse_controller.set_padding(padding);
-    }
-
     pub fn traverse_goto_limit_inner(&mut self) {
         if self.traverse_can_goto_limit_inner().is_allowed() {
             self.traverse_controller.goto_limit_inner();

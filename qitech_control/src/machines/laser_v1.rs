@@ -3,6 +3,7 @@ use std::rc::Rc;
 use std::time::Duration;
 use std::time::Instant;
 
+use qitech_framework::Machine;
 use qitech_framework::MachineIdentification;
 use qitech_framework::machine::ActError;
 use qitech_framework::machine::ActErrorImpact;
@@ -14,9 +15,9 @@ use qitech_framework::machine::ConfigProperty;
 use qitech_framework::machine::EventEmitter;
 use qitech_framework::machine::Machine;
 use qitech_framework::machine::MachineBuild;
-use qitech_framework::machine::MachineDescriptor;
 use qitech_framework::machine::Measurement;
 use qitech_framework::machine::StateProperty;
+use qitech_framework::machine_build;
 use qitech_framework::vendors;
 use qitech_lib::modbus::ModbusDevice;
 use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
@@ -24,6 +25,7 @@ use qitech_lib::modbus::devices::qitech_laser::LaserError;
 use qitech_lib::units::Length;
 use qitech_lib::units::length::millimeter;
 
+#[derive(Machine)]
 pub struct LaserV1 {
     // --- hardware ---
     device: Rc<RefCell<LaserDevice>>,
@@ -49,16 +51,8 @@ pub struct LaserV1 {
     last_request: Instant,
 }
 
-impl MachineDescriptor for LaserV1 {
-    const SCHEMA: &'static str = include_str!("../../../schemas/laser_v1.yaml");
-
-    const IDENTIFICATION: MachineIdentification = MachineIdentification {
-        vendor_id: vendors::QITECH.id,
-        machine_id: 6,
-    };
-}
-
 impl MachineBuild for LaserV1 {
+    #[machine_build(LaserV1)]
     fn build(ctx: &mut BuildContext<'_>) -> Result<Self, BuildError> {
         let device = ctx.get_modbus_rtu_device::<LaserDevice>(0)?;
 

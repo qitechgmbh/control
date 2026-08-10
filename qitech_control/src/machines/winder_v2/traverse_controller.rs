@@ -1,5 +1,6 @@
 use super::{TRAVERSE_END_STOP_PORT, TRAVERSE_PORT};
 use crate::converters::linear_step_converter::LinearStepConverter;
+use qitech_framework::machine::ConfigProperty;
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::angular_velocity::revolution_per_second;
@@ -8,14 +9,13 @@ use qitech_lib::units::length::millimeter;
 use qitech_lib::units::velocity::millimeter_per_second;
 use std::time::Instant;
 
-#[derive(Debug)]
 pub struct TraverseController {
     enabled: bool,
     position: Length,
     limit_inner: Length,
     limit_outer: Length,
     step_size: Length,
-    padding: Length,
+    padding: ConfigProperty<Length>,
     state: State,
     fullstep_converter: LinearStepConverter,
     microstep_converter: LinearStepConverter,
@@ -92,14 +92,19 @@ pub enum HomingState {
 }
 
 impl TraverseController {
-    pub fn new(limit_inner: Length, limit_outer: Length, microsteps: u8) -> Self {
+    pub fn new(
+        limit_inner: Length,
+        limit_outer: Length,
+        microsteps: u8,
+        padding: ConfigProperty<Length>,
+    ) -> Self {
         Self {
             enabled: false,
             position: Length::ZERO,
             limit_inner,
             limit_outer,
             step_size: Length::new::<millimeter>(1.75), // Default step size
-            padding: Length::new::<millimeter>(0.88),   // Default padding
+            padding,
             state: State::NotHomed,
             fullstep_converter: LinearStepConverter::from_circumference(
                 200,
@@ -131,10 +136,6 @@ impl TraverseController {
         self.step_size = step_size;
     }
 
-    pub fn set_padding(&mut self, padding: Length) {
-        self.padding = padding;
-    }
-
     pub fn get_limit_inner(&self) -> Length {
         self.limit_inner
     }
@@ -145,10 +146,6 @@ impl TraverseController {
 
     pub fn get_step_size(&self) -> Length {
         self.step_size
-    }
-
-    pub fn get_padding(&self) -> Length {
-        self.padding
     }
 
     pub fn get_current_position(&self) -> Option<Length> {
@@ -345,21 +342,21 @@ impl TraverseController {
             State::Traversing(traversing_state) => match traversing_state {
                 TraversingState::GoingOut => {
                     // If outer limit is reached
-                    if self.position >= self.limit_outer - self.padding {
+                    if self.position >= self.limit_outer - self.padding.get() {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingIn);
                     }
                 }
                 TraversingState::TraversingIn => {
                     // If inner limit is reached
-                    if self.position <= self.limit_inner + self.padding {
+                    if self.position <= self.limit_inner + self.padding.get() {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingOut);
                     }
                 }
                 TraversingState::TraversingOut => {
                     // If outer limit is reached
-                    if self.position >= self.limit_outer - self.padding {
+                    if self.position >= self.limit_outer - self.padding.get() {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingIn);
                     }
@@ -422,16 +419,16 @@ impl TraverseController {
                 TraversingState::GoingOut => {
                     // Move out at a speed of 100 mm/s
                     self.speed_to_position(
-                        self.limit_outer - self.padding + Length::new::<millimeter>(0.01),
+                        self.limit_outer - self.padding.get() + Length::new::<millimeter>(0.01),
                         Velocity::new::<millimeter_per_second>(100.0),
                     )
                 }
                 TraversingState::TraversingIn => self.speed_to_position(
-                    self.limit_inner + self.padding - Length::new::<millimeter>(0.01),
+                    self.limit_inner + self.padding.get() - Length::new::<millimeter>(0.01),
                     Self::calculate_traverse_speed(spool_speed, self.step_size),
                 ),
                 TraversingState::TraversingOut => self.speed_to_position(
-                    self.limit_outer - self.padding + Length::new::<millimeter>(0.01),
+                    self.limit_outer - self.padding.get() + Length::new::<millimeter>(0.01),
                     Self::calculate_traverse_speed(spool_speed, self.step_size),
                 ),
             },

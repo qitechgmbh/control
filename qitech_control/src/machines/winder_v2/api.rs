@@ -21,7 +21,6 @@ pub struct ConfigProperties {
     pub traverse_limit_inner: ConfigProperty<Length>,
     pub traverse_limit_outer: ConfigProperty<Length>,
     pub traverse_step_size: ConfigProperty<Length>,
-    pub traverse_padding: ConfigProperty<Length>,
 
     // --- puller ---
     pub puller_regulation_mode: ConfigProperty<PullerRegulationMode>,
@@ -73,11 +72,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
     pub fn on_traverse_step_size_changed(&mut self) -> ActResult {
         self.traverse_set_step_size(self.config_props.traverse_step_size.get_as::<millimeter>());
-        Ok(())
-    }
-
-    pub fn on_traverse_padding_changed(&mut self) -> ActResult {
-        self.traverse_set_padding(self.config_props.traverse_padding.get_as::<millimeter>());
         Ok(())
     }
 
@@ -233,7 +227,6 @@ pub struct TraverseStateProperties {
     pub is_traversing: StateProperty<bool>,
     pub laserpointer: StateProperty<bool>,
     pub step_size: StateProperty<Length>,
-    pub padding: StateProperty<Length>,
     pub can_go_in: StateProperty<bool>,
     pub can_go_out: StateProperty<bool>,
     pub can_go_home: StateProperty<bool>,
@@ -433,7 +426,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
         let laserpointer = self.laser_enabled;
         let step_size = self.traverse_controller.get_step_size();
-        let padding = self.traverse_controller.get_padding();
 
         let can_go_in = self.traverse_can_goto_limit_inner();
         let can_go_out = self.traverse_can_goto_limit_outer();
@@ -453,7 +445,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
         s.laserpointer.set(laserpointer);
         s.step_size.set(step_size);
-        s.padding.set(padding);
 
         s.can_go_in.set(can_go_in.is_allowed());
         s.can_go_out.set(can_go_out.is_allowed());

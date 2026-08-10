@@ -119,7 +119,7 @@ impl MachineDescriptor for WinderV1<VARIANT_REGULAR> {
         machine_id: 2,
     };
 
-    const SCHEMA: &'static str = include_str!("../../../../schemas/winder_v1.yaml");
+    const SCHEMA: &'static str = include_str!("../../../schemas/winder_v1.yaml");
 }
 
 impl MachineDescriptor for WinderV1<VARIANT_7031_SPOOL> {
@@ -128,7 +128,7 @@ impl MachineDescriptor for WinderV1<VARIANT_7031_SPOOL> {
         machine_id: 98,
     };
 
-    const SCHEMA: &'static str = include_str!("../../../../schemas/winder_v1_7031_0030_spool.yaml");
+    const SCHEMA: &'static str = include_str!("../../../schemas/winder_v1_7031_0030_spool.yaml");
 }
 
 impl<const VARIANT: usize> WinderV1<VARIANT> {

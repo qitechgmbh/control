@@ -131,6 +131,9 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 Length::new::<millimeter>(22.0), // Default inner limit
                 Length::new::<millimeter>(92.0), // Default outer limit
                 64,                              // Microsteps
+                ctx.config::<millimeter>("traverse.padding")
+                    .default(0.88)
+                    .build()?,
             ),
             mode: Winder2Mode::Standby,
             spool_mode: SpoolMode::Standby,
@@ -150,9 +153,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                     200,                            // Assuming 200 steps per revolution for the puller stepper,
                     Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
                 ),
-                ctx.config::<bool>("puller.forward")
-                    .default(true)
-                    .build()?,
+                ctx.config::<bool>("puller.forward").default(true).build()?,
             ),
             config_props: Self::init_config_properties(ctx)?,
             state_props: Self::init_state_properties(ctx)?,
@@ -295,11 +296,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 .on_external_changed(Self::on_traverse_step_size_changed)
                 .default(1.75)
                 .build()?,
-            traverse_padding: ctx
-                .config::<millimeter>("traverse.padding")
-                .on_external_changed(Self::on_traverse_padding_changed)
-                .default(0.88)
-                .build()?,
             puller_regulation_mode: ctx
                 .config::<PullerRegulationMode>("puller.regulation_mode")
                 .on_external_changed(Self::on_puller_regulation_mode_changed)
@@ -407,7 +403,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 is_traversing: ctx.state::<bool>("traverse.is_traversing").build()?,
                 laserpointer: ctx.state::<bool>("traverse.laserpointer").build()?,
                 step_size: ctx.state::<millimeter>("traverse.step_size").build()?,
-                padding: ctx.state::<millimeter>("traverse.padding").build()?,
                 can_go_in: ctx.state::<bool>("traverse.can_go_in").build()?,
                 can_go_out: ctx.state::<bool>("traverse.can_go_out").build()?,
                 can_go_home: ctx.state::<bool>("traverse.can_go_home").build()?,
