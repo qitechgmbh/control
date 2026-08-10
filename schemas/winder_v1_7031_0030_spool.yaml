@@ -8,86 +8,42 @@ identification:
 
 config:
   traverse:
-    limit:
-      inner: !millimeter
-        default: 22.0
-
-      outer: !millimeter
-        default: 22.0
-
+    limit_inner: !millimeter
+    limit_outer: !millimeter
     step_size: !millimeter
-      default: 1.75
-
     padding: !millimeter
-      default: 0.88
 
   puller:
-    regulation_mode: !enum
-      variants: [speed, diameter]
-      default: speed
+    regulation_mode: !enum [speed, diameter]
+    gear_ratio: !enum [one_to_one, one_to_five, one_to_ten]
 
-    speed_target: !meter_per_minute
-      default: 1.0
-
+    target_speed: !meter_per_minute
     forward: !boolean
-      default: true
-
-    gear_ratio: !enum
-      variants: [one_to_one, one_to_five, one_to_ten]
-      default: one_to_one
 
     adapative:
       max_speed_change_percent: !float
-        default: 33.0
-
       adjustment_interval: !meter
-        default: 0.5
-
       step_percent: !float
-        default: 3.3
-
       accepted_difference: !millimeter
-        default: 0.01
 
   spool:
-    direction: !boolean
+    regulation_mode: !enum [adaptive, min_max]
+    forward: !boolean
 
-    speed_regulation:
-      mode: !enum
-        variants: [adaptive, min_max]
-        default: [adaptive]
+    min_max:
+      speed_min: !revolution_per_minute
+      speed_max: !revolution_per_minute
 
-      min_max:
-        speed:
-          min: !meter_per_minute
-            default: 0.0
-
-          max: !meter_per_minute
-            default: 0.0
-
-      adaptive:
-        tension_target: !float
-          default: 0.7
-
-        radius_learning_rate: !float
-          default: 0.5
-
-        max_speed_multiplier: !float
-          default: 4.0
-
-        acceleration_factor: !float
-          default: 0.2
-
-        deacceleration_urgency_multiplier: !float
-          default: 15.0
+    adaptive:
+      tension_target: !float
+      radius_learning_rate: !float
+      max_speed_multiplier: !float
+      acceleration_factor: !float
+      deacceleration_urgency_multiplier: !float
 
   spool_automatic:
-    length_target: !meter
-      default: 250.0
-
-    action: !enum
-      variants: [no_action, pull, hold]
-      default: no_action
+    required_meters: !meter
+    action: !enum [no_action, pull, hold]
 
 state:
   traverse:
@@ -106,51 +62,49 @@ state:
     can_go_home: !boolean
 
   puller:
-    regulation: !enum
-      variants: [speed, diameter]
+    regulation: !enum [speed, diameter]
 
     target_speed: !meter_per_minute
     forward: !boolean
 
-    gear_ratio: !enum 
-      variants: [one_to_one, one_to_five, one_to_ten]
+    gear_ratio: !enum [one_to_one, one_to_five, one_to_ten]
 
-    adaptive_speed_delta_max: !float
-    adaptive_adjustment_distance: !millimeter
-    adaptive_change_per_step: !float
-    allowed_diameter_deviation: !millimeter
+    adaptive:
+      speed_delta_max: !float
+      change_per_step: !float
+      adjustment_distance: !millimeter
+      accepted_difference: !millimeter
 
   spool_automatic_action:
     spool_required_meters: !meter
-    spool_automatic_action_mode: !enum
-      variants: [no_action, pull, hold]
+    spool_automatic_action_mode: !enum [no_action, pull, hold]
 
   mode:
-    mode: !enum
-      variants: [standby, pull, hold, wind]
+    mode: !enum [standby, pull, hold, wind]
 
     can_wind: !boolean
 
   tension_arm:
     zeroed: !boolean
 
-  spool_speed_controller:
-    regulation_mode: !enum
-      variants: [adaptive, minmax]
-
-    minmax_min_speed: !revolution_per_minute
-    minmax_max_speed: !revolution_per_minute
-    adaptive_tension_target: !float
-    adaptive_radius_learning_rate: !float
-    adaptive_max_speed_multiplier: !float
-    adaptive_acceleration_factor: !float
-    adaptive_deacceleration_urgency_multiplier: !float
+  spool:
     forward: !boolean
+    regulation_mode: !enum [adaptive, minmax]
+
+    minmax:
+      speed_min: !revolution_per_minute
+      speed_max: !revolution_per_minute
+
+    adaptive:
+      tension_target: !float
+      radius_learning_rate: !float
+      max_speed_multiplier: !float
+      acceleration_factor: !float
+      deacceleration_urgency_multiplier: !float
 
 measurements:
   traverse:
-    position: !millimeter
-      nullable: true
+    position: !?millimeter
 
   puller: 
     speed: !meter_per_minute
@@ -164,11 +118,10 @@ measurements:
     angle: !degree
 
 commands:
-  set_mode:
-    standby: !command
-    hold: !command
-    pull: !command
-    wind: !command
+  enter_standby_mode: !command
+  enter_hold_mode: !command
+  enter_pull_mode: !command
+  enter_wind_mode: !command
 
   traverse:
     laserpointer:
@@ -181,3 +134,5 @@ commands:
 
   tension_arm: 
     set_zero: !command
+
+  spool.reset_progress: !command

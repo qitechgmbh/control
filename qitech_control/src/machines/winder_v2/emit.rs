@@ -264,14 +264,16 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     /// Set minimum speed for minmax mode in RPM
     pub fn spool_set_minmax_min_speed(&mut self, min_speed_rpm: f64) -> Result<(), String> {
         let min_speed = AngularVelocity::new::<revolution_per_minute>(min_speed_rpm);
-        self.spool_speed_controller.set_minmax_min_speed(min_speed)
+        self.spool_speed_controller
+            .set_minmax_min_speed(min_speed)
             .map_err(|e| e.to_string())
     }
 
     /// Set maximum speed for minmax mode in RPM
     pub fn spool_set_minmax_max_speed(&mut self, max_speed_rpm: f64) -> Result<(), String> {
         let max_speed = AngularVelocity::new::<revolution_per_minute>(max_speed_rpm);
-        self.spool_speed_controller.set_minmax_max_speed(max_speed)
+        self.spool_speed_controller
+            .set_minmax_max_speed(max_speed)
             .map_err(|e| e.to_string())
     }
 

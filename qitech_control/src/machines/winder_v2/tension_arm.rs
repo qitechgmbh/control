@@ -75,8 +75,8 @@ impl TensionArm {
                 self.zeroed = true;
                 Ok(())
             }
-            
-            Err(e) => Err(e.to_string())
+
+            Err(e) => Err(e.to_string()),
         }
     }
 }

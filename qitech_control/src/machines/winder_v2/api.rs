@@ -1,7 +1,10 @@
 use std::time::Instant;
 
-use qitech_framework::machine::{ActResult, CommandExecuteResult, ConfigProperty, Measurement, StateProperty};
+use qitech_framework::machine::{
+    ActResult, CommandExecuteResult, ConfigProperty, Measurement, StateProperty,
+};
 use qitech_lib::units::angle::degree;
+use qitech_lib::units::angular_velocity::revolution_per_minute;
 use qitech_lib::units::length::{meter, millimeter};
 use qitech_lib::units::velocity::meter_per_minute;
 use qitech_lib::units::{Angle, AngularVelocity, Length, Velocity};
@@ -32,8 +35,8 @@ pub struct ConfigProperties {
 
     // --- spool speed controller ---
     pub spool_regulation_mode: ConfigProperty<SpoolSpeedControllerType>,
-    pub spool_min_speed: ConfigProperty<Velocity>,
-    pub spool_max_speed: ConfigProperty<Velocity>,
+    pub spool_min_speed: ConfigProperty<AngularVelocity>,
+    pub spool_max_speed: ConfigProperty<AngularVelocity>,
     pub spool_forward: ConfigProperty<bool>,
 
     // --- adaptive spool speed controller ---
@@ -49,7 +52,7 @@ pub struct ConfigProperties {
 }
 
 impl<const VARIANT: usize> WinderV1<VARIANT> {
-    pub fn on_traverse_limit_inner_changed(&mut self) -> ActResult{
+    pub fn on_traverse_limit_inner_changed(&mut self) -> ActResult {
         self.traverse_set_limit_inner(
             self.config_props
                 .traverse_limit_inner
@@ -59,7 +62,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         Ok(())
     }
 
-    pub fn on_traverse_limit_outer_changed(&mut self) -> ActResult{
+    pub fn on_traverse_limit_outer_changed(&mut self) -> ActResult {
         self.traverse_set_limit_outer(
             self.config_props
                 .traverse_limit_outer
@@ -69,7 +72,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         Ok(())
     }
 
-    pub fn on_traverse_step_size_changed(&mut self) -> ActResult{
+    pub fn on_traverse_step_size_changed(&mut self) -> ActResult {
         self.traverse_set_step_size(self.config_props.traverse_step_size.get_as::<millimeter>());
         Ok(())
     }
@@ -79,12 +82,12 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         Ok(())
     }
 
-    pub fn on_puller_regulation_mode_changed(&mut self) -> ActResult{
+    pub fn on_puller_regulation_mode_changed(&mut self) -> ActResult {
         self.puller_set_regulation(self.config_props.puller_regulation_mode.get());
         Ok(())
     }
 
-    pub fn on_puller_target_speed_changed(&mut self) -> ActResult{
+    pub fn on_puller_target_speed_changed(&mut self) -> ActResult {
         self.puller_set_target_speed(
             self.config_props
                 .puller_target_speed
@@ -93,17 +96,17 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         Ok(())
     }
 
-    pub fn on_puller_forward_changed(&mut self) -> ActResult{
+    pub fn on_puller_forward_changed(&mut self) -> ActResult {
         self.puller_set_forward(self.config_props.puller_forward.get());
         Ok(())
     }
 
-    pub fn on_puller_gear_ratio_changed(&mut self) -> ActResult{
+    pub fn on_puller_gear_ratio_changed(&mut self) -> ActResult {
         self.puller_set_gear_ratio(self.config_props.puller_gear_ratio.get());
         Ok(())
     }
 
-    pub fn on_puller_adaptive_max_speed_change_percent_changed(&mut self) -> ActResult{
+    pub fn on_puller_adaptive_max_speed_change_percent_changed(&mut self) -> ActResult {
         self.puller_set_adaptive_max_speed_change_percent(
             self.config_props
                 .puller_adaptive_max_speed_change_percent
@@ -112,7 +115,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         Ok(())
     }
 
-    pub fn on_puller_adaptive_adjustment_interval_changed(&mut self) -> ActResult{
+    pub fn on_puller_adaptive_adjustment_interval_changed(&mut self) -> ActResult {
         self.puller_set_adaptive_adjustment_interval_meters(
             self.config_props
                 .puller_adaptive_adjustment_interval
@@ -121,12 +124,12 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         Ok(())
     }
 
-    pub fn on_puller_adaptive_step_percent_changed(&mut self) -> ActResult{
+    pub fn on_puller_adaptive_step_percent_changed(&mut self) -> ActResult {
         self.puller_set_adaptive_step_percent(self.config_props.puller_adaptive_step_percent.get());
         Ok(())
     }
 
-    pub fn on_puller_adaptive_accepted_difference_changed(&mut self) -> ActResult{
+    pub fn on_puller_adaptive_accepted_difference_changed(&mut self) -> ActResult {
         self.puller_set_adaptive_accepted_difference(
             self.config_props
                 .puller_adaptive_accepted_difference
@@ -135,7 +138,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         Ok(())
     }
 
-    pub fn on_spool_regulation_mode_changed(&mut self) -> ActResult{
+    pub fn on_spool_regulation_mode_changed(&mut self) -> ActResult {
         self.spool_set_regulation_mode(self.config_props.spool_regulation_mode.get());
         Ok(())
     }
@@ -144,58 +147,56 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         self.spool_set_minmax_min_speed(
             self.config_props
                 .spool_min_speed
-                .get_as::<meter_per_minute>(),
+                .get_as::<revolution_per_minute>(),
         );
 
         Ok(())
     }
 
-    pub fn on_spool_max_speed_changed(&mut self) -> ActResult{
+    pub fn on_spool_max_speed_changed(&mut self) -> ActResult {
         self.spool_set_minmax_max_speed(
             self.config_props
                 .spool_max_speed
-                .get_as::<meter_per_minute>(),
+                .get_as::<revolution_per_minute>(),
         );
 
         Ok(())
     }
 
-    pub fn on_spool_forward_changed(&mut self) -> ActResult{
+    pub fn on_spool_forward_changed(&mut self) -> ActResult {
         self.spool_set_forward(self.config_props.spool_forward.get());
         Ok(())
     }
 
-    pub fn on_spool_adaptive_tension_target_changed(&mut self) -> ActResult{
+    pub fn on_spool_adaptive_tension_target_changed(&mut self) -> ActResult {
         self.spool_set_adaptive_tension_target(
             self.config_props.spool_adaptive_tension_target.get(),
         );
         Ok(())
     }
 
-    pub fn on_spool_adaptive_radius_learning_rate_changed(&mut self) -> ActResult{
+    pub fn on_spool_adaptive_radius_learning_rate_changed(&mut self) -> ActResult {
         self.spool_set_adaptive_radius_learning_rate(
             self.config_props.spool_adaptive_radius_learning_rate.get(),
         );
         Ok(())
     }
 
-    pub fn on_spool_adaptive_max_speed_multiplier_changed(&mut self) -> ActResult{
+    pub fn on_spool_adaptive_max_speed_multiplier_changed(&mut self) -> ActResult {
         self.spool_set_adaptive_max_speed_multiplier(
             self.config_props.spool_adaptive_max_speed_multiplier.get(),
         );
         Ok(())
     }
 
-    pub fn on_spool_adaptive_acceleration_factor_changed(&mut self) -> ActResult{
+    pub fn on_spool_adaptive_acceleration_factor_changed(&mut self) -> ActResult {
         self.spool_set_adaptive_acceleration_factor(
             self.config_props.spool_adaptive_acceleration_factor.get(),
         );
         Ok(())
     }
 
-    pub fn on_spool_adaptive_deacceleration_urgency_multiplier_changed(
-        &mut self,
-    ) -> ActResult{
+    pub fn on_spool_adaptive_deacceleration_urgency_multiplier_changed(&mut self) -> ActResult {
         self.spool_set_adaptive_deacceleration_urgency_multiplier(
             self.config_props
                 .spool_adaptive_deacceleration_urgency_multiplier
@@ -204,7 +205,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         Ok(())
     }
 
-    pub fn on_spool_automatic_required_length_changed(&mut self) -> ActResult{
+    pub fn on_spool_automatic_required_length_changed(&mut self) -> ActResult {
         self.set_spool_automatic_required_meters(
             self.config_props
                 .spool_automatic_required_length
@@ -213,7 +214,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         Ok(())
     }
 
-    pub fn on_spool_automatic_action_changed(&mut self) -> ActResult{
+    pub fn on_spool_automatic_action_changed(&mut self) -> ActResult {
         self.set_spool_automatic_mode(self.config_props.spool_automatic_action.get());
         Ok(())
     }

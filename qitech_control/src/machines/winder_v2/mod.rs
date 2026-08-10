@@ -119,7 +119,7 @@ impl MachineDescriptor for WinderV1<VARIANT_REGULAR> {
         machine_id: 2,
     };
 
-    const SCHEMA: &'static str = include_str!("../../../../schemas/winder_v2.yaml");
+    const SCHEMA: &'static str = include_str!("../../../../schemas/winder_v1.yaml");
 }
 
 impl MachineDescriptor for WinderV1<VARIANT_7031_SPOOL> {
@@ -127,21 +127,11 @@ impl MachineDescriptor for WinderV1<VARIANT_7031_SPOOL> {
         vendor_id: vendors::QITECH.id,
         machine_id: 98,
     };
-    
-    const SCHEMA: &'static str = include_str!("../../../../schemas/winder_v2.yaml");
+
+    const SCHEMA: &'static str = include_str!("../../../../schemas/winder_v1_7031_0030_spool.yaml");
 }
 
 impl<const VARIANT: usize> WinderV1<VARIANT> {
-    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
-        vendor_id: vendors::QITECH.id,
-        machine_id: 2,
-    };
-
-    pub const MACHINE_IDENTIFICATION_7031_SPOOL: MachineIdentification = MachineIdentification {
-        vendor_id: vendors::QITECH.id,
-        machine_id: 98,
-    };
-
     /// Validates that traverse limits maintain proper constraints:
     /// - Inner limit must be smaller than outer limit
     /// - At least 0.9mm difference between inner and outer limits
@@ -244,7 +234,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
         OperationCapability::Allowed
     }
-
 
     /// Can go home capability check
     pub fn traverse_can_goto_home(&self) -> OperationCapability {

@@ -9,69 +9,35 @@ identification:
 config:
   traverse:
     limit_inner: !millimeter
-      default: 22.0
-
     limit_outer: !millimeter
-      default: 92.0
-
     step_size: !millimeter
-      default: 1.75
-
     padding: !millimeter
-      default: 0.88
 
   puller:
-    regulation_mode: !enum
-      variants: [speed, diameter]
-      default: speed
+    regulation_mode: !enum [speed, diameter]
+    gear_ratio: !enum [one_to_one, one_to_five, one_to_ten]
 
     target_speed: !meter_per_minute
-      default: 1.0
-
     forward: !boolean
-      default: true
-
-    gear_ratio: !enum
-      variants: [one_to_one, one_to_five, one_to_ten]
-      default: one_to_one
 
     adapative:
       max_speed_change_percent: !float
-        default: 33.0
-
       adjustment_interval: !meter
-        default: 0.5
-
       step_percent: !float
-        default: 3.3
-
       accepted_difference: !millimeter
-        default: 0.01
 
   spool:
     adaptive:
       tension_target: !float
-        default: 0.7
-
       radius_learning_rate: !float
-        default: 0.5
-
       max_speed_multiplier: !float
-        default: 4.0
-
       acceleration_factor: !float
-        default: 0.2
-
       deacceleration_urgency_multiplier: !float
-        default: 15.0
 
   spool_automatic:
     required_meters: !meter
-      default: 250.0
 
-    action: !enum
-      variants: [no_action, pull, hold]
-      default: no_action
+    action: !enum [no_action, pull, hold]
 
 state:
   traverse:
@@ -90,14 +56,12 @@ state:
     can_go_home: !boolean
 
   puller:
-    regulation: !enum
-      variants: [speed, diameter]
+    regulation: !enum [speed, diameter]
 
     target_speed: !meter_per_minute
     forward: !boolean
 
-    gear_ratio: !enum 
-      variants: [one_to_one, one_to_five, one_to_ten]
+    gear_ratio: !enum [one_to_one, one_to_five, one_to_ten]
 
     adaptive_speed_delta_max: !float
     adaptive_adjustment_distance: !millimeter
@@ -106,12 +70,10 @@ state:
 
   spool_automatic_action:
     spool_required_meters: !meter
-    spool_automatic_action_mode: !enum
-      variants: [no_action, pull, hold]
+    spool_automatic_action_mode: !enum [no_action, pull, hold]
 
   mode:
-    mode: !enum
-      variants: [standby, pull, hold, wind]
+    mode: !enum [standby, pull, hold, wind]
 
     can_wind: !boolean
 
@@ -119,8 +81,7 @@ state:
     zeroed: !boolean
 
   spool_speed_controller:
-    regulation_mode: !enum
-      variants: [adaptive, minmax]
+    regulation_mode: !enum [adaptive, minmax]
 
     minmax_min_speed: !revolution_per_minute
     minmax_max_speed: !revolution_per_minute
@@ -133,8 +94,7 @@ state:
 
 measurements:
   traverse:
-    position: !millimeter
-      nullable: true
+    position: !?millimeter
 
   puller: 
     speed: !meter_per_minute

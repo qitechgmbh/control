@@ -4,17 +4,17 @@ use std::time::Duration;
 use std::time::Instant;
 
 use qitech_framework::MachineIdentification;
+use qitech_framework::machine::ActError;
 use qitech_framework::machine::ActErrorImpact;
+use qitech_framework::machine::ActErrorKind;
+use qitech_framework::machine::ActResult;
 use qitech_framework::machine::BuildContext;
+use qitech_framework::machine::BuildError;
+use qitech_framework::machine::ConfigProperty;
 use qitech_framework::machine::EventEmitter;
 use qitech_framework::machine::Machine;
 use qitech_framework::machine::MachineBuild;
 use qitech_framework::machine::MachineDescriptor;
-use qitech_framework::machine::ActError;
-use qitech_framework::machine::ActErrorKind;
-use qitech_framework::machine::ActResult;
-use qitech_framework::machine::BuildError;
-use qitech_framework::machine::ConfigProperty;
 use qitech_framework::machine::Measurement;
 use qitech_framework::machine::StateProperty;
 use qitech_framework::vendors;
@@ -51,7 +51,7 @@ pub struct LaserV1 {
 
 impl MachineDescriptor for LaserV1 {
     const SCHEMA: &'static str = include_str!("../../../schemas/laser_v1.yaml");
-    
+
     const IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor_id: vendors::QITECH.id,
         machine_id: 6,
@@ -103,7 +103,7 @@ impl MachineBuild for LaserV1 {
 impl Machine for LaserV1 {
     fn act(&mut self, now: Instant) -> ActResult {
         _ = now;
-        
+
         self.update_device()?;
 
         if let Some(m) = self.device.borrow().measurement.clone() {

@@ -1,7 +1,6 @@
 use qitech_framework::{
-    MachineIdentificationUnique, machine::{
-        Machine, SubscribeContext, SubscribeResult, ActResult,
-    },
+    MachineIdentificationUnique,
+    machine::{ActResult, Machine, SubscribeContext, SubscribeResult},
 };
 use qitech_lib::units::length::millimeter;
 use std::time::Instant;
@@ -11,8 +10,6 @@ use crate::machines::winder_v2::types::LaserSubscription;
 
 impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
     fn act(&mut self, now: Instant) -> ActResult {
-        let now = Instant::now();
-
         // sync the spool speed
         self.sync_spool_speed(now);
 
@@ -46,7 +43,7 @@ impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
         Ok(())
     }
 
-    fn subscribe(&mut self, mut ctx: &mut SubscribeContext) -> SubscribeResult {
+    fn subscribe(&mut self, ctx: &mut SubscribeContext) -> SubscribeResult {
         self.laser_subscription = Some(LaserSubscription {
             ident: ctx.provider(),
             current: ctx.measurement("diameter")?,

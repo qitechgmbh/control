@@ -2026,7 +2026,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=3e1a0439cd3f9d1879ab2674133023edd939fa48#3e1a0439cd3f9d1879ab2674133023edd939fa48"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=af7d588e3d867faea0b6f6d50a9f47bb58ad597c#af7d588e3d867faea0b6f6d50a9f47bb58ad597c"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2053,7 +2053,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_core"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=3e1a0439cd3f9d1879ab2674133023edd939fa48#3e1a0439cd3f9d1879ab2674133023edd939fa48"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=af7d588e3d867faea0b6f6d50a9f47bb58ad597c#af7d588e3d867faea0b6f6d50a9f47bb58ad597c"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2074,7 +2074,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_macros"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=3e1a0439cd3f9d1879ab2674133023edd939fa48#3e1a0439cd3f9d1879ab2674133023edd939fa48"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=af7d588e3d867faea0b6f6d50a9f47bb58ad597c#af7d588e3d867faea0b6f6d50a9f47bb58ad597c"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -2087,7 +2087,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_tui"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=3e1a0439cd3f9d1879ab2674133023edd939fa48#3e1a0439cd3f9d1879ab2674133023edd939fa48"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=af7d588e3d867faea0b6f6d50a9f47bb58ad597c#af7d588e3d867faea0b6f6d50a9f47bb58ad597c"
 dependencies = [
  "anyhow",
  "bitvec",
