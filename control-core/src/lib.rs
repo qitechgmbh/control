@@ -7,6 +7,7 @@ pub mod futures;
 pub mod helpers;
 pub mod irq_handling;
 pub mod modbus;
+pub mod persistence;
 pub mod realtime;
 pub mod socketio;
 pub mod transmission;

@@ -9,6 +9,7 @@ import { useExtruder2 } from "./useExtruder";
 import { ControlGrid } from "@/control/ControlGrid";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { HeatingPowerOverrideZone } from "../HeatingPowerOverrideZone";
+import { MimoCouplingPanel } from "../MimoCouplingPanel";
 import { TemperatureAutoTunePanel } from "../TemperatureAutoTunePanel";
 
 export function Extruder2SettingsPage() {
@@ -32,6 +33,11 @@ export function Extruder2SettingsPage() {
     startTemperaturePidAutoTune,
     stopTemperaturePidAutoTune,
     applyTemperatureAutoTuneResult,
+    mimoTrace,
+    startMimoIdentification,
+    stopMimoIdentification,
+    synthesizeMimoGains,
+    setThermalControlMode,
   } = useExtruder2();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -486,6 +492,20 @@ export function Extruder2SettingsPage() {
               onStart={startTemperaturePidAutoTune}
               onStop={stopTemperaturePidAutoTune}
               onApply={applyTemperatureAutoTuneResult}
+            />
+          </ControlGrid>
+          <ControlGrid>
+            <MimoCouplingPanel
+              mimoState={state?.mimo_state}
+              trace={mimoTrace}
+              canStart={
+                state?.mode_state.mode === "Heat" &&
+                !state?.inverter_status_state.running
+              }
+              onStart={startMimoIdentification}
+              onStop={stopMimoIdentification}
+              onSynthesize={synthesizeMimoGains}
+              onSetMode={setThermalControlMode}
             />
           </ControlGrid>
         </>

@@ -2,10 +2,14 @@ use super::{
     ExtruderV2, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
     screw_speed_controller::ScrewSpeedController, temperature_controller::TemperatureController,
 };
+#[cfg(not(feature = "mock-machine"))]
+use crate::extruder1::mimo::ThermalControl;
 use crate::{
     MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, MachineHardware, MachineMessage, MachineNew,
 };
 use control_core::controllers::imc_tuner::{ImcTuner, ImcTunerConfig};
+#[cfg(not(feature = "mock-machine"))]
+use control_core::controllers::mimo::identify::MimoStepIdentifier;
 use control_core::transmission::fixed::FixedTransmission;
 use qitech_lib::ethercat_hal::{
     coe::ConfigurableDevice,
@@ -210,11 +214,31 @@ impl MachineNew for ExtruderV2 {
             temperature_tuner_setpoint: 0.0,
             last_tune_trace_emit: Instant::now(),
 
+            // A stored model and gains are restored below, but the machine always comes back under
+            // decentralized control. Changing a running machine's control structure on boot is not
+            // something to do without an operator asking for it.
+            #[cfg(not(feature = "mock-machine"))]
+            thermal_control: ThermalControl::Decentralized,
+            #[cfg(not(feature = "mock-machine"))]
+            mimo_identifier: MimoStepIdentifier::new(),
+            #[cfg(not(feature = "mock-machine"))]
+            mimo_model: None,
+            #[cfg(not(feature = "mock-machine"))]
+            mimo_gains: None,
+            #[cfg(not(feature = "mock-machine"))]
+            mimo_synthesis_method: "",
+            #[cfg(not(feature = "mock-machine"))]
+            last_mimo_trace_emit: Instant::now(),
+            #[cfg(not(feature = "mock-machine"))]
+            mimo_last_error: None,
+
             relais_output: digital_out_device.0,
             temperature_input: temperature_device.0,
             serial_interface: serial_device.0,
             pressure_sensor: pressure_sensor.0,
         };
+        #[cfg(not(feature = "mock-machine"))]
+        extruder.restore_mimo_record();
         extruder.emit_state();
         Ok(extruder)
     }

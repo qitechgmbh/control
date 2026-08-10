@@ -36,6 +36,8 @@ mock-machine = []
 memory-locking = []
 io-uring = []
 development-build = []
+# Iterated-LMI MIMO synthesis; see control-core/src/controllers/mimo/synth_lmi.rs.
+mimo-lmi = ["control_core/mimo-lmi"]
 
 [package.metadata.cargo-machete]
 ignored =  ["tonic"]

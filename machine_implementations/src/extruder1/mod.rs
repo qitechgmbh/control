@@ -1,8 +1,13 @@
 pub mod act;
 pub mod api;
 pub mod emit;
+// Both extend `ExtruderV2`, which does not exist under `mock-machine`.
+#[cfg(not(feature = "mock-machine"))]
+pub mod mimo;
 pub mod mitsubishi_cs80;
 pub mod new;
+#[cfg(not(feature = "mock-machine"))]
+pub mod persist;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
 
@@ -11,6 +16,10 @@ use crate::{MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, VENDOR_QITECH};
 use crate::{MachineMessage, QiTechMachine};
 use api::ExtruderV2Namespace;
 use control_core::controllers::imc_tuner::ImcTuner;
+#[cfg(not(feature = "mock-machine"))]
+use control_core::controllers::mimo::{MimoGains, MimoModel, identify::MimoStepIdentifier};
+#[cfg(not(feature = "mock-machine"))]
+use mimo::ThermalControl;
 use qitech_lib::machines::MachineIdentification;
 use qitech_lib::machines::MachineIdentificationUnique;
 use qitech_lib::units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
@@ -122,6 +131,27 @@ pub struct ExtruderV2 {
     temperature_tuner_setpoint: f64,
     /// Last time the tuner trace was pushed to clients.
     last_tune_trace_emit: Instant,
+
+    /// Which scheme drives the heating zones. Decentralized unless an operator switches over —
+    /// never automatically, including after a restart that restored a stored model.
+    thermal_control: ThermalControl,
+    /// Step-test campaign that identifies the 4x4 coupling matrix.
+    ///
+    /// Unlike the single-zone tuner this owns *every* heater for the length of a run: if the other
+    /// zones kept regulating they would reject the incoming heat, and the campaign would measure
+    /// the closed-loop disturbance response instead of the plant.
+    mimo_identifier: MimoStepIdentifier,
+    /// Most recently identified coupling model, from a campaign or restored from disk.
+    mimo_model: Option<MimoModel>,
+    /// Gains synthesized from that model. Present does not mean active.
+    mimo_gains: Option<MimoGains>,
+    /// Which synthesis backend produced `mimo_gains`.
+    mimo_synthesis_method: &'static str,
+    /// Last time the campaign trace was pushed to clients.
+    last_mimo_trace_emit: Instant,
+    /// Why the last MIMO request was refused. Surfaced to the operator, who is otherwise left
+    /// guessing why a button did nothing.
+    mimo_last_error: Option<String>,
 
     /// Energy tracking for total consumption calculation
     total_energy_kwh: f64,

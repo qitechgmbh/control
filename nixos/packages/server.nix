@@ -1,8 +1,13 @@
 {
+  lib,
   pkg-config,
   libudev-zero,
   libpcap,
+  openblas,
   rustPlatform,
+  # Iterated-LMI MIMO synthesis. Off by default because its semidefinite solver needs
+  # BLAS/LAPACK, which is a C/Fortran dependency the rest of the server does without.
+  withMimoLmi ? false,
 }:
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "server";
@@ -20,7 +25,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   buildInputs = [
     libpcap
     libudev-zero
-  ];
+  ] ++ lib.optional withMimoLmi openblas;
 
   doCheck = false;
 
@@ -30,5 +35,6 @@ rustPlatform.buildRustPackage (finalAttrs: {
     else
       "2";
 
-  cargoExtraArgs = "--features io-uring --no-default-features";
+  cargoExtraArgs =
+    "--features io-uring${lib.optionalString withMimoLmi ",mimo-lmi"} --no-default-features";
 })

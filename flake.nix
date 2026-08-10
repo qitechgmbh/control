@@ -80,6 +80,8 @@
               libudev-zero
               libpcap
               nodejs_24
+              # For `cargo test --features mimo-lmi`, whose SDP solver links BLAS/LAPACK.
+              openblas
               lldb
               electron
               # dev tools

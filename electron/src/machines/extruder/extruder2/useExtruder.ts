@@ -43,6 +43,7 @@ export function useExtruder2() {
     state,
     defaultState,
     tuneTrace,
+    mimoTrace,
     motorCurrent,
     motorFrequency,
     motorScrewRpm,
@@ -578,6 +579,78 @@ export function useExtruder2() {
     }),
   );
 
+  const { request: requestStartMimoIdentification } = useMachineMutation(
+    z.object({
+      StartMimoIdentification: z.object({
+        step_duty: z.number(),
+        max_rise_celsius: z.number(),
+      }),
+    }),
+  );
+
+  const { request: requestStopMimoIdentification } = useMachineMutation(
+    z.object({ StopMimoIdentification: z.object({}) }),
+  );
+
+  const { request: requestSynthesizeMimoGains } = useMachineMutation(
+    z.object({
+      SynthesizeMimoGains: z.object({
+        method: z.string(),
+        lambda_factor: z.number(),
+      }),
+    }),
+  );
+
+  const { request: requestSetThermalControlMode } = useMachineMutation(
+    z.object({ SetThermalControlMode: z.object({ mode: z.string() }) }),
+  );
+
+  /**
+   * Identify the 4x4 coupling matrix between the heating zones.
+   *
+   * Runs for hours with every heater open-loop, so the backend refuses unless the machine is in
+   * Heat mode with the screw stopped, and clamps the rise limit against each zone's own cutoff.
+   */
+  const startMimoIdentification = (
+    stepDuty: number,
+    maxRiseCelsius: number,
+  ) => {
+    requestStartMimoIdentification({
+      machine_identification_unique: machineIdentification,
+      data: {
+        StartMimoIdentification: {
+          step_duty: stepDuty,
+          max_rise_celsius: maxRiseCelsius,
+        },
+      },
+    });
+  };
+
+  const stopMimoIdentification = () => {
+    requestStopMimoIdentification({
+      machine_identification_unique: machineIdentification,
+      data: { StopMimoIdentification: {} },
+    });
+  };
+
+  /** Turn the identified model into gains. Does not apply them. */
+  const synthesizeMimoGains = (method: string, lambdaFactor: number) => {
+    requestSynthesizeMimoGains({
+      machine_identification_unique: machineIdentification,
+      data: {
+        SynthesizeMimoGains: { method, lambda_factor: lambdaFactor },
+      },
+    });
+  };
+
+  /** Switch the heating zones between independent PID loops and the coupled controller. */
+  const setThermalControlMode = (mode: "decentralized" | "mimo") => {
+    requestSetThermalControlMode({
+      machine_identification_unique: machineIdentification,
+      data: { SetThermalControlMode: { mode } },
+    });
+  };
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -587,6 +660,9 @@ export function useExtruder2() {
 
     // Recorded curve from the running or most recent temperature auto-tune
     tuneTrace,
+
+    // Recorded curves from the running or most recent MIMO coupling campaign
+    mimoTrace,
 
     // Individual live values (TimeSeries)
     motorCurrent,
@@ -643,5 +719,9 @@ export function useExtruder2() {
     startTemperaturePidAutoTune,
     stopTemperaturePidAutoTune,
     applyTemperatureAutoTuneResult,
+    startMimoIdentification,
+    stopMimoIdentification,
+    synthesizeMimoGains,
+    setThermalControlMode,
   };
 }

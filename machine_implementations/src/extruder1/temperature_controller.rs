@@ -61,12 +61,15 @@ pub struct TemperatureController {
     power_override_enabled: bool,
     /// Fixed heating power in watts used while `power_override_enabled` is set
     power_override_watts: f64,
-    /// Duty commanded by the IMC auto-tuner while a step test owns this zone, as a fraction of
-    /// full output. `None` means the zone is under normal control.
+    /// Duty commanded by whatever currently owns this zone from outside — the IMC step tuner, the
+    /// MIMO identification campaign, or the MIMO controller — as a fraction of full output. `None`
+    /// means the zone is under its own PID.
     ///
-    /// The tuner returns `None` in every non-running state and the caller applies that every tick,
-    /// so releasing the zone is structural — there is no restore step an abort path could skip.
-    tuner_duty: Option<f64>,
+    /// Every owner returns `None` in each of its non-driving states and the caller applies that
+    /// every tick, so releasing the zone is structural: there is no restore step an abort path
+    /// could skip. Only one owner may drive a zone at a time; the act loop enforces that by
+    /// ordering, running at most one of them per tick.
+    external_duty: Option<f64>,
 }
 
 impl TemperatureController {
@@ -125,7 +128,7 @@ impl TemperatureController {
             },
             power_override_enabled: false,
             power_override_watts: 0.0,
-            tuner_duty: None,
+            external_duty: None,
         }
     }
 
@@ -151,19 +154,19 @@ impl TemperatureController {
         self.max_temperature.get::<degree_celsius>()
     }
 
-    /// Hand the output to the auto-tuner (`Some(duty)`) or give it back to the PID (`None`).
+    /// Hand the output to an external owner (`Some(duty)`) or give it back to the PID (`None`).
     ///
     /// On release the PID is reset, so it restarts without integral and derivative state left over
-    /// from before the test.
-    pub fn apply_tuner_command(&mut self, cmd: Option<f64>) {
-        if self.tuner_duty.is_some() && cmd.is_none() {
+    /// from whatever was driving.
+    pub fn apply_external_duty(&mut self, cmd: Option<f64>) {
+        if self.external_duty.is_some() && cmd.is_none() {
             self.pid.reset();
         }
-        self.tuner_duty = cmd.map(|duty| duty.clamp(0.0, self.max_clamp));
+        self.external_duty = cmd.map(|duty| duty.clamp(0.0, self.max_clamp));
     }
 
-    pub const fn is_tuner_driving(&self) -> bool {
-        self.tuner_duty.is_some()
+    pub const fn is_externally_driven(&self) -> bool {
+        self.external_duty.is_some()
     }
 
     /// Apply tuned gains together with the matching derivative filter.
@@ -249,11 +252,11 @@ impl TemperatureController {
         }
 
         if self.heating_allowed {
-            let duty = if let Some(tuner_duty) = self.tuner_duty {
-                // The auto-tuner owns the output for the duration of a step test. Keep the PID
-                // reset so it does not wind up while it is not driving.
+            let duty = if let Some(external_duty) = self.external_duty {
+                // Something outside owns the output: a step test, an identification campaign, or
+                // the MIMO controller. Keep the PID reset so it does not wind up while idle.
                 self.pid.reset();
-                tuner_duty
+                external_duty
             } else if self.power_override_enabled {
                 // Debug/test mode: hold a fixed heating power instead of regulating. Keep the PID
                 // reset so its integral doesn't wind up while it isn't driving the output.

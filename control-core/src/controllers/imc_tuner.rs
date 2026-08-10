@@ -590,106 +590,18 @@ impl ImcTuner {
         })
     }
 
-    /// Least-squares FOPDT fit over the recorded step response.
-    ///
-    /// The model is `y(t) = A * (1 - exp(-(t - theta) / tau))` for `t >= theta`, zero before. `A` is
-    /// linear given `(theta, tau)`, so only two parameters are searched and the amplitude falls out
-    /// in closed form at each grid point.
-    ///
-    /// Cost is kept off the caller's control loop by decimating first, exploiting the uniform
-    /// sample spacing so `exp` is evaluated once per candidate `tau` rather than once per sample,
-    /// and refining coarse-to-fine. It runs exactly once, at the end of a run.
+    /// Least-squares FOPDT fit over this run's recorded step response.
     fn fit_fopdt(&self) -> Option<Fopdt> {
         let start = self.step_start_index?;
         let raw: Vec<f64> = self.trace[start..]
             .iter()
             .map(|s| s.pv - self.baseline_pv)
             .collect();
-        if raw.len() < MIN_FIT_SAMPLES {
-            return None;
-        }
-        let sample_dt = self.config.sample_period.as_secs_f64();
-
-        let stride = (raw.len() / FIT_TARGET_SAMPLES).max(1);
-        let ys: Vec<f64> = raw.iter().step_by(stride).copied().collect();
-        let dt = sample_dt * stride as f64;
-        let n = ys.len();
-        if n < 10 {
-            return None;
-        }
-
-        // Plateau value, averaged over the tail, used only to bracket the search.
-        let tail = ((PLATEAU_WINDOW_SECONDS / dt).round() as usize).clamp(1, n);
-        let y_final = ys[n - tail..].iter().sum::<f64>() / tail as f64;
-        if y_final.abs() < 1e-9 {
-            return None;
-        }
-
-        let target = 0.632 * y_final;
-        let crossed = ys.iter().position(|&y| {
-            if y_final > 0.0 {
-                y >= target
-            } else {
-                y <= target
-            }
-        });
-        let t63 = crossed
-            .map(|i| i as f64 * dt)
-            .unwrap_or(n as f64 * dt / 2.0)
-            .max(dt);
-
-        let sum_yy: f64 = ys.iter().map(|y| y * y).sum();
-
-        let mut theta_lo = 0.0;
-        let mut theta_hi = 0.5 * t63;
-        let mut tau_lo = 0.2 * t63;
-        let mut tau_hi = 3.0 * t63;
-        let mut exp_buf = vec![0.0_f64; n];
-        let mut best = GridBest::default();
-
-        for _ in 0..FIT_PASSES {
-            best = search_grid(
-                &ys,
-                dt,
-                theta_lo,
-                theta_hi,
-                tau_lo,
-                tau_hi,
-                FIT_GRID,
-                &mut exp_buf,
-            )?;
-            let dtheta = (theta_hi - theta_lo) / FIT_GRID as f64;
-            let dtau = (tau_hi - tau_lo) / FIT_GRID as f64;
-            theta_lo = (best.theta - dtheta).max(0.0);
-            theta_hi = best.theta + dtheta;
-            tau_lo = (best.tau - dtau).max(dt / 10.0);
-            tau_hi = best.tau + dtau;
-        }
-
-        let err = (sum_yy - best.metric).max(0.0);
-        let rms_residual = (err / n as f64).sqrt();
-
-        // Cross-check: dead time from the first threshold crossing, on the undecimated record.
-        let threshold = self.config.dead_time_threshold_celsius;
-        let theta_threshold = raw
-            .iter()
-            .position(|&y| {
-                if y_final > 0.0 {
-                    y >= threshold
-                } else {
-                    y <= -threshold
-                }
-            })
-            .map_or(0.0, |i| i as f64 * sample_dt);
-
-        Some(Fopdt {
-            amplitude: best.amplitude,
-            tau: best.tau,
-            theta: best.theta,
-            tau_63: (t63 - best.theta).max(0.0),
-            theta_threshold,
-            rms_residual,
-        })
+        fit_fopdt_series(
+            &raw,
+            self.config.sample_period.as_secs_f64(),
+            self.config.dead_time_threshold_celsius,
+        )
     }
 
     pub fn phase(&self) -> &'static str {
@@ -789,13 +701,14 @@ struct SteadyStats {
     peak_to_peak: f64,
 }
 
-struct Fopdt {
-    amplitude: f64,
-    tau: f64,
-    theta: f64,
-    tau_63: f64,
-    theta_threshold: f64,
-    rms_residual: f64,
+/// A fitted first-order-plus-dead-time model, in the units of the series it was fitted to.
+pub(crate) struct Fopdt {
+    pub(crate) amplitude: f64,
+    pub(crate) tau: f64,
+    pub(crate) theta: f64,
+    pub(crate) tau_63: f64,
+    pub(crate) theta_threshold: f64,
+    pub(crate) rms_residual: f64,
 }
 
 #[derive(Default, Clone, Copy)]
@@ -806,6 +719,112 @@ struct GridBest {
     /// `sum_yb^2 / sum_bb`. Maximising this minimises the squared residual, because
     /// `err = sum_yy - sum_yb^2 / sum_bb` once the amplitude is solved in closed form.
     metric: f64,
+}
+
+/// Least-squares FOPDT fit over a baseline-subtracted step response.
+///
+/// The model is `y(t) = A * (1 - exp(-(t - theta) / tau))` for `t >= theta`, zero before. `A` is
+/// linear given `(theta, tau)`, so only two parameters are searched and the amplitude falls out
+/// in closed form at each grid point.
+///
+/// Cost is kept off the caller's control loop by decimating first, exploiting the uniform
+/// sample spacing so `exp` is evaluated once per candidate `tau` rather than once per sample,
+/// and refining coarse-to-fine. It runs exactly once, at the end of a run.
+///
+/// `raw` is the response with its baseline already subtracted, uniformly spaced `sample_dt`
+/// seconds apart. `dead_time_threshold` is the crossing level for the reported dead-time
+/// cross-check, in the same units as `raw`.
+///
+/// Shared with the MIMO identifier, which fits one of these per entry of the coupling matrix from
+/// the same recorded campaign.
+pub(crate) fn fit_fopdt_series(
+    raw: &[f64],
+    sample_dt: f64,
+    dead_time_threshold: f64,
+) -> Option<Fopdt> {
+    if raw.len() < MIN_FIT_SAMPLES {
+        return None;
+    }
+
+    let stride = (raw.len() / FIT_TARGET_SAMPLES).max(1);
+    let ys: Vec<f64> = raw.iter().step_by(stride).copied().collect();
+    let dt = sample_dt * stride as f64;
+    let n = ys.len();
+    if n < 10 {
+        return None;
+    }
+
+    // Plateau value, averaged over the tail, used only to bracket the search.
+    let tail = ((PLATEAU_WINDOW_SECONDS / dt).round() as usize).clamp(1, n);
+    let y_final = ys[n - tail..].iter().sum::<f64>() / tail as f64;
+    if y_final.abs() < 1e-9 {
+        return None;
+    }
+
+    let target = 0.632 * y_final;
+    let crossed = ys.iter().position(|&y| {
+        if y_final > 0.0 {
+            y >= target
+        } else {
+            y <= target
+        }
+    });
+    let t63 = crossed
+        .map(|i| i as f64 * dt)
+        .unwrap_or(n as f64 * dt / 2.0)
+        .max(dt);
+
+    let sum_yy: f64 = ys.iter().map(|y| y * y).sum();
+
+    let mut theta_lo = 0.0;
+    let mut theta_hi = 0.5 * t63;
+    let mut tau_lo = 0.2 * t63;
+    let mut tau_hi = 3.0 * t63;
+    let mut exp_buf = vec![0.0_f64; n];
+    let mut best = GridBest::default();
+
+    for _ in 0..FIT_PASSES {
+        best = search_grid(
+            &ys,
+            dt,
+            theta_lo,
+            theta_hi,
+            tau_lo,
+            tau_hi,
+            FIT_GRID,
+            &mut exp_buf,
+        )?;
+        let dtheta = (theta_hi - theta_lo) / FIT_GRID as f64;
+        let dtau = (tau_hi - tau_lo) / FIT_GRID as f64;
+        theta_lo = (best.theta - dtheta).max(0.0);
+        theta_hi = best.theta + dtheta;
+        tau_lo = (best.tau - dtau).max(dt / 10.0);
+        tau_hi = best.tau + dtau;
+    }
+
+    let err = (sum_yy - best.metric).max(0.0);
+    let rms_residual = (err / n as f64).sqrt();
+
+    // Cross-check: dead time from the first threshold crossing, on the undecimated record.
+    let theta_threshold = raw
+        .iter()
+        .position(|&y| {
+            if y_final > 0.0 {
+                y >= dead_time_threshold
+            } else {
+                y <= -dead_time_threshold
+            }
+        })
+        .map_or(0.0, |i| i as f64 * sample_dt);
+
+    Some(Fopdt {
+        amplitude: best.amplitude,
+        tau: best.tau,
+        theta: best.theta,
+        tau_63: (t63 - best.theta).max(0.0),
+        theta_threshold,
+        rms_residual,
+    })
 }
 
 #[allow(clippy::too_many_arguments)]

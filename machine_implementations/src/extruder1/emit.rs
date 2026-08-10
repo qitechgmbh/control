@@ -164,6 +164,7 @@ impl ExtruderV2 {
                 }
             },
             temperature_autotune_state: self.get_temperature_autotune_state(),
+            mimo_state: self.build_mimo_state(),
         }
     }
 
@@ -586,7 +587,7 @@ impl ExtruderV2 {
     fn release_temperature_tuner_zone(&mut self) {
         if let Some(zone) = self.temperature_tuner_zone {
             self.temperature_controller_mut(zone)
-                .apply_tuner_command(None);
+                .apply_external_duty(None);
         }
     }
 
@@ -635,7 +636,7 @@ impl ExtruderV2 {
 
         let command = self.temperature_tuner.update(pv, pid_duty, now);
         self.temperature_controller_mut(zone)
-            .apply_tuner_command(command);
+            .apply_external_duty(command);
 
         // The 30 Hz state emission is gated on the inverter status hash, so tuner transitions
         // would otherwise never reach the UI.

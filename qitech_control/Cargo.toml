@@ -23,5 +23,7 @@ tokio-serial = "5.5.0"
 libc = "0.2.186"
 
 [features]
+# Iterated-LMI MIMO synthesis. Off by default: it pulls in BLAS/LAPACK.
+mimo-lmi = ["machine_implementations/mimo-lmi"]
 default = []
 mock = ["qitech_lib/mock"]

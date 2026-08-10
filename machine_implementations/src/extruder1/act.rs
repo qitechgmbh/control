@@ -18,6 +18,11 @@ impl Machine for ExtruderV2 {
         // Advance the auto-tuner before the zone controllers run, so its command is already in
         // place when they compute this tick's output.
         self.tick_temperature_tuner(now);
+        // A campaign owns all four heaters while it runs, so MIMO control must stand down for the
+        // duration rather than fight it for the same actuators.
+        if !self.tick_mimo_identifier(now) {
+            self.tick_mimo_control(now);
+        }
 
         {
             let mut relais = self.relais_output.borrow_mut();

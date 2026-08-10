@@ -4,13 +4,8 @@ use anyhow::{Context, Result};
 use qitech_lib::ethercat_hal::machine_ident_read::MachineDeviceInfo;
 use serde_json::{Value, json};
 
-fn get_machine_device_info_path() -> String {
-    let dir = std::env::var("STATE_DIRECTORY")
-        .or(std::env::var("XDG_DATA_HOME"))
-        .or(std::env::var("HOME"))
-        .unwrap_or(".".to_string());
-
-    dir + "/qitech.json"
+fn get_machine_device_info_path() -> std::path::PathBuf {
+    control_core::persistence::state_path("qitech.json")
 }
 
 pub fn write_machine_device_info(infos: &[MachineDeviceInfo]) -> Result<()> {

@@ -16,7 +16,7 @@ axum = "0.8.9"
 qitech_lib = { workspace = true }
 ethercrab = { git = "https://github.com/v-morlock/ethercrab", branch = "main" }
 interfaces = "0.0.9"
-serde = "1.0.219"
+serde = { version = "1.0.219", features = ["derive"] }
 serialport = "4.7.3"
 smol = "2.0.2"
 socketioxide = "0.15.2"
@@ -28,6 +28,17 @@ erased-serde = "0.4.10"
 core_affinity = "0.8.3"
 
 
+# Semidefinite solver for the iterated-LMI MIMO synthesis. Optional and off by default: its PSD
+# cone support is not pure Rust (`sdp = [blas, lapack, indexmap]`), so enabling it pulls a
+# BLAS/LAPACK implementation into the build. The BLAS backend is picked per platform because there
+# is no single one that works everywhere: Accelerate is system-provided on macOS, OpenBLAS is what
+# the NixOS deployment carries.
+[target.'cfg(target_os = "macos")'.dependencies]
+clarabel = { version = "0.11", features = ["sdp-accelerate"], optional = true }
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+clarabel = { version = "0.11", features = ["sdp-openblas"], optional = true }
+
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.186"
 
@@ -37,6 +48,8 @@ textplots = "0.8"
 
 [features]
 default = []
+# Iterated-LMI MIMO PID synthesis. See controllers/mimo/synth_lmi.rs.
+mimo-lmi = ["dep:clarabel"]
 
 [package.metadata.cargo-machete]
 ignored =  ["axum","bitvec","control_core_derive"]

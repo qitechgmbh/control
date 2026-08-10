@@ -19,6 +19,7 @@ import {
   temperatureAutoTuneTraceDataSchema,
   TemperatureAutoTuneTraceData,
 } from "../temperatureAutoTuneSchema";
+import { MimoTraceData, mimoStateSchema, mimoTraceSchema } from "../mimoSchema";
 
 // ========== Event Schema Definitions ==========
 
@@ -210,6 +211,7 @@ export const stateEventDataSchema = z.object({
   pid_settings: pidSettingsSchema,
   pid_autotune_state: pidAutoTuneStateSchema,
   temperature_autotune_state: temperatureAutoTuneStateSchema,
+  mimo_state: mimoStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -219,6 +221,7 @@ export const stateEventSchema = eventSchema(stateEventDataSchema);
 export const temperatureAutoTuneTraceEventSchema = eventSchema(
   temperatureAutoTuneTraceDataSchema,
 );
+export const mimoTraceEventSchema = eventSchema(mimoTraceSchema);
 
 // ========== Type Inferences ==========
 
@@ -240,6 +243,9 @@ export type Extruder3NamespaceStore = {
 
   /** Recorded curve from the running or most recent temperature auto-tune. */
   tuneTrace: TemperatureAutoTuneTraceData | null;
+
+  /** Recorded curves from the running or most recent MIMO coupling campaign. */
+  mimoTrace: MimoTraceData | null;
 
   // Time series data for live values
   motorFrequency: TimeSeries;
@@ -475,6 +481,9 @@ export function extruder3MessageHandler(
       } else if (eventName === "TemperatureAutoTuneTraceEvent") {
         const traceEvent = temperatureAutoTuneTraceEventSchema.parse(event);
         updateStore((state) => ({ ...state, tuneTrace: traceEvent.data }));
+      } else if (eventName === "MimoTraceEvent") {
+        const traceEvent = mimoTraceEventSchema.parse(event);
+        updateStore((state) => ({ ...state, mimoTrace: traceEvent.data }));
       } else {
         handleUnhandledEventError(eventName);
       }
@@ -492,6 +501,7 @@ export const createExtruder3NamespaceStore =
         state: null,
         defaultState: null,
         tuneTrace: null,
+        mimoTrace: null,
 
         motorCurrent,
         motorFrequency,

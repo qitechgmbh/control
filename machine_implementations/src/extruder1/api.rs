@@ -1,3 +1,4 @@
+use control_core::controllers::mimo::ZONE_COUNT;
 use std::sync::Arc;
 
 use super::{ExtruderV2Mode, mitsubishi_cs80::MotorStatus};
@@ -109,6 +110,8 @@ pub struct StateEvent {
     pub pid_autotune_state: PidAutoTuneState,
     /// temperature (IMC step-test) auto-tuner state
     pub temperature_autotune_state: TemperatureAutoTuneState,
+    /// MIMO coupling identification and matrix-gain control
+    pub mimo_state: MimoState,
 }
 
 impl StateEvent {
@@ -406,10 +409,116 @@ impl TemperatureAutoTuneTraceEvent {
     }
 }
 
+/// One recorded tick of a MIMO identification campaign: every zone at once.
+#[derive(Serialize, Debug, Clone, Copy, PartialEq)]
+pub struct MimoTraceSample {
+    pub t_seconds: f64,
+    pub temperatures: [f64; ZONE_COUNT],
+    pub duties: [f64; ZONE_COUNT],
+}
+
+/// The recorded campaign curve, in physical zone order.
+///
+/// Kept out of [`StateEvent`] for the same reason the single-zone trace is: a campaign runs for
+/// hours at 1 Hz, so this is roughly ten thousand samples across eight channels, and `StateEvent`
+/// is rebuilt on every mutation.
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct MimoTraceEvent {
+    pub phase: String,
+    pub column: Option<usize>,
+    pub zone_order: Vec<String>,
+    pub samples: Vec<MimoTraceSample>,
+}
+
+impl MimoTraceEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("MimoTraceEvent", self.clone())
+    }
+}
+
 pub enum ExtruderV2Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
     TuneTrace(Event<TemperatureAutoTuneTraceEvent>),
+    MimoTrace(Event<MimoTraceEvent>),
+}
+
+/// One entry of the identified coupling matrix, as sent to clients.
+#[derive(Serialize, Debug, Clone, Copy, PartialEq)]
+pub struct MimoEntryState {
+    /// Steady-state gain, degrees per unit of duty.
+    pub gp: f64,
+    pub tau: f64,
+    pub theta: f64,
+    pub rms_residual: f64,
+    pub snr_ratio: f64,
+}
+
+/// The identified model and what it implies about whether MIMO control is worth using.
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct MimoModelState {
+    /// `g[output][input]`, both in `zone_order`.
+    pub g: Vec<Vec<MimoEntryState>>,
+    pub zone_order: Vec<String>,
+    pub setpoints: Vec<f64>,
+    pub rga: Vec<Vec<f64>>,
+    pub condition_number: f64,
+    pub niederlinski: f64,
+    /// Largest departure of the RGA diagonal from 1. Near zero means the zones are already
+    /// effectively decoupled and MIMO control has little to add.
+    pub max_rga_deviation: f64,
+    /// Strongest off-diagonal gain as a fraction of the driven zone's own gain.
+    pub max_coupling_ratio: f64,
+    /// Seconds since the epoch, so the client can show how stale the model is.
+    pub identified_at_secs: u64,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct MimoGainsState {
+    pub kp: Vec<Vec<f64>>,
+    pub ki: Vec<Vec<f64>>,
+    pub kd: Vec<Vec<f64>>,
+    pub derivative_filter_tc: f64,
+    /// Which backend produced these.
+    pub method: String,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct MimoState {
+    /// `"decentralized"` or `"mimo"`.
+    pub mode: String,
+    /// Campaign phase: `idle`, `waiting_for_steady`, `baseline_hold`, `step`, `completed`, `failed`.
+    pub phase: String,
+    pub is_running: bool,
+    pub progress_percent: f64,
+    pub elapsed_seconds: f64,
+    /// Which zone is being stepped, as an index into `zone_order`.
+    pub column: Option<usize>,
+    pub columns_done: usize,
+    pub zone_order: Vec<String>,
+    pub failure_reason: Option<String>,
+    pub model: Option<MimoModelState>,
+    pub gains: Option<MimoGainsState>,
+    /// Why the last synthesis attempt was refused, in plain language.
+    pub synthesis_error: Option<String>,
+}
+
+/// Parameters for a coupling-identification campaign.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MimoIdentifyRequest {
+    /// Duty step applied to one zone at a time.
+    pub step_duty: f64,
+    /// Per-column rise limit. Clamped server-side against every zone's own cutoff.
+    pub max_rise_celsius: f64,
+}
+
+/// Parameters for turning an identified model into gains.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MimoSynthesizeRequest {
+    /// Synthesis backend: currently `"decoupler"`.
+    pub method: String,
+    /// Closed-loop speed, with the same meaning as in the single-zone tuner.
+    pub lambda_factor: f64,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -460,6 +569,18 @@ pub enum Mutation {
     ApplyTemperatureAutoTuneResult {
         form: String,
     },
+
+    // MIMO thermal control
+    /// Identify the 4x4 coupling matrix. Owns every heater for the length of the run, so it
+    /// requires `Heat` mode with the screw stopped and takes hours.
+    StartMimoIdentification(MimoIdentifyRequest),
+    StopMimoIdentification {},
+    /// Turn the identified model into gains, without applying them.
+    SynthesizeMimoGains(MimoSynthesizeRequest),
+    /// Switch the heating zones between `"decentralized"` and `"mimo"`.
+    SetThermalControlMode {
+        mode: String,
+    },
 }
 
 #[derive(Debug)]
@@ -486,6 +607,7 @@ impl CacheableEvents<Self> for ExtruderV2Events {
             Self::LiveValues(event) => event.into(),
             Self::State(event) => event.into(),
             Self::TuneTrace(event) => event.into(),
+            Self::MimoTrace(event) => event.into(),
         }
     }
 
@@ -495,6 +617,7 @@ impl CacheableEvents<Self> for ExtruderV2Events {
             Self::LiveValues(_) => cache_first_and_last,
             Self::State(_) => cache_first_and_last,
             Self::TuneTrace(_) => cache_first_and_last,
+            Self::MimoTrace(_) => cache_first_and_last,
         }
     }
 }
@@ -587,6 +710,18 @@ impl MachineApi for ExtruderV2 {
             }
             Mutation::StopPressurePidAutoTune {} => {
                 self.stop_pressure_pid_autotune();
+            }
+            Mutation::StartMimoIdentification(request) => {
+                self.handle_start_mimo_identification(request);
+            }
+            Mutation::StopMimoIdentification {} => {
+                self.stop_mimo_identification(std::time::Instant::now());
+            }
+            Mutation::SynthesizeMimoGains(request) => {
+                self.handle_synthesize_mimo_gains(&request);
+            }
+            Mutation::SetThermalControlMode { mode } => {
+                self.handle_set_thermal_control_mode(&mode);
             }
         }
         Ok(())
