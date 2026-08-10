@@ -9,7 +9,7 @@ use super::{
 pub use qitech_lib::units::{
     angular_velocity::revolution_per_minute,
     f64::*,
-    length::{meter, millimeter},
+    length::millimeter,
 };
 
 pub use std::time::Instant;
@@ -247,33 +247,5 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     /// Set forward rotation direction
     pub fn spool_set_forward(&mut self, forward: bool) {
         self.spool_speed_controller.set_forward(forward);
-    }
-}
-
-// Winder2 Extension
-#[cfg(not(feature = "mock-machine"))]
-impl<const VARIANT: usize> WinderV1<VARIANT> {
-    pub fn puller_set_adaptive_max_speed_change_percent(&mut self, value: f64) {
-        self.puller_speed_controller
-            .adaptive
-            .set_speed_delta_max(value);
-    }
-
-    pub fn puller_set_adaptive_adjustment_interval_meters(&mut self, value: f64) {
-        self.puller_speed_controller
-            .adaptive
-            .set_adjustment_distance(Length::new::<meter>(value));
-    }
-
-    pub fn puller_set_adaptive_step_percent(&mut self, value: f64) {
-        self.puller_speed_controller
-            .adaptive
-            .set_increase_per_step(value);
-    }
-
-    pub fn puller_set_adaptive_accepted_difference(&mut self, value: f64) {
-        self.puller_speed_controller
-            .adaptive
-            .set_tolerance_limit(Length::new::<millimeter>(value));
     }
 }

@@ -56,6 +56,7 @@ use crate::machines::winder_v2::api::SpoolSpeedControllerStateProperties;
 use crate::machines::winder_v2::api::StateProperties;
 use crate::machines::winder_v2::api::TensionArmStateProperties;
 use crate::machines::winder_v2::api::TraverseStateProperties;
+use crate::machines::winder_v2::puller_speed_controller::AdaptiveSpeedAlgorithm;
 use crate::machines::winder_v2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedControllerType;
@@ -145,6 +146,28 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 .build()?,
         );
 
+        let adapative_puller_algorithm = AdaptiveSpeedAlgorithm::new(
+            ctx
+                .config::<f64>("puller.adapative.speed_delta_max")
+                .minimum(0.0)
+                .default(0.33)
+                .build()?,
+            ctx
+                .config::<f64>("puller.adapative.increase_per_step")
+                .minimum(0.0)
+                .maximum(1.0)
+                .default(0.033)
+                .build()?,
+            ctx
+                .config::<meter>("puller.adapative.adjustment_interval")
+                .default(0.01)
+                .build()?,
+            ctx
+                .config::<millimeter>("puller.adapative.accepted_difference")
+                .default(0.5)
+                .build()?,
+        );
+
         Ok(Self {
             traverse,
             puller,
@@ -190,6 +213,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                     Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
                 ),
                 ctx.config::<bool>("puller.forward").default(true).build()?,
+                adapative_puller_algorithm,
             ),
             config_props: Self::init_config_properties(ctx)?,
             state_props: Self::init_state_properties(ctx)?,
@@ -337,26 +361,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 .on_external_changed(Self::on_puller_gear_ratio_changed)
                 .default(GearRatio::OneToOne)
                 .build()?,
-            puller_adaptive_max_speed_change_percent: ctx
-                .config::<f64>("puller.adapative.max_speed_change_percent")
-                .on_external_changed(Self::on_puller_adaptive_max_speed_change_percent_changed)
-                .default(33.0)
-                .build()?,
-            puller_adaptive_adjustment_interval: ctx
-                .config::<meter>("puller.adapative.adjustment_interval")
-                .on_external_changed(Self::on_puller_adaptive_adjustment_interval_changed)
-                .default(0.5)
-                .build()?,
-            puller_adaptive_step_percent: ctx
-                .config::<f64>("puller.adapative.step_percent")
-                .on_external_changed(Self::on_puller_adaptive_step_percent_changed)
-                .default(3.3)
-                .build()?,
-            puller_adaptive_accepted_difference: ctx
-                .config::<millimeter>("puller.adapative.accepted_difference")
-                .on_external_changed(Self::on_puller_adaptive_accepted_difference_changed)
-                .default(0.01)
-                .build()?,
             spool_regulation_mode: ctx
                 .config::<SpoolSpeedControllerType>("spool.regulation_mode")
                 .on_external_changed(Self::on_spool_regulation_mode_changed)
@@ -401,18 +405,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                     .state::<PullerRegulationMode>("puller.regulation")
                     .build()?,
                 gear_ratio: ctx.state::<GearRatio>("puller.gear_ratio").build()?,
-                adaptive_speed_delta_max: ctx
-                    .state::<f64>("puller.adaptive.speed_delta_max")
-                    .build()?,
-                adaptive_adjustment_distance: ctx
-                    .state::<millimeter>("puller.adaptive.adjustment_distance")
-                    .build()?,
-                adaptive_change_per_step: ctx
-                    .state::<f64>("puller.adaptive.change_per_step")
-                    .build()?,
-                allowed_diameter_deviation: ctx
-                    .state::<millimeter>("puller.adaptive.accepted_difference")
-                    .build()?,
             },
 
             mode_state: ModeStateProperties {

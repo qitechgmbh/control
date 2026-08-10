@@ -5,7 +5,7 @@ use qitech_framework::machine::{
 };
 use qitech_lib::units::angle::degree;
 use qitech_lib::units::angular_velocity::revolution_per_minute;
-use qitech_lib::units::length::{meter, millimeter};
+use qitech_lib::units::length::millimeter;
 use qitech_lib::units::{Angle, AngularVelocity, Length, Velocity};
 
 use crate::machines::winder_v2::{LASER_PORT, PULLER_PORT, SPOOL_PORT, Winder2Mode, WinderV1};
@@ -22,10 +22,6 @@ pub struct ConfigProperties {
     // --- puller ---
     pub puller_regulation_mode: ConfigProperty<PullerRegulationMode>,
     pub puller_gear_ratio: ConfigProperty<GearRatio>,
-    pub puller_adaptive_max_speed_change_percent: ConfigProperty<f64>,
-    pub puller_adaptive_adjustment_interval: ConfigProperty<Length>,
-    pub puller_adaptive_step_percent: ConfigProperty<f64>,
-    pub puller_adaptive_accepted_difference: ConfigProperty<Length>,
 
     // --- spool speed controller ---
     pub spool_regulation_mode: ConfigProperty<SpoolSpeedControllerType>,
@@ -62,38 +58,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
     pub fn on_puller_gear_ratio_changed(&mut self) -> ActResult {
         self.puller_set_gear_ratio(self.config_props.puller_gear_ratio.get());
-        Ok(())
-    }
-
-    pub fn on_puller_adaptive_max_speed_change_percent_changed(&mut self) -> ActResult {
-        self.puller_set_adaptive_max_speed_change_percent(
-            self.config_props
-                .puller_adaptive_max_speed_change_percent
-                .get(),
-        );
-        Ok(())
-    }
-
-    pub fn on_puller_adaptive_adjustment_interval_changed(&mut self) -> ActResult {
-        self.puller_set_adaptive_adjustment_interval_meters(
-            self.config_props
-                .puller_adaptive_adjustment_interval
-                .get_as::<meter>(),
-        );
-        Ok(())
-    }
-
-    pub fn on_puller_adaptive_step_percent_changed(&mut self) -> ActResult {
-        self.puller_set_adaptive_step_percent(self.config_props.puller_adaptive_step_percent.get());
-        Ok(())
-    }
-
-    pub fn on_puller_adaptive_accepted_difference_changed(&mut self) -> ActResult {
-        self.puller_set_adaptive_accepted_difference(
-            self.config_props
-                .puller_adaptive_accepted_difference
-                .get_as::<millimeter>(),
-        );
         Ok(())
     }
 
@@ -153,10 +117,6 @@ pub struct TraverseStateProperties {
 pub struct PullerStateProperties {
     pub regulation: StateProperty<PullerRegulationMode>,
     pub gear_ratio: StateProperty<GearRatio>,
-    pub adaptive_speed_delta_max: StateProperty<f64>,
-    pub adaptive_adjustment_distance: StateProperty<Length>,
-    pub adaptive_change_per_step: StateProperty<f64>,
-    pub allowed_diameter_deviation: StateProperty<Length>,
 }
 
 pub struct ModeStateProperties {
@@ -358,26 +318,11 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         let regulation = self.puller_speed_controller.regulation_mode;
         let gear_ratio = self.puller_speed_controller.gear_ratio;
 
-        let adaptive_speed_delta_max = self.puller_speed_controller.adaptive.speed_delta_max();
-        let adaptive_adjustment_distance =
-            self.puller_speed_controller.adaptive.adjustment_distance();
-        let adaptive_change_per_step = self.puller_speed_controller.adaptive.increase_per_step();
-        let allowed_diameter_deviation = self.puller_speed_controller.adaptive.tolerance_limit();
-
         // --- update puller state ---
         let s = &mut self.state_props.puller_state;
 
         s.regulation.set(regulation);
         s.gear_ratio.set(gear_ratio);
-
-        s.adaptive_speed_delta_max.set(adaptive_speed_delta_max);
-
-        s.adaptive_adjustment_distance
-            .set(adaptive_adjustment_distance);
-
-        s.adaptive_change_per_step.set(adaptive_change_per_step);
-
-        s.allowed_diameter_deviation.set(allowed_diameter_deviation);
     }
 
     fn update_state_spool_speed_controller(&mut self) {
