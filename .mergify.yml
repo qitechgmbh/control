@@ -1,22 +1,30 @@
 pull_request_rules:
-  - name: Automatic merge
+  - name: Automatic merges
     description: Merge updates
     conditions:
-      - author = dependabot[bot]
-      - files = "flake.lock"
-      - check-success = "nix-check"
+      - or:
+        - and:
+          - author = dependabot[bot]
+          - files = "flake.lock"
+          - check-success = "nix-check"
+        - and:
+          - author = mergify[bot]
+          - head ~= ^mergify/bp/
     actions:
       review:
       merge:
-  - name: Backport to master
+
+  - name: Backport from master to staging
     conditions:
-      - author = github-actions[bot]
-      - head = CI/staging-backmerge
+      - base = master
+      - merged
     actions:
-      review:
-      rebase: null
-      merge:
-        method: merge
+      backport:
+        title: "(Staging backport #{{ number }}) {{ title }}"
+        ignore_conflicts: true
+        branches:
+          - staging
+
 queue_rules: []
 merge_queue:
   queue_controls_comment: false
