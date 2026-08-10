@@ -760,10 +760,6 @@ impl RewindControlState {
             learning_allowed,
         );
     }
-
-    pub fn source_recovery_active(&self) -> bool {
-        source_needs_recovery(self.source_arm)
-    }
 }
 
 pub(crate) fn deadband(value: f64, width: f64) -> f64 {

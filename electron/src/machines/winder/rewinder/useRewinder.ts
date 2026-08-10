@@ -548,7 +548,6 @@ export function useRewinder() {
     isDisabled: !stateOptimistic.isInitialized,
     motionStopped,
     settingsEditPermitted,
-    manualTraversePermitted,
     setMode,
     setPullerTargetSpeed,
     setTakeupSpoolDiameter,

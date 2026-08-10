@@ -310,13 +310,12 @@ impl Rewinder {
     }
 
     pub fn sync_takeup_spool_speed(&mut self) {
-        let angular_velocity = if self.motion_stop_requested() {
-            self.rewind_control.takeup_command_angular_velocity()
-        } else if self.takeup_spool_motion_permitted() {
-            self.rewind_control.takeup_command_angular_velocity()
-        } else {
-            AngularVelocity::new::<revolution_per_minute>(0.0)
-        };
+        let angular_velocity =
+            if self.motion_stop_requested() || self.takeup_spool_motion_permitted() {
+                self.rewind_control.takeup_command_angular_velocity()
+            } else {
+                AngularVelocity::new::<revolution_per_minute>(0.0)
+            };
 
         let steps_per_second = self
             .takeup_spool_step_converter
