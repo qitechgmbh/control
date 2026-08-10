@@ -113,11 +113,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         self.traverse_controller.set_limit_outer(new_outer);
     }
 
-    pub fn traverse_set_step_size(&mut self, step_size: f64) {
-        let step_size = Length::new::<millimeter>(step_size);
-        self.traverse_controller.set_step_size(step_size);
-    }
-
     pub fn traverse_goto_limit_inner(&mut self) {
         if self.traverse_can_goto_limit_inner().is_allowed() {
             self.traverse_controller.goto_limit_inner();

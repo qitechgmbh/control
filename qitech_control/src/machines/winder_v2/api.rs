@@ -20,7 +20,6 @@ pub struct ConfigProperties {
     // --- traverse ---
     pub traverse_limit_inner: ConfigProperty<Length>,
     pub traverse_limit_outer: ConfigProperty<Length>,
-    pub traverse_step_size: ConfigProperty<Length>,
 
     // --- puller ---
     pub puller_regulation_mode: ConfigProperty<PullerRegulationMode>,
@@ -67,11 +66,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 .get_as::<millimeter>(),
         );
 
-        Ok(())
-    }
-
-    pub fn on_traverse_step_size_changed(&mut self) -> ActResult {
-        self.traverse_set_step_size(self.config_props.traverse_step_size.get_as::<millimeter>());
         Ok(())
     }
 
@@ -425,7 +419,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         let is_traversing = self.traverse_controller.is_traversing();
 
         let laserpointer = self.laser_enabled;
-        let step_size = self.traverse_controller.get_step_size();
 
         let can_go_in = self.traverse_can_goto_limit_inner();
         let can_go_out = self.traverse_can_goto_limit_outer();
@@ -444,7 +437,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         s.is_traversing.set(is_traversing);
 
         s.laserpointer.set(laserpointer);
-        s.step_size.set(step_size);
 
         s.can_go_in.set(can_go_in.is_allowed());
         s.can_go_out.set(can_go_out.is_allowed());

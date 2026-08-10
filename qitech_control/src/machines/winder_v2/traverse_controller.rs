@@ -14,7 +14,7 @@ pub struct TraverseController {
     position: Length,
     limit_inner: Length,
     limit_outer: Length,
-    step_size: Length,
+    step_size: ConfigProperty<Length>,
     padding: ConfigProperty<Length>,
     state: State,
     fullstep_converter: LinearStepConverter,
@@ -96,6 +96,7 @@ impl TraverseController {
         limit_inner: Length,
         limit_outer: Length,
         microsteps: u8,
+        step_size: ConfigProperty<Length>,
         padding: ConfigProperty<Length>,
     ) -> Self {
         Self {
@@ -103,7 +104,7 @@ impl TraverseController {
             position: Length::ZERO,
             limit_inner,
             limit_outer,
-            step_size: Length::new::<millimeter>(1.75), // Default step size
+            step_size, // : Length::new::<millimeter>(1.75),
             padding,
             state: State::NotHomed,
             fullstep_converter: LinearStepConverter::from_circumference(
@@ -132,10 +133,6 @@ impl TraverseController {
         self.limit_outer = limit;
     }
 
-    pub fn set_step_size(&mut self, step_size: Length) {
-        self.step_size = step_size;
-    }
-
     pub fn get_limit_inner(&self) -> Length {
         self.limit_inner
     }
@@ -145,7 +142,7 @@ impl TraverseController {
     }
 
     pub fn get_step_size(&self) -> Length {
-        self.step_size
+        self.step_size.get()
     }
 
     pub fn get_current_position(&self) -> Option<Length> {
@@ -425,11 +422,11 @@ impl TraverseController {
                 }
                 TraversingState::TraversingIn => self.speed_to_position(
                     self.limit_inner + self.padding.get() - Length::new::<millimeter>(0.01),
-                    Self::calculate_traverse_speed(spool_speed, self.step_size),
+                    Self::calculate_traverse_speed(spool_speed, self.step_size.get()),
                 ),
                 TraversingState::TraversingOut => self.speed_to_position(
                     self.limit_outer - self.padding.get() + Length::new::<millimeter>(0.01),
-                    Self::calculate_traverse_speed(spool_speed, self.step_size),
+                    Self::calculate_traverse_speed(spool_speed, self.step_size.get()),
                 ),
             },
         }

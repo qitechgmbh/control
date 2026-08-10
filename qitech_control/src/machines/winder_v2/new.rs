@@ -131,6 +131,9 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 Length::new::<millimeter>(22.0), // Default inner limit
                 Length::new::<millimeter>(92.0), // Default outer limit
                 64,                              // Microsteps
+                ctx.config::<millimeter>("traverse.step_size")
+                    .default(1.75)
+                    .build()?,
                 ctx.config::<millimeter>("traverse.padding")
                     .default(0.88)
                     .build()?,
@@ -290,11 +293,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 .config::<millimeter>("traverse.limit_outer")
                 .on_external_changed(Self::on_traverse_limit_outer_changed)
                 .default(92.0)
-                .build()?,
-            traverse_step_size: ctx
-                .config::<millimeter>("traverse.step_size")
-                .on_external_changed(Self::on_traverse_step_size_changed)
-                .default(1.75)
                 .build()?,
             puller_regulation_mode: ctx
                 .config::<PullerRegulationMode>("puller.regulation_mode")
