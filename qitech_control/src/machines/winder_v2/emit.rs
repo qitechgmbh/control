@@ -40,7 +40,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
     pub fn stop_or_pull_spool(&mut self, now: Instant) {
         if matches!(
-            self.spool_automatic_action.mode,
+            self.spool_automatic_action.mode.get(),
             SpoolAutomaticActionMode::NoAction
         ) {
             self.calculate_spool_auto_progress_(now);
@@ -56,8 +56,8 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             }
         }
 
-        if self.spool_automatic_action.progress >= self.spool_automatic_action.target_length {
-            match self.spool_automatic_action.mode {
+        if self.spool_automatic_action.progress >= self.spool_automatic_action.target_length.get() {
+            match self.spool_automatic_action.mode.get() {
                 SpoolAutomaticActionMode::NoAction => (),
                 SpoolAutomaticActionMode::Pull => {
                     self.stop_or_pull_spool_reset(now);
@@ -208,14 +208,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     /// Implement Tension Arm
     pub fn tension_arm_zero(&mut self) -> Result<(), String> {
         self.tension_arm.zero()
-    }
-
-    pub fn set_spool_automatic_required_meters(&mut self, meters: f64) {
-        self.spool_automatic_action.target_length = Length::new::<meter>(meters);
-    }
-
-    pub fn set_spool_automatic_mode(&mut self, mode: SpoolAutomaticActionMode) {
-        self.spool_automatic_action.mode = mode;
     }
 
     pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {

@@ -51,7 +51,6 @@ use crate::machines::winder_v2::api::Measurements;
 use crate::machines::winder_v2::api::ModeStateProperties;
 use crate::machines::winder_v2::api::PullerRegulationMode;
 use crate::machines::winder_v2::api::PullerStateProperties;
-use crate::machines::winder_v2::api::SpoolAutomaticActionStateProperties;
 use crate::machines::winder_v2::api::SpoolSpeedControllerStateProperties;
 use crate::machines::winder_v2::api::StateProperties;
 use crate::machines::winder_v2::api::TensionArmStateProperties;
@@ -147,8 +146,14 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             spool_automatic_action: SpoolAutomaticAction {
                 progress: Length::ZERO,
                 progress_last_check: Instant::now(),
-                target_length: Length::new::<meter>(250.0),
-                mode: SpoolAutomaticActionMode::NoAction,
+                target_length: ctx
+                    .config::<meter>("spool_automatic.required_meters")
+                    .default(250.0)
+                    .build()?,
+                mode: ctx
+                    .config::<SpoolAutomaticActionMode>("spool_automatic.action")
+                    .default(SpoolAutomaticActionMode::NoAction)
+                    .build()?,
             },
             puller_speed_controller: PullerSpeedController::new(
                 ctx.config::<meter_per_minute>("puller.target_speed")
@@ -353,16 +358,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 )
                 .default(15.0)
                 .build()?,
-            spool_automatic_required_length: ctx
-                .config::<meter>("spool_automatic.required_meters")
-                .on_external_changed(Self::on_spool_automatic_required_length_changed)
-                .default(250.0)
-                .build()?,
-            spool_automatic_action: ctx
-                .config::<SpoolAutomaticActionMode>("spool_automatic.action")
-                .on_external_changed(Self::on_spool_automatic_action_changed)
-                .default(SpoolAutomaticActionMode::NoAction)
-                .build()?,
             spool_regulation_mode: ctx
                 .config::<SpoolSpeedControllerType>("spool.regulation_mode")
                 .on_external_changed(Self::on_spool_regulation_mode_changed)
@@ -397,7 +392,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 is_going_home: ctx.state::<bool>("traverse.is_going_home").build()?,
                 is_traversing: ctx.state::<bool>("traverse.is_traversing").build()?,
                 laserpointer: ctx.state::<bool>("traverse.laserpointer").build()?,
-                step_size: ctx.state::<millimeter>("traverse.step_size").build()?,
                 can_go_in: ctx.state::<bool>("traverse.can_go_in").build()?,
                 can_go_out: ctx.state::<bool>("traverse.can_go_out").build()?,
                 can_go_home: ctx.state::<bool>("traverse.can_go_home").build()?,
@@ -419,17 +413,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                     .build()?,
                 allowed_diameter_deviation: ctx
                     .state::<millimeter>("puller.adaptive.accepted_difference")
-                    .build()?,
-            },
-
-            spool_automatic_action_state: SpoolAutomaticActionStateProperties {
-                spool_required_meters: ctx
-                    .state::<meter>("spool_automatic_action.spool_required_meters")
-                    .build()?,
-                spool_automatic_action_mode: ctx
-                    .state::<SpoolAutomaticActionMode>(
-                        "spool_automatic_action.spool_automatic_action_mode",
-                    )
                     .build()?,
             },
 

@@ -26,6 +26,7 @@ use crate::machines::winder_v2::types::SpoolMode;
 use crate::machines::winder_v2::types::TraverseMode;
 use crate::machines::winder_v2::types::Winder2Mode;
 use qitech_framework::MachineIdentification;
+use qitech_framework::machine::ConfigProperty;
 use qitech_framework::machine::MachineDescriptor;
 use qitech_framework::machine::OperationCapability;
 use qitech_framework::vendors;
@@ -52,23 +53,11 @@ pub const TRAVERSE_END_STOP_PORT: usize = 0;
 pub const VARIANT_REGULAR: usize = 0;
 pub const VARIANT_7031_SPOOL: usize = 1;
 
-#[derive(Debug)]
 pub struct SpoolAutomaticAction {
     pub progress: Length,
     progress_last_check: Instant,
-    pub target_length: Length,
-    pub mode: SpoolAutomaticActionMode,
-}
-
-impl Default for SpoolAutomaticAction {
-    fn default() -> Self {
-        SpoolAutomaticAction {
-            progress: Length::new::<meter>(0.0),
-            progress_last_check: Instant::now(),
-            target_length: Length::new::<meter>(0.0),
-            mode: SpoolAutomaticActionMode::default(),
-        }
-    }
+    pub target_length: ConfigProperty<Length>,
+    pub mode: ConfigProperty<SpoolAutomaticActionMode>,
 }
 
 #[allow(non_camel_case_types)]

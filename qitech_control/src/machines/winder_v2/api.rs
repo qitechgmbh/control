@@ -8,7 +8,6 @@ use qitech_lib::units::angular_velocity::revolution_per_minute;
 use qitech_lib::units::length::{meter, millimeter};
 use qitech_lib::units::{Angle, AngularVelocity, Length, Velocity};
 
-use crate::machines::winder_v2::types::SpoolAutomaticActionMode;
 use crate::machines::winder_v2::{LASER_PORT, PULLER_PORT, SPOOL_PORT, Winder2Mode, WinderV1};
 use crate::machines::winder_v2::{spool_speed_controller::SpoolSpeedControllerType, types::Mode};
 
@@ -40,10 +39,6 @@ pub struct ConfigProperties {
     pub spool_adaptive_max_speed_multiplier: ConfigProperty<f64>,
     pub spool_adaptive_acceleration_factor: ConfigProperty<f64>,
     pub spool_adaptive_deacceleration_urgency_multiplier: ConfigProperty<f64>,
-
-    // --- spool automation ---
-    pub spool_automatic_required_length: ConfigProperty<Length>,
-    pub spool_automatic_action: ConfigProperty<SpoolAutomaticActionMode>,
 }
 
 impl<const VARIANT: usize> WinderV1<VARIANT> {
@@ -175,26 +170,11 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         );
         Ok(())
     }
-
-    pub fn on_spool_automatic_required_length_changed(&mut self) -> ActResult {
-        self.set_spool_automatic_required_meters(
-            self.config_props
-                .spool_automatic_required_length
-                .get_as::<meter>(),
-        );
-        Ok(())
-    }
-
-    pub fn on_spool_automatic_action_changed(&mut self) -> ActResult {
-        self.set_spool_automatic_mode(self.config_props.spool_automatic_action.get());
-        Ok(())
-    }
 }
 
 pub struct StateProperties {
     pub traverse_state: TraverseStateProperties,
     pub puller_state: PullerStateProperties,
-    pub spool_automatic_action_state: SpoolAutomaticActionStateProperties,
     pub mode_state: ModeStateProperties,
     pub tension_arm_state: TensionArmStateProperties,
     pub spool_speed_controller_state: SpoolSpeedControllerStateProperties,
@@ -209,7 +189,6 @@ pub struct TraverseStateProperties {
     pub is_going_home: StateProperty<bool>,
     pub is_traversing: StateProperty<bool>,
     pub laserpointer: StateProperty<bool>,
-    pub step_size: StateProperty<Length>,
     pub can_go_in: StateProperty<bool>,
     pub can_go_out: StateProperty<bool>,
     pub can_go_home: StateProperty<bool>,
@@ -222,11 +201,6 @@ pub struct PullerStateProperties {
     pub adaptive_adjustment_distance: StateProperty<Length>,
     pub adaptive_change_per_step: StateProperty<f64>,
     pub allowed_diameter_deviation: StateProperty<Length>,
-}
-
-pub struct SpoolAutomaticActionStateProperties {
-    pub spool_required_meters: StateProperty<Length>,
-    pub spool_automatic_action_mode: StateProperty<SpoolAutomaticActionMode>,
 }
 
 pub struct ModeStateProperties {
@@ -390,9 +364,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
         // --- update spool speed controller state ---
         self.update_state_spool_speed_controller();
-
-        // --- update spool automatic action state ---
-        self.update_state_spool_automatic_action_state();
     }
 
     fn update_state_traverse(&mut self) {
@@ -506,18 +477,5 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             .set(adaptive_deacceleration_urgency_multiplier);
 
         s.forward.set(forward);
-    }
-
-    fn update_state_spool_automatic_action_state(&mut self) {
-        // --- precompute spool automatic action state ---
-        let spool_required_meters = self.spool_automatic_action.target_length;
-        let spool_automatic_action_mode = self.spool_automatic_action.mode;
-
-        // --- update spool automatic action state ---
-        let s = &mut self.state_props.spool_automatic_action_state;
-
-        s.spool_required_meters.set(spool_required_meters);
-        s.spool_automatic_action_mode
-            .set(spool_automatic_action_mode);
     }
 }
