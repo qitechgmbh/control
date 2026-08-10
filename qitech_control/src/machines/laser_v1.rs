@@ -65,19 +65,19 @@ impl MachineBuild for LaserV1 {
         let diameter_target = ctx
             .config::<millimeter>("diameter.target")
             .default(1.75)
-            .min(0.0)
+            .minimum(0.0)
             .build()?;
 
         let diameter_tolerance_lower = ctx
             .config::<millimeter>("diameter.tolerance.lower")
             .default(0.05)
-            .min(0.0)
+            .minimum(0.0)
             .build()?;
 
         let diameter_tolerance_upper = ctx
             .config::<millimeter>("diameter.tolerance.upper")
             .default(0.05)
-            .min(0.0)
+            .minimum(0.0)
             .build()?;
 
         Ok(Self {
