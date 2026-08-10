@@ -47,6 +47,7 @@ fn init_ek1100(ctx: &BuildContext) -> BuildResult<()> {
 
 fn init_el2008(ctx: &BuildContext,interface : EtherCATThreadChannel) -> BuildResult<()> {
     ctx.find_ethercat_device_and_addr::<EK1100>(0)?;
+    interface.enable_dc_sync0(el2008.1)?;
     Ok(())
 }
 
@@ -63,14 +64,10 @@ fn init_el3024(ctx: &BuildContext,interface : EtherCATThreadChannel) -> BuildRes
 impl MachineBuild for AquaPathV1 {
     fn build(ctx: &mut BuildContext) -> BuildResult<Self> {
         let interface = ctx.get_ethercat_interface()?;
-
         init_ek1100(ctx)?;
-        
         let el2008 = init_el2008(ctx, interface.clone())?;
         let el4002 = init_el4002(ctx)?;
         let el3024 = init_el3024(ctx, interface.clone())?;
-
-        //let el7031_0030_spool = init_el7031_0030_spool(ctx, interface.clone())?;
     }
 }
 

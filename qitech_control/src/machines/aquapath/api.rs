@@ -1,7 +1,6 @@
-use super::{AquaPathV1, AquaPathV1Mode, controller::CoolingMode};
+use super::{AquaPathV1Mode, controller::CoolingMode};
 use qitech_framework::{machine::{Measurement, StateProperty}};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct Measurements {
@@ -185,84 +184,4 @@ enum Mutation {
     SetLeftPumpCooldownMinTemperature(f64),
     SetRightPumpCooldownMinTemperature(f64),
     SetAmbientTemperatureCalibration(f64),
-}
-
-
-impl MachineApi for AquaPathV1 {
-    fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
-        let control: Mutation = serde_json::from_value(request_body)?;
-        match control {
-            Mutation::SetAquaPathMode(mode) => self.set_mode_state(mode),
-            Mutation::SetRightTemperature(temperature) => {
-                self.set_target_temperature(temperature, super::AquaPathSideType::Right)
-            }
-
-            Mutation::SetLeftTemperature(temperature) => {
-                self.set_target_temperature(temperature, super::AquaPathSideType::Left)
-            }
-
-            Mutation::SetRightFlow(should_pump) => {
-                self.set_should_pump(should_pump, super::AquaPathSideType::Right)
-            }
-            Mutation::SetLeftFlow(should_pump) => {
-                self.set_should_pump(should_pump, super::AquaPathSideType::Left)
-            }
-            Mutation::SetRightRevolutions(revolution) => {
-                self.set_max_revolutions(revolution, super::AquaPathSideType::Right)
-            }
-            Mutation::SetLeftRevolutions(revolutions) => {
-                self.set_max_revolutions(revolutions, super::AquaPathSideType::Left)
-            }
-            Mutation::SetRightHeatingTolerance(tolerance) => {
-                self.set_heating_tolerance(tolerance, super::AquaPathSideType::Right)
-            }
-            Mutation::SetLeftHeatingTolerance(tolerance) => {
-                self.set_heating_tolerance(tolerance, super::AquaPathSideType::Left)
-            }
-            Mutation::SetRightCoolingTolerance(tolerance) => {
-                self.set_cooling_tolerance(tolerance, super::AquaPathSideType::Right);
-            }
-            Mutation::SetLeftCoolingTolerance(tolerance) => {
-                self.set_cooling_tolerance(tolerance, super::AquaPathSideType::Left);
-            }
-            Mutation::SetLeftPidKp(value) => {
-                self.set_pid_kp(value, super::AquaPathSideType::Left);
-            }
-            Mutation::SetLeftPidKi(value) => {
-                self.set_pid_ki(value, super::AquaPathSideType::Left);
-            }
-            Mutation::SetLeftPidKd(value) => {
-                self.set_pid_kd(value, super::AquaPathSideType::Left);
-            }
-            Mutation::SetRightPidKp(value) => {
-                self.set_pid_kp(value, super::AquaPathSideType::Right);
-            }
-            Mutation::SetRightPidKi(value) => {
-                self.set_pid_ki(value, super::AquaPathSideType::Right);
-            }
-            Mutation::SetRightPidKd(value) => {
-                self.set_pid_kd(value, super::AquaPathSideType::Right);
-            }
-            Mutation::SetLeftThermalFlowSettleDuration(value) => {
-                self.set_thermal_flow_settle_duration(value, super::AquaPathSideType::Left);
-            }
-            Mutation::SetRightThermalFlowSettleDuration(value) => {
-                self.set_thermal_flow_settle_duration(value, super::AquaPathSideType::Right);
-            }
-            Mutation::SetLeftPumpCooldownMinTemperature(value) => {
-                self.set_pump_cooldown_min_temperature(value, super::AquaPathSideType::Left);
-            }
-            Mutation::SetRightPumpCooldownMinTemperature(value) => {
-                self.set_pump_cooldown_min_temperature(value, super::AquaPathSideType::Right);
-            }
-            Mutation::SetAmbientTemperatureCalibration(ambient_temp) => {
-                self.set_ambient_temperature_calibration(ambient_temp);
-            }
-        }
-        Ok(())
-    }
-
-    fn api_event_namespace(&mut self) -> Option<Namespace> {
-        self.namespace.namespace.clone()
-    }
 }
