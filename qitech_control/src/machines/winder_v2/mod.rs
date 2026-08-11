@@ -1,19 +1,17 @@
-pub mod act;
-pub mod adaptive_spool_speed_controller;
-pub mod api;
-pub mod clamp_revolution;
-pub mod emit;
-pub mod filament_tension;
-pub mod minmax_spool_speed_controller;
-pub mod new;
-pub mod puller_speed_controller;
-pub mod spool_speed_controller;
-pub mod tension_arm;
-pub mod traverse_controller;
+mod act;
+mod adaptive_spool_speed_controller;
+mod api;
+mod clamp_revolution;
+mod filament_tension;
+mod minmax_spool_speed_controller;
+mod new;
+mod puller_speed_controller;
+mod spool_speed_controller;
+mod tension_arm;
+mod traverse_controller;
 
 use crate::converters::angular_step_converter::AngularStepConverter;
 use crate::machines::winder_v2::api::Measurements;
-use crate::machines::winder_v2::api::StateProperties;
 use crate::machines::winder_v2::new::TensionArm;
 use crate::machines::winder_v2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedController;
@@ -70,7 +68,6 @@ pub struct WinderV1<const VARIANT: usize> {
     pub tension_arm: TensionArm,
 
     pub laser: Rc<RefCell<dyn DigitalOutputDevice>>,
-    pub laser_enabled: bool,
     pub traverse_controller: TraverseController,
 
     // mode
@@ -90,7 +87,7 @@ pub struct WinderV1<const VARIANT: usize> {
     pub puller_speed_controller: PullerSpeedController,
 
     // --- resource api migration ---
-    state_props: StateProperties,
+    laser_enabled: StateProperty<bool>,
     measurements: Measurements,
 
     // --- subscriptions ---
@@ -120,14 +117,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         let traverse = &mut *self.traverse.borrow_mut();
         self.traverse_controller
             .update_speed(traverse, self.spool_speed_controller.get_speed());
-    }
-
-    /// Can wind capability check
-    pub fn can_wind(&self) -> bool {
-        // Check if tension arm is zeroed and traverse is homed
-        self.tension_arm.zeroed.get()
-            && self.traverse_controller.is_homed()
-            && !self.traverse_controller.is_going_home()
     }
 
     /// Can go to inner limit capability check
@@ -171,83 +160,13 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         OperationCapability::Allowed
     }
 
-    /// Can go to outer limit capability check
-    pub fn traverse_can_goto_limit_outer(&self) -> OperationCapability {
-        if !self.traverse_controller.is_homed() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is not homed".to_string(),
-            };
-        }
-
-        if self.traverse_mode == TraverseMode::Standby {
-            return OperationCapability::Forbidden {
-                reason: "traverse is in standby".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_going_out() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is already going out".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_going_home() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is currently homing".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_traversing() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is currently traversing".to_string(),
-            };
-        }
-
-        if self.mode.get() == Mode::Wind {
-            return OperationCapability::Forbidden {
-                reason: "winder is in wind mode".to_string(),
-            };
-        }
-
-        OperationCapability::Allowed
-    }
-
-    /// Can go home capability check
-    pub fn traverse_can_goto_home(&self) -> OperationCapability {
-        if self.traverse_mode == TraverseMode::Standby {
-            return OperationCapability::Forbidden {
-                reason: "traverse is in standby".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_going_home() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is already going home".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_traversing() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is currently traversing".to_string(),
-            };
-        }
-
-        if self.mode.get() == Mode::Wind {
-            return OperationCapability::Forbidden {
-                reason: "winder is in wind mode".to_string(),
-            };
-        }
-
-        OperationCapability::Allowed
-    }
-
     /// Apply the mode changes to the spool
     ///
     /// It contains a transition matrix for atomic changes.
     /// It will set [`Self::spool_mode`]
     fn set_spool_mode(&mut self, mode: Mode) {
         // Convert to `Winder2Mode` to `SpoolMode`
-        let mode: SpoolMode = mode.clone().into();
+        let mode: SpoolMode = mode.into();
         let spool = &mut *self.spool.borrow_mut();
         // Transition matrix
         match self.spool_mode {
@@ -299,7 +218,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     /// It will set [`Self::puller_mode`]
     fn set_puller_mode(&mut self, mode: Mode) {
         // Convert to `Winder2Mode` to `PullerMode`
-        let mode: PullerMode = mode.clone().into();
+        let mode: PullerMode = mode.into();
         let puller = &mut *self.puller.borrow_mut();
 
         // Transition matrix

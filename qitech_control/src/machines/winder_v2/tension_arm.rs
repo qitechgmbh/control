@@ -1,4 +1,4 @@
-use qitech_framework::machine::StateProperty;
+use qitech_framework::machine::{ActErrorKind, StateProperty};
 use qitech_lib::ethercat_hal::io::analog_input::physical::AnalogInputValue;
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
 use qitech_lib::units::angle::revolution;
@@ -32,16 +32,20 @@ impl TensionArm {
         Angle::new::<revolution>(volts / 5.0) % Angle::new::<revolution>(1.0)
     }
 
-    fn get_volts(&self) -> Result<f64, anyhow::Error> {
-        // get the normalized value from the analog input
+    /// get the normalized value from the analog input
+    fn get_volts(&self) -> Result<f64, ActErrorKind> {
         let analog_input = &*self.analog_input.borrow();
 
         let range = match analog_input.analog_input_range() {
             Some(range) => range,
-            None => return Err(anyhow::anyhow!("No input range supplied")),
+            None => return Err(ActErrorKind::Custom("No input range supplied".to_string())),
         };
 
-        let value = analog_input.get_analog_input(0)?.get_physical(&range);
+        let value = match analog_input.get_analog_input(0) {
+            Ok(v) => v.get_physical(&range),
+            Err(e) => return Err(ActErrorKind::Custom(e.to_string())),
+        };
+
         match value {
             AnalogInputValue::Potential(v) => Ok(v.get::<volt>()),
             _ => panic!("Expected a potential value"),

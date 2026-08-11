@@ -6,7 +6,10 @@ use qitech_lib::units::length::millimeter;
 use std::time::Instant;
 
 use super::WinderV1;
-use crate::machines::winder_v2::types::LaserSubscription;
+use crate::machines::winder_v2::{
+    SPOOL_PORT,
+    types::{LaserSubscription, Mode, SpoolAutomaticActionMode},
+};
 
 impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
     fn act(&mut self, now: Instant) -> ActResult {
@@ -59,6 +62,62 @@ impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
             && sub.ident == ident
         {
             self.laser_subscription = None;
+        }
+    }
+}
+
+impl<const VARIANT: usize> WinderV1<VARIANT> {
+    pub fn sync_spool_speed(&mut self, t: Instant) {
+        let angular_velocity = self.spool_speed_controller.update_speed(
+            t,
+            &self.tension_arm,
+            &self.puller_speed_controller,
+        );
+
+        // Apply direction based on forward setting
+        let directed_angular_velocity = if self.spool_speed_controller.get_forward() {
+            angular_velocity
+        } else {
+            -angular_velocity
+        };
+
+        let steps_per_second = self
+            .spool_step_converter
+            .angular_velocity_to_steps(directed_angular_velocity);
+        let spool_ref = &mut *self.spool.borrow_mut();
+        let _ = spool_ref.set_speed(SPOOL_PORT, steps_per_second);
+    }
+
+    pub fn stop_or_pull_spool(&mut self, now: Instant) {
+        if matches!(
+            self.spool_automatic_action.mode.get(),
+            SpoolAutomaticActionMode::NoAction
+        ) {
+            self.calculate_spool_auto_progress_(now);
+            return;
+        }
+
+        match self.mode.get() {
+            Mode::Pull => self.calculate_spool_auto_progress_(now),
+            Mode::Wind => self.calculate_spool_auto_progress_(now),
+            _ => {
+                self.spool_automatic_action.progress_last_check = now;
+                return;
+            }
+        }
+
+        if self.spool_automatic_action.progress >= self.spool_automatic_action.target_length.get() {
+            match self.spool_automatic_action.mode.get() {
+                SpoolAutomaticActionMode::NoAction => (),
+                SpoolAutomaticActionMode::Pull => {
+                    self.stop_or_pull_spool_reset(now);
+                    self.set_mode(Mode::Pull);
+                }
+                SpoolAutomaticActionMode::Hold => {
+                    self.stop_or_pull_spool_reset(now);
+                    self.set_mode(Mode::Hold);
+                }
+            }
         }
     }
 }

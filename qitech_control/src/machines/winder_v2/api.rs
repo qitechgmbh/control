@@ -1,12 +1,15 @@
 use std::time::Instant;
 
-use qitech_framework::machine::{ActResult, CommandExecuteResult, Measurement, StateProperty};
+use qitech_framework::machine::{
+    ActError, ActErrorImpact, ActErrorKind, ActResult, CommandExecuteResult, Measurement,
+    OperationCapability,
+};
 use qitech_lib::units::angle::degree;
 use qitech_lib::units::length::millimeter;
 use qitech_lib::units::{Angle, AngularVelocity, Length, Velocity};
 
-use crate::machines::winder_v2::types::Mode;
-use crate::machines::winder_v2::{LASER_PORT, PULLER_PORT, SPOOL_PORT, WinderV1};
+use crate::machines::winder_v2::types::{Mode, TraverseMode};
+use crate::machines::winder_v2::{LASER_PORT, PULLER_PORT, SPOOL_PORT, TRAVERSE_PORT, WinderV1};
 
 pub use super::puller_speed_controller::{GearRatio, PullerRegulationMode};
 
@@ -49,19 +52,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     }
 }
 
-pub struct StateProperties {
-    pub traverse_state: TraverseStateProperties,
-}
-
-pub struct TraverseStateProperties {
-    pub is_going_in: StateProperty<bool>,
-    pub is_going_out: StateProperty<bool>,
-    pub is_homed: StateProperty<bool>,
-    pub is_going_home: StateProperty<bool>,
-    pub is_traversing: StateProperty<bool>,
-    pub laserpointer: StateProperty<bool>,
-}
-
 // --- measurements ---
 pub struct Measurements {
     pub traverse_position: Measurement<Option<Length>>,
@@ -73,61 +63,166 @@ pub struct Measurements {
 
 // --- commands ---
 impl<const VARIANT: usize> WinderV1<VARIANT> {
-    pub fn cmd_enter_standby_mode(&mut self) -> CommandExecuteResult {
+    pub fn enter_standby_mode(&mut self) -> CommandExecuteResult {
         self.set_mode(Mode::Standby);
         Ok(())
     }
 
-    pub fn cmd_enter_hold_mode(&mut self) -> CommandExecuteResult {
+    pub fn enter_hold_mode(&mut self) -> CommandExecuteResult {
         self.set_mode(Mode::Hold);
         Ok(())
     }
 
-    pub fn cmd_enter_pull_mode(&mut self) -> CommandExecuteResult {
+    pub fn enter_pull_mode(&mut self) -> CommandExecuteResult {
         self.set_mode(Mode::Pull);
         Ok(())
     }
 
-    pub fn cmd_enter_wind_mode(&mut self) -> CommandExecuteResult {
+    pub fn enter_wind_mode(&mut self) -> CommandExecuteResult {
         self.set_mode(Mode::Wind);
         Ok(())
     }
 
-    pub fn cmd_traverse_goto_home(&mut self) -> CommandExecuteResult {
-        self.traverse_goto_home();
+    pub fn traverse_goto_home(&mut self) -> CommandExecuteResult {
+        self.traverse_controller.goto_home();
         Ok(())
     }
 
-    pub fn cmd_traverse_goto_limit_outer(&mut self) -> CommandExecuteResult {
-        self.traverse_goto_limit_outer();
+    pub fn traverse_goto_limit_outer(&mut self) -> CommandExecuteResult {
+        self.traverse_controller.goto_limit_outer();
         Ok(())
     }
 
-    pub fn cmd_traverse_goto_limit_inner(&mut self) -> CommandExecuteResult {
-        self.traverse_goto_limit_inner();
+    pub fn traverse_goto_limit_inner(&mut self) -> CommandExecuteResult {
+        self.traverse_controller.goto_limit_inner();
         Ok(())
     }
 
-    pub fn cmd_traverse_laser_enable(&mut self) -> CommandExecuteResult {
-        self.laser_enabled = true;
+    pub fn traverse_laser_enable(&mut self) -> CommandExecuteResult {
+        self.laser_enabled.set(false);
         self.laser.borrow_mut().set_output(LASER_PORT, true);
         Ok(())
     }
 
-    pub fn cmd_traverse_laser_disable(&mut self) -> CommandExecuteResult {
-        self.laser_enabled = false;
+    pub fn traverse_laser_disable(&mut self) -> CommandExecuteResult {
+        self.laser_enabled.set(true);
         self.laser.borrow_mut().set_output(LASER_PORT, false);
         Ok(())
     }
 
-    pub fn cmd_spool_reset_progress(&mut self) -> CommandExecuteResult {
+    pub fn spool_reset_progress(&mut self) -> CommandExecuteResult {
         self.stop_or_pull_spool_reset(Instant::now());
         Ok(())
     }
 
-    pub fn cmd_tension_arm_set_zero(&mut self) -> CommandExecuteResult {
-        self.tension_arm_zero();
+    pub fn tension_arm_set_zero(&mut self) -> CommandExecuteResult {
+        if let Err(e) = self.tension_arm.zero() {
+            return Err(ActError {
+                kind: ActErrorKind::Custom(e),
+                impact: ActErrorImpact::Degraded,
+            });
+        }
+
         Ok(())
+    }
+}
+
+// --- command capability checks ---
+impl<const VARIANT: usize> WinderV1<VARIANT> {
+    pub fn can_enter_wind_mode(&self) -> OperationCapability {
+        if !self.tension_arm.zeroed.get() {
+            return OperationCapability::Forbidden {
+                reason: "tension arm is not zeroed".to_string(),
+            };
+        }
+
+        if !self.traverse_controller.is_homed() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is not homed".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_going_home() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is currently homing".to_string(),
+            };
+        }
+
+        if self.mode.get() == Mode::Wind {
+            return OperationCapability::Forbidden {
+                reason: "winder is already in wind mode".to_string(),
+            };
+        }
+
+        OperationCapability::Allowed
+    }
+
+    pub fn traverse_can_goto_home(&self) -> OperationCapability {
+        if self.traverse_mode == TraverseMode::Standby {
+            return OperationCapability::Forbidden {
+                reason: "traverse is in standby".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_going_home() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is already going home".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_traversing() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is currently traversing".to_string(),
+            };
+        }
+
+        if self.mode.get() == Mode::Wind {
+            return OperationCapability::Forbidden {
+                reason: "winder is in wind mode".to_string(),
+            };
+        }
+
+        OperationCapability::Allowed
+    }
+
+    pub fn traverse_can_goto_limit_outer(&self) -> OperationCapability {
+        if !self.traverse_controller.is_homed() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is not homed".to_string(),
+            };
+        }
+
+        if self.traverse_mode == TraverseMode::Standby {
+            return OperationCapability::Forbidden {
+                reason: "traverse is in standby".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_going_out() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is already going out".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_going_home() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is currently homing".to_string(),
+            };
+        }
+
+        if self.traverse_controller.is_traversing() {
+            return OperationCapability::Forbidden {
+                reason: "traverse is currently traversing".to_string(),
+            };
+        }
+
+        if self.mode.get() == Mode::Wind {
+            return OperationCapability::Forbidden {
+                reason: "winder is in wind mode".to_string(),
+            };
+        }
+
+        OperationCapability::Allowed
     }
 }
 
@@ -181,5 +276,93 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         self.measurements
             .spool_progress
             .set(self.spool_automatic_action.progress);
+    }
+}
+
+// --- utils ---
+impl<const VARIANT: usize> WinderV1<VARIANT> {
+    /// Implement Mode
+    pub fn set_mode(&mut self, mode: Mode) {
+        self.mode.set(mode);
+        self.set_spool_mode(mode);
+        self.set_puller_mode(mode);
+        self.set_traverse_mode(mode);
+    }
+
+    /// Apply the mode changes to the spool
+    ///
+    /// It contains a transition matrix for atomic changes.
+    /// It will set [`Self::spool_mode`]
+    fn set_traverse_mode(&mut self, mode: Mode) {
+        // Convert to `Winder2Mode` to `TraverseMode`
+        let mode: TraverseMode = mode.into();
+        // If coming out of standby
+        if self.traverse_mode == TraverseMode::Standby && mode != TraverseMode::Standby {
+            let mut traverse = self.traverse.borrow_mut();
+            let traverse_ref = &mut *traverse;
+            traverse_ref.set_enabled(TRAVERSE_PORT, true);
+            self.traverse_controller.set_enabled(true);
+            drop(traverse);
+        }
+
+        // If going into standby
+        if mode == TraverseMode::Standby && self.traverse_mode != TraverseMode::Standby {
+            let mut traverse = self.traverse.borrow_mut();
+            let traverse_ref = &mut *traverse;
+            // If we are going into standby, we need to stop the traverse
+            traverse_ref.set_enabled(TRAVERSE_PORT, false);
+            self.traverse_controller.set_enabled(false);
+            drop(traverse);
+        }
+
+        {
+            let mut traverse = self.traverse.borrow_mut();
+            let traverse_ref = &mut *traverse;
+            // Transition matrix
+            match self.traverse_mode {
+                TraverseMode::Standby => match mode {
+                    TraverseMode::Standby => {}
+                    TraverseMode::Hold => {
+                        // From [`TraverseMode::Standby`] to [`TraverseMode::Hold`]
+                        traverse_ref.set_enabled(TRAVERSE_PORT, true);
+                        self.traverse_controller.set_enabled(true);
+                        self.traverse_controller.goto_home();
+                    }
+                    TraverseMode::Traverse => {
+                        // From [`TraverseMode::Standby`] to [`TraverseMode::Wind`]
+                        traverse_ref.set_enabled(TRAVERSE_PORT, true);
+                        self.traverse_controller.set_enabled(true);
+                        self.traverse_controller.start_traversing();
+                    }
+                },
+                TraverseMode::Hold => match mode {
+                    TraverseMode::Standby => {
+                        // From [`TraverseMode::Hold`] to [`TraverseMode::Standby`]
+                        traverse_ref.set_enabled(TRAVERSE_PORT, false);
+                        self.traverse_controller.set_enabled(false);
+                    }
+                    TraverseMode::Hold => {}
+                    TraverseMode::Traverse => {
+                        // From [`TraverseMode::Hold`] to [`TraverseMode::Wind`]
+                        self.traverse_controller.start_traversing();
+                    }
+                },
+                TraverseMode::Traverse => match mode {
+                    TraverseMode::Standby => {
+                        // From [`TraverseMode::Wind`] to [`TraverseMode::Standby`]
+                        traverse_ref.set_enabled(TRAVERSE_PORT, false);
+                        self.traverse_controller.set_enabled(false);
+                    }
+                    TraverseMode::Hold => {
+                        // From [`TraverseMode::Wind`] to [`TraverseMode::Hold`]
+                        self.traverse_controller.goto_home();
+                    }
+                    TraverseMode::Traverse => {}
+                },
+            }
+        }
+
+        // Update the internal state
+        self.traverse_mode = mode;
     }
 }

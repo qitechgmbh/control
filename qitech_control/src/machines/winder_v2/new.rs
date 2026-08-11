@@ -49,8 +49,6 @@ use crate::machines::winder_v2::adaptive_spool_speed_controller::AdaptiveSpoolSp
 use crate::machines::winder_v2::api::GearRatio;
 use crate::machines::winder_v2::api::Measurements;
 use crate::machines::winder_v2::api::PullerRegulationMode;
-use crate::machines::winder_v2::api::StateProperties;
-use crate::machines::winder_v2::api::TraverseStateProperties;
 use crate::machines::winder_v2::minmax_spool_speed_controller::MinMaxSpoolSpeedController;
 use crate::machines::winder_v2::puller_speed_controller::AdaptiveSpeedAlgorithm;
 use crate::machines::winder_v2::puller_speed_controller::PullerSpeedController;
@@ -182,7 +180,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             spool,
             tension_arm,
             laser,
-            laser_enabled: false,
+            laser_enabled: ctx.state::<bool>("traverse.laser_pointer_active").build()?,
             traverse_controller: TraverseController::new(
                 ctx.config::<millimeter>("traverse.limit_inner")
                     .on_external_changed(Self::on_traverse_limit_inner_changed)
@@ -199,7 +197,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 ctx.config::<millimeter>("traverse.padding")
                     .default(0.88)
                     .build()?,
-                ctx.state::<traverse_controller::State>("traverse.limit_inner")
+                ctx.state::<traverse_controller::State>("traverse.state")
                     .build()?,
                 64,
             ),
@@ -247,7 +245,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                     .default(PullerRegulationMode::Speed)
                     .build()?,
             ),
-            state_props: Self::init_state_properties(ctx)?,
             measurements: Self::init_measurements(ctx)?,
             laser_subscription: None,
         })
@@ -370,19 +367,6 @@ fn init_el7031_0030_spool(
 
 // --- resources ---
 impl<const VARIANT: usize> WinderV1<VARIANT> {
-    fn init_state_properties(ctx: &mut BuildContext) -> BuildResult<StateProperties> {
-        Ok(StateProperties {
-            traverse_state: TraverseStateProperties {
-                is_going_in: ctx.state::<bool>("traverse.is_going_in").build()?,
-                is_going_out: ctx.state::<bool>("traverse.is_going_out").build()?,
-                is_homed: ctx.state::<bool>("traverse.is_homed").build()?,
-                is_going_home: ctx.state::<bool>("traverse.is_going_home").build()?,
-                is_traversing: ctx.state::<bool>("traverse.is_traversing").build()?,
-                laserpointer: ctx.state::<bool>("traverse.laserpointer").build()?,
-            },
-        })
-    }
-
     fn init_measurements(ctx: &mut BuildContext) -> BuildResult<Measurements> {
         Ok(Measurements {
             traverse_position: ctx
@@ -405,54 +389,55 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     fn init_commands(ctx: &mut BuildContext) -> BuildResult<()> {
         // --- modes ---
         ctx.command("enter_standby_mode")
-            .execute(Self::cmd_enter_standby_mode)
+            .execute(Self::enter_standby_mode)
             .build()?;
 
         ctx.command("enter_hold_mode")
-            .execute(Self::cmd_enter_hold_mode)
+            .execute(Self::enter_hold_mode)
             .build()?;
 
         ctx.command("enter_pull_mode")
-            .execute(Self::cmd_enter_pull_mode)
+            .execute(Self::enter_pull_mode)
             .build()?;
 
         ctx.command("enter_wind_mode")
-            .execute(Self::cmd_enter_wind_mode)
+            .can_execute(Self::can_enter_wind_mode)
+            .execute(Self::enter_wind_mode)
             .build()?;
 
         // --- traverse goto ---
         ctx.command("traverse.goto_home")
             .can_execute(Self::traverse_can_goto_home)
-            .execute(Self::cmd_traverse_goto_home)
+            .execute(Self::traverse_goto_home)
             .build()?;
 
         ctx.command("traverse.goto_limit_inner")
             .can_execute(Self::traverse_can_goto_limit_inner)
-            .execute(Self::cmd_traverse_goto_limit_inner)
+            .execute(Self::traverse_goto_limit_inner)
             .build()?;
 
         ctx.command("traverse.goto_limit_outer")
             .can_execute(Self::traverse_can_goto_limit_outer)
-            .execute(Self::cmd_traverse_goto_limit_outer)
+            .execute(Self::traverse_goto_limit_outer)
             .build()?;
 
         // --- traverse laser ---
         ctx.command("traverse.laserpointer.enable")
-            .execute(Self::cmd_traverse_laser_enable)
+            .execute(Self::traverse_laser_enable)
             .build()?;
 
         ctx.command("traverse.laserpointer.disable")
-            .execute(Self::cmd_traverse_laser_disable)
+            .execute(Self::traverse_laser_disable)
             .build()?;
 
         // --- spool ---
         ctx.command("spool.reset_progress")
-            .execute(Self::cmd_spool_reset_progress)
+            .execute(Self::spool_reset_progress)
             .build()?;
 
         // --- tension arm ---
         ctx.command("tension_arm.set_zero")
-            .execute(Self::cmd_tension_arm_set_zero)
+            .execute(Self::tension_arm_set_zero)
             .build()?;
 
         Ok(())

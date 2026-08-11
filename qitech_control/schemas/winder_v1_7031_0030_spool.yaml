@@ -48,70 +48,26 @@ config:
 state:
   mode: !enum [standby, pull, hold, wind]
 
-traverse:
-  state: !enum [
-      not_homed, 
-      idle, 
-      going_in, 
-      going_out, 
-      initialize, 
-      escape_endstop, 
-      find_endstop_fine_distancing, 
-      find_endstop_coarse, 
-      find_endstop_fine, 
-      validate, 
-      traversing_in, 
-      traversing_out
-    ]
+  traverse:
+    state: !enum [
+        not_homed, 
+        idle, 
+        going_in, 
+        going_out, 
+        initialize, 
+        escape_endstop, 
+        find_endstop_fine_distancing, 
+        find_endstop_coarse, 
+        find_endstop_fine, 
+        validate, 
+        traversing_in, 
+        traversing_out
+      ]
 
-    limit_inner: !millimeter
-    limit_outer: !millimeter
-    is_going_in: !boolean
-    is_going_out: !boolean
-    is_homed: !boolean
-    is_going_home: !boolean
-    is_traversing: !boolean
-    laserpointer: !boolean
-    step_size: !millimeter
-    padding: !millimeter
-    can_go_in: !boolean
-    can_go_out: !boolean
-    can_go_home: !boolean
-
-  puller:
-    regulation: !enum [speed, diameter]
-
-    target_speed: !meter_per_minute
-
-    gear_ratio: !enum [one_to_one, one_to_five, one_to_ten]
-
-    adaptive:
-      speed_delta_max: !float
-      change_per_step: !float
-      adjustment_distance: !millimeter
-      accepted_difference: !millimeter
-
-  spool_automatic_action:
-    spool_required_meters: !meter
-    spool_automatic_action_mode: !enum [no_action, pull, hold]
+    laserpointer_enabled: !boolean
 
   tension_arm:
     zeroed: !boolean
-
-  spool:
-    forward: !boolean
-    regulation_mode: !enum [adaptive, minmax]
-
-    minmax:
-      speed_min: !revolution_per_minute
-      speed_max: !revolution_per_minute
-
-    adaptive:
-      tension_target: !float
-      radius_learning_rate: !float
-      max_speed_multiplier: !float
-      acceleration_factor: !float
-      deacceleration_urgency_multiplier: !float
 
 measurements:
   traverse:
