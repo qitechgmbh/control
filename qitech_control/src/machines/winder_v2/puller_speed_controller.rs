@@ -41,11 +41,11 @@ pub struct PullerSpeedController {
 
     pub adaptive: AdaptiveSpeedAlgorithm,
 
-    pub regulation_mode: PullerRegulationMode,
+    pub regulation_mode: ConfigProperty<PullerRegulationMode>,
     /// Forward rotation direction. If false, applies negative sign to speed
     pub forward: ConfigProperty<bool>,
     /// Gear ratio for winding speed (1:5 or 1:10)
-    pub gear_ratio: GearRatio,
+    pub gear_ratio: ConfigProperty<GearRatio>,
     /// Linear acceleration controller to dampen speed change
     acceleration_controller: LinearJerkSpeedController,
     /// Converter for linear to angular transformations
@@ -59,6 +59,8 @@ impl PullerSpeedController {
         converter: LinearStepConverter,
         forward: ConfigProperty<bool>,
         adapative_algorithm: AdaptiveSpeedAlgorithm,
+        gear_ratio: ConfigProperty<GearRatio>,
+        regulation_mode: ConfigProperty<PullerRegulationMode>,
     ) -> Self {
         let acceleration = Acceleration::new::<meter_per_minute_per_second>(5.0);
         let jerk = Jerk::new::<meter_per_minute_per_second_squared>(10.0);
@@ -74,9 +76,9 @@ impl PullerSpeedController {
             enabled: false,
             target_speed,
             adaptive: adapative_algorithm,
-            regulation_mode: PullerRegulationMode::Speed,
+            regulation_mode,
             forward,
-            gear_ratio: GearRatio::default(),
+            gear_ratio,
             acceleration_controller: LinearJerkSpeedController::new_simple(
                 Some(speed),
                 acceleration,
@@ -91,26 +93,13 @@ impl PullerSpeedController {
         self.enabled = enabled;
     }
 
-    pub fn set_regulation_mode(&mut self, regulation: PullerRegulationMode) {
-        // Reset adaptive modulation when switching to Diameter mode
-        // so it starts from the current target_speed without jumps
-        if matches!(regulation, PullerRegulationMode::Diameter) {
-            self.adaptive.reset_modulation();
-        }
-        self.regulation_mode = regulation;
-    }
-
-    pub const fn set_gear_ratio(&mut self, gear_ratio: GearRatio) {
-        self.gear_ratio = gear_ratio;
-    }
-
-    pub const fn get_gear_ratio(&self) -> GearRatio {
-        self.gear_ratio
+    pub fn get_gear_ratio(&self) -> GearRatio {
+        self.gear_ratio.get()
     }
 
     fn update_speed(&mut self, t: Instant) -> Velocity {
         let base_speed = match self.enabled {
-            true => match self.regulation_mode {
+            true => match self.regulation_mode.get() {
                 PullerRegulationMode::Speed => self.target_speed.get(),
                 PullerRegulationMode::Diameter => self.adaptive.compute(self.target_speed.get()),
             },
@@ -118,7 +107,7 @@ impl PullerSpeedController {
         };
 
         // Apply gear ratio multiplier
-        let speed = base_speed * self.gear_ratio.multiplier();
+        let speed = base_speed * self.gear_ratio.get().multiplier();
 
         let speed = if self.forward.get() { speed } else { -speed };
 

@@ -4,12 +4,11 @@ use qitech_framework::machine::{
     ActResult, CommandExecuteResult, ConfigProperty, Measurement, StateProperty,
 };
 use qitech_lib::units::angle::degree;
-use qitech_lib::units::angular_velocity::revolution_per_minute;
 use qitech_lib::units::length::millimeter;
 use qitech_lib::units::{Angle, AngularVelocity, Length, Velocity};
 
+use crate::machines::winder_v2::types::Mode;
 use crate::machines::winder_v2::{LASER_PORT, PULLER_PORT, SPOOL_PORT, Winder2Mode, WinderV1};
-use crate::machines::winder_v2::{spool_speed_controller::SpoolSpeedControllerType, types::Mode};
 
 pub use super::puller_speed_controller::{GearRatio, PullerRegulationMode};
 
@@ -18,16 +17,6 @@ pub struct ConfigProperties {
     // --- traverse ---
     pub traverse_limit_inner: ConfigProperty<Length>,
     pub traverse_limit_outer: ConfigProperty<Length>,
-
-    // --- puller ---
-    pub puller_regulation_mode: ConfigProperty<PullerRegulationMode>,
-    pub puller_gear_ratio: ConfigProperty<GearRatio>,
-
-    // --- spool speed controller ---
-    pub spool_regulation_mode: ConfigProperty<SpoolSpeedControllerType>,
-    pub spool_min_speed: ConfigProperty<AngularVelocity>,
-    pub spool_max_speed: ConfigProperty<AngularVelocity>,
-    pub spool_forward: ConfigProperty<bool>,
 }
 
 impl<const VARIANT: usize> WinderV1<VARIANT> {
@@ -52,52 +41,36 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     }
 
     pub fn on_puller_regulation_mode_changed(&mut self) -> ActResult {
-        self.puller_set_regulation(self.config_props.puller_regulation_mode.get());
-        Ok(())
-    }
-
-    pub fn on_puller_gear_ratio_changed(&mut self) -> ActResult {
-        self.puller_set_gear_ratio(self.config_props.puller_gear_ratio.get());
+        self.puller_speed_controller.adaptive.reset_modulation();
         Ok(())
     }
 
     pub fn on_spool_regulation_mode_changed(&mut self) -> ActResult {
-        self.spool_set_regulation_mode(self.config_props.spool_regulation_mode.get());
+        self.spool_speed_controller.on_control_mode_changed();
         Ok(())
     }
 
     pub fn on_spool_min_speed_changed(&mut self) -> ActResult {
-        self.spool_set_minmax_min_speed(
-            self.config_props
-                .spool_min_speed
-                .get_as::<revolution_per_minute>(),
-        );
-
+        _ = self
+            .spool_speed_controller
+            .min_max_controller
+            .on_speed_min_changed();
         Ok(())
     }
 
     pub fn on_spool_max_speed_changed(&mut self) -> ActResult {
-        self.spool_set_minmax_max_speed(
-            self.config_props
-                .spool_max_speed
-                .get_as::<revolution_per_minute>(),
-        );
-
-        Ok(())
-    }
-
-    pub fn on_spool_forward_changed(&mut self) -> ActResult {
-        self.spool_set_forward(self.config_props.spool_forward.get());
+        _ = self
+            .spool_speed_controller
+            .min_max_controller
+            .on_speed_max_changed();
         Ok(())
     }
 }
 
 pub struct StateProperties {
     pub traverse_state: TraverseStateProperties,
-    pub puller_state: PullerStateProperties,
     pub mode_state: ModeStateProperties,
     pub tension_arm_state: TensionArmStateProperties,
-    pub spool_speed_controller_state: SpoolSpeedControllerStateProperties,
 }
 
 pub struct TraverseStateProperties {
@@ -114,11 +87,6 @@ pub struct TraverseStateProperties {
     pub can_go_home: StateProperty<bool>,
 }
 
-pub struct PullerStateProperties {
-    pub regulation: StateProperty<PullerRegulationMode>,
-    pub gear_ratio: StateProperty<GearRatio>,
-}
-
 pub struct ModeStateProperties {
     pub mode: StateProperty<Mode>,
     pub can_wind: StateProperty<bool>,
@@ -126,13 +94,6 @@ pub struct ModeStateProperties {
 
 pub struct TensionArmStateProperties {
     pub zeroed: StateProperty<bool>,
-}
-
-pub struct SpoolSpeedControllerStateProperties {
-    pub regulation_mode: StateProperty<SpoolSpeedControllerType>,
-    pub minmax_min_speed: StateProperty<AngularVelocity>,
-    pub minmax_max_speed: StateProperty<AngularVelocity>,
-    pub forward: StateProperty<bool>,
 }
 
 // --- measurements ---
@@ -258,7 +219,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
     pub fn update_states(&mut self) {
         self.update_state_traverse();
-        self.update_state_puller();
 
         // --- update mode state ---
         self.state_props
@@ -272,9 +232,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             .tension_arm_state
             .zeroed
             .set(self.tension_arm.zeroed);
-
-        // --- update spool speed controller state ---
-        self.update_state_spool_speed_controller();
     }
 
     fn update_state_traverse(&mut self) {
@@ -311,34 +268,5 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         s.can_go_in.set(can_go_in.is_allowed());
         s.can_go_out.set(can_go_out.is_allowed());
         s.can_go_home.set(can_go_home.is_allowed());
-    }
-
-    fn update_state_puller(&mut self) {
-        // --- precompute puller state ---
-        let regulation = self.puller_speed_controller.regulation_mode;
-        let gear_ratio = self.puller_speed_controller.gear_ratio;
-
-        // --- update puller state ---
-        let s = &mut self.state_props.puller_state;
-
-        s.regulation.set(regulation);
-        s.gear_ratio.set(gear_ratio);
-    }
-
-    fn update_state_spool_speed_controller(&mut self) {
-        // --- precompute spool speed controller state ---
-        let regulation_mode = *self.spool_speed_controller.get_type();
-        let minmax_min_speed = self.spool_speed_controller.get_minmax_min_speed();
-        let minmax_max_speed = self.spool_speed_controller.get_minmax_max_speed();
-        let forward = self.spool_speed_controller.get_forward();
-
-        // --- update spool speed controller state ---
-        let s = &mut self.state_props.spool_speed_controller_state;
-
-        s.regulation_mode.set(regulation_mode);
-        s.minmax_min_speed.set(minmax_min_speed);
-        s.minmax_max_speed.set(minmax_max_speed);
-
-        s.forward.set(forward);
     }
 }

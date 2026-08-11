@@ -1,16 +1,8 @@
 use crate::machines::winder_v2::types::{SpoolAutomaticActionMode, Winder2Mode};
 
-use super::{
-    SPOOL_PORT, TRAVERSE_PORT, TraverseMode, WinderV1, api::PullerRegulationMode,
-    spool_speed_controller,
-};
+use super::{SPOOL_PORT, TRAVERSE_PORT, TraverseMode, WinderV1};
 
-#[cfg(not(feature = "mock-machine"))]
-pub use qitech_lib::units::{
-    angular_velocity::revolution_per_minute,
-    f64::*,
-    length::millimeter,
-};
+pub use qitech_lib::units::{f64::*, length::millimeter};
 
 pub use std::time::Instant;
 
@@ -208,44 +200,5 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     /// Implement Tension Arm
     pub fn tension_arm_zero(&mut self) -> Result<(), String> {
         self.tension_arm.zero()
-    }
-
-    pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
-        self.puller_speed_controller
-            .set_regulation_mode(puller_regulation_mode);
-    }
-
-    /// Set gear ratio for winding speed
-    pub fn puller_set_gear_ratio(&mut self, gear_ratio: super::puller_speed_controller::GearRatio) {
-        self.puller_speed_controller.set_gear_ratio(gear_ratio);
-    }
-
-    // Spool Speed Controller API methods
-    pub fn spool_set_regulation_mode(
-        &mut self,
-        regulation_mode: spool_speed_controller::SpoolSpeedControllerType,
-    ) {
-        self.spool_speed_controller.set_type(regulation_mode);
-    }
-
-    /// Set minimum speed for minmax mode in RPM
-    pub fn spool_set_minmax_min_speed(&mut self, min_speed_rpm: f64) -> Result<(), String> {
-        let min_speed = AngularVelocity::new::<revolution_per_minute>(min_speed_rpm);
-        self.spool_speed_controller
-            .set_minmax_min_speed(min_speed)
-            .map_err(|e| e.to_string())
-    }
-
-    /// Set maximum speed for minmax mode in RPM
-    pub fn spool_set_minmax_max_speed(&mut self, max_speed_rpm: f64) -> Result<(), String> {
-        let max_speed = AngularVelocity::new::<revolution_per_minute>(max_speed_rpm);
-        self.spool_speed_controller
-            .set_minmax_max_speed(max_speed)
-            .map_err(|e| e.to_string())
-    }
-
-    /// Set forward rotation direction
-    pub fn spool_set_forward(&mut self, forward: bool) {
-        self.spool_speed_controller.set_forward(forward);
     }
 }

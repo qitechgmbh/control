@@ -14,6 +14,7 @@ use crate::{
 };
 use std::time::Instant;
 
+use qitech_framework::machine::{ActErrorKind, ConfigProperty};
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::angle::degree;
 use qitech_lib::units::angular_acceleration::{
@@ -22,7 +23,6 @@ use qitech_lib::units::angular_acceleration::{
 use qitech_lib::units::angular_velocity::{radian_per_second, revolution_per_minute};
 use qitech_lib::units::f64::*;
 
-#[derive(Debug)]
 pub struct MinMaxSpoolSpeedController {
     /// Current speed in
     last_speed: AngularVelocity,
@@ -34,16 +34,17 @@ pub struct MinMaxSpoolSpeedController {
     filament_calc: FilamentTensionCalculator,
     /// Unit is angular velocity in rad/s
     speed_time_window: MovingTimeWindow<f64>,
-}
 
-impl Default for MinMaxSpoolSpeedController {
-    fn default() -> Self {
-        Self::new()
-    }
+    // --- config ---
+    _speed_min: ConfigProperty<AngularVelocity>,
+    _speed_max: ConfigProperty<AngularVelocity>,
 }
 
 impl MinMaxSpoolSpeedController {
-    pub fn new() -> Self {
+    pub fn new(
+        _speed_min: ConfigProperty<AngularVelocity>,
+        _speed_max: ConfigProperty<AngularVelocity>,
+    ) -> Self {
         let max_speed = AngularVelocity::new::<revolution_per_minute>(150.0);
 
         Self {
@@ -64,7 +65,24 @@ impl MinMaxSpoolSpeedController {
                 std::time::Duration::from_secs(5),
                 10, // max samples
             ),
+            _speed_min,
+            _speed_max,
         }
+    }
+
+    // --- config callbacks ---
+    pub fn on_speed_min_changed(&mut self) -> Result<(), ActErrorKind> {
+        let value = self._speed_min.get();
+        self.acceleration_controller.set_min_speed(Some(value));
+        _ = self.update_acceleration().map_err(|e| e.to_string());
+        Ok(())
+    }
+
+    pub fn on_speed_max_changed(&mut self) -> Result<(), ActErrorKind> {
+        let value = self._speed_max.get();
+        self.acceleration_controller.set_max_speed(Some(value));
+        _ = self.update_acceleration().map_err(|e| e.to_string());
+        Ok(())
     }
 }
 
@@ -223,32 +241,6 @@ impl MinMaxSpoolSpeedController {
         self.acceleration_controller
             .set_min_acceleration(-acceleration);
         Ok(())
-    }
-
-    pub fn set_max_speed(
-        &mut self,
-        max_speed: AngularVelocity,
-    ) -> Result<(), MotionControllerError> {
-        self.acceleration_controller.set_max_speed(Some(max_speed));
-        self.update_acceleration()?;
-        Ok(())
-    }
-
-    pub fn set_min_speed(
-        &mut self,
-        min_speed: AngularVelocity,
-    ) -> Result<(), MotionControllerError> {
-        self.acceleration_controller.set_min_speed(Some(min_speed));
-        self.update_acceleration()?;
-        Ok(())
-    }
-
-    pub fn get_max_speed(&self) -> AngularVelocity {
-        self.max_speed()
-    }
-
-    pub fn get_min_speed(&self) -> AngularVelocity {
-        self.min_speed()
     }
 
     pub fn get_speed(&self) -> AngularVelocity {
