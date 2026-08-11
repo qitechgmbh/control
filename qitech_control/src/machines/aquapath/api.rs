@@ -1,71 +1,86 @@
 use super::{AquaPathV1Mode, controller::CoolingMode};
-use qitech_framework::{machine::{Measurement, StateProperty}};
+use qitech_framework::machine::{ConfigProperty, Measurement, StateProperty};
 use serde::Serialize;
 
 #[derive(Debug, Clone, Default)]
 pub struct Measurements {
     pub left_flow: Measurement<f64>,
     pub right_flow: Measurement<f64>,
+    
     pub left_temperature: Measurement<f64>,
     pub right_temperature: Measurement<f64>,
+    
     pub left_revolutions: Measurement<f64>,
     pub right_revolutions: Measurement<f64>,
+    
     pub left_power: Measurement<f64>,
     pub right_power: Measurement<f64>,
+    
     pub left_total_energy: Measurement<f64>,
     pub right_total_energy: Measurement<f64>,
 }
 
 #[derive(Debug, Clone)]
 pub struct StateProperties {
+    pub mode_state: ModeState,
     pub is_default_state: StateProperty<bool>,
+
     pub left_heating_startup_wait_active: StateProperty<bool>,
     pub right_heating_startup_wait_active: StateProperty<bool>,
+
     pub left_pump_cooldown_active: StateProperty<bool>,
-    pub right_pump_cooldown_active: StateProperty<bool>,
+    pub right_pump_cooldown_active: StateProperty<bool>,    
+    
     pub left_should_flow: StateProperty<bool>,
-    pub right_should_flow: StateProperty<bool>,
+    pub right_should_flow: StateProperty<bool>,    
+    
     pub left_heating: StateProperty<bool>,
     pub right_heating: StateProperty<bool>,
+    
     pub left_has_flow : StateProperty<bool>,
     pub right_has_flow : StateProperty<bool>,
-
+    
     pub left_pump_cooldown_remaining: StateProperty<f64>,
     pub right_pump_cooldown_remaining: StateProperty<f64>,
+    
     pub left_heating_startup_wait_remaining: StateProperty<f64>,
     pub right_heating_startup_wait_remaining: StateProperty<f64>,
-    pub ambient_temperature_calibration: StateProperty<f64>,
-    pub default_heating_tolerance: StateProperty<f64>,
-    pub default_cooling_tolerance: StateProperty<f64>,
-    pub default_pid_kp: StateProperty<f64>,
-    pub default_pid_ki: StateProperty<f64>,
-    pub default_pid_kd: StateProperty<f64>,
-    pub left_target_temperature: StateProperty<f64>,
-    pub right_target_temperature: StateProperty<f64>,
-    pub left_fan_max_revolutions :  StateProperty<f64>,
-    pub right_fan_max_revolutions :  StateProperty<f64>,
-
-    pub mode_state: ModeState,
+    
     pub left_cooling_mode: StateProperty<Option<CoolingMode>>,
     pub right_cooling_mode: StateProperty<Option<CoolingMode>>,
-    
-    // tolerance state,pid_states,thermal_safety_states --> Config
-    //pub tolerance_states: ToleranceStates,
-    //pub pid_states: PidStates,
-    //pub thermal_safety_states: ThermalSafetyStates,
 }
+
+#[derive(Debug, Clone)]
+pub struct ConfigProperties {
+    pub left_target_temperature: ConfigProperty<f64>,
+    pub right_target_temperature: ConfigProperty<f64>,
+    
+    pub ambient_temperature_calibration: ConfigProperty<f64>,
+    
+    pub default_heating_tolerance: ConfigProperty<f64>,
+    pub default_cooling_tolerance: ConfigProperty<f64>,
+    pub default_pid_kp: ConfigProperty<f64>,
+    pub default_pid_ki: ConfigProperty<f64>,
+    pub default_pid_kd: ConfigProperty<f64>,
+    
+    pub left_fan_max_revolutions :  ConfigProperty<f64>,
+    pub right_fan_max_revolutions :  ConfigProperty<f64>,
+    
+    pub left_tolerance_config: ToleranceState,
+    pub right_tolerance_config: ToleranceState,
+
+    pub left_pid_config: PidState,
+    pub right_pid_config: PidState,
+    
+    pub left_thermal_safety_state: ThermalSafetyState,
+    pub right_thermal_safety_state: ThermalSafetyState,
+}   
 
 
 #[derive(Serialize, Debug, Clone)]
 pub struct NoticeEvent {
     pub title: String,
     pub message: String,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct TempStates {
-    pub left: TempState,
-    pub right: TempState,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -89,11 +104,6 @@ pub struct FanState {
     pub revolutions: f64,
     pub max_revolutions: f64,
 }
-#[derive(Serialize, Debug, Clone)]
-pub struct FanStates {
-    pub left: FanState,
-    pub right: FanState,
-}
 
 #[derive(Serialize, Debug, Clone)]
 pub struct CoolingModeState {
@@ -101,61 +111,34 @@ pub struct CoolingModeState {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct CoolingModeStates {
-    pub left: CoolingModeState,
-    pub right: CoolingModeState,
-}
-
-#[derive(Serialize, Debug, Clone)]
 pub struct ToleranceState {
-    pub heating: f64,
-    pub cooling: f64,
-}
-#[derive(Serialize, Debug, Clone)]
-pub struct ToleranceStates {
-    pub left: ToleranceState,
-    pub right: ToleranceState,
+    pub heating: ConfigProperty<f64>,
+    pub cooling: ConfigProperty<f64>,
 }
 
 #[derive(Serialize, Debug, Clone)]
 pub struct PidState {
-    pub kp: f64,
-    pub ki: f64,
-    pub kd: f64,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct PidStates {
-    pub left: PidState,
-    pub right: PidState,
+    pub kp: ConfigProperty<f64>,
+    pub ki: ConfigProperty<f64>,
+    pub kd: ConfigProperty<f64>,
 }
 
 #[derive(Serialize, Debug, Clone)]
 pub struct ThermalSafetyState {
-    pub thermal_delay: f64,
-    pub cooldown_min_temperature: f64,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct ThermalSafetyStates {
-    pub left: ThermalSafetyState,
-    pub right: ThermalSafetyState,
+    pub thermal_delay: ConfigProperty<f64>,
+    pub cooldown_min_temperature: ConfigProperty<f64>,
 }
 
 #[derive(Serialize)]
 enum Mutation {
     //Mode
     SetAquaPathMode(AquaPathV1Mode),
-
     SetLeftTemperature(f64),
     SetRightTemperature(f64),
-
     SetLeftFlow(bool),
     SetRightFlow(bool),
-
     SetLeftRevolutions(f64),
     SetRightRevolutions(f64),
-
     SetLeftHeatingTolerance(f64),
     SetRightHeatingTolerance(f64),
     SetLeftCoolingTolerance(f64),
