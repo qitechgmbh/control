@@ -37,7 +37,6 @@ impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
         }
 
         // update the resources
-        self.update_states();
         self.update_measurements();
 
         Ok(())

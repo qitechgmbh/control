@@ -21,8 +21,71 @@ pub struct TraverseController {
     microstep_converter: LinearStepConverter,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+/*
+impl qitech_framework::__private::PropertyType for State {
+    type Constraints = qitech_framework::__private::EnumConstraints<Self>;
+}
+
+impl qitech_framework::__private::PropertyAdapter for State {
+    type Type = State;
+    type Input = State;
+
+    fn convert_input(input: Self::Input) -> Self::Type {
+        input
+    }
+
+    fn into_scalar(value: Self::Type) -> qitech_framework::__private::ScalarValue {
+        let s = match value {
+            State::NotHomed => "not_homed",
+            State::Idle => "idle",
+            State::GoingIn => "going_in",
+            State::GoingOut => "going_out",
+            State::Homing(state) => match state {
+                HomingState::Initialize => todo!(),
+                HomingState::EscapeEndstop => todo!(),
+                HomingState::FindEndstopFineDistancing => todo!(),
+                HomingState::FindEndstopCoarse => todo!(),
+                HomingState::FindEndtopFine => todo!(),
+                HomingState::Validate(_) => todo!(),
+            },
+            State::Traversing(state) => match state {
+                TraversingState::GoingOut => todo!(),
+                TraversingState::TraversingIn => todo!(),
+                TraversingState::TraversingOut => todo!(),
+            },
+        }.to_string();
+
+        qitech_framework::__private::ScalarValue::Enum(s)
+    }
+
+    fn from_scalar(value: ScalarValue) -> Result<Self::Type, ScalarValueTypeMismatchError> {
+        todo!()
+    }
+
+    fn validate_scalar_property_definition(definition: &ScalarPropertyDefinition) -> bool {
+        todo!()
+    }
+
+    fn validate_measurement_definition(definition: &MeasurementDefinition) -> bool {
+        todo!()
+    }
+
+    fn apply_constraints(
+        constraints: &<Self::Type as PropertyType>::Constraints,
+        value: &Self::Type,
+    ) -> Result<(), ConstraintViolationError> {
+        todo!()
+    }
+
+    fn as_constraints(constraints: &<Self::Type as PropertyType>::Constraints) -> Constraints {
+        todo!()
+    }
+}
+    */
+
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub enum State {
+    #[default]
     /// Initial state
     NotHomed,
 

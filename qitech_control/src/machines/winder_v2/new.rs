@@ -48,7 +48,6 @@ use crate::machines::winder_v2::WinderV1;
 use crate::machines::winder_v2::adaptive_spool_speed_controller::AdaptiveSpoolSpeedController;
 use crate::machines::winder_v2::api::GearRatio;
 use crate::machines::winder_v2::api::Measurements;
-use crate::machines::winder_v2::api::ModeStateProperties;
 use crate::machines::winder_v2::api::PullerRegulationMode;
 use crate::machines::winder_v2::api::StateProperties;
 use crate::machines::winder_v2::api::TraverseStateProperties;
@@ -377,10 +376,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 is_going_home: ctx.state::<bool>("traverse.is_going_home").build()?,
                 is_traversing: ctx.state::<bool>("traverse.is_traversing").build()?,
                 laserpointer: ctx.state::<bool>("traverse.laserpointer").build()?,
-            },
-
-            mode_state: ModeStateProperties {
-                mode: ctx.state::<Mode>("mode.mode").build()?,
             },
         })
     }

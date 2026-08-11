@@ -51,7 +51,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
 pub struct StateProperties {
     pub traverse_state: TraverseStateProperties,
-    pub mode_state: ModeStateProperties,
 }
 
 pub struct TraverseStateProperties {
@@ -61,10 +60,6 @@ pub struct TraverseStateProperties {
     pub is_going_home: StateProperty<bool>,
     pub is_traversing: StateProperty<bool>,
     pub laserpointer: StateProperty<bool>,
-}
-
-pub struct ModeStateProperties {
-    pub mode: StateProperty<Mode>,
 }
 
 // --- measurements ---
@@ -186,36 +181,5 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         self.measurements
             .spool_progress
             .set(self.spool_automatic_action.progress);
-    }
-
-    pub fn update_states(&mut self) {
-        self.update_state_traverse();
-
-        // --- update mode state ---
-        self.state_props
-            .mode_state
-            .mode
-            .set(self.mode.get());
-    }
-
-    fn update_state_traverse(&mut self) {
-        let is_going_in = self.traverse_controller.is_going_in();
-        let is_going_out = self.traverse_controller.is_going_out();
-        let is_homed = self.traverse_controller.is_homed();
-        let is_going_home = self.traverse_controller.is_going_home();
-        let is_traversing = self.traverse_controller.is_traversing();
-
-        let laserpointer = self.laser_enabled;
-
-        // --- update traverse state_props ---
-        let s = &mut self.state_props.traverse_state;
-
-        s.is_going_in.set(is_going_in);
-        s.is_going_out.set(is_going_out);
-        s.is_homed.set(is_homed);
-        s.is_going_home.set(is_going_home);
-        s.is_traversing.set(is_traversing);
-
-        s.laserpointer.set(laserpointer);
     }
 }
