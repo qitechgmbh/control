@@ -137,7 +137,6 @@ impl Rewinder {
                 TraverseMode::Traverse => {
                     traverse.set_enabled(TRAVERSE_PORT, true);
                     self.traverse_controller.set_enabled(true);
-                    self.traverse_controller.start_traversing();
                 }
             },
             TraverseMode::Hold => match mode {
@@ -146,12 +145,11 @@ impl Rewinder {
                     self.traverse_controller.set_enabled(false);
                 }
                 TraverseMode::Hold => {}
-                TraverseMode::Traverse => {
-                    self.traverse_controller.start_traversing();
-                }
+                TraverseMode::Traverse => {}
             },
             TraverseMode::Traverse => match mode {
                 TraverseMode::Standby => {
+                    self.traverse_controller.stop();
                     traverse.set_enabled(TRAVERSE_PORT, false);
                     self.traverse_controller.set_enabled(false);
                 }

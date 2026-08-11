@@ -329,22 +329,28 @@ export function RewinderControlPage() {
               </TouchButton>
             </div>
           </Label>
-          <Label label="Start Position">
-            <div className="flex items-center gap-2">
-              <span className="min-w-0 flex-1">
-                {state?.traverse_state.start_position.toFixed(0) ?? "--"} mm
-              </span>
-              <TouchButton
-                variant="outline"
-                icon="lu:MapPin"
-                onClick={gotoTraverseStartPosition}
-                disabled={!uiGuards.canMoveTraverse}
-                isLoading={isLoading}
-              >
-                Go
-              </TouchButton>
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <div className="text-sm text-gray-500">
+                Start Position - {state?.traverse_state.start ?? "--"}
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-mono text-2xl font-semibold text-gray-900">
+                  {state?.traverse_state.start_position.toFixed(0) ?? "--"}
+                </span>
+                <span className="text-gray-600">mm</span>
+              </div>
             </div>
-          </Label>
+            <TouchButton
+              variant="outline"
+              icon="lu:MapPin"
+              onClick={gotoTraverseStartPosition}
+              disabled={!uiGuards.canMoveTraverse}
+              isLoading={isLoading}
+            >
+              Go
+            </TouchButton>
+          </div>
           <Label label="Inner Limit">
             <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">

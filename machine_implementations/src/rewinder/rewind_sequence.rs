@@ -27,7 +27,7 @@ impl Rewinder {
 
         tracing::warn!("Rewinder hard stop: {reason}");
 
-        self.save_current_traverse_as_resume_position();
+        self.capture_hard_stop_traverse_position();
 
         self.stop_motion_commands();
 
@@ -132,8 +132,9 @@ impl Rewinder {
                     .config
                     .takeup_arm
                     .in_start_range(takeup_angle);
-                if source_ok && takeup_ok && self.traverse_at_active_rewind_start_position() {
-                    self.resume_traverse_position = None;
+                let traverse_ok =
+                    self.resume_traverse_in_place || self.traverse_at_start_position();
+                if source_ok && takeup_ok && traverse_ok {
                     self.set_rewind_phase(RewindPhase::Precharge, "start angles validated");
                 }
             }
@@ -142,6 +143,7 @@ impl Rewinder {
                     >= self.rewind_control.config.precharge_duration
                 {
                     self.set_rewind_phase(RewindPhase::CrawlStart, "precharge settled");
+                    self.resume_traverse_in_place = false;
                     self.traverse_controller.start_traversing();
                 }
             }

@@ -160,7 +160,7 @@ impl MachineNew for Rewinder {
             ),
             traverse_start: super::TraverseStart::Left,
             traverse_start_position: Length::new::<millimeter>(92.0),
-            resume_traverse_position: None,
+            resume_traverse_in_place: false,
             takeup_spool_diameter: None,
             source_spool_diameter: None,
             rewind_phase: RewindPhase::Idle,

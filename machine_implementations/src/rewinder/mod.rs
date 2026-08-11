@@ -76,7 +76,7 @@ pub struct Rewinder {
     pub traverse_controller: TraverseController,
     pub traverse_start: TraverseStart,
     pub traverse_start_position: Length,
-    pub resume_traverse_position: Option<Length>,
+    pub resume_traverse_in_place: bool,
     pub takeup_spool_diameter: Option<Length>,
     pub source_spool_diameter: Option<Length>,
     pub rewind_phase: RewindPhase,
@@ -164,15 +164,6 @@ impl Rewinder {
             TraverseStart::Right => self.traverse_controller.get_limit_inner(),
             TraverseStart::Custom => self.clamp_traverse_position(self.traverse_start_position),
         }
-    }
-
-    pub fn active_rewind_start_position(&self) -> Length {
-        self.resume_traverse_position
-            .unwrap_or_else(|| self.configured_traverse_start_position())
-    }
-
-    pub fn traverse_at_active_rewind_start_position(&self) -> bool {
-        self.traverse_at_position(self.active_rewind_start_position())
     }
 
     pub fn traverse_at_position(&self, target: Length) -> bool {

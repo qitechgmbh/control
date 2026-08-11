@@ -278,20 +278,20 @@ impl Rewinder {
             return false;
         }
 
-        if !self.traverse_controller.is_homed() {
+        if !self.resume_traverse_in_place && !self.traverse_controller.is_homed() {
             self.traverse_controller.goto_home();
             self.rewind_control
                 .decelerate_motion(self.rewind_control.last_dt_s);
             return true;
         }
 
-        if self.traverse_controller.is_going_home() {
+        if !self.resume_traverse_in_place && self.traverse_controller.is_going_home() {
             self.rewind_control
                 .decelerate_motion(self.rewind_control.last_dt_s);
             return true;
         }
 
-        if !self.traverse_at_start_position() {
+        if !self.resume_traverse_in_place && !self.traverse_at_start_position() {
             self.traverse_controller
                 .set_target_position(self.configured_traverse_start_position());
             self.traverse_controller.goto_target_position();

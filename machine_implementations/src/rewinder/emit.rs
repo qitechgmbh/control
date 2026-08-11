@@ -67,7 +67,6 @@ impl Rewinder {
                     return;
                 }
 
-                self.save_current_traverse_as_resume_position();
                 self.request_motion_stop(mode);
                 self.emit_state();
                 return;
@@ -103,15 +102,15 @@ impl Rewinder {
             }
             self.apply_mode_to_axes(mode);
             if hold_from_standby {
+                self.resume_traverse_in_place = false;
                 self.traverse_controller.goto_home();
             }
             if entering_rewind {
                 if resuming_motion_stop {
-                    self.resume_traverse_position = None;
+                    self.resume_traverse_in_place = false;
                     self.traverse_controller.start_traversing();
-                } else {
-                    let start_position =
-                        self.clamp_traverse_position(self.active_rewind_start_position());
+                } else if !self.resume_traverse_in_place {
+                    let start_position = self.configured_traverse_start_position();
                     self.traverse_controller.set_target_position(start_position);
                     self.traverse_controller.goto_target_position();
                 }
@@ -153,13 +152,17 @@ impl Rewinder {
         self.emit_state();
     }
 
-    pub(crate) fn save_current_traverse_as_resume_position(&mut self) {
+    pub(crate) fn capture_hard_stop_traverse_position(&mut self) {
         {
             let traverse = &*self.traverse.borrow();
             self.traverse_controller.sync_position(traverse);
         }
         if let Some(position) = self.traverse_controller.get_current_position() {
-            self.resume_traverse_position = Some(self.clamp_traverse_position(position));
+            self.traverse_start_position = self.clamp_traverse_position(position);
+            self.traverse_start = TraverseStart::Custom;
+            self.resume_traverse_in_place = true;
+        } else {
+            self.resume_traverse_in_place = false;
         }
     }
 
@@ -602,11 +605,11 @@ impl Rewinder {
         let current_outer = self.traverse_controller.get_limit_outer();
         if Self::validate_traverse_limits(new_inner, current_outer) {
             self.traverse_controller.set_limit_inner(new_inner);
-            self.traverse_start_position =
-                self.clamp_traverse_position(self.traverse_start_position);
-            self.resume_traverse_position = self
-                .resume_traverse_position
-                .map(|position| self.clamp_traverse_position(position));
+            let start_position = self.clamp_traverse_position(self.traverse_start_position);
+            if start_position != self.traverse_start_position {
+                self.resume_traverse_in_place = false;
+            }
+            self.traverse_start_position = start_position;
         }
         self.emit_state();
     }
@@ -616,18 +619,18 @@ impl Rewinder {
         let current_inner = self.traverse_controller.get_limit_inner();
         if Self::validate_traverse_limits(current_inner, new_outer) {
             self.traverse_controller.set_limit_outer(new_outer);
-            self.traverse_start_position =
-                self.clamp_traverse_position(self.traverse_start_position);
-            self.resume_traverse_position = self
-                .resume_traverse_position
-                .map(|position| self.clamp_traverse_position(position));
+            let start_position = self.clamp_traverse_position(self.traverse_start_position);
+            if start_position != self.traverse_start_position {
+                self.resume_traverse_in_place = false;
+            }
+            self.traverse_start_position = start_position;
         }
         self.emit_state();
     }
 
     pub fn traverse_set_start(&mut self, start: TraverseStart) {
         self.traverse_start = start;
-        self.resume_traverse_position = None;
+        self.resume_traverse_in_place = false;
         self.emit_state();
     }
 
@@ -635,7 +638,7 @@ impl Rewinder {
         let position = Length::new::<millimeter>(position);
         self.traverse_start_position = self.clamp_traverse_position(position);
         self.traverse_start = TraverseStart::Custom;
-        self.resume_traverse_position = None;
+        self.resume_traverse_in_place = false;
         self.emit_state();
     }
 
@@ -657,6 +660,7 @@ impl Rewinder {
             return;
         }
 
+        self.resume_traverse_in_place = false;
         self.traverse_controller.goto_limit_inner();
         self.emit_state();
     }
@@ -667,6 +671,7 @@ impl Rewinder {
             return;
         }
 
+        self.resume_traverse_in_place = false;
         self.traverse_controller.goto_limit_outer();
         self.emit_state();
     }
@@ -677,7 +682,7 @@ impl Rewinder {
             return;
         }
 
-        self.resume_traverse_position = None;
+        self.resume_traverse_in_place = false;
         self.traverse_controller
             .set_target_position(self.configured_traverse_start_position());
         self.traverse_controller.goto_target_position();
@@ -690,6 +695,7 @@ impl Rewinder {
             return;
         }
 
+        self.resume_traverse_in_place = false;
         self.traverse_controller.goto_home();
         self.emit_state();
     }
