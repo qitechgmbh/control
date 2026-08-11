@@ -56,6 +56,7 @@ use crate::machines::winder_v2::puller_speed_controller::AdaptiveSpeedAlgorithm;
 use crate::machines::winder_v2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedControllerType;
+use crate::machines::winder_v2::traverse_controller;
 use crate::machines::winder_v2::traverse_controller::TraverseController;
 use crate::machines::winder_v2::types::Mode;
 use crate::machines::winder_v2::types::PullerMode;
@@ -197,6 +198,8 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                     .build()?,
                 ctx.config::<millimeter>("traverse.padding")
                     .default(0.88)
+                    .build()?,
+                ctx.state::<traverse_controller::State>("traverse.limit_inner")
                     .build()?,
                 64,
             ),

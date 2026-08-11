@@ -1,6 +1,6 @@
 use super::{TRAVERSE_END_STOP_PORT, TRAVERSE_PORT};
 use crate::converters::linear_step_converter::LinearStepConverter;
-use qitech_framework::machine::ConfigProperty;
+use qitech_framework::machine::{ConfigProperty, StateProperty};
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::angular_velocity::revolution_per_second;
@@ -16,12 +16,11 @@ pub struct TraverseController {
     pub limit_outer: ConfigProperty<Length>,
     step_size: ConfigProperty<Length>,
     padding: ConfigProperty<Length>,
-    state: State,
+    state: StateProperty<State>,
     fullstep_converter: LinearStepConverter,
     microstep_converter: LinearStepConverter,
 }
 
-/*
 impl qitech_framework::__private::PropertyType for State {
     type Constraints = qitech_framework::__private::EnumConstraints<Self>;
 }
@@ -41,49 +40,88 @@ impl qitech_framework::__private::PropertyAdapter for State {
             State::GoingIn => "going_in",
             State::GoingOut => "going_out",
             State::Homing(state) => match state {
-                HomingState::Initialize => todo!(),
-                HomingState::EscapeEndstop => todo!(),
-                HomingState::FindEndstopFineDistancing => todo!(),
-                HomingState::FindEndstopCoarse => todo!(),
-                HomingState::FindEndtopFine => todo!(),
-                HomingState::Validate(_) => todo!(),
+                HomingState::Initialize => "initialize",
+                HomingState::EscapeEndstop => "escape_endstop",
+                HomingState::FindEndstopFineDistancing => "find_endstop_fine_distancing",
+                HomingState::FindEndstopCoarse => "find_endstop_coarse",
+                HomingState::FindEndtopFine => "find_endstop_fine",
+                HomingState::Validate(_) => "validate",
             },
             State::Traversing(state) => match state {
-                TraversingState::GoingOut => todo!(),
-                TraversingState::TraversingIn => todo!(),
-                TraversingState::TraversingOut => todo!(),
+                TraversingState::GoingOut => "going_out",
+                TraversingState::TraversingIn => "traversing_in",
+                TraversingState::TraversingOut => "traversing_out",
             },
         }.to_string();
 
         qitech_framework::__private::ScalarValue::Enum(s)
     }
 
-    fn from_scalar(value: ScalarValue) -> Result<Self::Type, ScalarValueTypeMismatchError> {
-        todo!()
+    fn from_scalar(
+        value: qitech_framework::__private::ScalarValue,
+    ) -> Result<Self::Type, qitech_framework::__private::ScalarValueTypeMismatchError> {
+        let qitech_framework::__private::ScalarValue::Enum(s) = value else {
+            return Err(qitech_framework::__private::ScalarValueTypeMismatchError);
+        };
+
+        Ok(match s.as_str() {
+            "not_homed" => State::NotHomed,
+            "idle" => State::Idle,
+            "going_in" => State::GoingIn,
+            "going_out" => State::GoingOut,
+
+            "initialize" => State::Homing(HomingState::Initialize),
+            "escape_endstop" => State::Homing(HomingState::EscapeEndstop),
+            "find_endstop_fine_distancing" => {
+                State::Homing(HomingState::FindEndstopFineDistancing)
+            }
+            "find_endstop_coarse" => State::Homing(HomingState::FindEndstopCoarse),
+            "find_endstop_fine" => State::Homing(HomingState::FindEndtopFine),
+
+            "going_out" => State::Traversing(TraversingState::GoingOut),
+            "traversing_in" => State::Traversing(TraversingState::TraversingIn),
+            "traversing_out" => State::Traversing(TraversingState::TraversingOut),
+
+            _ => return Err(qitech_framework::__private::ScalarValueTypeMismatchError),
+        })
     }
 
-    fn validate_scalar_property_definition(definition: &ScalarPropertyDefinition) -> bool {
-        todo!()
+    fn validate_scalar_property_definition(
+        definition: &qitech_framework::__private::ScalarPropertyDefinition,
+        ignore_nullable: bool,
+    ) -> bool {
+        _ = definition;
+        _ = ignore_nullable;
+        true
     }
 
-    fn validate_measurement_definition(definition: &MeasurementDefinition) -> bool {
-        todo!()
+    fn validate_measurement_definition(
+        definition: &qitech_framework::__private::MeasurementDefinition,
+        ignore_nullable: bool,
+    ) -> bool {
+        _ = definition;
+        _ = ignore_nullable;
+        true
     }
 
     fn apply_constraints(
-        constraints: &<Self::Type as PropertyType>::Constraints,
+        constraints: &<Self::Type as qitech_framework::__private::PropertyType>::Constraints,
         value: &Self::Type,
-    ) -> Result<(), ConstraintViolationError> {
-        todo!()
+    ) -> Result<(), qitech_framework::__private::ConstraintViolationError> {
+        _ = constraints;
+        _ = value;
+        Ok(())
     }
 
-    fn as_constraints(constraints: &<Self::Type as PropertyType>::Constraints) -> Constraints {
-        todo!()
+    fn as_constraints(
+        constraints: &<Self::Type as qitech_framework::__private::PropertyType>::Constraints,
+    ) -> qitech_framework::__private::Constraints {
+        _ = constraints;
+        qitech_framework::__private::Constraints::Enum { allowed: vec![] }
     }
 }
-    */
 
-#[derive(Debug, Default, PartialEq, Eq, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub enum State {
     #[default]
     /// Initial state
@@ -112,7 +150,7 @@ pub enum State {
     Traversing(TraversingState),
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum TraversingState {
     /// Like [`State::GoingOut`] but
     /// - will go into [`State::GoingIn`] after reaching the outer limit
@@ -129,7 +167,7 @@ pub enum TraversingState {
     TraversingOut,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum HomingState {
     /// In this state the traverse is not moving but checks if the endstop si triggered
     /// If the endstop is triggered we go into [`HomingState::EscapeEndstop`]
@@ -160,6 +198,7 @@ impl TraverseController {
         limit_outer: ConfigProperty<Length>,
         step_size: ConfigProperty<Length>,
         padding: ConfigProperty<Length>,
+        state: StateProperty<State>,
         microsteps: u8,
     ) -> Self {
         Self {
@@ -167,9 +206,9 @@ impl TraverseController {
             position: Length::ZERO,
             limit_inner,
             limit_outer,
-            step_size, // : Length::new::<millimeter>(1.75),
+            step_size,
             padding,
-            state: State::NotHomed,
+            state,
             fullstep_converter: LinearStepConverter::from_circumference(
                 200,
                 Length::new::<millimeter>(32.0),
@@ -198,45 +237,45 @@ impl TraverseController {
 
 // State management
 impl TraverseController {
-    pub const fn goto_limit_inner(&mut self) {
-        self.state = State::GoingIn;
+    pub fn goto_limit_inner(&mut self) {
+        self.state.set(State::GoingIn);
     }
 
-    pub const fn goto_limit_outer(&mut self) {
-        self.state = State::GoingOut;
+    pub fn goto_limit_outer(&mut self) {
+        self.state.set(State::GoingOut);
     }
 
-    pub const fn goto_home(&mut self) {
-        self.state = State::Homing(HomingState::Initialize);
+    pub fn goto_home(&mut self) {
+        self.state.set(State::Homing(HomingState::Initialize));
     }
 
-    pub const fn start_traversing(&mut self) {
-        self.state = State::Traversing(TraversingState::GoingOut);
+    pub fn start_traversing(&mut self) {
+        self.state.set(State::Traversing(TraversingState::GoingOut));
     }
 
-    pub const fn is_homed(&self) -> bool {
+    pub fn is_homed(&self) -> bool {
         // if not [`State::NotHomed`], then it is homed
-        !matches!(self.state, State::NotHomed)
+        !matches!(self.state.get(), State::NotHomed)
     }
 
-    pub const fn is_going_in(&self) -> bool {
+    pub fn is_going_in(&self) -> bool {
         // [`State::GoingIn`]
-        matches!(self.state, State::GoingIn)
+        matches!(self.state.get(), State::GoingIn)
     }
 
-    pub const fn is_going_out(&self) -> bool {
+    pub fn is_going_out(&self) -> bool {
         // [`State::GoingOut`]
-        matches!(self.state, State::GoingOut)
+        matches!(self.state.get(), State::GoingOut)
     }
 
-    pub const fn is_going_home(&self) -> bool {
+    pub fn is_going_home(&self) -> bool {
         // [`State::Homing`]
-        matches!(self.state, State::Homing(_))
+        matches!(self.state.get(), State::Homing(_))
     }
 
-    pub const fn is_traversing(&self) -> bool {
+    pub fn is_traversing(&self) -> bool {
         // [`State::Traversing`]
-        matches!(self.state, State::Traversing(_))
+        matches!(self.state.get(), State::Traversing(_))
     }
 }
 
@@ -293,21 +332,21 @@ impl TraverseController {
         self.sync_position(traverse);
 
         // Automatic Transitions
-        match &self.state {
+        match self.state.get() {
             State::NotHomed => {}
             State::Idle => {}
             State::GoingIn => {
                 // If inner limit is reached
                 if self.is_at_position(self.limit_inner.get(), Length::new::<millimeter>(0.01)) {
                     // Put Into Idle
-                    self.state = State::Idle;
+                    self.state.set(State::Idle);
                 }
             }
             State::GoingOut => {
                 // If outer limit is reached
                 if self.is_at_position(self.limit_outer.get(), Length::new::<millimeter>(0.01)) {
                     // Put Into Idle
-                    self.state = State::Idle;
+                    self.state.set(State::Idle);
                 }
             }
             State::Homing(homing_state) => match homing_state {
@@ -317,10 +356,10 @@ impl TraverseController {
                         .get_digital_input(TRAVERSE_END_STOP_PORT)
                         .unwrap_or(false)
                     {
-                        self.state = State::Homing(HomingState::EscapeEndstop);
+                        self.state.set(State::Homing(HomingState::EscapeEndstop));
                     } else {
                         // If endstop is not triggered, move to the endstop
-                        self.state = State::Homing(HomingState::FindEndstopCoarse);
+                        self.state.set(State::Homing(HomingState::FindEndstopCoarse));
                     }
                 }
                 HomingState::EscapeEndstop => {
@@ -329,7 +368,7 @@ impl TraverseController {
                         .get_digital_input(TRAVERSE_END_STOP_PORT)
                         .unwrap_or(false)
                     {
-                        self.state = State::Homing(HomingState::FindEndstopFineDistancing);
+                        self.state.set(State::Homing(HomingState::FindEndstopFineDistancing));
                     }
                 }
                 HomingState::FindEndstopFineDistancing => {
@@ -339,7 +378,7 @@ impl TraverseController {
                         .unwrap_or(false)
                     {
                         // Find endstop fine
-                        self.state = State::Homing(HomingState::FindEndtopFine);
+                        self.state.set(State::Homing(HomingState::FindEndtopFine));
                     }
                 }
                 HomingState::FindEndtopFine => {
@@ -351,7 +390,7 @@ impl TraverseController {
                         // Set poition of traverse to 0
                         traverse.set_position(TRAVERSE_PORT, 0);
                         // Put Into Idle
-                        self.state = State::Homing(HomingState::Validate(Instant::now()));
+                        self.state.set(State::Homing(HomingState::Validate(Instant::now())));
                     }
                 }
                 HomingState::FindEndstopCoarse => {
@@ -361,7 +400,7 @@ impl TraverseController {
                         .unwrap_or(false)
                     {
                         // Move awaiy from endstop
-                        self.state = State::Homing(HomingState::FindEndstopFineDistancing);
+                        self.state.set(State::Homing(HomingState::FindEndstopFineDistancing));
                     }
                 }
                 HomingState::Validate(instant) => {
@@ -369,10 +408,10 @@ impl TraverseController {
                     if instant.elapsed().as_millis() > 100 {
                         if self.is_at_position(Length::ZERO, Length::new::<millimeter>(0.01)) {
                             // If position is 0.0, put into idle
-                            self.state = State::Idle;
+                            self.state.set(State::Idle);
                         } else {
                             // If position is not 0.0, redo homing
-                            self.state = State::Homing(HomingState::Initialize);
+                            self.state.set(State::Homing(HomingState::Initialize));
                         }
                     }
                 }
@@ -384,28 +423,28 @@ impl TraverseController {
                     // If outer limit is reached
                     if self.position >= self.limit_outer.get() - self.padding.get() {
                         // Turn around
-                        self.state = State::Traversing(TraversingState::TraversingIn);
+                        self.state.set(State::Traversing(TraversingState::TraversingIn));
                     }
                 }
                 TraversingState::TraversingIn => {
                     // If inner limit is reached
                     if self.position <= self.limit_inner.get() + self.padding.get() {
                         // Turn around
-                        self.state = State::Traversing(TraversingState::TraversingOut);
+                        self.state.set(State::Traversing(TraversingState::TraversingOut));
                     }
                 }
                 TraversingState::TraversingOut => {
                     // If outer limit is reached
                     if self.position >= self.limit_outer.get() - self.padding.get() {
                         // Turn around
-                        self.state = State::Traversing(TraversingState::TraversingIn);
+                        self.state.set(State::Traversing(TraversingState::TraversingIn));
                     }
                 }
             },
         }
 
         // Speed
-        match &self.state {
+        match self.state.get() {
             State::NotHomed => Velocity::ZERO, // Not homed, no movement
             State::Idle => Velocity::ZERO,     // No movement in idle state
             State::GoingIn => {

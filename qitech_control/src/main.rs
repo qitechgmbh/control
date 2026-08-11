@@ -40,7 +40,7 @@ pub fn main() -> anyhow::Result<()> {
     let config = RuntimeConfiguration::new()
         .requests_per_cycle_max(10)
         .export_interval(Duration::from_secs_f64(1.0 / 32.0))
-        // .ethercat(ETHERCAT_CONFIG)
+        .ethercat(ETHERCAT_CONFIG)
         .modbus_rtu_device::<LaserDevice>(
             "pci-0000:c6:00.0-usbv2-0:2.1:1.0-port0".to_string(),
             laser_ident(1),
@@ -54,11 +54,10 @@ pub fn main() -> anyhow::Result<()> {
             None,
         )
         .machine::<LaserV1>()
-        // .machine::<WinderV1_Regular>()
-        // .machine::<WinderV1_7031_Spool>()
-        ;
+        .machine::<WinderV1_Regular>()
+        .machine::<WinderV1_7031_Spool>();
 
-    run_headless(config)
+    run_tui(config)
 }
 
 fn run_headless(config: RuntimeConfiguration) -> anyhow::Result<()> {
