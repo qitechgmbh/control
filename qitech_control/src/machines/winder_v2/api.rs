@@ -1,14 +1,12 @@
 use std::time::Instant;
 
-use qitech_framework::machine::{
-    ActResult, CommandExecuteResult, Measurement, StateProperty,
-};
+use qitech_framework::machine::{ActResult, CommandExecuteResult, Measurement, StateProperty};
 use qitech_lib::units::angle::degree;
 use qitech_lib::units::length::millimeter;
 use qitech_lib::units::{Angle, AngularVelocity, Length, Velocity};
 
 use crate::machines::winder_v2::types::Mode;
-use crate::machines::winder_v2::{LASER_PORT, PULLER_PORT, SPOOL_PORT, Winder2Mode, WinderV1};
+use crate::machines::winder_v2::{LASER_PORT, PULLER_PORT, SPOOL_PORT, WinderV1};
 
 pub use super::puller_speed_controller::{GearRatio, PullerRegulationMode};
 
@@ -17,7 +15,10 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     pub fn on_traverse_limit_inner_changed(&mut self) -> ActResult {
         let limit_inner = self.traverse_controller.limit_inner.get();
         let offet_min = Length::new::<millimeter>(0.9);
-        _ = self.traverse_controller.limit_outer.set(limit_inner + offet_min);
+        _ = self
+            .traverse_controller
+            .limit_outer
+            .set(limit_inner + offet_min);
         Ok(())
     }
 
@@ -51,8 +52,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 pub struct StateProperties {
     pub traverse_state: TraverseStateProperties,
     pub mode_state: ModeStateProperties,
-
-    pub tension_arm_zeroed: StateProperty<bool>,
 }
 
 pub struct TraverseStateProperties {
@@ -62,16 +61,10 @@ pub struct TraverseStateProperties {
     pub is_going_home: StateProperty<bool>,
     pub is_traversing: StateProperty<bool>,
     pub laserpointer: StateProperty<bool>,
-
-    // --- remove ---
-    pub can_go_in: StateProperty<bool>,
-    pub can_go_out: StateProperty<bool>,
-    pub can_go_home: StateProperty<bool>,
 }
 
 pub struct ModeStateProperties {
     pub mode: StateProperty<Mode>,
-    pub can_wind: StateProperty<bool>,
 }
 
 // --- measurements ---
@@ -86,22 +79,22 @@ pub struct Measurements {
 // --- commands ---
 impl<const VARIANT: usize> WinderV1<VARIANT> {
     pub fn cmd_enter_standby_mode(&mut self) -> CommandExecuteResult {
-        self.set_mode(&Winder2Mode::Standby);
+        self.set_mode(Mode::Standby);
         Ok(())
     }
 
     pub fn cmd_enter_hold_mode(&mut self) -> CommandExecuteResult {
-        self.set_mode(&Winder2Mode::Hold);
+        self.set_mode(Mode::Hold);
         Ok(())
     }
 
     pub fn cmd_enter_pull_mode(&mut self) -> CommandExecuteResult {
-        self.set_mode(&Winder2Mode::Pull);
+        self.set_mode(Mode::Pull);
         Ok(())
     }
 
     pub fn cmd_enter_wind_mode(&mut self) -> CommandExecuteResult {
-        self.set_mode(&Winder2Mode::Wind);
+        self.set_mode(Mode::Wind);
         Ok(())
     }
 
@@ -202,13 +195,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         self.state_props
             .mode_state
             .mode
-            .set(self.mode.clone().into());
-        self.state_props.mode_state.can_wind.set(self.can_wind());
-
-        // --- update tension arm state ---
-        self.state_props
-            .tension_arm_zeroed
-            .set(self.tension_arm.zeroed);
+            .set(self.mode.get());
     }
 
     fn update_state_traverse(&mut self) {
@@ -220,10 +207,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
         let laserpointer = self.laser_enabled;
 
-        let can_go_in = self.traverse_can_goto_limit_inner();
-        let can_go_out = self.traverse_can_goto_limit_outer();
-        let can_go_home = self.traverse_can_goto_home();
-
         // --- update traverse state_props ---
         let s = &mut self.state_props.traverse_state;
 
@@ -234,9 +217,5 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         s.is_traversing.set(is_traversing);
 
         s.laserpointer.set(laserpointer);
-
-        s.can_go_in.set(can_go_in.is_allowed());
-        s.can_go_out.set(can_go_out.is_allowed());
-        s.can_go_home.set(can_go_home.is_allowed());
     }
 }

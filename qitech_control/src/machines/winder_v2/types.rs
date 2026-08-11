@@ -9,39 +9,9 @@ pub enum SpoolAutomaticActionMode {
     Hold,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, EnumProperty)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, EnumProperty)]
 pub enum Mode {
     #[default]
-    Standby,
-    Hold,
-    Pull,
-    Wind,
-}
-
-impl From<Winder2Mode> for Mode {
-    fn from(mode: Winder2Mode) -> Self {
-        match mode {
-            Winder2Mode::Standby => Self::Standby,
-            Winder2Mode::Hold => Self::Hold,
-            Winder2Mode::Pull => Self::Pull,
-            Winder2Mode::Wind => Self::Wind,
-        }
-    }
-}
-
-impl From<Mode> for Winder2Mode {
-    fn from(mode: Mode) -> Self {
-        match mode {
-            Mode::Standby => Self::Standby,
-            Mode::Hold => Self::Hold,
-            Mode::Pull => Self::Pull,
-            Mode::Wind => Self::Wind,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Winder2Mode {
     Standby,
     Hold,
     Pull,
@@ -55,13 +25,13 @@ pub enum SpoolMode {
     Wind,
 }
 
-impl From<Winder2Mode> for SpoolMode {
-    fn from(mode: Winder2Mode) -> Self {
+impl From<Mode> for SpoolMode {
+    fn from(mode: Mode) -> Self {
         match mode {
-            Winder2Mode::Standby => Self::Standby,
-            Winder2Mode::Hold => Self::Hold,
-            Winder2Mode::Pull => Self::Hold,
-            Winder2Mode::Wind => Self::Wind,
+            Mode::Standby => Self::Standby,
+            Mode::Hold => Self::Hold,
+            Mode::Pull => Self::Hold,
+            Mode::Wind => Self::Wind,
         }
     }
 }
@@ -73,13 +43,13 @@ pub enum TraverseMode {
     Traverse,
 }
 
-impl From<Winder2Mode> for TraverseMode {
-    fn from(mode: Winder2Mode) -> Self {
+impl From<Mode> for TraverseMode {
+    fn from(mode: Mode) -> Self {
         match mode {
-            Winder2Mode::Standby => Self::Standby,
-            Winder2Mode::Hold => Self::Hold,
-            Winder2Mode::Pull => Self::Hold,
-            Winder2Mode::Wind => Self::Traverse,
+            Mode::Standby => Self::Standby,
+            Mode::Hold => Self::Hold,
+            Mode::Pull => Self::Hold,
+            Mode::Wind => Self::Traverse,
         }
     }
 }
@@ -91,13 +61,13 @@ pub enum PullerMode {
     Pull,
 }
 
-impl From<Winder2Mode> for PullerMode {
-    fn from(mode: Winder2Mode) -> Self {
+impl From<Mode> for PullerMode {
+    fn from(mode: Mode) -> Self {
         match mode {
-            Winder2Mode::Standby => Self::Standby,
-            Winder2Mode::Hold => Self::Hold,
-            Winder2Mode::Pull => Self::Pull,
-            Winder2Mode::Wind => Self::Pull,
+            Mode::Standby => Self::Standby,
+            Mode::Hold => Self::Hold,
+            Mode::Pull => Self::Pull,
+            Mode::Wind => Self::Pull,
         }
     }
 }

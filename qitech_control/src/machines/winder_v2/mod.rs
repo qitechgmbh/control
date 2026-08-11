@@ -19,25 +19,22 @@ use crate::machines::winder_v2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedController;
 use crate::machines::winder_v2::traverse_controller::TraverseController;
 use crate::machines::winder_v2::types::LaserSubscription;
+use crate::machines::winder_v2::types::Mode;
 use crate::machines::winder_v2::types::PullerMode;
 use crate::machines::winder_v2::types::SpoolAutomaticActionMode;
 use crate::machines::winder_v2::types::SpoolMode;
 use crate::machines::winder_v2::types::TraverseMode;
-use crate::machines::winder_v2::types::Winder2Mode;
 use qitech_framework::MachineIdentification;
 use qitech_framework::machine::ConfigProperty;
 use qitech_framework::machine::MachineDescriptor;
 use qitech_framework::machine::OperationCapability;
+use qitech_framework::machine::StateProperty;
 use qitech_framework::vendors;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 #[cfg(not(feature = "mock-machine"))]
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
 use qitech_lib::units::ConstZero;
-use qitech_lib::units::{
-    Length,
-    length::{meter},
-    velocity::meter_per_second,
-};
+use qitech_lib::units::{Length, length::meter, velocity::meter_per_second};
 use std::time::Instant;
 use std::{cell::RefCell, rc::Rc};
 
@@ -77,7 +74,7 @@ pub struct WinderV1<const VARIANT: usize> {
     pub traverse_controller: TraverseController,
 
     // mode
-    pub mode: Winder2Mode,
+    pub mode: StateProperty<Mode>,
     pub spool_mode: SpoolMode,
     pub traverse_mode: TraverseMode,
     pub puller_mode: PullerMode,
@@ -126,9 +123,9 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     }
 
     /// Can wind capability check
-    pub const fn can_wind(&self) -> bool {
+    pub fn can_wind(&self) -> bool {
         // Check if tension arm is zeroed and traverse is homed
-        self.tension_arm.zeroed
+        self.tension_arm.zeroed.get()
             && self.traverse_controller.is_homed()
             && !self.traverse_controller.is_going_home()
     }
@@ -165,7 +162,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             };
         }
 
-        if self.mode == Winder2Mode::Wind {
+        if self.mode.get() == Mode::Wind {
             return OperationCapability::Forbidden {
                 reason: "winder is in wind mode".to_string(),
             };
@@ -206,7 +203,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             };
         }
 
-        if self.mode == Winder2Mode::Wind {
+        if self.mode.get() == Mode::Wind {
             return OperationCapability::Forbidden {
                 reason: "winder is in wind mode".to_string(),
             };
@@ -235,7 +232,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             };
         }
 
-        if self.mode == Winder2Mode::Wind {
+        if self.mode.get() == Mode::Wind {
             return OperationCapability::Forbidden {
                 reason: "winder is in wind mode".to_string(),
             };
@@ -248,7 +245,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     ///
     /// It contains a transition matrix for atomic changes.
     /// It will set [`Self::spool_mode`]
-    fn set_spool_mode(&mut self, mode: &Winder2Mode) {
+    fn set_spool_mode(&mut self, mode: Mode) {
         // Convert to `Winder2Mode` to `SpoolMode`
         let mode: SpoolMode = mode.clone().into();
         let spool = &mut *self.spool.borrow_mut();
@@ -300,7 +297,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     ///
     /// It contains a transition matrix for atomic changes.
     /// It will set [`Self::puller_mode`]
-    fn set_puller_mode(&mut self, mode: &Winder2Mode) {
+    fn set_puller_mode(&mut self, mode: Mode) {
         // Convert to `Winder2Mode` to `PullerMode`
         let mode: PullerMode = mode.clone().into();
         let puller = &mut *self.puller.borrow_mut();

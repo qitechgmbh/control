@@ -1,4 +1,4 @@
-use crate::machines::winder_v2::types::{SpoolAutomaticActionMode, Winder2Mode};
+use crate::machines::winder_v2::types::{Mode, SpoolAutomaticActionMode};
 
 use super::{SPOOL_PORT, TRAVERSE_PORT, TraverseMode, WinderV1};
 
@@ -37,9 +37,9 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             return;
         }
 
-        match self.mode {
-            Winder2Mode::Pull => self.calculate_spool_auto_progress_(now),
-            Winder2Mode::Wind => self.calculate_spool_auto_progress_(now),
+        match self.mode.get() {
+            Mode::Pull => self.calculate_spool_auto_progress_(now),
+            Mode::Wind => self.calculate_spool_auto_progress_(now),
             _ => {
                 self.spool_automatic_action.progress_last_check = now;
                 return;
@@ -51,22 +51,22 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 SpoolAutomaticActionMode::NoAction => (),
                 SpoolAutomaticActionMode::Pull => {
                     self.stop_or_pull_spool_reset(now);
-                    self.set_mode(&Winder2Mode::Pull);
+                    self.set_mode(Mode::Pull);
                 }
                 SpoolAutomaticActionMode::Hold => {
                     self.stop_or_pull_spool_reset(now);
-                    self.set_mode(&Winder2Mode::Hold);
+                    self.set_mode(Mode::Hold);
                 }
             }
         }
     }
     /// Implement Mode
-    pub fn set_mode(&mut self, mode: &Winder2Mode) {
-        let should_update = *mode != Winder2Mode::Wind || self.can_wind();
+    pub fn set_mode(&mut self, mode: Mode) {
+        let should_update = mode != Mode::Wind || self.can_wind();
 
         if should_update {
             // all transitions are allowed
-            self.mode = mode.clone();
+            self.mode.set(mode);
 
             // Apply the mode changes to the spool and puller
             self.set_spool_mode(mode);
@@ -97,7 +97,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     ///
     /// It contains a transition matrix for atomic changes.
     /// It will set [`Self::spool_mode`]
-    fn set_traverse_mode(&mut self, mode: &Winder2Mode) {
+    fn set_traverse_mode(&mut self, mode: Mode) {
         // Convert to `Winder2Mode` to `TraverseMode`
         let mode: TraverseMode = mode.clone().into();
         // If coming out of standby

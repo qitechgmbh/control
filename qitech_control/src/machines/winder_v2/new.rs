@@ -63,7 +63,6 @@ use crate::machines::winder_v2::types::PullerMode;
 use crate::machines::winder_v2::types::SpoolAutomaticActionMode;
 use crate::machines::winder_v2::types::SpoolMode;
 use crate::machines::winder_v2::types::TraverseMode;
-use crate::machines::winder_v2::types::Winder2Mode;
 
 impl MachineBuild for WinderV1<VARIANT_REGULAR> {
     fn build(ctx: &mut BuildContext) -> BuildResult<Self> {
@@ -80,7 +79,7 @@ impl MachineBuild for WinderV1<VARIANT_REGULAR> {
             el7031,
             el7031_0030.clone(),
             el7041,
-            TensionArm::new(el7031_0030.clone()),
+            el7031_0030,
             el2002,
         )
     }
@@ -101,7 +100,7 @@ impl MachineBuild for WinderV1<VARIANT_7031_SPOOL> {
             el7031,
             el7031_0030.clone(),
             el7031_0030_spool,
-            TensionArm::new(el7031_0030.clone()),
+            el7031_0030,
             el2002,
         )
     }
@@ -113,10 +112,15 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         traverse: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
         puller: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
         spool: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
-        tension_arm: TensionArm,
+        analog_input: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
         laser: Rc<RefCell<dyn DigitalOutputDevice>>,
     ) -> BuildResult<Self> {
         Self::init_commands(ctx)?;
+
+        let tension_arm = TensionArm::new(
+            analog_input,
+            ctx.state::<bool>("tension_arm.zeroed").build()?,
+        );
 
         let spool_speed_controller_min_max = MinMaxSpoolSpeedController::new(
             ctx.config::<revolution_per_minute>("spool.min_max.speed_min")
@@ -188,7 +192,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 ctx.config::<millimeter>("traverse.limit_outer")
                     .default(92.0)
                     .minimum(0.9)
-                    .build()?, 
+                    .build()?,
                 ctx.config::<millimeter>("traverse.step_size")
                     .default(1.75)
                     .build()?,
@@ -197,7 +201,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                     .build()?,
                 64,
             ),
-            mode: Winder2Mode::Standby,
+            mode: ctx.state::<Mode>("mode").build()?,
             spool_mode: SpoolMode::Standby,
             traverse_mode: TraverseMode::Standby,
             puller_mode: PullerMode::Standby,
@@ -373,17 +377,11 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 is_going_home: ctx.state::<bool>("traverse.is_going_home").build()?,
                 is_traversing: ctx.state::<bool>("traverse.is_traversing").build()?,
                 laserpointer: ctx.state::<bool>("traverse.laserpointer").build()?,
-                can_go_in: ctx.state::<bool>("traverse.can_go_in").build()?,
-                can_go_out: ctx.state::<bool>("traverse.can_go_out").build()?,
-                can_go_home: ctx.state::<bool>("traverse.can_go_home").build()?,
             },
 
             mode_state: ModeStateProperties {
                 mode: ctx.state::<Mode>("mode.mode").build()?,
-                can_wind: ctx.state::<bool>("mode.can_wind").build()?,
             },
-
-            tension_arm_zeroed: ctx.state::<bool>("tension_arm.zeroed").build()?,
         })
     }
 

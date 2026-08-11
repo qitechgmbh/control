@@ -1,3 +1,4 @@
+use qitech_framework::machine::StateProperty;
 use qitech_lib::ethercat_hal::io::analog_input::physical::AnalogInputValue;
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
 use qitech_lib::units::angle::revolution;
@@ -10,15 +11,18 @@ pub struct TensionArm {
     pub analog_input: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
     pub zero: Angle,
     /// was zeroed at least once
-    pub zeroed: bool,
+    pub zeroed: StateProperty<bool>,
 }
 
 impl TensionArm {
-    pub fn new(analog_input: Rc<RefCell<dyn StepperVelocityEL70x1Device>>) -> Self {
+    pub fn new(
+        analog_input: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+        zeroed: StateProperty<bool>,
+    ) -> Self {
         Self {
             analog_input,
             zero: Angle::new::<revolution>(0.0),
-            zeroed: false,
+            zeroed,
         }
     }
 
@@ -72,7 +76,7 @@ impl TensionArm {
         match self.raw_angle() {
             Ok(angle) => {
                 self.zero = angle;
-                self.zeroed = true;
+                self.zeroed.set(true);
                 Ok(())
             }
 
