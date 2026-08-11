@@ -45,17 +45,17 @@ use crate::machines::winder_v2::SpoolAutomaticAction;
 use crate::machines::winder_v2::VARIANT_7031_SPOOL;
 use crate::machines::winder_v2::VARIANT_REGULAR;
 use crate::machines::winder_v2::WinderV1;
+use crate::machines::winder_v2::adaptive_spool_speed_controller::AdaptiveSpoolSpeedController;
 use crate::machines::winder_v2::api::ConfigProperties;
 use crate::machines::winder_v2::api::GearRatio;
 use crate::machines::winder_v2::api::Measurements;
 use crate::machines::winder_v2::api::ModeStateProperties;
 use crate::machines::winder_v2::api::PullerRegulationMode;
-use crate::machines::winder_v2::api::PullerStateProperties;
-use crate::machines::winder_v2::api::SpoolAutomaticActionStateProperties;
-use crate::machines::winder_v2::api::SpoolSpeedControllerStateProperties;
 use crate::machines::winder_v2::api::StateProperties;
 use crate::machines::winder_v2::api::TensionArmStateProperties;
 use crate::machines::winder_v2::api::TraverseStateProperties;
+use crate::machines::winder_v2::minmax_spool_speed_controller::MinMaxSpoolSpeedController;
+use crate::machines::winder_v2::puller_speed_controller::AdaptiveSpeedAlgorithm;
 use crate::machines::winder_v2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedControllerType;
@@ -120,6 +120,60 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     ) -> BuildResult<Self> {
         Self::init_commands(ctx)?;
 
+        let spool_speed_controller_min_max = MinMaxSpoolSpeedController::new(
+            ctx.config::<revolution_per_minute>("spool.min_max.speed_min")
+                .on_external_changed(Self::on_spool_min_speed_changed)
+                .default(0.0)
+                .build()?,
+            ctx.config::<revolution_per_minute>("spool.min_max.speed_max")
+                .on_external_changed(Self::on_spool_max_speed_changed)
+                .default(0.0)
+                .build()?,
+        );
+
+        let spool_speed_controller_adaptive = AdaptiveSpoolSpeedController::new(
+            ctx.config::<f64>("spool.adaptive.tension_target")
+                .minimum(0.0)
+                .maximum(1.0)
+                .default(0.7)
+                .build()?,
+            ctx.config::<f64>("spool.adaptive.radius_learning_rate")
+                .minimum(0.0)
+                .default(0.5)
+                .build()?,
+            ctx.config::<f64>("spool.adaptive.max_speed_multiplier")
+                .minimum(0.1)
+                .default(4.0)
+                .build()?,
+            ctx.config::<f64>("spool.adaptive.acceleration_factor")
+                .minimum(0.01)
+                .maximum(1.0)
+                .default(0.2)
+                .build()?,
+            ctx.config::<f64>("spool.adaptive.deacceleration_urgency_multiplier")
+                .minimum(1.0)
+                .default(15.0)
+                .build()?,
+        );
+
+        let adapative_puller_algorithm = AdaptiveSpeedAlgorithm::new(
+            ctx.config::<f64>("puller.adapative.speed_delta_max")
+                .minimum(0.0)
+                .default(0.33)
+                .build()?,
+            ctx.config::<f64>("puller.adapative.increase_per_step")
+                .minimum(0.0)
+                .maximum(1.0)
+                .default(0.033)
+                .build()?,
+            ctx.config::<meter>("puller.adapative.adjustment_interval")
+                .default(0.01)
+                .build()?,
+            ctx.config::<millimeter>("puller.adapative.accepted_difference")
+                .default(0.5)
+                .build()?,
+        );
+
         Ok(Self {
             traverse,
             puller,
@@ -131,6 +185,9 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 Length::new::<millimeter>(22.0), // Default inner limit
                 Length::new::<millimeter>(92.0), // Default outer limit
                 64,                              // Microsteps
+                ctx.config::<millimeter>("traverse.step_size")
+                    .default(1.75)
+                    .build()?,
                 ctx.config::<millimeter>("traverse.padding")
                     .default(0.88)
                     .build()?,
@@ -139,21 +196,45 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             spool_mode: SpoolMode::Standby,
             traverse_mode: TraverseMode::Standby,
             puller_mode: PullerMode::Standby,
-            spool_speed_controller: SpoolSpeedController::new(),
+            spool_speed_controller: SpoolSpeedController::new(
+                ctx.config::<SpoolSpeedControllerType>("spool.regulation_mode")
+                    .on_external_changed(Self::on_spool_regulation_mode_changed)
+                    .default(SpoolSpeedControllerType::Adaptive)
+                    .build()?,
+                ctx.config::<bool>("spool.forward").default(true).build()?,
+                spool_speed_controller_min_max,
+                spool_speed_controller_adaptive,
+            ),
             spool_step_converter: AngularStepConverter::new(200),
             spool_automatic_action: SpoolAutomaticAction {
                 progress: Length::ZERO,
                 progress_last_check: Instant::now(),
-                target_length: Length::new::<meter>(250.0),
-                mode: SpoolAutomaticActionMode::NoAction,
+                target_length: ctx
+                    .config::<meter>("spool_automatic.required_meters")
+                    .default(250.0)
+                    .build()?,
+                mode: ctx
+                    .config::<SpoolAutomaticActionMode>("spool_automatic.action")
+                    .default(SpoolAutomaticActionMode::NoAction)
+                    .build()?,
             },
             puller_speed_controller: PullerSpeedController::new(
-                Velocity::new::<meter_per_minute>(1.0),
+                ctx.config::<meter_per_minute>("puller.target_speed")
+                    .default(1.0)
+                    .build()?,
                 LinearStepConverter::from_diameter(
                     200,                            // Assuming 200 steps per revolution for the puller stepper,
                     Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
                 ),
                 ctx.config::<bool>("puller.forward").default(true).build()?,
+                adapative_puller_algorithm,
+                ctx.config::<GearRatio>("puller.gear_ratio")
+                    .default(GearRatio::OneToOne)
+                    .build()?,
+                ctx.config::<PullerRegulationMode>("puller.regulation_mode")
+                    .on_external_changed(Self::on_puller_regulation_mode_changed)
+                    .default(PullerRegulationMode::Speed)
+                    .build()?,
             ),
             config_props: Self::init_config_properties(ctx)?,
             state_props: Self::init_state_properties(ctx)?,
@@ -291,103 +372,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 .on_external_changed(Self::on_traverse_limit_outer_changed)
                 .default(92.0)
                 .build()?,
-            traverse_step_size: ctx
-                .config::<millimeter>("traverse.step_size")
-                .on_external_changed(Self::on_traverse_step_size_changed)
-                .default(1.75)
-                .build()?,
-            puller_regulation_mode: ctx
-                .config::<PullerRegulationMode>("puller.regulation_mode")
-                .on_external_changed(Self::on_puller_regulation_mode_changed)
-                .default(PullerRegulationMode::Speed)
-                .build()?,
-            puller_gear_ratio: ctx
-                .config::<GearRatio>("puller.gear_ratio")
-                .on_external_changed(Self::on_puller_gear_ratio_changed)
-                .default(GearRatio::OneToOne)
-                .build()?,
-            puller_target_speed: ctx
-                .config::<meter_per_minute>("puller.target_speed")
-                .on_external_changed(Self::on_puller_target_speed_changed)
-                .default(1.0)
-                .build()?,
-            puller_adaptive_max_speed_change_percent: ctx
-                .config::<f64>("puller.adapative.max_speed_change_percent")
-                .on_external_changed(Self::on_puller_adaptive_max_speed_change_percent_changed)
-                .default(33.0)
-                .build()?,
-            puller_adaptive_adjustment_interval: ctx
-                .config::<meter>("puller.adapative.adjustment_interval")
-                .on_external_changed(Self::on_puller_adaptive_adjustment_interval_changed)
-                .default(0.5)
-                .build()?,
-            puller_adaptive_step_percent: ctx
-                .config::<f64>("puller.adapative.step_percent")
-                .on_external_changed(Self::on_puller_adaptive_step_percent_changed)
-                .default(3.3)
-                .build()?,
-            puller_adaptive_accepted_difference: ctx
-                .config::<millimeter>("puller.adapative.accepted_difference")
-                .on_external_changed(Self::on_puller_adaptive_accepted_difference_changed)
-                .default(0.01)
-                .build()?,
-            spool_adaptive_tension_target: ctx
-                .config::<f64>("spool.adaptive.tension_target")
-                .on_external_changed(Self::on_spool_adaptive_tension_target_changed)
-                .default(0.7)
-                .build()?,
-            spool_adaptive_radius_learning_rate: ctx
-                .config::<f64>("spool.adaptive.radius_learning_rate")
-                .on_external_changed(Self::on_spool_adaptive_radius_learning_rate_changed)
-                .default(0.5)
-                .build()?,
-            spool_adaptive_max_speed_multiplier: ctx
-                .config::<f64>("spool.adaptive.max_speed_multiplier")
-                .on_external_changed(Self::on_spool_adaptive_max_speed_multiplier_changed)
-                .default(4.0)
-                .build()?,
-            spool_adaptive_acceleration_factor: ctx
-                .config::<f64>("spool.adaptive.acceleration_factor")
-                .on_external_changed(Self::on_spool_adaptive_acceleration_factor_changed)
-                .default(0.2)
-                .build()?,
-            spool_adaptive_deacceleration_urgency_multiplier: ctx
-                .config::<f64>("spool.adaptive.deacceleration_urgency_multiplier")
-                .on_external_changed(
-                    Self::on_spool_adaptive_deacceleration_urgency_multiplier_changed,
-                )
-                .default(15.0)
-                .build()?,
-            spool_automatic_required_length: ctx
-                .config::<meter>("spool_automatic.required_meters")
-                .on_external_changed(Self::on_spool_automatic_required_length_changed)
-                .default(250.0)
-                .build()?,
-            spool_automatic_action: ctx
-                .config::<SpoolAutomaticActionMode>("spool_automatic.action")
-                .on_external_changed(Self::on_spool_automatic_action_changed)
-                .default(SpoolAutomaticActionMode::NoAction)
-                .build()?,
-            spool_regulation_mode: ctx
-                .config::<SpoolSpeedControllerType>("spool.regulation_mode")
-                .on_external_changed(Self::on_spool_regulation_mode_changed)
-                .default(SpoolSpeedControllerType::Adaptive)
-                .build()?,
-            spool_forward: ctx
-                .config::<bool>("spool.forward")
-                .on_external_changed(Self::on_spool_forward_changed)
-                .default(true)
-                .build()?,
-            spool_min_speed: ctx
-                .config::<revolution_per_minute>("spool.min_max.speed_min")
-                .on_external_changed(Self::on_spool_min_speed_changed)
-                .default(0.0)
-                .build()?,
-            spool_max_speed: ctx
-                .config::<revolution_per_minute>("spool.min_max.speed_max")
-                .on_external_changed(Self::on_spool_max_speed_changed)
-                .default(0.0)
-                .build()?,
         })
     }
 
@@ -402,43 +386,9 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 is_going_home: ctx.state::<bool>("traverse.is_going_home").build()?,
                 is_traversing: ctx.state::<bool>("traverse.is_traversing").build()?,
                 laserpointer: ctx.state::<bool>("traverse.laserpointer").build()?,
-                step_size: ctx.state::<millimeter>("traverse.step_size").build()?,
                 can_go_in: ctx.state::<bool>("traverse.can_go_in").build()?,
                 can_go_out: ctx.state::<bool>("traverse.can_go_out").build()?,
                 can_go_home: ctx.state::<bool>("traverse.can_go_home").build()?,
-            },
-
-            puller_state: PullerStateProperties {
-                regulation: ctx
-                    .state::<PullerRegulationMode>("puller.regulation")
-                    .build()?,
-                target_speed: ctx
-                    .state::<meter_per_minute>("puller.target_speed")
-                    .build()?,
-                gear_ratio: ctx.state::<GearRatio>("puller.gear_ratio").build()?,
-                adaptive_speed_delta_max: ctx
-                    .state::<f64>("puller.adaptive.speed_delta_max")
-                    .build()?,
-                adaptive_adjustment_distance: ctx
-                    .state::<millimeter>("puller.adaptive.adjustment_distance")
-                    .build()?,
-                adaptive_change_per_step: ctx
-                    .state::<f64>("puller.adaptive.change_per_step")
-                    .build()?,
-                allowed_diameter_deviation: ctx
-                    .state::<millimeter>("puller.adaptive.accepted_difference")
-                    .build()?,
-            },
-
-            spool_automatic_action_state: SpoolAutomaticActionStateProperties {
-                spool_required_meters: ctx
-                    .state::<meter>("spool_automatic_action.spool_required_meters")
-                    .build()?,
-                spool_automatic_action_mode: ctx
-                    .state::<SpoolAutomaticActionMode>(
-                        "spool_automatic_action.spool_automatic_action_mode",
-                    )
-                    .build()?,
             },
 
             mode_state: ModeStateProperties {
@@ -448,34 +398,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
             tension_arm_state: TensionArmStateProperties {
                 zeroed: ctx.state::<bool>("tension_arm.zeroed").build()?,
-            },
-
-            spool_speed_controller_state: SpoolSpeedControllerStateProperties {
-                regulation_mode: ctx
-                    .state::<SpoolSpeedControllerType>("spool.regulation_mode")
-                    .build()?,
-                minmax_min_speed: ctx
-                    .state::<revolution_per_minute>("spool.minmax.speed_min")
-                    .build()?,
-                minmax_max_speed: ctx
-                    .state::<revolution_per_minute>("spool.minmax.speed_max")
-                    .build()?,
-                adaptive_tension_target: ctx
-                    .state::<f64>("spool.adaptive.tension_target")
-                    .build()?,
-                adaptive_radius_learning_rate: ctx
-                    .state::<f64>("spool.adaptive.radius_learning_rate")
-                    .build()?,
-                adaptive_max_speed_multiplier: ctx
-                    .state::<f64>("spool.adaptive.max_speed_multiplier")
-                    .build()?,
-                adaptive_acceleration_factor: ctx
-                    .state::<f64>("spool.adaptive.acceleration_factor")
-                    .build()?,
-                adaptive_deacceleration_urgency_multiplier: ctx
-                    .state::<f64>("spool.adaptive.deacceleration_urgency_multiplier")
-                    .build()?,
-                forward: ctx.state::<bool>("spool.forward").build()?,
             },
         })
     }
