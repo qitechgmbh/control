@@ -83,6 +83,12 @@
   stroke-width: 3;
 }
 
+.mm-central-hopper-throat {
+  fill: #cbd5e1;
+  stroke: #111827;
+  stroke-width: 3;
+}
+
 .mm-feeder-motor {
   fill: #334155;
   stroke: #111827;
@@ -129,20 +135,15 @@
   animation: mm-auger-motion 0.55s linear infinite;
 }
 
+.mm-auger-flights.is-running.is-reversed,
+.mm-mixer-shaft.is-running.is-reversed {
+  animation-direction: reverse;
+}
+
 .mm-motor-status {
   fill: #f9fafb;
   stroke: #e5e7eb;
   stroke-width: 2;
-}
-
-.mm-motor-status.is-fault {
-  fill: #fef2f2;
-  stroke: #fca5a5;
-}
-
-.mm-motor-status.is-warning {
-  fill: #fffbeb;
-  stroke: #fbbf24;
 }
 
 .mm-status-dot {
@@ -153,10 +154,6 @@
   fill: #16a34a;
 }
 
-.mm-status-dot.is-warning {
-  fill: #f59e0b;
-}
-
 .mm-svg-status,
 .mm-svg-rpm {
   fill: #374151;
@@ -164,18 +161,6 @@
 }
 
 .mm-svg-rpm {
-  font-weight: 700;
-}
-
-.mm-svg-fault {
-  fill: #dc2626;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.mm-svg-warning {
-  fill: #b45309;
-  font-size: 11px;
   font-weight: 700;
 }
 

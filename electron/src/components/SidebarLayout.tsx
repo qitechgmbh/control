@@ -114,22 +114,10 @@ export function SidebarLayout() {
 
   const items: SidebarItemContent[] = [
     {
-      link: "/_sidebar/machines/mixer-1",
-      activeLink: "/_sidebar/machines/mixer-1",
-      title: "Mixer 1",
+      link: "/_sidebar/machines/extruder-with-mixer/0/control",
+      activeLink: "/_sidebar/machines/extruder-with-mixer/0",
+      title: "Mixer",
       icon: "lu:Blend",
-    },
-    {
-      link: "/_sidebar/machines/mixer-2",
-      activeLink: "/_sidebar/machines/mixer-2",
-      title: "Mixer 2",
-      icon: "lu:Gauge",
-    },
-    {
-      link: "/_sidebar/machines/mixer-3",
-      activeLink: "/_sidebar/machines/mixer-3",
-      title: "Mixer 3",
-      icon: "lu:Palette",
     },
     {
       link: "/_sidebar/machines/extruder3/0/control",

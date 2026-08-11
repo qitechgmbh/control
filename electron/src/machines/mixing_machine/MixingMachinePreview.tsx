@@ -4,10 +4,12 @@ import { TouchSlider } from "@/components/touch/TouchSlider";
 import { ControlCard } from "@/control/ControlCard";
 import { Label } from "@/control/Label";
 import { StatusBadge } from "@/control/StatusBadge";
-import { AlertTriangle, Check } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import "./mixing-machine-preview.css";
-import { ConnectedExtruderCard, ExtruderLinkState } from "./MixerExtruderLink";
+import {
+  ExtruderMixerConfig,
+  useExtruderMixerStorage,
+} from "./extruderMixerConfig";
 
 export type MachinePhase =
   | "idle"
@@ -26,28 +28,21 @@ const MATERIAL_B = {
   color: "#d97706",
 };
 
-const recipes = [
-  { name: "70 / 30 blend", ratioA: 70, feedRate: 12 },
-  { name: "50 / 50 blend", ratioA: 50, feedRate: 10 },
-  { name: "30 / 70 blend", ratioA: 30, feedRate: 9 },
-];
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
 function DosingChannel({
   x,
   y,
   mirrored = false,
   running,
+  forward,
 }: {
   x: number;
   y: number;
   mirrored?: boolean;
   running: boolean;
+  forward: boolean;
 }) {
   const augerClipId = mirrored ? "mm-auger-clip-b" : "mm-auger-clip-a";
+  const reverseAnimation = forward;
 
   return (
     <g transform={`translate(${x} ${y}) ${mirrored ? "scale(-1 1)" : ""}`}>
@@ -76,7 +71,9 @@ function DosingChannel({
       <path d="M205 13 H307 V47 H205 Z" className="mm-dosing-window" />
       <g clipPath={`url(#${augerClipId})`}>
         <line x1="207" y1="30" x2="306" y2="30" className="mm-auger-shaft" />
-        <g className={`mm-auger-flights ${running ? "is-running" : ""}`}>
+        <g
+          className={`mm-auger-flights ${running ? "is-running" : ""} ${reverseAnimation ? "is-reversed" : ""}`}
+        >
           {[198, 210, 222, 234, 246, 258, 270, 282, 294].map((flightX) => (
             <path key={flightX} d={`M${flightX} 13 L${flightX + 12} 47`} />
           ))}
@@ -95,19 +92,17 @@ function Hopper({
   contentColor,
   contentOpacity,
   running,
-  empty,
-  low,
+  forward,
 }: {
   side: "A" | "B";
   material: typeof MATERIAL_A;
   ratio: number;
-  rpm: number;
+  rpm: number | null;
   fill: number;
   contentColor: string;
   contentOpacity: number;
   running: boolean;
-  empty: boolean;
-  low: boolean;
+  forward: boolean;
 }) {
   const left = side === "A";
   const clipId = `mm-hopper-${side}`;
@@ -166,7 +161,13 @@ function Hopper({
         rx="5"
         className="mm-hopper-lid"
       />
-      <DosingChannel x={channelX} y={247} mirrored={!left} running={running} />
+      <DosingChannel
+        x={channelX}
+        y={247}
+        mirrored={!left}
+        running={running}
+        forward={forward}
+      />
 
       <rect
         x={left ? 266 : 690}
@@ -183,40 +184,16 @@ function Hopper({
         width="180"
         height="39"
         rx="9"
-        className={
-          empty
-            ? "mm-motor-status is-fault"
-            : low
-              ? "mm-motor-status is-warning"
-              : "mm-motor-status"
-        }
+        className="mm-motor-status"
       />
       <circle
         cx={left ? 121 : 731}
         cy="339"
         r="5"
-        className={
-          running
-            ? "mm-status-dot is-running"
-            : low
-              ? "mm-status-dot is-warning"
-              : "mm-status-dot"
-        }
+        className={running ? "mm-status-dot is-running" : "mm-status-dot"}
       />
-      <text
-        x={left ? 135 : 745}
-        y="343"
-        className={
-          empty ? "mm-svg-fault" : low ? "mm-svg-warning" : "mm-svg-status"
-        }
-      >
-        {empty
-          ? "Material empty"
-          : low
-            ? "Material low"
-            : running
-              ? "Dosing"
-              : "Stopped"}
+      <text x={left ? 135 : 745} y="343" className="mm-svg-status">
+        {running ? "Dosing" : "Stopped"}
       </text>
       <text
         x={left ? 268 : 878}
@@ -224,7 +201,7 @@ function Hopper({
         textAnchor="end"
         className="mm-svg-rpm"
       >
-        {running ? rpm : 0} rpm
+        {running ? (rpm === null ? "—" : rpm.toFixed(1)) : "0"} rpm
       </text>
       <text
         x={left ? 195 : 805}
@@ -232,70 +209,116 @@ function Hopper({
         textAnchor="middle"
         className="mm-svg-ratio"
       >
-        {ratio}%
+        {ratio.toFixed(1)}%
       </text>
+    </g>
+  );
+}
+
+function CentralMaterialHopper() {
+  const hopperPath = "M390 10 H610 V142 L540 235 H460 L390 142 Z";
+
+  return (
+    <g>
+      <defs>
+        <clipPath id="mm-central-hopper-clip">
+          <path d={hopperPath} />
+        </clipPath>
+      </defs>
+      <path d={hopperPath} className="mm-hopper-shell" />
+      <g clipPath="url(#mm-central-hopper-clip)">
+        <rect
+          x="386"
+          y="112"
+          width="228"
+          height="128"
+          fill="#64748b"
+          fillOpacity="0.16"
+        />
+        <line
+          x1="386"
+          x2="614"
+          y1="112"
+          y2="112"
+          className="mm-material-level-line"
+        />
+      </g>
+      <path d={hopperPath} className="mm-hopper-outline" />
+      <rect
+        x="382"
+        y="1"
+        width="236"
+        height="20"
+        rx="5"
+        className="mm-hopper-lid"
+      />
+      <text x="500" y="42" textAnchor="middle" className="mm-svg-label">
+        CENTRAL HOPPER
+      </text>
+      <text x="500" y="65" textAnchor="middle" className="mm-svg-material">
+        Main material
+      </text>
+      <rect
+        x="460"
+        y="234"
+        width="80"
+        height="28"
+        rx="5"
+        className="mm-central-hopper-throat"
+      />
     </g>
   );
 }
 
 export function MachineOverview({
   phase,
-  ratioA,
-  feedRate,
-  hopperAEmpty,
-  hopperBEmpty,
-  hopperALow = false,
-  hopperBLow = false,
+  dosageA,
+  dosageB,
   materialColorA = MATERIAL_A.color,
   materialColorB = MATERIAL_B.color,
   showMaterialColors = false,
+  config,
 }: {
   phase: MachinePhase;
-  ratioA: number;
-  feedRate: number;
-  hopperAEmpty: boolean;
-  hopperBEmpty: boolean;
-  hopperALow?: boolean;
-  hopperBLow?: boolean;
+  dosageA: number;
+  dosageB: number;
   materialColorA?: string;
   materialColorB?: string;
   showMaterialColors?: boolean;
+  config: ExtruderMixerConfig;
 }) {
-  const feeding = phase === "running";
   const mixerRunning =
     phase === "starting" || phase === "running" || phase === "purging";
-  const rpmA = Math.round((feedRate * ratioA) / 22);
-  const rpmB = Math.round((feedRate * (100 - ratioA)) / 22);
+  const feeding = mixerRunning;
   return (
     <div className="mm-overview">
       <svg
         viewBox="0 0 1000 600"
         role="img"
-        aria-label="Two material hoppers feeding a common mixer and extruder"
+        aria-label="Two dosing hoppers and a central material hopper feeding a common mixer and extruder"
       >
+        <CentralMaterialHopper />
         <Hopper
           side="A"
           material={{ ...MATERIAL_A, color: materialColorA }}
           contentColor={materialColorA}
           contentOpacity={showMaterialColors ? 0.55 : 0.18}
-          ratio={ratioA}
-          rpm={rpmA}
-          fill={hopperAEmpty ? 0 : hopperALow ? 20 : 76}
-          running={feeding && !hopperAEmpty}
-          empty={hopperAEmpty}
-          low={hopperALow}
+          ratio={dosageA}
+          rpm={null}
+          fill={76}
+          running={feeding}
+          forward={config.motorForward.hopperA}
         />
         <Hopper
           side="B"
           material={{ ...MATERIAL_B, color: materialColorB }}
           contentColor={materialColorB}
           contentOpacity={showMaterialColors ? 0.55 : 0.18}
-          ratio={100 - ratioA}
-          rpm={rpmB}
-          fill={hopperBEmpty ? 0 : hopperBLow ? 20 : 76}
-          running={feeding && !hopperBEmpty}
-          empty={hopperBEmpty}
-          low={hopperBLow}
+          ratio={dosageB}
+          rpm={null}
+          fill={76}
+          running={feeding}
+          forward={config.motorForward.hopperB}
         />
 
         <g transform="translate(420 250)">
@@ -361,28 +384,18 @@ export function MachineOverview({
 }
 
 export function MixingMachinePreview() {
+  const { config, activePreset, activeCalibration } = useExtruderMixerStorage();
   const [phase, setPhase] = useState<MachinePhase>("idle");
-  const [ratioA, setRatioA] = useState(70);
-  const [feedRate, setFeedRate] = useState(12);
-  const [recipe, setRecipe] = useState("70 / 30 blend");
-  const [hopperAEmpty, setHopperAEmpty] = useState(false);
-  const [hopperBEmpty, setHopperBEmpty] = useState(false);
-  const [hopperALow, setHopperALow] = useState(false);
-  const [hopperBLow, setHopperBLow] = useState(false);
-  const [mixerFault, setMixerFault] = useState(false);
-  const [extruderLinkState, setExtruderLinkState] =
-    useState<ExtruderLinkState>("ready");
+  const [dosageA, setDosageA] = useState(activePreset.dosageA);
+  const [dosageB, setDosageB] = useState(activePreset.dosageB);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const ratioB = 100 - ratioA;
   const running = phase === "running";
   const busy = phase === "starting" || phase === "purging";
-  const canStart =
-    phase === "idle" &&
-    !hopperAEmpty &&
-    !hopperBEmpty &&
-    !mixerFault &&
-    extruderLinkState === "ready";
+  const hopperAReady = dosageA === 0 || config.calibration.hopperA !== null;
+  const hopperBReady = dosageB === 0 || config.calibration.hopperB !== null;
+  const automaticReady = hopperAReady && hopperBReady;
+  const canStart = phase === "idle" && activeCalibration === null;
 
   useEffect(
     () => () => {
@@ -392,31 +405,17 @@ export function MixingMachinePreview() {
   );
 
   useEffect(() => {
-    if (mixerFault && phase !== "idle") {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      setPhase("fault");
-    } else if (!mixerFault && phase === "fault") {
-      setPhase("idle");
-    }
-  }, [mixerFault, phase]);
+    const nextA = Math.min(100, Math.max(0, activePreset.dosageA));
+    const nextB = Math.min(100, Math.max(0, activePreset.dosageB));
+    setDosageA(nextA);
+    setDosageB(nextB);
+  }, [activePreset.id, activePreset.dosageA, activePreset.dosageB]);
 
   useEffect(() => {
-    if ((hopperAEmpty || hopperBEmpty) && phase === "running") {
-      setPhase("purging");
-      timeoutRef.current = setTimeout(() => setPhase("idle"), 1200);
-    }
-  }, [hopperAEmpty, hopperBEmpty, phase]);
-
-  useEffect(() => {
-    if (
-      extruderLinkState !== "ready" &&
-      (phase === "running" || phase === "starting")
-    ) {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      setPhase("purging");
-      timeoutRef.current = setTimeout(() => setPhase("idle"), 1200);
-    }
-  }, [extruderLinkState, phase]);
+    if (!activeCalibration) return;
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setPhase("idle");
+  }, [activeCalibration]);
 
   const start = () => {
     if (!canStart) return;
@@ -426,38 +425,14 @@ export function MixingMachinePreview() {
 
   const stop = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (phase === "starting") {
-      setPhase("idle");
-      return;
-    }
-    setPhase("purging");
-    timeoutRef.current = setTimeout(() => setPhase("idle"), 1200);
-  };
-
-  const reset = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setPhase("idle");
-    setHopperAEmpty(false);
-    setHopperBEmpty(false);
-    setHopperALow(false);
-    setHopperBLow(false);
-    setMixerFault(false);
-    setExtruderLinkState("ready");
-  };
-
-  const applyRecipe = (name: string) => {
-    const selected = recipes.find((item) => item.name === name);
-    if (!selected) return;
-    setRecipe(selected.name);
-    setRatioA(selected.ratioA);
-    setFeedRate(selected.feedRate);
   };
 
   return (
     <Page className="mm-page">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Material Mixer</h1>
+          <h1 className="text-3xl font-bold">Mixer</h1>
         </div>
         <div className="flex flex-wrap gap-2">
           {phase === "running" && (
@@ -466,36 +441,14 @@ export function MixingMachinePreview() {
           {phase === "starting" && (
             <StatusBadge variant="success">Starting mixer</StatusBadge>
           )}
-          {phase === "purging" && (
-            <StatusBadge variant="success">Clearing mixer</StatusBadge>
-          )}
           {phase === "fault" && (
             <StatusBadge variant="error">Not Ready</StatusBadge>
           )}
-          {phase === "idle" && canStart && (
+          {phase === "idle" && automaticReady && !activeCalibration && (
             <StatusBadge variant="success">Ready</StatusBadge>
           )}
-          {phase === "idle" && !canStart && (
+          {phase === "idle" && (!automaticReady || activeCalibration) && (
             <StatusBadge variant="error">Not Ready</StatusBadge>
-          )}
-          {mixerFault && <StatusBadge variant="error">Mixer fault</StatusBadge>}
-          {hopperAEmpty && (
-            <StatusBadge variant="error">Hopper A empty</StatusBadge>
-          )}
-          {hopperBEmpty && (
-            <StatusBadge variant="error">Hopper B empty</StatusBadge>
-          )}
-          {hopperALow && !hopperAEmpty && (
-            <StatusBadge variant="warning">Hopper A low</StatusBadge>
-          )}
-          {hopperBLow && !hopperBEmpty && (
-            <StatusBadge variant="warning">Hopper B low</StatusBadge>
-          )}
-          {extruderLinkState === "no-demand" && (
-            <StatusBadge variant="warning">No extruder demand</StatusBadge>
-          )}
-          {extruderLinkState === "fault" && (
-            <StatusBadge variant="error">Extruder fault</StatusBadge>
           )}
         </div>
       </div>
@@ -503,125 +456,128 @@ export function MixingMachinePreview() {
       <ControlCard title="Overview">
         <MachineOverview
           phase={phase}
-          ratioA={ratioA}
-          feedRate={feedRate}
-          hopperAEmpty={hopperAEmpty}
-          hopperBEmpty={hopperBEmpty}
-          hopperALow={hopperALow}
-          hopperBLow={hopperBLow}
+          dosageA={dosageA}
+          dosageB={dosageB}
+          config={config}
         />
       </ControlCard>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-4">
-        <ControlCard title="Blend">
-          <Label label="Recipe">
-            <select
-              className="h-12 w-full rounded-md border border-gray-200 bg-white px-3 text-sm disabled:bg-gray-100"
-              value={recipe}
-              disabled={running || busy}
-              onChange={(event) => applyRecipe(event.target.value)}
-            >
-              {recipe === "Custom" && (
-                <option value="Custom">Custom blend</option>
-              )}
-              {recipes.map((item) => (
-                <option key={item.name}>{item.name}</option>
-              ))}
-            </select>
-          </Label>
-
-          <Label label="Material Ratio">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="flex items-center gap-2">
+        <ControlCard title="Left Doser">
+          <Label label="Addition relative to main material">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="flex items-center gap-2 text-sm text-gray-500">
                 <span
                   className="size-3 rounded-sm"
                   style={{ backgroundColor: MATERIAL_A.color }}
                 />
-                <strong>{ratioA}%</strong>
-                <span className="text-xs text-gray-500">Hopper A</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Hopper B</span>
-                <strong>{ratioB}%</strong>
-                <span
-                  className="size-3 rounded-sm border border-gray-300"
-                  style={{ backgroundColor: MATERIAL_B.color }}
-                />
-              </div>
+                Left material
+              </span>
+              <strong className="font-mono text-2xl">
+                {dosageA.toFixed(1)}%
+              </strong>
             </div>
             <TouchSlider
               min={0}
               max={100}
-              step={1}
-              value={[ratioA]}
+              step={0.1}
+              value={[dosageA]}
               disabled={running || busy}
-              minLabel="0% A"
-              maxLabel="100% A"
-              onValueChange={([value]) => {
-                setRatioA(value);
-                setRecipe("Custom");
-              }}
+              minLabel="0%"
+              maxLabel="100% of main"
+              onValueChange={([value]) => setDosageA(value)}
             />
           </Label>
           <p className="text-xs text-amber-700">
-            Displayed ratio is estimated until both feeders are calibrated.
+            {config.calibration.hopperA
+              ? `Calibration: ${config.calibration.hopperA.name}`
+              : "Calibration required for automatic dosing."}
           </p>
         </ControlCard>
 
-        <ControlCard title="Production">
-          <Label label="Total Feed Rate">
-            <div className="flex items-center gap-3">
-              <TouchButton
-                variant="outline"
-                disabled={running || busy}
-                onClick={() =>
-                  setFeedRate((value) => clamp(value - 0.5, 1, 25))
-                }
-              >
-                −
-              </TouchButton>
-              <div className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-center">
-                <span className="font-mono text-3xl font-semibold">
-                  {feedRate.toFixed(feedRate % 1 === 0 ? 0 : 1)}
-                </span>
-                <span className="ml-2 text-sm text-gray-500">kg/h</span>
-              </div>
-              <TouchButton
-                variant="outline"
-                disabled={running || busy}
-                onClick={() =>
-                  setFeedRate((value) => clamp(value + 0.5, 1, 25))
-                }
-              >
-                +
-              </TouchButton>
-            </div>
-          </Label>
-
+        <ControlCard title="Extruder Link">
+          <StatusBadge variant="success">Follows extruder</StatusBadge>
           <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-500">Hopper A</span>
-                <strong className="mt-1 block">
-                  {((feedRate * ratioA) / 100).toFixed(1)} kg/h
-                </strong>
-              </div>
-              <div>
-                <span className="text-gray-500">Hopper B</span>
-                <strong className="mt-1 block">
-                  {((feedRate * ratioB) / 100).toFixed(1)} kg/h
-                </strong>
-              </div>
+            <span className="text-sm text-gray-500">Extruder screw speed</span>
+            <strong className="mt-1 block text-2xl">
+              {activePreset.screwRpm} rpm
+            </strong>
+            <span className="text-xs text-gray-500">{activePreset.name}</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center text-sm">
+            <div>
+              <span className="text-gray-500">Main reference</span>
+              <strong className="block">100%</strong>
+            </div>
+            <div>
+              <span className="text-gray-500">Left / main</span>
+              <strong className="block">{dosageA.toFixed(1)}%</strong>
+            </div>
+            <div>
+              <span className="text-gray-500">Right / main</span>
+              <strong className="block">{dosageB.toFixed(1)}%</strong>
             </div>
           </div>
+        </ControlCard>
 
+        <ControlCard title="Right Doser">
+          <Label label="Addition relative to main material">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="flex items-center gap-2 text-sm text-gray-500">
+                <span
+                  className="size-3 rounded-sm"
+                  style={{ backgroundColor: MATERIAL_B.color }}
+                />
+                Right material
+              </span>
+              <strong className="font-mono text-2xl">
+                {dosageB.toFixed(1)}%
+              </strong>
+            </div>
+            <TouchSlider
+              min={0}
+              max={100}
+              step={0.1}
+              value={[dosageB]}
+              disabled={running || busy}
+              minLabel="0%"
+              maxLabel="100% of main"
+              onValueChange={([value]) => setDosageB(value)}
+            />
+          </Label>
+          <p className="text-xs text-amber-700">
+            {config.calibration.hopperB
+              ? `Calibration: ${config.calibration.hopperB.name}`
+              : "Calibration required for automatic dosing."}
+          </p>
+        </ControlCard>
+
+        <ControlCard title="Operation">
+          <StatusBadge
+            variant={
+              activeCalibration
+                ? "warning"
+                : automaticReady
+                  ? "success"
+                  : "warning"
+            }
+          >
+            {activeCalibration
+              ? "Calibration running"
+              : automaticReady
+                ? "Ready"
+                : "Calibration needed"}
+          </StatusBadge>
+          <p className="text-sm text-gray-600">
+            The mixer starts and stops with the extruder.
+          </p>
           {running || busy ? (
             <TouchButton
               variant="destructive"
               icon="lu:OctagonX"
               onClick={stop}
             >
-              {phase === "purging" ? "Clearing Mixer…" : "Stop Mixing"}
+              Stop Simulation
             </TouchButton>
           ) : (
             <TouchButton
@@ -630,88 +586,10 @@ export function MixingMachinePreview() {
               onClick={start}
               className="bg-green-600 text-white"
             >
-              Start Mixing
+              Simulate Extruder Running
             </TouchButton>
           )}
         </ControlCard>
-
-        <ControlCard title="Errors">
-          {[
-            {
-              label: "Hopper A low",
-              errorState: "LOW",
-              active: hopperALow,
-              toggle: () => {
-                setHopperALow((value) => !value);
-                setHopperAEmpty(false);
-              },
-            },
-            {
-              label: "Hopper A empty",
-              errorState: "EMPTY",
-              active: hopperAEmpty,
-              toggle: () => {
-                setHopperAEmpty((value) => !value);
-                setHopperALow(false);
-              },
-            },
-            {
-              label: "Hopper B low",
-              errorState: "LOW",
-              active: hopperBLow,
-              toggle: () => {
-                setHopperBLow((value) => !value);
-                setHopperBEmpty(false);
-              },
-            },
-            {
-              label: "Hopper B empty",
-              errorState: "EMPTY",
-              active: hopperBEmpty,
-              toggle: () => {
-                setHopperBEmpty((value) => !value);
-                setHopperBLow(false);
-              },
-            },
-            {
-              label: "Mixer fault",
-              errorState: "FAULT",
-              active: mixerFault,
-              toggle: () => setMixerFault((value) => !value),
-            },
-          ].map((signal) => (
-            <button
-              key={signal.label}
-              className={`flex min-h-12 w-full items-center justify-between rounded-lg border px-3 text-sm ${
-                signal.active
-                  ? "border-red-300 bg-red-50 text-red-700"
-                  : "border-gray-200 bg-gray-50"
-              }`}
-              onClick={signal.toggle}
-            >
-              <span className="flex items-center gap-2">
-                {signal.active ? (
-                  <AlertTriangle className="size-4" />
-                ) : (
-                  <Check className="size-4 text-green-600" />
-                )}
-                {signal.label}
-              </span>
-              <span className="text-xs font-semibold">
-                {signal.active ? signal.errorState : "OK"}
-              </span>
-            </button>
-          ))}
-
-          <TouchButton variant="outline" icon="lu:RotateCcw" onClick={reset}>
-            Reset Simulation
-          </TouchButton>
-        </ControlCard>
-
-        <ConnectedExtruderCard
-          state={extruderLinkState}
-          onStateChange={setExtruderLinkState}
-        />
       </div>
     </Page>
   );

@@ -13,11 +13,8 @@ import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder3 } from "./useExtruder";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { StatusBadge } from "@/control/StatusBadge";
-import { TouchButton } from "@/components/touch/TouchButton";
-import { useNavigate } from "@tanstack/react-router";
 
 export function Extruder3ControlPage() {
-  const navigate = useNavigate();
   const {
     state,
     defaultState,
@@ -263,30 +260,6 @@ export function Extruder3ControlPage() {
             renderValue={(value) => roundToDecimals(value, 3)}
             timeseries={totalEnergyKWh}
           />
-        </ControlCard>
-
-        <ControlCard title="Material Mixer">
-          <StatusBadge variant="success">Material supply ready</StatusBadge>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-              <span className="text-xs text-gray-500">Blend</span>
-              <strong className="mt-1 block text-xl">70% A / 30% B</strong>
-            </div>
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-              <span className="text-xs text-gray-500">Feed target</span>
-              <strong className="mt-1 block text-xl">12 kg/h</strong>
-            </div>
-          </div>
-          <p className="text-sm text-gray-500">
-            Upstream material-supply module · presentation preview
-          </p>
-          <TouchButton
-            variant="outline"
-            icon="lu:ExternalLink"
-            onClick={() => navigate({ to: "/_sidebar/machines/mixer-2" })}
-          >
-            Open Mixer
-          </TouchButton>
         </ControlCard>
       </ControlGrid>
     </Page>

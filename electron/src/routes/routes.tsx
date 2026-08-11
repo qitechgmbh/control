@@ -97,10 +97,9 @@ import { Wago750_553MachineControlPage } from "@/machines/minimal_machines/wago7
 import { Wago750460MachinePage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachinePage";
 import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago750460machine/Wago750460MachineControlPage";
 import { MixingMachinePreview } from "@/machines/mixing_machine/MixingMachinePreview";
-import {
-  MixingMachineVariant2,
-  MixingMachineVariant3,
-} from "@/machines/mixing_machine/MixingMachineVariants";
+import { ExtruderWithMixerPage } from "@/machines/mixing_machine/ExtruderWithMixerPage";
+import { ExtruderMixerSettingsPage } from "@/machines/mixing_machine/ExtruderMixerSettingsPage";
+import { ExtruderMixerPresetsPage } from "@/machines/mixing_machine/ExtruderMixerPresetsPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -254,22 +253,28 @@ export const machinesRoute = createRoute({
   path: "machines",
 });
 
-export const mixer1PreviewRoute = createRoute({
+export const extruderWithMixerRoute = createRoute({
   getParentRoute: () => machinesRoute,
-  path: "mixer-1",
+  path: "extruder-with-mixer/$serial",
+  component: () => <ExtruderWithMixerPage />,
+});
+
+export const extruderWithMixerControlRoute = createRoute({
+  getParentRoute: () => extruderWithMixerRoute,
+  path: "control",
   component: () => <MixingMachinePreview />,
 });
 
-export const mixer2PreviewRoute = createRoute({
-  getParentRoute: () => machinesRoute,
-  path: "mixer-2",
-  component: () => <MixingMachineVariant2 />,
+export const extruderWithMixerSettingsRoute = createRoute({
+  getParentRoute: () => extruderWithMixerRoute,
+  path: "settings",
+  component: () => <ExtruderMixerSettingsPage />,
 });
 
-export const mixer3PreviewRoute = createRoute({
-  getParentRoute: () => machinesRoute,
-  path: "mixer-3",
-  component: () => <MixingMachineVariant3 />,
+export const extruderWithMixerPresetsRoute = createRoute({
+  getParentRoute: () => extruderWithMixerRoute,
+  path: "presets",
+  component: () => <ExtruderMixerPresetsPage />,
 });
 
 export const extruder2Route = createRoute({
@@ -638,9 +643,11 @@ export const rootTree = RootRoute.addChildren([
       metricsRoute,
     ]),
     machinesRoute.addChildren([
-      mixer1PreviewRoute,
-      mixer2PreviewRoute,
-      mixer3PreviewRoute,
+      extruderWithMixerRoute.addChildren([
+        extruderWithMixerControlRoute,
+        extruderWithMixerSettingsRoute,
+        extruderWithMixerPresetsRoute,
+      ]),
       laser1SerialRoute.addChildren([
         laser1ControlRoute,
         laser1GraphsRoute,
