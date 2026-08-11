@@ -4,7 +4,7 @@ revision: 1
 identification:
   name: aquapath
   vendor_id: 1
-  machine_id: 6
+  machine_id: 9
 
 measurements:
   left_flow: !float
@@ -17,3 +17,38 @@ measurements:
   right_power: !float
   left_total_energy: !float
   right_total_energy: !float
+
+state:
+  is_default_state: !bool
+  left_heating_startup_wait_active: !bool
+  right_heating_startup_wait_active: !bool
+  left_pump_cooldown_active: !bool
+  right_pump_cooldown_active: !bool
+  left_should_flow: !bool
+  right_should_flow: !bool
+  left_heating: !bool
+  right_heating: !bool
+
+  left_pump_cooldown_remaining: !float
+  right_pump_cooldown_remaining: !float
+  left_heating_startup_wait_remaining: !float
+  right_heating_startup_wait_remaining: !float
+  ambient_temperature_calibration: !float
+  default_heating_tolerance: !float
+  default_cooling_tolerance: !float
+  default_pid_kp: !float
+  default_pid_ki: !float
+  default_pid_kd: !float
+  left_target_temperature: !float
+  right_target_temperature: !float
+  left_fan_max_revolutions: !float
+  right_fan_max_revolutions: !float
+
+  mode_state:
+    mode: !enum [standby, pull, hold, wind]
+  left_cooling_mode: !?enum [low, ramp, max]
+  right_cooling_mode: !?enum [low, ramp, max]
+
+
+config:
+  

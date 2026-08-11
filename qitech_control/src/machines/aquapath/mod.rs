@@ -34,9 +34,9 @@ pub enum AquaPathSideType {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Temperature {
     pub temperature: ThermodynamicTemperature,
+    pub target_temperature: ThermodynamicTemperature,
     pub cooling: bool,
     pub heating: bool,
-    pub target_temperature: ThermodynamicTemperature,
 }
 
 impl Default for Temperature {
