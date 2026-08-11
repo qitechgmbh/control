@@ -17,33 +17,6 @@ pub struct ConfigProperties {
     // --- traverse ---
     pub traverse_limit_inner: ConfigProperty<Length>,
     pub traverse_limit_outer: ConfigProperty<Length>,
-    pub traverse_step_size: ConfigProperty<Length>,
-
-    // --- puller ---
-    pub puller_regulation_mode: ConfigProperty<PullerRegulationMode>,
-    pub puller_target_speed: ConfigProperty<Velocity>,
-    pub puller_gear_ratio: ConfigProperty<GearRatio>,
-    pub puller_adaptive_max_speed_change_percent: ConfigProperty<f64>,
-    pub puller_adaptive_adjustment_interval: ConfigProperty<Length>,
-    pub puller_adaptive_step_percent: ConfigProperty<f64>,
-    pub puller_adaptive_accepted_difference: ConfigProperty<Length>,
-
-    // --- spool speed controller ---
-    pub spool_regulation_mode: ConfigProperty<SpoolSpeedControllerType>,
-    pub spool_min_speed: ConfigProperty<AngularVelocity>,
-    pub spool_max_speed: ConfigProperty<AngularVelocity>,
-    pub spool_forward: ConfigProperty<bool>,
-
-    // --- adaptive spool speed controller ---
-    pub spool_adaptive_tension_target: ConfigProperty<f64>,
-    pub spool_adaptive_radius_learning_rate: ConfigProperty<f64>,
-    pub spool_adaptive_max_speed_multiplier: ConfigProperty<f64>,
-    pub spool_adaptive_acceleration_factor: ConfigProperty<f64>,
-    pub spool_adaptive_deacceleration_urgency_multiplier: ConfigProperty<f64>,
-
-    // --- spool automation ---
-    pub spool_automatic_required_length: ConfigProperty<Length>,
-    pub spool_automatic_action: ConfigProperty<SpoolAutomaticActionMode>,
 }
 
 impl<const VARIANT: usize> WinderV1<VARIANT> {
@@ -67,59 +40,8 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         Ok(())
     }
 
-    pub fn on_traverse_step_size_changed(&mut self) -> ActResult {
-        self.traverse_set_step_size(self.config_props.traverse_step_size.get_as::<millimeter>());
-        Ok(())
-    }
-
     pub fn on_puller_regulation_mode_changed(&mut self) -> ActResult {
-        self.puller_set_regulation(self.config_props.puller_regulation_mode.get());
-        Ok(())
-    }
-
-    pub fn on_puller_target_speed_changed(&mut self) -> ActResult {
-        self.puller_set_target_speed(
-            self.config_props
-                .puller_target_speed
-                .get_as::<meter_per_minute>(),
-        );
-        Ok(())
-    }
-
-    pub fn on_puller_gear_ratio_changed(&mut self) -> ActResult {
-        self.puller_set_gear_ratio(self.config_props.puller_gear_ratio.get());
-        Ok(())
-    }
-
-    pub fn on_puller_adaptive_max_speed_change_percent_changed(&mut self) -> ActResult {
-        self.puller_set_adaptive_max_speed_change_percent(
-            self.config_props
-                .puller_adaptive_max_speed_change_percent
-                .get(),
-        );
-        Ok(())
-    }
-
-    pub fn on_puller_adaptive_adjustment_interval_changed(&mut self) -> ActResult {
-        self.puller_set_adaptive_adjustment_interval_meters(
-            self.config_props
-                .puller_adaptive_adjustment_interval
-                .get_as::<meter>(),
-        );
-        Ok(())
-    }
-
-    pub fn on_puller_adaptive_step_percent_changed(&mut self) -> ActResult {
-        self.puller_set_adaptive_step_percent(self.config_props.puller_adaptive_step_percent.get());
-        Ok(())
-    }
-
-    pub fn on_puller_adaptive_accepted_difference_changed(&mut self) -> ActResult {
-        self.puller_set_adaptive_accepted_difference(
-            self.config_props
-                .puller_adaptive_accepted_difference
-                .get_as::<millimeter>(),
-        );
+        self.puller_speed_controller.adaptive.reset_modulation();
         Ok(())
     }
 
@@ -143,63 +65,10 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             .on_speed_max_changed();
         Ok(())
     }
-
-    pub fn on_spool_adaptive_tension_target_changed(&mut self) -> ActResult {
-        self.spool_set_adaptive_tension_target(
-            self.config_props.spool_adaptive_tension_target.get(),
-        );
-        Ok(())
-    }
-
-    pub fn on_spool_adaptive_radius_learning_rate_changed(&mut self) -> ActResult {
-        self.spool_set_adaptive_radius_learning_rate(
-            self.config_props.spool_adaptive_radius_learning_rate.get(),
-        );
-        Ok(())
-    }
-
-    pub fn on_spool_adaptive_max_speed_multiplier_changed(&mut self) -> ActResult {
-        self.spool_set_adaptive_max_speed_multiplier(
-            self.config_props.spool_adaptive_max_speed_multiplier.get(),
-        );
-        Ok(())
-    }
-
-    pub fn on_spool_adaptive_acceleration_factor_changed(&mut self) -> ActResult {
-        self.spool_set_adaptive_acceleration_factor(
-            self.config_props.spool_adaptive_acceleration_factor.get(),
-        );
-        Ok(())
-    }
-
-    pub fn on_spool_adaptive_deacceleration_urgency_multiplier_changed(&mut self) -> ActResult {
-        self.spool_set_adaptive_deacceleration_urgency_multiplier(
-            self.config_props
-                .spool_adaptive_deacceleration_urgency_multiplier
-                .get(),
-        );
-        Ok(())
-    }
-
-    pub fn on_spool_automatic_required_length_changed(&mut self) -> ActResult {
-        self.set_spool_automatic_required_meters(
-            self.config_props
-                .spool_automatic_required_length
-                .get_as::<meter>(),
-        );
-        Ok(())
-    }
-
-    pub fn on_spool_automatic_action_changed(&mut self) -> ActResult {
-        self.set_spool_automatic_mode(self.config_props.spool_automatic_action.get());
-        Ok(())
-    }
 }
 
 pub struct StateProperties {
     pub traverse_state: TraverseStateProperties,
-    pub puller_state: PullerStateProperties,
-    pub spool_automatic_action_state: SpoolAutomaticActionStateProperties,
     pub mode_state: ModeStateProperties,
     pub tension_arm_state: TensionArmStateProperties,
 }
@@ -213,25 +82,9 @@ pub struct TraverseStateProperties {
     pub is_going_home: StateProperty<bool>,
     pub is_traversing: StateProperty<bool>,
     pub laserpointer: StateProperty<bool>,
-    pub step_size: StateProperty<Length>,
     pub can_go_in: StateProperty<bool>,
     pub can_go_out: StateProperty<bool>,
     pub can_go_home: StateProperty<bool>,
-}
-
-pub struct PullerStateProperties {
-    pub regulation: StateProperty<PullerRegulationMode>,
-    pub target_speed: StateProperty<Velocity>,
-    pub gear_ratio: StateProperty<GearRatio>,
-    pub adaptive_speed_delta_max: StateProperty<f64>,
-    pub adaptive_adjustment_distance: StateProperty<Length>,
-    pub adaptive_change_per_step: StateProperty<f64>,
-    pub allowed_diameter_deviation: StateProperty<Length>,
-}
-
-pub struct SpoolAutomaticActionStateProperties {
-    pub spool_required_meters: StateProperty<Length>,
-    pub spool_automatic_action_mode: StateProperty<SpoolAutomaticActionMode>,
 }
 
 pub struct ModeStateProperties {
@@ -241,18 +94,6 @@ pub struct ModeStateProperties {
 
 pub struct TensionArmStateProperties {
     pub zeroed: StateProperty<bool>,
-}
-
-pub struct SpoolSpeedControllerStateProperties {
-    pub regulation_mode: StateProperty<SpoolSpeedControllerType>,
-    pub minmax_min_speed: StateProperty<AngularVelocity>,
-    pub minmax_max_speed: StateProperty<AngularVelocity>,
-    pub adaptive_tension_target: StateProperty<f64>,
-    pub adaptive_radius_learning_rate: StateProperty<f64>,
-    pub adaptive_max_speed_multiplier: StateProperty<f64>,
-    pub adaptive_acceleration_factor: StateProperty<f64>,
-    pub adaptive_deacceleration_urgency_multiplier: StateProperty<f64>,
-    pub forward: StateProperty<bool>,
 }
 
 // --- measurements ---
@@ -391,12 +232,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             .tension_arm_state
             .zeroed
             .set(self.tension_arm.zeroed);
-
-        // --- update spool speed controller state ---
-        self.update_state_spool_speed_controller();
-
-        // --- update spool automatic action state ---
-        self.update_state_spool_automatic_action_state();
     }
 
     fn update_state_traverse(&mut self) {
@@ -411,7 +246,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         let is_traversing = self.traverse_controller.is_traversing();
 
         let laserpointer = self.laser_enabled;
-        let step_size = self.traverse_controller.get_step_size();
 
         let can_go_in = self.traverse_can_goto_limit_inner();
         let can_go_out = self.traverse_can_goto_limit_outer();
@@ -430,102 +264,9 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         s.is_traversing.set(is_traversing);
 
         s.laserpointer.set(laserpointer);
-        s.step_size.set(step_size);
 
         s.can_go_in.set(can_go_in.is_allowed());
         s.can_go_out.set(can_go_out.is_allowed());
         s.can_go_home.set(can_go_home.is_allowed());
-    }
-
-    fn update_state_puller(&mut self) {
-        // --- precompute puller state ---
-        let regulation = self.puller_speed_controller.regulation_mode;
-        let target_speed = self.puller_speed_controller.target_speed;
-        let gear_ratio = self.puller_speed_controller.gear_ratio;
-
-        let adaptive_speed_delta_max = self.puller_speed_controller.adaptive.speed_delta_max();
-        let adaptive_adjustment_distance =
-            self.puller_speed_controller.adaptive.adjustment_distance();
-        let adaptive_change_per_step = self.puller_speed_controller.adaptive.increase_per_step();
-        let allowed_diameter_deviation = self.puller_speed_controller.adaptive.tolerance_limit();
-
-        // --- update puller state ---
-        let s = &mut self.state_props.puller_state;
-
-        s.regulation.set(regulation);
-        s.target_speed.set(target_speed);
-        s.gear_ratio.set(gear_ratio);
-
-        s.adaptive_speed_delta_max.set(adaptive_speed_delta_max);
-
-        s.adaptive_adjustment_distance
-            .set(adaptive_adjustment_distance);
-
-        s.adaptive_change_per_step.set(adaptive_change_per_step);
-
-        s.allowed_diameter_deviation.set(allowed_diameter_deviation);
-    }
-
-    fn update_state_spool_speed_controller(&mut self) {
-        // --- precompute spool speed controller state ---
-        let regulation_mode = *self.spool_speed_controller.get_type();
-        let minmax_min_speed = self.spool_speed_controller.get_minmax_min_speed();
-        let minmax_max_speed = self.spool_speed_controller.get_minmax_max_speed();
-
-        let adaptive_tension_target = self.spool_speed_controller.get_adaptive_tension_target();
-
-        let adaptive_radius_learning_rate = self
-            .spool_speed_controller
-            .get_adaptive_radius_learning_rate();
-
-        let adaptive_max_speed_multiplier = self
-            .spool_speed_controller
-            .get_adaptive_max_speed_multiplier();
-
-        let adaptive_acceleration_factor = self
-            .spool_speed_controller
-            .get_adaptive_acceleration_factor();
-
-        let adaptive_deacceleration_urgency_multiplier = self
-            .spool_speed_controller
-            .get_adaptive_deacceleration_urgency_multiplier();
-
-        let forward = self.spool_speed_controller.get_forward();
-
-        // --- update spool speed controller state ---
-        let s = &mut self.state_props.spool_speed_controller_state;
-
-        s.regulation_mode.set(regulation_mode);
-        s.minmax_min_speed.set(minmax_min_speed);
-        s.minmax_max_speed.set(minmax_max_speed);
-
-        s.adaptive_tension_target.set(adaptive_tension_target);
-
-        s.adaptive_radius_learning_rate
-            .set(adaptive_radius_learning_rate);
-
-        s.adaptive_max_speed_multiplier
-            .set(adaptive_max_speed_multiplier);
-
-        s.adaptive_acceleration_factor
-            .set(adaptive_acceleration_factor);
-
-        s.adaptive_deacceleration_urgency_multiplier
-            .set(adaptive_deacceleration_urgency_multiplier);
-
-        s.forward.set(forward);
-    }
-
-    fn update_state_spool_automatic_action_state(&mut self) {
-        // --- precompute spool automatic action state ---
-        let spool_required_meters = self.spool_automatic_action.target_length;
-        let spool_automatic_action_mode = self.spool_automatic_action.mode;
-
-        // --- update spool automatic action state ---
-        let s = &mut self.state_props.spool_automatic_action_state;
-
-        s.spool_required_meters.set(spool_required_meters);
-        s.spool_automatic_action_mode
-            .set(spool_automatic_action_mode);
     }
 }

@@ -1,74 +1,86 @@
-use super::{AquaPathV1Mode, controller::CoolingMode};
-use qitech_framework::{machine::{Measurement, StateProperty}};
-use serde::{Deserialize, Serialize};
+use std::time::Instant;
 
-#[derive(Serialize, Debug, Clone, Default)]
+use crate::machines::aquapath::AquaPathV1;
+
+use super::{AquaPathV1Mode, controller::CoolingMode};
+use qitech_framework::machine::{ActResult, ConfigProperty, Measurement, StateProperty};
+use qitech_lib::units::{
+    angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius,
+    volume_rate::liter_per_minute,
+};
+use serde::Serialize;
+
 pub struct Measurements {
     pub left_flow: Measurement<f64>,
     pub right_flow: Measurement<f64>,
+
     pub left_temperature: Measurement<f64>,
     pub right_temperature: Measurement<f64>,
+
     pub left_revolutions: Measurement<f64>,
     pub right_revolutions: Measurement<f64>,
+
     pub left_power: Measurement<f64>,
     pub right_power: Measurement<f64>,
+
     pub left_total_energy: Measurement<f64>,
     pub right_total_energy: Measurement<f64>,
 }
 
-
-
-
-
-#[derive(Serialize, Debug, Clone)]
 pub struct StateProperties {
-    pub is_default_state: StateProperty<bool>,
-    /// mode state
-    pub mode_state: ModeState,
-    pub ambient_temperature_calibration: StateProperty<f64>,
-    
-    pub default_heating_tolerance: StateProperty<f64>,
-    pub default_cooling_tolerance: StateProperty<f64>,
-    pub default_pid_kp: StateProperty<f64>,
-    pub default_pid_ki: StateProperty<f64>,
-    pub default_pid_kd: StateProperty<f64>,
-    
-    pub left_cooling_mode: StateProperty<Option<CoolingMode>>,
-    pub right_cooling_mode: StateProperty<Option<CoolingMode>>,
-    
+    pub mode_state: ModeState,    
     pub left_heating_startup_wait_active: StateProperty<bool>,
     pub right_heating_startup_wait_active: StateProperty<bool>,
-    
-    pub left_heating: StateProperty<bool>,
-    pub right_heating: StateProperty<bool>,
-    
-    pub left_pump_cooldown_remaining: StateProperty<f64>,
-    pub right_pump_cooldown_remaining: StateProperty<f64>,
-    
-    pub left_heating_startup_wait_remaining: StateProperty<f64>,
-    pub right_heating_startup_wait_remaining: StateProperty<f64>,
 
     pub left_pump_cooldown_active: StateProperty<bool>,
     pub right_pump_cooldown_active: StateProperty<bool>,
 
-    pub left_flow : FlowState,
-    pub right_flow : FlowState,
-
     pub left_should_flow: StateProperty<bool>,
     pub right_should_flow: StateProperty<bool>,
 
-    pub left_target_temperature: StateProperty<f64>,
-    pub right_target_temperature: StateProperty<f64>,
-    
-    pub left_fan_max_revolutions :  StateProperty<f64>,
-    pub right_fan_max_revolutions :  StateProperty<f64>,
+    pub left_heating: StateProperty<bool>,
+    pub right_heating: StateProperty<bool>,
 
-    pub cooling_mode_states: StateProperty<CoolingModeStates>,
-    pub tolerance_states: StateProperty<ToleranceStates>,
-    pub pid_states: StateProperty<PidStates>,
-    pub thermal_safety_states: StateProperty<ThermalSafetyStates>,
+    pub left_pump_cooldown_remaining: StateProperty<f64>,
+    pub right_pump_cooldown_remaining: StateProperty<f64>,
+
+    pub left_heating_startup_wait_remaining: StateProperty<f64>,
+    pub right_heating_startup_wait_remaining: StateProperty<f64>,
+
+    pub left_cooling_mode: StateProperty<Option<CoolingMode>>,
+    pub right_cooling_mode: StateProperty<Option<CoolingMode>>,
+
+    pub left_thermal_safety_state: ThermalSafetyState,
+    pub right_thermal_safety_state: ThermalSafetyState,
 }
 
+pub struct ConfigProperties {
+    pub left_target_temperature: ConfigProperty<f64>,
+    pub right_target_temperature: ConfigProperty<f64>,
+
+    pub ambient_temperature_calibration: ConfigProperty<f64>,
+
+    /*pub default_heating_tolerance: ConfigProperty<f64>,
+    pub default_cooling_tolerance: ConfigProperty<f64>,
+    pub default_pid_kp: ConfigProperty<f64>,
+    pub default_pid_ki: ConfigProperty<f64>,
+    pub default_pid_kd: ConfigProperty<f64>,*/
+
+    pub left_fan_max_revolutions: ConfigProperty<f64>,
+    pub right_fan_max_revolutions: ConfigProperty<f64>,
+
+    pub left_tolerance_config: ToleranceState,
+    pub right_tolerance_config: ToleranceState,
+
+    pub left_pid_config: PidState,
+    pub right_pid_config: PidState,
+
+    pub left_thermal_flow_settle_duration: ConfigProperty<f64>,
+    pub right_thermal_flow_settle_duration: ConfigProperty<f64>,
+
+    pub left_pump_cooldown_min_temperature: ConfigProperty<f64>,
+    pub right_pump_cooldown_min_temperature: ConfigProperty<f64>,
+}
 
 #[derive(Serialize, Debug, Clone)]
 pub struct NoticeEvent {
@@ -76,113 +88,290 @@ pub struct NoticeEvent {
     pub message: String,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct TempStates {
-    pub left: TempState,
-    pub right: TempState,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct TempState {
-    pub temperature: f64,
-    pub target_temperature: f64,
-}
-
-#[derive(Serialize, Debug, Clone,Eq,PartialEq,Default)]
 pub struct ModeState {
     pub mode: StateProperty<AquaPathV1Mode>,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct FlowState {
-    pub should_flow: StateProperty<bool>,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct FanState {
-    pub revolutions: f64,
-    pub max_revolutions: f64,
-}
-#[derive(Serialize, Debug, Clone)]
-pub struct FanStates {
-    pub left: FanState,
-    pub right: FanState,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct CoolingModeState {
-    pub mode: Option<CoolingMode>,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct CoolingModeStates {
-    pub left: CoolingModeState,
-    pub right: CoolingModeState,
-}
-
-#[derive(Serialize, Debug, Clone)]
 pub struct ToleranceState {
-    pub heating: f64,
-    pub cooling: f64,
-}
-#[derive(Serialize, Debug, Clone)]
-pub struct ToleranceStates {
-    pub left: ToleranceState,
-    pub right: ToleranceState,
+    pub heating: ConfigProperty<f64>,
+    pub cooling: ConfigProperty<f64>,
 }
 
-#[derive(Serialize, Debug, Clone)]
 pub struct PidState {
-    pub kp: f64,
-    pub ki: f64,
-    pub kd: f64,
+    pub kp: ConfigProperty<f64>,
+    pub ki: ConfigProperty<f64>,
+    pub kd: ConfigProperty<f64>,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct PidStates {
-    pub left: PidState,
-    pub right: PidState,
-}
-
-#[derive(Serialize, Debug, Clone)]
 pub struct ThermalSafetyState {
-    pub thermal_delay: f64,
-    pub cooldown_min_temperature: f64,
+    pub thermal_delay: StateProperty<f64>,
+    pub cooldown_min_temperature: StateProperty<f64>,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct ThermalSafetyStates {
-    pub left: ThermalSafetyState,
-    pub right: ThermalSafetyState,
+impl AquaPathV1 {
+    pub fn on_right_target_temparature_changed(&mut self) -> ActResult {
+        _ = self.set_target_temperature(
+            self.config_props.right_target_temperature.get(),
+            super::AquaPathSideType::Right,
+        );
+        Ok(())
+    }
+
+    pub fn on_left_target_temparature_changed(&mut self) -> ActResult {
+        _ = self.set_target_temperature(
+            self.config_props.left_target_temperature.get(),
+            super::AquaPathSideType::Left,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_right_revolutions(&mut self) -> ActResult {
+        self.set_max_revolutions(
+            self.config_props.right_fan_max_revolutions.get(),
+            super::AquaPathSideType::Right,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_left_revolutions(&mut self) -> ActResult {
+        self.set_max_revolutions(
+            self.config_props.left_fan_max_revolutions.get(),
+            super::AquaPathSideType::Left,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_right_heating_tolerance(&mut self) -> ActResult {
+        self.set_heating_tolerance(
+            self.config_props.right_tolerance_config.heating.get(),
+            super::AquaPathSideType::Right,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_left_heating_tolerance(&mut self) -> ActResult {
+        self.set_heating_tolerance(
+            self.config_props.left_tolerance_config.heating.get(),
+            super::AquaPathSideType::Left,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_right_cooling_tolerance(&mut self) -> ActResult {
+        self.set_cooling_tolerance(
+            self.config_props.right_tolerance_config.cooling.get(),
+            super::AquaPathSideType::Right,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_left_cooling_tolerance(&mut self) -> ActResult {
+        self.set_cooling_tolerance(
+            self.config_props.left_tolerance_config.cooling.get(),
+            super::AquaPathSideType::Left,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_left_pid(&mut self) -> ActResult {
+        self.set_pid(super::AquaPathSideType::Left);
+        Ok(())
+    }
+
+    pub fn on_set_right_pid(&mut self) -> ActResult {
+        self.set_pid(super::AquaPathSideType::Right);
+        Ok(())
+    }
+
+    pub fn on_set_left_thermal_flow_settle_duration(&mut self) -> ActResult {
+        self.set_thermal_flow_settle_duration(
+            self.config_props.left_thermal_flow_settle_duration.get(),
+            super::AquaPathSideType::Left,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_right_thermal_flow_settle_duration(&mut self) -> ActResult {
+        // TODO change config_props
+        self.set_thermal_flow_settle_duration(
+            self.config_props.right_thermal_flow_settle_duration.get(),
+            super::AquaPathSideType::Right,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_left_cooldown_min_temp(&mut self) -> ActResult {
+        self.set_pump_cooldown_min_temperature(
+            self.config_props.left_pump_cooldown_min_temperature.get(),
+            super::AquaPathSideType::Left,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_right_cooldown_min_temp(&mut self) -> ActResult {
+        self.set_pump_cooldown_min_temperature(
+            self.config_props.right_pump_cooldown_min_temperature.get(),
+            super::AquaPathSideType::Right,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_ambient_temperature_calibration(&mut self) -> ActResult {
+        self.set_ambient_temperature_calibration(
+            self.config_props.ambient_temperature_calibration.get(),
+        );
+        Ok(())
+    }
 }
 
-#[derive(Deserialize, Serialize)]
-enum Mutation {
-    //Mode
-    SetAquaPathMode(AquaPathV1Mode),
+impl AquaPathV1 {
+    pub fn update_measurements(&mut self) {
+        //self.left_controller.
+        let left_flow = self.left_controller.current_flow.get::<liter_per_minute>();
+        let right_flow = self.right_controller.current_flow.get::<liter_per_minute>();
 
-    SetLeftTemperature(f64),
-    SetRightTemperature(f64),
+        let left_temp = self
+            .left_controller
+            .current_temperature
+            .get::<degree_celsius>();
+        let right_temp = self
+            .right_controller
+            .current_temperature
+            .get::<degree_celsius>();
 
-    SetLeftFlow(bool),
-    SetRightFlow(bool),
+        let left_revolutions = self
+            .left_controller
+            .get_current_revolutions()
+            .get::<revolution_per_minute>();
+        let right_revolutions = self
+            .right_controller
+            .get_current_revolutions()
+            .get::<revolution_per_minute>();
 
-    SetLeftRevolutions(f64),
-    SetRightRevolutions(f64),
+        self.measurements.left_flow.set(left_flow);
+        self.measurements.right_flow.set(right_flow);
 
-    SetLeftHeatingTolerance(f64),
-    SetRightHeatingTolerance(f64),
-    SetLeftCoolingTolerance(f64),
-    SetRightCoolingTolerance(f64),
-    SetLeftPidKp(f64),
-    SetLeftPidKi(f64),
-    SetLeftPidKd(f64),
-    SetRightPidKp(f64),
-    SetRightPidKi(f64),
-    SetRightPidKd(f64),
-    SetLeftThermalFlowSettleDuration(f64),
-    SetRightThermalFlowSettleDuration(f64),
-    SetLeftPumpCooldownMinTemperature(f64),
-    SetRightPumpCooldownMinTemperature(f64),
-    SetAmbientTemperatureCalibration(f64),
+        self.measurements.left_temperature.set(left_temp);
+        self.measurements.right_temperature.set(right_temp);
+
+        self.measurements.left_revolutions.set(left_revolutions);
+        self.measurements.right_revolutions.set(right_revolutions);
+
+        self.measurements.left_power.set(self.left_controller.power);
+        self.measurements
+            .right_power
+            .set(self.right_controller.power);
+
+        self.measurements
+            .left_total_energy
+            .set(self.left_controller.get_total_energy());
+        self.measurements
+            .right_total_energy
+            .set(self.right_controller.get_total_energy());
+    }
+
+    pub fn update_states(&mut self, now: Instant) {
+        let mode = self.mode.clone();
+
+        let left_heating_startup_wait_active =
+            self.left_controller.is_heating_startup_wait_active(now);
+        let right_heating_startup_wait_active =
+            self.right_controller.is_heating_startup_wait_active(now);
+
+        self.state_props.mode_state.mode.set(mode);
+        self.state_props
+            .left_heating_startup_wait_active
+            .set(left_heating_startup_wait_active);
+        self.state_props
+            .right_heating_startup_wait_active
+            .set(right_heating_startup_wait_active);
+
+        self.state_props
+            .left_pump_cooldown_active
+            .set(self.left_controller.is_pump_cooldown_active(now));
+        self.state_props
+            .right_pump_cooldown_active
+            .set(self.right_controller.is_pump_cooldown_active(now));
+
+        self.state_props
+            .left_should_flow
+            .set(self.left_controller.should_pump);
+        self.state_props
+            .right_should_flow
+            .set(self.right_controller.should_pump);
+
+        self.state_props
+            .left_heating
+            .set(self.left_controller.temperature.heating);
+        self.state_props
+            .right_heating
+            .set(self.right_controller.temperature.heating);
+
+        self.state_props.left_pump_cooldown_remaining.set(
+            self.left_controller
+                .get_pump_cooldown_remaining(now)
+                .as_secs_f64(),
+        );
+
+        self.state_props.right_pump_cooldown_remaining.set(
+            self.right_controller
+                .get_pump_cooldown_remaining(now)
+                .as_secs_f64(),
+        );
+
+        self.state_props.left_heating_startup_wait_remaining.set(
+            self.left_controller
+                .get_heating_startup_wait_remaining(now)
+                .as_secs_f64(),
+        );
+
+        self.state_props.right_heating_startup_wait_remaining.set(
+            self.right_controller
+                .get_heating_startup_wait_remaining(now)
+                .as_secs_f64(),
+        );
+
+        self.state_props
+            .left_cooling_mode
+            .set(self.left_controller.cooling_mode.clone());
+
+        self.state_props
+            .right_cooling_mode
+            .set(self.right_controller.cooling_mode.clone());
+
+        self.state_props
+            .left_thermal_safety_state
+            .thermal_delay
+            .set(
+                self.left_controller
+                    .get_thermal_flow_settle_duration()
+                    .as_secs_f64(),
+            );
+
+        self.state_props
+            .left_thermal_safety_state
+            .cooldown_min_temperature
+            .set(
+                self.left_controller
+                    .get_pump_cooldown_min_temperature()
+                    .get::<degree_celsius>(),
+            );
+
+        self.state_props
+            .right_thermal_safety_state
+            .thermal_delay
+            .set(
+                self.right_controller
+                    .get_thermal_flow_settle_duration()
+                    .as_secs_f64(),
+            );
+        self.state_props
+            .right_thermal_safety_state
+            .cooldown_min_temperature
+            .set(
+                self.right_controller
+                    .get_pump_cooldown_min_temperature()
+                    .get::<degree_celsius>(),
+            );
+    }
 }

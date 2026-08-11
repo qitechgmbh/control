@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use qitech_control_core::interface;
 use qitech_framework::HubConfiguration;
-use qitech_framework::machine::MachineDescriptor;
 use qitech_framework::run_debug;
 use qitech_framework::run_with_hub;
 use qitech_framework::run_with_tui;
@@ -12,20 +11,16 @@ use qitech_framework::runtime::RuntimeConfiguration;
 use qitech_lib::ethercat_hal::DcConfiguration;
 use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
-use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
-
 mod types;
-
 mod machines;
-use machines::LaserV1;
-use machines::WinderV1_7031_Spool;
-use machines::WinderV1_Regular;
 
 mod api;
 use api::LegacySharedState;
 use api::Server;
 use api::SharedState;
 use api::SocketIODispatcher;
+
+use crate::machines::aquapath::AquaPathV1;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
@@ -36,7 +31,7 @@ pub async fn main() -> anyhow::Result<()> {
     let config_rt = RuntimeConfiguration::new()
         .requests_per_cycle_max(10)
         .export_interval(Duration::from_secs_f64(1.0 / 32.0))
-        .modbus_rtu_device::<LaserDevice>(
+        /*.modbus_rtu_device::<LaserDevice>(
             "pci-0000:c6:00.0-usbv2-0:2.3:1.0-port0".to_string(),
             LaserV1::IDENTIFICATION.unique(1),
             1,
@@ -44,7 +39,8 @@ pub async fn main() -> anyhow::Result<()> {
         )
         .machine::<LaserV1>()
         .machine::<WinderV1_Regular>()
-        .machine::<WinderV1_7031_Spool>();
+        .machine::<WinderV1_7031_Spool>();*/
+        .machine::<AquaPathV1>();
 
     // --- determine if ethercat is enabled ---
     let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {

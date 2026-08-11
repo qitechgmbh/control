@@ -14,7 +14,7 @@ use units::f64::{ThermodynamicTemperature, VolumeRate};
 use units::thermodynamic_temperature::degree_celsius;
 use units::volume_rate::liter_per_minute;
 
-use crate::controllers::pid::PidController;
+use qitech_control_core::controllers::pid::PidController;
 use crate::machines::aquapath::{Flow, Temperature};
 
 #[derive(Debug, Clone, Copy)]
@@ -32,7 +32,7 @@ pub enum ControllerNotice {
     PumpStoppedLowFlow,
 }
 
-#[derive(Default,Debug, Clone, Copy,PartialEq,Eq, EnumProperty)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, EnumProperty)]
 pub enum CoolingMode {
     #[default]
     Low,
@@ -138,7 +138,6 @@ pub struct Controller {
     heating_last_active_at: Option<Instant>,
     pub pump_allowed: bool,
     pub current_flow: VolumeRate,
-    pub max_flow: VolumeRate,
     config: ControllerConfig,
     pending_notices: Vec<ControllerNotice>,
 }
@@ -233,7 +232,6 @@ impl Controller {
             heating_last_active_at: None,
             current_flow: VolumeRate::new::<liter_per_minute>(0.0),
             pump_allowed: false,
-            max_flow: VolumeRate::new::<liter_per_minute>(10.0),
             config,
             pending_notices: Vec::new(),
             cooling_controller,
@@ -264,9 +262,6 @@ impl Controller {
         drop(guard);
     }
 
-    pub fn disallow_pump(&mut self) {
-        self.pump_allowed = false;
-    }
 
     pub fn allow_pump(&mut self) {
         self.pump_allowed = true;
@@ -280,7 +275,7 @@ impl Controller {
         self.turn_cooling_off();
         self.disallow_cooling();
     }
-
+    /*
     pub fn disable_heating(&mut self) {
         self.turn_heating_off();
         self.disallow_heating();
@@ -294,7 +289,7 @@ impl Controller {
     pub fn enable_heating(&mut self) {
         self.turn_heating_on();
         self.allow_heating();
-    }
+    }*/
     pub fn reset_pid(&mut self) {
         self.pid.reset()
     }
@@ -756,8 +751,8 @@ impl Controller {
             // Inside deadband: keep actuators off and clear PID memory to prevent windup.
             self.set_heating_state(false, now);
             self.set_cooling_state(false, now);
-            self.temperature_pid_output = 0.0;
-            self.pid.reset();
+            self.temperature_pid_output = 0.0;            
+            self.reset_pid();
         }
     }
 }

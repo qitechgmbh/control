@@ -1,21 +1,10 @@
 use crate::machines::winder_v2::types::{SpoolAutomaticActionMode, Winder2Mode};
 
-use super::{
-    SPOOL_PORT, TRAVERSE_PORT, TraverseMode, WinderV1, api::PullerRegulationMode,
-    spool_speed_controller,
-};
+use super::{SPOOL_PORT, TRAVERSE_PORT, TraverseMode, WinderV1};
 
-#[cfg(not(feature = "mock-machine"))]
-pub use qitech_lib::units::{
-    angular_velocity::revolution_per_minute,
-    f64::*,
-    length::{meter, millimeter},
-};
+pub use qitech_lib::units::{f64::*, length::millimeter};
 
 pub use std::time::Instant;
-
-pub use qitech_lib::units::Velocity;
-pub use qitech_lib::units::velocity::meter_per_minute;
 
 impl<const VARIANT: usize> WinderV1<VARIANT> {
     /// Implement Spool
@@ -43,7 +32,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
     pub fn stop_or_pull_spool(&mut self, now: Instant) {
         if matches!(
-            self.spool_automatic_action.mode,
+            self.spool_automatic_action.mode.get(),
             SpoolAutomaticActionMode::NoAction
         ) {
             self.calculate_spool_auto_progress_(now);
@@ -59,8 +48,8 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             }
         }
 
-        if self.spool_automatic_action.progress >= self.spool_automatic_action.target_length {
-            match self.spool_automatic_action.mode {
+        if self.spool_automatic_action.progress >= self.spool_automatic_action.target_length.get() {
+            match self.spool_automatic_action.mode.get() {
                 SpoolAutomaticActionMode::NoAction => (),
                 SpoolAutomaticActionMode::Pull => {
                     self.stop_or_pull_spool_reset(now);
@@ -111,11 +100,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         }
 
         self.traverse_controller.set_limit_outer(new_outer);
-    }
-
-    pub fn traverse_set_step_size(&mut self, step_size: f64) {
-        let step_size = Length::new::<millimeter>(step_size);
-        self.traverse_controller.set_step_size(step_size);
     }
 
     pub fn traverse_goto_limit_inner(&mut self) {
@@ -216,120 +200,5 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     /// Implement Tension Arm
     pub fn tension_arm_zero(&mut self) -> Result<(), String> {
         self.tension_arm.zero()
-    }
-
-    pub fn set_spool_automatic_required_meters(&mut self, meters: f64) {
-        self.spool_automatic_action.target_length = Length::new::<meter>(meters);
-    }
-
-    pub fn set_spool_automatic_mode(&mut self, mode: SpoolAutomaticActionMode) {
-        self.spool_automatic_action.mode = mode;
-    }
-
-    pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
-        self.puller_speed_controller
-            .set_regulation_mode(puller_regulation_mode);
-    }
-
-    /// Set target speed in m/min
-    pub fn puller_set_target_speed(&mut self, target_speed: f64) {
-        // Convert m/min to velocity
-        let target_speed = Velocity::new::<meter_per_minute>(target_speed);
-        self.puller_speed_controller.set_target_speed(target_speed);
-    }
-
-    /// Set gear ratio for winding speed
-    pub fn puller_set_gear_ratio(&mut self, gear_ratio: super::puller_speed_controller::GearRatio) {
-        self.puller_speed_controller.set_gear_ratio(gear_ratio);
-    }
-
-    // Spool Speed Controller API methods
-    pub fn spool_set_regulation_mode(
-        &mut self,
-        regulation_mode: spool_speed_controller::SpoolSpeedControllerType,
-    ) {
-        self.spool_speed_controller.set_type(regulation_mode);
-    }
-
-    /// Set minimum speed for minmax mode in RPM
-    pub fn spool_set_minmax_min_speed(&mut self, min_speed_rpm: f64) -> Result<(), String> {
-        let min_speed = AngularVelocity::new::<revolution_per_minute>(min_speed_rpm);
-        self.spool_speed_controller
-            .set_minmax_min_speed(min_speed)
-            .map_err(|e| e.to_string())
-    }
-
-    /// Set maximum speed for minmax mode in RPM
-    pub fn spool_set_minmax_max_speed(&mut self, max_speed_rpm: f64) -> Result<(), String> {
-        let max_speed = AngularVelocity::new::<revolution_per_minute>(max_speed_rpm);
-        self.spool_speed_controller
-            .set_minmax_max_speed(max_speed)
-            .map_err(|e| e.to_string())
-    }
-
-    /// Set tension target for adaptive mode (0.0-1.0)
-    pub fn spool_set_adaptive_tension_target(&mut self, tension_target: f64) {
-        self.spool_speed_controller
-            .set_adaptive_tension_target(tension_target);
-    }
-
-    /// Set radius learning rate for adaptive mode
-    pub fn spool_set_adaptive_radius_learning_rate(&mut self, radius_learning_rate: f64) {
-        self.spool_speed_controller
-            .set_adaptive_radius_learning_rate(radius_learning_rate);
-    }
-
-    /// Set max speed multiplier for adaptive mode
-    pub fn spool_set_adaptive_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
-        self.spool_speed_controller
-            .set_adaptive_max_speed_multiplier(max_speed_multiplier);
-    }
-
-    /// Set acceleration factor for adaptive mode
-    pub fn spool_set_adaptive_acceleration_factor(&mut self, acceleration_factor: f64) {
-        self.spool_speed_controller
-            .set_adaptive_acceleration_factor(acceleration_factor);
-    }
-
-    /// Set deacceleration urgency multiplier for adaptive mode
-    pub fn spool_set_adaptive_deacceleration_urgency_multiplier(
-        &mut self,
-        deacceleration_urgency_multiplier: f64,
-    ) {
-        self.spool_speed_controller
-            .set_adaptive_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
-    }
-
-    /// Set forward rotation direction
-    pub fn spool_set_forward(&mut self, forward: bool) {
-        self.spool_speed_controller.set_forward(forward);
-    }
-}
-
-// Winder2 Extension
-#[cfg(not(feature = "mock-machine"))]
-impl<const VARIANT: usize> WinderV1<VARIANT> {
-    pub fn puller_set_adaptive_max_speed_change_percent(&mut self, value: f64) {
-        self.puller_speed_controller
-            .adaptive
-            .set_speed_delta_max(value);
-    }
-
-    pub fn puller_set_adaptive_adjustment_interval_meters(&mut self, value: f64) {
-        self.puller_speed_controller
-            .adaptive
-            .set_adjustment_distance(Length::new::<meter>(value));
-    }
-
-    pub fn puller_set_adaptive_step_percent(&mut self, value: f64) {
-        self.puller_speed_controller
-            .adaptive
-            .set_increase_per_step(value);
-    }
-
-    pub fn puller_set_adaptive_accepted_difference(&mut self, value: f64) {
-        self.puller_speed_controller
-            .adaptive
-            .set_tolerance_limit(Length::new::<millimeter>(value));
     }
 }
