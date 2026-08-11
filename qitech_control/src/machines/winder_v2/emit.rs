@@ -2,8 +2,6 @@ use crate::machines::winder_v2::types::{SpoolAutomaticActionMode, Winder2Mode};
 
 use super::{SPOOL_PORT, TRAVERSE_PORT, TraverseMode, WinderV1};
 
-pub use qitech_lib::units::{f64::*, length::millimeter};
-
 pub use std::time::Instant;
 
 impl<const VARIANT: usize> WinderV1<VARIANT> {
@@ -75,31 +73,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             self.set_puller_mode(mode);
             self.set_traverse_mode(mode);
         }
-    }
-
-    pub fn traverse_set_limit_inner(&mut self, limit: f64) {
-        let new_inner = Length::new::<millimeter>(limit);
-        let current_outer = self.traverse_controller.get_limit_outer();
-
-        // Validate the new inner limit against current outer limit
-        if !Self::validate_traverse_limits(new_inner, current_outer) {
-            // Don't update if validation fails - keep the current value
-            return;
-        }
-        self.traverse_controller.set_limit_inner(new_inner);
-    }
-
-    pub fn traverse_set_limit_outer(&mut self, limit: f64) {
-        let new_outer = Length::new::<millimeter>(limit);
-        let current_inner = self.traverse_controller.get_limit_inner();
-
-        // Validate the new outer limit against current inner limit
-        if !Self::validate_traverse_limits(current_inner, new_outer) {
-            // Don't update if validation fails - keep the current value
-            return;
-        }
-
-        self.traverse_controller.set_limit_outer(new_outer);
     }
 
     pub fn traverse_goto_limit_inner(&mut self) {

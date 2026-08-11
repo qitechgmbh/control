@@ -46,13 +46,11 @@ use crate::machines::winder_v2::VARIANT_7031_SPOOL;
 use crate::machines::winder_v2::VARIANT_REGULAR;
 use crate::machines::winder_v2::WinderV1;
 use crate::machines::winder_v2::adaptive_spool_speed_controller::AdaptiveSpoolSpeedController;
-use crate::machines::winder_v2::api::ConfigProperties;
 use crate::machines::winder_v2::api::GearRatio;
 use crate::machines::winder_v2::api::Measurements;
 use crate::machines::winder_v2::api::ModeStateProperties;
 use crate::machines::winder_v2::api::PullerRegulationMode;
 use crate::machines::winder_v2::api::StateProperties;
-use crate::machines::winder_v2::api::TensionArmStateProperties;
 use crate::machines::winder_v2::api::TraverseStateProperties;
 use crate::machines::winder_v2::minmax_spool_speed_controller::MinMaxSpoolSpeedController;
 use crate::machines::winder_v2::puller_speed_controller::AdaptiveSpeedAlgorithm;
@@ -182,15 +180,22 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             laser,
             laser_enabled: false,
             traverse_controller: TraverseController::new(
-                Length::new::<millimeter>(22.0), // Default inner limit
-                Length::new::<millimeter>(92.0), // Default outer limit
-                64,                              // Microsteps
+                ctx.config::<millimeter>("traverse.limit_inner")
+                    .on_external_changed(Self::on_traverse_limit_inner_changed)
+                    .default(22.0)
+                    .minimum(0.0)
+                    .build()?,
+                ctx.config::<millimeter>("traverse.limit_outer")
+                    .default(92.0)
+                    .minimum(0.9)
+                    .build()?, 
                 ctx.config::<millimeter>("traverse.step_size")
                     .default(1.75)
                     .build()?,
                 ctx.config::<millimeter>("traverse.padding")
                     .default(0.88)
                     .build()?,
+                64,
             ),
             mode: Winder2Mode::Standby,
             spool_mode: SpoolMode::Standby,
@@ -236,7 +241,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                     .default(PullerRegulationMode::Speed)
                     .build()?,
             ),
-            config_props: Self::init_config_properties(ctx)?,
             state_props: Self::init_state_properties(ctx)?,
             measurements: Self::init_measurements(ctx)?,
             laser_subscription: None,
@@ -360,26 +364,9 @@ fn init_el7031_0030_spool(
 
 // --- resources ---
 impl<const VARIANT: usize> WinderV1<VARIANT> {
-    fn init_config_properties(ctx: &mut BuildContext) -> BuildResult<ConfigProperties> {
-        Ok(ConfigProperties {
-            traverse_limit_inner: ctx
-                .config::<millimeter>("traverse.limit_inner")
-                .on_external_changed(Self::on_traverse_limit_inner_changed)
-                .default(22.0)
-                .build()?,
-            traverse_limit_outer: ctx
-                .config::<millimeter>("traverse.limit_outer")
-                .on_external_changed(Self::on_traverse_limit_outer_changed)
-                .default(92.0)
-                .build()?,
-        })
-    }
-
     fn init_state_properties(ctx: &mut BuildContext) -> BuildResult<StateProperties> {
         Ok(StateProperties {
             traverse_state: TraverseStateProperties {
-                limit_inner: ctx.state::<millimeter>("traverse.limit_inner").build()?,
-                limit_outer: ctx.state::<millimeter>("traverse.limit_outer").build()?,
                 is_going_in: ctx.state::<bool>("traverse.is_going_in").build()?,
                 is_going_out: ctx.state::<bool>("traverse.is_going_out").build()?,
                 is_homed: ctx.state::<bool>("traverse.is_homed").build()?,
@@ -396,9 +383,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 can_wind: ctx.state::<bool>("mode.can_wind").build()?,
             },
 
-            tension_arm_state: TensionArmStateProperties {
-                zeroed: ctx.state::<bool>("tension_arm.zeroed").build()?,
-            },
+            tension_arm_zeroed: ctx.state::<bool>("tension_arm.zeroed").build()?,
         })
     }
 

@@ -12,7 +12,6 @@ pub mod tension_arm;
 pub mod traverse_controller;
 
 use crate::converters::angular_step_converter::AngularStepConverter;
-use crate::machines::winder_v2::api::ConfigProperties;
 use crate::machines::winder_v2::api::Measurements;
 use crate::machines::winder_v2::api::StateProperties;
 use crate::machines::winder_v2::new::TensionArm;
@@ -36,7 +35,7 @@ use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::{
     Length,
-    length::{meter, millimeter},
+    length::{meter},
     velocity::meter_per_second,
 };
 use std::time::Instant;
@@ -94,7 +93,6 @@ pub struct WinderV1<const VARIANT: usize> {
     pub puller_speed_controller: PullerSpeedController,
 
     // --- resource api migration ---
-    config_props: ConfigProperties,
     state_props: StateProperties,
     measurements: Measurements,
 
@@ -121,13 +119,6 @@ impl MachineDescriptor for WinderV1<VARIANT_7031_SPOOL> {
 }
 
 impl<const VARIANT: usize> WinderV1<VARIANT> {
-    /// Validates that traverse limits maintain proper constraints:
-    /// - Inner limit must be smaller than outer limit
-    /// - At least 0.9mm difference between inner and outer limits
-    fn validate_traverse_limits(inner: Length, outer: Length) -> bool {
-        outer > inner + Length::new::<millimeter>(0.9)
-    }
-
     pub fn sync_traverse_speed(&mut self) {
         let traverse = &mut *self.traverse.borrow_mut();
         self.traverse_controller
@@ -386,61 +377,5 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             .angular_velocity_to_steps(angular_velocity);
         let puller = &mut *self.puller.borrow_mut();
         let _ = puller.set_speed(PULLER_PORT, steps_per_second);
-    }
-}
-
-#[cfg(not(feature = "mock-machine"))]
-impl<const VARIANT: usize> std::fmt::Display for WinderV1<VARIANT> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Winder2")
-    }
-}
-
-#[cfg(not(feature = "mock-machine"))]
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_validate_traverse_limits() {
-        // Test case 1: Valid limits with exactly 1.0mm difference (should pass)
-        let inner = Length::new::<millimeter>(15.0);
-        let outer = Length::new::<millimeter>(16.0);
-        assert!(WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 2: Invalid limits with exactly 0.9mm difference (should fail)
-        let inner = Length::new::<millimeter>(15.0);
-        let outer = Length::new::<millimeter>(15.9);
-        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 3: Invalid limits with less than 0.9mm difference (should fail)
-        let inner = Length::new::<millimeter>(15.0);
-        let outer = Length::new::<millimeter>(15.5);
-        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 4: Invalid limits where inner equals outer (should fail)
-        let inner = Length::new::<millimeter>(20.0);
-        let outer = Length::new::<millimeter>(20.0);
-        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 5: Invalid limits where inner is greater than outer (should fail)
-        let inner = Length::new::<millimeter>(25.0);
-        let outer = Length::new::<millimeter>(20.0);
-        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 6: Valid limits with large difference (should pass)
-        let inner = Length::new::<millimeter>(10.0);
-        let outer = Length::new::<millimeter>(80.0);
-        assert!(WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 7: Edge case - exactly 0.91mm difference (should pass)
-        let inner = Length::new::<millimeter>(15.0);
-        let outer = Length::new::<millimeter>(15.91);
-        assert!(WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 8: Edge case - exactly 0.89mm difference (should fail)
-        let inner = Length::new::<millimeter>(15.0);
-        let outer = Length::new::<millimeter>(15.89);
-        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
     }
 }
