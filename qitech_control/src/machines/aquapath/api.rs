@@ -2,7 +2,6 @@ use super::{AquaPathV1Mode, controller::CoolingMode};
 use qitech_framework::machine::{ConfigProperty, Measurement, StateProperty};
 use serde::Serialize;
 
-#[derive(Debug, Clone, Default)]
 pub struct Measurements {
     pub left_flow: Measurement<f64>,
     pub right_flow: Measurement<f64>,
@@ -20,7 +19,6 @@ pub struct Measurements {
     pub right_total_energy: Measurement<f64>,
 }
 
-#[derive(Debug, Clone)]
 pub struct StateProperties {
     pub mode_state: ModeState,
     pub is_default_state: StateProperty<bool>,
@@ -50,7 +48,6 @@ pub struct StateProperties {
     pub right_cooling_mode: StateProperty<Option<CoolingMode>>,
 }
 
-#[derive(Debug, Clone)]
 pub struct ConfigProperties {
     pub left_target_temperature: ConfigProperty<f64>,
     pub right_target_temperature: ConfigProperty<f64>,
@@ -89,12 +86,10 @@ pub struct TempState {
     pub target_temperature: f64,
 }
 
-#[derive(Serialize, Debug, Clone,Eq,PartialEq,Default)]
 pub struct ModeState {
     pub mode: StateProperty<AquaPathV1Mode>,
 }
 
-#[derive(Serialize, Debug, Clone)]
 pub struct FlowState {
     pub should_flow: StateProperty<bool>,
 }
@@ -105,25 +100,25 @@ pub struct FanState {
     pub max_revolutions: f64,
 }
 
-#[derive(Serialize, Debug, Clone)]
+
 pub struct CoolingModeState {
     pub mode: Option<CoolingMode>,
 }
 
-#[derive(Serialize, Debug, Clone)]
+
 pub struct ToleranceState {
     pub heating: ConfigProperty<f64>,
     pub cooling: ConfigProperty<f64>,
 }
 
-#[derive(Serialize, Debug, Clone)]
+
 pub struct PidState {
     pub kp: ConfigProperty<f64>,
     pub ki: ConfigProperty<f64>,
     pub kd: ConfigProperty<f64>,
 }
 
-#[derive(Serialize, Debug, Clone)]
+
 pub struct ThermalSafetyState {
     pub thermal_delay: ConfigProperty<f64>,
     pub cooldown_min_temperature: ConfigProperty<f64>,

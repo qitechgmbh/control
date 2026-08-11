@@ -2,9 +2,8 @@ use crate::{
         machines::aquapath::api::NoticeEvent,
         machines::aquapath::controller::{ControlResetReason, Controller, ControllerNotice},    
 };
-use qitech_framework::{EnumProperty, machine::{EventEmitter, MachineDescriptor}, vendors};
+use qitech_framework::{EnumProperty, Machine, machine::{EventEmitter}};
 use qitech_framework::{
-    machine::{MachineIdentification, MachineIdentificationUnique},
     units::{
         AngularVelocity, ThermodynamicTemperature, VolumeRate,
         angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius,
@@ -12,7 +11,6 @@ use qitech_framework::{
     },
 };
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
 
 pub mod act;
 pub mod api;
@@ -57,14 +55,7 @@ pub struct Flow {
     pub should_pump: bool,
 }
 
-impl MachineDescriptor for AquaPathV1 {
-    const IDENTIFICATION: MachineIdentification = MachineIdentification {
-        vendor_id: vendors::QITECH.id,
-        machine_id: 0x0009,
-    };
 
-    const SCHEMA: &'static str = include_str!("../../../schemas/winder_v1.yaml");
-}
 
 impl Default for Flow {
     fn default() -> Self {
@@ -76,11 +67,10 @@ impl Default for Flow {
     }
 }
 
+#[derive(Machine)]
 pub struct AquaPathV1 {
-    machine_identification_unique: MachineIdentificationUnique,
     mode: AquaPathV1Mode,
     ambient_temperature_calibration: ThermodynamicTemperature,
-    last_measurement_emit: Instant,
     left_controller: Controller,
     right_controller: Controller,
     notice_event_emitter : EventEmitter<NoticeEvent>,
@@ -108,9 +98,8 @@ impl AquaPathV1 {
         let event = NoticeEvent {
             title: title.into(),
             message: message.into(),
-        }
-        .build();        
-        self.notice_event_emitter.emit(event);
+        };
+        self.notice_event_emitter.emit( &event);
     }
 
     fn emit_controller_notice(&mut self, side_label: &str, notice: ControllerNotice) {
@@ -235,7 +224,7 @@ impl AquaPathV1 {
 impl AquaPathV1 {
     fn set_mode_state(&mut self, mode: AquaPathV1Mode) {
         self.switch_mode(mode.clone());
-        self.emit_state();
+        
     }
 }
 
@@ -275,7 +264,6 @@ impl AquaPathV1 {
             self.right_controller.set_target_temperature(min_settable);
         }
 
-        self.emit_state();
     }
 
     fn set_target_temperature(&mut self, temperature: f64, cooling_type: AquaPathSideType) {
@@ -288,7 +276,7 @@ impl AquaPathV1 {
             AquaPathSideType::Right => self.right_controller.set_target_temperature(target_temp),
             AquaPathSideType::Left => self.left_controller.set_target_temperature(target_temp),
         }
-        self.emit_state();
+        
     }
 
     fn set_should_pump(&mut self, should_pump: bool, cooling_type: AquaPathSideType) {
@@ -296,7 +284,6 @@ impl AquaPathV1 {
             AquaPathSideType::Right => self.right_controller.set_should_pump(should_pump),
             AquaPathSideType::Left => self.left_controller.set_should_pump(should_pump),
         }
-        self.emit_state();
     }
 }
 
@@ -310,7 +297,7 @@ impl AquaPathV1 {
                 .left_controller
                 .set_max_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
         }
-        self.emit_state();
+        
     }
 }
 
@@ -354,7 +341,7 @@ impl AquaPathV1 {
             }
         }
 
-        self.emit_state();
+        
     }
 
     fn set_cooling_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
@@ -389,7 +376,7 @@ impl AquaPathV1 {
             }
         }
 
-        self.emit_state();
+        
     }
 
     fn set_pid_kp(&mut self, value: f64, side: AquaPathSideType) {
@@ -402,7 +389,7 @@ impl AquaPathV1 {
             AquaPathSideType::Right => self.right_controller.set_pid_kp(value),
             AquaPathSideType::Left => self.left_controller.set_pid_kp(value),
         }
-        self.emit_state();
+        
     }
 
     fn set_pid_ki(&mut self, value: f64, side: AquaPathSideType) {
@@ -415,7 +402,7 @@ impl AquaPathV1 {
             AquaPathSideType::Right => self.right_controller.set_pid_ki(value),
             AquaPathSideType::Left => self.left_controller.set_pid_ki(value),
         }
-        self.emit_state();
+        
     }
 
     fn set_pid_kd(&mut self, value: f64, side: AquaPathSideType) {
@@ -428,7 +415,7 @@ impl AquaPathV1 {
             AquaPathSideType::Right => self.right_controller.set_pid_kd(value),
             AquaPathSideType::Left => self.left_controller.set_pid_kd(value),
         }
-        self.emit_state();
+        
     }
 
     fn set_thermal_flow_settle_duration(&mut self, duration: f64, side: AquaPathSideType) {
@@ -462,7 +449,7 @@ impl AquaPathV1 {
                 .left_controller
                 .set_thermal_flow_settle_duration(duration),
         }
-        self.emit_state();
+        
     }
 
     fn set_pump_cooldown_min_temperature(&mut self, temperature: f64, side: AquaPathSideType) {
@@ -496,6 +483,6 @@ impl AquaPathV1 {
                 .left_controller
                 .set_pump_cooldown_min_temperature(temperature),
         }
-        self.emit_state();
+        
     }
 }

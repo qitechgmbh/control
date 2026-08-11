@@ -1,0 +1,78 @@
+qms_version: 1.0
+revision: 1
+
+identification:
+  name: aquapath
+  vendor_id: 1
+  machine_id: 9
+
+measurements:
+  left_flow: !float
+  right_flow: !float
+  left_temperature: !float
+  right_temperature: !float
+  left_revolutions: !float
+  right_revolutions: !float
+  left_power: !float
+  right_power: !float
+  left_total_energy: !float
+  right_total_energy: !float
+
+state:
+  mode_state:
+    mode: !enum [standby, pull, hold, wind]
+  is_default_state: !boolean
+  left_heating_startup_wait_active: !boolean
+  right_heating_startup_wait_active: !boolean
+  left_pump_cooldown_active: !boolean
+  right_pump_cooldown_active: !boolean
+  left_should_flow: !boolean
+  right_should_flow: !boolean
+  left_heating: !boolean
+  right_heating: !boolean
+  left_has_flow: !boolean
+  right_has_flow: !boolean
+  left_pump_cooldown_remaining: !float
+  right_pump_cooldown_remaining: !float
+  left_heating_startup_wait_remaining: !float
+  right_heating_startup_wait_remaining: !float
+  left_cooling_mode: !?enum [low, ramp, max]
+  right_cooling_mode: !?enum [low, ramp, max]
+
+config:  
+  left_target_temperature: !float
+  right_target_temperature: !float
+  ambient_temperature_calibration: !float
+  default_heating_tolerance: !float
+  default_cooling_tolerance: !float
+  default_pid_kp: !float
+  default_pid_ki: !float
+  default_pid_kd: !float
+  left_fan_max_revolutions: !float
+  right_fan_max_revolutions: !float
+  left_tolerance_config:
+    heating: !float
+    cooling: !float
+  right_tolerance_config:
+    heating: !float
+    cooling: !float
+  left_pid_config:
+    kp: !float
+    ki: !float
+    kd: !float
+  right_pid_config:
+    kp: !float
+    ki: !float
+    kd: !float
+  left_thermal_safety_state:
+    thermal_delay: !float
+    cooldown_min_temperature: !float
+  right_thermal_safety_state:
+    thermal_delay: !float
+    cooldown_min_temperature: !float
+
+
+events:
+  notice_event: !event
+    title: !string
+    message: !string
