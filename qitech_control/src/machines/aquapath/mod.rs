@@ -2,7 +2,7 @@ use crate::{
         machines::aquapath::api::NoticeEvent,
         machines::aquapath::controller::{ControlResetReason, Controller, ControllerNotice},    
 };
-use qitech_framework::{machine::{EventEmitter, MachineDescriptor}, vendors};
+use qitech_framework::{EnumProperty, machine::{EventEmitter, MachineDescriptor}, vendors};
 use qitech_framework::{
     machine::{MachineIdentification, MachineIdentificationUnique},
     units::{
@@ -19,8 +19,9 @@ pub mod api;
 pub mod controller;
 pub mod new;
 
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq,Eq,Default,EnumProperty)]
 pub enum AquaPathV1Mode {
+    #[default]
     Standby,
     Auto,
 }

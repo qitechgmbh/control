@@ -4,37 +4,14 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct Measurements {
-
     pub left_flow: Measurement<f64>,
     pub right_flow: Measurement<f64>,
-    
     pub left_temperature: Measurement<f64>,
     pub right_temperature: Measurement<f64>,
-
     pub left_revolutions: Measurement<f64>,
     pub right_revolutions: Measurement<f64>,
-
     pub left_power: Measurement<f64>,
     pub right_power: Measurement<f64>,
-    
-    pub left_heating: Measurement<bool>,
-    pub right_heating: Measurement<bool>,
-    
-    pub left_cooling_mode: Measurement<Option<CoolingMode>>,
-    pub right_cooling_mode: Measurement<Option<CoolingMode>>,
-    
-    pub left_pump_cooldown_active: Measurement<bool>,
-    pub right_pump_cooldown_active: Measurement<bool>,
-    
-    pub left_pump_cooldown_remaining: Measurement<f64>,
-    pub right_pump_cooldown_remaining: Measurement<f64>,
-    
-    pub left_heating_startup_wait_active: Measurement<bool>,
-    pub right_heating_startup_wait_active: Measurement<bool>,
-    
-    pub left_heating_startup_wait_remaining: Measurement<f64>,
-    pub right_heating_startup_wait_remaining: Measurement<f64>,
-    
     pub left_total_energy: Measurement<f64>,
     pub right_total_energy: Measurement<f64>,
 }
@@ -47,20 +24,49 @@ pub struct Measurements {
 pub struct StateProperties {
     pub is_default_state: StateProperty<bool>,
     /// mode state
-    pub mode_state: StateProperty<ModeState>,
+    pub mode_state: ModeState,
     pub ambient_temperature_calibration: StateProperty<f64>,
+    
     pub default_heating_tolerance: StateProperty<f64>,
     pub default_cooling_tolerance: StateProperty<f64>,
     pub default_pid_kp: StateProperty<f64>,
     pub default_pid_ki: StateProperty<f64>,
     pub default_pid_kd: StateProperty<f64>,
-    pub flow_states: FlowStates,
-    pub temperature_states: TempStates,
-    pub fan_states: FanStates,
-    pub cooling_mode_states: CoolingModeStates,
-    pub tolerance_states: ToleranceStates,
-    pub pid_states: PidStates,
-    pub thermal_safety_states: ThermalSafetyStates,
+    
+    pub left_cooling_mode: StateProperty<Option<CoolingMode>>,
+    pub right_cooling_mode: StateProperty<Option<CoolingMode>>,
+    
+    pub left_heating_startup_wait_active: StateProperty<bool>,
+    pub right_heating_startup_wait_active: StateProperty<bool>,
+    
+    pub left_heating: StateProperty<bool>,
+    pub right_heating: StateProperty<bool>,
+    
+    pub left_pump_cooldown_remaining: StateProperty<f64>,
+    pub right_pump_cooldown_remaining: StateProperty<f64>,
+    
+    pub left_heating_startup_wait_remaining: StateProperty<f64>,
+    pub right_heating_startup_wait_remaining: StateProperty<f64>,
+
+    pub left_pump_cooldown_active: StateProperty<bool>,
+    pub right_pump_cooldown_active: StateProperty<bool>,
+
+    pub left_flow : FlowState,
+    pub right_flow : FlowState,
+
+    pub left_should_flow: StateProperty<bool>,
+    pub right_should_flow: StateProperty<bool>,
+
+    pub left_target_temperature: StateProperty<f64>,
+    pub right_target_temperature: StateProperty<f64>,
+    
+    pub left_fan_max_revolutions :  StateProperty<f64>,
+    pub right_fan_max_revolutions :  StateProperty<f64>,
+
+    pub cooling_mode_states: StateProperty<CoolingModeStates>,
+    pub tolerance_states: StateProperty<ToleranceStates>,
+    pub pid_states: StateProperty<PidStates>,
+    pub thermal_safety_states: StateProperty<ThermalSafetyStates>,
 }
 
 
@@ -82,19 +88,14 @@ pub struct TempState {
     pub target_temperature: f64,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone,Eq,PartialEq,Default)]
 pub struct ModeState {
-    pub mode: AquaPathV1Mode,
+    pub mode: StateProperty<AquaPathV1Mode>,
 }
-#[derive(Serialize, Debug, Clone)]
-pub struct FlowStates {
-    pub left: FlowState,
-    pub right: FlowState,
-}
+
 #[derive(Serialize, Debug, Clone)]
 pub struct FlowState {
-    pub flow: f64,
-    pub should_flow: bool,
+    pub should_flow: StateProperty<bool>,
 }
 
 #[derive(Serialize, Debug, Clone)]

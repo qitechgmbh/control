@@ -5,3 +5,15 @@ identification:
   name: aquapath
   vendor_id: 1
   machine_id: 6
+
+measurements:
+  left_flow: !float
+  right_flow: !float
+  left_temperature: !float
+  right_temperature: !float
+  left_revolutions: !float
+  right_revolutions: !float
+  left_power: !float
+  right_power: !float
+  left_total_energy: !float
+  right_total_energy: !float
