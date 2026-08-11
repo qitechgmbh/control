@@ -108,7 +108,8 @@ impl Rewinder {
             if entering_rewind {
                 if resuming_motion_stop {
                     self.resume_traverse_in_place = false;
-                    self.traverse_controller.start_traversing();
+                    self.traverse_controller
+                        .start_traversing_from_current_position();
                 } else if !self.resume_traverse_in_place {
                     let start_position = self.configured_traverse_start_position();
                     self.traverse_controller.set_target_position(start_position);

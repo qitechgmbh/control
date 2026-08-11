@@ -144,7 +144,8 @@ impl Rewinder {
                 {
                     self.set_rewind_phase(RewindPhase::CrawlStart, "precharge settled");
                     self.resume_traverse_in_place = false;
-                    self.traverse_controller.start_traversing();
+                    self.traverse_controller
+                        .start_traversing_from_current_position();
                 }
             }
             RewindPhase::CrawlStart => {

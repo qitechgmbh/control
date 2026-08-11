@@ -227,6 +227,16 @@ impl TraverseController {
         self.state = State::Traversing(TraversingState::GoingOut);
     }
 
+    pub fn start_traversing_from_current_position(&mut self) {
+        let midpoint = self.limit_inner + (self.limit_outer - self.limit_inner) / 2.0;
+        let direction = if self.position >= midpoint {
+            TraversingState::TraversingIn
+        } else {
+            TraversingState::TraversingOut
+        };
+        self.state = State::Traversing(direction);
+    }
+
     pub const fn is_homed(&self) -> bool {
         // if not [`State::NotHomed`], then it is homed
         !matches!(self.state, State::NotHomed)
