@@ -54,7 +54,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
 // --- measurements ---
 pub struct Measurements {
-    pub traverse_position: Measurement<Option<Length>>,
     pub puller_speed: Measurement<Velocity>,
     pub spool_rpm: Measurement<AngularVelocity>,
     pub tension_arm_angle: Measurement<Angle>,
@@ -63,26 +62,6 @@ pub struct Measurements {
 
 // --- commands ---
 impl<const VARIANT: usize> WinderV1<VARIANT> {
-    pub fn enter_standby_mode(&mut self) -> CommandExecuteResult {
-        self.set_mode(Mode::Standby);
-        Ok(())
-    }
-
-    pub fn enter_hold_mode(&mut self) -> CommandExecuteResult {
-        self.set_mode(Mode::Hold);
-        Ok(())
-    }
-
-    pub fn enter_pull_mode(&mut self) -> CommandExecuteResult {
-        self.set_mode(Mode::Pull);
-        Ok(())
-    }
-
-    pub fn enter_wind_mode(&mut self) -> CommandExecuteResult {
-        self.set_mode(Mode::Wind);
-        Ok(())
-    }
-
     pub fn traverse_goto_home(&mut self) -> CommandExecuteResult {
         self.traverse_controller.goto_home();
         Ok(())
@@ -116,7 +95,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     }
 
     pub fn tension_arm_set_zero(&mut self) -> CommandExecuteResult {
-        if let Err(e) = self.tension_arm.zero() {
+        if let Err(e) = self.tension_arm.set_zero() {
             return Err(ActError {
                 kind: ActErrorKind::Custom(e),
                 impact: ActErrorImpact::Degraded,
@@ -226,10 +205,14 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     }
 }
 
+// NOTES:
+// -> code that adjust values for export must be removed
+// reason is we yield the raw measurements not transformed ones!!
+
 // --- resource updates ---
 impl<const VARIANT: usize> WinderV1<VARIANT> {
     pub fn update_measurements(&mut self) {
-        let angle_deg = self.tension_arm.get_angle().unwrap();
+        let angle_deg = self.tension_arm.angle().unwrap();
 
         // Wrap [270;<360] to [-90; 0]
         // This is done to reduce flicker in the graphs around the zero point
@@ -266,10 +249,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             .abs();
 
         // --- write now ---
-        self.measurements
-            .traverse_position
-            .set(self.traverse_controller.get_current_position());
-
         self.measurements.puller_speed.set(puller_speed.abs());
         self.measurements.spool_rpm.set(spool_rpm);
         self.measurements.tension_arm_angle.set(angle_deg);
@@ -282,11 +261,12 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 // --- utils ---
 impl<const VARIANT: usize> WinderV1<VARIANT> {
     /// Implement Mode
-    pub fn set_mode(&mut self, mode: Mode) {
+    pub fn set_mode(&mut self, mode: Mode) -> ActResult {
         self.mode.set(mode);
         self.set_spool_mode(mode);
         self.set_puller_mode(mode);
         self.set_traverse_mode(mode);
+        Ok(())
     }
 
     /// Apply the mode changes to the spool

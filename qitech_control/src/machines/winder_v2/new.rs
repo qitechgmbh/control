@@ -55,7 +55,7 @@ use crate::machines::winder_v2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedControllerType;
 use crate::machines::winder_v2::traverse_controller;
-use crate::machines::winder_v2::traverse_controller::TraverseController;
+use crate::machines::winder_v2::traverse_controller::Traverse;
 use crate::machines::winder_v2::types::Mode;
 use crate::machines::winder_v2::types::PullerMode;
 use crate::machines::winder_v2::types::SpoolAutomaticActionMode;
@@ -175,13 +175,14 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         );
 
         Ok(Self {
-            traverse,
+            traverse: traverse.clone(),
             puller,
             spool,
             tension_arm,
             laser,
             laser_enabled: ctx.state::<bool>("traverse.laser_pointer_active").build()?,
-            traverse_controller: TraverseController::new(
+            traverse_controller: Traverse::new(
+                traverse,
                 ctx.config::<millimeter>("traverse.limit_inner")
                     .on_external_changed(Self::on_traverse_limit_inner_changed)
                     .default(22.0)
@@ -198,6 +199,8 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                     .default(0.88)
                     .build()?,
                 ctx.state::<traverse_controller::State>("traverse.state")
+                    .build()?,
+                ctx.measurement::<Option<millimeter>>("traverse.position")
                     .build()?,
                 64,
             ),
@@ -369,10 +372,6 @@ fn init_el7031_0030_spool(
 impl<const VARIANT: usize> WinderV1<VARIANT> {
     fn init_measurements(ctx: &mut BuildContext) -> BuildResult<Measurements> {
         Ok(Measurements {
-            traverse_position: ctx
-                .measurement::<Option<millimeter>>("traverse.position")
-                .build()?,
-
             puller_speed: ctx
                 .measurement::<meter_per_minute>("puller.speed")
                 .build()?,
@@ -387,28 +386,28 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     }
 
     fn init_commands(ctx: &mut BuildContext) -> BuildResult<()> {
-        // --- modes ---
+        // --- mode transition ---
         ctx.command("enter_standby_mode")
-            .execute(Self::enter_standby_mode)
+            .execute(|m: &mut Self| m.set_mode(Mode::Standby))
             .build()?;
 
         ctx.command("enter_hold_mode")
-            .execute(Self::enter_hold_mode)
+            .execute(|m: &mut Self| m.set_mode(Mode::Hold))
             .build()?;
 
         ctx.command("enter_pull_mode")
-            .execute(Self::enter_pull_mode)
+            .execute(|m: &mut Self| m.set_mode(Mode::Pull))
             .build()?;
 
         ctx.command("enter_wind_mode")
             .can_execute(Self::can_enter_wind_mode)
-            .execute(Self::enter_wind_mode)
+            .execute(|m: &mut Self| m.set_mode(Mode::Wind))
             .build()?;
 
         // --- traverse goto ---
         ctx.command("traverse.goto_home")
             .can_execute(Self::traverse_can_goto_home)
-            .execute(Self::traverse_goto_home)
+            .execute(|m: &mut Self| m.traverse_controller.goto_home())
             .build()?;
 
         ctx.command("traverse.goto_limit_inner")

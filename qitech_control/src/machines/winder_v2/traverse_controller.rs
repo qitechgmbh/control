@@ -1,17 +1,21 @@
 use super::{TRAVERSE_END_STOP_PORT, TRAVERSE_PORT};
 use crate::converters::linear_step_converter::LinearStepConverter;
-use qitech_framework::machine::{ConfigProperty, StateProperty};
+use qitech_framework::machine::{ActResult, ConfigProperty, Measurement, StateProperty};
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::angular_velocity::revolution_per_second;
 use qitech_lib::units::f64::{AngularVelocity, Length, Velocity};
 use qitech_lib::units::length::millimeter;
 use qitech_lib::units::velocity::millimeter_per_second;
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::time::Instant;
 
-pub struct TraverseController {
+pub struct Traverse {
     enabled: bool,
-    position: Length,
+    device: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+
+    position: Measurement<Option<Length>>,
     pub limit_inner: ConfigProperty<Length>,
     pub limit_outer: ConfigProperty<Length>,
     step_size: ConfigProperty<Length>,
@@ -191,18 +195,21 @@ pub enum HomingState {
     Validate(Instant),
 }
 
-impl TraverseController {
+impl Traverse {
     pub fn new(
+        device: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
         limit_inner: ConfigProperty<Length>,
         limit_outer: ConfigProperty<Length>,
         step_size: ConfigProperty<Length>,
         padding: ConfigProperty<Length>,
         state: StateProperty<State>,
+        position: Measurement<Option<Length>>,
         microsteps: u8,
     ) -> Self {
         Self {
             enabled: false,
-            position: Length::ZERO,
+            device,
+            position,
             limit_inner,
             limit_outer,
             step_size,
@@ -221,35 +228,31 @@ impl TraverseController {
 }
 
 // Getter & Setter
-impl TraverseController {
+impl Traverse {
     pub const fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
-    }
-
-    pub fn get_current_position(&self) -> Option<Length> {
-        match self.is_homed() {
-            true => Some(self.position),
-            false => None,
-        }
     }
 }
 
 // State management
-impl TraverseController {
+impl Traverse {
     pub fn goto_limit_inner(&mut self) {
         self.state.set(State::GoingIn);
     }
 
-    pub fn goto_limit_outer(&mut self) {
+    pub fn goto_limit_outer(&mut self) -> ActResult {
         self.state.set(State::GoingOut);
+        Ok(())
     }
 
-    pub fn goto_home(&mut self) {
+    pub fn goto_home(&mut self) -> ActResult {
         self.state.set(State::Homing(HomingState::Initialize));
+        Ok(())
     }
 
-    pub fn start_traversing(&mut self) {
+    pub fn start_traversing(&mut self) -> ActResult {
         self.state.set(State::Traversing(TraversingState::GoingOut));
+        Ok(())
     }
 
     pub fn is_homed(&self) -> bool {
@@ -278,7 +281,7 @@ impl TraverseController {
     }
 }
 
-impl TraverseController {
+impl Traverse {
     // If at inner limit within a tolerance
     fn is_at_position(&self, target_position: Length, tolerance: Length) -> bool {
         let upper_tolerance = target_position + tolerance.abs();
@@ -312,7 +315,8 @@ impl TraverseController {
     /// Gets the current traverse position as a [`Length`].
     pub fn sync_position(&mut self, traverse: &dyn StepperVelocityEL70x1Device) {
         let steps = traverse.get_position(TRAVERSE_PORT);
-        self.position = self.microstep_converter.steps_to_distance(steps as f64);
+        let pos = self.microstep_converter.steps_to_distance(steps as f64);
+        self.position.set(Some(pos));
     }
 
     /// Calculates a desired speed based on the current state and the end stop status.

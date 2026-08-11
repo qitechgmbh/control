@@ -15,7 +15,7 @@ use crate::machines::winder_v2::api::Measurements;
 use crate::machines::winder_v2::new::TensionArm;
 use crate::machines::winder_v2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedController;
-use crate::machines::winder_v2::traverse_controller::TraverseController;
+use crate::machines::winder_v2::traverse_controller::Traverse;
 use crate::machines::winder_v2::types::LaserSubscription;
 use crate::machines::winder_v2::types::Mode;
 use crate::machines::winder_v2::types::PullerMode;
@@ -68,7 +68,7 @@ pub struct WinderV1<const VARIANT: usize> {
     pub tension_arm: TensionArm,
 
     pub laser: Rc<RefCell<dyn DigitalOutputDevice>>,
-    pub traverse_controller: TraverseController,
+    pub traverse_controller: Traverse,
 
     // mode
     pub mode: StateProperty<Mode>,
