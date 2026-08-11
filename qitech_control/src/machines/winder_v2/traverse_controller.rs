@@ -48,7 +48,7 @@ impl qitech_framework::__private::PropertyAdapter for State {
                 HomingState::Validate(_) => "validate",
             },
             State::Traversing(state) => match state {
-                TraversingState::GoingOut => "going_out",
+                TraversingState::GoingOut => "going_out (traverse)",
                 TraversingState::TraversingIn => "traversing_in",
                 TraversingState::TraversingOut => "traversing_out",
             },
