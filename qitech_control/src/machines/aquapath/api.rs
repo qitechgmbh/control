@@ -51,6 +51,9 @@ pub struct StateProperties {
     
     pub left_cooling_mode: StateProperty<Option<CoolingMode>>,
     pub right_cooling_mode: StateProperty<Option<CoolingMode>>,
+
+    pub left_thermal_safety_state : ThermalSafetyState,
+    pub right_thermal_safety_state : ThermalSafetyState,
 }
 
 pub struct ConfigProperties {
@@ -74,9 +77,6 @@ pub struct ConfigProperties {
 
     pub left_pid_config: PidState,
     pub right_pid_config: PidState,
-    
-    pub left_thermal_safety_state: ThermalSafetyState,
-    pub right_thermal_safety_state: ThermalSafetyState,
 }   
 
 

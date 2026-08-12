@@ -89,6 +89,17 @@ fn init_state(ctx: &mut BuildContext) -> BuildResult<StateProperties> {
         mode: ctx.state::<AquaPathV1Mode>("mode_state.mode").build()?,
     };
 
+    let left_thermal_safety_state = ThermalSafetyState {
+        thermal_delay: ctx.config::<f64>("left_thermal_safety_state.thermal_delay").build()?,
+        cooldown_min_temperature: ctx.config::<f64>("left_thermal_safety_state.cooldown_min_temperature").build()?,
+    };
+
+
+    let right_thermal_safety_state = ThermalSafetyState {
+        thermal_delay: ctx.config::<f64>("right_thermal_safety_state.thermal_delay").build()?,
+        cooldown_min_temperature: ctx.config::<f64>("right_thermal_safety_state.cooldown_min_temperature").build()?,
+    };
+
     Ok(StateProperties { 
         mode_state, 
         is_default_state: ctx.state::<bool>("is_default_state").build()?, 
@@ -110,7 +121,6 @@ fn init_state(ctx: &mut BuildContext) -> BuildResult<StateProperties> {
         right_cooling_mode: ctx.state::<Option<CoolingMode>>("right_cooling_mode").build()?, 
     })
 }
-
 
 fn init_config(ctx: &mut BuildContext) -> BuildResult<ConfigProperties> {
 
@@ -138,34 +148,23 @@ fn init_config(ctx: &mut BuildContext) -> BuildResult<ConfigProperties> {
         kd: ctx.config::<f64>("right_pid_config.kd").build()?,
     };
 
-    let left_thermal_safety_state = ThermalSafetyState {
-        thermal_delay: ctx.config::<f64>("left_thermal_safety_state.thermal_delay").build()?,
-        cooldown_min_temperature: ctx.config::<f64>("left_thermal_safety_state.cooldown_min_temperature").build()?,
-    };
 
-
-    let right_thermal_safety_state = ThermalSafetyState {
-        thermal_delay: ctx.config::<f64>("right_thermal_safety_state.thermal_delay").build()?,
-        cooldown_min_temperature: ctx.config::<f64>("right_thermal_safety_state.cooldown_min_temperature").build()?,
-    };
 
     let props = ConfigProperties {
         left_target_temperature: ctx.config::<f64>("left_target_temperature").build()?,
-        right_target_temperature: ctx.config::<f64>("left_target_temperature").build()?,
+        right_target_temperature: ctx.config::<f64>("right_target_temperature").build()?,
         ambient_temperature_calibration: ctx.config::<f64>("ambient_temperature_calibration").build()?,
-        default_heating_tolerance: ctx.config::<f64>("default_heating_tolerance").build()?,
-        default_cooling_tolerance: ctx.config::<f64>("default_cooling_tolerance").build()?,
-        default_pid_kp: ctx.config::<f64>("default_pid_kp").build()?,
-        default_pid_ki: ctx.config::<f64>("default_pid_ki").build()?,
-        default_pid_kd: ctx.config::<f64>("default_pid_kd").build()?,
+        default_heating_tolerance: ctx.config::<f64>("default_heating_tolerance").default(AquaPathV1::DEFAULT_HEATING_TOLERANCE).build()?,
+        default_cooling_tolerance: ctx.config::<f64>("default_cooling_tolerance").default(AquaPathV1::DEFAULT_COOLING_TOLERANCE).build()?,
+        default_pid_kp: ctx.config::<f64>("default_pid_kp").default(AquaPathV1::DEFAULT_PID_KP).build()?,
+        default_pid_ki: ctx.config::<f64>("default_pid_ki").default(AquaPathV1::DEFAULT_PID_KI).build()?,
+        default_pid_kd: ctx.config::<f64>("default_pid_kd").default(AquaPathV1::DEFAULT_PID_KD).build()?,
         left_fan_max_revolutions: ctx.config::<f64>("left_fan_max_revolutions").build()?,
         right_fan_max_revolutions: ctx.config::<f64>("right_fan_max_revolutions").build()?,
         left_tolerance_config: left_tolerance_state,
         right_tolerance_config: right_tolerance_state,
         left_pid_config,
         right_pid_config,
-        left_thermal_safety_state,
-        right_thermal_safety_state,
     };
 
     Ok(props)
