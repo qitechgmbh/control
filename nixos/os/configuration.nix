@@ -111,6 +111,20 @@ in
   # ... but do not interfere with ethercat
   networking.networkmanager.unmanaged = [ "type:ethernet" ];
 
+  # enp1s0 is dedicated to the XTREM scale (UDP broadcast on 192.168.4.0/24, see
+  # xtrem/README.md). It's an ethernet device, so NetworkManager ignores it (above);
+  # networkd manages it instead without any conflict.
+  systemd.network.enable = true;
+  systemd.network.networks."10-enp1s0" = {
+    matchConfig.Name = "enp1s0";
+    networkConfig = {
+      Address = "192.168.4.10/24";
+      DHCP = "no";
+    };
+  };
+  # Scale replies to the host on 5555 (register 0700h default); scope to enp1s0 only.
+  networking.firewall.interfaces.enp1s0.allowedUDPPorts = [ 5555 ];
+
   # Enable the X11 windowing system.
   services.displayManager.gdm = {
     enable = true;
