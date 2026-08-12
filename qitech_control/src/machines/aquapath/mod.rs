@@ -1,7 +1,4 @@
-use crate::{
-        machines::aquapath::api::NoticeEvent,
-        machines::aquapath::controller::{ControlResetReason, Controller, ControllerNotice},    
-};
+use crate::machines::aquapath::{api::{ConfigProperties, Measurements, NoticeEvent, StateProperties}, controller::{ControlResetReason, Controller, ControllerNotice}};
 use qitech_framework::{EnumProperty, Machine, machine::{EventEmitter}};
 use qitech_framework::{
     units::{
@@ -74,6 +71,9 @@ pub struct AquaPathV1 {
     left_controller: Controller,
     right_controller: Controller,
     notice_event_emitter : EventEmitter<NoticeEvent>,
+    measurements : Measurements,
+    state_props: StateProperties,
+    config_props: ConfigProperties,
 }
 
 impl AquaPathV1 {

@@ -1,4 +1,4 @@
-use crate::machines::aquapath::{AquaPathV1Mode, Flow, Temperature, controller::{Controller, ControllerConfig}};
+use crate::machines::aquapath::{AquaPathV1Mode, Flow, Temperature, api::{ConfigProperties, Measurements, ModeState, PidState, StateProperties, ThermalSafetyState, ToleranceState}, controller::{Controller, ControllerConfig, CoolingMode}};
 
 use super::{
     AquaPathV1
@@ -36,20 +36,19 @@ fn init_ek1100(ctx: &BuildContext) -> BuildResult<()> {
     Ok(())
 }
 
-
 fn init_el2008(ctx: &BuildContext,interface : EtherCATThreadChannel) -> BuildResult<Rc<RefCell<EL2008>>> {
-    let el2008 = ctx.find_ethercat_device_and_addr::<EL2008>(0)?;
+    let el2008 = ctx.find_ethercat_device_and_addr::<EL2008>(1)?;
     interface.enable_dc_sync0(el2008.1)?;
     Ok( el2008.0 )
 }
 
 fn init_el4002(ctx: &BuildContext) -> BuildResult<Rc<RefCell<EL4002>>> {
-    let el4002 = ctx.find_ethercat_device_and_addr::<EL4002>(0)?;
+    let el4002 = ctx.find_ethercat_device_and_addr::<EL4002>(2)?;
     Ok( el4002.0 )
 }
 
 fn init_el3024(ctx: &BuildContext,interface : EtherCATThreadChannel) -> BuildResult<Rc<RefCell<EL3024>>> {
-    let el3024 = ctx.find_ethercat_device_and_addr::<EL3024>(0)?;
+    let el3024 = ctx.find_ethercat_device_and_addr::<EL3024>(3)?;
     interface.enable_dc_sync0(el3024.1)?;
     Ok( el3024.0 )
 }
@@ -69,12 +68,115 @@ impl MachineBuild for AquaPathV1 {
     }
 }
 
+
+fn init_measurements(ctx: &mut BuildContext) -> BuildResult<Measurements> {
+    Ok(Measurements {
+        left_flow: ctx.measurement::<f64>("left_flow").build()?,
+        right_flow: ctx.measurement::<f64>("right_flow").build()?,
+        left_temperature: ctx.measurement::<f64>("left_temperature").build()?,
+        right_temperature: ctx.measurement::<f64>("right_temperature").build()?,
+        left_revolutions: ctx.measurement::<f64>("left_revolutions").build()?,
+        right_revolutions: ctx.measurement::<f64>("right_revolutions").build()?,
+        left_power: ctx.measurement::<f64>("left_power").build()?,
+        right_power: ctx.measurement::<f64>("right_power").build()?,
+        left_total_energy: ctx.measurement::<f64>("left_total_energy").build()?,
+        right_total_energy: ctx.measurement::<f64>("right_total_energy").build()?,
+    })
+}
+
+fn init_state(ctx: &mut BuildContext) -> BuildResult<StateProperties> {
+    let mode_state = ModeState {
+        mode: ctx.state::<AquaPathV1Mode>("mode_state.mode").build()?,
+    };
+
+    Ok(StateProperties { 
+        mode_state, 
+        is_default_state: ctx.state::<bool>("is_default_state").build()?, 
+        left_heating_startup_wait_active:ctx.state::<bool>("left_heating_startup_wait_active").build()?, 
+        right_heating_startup_wait_active:ctx.state::<bool>("right_heating_startup_wait_active").build()?, 
+        left_pump_cooldown_active:ctx.state::<bool>("left_pump_cooldown_active").build()?, 
+        right_pump_cooldown_active:ctx.state::<bool>("right_pump_cooldown_active").build()?, 
+        left_should_flow:ctx.state::<bool>("left_should_flow").build()?, 
+        right_should_flow:ctx.state::<bool>("right_should_flow").build()?, 
+        left_heating: ctx.state::<bool>("left_heating").build()?, 
+        right_heating:ctx.state::<bool>("right_heating").build()?, 
+        left_has_flow: ctx.state::<bool>("left_has_flow").build()?, 
+        right_has_flow: ctx.state::<bool>("right_has_flow").build()?, 
+        left_pump_cooldown_remaining: ctx.state::<f64>("left_pump_cooldown_remaining").build()?, 
+        right_pump_cooldown_remaining: ctx.state::<f64>("right_pump_cooldown_remaining").build()?, 
+        left_heating_startup_wait_remaining: ctx.state::<f64>("left_heating_startup_wait_remaining").build()?, 
+        right_heating_startup_wait_remaining: ctx.state::<f64>("right_heating_startup_wait_remaining").build()?, 
+        left_cooling_mode: ctx.state::<Option<CoolingMode>>("left_cooling_mode").build()?, 
+        right_cooling_mode: ctx.state::<Option<CoolingMode>>("right_cooling_mode").build()?, 
+    })
+}
+
+
+fn init_config(ctx: &mut BuildContext) -> BuildResult<ConfigProperties> {
+
+    let left_tolerance_state = ToleranceState 
+    {
+        heating: ctx.config::<f64>("left_tolerance_config.heating").build()?,
+        cooling: ctx.config::<f64>("left_tolerance_config.cooling").build()?,
+    };
+
+    let right_tolerance_state = ToleranceState 
+    {
+        heating: ctx.config::<f64>("right_tolerance_config.heating").build()?,
+        cooling: ctx.config::<f64>("right_tolerance_config.cooling").build()?,
+    };
+
+    let left_pid_config = PidState {
+        kp: ctx.config::<f64>("left_pid_config.kp").build()?,
+        ki: ctx.config::<f64>("left_pid_config.ki").build()?,
+        kd: ctx.config::<f64>("left_pid_config.kd").build()?,
+    };
+
+    let right_pid_config = PidState {
+        kp: ctx.config::<f64>("right_pid_config.kp").build()?,
+        ki: ctx.config::<f64>("right_pid_config.ki").build()?,
+        kd: ctx.config::<f64>("right_pid_config.kd").build()?,
+    };
+
+    let left_thermal_safety_state = ThermalSafetyState {
+        thermal_delay: ctx.config::<f64>("left_thermal_safety_state.thermal_delay").build()?,
+        cooldown_min_temperature: ctx.config::<f64>("left_thermal_safety_state.cooldown_min_temperature").build()?,
+    };
+
+
+    let right_thermal_safety_state = ThermalSafetyState {
+        thermal_delay: ctx.config::<f64>("right_thermal_safety_state.thermal_delay").build()?,
+        cooldown_min_temperature: ctx.config::<f64>("right_thermal_safety_state.cooldown_min_temperature").build()?,
+    };
+
+    let props = ConfigProperties {
+        left_target_temperature: ctx.config::<f64>("left_target_temperature").build()?,
+        right_target_temperature: ctx.config::<f64>("left_target_temperature").build()?,
+        ambient_temperature_calibration: ctx.config::<f64>("ambient_temperature_calibration").build()?,
+        default_heating_tolerance: ctx.config::<f64>("default_heating_tolerance").build()?,
+        default_cooling_tolerance: ctx.config::<f64>("default_cooling_tolerance").build()?,
+        default_pid_kp: ctx.config::<f64>("default_pid_kp").build()?,
+        default_pid_ki: ctx.config::<f64>("default_pid_ki").build()?,
+        default_pid_kd: ctx.config::<f64>("default_pid_kd").build()?,
+        left_fan_max_revolutions: ctx.config::<f64>("left_fan_max_revolutions").build()?,
+        right_fan_max_revolutions: ctx.config::<f64>("right_fan_max_revolutions").build()?,
+        left_tolerance_config: left_tolerance_state,
+        right_tolerance_config: right_tolerance_state,
+        left_pid_config,
+        right_pid_config,
+        left_thermal_safety_state,
+        right_thermal_safety_state,
+    };
+
+    Ok(props)
+}
+
+
+
 impl AquaPathV1 {
     #[machine_build(AquaPathV1)]
     fn new(ctx: &mut BuildContext, relais_controller : Rc<RefCell<dyn DigitalOutputDevice>>,as006_sensor:Rc<RefCell<dyn AnalogInputDevice>>,fan_speed_control : Rc<RefCell<dyn AnalogOutputDevice>>) -> BuildResult<Self> {
-
         let controller_config = ControllerConfig::default();
-
         let left_controller = Controller::new(
             AquaPathV1::DEFAULT_PID_KP,
             AquaPathV1::DEFAULT_PID_KI,
@@ -114,17 +216,8 @@ impl AquaPathV1 {
             RIGHT_HEATING_RELAY_PORT,
             RIGHT_TEMP_SENSOR_PORT,
         );
-
         let emitter = ctx.event("notice_event").build()?;
-
-        let machine = Self {            
-            mode: AquaPathV1Mode::Standby,
-            ambient_temperature_calibration: ThermodynamicTemperature::new::<degree_celsius>(22.0),
-            left_controller,
-            right_controller,
-            notice_event_emitter : emitter
-        };
-        
+        let machine = Self {mode:AquaPathV1Mode::Standby,ambient_temperature_calibration:ThermodynamicTemperature::new:: <degree_celsius>(22.0),left_controller,right_controller,notice_event_emitter:emitter, measurements: init_measurements(ctx)?, state_props: init_state(ctx)?,config_props:init_config(ctx)?};
         Ok(machine)
     }
 }

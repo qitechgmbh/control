@@ -14,7 +14,6 @@ impl Machine for AquaPathV1 {
             }
         }
 
-        let now = Instant::now();
         self.left_controller.update(now);
         self.right_controller.update(now);
 
@@ -28,6 +27,9 @@ impl Machine for AquaPathV1 {
         for notice in right_notices.iter().copied() {
             self.emit_controller_notice("Right Reservoir", notice);
         }
+
+        self.update_measurements();
+        self.update_states(now);
 
         Ok(())
     }
