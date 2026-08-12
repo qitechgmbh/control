@@ -64,9 +64,7 @@ impl TensionArm {
 
         let range = analog_input
             .analog_input_range()
-            .ok_or_else(|| {
-                ActErrorKind::Custom("No input range supplied".to_string())
-            })?;
+            .ok_or_else(|| ActErrorKind::Custom("No input range supplied".to_string()))?;
 
         let value = analog_input
             .get_analog_input(0)

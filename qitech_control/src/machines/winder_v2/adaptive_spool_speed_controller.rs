@@ -176,7 +176,7 @@ impl AdaptiveSpoolSpeedController {
         let max_speed = self.get_max_speed(puller_speed_controller).abs();
 
         // Calculate filament tension from arm angle
-        let tension_arm_angle = tension_arm.angle().unwrap();
+        let tension_arm_angle = tension_arm.angle();
         let (clamped_angle, clamping_state) = clamp_revolution_uom(
             tension_arm_angle,
             self.filament_calc.get_max_angle(), // Inverted because min angle = max tension

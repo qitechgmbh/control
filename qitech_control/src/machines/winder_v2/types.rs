@@ -37,24 +37,6 @@ impl From<Mode> for SpoolMode {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TraverseMode {
-    Standby,
-    Hold,
-    Traverse,
-}
-
-impl From<Mode> for TraverseMode {
-    fn from(mode: Mode) -> Self {
-        match mode {
-            Mode::Standby => Self::Standby,
-            Mode::Hold => Self::Hold,
-            Mode::Pull => Self::Hold,
-            Mode::Wind => Self::Traverse,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PullerMode {
     Standby,
     Hold,

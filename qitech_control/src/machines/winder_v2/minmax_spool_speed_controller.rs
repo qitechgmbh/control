@@ -115,7 +115,7 @@ impl MinMaxSpoolSpeedController {
         let max_speed = self.max_speed();
 
         // calculate filament tension
-        let tension_arm_angle = tension_arm.angle().unwrap();
+        let tension_arm_angle = tension_arm.angle();
         let tension_arm_revolution = clamp_revolution_uom(
             tension_arm_angle,
             // inverted because min angle is max tension

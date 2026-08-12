@@ -31,6 +31,8 @@ mod winder2_imports {
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use qitech_framework::machine::ActError;
+use qitech_framework::machine::ActErrorImpact;
 use qitech_lib::ethercat_hal::EtherCATThreadChannel;
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
 use qitech_lib::units::angle::degree;
@@ -54,13 +56,12 @@ use crate::machines::winder_v2::puller_speed_controller::AdaptiveSpeedAlgorithm;
 use crate::machines::winder_v2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedControllerType;
-use crate::machines::winder_v2::traverse_controller;
-use crate::machines::winder_v2::traverse_controller::Traverse;
+use crate::machines::winder_v2::traverse;
+use crate::machines::winder_v2::traverse::Traverse;
 use crate::machines::winder_v2::types::Mode;
 use crate::machines::winder_v2::types::PullerMode;
 use crate::machines::winder_v2::types::SpoolAutomaticActionMode;
 use crate::machines::winder_v2::types::SpoolMode;
-use crate::machines::winder_v2::types::TraverseMode;
 
 impl MachineBuild for WinderV1<VARIANT_REGULAR> {
     fn build(ctx: &mut BuildContext) -> BuildResult<Self> {
@@ -113,12 +114,13 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         analog_input: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
         laser: Rc<RefCell<dyn DigitalOutputDevice>>,
     ) -> BuildResult<Self> {
-        Self::init_commands(ctx)?;
+        Self::install_commands(ctx)?;
 
-        let tension_arm = TensionArm::new(
+        let tension_arm = TensionArm {
             analog_input,
-            ctx.state::<bool>("tension_arm.zeroed").build()?,
-        );
+            zero: ctx.state::<Option<degree>>("tension_arm.zero").build()?,
+            angle: ctx.measurement::<degree>("tension_arm.angle").build()?,
+        };
 
         let spool_speed_controller_min_max = MinMaxSpoolSpeedController::new(
             ctx.config::<revolution_per_minute>("spool.min_max.speed_min")
@@ -174,39 +176,18 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 .build()?,
         );
 
+        let traverse = Self::init_traverse(ctx, traverse)?;
+
+        // --- construct machine ---
         Ok(Self {
-            traverse: traverse.clone(),
             puller,
             spool,
             tension_arm,
             laser,
             laser_enabled: ctx.state::<bool>("traverse.laser_pointer_active").build()?,
-            traverse_controller: Traverse::new(
-                traverse,
-                ctx.config::<millimeter>("traverse.limit_inner")
-                    .on_external_changed(Self::on_traverse_limit_inner_changed)
-                    .default(22.0)
-                    .minimum(0.0)
-                    .build()?,
-                ctx.config::<millimeter>("traverse.limit_outer")
-                    .default(92.0)
-                    .minimum(0.9)
-                    .build()?,
-                ctx.config::<millimeter>("traverse.step_size")
-                    .default(1.75)
-                    .build()?,
-                ctx.config::<millimeter>("traverse.padding")
-                    .default(0.88)
-                    .build()?,
-                ctx.state::<traverse_controller::State>("traverse.state")
-                    .build()?,
-                ctx.measurement::<Option<millimeter>>("traverse.position")
-                    .build()?,
-                64,
-            ),
+            traverse,
             mode: ctx.state::<Mode>("mode").build()?,
             spool_mode: SpoolMode::Standby,
-            traverse_mode: TraverseMode::Standby,
             puller_mode: PullerMode::Standby,
             spool_speed_controller: SpoolSpeedController::new(
                 ctx.config::<SpoolSpeedControllerType>("spool.regulation_mode")
@@ -251,6 +232,78 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             measurements: Self::init_measurements(ctx)?,
             laser_subscription: None,
         })
+    }
+
+    fn init_traverse(
+        ctx: &mut BuildContext,
+        device: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+    ) -> BuildResult<Traverse> {
+        let microsteps = 64;
+
+        let traverse = Traverse {
+            // --- hardware ---
+            device,
+
+            // --- config ---
+            limit_inner: ctx
+                .config::<millimeter>("traverse.limit_inner")
+                .on_external_changed(|m: &mut Self| m.traverse.on_limit_inner_changed())
+                .default(22.0)
+                .minimum(0.0)
+                .build()?,
+
+            limit_outer: ctx
+                .config::<millimeter>("traverse.limit_outer")
+                .default(92.0)
+                .minimum(0.9)
+                .build()?,
+
+            step_size: ctx
+                .config::<millimeter>("traverse.step_size")
+                .default(1.75)
+                .build()?,
+
+            padding: ctx
+                .config::<millimeter>("traverse.padding")
+                .default(0.88)
+                .build()?,
+
+            // --- state ---
+            mode: ctx.state::<traverse::Mode>("traverse.mode").build()?,
+            state: ctx.state::<traverse::State>("traverse.state").build()?,
+            enabled: ctx.state::<bool>("traverse.enabled").build()?,
+            endstop_triggered: ctx.state::<bool>("traverse.endstop_triggered").build()?,
+
+            // --- measurements ---
+            position: ctx.measurement::<millimeter>("traverse.position").build()?,
+
+            // --- converters ---
+            fullstep_converter: LinearStepConverter::from_circumference(
+                200,
+                Length::new::<millimeter>(32.0),
+            ),
+            microstep_converter: LinearStepConverter::from_circumference(
+                200 * microsteps as i16,
+                Length::new::<millimeter>(32.0),
+            ),
+        };
+
+        ctx.command("traverse.goto_home")
+            .can_execute(|m: &Self| m.traverse.goto_home_capability())
+            .execute(|m: &mut Self| m.traverse.goto_home())
+            .build()?;
+
+        ctx.command("traverse.goto_limit_inner")
+            .can_execute(|m: &Self| m.traverse.goto_limit_inner_capability())
+            .execute(|m: &mut Self| m.traverse.goto_limit_inner())
+            .build()?;
+
+        ctx.command("traverse.goto_limit_outer")
+            .can_execute(|m: &Self| m.traverse.goto_limit_outer_capability())
+            .execute(|m: &mut Self| m.traverse.goto_limit_outer())
+            .build()?;
+
+        Ok(traverse)
     }
 }
 
@@ -380,12 +433,11 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 .measurement::<revolution_per_minute>("spool.rpm")
                 .build()?,
 
-            tension_arm_angle: ctx.measurement::<degree>("tension_arm.angle").build()?,
             spool_progress: ctx.measurement::<meter>("spool.progress").build()?,
         })
     }
 
-    fn init_commands(ctx: &mut BuildContext) -> BuildResult<()> {
+    fn install_commands(ctx: &mut BuildContext) -> BuildResult<()> {
         // --- mode transition ---
         ctx.command("enter_standby_mode")
             .execute(|m: &mut Self| m.set_mode(Mode::Standby))
@@ -404,20 +456,20 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             .execute(|m: &mut Self| m.set_mode(Mode::Wind))
             .build()?;
 
-        // --- traverse goto ---
+        // --- traverse ---
         ctx.command("traverse.goto_home")
-            .can_execute(Self::traverse_can_goto_home)
-            .execute(|m: &mut Self| m.traverse_controller.goto_home())
+            .can_execute(|m: &Self| m.traverse.goto_home_capability())
+            .execute(|m: &mut Self| m.traverse.goto_home())
             .build()?;
 
         ctx.command("traverse.goto_limit_inner")
-            .can_execute(Self::traverse_can_goto_limit_inner)
-            .execute(Self::traverse_goto_limit_inner)
+            .can_execute(|m: &Self| m.traverse.goto_limit_inner_capability())
+            .execute(|m: &mut Self| m.traverse.goto_limit_inner())
             .build()?;
 
         ctx.command("traverse.goto_limit_outer")
-            .can_execute(Self::traverse_can_goto_limit_outer)
-            .execute(Self::traverse_goto_limit_outer)
+            .can_execute(|m: &Self| m.traverse.goto_limit_outer_capability())
+            .execute(|m: &mut Self| m.traverse.goto_limit_outer())
             .build()?;
 
         // --- traverse laser ---
@@ -436,7 +488,12 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
         // --- tension arm ---
         ctx.command("tension_arm.set_zero")
-            .execute(Self::tension_arm_set_zero)
+            .execute(|zelf: &mut Self| {
+                zelf.tension_arm.set_zero().map_err(|kind| ActError {
+                    kind,
+                    impact: ActErrorImpact::Degraded,
+                })
+            })
             .build()?;
 
         Ok(())

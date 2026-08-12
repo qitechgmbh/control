@@ -63,7 +63,7 @@ impl SpoolSpeedController {
         match self.r#type.get() {
             SpoolSpeedControllerType::Adaptive => {
                 self.adaptive_controller.set_speed(current_speed);
-                self.adaptive_controller.reset();
+                _ = self.adaptive_controller.reset();
                 self.adaptive_controller.set_speed(current_speed); // Set again after reset to maintain speed
             }
             SpoolSpeedControllerType::MinMax => {

@@ -1,6 +1,5 @@
 use qitech_framework::{
-    MachineIdentificationUnique,
-    machine::{ActResult, Machine, SubscribeContext, SubscribeResult},
+    MachineIdentificationUnique, machine::{ActError, ActErrorImpact, ActResult, Machine, SubscribeContext, SubscribeResult},
 };
 use qitech_lib::units::length::millimeter;
 use std::time::Instant;
@@ -13,14 +12,20 @@ use crate::machines::winder_v2::{
 
 impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
     fn act(&mut self, now: Instant) -> ActResult {
+        if let Err(kind) = self.tension_arm.update() {
+            return Err(ActError {
+                kind,
+                impact: ActErrorImpact::Degraded,
+            });
+        };
+
         // sync the spool speed
         self.sync_spool_speed(now);
 
         // sync the puller speed
         self.sync_puller_speed(now);
 
-        // sync the traverse speed
-        self.sync_traverse_speed();
+        self.traverse.update(now, self.spool_speed_controller.get_speed());
 
         // automatically stops or pulls after N Meters if enabled
         self.stop_or_pull_spool(now);

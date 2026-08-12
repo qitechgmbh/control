@@ -8,24 +8,22 @@ mod new;
 mod puller_speed_controller;
 mod spool_speed_controller;
 mod tension_arm;
-mod traverse_controller;
+mod traverse;
+use traverse::Traverse;
 
 use crate::converters::angular_step_converter::AngularStepConverter;
 use crate::machines::winder_v2::api::Measurements;
 use crate::machines::winder_v2::new::TensionArm;
 use crate::machines::winder_v2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedController;
-use crate::machines::winder_v2::traverse_controller::Traverse;
 use crate::machines::winder_v2::types::LaserSubscription;
 use crate::machines::winder_v2::types::Mode;
 use crate::machines::winder_v2::types::PullerMode;
 use crate::machines::winder_v2::types::SpoolAutomaticActionMode;
 use crate::machines::winder_v2::types::SpoolMode;
-use crate::machines::winder_v2::types::TraverseMode;
 use qitech_framework::MachineIdentification;
 use qitech_framework::machine::ConfigProperty;
 use qitech_framework::machine::MachineDescriptor;
-use qitech_framework::machine::OperationCapability;
 use qitech_framework::machine::StateProperty;
 use qitech_framework::vendors;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
@@ -38,11 +36,9 @@ use std::{cell::RefCell, rc::Rc};
 
 mod types;
 
-pub const TRAVERSE_PORT: usize = 0;
 pub const LASER_PORT: usize = 0;
 pub const PULLER_PORT: usize = 0;
 pub const SPOOL_PORT: usize = 0;
-pub const TRAVERSE_END_STOP_PORT: usize = 0;
 
 pub const VARIANT_REGULAR: usize = 0;
 pub const VARIANT_7031_SPOOL: usize = 1;
@@ -62,18 +58,16 @@ pub type WinderV1_7031_Spool = WinderV1<VARIANT_7031_SPOOL>;
 
 pub struct WinderV1<const VARIANT: usize> {
     // drivers
-    pub traverse: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
     pub puller: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
     pub spool: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
     pub tension_arm: TensionArm,
 
     pub laser: Rc<RefCell<dyn DigitalOutputDevice>>,
-    pub traverse_controller: Traverse,
+    pub traverse: Traverse,
 
     // mode
     pub mode: StateProperty<Mode>,
     pub spool_mode: SpoolMode,
-    pub traverse_mode: TraverseMode,
     pub puller_mode: PullerMode,
 
     // control circuit arm/spool
@@ -113,53 +107,6 @@ impl MachineDescriptor for WinderV1<VARIANT_7031_SPOOL> {
 }
 
 impl<const VARIANT: usize> WinderV1<VARIANT> {
-    pub fn sync_traverse_speed(&mut self) {
-        let traverse = &mut *self.traverse.borrow_mut();
-        self.traverse_controller
-            .update_speed(traverse, self.spool_speed_controller.get_speed());
-    }
-
-    /// Can go to inner limit capability check
-    pub fn traverse_can_goto_limit_inner(&self) -> OperationCapability {
-        if !self.traverse_controller.is_homed() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is not homed".to_string(),
-            };
-        }
-
-        if self.traverse_mode == TraverseMode::Standby {
-            return OperationCapability::Forbidden {
-                reason: "traverse is in standby".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_going_in() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is already going in".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_going_home() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is currently homing".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_traversing() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is currently traversing".to_string(),
-            };
-        }
-
-        if self.mode.get() == Mode::Wind {
-            return OperationCapability::Forbidden {
-                reason: "winder is in wind mode".to_string(),
-            };
-        }
-
-        OperationCapability::Allowed
-    }
-
     /// Apply the mode changes to the spool
     ///
     /// It contains a transition matrix for atomic changes.
