@@ -8,9 +8,9 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 pub struct TensionArm {
-    pub analog_input: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
-    pub zero: StateProperty<Option<Angle>>,
-    pub angle: Measurement<Angle>,
+    pub(super) analog_input: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+    pub(super) zero: StateProperty<Option<Angle>>,
+    pub(super) angle: Measurement<Angle>,
 }
 
 impl TensionArm {

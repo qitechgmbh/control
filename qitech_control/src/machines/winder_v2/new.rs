@@ -116,12 +116,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
     ) -> BuildResult<Self> {
         Self::install_commands(ctx)?;
 
-        let tension_arm = TensionArm {
-            analog_input,
-            zero: ctx.state::<Option<degree>>("tension_arm.zero").build()?,
-            angle: ctx.measurement::<degree>("tension_arm.angle").build()?,
-        };
-
         let spool_speed_controller_min_max = MinMaxSpoolSpeedController::new(
             ctx.config::<revolution_per_minute>("spool.min_max.speed_min")
                 .on_external_changed(Self::on_spool_min_speed_changed)
@@ -176,6 +170,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 .build()?,
         );
 
+        let tension_arm = Self::init_tension_arm(ctx, analog_input)?;
         let traverse = Self::init_traverse(ctx, traverse)?;
 
         // --- construct machine ---
@@ -234,6 +229,17 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         })
     }
 
+    fn init_tension_arm(
+        ctx: &mut BuildContext,
+        analog_input: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+    ) -> BuildResult<TensionArm> {
+        Ok(TensionArm {
+            analog_input,
+            zero: ctx.state::<Option<degree>>("tension_arm.zero").build()?,
+            angle: ctx.measurement::<degree>("tension_arm.angle").build()?,
+        })
+    }
+
     fn init_traverse(
         ctx: &mut BuildContext,
         device: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
@@ -271,7 +277,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             // --- state ---
             mode: ctx.state::<traverse::Mode>("traverse.mode").build()?,
             state: ctx.state::<traverse::State>("traverse.state").build()?,
-            enabled: ctx.state::<bool>("traverse.enabled").build()?,
             endstop_triggered: ctx.state::<bool>("traverse.endstop_triggered").build()?,
 
             // --- measurements ---

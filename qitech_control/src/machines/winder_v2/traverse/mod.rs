@@ -31,7 +31,6 @@ pub struct Traverse {
     // --- state ---
     pub(super) mode: StateProperty<Mode>,
     pub(super) state: StateProperty<State>,
-    pub(super) enabled: StateProperty<bool>,
     pub(super) endstop_triggered: StateProperty<bool>,
 
     // --- measurements ---
@@ -51,28 +50,23 @@ impl Traverse {
 impl Traverse {
     pub fn apply_mode(&mut self, mode: Mode) -> Result<(), ActErrorKind> {
         if self.mode.set(mode) {
-            match mode {
-                Mode::Standby => {
-                    self.set_enabled(false);
-                }
+            let enabled = match mode {
+                Mode::Standby => false,
                 Mode::Hold => {
-                    self.set_enabled(true);
                     _ = self.goto_home();
+                    true
                 }
                 Mode::Traverse => {
-                    self.set_enabled(true);
                     _ = self.start_traversing();
+                    true
                 }
-            }
+            };
+
+            let mut dev = self.device.borrow_mut();
+            dev.set_enabled(Self::PORT, enabled);
         }
 
         Ok(())
-    }
-
-    pub fn set_enabled(&mut self, value: bool) {
-        let mut dev = self.device.borrow_mut();
-        dev.set_enabled(Self::PORT, value);
-        self.enabled.set(value);
     }
 
     pub fn update(&mut self, now: Instant, spool_speed: AngularVelocity) {
