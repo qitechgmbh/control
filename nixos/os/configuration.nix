@@ -234,6 +234,20 @@ in
     package = pkgs.qitechPackages.server;
   };
 
+  # TEMPORARY — XTREM scale debugging. REVERT WHEN DONE.
+  #
+  # The server's EtherCAT interface discovery runs `nmcli dev set <iface> managed yes`
+  # on every ethernet NIC that isn't the EtherCAT one (see the else-branch in
+  # control-core/src/ethercat/interface_discovery.rs). That hands enp1s0 back to
+  # NetworkManager, which has no profile for it and holds the link admin-down — the
+  # scale's link LED goes dark and it never gets a DHCP lease. Restart=always re-runs
+  # the discovery every 10s, so stopping the unit by hand doesn't survive.
+  #
+  # Everything stays installed (package, user, udev rules, polkit); the unit just
+  # doesn't start at boot. Start it manually when you want it:
+  #   sudo systemctl start qitech-control-server
+  systemd.services.qitech-control-server.wantedBy = lib.mkForce [ ];
+
   users.users.qitech = {
     isNormalUser = true;
     description = "QiTech HMI";
