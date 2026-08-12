@@ -86,30 +86,14 @@ pub struct NoticeEvent {
     pub message: String,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct TempState {
-    pub temperature: f64,
-    pub target_temperature: f64,
-}
-
 pub struct ModeState {
     pub mode: StateProperty<AquaPathV1Mode>,
 }
 
-pub struct FlowState {
-    pub should_flow: StateProperty<bool>,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct FanState {
-    pub revolutions: f64,
-    pub max_revolutions: f64,
-}
 
 
-pub struct CoolingModeState {
-    pub mode: Option<CoolingMode>,
-}
+
+
 
 
 pub struct ToleranceState {
@@ -126,8 +110,8 @@ pub struct PidState {
 
 
 pub struct ThermalSafetyState {
-    pub thermal_delay: ConfigProperty<f64>,
-    pub cooldown_min_temperature: ConfigProperty<f64>,
+    pub thermal_delay: StateProperty<f64>,
+    pub cooldown_min_temperature: StateProperty<f64>,
 }
 
 #[derive(Serialize)]

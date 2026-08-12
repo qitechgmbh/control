@@ -90,14 +90,14 @@ fn init_state(ctx: &mut BuildContext) -> BuildResult<StateProperties> {
     };
 
     let left_thermal_safety_state = ThermalSafetyState {
-        thermal_delay: ctx.config::<f64>("left_thermal_safety_state.thermal_delay").build()?,
-        cooldown_min_temperature: ctx.config::<f64>("left_thermal_safety_state.cooldown_min_temperature").build()?,
+        thermal_delay: ctx.state::<f64>("left_thermal_safety_state.thermal_delay").build()?,
+        cooldown_min_temperature: ctx.state::<f64>("left_thermal_safety_state.cooldown_min_temperature").build()?,
     };
 
 
     let right_thermal_safety_state = ThermalSafetyState {
-        thermal_delay: ctx.config::<f64>("right_thermal_safety_state.thermal_delay").build()?,
-        cooldown_min_temperature: ctx.config::<f64>("right_thermal_safety_state.cooldown_min_temperature").build()?,
+        thermal_delay: ctx.state::<f64>("right_thermal_safety_state.thermal_delay").build()?,
+        cooldown_min_temperature: ctx.state::<f64>("right_thermal_safety_state.cooldown_min_temperature").build()?,
     };
 
     Ok(StateProperties { 
@@ -118,7 +118,9 @@ fn init_state(ctx: &mut BuildContext) -> BuildResult<StateProperties> {
         left_heating_startup_wait_remaining: ctx.state::<f64>("left_heating_startup_wait_remaining").build()?, 
         right_heating_startup_wait_remaining: ctx.state::<f64>("right_heating_startup_wait_remaining").build()?, 
         left_cooling_mode: ctx.state::<Option<CoolingMode>>("left_cooling_mode").build()?, 
-        right_cooling_mode: ctx.state::<Option<CoolingMode>>("right_cooling_mode").build()?, 
+        right_cooling_mode: ctx.state::<Option<CoolingMode>>("right_cooling_mode").build()?,
+        left_thermal_safety_state,
+        right_thermal_safety_state, 
     })
 }
 
@@ -137,18 +139,16 @@ fn init_config(ctx: &mut BuildContext) -> BuildResult<ConfigProperties> {
     };
 
     let left_pid_config = PidState {
-        kp: ctx.config::<f64>("left_pid_config.kp").build()?,
-        ki: ctx.config::<f64>("left_pid_config.ki").build()?,
-        kd: ctx.config::<f64>("left_pid_config.kd").build()?,
+        kp: ctx.config::<f64>("left_pid_config.kp").default(AquaPathV1::DEFAULT_PID_KP).build()?,
+        ki: ctx.config::<f64>("left_pid_config.ki").default(AquaPathV1::DEFAULT_PID_KI).build()?,
+        kd: ctx.config::<f64>("left_pid_config.kd").default(AquaPathV1::DEFAULT_PID_KD).build()?,
     };
 
     let right_pid_config = PidState {
-        kp: ctx.config::<f64>("right_pid_config.kp").build()?,
-        ki: ctx.config::<f64>("right_pid_config.ki").build()?,
-        kd: ctx.config::<f64>("right_pid_config.kd").build()?,
+        kp: ctx.config::<f64>("right_pid_config.kp").default(AquaPathV1::DEFAULT_PID_KP).build()?,
+        ki: ctx.config::<f64>("right_pid_config.ki").default(AquaPathV1::DEFAULT_PID_KI).build()?,
+        kd: ctx.config::<f64>("right_pid_config.kd").default(AquaPathV1::DEFAULT_PID_KD).build()?,
     };
-
-
 
     let props = ConfigProperties {
         left_target_temperature: ctx.config::<f64>("left_target_temperature").build()?,

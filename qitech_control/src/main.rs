@@ -1,7 +1,5 @@
 use std::thread;
 use std::time::Duration;
-
-use qitech_framework::MachineIdentificationUnique;
 use qitech_framework::runtime::EtherCATConfig;
 use qitech_framework::runtime::Runtime;
 use qitech_framework::runtime::RuntimeConfiguration;
@@ -16,33 +14,30 @@ mod converters;
 mod interface;
 
 mod machines;
-use machines::LaserV1;
+
 use qitech_framework::session;
 use qitech_framework_tui::Tui;
 use qitech_framework_tui::TuiConfiguration;
 use qitech_lib::ethercat_hal::DcConfiguration;
 use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
-use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
 
-use crate::machines::WinderV1_7031_Spool;
-use crate::machines::WinderV1_Regular;
 use crate::machines::aquapath::AquaPathV1;
 
 pub fn main() -> anyhow::Result<()> {
     interface::bring_up_all_ethernet();
-
+/*
     let laser_ident = |serial: u16| MachineIdentificationUnique {
         identification: LaserV1::IDENTIFICATION,
         serial,
     };
-
+*/
     // --- configure runtime ---
     let config = RuntimeConfiguration::new()
         .requests_per_cycle_max(10)
         .export_interval(Duration::from_secs_f64(1.0 / 32.0))
         .ethercat(ETHERCAT_CONFIG)
-        .modbus_rtu_device::<LaserDevice>(
+ /*       .modbus_rtu_device::<LaserDevice>(
             "pci-0000:c6:00.0-usbv2-0:2.1:1.0-port0".to_string(),
             laser_ident(1),
             1,
@@ -53,10 +48,7 @@ pub fn main() -> anyhow::Result<()> {
             laser_ident(2),
             1,
             None,
-        )
-        .machine::<LaserV1>()
-        .machine::<WinderV1_Regular>()
-        .machine::<WinderV1_7031_Spool>()
+        )*/
         .machine::<AquaPathV1>();
 
     run_tui(config)

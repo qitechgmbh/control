@@ -38,7 +38,13 @@ state:
   right_heating_startup_wait_remaining: !float
   left_cooling_mode: !?enum [low, ramp, max]
   right_cooling_mode: !?enum [low, ramp, max]
-
+  left_thermal_safety_state:
+    thermal_delay: !float
+    cooldown_min_temperature: !float
+  right_thermal_safety_state:
+    thermal_delay: !float
+    cooldown_min_temperature: !float
+    
 config:  
   left_target_temperature: !float
   right_target_temperature: !float
@@ -64,12 +70,7 @@ config:
     kp: !float
     ki: !float
     kd: !float
-  left_thermal_safety_state:
-    thermal_delay: !float
-    cooldown_min_temperature: !float
-  right_thermal_safety_state:
-    thermal_delay: !float
-    cooldown_min_temperature: !float
+
 
 
 events:
