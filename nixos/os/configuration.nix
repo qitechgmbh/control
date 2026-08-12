@@ -257,6 +257,29 @@ in
       "realtime"
       "wireshark"
     ];
+
+    # TEMPORARY — remote debugging access for the XTREM scale work. REVERT WHEN DONE.
+    # Remove this key (and the services.openssh block below) once the scale is working.
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAFFinkAqL2BxEAK3KFFeMBG16X9dXhocHNmw5ZqJfTx claude-debug@christian-mac"
+    ];
+  };
+
+  # TEMPORARY — remote debugging access for the XTREM scale work. REVERT WHEN DONE.
+  #
+  # Key-only: the qitech account has no password set (it's an autologin HMI account),
+  # so password auth could never succeed anyway. Combined with
+  # security.sudo.wheelNeedsPassword = false above, an authorized key gets a shell with
+  # passwordless sudo — enough to inspect networkd, nmcli and the scale's link state.
+  #
+  # The openssh module opens TCP 22 in the firewall itself (openFirewall defaults true).
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+      PermitRootLogin = "no";
+    };
   };
 
   home-manager.useGlobalPkgs = true;
