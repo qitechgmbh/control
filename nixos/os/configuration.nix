@@ -109,7 +109,13 @@ in
   # Enable networking
   networking.networkmanager.enable = true;
   # ... but do not interfere with ethercat
-  networking.networkmanager.unmanaged = [ "type:ethernet" ];
+  # Both a type match and an explicit name match, so enp1s0 stays unmanaged even if a
+  # stale NetworkManager connection profile (e.g. from before this rule existed) would
+  # otherwise hold its link admin-down.
+  networking.networkmanager.unmanaged = [
+    "type:ethernet"
+    "interface-name:enp1s0"
+  ];
 
   # enp1s0 is dedicated to the XTREM scale (UDP broadcast on 192.168.4.0/24, see
   # xtrem/README.md). It's an ethernet device, so NetworkManager ignores it (above);
