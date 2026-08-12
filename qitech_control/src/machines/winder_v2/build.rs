@@ -1,7 +1,5 @@
 mod winder2_imports {
-    pub use super::super::tension_arm::TensionArm;
-    pub use crate::converters::angular_step_converter::AngularStepConverter;
-    pub use crate::converters::linear_step_converter::LinearStepConverter;
+    pub use std::time::Instant;
 
     pub use qitech_lib::ethercat_hal::coe::ConfigurableDevice;
     pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::ek1100::EK1100;
@@ -9,23 +7,26 @@ mod winder2_imports {
     pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031::EL7031;
     pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031::coe::EL7031Configuration;
     pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031::pdo::EL7031PredefinedPdoAssignment;
+    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031_0030::EL7031_0030;
     pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031_0030::coe::EL7031_0030Configuration;
     pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
-    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031_0030::{self, EL7031_0030};
+    pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031_0030::{self};
     pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7041_0052::EL7041_0052;
     pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7041_0052::coe::EL7041_0052Configuration;
-
     pub use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
-
     pub use qitech_lib::ethercat_hal::shared_config;
-    pub use qitech_lib::ethercat_hal::shared_config::el70x1::{
-        EL70x1OperationMode, StmMotorConfiguration,
-    };
+    pub use qitech_lib::ethercat_hal::shared_config::el70x1::EL70x1OperationMode;
+    pub use qitech_lib::ethercat_hal::shared_config::el70x1::StmMotorConfiguration;
     pub use qitech_lib::units::ConstZero;
     pub use qitech_lib::units::f64::*;
-    pub use qitech_lib::units::length::{centimeter, meter, millimeter};
+    pub use qitech_lib::units::length::centimeter;
+    pub use qitech_lib::units::length::meter;
+    pub use qitech_lib::units::length::millimeter;
     pub use qitech_lib::units::velocity::meter_per_minute;
-    pub use std::time::Instant;
+
+    pub use super::super::tension_arm::TensionArm;
+    pub use crate::converters::angular_step_converter::AngularStepConverter;
+    pub use crate::converters::linear_step_converter::LinearStepConverter;
 }
 
 use std::cell::RefCell;
@@ -33,35 +34,31 @@ use std::rc::Rc;
 
 use qitech_framework::machine::ActError;
 use qitech_framework::machine::ActErrorImpact;
-use qitech_lib::ethercat_hal::EtherCATThreadChannel;
-use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
-use qitech_lib::units::angle::degree;
-use qitech_lib::units::angular_velocity::revolution_per_minute;
-pub use winder2_imports::*;
-
 use qitech_framework::machine::BuildContext;
 use qitech_framework::machine::BuildResult;
 use qitech_framework::machine::MachineBuild;
+use qitech_lib::ethercat_hal::EtherCATThreadChannel;
+use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
+use qitech_lib::units::acceleration::meter_per_minute_per_second;
+use qitech_lib::units::angle::degree;
+use qitech_lib::units::angular_velocity::revolution_per_minute;
+use qitech_lib::units::jerk::meter_per_minute_per_second_squared;
+pub use winder2_imports::*;
 
+use crate::controllers::LinearJerkSpeedController;
 use crate::machines::winder_v2::SpoolAutomaticAction;
 use crate::machines::winder_v2::VARIANT_7031_SPOOL;
 use crate::machines::winder_v2::VARIANT_REGULAR;
 use crate::machines::winder_v2::WinderV1;
-use crate::machines::winder_v2::adaptive_spool_speed_controller::AdaptiveSpoolSpeedController;
-use crate::machines::winder_v2::api::GearRatio;
-use crate::machines::winder_v2::api::Measurements;
-use crate::machines::winder_v2::api::PullerRegulationMode;
-use crate::machines::winder_v2::minmax_spool_speed_controller::MinMaxSpoolSpeedController;
-use crate::machines::winder_v2::puller_speed_controller::AdaptiveSpeedAlgorithm;
-use crate::machines::winder_v2::puller_speed_controller::PullerSpeedController;
-use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedController;
-use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedControllerType;
+use crate::machines::winder_v2::puller;
+use crate::machines::winder_v2::puller::Puller;
+use crate::machines::winder_v2::spool::Spool;
 use crate::machines::winder_v2::traverse;
+use crate::machines::winder_v2::traverse::LaserPointer;
 use crate::machines::winder_v2::traverse::Traverse;
+use crate::machines::winder_v2::types::AutomaticActionSpoolAction;
 use crate::machines::winder_v2::types::Mode;
-use crate::machines::winder_v2::types::PullerMode;
-use crate::machines::winder_v2::types::SpoolAutomaticActionMode;
-use crate::machines::winder_v2::types::SpoolMode;
+use crate::types::RotationDirection;
 
 impl MachineBuild for WinderV1<VARIANT_REGULAR> {
     fn build(ctx: &mut BuildContext) -> BuildResult<Self> {
@@ -152,26 +149,9 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 .build()?,
         );
 
-        let adapative_puller_algorithm = AdaptiveSpeedAlgorithm::new(
-            ctx.config::<f64>("puller.adapative.speed_delta_max")
-                .minimum(0.0)
-                .default(0.33)
-                .build()?,
-            ctx.config::<f64>("puller.adapative.increase_per_step")
-                .minimum(0.0)
-                .maximum(1.0)
-                .default(0.033)
-                .build()?,
-            ctx.config::<meter>("puller.adapative.adjustment_interval")
-                .default(0.01)
-                .build()?,
-            ctx.config::<millimeter>("puller.adapative.accepted_difference")
-                .default(0.5)
-                .build()?,
-        );
-
         let tension_arm = Self::init_tension_arm(ctx, analog_input)?;
-        let traverse = Self::init_traverse(ctx, traverse)?;
+        let traverse = Self::init_traverse(ctx, traverse, laser)?;
+        let puller = Self::init_puller(ctx, puller)?;
 
         // --- construct machine ---
         Ok(Self {
@@ -182,8 +162,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             laser_enabled: ctx.state::<bool>("traverse.laser_pointer_active").build()?,
             traverse,
             mode: ctx.state::<Mode>("mode").build()?,
-            spool_mode: SpoolMode::Standby,
-            puller_mode: PullerMode::Standby,
             spool_speed_controller: SpoolSpeedController::new(
                 ctx.config::<SpoolSpeedControllerType>("spool.regulation_mode")
                     .on_external_changed(Self::on_spool_regulation_mode_changed)
@@ -202,30 +180,34 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                     .default(250.0)
                     .build()?,
                 mode: ctx
-                    .config::<SpoolAutomaticActionMode>("spool_automatic.action")
-                    .default(SpoolAutomaticActionMode::NoAction)
+                    .config::<AutomaticActionSpoolAction>("spool_automatic.action")
+                    .default(AutomaticActionSpoolAction::NoAction)
                     .build()?,
             },
-            puller_speed_controller: PullerSpeedController::new(
-                ctx.config::<meter_per_minute>("puller.target_speed")
-                    .default(1.0)
-                    .build()?,
-                LinearStepConverter::from_diameter(
-                    200,                            // Assuming 200 steps per revolution for the puller stepper,
-                    Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
-                ),
-                ctx.config::<bool>("puller.forward").default(true).build()?,
-                adapative_puller_algorithm,
-                ctx.config::<GearRatio>("puller.gear_ratio")
-                    .default(GearRatio::OneToOne)
-                    .build()?,
-                ctx.config::<PullerRegulationMode>("puller.regulation_mode")
-                    .on_external_changed(Self::on_puller_regulation_mode_changed)
-                    .default(PullerRegulationMode::Speed)
-                    .build()?,
-            ),
             measurements: Self::init_measurements(ctx)?,
             laser_subscription: None,
+        })
+    }
+
+    fn init_spool(
+        ctx: &mut BuildContext,
+        device: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+    ) -> BuildResult<Spool> {
+        Ok(Spool {
+            device,
+            direction: ctx
+                .config::<RotationDirection>("spool.direction")
+                .on_external_changed(Self::on_spool_regulation_mode_changed)
+                .build()?,
+            regulation_mode: ctx
+                .config::<RotationDirection>("spool.direction")
+                .on_external_changed(Self::on_spool_regulation_mode_changed)
+                .build()?,
+            mode: (),
+            velocity: (),
+            sc_adaptive: (),
+            sc_min_max: (),
+            step_converter: (),
         })
     }
 
@@ -240,15 +222,33 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
         })
     }
 
+    fn init_laser_pointer(
+        ctx: &mut BuildContext,
+        device: Rc<RefCell<dyn DigitalOutputDevice>>,
+    ) -> BuildResult<LaserPointer> {
+        Ok(LaserPointer {
+            device,
+            enabled: ctx
+                .state::<bool>("traverse.laser_pointer.enabled")
+                .build()?,
+        })
+    }
+
     fn init_traverse(
         ctx: &mut BuildContext,
         device: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+        laser: Rc<RefCell<dyn DigitalOutputDevice>>,
     ) -> BuildResult<Traverse> {
-        let microsteps = 64;
+        const MICROSTEPS: i16 = 64;
+
+        let laser_pointer = Self::init_laser_pointer(ctx, laser)?;
 
         let traverse = Traverse {
             // --- hardware ---
             device,
+
+            // --- sub devices ---
+            laser_pointer,
 
             // --- config ---
             limit_inner: ctx
@@ -288,7 +288,7 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
                 Length::new::<millimeter>(32.0),
             ),
             microstep_converter: LinearStepConverter::from_circumference(
-                200 * microsteps as i16,
+                200 * MICROSTEPS,
                 Length::new::<millimeter>(32.0),
             ),
         };
@@ -309,6 +309,71 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             .build()?;
 
         Ok(traverse)
+    }
+
+    fn init_puller(
+        ctx: &mut BuildContext,
+        device: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+    ) -> BuildResult<Puller> {
+        let acceleration_controller = LinearJerkSpeedController::new_simple(
+            Some(Velocity::new::<meter_per_minute>(50.0)),
+            Acceleration::new::<meter_per_minute_per_second>(5.0),
+            Jerk::new::<meter_per_minute_per_second_squared>(10.0),
+        );
+
+        let converter = LinearStepConverter::from_diameter(
+            // Assuming 200 steps per revolution for the puller stepper,
+            200,
+            // 8cm diameter of the puller wheel
+            Length::new::<centimeter>(8.0),
+        );
+
+        let sa_adaptive = puller::SpeedAlgorithmAdaptive {
+            speed_delta_max: ctx
+                .config::<f64>("puller.speed_algorithm.adaptive.speed_delta_max")
+                .build()?,
+            increase_per_step: ctx
+                .config::<f64>("puller.speed_algorithm.adaptive.increase_per_step")
+                .build()?,
+            tolerance_limit: ctx
+                .config::<millimeter>("puller.speed_algorithm.adaptive.tolerance_limit")
+                .build()?,
+            adjustment_distance: ctx
+                .config::<millimeter>("puller.speed_algorithm.adaptive.adjustment_distance")
+                .build()?,
+            modulation: ctx
+                .measurement::<f64>("puller.speed_algorithm.adaptive.modulation")
+                .build()?,
+            distance_since_adjustment: ctx
+                .measurement::<meter>("puller.speed_algorithm.adaptive.distance_since_adjustment")
+                .build()?,
+            time_since_last_update: Instant::now(),
+        };
+
+        Ok(Puller {
+            device,
+            direction: ctx
+                .config::<RotationDirection>("puller.direction")
+                .build()?,
+            gear_ratio: ctx
+                .config::<puller::GearRatio>("puller.gear_ratio")
+                .build()?,
+            regulation_mode: ctx
+                .config::<puller::SpeedRegulationMode>("puller.regulation_mode")
+                .on_external_changed(|m: &mut Self| {
+                    m.puller.on_regulation_mode_changed();
+                    Ok(())
+                })
+                .build()?,
+            speed_target: ctx
+                .config::<meter_per_minute>("puller.speed.target")
+                .build()?,
+            mode: ctx.state::<puller::Mode>("puller.mode").build()?,
+            speed: ctx.measurement::<meter_per_minute>("puller.mode").build()?,
+            acceleration_controller,
+            converter,
+            sa_adaptive,
+        })
     }
 }
 
@@ -430,10 +495,6 @@ fn init_el7031_0030_spool(
 impl<const VARIANT: usize> WinderV1<VARIANT> {
     fn init_measurements(ctx: &mut BuildContext) -> BuildResult<Measurements> {
         Ok(Measurements {
-            puller_speed: ctx
-                .measurement::<meter_per_minute>("puller.speed")
-                .build()?,
-
             spool_rpm: ctx
                 .measurement::<revolution_per_minute>("spool.rpm")
                 .build()?,

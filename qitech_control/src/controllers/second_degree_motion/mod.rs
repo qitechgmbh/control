@@ -1,4 +1,7 @@
 pub mod acceleration_position_controller;
+pub use acceleration_position_controller::AccelerationPositionController;
+pub use acceleration_position_controller::MotionControllerError;
+
 pub mod angular_acceleration_position_controller;
 pub mod angular_jerk_speed_controller;
 pub mod jerk_speed_controller;

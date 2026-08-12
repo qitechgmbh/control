@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, Copy, Default)]
+use qitech_framework::EnumProperty;
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, EnumProperty)]
 pub enum RotationDirection {
     #[default]
     Forward,

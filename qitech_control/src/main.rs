@@ -6,8 +6,8 @@ use qitech_framework::runtime::EtherCATConfig;
 use qitech_framework::runtime::Runtime;
 use qitech_framework::runtime::RuntimeConfiguration;
 
-// TODO: migrate forward to RotationDirection
-// mod types;
+mod types;
+use types::RotationDirection;
 
 mod utils;
 

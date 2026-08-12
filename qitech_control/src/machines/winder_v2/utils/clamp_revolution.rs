@@ -144,8 +144,9 @@ fn revolution_in_range(value: f64, min: f64, max: f64) -> bool {
 mod tests {
     use core::f64;
 
-    use super::*;
     use approx::assert_relative_eq;
+
+    use super::*;
 
     #[test]
     fn test_clamp_revolution() {

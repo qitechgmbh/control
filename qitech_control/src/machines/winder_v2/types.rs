@@ -1,8 +1,10 @@
-use qitech_framework::{EnumProperty, MachineIdentificationUnique, machine::RemoteProperty};
+use qitech_framework::EnumProperty;
+use qitech_framework::MachineIdentificationUnique;
+use qitech_framework::machine::RemoteProperty;
 use qitech_lib::units::Length;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, EnumProperty)]
-pub enum SpoolAutomaticActionMode {
+pub enum AutomaticActionSpoolAction {
     #[default]
     NoAction,
     Pull,
@@ -18,46 +20,10 @@ pub enum Mode {
     Wind,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SpoolMode {
-    Standby,
-    Hold,
-    Wind,
-}
-
-impl From<Mode> for SpoolMode {
-    fn from(mode: Mode) -> Self {
-        match mode {
-            Mode::Standby => Self::Standby,
-            Mode::Hold => Self::Hold,
-            Mode::Pull => Self::Hold,
-            Mode::Wind => Self::Wind,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PullerMode {
-    Standby,
-    Hold,
-    Pull,
-}
-
-impl From<Mode> for PullerMode {
-    fn from(mode: Mode) -> Self {
-        match mode {
-            Mode::Standby => Self::Standby,
-            Mode::Hold => Self::Hold,
-            Mode::Pull => Self::Pull,
-            Mode::Wind => Self::Pull,
-        }
-    }
-}
-
 pub struct LaserSubscription {
     pub ident: MachineIdentificationUnique,
-    pub current: RemoteProperty<Length>,
-    pub target: RemoteProperty<Length>,
-    pub lower: RemoteProperty<Length>,
-    pub upper: RemoteProperty<Length>,
+    pub diameter: RemoteProperty<Length>,
+    pub diameter_target: RemoteProperty<Length>,
+    pub tolerance_lower: RemoteProperty<Length>,
+    pub tolerance_upper: RemoteProperty<Length>,
 }

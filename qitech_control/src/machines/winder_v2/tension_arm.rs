@@ -1,11 +1,15 @@
-use qitech_framework::machine::{ActErrorKind, Measurement, StateProperty};
-use qitech_lib::ethercat_hal::io::analog_input::physical::AnalogInputValue;
-use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
-use qitech_lib::units::angle::{degree, revolution};
-use qitech_lib::units::electric_potential::volt;
-use qitech_lib::units::f64::*;
 use std::cell::RefCell;
 use std::rc::Rc;
+
+use qitech_framework::machine::ActErrorKind;
+use qitech_framework::machine::Measurement;
+use qitech_framework::machine::StateProperty;
+use qitech_lib::ethercat_hal::io::analog_input::physical::AnalogInputValue;
+use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
+use qitech_lib::units::angle::degree;
+use qitech_lib::units::angle::revolution;
+use qitech_lib::units::electric_potential::volt;
+use qitech_lib::units::f64::*;
 
 pub struct TensionArm {
     pub(super) analog_input: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,

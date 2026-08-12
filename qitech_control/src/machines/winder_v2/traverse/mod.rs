@@ -1,17 +1,25 @@
+use std::cell::RefCell;
 use std::cmp::Ordering;
-use std::time::{Duration, Instant};
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
+use std::time::Duration;
+use std::time::Instant;
 
-use crate::converters::LinearStepConverter;
-use qitech_framework::machine::{ActErrorKind, ActResult, OperationCapability};
-use qitech_framework::machine::{ConfigProperty, Measurement, StateProperty};
+use qitech_framework::machine::ActErrorKind;
+use qitech_framework::machine::ActResult;
+use qitech_framework::machine::ConfigProperty;
+use qitech_framework::machine::Measurement;
+use qitech_framework::machine::OperationCapability;
+use qitech_framework::machine::StateProperty;
+use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
+use qitech_lib::units::AngularVelocity;
+use qitech_lib::units::ConstZero;
+use qitech_lib::units::Length;
+use qitech_lib::units::Velocity;
 use qitech_lib::units::angular_velocity::revolution_per_second;
 use qitech_lib::units::length::millimeter;
 use qitech_lib::units::velocity::millimeter_per_second;
-use qitech_lib::units::{AngularVelocity, ConstZero, Velocity};
-use qitech_lib::{
-    ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device, units::Length,
-};
+
+use crate::converters::LinearStepConverter;
 
 mod types;
 use types::HomingState;
@@ -19,8 +27,14 @@ pub use types::Mode;
 pub use types::State;
 use types::TraversingState;
 
+mod laser_pointer;
+pub(super) use laser_pointer::LaserPointer;
+
 pub struct Traverse {
     pub(super) device: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+
+    // --- sub devices ---
+    pub(super) laser_pointer: LaserPointer,
 
     // --- config ---
     pub(super) limit_inner: ConfigProperty<Length>,
@@ -72,7 +86,9 @@ impl Traverse {
     pub fn update(&mut self, now: Instant, spool_speed: AngularVelocity) {
         self.sync();
 
-        if self.update_state(now) && matches!(self.state.get(), State::Homing(HomingState::Validate(_))) {
+        if self.update_state(now)
+            && matches!(self.state.get(), State::Homing(HomingState::Validate(_)))
+        {
             // set position to zero if we enter validate state
             self.device.borrow_mut().set_position(Self::PORT, 0);
         }
@@ -268,7 +284,8 @@ impl Traverse {
         };
 
         let steps_per_second = self.fullstep_converter.velocity_to_steps(speed);
-        _ = self.device
+        _ = self
+            .device
             .borrow_mut()
             .set_speed(Self::PORT, steps_per_second);
     }
