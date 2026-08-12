@@ -32,7 +32,7 @@ pub enum ControllerNotice {
     PumpStoppedLowFlow,
 }
 
-#[derive(Default,Debug, Clone, Copy,PartialEq,Eq, EnumProperty)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, EnumProperty)]
 pub enum CoolingMode {
     #[default]
     Low,

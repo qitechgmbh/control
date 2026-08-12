@@ -1,8 +1,8 @@
-use std::thread;
-use std::time::Duration;
 use qitech_framework::runtime::EtherCATConfig;
 use qitech_framework::runtime::Runtime;
 use qitech_framework::runtime::RuntimeConfiguration;
+use std::thread;
+use std::time::Duration;
 
 // TODO: migrate forward to RotationDirection
 // mod types;
@@ -26,18 +26,18 @@ use crate::machines::aquapath::AquaPathV1;
 
 pub fn main() -> anyhow::Result<()> {
     interface::bring_up_all_ethernet();
-/*
-    let laser_ident = |serial: u16| MachineIdentificationUnique {
-        identification: LaserV1::IDENTIFICATION,
-        serial,
-    };
-*/
+    /*
+        let laser_ident = |serial: u16| MachineIdentificationUnique {
+            identification: LaserV1::IDENTIFICATION,
+            serial,
+        };
+    */
     // --- configure runtime ---
     let config = RuntimeConfiguration::new()
         .requests_per_cycle_max(10)
         .export_interval(Duration::from_secs_f64(1.0 / 32.0))
         .ethercat(ETHERCAT_CONFIG)
- /*       .modbus_rtu_device::<LaserDevice>(
+        /*       .modbus_rtu_device::<LaserDevice>(
             "pci-0000:c6:00.0-usbv2-0:2.1:1.0-port0".to_string(),
             laser_ident(1),
             1,
@@ -66,7 +66,7 @@ fn run_tui(config: RuntimeConfiguration) -> anyhow::Result<()> {
 
     thread::spawn(move || {
         let rt = Runtime::init(config, session_rt).unwrap();
-        rt.run();
+        let _ = rt.run();
     });
 
     // run slightly faster than the export interval so we don't stay behind

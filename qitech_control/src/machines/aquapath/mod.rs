@@ -1,11 +1,14 @@
-use crate::machines::aquapath::{api::{ConfigProperties, Measurements, NoticeEvent, StateProperties}, controller::{ControlResetReason, Controller, ControllerNotice}};
-use qitech_framework::{EnumProperty, Machine, machine::{EventEmitter}};
+use crate::machines::aquapath::{
+    api::{ConfigProperties, Measurements, NoticeEvent, StateProperties},
+    controller::{ControlResetReason, Controller, ControllerNotice},
+};
+use qitech_framework::units::{
+    AngularVelocity, ThermodynamicTemperature, VolumeRate, angular_velocity::revolution_per_minute,
+    thermodynamic_temperature::degree_celsius, volume_rate::liter_per_minute,
+};
 use qitech_framework::{
-    units::{
-        AngularVelocity, ThermodynamicTemperature, VolumeRate,
-        angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius,
-        volume_rate::liter_per_minute,
-    },
+    EnumProperty, Machine,
+    machine::{ActResult, EventEmitter},
 };
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +17,7 @@ pub mod api;
 pub mod controller;
 pub mod new;
 
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq,Eq,Default,EnumProperty)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Default, EnumProperty)]
 pub enum AquaPathV1Mode {
     #[default]
     Standby,
@@ -52,8 +55,6 @@ pub struct Flow {
     pub should_pump: bool,
 }
 
-
-
 impl Default for Flow {
     fn default() -> Self {
         Self {
@@ -70,8 +71,8 @@ pub struct AquaPathV1 {
     ambient_temperature_calibration: ThermodynamicTemperature,
     left_controller: Controller,
     right_controller: Controller,
-    notice_event_emitter : EventEmitter<NoticeEvent>,
-    measurements : Measurements,
+    notice_event_emitter: EventEmitter<NoticeEvent>,
+    measurements: Measurements,
     state_props: StateProperties,
     config_props: ConfigProperties,
 }
@@ -92,14 +93,13 @@ impl AquaPathV1 {
     pub const PUMP_COOLDOWN_MIN_TEMPERATURE_MIN: f64 = 10.0;
     // in °C
     pub const PUMP_COOLDOWN_MIN_TEMPERATURE_MAX: f64 = 80.0;
-    
 
     pub fn emit_notice(&mut self, title: impl Into<String>, message: impl Into<String>) {
         let event = NoticeEvent {
             title: title.into(),
             message: message.into(),
         };
-        self.notice_event_emitter.emit( &event);
+        self.notice_event_emitter.emit(&event);
     }
 
     fn emit_controller_notice(&mut self, side_label: &str, notice: ControllerNotice) {
@@ -151,6 +151,34 @@ impl std::fmt::Display for AquaPathV1 {
         write!(f, "Aquapath")
     }
 }
+
+#[derive(Serialize)]
+enum Mutation {
+    //Mode
+    SetAquaPathMode(AquaPathV1Mode),
+    SetLeftTemperature(f64),
+    SetRightTemperature(f64),
+    SetLeftFlow(bool),
+    SetRightFlow(bool),
+    SetLeftRevolutions(f64),
+    SetRightRevolutions(f64),
+    SetLeftHeatingTolerance(f64),
+    SetRightHeatingTolerance(f64),
+    SetLeftCoolingTolerance(f64),
+    SetRightCoolingTolerance(f64),
+    SetLeftPidKp(f64),
+    SetLeftPidKi(f64),
+    SetLeftPidKd(f64),
+    SetRightPidKp(f64),
+    SetRightPidKi(f64),
+    SetRightPidKd(f64),
+    SetLeftThermalFlowSettleDuration(f64),
+    SetRightThermalFlowSettleDuration(f64),
+    SetLeftPumpCooldownMinTemperature(f64),
+    SetRightPumpCooldownMinTemperature(f64),
+    SetAmbientTemperatureCalibration(f64),
+}
+
 impl AquaPathV1 {
     fn request_pump_off(&mut self) {
         self.left_controller.set_should_pump(false);
@@ -194,38 +222,45 @@ impl AquaPathV1 {
         self.turn_pump_on();
     }
     // Turn all OFF and do nothing
-    fn switch_to_standby(&mut self) {
+    fn switch_to_standby(&mut self) -> ActResult {
         match self.mode {
             AquaPathV1Mode::Standby => (),
             AquaPathV1Mode::Auto => self.turn_off_all(),
         };
         self.mode = AquaPathV1Mode::Standby;
+        return Ok(());
     }
 
-    fn switch_to_auto(&mut self) {
+    fn switch_to_auto(&mut self) -> ActResult {
         match self.mode {
             AquaPathV1Mode::Auto => (),
             AquaPathV1Mode::Standby => self.turn_on_all(),
         }
         self.mode = AquaPathV1Mode::Auto;
+        return Ok(());
     }
 
-    fn switch_mode(&mut self, mode: AquaPathV1Mode) {
-        if self.mode == mode {
-            return;
-        }
-        match mode {
-            AquaPathV1Mode::Standby => self.switch_to_standby(),
-            AquaPathV1Mode::Auto => self.switch_to_auto(),
-        }
+    fn cmd_start_right_pump(&mut self) -> ActResult {
+        self.set_should_pump(true, AquaPathSideType::Right);
+        return Ok(());
     }
-}
 
-impl AquaPathV1 {
-    fn set_mode_state(&mut self, mode: AquaPathV1Mode) {
-        self.switch_mode(mode.clone());
-        
+    fn cmd_stop_right_pump(&mut self) -> ActResult {
+        self.set_should_pump(false, AquaPathSideType::Right);
+        return Ok(());
     }
+
+    fn cmd_start_left_pump(&mut self) -> ActResult {
+        self.set_should_pump(true, AquaPathSideType::Left);
+        return Ok(());
+    }
+
+    fn cmd_stop_left_pump(&mut self) -> ActResult {
+        self.set_should_pump(false, AquaPathSideType::Left);
+        return Ok(());
+    }
+    
+
 }
 
 impl AquaPathV1 {
@@ -263,7 +298,6 @@ impl AquaPathV1 {
         {
             self.right_controller.set_target_temperature(min_settable);
         }
-
     }
 
     fn set_target_temperature(&mut self, temperature: f64, cooling_type: AquaPathSideType) {
@@ -276,7 +310,6 @@ impl AquaPathV1 {
             AquaPathSideType::Right => self.right_controller.set_target_temperature(target_temp),
             AquaPathSideType::Left => self.left_controller.set_target_temperature(target_temp),
         }
-        
     }
 
     fn set_should_pump(&mut self, should_pump: bool, cooling_type: AquaPathSideType) {
@@ -297,7 +330,6 @@ impl AquaPathV1 {
                 .left_controller
                 .set_max_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
         }
-        
     }
 }
 
@@ -340,8 +372,6 @@ impl AquaPathV1 {
                     .set_heating_tolerance(ThermodynamicTemperature::new::<degree_celsius>(value))
             }
         }
-
-        
     }
 
     fn set_cooling_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
@@ -375,8 +405,6 @@ impl AquaPathV1 {
                     .set_cooling_tolerance(ThermodynamicTemperature::new::<degree_celsius>(value))
             }
         }
-
-        
     }
 
     fn set_pid_kp(&mut self, value: f64, side: AquaPathSideType) {
@@ -389,7 +417,6 @@ impl AquaPathV1 {
             AquaPathSideType::Right => self.right_controller.set_pid_kp(value),
             AquaPathSideType::Left => self.left_controller.set_pid_kp(value),
         }
-        
     }
 
     fn set_pid_ki(&mut self, value: f64, side: AquaPathSideType) {
@@ -402,7 +429,6 @@ impl AquaPathV1 {
             AquaPathSideType::Right => self.right_controller.set_pid_ki(value),
             AquaPathSideType::Left => self.left_controller.set_pid_ki(value),
         }
-        
     }
 
     fn set_pid_kd(&mut self, value: f64, side: AquaPathSideType) {
@@ -415,7 +441,6 @@ impl AquaPathV1 {
             AquaPathSideType::Right => self.right_controller.set_pid_kd(value),
             AquaPathSideType::Left => self.left_controller.set_pid_kd(value),
         }
-        
     }
 
     fn set_thermal_flow_settle_duration(&mut self, duration: f64, side: AquaPathSideType) {
@@ -449,7 +474,6 @@ impl AquaPathV1 {
                 .left_controller
                 .set_thermal_flow_settle_duration(duration),
         }
-        
     }
 
     fn set_pump_cooldown_min_temperature(&mut self, temperature: f64, side: AquaPathSideType) {
@@ -483,6 +507,5 @@ impl AquaPathV1 {
                 .left_controller
                 .set_pump_cooldown_min_temperature(temperature),
         }
-        
     }
 }

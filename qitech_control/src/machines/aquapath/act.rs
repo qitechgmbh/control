@@ -1,19 +1,9 @@
+use super::AquaPathV1;
 use qitech_framework::machine::{ActResult, Machine};
-
-use super::{AquaPathV1, AquaPathV1Mode};
-use std::time::{Instant};
+use std::time::Instant;
 
 impl Machine for AquaPathV1 {
     fn act(&mut self, now: Instant) -> ActResult {
-        match self.mode {
-            AquaPathV1Mode::Standby => {
-                self.switch_to_standby();
-            }
-            AquaPathV1Mode::Auto => {
-                self.switch_to_auto();
-            }
-        }
-
         self.left_controller.update(now);
         self.right_controller.update(now);
 
@@ -23,7 +13,7 @@ impl Machine for AquaPathV1 {
         for notice in left_notices.iter().copied() {
             self.emit_controller_notice("Left Reservoir", notice);
         }
-        
+
         for notice in right_notices.iter().copied() {
             self.emit_controller_notice("Right Reservoir", notice);
         }

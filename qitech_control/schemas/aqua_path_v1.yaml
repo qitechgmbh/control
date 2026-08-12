@@ -44,7 +44,7 @@ state:
   right_thermal_safety_state:
     thermal_delay: !float
     cooldown_min_temperature: !float
-    
+
 config:  
   left_target_temperature: !float
   right_target_temperature: !float
@@ -77,3 +77,14 @@ events:
   notice_event: !event
     title: !string
     message: !string
+
+commands:
+  state:
+    set_standby: !command
+    set_auto: !command
+  pump:
+    start_right_pump: !command
+    stop_right_pump: !command
+    start_left_pump: !command
+    stop_left_pump: !command
+  
