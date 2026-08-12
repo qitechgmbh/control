@@ -120,16 +120,33 @@ in
   # enp1s0 is dedicated to the XTREM scale (UDP broadcast on 192.168.4.0/24, see
   # xtrem/README.md). It's an ethernet device, so NetworkManager ignores it (above);
   # networkd manages it instead without any conflict.
+  #
+  # The module has no static factory address — it's a DHCP client, so this host has to
+  # hand it a lease or it never gets an IP and never answers a discovery broadcast. That
+  # failure is indistinguishable from a dead cable: the host is on the right subnet, the
+  # send succeeds, and every BusStats counter stays at zero. Confirmed against a working
+  # reference setup, where the module leases an address in this pool and replies normally.
   systemd.network.enable = true;
   systemd.network.networks."10-enp1s0" = {
     matchConfig.Name = "enp1s0";
     networkConfig = {
-      Address = "192.168.4.10/24";
-      DHCP = "no";
+      Address = "192.168.4.1/24";
+      DHCP = "no"; # we take no lease ourselves...
+      DHCPServer = "yes"; # ...we hand them out
+    };
+    # Pool is .10-.99, so .1 (us) stays out of it and .100+ is free for hand-pinned hosts.
+    dhcpServerConfig = {
+      PoolOffset = 10;
+      PoolSize = 90;
     };
   };
-  # Scale replies to the host on 5555 (register 0700h default); scope to enp1s0 only.
-  networking.firewall.interfaces.enp1s0.allowedUDPPorts = [ 5555 ];
+  # 5555: the scale replies to the host here (register 0700h default).
+  # 67: DHCP server port — without it the module's DISCOVER is dropped and it never gets
+  # the address everything above depends on. Both scoped to enp1s0 only.
+  networking.firewall.interfaces.enp1s0.allowedUDPPorts = [
+    67
+    5555
+  ];
 
   # Enable the X11 windowing system.
   services.displayManager.gdm = {
