@@ -24,6 +24,7 @@ pub enum AquaPathV1Mode {
     Auto,
 }
 
+#[derive(Copy, Clone)]
 pub enum AquaPathSideType {
     Left,
     Right,
@@ -151,7 +152,7 @@ impl std::fmt::Display for AquaPathV1 {
         write!(f, "Aquapath")
     }
 }
-
+/*
 #[derive(Serialize)]
 enum Mutation {
     //Mode
@@ -177,7 +178,7 @@ enum Mutation {
     SetLeftPumpCooldownMinTemperature(f64),
     SetRightPumpCooldownMinTemperature(f64),
     SetAmbientTemperatureCalibration(f64),
-}
+}*/
 
 impl AquaPathV1 {
     fn request_pump_off(&mut self) {
@@ -259,8 +260,6 @@ impl AquaPathV1 {
         self.set_should_pump(false, AquaPathSideType::Left);
         return Ok(());
     }
-    
-
 }
 
 impl AquaPathV1 {
@@ -403,6 +402,21 @@ impl AquaPathV1 {
                 );
                 self.left_controller
                     .set_cooling_tolerance(ThermodynamicTemperature::new::<degree_celsius>(value))
+            }
+        }
+    }
+
+    fn set_pid(&mut self, side: AquaPathSideType) {
+        match side {
+            AquaPathSideType::Left => {
+                self.set_pid_kp(self.config_props.left_pid_config.kp.get(), side);
+                self.set_pid_ki(self.config_props.left_pid_config.ki.get(), side);
+                self.set_pid_kd(self.config_props.left_pid_config.kd.get(), side);
+            }
+            AquaPathSideType::Right => {
+                self.set_pid_kp(self.config_props.right_pid_config.kp.get(), side);
+                self.set_pid_ki(self.config_props.right_pid_config.ki.get(), side);
+                self.set_pid_kd(self.config_props.right_pid_config.kd.get(), side);
             }
         }
     }

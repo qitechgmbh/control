@@ -168,16 +168,24 @@ fn init_state(ctx: &mut BuildContext) -> BuildResult<StateProperties> {
 impl AquaPathV1 {
     fn init_config(ctx: &mut BuildContext) -> BuildResult<ConfigProperties> {
         let left_tolerance_state = ToleranceState {
-            heating: ctx.config::<f64>("left_tolerance_config.heating").build()?,
-            cooling: ctx.config::<f64>("left_tolerance_config.cooling").build()?,
+            heating: ctx
+                .config::<f64>("left_tolerance_config.heating")
+                .on_external_changed(Self::on_set_left_heating_tolerance)
+                .build()?,
+            cooling: ctx
+                .config::<f64>("left_tolerance_config.cooling")
+                .on_external_changed(Self::on_set_left_cooling_tolerance)
+                .build()?,
         };
 
         let right_tolerance_state = ToleranceState {
             heating: ctx
                 .config::<f64>("right_tolerance_config.heating")
+                .on_external_changed(Self::on_set_right_heating_tolerance)
                 .build()?,
             cooling: ctx
                 .config::<f64>("right_tolerance_config.cooling")
+                .on_external_changed(Self::on_set_right_cooling_tolerance)
                 .build()?,
         };
 
@@ -185,14 +193,17 @@ impl AquaPathV1 {
             kp: ctx
                 .config::<f64>("left_pid_config.kp")
                 .default(AquaPathV1::DEFAULT_PID_KP)
+                .on_external_changed(Self::on_set_left_pid)
                 .build()?,
             ki: ctx
                 .config::<f64>("left_pid_config.ki")
                 .default(AquaPathV1::DEFAULT_PID_KI)
+                .on_external_changed(Self::on_set_left_pid)
                 .build()?,
             kd: ctx
                 .config::<f64>("left_pid_config.kd")
                 .default(AquaPathV1::DEFAULT_PID_KD)
+                .on_external_changed(Self::on_set_left_pid)
                 .build()?,
         };
 
@@ -200,25 +211,32 @@ impl AquaPathV1 {
             kp: ctx
                 .config::<f64>("right_pid_config.kp")
                 .default(AquaPathV1::DEFAULT_PID_KP)
+                .on_external_changed(Self::on_set_right_pid)
                 .build()?,
             ki: ctx
                 .config::<f64>("right_pid_config.ki")
                 .default(AquaPathV1::DEFAULT_PID_KI)
+                .on_external_changed(Self::on_set_right_pid)
                 .build()?,
             kd: ctx
                 .config::<f64>("right_pid_config.kd")
                 .default(AquaPathV1::DEFAULT_PID_KD)
+                .on_external_changed(Self::on_set_right_pid)
                 .build()?,
         };
 
         let props = ConfigProperties {
-            left_target_temperature: ctx.config::<f64>("left_target_temperature").build()?,
+            left_target_temperature: ctx
+                .config::<f64>("left_target_temperature")
+                .on_external_changed(Self::on_left_target_temparature_changed)
+                .build()?,
             right_target_temperature: ctx
                 .config::<f64>("right_target_temperature")
                 .on_external_changed(Self::on_right_target_temparature_changed)
                 .build()?,
             ambient_temperature_calibration: ctx
                 .config::<f64>("ambient_temperature_calibration")
+                .on_external_changed(Self::on_set_ambient_temperature_calibration)
                 .build()?,
             default_heating_tolerance: ctx
                 .config::<f64>("default_heating_tolerance")
@@ -240,28 +258,53 @@ impl AquaPathV1 {
                 .config::<f64>("default_pid_kd")
                 .default(AquaPathV1::DEFAULT_PID_KD)
                 .build()?,
-            left_fan_max_revolutions: ctx.config::<f64>("left_fan_max_revolutions").build()?,
-            right_fan_max_revolutions: ctx.config::<f64>("right_fan_max_revolutions").build()?,
+            left_fan_max_revolutions: ctx
+                .config::<f64>("left_fan_max_revolutions")
+                .on_external_changed(Self::on_set_left_revolutions)
+                .build()?,
+            right_fan_max_revolutions: ctx
+                .config::<f64>("right_fan_max_revolutions")
+                .on_external_changed(Self::on_set_right_revolutions)
+                .build()?,
             left_tolerance_config: left_tolerance_state,
             right_tolerance_config: right_tolerance_state,
             left_pid_config,
             right_pid_config,
+            left_thermal_flow_settle_duration: ctx
+                .config::<f64>("left_thermal_flow_settle_duration")
+                .on_external_changed(Self::on_set_left_thermal_flow_settle_duration)
+                .build()?,
+            right_thermal_flow_settle_duration: ctx
+                .config::<f64>("right_thermal_flow_settle_duration")
+                .on_external_changed(Self::on_set_right_thermal_flow_settle_duration)
+                .build()?,
+            left_pump_cooldown_min_temperature: ctx
+                .config::<f64>("left_pump_cooldown_min_temperature")
+                .on_external_changed(Self::on_set_left_cooldown_min_temp)
+                .build()?,
+            right_pump_cooldown_min_temperature: ctx
+                .config::<f64>("right_pump_cooldown_min_temperature")
+                .on_external_changed(Self::on_set_right_cooldown_min_temp)
+                .build()?,
         };
-
         Ok(props)
     }
 
     fn init_commands(ctx: &mut BuildContext) -> BuildResult<()> {
         ctx.command("state.set_standby")
             .execute(Self::switch_to_standby)
-            .build()?;        
+            .build()?;
         ctx.command("state.set_auto")
             .execute(Self::switch_to_auto)
             .build()?;
-        ctx.command("pump.start_right_pump").execute(Self::cmd_start_right_pump);
-        ctx.command("pump.stop_right_pump").execute(Self::cmd_stop_right_pump);        
-        ctx.command("pump.start_left_pump").execute(Self::cmd_start_left_pump);
-        ctx.command("pump.stop_left_pump").execute(Self::cmd_stop_left_pump);
+        ctx.command("pump.start_right_pump")
+            .execute(Self::cmd_start_right_pump);
+        ctx.command("pump.stop_right_pump")
+            .execute(Self::cmd_stop_right_pump);
+        ctx.command("pump.start_left_pump")
+            .execute(Self::cmd_start_left_pump);
+        ctx.command("pump.stop_left_pump")
+            .execute(Self::cmd_stop_left_pump);
         Ok(())
     }
 

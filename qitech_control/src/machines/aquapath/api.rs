@@ -67,7 +67,6 @@ pub struct ConfigProperties {
 
     pub default_heating_tolerance: ConfigProperty<f64>,
     pub default_cooling_tolerance: ConfigProperty<f64>,
-
     pub default_pid_kp: ConfigProperty<f64>,
     pub default_pid_ki: ConfigProperty<f64>,
     pub default_pid_kd: ConfigProperty<f64>,
@@ -80,6 +79,12 @@ pub struct ConfigProperties {
 
     pub left_pid_config: PidState,
     pub right_pid_config: PidState,
+
+    pub left_thermal_flow_settle_duration: ConfigProperty<f64>,
+    pub right_thermal_flow_settle_duration: ConfigProperty<f64>,
+
+    pub left_pump_cooldown_min_temperature: ConfigProperty<f64>,
+    pub right_pump_cooldown_min_temperature: ConfigProperty<f64>,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -119,8 +124,107 @@ impl AquaPathV1 {
 
     pub fn on_left_target_temparature_changed(&mut self) -> ActResult {
         _ = self.set_target_temperature(
-        self.config_props.left_target_temperature.get(),
+            self.config_props.left_target_temperature.get(),
             super::AquaPathSideType::Left,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_right_revolutions(&mut self) -> ActResult {
+        self.set_max_revolutions(
+            self.config_props.right_fan_max_revolutions.get(),
+            super::AquaPathSideType::Right,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_left_revolutions(&mut self) -> ActResult {
+        self.set_max_revolutions(
+            self.config_props.left_fan_max_revolutions.get(),
+            super::AquaPathSideType::Left,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_right_heating_tolerance(&mut self) -> ActResult {
+        self.set_heating_tolerance(
+            self.config_props.right_tolerance_config.heating.get(),
+            super::AquaPathSideType::Right,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_left_heating_tolerance(&mut self) -> ActResult {
+        self.set_heating_tolerance(
+            self.config_props.left_tolerance_config.heating.get(),
+            super::AquaPathSideType::Left,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_right_cooling_tolerance(&mut self) -> ActResult {
+        self.set_cooling_tolerance(
+            self.config_props.right_tolerance_config.cooling.get(),
+            super::AquaPathSideType::Right,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_left_cooling_tolerance(&mut self) -> ActResult {
+        self.set_cooling_tolerance(
+            self.config_props.left_tolerance_config.cooling.get(),
+            super::AquaPathSideType::Left,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_left_pid(&mut self) -> ActResult {
+        self.set_pid(super::AquaPathSideType::Left);
+        Ok(())
+    }
+
+    pub fn on_set_right_pid(&mut self) -> ActResult {
+        self.set_pid(super::AquaPathSideType::Right);
+        Ok(())
+    }
+
+    pub fn on_set_left_thermal_flow_settle_duration(&mut self) -> ActResult {
+        // TODO change config_props
+        self.set_thermal_flow_settle_duration(
+            self.config_props.left_thermal_flow_settle_duration.get(),
+            super::AquaPathSideType::Left,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_right_thermal_flow_settle_duration(&mut self) -> ActResult {
+        // TODO change config_props
+        self.set_thermal_flow_settle_duration(
+            self.config_props.right_thermal_flow_settle_duration.get(),
+            super::AquaPathSideType::Right,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_left_cooldown_min_temp(&mut self) -> ActResult {
+        self.set_pump_cooldown_min_temperature(
+            self.config_props.left_pump_cooldown_min_temperature.get(),
+            super::AquaPathSideType::Left,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_right_cooldown_min_temp(&mut self) -> ActResult {
+        self.set_pump_cooldown_min_temperature(
+            self.config_props.right_pump_cooldown_min_temperature.get(),
+            super::AquaPathSideType::Right,
+        );
+        Ok(())
+    }
+
+    pub fn on_set_ambient_temperature_calibration(&mut self) -> ActResult {
+        self.set_ambient_temperature_calibration(
+            self.config_props.ambient_temperature_calibration.get(),
         );
         Ok(())
     }
@@ -239,5 +343,40 @@ impl AquaPathV1 {
         self.state_props
             .right_cooling_mode
             .set(self.right_controller.cooling_mode.clone());
+
+        self.state_props
+            .left_thermal_safety_state
+            .thermal_delay
+            .set(
+                self.left_controller
+                    .get_thermal_flow_settle_duration()
+                    .as_secs_f64(),
+            );
+
+        self.state_props
+            .left_thermal_safety_state
+            .cooldown_min_temperature
+            .set(
+                self.left_controller
+                    .get_pump_cooldown_min_temperature()
+                    .get::<degree_celsius>(),
+            );
+
+        self.state_props
+            .right_thermal_safety_state
+            .thermal_delay
+            .set(
+                self.right_controller
+                    .get_thermal_flow_settle_duration()
+                    .as_secs_f64(),
+            );
+        self.state_props
+            .right_thermal_safety_state
+            .cooldown_min_temperature
+            .set(
+                self.right_controller
+                    .get_pump_cooldown_min_temperature()
+                    .get::<degree_celsius>(),
+            );
     }
 }
