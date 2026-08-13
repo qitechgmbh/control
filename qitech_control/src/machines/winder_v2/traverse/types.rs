@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::Duration;
 
 use qitech_framework::EnumProperty;
 
@@ -26,46 +26,17 @@ impl From<WinderMode> for Mode {
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub enum State {
     #[default]
-    /// Initial state
-    NotHomed,
-
-    /// Doing nothing
-    /// Already homed
     Idle,
-
-    /// Going to inner limit
-    ///
-    /// After reaching the inner limit, the state will change to [`State::Idle`]
     GoingIn,
-
-    /// Going to outer limit
-    ///
-    /// After reaching the outer limit, the state will change to [`State::Idle`]
     GoingOut,
-
-    /// Homing is in progress
-    ///
-    /// After homing is done, the state will change to [`State::Idle`]
     Homing(HomingState),
-
-    /// Move between inner and outer limits
     Traversing(TraversingState),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum TraversingState {
-    /// Like [`State::GoingOut`] but
-    /// - will go into [`State::GoingIn`] after reaching the outer limit
     GoingOut,
-
-    /// Like [`State::GoingIn`] but
-    /// - will go into [`State::GoingOut`] after reaching the inner limit
-    /// - speed is synced to spool speed
     TraversingIn,
-
-    /// Like [`State::GoingOut`] but
-    /// - will go into [`State::GoingIn`] after reaching the outer limit
-    /// - speed is synced to spool speed
     TraversingOut,
 }
 
@@ -91,7 +62,7 @@ pub enum HomingState {
     FindEndstopFine,
 
     /// In this state we check if th current position is actually 0.0, if not we redo the homing routine
-    Validate(Instant),
+    Validate(Duration),
 }
 
 // --- enum property ---
@@ -109,7 +80,6 @@ impl qitech_framework::__private::PropertyAdapter for State {
 
     fn into_scalar(value: Self::Type) -> qitech_framework::__private::ScalarValue {
         let s = match value {
-            State::NotHomed => "not_homed",
             State::Idle => "idle",
             State::GoingIn => "going_in",
             State::GoingOut => "going_out",
@@ -140,7 +110,6 @@ impl qitech_framework::__private::PropertyAdapter for State {
         };
 
         Ok(match s.as_str() {
-            "not_homed" => State::NotHomed,
             "idle" => State::Idle,
             "going_in" => State::GoingIn,
             "going_out" => State::GoingOut,

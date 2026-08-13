@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Duration;
-use std::time::Instant;
 
 use qitech_framework::Machine;
 use qitech_framework::MachineIdentification;
@@ -48,7 +47,7 @@ pub struct LaserV1 {
     out_of_tolerance: EventEmitter<()>,
 
     // -- misc ---
-    last_request: Instant,
+    request_timer: Duration,
 }
 
 impl MachineBuild for LaserV1 {
@@ -89,16 +88,14 @@ impl MachineBuild for LaserV1 {
                 .build()?,
             roundness: ctx.measurement::<Option<f64>>("roundness").build()?,
             out_of_tolerance: ctx.event("out_of_tolerance").build()?,
-            last_request: Instant::now(),
+            request_timer: Duration::ZERO,
         })
     }
 }
 
 impl Machine for LaserV1 {
-    fn act(&mut self, now: Instant) -> ActResult {
-        _ = now;
-
-        self.update_device()?;
+    fn act(&mut self, dt: Duration) -> ActResult {
+        self.update_device(dt)?;
 
         if let Some(m) = self.device.borrow().measurement.clone() {
             fn convert(value: u16) -> Length {
@@ -129,7 +126,7 @@ impl LaserV1 {
         machine_id: 6,
     };
 
-    fn update_device(&mut self) -> ActResult {
+    fn update_device(&mut self, dt: Duration) -> ActResult {
         let mut laser = self.device.borrow_mut();
 
         if let Err(e) = laser.handle_response()
@@ -142,15 +139,13 @@ impl LaserV1 {
             });
         }
 
-        let now = Instant::now();
-        if now.duration_since(self.last_request) > Duration::from_millis(6) {
-            self.last_request = now;
+        self.request_timer = self.request_timer.saturating_sub(dt);
 
-            if let Err(e) = laser.send_next_request() {
-                return Err(ActError {
-                    kind: ActErrorKind::HardwareFault(format!("Failed to send request: {e}")),
-                    impact: ActErrorImpact::Degraded,
-                });
+        if self.request_timer.is_zero() {
+            self.request_timer = Duration::from_millis(6);
+
+            if let Err(err) = laser.send_next_request() {
+                println!("send_next_request {:?}", err);
             }
         }
 

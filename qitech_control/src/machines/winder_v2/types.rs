@@ -24,6 +24,4 @@ pub struct LaserSubscription {
     pub ident: MachineIdentificationUnique,
     pub diameter: RemoteProperty<Length>,
     pub diameter_target: RemoteProperty<Length>,
-    pub tolerance_lower: RemoteProperty<Length>,
-    pub tolerance_upper: RemoteProperty<Length>,
 }

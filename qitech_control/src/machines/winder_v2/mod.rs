@@ -1,3 +1,4 @@
+use std::time::Duration;
 use std::time::Instant;
 
 use qitech_framework::MachineIdentification;
@@ -8,6 +9,7 @@ use qitech_framework::machine::ActResult;
 use qitech_framework::machine::ConfigProperty;
 use qitech_framework::machine::Machine;
 use qitech_framework::machine::MachineDescriptor;
+use qitech_framework::machine::OperationCapability;
 use qitech_framework::machine::StateProperty;
 use qitech_framework::machine::SubscribeContext;
 use qitech_framework::machine::SubscribeResult;
@@ -19,12 +21,11 @@ use crate::machines::winder_v2::types::LaserSubscription;
 use crate::machines::winder_v2::types::Mode;
 
 mod build;
+mod types;
+mod utils;
 
 mod traverse;
 use traverse::Traverse;
-
-mod tension_arm;
-use tension_arm::TensionArm;
 
 mod puller;
 use puller::Puller;
@@ -32,11 +33,11 @@ use puller::Puller;
 mod spool;
 use spool::Spool;
 
-mod types;
-mod utils;
+mod tension_arm;
+use tension_arm::TensionArm;
 
-pub const LASER_PORT: usize = 0;
-pub const SPOOL_PORT: usize = 0;
+mod laser_pointer;
+use laser_pointer::LaserPointer;
 
 pub const VARIANT_REGULAR: usize = 0;
 pub const VARIANT_7031_SPOOL: usize = 1;
@@ -48,15 +49,19 @@ pub type WinderV1_Regular = WinderV1<VARIANT_REGULAR>;
 pub type WinderV1_7031_Spool = WinderV1<VARIANT_7031_SPOOL>;
 
 pub struct WinderV1<const VARIANT: usize> {
-    pub spool: Spool,
-    pub puller: Puller,
-    pub traverse: Traverse,
-    pub tension_arm: TensionArm,
+    // ---- components ---
+    spool: Spool,
+    puller: Puller,
+    traverse: Traverse,
+    tension_arm: TensionArm,
+    laser_pointer: LaserPointer,
 
-    pub mode: StateProperty<Mode>,
-    pub spool_automatic_action: SpoolAutomaticAction,
+    // --- state ---
+    pub(super) mode: StateProperty<Mode>,
+    // pub(super) spool_automatic_action: SpoolAutomaticAction,
 
-    pub laser_subscription: Option<LaserSubscription>,
+    // --- subscriptions ---
+    pub(super) laser_subscription: Option<LaserSubscription>,
 }
 
 impl MachineDescriptor for WinderV1<VARIANT_REGULAR> {
@@ -78,7 +83,7 @@ impl MachineDescriptor for WinderV1<VARIANT_7031_SPOOL> {
 }
 
 impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
-    fn act(&mut self, now: Instant) -> ActResult {
+    fn act(&mut self, dt: Duration) -> ActResult {
         if let Err(kind) = self.tension_arm.update() {
             return Err(ActError {
                 kind,
@@ -86,12 +91,16 @@ impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
             });
         };
 
-        // self.sync_spool_speed(now);
+        self.spool.update(dt, &self.puller, &self.tension_arm);
 
-        self.puller.update(now, &self.laser_subscription);
-        self.traverse.update(now, self.spool.velocity.get());
+        if let Err(kind) = self.puller.update(dt, self.laser_subscription.as_ref()) {
+            return Err(ActError {
+                kind,
+                impact: ActErrorImpact::Degraded,
+            });
+        };
 
-        // self.stop_or_pull_spool(now);
+        self.traverse.update(dt, self.spool.velocity.get());
 
         Ok(())
     }
@@ -101,8 +110,6 @@ impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
             ident: ctx.provider(),
             diameter: ctx.measurement("diameter")?,
             diameter_target: ctx.config("diameter.target")?,
-            tolerance_upper: ctx.config("diameter.tolerance.upper")?,
-            tolerance_lower: ctx.config("diameter.tolerance.lower")?,
         });
 
         Ok(())
@@ -118,12 +125,28 @@ impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
 }
 
 impl<const VARIANT: usize> WinderV1<VARIANT> {
-    pub fn set_mode(&mut self, mode: Mode) -> ActResult {
-        self.mode.set(mode);
-        self.spool.apply_mode(mode.into());
-        self.puller.apply_mode(mode.into());
+    fn can_wind(&self) -> OperationCapability {
+        if !self.tension_arm.zeroed() {
+            return OperationCapability::forbidden("tension arm is not zeroed");
+        }
 
-        if let Err(kind) = self.traverse.apply_mode(mode.into()) {
+        if !self.traverse.is_homed() {
+            return OperationCapability::forbidden("traverse is not homed");
+        }
+
+        if self.traverse.is_homing() {
+            return OperationCapability::forbidden("traverse is homing");
+        }
+
+        OperationCapability::Allowed
+    }
+
+    fn set_mode(&mut self, mode: Mode) -> ActResult {
+        self.mode.set(mode);
+        self.spool.set_mode(mode.into());
+        self.puller.set_mode(mode.into());
+
+        if let Err(kind) = self.traverse.set_mode(mode.into()) {
             return Err(ActError {
                 kind,
                 impact: ActErrorImpact::Degraded,

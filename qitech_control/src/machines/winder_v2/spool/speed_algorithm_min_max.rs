@@ -1,3 +1,4 @@
+use std::time::Duration;
 use std::time::Instant;
 
 use qitech_lib::units::AngularAcceleration;
@@ -18,17 +19,37 @@ pub struct SpeedAlgorithmMinMax {
 }
 
 impl SpeedAlgorithmMinMax {
+    pub fn init() -> Self {
+        let speed_time_window = MovingTimeWindow::new(std::time::Duration::from_secs(5), 10);
+
+        let acceleration_controller = AngularAccelerationSpeedController::new(
+            Some(AngularVelocity::ZERO),
+            None,
+            AngularAcceleration::ZERO,
+            AngularAcceleration::ZERO,
+            AngularVelocity::ZERO,
+        );
+
+        Self {
+            speed_time_window,
+            acceleration_controller,
+        }
+    }
+}
+
+impl SpeedAlgorithmMinMax {
     pub fn compute(&mut self, input: SpeedAlgorithmInput) -> AngularVelocity {
         let speed = match input.enabled {
             true => self.compute_raw(&input),
             false => AngularVelocity::ZERO,
         };
 
-        let speed = self.accelerate(speed, input.now);
-        speed
+        self.accelerate(input.dt, speed)
     }
 
-    fn accelerate(&mut self, speed: AngularVelocity, now: Instant) -> AngularVelocity {
+    fn accelerate(&mut self, dt: Duration, speed: AngularVelocity) -> AngularVelocity {
+        _ = dt;
+
         // The min/max acceleration depends on the max speed of the last 5 secs or the target speed (whatever is higher)
         let acceleration = AngularAcceleration::new::<radian_per_second_squared>(
             self.speed_time_window
@@ -45,6 +66,7 @@ impl SpeedAlgorithmMinMax {
         self.acceleration_controller
             .set_min_acceleration(-acceleration);
 
+        let now = Instant::now();
         let new_speed = self.acceleration_controller.update(speed, now);
 
         // add new speed to the time window

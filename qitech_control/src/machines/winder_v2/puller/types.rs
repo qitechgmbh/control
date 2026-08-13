@@ -42,8 +42,8 @@ impl GearRatio {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, EnumProperty)]
-pub enum SpeedRegulationMode {
+pub enum SpeedControlAlgorithm {
     #[default]
     Direct,
-    Diameter,
+    Adaptive,
 }

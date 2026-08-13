@@ -23,7 +23,7 @@ pub struct FilamentTensionCalculator {
     max_angle: Angle,
     min_distance: Length,
     max_distance: Length,
-    pub angle_converter: AngleConverterUom,
+    angle_converter: AngleConverterUom,
 }
 
 impl FilamentTensionCalculator {
@@ -44,14 +44,32 @@ impl FilamentTensionCalculator {
         // Calculate min and max distances
         calculator.min_distance = calculator.calc_filament_length(min_angle);
         calculator.max_distance = calculator.calc_filament_length(max_angle);
-
         calculator
     }
 
-    // Calculate the filament length for a given tension arm angle
-    // - [`tension_arm_angle_deg`] in Y-Flipped CW rotation system
-    // Returns the filament length in mm.
-    pub fn calc_filament_length(&self, tension_arm_angle: Angle) -> Length {
+    // Calculate filament tension as a value between 0.0 (low) and 1.0 (high).
+    // `1.0` means the minimum amount of filament is in the tensioning system (high tension).
+    // `0.0` means the maximum amount of filament is in the tensioning system (low tension).
+    // `tension_arm_angle` uses the Y-flipped CW rotation system.
+    pub fn calc_filament_tension(&self, tension_arm_angle: Angle) -> Option<f64> {
+        if tension_arm_angle < self.min_angle || tension_arm_angle > self.max_angle {
+            // out of bounds
+            return None
+        };
+
+        let current_distance = self.calc_filament_length(tension_arm_angle);
+        let distance_range = self.max_distance - self.min_distance;
+
+        let normalized = ((current_distance - self.min_distance) / distance_range)
+            .get::<ratio>()
+            .clamp(0.0, 1.0);
+
+        Some(1.0 - normalized)
+    }
+
+    /// Calculate the filament length for a given tension arm angle
+    /// - [`tension_arm_angle_deg`] in Y-Flipped CW rotation system
+    fn calc_filament_length(&self, tension_arm_angle: Angle) -> Length {
         let tension_arm_angle_rad = self
             .angle_converter
             .decode(tension_arm_angle)
@@ -76,31 +94,5 @@ impl FilamentTensionCalculator {
             + tension_arm_tip.distance_to(self.traverse_point);
 
         Length::new::<centimeter>(length_cm)
-    }
-
-    // Calculate the filament buffer as a value between 0.0 (min) and 1.0 (max)
-    // `1.0` means the minimum amount of filament is in the tensioning system (high tension)
-    // `0.0` means the maximum amount of filament is in the tensioning system (low tension)
-    // - [`tension_arm_angle`] in Y-Flipped CW rotation system
-    pub fn calc_filament_tension(&self, tension_arm_angle: Angle) -> f64 {
-        let current_distance = self.calc_filament_length(tension_arm_angle);
-
-        let distance_range = self.max_distance - self.min_distance;
-
-        1.0 - ((current_distance - self.min_distance) / distance_range)
-            .get::<ratio>()
-            .clamp(0.0, 1.0)
-    }
-
-    // Get the optimal angle (minimum filament length)
-    // Returns the angle in Y-Flipped CW rotation system.
-    pub fn get_min_angle(&self) -> Angle {
-        self.min_angle
-    }
-
-    // Get the maximum reference angle
-    // Returns the angle in Y-Flipped CW rotation system.
-    pub fn get_max_angle(&self) -> Angle {
-        self.max_angle
     }
 }

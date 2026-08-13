@@ -20,3 +20,10 @@ impl From<WinderMode> for Mode {
         }
     }
 }
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, EnumProperty)]
+pub enum SpeedControlAlgorithm {
+    #[default]
+    Adaptive,
+    MinMax,
+}

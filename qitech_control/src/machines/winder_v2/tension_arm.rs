@@ -1,7 +1,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use qitech_framework::machine::ActError;
+use qitech_framework::machine::ActErrorImpact;
 use qitech_framework::machine::ActErrorKind;
+use qitech_framework::machine::BuildContext;
+use qitech_framework::machine::BuildResult;
 use qitech_framework::machine::Measurement;
 use qitech_framework::machine::StateProperty;
 use qitech_lib::ethercat_hal::io::analog_input::physical::AnalogInputValue;
@@ -11,22 +15,52 @@ use qitech_lib::units::angle::revolution;
 use qitech_lib::units::electric_potential::volt;
 use qitech_lib::units::f64::*;
 
+use crate::machines::winder_v2::WinderV1;
+
 pub struct TensionArm {
-    pub(super) analog_input: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
-    pub(super) zero: StateProperty<Option<Angle>>,
-    pub(super) angle: Measurement<Angle>,
+    device: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+    zero: StateProperty<Option<Angle>>,
+    angle: Measurement<Angle>,
 }
 
 impl TensionArm {
-    pub fn update(&mut self) -> Result<(), ActErrorKind> {
-        self.update_angle()
+    pub fn init<const VARIANT: usize>(
+        ctx: &mut BuildContext,
+        device: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
+    ) -> BuildResult<Self> {
+        ctx.command("tension_arm.set_zero")
+            .execute(|m: &mut WinderV1<VARIANT>| {
+                m.tension_arm.set_zero().map_err(|e| ActError {
+                    kind: e,
+                    impact: ActErrorImpact::Degraded,
+                })
+            })
+            .build()?;
+
+        Ok(Self {
+            device,
+            zero: ctx
+                .state::<Option<revolution>>("tension_arm.zero")
+                .build()?,
+            angle: ctx.measurement::<revolution>("tension_arm.angle").build()?,
+        })
+    }
+}
+
+impl TensionArm {
+    pub fn zeroed(&self) -> bool {
+        self.zero.get().is_some()
     }
 
     pub fn angle(&self) -> Angle {
         self.angle.get()
     }
 
-    pub fn set_zero(&mut self) -> Result<(), ActErrorKind> {
+    pub fn update(&mut self) -> Result<(), ActErrorKind> {
+        self.update_angle()
+    }
+
+    fn set_zero(&mut self) -> Result<(), ActErrorKind> {
         let angle = self.raw_angle()?;
         self.zero.set(Some(angle));
         Ok(())
@@ -64,7 +98,7 @@ impl TensionArm {
 
     /// Read the normalized voltage from the analog input.
     fn read_volts(&self) -> Result<f64, ActErrorKind> {
-        let analog_input = self.analog_input.borrow();
+        let analog_input = self.device.borrow();
 
         let range = analog_input
             .analog_input_range()
