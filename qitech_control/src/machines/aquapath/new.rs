@@ -106,7 +106,9 @@ fn init_measurements(ctx: &mut BuildContext) -> BuildResult<Measurements> {
     })
 }
 
+#[machine_build(AquaPathV1)]
 fn init_state(ctx: &mut BuildContext) -> BuildResult<StateProperties> {
+
     let mode_state = ModeState {
         mode: ctx.state::<AquaPathV1Mode>("mode_state.mode").build()?,
     };
@@ -131,7 +133,6 @@ fn init_state(ctx: &mut BuildContext) -> BuildResult<StateProperties> {
 
     Ok(StateProperties {
         mode_state,
-        is_default_state: ctx.state::<bool>("is_default_state").build()?,
         left_heating_startup_wait_active: ctx
             .state::<bool>("left_heating_startup_wait_active")
             .build()?,
@@ -144,8 +145,6 @@ fn init_state(ctx: &mut BuildContext) -> BuildResult<StateProperties> {
         right_should_flow: ctx.state::<bool>("right_should_flow").build()?,
         left_heating: ctx.state::<bool>("left_heating").build()?,
         right_heating: ctx.state::<bool>("right_heating").build()?,
-        left_has_flow: ctx.state::<bool>("left_has_flow").build()?,
-        right_has_flow: ctx.state::<bool>("right_has_flow").build()?,
         left_pump_cooldown_remaining: ctx.state::<f64>("left_pump_cooldown_remaining").build()?,
         right_pump_cooldown_remaining: ctx.state::<f64>("right_pump_cooldown_remaining").build()?,
         left_heating_startup_wait_remaining: ctx
@@ -166,6 +165,7 @@ fn init_state(ctx: &mut BuildContext) -> BuildResult<StateProperties> {
 }
 
 impl AquaPathV1 {
+    #[machine_build(AquaPathV1)]
     fn init_config(ctx: &mut BuildContext) -> BuildResult<ConfigProperties> {
         let left_tolerance_state = ToleranceState {
             heating: ctx
@@ -238,7 +238,7 @@ impl AquaPathV1 {
                 .config::<f64>("ambient_temperature_calibration")
                 .on_external_changed(Self::on_set_ambient_temperature_calibration)
                 .build()?,
-            default_heating_tolerance: ctx
+/*            default_heating_tolerance: ctx
                 .config::<f64>("default_heating_tolerance")
                 .default(AquaPathV1::DEFAULT_HEATING_TOLERANCE)
                 .build()?,
@@ -257,7 +257,7 @@ impl AquaPathV1 {
             default_pid_kd: ctx
                 .config::<f64>("default_pid_kd")
                 .default(AquaPathV1::DEFAULT_PID_KD)
-                .build()?,
+                .build()?,*/
             left_fan_max_revolutions: ctx
                 .config::<f64>("left_fan_max_revolutions")
                 .on_external_changed(Self::on_set_left_revolutions)
@@ -298,13 +298,17 @@ impl AquaPathV1 {
             .execute(Self::switch_to_auto)
             .build()?;
         ctx.command("pump.start_right_pump")
-            .execute(Self::cmd_start_right_pump);
+            .execute(Self::cmd_start_right_pump)
+            .build()?;
         ctx.command("pump.stop_right_pump")
-            .execute(Self::cmd_stop_right_pump);
+            .execute(Self::cmd_stop_right_pump)
+            .build()?;
         ctx.command("pump.start_left_pump")
-            .execute(Self::cmd_start_left_pump);
+            .execute(Self::cmd_start_left_pump)
+            .build()?;
         ctx.command("pump.stop_left_pump")
-            .execute(Self::cmd_stop_left_pump);
+            .execute(Self::cmd_stop_left_pump)
+            .build()?;
         Ok(())
     }
 

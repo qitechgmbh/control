@@ -70,7 +70,10 @@ config:
     kp: !float
     ki: !float
     kd: !float
-
+  left_thermal_flow_settle_duration: !float
+  right_thermal_flow_settle_duration: !float
+  left_pump_cooldown_min_temperature: !float
+  right_pump_cooldown_min_temperature: !float
 
 
 events:
@@ -87,4 +90,3 @@ commands:
     stop_right_pump: !command
     start_left_pump: !command
     stop_left_pump: !command
-  

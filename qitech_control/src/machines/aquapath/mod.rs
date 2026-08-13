@@ -79,10 +79,6 @@ pub struct AquaPathV1 {
 }
 
 impl AquaPathV1 {
-    // in °C
-    pub const DEFAULT_HEATING_TOLERANCE: f64 = 0.4;
-    // in °C
-    pub const DEFAULT_COOLING_TOLERANCE: f64 = 0.8;
     pub const DEFAULT_PID_KP: f64 = 0.16;
     pub const DEFAULT_PID_KI: f64 = 0.02;
     pub const DEFAULT_PID_KD: f64 = 0.0;

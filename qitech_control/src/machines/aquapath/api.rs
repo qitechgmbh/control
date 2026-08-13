@@ -28,9 +28,7 @@ pub struct Measurements {
 }
 
 pub struct StateProperties {
-    pub mode_state: ModeState,
-    pub is_default_state: StateProperty<bool>,
-
+    pub mode_state: ModeState,    
     pub left_heating_startup_wait_active: StateProperty<bool>,
     pub right_heating_startup_wait_active: StateProperty<bool>,
 
@@ -42,9 +40,6 @@ pub struct StateProperties {
 
     pub left_heating: StateProperty<bool>,
     pub right_heating: StateProperty<bool>,
-
-    pub left_has_flow: StateProperty<bool>,
-    pub right_has_flow: StateProperty<bool>,
 
     pub left_pump_cooldown_remaining: StateProperty<f64>,
     pub right_pump_cooldown_remaining: StateProperty<f64>,
@@ -65,11 +60,11 @@ pub struct ConfigProperties {
 
     pub ambient_temperature_calibration: ConfigProperty<f64>,
 
-    pub default_heating_tolerance: ConfigProperty<f64>,
+    /*pub default_heating_tolerance: ConfigProperty<f64>,
     pub default_cooling_tolerance: ConfigProperty<f64>,
     pub default_pid_kp: ConfigProperty<f64>,
     pub default_pid_ki: ConfigProperty<f64>,
-    pub default_pid_kd: ConfigProperty<f64>,
+    pub default_pid_kd: ConfigProperty<f64>,*/
 
     pub left_fan_max_revolutions: ConfigProperty<f64>,
     pub right_fan_max_revolutions: ConfigProperty<f64>,
@@ -189,7 +184,6 @@ impl AquaPathV1 {
     }
 
     pub fn on_set_left_thermal_flow_settle_duration(&mut self) -> ActResult {
-        // TODO change config_props
         self.set_thermal_flow_settle_duration(
             self.config_props.left_thermal_flow_settle_duration.get(),
             super::AquaPathSideType::Left,
@@ -247,11 +241,11 @@ impl AquaPathV1 {
 
         let left_revolutions = self
             .left_controller
-            .current_revolutions
+            .get_current_revolutions()
             .get::<revolution_per_minute>();
         let right_revolutions = self
             .right_controller
-            .current_revolutions
+            .get_current_revolutions()
             .get::<revolution_per_minute>();
 
         self.measurements.left_flow.set(left_flow);
@@ -270,10 +264,10 @@ impl AquaPathV1 {
 
         self.measurements
             .left_total_energy
-            .set(self.left_controller.total_energy);
+            .set(self.left_controller.get_total_energy());
         self.measurements
             .right_total_energy
-            .set(self.right_controller.total_energy);
+            .set(self.right_controller.get_total_energy());
     }
 
     pub fn update_states(&mut self, now: Instant) {
@@ -340,6 +334,7 @@ impl AquaPathV1 {
         self.state_props
             .left_cooling_mode
             .set(self.left_controller.cooling_mode.clone());
+
         self.state_props
             .right_cooling_mode
             .set(self.right_controller.cooling_mode.clone());
