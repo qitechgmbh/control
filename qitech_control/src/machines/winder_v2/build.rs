@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use qitech_framework::machine::BuildContext;
+use qitech_framework::machine::BuildError;
 use qitech_framework::machine::BuildResult;
 use qitech_framework::machine::MachineBuild;
 use qitech_lib::ethercat_hal::EtherCATThreadChannel;
@@ -164,8 +165,13 @@ fn init_el7031_0030(
     };
 
     dev.borrow_mut()
-        .write_config(interface.clone(), addr, &config)?;
-    interface.enable_dc_sync0(addr)?;
+        .write_config(interface.clone(), addr, &config)
+        .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+
+    interface
+        .enable_dc_sync0(addr)
+        .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+
     Ok(dev)
 }
 
@@ -189,8 +195,12 @@ fn init_el7041(
     };
 
     dev.borrow_mut()
-        .write_config(interface.clone(), addr, &config)?;
-    interface.enable_dc_sync0(addr)?;
+        .write_config(interface.clone(), addr, &config)
+        .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+    interface
+        .enable_dc_sync0(addr)
+        .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+
     Ok(dev)
 }
 
@@ -215,8 +225,13 @@ fn init_el7031(
     };
 
     dev.borrow_mut()
-        .write_config(interface.clone(), addr, &config)?;
-    interface.enable_dc_sync0(addr)?;
+        .write_config(interface.clone(), addr, &config)
+        .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+
+    interface
+        .enable_dc_sync0(addr)
+        .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+
     Ok(dev)
 }
 
@@ -242,7 +257,12 @@ fn init_el7031_0030_spool(
     };
 
     dev.borrow_mut()
-        .write_config(interface.clone(), addr, &config)?;
-    interface.enable_dc_sync0(addr)?;
+        .write_config(interface.clone(), addr, &config)
+        .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+
+    interface
+        .enable_dc_sync0(addr)
+        .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+
     Ok(dev)
 }

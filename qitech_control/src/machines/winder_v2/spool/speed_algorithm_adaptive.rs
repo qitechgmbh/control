@@ -194,8 +194,10 @@ impl SpeedAlgorithmAdaptive {
             AngularAcceleration::new::<radian_per_second_squared>(acceleration_limit);
 
         // Update acceleration controller limits
-        self.acceleration_controller.set_max_acceleration(acceleration);
-        self.acceleration_controller.set_min_acceleration(-acceleration);
+        self.acceleration_controller
+            .set_max_acceleration(acceleration);
+        self.acceleration_controller
+            .set_min_acceleration(-acceleration);
         self.acceleration_controller.update(speed_target, now)
     }
 }

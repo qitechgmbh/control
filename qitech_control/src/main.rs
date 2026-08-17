@@ -9,6 +9,7 @@ use qitech_framework::runtime::RuntimeConfiguration;
 mod types;
 use types::RotationDirection;
 
+mod api;
 mod utils;
 
 mod controllers;

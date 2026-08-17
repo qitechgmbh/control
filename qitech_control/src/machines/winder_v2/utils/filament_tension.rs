@@ -54,7 +54,7 @@ impl FilamentTensionCalculator {
     pub fn calc_filament_tension(&self, tension_arm_angle: Angle) -> Option<f64> {
         if tension_arm_angle < self.min_angle || tension_arm_angle > self.max_angle {
             // out of bounds
-            return None
+            return None;
         };
 
         let current_distance = self.calc_filament_length(tension_arm_angle);
