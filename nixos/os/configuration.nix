@@ -186,7 +186,7 @@ in
   };
 
   systemd.services.cpu-isolate = {
-    description = "Apply cpuset isolation for realtime cores";
+    description = "Apply cpuset isolation and CPU governor for realtime cores";
     wantedBy = [ "multi-user.target" ];
     before = [ "qitech.service" ];
     after = [ "systemd-udevd.service" ];
@@ -195,6 +195,13 @@ in
       RemainAfterExit = true;
       ExecStart = pkgs.writeShellScript "cpu-isolate" ''
         set -euo pipefail
+
+        # Force performance governor on ALL cores
+        for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+          echo performance > "$cpu"
+        done
+
+        # Apply cpuset isolation
         systemctl set-property --runtime init.scope   AllowedCPUs=0-1
         systemctl set-property --runtime system.slice AllowedCPUs=0-1
         systemctl set-property --runtime user.slice   AllowedCPUs=0-1
