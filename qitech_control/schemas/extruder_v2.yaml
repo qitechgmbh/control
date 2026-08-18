@@ -1,0 +1,147 @@
+# TODO: `motor.power`, `heating.*.power`, `power.combined` and `energy.total` are `!float`
+# (watts / kWh) because `qitech_lib::units` has no Power or Energy quantity. Making them
+# `!watt` / `!kilowatt_hour` is a three-repo change:
+#   1. qitech_lib: add units/src/power.rs + energy.rs (uom `quantity!`, see pressure.rs for the
+#      shape) and register both in the `system! { units: U { .. } }` list in units/src/lib.rs
+#   2. qitech_framework: add [[quantity]] Power = ["Watt"] and Energy = ["KilowattHour"]
+#      to qitech_framework_core/quantities.toml
+#   3. control: bump the qitech_lib and qitech_framework revs in the workspace Cargo.toml
+
+qms_version: 1.0
+revision: 1
+
+identification:
+  name: extruder_v2
+  vendor_id: 1
+  machine_id: 22
+
+config:
+  screw:
+    direction: !enum [forward, reverse]
+    regulation: !enum [rpm, pressure]
+    target_rpm: !revolution_per_minute
+    target_pressure: !bar
+
+  pressure:
+    limit: !bar
+    limit_enabled: !boolean
+
+    autotune:
+      tune_delta: !bar
+      frequency_step: !hertz
+
+  heating:
+    nozzle:
+      target_temperature: !degree_celsius
+      target_enabled: !boolean
+    front:
+      target_temperature: !degree_celsius
+    middle:
+      target_temperature: !degree_celsius
+    back:
+      target_temperature: !degree_celsius
+
+  pid:
+    pressure:
+      kp: !float
+      ki: !float
+      kd: !float
+
+    temperature:
+      nozzle:
+        kp: !float
+        ki: !float
+        kd: !float
+      front:
+        kp: !float
+        ki: !float
+        kd: !float
+      middle:
+        kp: !float
+        ki: !float
+        kd: !float
+      back:
+        kp: !float
+        ki: !float
+        kd: !float
+
+state:
+  mode: !enum [standby, heat, extrude]
+
+  pressure:
+    wiring_error: !boolean
+
+    autotune:
+      state: !enum [not_started, running, completed, failed]
+
+      result:
+        kp: !?float
+        ki: !?float
+        kd: !?float
+
+  heating:
+    nozzle:
+      wiring_error: !boolean
+    front:
+      wiring_error: !boolean
+    middle:
+      wiring_error: !boolean
+    back:
+      wiring_error: !boolean
+
+  inverter:
+    running: !boolean
+    forward_running: !boolean
+    reverse_running: !boolean
+    up_to_frequency: !boolean
+    overload_warning: !boolean
+    no_function: !boolean
+    output_frequency_detection: !boolean
+    abc_fault: !boolean
+    fault_occurence: !boolean
+
+measurements:
+  motor:
+    rpm: !revolution_per_minute
+    frequency: !hertz
+    voltage: !volt
+    current: !ampere
+    power: !float
+
+  pressure:
+    value: !bar
+    autotune_progress: !percentage
+
+  heating:
+    nozzle:
+      temperature: !degree_celsius
+      power: !float
+    front:
+      temperature: !degree_celsius
+      power: !float
+    middle:
+      temperature: !degree_celsius
+      power: !float
+    back:
+      temperature: !degree_celsius
+      power: !float
+
+  power:
+    combined: !float
+
+  energy:
+    total: !float
+
+commands:
+  mode:
+    standby: !command
+    heat: !command
+    extrude: !command
+
+  inverter:
+    reset: !command
+
+  pressure:
+    autotune:
+      start: !command
+      stop: !command

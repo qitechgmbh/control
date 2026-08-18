@@ -12,6 +12,10 @@ use qitech_lib::ethercat_hal::DcConfiguration;
 use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
 mod types;
+
+mod modbus;
+mod transmission;
+
 mod machines;
 
 mod api;
@@ -20,6 +24,8 @@ use api::Server;
 use api::SharedState;
 use api::SocketIODispatcher;
 
+use crate::machines::ExtruderV1;
+use crate::machines::ExtruderV2;
 use crate::machines::WinderV1_Regular;
 use crate::machines::aquapath::AquaPathV1;
 
@@ -42,7 +48,9 @@ pub async fn main() -> anyhow::Result<()> {
         .machine::<WinderV1_Regular>()
         .machine::<WinderV1_7031_Spool>();*/
         .machine::<AquaPathV1>()
-        .machine::<WinderV1_Regular>();
+        .machine::<WinderV1_Regular>()
+        .machine::<ExtruderV1>()
+        .machine::<ExtruderV2>();
 
     // --- determine if ethercat is enabled ---
     let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {
