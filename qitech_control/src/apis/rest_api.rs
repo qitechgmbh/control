@@ -5,6 +5,8 @@ use axum::routing::{get, post};
 use axum::{Extension, Json, Router, debug_handler};
 use machine_implementations::MachineMessage;
 use machine_implementations::aquapath1::AquaPathV1;
+use machine_implementations::dryer::DryerMachine;
+use machine_implementations::dryer::material_presets::{MATERIAL_PRESETS, MaterialPreset};
 use machine_implementations::extruder1::ExtruderV2;
 use machine_implementations::laser::LaserMachine;
 use machine_implementations::machine_identification::{
@@ -135,6 +137,11 @@ async fn post_machine_handler(
     json(())
 }
 
+#[debug_handler]
+async fn get_material_presets_handler() -> Result<&'static [MaterialPreset]> {
+    json(MATERIAL_PRESETS)
+}
+
 fn make_machine_router(id: MachineIdentification) -> Router<Arc<SharedAppState>> {
     let slug = id.slug();
     let path = format!("/machine/{slug}/{{serial}}");
@@ -147,6 +154,7 @@ fn make_machine_router(id: MachineIdentification) -> Router<Arc<SharedAppState>>
 pub fn rest_api_router() -> Router<Arc<SharedAppState>> {
     Router::new()
         .route("/machine", get(get_machines_handler))
+        .route("/material-presets", get(get_material_presets_handler))
         .merge(make_machine_router(
             LaserMachine::MACHINE_IDENTIFICATION.into(),
         ))
@@ -159,6 +167,9 @@ pub fn rest_api_router() -> Router<Arc<SharedAppState>> {
         ))
         .merge(make_machine_router(
             AquaPathV1::MACHINE_IDENTIFICATION.into(),
+        ))
+        .merge(make_machine_router(
+            DryerMachine::MACHINE_IDENTIFICATION.into(),
         ))
     /*.merge(make_machine_router(TestMachine::MACHINE_IDENTIFICATION.into()))
     .merge(make_machine_router(WagoPower::MACHINE_IDENTIFICATION.into()))

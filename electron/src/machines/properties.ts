@@ -469,6 +469,18 @@ export const laser1: MachineProperties = {
   device_roles: [],
 };
 
+export const dryerV1: MachineProperties = {
+  name: "Dryer",
+  version: "V1",
+  slug: "dryer_v1",
+  icon: "lu:Wind",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0010,
+  },
+  device_roles: [],
+};
+
 export const mock1: MachineProperties = {
   name: "Mock",
   version: "V1",
@@ -1032,6 +1044,7 @@ export const machineProperties: MachineProperties[] = [
   extruder3,
   extruder2,
   laser1,
+  dryerV1,
   mock1,
   buffer1,
   wagoPower1,
