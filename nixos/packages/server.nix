@@ -1,5 +1,6 @@
 {
   lib,
+  stdenv,
   pkg-config,
   libudev-zero,
   libpcap,
@@ -20,6 +21,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   buildInputs = [
     libpcap
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isLinux [
     libudev-zero
   ];
 
