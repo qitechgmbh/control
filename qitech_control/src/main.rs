@@ -106,7 +106,7 @@ const ETHERCAT_CONFIG: EtherCATConfig = {
         ethercat_io_thread_core: 3,
         ethercat_io_thread_priority: 50,
         pin_irq_core: Some(3),
-        lock_memory: true,
+        lock_memory: cfg!(target_os = "linux"),
     };
 
     let master_config = MasterConfiguration {
