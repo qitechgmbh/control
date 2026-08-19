@@ -9,8 +9,8 @@ use qitech_lib::ethercat_hal::io::{
 use qitech_lib::units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
 use std::time::{Duration, Instant};
 
-use crate::controllers::pid::PidController;
 use crate::machines::extruder1::{PidGains, Zone};
+use qitech_control_core::controllers::pid::PidController;
 
 /// Fixed hardware limits and tuning of one heating zone, supplied at build time.
 pub struct TemperatureControllerConfig {

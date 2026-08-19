@@ -15,13 +15,13 @@ use qitech_lib::units::{
     electric_current::milliampere, electric_potential::volt, frequency::hertz, pressure::bar,
 };
 
-use crate::controllers::clamping_timeagnostic_pid::ClampingTimeagnosticPidController;
-use crate::controllers::pid_autotuner::{AutoTuneConfig, PidAutoTuner};
 use crate::machines::extruder1::mitsubishi_cs80::{MitsubishiCS80, MitsubishiCS80Status};
 use crate::machines::extruder1::{AutoTuneState, Extruder, PidGainPaths, PidGains, Regulation};
 use crate::transmission::{Transmission, fixed::FixedTransmission};
 use crate::types::RotationDirection;
-use crate::utils::interpolation::normalize;
+use qitech_control_core::controllers::clamping_timeagnostic_pid::ClampingTimeagnosticPidController;
+use qitech_control_core::controllers::pid_autotuner::{AutoTuneConfig, PidAutoTuner};
+use qitech_control_core::utils::interpolation::normalize;
 
 const AUTOTUNE_MAX_DURATION: Duration = Duration::from_secs(30);
 
