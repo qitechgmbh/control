@@ -63,7 +63,7 @@ jobs:
           skipPush: true
 
       - name: Build Flake and System Configuration
-        run: ./nixos/nixos-build-iso.sh
+        run: nix build .#nixosConfigurations.nixos.config.system.build.toplevel
 
       - uses: actions/upload-artifact@v7.0.1
         with:
