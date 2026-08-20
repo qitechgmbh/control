@@ -4,7 +4,7 @@ use crate::minimal_machines::test_machine_stepper::{
 use ethercat_hal::{
     devices::{
         EthercatDevice, downcast_device,
-        wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
+        wago_modules::wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
         wago_modules::{wago_750_671::Wago750_671, wago_750_672::Wago750_672},
     },
     io::{
