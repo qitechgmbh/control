@@ -12,7 +12,6 @@ use tokio::task::JoinHandle;
 use tokio_modbus::{
     Request, Response,
     client::{Client, Context},
-    prelude::ReadCode,
 };
 
 #[derive(Debug)]
@@ -59,6 +58,9 @@ const SCHEDULE_REG_COUNT: u16 = 28;
 
 const POLL_INTERVAL: Duration = Duration::from_secs(1);
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(2);
+/// Number of failed identification rounds (each ~`POLL_INTERVAL`, entirely off the
+/// real-time thread) before giving up and reporting "no dryer here".
+const MAX_IDENTIFY_ATTEMPTS: u8 = 3;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ScheduleDay {
@@ -118,6 +120,7 @@ struct ActorMessage {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum PendingKind {
     Write,
+    SmartProbe,
     InputRegisters,
     TargetTemp,
     Schedule,
@@ -149,6 +152,16 @@ pub struct DryerDevice {
     round_started_at: Instant,
     smart_timer_slots: u16,
     handle: JoinHandle<()>,
+    path: String,
+    /// Failed identification rounds before the first successful `InputRegisters`
+    /// read (`data` still `None`). Once this hits `MAX_IDENTIFY_ATTEMPTS`,
+    /// `handle_response` reports a fatal error so the caller removes this device
+    /// instead of polling a non-existent dryer forever.
+    identify_attempts: u8,
+    /// Set once, right after the first successful `InputRegisters` read, to queue a
+    /// one-shot read of the Smart hardware-ID register (see `is_smart`).
+    smart_probe_queued: bool,
+    smart_probed: bool,
 }
 
 impl Drop for DryerDevice {
@@ -188,58 +201,18 @@ impl ModbusDevice for DryerDevice {
 
         let rt = get_async_runtime();
         let _guard = rt.enter();
-        let mut ctx = create_modbus_device_context(&meta)?;
+        let ctx = create_modbus_device_context(&meta)?;
 
-        let identified_by_device_id = rt.block_on(async {
-            let result = tokio::time::timeout(
-                Duration::from_millis(500),
-                ctx.call(Request::ReadDeviceIdentification(ReadCode::Basic, 0)),
-            )
-            .await;
-            match result {
-                Ok(Ok(Ok(Response::ReadDeviceIdentification(resp)))) => resp
-                    .device_id_objects
-                    .iter()
-                    .any(|obj| obj.value_as_str().is_some_and(|s| s.contains("Dryplus"))),
-                _ => false,
-            }
-        });
-
-        let identity_ok = identified_by_device_id
-            || rt.block_on(async {
-                let result = tokio::time::timeout(
-                    Duration::from_millis(500),
-                    ctx.call(Request::ReadInputRegisters(0x00, 0x21)),
-                )
-                .await;
-                matches!(
-                    result,
-                    Ok(Ok(Ok(Response::ReadInputRegisters(ref regs)))) if regs.len() == 0x21
-                )
-            });
-        if !identity_ok {
-            return Err(anyhow!("no dryer responded on {}", meta.path));
-        }
-
-        // Probe holding register 2000 once, synchronously, to tell V1 and Smart hardware
-        // apart before the machine layer picks which machine type to construct.
-        let is_smart = rt.block_on(async {
-            let result = tokio::time::timeout(
-                Duration::from_millis(500),
-                ctx.call(Request::ReadHoldingRegisters(SMART_REG_HW_ID, 1)),
-            )
-            .await;
-            matches!(
-                result,
-                Ok(Ok(Ok(Response::ReadHoldingRegisters(ref regs)))) if regs.first() == Some(&SMART_HW_ID)
-            )
-        });
-
+        // Identity (is anything actually there?) and variant (V1 vs Smart, via holding
+        // register 2000) are both determined below through the same non-blocking
+        // request/response cycle as everything else - never by blocking here. Blocking
+        // this call would stall the real-time loop that constructs this device, which
+        // also drives every other machine's act()/react() on the same thread.
         let (tx, rx) = mpsc::channel::<ActorMessage>(8);
         let handle = rt.spawn(run_dryer_actor(rx, ctx));
 
         Ok(Self {
-            is_smart,
+            is_smart: false,
             data: None,
             smart_data: SmartData::default(),
             tx,
@@ -249,6 +222,10 @@ impl ModbusDevice for DryerDevice {
             round_started_at: Instant::now() - POLL_INTERVAL,
             smart_timer_slots: SMART_TIMER_MIN_SLOTS,
             handle,
+            path: meta.path,
+            identify_attempts: 0,
+            smart_probe_queued: false,
+            smart_probed: false,
         })
     }
 
@@ -259,6 +236,14 @@ impl ModbusDevice for DryerDevice {
 
         if let Some(request) = self.write_queue.pop_front() {
             return self.dispatch(request, PendingKind::Write);
+        }
+
+        if self.smart_probe_queued {
+            self.smart_probe_queued = false;
+            return self.dispatch(
+                Request::ReadHoldingRegisters(SMART_REG_HW_ID, 1),
+                PendingKind::SmartProbe,
+            );
         }
 
         if self.cycle == CycleStep::InputRegisters {
@@ -332,12 +317,21 @@ impl ModbusDevice for DryerDevice {
             Err(e) => {
                 // A genuine IO error means the port itself is gone (device unplugged) -
                 // propagate it so the machine gets removed instead of lingering forever.
-                // Timeouts/exceptions can be transient, so just skip this tick for those.
+                // Timeouts/exceptions can be transient, so just skip this tick for those,
+                // except while we're still identifying (data.is_none()): a bounded number
+                // of failed identification rounds also means "nothing is a dryer here" and
+                // should get the same treatment as an unplugged device.
                 if matches!(
                     e.downcast_ref::<DryerDeviceError>(),
                     Some(DryerDeviceError::IoErr(_))
                 ) {
                     return Err(e);
+                }
+                if kind == PendingKind::InputRegisters && self.data.is_none() {
+                    self.identify_attempts += 1;
+                    if self.identify_attempts >= MAX_IDENTIFY_ATTEMPTS {
+                        return Err(anyhow!("no dryer responded on {}", self.path));
+                    }
                 }
                 tracing::debug!("dryer modbus request failed: {e}");
                 return Ok(());
@@ -346,34 +340,14 @@ impl ModbusDevice for DryerDevice {
 
         match kind {
             PendingKind::Write => {}
+            PendingKind::SmartProbe => {
+                if let Response::ReadHoldingRegisters(regs) = response {
+                    self.is_smart = regs.first() == Some(&SMART_HW_ID);
+                }
+            }
             PendingKind::InputRegisters => {
                 if let Response::ReadInputRegisters(regs) = response {
-                    if regs.len() >= 20 {
-                        let target_temperature = self
-                            .data
-                            .as_ref()
-                            .map(|d| d.target_temperature)
-                            .unwrap_or(0.0);
-                        let schedule = self.data.as_ref().map(|d| d.schedule).unwrap_or_default();
-                        self.data = Some(DryerData {
-                            status: regs[0],
-                            temp_process: regs[1] as f64 / 10.0,
-                            temp_safety: regs[2] as f64 / 10.0,
-                            temp_regen_in: regs[3] as f64 / 10.0,
-                            temp_regen_out: regs[4] as f64 / 10.0,
-                            temp_fan_inlet: regs[5] as f64 / 10.0,
-                            pwm_fan1: regs.get(6).copied().unwrap_or(0) as f64,
-                            pwm_fan2: regs.get(7).copied().unwrap_or(0) as f64,
-                            temp_dew_point: regs.get(23).map(|&v| v as i16 as f64).unwrap_or(0.0),
-                            alarm: regs[14],
-                            warning: regs[15],
-                            temp_return_air: regs[19] as f64 / 10.0,
-                            power_process: regs.get(31).copied().unwrap_or(0) as f64,
-                            power_regen: regs.get(32).copied().unwrap_or(0) as f64,
-                            target_temperature,
-                            schedule,
-                        });
-                    }
+                    self.apply_input_registers(&regs);
                 }
             }
             PendingKind::TargetTemp => {
@@ -458,6 +432,48 @@ impl ModbusDevice for DryerDevice {
 }
 
 impl DryerDevice {
+    /// Parses a raw `ReadInputRegisters(0x00, 0x21)` response into `self.data`. This
+    /// doubles as identification: the very first time this succeeds, it also queues the
+    /// one-shot Smart-variant probe (see `smart_probe_queued`).
+    fn apply_input_registers(&mut self, regs: &[u16]) {
+        if regs.len() < 20 {
+            return;
+        }
+
+        let was_identified = self.data.is_some();
+
+        let target_temperature = self
+            .data
+            .as_ref()
+            .map(|d| d.target_temperature)
+            .unwrap_or(0.0);
+        let schedule = self.data.as_ref().map(|d| d.schedule).unwrap_or_default();
+        self.data = Some(DryerData {
+            status: regs[0],
+            temp_process: regs[1] as f64 / 10.0,
+            temp_safety: regs[2] as f64 / 10.0,
+            temp_regen_in: regs[3] as f64 / 10.0,
+            temp_regen_out: regs[4] as f64 / 10.0,
+            temp_fan_inlet: regs[5] as f64 / 10.0,
+            pwm_fan1: regs.get(6).copied().unwrap_or(0) as f64,
+            pwm_fan2: regs.get(7).copied().unwrap_or(0) as f64,
+            temp_dew_point: regs.get(23).map(|&v| v as i16 as f64).unwrap_or(0.0),
+            alarm: regs[14],
+            warning: regs[15],
+            temp_return_air: regs[19] as f64 / 10.0,
+            power_process: regs.get(31).copied().unwrap_or(0) as f64,
+            power_regen: regs.get(32).copied().unwrap_or(0) as f64,
+            target_temperature,
+            schedule,
+        });
+
+        self.identify_attempts = 0;
+        if !was_identified && !self.smart_probed {
+            self.smart_probed = true;
+            self.smart_probe_queued = true;
+        }
+    }
+
     fn dispatch(
         &mut self,
         request: Request<'static>,
@@ -652,13 +668,20 @@ fn days_to_ymd(days: u64) -> (u32, u32, u32) {
 /// OS local time here (rather than UTC) is what keeps the backend's decision in sync with
 /// what the user actually configured.
 pub fn local_weekday_and_minutes() -> (u8, u32) {
+    let (weekday, seconds) = local_weekday_and_seconds();
+    (weekday, seconds / 60)
+}
+
+/// Same as `local_weekday_and_minutes`, but with second precision - used for the
+/// remaining-time countdown, where whole minutes would visibly jump.
+pub fn local_weekday_and_seconds() -> (u8, u32) {
     unsafe {
         let t = libc::time(std::ptr::null_mut());
         let mut tm: libc::tm = std::mem::zeroed();
         libc::localtime_r(&t, &mut tm);
         // libc::tm_wday is 0=Sunday..6=Saturday; WeeklySchedule is 0=Monday..6=Sunday.
         let weekday = ((tm.tm_wday + 6) % 7) as u8;
-        let minutes = (tm.tm_hour * 60 + tm.tm_min) as u32;
-        (weekday, minutes)
+        let seconds = (tm.tm_hour * 3600 + tm.tm_min * 60 + tm.tm_sec) as u32;
+        (weekday, seconds)
     }
 }

@@ -3,7 +3,7 @@ use api::{DryerEvents, DryerMachineNamespace, LiveValuesEvent, StateEvent};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use device::{
     DryerDevice, SmartData, SmartTimerEntry, WeeklySchedule, is_running_status,
-    local_weekday_and_minutes,
+    local_weekday_and_minutes, local_weekday_and_seconds,
 };
 use material_presets::MATERIAL_PRESETS;
 use qitech_lib::machines::{MachineError, MachineIdentification, MachineIdentificationUnique};
@@ -90,9 +90,32 @@ impl DryerMachine {
             target_temperature: self.target_temperature,
             schedule: self.schedule,
             drying_timer_minutes: self.drying_timer_minutes,
+            remaining_seconds: self.remaining_seconds(),
             is_smart: self.dryer.borrow().is_smart,
             smart_data: self.smart_data.clone(),
         }
+    }
+
+    /// Seconds left until the dryer stops, or `None` if there's nothing counting down
+    /// (not running, or no schedule/timer applies). Mirrors `check_auto_stop`'s own
+    /// precedence exactly (scheduled stop today, if any, always wins over the drying
+    /// timer) so the displayed countdown can never disagree with what actually happens -
+    /// computed once here instead of being recalculated in the frontend.
+    pub fn remaining_seconds(&self) -> Option<u32> {
+        if !is_running_status(self.status) {
+            return None;
+        }
+
+        let (weekday, now_sec) = local_weekday_and_seconds();
+        let scheduled_stop = self.schedule[weekday as usize].stop_time;
+        if scheduled_stop != 0 {
+            let stop_sec = (scheduled_stop / 100) as u32 * 3600 + (scheduled_stop % 100) as u32 * 60;
+            return stop_sec.checked_sub(now_sec);
+        }
+
+        let started = self.running_since?;
+        let target_sec = self.drying_timer_minutes * 60;
+        Some(target_sec.saturating_sub(started.elapsed().as_secs() as u32))
     }
 
     pub fn emit_live_values(&mut self) {

@@ -24,7 +24,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import {
   useMaterialPresets,
@@ -156,14 +156,7 @@ export function DryerV1ControlPage() {
     setTargetTimeMin,
     selectedAbbrev: selectedMaterialAbbrev,
   } = useDryerV1MaterialStore();
-  const timerStartRef = useRef<number | null>(null);
-  const [remainingSec, setRemainingSec] = useState<number | null>(null);
-  const prevStatusRef = useRef<number | undefined>(undefined);
-
-  const scheduleRef = useRef(v?.schedule);
-  scheduleRef.current = v?.schedule;
-  const targetTimeMinRef = useRef(targetTimeMin);
-  targetTimeMinRef.current = targetTimeMin;
+  const remainingSec = v?.remaining_seconds ?? null;
 
   const scheduledStopMins = useMemo(() => {
     const today = getTodayScheduleDay(v?.schedule);
@@ -174,45 +167,6 @@ export function DryerV1ControlPage() {
   }, [v?.schedule]);
 
   const scheduleControlled = scheduledStopMins !== null;
-
-  useEffect(() => {
-    if (v?.status === undefined) return;
-    const wasRunning =
-      prevStatusRef.current !== undefined &&
-      isRunningStatus(prevStatusRef.current);
-    const nowRunning = isRunningStatus(v.status);
-    if (!wasRunning && nowRunning) {
-      timerStartRef.current = Date.now();
-    } else if (wasRunning && !nowRunning) {
-      timerStartRef.current = null;
-      setRemainingSec(null);
-    }
-    prevStatusRef.current = v.status;
-  }, [v?.status]);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      const today = getTodayScheduleDay(scheduleRef.current);
-      if (today?.stop_time) {
-        const now = new Date();
-        const stopSec = encodedToMinutes(today.stop_time) * 60;
-        const nowSec =
-          now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-        if (stopSec > nowSec) {
-          setRemainingSec(stopSec - nowSec);
-          return;
-        }
-      }
-
-      if (timerStartRef.current !== null) {
-        const elapsedSec = (Date.now() - timerStartRef.current) / 1000;
-        setRemainingSec(
-          Math.max(0, targetTimeMinRef.current * 60 - elapsedSec),
-        );
-      }
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
 
   const isRunning = v !== undefined && isRunningStatus(v.status);
   const machineStatusInfo =

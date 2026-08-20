@@ -63,6 +63,7 @@ export const liveValuesEventDataSchema = z.object({
   power_regen: z.number(),
   target_temperature: z.number(),
   drying_timer_minutes: z.number(),
+  remaining_seconds: z.number().nullable(),
   schedule: z.array(scheduleDaySchema).length(7),
   is_smart: z.boolean(),
   smart_data: smartDataSchema,

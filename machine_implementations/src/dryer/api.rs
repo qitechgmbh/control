@@ -32,6 +32,10 @@ pub struct LiveValuesEvent {
     pub target_temperature: f64,
     pub schedule: WeeklySchedule,
     pub drying_timer_minutes: u32,
+    /// Seconds left until the dryer stops itself; `None` if nothing is counting down.
+    /// See `DryerMachine::remaining_seconds` - the frontend just displays this rather
+    /// than recomputing it from `schedule`/`drying_timer_minutes` client-side.
+    pub remaining_seconds: Option<u32>,
     /// Whether this physical unit is a Smart-variant dryer (probed from the device at
     /// connect time) - drives whether the frontend shows the Smart-only section.
     pub is_smart: bool,
