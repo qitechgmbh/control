@@ -6,10 +6,10 @@ use crate::{
 use anyhow::Error;
 
 use ethercat_hal::coe::ConfigurableDevice;
-use ethercat_hal::devices::ek1100::{EK1100, EK1100_IDENTITY_A};
-use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
-use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
-use ethercat_hal::devices::el7031_0030::{
+use ethercat_hal::devices::beckhoff_modules::ek1100::{EK1100, EK1100_IDENTITY_A};
+use ethercat_hal::devices::beckhoff_modules::el7031_0030::coe::EL7031_0030Configuration;
+use ethercat_hal::devices::beckhoff_modules::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
+use ethercat_hal::devices::beckhoff_modules::el7031_0030::{
     EL7031_0030, EL7031_0030_IDENTITY_A, EL7031_0030StepperPort,
 };
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
@@ -44,7 +44,7 @@ impl MachineNewTrait for MotorTestMachine {
                 .await?;
 
                 let el7031_config = EL7031_0030Configuration {
-                    stm_features: ethercat_hal::devices::el7031_0030::coe::StmFeatures {
+                    stm_features: ethercat_hal::devices::beckhoff_modules::el7031_0030::coe::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
                         speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
                         ..Default::default()

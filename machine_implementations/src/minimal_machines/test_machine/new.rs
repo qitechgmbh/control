@@ -9,12 +9,12 @@ use crate::{
 };
 
 use anyhow::Error;
-use ethercat_hal::devices::el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port};
+use ethercat_hal::devices::beckhoff_modules::el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port};
 use ethercat_hal::io::digital_output::DigitalOutput;
 
 //Imports For Wago
 /*
-use ethercat_hal::devices::wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
+use ethercat_hal::devices::wago_modules::wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
 use ethercat_hal::devices::{EthercatDevice, downcast_device};
 use smol::lock::RwLock;
 use std::sync::Arc;

@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use anyhow::Error;
 use ethercat_hal::{
-    devices::el3021::{EL3021, EL3021_IDENTITY_A, EL3021Port},
+    devices::beckhoff_modules::el3021::{EL3021, EL3021_IDENTITY_A, EL3021Port},
     io::analog_input::AnalogInput,
 };
 use smol::{block_on, channel::unbounded};

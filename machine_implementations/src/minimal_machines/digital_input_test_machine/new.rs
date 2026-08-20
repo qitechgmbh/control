@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use super::{DigitalInputTestMachine, api::DigitalInputTestMachineNamespace};
 use qitech_lib::{
-    ethercat_hal::devices::{ek1100::EK1100, el1008::EL1008, el2004::EL2004},
+    ethercat_hal::devices::beckhoff_modules::{ek1100::EK1100, el1008::EL1008, el2004::EL2004},
     machines::MachineIdentificationUnique,
 };
 

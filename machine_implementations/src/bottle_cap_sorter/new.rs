@@ -2,9 +2,9 @@ use std::{collections::HashMap, time::Instant};
 use anyhow::Error;
 use control_core::converters::linear_step_converter::LinearStepConverter;
 use qitech_lib::ethercat_hal::coe::ConfigurableDevice;
-use qitech_lib::ethercat_hal::devices::el7041_0052::EL7041_0052;
-use qitech_lib::ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
-use qitech_lib::ethercat_hal::devices::el7041_0052::pdo::EL7041_0052PredefinedPdoAssignment;
+use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7041_0052::EL7041_0052;
+use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7041_0052::coe::EL7041_0052Configuration;
+use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7041_0052::pdo::EL7041_0052PredefinedPdoAssignment;
 use qitech_lib::ethercat_hal::shared_config;
 use qitech_lib::ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
 use qitech_lib::units::length::millimeter;
@@ -20,7 +20,7 @@ use super::{Sorter1, Sorter1Mode};
 // Required for the new HAL abstraction
 use qitech_lib::ethercat_hal::{
     EtherCATThreadChannel, 
-    devices::{el2008::EL2008}
+    devices::beckhoff_modules::{el2008::EL2008}
 };
 
 impl MachineNew for Sorter1 {
