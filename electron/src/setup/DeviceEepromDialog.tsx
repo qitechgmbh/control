@@ -104,7 +104,7 @@ type ContentProps = {
 export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   const client = useClient();
   const [isApplying, setIsApplying] = useState(false);
-  const [isUnassigning, setIsUnassigning] = useState(false);
+  const [isUnassigning, setUnassigning] = useState(false);
   const [writeSuccess, setWriteSuccess] = useState(false);
 
   const [numpadOpen, setNumpadOpen] = useState(false);
@@ -180,7 +180,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
       )
     )
       return;
-    setIsUnassigning(true);
+    setUnassigning(true);
     performUnassign()
       .then((res) => {
         if (res.success) {
@@ -193,7 +193,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
           );
         }
       })
-      .finally(() => setIsUnassigning(false));
+      .finally(() => setUnassigning(false));
   };
 
   const confirmIfChangingMachine = (): boolean => {
