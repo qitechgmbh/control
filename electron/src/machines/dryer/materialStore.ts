@@ -17,7 +17,7 @@ export type MaterialStoreState = {
   setTargetTimeMin: (value: number) => void;
 };
 
-export const useDryerV1MaterialStore = create<MaterialStoreState>()(
+export const useDryerMaterialStore = create<MaterialStoreState>()(
   persist(
     (set) => ({
       favorites: [],

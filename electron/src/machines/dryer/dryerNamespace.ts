@@ -74,7 +74,7 @@ export type LiveValuesEventData = z.infer<typeof liveValuesEventDataSchema>;
 export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
 export type LiveValuesEvent = z.infer<typeof liveValuesEventSchema>;
 
-export type DryerV1NamespaceStore = {
+export type DryerNamespaceStore = {
   liveValues: LiveValuesEvent | null;
   ts_temp_process: TimeSeries;
   ts_temp_regen_in: TimeSeries;
@@ -109,9 +109,9 @@ const { initialTimeSeries: init_pwm_fan1, insert: add_pwm_fan1 } =
 const { initialTimeSeries: init_pwm_fan2, insert: add_pwm_fan2 } =
   createTimeSeries();
 
-export function dryerV1MessageHandler(
-  _store: StoreApi<DryerV1NamespaceStore>,
-  throttledUpdater: ThrottledStoreUpdater<DryerV1NamespaceStore>,
+export function dryerMessageHandler(
+  _store: StoreApi<DryerNamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<DryerNamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
@@ -174,34 +174,33 @@ export function dryerV1MessageHandler(
   };
 }
 
-export const createDryerV1NamespaceStore =
-  (): StoreApi<DryerV1NamespaceStore> =>
-    create<DryerV1NamespaceStore>(() => ({
-      liveValues: null,
-      ts_temp_process: init_temp_process,
-      ts_temp_regen_in: init_temp_regen_in,
-      ts_temp_regen_out: init_temp_regen_out,
-      ts_temp_fan_inlet: init_temp_fan_inlet,
-      ts_temp_safety: init_temp_safety,
-      ts_temp_return_air: init_temp_return_air,
-      ts_power_process: init_power_process,
-      ts_power_regen: init_power_regen,
-      ts_pwm_fan1: init_pwm_fan1,
-      ts_pwm_fan2: init_pwm_fan2,
-    }));
+export const createDryerNamespaceStore = (): StoreApi<DryerNamespaceStore> =>
+  create<DryerNamespaceStore>(() => ({
+    liveValues: null,
+    ts_temp_process: init_temp_process,
+    ts_temp_regen_in: init_temp_regen_in,
+    ts_temp_regen_out: init_temp_regen_out,
+    ts_temp_fan_inlet: init_temp_fan_inlet,
+    ts_temp_safety: init_temp_safety,
+    ts_temp_return_air: init_temp_return_air,
+    ts_power_process: init_power_process,
+    ts_power_regen: init_power_regen,
+    ts_pwm_fan1: init_pwm_fan1,
+    ts_pwm_fan2: init_pwm_fan2,
+  }));
 
-const useDryerV1NamespaceImplementation =
-  createNamespaceHookImplementation<DryerV1NamespaceStore>({
-    createStore: createDryerV1NamespaceStore,
-    createEventHandler: dryerV1MessageHandler,
+const useDryerNamespaceImplementation =
+  createNamespaceHookImplementation<DryerNamespaceStore>({
+    createStore: createDryerNamespaceStore,
+    createEventHandler: dryerMessageHandler,
   });
 
-export function useDryerV1Namespace(
+export function useDryerNamespace(
   machine_identification_unique: MachineIdentificationUnique,
-): DryerV1NamespaceStore {
+): DryerNamespaceStore {
   const namespaceId = useMemo<NamespaceId>(
     () => ({ type: "machine", machine_identification_unique }),
     [machine_identification_unique],
   );
-  return useDryerV1NamespaceImplementation(namespaceId);
+  return useDryerNamespaceImplementation(namespaceId);
 }

@@ -469,7 +469,7 @@ export const laser1: MachineProperties = {
   device_roles: [],
 };
 
-export const dryerV1: MachineProperties = {
+export const dryer: MachineProperties = {
   name: "Dryer",
   version: "V1",
   slug: "dryer_v1",
@@ -1044,7 +1044,7 @@ export const machineProperties: MachineProperties[] = [
   extruder3,
   extruder2,
   laser1,
-  dryerV1,
+  dryer,
   mock1,
   buffer1,
   wagoPower1,

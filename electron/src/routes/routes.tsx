@@ -57,11 +57,11 @@ import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 import { Laser1SettingsPage } from "@/machines/laser/laser1/Laser1SettingsPage";
 
-import { DryerV1Page } from "@/machines/dryer/dryer_v1/DryerV1Page";
-import { DryerV1ControlPage } from "@/machines/dryer/dryer_v1/DryerV1ControlPage";
-import { DryerV1OverviewPage } from "@/machines/dryer/dryer_v1/DryerV1OverviewPage";
-import { DryerV1SchedulePage } from "@/machines/dryer/dryer_v1/DryerV1SchedulePage";
-import { DryerV1MaterialPage } from "@/machines/dryer/dryer_v1/DryerV1MaterialPage";
+import { DryerPage } from "@/machines/dryer/DryerPage";
+import { DryerControlPage } from "@/machines/dryer/DryerControlPage";
+import { DryerOverviewPage } from "@/machines/dryer/DryerOverviewPage";
+import { DryerSchedulePage } from "@/machines/dryer/DryerSchedulePage";
+import { DryerMaterialPage } from "@/machines/dryer/DryerMaterialPage";
 
 import { WagoSerialPage } from "@/machines/wago_serial/WagoSerialPage";
 import { WagoSerialControlPage } from "@/machines/wago_serial/WagoSerialControlPage";
@@ -479,34 +479,34 @@ export const laser1SettingsRoute = createRoute({
   component: () => <Laser1SettingsPage />,
 });
 
-export const dryerV1SerialRoute = createRoute({
+export const dryerSerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "dryer_v1/$serial",
-  component: () => <DryerV1Page />,
+  component: () => <DryerPage />,
 });
 
-export const dryerV1ControlRoute = createRoute({
-  getParentRoute: () => dryerV1SerialRoute,
+export const dryerControlRoute = createRoute({
+  getParentRoute: () => dryerSerialRoute,
   path: "control",
-  component: () => <DryerV1ControlPage />,
+  component: () => <DryerControlPage />,
 });
 
-export const dryerV1OverviewRoute = createRoute({
-  getParentRoute: () => dryerV1SerialRoute,
+export const dryerOverviewRoute = createRoute({
+  getParentRoute: () => dryerSerialRoute,
   path: "overview",
-  component: () => <DryerV1OverviewPage />,
+  component: () => <DryerOverviewPage />,
 });
 
-export const dryerV1ScheduleRoute = createRoute({
-  getParentRoute: () => dryerV1SerialRoute,
+export const dryerScheduleRoute = createRoute({
+  getParentRoute: () => dryerSerialRoute,
   path: "schedule",
-  component: () => <DryerV1SchedulePage />,
+  component: () => <DryerSchedulePage />,
 });
 
-export const dryerV1MaterialRoute = createRoute({
-  getParentRoute: () => dryerV1SerialRoute,
+export const dryerMaterialRoute = createRoute({
+  getParentRoute: () => dryerSerialRoute,
   path: "material",
-  component: () => <DryerV1MaterialPage />,
+  component: () => <DryerMaterialPage />,
 });
 
 export const mock1SerialRoute = createRoute({
@@ -746,11 +746,11 @@ export const rootTree = RootRoute.addChildren([
         laser1SettingsRoute,
       ]),
 
-      dryerV1SerialRoute.addChildren([
-        dryerV1ControlRoute,
-        dryerV1OverviewRoute,
-        dryerV1ScheduleRoute,
-        dryerV1MaterialRoute,
+      dryerSerialRoute.addChildren([
+        dryerControlRoute,
+        dryerOverviewRoute,
+        dryerScheduleRoute,
+        dryerMaterialRoute,
       ]),
 
       testMachineSerialRoute.addChildren([testMachineControlRoute]),

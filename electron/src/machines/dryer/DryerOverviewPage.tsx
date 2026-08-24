@@ -2,16 +2,16 @@ import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
-import { dryerV1 } from "@/machines/properties";
-import { dryerV1SerialRoute } from "@/routes/routes";
+import { dryer } from "@/machines/properties";
+import { dryerSerialRoute } from "@/routes/routes";
 import { useDryerMachineIdentification } from "./useDryerMachineIdentification";
-import { useDryerV1Namespace } from "./dryerV1Namespace";
+import { useDryerNamespace } from "./dryerNamespace";
 import React from "react";
 
-export function DryerV1OverviewPage() {
-  const { serial: serialString } = dryerV1SerialRoute.useParams();
+export function DryerOverviewPage() {
+  const { serial: serialString } = dryerSerialRoute.useParams();
   const machineIdentification = useDryerMachineIdentification(
-    dryerV1,
+    dryer,
     serialString,
   );
 
@@ -27,7 +27,7 @@ export function DryerV1OverviewPage() {
     ts_power_regen,
     ts_pwm_fan1,
     ts_pwm_fan2,
-  } = useDryerV1Namespace(machineIdentification);
+  } = useDryerNamespace(machineIdentification);
   const v = liveValues?.data;
 
   return (

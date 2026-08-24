@@ -10,11 +10,11 @@ import {
 } from "@/control/SelectionGroup";
 import { StatusBadge } from "@/control/StatusBadge";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { dryerV1 } from "@/machines/properties";
-import { dryerV1SerialRoute } from "@/routes/routes";
+import { dryer } from "@/machines/properties";
+import { dryerSerialRoute } from "@/routes/routes";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { useDryerMachineIdentification } from "./useDryerMachineIdentification";
-import { useDryerV1Namespace } from "./dryerV1Namespace";
+import { useDryerNamespace } from "./dryerNamespace";
 import { useMachineMutate } from "@/client/useClient";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { Icon } from "@/components/Icon";
@@ -31,7 +31,7 @@ import {
   recommendedTemp,
   formatRange,
 } from "./useMaterialPresets";
-import { useDryerV1MaterialStore } from "./materialStore";
+import { useDryerMaterialStore } from "./materialStore";
 import {
   encodedToMinutes,
   formatMinutes,
@@ -138,14 +138,14 @@ function formatRemaining(sec: number): string {
   return `${m}min ${s}s`;
 }
 
-export function DryerV1ControlPage() {
-  const { serial: serialString } = dryerV1SerialRoute.useParams();
+export function DryerControlPage() {
+  const { serial: serialString } = dryerSerialRoute.useParams();
   const machineIdentification = useDryerMachineIdentification(
-    dryerV1,
+    dryer,
     serialString,
   );
 
-  const { liveValues, ts_temp_process } = useDryerV1Namespace(
+  const { liveValues, ts_temp_process } = useDryerNamespace(
     machineIdentification,
   );
   const v = liveValues?.data;
@@ -155,7 +155,7 @@ export function DryerV1ControlPage() {
     targetTimeMin,
     setTargetTimeMin,
     selectedAbbrev: selectedMaterialAbbrev,
-  } = useDryerV1MaterialStore();
+  } = useDryerMaterialStore();
   const remainingSec = v?.remaining_seconds ?? null;
 
   const scheduledStopMins = useMemo(() => {
@@ -388,7 +388,7 @@ function MaterialListeCard({
     selectMaterial,
     clearMaterial,
     toggleFavorite,
-  } = useDryerV1MaterialStore();
+  } = useDryerMaterialStore();
   const { request: sendMutation } = useMachineMutate(z.any());
 
   const handleSelect = (abbrev: string) => {
@@ -625,8 +625,7 @@ function FlowRateCard({
   machineIdentification: MachineIdentificationUnique;
 }) {
   const materialPresets = useMaterialPresets();
-  const { throughput, selectedAbbrev, setThroughput } =
-    useDryerV1MaterialStore();
+  const { throughput, selectedAbbrev, setThroughput } = useDryerMaterialStore();
   const { request: sendMutation } = useMachineMutate(z.any());
 
   const selectedPreset = selectedAbbrev

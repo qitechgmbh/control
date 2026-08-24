@@ -1,9 +1,9 @@
 import { Topbar } from "@/components/Topbar";
-import { dryerV1SerialRoute } from "@/routes/routes";
+import { dryerSerialRoute } from "@/routes/routes";
 import React from "react";
 
-export function DryerV1Page() {
-  const { serial } = dryerV1SerialRoute.useParams();
+export function DryerPage() {
+  const { serial } = dryerSerialRoute.useParams();
   return (
     <Topbar
       pathname={`/_sidebar/machines/dryer_v1/${serial}`}

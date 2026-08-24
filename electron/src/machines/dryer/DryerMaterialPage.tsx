@@ -2,19 +2,19 @@ import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
 import { Icon } from "@/components/Icon";
 import { Input } from "@/components/ui/input";
-import { dryerV1 } from "@/machines/properties";
-import { dryerV1SerialRoute } from "@/routes/routes";
+import { dryer } from "@/machines/properties";
+import { dryerSerialRoute } from "@/routes/routes";
 import { useDryerMachineIdentification } from "./useDryerMachineIdentification";
 import { useMachineMutate } from "@/client/useClient";
 import { useMaterialPresets, formatRange } from "./useMaterialPresets";
-import { useDryerV1MaterialStore } from "./materialStore";
+import { useDryerMaterialStore } from "./materialStore";
 import React, { useMemo, useState } from "react";
 import { z } from "zod";
 
-export function DryerV1MaterialPage() {
-  const { serial: serialString } = dryerV1SerialRoute.useParams();
+export function DryerMaterialPage() {
+  const { serial: serialString } = dryerSerialRoute.useParams();
   const machineIdentification = useDryerMachineIdentification(
-    dryerV1,
+    dryer,
     serialString,
   );
 
@@ -26,7 +26,7 @@ export function DryerV1MaterialPage() {
     throughput,
     selectMaterial,
     toggleFavorite,
-  } = useDryerV1MaterialStore();
+  } = useDryerMaterialStore();
   const { request: sendMutation } = useMachineMutate(z.any());
 
   const filtered = useMemo(() => {

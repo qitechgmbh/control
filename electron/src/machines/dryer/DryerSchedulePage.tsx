@@ -5,14 +5,14 @@ import {
   SelectionGroup,
   SelectionGroupBoolean,
 } from "@/control/SelectionGroup";
-import { dryerV1 } from "@/machines/properties";
-import { dryerV1SerialRoute } from "@/routes/routes";
+import { dryer } from "@/machines/properties";
+import { dryerSerialRoute } from "@/routes/routes";
 import { useDryerMachineIdentification } from "./useDryerMachineIdentification";
 import {
-  useDryerV1Namespace,
+  useDryerNamespace,
   ScheduleDay,
   SmartTimerEntry,
-} from "./dryerV1Namespace";
+} from "./dryerNamespace";
 import {
   DAY_LABELS,
   encodedToTimeInput,
@@ -41,14 +41,14 @@ const newEntryDefault: SmartTimerEntry = {
 /// hardware - gated on `v.is_smart`, reported directly by the connected device. These two
 /// UIs are genuinely different (not just a Smart-only section layered on a shared base),
 /// unlike Control/Overview/Material.
-export function DryerV1SchedulePage() {
-  const { serial: serialString } = dryerV1SerialRoute.useParams();
+export function DryerSchedulePage() {
+  const { serial: serialString } = dryerSerialRoute.useParams();
   const machineIdentification = useDryerMachineIdentification(
-    dryerV1,
+    dryer,
     serialString,
   );
 
-  const { liveValues } = useDryerV1Namespace(machineIdentification);
+  const { liveValues } = useDryerNamespace(machineIdentification);
   const v = liveValues?.data;
 
   const serverSchedule = v?.schedule;

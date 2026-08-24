@@ -1,4 +1,4 @@
-import { ScheduleDay } from "./dryerV1Namespace";
+import { ScheduleDay } from "./dryerNamespace";
 
 /// Helpers for the dryer's `HH*100+MM` time encoding (e.g. 1430 = 14:30), shared by the
 /// Control page (countdown/schedule-stop display) and the Schedule page (weekly
