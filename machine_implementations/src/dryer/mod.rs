@@ -109,7 +109,8 @@ impl DryerMachine {
         let (weekday, now_sec) = local_weekday_and_seconds();
         let scheduled_stop = self.schedule[weekday as usize].stop_time;
         if scheduled_stop != 0 {
-            let stop_sec = (scheduled_stop / 100) as u32 * 3600 + (scheduled_stop % 100) as u32 * 60;
+            let stop_sec =
+                (scheduled_stop / 100) as u32 * 3600 + (scheduled_stop % 100) as u32 * 60;
             return stop_sec.checked_sub(now_sec);
         }
 
