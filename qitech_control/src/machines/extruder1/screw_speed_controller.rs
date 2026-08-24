@@ -10,9 +10,10 @@ use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
 use qitech_lib::ethercat_hal::io::analog_input::physical::AnalogInputValue;
 use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
 use qitech_lib::units::{
-    AngularVelocity, ElectricCurrent, ElectricPotential, Frequency, Pressure,
+    AngularVelocity, ElectricCurrent, ElectricPotential, Frequency, Power, Pressure,
     angular_velocity::revolution_per_minute, electric_current::ampere,
     electric_current::milliampere, electric_potential::volt, frequency::hertz, pressure::bar,
+    power::watt,
 };
 
 use crate::machines::extruder1::mitsubishi_cs80::{MitsubishiCS80, MitsubishiCS80Status};
@@ -111,8 +112,7 @@ struct MotorMeasurements {
     frequency: Measurement<Frequency>,
     voltage: Measurement<ElectricPotential>,
     current: Measurement<ElectricCurrent>,
-    // TODO: `Measurement<Power>` once qitech_lib::units gains a Power quantity (see schema).
-    power: Measurement<f64>,
+    power: Measurement<Power>,
 }
 
 impl MotorMeasurements {
@@ -124,7 +124,7 @@ impl MotorMeasurements {
             frequency: ctx.measurement::<hertz>("motor.frequency").build()?,
             voltage: ctx.measurement::<volt>("motor.voltage").build()?,
             current: ctx.measurement::<ampere>("motor.current").build()?,
-            power: ctx.measurement::<f64>("motor.power").build()?,
+            power: ctx.measurement::<watt>("motor.power").build()?,
         })
     }
 }
@@ -314,10 +314,10 @@ impl ScrewSpeedController {
         self.motor_on
     }
 
-    /// Motor power draw in watts.
-    pub fn get_motor_power(&self) -> f64 {
+    /// Motor power draw.
+    pub fn get_motor_power(&self) -> Power {
         let status = self.inverter.motor_status;
-        status.voltage.get::<volt>() * status.current.get::<ampere>()
+        Power::new::<watt>(status.voltage.get::<volt>() * status.current.get::<ampere>())
     }
 
     pub fn reset_inverter(&mut self) {

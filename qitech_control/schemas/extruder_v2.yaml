@@ -1,12 +1,3 @@
-# TODO: `motor.power`, `heating.*.power`, `power.combined` and `energy.total` are `!float`
-# (watts / kWh) because `qitech_lib::units` has no Power or Energy quantity. Making them
-# `!watt` / `!kilowatt_hour` is a three-repo change:
-#   1. qitech_lib: add units/src/power.rs + energy.rs (uom `quantity!`, see pressure.rs for the
-#      shape) and register both in the `system! { units: U { .. } }` list in units/src/lib.rs
-#   2. qitech_framework: add [[quantity]] Power = ["Watt"] and Energy = ["KilowattHour"]
-#      to qitech_framework_core/quantities.toml
-#   3. control: bump the qitech_lib and qitech_framework revs in the workspace Cargo.toml
-
 qms_version: 1.0
 revision: 1
 
@@ -106,7 +97,7 @@ measurements:
     frequency: !hertz
     voltage: !volt
     current: !ampere
-    power: !float
+    power: !watt
 
   pressure:
     value: !bar
@@ -115,22 +106,22 @@ measurements:
   heating:
     nozzle:
       temperature: !degree_celsius
-      power: !float
+      power: !watt
     front:
       temperature: !degree_celsius
-      power: !float
+      power: !watt
     middle:
       temperature: !degree_celsius
-      power: !float
+      power: !watt
     back:
       temperature: !degree_celsius
-      power: !float
+      power: !watt
 
   power:
-    combined: !float
+    combined: !watt
 
   energy:
-    total: !float
+    total: !kilowatt_hour
 
 commands:
   mode:

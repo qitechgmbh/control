@@ -17,7 +17,10 @@ use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
 use qitech_lib::ethercat_hal::io::temperature_input::TemperatureInputDevice;
-use qitech_lib::units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
+use qitech_lib::units::{
+    ThermodynamicTemperature, energy::kilowatt_hour, power::watt,
+    thermodynamic_temperature::degree_celsius,
+};
 
 use crate::machines::extruder1::mitsubishi_cs80::MitsubishiCS80;
 use crate::machines::extruder1::screw_speed_controller::ScrewSpeedController;
@@ -168,8 +171,8 @@ impl<const VARIANT: usize> Extruder<VARIANT> {
 
             mode: ctx.state::<Mode>("mode").build()?,
 
-            combined_power: ctx.measurement::<f64>("power.combined").build()?,
-            total_energy: ctx.measurement::<f64>("energy.total").build()?,
+            combined_power: ctx.measurement::<watt>("power.combined").build()?,
+            total_energy: ctx.measurement::<kilowatt_hour>("energy.total").build()?,
 
             last_energy_calculation_time: None,
         })

@@ -19,6 +19,7 @@ use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
 use qitech_lib::ethercat_hal::io::temperature_input::TemperatureInputDevice;
+use qitech_lib::units::{Energy, Power, Time, time::second};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;
@@ -233,10 +234,8 @@ pub struct Extruder<const VARIANT: usize> {
     mode: StateProperty<Mode>,
 
     // --- measurements ---
-    // TODO: `Measurement<Power>` once qitech_lib::units gains a Power quantity (see schema).
-    combined_power: Measurement<f64>,
-    // TODO: `Measurement<Energy>` once qitech_lib::units gains an Energy quantity (see schema).
-    total_energy: Measurement<f64>,
+    combined_power: Measurement<Power>,
+    total_energy: Measurement<Energy>,
 
     last_energy_calculation_time: Option<Instant>,
 }
@@ -262,8 +261,8 @@ impl MachineDescriptor for Extruder<VARIANT_V2> {
 impl<const VARIANT: usize> Extruder<VARIANT> {
     // --- power / energy ---
 
-    /// Combined power draw in watts: motor plus all four heating elements.
-    fn calculate_combined_power(&self) -> f64 {
+    /// Combined power draw: motor plus all four heating elements.
+    fn calculate_combined_power(&self) -> Power {
         let motor_power = self.screw_speed_controller.get_motor_power();
 
         motor_power
@@ -273,15 +272,14 @@ impl<const VARIANT: usize> Extruder<VARIANT> {
             + self.temperature_controller_middle.heating_element_wattage()
     }
 
-    /// Integrates combined power into the total energy counter (kWh).
+    /// Integrates combined power into the total energy counter.
     pub(super) fn update_energy(&mut self, now: Instant) {
-        let power_watts = self.calculate_combined_power();
-        self.combined_power.set(power_watts);
+        let power = self.calculate_combined_power();
+        self.combined_power.set(power);
 
         if let Some(last_time) = self.last_energy_calculation_time {
-            let time_delta_hours = now.duration_since(last_time).as_secs_f64() / 3600.0;
-            let energy_delta_kwh = (power_watts / 1000.0) * time_delta_hours;
-            let total = self.total_energy.get() + energy_delta_kwh;
+            let elapsed = Time::new::<second>(now.duration_since(last_time).as_secs_f64());
+            let total = self.total_energy.get() + power * elapsed;
             self.total_energy.set(total);
         }
 

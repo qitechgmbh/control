@@ -6,7 +6,9 @@ use qitech_framework::machine::StateProperty;
 use qitech_lib::ethercat_hal::io::{
     digital_output::DigitalOutputDevice, temperature_input::TemperatureInputDevice,
 };
-use qitech_lib::units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
+use qitech_lib::units::{
+    Power, ThermodynamicTemperature, power::watt, thermodynamic_temperature::degree_celsius,
+};
 use std::time::{Duration, Instant};
 
 use crate::machines::extruder1::{PidGains, Zone};
@@ -36,8 +38,7 @@ pub struct TemperatureController {
 
     // --- measurements ---
     temperature: Measurement<ThermodynamicTemperature>,
-    // TODO: `Measurement<Power>` once qitech_lib::units gains a Power quantity (see schema).
-    power: Measurement<f64>,
+    power: Measurement<Power>,
 
     // --- internals ---
     heating: bool,
@@ -81,7 +82,7 @@ impl TemperatureController {
             temperature: ctx
                 .measurement::<degree_celsius>(paths.temperature)
                 .build()?,
-            power: ctx.measurement::<f64>(paths.power).build()?,
+            power: ctx.measurement::<watt>(paths.power).build()?,
 
             heating: false,
             heating_allowed: false,
@@ -110,9 +111,9 @@ impl TemperatureController {
         self.heating_allowed = true;
     }
 
-    /// Current draw of this zone's heating element in watts.
-    pub fn heating_element_wattage(&self) -> f64 {
-        self.temperature_pid_output * self.heating_element_wattage
+    /// Current draw of this zone's heating element.
+    pub fn heating_element_wattage(&self) -> Power {
+        Power::new::<watt>(self.temperature_pid_output * self.heating_element_wattage)
     }
 
     pub fn update(
