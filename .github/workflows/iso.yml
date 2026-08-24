@@ -1,0 +1,35 @@
+
+name: Nix ISO
+
+on:
+  push:
+    branches:
+      - master
+  schedule:
+  - cron: "0 0 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  nix-iso:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - uses: nixbuild/nix-quick-install-action@v35
+        with:
+          nix_conf: |
+            keep-env-derivations = true
+            keep-outputs = true
+
+      - uses: cachix/cachix-action@v17
+        with:
+          name: qitech
+          skipPush: true
+
+      - name: Build QiTech NixOS ISO 9660 image
+        run: ./nixos/nixos-build-iso.sh
+
