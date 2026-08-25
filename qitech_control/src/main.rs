@@ -32,11 +32,6 @@ use crate::machines::WinderV1_Regular;
 pub fn main() -> anyhow::Result<()> {
     interface::bring_up_all_ethernet();
 
-    let laser_ident = |serial: u16| MachineIdentificationUnique {
-        identification: LaserV1::IDENTIFICATION,
-        serial,
-    };
-
     // --- configure runtime ---
     let config = RuntimeConfiguration::new()
         .requests_per_cycle_max(10)
@@ -44,13 +39,13 @@ pub fn main() -> anyhow::Result<()> {
         .ethercat(ETHERCAT_CONFIG)
         .modbus_rtu_device::<LaserDevice>(
             "pci-0000:c6:00.0-usbv2-0:2.1:1.0-port0".to_string(),
-            laser_ident(1),
+            LaserV1::IDENTIFICATION.unique(1),
             1,
             None,
         )
         .modbus_rtu_device::<LaserDevice>(
             "pci-0000:c6:00.0-usbv2-0:2.3:1.0-port0".to_string(),
-            laser_ident(2),
+            LaserV1::IDENTIFICATION.unique(1),
             1,
             None,
         )
