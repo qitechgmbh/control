@@ -1,5 +1,7 @@
 use std::time::Instant;
 
+use qitech_control_core::controllers::first_degree_motion::AngularAccelerationSpeedController;
+use qitech_control_core::utils::interpolation::scale;
 use qitech_framework::machine::BuildContext;
 use qitech_framework::machine::BuildResult;
 use qitech_framework::machine::ConfigProperty;
@@ -15,9 +17,7 @@ use qitech_lib::units::length::centimeter;
 use qitech_lib::units::length::meter;
 use qitech_lib::units::velocity::meter_per_second;
 
-use crate::controllers::first_degree_motion::AngularAccelerationSpeedController;
 use crate::machines::winder_v2::spool::speed_controller::SpeedAlgorithmInput;
-use crate::utils::interpolation::scale;
 
 pub struct SpeedAlgorithmAdaptive {
     /// Timestamp of last max speed factor update, used for time-aware learning rate calculation

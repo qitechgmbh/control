@@ -3,7 +3,6 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use qitech_framework::Machine;
-use qitech_framework::MachineIdentification;
 use qitech_framework::machine::ActError;
 use qitech_framework::machine::ActErrorImpact;
 use qitech_framework::machine::ActErrorKind;
@@ -17,7 +16,6 @@ use qitech_framework::machine::MachineBuild;
 use qitech_framework::machine::Measurement;
 use qitech_framework::machine::StateProperty;
 use qitech_framework::machine_build;
-use qitech_framework::vendors;
 use qitech_lib::modbus::ModbusDevice;
 use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
 use qitech_lib::modbus::devices::qitech_laser::LaserError;
@@ -59,6 +57,7 @@ impl MachineBuild for LaserV1 {
             .config::<millimeter>("diameter.target")
             .default(1.75)
             .minimum(0.0)
+            .maximum(5.0)
             .build()?;
 
         let diameter_tolerance_lower = ctx
@@ -71,6 +70,7 @@ impl MachineBuild for LaserV1 {
             .config::<millimeter>("diameter.tolerance.upper")
             .default(0.05)
             .minimum(0.0)
+            .maximum(1.0)
             .build()?;
 
         Ok(Self {
@@ -97,6 +97,7 @@ impl Machine for LaserV1 {
     fn act(&mut self, dt: Duration) -> ActResult {
         self.update_device(dt)?;
 
+        // --- update measurements ---
         if let Some(m) = self.device.borrow().measurement.clone() {
             fn convert(value: u16) -> Length {
                 Length::new::<millimeter>(value as f64 / 1000.0)
@@ -107,9 +108,11 @@ impl Machine for LaserV1 {
             self.diameter_y.set(Some(convert(m.y_axis)));
         }
 
+        // --- update roundness ---
         let roundness = self.compute_roundness();
         self.roundness.set(roundness);
 
+        // --- update in_tolerance ---
         let in_tolerance = self.compute_in_tolerance();
         if self.in_tolerance.set(in_tolerance) && !in_tolerance {
             // value changed from in tolerance -> out of tolerance
@@ -121,11 +124,6 @@ impl Machine for LaserV1 {
 }
 
 impl LaserV1 {
-    pub const IDENTIFICATION: MachineIdentification = MachineIdentification {
-        vendor_id: vendors::QITECH.id,
-        machine_id: 6,
-    };
-
     fn update_device(&mut self, dt: Duration) -> ActResult {
         let mut laser = self.device.borrow_mut();
 

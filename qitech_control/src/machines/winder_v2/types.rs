@@ -1,5 +1,5 @@
 use qitech_framework::EnumProperty;
-use qitech_framework::MachineIdentificationUnique;
+use qitech_framework::MachineInstanceIdentification;
 use qitech_framework::machine::RemoteProperty;
 use qitech_lib::units::Length;
 
@@ -21,7 +21,7 @@ pub enum Mode {
 }
 
 pub struct LaserSubscription {
-    pub ident: MachineIdentificationUnique,
+    pub ident: MachineInstanceIdentification,
     pub diameter: RemoteProperty<Length>,
     pub diameter_target: RemoteProperty<Length>,
 }

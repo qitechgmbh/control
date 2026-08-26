@@ -1,31 +1,32 @@
 [workspace]
-members = ["qitech_control"]
+members = ["qitech_control", "qitech_control_core"]
 exclude = []
 resolver = "2"
 
 [workspace.package]
 license = "LGPL-3.0-only"
 repository = "https://github.com/qitechgmbh/control"
+keywords = ["ethercat", "modbus", "machine"]
+categories = [""]
+exclude = [".github", ".vscode"]
+edition = "2024"
+rust-version = "1.90"
 
 [workspace.dependencies]
+# --- internal ---
+qitech_control = { path = "qitech_control" }
+qitech_control_core = { path = "qitech_control_core" }
+
 # --- lib ---
-qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="530355c00baf6335f6085441c2a497d9ac060af6" }
+qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="ab7019c" }
 
 # --- framework ---
-qitech_framework = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="812babfe83dd4d14a3e16d40e1174b5b4718e017" }
-qitech_framework_tui = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="812babfe83dd4d14a3e16d40e1174b5b4718e017" }
-qitech_framework_hub = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="812babfe83dd4d14a3e16d40e1174b5b4718e017" }
+qitech_framework = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="25d58c2cc9d6b7e4104710659e8bd4d0c3cb2375" }
+qitech_framework_tui = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="25d58c2cc9d6b7e4104710659e8bd4d0c3cb2375" }
+qitech_framework_hub = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="25d58c2cc9d6b7e4104710659e8bd4d0c3cb2375" }
 
-[workspace.lints.clippy]
-# don't lint poissbilities for let chains because they were introduces after Rust 1.86
-collapsible_if = "allow"
-
-# Lint groups (priority -1)
-correctness = { level = "warn", priority = -1 }
-suspicious = { level = "warn", priority = -1 }
-complexity = { level = "warn", priority = -1 }
-perf = { level = "warn", priority = -1 }
-style = { level = "warn", priority = -1 }
-pendantic = { level = "warn", priority = -1 }
-cargo = { level = "warn", priority = -1 }
-nursery = { level = "warn", priority = -1 }
+# --- external ---
+tokio = "1"
+tower-http = "0.6.8"
+tracing = "0.1.44"
+tracing-subscriber = "0.3"

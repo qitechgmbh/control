@@ -2,7 +2,7 @@ use std::time::Duration;
 use std::time::Instant;
 
 use qitech_framework::MachineIdentification;
-use qitech_framework::MachineIdentificationUnique;
+use qitech_framework::MachineInstanceIdentification;
 use qitech_framework::machine::ActError;
 use qitech_framework::machine::ActErrorImpact;
 use qitech_framework::machine::ActResult;
@@ -115,7 +115,7 @@ impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
         Ok(())
     }
 
-    fn unsubscribe(&mut self, ident: MachineIdentificationUnique) {
+    fn unsubscribe(&mut self, ident: MachineInstanceIdentification) {
         if let Some(sub) = &mut self.laser_subscription
             && sub.ident == ident
         {

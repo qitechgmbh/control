@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Duration;
 
+use qitech_control_core::converters::AngularStepConverter;
 use qitech_framework::machine::BuildContext;
 use qitech_framework::machine::BuildResult;
 use qitech_framework::machine::ConfigProperty;
@@ -14,7 +15,6 @@ use qitech_lib::units::Length;
 use qitech_lib::units::angular_velocity::revolution_per_minute;
 use qitech_lib::units::length::meter;
 
-use crate::converters::AngularStepConverter;
 use crate::machines::winder_v2::TensionArm;
 use crate::machines::winder_v2::WinderV1;
 use crate::machines::winder_v2::puller::Puller;

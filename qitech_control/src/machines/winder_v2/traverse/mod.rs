@@ -3,6 +3,7 @@ use std::cmp::Ordering;
 use std::rc::Rc;
 use std::time::Duration;
 
+use qitech_control_core::converters::LinearStepConverter;
 use qitech_framework::machine::ActErrorKind;
 use qitech_framework::machine::ActResult;
 use qitech_framework::machine::BuildContext;
@@ -20,7 +21,6 @@ use qitech_lib::units::angular_velocity::revolution_per_second;
 use qitech_lib::units::length::millimeter;
 use qitech_lib::units::velocity::millimeter_per_second;
 
-use crate::converters::LinearStepConverter;
 use crate::machines::winder_v2::WinderV1;
 
 mod types;

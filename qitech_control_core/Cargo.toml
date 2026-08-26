@@ -1,0 +1,8 @@
+[package]
+name = "qitech_control_core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+qitech_lib = { workspace = true }
+libc = "0.2.186"

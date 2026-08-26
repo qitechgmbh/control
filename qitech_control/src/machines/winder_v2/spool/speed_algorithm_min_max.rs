@@ -1,17 +1,17 @@
 use std::time::Duration;
 use std::time::Instant;
 
+use qitech_control_core::controllers::first_degree_motion::angular_acceleration_speed_controller::AngularAccelerationSpeedController;
+use qitech_control_core::utils::interpolation::interpolate_exponential;
+use qitech_control_core::utils::interpolation::scale;
+use qitech_control_core::utils::moving_time_window::MovingTimeWindow;
 use qitech_lib::units::AngularAcceleration;
 use qitech_lib::units::AngularVelocity;
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::angular_acceleration::radian_per_second_squared;
 use qitech_lib::units::angular_velocity::radian_per_second;
 
-use crate::controllers::first_degree_motion::angular_acceleration_speed_controller::AngularAccelerationSpeedController;
 use crate::machines::winder_v2::spool::speed_controller::SpeedAlgorithmInput;
-use crate::utils::interpolation::interpolate_exponential;
-use crate::utils::interpolation::scale;
-use crate::utils::moving_time_window::MovingTimeWindow;
 
 pub struct SpeedAlgorithmMinMax {
     pub(crate) speed_time_window: MovingTimeWindow<f64>, // in rad/s
