@@ -272,12 +272,15 @@ impl MachineApi for super::Rewinder {
             MachineMessage::HttpApiJsonRequest(value) => {
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::RequestValues(sender) => {
-                let _ = sender.send(MachineValues {
-                    state: serde_json::to_value(self.build_state_event()).unwrap(),
-                    live_values: serde_json::to_value(self.get_live_values()).unwrap(),
-                });
-            }
+            MachineMessage::RequestValues(sender) => crate::respond_values(
+                sender,
+                MachineValues {
+                    state: serde_json::to_value(self.build_state_event())
+                        .expect("Failed to serialize state"),
+                    live_values: serde_json::to_value(self.get_live_values())
+                        .expect("Failed to serialize live values"),
+                },
+            ),
         }
     }
 }

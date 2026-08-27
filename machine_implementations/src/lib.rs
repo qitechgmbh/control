@@ -62,6 +62,12 @@ pub enum MachineMessage {
     RequestValues(tokio::sync::oneshot::Sender<MachineValues>),
 }
 
+pub fn respond_values(sender: tokio::sync::oneshot::Sender<MachineValues>, values: MachineValues) {
+    if sender.send(values).is_err() {
+        tracing::debug!("RequestValues receiver dropped before the machine could respond");
+    }
+}
+
 pub trait MachineApi {
     fn act_machine_message(&mut self, msg: MachineMessage);
     fn get_api_sender(&self) -> Sender<MachineMessage>;

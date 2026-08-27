@@ -178,13 +178,16 @@ impl SharedAppState {
         message: MachineMessage,
     ) -> Result<(), anyhow::Error> {
         let guard = self.machines_with_channel.read().await;
-        let sender = guard.get(machine_identification_unique);
-        if let Some(sender) = sender {
-            sender.send(message).await?;
-        }
+        let sender = guard.get(machine_identification_unique).cloned();
         drop(guard);
-        // why does a macro for return Err() exist bro ...
-        bail!("Unknown machine!")
+
+        match sender {
+            Some(sender) => {
+                sender.send(message).await?;
+                Ok(())
+            }
+            None => bail!("Unknown machine!"),
+        }
     }
 
     pub fn add_machine_sync(

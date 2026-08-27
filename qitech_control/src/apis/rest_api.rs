@@ -13,6 +13,11 @@ use machine_implementations::machine_identification::{
 use machine_implementations::winder2::Winder2;
 use serde::Serialize;
 use std::sync::Arc;
+use std::time::Duration;
+
+/// How long a REST caller waits for a machine's act loop to answer a
+/// [`MachineMessage::RequestValues`] before the request is failed.
+const REQUEST_VALUES_TIMEOUT: Duration = Duration::from_secs(2);
 
 #[derive(Serialize, Debug, PartialEq)]
 struct MachineResponce {
@@ -96,13 +101,19 @@ async fn get_machine_handler(
         machine_identification: id,
     };
 
-    let (sender, mut receiver) = tokio::sync::oneshot::channel();
+    let (sender, receiver) = tokio::sync::oneshot::channel();
     shared_state
         .message_machine(&id, MachineMessage::RequestValues(sender))
         .await
         .map_err(not_found)?;
 
-    let values = receiver.try_recv().map_err(internal_error)?;
+    // The machine answers from its act loop, so the response only arrives on a
+    // subsequent tick. Await it rather than polling once, but keep a bound so a
+    // stalled machine can't pin the connection open indefinitely.
+    let values = tokio::time::timeout(REQUEST_VALUES_TIMEOUT, receiver)
+        .await
+        .map_err(|_| internal_error("Machine did not respond in time"))?
+        .map_err(internal_error)?;
 
     json(GetMachineResponce {
         machine: MachineResponce::from(id),
