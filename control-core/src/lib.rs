@@ -9,4 +9,5 @@ pub mod irq_handling;
 pub mod modbus;
 pub mod realtime;
 pub mod socketio;
+pub mod thermal;
 pub mod transmission;
