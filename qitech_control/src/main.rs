@@ -24,6 +24,8 @@ use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
 use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
 
+use crate::machines::DryerDevice;
+use crate::machines::DryerV1;
 use crate::machines::ExtruderV1;
 use crate::machines::ExtruderV2;
 use crate::machines::LaserV1;
@@ -49,7 +51,14 @@ pub async fn main() -> anyhow::Result<()> {
             1,
             None,
         )
-        .machine::<LaserV1>();
+        .machine::<LaserV1>()
+        .modbus_rtu_device::<DryerDevice>(
+            "pci-0000:07:00.4-usbv2-0:1:1.0-port0".to_string(),
+            DryerV1::IDENTIFICATION.unique(1),
+            1,
+            None,
+        )
+        .machine::<DryerV1>();
 
     // --- determine if ethercat is enabled ---
     let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {
