@@ -1,3 +1,7 @@
+mod dryer_v1;
+pub use dryer_v1::DryerDevice;
+pub use dryer_v1::DryerV1;
+
 mod laser_v1;
 pub use laser_v1::LaserV1;
 

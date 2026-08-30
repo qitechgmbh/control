@@ -17,6 +17,8 @@ use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
 mod types;
 
 mod machines;
+use machines::DryerDevice;
+use machines::DryerV1;
 use machines::LaserV1;
 use machines::WinderV1_7031_Spool;
 use machines::WinderV1_Regular;
@@ -29,6 +31,12 @@ use api::SocketIODispatcher;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
+    // --- init tracing subscriber ---
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .with_ansi(true)
+        .init();
+
     // --- bring up all ethernet interfaces for ethercat ---
     interface::bring_up_all_ethernet();
 
@@ -42,7 +50,14 @@ pub async fn main() -> anyhow::Result<()> {
             1,
             None,
         )
+        .modbus_rtu_device::<DryerDevice>(
+            "pci-0000:07:00.4-usbv2-0:1:1.0-port0".to_string(),
+            DryerV1::IDENTIFICATION.unique(1),
+            1,
+            None,
+        )
         .machine::<LaserV1>()
+        .machine::<DryerV1>()
         .machine::<WinderV1_Regular>()
         .machine::<WinderV1_7031_Spool>();
 
@@ -63,13 +78,6 @@ pub async fn main() -> anyhow::Result<()> {
 
         // default is hub
         _ => {
-            // --- init tracing subscriber ---
-            tracing_subscriber::fmt()
-                .with_target(false)
-                .with_ansi(true)
-                // .with_max_level(tracing::Level::DEBUG)
-                .init();
-
             // --- configure hub ---
             let state = SharedState::default();
             let state_legacy = LegacySharedState::new();
