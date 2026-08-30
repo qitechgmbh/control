@@ -1546,6 +1546,7 @@ dependencies = [
  "qitech_lib",
  "serde",
  "serde_json",
+ "textplots",
  "tokio",
  "tokio-modbus",
  "tonic",
