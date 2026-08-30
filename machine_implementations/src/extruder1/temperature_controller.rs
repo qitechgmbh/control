@@ -112,9 +112,12 @@ impl TemperatureController {
             let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
                 - self.heating.temperature.get::<degree_celsius>();
 
-            let control = self.pid.update(error, now); // PID output
-            // Clamp PID output to 0.0 – 1.0 (as duty cycle)
-            let duty = control.clamp(0.0, self.max_clamp);
+            // PID output with anti-windup, clamped to the duty range. Without
+            // anti-windup any `ki > 0` winds the integral up on a cold-start
+            // ramp and causes huge overshoot.
+            let duty = self
+                .pid
+                .update_with_antiwindup(error, now, 0.0, self.max_clamp);
 
             self.temperature_pid_output = duty;
 
