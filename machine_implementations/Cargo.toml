@@ -27,6 +27,7 @@ postcard = { version = "1.0", features = ["alloc"] }
 
 [dev-dependencies]
 approx = "0.5.1"
+textplots = "0.8"
 
 [features]
 default = ["tracing-fmt"]

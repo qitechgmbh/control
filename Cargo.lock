@@ -1545,6 +1545,7 @@ dependencies = [
  "qitech_lib",
  "serde",
  "serde_json",
+ "textplots",
  "tokio",
  "tonic",
  "tracing",

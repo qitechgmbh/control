@@ -4,6 +4,9 @@ pub mod emit;
 pub mod mitsubishi_cs80;
 pub mod new;
 pub mod screw_speed_controller;
+/// Offline thermal simulation of the heating zones. Not feature gated on
+/// purpose: it must keep compiling alongside the controller it drives.
+pub mod simulation;
 pub mod temperature_controller;
 
 #[cfg(not(feature = "mock-machine"))]
