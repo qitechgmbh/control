@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, write};
 
 use crate::machines::aquapath::{
     api::{ConfigProperties, Measurements, NoticeEvent, StateProperties},
@@ -20,7 +20,7 @@ pub mod new;
 
 impl fmt::Display for AquaPathV1Mode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self);
+        let _ = write!(f, "{:?}", self);
         Ok(())
     }
 }
@@ -154,37 +154,10 @@ impl AquaPathV1 {
 
 impl std::fmt::Display for AquaPathV1 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Aquapath");
+        let _ = write!(f, "AquapathV1");
         Ok(())
     }
 }
-/*
-#[derive(Serialize)]
-enum Mutation {
-    //Mode
-    SetAquaPathMode(AquaPathV1Mode),
-    SetLeftTemperature(f64),
-    SetRightTemperature(f64),
-    SetLeftFlow(bool),
-    SetRightFlow(bool),
-    SetLeftRevolutions(f64),
-    SetRightRevolutions(f64),
-    SetLeftHeatingTolerance(f64),
-    SetRightHeatingTolerance(f64),
-    SetLeftCoolingTolerance(f64),
-    SetRightCoolingTolerance(f64),
-    SetLeftPidKp(f64),
-    SetLeftPidKi(f64),
-    SetLeftPidKd(f64),
-    SetRightPidKp(f64),
-    SetRightPidKi(f64),
-    SetRightPidKd(f64),
-    SetLeftThermalFlowSettleDuration(f64),
-    SetRightThermalFlowSettleDuration(f64),
-    SetLeftPumpCooldownMinTemperature(f64),
-    SetRightPumpCooldownMinTemperature(f64),
-    SetAmbientTemperatureCalibration(f64),
-}*/
 
 impl AquaPathV1 {
     fn request_pump_off(&mut self) {

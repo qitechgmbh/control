@@ -64,7 +64,7 @@ pub async fn main() -> anyhow::Result<()> {
             // --- init tracing subscriber ---
             tracing_subscriber::fmt()
                 .with_target(false)
-                .with_ansi(true)
+                .with_ansi(false)
                 // .with_max_level(tracing::Level::DEBUG)
                 .init();
 
