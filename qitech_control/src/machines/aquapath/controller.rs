@@ -14,7 +14,7 @@ use units::f64::{ThermodynamicTemperature, VolumeRate};
 use units::thermodynamic_temperature::degree_celsius;
 use units::volume_rate::liter_per_minute;
 
-use crate::controllers::pid::PidController;
+use qitech_control_core::controllers::pid::PidController;
 use crate::machines::aquapath::{Flow, Temperature};
 
 #[derive(Debug, Clone, Copy)]
