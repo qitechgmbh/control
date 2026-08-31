@@ -351,9 +351,9 @@ fn autotune(params: ExtruderThermalParams, config: SimConfig, zone: Zone) {
             println!("    (ku = {:.4}, tu = {:.1} s)", r.ku, r.tu);
             println!(
                 "\ncompare with the shipping gains: kp = {:.3}, ki = {:.3}, kd = {:.3}",
-                ZoneTuning::PRODUCTION.kp,
-                ZoneTuning::PRODUCTION.ki,
-                ZoneTuning::PRODUCTION.kd
+                ZoneTuning::PRODUCTION[zone.port()].kp,
+                ZoneTuning::PRODUCTION[zone.port()].ki,
+                ZoneTuning::PRODUCTION[zone.port()].kd
             );
         }
         None => println!(

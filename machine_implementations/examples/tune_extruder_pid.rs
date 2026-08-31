@@ -244,7 +244,7 @@ const KI_OPTIONS: [f64; 6] = [0.0, 0.0005, 0.001, 0.002, 0.004, 0.008];
 const KD_OPTIONS: [f64; 1] = [0.0];
 
 fn random_tuning(rng: &mut Rng) -> Tuning4 {
-    let mut t = [ZoneTuning::PRODUCTION; 4];
+    let mut t = ZoneTuning::PRODUCTION;
     for p in 0..4 {
         t[p] = ZoneTuning {
             kp: rng.range(KP_LO, KP_HI),
@@ -504,7 +504,7 @@ fn search(
     s_real: SimSettings,
 ) -> Tuning4 {
     let mut rng = Rng(seed);
-    let mut candidates: Vec<Tuning4> = vec![[ZoneTuning::PRODUCTION; 4]];
+    let mut candidates: Vec<Tuning4> = vec![ZoneTuning::PRODUCTION];
     for _ in 0..evals {
         candidates.push(random_tuning(&mut rng));
     }
@@ -567,7 +567,7 @@ fn optimize(
 ) -> Tuning4 {
     let step = [0.2, 0.2, 0.2, 0.2, 0.002, 0.002, 0.002, 0.002];
     let mut rng = Rng(seed);
-    let mut starts: Vec<Vec<f64>> = vec![to_vec(&[ZoneTuning::PRODUCTION; 4])];
+    let mut starts: Vec<Vec<f64>> = vec![to_vec(&ZoneTuning::PRODUCTION)];
     for _ in 1..restarts {
         starts.push(to_vec(&random_tuning(&mut rng)));
     }
@@ -612,7 +612,7 @@ fn main() {
             .cloned()
     };
 
-    let mut tuning = [ZoneTuning::PRODUCTION; 4];
+    let mut tuning = ZoneTuning::PRODUCTION;
 
     for (i, a) in args.iter().enumerate() {
         let gain = match a.as_str() {

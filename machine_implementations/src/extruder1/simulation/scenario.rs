@@ -42,6 +42,10 @@ impl Scenario {
         Self::base("recorded-heatup", [180.0, 180.0, 170.0, 175.0], 3270.0)
     }
 
+    pub fn normal_production() -> Self {
+        Self::base("normal-production", [180.0, 160.0, 150.0, 180.0], 3600.0)
+    }
+
     /// Plain cold start with every zone asked for the same temperature. The
     /// cleanest way to see the zones diverge.
     pub fn cold_start() -> Self {
@@ -74,6 +78,7 @@ impl Scenario {
         Some(match name {
             "recorded-heatup" => Self::recorded_heatup(),
             "cold-start" => Self::cold_start(),
+            "normal-production" => Self::normal_production(),
             "nozzle-only" => Self::nozzle_only(),
             "step-up" => Self::step_up(),
             "single-front" => Self::single_zone(Zone::Front),
@@ -87,6 +92,7 @@ impl Scenario {
     /// Every scenario name [`Self::by_name`] accepts.
     pub const NAMES: &'static [&'static str] = &[
         "recorded-heatup",
+        "normal-production",
         "cold-start",
         "nozzle-only",
         "step-up",
