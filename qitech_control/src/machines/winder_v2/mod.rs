@@ -1,64 +1,46 @@
-pub mod act;
-pub mod adaptive_spool_speed_controller;
-pub mod api;
-pub mod clamp_revolution;
-pub mod emit;
-pub mod filament_tension;
-pub mod minmax_spool_speed_controller;
-pub mod new;
-pub mod puller_speed_controller;
-pub mod spool_speed_controller;
-pub mod tension_arm;
-pub mod traverse_controller;
+use std::time::Duration;
+use std::time::Instant;
 
-use crate::converters::angular_step_converter::AngularStepConverter;
-use crate::machines::winder_v2::api::ConfigProperties;
-use crate::machines::winder_v2::api::Measurements;
-use crate::machines::winder_v2::api::StateProperties;
-use crate::machines::winder_v2::new::TensionArm;
-use crate::machines::winder_v2::puller_speed_controller::PullerSpeedController;
-use crate::machines::winder_v2::spool_speed_controller::SpoolSpeedController;
-use crate::machines::winder_v2::traverse_controller::TraverseController;
-use crate::machines::winder_v2::types::LaserSubscription;
-use crate::machines::winder_v2::types::PullerMode;
-use crate::machines::winder_v2::types::SpoolAutomaticActionMode;
-use crate::machines::winder_v2::types::SpoolMode;
-use crate::machines::winder_v2::types::TraverseMode;
-use crate::machines::winder_v2::types::Winder2Mode;
 use qitech_framework::MachineIdentification;
+use qitech_framework::MachineInstanceIdentification;
+use qitech_framework::machine::ActError;
+use qitech_framework::machine::ActErrorImpact;
+use qitech_framework::machine::ActResult;
 use qitech_framework::machine::ConfigProperty;
+use qitech_framework::machine::Machine;
 use qitech_framework::machine::MachineDescriptor;
 use qitech_framework::machine::OperationCapability;
+use qitech_framework::machine::StateProperty;
+use qitech_framework::machine::SubscribeContext;
+use qitech_framework::machine::SubscribeResult;
 use qitech_framework::vendors;
-use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
-#[cfg(not(feature = "mock-machine"))]
-use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
-use qitech_lib::units::ConstZero;
-use qitech_lib::units::{
-    Length,
-    length::{meter, millimeter},
-    velocity::meter_per_second,
-};
-use std::time::Instant;
-use std::{cell::RefCell, rc::Rc};
+use qitech_lib::units::Length;
 
+use crate::machines::winder_v2::types::AutomaticActionSpoolAction;
+use crate::machines::winder_v2::types::LaserSubscription;
+use crate::machines::winder_v2::types::Mode;
+
+mod build;
 mod types;
+mod utils;
 
-pub const TRAVERSE_PORT: usize = 0;
-pub const LASER_PORT: usize = 0;
-pub const PULLER_PORT: usize = 0;
-pub const SPOOL_PORT: usize = 0;
-pub const TRAVERSE_END_STOP_PORT: usize = 0;
+mod traverse;
+use traverse::Traverse;
+
+mod puller;
+use puller::Puller;
+
+mod spool;
+use spool::Spool;
+
+mod tension_arm;
+use tension_arm::TensionArm;
+
+mod laser_pointer;
+use laser_pointer::LaserPointer;
 
 pub const VARIANT_REGULAR: usize = 0;
 pub const VARIANT_7031_SPOOL: usize = 1;
-
-pub struct SpoolAutomaticAction {
-    pub progress: Length,
-    progress_last_check: Instant,
-    pub target_length: ConfigProperty<Length>,
-    pub mode: ConfigProperty<SpoolAutomaticActionMode>,
-}
 
 #[allow(non_camel_case_types)]
 pub type WinderV1_Regular = WinderV1<VARIANT_REGULAR>;
@@ -67,39 +49,19 @@ pub type WinderV1_Regular = WinderV1<VARIANT_REGULAR>;
 pub type WinderV1_7031_Spool = WinderV1<VARIANT_7031_SPOOL>;
 
 pub struct WinderV1<const VARIANT: usize> {
-    // drivers
-    pub traverse: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
-    pub puller: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
-    pub spool: Rc<RefCell<dyn StepperVelocityEL70x1Device>>,
-    pub tension_arm: TensionArm,
+    // ---- components ---
+    spool: Spool,
+    puller: Puller,
+    traverse: Traverse,
+    tension_arm: TensionArm,
+    laser_pointer: LaserPointer,
 
-    pub laser: Rc<RefCell<dyn DigitalOutputDevice>>,
-    pub laser_enabled: bool,
-    pub traverse_controller: TraverseController,
-
-    // mode
-    pub mode: Winder2Mode,
-    pub spool_mode: SpoolMode,
-    pub traverse_mode: TraverseMode,
-    pub puller_mode: PullerMode,
-
-    // control circuit arm/spool
-    pub spool_speed_controller: SpoolSpeedController,
-    pub spool_step_converter: AngularStepConverter,
-
-    // spool automatic action state
-    pub spool_automatic_action: SpoolAutomaticAction,
-
-    // control circuit puller
-    pub puller_speed_controller: PullerSpeedController,
-
-    // --- resource api migration ---
-    config_props: ConfigProperties,
-    state_props: StateProperties,
-    measurements: Measurements,
+    // --- state ---
+    pub(super) mode: StateProperty<Mode>,
+    // pub(super) spool_automatic_action: SpoolAutomaticAction,
 
     // --- subscriptions ---
-    pub laser_subscription: Option<LaserSubscription>,
+    pub(super) laser_subscription: Option<LaserSubscription>,
 }
 
 impl MachineDescriptor for WinderV1<VARIANT_REGULAR> {
@@ -120,328 +82,84 @@ impl MachineDescriptor for WinderV1<VARIANT_7031_SPOOL> {
     const SCHEMA: &'static str = include_str!("../../../schemas/winder_v1_7031_0030_spool.yaml");
 }
 
+impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
+    fn act(&mut self, dt: Duration) -> ActResult {
+        if let Err(kind) = self.tension_arm.update() {
+            return Err(ActError {
+                kind,
+                impact: ActErrorImpact::Degraded,
+            });
+        };
+
+        self.spool.update(dt, &self.puller, &self.tension_arm);
+
+        if let Err(kind) = self.puller.update(dt, self.laser_subscription.as_ref()) {
+            return Err(ActError {
+                kind,
+                impact: ActErrorImpact::Degraded,
+            });
+        };
+
+        self.traverse.update(dt, self.spool.velocity.get());
+
+        Ok(())
+    }
+
+    fn subscribe(&mut self, ctx: &mut SubscribeContext) -> SubscribeResult {
+        self.laser_subscription = Some(LaserSubscription {
+            ident: ctx.provider(),
+            diameter: ctx.measurement("diameter")?,
+            diameter_target: ctx.config("diameter.target")?,
+        });
+
+        Ok(())
+    }
+
+    fn unsubscribe(&mut self, ident: MachineInstanceIdentification) {
+        if let Some(sub) = &mut self.laser_subscription
+            && sub.ident == ident
+        {
+            self.laser_subscription = None;
+        }
+    }
+}
+
 impl<const VARIANT: usize> WinderV1<VARIANT> {
-    /// Validates that traverse limits maintain proper constraints:
-    /// - Inner limit must be smaller than outer limit
-    /// - At least 0.9mm difference between inner and outer limits
-    fn validate_traverse_limits(inner: Length, outer: Length) -> bool {
-        outer > inner + Length::new::<millimeter>(0.9)
-    }
-
-    pub fn sync_traverse_speed(&mut self) {
-        let traverse = &mut *self.traverse.borrow_mut();
-        self.traverse_controller
-            .update_speed(traverse, self.spool_speed_controller.get_speed());
-    }
-
-    /// Can wind capability check
-    pub const fn can_wind(&self) -> bool {
-        // Check if tension arm is zeroed and traverse is homed
-        self.tension_arm.zeroed
-            && self.traverse_controller.is_homed()
-            && !self.traverse_controller.is_going_home()
-    }
-
-    /// Can go to inner limit capability check
-    pub fn traverse_can_goto_limit_inner(&self) -> OperationCapability {
-        if !self.traverse_controller.is_homed() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is not homed".to_string(),
-            };
+    fn can_wind(&self) -> OperationCapability {
+        if !self.tension_arm.zeroed() {
+            return OperationCapability::forbidden("tension arm is not zeroed");
         }
 
-        if self.traverse_mode == TraverseMode::Standby {
-            return OperationCapability::Forbidden {
-                reason: "traverse is in standby".to_string(),
-            };
+        if !self.traverse.is_homed() {
+            return OperationCapability::forbidden("traverse is not homed");
         }
 
-        if self.traverse_controller.is_going_in() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is already going in".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_going_home() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is currently homing".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_traversing() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is currently traversing".to_string(),
-            };
-        }
-
-        if self.mode == Winder2Mode::Wind {
-            return OperationCapability::Forbidden {
-                reason: "winder is in wind mode".to_string(),
-            };
+        if self.traverse.is_homing() {
+            return OperationCapability::forbidden("traverse is homing");
         }
 
         OperationCapability::Allowed
     }
 
-    /// Can go to outer limit capability check
-    pub fn traverse_can_goto_limit_outer(&self) -> OperationCapability {
-        if !self.traverse_controller.is_homed() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is not homed".to_string(),
-            };
+    fn set_mode(&mut self, mode: Mode) -> ActResult {
+        self.mode.set(mode);
+        self.spool.set_mode(mode.into());
+        self.puller.set_mode(mode.into());
+
+        if let Err(kind) = self.traverse.set_mode(mode.into()) {
+            return Err(ActError {
+                kind,
+                impact: ActErrorImpact::Degraded,
+            });
         }
 
-        if self.traverse_mode == TraverseMode::Standby {
-            return OperationCapability::Forbidden {
-                reason: "traverse is in standby".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_going_out() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is already going out".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_going_home() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is currently homing".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_traversing() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is currently traversing".to_string(),
-            };
-        }
-
-        if self.mode == Winder2Mode::Wind {
-            return OperationCapability::Forbidden {
-                reason: "winder is in wind mode".to_string(),
-            };
-        }
-
-        OperationCapability::Allowed
-    }
-
-    /// Can go home capability check
-    pub fn traverse_can_goto_home(&self) -> OperationCapability {
-        if self.traverse_mode == TraverseMode::Standby {
-            return OperationCapability::Forbidden {
-                reason: "traverse is in standby".to_string(),
-            };
-        }
-        
-
-        if self.traverse_controller.is_going_home() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is already going home".to_string(),
-            };
-        }
-
-        if self.traverse_controller.is_traversing() {
-            return OperationCapability::Forbidden {
-                reason: "traverse is currently traversing".to_string(),
-            };
-        }
-
-        if self.mode == Winder2Mode::Wind {
-            return OperationCapability::Forbidden {
-                reason: "winder is in wind mode".to_string(),
-            };
-        }
-
-        OperationCapability::Allowed
-    }
-
-    /// Apply the mode changes to the spool
-    ///
-    /// It contains a transition matrix for atomic changes.
-    /// It will set [`Self::spool_mode`]
-    fn set_spool_mode(&mut self, mode: &Winder2Mode) {
-        // Convert to `Winder2Mode` to `SpoolMode`
-        let mode: SpoolMode = mode.clone().into();
-        let spool = &mut *self.spool.borrow_mut();
-        // Transition matrix
-        match self.spool_mode {
-            SpoolMode::Standby => match mode {
-                SpoolMode::Standby => {}
-                SpoolMode::Hold => {
-                    // From [`SpoolMode::Standby`] to [`SpoolMode::Hold`]
-                    spool.set_enabled(SPOOL_PORT, true);
-                }
-                SpoolMode::Wind => {
-                    spool.set_enabled(SPOOL_PORT, true);
-                    // self.spool_speed_controller.reset();
-                    self.spool_speed_controller.set_enabled(true);
-                }
-            },
-            SpoolMode::Hold => match mode {
-                SpoolMode::Standby => {
-                    // From [`SpoolMode::Hold`] to [`SpoolMode::Standby`]
-                    spool.set_enabled(SPOOL_PORT, false);
-                }
-                SpoolMode::Hold => {}
-                SpoolMode::Wind => {
-                    // From [`SpoolMode::Hold`] to [`SpoolMode::Wind`]
-                    // self.spool_speed_controller.reset();
-                    self.spool_speed_controller.set_enabled(true);
-                }
-            },
-            SpoolMode::Wind => match mode {
-                SpoolMode::Standby => {
-                    // From [`SpoolMode::Wind`] to [`SpoolMode::Standby`]
-                    spool.set_enabled(SPOOL_PORT, false);
-                    self.spool_speed_controller.set_enabled(false);
-                }
-                SpoolMode::Hold => {
-                    // From [`SpoolMode::Wind`] to [`SpoolMode::Hold`]
-                    self.spool_speed_controller.set_enabled(false);
-                }
-                SpoolMode::Wind => {}
-            },
-        }
-
-        // Update the internal state
-        self.spool_mode = mode;
-    }
-
-    /// Apply the mode changes to the puller
-    ///
-    /// It contains a transition matrix for atomic changes.
-    /// It will set [`Self::puller_mode`]
-    fn set_puller_mode(&mut self, mode: &Winder2Mode) {
-        // Convert to `Winder2Mode` to `PullerMode`
-        let mode: PullerMode = mode.clone().into();
-        let puller = &mut *self.puller.borrow_mut();
-
-        // Transition matrix
-        match self.puller_mode {
-            PullerMode::Standby => match mode {
-                PullerMode::Standby => {}
-                PullerMode::Hold => {
-                    // From [`PullerMode::Standby`] to [`PullerMode::Hold`]
-                    puller.set_enabled(PULLER_PORT, true);
-                }
-                PullerMode::Pull => {
-                    // From [`PullerMode::Standby`] to [`PullerMode::Pull`]
-                    puller.set_enabled(PULLER_PORT, true);
-                    self.puller_speed_controller.set_enabled(true);
-                }
-            },
-            PullerMode::Hold => match mode {
-                PullerMode::Standby => {
-                    // From [`PullerMode::Hold`] to [`PullerMode::Standby`]
-                    puller.set_enabled(PULLER_PORT, false);
-                }
-                PullerMode::Hold => {}
-                PullerMode::Pull => {
-                    // From [`PullerMode::Hold`] to [`PullerMode::Pull`]
-                    self.puller_speed_controller.set_enabled(true);
-                }
-            },
-            PullerMode::Pull => match mode {
-                PullerMode::Standby => {
-                    // From [`PullerMode::Pull`] to [`PullerMode::Standby`]
-                    puller.set_enabled(PULLER_PORT, false);
-                    self.puller_speed_controller.set_enabled(false);
-                }
-                PullerMode::Hold => {
-                    // From [`PullerMode::Pull`] to [`PullerMode::Hold`]
-                    self.puller_speed_controller.set_enabled(false);
-                }
-                PullerMode::Pull => {}
-            },
-        }
-
-        // Update the internal state
-        self.puller_mode = mode;
-    }
-
-    pub const fn stop_or_pull_spool_reset(&mut self, now: Instant) {
-        self.spool_automatic_action.progress = Length::ZERO;
-        self.spool_automatic_action.progress_last_check = now;
-    }
-
-    pub fn calculate_spool_auto_progress_(&mut self, now: Instant) {
-        let dt = now
-            .duration_since(self.spool_automatic_action.progress_last_check)
-            .as_secs_f64();
-
-        let meters_pulled_this_interval = Length::new::<meter>(
-            self.puller_speed_controller
-                .last_speed
-                .get::<meter_per_second>()
-                * dt,
-        );
-
-        self.spool_automatic_action.progress += meters_pulled_this_interval.abs();
-        self.spool_automatic_action.progress_last_check = now;
-    }
-
-    pub fn sync_puller_speed(&mut self, t: Instant) {
-        let angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
-        let steps_per_second = self
-            .puller_speed_controller
-            .converter
-            .angular_velocity_to_steps(angular_velocity);
-        let puller = &mut *self.puller.borrow_mut();
-        let _ = puller.set_speed(PULLER_PORT, steps_per_second);
+        Ok(())
     }
 }
 
-#[cfg(not(feature = "mock-machine"))]
-impl<const VARIANT: usize> std::fmt::Display for WinderV1<VARIANT> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Winder2")
-    }
-}
-
-#[cfg(not(feature = "mock-machine"))]
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_validate_traverse_limits() {
-        // Test case 1: Valid limits with exactly 1.0mm difference (should pass)
-        let inner = Length::new::<millimeter>(15.0);
-        let outer = Length::new::<millimeter>(16.0);
-        assert!(WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 2: Invalid limits with exactly 0.9mm difference (should fail)
-        let inner = Length::new::<millimeter>(15.0);
-        let outer = Length::new::<millimeter>(15.9);
-        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 3: Invalid limits with less than 0.9mm difference (should fail)
-        let inner = Length::new::<millimeter>(15.0);
-        let outer = Length::new::<millimeter>(15.5);
-        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 4: Invalid limits where inner equals outer (should fail)
-        let inner = Length::new::<millimeter>(20.0);
-        let outer = Length::new::<millimeter>(20.0);
-        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 5: Invalid limits where inner is greater than outer (should fail)
-        let inner = Length::new::<millimeter>(25.0);
-        let outer = Length::new::<millimeter>(20.0);
-        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 6: Valid limits with large difference (should pass)
-        let inner = Length::new::<millimeter>(10.0);
-        let outer = Length::new::<millimeter>(80.0);
-        assert!(WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 7: Edge case - exactly 0.91mm difference (should pass)
-        let inner = Length::new::<millimeter>(15.0);
-        let outer = Length::new::<millimeter>(15.91);
-        assert!(WinderV1_Regular::validate_traverse_limits(inner, outer));
-
-        // Test case 8: Edge case - exactly 0.89mm difference (should fail)
-        let inner = Length::new::<millimeter>(15.0);
-        let outer = Length::new::<millimeter>(15.89);
-        assert!(!WinderV1_Regular::validate_traverse_limits(inner, outer));
-    }
+pub struct SpoolAutomaticAction {
+    pub progress: Length,
+    progress_last_check: Instant,
+    pub target_length: ConfigProperty<Length>,
+    pub mode: ConfigProperty<AutomaticActionSpoolAction>,
 }
