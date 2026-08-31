@@ -49,11 +49,6 @@ config:
   left_target_temperature: !float
   right_target_temperature: !float
   ambient_temperature_calibration: !float
-  default_heating_tolerance: !float
-  default_cooling_tolerance: !float
-  default_pid_kp: !float
-  default_pid_ki: !float
-  default_pid_kd: !float
   left_fan_max_revolutions: !float
   right_fan_max_revolutions: !float
   left_tolerance_config:

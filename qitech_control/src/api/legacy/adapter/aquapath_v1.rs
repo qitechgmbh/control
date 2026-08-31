@@ -154,62 +154,196 @@ fn convert_request(
         target: ident,
         path: "ambient_temperature_calibration".to_string(),
         value: ScalarValue::Float(v),
-    },
-    };
-
+    }};
     Ok(res)
 }
 
 fn init_state_event(
     instance: &MachineInstance,
-    is_default_state: bool,
+    _is_default_state: bool,
 ) -> Option<serde_json::Value> {
-    let target_diameter = instance
-        .config_properties
-        .get("diameter.target")?
-        .as_ref()?
-        .value
-        .clone()
-        .float()
-        .expect("Cannot be null");
+    let get_state = |name: &'static str| -> Option<ScalarValue> {
+        Some(instance.state_properties.get(name)?.as_ref()?.value.clone())
+    };
 
-    let higher_tolerance = instance
-        .config_properties
-        .get("diameter.tolerance.upper")?
-        .as_ref()?
-        .value
-        .clone()
-        .float()
-        .expect("Cannot be null");
+    let get_config = |name: &'static str| -> Option<ScalarValue> {
+        Some(instance.config_properties.get(name)?.as_ref()?.value.clone())
+    };
 
-    let lower_tolerance = instance
-        .config_properties
-        .get("diameter.tolerance.lower")?
-        .as_ref()?
-        .value
-        .clone()
-        .float()
-        .expect("Cannot be null");
+   Some(serde_json::json!({
+    "mode": get_state("mode")?
+        .r#enum()
+        .expect("Cannot be null"),
 
-    let in_tolerance = instance
-        .state_properties
-        .get("in_tolerance")?
-        .as_ref()?
-        .value
-        .clone()
+    "is_default_state": get_state("is_default_state")?
         .boolean()
-        .expect("Cannot be null");
+        .expect("Cannot be null"),
 
-    Some(serde_json::json!({
-        "is_default_state": is_default_state,
-        "laser_state": serde_json::json!({
-            "target_diameter":  target_diameter,
-            "higher_tolerance": higher_tolerance,
-            "lower_tolerance":  lower_tolerance,
-            "in_tolerance":     in_tolerance,
-            "global_warning":   false,
-        })
-    }))
+    "left_heating_startup_wait_active": get_state("left_heating_startup_wait_active")?
+        .boolean()
+        .expect("Cannot be null"),
+
+    "right_heating_startup_wait_active": get_state("right_heating_startup_wait_active")?
+        .boolean()
+        .expect("Cannot be null"),
+
+    "left_pump_cooldown_active": get_state("left_pump_cooldown_active")?
+        .boolean()
+        .expect("Cannot be null"),
+
+    "right_pump_cooldown_active": get_state("right_pump_cooldown_active")?
+        .boolean()
+        .expect("Cannot be null"),
+
+    "left_should_flow": get_state("left_should_flow")?
+        .boolean()
+        .expect("Cannot be null"),
+
+    "right_should_flow": get_state("right_should_flow")?
+        .boolean()
+        .expect("Cannot be null"),
+
+    "left_heating": get_state("left_heating")?
+        .boolean()
+        .expect("Cannot be null"),
+
+    "right_heating": get_state("right_heating")?
+        .boolean()
+        .expect("Cannot be null"),
+
+    "left_has_flow": get_state("left_has_flow")?
+        .boolean()
+        .expect("Cannot be null"),
+
+    "right_has_flow": get_state("right_has_flow")?
+        .boolean()
+        .expect("Cannot be null"),
+
+    "left_pump_cooldown_remaining": get_state("left_pump_cooldown_remaining")?
+        .float()
+        .expect("Cannot be null"),
+
+    "right_pump_cooldown_remaining": get_state("right_pump_cooldown_remaining")?
+        .float()
+        .expect("Cannot be null"),
+
+    "left_heating_startup_wait_remaining": get_state("left_heating_startup_wait_remaining")?
+        .float()
+        .expect("Cannot be null"),
+
+    "right_heating_startup_wait_remaining": get_state("right_heating_startup_wait_remaining")?
+        .float()
+        .expect("Cannot be null"),
+
+    "left_cooling_mode": get_state("left_cooling_mode")
+        .and_then(|v| v.r#enum()),
+
+    "right_cooling_mode": get_state("right_cooling_mode")
+        .and_then(|v| v.r#enum()),
+
+    "left_thermal_safety_state": {
+        "thermal_delay": get_state("left_thermal_safety_state.thermal_delay")?
+            .float()
+            .expect("Cannot be null"),
+
+        "cooldown_min_temperature": get_state("left_thermal_safety_state.cooldown_min_temperature")?
+            .float()
+            .expect("Cannot be null"),
+    },
+
+    "right_thermal_safety_state": {
+        "thermal_delay": get_state("right_thermal_safety_state.thermal_delay")?
+            .float()
+            .expect("Cannot be null"),
+
+        "cooldown_min_temperature": get_state("right_thermal_safety_state.cooldown_min_temperature")?
+            .float()
+            .expect("Cannot be null"),
+    },
+    "left_target_temperature": get_config("left_target_temperature")?
+        .float()
+        .expect("Cannot be null"),
+
+    "right_target_temperature": get_config("right_target_temperature")?
+        .float()
+        .expect("Cannot be null"),
+
+    "ambient_temperature_calibration": get_config("ambient_temperature_calibration")?
+        .float()
+        .expect("Cannot be null"),
+
+    "left_fan_max_revolutions": get_config("left_fan_max_revolutions")?
+        .float()
+        .expect("Cannot be null"),
+
+    "right_fan_max_revolutions": get_config("right_fan_max_revolutions")?
+        .float()
+        .expect("Cannot be null"),
+
+    "left_tolerance_config": {
+        "heating": get_config("left_tolerance_config.heating")?
+            .float()
+            .expect("Cannot be null"),
+
+        "cooling": get_config("left_tolerance_config.cooling")?
+            .float()
+            .expect("Cannot be null"),
+    },
+
+    "right_tolerance_config": {
+        "heating": get_config("right_tolerance_config.heating")?
+            .float()
+            .expect("Cannot be null"),
+
+        "cooling": get_config("right_tolerance_config.cooling")?
+            .float()
+            .expect("Cannot be null"),
+    },
+
+    "left_pid_config": {
+        "kp": get_config("left_pid_config.kp")?
+            .float()
+            .expect("Cannot be null"),
+
+        "ki": get_config("left_pid_config.ki")?
+            .float()
+            .expect("Cannot be null"),
+
+        "kd": get_config("left_pid_config.kd")?
+            .float()
+            .expect("Cannot be null"),
+    },
+
+    "right_pid_config": {
+        "kp": get_config("right_pid_config.kp")?
+            .float()
+            .expect("Cannot be null"),
+
+        "ki": get_config("right_pid_config.ki")?
+            .float()
+            .expect("Cannot be null"),
+
+        "kd": get_config("right_pid_config.kd")?
+            .float()
+            .expect("Cannot be null"),
+    },
+
+    "left_thermal_flow_settle_duration": get_config("left_thermal_flow_settle_duration")?
+        .float()
+        .expect("Cannot be null"),
+
+    "right_thermal_flow_settle_duration": get_config("right_thermal_flow_settle_duration")?
+        .float()
+        .expect("Cannot be null"),
+
+    "left_pump_cooldown_min_temperature": get_config("left_pump_cooldown_min_temperature")?
+        .float()
+        .expect("Cannot be null"),
+
+    "right_pump_cooldown_min_temperature": get_config("right_pump_cooldown_min_temperature")?
+        .float()
+        .expect("Cannot be null"),
+}))
 }
 
 fn init_measurements_event(instance: &MachineInstance) -> Option<serde_json::Value> {
@@ -218,9 +352,15 @@ fn init_measurements_event(instance: &MachineInstance) -> Option<serde_json::Val
     };
 
     Some(serde_json::json!({
-        "diameter":   get("diameter").expect("Non nullable measurement is null"),
-        "x_diameter": get("diameter_x"),
-        "y_diameter": get("diameter_y"),
-        "roundness":  get("roundness"),
+        "left_flow": get("left_flow").expect("Non nullable measurement is null"),
+        "right_flow": get("right_flow").expect("Non nullable measurement is null"),
+        "left_temperature": get("left_temperature").expect("Non nullable measurement is null"),
+        "right_temperature": get("right_temperature").expect("Non nullable measurement is null"),
+        "left_revolutions": get("left_revolutions").expect("Non nullable measurement is null"),
+        "right_revolutions": get("right_revolutions").expect("Non nullable measurement is null"),
+        "left_power": get("left_power").expect("Non nullable measurement is null"),
+        "right_power": get("right_power").expect("Non nullable measurement is null"),
+        "left_total_energy": get("left_total_energy").expect("Non nullable measurement is null"),
+        "right_total_energy": get("right_total_energy").expect("Non nullable measurement is null"),
     }))
 }
