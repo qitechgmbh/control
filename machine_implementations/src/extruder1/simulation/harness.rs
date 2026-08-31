@@ -67,13 +67,31 @@ pub struct ZoneTuning {
 }
 
 impl ZoneTuning {
-    /// The gains currently shipping for every zone, from
+    /// The gains shipping for `MACHINE_EXTRUDER_V2` (the newest hardware
+    /// generation), indexed by [`Zone::port`], from
     /// [`crate::extruder1::new`].
-    pub const PRODUCTION: Self = Self {
-        kp: 0.16,
-        ki: 0.0,
-        kd: 0.008,
-    };
+    pub const PRODUCTION: [Self; 4] = [
+        Self {
+            kp: 0.066,
+            ki: 0.0,
+            kd: 0.0,
+        }, // front
+        Self {
+            kp: 0.020,
+            ki: 0.000003,
+            kd: 0.0,
+        }, // middle
+        Self {
+            kp: 0.020,
+            ki: 0.000017,
+            kd: 0.0,
+        }, // back
+        Self {
+            kp: 0.433,
+            ki: 0.002,
+            kd: 0.0,
+        }, // nozzle
+    ];
 }
 
 /// Harness configuration.
@@ -101,7 +119,7 @@ impl Default for SimConfig {
             dt_ctrl_s: DT_CTRL_S,
             sensor_period_s: SENSOR_PERIOD_S,
             record_period_s: 1.0,
-            tuning: [ZoneTuning::PRODUCTION; 4],
+            tuning: ZoneTuning::PRODUCTION,
             pwm_period: Duration::from_millis(500),
             // Production: 1.0 for the barrel zones, 0.95 for the nozzle.
             max_clamp: [1.0, 1.0, 1.0, 0.95],
@@ -642,8 +660,22 @@ mod tests {
         (171.2, 1849.0),
     ];
 
+    /// Uniform gains in effect on the machine when `data/heatup_2026-02-24.csv`
+    /// was recorded — pre-dates the per-zone retune in
+    /// [`ZoneTuning::PRODUCTION`], so the recorded-run comparisons below pin
+    /// this rather than following `SimConfig::default()`.
+    const RECORDED_RUN_TUNING: ZoneTuning = ZoneTuning {
+        kp: 0.16,
+        ki: 0.0,
+        kd: 0.008,
+    };
+
     fn recorded_run_trace() -> Trace {
-        let mut sim = ThermalSim::new(ExtruderThermalParams::calibrated(), SimConfig::default());
+        let config = SimConfig {
+            tuning: [RECORDED_RUN_TUNING; 4],
+            ..SimConfig::default()
+        };
+        let mut sim = ThermalSim::new(ExtruderThermalParams::calibrated(), config);
         sim.run(&Scenario::recorded_heatup())
     }
 
