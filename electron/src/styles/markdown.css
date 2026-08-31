@@ -1,0 +1,6 @@
+/* Basic list styling */
+.markdown-list ul,
+.markdown-list ol,
+.markdown-list li {
+  padding-left: 1rem;
+}

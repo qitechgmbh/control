@@ -20,6 +20,7 @@ use api::Server;
 use api::SharedState;
 use api::SocketIODispatcher;
 
+use crate::machines::WinderV1_Regular;
 use crate::machines::aquapath::AquaPathV1;
 
 #[tokio::main]
@@ -40,7 +41,8 @@ pub async fn main() -> anyhow::Result<()> {
         .machine::<LaserV1>()
         .machine::<WinderV1_Regular>()
         .machine::<WinderV1_7031_Spool>();*/
-        .machine::<AquaPathV1>();
+        .machine::<AquaPathV1>()
+        .machine::<WinderV1_Regular>();
 
     // --- determine if ethercat is enabled ---
     let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {
@@ -62,7 +64,7 @@ pub async fn main() -> anyhow::Result<()> {
             // --- init tracing subscriber ---
             tracing_subscriber::fmt()
                 .with_target(false)
-                .with_ansi(true)
+                .with_ansi(false)
                 // .with_max_level(tracing::Level::DEBUG)
                 .init();
 
