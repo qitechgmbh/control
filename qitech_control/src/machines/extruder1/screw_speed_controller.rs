@@ -12,8 +12,8 @@ use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
 use qitech_lib::units::{
     AngularVelocity, ElectricCurrent, ElectricPotential, Frequency, Power, Pressure,
     angular_velocity::revolution_per_minute, electric_current::ampere,
-    electric_current::milliampere, electric_potential::volt, frequency::hertz, pressure::bar,
-    power::watt,
+    electric_current::milliampere, electric_potential::volt, frequency::hertz, power::watt,
+    pressure::bar,
 };
 
 use crate::machines::extruder1::mitsubishi_cs80::{MitsubishiCS80, MitsubishiCS80Status};
