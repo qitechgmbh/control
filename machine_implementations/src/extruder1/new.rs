@@ -26,6 +26,18 @@ use std::{
     time::{Duration, Instant},
 };
 
+struct PidGains {
+    kp: f64,
+    ki: f64,
+    kd: f64,
+}
+
+impl PidGains {
+    const fn new(kp: f64, ki: f64, kd: f64) -> Self {
+        Self { kp, ki, kd }
+    }
+}
+
 struct ExtruderRoles {
     temp_role: u16,
     ek1100_role: u16,
@@ -114,11 +126,31 @@ impl MachineNew for ExtruderV2 {
         drop(el6021);
         interface.enable_dc_sync0(serial_device.1)?;
 
+        // PID gains differ by hardware generation: MACHINE_EXTRUDER_V2 (the
+        // newer "V3" role layout) was retuned via the offline thermal
+        // simulation's tuning search; MACHINE_EXTRUDER_V1 keeps its
+        // long-standing gains.
+        let (front_gains, middle_gains, back_gains, nozzle_gains) =
+            match hw.identification.machine_ident.machine {
+                MACHINE_EXTRUDER_V2 => (
+                    PidGains::new(0.066, 0.0, 0.0),
+                    PidGains::new(0.020, 0.000003, 0.0),
+                    PidGains::new(0.020, 0.000017, 0.0),
+                    PidGains::new(0.433, 0.002, 0.0),
+                ),
+                _ => (
+                    PidGains::new(0.16, 0.0, 0.008),
+                    PidGains::new(0.16, 0.0, 0.008),
+                    PidGains::new(0.16, 0.0, 0.008),
+                    PidGains::new(0.16, 0.0, 0.008),
+                ),
+            };
+
         let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
         let temperature_controller_front = TemperatureController::new(
-            0.16,
-            0.0,
-            0.008,
+            front_gains.kp,
+            front_gains.ki,
+            front_gains.kd,
             ThermodynamicTemperature::new::<degree_celsius>(150.0),
             extruder_max_temperature,
             Heating::default(),
@@ -130,9 +162,9 @@ impl MachineNew for ExtruderV2 {
         );
 
         let temperature_controller_middle = TemperatureController::new(
-            0.16,
-            0.0,
-            0.008,
+            middle_gains.kp,
+            middle_gains.ki,
+            middle_gains.kd,
             ThermodynamicTemperature::new::<degree_celsius>(150.0),
             extruder_max_temperature,
             Heating::default(),
@@ -144,9 +176,9 @@ impl MachineNew for ExtruderV2 {
         );
 
         let temperature_controller_back = TemperatureController::new(
-            0.16,
-            0.0,
-            0.008,
+            back_gains.kp,
+            back_gains.ki,
+            back_gains.kd,
             ThermodynamicTemperature::new::<degree_celsius>(150.0),
             extruder_max_temperature,
             Heating::default(),
@@ -159,9 +191,9 @@ impl MachineNew for ExtruderV2 {
 
         // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
         let temperature_controller_nozzle = TemperatureController::new(
-            0.16,
-            0.0,
-            0.008,
+            nozzle_gains.kp,
+            nozzle_gains.ki,
+            nozzle_gains.kd,
             ThermodynamicTemperature::new::<degree_celsius>(150.0),
             extruder_max_temperature,
             Heating::default(),

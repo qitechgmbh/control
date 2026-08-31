@@ -64,9 +64,18 @@ impl SimSettings {
 /// here in the simulator's `[front, middle, back, nozzle]` order.
 const PROFILES: &[(&str, [f64; 4])] = &[
     // name, [front, middle, back, nozzle]
-    ("A  nozzle200 front200 middle170 back150", [200.0, 170.0, 150.0, 200.0]),
-    ("B  nozzle170 front180 middle160 back140", [180.0, 160.0, 140.0, 170.0]),
-    ("C  nozzle150 front150 middle130 back100", [150.0, 130.0, 100.0, 150.0]),
+    (
+        "A  nozzle200 front200 middle170 back150",
+        [200.0, 170.0, 150.0, 200.0],
+    ),
+    (
+        "B  nozzle170 front180 middle160 back140",
+        [180.0, 160.0, 140.0, 170.0],
+    ),
+    (
+        "C  nozzle150 front150 middle130 back100",
+        [150.0, 130.0, 100.0, 150.0],
+    ),
 ];
 
 const DURATION_S: f64 = 6000.0;
@@ -123,7 +132,9 @@ fn zone_cost(trace: &Trace, zone: Zone) -> f64 {
             }
             c
         }
-        None => NEVER_SETTLED_BASE * DURATION_S + FINAL_ERR_WEIGHT * (trace.final_c(zone) - sp).abs(),
+        None => {
+            NEVER_SETTLED_BASE * DURATION_S + FINAL_ERR_WEIGHT * (trace.final_c(zone) - sp).abs()
+        }
     }
 }
 
@@ -306,7 +317,12 @@ fn clamp_params(v: &mut [f64]) {
 
 /// Nelder–Mead simplex optimisation of a deterministic black-box cost.
 /// Converges on a local minimum without needing gradients.
-fn nelder_mead<F: Fn(&[f64]) -> f64>(f: &F, x0: &[f64], step: &[f64], iters: usize) -> (Vec<f64>, f64) {
+fn nelder_mead<F: Fn(&[f64]) -> f64>(
+    f: &F,
+    x0: &[f64],
+    step: &[f64],
+    iters: usize,
+) -> (Vec<f64>, f64) {
     let n = x0.len();
     let mut simplex: Vec<Vec<f64>> = vec![x0.to_vec()];
     for i in 0..n {
@@ -456,7 +472,13 @@ fn print_best(t: &Tuning4) {
 }
 
 /// Jitter `best` and keep the cheapest candidate, evaluated at `s_real`.
-fn real_refine(best: Tuning4, evals: usize, threads: usize, seed: u64, s_real: SimSettings) -> (Tuning4, f64) {
+fn real_refine(
+    best: Tuning4,
+    evals: usize,
+    threads: usize,
+    seed: u64,
+    s_real: SimSettings,
+) -> (Tuning4, f64) {
     let mut rng = Rng(seed);
     let mut cands = vec![best];
     for _ in 0..evals {
@@ -614,7 +636,11 @@ fn main() {
                 (vec![zone.port()], v)
             }
             None => (
-                Zone::ALL.iter().copied().map(Zone::port).collect::<Vec<_>>(),
+                Zone::ALL
+                    .iter()
+                    .copied()
+                    .map(Zone::port)
+                    .collect::<Vec<_>>(),
                 spec.as_str(),
             ),
         };
@@ -712,5 +738,8 @@ fn main() {
     }
 
     report(&tuning, s);
-    println!("\ntotal cost (lower is better): {:.0}", total_cost(&tuning, s));
+    println!(
+        "\ntotal cost (lower is better): {:.0}",
+        total_cost(&tuning, s)
+    );
 }
