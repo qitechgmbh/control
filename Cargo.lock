@@ -2249,6 +2249,7 @@ dependencies = [
  "arc-swap",
  "axum",
  "bitvec",
+ "crc",
  "erased-serde",
  "euclid",
  "heapless 0.9.3",
