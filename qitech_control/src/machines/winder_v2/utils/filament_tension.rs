@@ -1,6 +1,5 @@
 use euclid::Point2D;
-use qitech_control_core::converters::AngleConverter;
-use qitech_control_core::converters::AngleConverterUom;
+use qitech_control_core::converters::angle_converter::{AngleConverter, AngleConverterUom};
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::angle::radian;
 use qitech_lib::units::f64::*;

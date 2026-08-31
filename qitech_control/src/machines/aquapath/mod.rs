@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::machines::aquapath::{
     api::{ConfigProperties, Measurements, NoticeEvent, StateProperties},
     controller::{ControlResetReason, Controller, ControllerNotice},
@@ -11,11 +13,18 @@ use qitech_framework::{
     machine::{ActResult, EventEmitter},
 };
 use serde::{Deserialize, Serialize};
-
 pub mod act;
 pub mod api;
 pub mod controller;
 pub mod new;
+
+impl fmt::Display for AquaPathV1Mode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self);
+        Ok(())
+    }
+}
+
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Default, EnumProperty)]
 pub enum AquaPathV1Mode {
@@ -145,7 +154,8 @@ impl AquaPathV1 {
 
 impl std::fmt::Display for AquaPathV1 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Aquapath")
+        write!(f, "Aquapath");
+        Ok(())
     }
 }
 /*
