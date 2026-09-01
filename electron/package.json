@@ -33,7 +33,7 @@
   },
   "author": "",
   "devDependencies": {
-    "@cyclonedx/cyclonedx-npm": "^6.0.0",
+    "@cyclonedx/cyclonedx-npm": "^6.0.1",
     "@electron/fuses": "^1.8.0",
     "@eslint/compat": "^2.0.2",
     "@eslint/js": "^10.0.1",
