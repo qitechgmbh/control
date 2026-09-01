@@ -31,6 +31,9 @@
 use std::time::{Duration, Instant};
 
 use bitvec::prelude::*;
+use control_core::controllers::heating::{
+    CascadeController, CascadeParams, HeatingStrategy, ObserverPi, ObserverPiParams, PidBaseline,
+};
 use control_core::controllers::pid_autotuner::{AutoTuneResult, PidAutoTuner};
 use qitech_lib::ethercat_hal::devices::beckhoff_modules::{el2004::EL2004, el3204::EL3204};
 use qitech_lib::ethercat_hal::devices::{EthercatDevice, NewEthercatDevice};
@@ -94,6 +97,92 @@ impl ZoneTuning {
     ];
 }
 
+/// Which control law the zones run.
+///
+/// Every variant carries one entry per zone, indexed by [`Zone::port`], because
+/// the four zones are genuinely different plants — the nozzle's kilograms per
+/// watt are several times a barrel zone's.
+#[derive(Debug, Clone)]
+pub enum StrategyConfig {
+    /// A PID on the raw reading: what has always shipped.
+    Pid([ZoneTuning; 4]),
+    /// PI on an observed metal temperature, over a steady-state feedforward.
+    ObserverPi([ObserverPiParams; 4]),
+    /// Cascade: outer loop sets a band temperature, inner loop delivers it.
+    Cascade([CascadeParams; 4]),
+}
+
+impl StrategyConfig {
+    /// Short name for a results table.
+    pub const fn name(&self) -> &'static str {
+        match self {
+            Self::Pid(_) => "pid",
+            Self::ObserverPi(_) => "observer-pi",
+            Self::Cascade(_) => "cascade",
+        }
+    }
+
+    fn build(&self, zone: Zone) -> Box<dyn HeatingStrategy> {
+        let p = zone.port();
+        match self {
+            Self::Pid(t) => Box::new(PidBaseline::new(
+                t[p].kp,
+                t[p].ki,
+                t[p].kd,
+                DEFAULT_MAX_CLAMP[p],
+            )),
+            Self::ObserverPi(t) => Box::new(ObserverPi::new(t[p])),
+            Self::Cascade(t) => Box::new(CascadeController::new(t[p])),
+        }
+    }
+}
+
+/// Production clamp per zone: 1.0 for the barrel zones, 0.95 for the nozzle.
+pub const DEFAULT_MAX_CLAMP: [f64; 4] = [1.0, 1.0, 1.0, 0.95];
+
+/// Plants that all reproduce the recorded heat-up, spread along the axis the
+/// calibration cannot resolve.
+///
+/// `sensor_tau_s` and `band_heat_capacity_j_per_m2_k` are documented in
+/// [`ExtruderThermalParams::EXPECTED_PINNED`] as trading off almost exactly:
+/// both delay the reading relative to the steel, and one recording with all
+/// four zones heating together cannot say which is responsible. The optimiser
+/// stopped at `tau = 150 s` with a nearly weightless band, but
+/// `tau = 20 s` with a heavy band fits the same data — and is a *physically
+/// very different machine*, where the overshoot is stored energy rather than
+/// measurement lag.
+///
+/// The compensation keeps the total lag roughly constant. The band's own time
+/// constant is `C / (h * A)`, which for a capacity expressed per unit contact
+/// area is just `band_heat_capacity_j_per_m2_k / band_contact_h` — independent
+/// of band size, which is why that unit was chosen. So each variant is built by
+/// moving lag between the two mechanisms:
+///
+/// ```text
+/// tau_sensor + band_heat_capacity / band_contact_h  ~=  160 s
+/// ```
+///
+/// A control law that is only good at one end of this range is tuned to an
+/// artefact of the calibration, not to the machine. `family_members_all_match_the_recording`
+/// is what keeps this honest: a variant that stops reproducing the recording is
+/// not a legitimate reading of the data and does not belong here.
+pub fn plant_family() -> Vec<ExtruderThermalParams> {
+    const TOTAL_LAG_S: f64 = 160.0;
+    [20.0, 60.0, 100.0, 150.0]
+        .into_iter()
+        .map(|tau_sensor_s| {
+            let base = ExtruderThermalParams::calibrated();
+            let band_tau_s = (TOTAL_LAG_S - tau_sensor_s).max(10.0);
+            ExtruderThermalParams {
+                sensor_tau_s: tau_sensor_s,
+                band_heat_capacity_j_per_m2_k: (band_tau_s * base.band_contact_h)
+                    .clamp(1_000.0, 30_000.0),
+                ..base
+            }
+        })
+        .collect()
+}
+
 /// Harness configuration.
 #[derive(Debug, Clone)]
 pub struct SimConfig {
@@ -102,12 +191,10 @@ pub struct SimConfig {
     pub sensor_period_s: f64,
     /// How often a [`Sample`] is appended to the [`Trace`].
     pub record_period_s: f64,
-    /// Per-zone gains, indexed by [`Zone::port`].
-    pub tuning: [ZoneTuning; 4],
+    /// The control law under test.
+    pub strategy: StrategyConfig,
     /// Slow-PWM window length.
     pub pwm_period: Duration,
-    /// Per-zone output clamp, indexed by [`Zone::port`].
-    pub max_clamp: [f64; 4],
     /// Over-temperature cutout in °C.
     pub max_temperature_c: f64,
 }
@@ -119,10 +206,8 @@ impl Default for SimConfig {
             dt_ctrl_s: DT_CTRL_S,
             sensor_period_s: SENSOR_PERIOD_S,
             record_period_s: 1.0,
-            tuning: ZoneTuning::PRODUCTION,
+            strategy: StrategyConfig::Pid(ZoneTuning::PRODUCTION),
             pwm_period: Duration::from_millis(500),
-            // Production: 1.0 for the barrel zones, 0.95 for the nozzle.
-            max_clamp: [1.0, 1.0, 1.0, 0.95],
             max_temperature_c: 300.0,
         }
     }
@@ -132,6 +217,13 @@ impl Default for SimConfig {
 #[derive(Debug, Clone)]
 pub struct Sample {
     pub t_s: f64,
+    /// The setpoint in force at this instant, in °C.
+    ///
+    /// Per sample rather than per run, because a scenario may change setpoints
+    /// part-way through — and reading a step-up trace against the *final*
+    /// setpoint makes the whole approach look like a huge undershoot.
+    /// `NaN` for open-loop runs, which have no setpoint.
+    pub setpoint_c: [f64; 4],
     /// What the controller saw, after EL3204 quantisation.
     pub sensor_c: [f64; 4],
     /// True barrel steel temperature under the sensor.
@@ -221,9 +313,24 @@ impl Trace {
     }
 
     /// CSV with a header row, one line per sample.
+    ///
+    /// Columns are `t_s`, then one group of four per quantity in the order
+    /// `front, middle, back, nozzle`:
+    ///
+    /// | group | what |
+    /// |---|---|
+    /// | `setpoint_*` | what was being asked for at that instant |
+    /// | `sensor_*` | what the controller saw, after EL3204 quantisation |
+    /// | `steel_*` | what the barrel steel was actually at |
+    /// | `band_*` | the band heater itself |
+    /// | `duty_*` | demanded duty, 0..1 |
+    /// | `power_w_*` | electrical power actually delivered |
+    ///
+    /// `sensor` against `steel` is the interesting pair: the gap between them is
+    /// the measurement lag the controller has to work through.
     pub fn to_csv(&self) -> String {
         let mut out = String::from("t_s");
-        for tag in ["sensor", "steel", "band", "duty", "power_w"] {
+        for tag in ["setpoint", "sensor", "steel", "band", "duty", "power_w"] {
             for zone in Zone::ALL {
                 out.push_str(&format!(",{}_{}", tag, zone.name()));
             }
@@ -231,7 +338,7 @@ impl Trace {
         out.push('\n');
         for s in &self.samples {
             out.push_str(&format!("{:.2}", s.t_s));
-            for arr in [&s.sensor_c, &s.steel_c, &s.band_c] {
+            for arr in [&s.setpoint_c, &s.sensor_c, &s.steel_c, &s.band_c] {
                 for zone in Zone::ALL {
                     out.push_str(&format!(",{:.3}", arr[zone.port()]));
                 }
@@ -268,17 +375,13 @@ impl ThermalSim {
             .iter()
             .map(|zone| {
                 let p = zone.port();
-                let t = config.tuning[p];
-                TemperatureController::new(
-                    t.kp,
-                    t.ki,
-                    t.kd,
+                TemperatureController::with_strategy(
+                    config.strategy.build(*zone),
                     ThermodynamicTemperature::new::<degree_celsius>(0.0),
                     ThermodynamicTemperature::new::<degree_celsius>(config.max_temperature_c),
                     Heating::default(),
                     config.pwm_period,
                     zone.band().rated_w,
-                    config.max_clamp[p],
                     p,
                     p,
                 )
@@ -493,6 +596,7 @@ impl ThermalSim {
                 }
                 trace.samples.push(Sample {
                     t_s: now_ns as f64 * 1e-9,
+                    setpoint_c: setpoints,
                     sensor_c,
                     steel_c,
                     band_c,
@@ -607,6 +711,8 @@ impl ThermalSim {
                 }
                 trace.samples.push(Sample {
                     t_s: t,
+                    // Open loop: nothing is being asked for.
+                    setpoint_c: [f64::NAN; 4],
                     sensor_c,
                     steel_c,
                     band_c,
@@ -672,7 +778,7 @@ mod tests {
 
     fn recorded_run_trace() -> Trace {
         let config = SimConfig {
-            tuning: [RECORDED_RUN_TUNING; 4],
+            strategy: StrategyConfig::Pid([RECORDED_RUN_TUNING; 4]),
             ..SimConfig::default()
         };
         let mut sim = ThermalSim::new(ExtruderThermalParams::calibrated(), config);
@@ -891,6 +997,78 @@ mod tests {
             );
             assert!(trace.energy_kwh(zone) > 0.02);
         }
+    }
+
+    /// The plant family only means anything if every member really is an
+    /// equally good reading of the recording. A variant that has drifted away
+    /// from it is not an alternative hypothesis, it is just a wrong model, and
+    /// scoring controllers against it would be inventing a robustness
+    /// requirement rather than discovering one.
+    ///
+    /// Tolerances are looser than
+    /// [`calibrated_model_matches_the_recorded_heat_up`] — these are not refits,
+    /// only the nominal fit with lag moved between the two mechanisms — but
+    /// tight enough that a variant which stops reproducing the machine is
+    /// caught.
+    #[test]
+    fn family_members_all_match_the_recording() {
+        for params in plant_family() {
+            let tau = params.sensor_tau_s;
+            let config = SimConfig {
+                strategy: StrategyConfig::Pid([RECORDED_RUN_TUNING; 4]),
+                ..SimConfig::default()
+            };
+            let mut sim = ThermalSim::new(params, config);
+            let trace = sim.run(&Scenario::recorded_heatup());
+
+            for zone in Zone::ALL {
+                let (peak, t90) = MEASURED[zone.port()];
+                let sim_peak = trace.peak_c(zone);
+                assert!(
+                    (sim_peak - peak).abs() < 12.0,
+                    "tau={tau:.0}: {} peaks at {sim_peak:.1} C vs the recorded {peak:.1} C, \
+                     so this is not a plant the recording supports",
+                    zone.name()
+                );
+                let sim_t90 = trace
+                    .rise_time_s(zone, 0.9)
+                    .unwrap_or_else(|| panic!("tau={tau:.0}: {} never reached 90 %", zone.name()));
+                assert!(
+                    (sim_t90 - t90).abs() / t90 < 0.25,
+                    "tau={tau:.0}: {} t90 {sim_t90:.0} s vs the recorded {t90:.0} s",
+                    zone.name()
+                );
+            }
+        }
+    }
+
+    /// The family has to actually span the two competing explanations, or it is
+    /// only testing one hypothesis dressed up as four.
+    #[test]
+    fn the_family_spans_both_overshoot_mechanisms() {
+        let family = plant_family();
+        assert!(
+            family.len() >= 3,
+            "a family of {} is not a spread",
+            family.len()
+        );
+
+        let lag_dominated = family
+            .iter()
+            .find(|p| p.sensor_tau_s > 120.0)
+            .expect("family should contain a measurement-lag-dominated plant");
+        let storage_dominated = family
+            .iter()
+            .find(|p| p.sensor_tau_s < 40.0)
+            .expect("family should contain a band-storage-dominated plant");
+
+        assert!(
+            storage_dominated.band_heat_capacity_j_per_m2_k
+                > 5.0 * lag_dominated.band_heat_capacity_j_per_m2_k,
+            "the two ends should disagree about band capacity by a lot; got {} vs {}",
+            storage_dominated.band_heat_capacity_j_per_m2_k,
+            lag_dominated.band_heat_capacity_j_per_m2_k
+        );
     }
 
     #[test]

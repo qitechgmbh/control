@@ -34,7 +34,7 @@ use std::time::Instant;
 
 use machine_implementations::extruder1::simulation::{
     geometry::Zone,
-    harness::{SimConfig, ThermalSim, Trace, ZoneTuning},
+    harness::{SimConfig, StrategyConfig, ThermalSim, Trace, ZoneTuning},
     params::ExtruderThermalParams,
     scenario::Scenario,
 };
@@ -143,7 +143,7 @@ fn total_cost(tuning: &Tuning4, s: SimSettings) -> f64 {
     let mut total = 0.0;
     for (_, sp) in PROFILES {
         let config = SimConfig {
-            tuning: *tuning,
+            strategy: StrategyConfig::Pid(*tuning),
             dt_plant_s: s.dt_plant_s,
             dt_ctrl_s: s.dt_ctrl_s,
             ..SimConfig::default()
@@ -176,7 +176,7 @@ fn report(tuning: &Tuning4, s: SimSettings) {
     );
     for (name, sp) in PROFILES {
         let config = SimConfig {
-            tuning: *tuning,
+            strategy: StrategyConfig::Pid(*tuning),
             dt_plant_s: s.dt_plant_s,
             dt_ctrl_s: s.dt_ctrl_s,
             ..SimConfig::default()

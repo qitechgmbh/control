@@ -7,8 +7,9 @@
 use std::time::Duration;
 
 use machine_implementations::extruder1::simulation::{
-    ExtruderThermalParams, Scenario, SimConfig, ThermalSim, Zone, ZoneTuning,
+    ExtruderThermalParams, Scenario, SimConfig, StrategyConfig, ThermalSim, Zone, ZoneTuning,
     fit::{self, RecordedRun},
+    tuning::{cascade_params, observer_pi_params},
 };
 
 const HELP: &str = "\
@@ -16,6 +17,10 @@ extruder_thermal_sim — offline simulation of the extruder's 4 heating zones
 
 USAGE:
     --scenario <name>     run a scenario (default: recorded-heatup)
+    --strategy <name>     control law: pid | observer-pi | cascade
+                          default pid, because that is what the reference
+                          recording was made with and what --compare scores
+                          against; observer-pi is what ships on EXTRUDER_V2
     --out <path>          write the trace as CSV
     --compare             run `recorded-heatup` and score it against the real recording
     --fit [path]          calibrate the model against a recording (default: the built-in one)
@@ -57,6 +62,15 @@ fn main() {
 
     let mut params = ExtruderThermalParams::calibrated();
     let mut config = SimConfig::default();
+
+    if let Some(name) = value("--strategy") {
+        config.strategy = match name.as_str() {
+            "pid" => StrategyConfig::Pid(ZoneTuning::PRODUCTION),
+            "observer-pi" => StrategyConfig::ObserverPi(observer_pi_params()),
+            "cascade" => StrategyConfig::Cascade(cascade_params()),
+            other => panic!("unknown strategy {other}; expected pid, observer-pi or cascade"),
+        };
+    }
 
     // --set key=value, repeatable, for exploring one coefficient at a time.
     for (i, a) in args.iter().enumerate() {
@@ -114,8 +128,11 @@ fn main() {
         let v: f64 = raw
             .parse()
             .unwrap_or_else(|e| panic!("{a}: {raw} is not a number ({e})"));
+        let StrategyConfig::Pid(tuning) = &mut config.strategy else {
+            panic!("{a} only applies to the pid strategy");
+        };
         for p in ports {
-            let t = &mut config.tuning[p];
+            let t = &mut tuning[p];
             match gain {
                 0 => t.kp = v,
                 1 => t.ki = v,
@@ -201,20 +218,21 @@ fn main() {
         Scenario::by_name(&name).unwrap_or_else(|| panic!("unknown scenario {name}; try --list"));
 
     params.ambient_c = params.ambient_c.max(0.0);
-    let tuning = config.tuning;
+    let strategy = config.strategy.clone();
     let started = std::time::Instant::now();
     let mut sim = ThermalSim::new(params, config);
     let trace = sim.run(&scenario);
     let wall = started.elapsed();
 
     println!(
-        "scenario '{}': {:.0} s simulated in {:.2} s wall ({:.0}x realtime)\n",
+        "scenario '{}' with the '{}' controller: {:.0} s simulated in {:.2} s wall ({:.0}x realtime)\n",
         scenario.name,
+        strategy.name(),
         scenario.duration_s,
         wall.as_secs_f64(),
         scenario.duration_s / wall.as_secs_f64().max(1e-9)
     );
-    print_summary(&trace, &tuning);
+    print_summary(&trace, &strategy);
 
     if let Some(path) = value("--out") {
         std::fs::write(&path, trace.to_csv())
@@ -225,21 +243,26 @@ fn main() {
 
 fn print_summary(
     trace: &machine_implementations::extruder1::simulation::Trace,
-    tuning: &[ZoneTuning; 4],
+    strategy: &StrategyConfig,
 ) {
+    // Whatever the strategy, the outer loop's gains are the comparable thing.
+    let gains = |p: usize| match strategy {
+        StrategyConfig::Pid(t) => format!("{}/{}/{}", t[p].kp, t[p].ki, t[p].kd),
+        StrategyConfig::ObserverPi(t) => format!("{}/{}", t[p].kp, t[p].ki),
+        StrategyConfig::Cascade(t) => format!("{}/{}", t[p].kp, t[p].ki),
+    };
     println!(
-        "{:<8} {:>7} {:>8} {:>8} {:>10} {:>9} {:>9} {:>8} {:>7}",
-        "zone", "kp/ki/kd", "setpt", "peak", "overshoot", "t90", "final", "kWh", "relay"
+        "{:<8} {:>13} {:>8} {:>8} {:>10} {:>9} {:>9} {:>8} {:>7}",
+        "zone", "kp/ki[/kd]", "setpt", "peak", "overshoot", "t90", "final", "kWh", "relay"
     );
     for zone in Zone::ALL {
         let t90 = trace
             .rise_time_s(zone, 0.9)
             .map_or("never".to_owned(), |v| format!("{v:.0} s"));
-        let t = tuning[zone.port()];
         println!(
-            "{:<8} {:>7} {:>8.1} {:>8.1} {:>+10.1} {:>9} {:>9.1} {:>8.3} {:>7}",
+            "{:<8} {:>13} {:>8.1} {:>8.1} {:>+10.1} {:>9} {:>9.1} {:>8.3} {:>7}",
             zone.name(),
-            format!("{}/{}/{}", t.kp, t.ki, t.kd),
+            gains(zone.port()),
             trace.setpoints_c[zone.port()],
             trace.peak_c(zone),
             trace.overshoot_k(zone),
