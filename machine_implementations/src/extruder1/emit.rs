@@ -105,27 +105,27 @@ impl ExtruderV2 {
             pid_settings: PidSettingsStates {
                 temperature: TemperaturePidStates {
                     front: TemperaturePid {
-                        ki: self.temperature_controller_front.pid.get_ki(),
-                        kp: self.temperature_controller_front.pid.get_kp(),
-                        kd: self.temperature_controller_front.pid.get_kd(),
+                        ki: self.temperature_controller_front.pid().get_ki(),
+                        kp: self.temperature_controller_front.pid().get_kp(),
+                        kd: self.temperature_controller_front.pid().get_kd(),
                         zone: String::from("front"),
                     },
                     middle: TemperaturePid {
-                        ki: self.temperature_controller_middle.pid.get_ki(),
-                        kp: self.temperature_controller_middle.pid.get_kp(),
-                        kd: self.temperature_controller_middle.pid.get_kd(),
+                        ki: self.temperature_controller_middle.pid().get_ki(),
+                        kp: self.temperature_controller_middle.pid().get_kp(),
+                        kd: self.temperature_controller_middle.pid().get_kd(),
                         zone: String::from("middle"),
                     },
                     back: TemperaturePid {
-                        ki: self.temperature_controller_back.pid.get_ki(),
-                        kp: self.temperature_controller_back.pid.get_kp(),
-                        kd: self.temperature_controller_back.pid.get_kd(),
+                        ki: self.temperature_controller_back.pid().get_ki(),
+                        kp: self.temperature_controller_back.pid().get_kp(),
+                        kd: self.temperature_controller_back.pid().get_kd(),
                         zone: String::from("back"),
                     },
                     nozzle: TemperaturePid {
-                        ki: self.temperature_controller_nozzle.pid.get_ki(),
-                        kp: self.temperature_controller_nozzle.pid.get_kp(),
-                        kd: self.temperature_controller_nozzle.pid.get_kd(),
+                        ki: self.temperature_controller_nozzle.pid().get_ki(),
+                        kp: self.temperature_controller_nozzle.pid().get_kp(),
+                        kd: self.temperature_controller_nozzle.pid().get_kd(),
                         zone: String::from("nozzle"),
                     },
                 },
@@ -361,28 +361,28 @@ impl ExtruderV2 {
     pub fn configure_temperature_pid(&mut self, settings: TemperaturePid) {
         match settings.zone.as_str() {
             "front" => {
-                self.temperature_controller_front.pid.configure(
+                self.temperature_controller_front.pid_mut().configure(
                     settings.ki,
                     settings.kp,
                     settings.kd,
                 );
             }
             "middle" => {
-                self.temperature_controller_middle.pid.configure(
+                self.temperature_controller_middle.pid_mut().configure(
                     settings.ki,
                     settings.kp,
                     settings.kd,
                 );
             }
             "back" => {
-                self.temperature_controller_back.pid.configure(
+                self.temperature_controller_back.pid_mut().configure(
                     settings.ki,
                     settings.kp,
                     settings.kd,
                 );
             }
             "nozzle" => {
-                self.temperature_controller_nozzle.pid.configure(
+                self.temperature_controller_nozzle.pid_mut().configure(
                     settings.ki,
                     settings.kp,
                     settings.kd,

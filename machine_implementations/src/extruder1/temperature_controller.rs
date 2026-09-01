@@ -1,4 +1,5 @@
 use super::Heating;
+use control_core::controllers::heating::{HeatingStrategy, PidBaseline};
 use control_core::controllers::pid::PidController;
 use qitech_lib::{
     ethercat_hal::io::{
@@ -8,8 +9,16 @@ use qitech_lib::{
 };
 use std::time::{Duration, Instant};
 
+/// One heating zone: sensor in, relay out.
+///
+/// This owns everything around the control law — reading the RTD, the
+/// over-temperature cutout, the slow-PWM window, driving the relay — and
+/// delegates the duty decision itself to a [`HeatingStrategy`]. Swapping the
+/// control law is then a change of one constructor argument, and the offline
+/// simulation in [`crate::extruder1::simulation`] can compare strategies while
+/// still driving the shipping code around them.
 pub struct TemperatureController {
-    pub pid: PidController,
+    strategy: Box<dyn HeatingStrategy>,
     pub heating: Heating,
     pub target_temp: ThermodynamicTemperature,
     pub digital_port: usize,
@@ -20,7 +29,6 @@ pub struct TemperatureController {
     max_temperature: ThermodynamicTemperature,
     temperature_pid_output: f64,
     heating_element_wattage: f64,
-    max_clamp: f64,
     target_temp_enabled: bool, // Sets whether the frontend should display a target temperature setter for this temp controller
 }
 
@@ -31,6 +39,9 @@ impl TemperatureController {
         self.disallow_heating();
     }
 
+    /// A zone driven by a plain PID on the raw reading — the control law that
+    /// has always shipped.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         kp: f64,
         ki: f64,
@@ -44,8 +55,34 @@ impl TemperatureController {
         digital_port: usize,
         temperature_port: usize,
     ) -> Self {
+        Self::with_strategy(
+            Box::new(PidBaseline::new(kp, ki, kd, max_clamp)),
+            target_temp,
+            max_temperature,
+            heating,
+            pwm_duration,
+            heating_element_wattage,
+            digital_port,
+            temperature_port,
+        )
+    }
+
+    /// A zone driven by an arbitrary control law.
+    ///
+    /// The strategy owns its own output clamp, so there is no `max_clamp` here.
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_strategy(
+        strategy: Box<dyn HeatingStrategy>,
+        target_temp: ThermodynamicTemperature,
+        max_temperature: ThermodynamicTemperature,
+        heating: Heating,
+        pwm_duration: Duration,
+        heating_element_wattage: f64,
+        digital_port: usize,
+        temperature_port: usize,
+    ) -> Self {
         Self {
-            pid: PidController::new(kp, ki, kd),
+            strategy,
             target_temp,
             window_start: Instant::now(),
             heating,
@@ -54,7 +91,6 @@ impl TemperatureController {
             max_temperature,
             temperature_pid_output: 0.0,
             heating_element_wattage,
-            max_clamp,
             target_temp_enabled: true,
             digital_port,
             temperature_port,
@@ -73,8 +109,22 @@ impl TemperatureController {
         self.target_temp_enabled
     }
 
-    pub const fn disallow_heating(&mut self) {
+    /// The outer-loop PID, whichever strategy is in use, so gains stay readable
+    /// and settable through the existing API.
+    pub fn pid(&self) -> &PidController {
+        self.strategy.pid()
+    }
+
+    pub fn pid_mut(&mut self) -> &mut PidController {
+        self.strategy.pid_mut()
+    }
+
+    pub fn disallow_heating(&mut self) {
         self.heating_allowed = false;
+        // Drop the integral and any state the estimator built up, so that
+        // re-enabling does not resume from a stale picture of a plant that has
+        // been cooling in the meantime.
+        self.strategy.reset();
     }
 
     pub const fn allow_heating(&mut self) {
@@ -101,6 +151,18 @@ impl TemperatureController {
         };
         self.heating.temperature = temperature_celsius;
 
+        // A failed read decodes to 0 °C, which is maximum error, which would be
+        // maximum heat demand — the heater running flat out precisely when
+        // nothing can see how hot it is getting. Open the relay instead. The
+        // strategy is deliberately not stepped and not reset: a transient fault
+        // should not discard a good estimate, and every estimator here is
+        // written to tolerate the long `dt` that a sustained one produces.
+        if self.heating.wiring_error {
+            relais.set_output(self.digital_port, false);
+            self.heating.heating = false;
+            return;
+        }
+
         if self.heating.temperature > self.max_temperature {
             // disable the relais and return
             relais.set_output(self.digital_port, false);
@@ -109,23 +171,24 @@ impl TemperatureController {
         }
 
         if self.heating_allowed {
-            let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
-                - self.heating.temperature.get::<degree_celsius>();
-
-            // PID output with anti-windup, clamped to the duty range. Without
-            // anti-windup any `ki > 0` winds the integral up on a cold-start
-            // ramp and causes huge overshoot.
-            let duty = self
-                .pid
-                .update_with_antiwindup(error, now, 0.0, self.max_clamp);
+            let duty = self.strategy.update(
+                self.heating.temperature.get::<degree_celsius>(),
+                self.heating.target_temperature.get::<degree_celsius>(),
+                now,
+            );
 
             self.temperature_pid_output = duty;
 
-            let elapsed = now.duration_since(self.window_start);
+            let mut elapsed = now.duration_since(self.window_start);
 
-            // Restart window if needed
+            // Restart window if needed. `elapsed` has to be recomputed with it:
+            // leaving the old, already-past-the-period value in place made the
+            // comparison below false for the first tick of every window, so the
+            // relay was held open for one tick per window no matter what duty
+            // was asked for.
             if elapsed >= self.pwm_period {
                 self.window_start = now;
+                elapsed = Duration::ZERO;
             }
             // Compare duty cycle to elapsed time
             let on_time = self.pwm_period.mul_f64(duty);

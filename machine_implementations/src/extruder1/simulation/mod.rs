@@ -18,9 +18,13 @@
 //! The *controller is the shipping code*. [`harness::ThermalSim`] constructs the
 //! production [`crate::extruder1::temperature_controller::TemperatureController`]
 //! and drives it with a real `EL3204` and `EL2004`, feeding the sensor in as raw
-//! PDO bytes. So the PID, the duty clamp, the 500 ms slow-PWM window and the
-//! 0.1 °C quantisation are not reimplemented here — a fix to the controller
+//! PDO bytes. So the control law, the duty clamp, the 500 ms slow-PWM window and
+//! the 0.1 °C quantisation are not reimplemented here — a fix to the controller
 //! shows up in the simulation immediately, which is the whole point.
+//!
+//! Which control law runs is [`harness::StrategyConfig`], so alternatives can be
+//! compared against the same plant without either of them being a mock-up. The
+//! three that exist live in `control_core::controllers::heating`.
 //!
 //! Simulated time is synthetic `Instant`s, so the run is decoupled from the wall
 //! clock. Nothing here touches the `mock-machine` feature.
@@ -117,30 +121,58 @@
 //! measurements. Recording the `single-*` scenarios in [`scenario`] on the real
 //! machine — one zone from cold, then decay — would separate them.
 //!
-//! # Known controller problems this rig exposes
+//! # Controller problems this rig exposed, and what happened to them
 //!
-//! Documented here rather than fixed, so the fix can be developed against the
-//! simulation:
+//! All of these were found here rather than on the machine, and all are now
+//! fixed. Kept as a record of what the rig is for.
 //!
-//! 1. **The derivative term is quantisation noise.** `update` runs every ~1 ms
+//! 1. **The derivative term was quantisation noise.** `update` runs every ~1 ms
 //!    on a value the EL3204 only refreshes every few tens of ms in 0.1 °C steps.
-//!    When it does move, `ed = 0.1 / 0.001 = 100 K/s`, and `kd * ed = 0.8` —
-//!    most of the duty range, from one LSB. Every other tick contributes zero.
-//! 2. **No anti-windup.** `PidController` integrates unconditionally while the
-//!    caller clamps externally. `ki = 0` hides it today; the comment in
-//!    `new.rs` about "problems when starting far away because of integral" is
-//!    this waiting to happen.
-//! 3. **One set of gains for four very different plants.** The nozzle's
-//!    kg-per-watt is several times the barrel zones'.
-//! 4. **PWM window off-by-one.** `elapsed` is not recomputed after
-//!    `window_start = now`, so the relay is forced off for one tick per window.
-//! 5. **A failed sensor reads as 0 °C**, which is maximum error, which is full
-//!    heat demand. `wiring_error` is reported but does not inhibit heating.
+//!    When it did move, `ed = 0.1 / 0.001 = 100 K/s`, and `kd * ed = 0.8` — most
+//!    of the duty range, from one LSB. *Fixed* by never differentiating the raw
+//!    reading: `SensorLagObserver` low-passes first and takes the slope of the
+//!    filtered signal, which needs no division by `dt` at all.
+//! 2. **No anti-windup.** *Fixed* previously by
+//!    `PidController::update_with_antiwindup`, and the feedforward now means the
+//!    integral is only ever carrying a small residual anyway.
+//! 3. **One set of gains for four very different plants.** *Fixed*: every
+//!    parameter is per zone, in [`tuning`].
+//! 4. **PWM window off-by-one.** `elapsed` was not recomputed after
+//!    `window_start = now`, so the relay was forced off for one tick per window.
+//!    *Fixed* in `TemperatureController::update`.
+//! 5. **A failed sensor read as 0 °C**, which is maximum error, which is full
+//!    heat demand — the heater running flat out exactly when nothing could see
+//!    how hot it was getting. *Fixed*: `wiring_error` now opens the relay.
 //!
-//! And one that is not in the code at all: calibration says the RTDs have a time
-//! constant of order **150 s**, which is what a probe sitting in an air gap does,
-//! not one that is properly seated. That lag is a large part of the overshoot,
-//! and it is fixable with heat-transfer compound rather than with gains. See
+//! # The overshoot, and what actually fixed it
+//!
+//! Not the gains. The RTDs have a time constant of order **150 s**, and the
+//! barrel ramps at ~0.23 K/s, so the controller spent the whole heat-up reading
+//! a value about **34 K stale** and shut off that far late. That single number
+//! is essentially the entire +31.5 K middle-zone overshoot, and no PID on the
+//! raw signal can remove it, because from inside the loop a stale reading is
+//! indistinguishable from being genuinely that far away.
+//!
+//! What ships now is [`control_core::controllers::heating::ObserverPi`]:
+//! reconstruct the steel temperature from the reading and its filtered slope,
+//! and regulate *that*, over a feedforward that already knows the duty the
+//! setpoint costs. Measured here, across the whole of
+//! [`harness::plant_family`]:
+//!
+//! | zone | PID overshoot | ObserverPi | PID settle | ObserverPi |
+//! |---|---|---|---|---|
+//! | front | +8.8 K | +0.3 K | 1445 s | 808 s |
+//! | middle | **+15.8 K** | **+0.4 K** | 2073 s | 846 s |
+//! | back | +6.5 K | +0.1 K | 1040 s | 672 s |
+//! | nozzle | +0.1 K (never arrives) | +0.2 K (arrives) | 2131 s | 2105 s |
+//!
+//! Compare strategies with the `bench_heating` example; the shipping
+//! configuration is asserted by the tests in [`tuning`].
+//!
+//! **Still worth doing on the machine.** A 150 s probe lag is what one sitting
+//! in an air gap does, not one that is properly seated. Fixing the seating with
+//! heat-transfer compound would remove the *cause* rather than compensating for
+//! it, and would make everything here work better. See
 //! [`params::ExtruderThermalParams::sensor_tau_s`].
 //!
 //! # Relay autotuning
@@ -161,9 +193,10 @@ pub mod harness;
 pub mod model;
 pub mod params;
 pub mod scenario;
+pub mod tuning;
 
 pub use geometry::Zone;
-pub use harness::{SimConfig, ThermalSim, Trace, ZoneTuning};
+pub use harness::{SimConfig, StrategyConfig, ThermalSim, Trace, ZoneTuning};
 pub use model::ExtruderThermalModel;
 pub use params::ExtruderThermalParams;
 pub use scenario::Scenario;
