@@ -21,6 +21,16 @@ USAGE:
                           default pid, because that is what the reference
                           recording was made with and what --compare scores
                           against; observer-pi is what ships on EXTRUDER_V2
+    --setpoint <v>        override the scenario's setpoints on every zone, or
+                          `zone=value` for one (repeatable, same form as --kp:
+                          --setpoint 300 --setpoint nozzle=240). A scenario's
+                          scheduled setpoint changes (only `step-up` has any)
+                          still fire as defined.
+    --initial <c>         uniform starting temperature (default: the scenario's,
+                          22 for all of them)
+    --duration <s>        override the scenario's run length
+    --max-temp <c>        over-temperature cutout (default 300); the relay opens
+                          above this, so keep it above the highest setpoint
     --out <path>          write the trace as CSV
     --compare             run `recorded-heatup` and score it against the real recording
     --fit [path]          calibrate the model against a recording (default: the built-in one)
@@ -38,6 +48,35 @@ SCENARIOS:
     recorded-heatup cold-start nozzle-only step-up
     single-front single-middle single-back single-nozzle
 ";
+
+/// Parse a `--kp`-style argument: a bare number applies to every zone,
+/// `zone=value` to one. Returns the affected [`Zone::port`]s and the number.
+fn zone_value(flag: &str, spec: &str) -> (Vec<usize>, f64) {
+    let (ports, raw) = match spec.split_once('=') {
+        Some((name, v)) => {
+            let zone = Zone::ALL
+                .iter()
+                .find(|z| z.name() == name)
+                .copied()
+                .unwrap_or_else(|| {
+                    panic!("{flag}: unknown zone {name}; expected front/middle/back/nozzle")
+                });
+            (vec![zone.port()], v)
+        }
+        None => (
+            Zone::ALL
+                .iter()
+                .copied()
+                .map(Zone::port)
+                .collect::<Vec<_>>(),
+            spec,
+        ),
+    };
+    let v: f64 = raw
+        .parse()
+        .unwrap_or_else(|e| panic!("{flag}: {raw} is not a number ({e})"));
+    (ports, v)
+}
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -105,29 +144,7 @@ fn main() {
         let spec = args
             .get(i + 1)
             .unwrap_or_else(|| panic!("{a} needs a value, or zone=value"));
-        let (ports, raw) = match spec.split_once('=') {
-            Some((name, v)) => {
-                let zone = Zone::ALL
-                    .iter()
-                    .find(|z| z.name() == name)
-                    .copied()
-                    .unwrap_or_else(|| {
-                        panic!("{a}: unknown zone {name}; expected front/middle/back/nozzle")
-                    });
-                (vec![zone.port()], v)
-            }
-            None => (
-                Zone::ALL
-                    .iter()
-                    .copied()
-                    .map(Zone::port)
-                    .collect::<Vec<_>>(),
-                spec.as_str(),
-            ),
-        };
-        let v: f64 = raw
-            .parse()
-            .unwrap_or_else(|e| panic!("{a}: {raw} is not a number ({e})"));
+        let (ports, v) = zone_value(a, spec);
         let StrategyConfig::Pid(tuning) = &mut config.strategy else {
             panic!("{a} only applies to the pid strategy");
         };
@@ -141,11 +158,30 @@ fn main() {
         }
     }
 
+    // --setpoint takes the same `value` / `zone=value` form as the gains, and is
+    // applied to the scenario further down, once one has been picked.
+    let mut setpoints: [Option<f64>; 4] = [None; 4];
+    for (i, a) in args.iter().enumerate() {
+        if a != "--setpoint" {
+            continue;
+        }
+        let spec = args
+            .get(i + 1)
+            .unwrap_or_else(|| panic!("--setpoint needs a value, or zone=value"));
+        let (ports, v) = zone_value(a, spec);
+        for p in ports {
+            setpoints[p] = Some(v);
+        }
+    }
+
     if let Some(v) = value("--dt-ctrl").and_then(|v| v.parse::<f64>().ok()) {
         config.dt_ctrl_s = v;
     }
     if let Some(v) = value("--sensor-period").and_then(|v| v.parse::<f64>().ok()) {
         config.sensor_period_s = v;
+    }
+    if let Some(v) = value("--max-temp").and_then(|v| v.parse::<f64>().ok()) {
+        config.max_temperature_c = v;
     }
 
     if flag("--fit") {
@@ -214,8 +250,34 @@ fn main() {
     }
 
     let name = value("--scenario").unwrap_or_else(|| "recorded-heatup".to_owned());
-    let scenario =
+    let mut scenario =
         Scenario::by_name(&name).unwrap_or_else(|| panic!("unknown scenario {name}; try --list"));
+
+    for (p, sp) in setpoints.iter().enumerate() {
+        if let Some(v) = sp {
+            scenario.setpoints_c[p] = *v;
+        }
+    }
+    if let Some(v) = value("--initial").and_then(|v| v.parse::<f64>().ok()) {
+        scenario.initial_c = v;
+    }
+    if let Some(v) = value("--duration").and_then(|v| v.parse::<f64>().ok()) {
+        scenario.duration_s = v;
+    }
+    // The cutout opens the relay for good above this, so a setpoint sitting on
+    // it turns the run into a thermostat test rather than a controller test.
+    let hottest = scenario
+        .setpoints_c
+        .iter()
+        .chain(scenario.changes.iter().flat_map(|(_, sp)| sp.iter()))
+        .copied()
+        .fold(f64::NEG_INFINITY, f64::max);
+    assert!(
+        hottest < config.max_temperature_c,
+        "setpoint {hottest:.0} C is at or above the {:.0} C over-temperature cutout; \
+         raise it with --max-temp",
+        config.max_temperature_c
+    );
 
     params.ambient_c = params.ambient_c.max(0.0);
     let strategy = config.strategy.clone();
