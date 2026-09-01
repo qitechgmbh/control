@@ -57,27 +57,15 @@ pub struct StateProperties {
 pub struct ConfigProperties {
     pub left_target_temperature: ConfigProperty<f64>,
     pub right_target_temperature: ConfigProperty<f64>,
-
     pub ambient_temperature_calibration: ConfigProperty<f64>,
-
-    /*pub default_heating_tolerance: ConfigProperty<f64>,
-    pub default_cooling_tolerance: ConfigProperty<f64>,
-    pub default_pid_kp: ConfigProperty<f64>,
-    pub default_pid_ki: ConfigProperty<f64>,
-    pub default_pid_kd: ConfigProperty<f64>,*/
-
     pub left_fan_max_revolutions: ConfigProperty<f64>,
     pub right_fan_max_revolutions: ConfigProperty<f64>,
-
     pub left_tolerance_config: ToleranceState,
     pub right_tolerance_config: ToleranceState,
-
     pub left_pid_config: PidState,
     pub right_pid_config: PidState,
-
     pub left_thermal_flow_settle_duration: ConfigProperty<f64>,
     pub right_thermal_flow_settle_duration: ConfigProperty<f64>,
-
     pub left_pump_cooldown_min_temperature: ConfigProperty<f64>,
     pub right_pump_cooldown_min_temperature: ConfigProperty<f64>,
 }
