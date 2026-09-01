@@ -26,11 +26,21 @@ use api::SocketIODispatcher;
 
 use crate::machines::ExtruderV1;
 use crate::machines::ExtruderV2;
+use crate::machines::MixerV1;
 use crate::machines::WinderV1_Regular;
 use crate::machines::aquapath::AquaPathV1;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
+    // --- init tracing subscriber ---
+    // Moved here (was only initialized in the default/Hub branch below) so that
+    // TUI and DEBUG modes also get to see build/runtime errors instead of them
+    // being silently dropped by the absence of any subscriber.
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .with_ansi(true)
+        .init();
+
     // --- bring up all ethernet interfaces for ethercat ---
     interface::bring_up_all_ethernet();
 
@@ -45,12 +55,12 @@ pub async fn main() -> anyhow::Result<()> {
             None,
         )
         .machine::<LaserV1>()
-        .machine::<WinderV1_Regular>()
         .machine::<WinderV1_7031_Spool>();*/
         .machine::<AquaPathV1>()
         .machine::<WinderV1_Regular>()
         .machine::<ExtruderV1>()
-        .machine::<ExtruderV2>();
+        .machine::<ExtruderV2>()
+        .machine::<MixerV1>();
 
     // --- determine if ethercat is enabled ---
     let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {
@@ -69,13 +79,6 @@ pub async fn main() -> anyhow::Result<()> {
 
         // default is hub
         _ => {
-            // --- init tracing subscriber ---
-            tracing_subscriber::fmt()
-                .with_target(false)
-                .with_ansi(false)
-                // .with_max_level(tracing::Level::DEBUG)
-                .init();
-
             // --- configure hub ---
             let state = SharedState::default();
             let state_legacy = LegacySharedState::new();

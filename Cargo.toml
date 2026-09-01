@@ -30,3 +30,14 @@ tokio = "1"
 tower-http = "0.6.8"
 tracing = "0.1.44"
 tracing-subscriber = "0.3"
+
+# --- local patch: try_get_subdevices_vec_sync used blocking_lock() inside the
+# Tokio runtime, which panics. Temporary local fix pending upstream - see
+# /home/khalil/qitech_lib branch fix-blocking-lock-mixer-v2. DO NOT PUSH. ---
+[patch."https://github.com/qitechgmbh/qitech_lib.git"]
+ethercat_hal = { path = "/home/khalil/qitech_lib/ethercat_hal" }
+ethercat_hal_derive = { path = "/home/khalil/qitech_lib/ethercat_hal_derive" }
+common = { path = "/home/khalil/qitech_lib/common" }
+modbus = { path = "/home/khalil/qitech_lib/modbus" }
+units = { path = "/home/khalil/qitech_lib/units" }
+xtrem = { path = "/home/khalil/qitech_lib/xtrem" }

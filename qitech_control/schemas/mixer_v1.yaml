@@ -1,0 +1,30 @@
+qms_version: 1.0
+revision: 1
+
+identification:
+  name: mixer_v1
+  vendor_id: 1
+  machine_id: 18
+
+config:
+  hopper_a:
+    target_speed: !float
+    forward: !boolean
+  hopper_b:
+    target_speed: !float
+    forward: !boolean
+
+state:
+  mixing_motor_on: !boolean
+  hopper_a_ready: !boolean
+  hopper_a_error: !boolean
+  hopper_b_ready: !boolean
+  hopper_b_error: !boolean
+
+commands:
+  mixing_motor.start: !command
+  mixing_motor.stop: !command
+  hopper_a.enable: !command
+  hopper_a.disable: !command
+  hopper_b.enable: !command
+  hopper_b.disable: !command

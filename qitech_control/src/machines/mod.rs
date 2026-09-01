@@ -4,6 +4,9 @@ pub mod aquapath;
 pub mod winder_v2;
 pub use winder_v2::WinderV1_Regular;
 
+mod mixer_v1;
+pub use mixer_v1::MixerV1;
+
 /*
 
 mod winder_v2;
