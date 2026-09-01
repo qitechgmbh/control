@@ -11,50 +11,81 @@
 
   Also reads the recorded-run format (data/heatup_2026-02-24.csv and anything
   scripts/record-extruder.mjs writes), so you can plot a real run the same way.
+
+  Any combination of measures (setpoint / sensor / steel / band / duty / power)
+  can be drawn on top of each other: colour is the zone, dash pattern is the
+  measure, and each unit gets its own y-axis so duty and °C stay readable
+  together. Drag across the chart to zoom in on a stretch of time, double-click
+  to zoom back out.
 -->
 <style>
-  :root { color-scheme: light dark; --fg: #1a1a1a; --dim: #767676; --grid: #e2e2e2; --bg: #fff; }
+  :root { color-scheme: light dark; --fg: #1a1a1a; --dim: #767676; --grid: #e2e2e2; --bg: #fff;
+          --sel: #2f7ed822; }
   @media (prefers-color-scheme: dark) {
-    :root { --fg: #e8e8e8; --dim: #9a9a9a; --grid: #333; --bg: #161616; }
+    :root { --fg: #e8e8e8; --dim: #9a9a9a; --grid: #333; --bg: #161616; --sel: #6aa9e922; }
   }
   body { margin: 0; padding: 20px; font: 13px/1.5 ui-sans-serif, system-ui, sans-serif;
          color: var(--fg); background: var(--bg); }
   h1 { font-size: 15px; font-weight: 600; margin: 0 0 12px; }
-  #bar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
-  select, input[type=file] { font: inherit; color: inherit; }
-  #legend { display: flex; gap: 14px; flex-wrap: wrap; }
-  #legend label { display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; }
-  #legend input { margin: 0; }
+  #bar { display: flex; gap: 10px 20px; align-items: baseline; flex-wrap: wrap; margin-bottom: 10px; }
+  input[type=file] { font: inherit; color: inherit; }
+  .picker { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .picker > b { font-weight: 600; color: var(--dim); font-size: 11px; text-transform: uppercase;
+                letter-spacing: .04em; }
+  .picker label { display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; }
+  .picker input { margin: 0; }
   .swatch { width: 11px; height: 11px; border-radius: 2px; }
+  .dashkey { display: block; }
   #drop { border: 1.5px dashed var(--grid); border-radius: 8px; padding: 40px; text-align: center;
           color: var(--dim); }
   #drop.over { border-color: var(--fg); color: var(--fg); }
-  #chart { width: 100%; height: auto; }
+  #chart { width: 100%; height: auto; touch-action: none; }
   .grid { stroke: var(--grid); stroke-width: 1; }
   .axis { fill: var(--dim); font-size: 11px; }
   .line { fill: none; stroke-width: 1.6; }
-  #readout { color: var(--dim); font-variant-numeric: tabular-nums; min-height: 1.5em; }
+  #readout { color: var(--dim); font-variant-numeric: tabular-nums; min-height: 3em;
+             display: flex; gap: 4px 16px; flex-wrap: wrap; align-items: baseline; }
+  #readout .t { color: var(--fg); font-weight: 600; }
+  #readout .v { white-space: nowrap; }
+  #hint { color: var(--dim); font-size: 11px; margin-top: 6px; }
 </style>
 
 <h1>Extruder heating</h1>
 
 <div id="bar">
   <input type="file" id="file" accept=".csv,text/csv" />
-  <label>show <select id="group"></select></label>
-  <span id="legend"></span>
+  <span class="picker" id="measures"></span>
+  <span class="picker" id="zones"></span>
 </div>
 <div id="readout"></div>
 <div id="drop">drop a CSV here</div>
 <svg id="chart" viewBox="0 0 900 460" hidden></svg>
+<div id="hint" hidden>drag across the chart to zoom into a time range · double-click to reset</div>
 
 <script>
   const ZONES = ["front", "middle", "back", "nozzle"];
   const COLORS = { front: "#2f7ed8", middle: "#d9534f", back: "#3f9a52", nozzle: "#b36ae2" };
   // Column prefix -> axis label. `T` covers the recorded-run format.
-  const UNITS = { sensor: "°C", steel: "°C", band: "°C", T: "°C", duty: "0-1", power_w: "W" };
-  const M = { l: 52, r: 14, t: 12, b: 34 }, W = 900, H = 460;
+  const UNITS = { setpoint: "°C", sensor: "°C", steel: "°C", band: "°C", T: "°C",
+                  duty: "0-1", power_w: "W" };
+  // Digits per unit for the hover readout and the axis ticks.
+  const DIGITS = { "°C": 1, "0-1": 3, "W": 0 };
+  // Dash per measure: the temperature the controller reads stays solid, the
+  // rest are distinguishable at a glance. Unknown columns cycle through DASHES.
+  const DASH = { sensor: "none", T: "none", setpoint: "6 4", steel: "2 3",
+                 band: "1 3", duty: "9 3 2 3", power_w: "11 4 1 4" };
+  const DASHES = ["none", "6 4", "2 3", "1 3", "9 3 2 3", "11 4 1 4", "6 2 2 2 2 2"];
+  const W = 900, H = 460, M = { l: 52, t: 20, b: 34 }, AXIS_W = 48;
 
-  let data = null, hidden = new Set();
+  let data = null;                  // { t, measures: [prefix], groups: {prefix: {zone: []}} }
+  let onMeasures = new Set(), onZones = new Set(ZONES);
+  let view = null;                  // [t0, t1] seconds, or null for the whole run
+  let drag = null;                  // { from: seconds } while selecting a zoom range
+
+  const $ = id => document.getElementById(id);
+  const unitOf = p => UNITS[p] ?? "";
+  const dashOf = p => DASH[p] ?? DASHES[data.measures.indexOf(p) % DASHES.length];
+  const fmt = (v, unit) => v.toFixed(DIGITS[unit] ?? 2);
 
   function parseCsv(text) {
     const lines = text.split("\n").map(s => s.trim()).filter(s => s && !s.startsWith("#"));
@@ -66,103 +97,223 @@
       head.forEach((h, i) => cols[h].push(+cells[i]));
     }
     // Group columns by their prefix: "sensor_front" -> sensor / front.
-    const groups = {};
+    const groups = {}, measures = [];
     for (const h of head) {
       const zone = ZONES.find(z => h.endsWith("_" + z));
       if (!zone) continue;
       const prefix = h.slice(0, -(zone.length + 1));
-      (groups[prefix] ??= {})[zone] = cols[h];
+      if (!groups[prefix]) { groups[prefix] = {}; measures.push(prefix); }
+      groups[prefix][zone] = cols[h];
     }
-    return { t: cols.t_s ?? [], groups };
+    return { t: cols.t_s ?? [], measures, groups };
+  }
+
+  /// Index of the last sample at or before `secs`.
+  function idxAt(secs) {
+    const t = data.t;
+    let lo = 0, hi = t.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (t[mid] <= secs) lo = mid; else hi = mid - 1;
+    }
+    return lo;
+  }
+
+  /// Every visible line, plus one y-axis per distinct unit.
+  function layout() {
+    const series = [];
+    for (const m of data.measures) {
+      if (!onMeasures.has(m)) continue;
+      for (const z of ZONES) {
+        if (!onZones.has(z) || !data.groups[m][z]) continue;
+        series.push({ m, z, unit: unitOf(m), values: data.groups[m][z] });
+      }
+    }
+
+    const t = data.t;
+    const t0 = view ? view[0] : (t[0] ?? 0);
+    const t1 = view ? view[1] : (t[t.length - 1] ?? 1);
+    const i0 = idxAt(t0), i1 = Math.min(t.length - 1, idxAt(t1) + 1);
+
+    const axes = [];
+    for (const s of series) {
+      let ax = axes.find(a => a.unit === s.unit);
+      if (!ax) axes.push(ax = { unit: s.unit, lo: Infinity, hi: -Infinity });
+      for (let i = i0; i <= i1; i++) {
+        const v = s.values[i];
+        if (!Number.isFinite(v)) continue;
+        if (v < ax.lo) ax.lo = v;
+        if (v > ax.hi) ax.hi = v;
+      }
+      s.axis = ax;
+    }
+    for (const ax of axes) {
+      if (!Number.isFinite(ax.lo)) { ax.lo = 0; ax.hi = 1; }
+      if (ax.unit === "0-1") { ax.lo = 0; ax.hi = 1; continue; }   // duty is absolute
+      if (ax.unit === "W") { ax.lo = 0; ax.hi = ax.hi * 1.06 || 1; continue; }
+      const pad = (ax.hi - ax.lo) * 0.06 || 1;
+      ax.lo -= pad; ax.hi += pad;
+    }
+
+    const mr = 14 + AXIS_W * Math.max(0, axes.length - 1);
+    const x = s => M.l + ((s - t0) / (t1 - t0 || 1)) * (W - M.l - mr);
+    const y = (v, ax) => H - M.b - ((v - ax.lo) / (ax.hi - ax.lo || 1)) * (H - M.t - M.b);
+    return { series, axes, t0, t1, i0, i1, mr, x, y };
   }
 
   function render() {
     if (!data) return;
-    const svg = document.getElementById("chart");
-    const prefix = document.getElementById("group").value;
-    const series = data.groups[prefix] ?? {};
-    const shown = ZONES.filter(z => series[z] && !hidden.has(z));
+    const svg = $("chart");
+    const L = layout(), t = data.t, parts = [];
+    const ROWS = 5;
 
-    const t = data.t;
-    const xMax = t[t.length - 1] || 1;
-    let lo = Infinity, hi = -Infinity;
-    for (const z of shown) for (const v of series[z]) {
-      if (Number.isFinite(v)) { if (v < lo) lo = v; if (v > hi) hi = v; }
+    // Horizontal grid: one set of rows, each axis labels them in its own unit.
+    for (let i = 0; i <= ROWS; i++) {
+      const yy = H - M.b - ((H - M.t - M.b) * i) / ROWS;
+      parts.push(`<line class="grid" x1="${M.l}" x2="${W - L.mr}" y1="${yy}" y2="${yy}"/>`);
+      L.axes.forEach((ax, k) => {
+        const v = ax.lo + ((ax.hi - ax.lo) * i) / ROWS;
+        const at = k === 0 ? M.l - 7 : W - L.mr + 7 + AXIS_W * (k - 1);
+        parts.push(`<text class="axis" x="${at}" y="${yy + 4}" text-anchor="${
+          k === 0 ? "end" : "start"}">${fmt(v, ax.unit)}</text>`);
+      });
     }
-    if (!Number.isFinite(lo)) { lo = 0; hi = 1; }
-    const pad = (hi - lo) * 0.06 || 1;
-    lo -= pad; hi += pad;
+    L.axes.forEach((ax, k) => {
+      const at = k === 0 ? M.l - 7 : W - L.mr + 7 + AXIS_W * (k - 1);
+      parts.push(`<text class="axis" x="${at}" y="${M.t - 6}" text-anchor="${
+        k === 0 ? "end" : "start"}">${ax.unit}</text>`);
+    });
 
-    const x = s => M.l + (s / xMax) * (W - M.l - M.r);
-    const y = v => H - M.b - ((v - lo) / (hi - lo)) * (H - M.t - M.b);
-
-    const parts = [];
-    for (let i = 0; i <= 5; i++) {
-      const v = lo + ((hi - lo) * i) / 5, yy = y(v);
-      parts.push(`<line class="grid" x1="${M.l}" x2="${W - M.r}" y1="${yy}" y2="${yy}"/>`);
-      parts.push(`<text class="axis" x="${M.l - 7}" y="${yy + 4}" text-anchor="end">${
-        Math.abs(hi - lo) < 3 ? v.toFixed(2) : v.toFixed(0)}</text>`);
-    }
+    // Vertical grid, labelled in minutes (seconds once zoomed in far enough).
+    const span = L.t1 - L.t0;
     for (let i = 0; i <= 6; i++) {
-      const s = (xMax * i) / 6, xx = x(s);
+      const s = L.t0 + (span * i) / 6, xx = L.x(s);
       parts.push(`<line class="grid" x1="${xx}" x2="${xx}" y1="${M.t}" y2="${H - M.b}"/>`);
-      parts.push(`<text class="axis" x="${xx}" y="${H - M.b + 17}" text-anchor="middle">${
-        (s / 60).toFixed(0)}m</text>`);
+      const label = span < 180 ? `${s.toFixed(0)}s` : `${(s / 60).toFixed(span < 900 ? 1 : 0)}m`;
+      parts.push(`<text class="axis" x="${xx}" y="${H - M.b + 17}" text-anchor="middle">${label}</text>`);
     }
-    parts.push(`<text class="axis" x="${M.l - 7}" y="${M.t + 2}" text-anchor="end">${
-      UNITS[prefix] ?? ""}</text>`);
 
     // One point per horizontal pixel is plenty; the CSV is 1 Hz over an hour.
-    const stride = Math.max(1, Math.ceil(t.length / (W - M.l - M.r)));
-    for (const z of shown) {
+    const stride = Math.max(1, Math.ceil((L.i1 - L.i0 + 1) / (W - M.l - L.mr)));
+    for (const s of L.series) {
       const d = [];
-      for (let i = 0; i < t.length; i += stride) d.push(`${x(t[i]).toFixed(1)},${y(series[z][i]).toFixed(1)}`);
-      parts.push(`<polyline class="line" stroke="${COLORS[z]}" points="${d.join(" ")}"/>`);
+      for (let i = L.i0; i <= L.i1; i += stride) {
+        d.push(`${L.x(t[i]).toFixed(1)},${L.y(s.values[i], s.axis).toFixed(1)}`);
+      }
+      parts.push(`<polyline class="line" stroke="${COLORS[s.z]}" stroke-dasharray="${
+        dashOf(s.m)}" points="${d.join(" ")}"/>`);
     }
-    parts.push(`<line id="cross" class="grid" y1="${M.t}" y2="${H - M.b}" x1="-9" x2="-9"/>`);
+
+    parts.push(`<rect id="sel" fill="var(--sel)" y="${M.t}" height="${H - M.t - M.b}" x="-9" width="0"/>`);
+    parts.push(`<line id="cross" class="grid" stroke="var(--dim)" y1="${M.t}" y2="${H - M.b}" x1="-9" x2="-9"/>`);
+    parts.push(`<g id="marks"></g>`);
     svg.innerHTML = parts.join("");
     svg.hidden = false;
-    document.getElementById("drop").hidden = true;
+    $("drop").hidden = true;
+    $("hint").hidden = false;
 
-    svg.onmousemove = e => {
+    const secsAt = e => {
       const r = svg.getBoundingClientRect();
       const sx = ((e.clientX - r.left) / r.width) * W;
-      const secs = ((sx - M.l) / (W - M.l - M.r)) * xMax;
-      let i = Math.round((secs / xMax) * (t.length - 1));
-      i = Math.min(t.length - 1, Math.max(0, i));
-      svg.querySelector("#cross").setAttribute("x1", x(t[i]));
-      svg.querySelector("#cross").setAttribute("x2", x(t[i]));
-      document.getElementById("readout").textContent =
-        `t = ${(t[i] / 60).toFixed(1)} min   ` +
-        shown.map(z => `${z} ${series[z][i].toFixed(2)}`).join("   ");
+      const s = L.t0 + ((sx - M.l) / (W - M.l - L.mr)) * span;
+      return Math.min(L.t1, Math.max(L.t0, s));
     };
+
+    svg.onmousedown = e => { drag = { from: secsAt(e) }; };
+    svg.onmouseup = e => {
+      if (!drag) return;
+      const [a, b] = [drag.from, secsAt(e)].sort((p, q) => p - q);
+      drag = null;
+      // Ignore a click or a stray twitch; a real drag is a few pixels wide.
+      if (b - a > span / (W - M.l - L.mr) * 4) { view = [a, b]; render(); }
+      else svg.querySelector("#sel").setAttribute("width", 0);
+    };
+    svg.ondblclick = () => { if (view) { view = null; render(); } };
+    svg.onmouseleave = () => {
+      drag = null;
+      svg.querySelector("#sel").setAttribute("width", 0);
+      svg.querySelector("#cross").setAttribute("x1", -9);
+      svg.querySelector("#cross").setAttribute("x2", -9);
+      svg.querySelector("#marks").innerHTML = "";
+      showReadout(null, L);
+    };
+    svg.onmousemove = e => {
+      const secs = secsAt(e);
+      if (drag) {
+        const [a, b] = [drag.from, secs].sort((p, q) => p - q);
+        const sel = svg.querySelector("#sel");
+        sel.setAttribute("x", L.x(a));
+        sel.setAttribute("width", Math.max(0, L.x(b) - L.x(a)));
+      }
+      const i = idxAt(secs);
+      const cross = svg.querySelector("#cross");
+      cross.setAttribute("x1", L.x(t[i]));
+      cross.setAttribute("x2", L.x(t[i]));
+      svg.querySelector("#marks").innerHTML = L.series.map(s =>
+        `<circle cx="${L.x(t[i]).toFixed(1)}" cy="${L.y(s.values[i], s.axis).toFixed(1)}" r="2.6"
+                 fill="${COLORS[s.z]}"/>`).join("");
+      showReadout(i, L);
+    };
+    showReadout(null, L);
+  }
+
+  /// The line under the toolbar: time, then every visible series at that instant.
+  function showReadout(i, L) {
+    const box = $("readout");
+    if (i == null) {
+      box.innerHTML = L.series.length
+        ? `<span class="t">hover the chart</span><span>${L.series.length} series</span>`
+        : `<span class="t">nothing selected</span><span>tick a measure and a zone</span>`;
+      return;
+    }
+    const t = data.t[i];
+    const head = `<span class="t">t = ${(t / 60).toFixed(2)} min (${t.toFixed(1)} s)</span>`;
+    box.innerHTML = head + L.series.map(s =>
+      `<span class="v" style="color:${COLORS[s.z]}">${s.m}·${s.z}
+       <b>${fmt(s.values[i], s.unit)}</b> ${s.unit}</span>`).join("");
+  }
+
+  function buildPickers() {
+    $("measures").innerHTML = "<b>measures</b>" + data.measures.map(m =>
+      `<label><input type="checkbox" data-m="${m}"${onMeasures.has(m) ? " checked" : ""}>
+       <svg class="dashkey" width="24" height="9" aria-hidden="true"><line x1="0" y1="4.5" x2="24" y2="4.5"
+         stroke="currentColor" stroke-width="1.8" stroke-dasharray="${dashOf(m)}"/></svg>${m}</label>`).join("");
+    $("zones").innerHTML = "<b>zones</b>" + ZONES.filter(z =>
+      data.measures.some(m => data.groups[m][z])).map(z =>
+      `<label><input type="checkbox" data-z="${z}"${onZones.has(z) ? " checked" : ""}>
+       <span class="swatch" style="background:${COLORS[z]}"></span>${z}</label>`).join("");
+
+    for (const cb of document.querySelectorAll("#measures input")) {
+      cb.onchange = () => {
+        cb.checked ? onMeasures.add(cb.dataset.m) : onMeasures.delete(cb.dataset.m);
+        render();
+      };
+    }
+    for (const cb of document.querySelectorAll("#zones input")) {
+      cb.onchange = () => {
+        cb.checked ? onZones.add(cb.dataset.z) : onZones.delete(cb.dataset.z);
+        render();
+      };
+    }
   }
 
   function load(text) {
     data = parseCsv(text);
-    const prefixes = Object.keys(data.groups);
-    const sel = document.getElementById("group");
-    sel.innerHTML = prefixes.map(p => `<option>${p}</option>`).join("");
-    // Prefer what the controller actually reacts to.
-    sel.value = prefixes.includes("sensor") ? "sensor" : prefixes[0];
-    document.getElementById("legend").innerHTML = ZONES.map(z =>
-      `<label><input type="checkbox" data-zone="${z}" checked>
-       <span class="swatch" style="background:${COLORS[z]}"></span>${z}</label>`).join("");
-    document.querySelectorAll("#legend input").forEach(cb => {
-      cb.onchange = () => {
-        cb.checked ? hidden.delete(cb.dataset.zone) : hidden.add(cb.dataset.zone);
-        render();
-      };
-    });
+    view = null;
+    // Open on what the controller reacts to plus what it commanded, so cause
+    // and effect are on screen together from the first frame.
+    onMeasures = new Set(["setpoint", "sensor", "T", "duty"].filter(m => data.groups[m]));
+    if (!onMeasures.size && data.measures.length) onMeasures.add(data.measures[0]);
+    onZones = new Set(ZONES);
+    buildPickers();
     render();
   }
 
-  document.getElementById("group").onchange = render;
-  document.getElementById("file").onchange = e => {
+  $("file").onchange = e => {
     const f = e.target.files[0];
     if (f) f.text().then(load);
   };
-  const drop = document.getElementById("drop");
+  const drop = $("drop");
   for (const ev of ["dragenter", "dragover"]) {
     document.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); });
   }
