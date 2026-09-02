@@ -275,21 +275,6 @@ impl Controller {
         self.turn_cooling_off();
         self.disallow_cooling();
     }
-    /*
-    pub fn disable_heating(&mut self) {
-        self.turn_heating_off();
-        self.disallow_heating();
-    }
-
-    pub fn enable_cooling(&mut self) {
-        self.turn_cooling_on();
-        self.allow_cooling();
-    }
-
-    pub fn enable_heating(&mut self) {
-        self.turn_heating_on();
-        self.allow_heating();
-    }*/
 
     pub fn reset_pid(&mut self) {
         self.pid.reset()
@@ -300,9 +285,7 @@ impl Controller {
             Instant::now(),
             Some(ControlResetReason::TargetTemperatureChanged),
         );
-
         self.target_temperature = temperature;
-        println!("TARGET: {:?}", self.target_temperature.get::<degree_celsius>() );
     }
 
     pub fn get_temp_in(&self) -> ThermodynamicTemperature {
