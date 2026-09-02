@@ -30,24 +30,18 @@ pub struct ExtruderThermalParams {
     // ---- band heaters ----
     /// Heat capacity of a band heater per unit of contact area, in J/(m²·K).
     ///
-    /// Deliberately *not* derived from the CAD. `Heizelement Barrel` is modelled
-    /// there as a bare Ø65→Ø71 shell, which is a placeholder for a real band with
-    /// its sheath and clamp straps. Expressing the capacity per unit contact area
-    /// makes the one number scale correctly between the 200 mm barrel bands and
-    /// the 34 mm nozzle band.
-    ///
-    /// The calibrated 8000 J/(m²·K) is ~330 J/K for a 200 mm band, i.e. roughly
-    /// 0.7 kg of steel-equivalent — the right order for a band of that size.
+    /// Per unit area rather than absolute, so one number scales correctly between
+    /// the 200 mm barrel bands and the 34 mm nozzle band. Not from the CAD, which
+    /// models the band as a bare shell without its sheath and clamp straps.
     pub band_heat_capacity_j_per_m2_k: f64,
     /// Contact coefficient between a clamped band and the barrel, in W/(m²·K).
     ///
-    /// This and [`Self::band_heat_capacity_j_per_m2_k`] are the overshoot
-    /// parameters. Their ratio `C / (h·A)` is the band's time constant, and
-    /// `P · C / (h·A)` is the energy it has stored when the relay opens — the
-    /// energy that then keeps pushing the barrel past setpoint. The calibrated
-    /// ~70 W/(m²·K) is low, which is what a clamped band on machined steel with
-    /// no heat-transfer compound actually achieves: it puts the band around
-    /// 170 K above the barrel while driven.
+    /// This and [`Self::band_heat_capacity_j_per_m2_k`] are the band-storage
+    /// half of the overshoot: their ratio `C / (h·A)` is the band's time constant
+    /// and `P · C / (h·A)` the energy still pushing the barrel when the relay
+    /// opens. The calibrated value is low, as a clamped band on machined steel
+    /// with no heat-transfer compound is — it sits ~170 K above the barrel while
+    /// driven.
     pub band_contact_h: f64,
 
     // ---- insulation sleeve ----
@@ -88,20 +82,11 @@ pub struct ExtruderThermalParams {
     // ---- sensors ----
     /// First-order lag of the RTD in its pocket, in seconds.
     ///
-    /// # This is larger than it looks like it should be
-    ///
-    /// A well-seated RTD in a steel pocket is 5–20 s. Calibration against the
-    /// real machine wants ~60 s, and that is not the optimiser misbehaving — it
-    /// is visible directly in the recording. While a zone ramps at ~0.21 K/s the
-    /// sensor trails the steel by `τ · rate`, so the controller keeps driving
-    /// after the steel has already passed setpoint; when the relay finally opens,
-    /// the reading climbs to meet the steel. That accounts for roughly a third of
-    /// the observed overshoot, with band storage supplying the rest.
-    ///
-    /// A lag this long means the probes are not tightly coupled to the bore — an
-    /// air gap, no heat-transfer compound, or a loose fit. **Worth checking on
-    /// the machine**: seating the probes properly would remove a large part of
-    /// the overshoot with no change to the control code at all.
+    /// **Much larger than a well-seated probe's 5–20 s**, and not an optimiser
+    /// artefact — it is visible directly in the recording, and it is the dominant
+    /// half of the overshoot. A lag this long means the probes are not tightly
+    /// coupled to the bore: an air gap, a loose fit, or no heat-transfer
+    /// compound. Worth fixing on the machine; see `README.md`.
     pub sensor_tau_s: f64,
     /// Heat capacity attributed to the sensing tip in J/K. Only its ratio to
     /// [`Self::sensor_tau_s`] matters; it is kept small so the sensor does not
@@ -123,10 +108,9 @@ impl Default for ExtruderThermalParams {
 impl ExtruderThermalParams {
     /// Handbook values, before the model has seen the machine.
     ///
-    /// Kept so the effect of calibration stays visible and reproducible. These
-    /// get the thermal masses and the steady-state balance about right — rise
-    /// times land within a few percent — but produce **no overshoot at all**,
-    /// because they assume a well-coupled band and a fast sensor.
+    /// Kept so the effect of calibration stays visible. These get the masses and
+    /// the steady-state balance about right, but produce **no overshoot at all**:
+    /// they assume a well-coupled band and a fast sensor.
     pub fn first_principles() -> Self {
         Self {
             ambient_c: 22.0,
@@ -158,24 +142,15 @@ impl ExtruderThermalParams {
 
     /// Parameters calibrated against `data/heatup_2026-02-24.csv`.
     ///
-    /// Regenerate with:
+    /// Closed loop against that run these give peaks within 1.5 K and rise times
+    /// within 6 % on all four zones, at an open-loop replay RMS of 5.7 K over the
+    /// hour; the tests in [`super::harness`] assert it. `sensor_tau_s` was also
+    /// confirmed by hand as an interior optimum. Regenerate with:
     ///
     /// ```text
-    /// cargo run --release -p machine_implementations \
+    /// cargo run --release -p machine_implementations --features simulation \
     ///     --example extruder_thermal_sim -- --fit --evals 4000
     /// ```
-    ///
-    /// How well this set reproduces that recording — and where it still misses —
-    /// is asserted in the tests in [`super::harness`] and summarised in the
-    /// [`super`] module docs.
-    ///
-    /// Closed loop against the reference run these give peaks within 1.5 K and
-    /// rise times within 6 % on all four zones, at an open-loop replay RMS of
-    /// 5.7 K over the hour.
-    ///
-    /// `sensor_tau_s` is the optimiser's value but was also confirmed by hand as
-    /// an interior optimum: sweeping it, the closed-loop peaks are closest at
-    /// 150 s and get worse in both directions.
     pub fn calibrated() -> Self {
         Self {
             band_contact_h: 98.0,
@@ -213,136 +188,111 @@ impl ExtruderThermalParams {
         "gearbox_sink_g",
     ];
 
-    /// The free coefficients, in the order [`Self::apply_vector`] expects.
-    ///
-    /// Only the parameters that calibration is allowed to move are included —
-    /// masses and geometry stay fixed at their CAD values, and `cp_steel` /
-    /// `k_steel` are handbook values that should not absorb modelling error.
+    /// The free coefficients, in [`Self::COEFFICIENTS`] order.
     pub fn to_vector(&self) -> Vec<f64> {
-        vec![
-            self.band_contact_h,
-            self.band_heat_capacity_j_per_m2_k,
-            self.k_insulation,
-            self.bare_convection_coeff,
-            self.bare_emissivity,
-            self.flange_contact_h,
-            self.gearbox_sink_g,
-            self.bore_gap_h,
-            self.sensor_tau_s,
-        ]
+        // `get` needs `&mut`, and this is cheap; the clone keeps the signature
+        // taking `&self`, which every caller wants.
+        let mut copy = self.clone();
+        Self::COEFFICIENTS
+            .iter()
+            .map(|c| *c.get(&mut copy))
+            .collect()
     }
 
-    /// Physical bounds for each entry of [`Self::to_vector`], as
-    /// `(name, min, max)`.
+    /// Inverse of [`Self::to_vector`], clamped to each coefficient's bounds.
+    pub fn apply_vector(&mut self, v: &[f64]) {
+        debug_assert_eq!(v.len(), Self::COEFFICIENTS.len());
+        for (coeff, value) in Self::COEFFICIENTS.iter().zip(v) {
+            *coeff.get(self) = value.clamp(coeff.min, coeff.max);
+        }
+    }
+
+    /// The free coefficients: name, physical bounds, and how to reach the field.
     ///
-    /// These are what the hardware and the literature allow, not what makes the
-    /// optimiser's life easy. [`Self::pinned_parameters`] reports anything
-    /// sitting on a bound rather than letting it pass silently.
+    /// One table rather than four parallel lists, so [`Self::to_vector`],
+    /// [`Self::apply_vector`], [`Self::set_by_name`] and
+    /// [`Self::pinned_parameters`] cannot drift out of order — adding a
+    /// coefficient is one line.
     ///
-    /// # Reading a pinned fit
+    /// Only what calibration is allowed to move is here: masses and geometry stay
+    /// at their CAD values, and `cp_steel` / `k_steel` are handbook values that
+    /// should not absorb modelling error.
     ///
-    /// A pinned coefficient means one of two things, and they need different
-    /// responses:
-    ///
-    /// - The **model** is missing a mechanism, and the optimiser is pushing a
-    ///   coefficient somewhere unphysical to compensate. Widening the bound hides
-    ///   the problem; fix the model.
-    /// - The coefficient is **not identifiable** from the recording you fitted
-    ///   against. This is the case today: one run with all four zones heating
-    ///   together cannot separate nine coefficients, because several of them
-    ///   trade off almost exactly — every distributed loss term against
-    ///   `gearbox_sink_g`, and `band_heat_capacity_j_per_m2_k` against
-    ///   `sensor_tau_s`. The optimiser lands on an arbitrary point along a flat
-    ///   valley. The model still *predicts* well; the individual numbers are just
-    ///   not separately trustworthy.
-    ///
-    /// The cure for the second case is more experiments, not more optimiser
-    /// budget: heat one zone at a time from cold and let it decay, which
-    /// separates that zone's losses from its neighbours' coupling. See the
-    /// `single-*` scenarios in [`super::scenario`].
-    pub const BOUNDS: [(&'static str, f64, f64); 9] = [
+    /// The bounds are what the hardware and the literature allow, not what makes
+    /// the optimiser's life easy. A coefficient sitting on one means either the
+    /// model is missing a mechanism — widening the bound hides that, fix the model
+    /// — or the coefficient is not identifiable from the recording, which is the
+    /// case for the three in [`Self::EXPECTED_PINNED`]. The cure for the second is
+    /// more experiments, not more optimiser budget: the `single-*` scenarios in
+    /// [`super::scenario`] heat one zone at a time and separate its losses from
+    /// its neighbours' coupling.
+    pub const COEFFICIENTS: [Coefficient; 9] = [
         // A clamped band on machined steel with no heat-transfer compound is
         // genuinely poor; the upper end is a well-seated one.
-        ("band_contact_h", 40.0, 1200.0),
+        Coefficient::new("band_contact_h", 40.0, 1200.0, |p| &mut p.band_contact_h),
         // ~0.1 kg to ~2.5 kg of steel-equivalent per 200 mm band.
-        ("band_heat_capacity_j_per_m2_k", 1_000.0, 30_000.0),
+        Coefficient::new("band_heat_capacity_j_per_m2_k", 1_000.0, 30_000.0, |p| {
+            &mut p.band_heat_capacity_j_per_m2_k
+        }),
         // Low-density ceramic fibre blanket over its working range.
-        ("k_insulation", 0.03, 0.15),
+        Coefficient::new("k_insulation", 0.03, 0.15, |p| &mut p.k_insulation),
         // Free convection off a horizontal Ø65-Ø111 cylinder gives ~2.6 in open
         // still air. The barrel is enclosed in the Oberbau housing, where the air
         // is stagnant and pre-warmed, so the effective value runs lower.
-        ("bare_convection_coeff", 1.0, 6.0),
+        Coefficient::new("bare_convection_coeff", 1.0, 6.0, |p| {
+            &mut p.bare_convection_coeff
+        }),
         // Machined steel is ~0.15; oxidised is ~0.8.
-        ("bare_emissivity", 0.10, 0.9),
+        Coefficient::new("bare_emissivity", 0.10, 0.9, |p| &mut p.bare_emissivity),
         // Bolted steel-to-steel flange, from a poor contact to near-solid.
-        ("flange_contact_h", 200.0, 30_000.0),
+        Coefficient::new("flange_contact_h", 200.0, 30_000.0, |p| {
+            &mut p.flange_contact_h
+        }),
         // The gearbox and bearing housing are a large unmodelled sink.
-        ("gearbox_sink_g", 0.0, 40.0),
+        Coefficient::new("gearbox_sink_g", 0.0, 40.0, |p| &mut p.gearbox_sink_g),
         // From a loose clearance fit to a close one, plus radiation.
-        ("bore_gap_h", 5.0, 600.0),
+        Coefficient::new("bore_gap_h", 5.0, 600.0, |p| &mut p.bore_gap_h),
         // From a well-seated probe to one sitting in an air gap. See
         // [`Self::sensor_tau_s`] for why the upper end is this high.
-        ("sensor_tau_s", 2.0, 200.0),
+        Coefficient::new("sensor_tau_s", 2.0, 200.0, |p| &mut p.sensor_tau_s),
     ];
 
-    /// Inverse of [`Self::to_vector`], clamped to [`Self::BOUNDS`].
-    pub fn apply_vector(&mut self, v: &[f64]) {
-        debug_assert_eq!(v.len(), Self::BOUNDS.len());
-        let c = |i: usize| v[i].clamp(Self::BOUNDS[i].1, Self::BOUNDS[i].2);
-        self.band_contact_h = c(0);
-        self.band_heat_capacity_j_per_m2_k = c(1);
-        self.k_insulation = c(2);
-        self.bare_convection_coeff = c(3);
-        self.bare_emissivity = c(4);
-        self.flange_contact_h = c(5);
-        self.gearbox_sink_g = c(6);
-        self.bore_gap_h = c(7);
-        self.sensor_tau_s = c(8);
-    }
-
     /// Which fitted coefficients are sitting on a bound, to within a factor of
-    /// `1 + tol`.
+    /// `1 + tol`. Used to flag a degenerate fit rather than report it a success.
     ///
-    /// The test is a *ratio*, not a distance, because these coefficients span
-    /// orders of magnitude and [`super::fit`] optimises them in log space — being
-    /// 5 units from a bound means something very different for `k_insulation`
-    /// (range 0.03–0.15) than for `flange_contact_h` (200–30000).
-    ///
-    /// Used to flag a degenerate fit rather than reporting it as a success.
+    /// A *ratio*, not a distance: these coefficients span orders of magnitude and
+    /// [`super::fit`] optimises them in log space.
     pub fn pinned_parameters(&self, tol: f64) -> Vec<&'static str> {
         self.to_vector()
             .iter()
-            .zip(Self::BOUNDS)
-            .filter(|(v, (_, lo, hi))| {
-                let (v, lo, hi) = (**v, *lo, *hi);
-                let at_low = if lo <= 0.0 {
+            .zip(Self::COEFFICIENTS)
+            .filter(|(v, c)| {
+                let v = **v;
+                let at_low = if c.min <= 0.0 {
                     // A zero lower bound has no meaningful ratio; only "exactly
                     // off" counts as pinned there.
                     v <= 0.0
                 } else {
-                    v / lo <= 1.0 + tol
+                    v / c.min <= 1.0 + tol
                 };
-                at_low || (v > 0.0 && hi / v <= 1.0 + tol)
+                at_low || (v > 0.0 && c.max / v <= 1.0 + tol)
             })
-            .map(|(_, (name, _, _))| name)
+            .map(|(_, c)| c.name)
             .collect()
     }
 
-    /// Set one coefficient by the name used in [`Self::BOUNDS`].
+    /// Set one coefficient by name, unclamped. Returns `false` for an unknown
+    /// name.
     ///
-    /// Returns `false` for an unknown name.
+    /// Covers the free coefficients in [`Self::COEFFICIENTS`] plus the fixed
+    /// values a caller may still want to override for an experiment.
     pub fn set_by_name(&mut self, name: &str, value: f64) -> bool {
+        if let Some(c) = Self::COEFFICIENTS.iter().find(|c| c.name == name) {
+            *c.get(self) = value;
+            return true;
+        }
         match name {
-            "band_contact_h" => self.band_contact_h = value,
-            "band_heat_capacity_j_per_m2_k" => self.band_heat_capacity_j_per_m2_k = value,
-            "k_insulation" => self.k_insulation = value,
             "insulation_emissivity" => self.insulation_emissivity = value,
-            "bare_convection_coeff" => self.bare_convection_coeff = value,
-            "bare_emissivity" => self.bare_emissivity = value,
-            "flange_contact_h" => self.flange_contact_h = value,
-            "gearbox_sink_g" => self.gearbox_sink_g = value,
-            "bore_gap_h" => self.bore_gap_h = value,
-            "sensor_tau_s" => self.sensor_tau_s = value,
             "k_steel" => self.k_steel = value,
             "cp_steel" => self.cp_steel = value,
             "ambient_c" => self.ambient_c = value,
@@ -350,6 +300,42 @@ impl ExtruderThermalParams {
             _ => return false,
         }
         true
+    }
+}
+
+/// One calibratable coefficient: what it is called, what values are physical,
+/// and how to reach it on [`ExtruderThermalParams`].
+#[derive(Clone, Copy)]
+pub struct Coefficient {
+    pub name: &'static str,
+    pub min: f64,
+    pub max: f64,
+    field: fn(&mut ExtruderThermalParams) -> &mut f64,
+}
+
+impl Coefficient {
+    const fn new(
+        name: &'static str,
+        min: f64,
+        max: f64,
+        field: fn(&mut ExtruderThermalParams) -> &mut f64,
+    ) -> Self {
+        Self {
+            name,
+            min,
+            max,
+            field,
+        }
+    }
+
+    pub fn get<'a>(&self, params: &'a mut ExtruderThermalParams) -> &'a mut f64 {
+        (self.field)(params)
+    }
+}
+
+impl std::fmt::Debug for Coefficient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} in {}..={}", self.name, self.min, self.max)
     }
 }
 

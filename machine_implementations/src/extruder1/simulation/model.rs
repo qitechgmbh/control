@@ -27,6 +27,8 @@
 //! bolted flange contact, matching the physical split the CAD shows at
 //! `x = -20 mm`.
 
+use std::f64::consts::{FRAC_PI_4, PI};
+
 use control_core::thermal::{AmbientLoss, Node, NodeId, ThermalNetwork};
 
 use super::geometry::{
@@ -75,9 +77,28 @@ impl ExtruderThermalModel {
     /// Build the network and set every node to `ambient_c`.
     pub fn new(params: ExtruderThermalParams) -> Self {
         let mut net = ThermalNetwork::new(params.ambient_c);
+
+        let cells = Self::build_steel(&mut net, &params);
+        let screw = Self::build_screw(&mut net, &params, &cells);
+        let bands = Self::build_bands(&mut net, &params, &cells);
+        Self::build_ambient_losses(&mut net, &params, &cells);
+        let (sensors, sensor_cells) = Self::build_sensors(&mut net, &params, &cells);
+
+        Self {
+            net,
+            params,
+            cells,
+            screw,
+            bands,
+            sensors,
+            sensor_cells,
+        }
+    }
+
+    /// The barrel steel: two chains of axial cells, split at the flange joint.
+    fn build_steel(net: &mut ThermalNetwork, params: &ExtruderThermalParams) -> Vec<Cell> {
         let rho_cp = STEEL_DENSITY_KG_M3 * params.cp_steel;
 
-        // ---- steel cells: two chains, split at the flange joint ----
         let mut cells: Vec<Cell> = Vec::new();
         let mut chain_bounds: Vec<(usize, usize)> = Vec::new();
 
@@ -132,10 +153,18 @@ impl ExtruderThermalModel {
             params.flange_contact_h * joint_area_m2,
         );
 
+        cells
+    }
+
+    fn build_screw(
+        net: &mut ThermalNetwork,
+        params: &ExtruderThermalParams,
+        cells: &[Cell],
+    ) -> Vec<Option<NodeId>> {
         // ---- screw ----
         let mut screw: Vec<Option<NodeId>> = vec![None; cells.len()];
         if params.include_screw {
-            let screw_area_m2 = std::f64::consts::FRAC_PI_4 * (SCREW_D_MM * 1e-3).powi(2);
+            let screw_area_m2 = FRAC_PI_4 * (SCREW_D_MM * 1e-3).powi(2);
             let screw_rho_cp = STEEL_DENSITY_KG_M3 * params.cp_steel;
             for (i, c) in cells.iter().enumerate() {
                 let covered = geometry::overlap(c.x0_mm, c.x1_mm, SCREW_X0_MM, X_MAX_MM);
@@ -145,7 +174,7 @@ impl ExtruderThermalModel {
                 let capacity = screw_area_m2 * (covered * 1e-3) * screw_rho_cp;
                 let id = net.add_node(Node::new(format!("screw[{i}]"), capacity, params.ambient_c));
                 // Across the bore gap into the surrounding steel.
-                let gap_area = std::f64::consts::PI * (BORE_D_MM * 1e-3) * (covered * 1e-3);
+                let gap_area = PI * (BORE_D_MM * 1e-3) * (covered * 1e-3);
                 net.connect(c.id, id, params.bore_gap_h * gap_area);
                 screw[i] = Some(id);
             }
@@ -158,6 +187,14 @@ impl ExtruderThermalModel {
             }
         }
 
+        screw
+    }
+
+    fn build_bands(
+        net: &mut ThermalNetwork,
+        params: &ExtruderThermalParams,
+        cells: &[Cell],
+    ) -> [NodeId; 4] {
         // ---- band heaters ----
         // One node per band, separate from the steel it heats. That separation is
         // what produces overshoot: while driven, the band sits ~170 K above the
@@ -174,12 +211,12 @@ impl ExtruderThermalModel {
 
             // Contact with every cell the band overlaps, in proportion to the
             // overlap length.
-            for c in &cells {
+            for c in cells {
                 let covered = geometry::overlap(c.x0_mm, c.x1_mm, band.x0_mm, band.x1_mm);
                 if covered <= 0.0 {
                     continue;
                 }
-                let area = std::f64::consts::PI * (BAND_INNER_D_MM * 1e-3) * (covered * 1e-3);
+                let area = PI * (BAND_INNER_D_MM * 1e-3) * (covered * 1e-3);
                 net.connect(c.id, id, params.band_contact_h * area);
             }
 
@@ -204,7 +241,7 @@ impl ExtruderThermalModel {
                 net.add_loss(
                     id,
                     AmbientLoss::Bare {
-                        area_m2: std::f64::consts::PI * (BAND_OUTER_D_MM * 1e-3) * (bare * 1e-3),
+                        area_m2: PI * (BAND_OUTER_D_MM * 1e-3) * (bare * 1e-3),
                         convection_coeff: params.bare_convection_coeff,
                         emissivity: params.bare_emissivity,
                     },
@@ -212,8 +249,16 @@ impl ExtruderThermalModel {
             }
         }
 
+        bands
+    }
+
+    fn build_ambient_losses(
+        net: &mut ThermalNetwork,
+        params: &ExtruderThermalParams,
+        cells: &[Cell],
+    ) {
         // ---- ambient loss from the steel that no band covers ----
-        for c in &cells {
+        for c in cells {
             let banded: f64 = Zone::ALL
                 .iter()
                 .map(|z| {
@@ -229,7 +274,7 @@ impl ExtruderThermalModel {
             net.add_loss(
                 c.id,
                 AmbientLoss::Bare {
-                    area_m2: std::f64::consts::PI * (d * 1e-3) * (exposed * 1e-3),
+                    area_m2: PI * (d * 1e-3) * (exposed * 1e-3),
                     convection_coeff: params.bare_convection_coeff,
                     emissivity: params.bare_emissivity,
                 },
@@ -251,7 +296,13 @@ impl ExtruderThermalModel {
             let sink = net.add_node(Node::new("gearbox_sink", 1e9, params.ambient_c));
             net.connect(cells[last].id, sink, params.gearbox_sink_g);
         }
+    }
 
+    fn build_sensors(
+        net: &mut ThermalNetwork,
+        params: &ExtruderThermalParams,
+        cells: &[Cell],
+    ) -> ([NodeId; 4], [usize; 4]) {
         // ---- sensors ----
         // One RTD per zone, in a pocket in the barrel wall under the band centre.
         let mut sensors = [NodeId(0); 4];
@@ -288,15 +339,7 @@ impl ExtruderThermalModel {
             sensor_cells[zone.port()] = idx;
         }
 
-        Self {
-            net,
-            params,
-            cells,
-            screw,
-            bands,
-            sensors,
-            sensor_cells,
-        }
+        (sensors, sensor_cells)
     }
 
     pub const fn params(&self) -> &ExtruderThermalParams {
@@ -458,7 +501,7 @@ mod tests {
         let mut m = model();
         m.set_uniform_temperature(22.0);
         for zone in [Zone::Front, Zone::Middle, Zone::Back] {
-            m.set_band_power(zone, zone.band().rated_w);
+            m.set_band_power(zone, zone.rated_w());
         }
         // Skip the first 150 s so the band and sensor have caught up, then
         // measure over the next 150 s, matching how the figure was read off the

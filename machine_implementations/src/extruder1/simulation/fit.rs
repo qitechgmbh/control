@@ -16,9 +16,10 @@
 //! coefficients that differ by four orders of magnitude (`0.07` for insulation
 //! conductivity, `1500` for the flange contact) get comparable step sizes.
 
-use super::geometry::Zone;
 use super::harness::{SimConfig, ThermalSim};
+use super::optimize;
 use super::params::ExtruderThermalParams;
+use crate::extruder1::zone::Zone;
 
 /// The reference heat-up shipped in `data/heatup_2026-02-24.csv`.
 const REFERENCE_CSV: &str = include_str!("data/heatup_2026-02-24.csv");
@@ -250,10 +251,11 @@ pub struct FitOutcome {
 /// `start`.
 pub fn fit(run: &RecordedRun, start: &ExtruderThermalParams, max_evaluations: usize) -> FitOutcome {
     let base = start.to_vector();
-    let n = base.len();
-    let mut evaluations = 0usize;
 
-    // Optimise log-multipliers so every coefficient gets a comparable step.
+    // Search log-multipliers so every coefficient gets a comparable step,
+    // whatever its magnitude. The default `initial_step` of 0.6 is then a factor
+    // of ~1.8 per axis — deliberately coarse, because a starting guess from first
+    // principles can be an order of magnitude off.
     let to_params = |x: &[f64]| {
         let mut p = start.clone();
         let v: Vec<f64> = base.iter().zip(x).map(|(b, xi)| b * xi.exp()).collect();
@@ -261,136 +263,21 @@ pub fn fit(run: &RecordedRun, start: &ExtruderThermalParams, max_evaluations: us
         p
     };
 
-    let objective = |x: &[f64], evaluations: &mut usize| {
-        *evaluations += 1;
-        residual(&to_params(x), run).overall_k
-    };
+    let outcome = optimize::nelder_mead(
+        &vec![0.0; base.len()],
+        |x| residual(&to_params(x), run).overall_k,
+        optimize::Options {
+            max_evaluations,
+            ..optimize::Options::default()
+        },
+    );
 
-    // A simplex around `centre`, one step per axis. The step is in log space, so
-    // 0.6 is a factor of ~1.8 on each coefficient — deliberately coarse, because
-    // the starting guess can be an order of magnitude off.
-    let build_simplex = |centre: &[f64], step: f64| {
-        let mut s = Vec::with_capacity(n + 1);
-        s.push(centre.to_vec());
-        for i in 0..n {
-            let mut v = centre.to_vec();
-            v[i] += step;
-            s.push(v);
-        }
-        s
-    };
-
-    let mut step = 0.6;
-    let mut simplex = build_simplex(&vec![0.0; n], step);
-    let mut values: Vec<f64> = simplex
-        .iter()
-        .map(|s| objective(s, &mut evaluations))
-        .collect();
-    let mut best_ever = simplex[0].clone();
-    let mut best_ever_value = f64::INFINITY;
-
-    let (alpha, gamma, rho, sigma) = (1.0_f64, 2.0_f64, 0.5_f64, 0.5_f64);
-
-    while evaluations < max_evaluations {
-        // Order by objective value.
-        let mut order: Vec<usize> = (0..simplex.len()).collect();
-        order.sort_by(|&a, &b| values[a].total_cmp(&values[b]));
-        simplex = order.iter().map(|&i| simplex[i].clone()).collect();
-        values = order.iter().map(|&i| values[i]).collect();
-
-        if values[0] < best_ever_value {
-            best_ever_value = values[0];
-            best_ever.clone_from(&simplex[0]);
-        }
-
-        // When the simplex collapses, restart it around the best point with a
-        // smaller step instead of stopping. A single Nelder-Mead descent in nine
-        // correlated dimensions reliably parks in a corner; restarting is what
-        // makes the difference between a degenerate answer and a usable one.
-        if (values[values.len() - 1] - values[0]).abs() < 1e-3 * values[0].max(1e-6) {
-            if step < 0.05 {
-                break;
-            }
-            step *= 0.4;
-            simplex = build_simplex(&best_ever.clone(), step);
-            values = simplex
-                .iter()
-                .map(|s| objective(s, &mut evaluations))
-                .collect();
-            continue;
-        }
-
-        // Centroid of everything but the worst point.
-        let worst = simplex.len() - 1;
-        let mut centroid = vec![0.0; n];
-        for s in &simplex[..worst] {
-            for (c, v) in centroid.iter_mut().zip(s) {
-                *c += v / worst as f64;
-            }
-        }
-
-        let reflect: Vec<f64> = centroid
-            .iter()
-            .zip(&simplex[worst])
-            .map(|(c, w)| alpha.mul_add(c - w, *c))
-            .collect();
-        let f_reflect = objective(&reflect, &mut evaluations);
-
-        if f_reflect < values[0] {
-            let expand: Vec<f64> = centroid
-                .iter()
-                .zip(&reflect)
-                .map(|(c, r)| gamma.mul_add(r - c, *c))
-                .collect();
-            let f_expand = objective(&expand, &mut evaluations);
-            if f_expand < f_reflect {
-                simplex[worst] = expand;
-                values[worst] = f_expand;
-            } else {
-                simplex[worst] = reflect;
-                values[worst] = f_reflect;
-            }
-        } else if f_reflect < values[worst - 1] {
-            simplex[worst] = reflect;
-            values[worst] = f_reflect;
-        } else {
-            let contract: Vec<f64> = centroid
-                .iter()
-                .zip(&simplex[worst])
-                .map(|(c, w)| rho.mul_add(w - c, *c))
-                .collect();
-            let f_contract = objective(&contract, &mut evaluations);
-            if f_contract < values[worst] {
-                simplex[worst] = contract;
-                values[worst] = f_contract;
-            } else {
-                // Shrink towards the best vertex.
-                let best = simplex[0].clone();
-                for i in 1..simplex.len() {
-                    simplex[i] = best
-                        .iter()
-                        .zip(&simplex[i])
-                        .map(|(b, s)| sigma.mul_add(s - b, *b))
-                        .collect();
-                    values[i] = objective(&simplex[i], &mut evaluations);
-                }
-            }
-        }
-    }
-
-    let best = simplex
-        .iter()
-        .zip(&values)
-        .min_by(|a, b| a.1.total_cmp(b.1))
-        .filter(|(_, v)| **v <= best_ever_value)
-        .map_or(best_ever, |(s, _)| s.clone());
-
-    let params = to_params(&best);
+    let params = to_params(&outcome.point);
     FitOutcome {
         residual: residual(&params, run),
         starting_residual: residual(start, run),
         params,
-        evaluations,
+        evaluations: outcome.evaluations,
     }
 }
 

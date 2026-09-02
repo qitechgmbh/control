@@ -1,38 +1,23 @@
 //! Closed-loop harness: the real controller code driving the simulated plant.
 //!
-//! # What is real here
+//! Everything on the control side is real. The harness constructs the production
+//! [`TemperatureController`]s, a real Beckhoff [`EL3204`] and [`EL2004`], and
+//! calls [`TemperatureController::update`] exactly as [`crate::extruder1::act`]
+//! does. Readings are pushed in as **raw PDO bytes**, so `RtdInput::read`'s
+//! `i16 / 10.0` decode — the source of the 0.1 °C quantisation — runs for real.
 //!
-//! Everything on the control side. The harness constructs the production
-//! [`TemperatureController`]s, a real Beckhoff [`EL3204`] and a real [`EL2004`],
-//! and calls [`TemperatureController::update`] exactly as
-//! [`crate::extruder1::act`] does. The PID, the `clamp(0.0, max_clamp)`, the
-//! 500 ms slow-PWM window and the 0.1 °C sensor quantisation are the shipping
-//! implementations, not reimplementations.
-//!
-//! Sensor readings are pushed in as **raw PDO bytes** through
-//! [`EthercatDevice::input`], so `RtdInput::read`'s `i16 / 10.0` decode — the
-//! actual source of the 0.1 °C quantisation — runs for real.
-//!
-//! # Three clocks
-//!
-//! The real machine runs these at genuinely different rates, and the difference
-//! is the point:
-//!
-//! | rate | what | why it matters |
-//! |---|---|---|
-//! | [`DT_CTRL_S`] | `TemperatureController::update` | the machine loop is a busy loop with a 100 µs sleep, so the PID runs thousands of times per PWM window |
-//! | [`SENSOR_PERIOD_S`] | EL3204 conversion | the reading is *held* between conversions, then jumps by a whole quantisation step |
-//! | [`DT_PLANT_S`] | thermal integration | fast enough to resolve the PWM window, far inside the network's stability limit |
-//!
-//! A model that ticks the PID once per plant step would completely miss the
-//! derivative-term behaviour, because `ed = (ep - ep_prev)/dt` divides a
-//! quantised, held signal by a very small `dt`.
+//! Three clocks run at genuinely different rates, and that difference is the
+//! point: [`DT_CTRL_S`] for the controller (thousands of ticks per PWM window),
+//! [`SENSOR_PERIOD_S`] for the EL3204 conversion (the reading is *held* between
+//! conversions, then jumps a whole quantisation step), and [`DT_PLANT_S`] for
+//! the thermal integration. A model ticking the PID once per plant step would
+//! miss the derivative behaviour entirely.
 
 use std::time::{Duration, Instant};
 
 use bitvec::prelude::*;
 use control_core::controllers::heating::{
-    CascadeController, CascadeParams, HeatingStrategy, ObserverPi, ObserverPiParams, PidBaseline,
+    HeatingStrategy, ObserverPi, ObserverPiParams, PidBaseline,
 };
 use control_core::controllers::pid_autotuner::{AutoTuneResult, PidAutoTuner};
 use qitech_lib::ethercat_hal::devices::beckhoff_modules::{el2004::EL2004, el3204::EL3204};
@@ -40,12 +25,13 @@ use qitech_lib::ethercat_hal::devices::{EthercatDevice, NewEthercatDevice};
 use qitech_lib::ethercat_hal::io::temperature_input::TemperatureInputDevice;
 use qitech_lib::units::{ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
 
-use super::geometry::Zone;
 use super::model::ExtruderThermalModel;
 use super::params::ExtruderThermalParams;
 use super::scenario::Scenario;
 use crate::extruder1::Heating;
+use crate::extruder1::heating_params::DEFAULT_MAX_CLAMP;
 use crate::extruder1::temperature_controller::TemperatureController;
+use crate::extruder1::zone::Zone;
 
 /// Thermal integration step in seconds.
 pub const DT_PLANT_S: f64 = 0.01;
@@ -108,8 +94,6 @@ pub enum StrategyConfig {
     Pid([ZoneTuning; 4]),
     /// PI on an observed metal temperature, over a steady-state feedforward.
     ObserverPi([ObserverPiParams; 4]),
-    /// Cascade: outer loop sets a band temperature, inner loop delivers it.
-    Cascade([CascadeParams; 4]),
 }
 
 impl StrategyConfig {
@@ -118,7 +102,6 @@ impl StrategyConfig {
         match self {
             Self::Pid(_) => "pid",
             Self::ObserverPi(_) => "observer-pi",
-            Self::Cascade(_) => "cascade",
         }
     }
 
@@ -132,40 +115,24 @@ impl StrategyConfig {
                 DEFAULT_MAX_CLAMP[p],
             )),
             Self::ObserverPi(t) => Box::new(ObserverPi::new(t[p])),
-            Self::Cascade(t) => Box::new(CascadeController::new(t[p])),
         }
     }
 }
 
-/// Production clamp per zone: 1.0 for the barrel zones, 0.95 for the nozzle.
-pub const DEFAULT_MAX_CLAMP: [f64; 4] = [1.0, 1.0, 1.0, 0.95];
-
 /// Plants that all reproduce the recorded heat-up, spread along the axis the
 /// calibration cannot resolve.
 ///
-/// `sensor_tau_s` and `band_heat_capacity_j_per_m2_k` are documented in
-/// [`ExtruderThermalParams::EXPECTED_PINNED`] as trading off almost exactly:
-/// both delay the reading relative to the steel, and one recording with all
-/// four zones heating together cannot say which is responsible. The optimiser
-/// stopped at `tau = 150 s` with a nearly weightless band, but
-/// `tau = 20 s` with a heavy band fits the same data — and is a *physically
-/// very different machine*, where the overshoot is stored energy rather than
-/// measurement lag.
-///
-/// The compensation keeps the total lag roughly constant. The band's own time
-/// constant is `C / (h * A)`, which for a capacity expressed per unit contact
-/// area is just `band_heat_capacity_j_per_m2_k / band_contact_h` — independent
-/// of band size, which is why that unit was chosen. So each variant is built by
-/// moving lag between the two mechanisms:
-///
-/// ```text
-/// tau_sensor + band_heat_capacity / band_contact_h  ~=  160 s
-/// ```
+/// `sensor_tau_s` and `band_heat_capacity_j_per_m2_k` trade off almost exactly —
+/// both delay the reading relative to the steel — and one recording cannot say
+/// which is responsible. The optimiser stopped at `tau = 150 s` with a nearly
+/// weightless band, but `tau = 20 s` with a heavy band fits the same data and is
+/// a *physically very different machine*, where the overshoot is stored energy
+/// rather than measurement lag. Each variant moves lag between the two while
+/// keeping `tau_sensor + band_heat_capacity / band_contact_h  ~= 160 s`.
 ///
 /// A control law that is only good at one end of this range is tuned to an
-/// artefact of the calibration, not to the machine. `family_members_all_match_the_recording`
-/// is what keeps this honest: a variant that stops reproducing the recording is
-/// not a legitimate reading of the data and does not belong here.
+/// artefact of the calibration, not to the machine.
+/// `family_members_all_match_the_recording` keeps the set honest.
 pub fn plant_family() -> Vec<ExtruderThermalParams> {
     const TOTAL_LAG_S: f64 = 160.0;
     [20.0, 60.0, 100.0, 150.0]
@@ -217,12 +184,8 @@ impl Default for SimConfig {
 #[derive(Debug, Clone)]
 pub struct Sample {
     pub t_s: f64,
-    /// The setpoint in force at this instant, in °C.
-    ///
-    /// Per sample rather than per run, because a scenario may change setpoints
-    /// part-way through — and reading a step-up trace against the *final*
-    /// setpoint makes the whole approach look like a huge undershoot.
-    /// `NaN` for open-loop runs, which have no setpoint.
+    /// The setpoint in force at this instant, in °C. Per sample because a
+    /// scenario may change setpoints part-way through. `NaN` for open loop.
     pub setpoint_c: [f64; 4],
     /// What the controller saw, after EL3204 quantisation.
     pub sensor_c: [f64; 4],
@@ -232,8 +195,6 @@ pub struct Sample {
     pub band_c: [f64; 4],
     /// PID duty demand, 0..1 — what the machine reports as "power".
     pub duty: [f64; 4],
-    /// Fraction of the last plant step the relay was actually closed, 0..1.
-    pub on_fraction: [f64; 4],
     /// Electrical power actually delivered over the last plant step, in W.
     pub power_w: [f64; 4],
 }
@@ -244,20 +205,15 @@ pub struct Trace {
     pub samples: Vec<Sample>,
     /// Setpoints used, indexed by [`Zone::port`].
     pub setpoints_c: [f64; 4],
-    /// Relay transitions counted at controller-tick resolution, indexed by
-    /// [`Zone::port`].
+    /// Relay transitions at controller-tick resolution, indexed by [`Zone::port`].
     ///
-    /// Counted during the run rather than derived from [`Self::samples`]: the
-    /// trace is recorded at 1 Hz while the PWM window is 500 ms, so a sampled
-    /// count aliases badly — at exactly two windows per sample it collapses to
-    /// almost nothing.
+    /// Counted during the run, not derived from [`Self::samples`]: at 1 Hz
+    /// against a 500 ms window a sampled count aliases to almost nothing.
     pub relay_switches: [usize; 4],
     /// Electrical energy delivered per zone in J, indexed by [`Zone::port`].
     ///
     /// Accumulated every plant step, for the same aliasing reason as
-    /// [`Self::relay_switches`]: integrating the 1 Hz `power_w` column instead
-    /// gives nonsense — a zone that is genuinely heating can integrate to zero
-    /// if its PWM phase happens to line up with the sample instants.
+    /// [`Self::relay_switches`].
     pub energy_j: [f64; 4],
 }
 
@@ -314,40 +270,34 @@ impl Trace {
 
     /// CSV with a header row, one line per sample.
     ///
-    /// Columns are `t_s`, then one group of four per quantity in the order
-    /// `front, middle, back, nozzle`:
-    ///
-    /// | group | what |
-    /// |---|---|
-    /// | `setpoint_*` | what was being asked for at that instant |
-    /// | `sensor_*` | what the controller saw, after EL3204 quantisation |
-    /// | `steel_*` | what the barrel steel was actually at |
-    /// | `band_*` | the band heater itself |
-    /// | `duty_*` | demanded duty, 0..1 |
-    /// | `power_w_*` | electrical power actually delivered |
+    /// Columns are `t_s`, then `setpoint / sensor / steel / band / duty /
+    /// power_w`, each as a group of four in `front, middle, back, nozzle` order.
     ///
     /// `sensor` against `steel` is the interesting pair: the gap between them is
     /// the measurement lag the controller has to work through.
     pub fn to_csv(&self) -> String {
-        let mut out = String::from("t_s");
+        use std::fmt::Write as _;
+
+        let mut out = String::with_capacity(self.samples.len() * 200);
+        out.push_str("t_s");
         for tag in ["setpoint", "sensor", "steel", "band", "duty", "power_w"] {
             for zone in Zone::ALL {
-                out.push_str(&format!(",{}_{}", tag, zone.name()));
+                let _ = write!(out, ",{tag}_{}", zone.name());
             }
         }
         out.push('\n');
         for s in &self.samples {
-            out.push_str(&format!("{:.2}", s.t_s));
+            let _ = write!(out, "{:.2}", s.t_s);
             for arr in [&s.setpoint_c, &s.sensor_c, &s.steel_c, &s.band_c] {
                 for zone in Zone::ALL {
-                    out.push_str(&format!(",{:.3}", arr[zone.port()]));
+                    let _ = write!(out, ",{:.3}", arr[zone.port()]);
                 }
             }
             for zone in Zone::ALL {
-                out.push_str(&format!(",{:.4}", s.duty[zone.port()]));
+                let _ = write!(out, ",{:.4}", s.duty[zone.port()]);
             }
             for zone in Zone::ALL {
-                out.push_str(&format!(",{:.2}", s.power_w[zone.port()]));
+                let _ = write!(out, ",{:.2}", s.power_w[zone.port()]);
             }
             out.push('\n');
         }
@@ -381,7 +331,7 @@ impl ThermalSim {
                     ThermodynamicTemperature::new::<degree_celsius>(config.max_temperature_c),
                     Heating::default(),
                     config.pwm_period,
-                    zone.band().rated_w,
+                    zone.rated_w(),
                     p,
                     p,
                 )
@@ -441,6 +391,28 @@ impl ThermalSim {
         .is_some_and(|c| c.value)
     }
 
+    /// One trace row. `sensor_c` is passed in because the closed loop records
+    /// the *held* reading the controller acted on, while the open loop reads the
+    /// model directly.
+    fn sample(
+        &self,
+        t_s: f64,
+        setpoint_c: [f64; 4],
+        sensor_c: [f64; 4],
+        duty: [f64; 4],
+        power_w: [f64; 4],
+    ) -> Sample {
+        Sample {
+            t_s,
+            setpoint_c,
+            sensor_c,
+            steel_c: Zone::ALL.map(|z| self.model.steel_c(z)),
+            band_c: Zone::ALL.map(|z| self.model.band_c(z)),
+            duty,
+            power_w,
+        }
+    }
+
     fn apply_setpoints(&mut self, setpoints_c: [f64; 4]) {
         for zone in Zone::ALL {
             let p = zone.port();
@@ -468,10 +440,8 @@ impl ThermalSim {
         let t0 = Instant::now();
 
         let mut trace = Trace {
-            samples: Vec::new(),
             setpoints_c: setpoints,
-            relay_switches: [0; 4],
-            energy_j: [0.0; 4],
+            ..Default::default()
         };
         let mut relay_was_on = [false; 4];
         // Held across plant steps: with `dt_ctrl` longer than `dt_plant` the
@@ -555,8 +525,7 @@ impl ThermalSim {
                         trace.relay_switches[p] += 1;
                         relay_was_on[p] = on;
                     }
-                    duty[p] =
-                        self.controllers[p].get_heating_element_wattage() / zone.band().rated_w;
+                    duty[p] = self.controllers[p].duty();
                 }
             }
 
@@ -571,13 +540,10 @@ impl ThermalSim {
 
             // Time-weighted mean relay state over the step. The relay is
             // piecewise constant between controller ticks, so this is exact.
-            let mut on_fraction = [0.0f64; 4];
             let mut power_w = [0.0f64; 4];
             for zone in Zone::ALL {
                 let p = zone.port();
-                let frac = on_ns[p] as f64 / plant_ns as f64;
-                on_fraction[p] = frac;
-                power_w[p] = frac * zone.band().rated_w;
+                power_w[p] = (on_ns[p] as f64 / plant_ns as f64) * zone.rated_w();
                 trace.energy_j[p] += power_w[p] * dt_plant;
                 self.model.set_band_power(zone, power_w[p]);
             }
@@ -585,25 +551,16 @@ impl ThermalSim {
             self.model.step(dt_plant);
 
             if now_ns >= next_record_ns {
-                let mut sensor_c = [0.0; 4];
-                let mut steel_c = [0.0; 4];
-                let mut band_c = [0.0; 4];
-                for zone in Zone::ALL {
-                    let p = zone.port();
-                    sensor_c[p] = self.held_c[p];
-                    steel_c[p] = self.model.steel_c(zone);
-                    band_c[p] = self.model.band_c(zone);
-                }
-                trace.samples.push(Sample {
-                    t_s: now_ns as f64 * 1e-9,
-                    setpoint_c: setpoints,
+                // The controller sees the held reading, not the model's current
+                // one; the trace records what it saw.
+                let sensor_c = self.held_c;
+                trace.samples.push(self.sample(
+                    now_ns as f64 * 1e-9,
+                    setpoints,
                     sensor_c,
-                    steel_c,
-                    band_c,
                     duty,
-                    on_fraction,
                     power_w,
-                });
+                ));
                 next_record_ns += record_ns;
             }
         }
@@ -654,7 +611,7 @@ impl ThermalSim {
 
             let duty = tuner.update(measured, now);
             self.model
-                .set_band_power(zone, duty.clamp(0.0, 1.0) * zone.band().rated_w);
+                .set_band_power(zone, duty.clamp(0.0, 1.0) * zone.rated_w());
             self.model.step(dt);
 
             if tuner.is_completed() || tuner.is_failed() {
@@ -676,12 +633,10 @@ impl ThermalSim {
         duty_at: &dyn Fn(f64) -> [f64; 4],
     ) -> Trace {
         self.model.set_uniform_temperature(initial_c);
+        // Open loop drives the bands directly; there is no relay to count.
         let mut trace = Trace {
-            samples: Vec::new(),
             setpoints_c: [f64::NAN; 4],
-            // Open loop drives the bands directly; there is no relay to count.
-            relay_switches: [0; 4],
-            energy_j: [0.0; 4],
+            ..Default::default()
         };
         let dt = self.config.dt_plant_s;
         let steps = (duration_s / dt).round() as usize;
@@ -693,33 +648,18 @@ impl ThermalSim {
             let mut power_w = [0.0; 4];
             for zone in Zone::ALL {
                 let p = zone.port();
-                power_w[p] = duty[p].clamp(0.0, 1.0) * zone.band().rated_w;
+                power_w[p] = duty[p].clamp(0.0, 1.0) * zone.rated_w();
                 trace.energy_j[p] += power_w[p] * dt;
                 self.model.set_band_power(zone, power_w[p]);
             }
             self.model.step(dt);
 
             if i % record_every == 0 {
-                let mut sensor_c = [0.0; 4];
-                let mut steel_c = [0.0; 4];
-                let mut band_c = [0.0; 4];
-                for zone in Zone::ALL {
-                    let p = zone.port();
-                    sensor_c[p] = self.model.sensor_c(zone);
-                    steel_c[p] = self.model.steel_c(zone);
-                    band_c[p] = self.model.band_c(zone);
-                }
-                trace.samples.push(Sample {
-                    t_s: t,
-                    // Open loop: nothing is being asked for.
-                    setpoint_c: [f64::NAN; 4],
-                    sensor_c,
-                    steel_c,
-                    band_c,
-                    duty,
-                    on_fraction: duty,
-                    power_w,
-                });
+                let sensor_c = Zone::ALL.map(|z| self.model.sensor_c(z));
+                // Open loop: nothing is being asked for.
+                trace
+                    .samples
+                    .push(self.sample(t, [f64::NAN; 4], sensor_c, duty, power_w));
             }
         }
         trace
