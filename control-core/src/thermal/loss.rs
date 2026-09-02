@@ -91,7 +91,7 @@ impl AmbientLoss {
                 // temperature, which itself depends on the series split. Three
                 // fixed-point passes are plenty: the skin sits close to ambient
                 // and the iteration contracts hard.
-                let mut skin_c = ambient_c + 0.15 * (node_c - ambient_c);
+                let mut skin_c = 0.15f64.mul_add(node_c - ambient_c, ambient_c);
                 let mut g_total = 0.0;
                 for _ in 0..3 {
                     let g_film = area_outer

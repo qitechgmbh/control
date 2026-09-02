@@ -1,34 +1,28 @@
-//! Compare heating control strategies for the extruder's four zones.
+//! Compare heating control strategies for the extruder's four zones, measure the
+//! plant coefficients, and search for gains.
 //!
-//! The three strategies in `control_core::controllers::heating` are run against
-//! the calibrated thermal model, over several operating profiles, and — this is
-//! the part that matters — over a *family* of plants rather than one.
-//!
-//! # Why a family
-//!
-//! The model is calibrated against a single recorded heat-up, and that recording
-//! cannot separate `sensor_tau_s` from `band_heat_capacity_j_per_m2_k`: both
-//! delay the reading relative to the steel, so the optimiser lands somewhere
-//! along a flat valley. See `ExtruderThermalParams::EXPECTED_PINNED`.
-//!
-//! Every strategy here leans on exactly that split — one of them estimates the
-//! steel from `sensor_tau_s`, another estimates the band from its capacity — so
-//! scoring against the nominal fit alone would be marking our own homework. A
-//! candidate has to be good across every plant that reproduces the recording
-//! equally well, not just the one the optimiser happened to stop at.
+//! Strategies are run against the calibrated thermal model over several
+//! operating profiles and — this is the part that matters — over a *family* of
+//! plants rather than one. The model is calibrated against a single recorded
+//! heat-up, and that recording cannot separate `sensor_tau_s` from
+//! `band_heat_capacity_j_per_m2_k`: both delay the reading relative to the steel,
+//! so the optimiser lands somewhere along a flat valley. `ObserverPi` leans on
+//! exactly that split, so scoring it against the nominal fit alone would be
+//! marking our own homework.
 //!
 //! ```text
-//! cargo run --release -p machine_implementations --example bench_heating
-//! cargo run --release -p machine_implementations --example bench_heating -- --identify
-//! cargo run --release -p machine_implementations --example bench_heating -- --search observer-pi
+//! cargo run --release -p machine_implementations --features simulation \
+//!     --example bench_heating                      # compare pid vs observer-pi
+//! ... -- --identify                                # re-measure the PLANT table
+//! ... -- --search observer-pi                      # search gains (or `pid`)
 //! ```
 
-use std::time::Duration;
-
+use machine_implementations::extruder1::heating_params::{PLANT, observer_pi_params};
 use machine_implementations::extruder1::simulation::{
     ExtruderThermalParams, Scenario, SimConfig, StrategyConfig, ThermalSim, Trace, Zone,
+    ZoneTuning,
     harness::plant_family,
-    tuning::{PLANT, cascade_params, observer_pi_params},
+    optimize::{self, Rng},
 };
 
 /// Profiles as entered on the UI in `nozzle, front, middle, back` order, stored
@@ -273,7 +267,7 @@ fn identify() {
     for zone in Zone::ALL {
         let p = zone.port();
         let rate = (b.steel_c[p] - a.steel_c[p]) / (b.t_s - a.t_s);
-        capacity[p] = zone.band().rated_w / rate;
+        capacity[p] = zone.rated_w() / rate;
     }
 
     // ---- steady-state duty, from settled closed-loop runs ----
@@ -305,8 +299,8 @@ fn identify() {
     }
 
     println!(
-        "  {:<8} {:>10} {:>12} {:>14} {:>10} {:>8}",
-        "zone", "C_metal", "loss_W_per_K", "ff_duty_per_K", "C_band", "samples"
+        "  {:<8} {:>10} {:>12} {:>14} {:>8}",
+        "zone", "C_metal", "loss_W_per_K", "ff_duty_per_K", "samples"
     );
     let mut lines = Vec::new();
     for zone in Zone::ALL {
@@ -318,30 +312,26 @@ fn identify() {
             zone.name()
         );
         let ff = ff_samples[p].0 / ff_samples[p].1 as f64;
-        let loss = ff * zone.band().rated_w;
-        let c_band = zone.band().contact_area_m2() * params.band_heat_capacity_j_per_m2_k;
-        let g_band = params.band_contact_h * zone.band().contact_area_m2();
+        let loss = ff * zone.rated_w();
 
         println!(
-            "  {:<8} {:>10.0} {:>12.3} {:>14.5} {:>10.1} {:>8}",
+            "  {:<8} {:>10.0} {:>12.3} {:>14.5} {:>8}",
             zone.name(),
             capacity[p],
             loss,
             ff,
-            c_band,
             ff_samples[p].1,
         );
         lines.push(format!(
             "    // {}\n    \
              PlantCoefficients {{ metal_capacity_j_per_k: {:.0}, metal_loss_w_per_k: {loss:.3}, \
-             band_capacity_j_per_k: {c_band:.1}, band_to_metal_w_per_k: {g_band:.2}, \
              ff_duty_per_k: {ff:.5} }},",
             zone.name(),
             capacity[p],
         ));
     }
 
-    println!("\npaste into extruder1::simulation::tuning::PLANT:\n");
+    println!("\npaste into extruder1::heating_params::PLANT:\n");
     for l in lines {
         println!("{l}");
     }
@@ -357,36 +347,40 @@ fn identify() {
 
 // ---------------------------------------------------------------- search
 //
-// Nelder-Mead over a strategy's free parameters, same shape as the search in
-// `tune_extruder_pid`, but scored across the plant family.
-
-struct Rng(u64);
-
-impl Rng {
-    fn next_u64(&mut self) -> u64 {
-        let mut x = self.0;
-        x ^= x << 13;
-        x ^= x >> 7;
-        x ^= x << 17;
-        self.0 = x;
-        x
-    }
-    fn f64(&mut self) -> f64 {
-        (self.next_u64() >> 11) as f64 / (1u64 << 53) as f64
-    }
-    fn range(&mut self, lo: f64, hi: f64) -> f64 {
-        (hi - lo).mul_add(self.f64(), lo)
-    }
-}
+// Nelder-Mead over a strategy's free parameters, scored across the plant family.
+// The simplex itself lives in `simulation::optimize`, shared with the model
+// calibration in `simulation::fit`.
 
 /// A strategy's tunable parameters, flattened so the optimiser can work on them
 /// without knowing what they mean.
-trait Tunable {
+trait Tunable: Copy {
     /// `(name, lo, hi)` per free parameter.
     fn bounds() -> Vec<(&'static str, f64, f64)>;
     fn to_vec(&self) -> Vec<f64>;
     fn from_vec(v: &[f64]) -> Self;
     fn strategy(&self) -> StrategyConfig;
+}
+
+/// `[(a, b, c, d); 4]` — four per-zone quantities, laid out zone-major so each
+/// group of four in the flat vector is one quantity across all zones.
+type PerZone4 = [(f64, f64, f64, f64); 4];
+
+fn flatten(t: &PerZone4) -> Vec<f64> {
+    let mut v = Vec::with_capacity(16);
+    v.extend(t.iter().map(|x| x.0));
+    v.extend(t.iter().map(|x| x.1));
+    v.extend(t.iter().map(|x| x.2));
+    v.extend(t.iter().map(|x| x.3));
+    v
+}
+
+fn unflatten(v: &[f64]) -> PerZone4 {
+    std::array::from_fn(|p| (v[p], v[4 + p], v[8 + p], v[12 + p]))
+}
+
+/// Four per-zone entries of one quantity, all sharing the same bounds.
+fn zone_bounds(lo: f64, hi: f64) -> impl Iterator<Item = (&'static str, f64, f64)> {
+    Zone::ALL.into_iter().map(move |z| (z.name(), lo, hi))
 }
 
 /// Per-zone `(kp, ki, tau_filter_s, tau_sensor_s)` for `ObserverPi`.
@@ -396,181 +390,83 @@ trait Tunable {
 /// leaving it fixed would tune everything else around a number that might be
 /// wrong by an order of magnitude.
 #[derive(Debug, Clone, Copy)]
-struct ObserverPiTuning([(f64, f64, f64, f64); 4]);
+struct ObserverPiTuning(PerZone4);
 
 impl Tunable for ObserverPiTuning {
     fn bounds() -> Vec<(&'static str, f64, f64)> {
-        let mut b = Vec::new();
-        for z in Zone::ALL {
-            b.push((z.name(), 0.005, 0.6)); // kp
-        }
-        for z in Zone::ALL {
-            b.push((z.name(), 0.0, 0.004)); // ki
-        }
-        for z in Zone::ALL {
-            b.push((z.name(), 5.0, 60.0)); // tau_filter_s
-        }
-        for z in Zone::ALL {
-            b.push((z.name(), 10.0, 220.0)); // tau_sensor_s
-        }
-        b
+        zone_bounds(0.005, 0.6) // kp
+            .chain(zone_bounds(0.0, 0.004)) // ki
+            .chain(zone_bounds(5.0, 60.0)) // tau_filter_s
+            .chain(zone_bounds(10.0, 220.0)) // tau_sensor_s
+            .collect()
     }
     fn to_vec(&self) -> Vec<f64> {
-        let mut v = Vec::with_capacity(16);
-        v.extend(self.0.iter().map(|t| t.0));
-        v.extend(self.0.iter().map(|t| t.1));
-        v.extend(self.0.iter().map(|t| t.2));
-        v.extend(self.0.iter().map(|t| t.3));
-        v
+        flatten(&self.0)
     }
     fn from_vec(v: &[f64]) -> Self {
-        let mut t = [(0.0, 0.0, 0.0, 0.0); 4];
-        for p in 0..4 {
-            t[p] = (v[p], v[4 + p], v[8 + p], v[12 + p]);
-        }
-        Self(t)
+        Self(unflatten(v))
     }
     fn strategy(&self) -> StrategyConfig {
         let mut params = observer_pi_params();
-        for p in 0..4 {
-            params[p].kp = self.0[p].0;
-            params[p].ki = self.0[p].1;
-            params[p].tau_filter_s = self.0[p].2;
-            params[p].tau_sensor_s = self.0[p].3;
+        for (p, t) in self.0.iter().enumerate() {
+            params[p].kp = t.0;
+            params[p].ki = t.1;
+            params[p].tau_filter_s = t.2;
+            params[p].tau_sensor_s = t.3;
         }
         StrategyConfig::ObserverPi(params)
     }
 }
 
-/// Per-zone `(kp, ki, band_lead_max_k, approach_bias_k)` for the cascade.
+/// Per-zone `(kp, ki, kd, _)` for the plain PID baseline.
+///
+/// The fourth slot is unused padding so the flat layout is shared with
+/// [`ObserverPiTuning`]; it is pinned to a single value so the optimiser cannot
+/// waste evaluations on it.
 #[derive(Debug, Clone, Copy)]
-struct CascadeTuning([(f64, f64, f64, f64); 4]);
+struct PidTuning(PerZone4);
 
-impl Tunable for CascadeTuning {
+impl PidTuning {
+    fn from_production() -> Self {
+        Self(ZoneTuning::PRODUCTION.map(|t| (t.kp, t.ki, t.kd, 0.0)))
+    }
+}
+
+impl Tunable for PidTuning {
     fn bounds() -> Vec<(&'static str, f64, f64)> {
-        let mut b = Vec::new();
-        for z in Zone::ALL {
-            b.push((z.name(), 1.0, 60.0)); // kp
-        }
-        for z in Zone::ALL {
-            b.push((z.name(), 0.0, 0.05)); // ki
-        }
-        for z in Zone::ALL {
-            b.push((z.name(), 20.0, 400.0)); // band_lead_max_k
-        }
-        for z in Zone::ALL {
-            b.push((z.name(), -6.0, 1.0)); // approach_bias_k
-        }
-        b
+        zone_bounds(0.005, 1.5) // kp
+            .chain(zone_bounds(0.0, 0.01)) // ki
+            .chain(zone_bounds(0.0, 0.2)) // kd
+            .chain(zone_bounds(0.0, 0.0)) // unused
+            .collect()
     }
     fn to_vec(&self) -> Vec<f64> {
-        let mut v = Vec::with_capacity(16);
-        v.extend(self.0.iter().map(|t| t.0));
-        v.extend(self.0.iter().map(|t| t.1));
-        v.extend(self.0.iter().map(|t| t.2));
-        v.extend(self.0.iter().map(|t| t.3));
-        v
+        flatten(&self.0)
     }
     fn from_vec(v: &[f64]) -> Self {
-        let mut t = [(0.0, 0.0, 0.0, 0.0); 4];
-        for p in 0..4 {
-            t[p] = (v[p], v[4 + p], v[8 + p], v[12 + p]);
-        }
-        Self(t)
+        Self(unflatten(v))
     }
     fn strategy(&self) -> StrategyConfig {
-        let mut params = cascade_params();
-        for p in 0..4 {
-            params[p].kp = self.0[p].0;
-            params[p].ki = self.0[p].1;
-            params[p].band_lead_max_k = self.0[p].2;
-            params[p].approach_bias_k = self.0[p].3;
-        }
-        StrategyConfig::Cascade(params)
+        StrategyConfig::Pid(self.0.map(|t| ZoneTuning {
+            kp: t.0,
+            ki: t.1,
+            kd: t.2,
+        }))
     }
 }
 
-fn clamp_to_bounds<T: Tunable>(v: &mut [f64]) {
-    for (i, (_, lo, hi)) in T::bounds().iter().enumerate() {
-        v[i] = v[i].clamp(*lo, *hi);
-    }
+fn clamped<T: Tunable>(v: &[f64]) -> Vec<f64> {
+    T::bounds()
+        .iter()
+        .zip(v)
+        .map(|((_, lo, hi), x)| x.clamp(*lo, *hi))
+        .collect()
 }
 
-fn nelder_mead<T: Tunable>(start: &[f64], iters: usize) -> Vec<f64> {
-    let cost = |v: &[f64]| {
-        let mut v = v.to_vec();
-        clamp_to_bounds::<T>(&mut v);
-        total_cost(&T::from_vec(&v).strategy(), true)
-    };
-
-    let n = start.len();
-    let bounds = T::bounds();
-    let mut simplex: Vec<(Vec<f64>, f64)> = Vec::with_capacity(n + 1);
-    simplex.push((start.to_vec(), cost(start)));
-    for i in 0..n {
-        let mut v = start.to_vec();
-        let (_, lo, hi) = bounds[i];
-        // A step proportional to the parameter's own range, so all dimensions
-        // move comparably however differently they are scaled.
-        v[i] = (v[i] + 0.15 * (hi - lo)).min(hi);
-        let c = cost(&v);
-        simplex.push((v, c));
-    }
-
-    for _ in 0..iters {
-        simplex.sort_by(|a, b| a.1.total_cmp(&b.1));
-        let worst = simplex[n].clone();
-        let mut centroid = vec![0.0; n];
-        for (v, _) in &simplex[..n] {
-            for i in 0..n {
-                centroid[i] += v[i] / n as f64;
-            }
-        }
-
-        let step = |f: f64| -> Vec<f64> {
-            (0..n)
-                .map(|i| f.mul_add(centroid[i] - worst.0[i], centroid[i]))
-                .collect()
-        };
-
-        let reflected = step(1.0);
-        let cr = cost(&reflected);
-        if cr < simplex[0].1 {
-            let expanded = step(2.0);
-            let ce = cost(&expanded);
-            simplex[n] = if ce < cr {
-                (expanded, ce)
-            } else {
-                (reflected, cr)
-            };
-        } else if cr < simplex[n - 1].1 {
-            simplex[n] = (reflected, cr);
-        } else {
-            let contracted = step(-0.5);
-            let cc = cost(&contracted);
-            if cc < worst.1 {
-                simplex[n] = (contracted, cc);
-            } else {
-                // Shrink towards the best vertex.
-                let best = simplex[0].0.clone();
-                for entry in simplex.iter_mut().skip(1) {
-                    for i in 0..n {
-                        entry.0[i] = 0.5 * (entry.0[i] + best[i]);
-                    }
-                    entry.1 = cost(&entry.0);
-                }
-            }
-        }
-    }
-
-    simplex.sort_by(|a, b| a.1.total_cmp(&b.1));
-    let mut best = simplex[0].0.clone();
-    clamp_to_bounds::<T>(&mut best);
-    best
-}
-
-fn search<T: Tunable + Copy>(start: T, restarts: usize, iters: usize, seed: u64) -> T {
-    let mut rng = Rng(seed);
+/// Multi-start Nelder-Mead. Restarts from random points inside the bounds,
+/// because a single descent on this objective reliably parks in a corner.
+fn search<T: Tunable>(start: T, restarts: usize, evaluations: usize, seed: u64) -> T {
+    let mut rng = Rng::new(seed);
     let bounds = T::bounds();
     let mut best = start.to_vec();
     let mut best_cost = total_cost(&start.strategy(), true);
@@ -585,7 +481,33 @@ fn search<T: Tunable + Copy>(start: T, restarts: usize, iters: usize, seed: u64)
                 .map(|(_, lo, hi)| rng.range(*lo, *hi))
                 .collect()
         };
-        let v = nelder_mead::<T>(&init, iters);
+
+        // Step proportional to each parameter's own range, so all dimensions
+        // move comparably however differently they are scaled. The optimiser
+        // takes one scalar, so search in normalised units and widen inside the
+        // cost closure.
+        let span: Vec<f64> = bounds.iter().map(|(_, lo, hi)| hi - lo).collect();
+        let to_real = |x: &[f64]| -> Vec<f64> {
+            clamped::<T>(&x.iter().zip(&span).map(|(v, s)| v * s).collect::<Vec<_>>())
+        };
+        let normalised: Vec<f64> = init
+            .iter()
+            .zip(&span)
+            .map(|(v, s)| if *s > 0.0 { v / s } else { 0.0 })
+            .collect();
+
+        let outcome = optimize::nelder_mead(
+            &normalised,
+            |x| total_cost(&T::from_vec(&to_real(x)).strategy(), true),
+            optimize::Options {
+                max_evaluations: evaluations,
+                initial_step: 0.15,
+                min_step: 0.005,
+                ..optimize::Options::default()
+            },
+        );
+
+        let v = to_real(&outcome.point);
         let c = total_cost(&T::from_vec(&v).strategy(), true);
         if c < best_cost {
             best_cost = c;
@@ -619,9 +541,9 @@ fn main() {
         let restarts = value("--restarts")
             .and_then(|v| v.parse().ok())
             .unwrap_or(6usize);
-        let iters = value("--iters")
+        let evaluations = value("--evaluations")
             .and_then(|v| v.parse().ok())
-            .unwrap_or(120usize);
+            .unwrap_or(400usize);
         let seed = value("--seed")
             .and_then(|v| v.parse().ok())
             .unwrap_or(0x9E37_79B9_7F4A_7C15u64);
@@ -632,29 +554,23 @@ fn main() {
                 let start = ObserverPiTuning(
                     [0, 1, 2, 3].map(|i| (p[i].kp, p[i].ki, p[i].tau_filter_s, p[i].tau_sensor_s)),
                 );
-                let best = search(start, restarts, iters, seed);
+                let best = search(start, restarts, evaluations, seed);
                 println!("\n{:#?}", best.0);
                 report(&best.strategy());
             }
-            "cascade" => {
-                let p = cascade_params();
-                let start = CascadeTuning(
-                    [0, 1, 2, 3]
-                        .map(|i| (p[i].kp, p[i].ki, p[i].band_lead_max_k, p[i].approach_bias_k)),
-                );
-                let best = search(start, restarts, iters, seed);
+            "pid" => {
+                let best = search(PidTuning::from_production(), restarts, evaluations, seed);
                 println!("\n{:#?}", best.0);
                 report(&best.strategy());
             }
-            other => panic!("unknown strategy {other}; try observer-pi or cascade"),
+            other => panic!("unknown strategy {other}; try observer-pi or pid"),
         }
         return;
     }
 
     let strategies = [
-        StrategyConfig::Pid(machine_implementations::extruder1::simulation::ZoneTuning::PRODUCTION),
+        StrategyConfig::Pid(ZoneTuning::PRODUCTION),
         StrategyConfig::ObserverPi(observer_pi_params()),
-        StrategyConfig::Cascade(cascade_params()),
     ];
 
     let started = std::time::Instant::now();
@@ -676,6 +592,4 @@ fn main() {
         plant_family().len()
     );
     println!("benchmark took {:.1} s", started.elapsed().as_secs_f64());
-
-    let _ = Duration::from_secs(0);
 }
