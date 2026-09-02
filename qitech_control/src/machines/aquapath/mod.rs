@@ -25,7 +25,6 @@ impl fmt::Display for AquaPathV1Mode {
     }
 }
 
-
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Default, EnumProperty)]
 pub enum AquaPathV1Mode {
     #[default]

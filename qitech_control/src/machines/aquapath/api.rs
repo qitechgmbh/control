@@ -1,12 +1,12 @@
-use std::time::Instant;
-use crate::machines::aquapath::AquaPathV1;
 use super::{AquaPathV1Mode, controller::CoolingMode};
+use crate::machines::aquapath::AquaPathV1;
 use qitech_framework::machine::{ActResult, ConfigProperty, Measurement, StateProperty};
 use qitech_lib::units::{
     angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius,
     volume_rate::liter_per_minute,
 };
 use serde::Serialize;
+use std::time::Instant;
 
 pub struct Measurements {
     pub left_flow: Measurement<f64>,
@@ -22,7 +22,7 @@ pub struct Measurements {
 }
 
 pub struct StateProperties {
-    pub mode_state: ModeState,    
+    pub mode_state: ModeState,
     pub left_heating_startup_wait_active: StateProperty<bool>,
     pub right_heating_startup_wait_active: StateProperty<bool>,
     pub left_pump_cooldown_active: StateProperty<bool>,
@@ -86,10 +86,7 @@ pub struct ThermalSafetyState {
 impl AquaPathV1 {
     pub fn on_right_target_temparature_changed(&mut self) -> ActResult {
         let t = self.config_props.right_target_temperature.get();
-        _ = self.set_target_temperature(
-            t,
-            super::AquaPathSideType::Right,
-        );
+        _ = self.set_target_temperature(t, super::AquaPathSideType::Right);
         Ok(())
     }
 

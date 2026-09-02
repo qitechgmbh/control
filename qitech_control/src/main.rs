@@ -1,9 +1,15 @@
-mod types;
-mod machines;
 mod api;
+mod machines;
+mod types;
 
-use std::env;
-use std::time::Duration;
+use crate::machines::WinderV1_Regular;
+use crate::machines::aquapath::AquaPathV1;
+use crate::machines::laser_v1::LaserV1;
+use crate::machines::winder_v2::WinderV1_7031_Spool;
+use api::LegacySharedState;
+use api::Server;
+use api::SharedState;
+use api::SocketIODispatcher;
 use qitech_control_core::interface;
 use qitech_framework::HubConfiguration;
 use qitech_framework::machine::MachineDescriptor;
@@ -15,15 +21,9 @@ use qitech_framework::runtime::RuntimeConfiguration;
 use qitech_lib::ethercat_hal::DcConfiguration;
 use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
-use api::LegacySharedState;
-use api::Server;
-use api::SharedState;
-use api::SocketIODispatcher;
 use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
-use crate::machines::WinderV1_Regular;
-use crate::machines::aquapath::AquaPathV1;
-use crate::machines::laser_v1::LaserV1;
-use crate::machines::winder_v2::WinderV1_7031_Spool;
+use std::env;
+use std::time::Duration;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {

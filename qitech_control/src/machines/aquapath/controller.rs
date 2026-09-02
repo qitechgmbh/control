@@ -14,8 +14,8 @@ use units::f64::{ThermodynamicTemperature, VolumeRate};
 use units::thermodynamic_temperature::degree_celsius;
 use units::volume_rate::liter_per_minute;
 
-use qitech_control_core::controllers::pid::PidController;
 use crate::machines::aquapath::{Flow, Temperature};
+use qitech_control_core::controllers::pid::PidController;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ControlResetReason {
@@ -261,7 +261,6 @@ impl Controller {
         guard.set_output(self.pump_relais_port, true);
         drop(guard);
     }
-
 
     pub fn allow_pump(&mut self) {
         self.pump_allowed = true;
@@ -739,7 +738,7 @@ impl Controller {
             // Inside deadband: keep actuators off and clear PID memory to prevent windup.
             self.set_heating_state(false, now);
             self.set_cooling_state(false, now);
-            self.temperature_pid_output = 0.0;            
+            self.temperature_pid_output = 0.0;
             self.reset_pid();
         }
     }

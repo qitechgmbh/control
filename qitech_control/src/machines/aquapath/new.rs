@@ -9,7 +9,8 @@ use crate::machines::aquapath::{
 
 use super::AquaPathV1;
 use qitech_framework::{
-    machine::{BuildContext, BuildError, BuildResult, MachineBuild}, machine_build,
+    machine::{BuildContext, BuildError, BuildResult, MachineBuild},
+    machine_build,
 };
 use qitech_lib::{
     ethercat_hal::{
@@ -61,8 +62,10 @@ fn init_el2008(
     match res {
         Ok(_) => (),
         Err(_) => {
-            return Err(BuildError::EtherCATConfigureError("Failed to set sync0 for el2008".to_owned()));
-        },
+            return Err(BuildError::EtherCATConfigureError(
+                "Failed to set sync0 for el2008".to_owned(),
+            ));
+        }
     }
     Ok(el2008.0)
 }
@@ -81,8 +84,10 @@ fn init_el3024(
     match res {
         Ok(_) => (),
         Err(_) => {
-            return Err(BuildError::EtherCATConfigureError("Failed to set sync0 for el3024".to_owned()));
-        },
+            return Err(BuildError::EtherCATConfigureError(
+                "Failed to set sync0 for el3024".to_owned(),
+            ));
+        }
     }
     Ok(el3024.0)
 }

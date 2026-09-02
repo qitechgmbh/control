@@ -3,7 +3,7 @@ use qitech_framework::machine::{ActResult, Machine};
 use std::time::{Duration, Instant};
 
 impl Machine for AquaPathV1 {
-    fn act(&mut self, _ : Duration) -> ActResult {
+    fn act(&mut self, _: Duration) -> ActResult {
         let now = Instant::now();
         self.left_controller.update(now);
         self.right_controller.update(now);

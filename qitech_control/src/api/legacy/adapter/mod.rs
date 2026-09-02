@@ -4,8 +4,8 @@ use qitech_framework::RuntimeRequestKind;
 
 use crate::api::types::MachineInstance;
 
-pub mod laser_v1;
 pub mod aquapath_v1;
+pub mod laser_v1;
 
 pub fn get(ident: MachineIdentification) -> Option<MachineLegacyDataAdapter> {
     const IDENT_LASER: MachineIdentification = MachineIdentification {

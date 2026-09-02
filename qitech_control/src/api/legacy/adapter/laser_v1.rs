@@ -1,9 +1,9 @@
+use crate::api::legacy::MachineLegacyDataAdapter;
+use crate::api::types::MachineInstance;
 use qitech_framework::MachineInstanceIdentification;
 use qitech_framework::RuntimeRequestKind;
 use qitech_framework::ScalarValue;
 use serde::Deserialize;
-use crate::api::legacy::MachineLegacyDataAdapter;
-use crate::api::types::MachineInstance;
 
 pub const ADAPTER: MachineLegacyDataAdapter = MachineLegacyDataAdapter {
     convert_request,
