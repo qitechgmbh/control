@@ -72,6 +72,8 @@ pub struct LaserMachine {
     last_request: Instant,
     laser: Rc<RefCell<LaserDevice>>,
     error: Option<MachineError>,
+    /// Timestamp of the last successfully parsed measurement.
+    last_successful_response: Instant,
     // laser values
     diameter: Length,
     x_diameter: Option<Length>,
@@ -223,6 +225,8 @@ impl LaserMachine {
 
         self.in_tolerance
     }
+    
+    const IO_FAILURE_GRACE_PERIOD: Duration = Duration::from_secs(5);
 
     pub fn update(&mut self) {
         let mut laser = self.laser.borrow_mut();
@@ -236,10 +240,14 @@ impl LaserMachine {
                 if let Some(laser_error) = e.downcast_ref::<LaserError>() {
                     match laser_error {
                         LaserError::IoErr() => {
-                            self.error = Some(MachineError::IrrecoverableFailure(
-                                "Physical hardware I/O broke. Dropping machine permanently."
-                                    .to_owned(),
-                            ));
+                            if now.duration_since(self.last_successful_response)
+                                > Self::IO_FAILURE_GRACE_PERIOD
+                            {
+                                self.error = Some(MachineError::IrrecoverableFailure(
+                                    "Physical hardware I/O broke. Dropping machine permanently."
+                                        .to_owned(),
+                                ));
+                            }
                         }
                         _ => (),
                     }
@@ -257,9 +265,10 @@ impl LaserMachine {
 
         match &laser.measurement {
             Some(m) => {
-                self.x_diameter = Some(Length::new::<millimeter>(m.x_axis as f64 / 1000.0));
-                self.y_diameter = Some(Length::new::<millimeter>(m.y_axis as f64 / 1000.0));
+                self.x_diameter = m.x_axis.map(|x| Length::new::<millimeter>(x as f64 / 1000.0));
+                self.y_diameter = m.y_axis.map(|y| Length::new::<millimeter>(y as f64 / 1000.0));
                 self.diameter = Length::new::<millimeter>(m.diameter as f64 / 1000.0);
+                self.last_successful_response = now;
             }
             None => (),
         };

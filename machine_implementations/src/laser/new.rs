@@ -29,6 +29,7 @@ impl MachineNew for LaserMachine {
             namespace: LaserMachineNamespace { namespace: None },
             last_measurement_emit: Instant::now(),
             last_request: Instant::now(),
+            last_successful_response: Instant::now(),
             laser_target,
             emitted_default_state: false,
             diameter: Length::ZERO,
