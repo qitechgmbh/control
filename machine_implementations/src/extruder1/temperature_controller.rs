@@ -11,12 +11,10 @@ use std::time::{Duration, Instant};
 
 /// One heating zone: sensor in, relay out.
 ///
-/// This owns everything around the control law — reading the RTD, the
+/// Owns everything around the control law — reading the RTD, the
 /// over-temperature cutout, the slow-PWM window, driving the relay — and
-/// delegates the duty decision itself to a [`HeatingStrategy`]. Swapping the
-/// control law is then a change of one constructor argument, and the offline
-/// simulation in [`crate::extruder1::simulation`] can compare strategies while
-/// still driving the shipping code around them.
+/// delegates the duty decision to a [`HeatingStrategy`], so swapping the control
+/// law is a change of one constructor argument.
 pub struct TemperatureController {
     strategy: Box<dyn HeatingStrategy>,
     pub heating: Heating,
@@ -34,13 +32,11 @@ pub struct TemperatureController {
 
 impl TemperatureController {
     pub fn disable(&mut self, relais: &mut dyn DigitalOutputDevice) {
-        relais.set_output(self.digital_port, false);
-        self.heating.heating = false;
+        self.open_relay(relais);
         self.disallow_heating();
     }
 
-    /// A zone driven by a plain PID on the raw reading — the control law that
-    /// has always shipped.
+    /// A zone driven by a plain PID on the raw reading.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         kp: f64,
@@ -67,9 +63,8 @@ impl TemperatureController {
         )
     }
 
-    /// A zone driven by an arbitrary control law.
-    ///
-    /// The strategy owns its own output clamp, so there is no `max_clamp` here.
+    /// A zone driven by an arbitrary control law. The strategy owns its own
+    /// output clamp, so there is no `max_clamp` here.
     #[allow(clippy::too_many_arguments)]
     pub fn with_strategy(
         strategy: Box<dyn HeatingStrategy>,
@@ -121,9 +116,8 @@ impl TemperatureController {
 
     pub fn disallow_heating(&mut self) {
         self.heating_allowed = false;
-        // Drop the integral and any state the estimator built up, so that
-        // re-enabling does not resume from a stale picture of a plant that has
-        // been cooling in the meantime.
+        // Drop the integral and the estimator's state, so re-enabling does not
+        // resume from a stale picture of a plant that has been cooling.
         self.strategy.reset();
     }
 
@@ -131,8 +125,19 @@ impl TemperatureController {
         self.heating_allowed = true;
     }
 
+    /// The duty the control law last asked for, in `0..=1`.
+    pub const fn duty(&self) -> f64 {
+        self.temperature_pid_output
+    }
+
     pub fn get_heating_element_wattage(&self) -> f64 {
         self.temperature_pid_output * self.heating_element_wattage
+    }
+
+    /// Open the relay and record that the zone is not heating.
+    fn open_relay(&mut self, relais: &mut dyn DigitalOutputDevice) {
+        relais.set_output(self.digital_port, false);
+        self.heating.heating = false;
     }
 
     pub fn update(
@@ -153,50 +158,38 @@ impl TemperatureController {
 
         // A failed read decodes to 0 °C, which is maximum error, which would be
         // maximum heat demand — the heater running flat out precisely when
-        // nothing can see how hot it is getting. Open the relay instead. The
-        // strategy is deliberately not stepped and not reset: a transient fault
-        // should not discard a good estimate, and every estimator here is
-        // written to tolerate the long `dt` that a sustained one produces.
-        if self.heating.wiring_error {
-            relais.set_output(self.digital_port, false);
-            self.heating.heating = false;
+        // nothing can see how hot it is getting. The strategy is deliberately
+        // neither stepped nor reset: a transient fault should not discard a good
+        // estimate, and every estimator here tolerates a long `dt`.
+        if self.heating.wiring_error || self.heating.temperature > self.max_temperature {
+            self.open_relay(relais);
             return;
         }
 
-        if self.heating.temperature > self.max_temperature {
-            // disable the relais and return
-            relais.set_output(self.digital_port, false);
-            self.heating.heating = false;
+        if !self.heating_allowed {
+            self.open_relay(relais);
             return;
         }
 
-        if self.heating_allowed {
-            let duty = self.strategy.update(
-                self.heating.temperature.get::<degree_celsius>(),
-                self.heating.target_temperature.get::<degree_celsius>(),
-                now,
-            );
+        let duty = self.strategy.update(
+            self.heating.temperature.get::<degree_celsius>(),
+            self.heating.target_temperature.get::<degree_celsius>(),
+            now,
+        );
+        self.temperature_pid_output = duty;
 
-            self.temperature_pid_output = duty;
-
-            let mut elapsed = now.duration_since(self.window_start);
-
-            // Restart window if needed. `elapsed` has to be recomputed with it:
-            // leaving the old, already-past-the-period value in place made the
-            // comparison below false for the first tick of every window, so the
-            // relay was held open for one tick per window no matter what duty
-            // was asked for.
-            if elapsed >= self.pwm_period {
-                self.window_start = now;
-                elapsed = Duration::ZERO;
-            }
-            // Compare duty cycle to elapsed time
-            let on_time = self.pwm_period.mul_f64(duty);
-
-            // Relay is ON if within duty cycle window
-            let on = elapsed < on_time;
-            relais.set_output(self.digital_port, on);
-            self.heating.heating = on;
+        let mut elapsed = now.duration_since(self.window_start);
+        // `elapsed` has to be reset along with the window: leaving the old,
+        // already-past-the-period value in place made the comparison below false
+        // for the first tick of every window, holding the relay open for one tick
+        // per window whatever duty was asked for.
+        if elapsed >= self.pwm_period {
+            self.window_start = now;
+            elapsed = Duration::ZERO;
         }
+
+        let on = elapsed < self.pwm_period.mul_f64(duty);
+        relais.set_output(self.digital_port, on);
+        self.heating.heating = on;
     }
 }

@@ -34,7 +34,7 @@ pub struct ThermalNetwork {
 }
 
 impl ThermalNetwork {
-    pub fn new(ambient_c: f64) -> Self {
+    pub const fn new(ambient_c: f64) -> Self {
         Self {
             nodes: Vec::new(),
             conductances: Vec::new(),
@@ -88,7 +88,7 @@ impl ThermalNetwork {
         self.nodes[id.0].power_w = power_w;
     }
 
-    pub fn node_count(&self) -> usize {
+    pub const fn node_count(&self) -> usize {
         self.nodes.len()
     }
 
@@ -230,7 +230,7 @@ mod tests {
         for _ in 0..((tau / dt) as usize) {
             net.step(dt);
         }
-        let expected = 20.0 + 100.0 * (1.0 - (-1.0_f64).exp());
+        let expected = 100.0f64.mul_add(1.0 - (-1.0_f64).exp(), 20.0);
         assert_relative_eq!(net.temperature(a), expected, max_relative = 1e-3);
 
         for _ in 0..((10.0 * tau / dt) as usize) {

@@ -1,4 +1,5 @@
-use super::simulation::tuning::observer_pi_params;
+use super::heating_params::{DEFAULT_MAX_CLAMP, observer_pi_params};
+use super::zone::Zone;
 use super::{
     ExtruderV2, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
     screw_speed_controller::ScrewSpeedController, temperature_controller::TemperatureController,
@@ -119,54 +120,41 @@ impl MachineNew for ExtruderV2 {
         let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
         let initial_target = ThermodynamicTemperature::new::<degree_celsius>(150.0);
         let pwm = Duration::from_millis(500);
-        // Rated band power per zone, in `[front, middle, back, nozzle]` order.
-        let rated_w = [700.0, 700.0, 700.0, 200.0];
 
-        // The control law differs by hardware generation.
-        //
-        // `MACHINE_EXTRUDER_V2` (the newer "V3" role layout) is the machine the
-        // thermal model in `simulation` was built and calibrated against, so it
-        // runs `ObserverPi`: a PI on an *estimate* of the barrel steel, over a
-        // feedforward that already knows what holding the setpoint costs. A PID
-        // on the raw reading cannot do better here no matter how it is tuned,
-        // because the RTDs trail the steel by something like 150 s and on a
-        // cold-start ramp that is a standing ~34 K error — which is essentially
-        // the whole of the overshoot the machine has always had.
-        //
-        // `MACHINE_EXTRUDER_V1` keeps its long-standing PID. It is a different
-        // machine, nothing has modelled it, and the parameters below are
-        // measured off V2's geometry — shipping them there would be guessing.
-        let (front, middle, back, nozzle) = match hw.identification.machine_ident.machine {
-            MACHINE_EXTRUDER_V2 => {
-                let p = observer_pi_params();
-                let build =
-                    |i: usize| -> Box<dyn HeatingStrategy> { Box::new(ObserverPi::new(p[i])) };
-                (build(0), build(1), build(2), build(3))
-            }
-            _ => {
-                let build = |max_clamp: f64| -> Box<dyn HeatingStrategy> {
-                    Box::new(PidBaseline::new(0.16, 0.0, 0.008, max_clamp))
-                };
-                (build(1.0), build(1.0), build(1.0), build(0.95))
-            }
-        };
+        // The control law differs by hardware generation. `MACHINE_EXTRUDER_V2`
+        // is the machine the thermal model was calibrated against, so it runs
+        // `ObserverPi`. `MACHINE_EXTRUDER_V1` keeps its long-standing PID: it is
+        // a different machine, nothing has modelled it, and the parameters below
+        // are measured off V2's geometry. See `simulation/README.md`.
+        let is_v2 = hw.identification.machine_ident.machine == MACHINE_EXTRUDER_V2;
+        let observer_pi = observer_pi_params();
 
-        let controller = |strategy, port: usize| {
+        let controller = |zone: Zone| {
+            let strategy: Box<dyn HeatingStrategy> = if is_v2 {
+                Box::new(ObserverPi::new(observer_pi[zone.port()]))
+            } else {
+                Box::new(PidBaseline::new(
+                    0.16,
+                    0.0,
+                    0.008,
+                    DEFAULT_MAX_CLAMP[zone.port()],
+                ))
+            };
             TemperatureController::with_strategy(
                 strategy,
                 initial_target,
                 extruder_max_temperature,
                 Heating::default(),
                 pwm,
-                rated_w[port],
-                port,
-                port,
+                zone.rated_w(),
+                zone.port(),
+                zone.port(),
             )
         };
-        let temperature_controller_front = controller(front, 0);
-        let temperature_controller_middle = controller(middle, 1);
-        let temperature_controller_back = controller(back, 2);
-        let temperature_controller_nozzle = controller(nozzle, 3);
+        let temperature_controller_front = controller(Zone::Front);
+        let temperature_controller_middle = controller(Zone::Middle);
+        let temperature_controller_back = controller(Zone::Back);
+        let temperature_controller_nozzle = controller(Zone::Nozzle);
 
         let inverter = MitsubishiCS80::new();
         let target_pressure = Pressure::new::<bar>(0.0);

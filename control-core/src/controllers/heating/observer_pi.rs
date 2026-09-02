@@ -1,33 +1,20 @@
 //! PI on an estimate of the metal, plus a feedforward that already knows what
 //! holding that temperature costs.
 //!
-//! Two changes to a textbook loop, each aimed at one reason the textbook loop
-//! overshoots on a slow thermal plant.
+//! Two changes to a textbook loop, each aimed at one reason it overshoots on a
+//! slow thermal plant:
 //!
-//! # Regulate the metal, not the probe
-//!
-//! A PID on the raw reading is chasing a signal that trails the metal by
-//! `tau_probe * rate` — a *constant* error for as long as the ramp lasts, which
-//! no choice of gains removes, because from inside the loop it is
-//! indistinguishable from being genuinely that far from setpoint. On the
-//! extruder that is around 34 K, and it is most of the observed overshoot. A
-//! [`SensorLagObserver`] hands the loop the metal temperature instead.
-//!
-//! # Let feedforward carry the steady state
-//!
-//! Holding a zone at temperature costs a predictable duty, roughly proportional
-//! to how far above ambient it is being held. Supplying that directly leaves the
-//! integrator with only the residual to correct, which has three consequences
-//! that all matter here:
-//!
-//! - it converges in minutes instead of the tens of minutes a small `ki` needs
-//!   to build the whole steady-state duty from zero;
-//! - it cannot wind up across a long saturated ramp, because it was never
-//!   carrying much to begin with; and
-//! - **a setpoint change is answered immediately**, since the feedforward moves
-//!   the instant the target does rather than waiting for an integral to rebuild.
-//!   That is what fixes overshoot on a step up from an already-hot machine,
-//!   which is a different failure from the cold-start one.
+//! - **Regulate the metal, not the probe.** A PID on the raw reading chases a
+//!   signal that trails the metal by `tau_probe * rate` — a *constant* error for
+//!   as long as the ramp lasts, which no choice of gains removes. On the extruder
+//!   that is around 34 K and most of the observed overshoot, so a
+//!   [`SensorLagObserver`] hands the loop the metal temperature instead.
+//! - **Let feedforward carry the steady state.** Holding a zone costs a
+//!   predictable duty, roughly proportional to its lift above ambient. Supplying
+//!   it directly leaves the integrator only the residual, so it converges in
+//!   minutes rather than tens, cannot wind up much across a saturated ramp, and
+//!   answers a setpoint change immediately instead of waiting for an integral to
+//!   rebuild.
 
 use std::time::Instant;
 
@@ -43,8 +30,7 @@ pub struct ObserverPiParams {
     pub tau_sensor_s: f64,
     /// Smoothing applied before differentiating the reading, in seconds.
     /// Trades residual lag against how much sensor quantisation reaches the
-    /// estimate; an order of magnitude below `tau_sensor_s` is the useful
-    /// regime.
+    /// estimate; several times below `tau_sensor_s` is the useful regime.
     pub tau_filter_s: f64,
     /// Cap on the observer's correction, in K.
     pub lead_max_k: f64,

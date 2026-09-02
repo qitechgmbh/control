@@ -37,6 +37,17 @@ mock-machine = []
 memory-locking = []
 io-uring = []
 development-build = []
+# Offline thermal simulation of the extruder heating zones. Test-only in
+# practice; also built under `cfg(test)`, so `cargo test` covers it.
+simulation = []
+
+[[example]]
+name = "extruder_thermal_sim"
+required-features = ["simulation"]
+
+[[example]]
+name = "bench_heating"
+required-features = ["simulation"]
 
 [package.metadata.cargo-machete]
 ignored =  ["tonic"]

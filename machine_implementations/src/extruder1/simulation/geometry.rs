@@ -24,6 +24,8 @@
 //! at R = 35.5 → 55.5 mm; the barrel profile comes from `Schneckenzylinder`.
 //! The steel density is the file's own `density measure` property, 7850 kg/m³.
 
+use std::f64::consts::{FRAC_PI_4, PI};
+
 /// Steel density in kg/m³, from the STEP file's material property.
 pub const STEEL_DENSITY_KG_M3: f64 = 7850.0;
 
@@ -67,80 +69,42 @@ pub const SCREW_X1_MM: f64 = X_MAX_MM;
 /// Screw outer diameter in mm.
 pub const SCREW_D_MM: f64 = 25.0;
 
-/// One of the four independently controlled heating zones.
-///
-/// The discriminants match the EL3204 / EL2004 port numbers assigned in
-/// [`crate::extruder1::new`]: front = 0, middle = 1, back = 2, nozzle = 3.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Zone {
-    Front,
-    Middle,
-    Back,
-    Nozzle,
-}
+pub use crate::extruder1::zone::Zone;
 
 impl Zone {
-    /// All zones in port order.
-    pub const ALL: [Self; 4] = [Self::Front, Self::Middle, Self::Back, Self::Nozzle];
-
-    /// EL3204 / EL2004 port index for this zone.
-    pub const fn port(self) -> usize {
-        match self {
-            Self::Front => 0,
-            Self::Middle => 1,
-            Self::Back => 2,
-            Self::Nozzle => 3,
-        }
-    }
-
-    /// Lowercase wire-protocol name, matching `extruder1::api`.
-    pub const fn name(self) -> &'static str {
-        match self {
-            Self::Front => "front",
-            Self::Middle => "middle",
-            Self::Back => "back",
-            Self::Nozzle => "nozzle",
-        }
-    }
-
-    /// The heater band belonging to this zone.
+    /// Where this zone's heater band sits on the barrel. Its rated power is on
+    /// [`Zone::rated_w`], which production code needs without the CAD model.
     pub const fn band(self) -> Band {
         match self {
             // Global X 4…204, 206…406, 408…608; all three identical 200 mm bands.
             Self::Front => Band {
                 x0_mm: 4.0,
                 x1_mm: 204.0,
-                rated_w: 700.0,
             },
             Self::Middle => Band {
                 x0_mm: 206.0,
                 x1_mm: 406.0,
-                rated_w: 700.0,
             },
             Self::Back => Band {
                 x0_mm: 408.0,
                 x1_mm: 608.0,
-                rated_w: 700.0,
             },
             // Global X −77…−43: only 34 mm wide, and it sits on the Düse, on the
             // far side of the flange joint from the other three.
             Self::Nozzle => Band {
                 x0_mm: -77.0,
                 x1_mm: -43.0,
-                rated_w: 200.0,
             },
         }
     }
 }
 
-/// A band heater clamped around the barrel.
+/// A band heater clamped around the barrel. Its rated power lives on
+/// [`Zone::rated_w`].
 #[derive(Debug, Clone, Copy)]
 pub struct Band {
     pub x0_mm: f64,
     pub x1_mm: f64,
-    /// Rated electrical power in W, matching the values in
-    /// [`crate::extruder1::new`].
-    pub rated_w: f64,
 }
 
 impl Band {
@@ -155,14 +119,14 @@ impl Band {
 
     /// Contact area against the barrel in m².
     pub fn contact_area_m2(&self) -> f64 {
-        std::f64::consts::PI * (BAND_INNER_D_MM / 1000.0) * (self.width_mm() / 1000.0)
+        PI * (BAND_INNER_D_MM / 1000.0) * (self.width_mm() / 1000.0)
     }
 
     /// Volume of the band's own shell in m³ (the Ø65 → Ø71 annulus).
     pub fn shell_volume_m3(&self) -> f64 {
         let r_in = BAND_INNER_D_MM / 2000.0;
         let r_out = BAND_OUTER_D_MM / 2000.0;
-        std::f64::consts::PI * r_out.mul_add(r_out, -(r_in * r_in)) * (self.width_mm() / 1000.0)
+        PI * r_out.mul_add(r_out, -(r_in * r_in)) * (self.width_mm() / 1000.0)
     }
 }
 
@@ -237,7 +201,7 @@ pub const PROFILE: &[Segment] = &[
 pub fn steel_area_mm2(x_mm: f64) -> f64 {
     for s in PROFILE {
         if x_mm >= s.x0_mm && x_mm < s.x1_mm {
-            return std::f64::consts::FRAC_PI_4
+            return FRAC_PI_4
                 * s.outer_d_mm
                     .mul_add(s.outer_d_mm, -(s.bore_d_mm * s.bore_d_mm));
         }
@@ -315,8 +279,8 @@ mod tests {
         );
         // ~6 kg on 200 W, versus ~4.4 kg on 700 W: the ratio of (mass / power) is
         // what makes the nozzle zone so much slower.
-        let nozzle_ratio = nozzle_mass / Zone::Nozzle.band().rated_w;
-        let front_ratio = front_mass / front.rated_w;
+        let nozzle_ratio = nozzle_mass / Zone::Nozzle.rated_w();
+        let front_ratio = front_mass / Zone::Front.rated_w();
         assert!(
             nozzle_ratio > 4.0 * front_ratio,
             "nozzle kg/W {nozzle_ratio:.5} should be several times front's {front_ratio:.5}"

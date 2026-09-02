@@ -1,15 +1,16 @@
 //! Headless runner for the extruder heating simulation.
 //!
 //! ```text
-//! cargo run --release -p machine_implementations --example extruder_thermal_sim -- --help
+//! cargo run --release -p machine_implementations --features simulation \
+//!     --example extruder_thermal_sim -- --help
 //! ```
 
 use std::time::Duration;
 
+use machine_implementations::extruder1::heating_params::observer_pi_params;
 use machine_implementations::extruder1::simulation::{
     ExtruderThermalParams, Scenario, SimConfig, StrategyConfig, ThermalSim, Zone, ZoneTuning,
     fit::{self, RecordedRun},
-    tuning::{cascade_params, observer_pi_params},
 };
 
 const HELP: &str = "\
@@ -17,7 +18,7 @@ extruder_thermal_sim — offline simulation of the extruder's 4 heating zones
 
 USAGE:
     --scenario <name>     run a scenario (default: recorded-heatup)
-    --strategy <name>     control law: pid | observer-pi | cascade
+    --strategy <name>     control law: pid | observer-pi
                           default pid, because that is what the reference
                           recording was made with and what --compare scores
                           against; observer-pi is what ships on EXTRUDER_V2
@@ -106,8 +107,7 @@ fn main() {
         config.strategy = match name.as_str() {
             "pid" => StrategyConfig::Pid(ZoneTuning::PRODUCTION),
             "observer-pi" => StrategyConfig::ObserverPi(observer_pi_params()),
-            "cascade" => StrategyConfig::Cascade(cascade_params()),
-            other => panic!("unknown strategy {other}; expected pid, observer-pi or cascade"),
+            other => panic!("unknown strategy {other}; expected pid or observer-pi"),
         };
     }
 
@@ -311,7 +311,6 @@ fn print_summary(
     let gains = |p: usize| match strategy {
         StrategyConfig::Pid(t) => format!("{}/{}/{}", t[p].kp, t[p].ki, t[p].kd),
         StrategyConfig::ObserverPi(t) => format!("{}/{}", t[p].kp, t[p].ki),
-        StrategyConfig::Cascade(t) => format!("{}/{}", t[p].kp, t[p].ki),
     };
     println!(
         "{:<8} {:>13} {:>8} {:>8} {:>10} {:>9} {:>9} {:>8} {:>7}",

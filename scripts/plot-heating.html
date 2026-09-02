@@ -3,7 +3,7 @@
 <title>Extruder heating</title>
 <!--
   Plots a CSV written by:
-    cargo run --release -p machine_implementations \
+    cargo run --release -p machine_implementations --features simulation \
       --example extruder_thermal_sim -- --scenario cold-start --out heating.csv
 
   Open this file in a browser and drop the CSV on it. No dependencies, no server;

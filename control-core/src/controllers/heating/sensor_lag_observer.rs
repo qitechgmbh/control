@@ -1,34 +1,25 @@
 //! Undoing a temperature sensor's own time constant.
 //!
 //! A probe in a pocket is a first-order lag: `tau * y' = x - y`, where `x` is
-//! the metal and `y` is what the terminal reports. Rearranged, the metal
-//! temperature is `x = y + tau * y'`, so an estimate of the reading's slope buys
-//! back the lag.
+//! the metal and `y` is what the terminal reports. Rearranged, `x = y + tau * y'`,
+//! so an estimate of the reading's slope buys back the lag.
 //!
-//! # Why the slope is not `(y - y_prev) / dt`
-//!
-//! On a machine that runs its control loop in the kHz and reads a terminal that
-//! converts every few hundred milliseconds in 0.1 °C steps, the naive difference
-//! quotient is meaningless: it is zero on almost every tick, and on the tick the
-//! reading finally moves it is `0.1 / 0.001 = 100 K/s`. That is what makes a
-//! plain `kd` term on these loops nothing but quantisation noise.
-//!
-//! This uses the washout form instead, which never divides by `dt`:
+//! The slope is *not* `(y - y_prev) / dt`. With a kHz control loop reading a
+//! terminal that converts every few hundred ms in 0.1 °C steps, that quotient is
+//! zero on almost every tick and `0.1 / 0.001 = 100 K/s` on the tick the reading
+//! moves — which is why a plain `kd` term on these loops is pure quantisation
+//! noise. The washout form below never divides by `dt`:
 //!
 //! ```text
 //! y_f += (1 - exp(-dt / tau_f)) * (y - y_f)     // low-pass of the reading
 //! y'   = (y - y_f) / tau_f                      // its exact derivative
 //! ```
 //!
-//! Feed it a ramp of `r` K/s and `y - y_f` settles at `r * tau_f`, so the slope
-//! estimate settles at exactly `r` — the filter time constant cancels. One
-//! quantisation step, meanwhile, moves the slope estimate by only
-//! `0.1 / tau_f` K/s. That is the whole trick: full ramp sensitivity, and
-//! quantisation attenuated by `tau_f`.
-//!
-//! The price is that the lag is not removed so much as *traded down*: the
-//! estimate still trails by about `tau_f` instead of `tau_sensor`. Choosing
-//! `tau_f` an order of magnitude below `tau_sensor` is the useful regime.
+//! On a ramp of `r` K/s, `y - y_f` settles at `r * tau_f` and the slope estimate
+//! at exactly `r`, while one quantisation step moves it by only `0.1 / tau_f`.
+//! The lag is traded down rather than removed — the estimate still trails by
+//! about `tau_f` — so `tau_f` several times below `tau_sensor` is the useful
+//! regime.
 
 use std::time::Instant;
 
@@ -38,7 +29,8 @@ pub struct SensorLagObserver {
     /// The probe's own time constant in seconds — how far it trails the metal.
     tau_sensor_s: f64,
     /// Smoothing applied before differentiating, in seconds. Sets both the
-    /// residual lag and how much sensor quantisation reaches the estimate.
+    /// residual lag and how much sensor quantisation reaches the estimate;
+    /// several times below `tau_sensor_s` is the useful regime.
     tau_filter_s: f64,
     /// Cap on the correction, in K. Bounds what a wrong `tau_sensor_s`, a
     /// sensor glitch or a step change of setpoint can do to the estimate.
@@ -51,6 +43,11 @@ pub struct SensorLagObserver {
 
 impl SensorLagObserver {
     pub const fn new(tau_sensor_s: f64, tau_filter_s: f64, lead_max_k: f64) -> Self {
+        debug_assert!(
+            tau_filter_s > 0.0,
+            "tau_filter_s divides the slope estimate"
+        );
+        debug_assert!(tau_sensor_s >= 0.0);
         Self {
             tau_sensor_s,
             tau_filter_s,
@@ -95,12 +92,6 @@ impl SensorLagObserver {
     fn estimate(&self, measured_c: f64) -> f64 {
         let lead = (self.tau_sensor_s * self.rate_c_per_s).clamp(-self.lead_max_k, self.lead_max_k);
         measured_c + lead
-    }
-
-    /// Estimated rate of change of the metal, in K/s. Heavily smoothed, and
-    /// useful for deciding when a zone is close enough to be settling.
-    pub const fn rate_c_per_s(&self) -> f64 {
-        self.rate_c_per_s
     }
 
     pub const fn reset(&mut self) {
@@ -149,7 +140,7 @@ mod tests {
         for i in 0..steps {
             let t = i as f64 * dt;
             let metal = metal_at(t);
-            probe += dt / tau_sensor * (metal - probe);
+            probe = (dt / tau_sensor).mul_add(metal - probe, probe);
             let reading = if quantise {
                 (probe * 10.0).round() / 10.0
             } else {
@@ -172,7 +163,7 @@ mod tests {
         let r = run(150.0, 15.0, |t| rate.mul_add(t, 22.0), 1500.0, 750.0, false);
 
         assert!(
-            (r.raw_error_k - 150.0 * rate).abs() < 1.0,
+            (150.0f64.mul_add(-rate, r.raw_error_k)).abs() < 1.0,
             "raw reading should trail by tau*rate = {:.1} K, trailed {:.1} K",
             150.0 * rate,
             r.raw_error_k
