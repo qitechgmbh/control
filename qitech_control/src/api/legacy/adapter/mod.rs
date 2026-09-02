@@ -4,7 +4,8 @@ use qitech_framework::RuntimeRequestKind;
 
 use crate::api::types::MachineInstance;
 
-mod laser_v1;
+pub mod aquapath_v1;
+pub mod laser_v1;
 
 pub fn get(ident: MachineIdentification) -> Option<MachineLegacyDataAdapter> {
     const IDENT_LASER: MachineIdentification = MachineIdentification {
@@ -12,8 +13,14 @@ pub fn get(ident: MachineIdentification) -> Option<MachineLegacyDataAdapter> {
         machine_id: 6,
     };
 
+    const IDENT_AQUAPATH: MachineIdentification = MachineIdentification {
+        vendor_id: 1,
+        machine_id: 9,
+    };
+
     match ident {
         IDENT_LASER => Some(laser_v1::ADAPTER),
+        IDENT_AQUAPATH => Some(aquapath_v1::ADAPTER),
         _ => None,
     }
 }
