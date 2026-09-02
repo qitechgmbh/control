@@ -63,17 +63,26 @@
 <div id="hint" hidden>drag across the chart to zoom into a time range · double-click to reset</div>
 
 <script>
-  const ZONES = ["front", "middle", "back", "nozzle"];
-  const COLORS = { front: "#2f7ed8", middle: "#d9534f", back: "#3f9a52", nozzle: "#b36ae2" };
+  // "machine" is the pseudo-zone for columns that belong to the whole machine
+  // rather than one heating zone — screw speed, throughput, what the melt
+  // carries out. They have no `_<zone>` suffix in the CSV.
+  const MACHINE = "machine";
+  const ZONES = ["front", "middle", "back", "nozzle", MACHINE];
+  const COLORS = { front: "#2f7ed8", middle: "#d9534f", back: "#3f9a52",
+                   nozzle: "#b36ae2", [MACHINE]: "#6b6b6b" };
   // Column prefix -> axis label. `T` covers the recorded-run format.
   const UNITS = { setpoint: "°C", sensor: "°C", steel: "°C", band: "°C", T: "°C",
-                  duty: "0-1", power_w: "W" };
+                  melt: "°C", duty: "0-1", power_w: "W", meltload_w: "W",
+                  melt_out_w: "W", shear_w: "W",
+                  screw_rpm: "rpm", throughput_kg_h: "kg/h" };
   // Digits per unit for the hover readout and the axis ticks.
-  const DIGITS = { "°C": 1, "0-1": 3, "W": 0 };
+  const DIGITS = { "°C": 1, "0-1": 3, "W": 0, "rpm": 0, "kg/h": 2 };
   // Dash per measure: the temperature the controller reads stays solid, the
   // rest are distinguishable at a glance. Unknown columns cycle through DASHES.
   const DASH = { sensor: "none", T: "none", setpoint: "6 4", steel: "2 3",
-                 band: "1 3", duty: "9 3 2 3", power_w: "11 4 1 4" };
+                 band: "1 3", duty: "9 3 2 3", power_w: "11 4 1 4",
+                 melt: "4 2", meltload_w: "1 2", screw_rpm: "none",
+                 throughput_kg_h: "6 2", melt_out_w: "3 3", shear_w: "8 2 1 2" };
   const DASHES = ["none", "6 4", "2 3", "1 3", "9 3 2 3", "11 4 1 4", "6 2 2 2 2 2"];
   const W = 900, H = 460, M = { l: 52, t: 20, b: 34 }, AXIS_W = 48;
 
@@ -99,9 +108,11 @@
     // Group columns by their prefix: "sensor_front" -> sensor / front.
     const groups = {}, measures = [];
     for (const h of head) {
-      const zone = ZONES.find(z => h.endsWith("_" + z));
-      if (!zone) continue;
-      const prefix = h.slice(0, -(zone.length + 1));
+      if (h === "t_s") continue;
+      // `melt_front` -> melt / front; an unsuffixed `screw_rpm` -> screw_rpm /
+      // machine, so machine-wide series are drawn rather than silently dropped.
+      const zone = ZONES.find(z => h.endsWith("_" + z)) ?? MACHINE;
+      const prefix = zone === MACHINE ? h : h.slice(0, -(zone.length + 1));
       if (!groups[prefix]) { groups[prefix] = {}; measures.push(prefix); }
       groups[prefix][zone] = cols[h];
     }
@@ -304,7 +315,8 @@
     // and effect are on screen together from the first frame.
     onMeasures = new Set(["setpoint", "sensor", "T", "duty"].filter(m => data.groups[m]));
     if (!onMeasures.size && data.measures.length) onMeasures.add(data.measures[0]);
-    onZones = new Set(ZONES);
+    onZones = new Set(ZONES.filter(z =>
+      data.measures.some(m => data.groups[m][z])));
     buildPickers();
     render();
   }

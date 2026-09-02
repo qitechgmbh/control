@@ -27,8 +27,7 @@ fn scenario(setpoints_c: [f64; 4]) -> Scenario {
         initial_c: 22.0,
         duration_s: 6000.0,
         setpoints_c,
-        heating_enabled_at_s: 0.0,
-        changes: Vec::new(),
+        ..Scenario::default()
     }
 }
 

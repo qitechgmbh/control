@@ -69,6 +69,137 @@ pub const SCREW_X1_MM: f64 = X_MAX_MM;
 /// Screw outer diameter in mm.
 pub const SCREW_D_MM: f64 = 25.0;
 
+/// The screw's root (core) diameter along the axis, measured from
+/// `Oberbau_UBG.step`.
+///
+/// [`SCREW_D_MM`] is the flight *tip* diameter, which is why the model filled
+/// the whole Ø25 bore with steel until the melt was added. The polymer really
+/// travels in the annulus between the root and the bore, and the root is not
+/// constant: this is a textbook three-zone screw, deep where cold pellets enter
+/// and shallow where melt is pumped into the die.
+///
+/// # Provenance
+///
+/// Read out of the STEP file the same way the barrel [`PROFILE`] was. The
+/// `Schnecke` part is placed in the assembly by a pure +879 mm translation along
+/// x (`ITEM_DEFINED_TRANSFORMATION` #164), so its local coordinates map to the
+/// global frame by adding 879 — which is what puts the flighted section's local
+/// −952…−52 at the global −73…827 that [`SCREW_X0_MM`] already recorded. The
+/// root diameters are the radii of the `CYLINDRICAL_SURFACE` and
+/// `CONICAL_SURFACE` faces between the flights: Ø21.2 metering, a 0.007 rad
+/// cone tapering to Ø13.6, then Ø13.6 through the feed section, and a Ø19
+/// journal behind it.
+///
+/// Only used when [`super::params::MeltParams::enabled`] is set; with the melt
+/// off the screw stays the solid Ø25 cylinder the thermal calibration assumed.
+pub const SCREW_ROOT_PROFILE: &[RootSegment] = &[
+    // Nose and metering section: the shallowest channel, next to the die.
+    RootSegment {
+        x0_mm: -73.0,
+        x1_mm: 97.0,
+        d0_mm: 21.2,
+        d1_mm: 21.2,
+    },
+    // Compression: the cone, Ø21.2 back to Ø13.6 over 530 mm.
+    RootSegment {
+        x0_mm: 97.0,
+        x1_mm: 627.0,
+        d0_mm: 21.2,
+        d1_mm: 13.6,
+    },
+    // Feed: the deepest channel, where the cold pellets drop in.
+    RootSegment {
+        x0_mm: 627.0,
+        x1_mm: 747.0,
+        d0_mm: 13.6,
+        d1_mm: 13.6,
+    },
+    // The journal behind the feed throat. Flighted, but nothing is in it.
+    RootSegment {
+        x0_mm: 747.0,
+        x1_mm: 827.0,
+        d0_mm: 19.0,
+        d1_mm: 19.0,
+    },
+];
+
+/// One run of the screw root, linear from `d0_mm` to `d1_mm`.
+#[derive(Debug, Clone, Copy)]
+pub struct RootSegment {
+    pub x0_mm: f64,
+    pub x1_mm: f64,
+    pub d0_mm: f64,
+    pub d1_mm: f64,
+}
+
+/// Axial position of the feed throat in mm, where material enters.
+///
+/// Taken in the middle of the measured deep-channel feed section (627…747 mm),
+/// which is the only place on the screw shaped to accept pellets. The throat
+/// opening itself is in the feed housing, which is not part of the modelled
+/// geometry, so this is the screw's evidence rather than the hopper's.
+///
+/// Its exact value matters little: the 231 mm of bare barrel behind the back
+/// band sits near ambient anyway, so material enters cold wherever in it the
+/// throat is.
+pub const FEED_X_MM: f64 = 700.0;
+
+/// Screw root diameter at `x`, in mm. Zero where the screw does not reach.
+pub fn screw_root_d_mm(x_mm: f64) -> f64 {
+    for s in SCREW_ROOT_PROFILE {
+        if x_mm >= s.x0_mm && x_mm < s.x1_mm {
+            let t = (x_mm - s.x0_mm) / (s.x1_mm - s.x0_mm);
+            return (s.d1_mm - s.d0_mm).mul_add(t, s.d0_mm);
+        }
+    }
+    0.0
+}
+
+/// Cross-section of the polymer channel at `x`, in mm².
+///
+/// Inside the screw's extent this is the annulus between the root and the bore;
+/// ahead of the screw, in the Düse, the full bore is melt. Zero outside the
+/// modelled machine and behind the feed throat, where there is no material yet.
+///
+/// # Approximations
+///
+/// The flight land is ignored — it occupies roughly a tenth of the annulus on a
+/// square-pitched screw, and resolving the helix would buy a correction far
+/// smaller than the uncertainty in [`super::params::MeltParams::film_h`], which
+/// absorbs it.
+///
+/// The channel is also treated as completely full. The metering section is; the
+/// feed section is not, since pellets enter at a lower bulk density and only
+/// compact as they melt. That makes the modelled residence time too long at low
+/// throughput without affecting the steady-state thermal load.
+pub fn channel_area_mm2(x_mm: f64) -> f64 {
+    if x_mm < X_MIN_MM || x_mm > FEED_X_MM {
+        return 0.0;
+    }
+    let root = screw_root_d_mm(x_mm);
+    FRAC_PI_4 * root.mul_add(-root, BORE_D_MM * BORE_D_MM)
+}
+
+/// Solid cross-section of the screw at `x`, in mm² — whatever of the bore the
+/// polymer is not using. Zero where the screw does not reach.
+///
+/// Together with [`channel_area_mm2`] this exactly fills the bore, which is the
+/// invariant that keeps the two from drifting apart.
+pub fn screw_solid_area_mm2(x_mm: f64) -> f64 {
+    let root = screw_root_d_mm(x_mm);
+    FRAC_PI_4 * root * root
+}
+
+/// Polymer channel volume between `x0` and `x1` in mm³, integrating
+/// [`channel_area_mm2`] with the same midpoint rule as [`steel_volume_mm3`].
+pub fn channel_volume_mm3(x0_mm: f64, x1_mm: f64) -> f64 {
+    const SUBDIVISIONS: usize = 200;
+    let dx = (x1_mm - x0_mm) / SUBDIVISIONS as f64;
+    (0..SUBDIVISIONS)
+        .map(|i| channel_area_mm2((i as f64 + 0.5).mul_add(dx, x0_mm)) * dx)
+        .sum()
+}
+
 pub use crate::extruder1::zone::Zone;
 
 impl Zone {
@@ -320,6 +451,92 @@ mod tests {
         // The nozzle band is deliberately outside the sleeve.
         let n = Zone::Nozzle.band();
         assert!(n.x1_mm < INSULATION_X0_MM);
+    }
+
+    /// The screw and the polymer must exactly fill the bore between them — if
+    /// they ever stop doing that, one of the two areas has drifted.
+    #[test]
+    fn the_screw_and_the_channel_fill_the_bore() {
+        let bore = FRAC_PI_4 * BORE_D_MM * BORE_D_MM;
+        for x in [-70.0, 0.0, 97.0, 300.0, 627.0, 700.0] {
+            assert_relative_eq!(
+                channel_area_mm2(x) + screw_solid_area_mm2(x),
+                bore,
+                max_relative = 1e-9
+            );
+        }
+    }
+
+    /// Ahead of the screw the Düse is a plain tube, so all of it is melt.
+    #[test]
+    fn the_nozzle_bore_is_all_melt() {
+        let bore = FRAC_PI_4 * BORE_D_MM * BORE_D_MM;
+        assert_relative_eq!(channel_area_mm2(-150.0), bore, max_relative = 1e-9);
+        assert!(screw_solid_area_mm2(-150.0).abs() < f64::EPSILON);
+    }
+
+    /// The measured three-zone screw: deep where cold pellets enter, shallow
+    /// where melt is pumped into the die. Getting this backwards would make the
+    /// feed section the shallow one, which is the opposite of how a screw works.
+    #[test]
+    fn the_channel_is_deepest_at_the_feed_end() {
+        let metering = channel_area_mm2(0.0);
+        let compression = channel_area_mm2(350.0);
+        let feed = channel_area_mm2(680.0);
+        assert!(
+            feed > compression && compression > metering,
+            "channel areas should grow towards the feed: \
+             metering {metering:.0}, compression {compression:.0}, feed {feed:.0} mm²"
+        );
+        // Ø13.6 root against a Ø25 bore is a 5.7 mm channel; Ø21.2 is 1.9 mm.
+        assert_relative_eq!(screw_root_d_mm(680.0), 13.6, max_relative = 1e-9);
+        assert_relative_eq!(screw_root_d_mm(0.0), 21.2, max_relative = 1e-9);
+    }
+
+    /// Roughly a third of a kilo of polymer sits in the machine. At the rated
+    /// 10 kg/h that is a residence time of a couple of minutes, which is the
+    /// right order for a single-screw extruder.
+    #[test]
+    fn the_polymer_inventory_is_about_a_third_of_a_kilo() {
+        let volume_mm3 = channel_volume_mm3(X_MIN_MM, FEED_X_MM);
+        let mass_kg = volume_mm3 * 1e-9 * 1200.0;
+        assert!(
+            (0.25..0.45).contains(&mass_kg),
+            "polymer inventory {mass_kg:.3} kg outside the expected range"
+        );
+
+        let residence_s = mass_kg / (10.0 / 3600.0);
+        assert!(
+            (60.0..240.0).contains(&residence_s),
+            "residence time {residence_s:.0} s at 10 kg/h is not plausible"
+        );
+    }
+
+    /// Making room for the polymer takes real steel out of the bore, and that
+    /// is the one way enabling the melt perturbs the existing calibration.
+    #[test]
+    fn making_room_for_the_melt_lightens_the_screw() {
+        let solid = |x0: f64, x1: f64| {
+            const N: usize = 2000;
+            let dx = (x1 - x0) / N as f64;
+            (0..N)
+                .map(|i| screw_solid_area_mm2((i as f64 + 0.5).mul_add(dx, x0)) * dx)
+                .sum::<f64>()
+                * 1e-9
+                * STEEL_DENSITY_KG_M3
+        };
+        let rooted = solid(SCREW_X0_MM, 827.0);
+        let as_a_solid_bar = FRAC_PI_4
+            * SCREW_D_MM
+            * SCREW_D_MM
+            * (827.0 - SCREW_X0_MM)
+            * 1e-9
+            * STEEL_DENSITY_KG_M3;
+        assert!(
+            rooted < as_a_solid_bar * 0.6,
+            "the real screw {rooted:.2} kg should be far lighter than the \
+             {as_a_solid_bar:.2} kg solid bar the model used to assume"
+        );
     }
 
     #[test]

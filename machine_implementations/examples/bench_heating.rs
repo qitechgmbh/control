@@ -65,8 +65,7 @@ fn profile(sp: [f64; 4]) -> Scenario {
         initial_c: 22.0,
         duration_s: DURATION_S,
         setpoints_c: sp,
-        heating_enabled_at_s: 0.0,
-        changes: Vec::new(),
+        ..Scenario::default()
     }
 }
 

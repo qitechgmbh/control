@@ -97,6 +97,233 @@ pub struct ExtruderThermalParams {
     /// Nominal axial cell size in mm. 20 mm gives ~54 cells over the full length
     /// and resolves the axial gradients that couple the zones.
     pub cell_size_mm: f64,
+
+    // ---- material throughput ----
+    /// What the polymer passing through the machine does thermally. Disabled by
+    /// default, in which case the model is exactly the idle machine the rest of
+    /// these coefficients were calibrated against.
+    pub melt: MeltParams,
+}
+
+/// The polymer moving through the barrel: what it is, how much of it, and what
+/// the screw does to it.
+///
+/// # Status: not validated
+///
+/// Every number here is a handbook value or a hand calculation. Unlike the
+/// coefficients on [`ExtruderThermalParams`], **none of it has been fitted to a
+/// recording of the real machine**, because no recording of an extrusion run
+/// exists yet. The model's *structure* is standard single-screw practice and the
+/// magnitudes are right; the individual coefficients are not measurements. See
+/// `README.md` for what recording would fix that.
+///
+/// Deliberately kept off [`ExtruderThermalParams::COEFFICIENTS`] so that the
+/// existing nine-coefficient calibration and [`super::fit`] are untouched.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MeltParams {
+    /// Whether to model the polymer at all.
+    ///
+    /// With this off the bore holds the solid Ø25 screw the calibration assumed
+    /// and there is no melt chain, so the network is identical to the one the
+    /// heat-up recording was fitted against.
+    ///
+    /// With it on, the screw is cut back to its measured root profile to make
+    /// room for the channel: about 1.8 kg of steel comes out and 0.32 kg of
+    /// polymer goes in. Polymer holds roughly four times the heat per kilogram,
+    /// so the bore's total heat capacity only drops by around a sixth — bounded
+    /// by `splitting_the_bore_barely_changes_its_heat_capacity` in
+    /// [`super::model`]. That is small, but it is not nothing: with the melt on
+    /// this is no longer exactly the plant the nine thermal coefficients were
+    /// fitted to. See `README.md`.
+    pub enabled: bool,
+
+    /// Throughput per screw rpm, in kg/h. Linear: 100 rpm — the machine maximum
+    /// — gives 10 kg/h, 10 rpm gives 1 kg/h.
+    pub kg_per_h_per_rpm: f64,
+
+    // ---- material ----
+    /// Melt density in kg/m³. ~1200 for PLA, ~1240 for PETG, ~750 for PP.
+    pub density_kg_m3: f64,
+    /// Specific heat of the solid polymer in J/(kg·K).
+    pub cp_solid: f64,
+    /// Specific heat of the melt in J/(kg·K).
+    pub cp_melt: f64,
+    /// Latent heat of fusion in J/kg. PLA is only partly crystalline, so this is
+    /// far below a polyolefin's ~200 kJ/kg.
+    pub latent_heat_j_per_kg: f64,
+    /// Melting point in °C.
+    pub melt_temperature_c: f64,
+    /// Half-width of the melting range in K, over which the latent heat is
+    /// smeared into an apparent heat capacity. See
+    /// [`Self::specific_enthalpy_j_per_kg`].
+    pub melt_window_k: f64,
+    /// Temperature the material arrives at the feed throat at, in °C.
+    pub feed_c: f64,
+
+    // ---- interfaces ----
+    /// Heat transfer coefficient between the melt and the barrel bore, in
+    /// W/(m²·K).
+    ///
+    /// The most uncertain coefficient here after
+    /// [`Self::specific_mechanical_energy_kwh_per_kg`]. A thin sheared melt film
+    /// against a metal wall transfers far better than stagnant polymer, and the
+    /// value depends on how full the channel is, which varies along the screw.
+    pub film_h: f64,
+
+    // ---- the screw's mechanical work ----
+    /// Specific mechanical energy in kWh/kg: the shaft work the screw puts into
+    /// each kilogram of polymer, essentially all of which becomes heat.
+    ///
+    /// Small single-screw extruders run 0.1–0.25 kWh/kg. **This term is the same
+    /// order as the melting load it opposes** — at 10 kg/h, 0.10 kWh/kg is
+    /// ~1000 W of shear heat against ~990 W carried out — so whether extruding
+    /// heats or cools the barrel is decided by a number nobody has measured on
+    /// this machine. Treat any conclusion that depends on the sign with care.
+    pub specific_mechanical_energy_kwh_per_kg: f64,
+    /// Ceiling on shear power in W: the drive cannot deliver more than its
+    /// nameplate, whatever the specific energy says.
+    ///
+    /// **Placeholder.** The drive's rating is not in the codebase —
+    /// [`crate::extruder1::screw_speed_controller::ScrewSpeedController`] carries
+    /// only the 60 Hz frequency ceiling and the pole count. Read it off the motor
+    /// and correct this.
+    pub max_shear_power_w: f64,
+}
+
+impl Default for MeltParams {
+    fn default() -> Self {
+        Self::pla()
+    }
+}
+
+impl MeltParams {
+    /// PLA, disabled. Enable with [`Self::enabled`].
+    pub const fn pla() -> Self {
+        Self {
+            enabled: false,
+            kg_per_h_per_rpm: 0.1,
+
+            density_kg_m3: 1200.0,
+            cp_solid: 1800.0,
+            cp_melt: 2100.0,
+            latent_heat_j_per_kg: 45_000.0,
+            melt_temperature_c: 160.0,
+            melt_window_k: 10.0,
+            feed_c: 22.0,
+
+            film_h: 300.0,
+
+            specific_mechanical_energy_kwh_per_kg: 0.10,
+            max_shear_power_w: 1500.0,
+        }
+    }
+
+    /// Throughput at a given screw speed, in kg/s.
+    pub fn mass_flow_kg_per_s(&self, screw_rpm: f64) -> f64 {
+        (screw_rpm.max(0.0) * self.kg_per_h_per_rpm) / 3600.0
+    }
+
+    /// Total shear power at a given screw speed, in W, capped at the drive's
+    /// rating.
+    pub fn shear_power_w(&self, screw_rpm: f64) -> f64 {
+        let joules_per_kg = self.specific_mechanical_energy_kwh_per_kg * 3.6e6;
+        (self.mass_flow_kg_per_s(screw_rpm) * joules_per_kg).min(self.max_shear_power_w)
+    }
+
+    /// Bounds of the melting range in °C.
+    const fn melting_range(&self) -> (f64, f64) {
+        (
+            self.melt_temperature_c - self.melt_window_k,
+            self.melt_temperature_c + self.melt_window_k,
+        )
+    }
+
+    /// Specific heat inside the melting range, in J/(kg·K) — the sensible mean
+    /// plus the latent heat smeared across the window.
+    fn cp_window(&self) -> f64 {
+        let sensible = (self.cp_solid + self.cp_melt) * 0.5;
+        sensible + self.latent_heat_j_per_kg / (2.0 * self.melt_window_k)
+    }
+
+    /// Specific enthalpy at `t_c`, in J/kg, relative to 0 °C.
+    ///
+    /// Piecewise linear with a steep middle section: solid below the melting
+    /// range, melt above it, and in between a slope that carries the latent heat.
+    ///
+    /// A lumped-capacitance network integrates `C dT/dt = Q`, which cannot
+    /// represent a true phase change — the material would have to absorb energy
+    /// at constant temperature, and a node with a finite capacity cannot. The
+    /// standard workaround is this: smear the latent heat over a narrow range so
+    /// that *crossing* it costs the right number of joules. It also raises the
+    /// node's capacity there, which helps rather than hurts the step limit.
+    pub fn specific_enthalpy_j_per_kg(&self, t_c: f64) -> f64 {
+        let (lo, hi) = self.melting_range();
+        if t_c <= lo {
+            self.cp_solid * t_c
+        } else if t_c >= hi {
+            // Solid up to `lo`, then the whole melting range, then melt.
+            let h_hi = self.cp_window().mul_add(hi - lo, self.cp_solid * lo);
+            self.cp_melt.mul_add(t_c - hi, h_hi)
+        } else {
+            self.cp_window().mul_add(t_c - lo, self.cp_solid * lo)
+        }
+    }
+
+    /// Tangent specific heat `dh/dT` at `t_c`, in J/(kg·K).
+    ///
+    /// This is what a node's heat capacity wants: it makes `dT/dt = Q/(m·dh/dT)`
+    /// correct. It is *not* what a [`control_core::thermal::Flow`] wants — see
+    /// [`Self::secant_cp_j_per_kg_k`].
+    pub fn apparent_cp_j_per_kg_k(&self, t_c: f64) -> f64 {
+        let (lo, hi) = self.melting_range();
+        if t_c <= lo {
+            self.cp_solid
+        } else if t_c >= hi {
+            self.cp_melt
+        } else {
+            self.cp_window()
+        }
+    }
+
+    /// Secant specific heat between `datum_c` and `t_c`, in J/(kg·K).
+    ///
+    /// `(h(T) - h(datum)) / (T - datum)`. This is what an advection edge wants:
+    /// with it, `w = m_dot * secant_cp` makes the edge carry exactly
+    /// `m_dot * (h(T) - h(datum))`, so a chain transports true enthalpy
+    /// differences and nothing leaks across the melting range. Using the tangent
+    /// here instead would advect `cp*T` rather than `h`, which is only the same
+    /// thing while `cp` is constant — i.e. everywhere except the one place in
+    /// this machine that matters.
+    pub fn secant_cp_j_per_kg_k(&self, t_c: f64, datum_c: f64) -> f64 {
+        let dt = t_c - datum_c;
+        if dt.abs() < 1e-9 {
+            return self.apparent_cp_j_per_kg_k(datum_c);
+        }
+        (self.specific_enthalpy_j_per_kg(t_c) - self.specific_enthalpy_j_per_kg(datum_c)) / dt
+    }
+
+    /// Set one melt coefficient by its `melt.` CLI name. Returns `false` for an
+    /// unknown name.
+    pub fn set_by_name(&mut self, name: &str, value: f64) -> bool {
+        match name {
+            "enabled" => self.enabled = value != 0.0,
+            "kg_per_h_per_rpm" => self.kg_per_h_per_rpm = value,
+            "density_kg_m3" => self.density_kg_m3 = value,
+            "cp_solid" => self.cp_solid = value,
+            "cp_melt" => self.cp_melt = value,
+            "latent_heat_j_per_kg" => self.latent_heat_j_per_kg = value,
+            "melt_temperature_c" => self.melt_temperature_c = value,
+            "melt_window_k" => self.melt_window_k = value,
+            "feed_c" => self.feed_c = value,
+            "film_h" => self.film_h = value,
+            "specific_mechanical_energy_kwh_per_kg" => {
+                self.specific_mechanical_energy_kwh_per_kg = value;
+            }
+            "max_shear_power_w" => self.max_shear_power_w = value,
+            _ => return false,
+        }
+        true
+    }
 }
 
 impl Default for ExtruderThermalParams {
@@ -137,6 +364,8 @@ impl ExtruderThermalParams {
             sensor_heat_capacity: 5.0,
 
             cell_size_mm: 20.0,
+
+            melt: MeltParams::pla(),
         }
     }
 
@@ -284,12 +513,16 @@ impl ExtruderThermalParams {
     /// Set one coefficient by name, unclamped. Returns `false` for an unknown
     /// name.
     ///
-    /// Covers the free coefficients in [`Self::COEFFICIENTS`] plus the fixed
-    /// values a caller may still want to override for an experiment.
+    /// Covers the free coefficients in [`Self::COEFFICIENTS`], the fixed values
+    /// a caller may still want to override for an experiment, and the melt
+    /// coefficients under a `melt.` prefix (`melt.film_h`, `melt.enabled`, ...).
     pub fn set_by_name(&mut self, name: &str, value: f64) -> bool {
         if let Some(c) = Self::COEFFICIENTS.iter().find(|c| c.name == name) {
             *c.get(self) = value;
             return true;
+        }
+        if let Some(key) = name.strip_prefix("melt.") {
+            return self.melt.set_by_name(key, value);
         }
         match name {
             "insulation_emissivity" => self.insulation_emissivity = value,
@@ -375,5 +608,136 @@ mod tests {
         assert!(p.set_by_name("band_contact_h", 123.0));
         assert!((p.band_contact_h - 123.0).abs() < f64::EPSILON);
         assert!(!p.set_by_name("no_such_parameter", 1.0));
+    }
+
+    #[test]
+    fn melt_coefficients_are_reachable_under_their_prefix() {
+        let mut p = ExtruderThermalParams::calibrated();
+        assert!(p.set_by_name("melt.film_h", 450.0));
+        assert!((p.melt.film_h - 450.0).abs() < f64::EPSILON);
+        assert!(p.set_by_name("melt.enabled", 1.0));
+        assert!(p.melt.enabled);
+        assert!(!p.set_by_name("melt.no_such_parameter", 1.0));
+    }
+
+    /// The melt model must not join the calibration: [`super::fit`] optimises
+    /// exactly the nine coefficients the heat-up recording can identify, and an
+    /// extrusion term is not one of them.
+    #[test]
+    fn the_melt_model_is_not_part_of_the_fitted_vector() {
+        let a = ExtruderThermalParams::calibrated();
+        let mut b = ExtruderThermalParams::calibrated();
+        b.melt.enabled = true;
+        b.melt.film_h = 1_234.0;
+        assert_eq!(a.to_vector(), b.to_vector());
+    }
+
+    #[test]
+    fn the_machine_maximum_of_a_hundred_rpm_is_ten_kilos_an_hour() {
+        let m = MeltParams::pla();
+        assert!((m.mass_flow_kg_per_s(100.0) * 3600.0 - 10.0).abs() < 1e-9);
+        assert!((m.mass_flow_kg_per_s(10.0) * 3600.0 - 1.0).abs() < 1e-9);
+        assert!(m.mass_flow_kg_per_s(0.0).abs() < f64::EPSILON);
+        // A stopped screw cannot pump backwards.
+        assert!(m.mass_flow_kg_per_s(-5.0).abs() < f64::EPSILON);
+    }
+
+    /// Crossing the melting range must cost the latent heat, whatever window it
+    /// is smeared over — that is the whole point of the apparent-capacity trick.
+    #[test]
+    fn the_melting_range_costs_the_latent_heat() {
+        for window in [2.0, 10.0, 25.0] {
+            let m = MeltParams {
+                melt_window_k: window,
+                ..MeltParams::pla()
+            };
+            let lo = m.melt_temperature_c - window;
+            let hi = m.melt_temperature_c + window;
+            let crossing = m.specific_enthalpy_j_per_kg(hi) - m.specific_enthalpy_j_per_kg(lo);
+            let sensible = (m.cp_solid + m.cp_melt) * 0.5 * (hi - lo);
+            assert!(
+                (crossing - sensible - m.latent_heat_j_per_kg).abs() < 1e-6,
+                "window {window} K: latent heat came out as {:.1} J/kg",
+                crossing - sensible
+            );
+        }
+    }
+
+    /// Enthalpy must be continuous and strictly increasing, and its slope must
+    /// be exactly the tangent `cp` everywhere — otherwise node capacities and
+    /// transported enthalpy disagree about what the material is.
+    #[test]
+    fn enthalpy_is_smooth_and_its_slope_is_the_apparent_cp() {
+        let m = MeltParams::pla();
+        let mut previous = m.specific_enthalpy_j_per_kg(0.0);
+        let mut t = 0.5;
+        while t <= 300.0 {
+            let h = m.specific_enthalpy_j_per_kg(t);
+            assert!(h > previous, "enthalpy must increase with temperature");
+
+            let eps = 1e-4;
+            let slope = (m.specific_enthalpy_j_per_kg(t + eps)
+                - m.specific_enthalpy_j_per_kg(t - eps))
+                / (2.0 * eps);
+            // Skip the two kinks, where a centred difference straddles a corner.
+            let (lo, hi) = (
+                m.melt_temperature_c - m.melt_window_k,
+                m.melt_temperature_c + m.melt_window_k,
+            );
+            if (t - lo).abs() > 1e-3 && (t - hi).abs() > 1e-3 {
+                assert!(
+                    (slope - m.apparent_cp_j_per_kg_k(t)).abs() < 1.0,
+                    "at {t} °C, dh/dT is {slope:.1} but apparent cp is {:.1}",
+                    m.apparent_cp_j_per_kg_k(t)
+                );
+            }
+            previous = h;
+            t += 0.5;
+        }
+    }
+
+    /// The secant is what makes an advection edge exact: `w * (T - datum)` with
+    /// `w = m_dot * secant_cp` must equal `m_dot * (h(T) - h(datum))`, including
+    /// across the melting range where the tangent would be wrong.
+    #[test]
+    fn the_secant_rate_carries_exact_enthalpy() {
+        let m = MeltParams::pla();
+        let datum = 22.0;
+        for t in [22.0, 100.0, 155.0, 160.0, 165.0, 200.0, 260.0] {
+            let carried = m.secant_cp_j_per_kg_k(t, datum) * (t - datum);
+            let exact = m.specific_enthalpy_j_per_kg(t) - m.specific_enthalpy_j_per_kg(datum);
+            assert!(
+                (carried - exact).abs() < 1e-6,
+                "at {t} °C the edge would carry {carried:.1} J/kg, not {exact:.1}"
+            );
+        }
+
+        // Across the melting range itself the tangent is wrong by the whole
+        // latent heat, which is what the distinction exists to avoid. Material
+        // entering at the start of melting and leaving at the end really carries
+        // 84 kJ/kg; a tangent rate taken at the outlet would say 42 kJ/kg and
+        // silently lose every joule of the phase change.
+        let (lo, hi) = (
+            m.melt_temperature_c - m.melt_window_k,
+            m.melt_temperature_c + m.melt_window_k,
+        );
+        let exact = m.specific_enthalpy_j_per_kg(hi) - m.specific_enthalpy_j_per_kg(lo);
+        let with_tangent = m.apparent_cp_j_per_kg_k(hi) * (hi - lo);
+        assert!(
+            (exact - with_tangent - m.latent_heat_j_per_kg).abs() < 0.5 * m.latent_heat_j_per_kg,
+            "the tangent should be short by about the latent heat, not {:.0} J/kg",
+            exact - with_tangent
+        );
+    }
+
+    #[test]
+    fn shear_power_is_capped_at_the_drive_rating() {
+        let m = MeltParams {
+            specific_mechanical_energy_kwh_per_kg: 0.25,
+            ..MeltParams::pla()
+        };
+        // 0.25 kWh/kg at 10 kg/h would be 2500 W; the drive cannot.
+        assert!((m.shear_power_w(100.0) - m.max_shear_power_w).abs() < 1e-9);
+        assert!(m.shear_power_w(0.0).abs() < f64::EPSILON);
     }
 }

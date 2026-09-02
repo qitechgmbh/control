@@ -39,15 +39,23 @@ USAGE:
     --autotune <zone>     relay-autotune one zone and print the suggested gains
     --kp/--ki/--kd <v>    set a gain on every zone, or `zone=value` for one
                           (repeatable: --kp 0.05 --kp nozzle=0.02)
-    --set <key>=<value>   override one model coefficient (repeatable)
+    --rpm <v>             screw speed in rpm from t=0 (0 = not extruding).
+                          100 rpm is the machine maximum and gives 10 kg/h.
+                          Implies the melt model.
+    --rpm-at <t>=<rpm>    schedule a speed change (repeatable):
+                          --rpm-at 3600=60 --rpm-at 6000=100
+    --set <key>=<value>   override one model coefficient (repeatable). Melt
+                          coefficients take a `melt.` prefix, e.g.
+                          --set melt.specific_mechanical_energy_kwh_per_kg=0.05
     --dt-ctrl <s>         controller period (default 0.001, the real busy loop)
     --sensor-period <s>   EL3204 refresh period (default 0.25)
     --list                list scenario names
     --help
 
 SCENARIOS:
-    recorded-heatup cold-start nozzle-only step-up
+    recorded-heatup cold-start normal-production nozzle-only step-up
     single-front single-middle single-back single-nozzle
+    extrude-start extrude-ramp extrude-stop
 ";
 
 /// Parse a `--kp`-style argument: a bare number applies to every zone,
@@ -264,6 +272,37 @@ fn main() {
     if let Some(v) = value("--duration").and_then(|v| v.parse::<f64>().ok()) {
         scenario.duration_s = v;
     }
+
+    if let Some(v) = value("--rpm") {
+        scenario.screw_rpm = v
+            .parse()
+            .unwrap_or_else(|e| panic!("--rpm: {v} is not a number ({e})"));
+    }
+    // `--rpm-at t=rpm`, repeatable, same shape as `--set`.
+    for (i, a) in args.iter().enumerate() {
+        if a != "--rpm-at" {
+            continue;
+        }
+        let Some(spec) = args.get(i + 1) else {
+            panic!("--rpm-at needs t=rpm");
+        };
+        let (t, rpm) = spec
+            .split_once('=')
+            .unwrap_or_else(|| panic!("--rpm-at expects t=rpm, got {spec}"));
+        let t: f64 = t
+            .parse()
+            .unwrap_or_else(|e| panic!("--rpm-at: {t} is not a number ({e})"));
+        let rpm: f64 = rpm
+            .parse()
+            .unwrap_or_else(|e| panic!("--rpm-at: {rpm} is not a number ({e})"));
+        scenario.rpm_changes.push((t, rpm));
+    }
+
+    // Turning the screw needs the polymer modelled. Enable it here rather than
+    // making the user pass a second flag that could only ever be wrong.
+    if scenario.extrudes() {
+        params.melt.enabled = true;
+    }
     // The cutout opens the relay for good above this, so a setpoint sitting on
     // it turns the run into a thermostat test rather than a controller test.
     let hottest = scenario
@@ -295,12 +334,53 @@ fn main() {
         scenario.duration_s / wall.as_secs_f64().max(1e-9)
     );
     print_summary(&trace, &strategy);
+    print_melt_summary(&trace);
 
     if let Some(path) = value("--out") {
         std::fs::write(&path, trace.to_csv())
             .unwrap_or_else(|e| panic!("cannot write {path}: {e}"));
         println!("\nwrote {} samples to {path}", trace.samples.len());
     }
+}
+
+/// What the material did, when there was any. Silent on a run with the screw
+/// stopped, which is most of them.
+fn print_melt_summary(trace: &machine_implementations::extruder1::simulation::Trace) {
+    let Some(last) = trace.samples.last() else {
+        return;
+    };
+    if trace.samples.iter().all(|s| s.screw_rpm <= 0.0) {
+        return;
+    }
+
+    println!(
+        "\nmelt: {:.0} rpm, {:.2} kg/h at the end of the run",
+        last.screw_rpm, last.throughput_kg_h
+    );
+    println!(
+        "  carried out {:.0} W   shear in {:.0} W   net load on the heaters {:+.0} W",
+        last.melt_out_w,
+        last.shear_w,
+        last.melt_out_w - last.shear_w
+    );
+    println!(
+        "  over the run: {:.3} kWh carried out, {:.3} kWh of shear work",
+        trace.melt_energy_kwh(),
+        trace.shear_energy_kwh()
+    );
+    println!("{:<8} {:>10} {:>12}", "zone", "melt C", "melt load W");
+    for zone in Zone::ALL {
+        println!(
+            "{:<8} {:>10.1} {:>12.0}",
+            zone.name(),
+            last.melt_c[zone.port()],
+            last.meltload_w[zone.port()]
+        );
+    }
+    println!(
+        "  (melt load is heat leaving that zone's steel into the polymer; \
+         negative means the polymer is warming the steel)"
+    );
 }
 
 fn print_summary(

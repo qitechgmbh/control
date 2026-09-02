@@ -197,6 +197,18 @@ pub struct Sample {
     pub duty: [f64; 4],
     /// Electrical power actually delivered over the last plant step, in W.
     pub power_w: [f64; 4],
+    /// Melt temperature under each zone's band, in °C. `NaN` when not modelled.
+    pub melt_c: [f64; 4],
+    /// Heat the melt is drawing from each zone's steel, in W.
+    pub meltload_w: [f64; 4],
+    /// Screw speed in rpm.
+    pub screw_rpm: f64,
+    /// Throughput in kg/h.
+    pub throughput_kg_h: f64,
+    /// Enthalpy leaving at the die, in W.
+    pub melt_out_w: f64,
+    /// Viscous shear power going into the melt, in W.
+    pub shear_w: f64,
 }
 
 /// A simulation run.
@@ -215,6 +227,10 @@ pub struct Trace {
     /// Accumulated every plant step, for the same aliasing reason as
     /// [`Self::relay_switches`].
     pub energy_j: [f64; 4],
+    /// Enthalpy carried out of the die over the run, in J.
+    pub melt_energy_j: f64,
+    /// Viscous shear work put into the melt over the run, in J.
+    pub shear_energy_j: f64,
 }
 
 impl Trace {
@@ -268,23 +284,51 @@ impl Trace {
         self.energy_j[zone.port()] / 3_600_000.0
     }
 
+    /// Enthalpy the material carried out of the die over the run, in kWh.
+    pub fn melt_energy_kwh(&self) -> f64 {
+        self.melt_energy_j / 3_600_000.0
+    }
+
+    /// Shear work the screw put into the material over the run, in kWh.
+    pub fn shear_energy_kwh(&self) -> f64 {
+        self.shear_energy_j / 3_600_000.0
+    }
+
     /// CSV with a header row, one line per sample.
     ///
     /// Columns are `t_s`, then `setpoint / sensor / steel / band / duty /
-    /// power_w`, each as a group of four in `front, middle, back, nozzle` order.
+    /// power_w / melt / meltload_w`, each as a group of four in
+    /// `front, middle, back, nozzle` order, and finally the four machine-wide
+    /// columns `screw_rpm, throughput_kg_h, melt_out_w, shear_w`.
     ///
     /// `sensor` against `steel` is the interesting pair: the gap between them is
-    /// the measurement lag the controller has to work through.
+    /// the measurement lag the controller has to work through. On an extrusion
+    /// run, `meltload_w` against `power_w` is the second one — what the material
+    /// takes against what the bands put back.
+    ///
+    /// The per-zone columns are named `<metric>_<zone>` because that is what
+    /// `scripts/plot-heating.html` groups on; the machine-wide four have no zone
+    /// suffix and the plotter draws them as single series.
     pub fn to_csv(&self) -> String {
         use std::fmt::Write as _;
 
-        let mut out = String::with_capacity(self.samples.len() * 200);
+        let mut out = String::with_capacity(self.samples.len() * 260);
         out.push_str("t_s");
-        for tag in ["setpoint", "sensor", "steel", "band", "duty", "power_w"] {
+        for tag in [
+            "setpoint",
+            "sensor",
+            "steel",
+            "band",
+            "duty",
+            "power_w",
+            "melt",
+            "meltload_w",
+        ] {
             for zone in Zone::ALL {
                 let _ = write!(out, ",{tag}_{}", zone.name());
             }
         }
+        out.push_str(",screw_rpm,throughput_kg_h,melt_out_w,shear_w");
         out.push('\n');
         for s in &self.samples {
             let _ = write!(out, "{:.2}", s.t_s);
@@ -299,6 +343,17 @@ impl Trace {
             for zone in Zone::ALL {
                 let _ = write!(out, ",{:.2}", s.power_w[zone.port()]);
             }
+            for zone in Zone::ALL {
+                let _ = write!(out, ",{:.3}", s.melt_c[zone.port()]);
+            }
+            for zone in Zone::ALL {
+                let _ = write!(out, ",{:.2}", s.meltload_w[zone.port()]);
+            }
+            let _ = write!(
+                out,
+                ",{:.2},{:.4},{:.2},{:.2}",
+                s.screw_rpm, s.throughput_kg_h, s.melt_out_w, s.shear_w
+            );
             out.push('\n');
         }
         out
@@ -410,6 +465,16 @@ impl ThermalSim {
             band_c: Zone::ALL.map(|z| self.model.band_c(z)),
             duty,
             power_w,
+            melt_c: Zone::ALL.map(|z| {
+                self.model
+                    .melt_c_at(z.band().centre_mm())
+                    .unwrap_or(f64::NAN)
+            }),
+            meltload_w: Zone::ALL.map(|z| self.model.melt_load_w(z)),
+            screw_rpm: self.model.screw_rpm(),
+            throughput_kg_h: self.model.throughput_kg_per_h(),
+            melt_out_w: self.model.melt_extraction_w(),
+            shear_w: self.model.shear_power_w(),
         }
     }
 
@@ -428,11 +493,23 @@ impl ThermalSim {
         self.held_c = [scenario.initial_c; 4];
         self.publish_sensors();
 
+        assert!(
+            !scenario.extrudes() || self.model.melt_is_modelled(),
+            "scenario '{}' turns the screw, but this model was built without the \
+             melt — set `params.melt.enabled` or the run would silently do nothing",
+            scenario.name
+        );
+
         let mut setpoints = scenario.setpoints_c;
         self.apply_setpoints(setpoints);
         let mut pending: Vec<(f64, [f64; 4])> = scenario.changes.clone();
         pending.sort_by(|a, b| a.0.total_cmp(&b.0));
         pending.reverse(); // pop() yields the earliest
+
+        self.model.set_screw_rpm(scenario.screw_rpm);
+        let mut pending_rpm: Vec<(f64, f64)> = scenario.rpm_changes.clone();
+        pending_rpm.sort_by(|a, b| a.0.total_cmp(&b.0));
+        pending_rpm.reverse();
 
         // Capture the epoch *after* constructing the controllers: their
         // `window_start` comes from the real clock, and starting the virtual
@@ -474,6 +551,16 @@ impl ThermalSim {
                 setpoints = sp;
                 self.apply_setpoints(setpoints);
                 trace.setpoints_c = setpoints;
+            }
+
+            // And any screw-speed change. Starting or stopping extrusion is a
+            // load step on every zone at once.
+            while pending_rpm
+                .last()
+                .is_some_and(|(at, _)| now_ns as f64 * 1e-9 >= *at)
+            {
+                let (_, rpm) = pending_rpm.pop().expect("checked by the guard above");
+                self.model.set_screw_rpm(rpm);
             }
 
             // Walk the controller ticks that fall inside this plant step,
@@ -547,6 +634,9 @@ impl ThermalSim {
                 trace.energy_j[p] += power_w[p] * dt_plant;
                 self.model.set_band_power(zone, power_w[p]);
             }
+
+            trace.melt_energy_j += self.model.melt_extraction_w() * dt_plant;
+            trace.shear_energy_j += self.model.shear_power_w() * dt_plant;
 
             self.model.step(dt_plant);
 
@@ -1011,6 +1101,169 @@ mod tests {
         );
     }
 
+    /// Mean sensor reading over a time window, for judging settled behaviour.
+    fn mean_between(trace: &Trace, t0: f64, t1: f64, zone: Zone) -> f64 {
+        let vals: Vec<f64> = trace
+            .samples
+            .iter()
+            .filter(|s| s.t_s >= t0 && s.t_s < t1)
+            .map(|s| s.sensor_c[zone.port()])
+            .collect();
+        vals.iter().sum::<f64>() / vals.len() as f64
+    }
+
+    /// Build a sim with the melt modelled and the shipping controller.
+    fn extruding_sim() -> ThermalSim {
+        let mut params = ExtruderThermalParams::calibrated();
+        params.melt.enabled = true;
+        let config = SimConfig {
+            strategy: StrategyConfig::ObserverPi(
+                crate::extruder1::heating_params::observer_pi_params(),
+            ),
+            ..SimConfig::default()
+        };
+        ThermalSim::new(params, config)
+    }
+
+    /// **The test this whole model was built for.** The shipping controller was
+    /// tuned on a heat-up with the screw stopped; here it has to hold setpoint
+    /// while cold polymer starts moving through the barrel.
+    ///
+    /// Shear is switched off so that this is the *cooling* load alone — the
+    /// direction the controller can actually do something about, by opening the
+    /// heaters further. See
+    /// [`the_machine_has_no_answer_to_shear_heat`] for the other direction.
+    ///
+    /// The bounds are deliberately loose: the melt coefficients have never been
+    /// fitted to this machine, so this asserts the shape of the response — there
+    /// is a disturbance, and it is absorbed — rather than numbers that would only
+    /// be as trustworthy as `MeltParams`.
+    #[test]
+    fn starting_extrusion_is_a_load_step_the_controller_rejects() {
+        let mut params = ExtruderThermalParams::calibrated();
+        params.melt.enabled = true;
+        params.melt.specific_mechanical_energy_kwh_per_kg = 0.0;
+        let config = SimConfig {
+            strategy: StrategyConfig::ObserverPi(
+                crate::extruder1::heating_params::observer_pi_params(),
+            ),
+            ..SimConfig::default()
+        };
+        let trace = ThermalSim::new(params, config).run(&Scenario::extrude_start());
+
+        for zone in Zone::ALL {
+            let sp = trace.setpoints_c[zone.port()];
+            let before = mean_between(&trace, 3300.0, 3600.0, zone);
+            let after = mean_between(&trace, 8100.0, f64::MAX, zone);
+
+            assert!(
+                (before - sp).abs() < 3.0,
+                "{} had not settled before the load step: {before:.1} vs {sp:.1}",
+                zone.name()
+            );
+            assert!(
+                (after - sp).abs() < 8.0,
+                "{} never recovered after extrusion started: {after:.1} vs {sp:.1}",
+                zone.name()
+            );
+        }
+    }
+
+    /// **A finding, not a controller defect.** With the screw's mechanical work
+    /// included, extruding at 60 rpm drives the front of the barrel well above
+    /// setpoint and nothing in the machine can bring it back: the loops can only
+    /// stop heating, and there is no barrel cooling to call on. Real extruders
+    /// carry cooling fans for exactly this.
+    ///
+    /// Asserted so it cannot quietly disappear — but note the size of it rests
+    /// on `specific_mechanical_energy_kwh_per_kg`, which has never been measured
+    /// here and is uncertain by a factor of two. Treat this as "the model says
+    /// this is worth measuring", not "the machine does this".
+    #[test]
+    fn the_machine_has_no_answer_to_shear_heat() {
+        let trace = extruding_sim().run(&Scenario::extrude_start());
+
+        let sp = trace.setpoints_c[Zone::Front.port()];
+        let after = mean_between(&trace, 8100.0, f64::MAX, Zone::Front);
+        assert!(
+            after > sp + 10.0,
+            "front settled at {after:.1} against a {sp:.1} setpoint; if shear no \
+             longer overheats it, the melt parameters have changed"
+        );
+
+        // And the controller is doing the only thing it can: nothing.
+        let duty = trace
+            .samples
+            .iter()
+            .filter(|s| s.t_s > 8100.0)
+            .map(|s| s.duty[Zone::Front.port()])
+            .fold(0.0_f64, f64::max);
+        assert!(
+            duty < 0.05,
+            "front duty {duty:.3} — the loop should be shut off, not fighting"
+        );
+    }
+
+    /// Material really does move, and the trace really does record it.
+    #[test]
+    fn an_extrusion_run_records_what_the_material_did() {
+        let trace = extruding_sim().run(&Scenario::extrude_start());
+
+        let last = trace.samples.last().expect("samples");
+        assert!((last.screw_rpm - 60.0).abs() < 1e-9);
+        assert!((last.throughput_kg_h - 6.0).abs() < 1e-9);
+        assert!(
+            last.melt_out_w > 0.0,
+            "material should be carrying heat out"
+        );
+        assert!(last.shear_w > 0.0, "the screw should be doing work");
+        assert!(
+            trace.melt_energy_kwh() > 0.0 && trace.shear_energy_kwh() > 0.0,
+            "run energies should accumulate"
+        );
+
+        // Nothing before the step, everything after it.
+        let before = trace
+            .samples
+            .iter()
+            .find(|s| s.t_s > 1800.0)
+            .expect("a sample before the step");
+        assert!(before.screw_rpm.abs() < 1e-12);
+        assert!(before.melt_out_w.abs() < 1e-9);
+    }
+
+    /// The CSV has to carry the new columns, and `scripts/plot-heating.html`
+    /// groups per-zone series by a `<metric>_<zone>` suffix — so the names
+    /// matter, not just the values.
+    #[test]
+    fn the_csv_carries_the_melt_columns() {
+        let trace = extruding_sim().run(&Scenario::extrude_start());
+        let csv = trace.to_csv();
+        let header = csv.lines().next().expect("a header");
+
+        for zone in Zone::ALL {
+            assert!(header.contains(&format!("melt_{}", zone.name())));
+            assert!(header.contains(&format!("meltload_w_{}", zone.name())));
+        }
+        for tag in ["screw_rpm", "throughput_kg_h", "melt_out_w", "shear_w"] {
+            assert!(header.contains(tag), "missing column {tag}");
+        }
+        // Every row must have exactly as many fields as the header promises.
+        let want = header.split(',').count();
+        for line in csv.lines().skip(1) {
+            assert_eq!(line.split(',').count(), want);
+        }
+    }
+
+    /// A scenario that turns the screw against a model without the melt would
+    /// silently do nothing, which is worse than failing.
+    #[test]
+    #[should_panic(expected = "turns the screw")]
+    fn extruding_without_a_melt_model_is_refused() {
+        let mut sim = ThermalSim::new(ExtruderThermalParams::calibrated(), SimConfig::default());
+        let _ = sim.run(&Scenario::extrude_start());
+    }
+
     #[test]
     fn relays_start_open_and_the_plant_stays_cold_without_heating() {
         let mut sim = ThermalSim::new(ExtruderThermalParams::default(), SimConfig::default());
@@ -1020,7 +1273,7 @@ mod tests {
             duration_s: 60.0,
             setpoints_c: [180.0, 180.0, 170.0, 175.0],
             heating_enabled_at_s: f64::INFINITY,
-            changes: Vec::new(),
+            ..Scenario::default()
         };
         let trace = sim.run(&scenario);
         for zone in Zone::ALL {
