@@ -7,6 +7,7 @@ shell.nix
 node_modules/
 runtime_metrics.csv
 compile_metrics.csv
+heating_traces/
 .idea/
 electron/dist-electron/
 
