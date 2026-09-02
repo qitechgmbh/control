@@ -1,7 +1,5 @@
 use std::time::Instant;
-
 use crate::machines::aquapath::AquaPathV1;
-
 use super::{AquaPathV1Mode, controller::CoolingMode};
 use qitech_framework::machine::{ActResult, ConfigProperty, Measurement, StateProperty};
 use qitech_lib::units::{
@@ -13,16 +11,12 @@ use serde::Serialize;
 pub struct Measurements {
     pub left_flow: Measurement<f64>,
     pub right_flow: Measurement<f64>,
-
     pub left_temperature: Measurement<f64>,
     pub right_temperature: Measurement<f64>,
-
     pub left_revolutions: Measurement<f64>,
     pub right_revolutions: Measurement<f64>,
-
     pub left_power: Measurement<f64>,
     pub right_power: Measurement<f64>,
-
     pub left_total_energy: Measurement<f64>,
     pub right_total_energy: Measurement<f64>,
 }
@@ -31,25 +25,18 @@ pub struct StateProperties {
     pub mode_state: ModeState,    
     pub left_heating_startup_wait_active: StateProperty<bool>,
     pub right_heating_startup_wait_active: StateProperty<bool>,
-
     pub left_pump_cooldown_active: StateProperty<bool>,
     pub right_pump_cooldown_active: StateProperty<bool>,
-
     pub left_should_flow: StateProperty<bool>,
     pub right_should_flow: StateProperty<bool>,
-
     pub left_heating: StateProperty<bool>,
     pub right_heating: StateProperty<bool>,
-
     pub left_pump_cooldown_remaining: StateProperty<f64>,
     pub right_pump_cooldown_remaining: StateProperty<f64>,
-
     pub left_heating_startup_wait_remaining: StateProperty<f64>,
     pub right_heating_startup_wait_remaining: StateProperty<f64>,
-
     pub left_cooling_mode: StateProperty<Option<CoolingMode>>,
     pub right_cooling_mode: StateProperty<Option<CoolingMode>>,
-
     pub left_thermal_safety_state: ThermalSafetyState,
     pub right_thermal_safety_state: ThermalSafetyState,
 }
@@ -98,8 +85,9 @@ pub struct ThermalSafetyState {
 
 impl AquaPathV1 {
     pub fn on_right_target_temparature_changed(&mut self) -> ActResult {
+        let t = self.config_props.right_target_temperature.get();
         _ = self.set_target_temperature(
-            self.config_props.right_target_temperature.get(),
+            t,
             super::AquaPathSideType::Right,
         );
         Ok(())
@@ -353,6 +341,7 @@ impl AquaPathV1 {
                     .get_thermal_flow_settle_duration()
                     .as_secs_f64(),
             );
+
         self.state_props
             .right_thermal_safety_state
             .cooldown_min_temperature

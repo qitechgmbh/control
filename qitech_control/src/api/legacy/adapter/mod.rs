@@ -18,7 +18,6 @@ pub fn get(ident: MachineIdentification) -> Option<MachineLegacyDataAdapter> {
         machine_id: 9,
     };
 
-
     match ident {
         IDENT_LASER => Some(laser_v1::ADAPTER),
         IDENT_AQUAPATH => Some(aquapath_v1::ADAPTER),

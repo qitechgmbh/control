@@ -119,7 +119,6 @@ fn init_measurements(ctx: &mut BuildContext) -> BuildResult<Measurements> {
 
 #[machine_build(AquaPathV1)]
 fn init_state(ctx: &mut BuildContext) -> BuildResult<StateProperties> {
-
     let mode_state = ModeState {
         mode: ctx.state::<AquaPathV1Mode>("mode_state.mode").build()?,
     };
@@ -182,10 +181,12 @@ impl AquaPathV1 {
             heating: ctx
                 .config::<f64>("left_tolerance_config.heating")
                 .on_external_changed(Self::on_set_left_heating_tolerance)
+                .default(0.4)
                 .build()?,
             cooling: ctx
                 .config::<f64>("left_tolerance_config.cooling")
                 .on_external_changed(Self::on_set_left_cooling_tolerance)
+                .default(0.8)
                 .build()?,
         };
 
@@ -193,10 +194,12 @@ impl AquaPathV1 {
             heating: ctx
                 .config::<f64>("right_tolerance_config.heating")
                 .on_external_changed(Self::on_set_right_heating_tolerance)
+                .default(0.4)
                 .build()?,
             cooling: ctx
                 .config::<f64>("right_tolerance_config.cooling")
                 .on_external_changed(Self::on_set_right_cooling_tolerance)
+                .default(0.8)
                 .build()?,
         };
 
@@ -248,34 +251,19 @@ impl AquaPathV1 {
             ambient_temperature_calibration: ctx
                 .config::<f64>("ambient_temperature_calibration")
                 .on_external_changed(Self::on_set_ambient_temperature_calibration)
+                .default(22.0)
                 .build()?,
-/*            default_heating_tolerance: ctx
-                .config::<f64>("default_heating_tolerance")
-                .default(AquaPathV1::DEFAULT_HEATING_TOLERANCE)
-                .build()?,
-            default_cooling_tolerance: ctx
-                .config::<f64>("default_cooling_tolerance")
-                .default(AquaPathV1::DEFAULT_COOLING_TOLERANCE)
-                .build()?,
-            default_pid_kp: ctx
-                .config::<f64>("default_pid_kp")
-                .default(AquaPathV1::DEFAULT_PID_KP)
-                .build()?,
-            default_pid_ki: ctx
-                .config::<f64>("default_pid_ki")
-                .default(AquaPathV1::DEFAULT_PID_KI)
-                .build()?,
-            default_pid_kd: ctx
-                .config::<f64>("default_pid_kd")
-                .default(AquaPathV1::DEFAULT_PID_KD)
-                .build()?,*/
             left_fan_max_revolutions: ctx
                 .config::<f64>("left_fan_max_revolutions")
                 .on_external_changed(Self::on_set_left_revolutions)
+                .default(100.0)
                 .build()?,
             right_fan_max_revolutions: ctx
                 .config::<f64>("right_fan_max_revolutions")
                 .on_external_changed(Self::on_set_right_revolutions)
+                .default(100.0)
+                .minimum(0.0)
+                .maximum(100.0)
                 .build()?,
             left_tolerance_config: left_tolerance_state,
             right_tolerance_config: right_tolerance_state,
@@ -284,18 +272,30 @@ impl AquaPathV1 {
             left_thermal_flow_settle_duration: ctx
                 .config::<f64>("left_thermal_flow_settle_duration")
                 .on_external_changed(Self::on_set_left_thermal_flow_settle_duration)
+                .default(0.0)
+                .minimum(0.0)
+                .maximum(30.0)
                 .build()?,
             right_thermal_flow_settle_duration: ctx
                 .config::<f64>("right_thermal_flow_settle_duration")
                 .on_external_changed(Self::on_set_right_thermal_flow_settle_duration)
+                .default(0.0)
+                .minimum(0.0)
+                .maximum(30.0)
                 .build()?,
             left_pump_cooldown_min_temperature: ctx
                 .config::<f64>("left_pump_cooldown_min_temperature")
                 .on_external_changed(Self::on_set_left_cooldown_min_temp)
+                .default(32.0)
+                .minimum(10.0)
+                .maximum(80.0)
                 .build()?,
             right_pump_cooldown_min_temperature: ctx
                 .config::<f64>("right_pump_cooldown_min_temperature")
                 .on_external_changed(Self::on_set_right_cooldown_min_temp)
+                .default(22.0)
+                .minimum(10.0)
+                .maximum(80.0)
                 .build()?,
         };
         Ok(props)

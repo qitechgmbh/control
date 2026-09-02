@@ -290,15 +290,19 @@ impl Controller {
         self.turn_heating_on();
         self.allow_heating();
     }*/
+
     pub fn reset_pid(&mut self) {
         self.pid.reset()
     }
+
     pub fn set_target_temperature(&mut self, temperature: ThermodynamicTemperature) {
         self.reset_control_state(
             Instant::now(),
             Some(ControlResetReason::TargetTemperatureChanged),
         );
+
         self.target_temperature = temperature;
+        println!("TARGET: {:?}", self.target_temperature.get::<degree_celsius>() );
     }
 
     pub fn get_temp_in(&self) -> ThermodynamicTemperature {
@@ -372,6 +376,7 @@ impl Controller {
             self.reset_control_state(Instant::now(), Some(ControlResetReason::PumpCommandChanged));
         }
         self.should_pump = should_pump;
+        println!("set_should_pump {should_pump}")
     }
 
     pub fn get_should_pump(&mut self) -> bool {
