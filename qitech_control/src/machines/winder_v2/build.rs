@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::Instant;
 
 use qitech_framework::machine::BuildContext;
 use qitech_framework::machine::BuildError;
@@ -23,15 +24,20 @@ use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1
 pub use qitech_lib::ethercat_hal::shared_config;
 pub use qitech_lib::ethercat_hal::shared_config::el70x1::EL70x1OperationMode;
 pub use qitech_lib::ethercat_hal::shared_config::el70x1::StmMotorConfiguration;
+use qitech_lib::units::ConstZero;
+use qitech_lib::units::Length;
+use qitech_lib::units::length::meter;
 
 use crate::machines::winder_v2::LaserPointer;
 use crate::machines::winder_v2::Puller;
 use crate::machines::winder_v2::Spool;
+use crate::machines::winder_v2::SpoolAutomaticAction;
 use crate::machines::winder_v2::TensionArm;
 use crate::machines::winder_v2::Traverse;
 use crate::machines::winder_v2::VARIANT_7031_SPOOL;
 use crate::machines::winder_v2::VARIANT_REGULAR;
 use crate::machines::winder_v2::WinderV1;
+use crate::machines::winder_v2::types::AutomaticActionSpoolAction;
 use crate::machines::winder_v2::types::Mode;
 
 impl MachineBuild for WinderV1<VARIANT_REGULAR> {
@@ -117,18 +123,18 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             tension_arm,
             laser_pointer,
             mode: ctx.state::<Mode>("mode").build()?,
-            // spool_automatic_action: SpoolAutomaticAction {
-            //     progress: Length::ZERO,
-            //     progress_last_check: Instant::now(),
-            //     target_length: ctx
-            //         .config::<meter>("spool_automatic.required_meters")
-            //         .default(250.0)
-            //         .build()?,
-            //     mode: ctx
-            //         .config::<AutomaticActionSpoolAction>("spool_automatic.action")
-            //         .default(AutomaticActionSpoolAction::NoAction)
-            //         .build()?,
-            // },
+            spool_automatic_action: SpoolAutomaticAction {
+                progress: Length::ZERO,
+                progress_last_check: Instant::now(),
+                target_length: ctx
+                    .config::<meter>("spool_automatic.required_meters")
+                    .default(250.0)
+                    .build()?,
+                mode: ctx
+                    .config::<AutomaticActionSpoolAction>("spool_automatic.action")
+                    .default(AutomaticActionSpoolAction::NoAction)
+                    .build()?,
+            },
             laser_subscription: None,
         })
     }

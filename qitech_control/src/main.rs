@@ -68,7 +68,7 @@ pub async fn main() -> anyhow::Result<()> {
 }
 
 const ETHERCAT_CONFIG: EtherCATConfig = {
-    let target_cycle_time_us: u64 = 1000;
+    let target_cycle_time_us: u64 = 2000;
     let dc_config = DcConfiguration {
         start_delay: Duration::from_millis(100),
         sync0_period: Duration::from_micros(target_cycle_time_us),

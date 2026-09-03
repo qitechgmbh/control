@@ -56,8 +56,8 @@ impl SpeedController {
 impl SpeedController {
     pub fn init<const VARIANT: usize>(ctx: &mut BuildContext) -> BuildResult<Self> {
         let tension_calculator = FilamentTensionCalculator::new(
-            Self::tension_arm_angle_max(),
             Self::tension_arm_angle_min(),
+            Self::tension_arm_angle_max(),
         );
 
         let speed_min = ctx
@@ -135,6 +135,10 @@ impl SpeedController {
         let angle = tension_arm.angle();
         let value = self.tension_calculator.calc_filament_tension(angle);
         self.filament_tension.set(value);
+    }
+
+    pub fn set_enalbed(&mut self, enabled: bool) {
+        self.enabled.set(enabled);
     }
 }
 

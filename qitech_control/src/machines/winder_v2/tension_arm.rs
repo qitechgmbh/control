@@ -42,7 +42,7 @@ impl TensionArm {
             zero: ctx
                 .state::<Option<revolution>>("tension_arm.zero")
                 .build()?,
-            angle: ctx.measurement::<revolution>("tension_arm.angle").build()?,
+            angle: ctx.measurement::<degree>("tension_arm.angle").build()?,
         })
     }
 }

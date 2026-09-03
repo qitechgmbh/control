@@ -89,7 +89,7 @@ state:
     endstop_triggered: !boolean
 
   tension_arm:
-    zero: !?revolution
+    angle: !degree
 
   laser_pointer:
     enabled: !boolean

@@ -90,9 +90,7 @@ pub fn convert_request(
         Mutation::SetPullerForward(forward) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
             path: "puller.direction".to_string(),
-            value: ScalarValue::Enum(
-                if forward { "forward" } else { "reverse" }.to_string(),
-            ),
+            value: ScalarValue::Enum(if forward { "forward" } else { "reverse" }.to_string()),
         },
 
         Mutation::SetPullerGearRatio(v) => RuntimeRequestKind::SetConfigProperty {
@@ -125,9 +123,7 @@ pub fn convert_request(
         Mutation::SetSpoolForward(forward) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
             path: "spool.direction".to_string(),
-            value: ScalarValue::Enum(
-                if forward { "forward" } else { "reverse" }.to_string(),
-            ),
+            value: ScalarValue::Enum(if forward { "forward" } else { "reverse" }.to_string()),
         },
 
         Mutation::SetSpoolAdaptiveTensionTarget(v) => RuntimeRequestKind::SetConfigProperty {
@@ -166,21 +162,17 @@ pub fn convert_request(
         // ------------------------------------------------------------
         // Spool automatic config (not in runtime schema — no-op)
         // ------------------------------------------------------------
-        Mutation::SetSpoolAutomaticRequiredMeters(_v) => {
-            tracing::warn!("SetSpoolAutomaticRequiredMeters: not implemented in runtime schema");
-            return Ok(RuntimeRequestKind::ExecuteCommand {
-                target: ident,
-                path: "spool.reset_progress".to_string(), // no-op placeholder
-            });
-        }
+        Mutation::SetSpoolAutomaticRequiredMeters(v) => RuntimeRequestKind::SetConfigProperty {
+            target: ident,
+            path: "spool_automatic.required_meters".to_string(),
+            value: ScalarValue::Float(v),
+        },
 
-        Mutation::SetSpoolAutomaticAction(_v) => {
-            tracing::warn!("SetSpoolAutomaticAction: not implemented in runtime schema");
-            return Ok(RuntimeRequestKind::ExecuteCommand {
-                target: ident,
-                path: "spool.reset_progress".to_string(), // no-op placeholder
-            });
-        }
+        Mutation::SetSpoolAutomaticAction(v) => RuntimeRequestKind::SetConfigProperty {
+            target: ident,
+            path: "spool_automatic.action".to_string(),
+            value: ScalarValue::Enum(v.to_string()),
+        },
 
         // ------------------------------------------------------------
         // Spool commands

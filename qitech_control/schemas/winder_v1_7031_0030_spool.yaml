@@ -51,6 +51,10 @@ config:
     step_size: !millimeter
     padding: !millimeter
 
+  spool_automatic:
+    required_meters: !meter
+    action: !enum [no_action, pull, hold]
+
 
 state:
   mode: !enum [standby, pull, hold, wind]
@@ -120,7 +124,7 @@ measurements:
     position: !millimeter
 
   tension_arm:
-    angle: !revolution
+    angle: !degree
 
 commands:
   mode:

@@ -14,6 +14,7 @@ use qitech_lib::units::ConstZero;
 use qitech_lib::units::Length;
 use qitech_lib::units::angular_velocity::revolution_per_minute;
 use qitech_lib::units::length::meter;
+use qitech_lib::units::velocity::meter_per_second;
 
 use crate::machines::winder_v2::TensionArm;
 use crate::machines::winder_v2::WinderV1;
@@ -98,12 +99,21 @@ impl Spool {
             };
 
             self.device.borrow_mut().set_enabled(Self::PORT, enabled);
+            self.speed_controller.set_enalbed(enabled);
         }
     }
 
     pub fn update(&mut self, dt: Duration, puller: &Puller, tension_arm: &TensionArm) {
         self.speed_controller.update(dt, puller, tension_arm);
+        self.update_progress(dt, puller);
         self.sync();
+    }
+
+    fn update_progress(&mut self, dt: Duration, puller: &Puller) {
+        let dt_seconds = dt.as_secs_f64();
+        let speed_mps = puller.speed().get::<meter_per_second>();
+        let distance = Length::new::<meter>(speed_mps * dt_seconds);
+        self.progress.set(self.progress.get() + distance);
     }
 
     fn sync(&mut self) {
