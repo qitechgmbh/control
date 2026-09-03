@@ -47,7 +47,6 @@ pub struct MixerV1 {
     hopper_b: Rc<RefCell<EL7041_0052>>,
 
     // --- config ---
-    extruder_output_rate: ConfigProperty<f64>,
     extruder_kg_per_rpm: ConfigProperty<f64>,
     hopper_a_target_rpm: ConfigProperty<f64>,
     hopper_a_forward: ConfigProperty<bool>,
@@ -128,12 +127,6 @@ impl MachineBuild for MixerV1 {
             .on_external_changed(Self::push_hopper_b_ratio_speed)
             .build()?;
 
-        let extruder_output_rate = ctx
-            .config::<f64>("extruder_output_rate")
-            .default(0.0)
-            .minimum(0.0)
-            .on_external_changed(Self::push_ratio_speeds)
-            .build()?;
         let extruder_kg_per_rpm = ctx
             .config::<f64>("extruder_kg_per_rpm")
             .default(0.1)
@@ -166,7 +159,6 @@ impl MachineBuild for MixerV1 {
             mixing_motor,
             hopper_a,
             hopper_b,
-            extruder_output_rate,
             extruder_kg_per_rpm,
             hopper_a_target_rpm,
             hopper_a_forward,
@@ -269,12 +261,10 @@ impl MixerV1 {
         Self::push_hopper_b_ratio_speed(m)
     }
 
-    /// Prefers the live extruder subscription over the manual placeholder
-    /// config when a connection is active.
     fn current_extruder_output_rate(&self) -> f64 {
         match &self.extruder_subscription {
             Some(sub) => sub.rpm.get_as::<revolution_per_minute>() * self.extruder_kg_per_rpm.get(),
-            None => self.extruder_output_rate.get(),
+            None => 0.0,
         }
     }
 

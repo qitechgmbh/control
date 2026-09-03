@@ -7,8 +7,6 @@ identification:
   machine_id: 18
 
 config:
-  # Fallback used only when no extruder is connected via subscription.
-  extruder_output_rate: !float
   extruder_kg_per_rpm: !float
   hopper_a:
     target_rpm: !float

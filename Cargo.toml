@@ -41,3 +41,15 @@ common = { path = "/home/khalil/qitech_lib/common" }
 modbus = { path = "/home/khalil/qitech_lib/modbus" }
 units = { path = "/home/khalil/qitech_lib/units" }
 xtrem = { path = "/home/khalil/qitech_lib/xtrem" }
+
+# --- local patch: SubscribeMachine dropped its LifetimeTokenOwner immediately
+# after use instead of storing it on the subscriber instance, so every
+# RemoteProperty handed out by subscribe() expired on the very next tick.
+# Temporary local fix pending upstream - see
+# /home/khalil/qitech_framework branch fix-subscription-token-owner. DO NOT PUSH.
+[patch."https://github.com/qitechgmbh/qitech_framework.git"]
+qitech_framework = { path = "/home/khalil/qitech_framework/qitech_framework" }
+qitech_framework_core = { path = "/home/khalil/qitech_framework/qitech_framework_core" }
+qitech_framework_tui = { path = "/home/khalil/qitech_framework/qitech_framework_tui" }
+qitech_framework_hub = { path = "/home/khalil/qitech_framework/qitech_framework_hub" }
+qitech_framework_macros = { path = "/home/khalil/qitech_framework/qitech_framework_macros" }
