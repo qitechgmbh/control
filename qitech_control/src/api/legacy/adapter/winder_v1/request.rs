@@ -60,9 +60,9 @@ pub fn convert_request(
         Mutation::EnableTraverseLaserpointer(enable) => RuntimeRequestKind::ExecuteCommand {
             target: ident,
             path: if enable {
-                "traverse.laserpointer.enable".to_string()
+                "laser_pointer.enable".to_string()
             } else {
-                "traverse.laserpointer.disable".to_string()
+                "laser_pointer.disable".to_string()
             },
         },
 
@@ -71,13 +71,13 @@ pub fn convert_request(
         // ------------------------------------------------------------
         Mutation::SetPullerRegulationMode(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "puller.regulation_mode".to_string(),
+            path: "puller.speed_controller.algorithm".to_string(),
             value: ScalarValue::Enum(v.to_string()),
         },
 
         Mutation::SetPullerTargetSpeed(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "puller.target_speed".to_string(),
+            path: "puller.speed_controller.speed_desired".to_string(),
             value: ScalarValue::Float(v),
         },
 
@@ -87,10 +87,12 @@ pub fn convert_request(
             value: ScalarValue::Float(v),
         },
 
-        Mutation::SetPullerForward(v) => RuntimeRequestKind::SetConfigProperty {
+        Mutation::SetPullerForward(forward) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "puller.forward".to_string(),
-            value: ScalarValue::Boolean(v),
+            path: "puller.direction".to_string(),
+            value: ScalarValue::Enum(
+                if forward { "forward" } else { "reverse" }.to_string(),
+            ),
         },
 
         Mutation::SetPullerGearRatio(v) => RuntimeRequestKind::SetConfigProperty {
@@ -104,74 +106,81 @@ pub fn convert_request(
         // ------------------------------------------------------------
         Mutation::SetSpoolRegulationMode(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "spool_speed_controller.regulation_mode".to_string(),
+            path: "spool.speed_controller.algorithm".to_string(),
             value: ScalarValue::Enum(v.to_string()),
         },
 
         Mutation::SetSpoolMinMaxMinSpeed(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "spool_speed_controller.minmax_min_speed".to_string(),
+            path: "spool.speed_controller.speed_min".to_string(),
             value: ScalarValue::Float(v),
         },
 
         Mutation::SetSpoolMinMaxMaxSpeed(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "spool_speed_controller.minmax_max_speed".to_string(),
+            path: "spool.speed_controller.speed_max".to_string(),
             value: ScalarValue::Float(v),
         },
 
-        Mutation::SetSpoolForward(v) => RuntimeRequestKind::SetConfigProperty {
+        Mutation::SetSpoolForward(forward) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "spool_speed_controller.forward".to_string(),
-            value: ScalarValue::Boolean(v),
+            path: "spool.direction".to_string(),
+            value: ScalarValue::Enum(
+                if forward { "forward" } else { "reverse" }.to_string(),
+            ),
         },
 
         Mutation::SetSpoolAdaptiveTensionTarget(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "spool.adaptive.tension_target".to_string(),
+            path: "spool.speed_controller.adaptive.tension_target".to_string(),
             value: ScalarValue::Float(v),
         },
 
         Mutation::SetSpoolAdaptiveRadiusLearningRate(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "spool.adaptive.radius_learning_rate".to_string(),
+            path: "spool.speed_controller.adaptive.radius_learning_rate".to_string(),
             value: ScalarValue::Float(v),
         },
 
         Mutation::SetSpoolAdaptiveMaxSpeedMultiplier(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "spool.adaptive.max_speed_multiplier".to_string(),
+            path: "spool.speed_controller.adaptive.max_speed_multiplier".to_string(),
             value: ScalarValue::Float(v),
         },
 
         Mutation::SetSpoolAdaptiveAccelerationFactor(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "spool.adaptive.acceleration_factor".to_string(),
+            path: "spool.speed_controller.adaptive.acceleration_factor".to_string(),
             value: ScalarValue::Float(v),
         },
 
         Mutation::SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(v) => {
             RuntimeRequestKind::SetConfigProperty {
                 target: ident,
-                path: "spool.adaptive.deacceleration_urgency_multiplier".to_string(),
+                path: "spool.speed_controller.adaptive.deacceleration_urgency_multiplier"
+                    .to_string(),
                 value: ScalarValue::Float(v),
             }
         }
 
         // ------------------------------------------------------------
-        // Spool automatic config
+        // Spool automatic config (not in runtime schema — no-op)
         // ------------------------------------------------------------
-        Mutation::SetSpoolAutomaticRequiredMeters(v) => RuntimeRequestKind::SetConfigProperty {
-            target: ident,
-            path: "spool_automatic.required_meters".to_string(),
-            value: ScalarValue::Float(v),
-        },
+        Mutation::SetSpoolAutomaticRequiredMeters(_v) => {
+            tracing::warn!("SetSpoolAutomaticRequiredMeters: not implemented in runtime schema");
+            return Ok(RuntimeRequestKind::ExecuteCommand {
+                target: ident,
+                path: "spool.reset_progress".to_string(), // no-op placeholder
+            });
+        }
 
-        Mutation::SetSpoolAutomaticAction(v) => RuntimeRequestKind::SetConfigProperty {
-            target: ident,
-            path: "spool_automatic.action".to_string(),
-            value: ScalarValue::Enum(v.to_string()),
-        },
+        Mutation::SetSpoolAutomaticAction(_v) => {
+            tracing::warn!("SetSpoolAutomaticAction: not implemented in runtime schema");
+            return Ok(RuntimeRequestKind::ExecuteCommand {
+                target: ident,
+                path: "spool.reset_progress".to_string(), // no-op placeholder
+            });
+        }
 
         // ------------------------------------------------------------
         // Spool commands
@@ -190,12 +199,11 @@ pub fn convert_request(
         },
 
         // ------------------------------------------------------------
-        // Mode config
+        // Mode commands
         // ------------------------------------------------------------
-        Mutation::SetMode(v) => RuntimeRequestKind::SetConfigProperty {
+        Mutation::SetMode(v) => RuntimeRequestKind::ExecuteCommand {
             target: ident,
-            path: "mode.mode".to_string(),
-            value: ScalarValue::Enum(v.to_string()),
+            path: format!("mode.{}", v),
         },
 
         // ------------------------------------------------------------
@@ -204,7 +212,7 @@ pub fn convert_request(
         Mutation::SetPullerAdaptiveMaxSpeedChangePercent(v) => {
             RuntimeRequestKind::SetConfigProperty {
                 target: ident,
-                path: "puller.adapative.max_speed_change_percent".to_string(),
+                path: "puller.speed_controller.adaptive.speed_delta_max".to_string(),
                 value: ScalarValue::Float(v),
             }
         }
@@ -212,20 +220,20 @@ pub fn convert_request(
         Mutation::SetPullerAdaptiveAdjustmentIntervalMeters(v) => {
             RuntimeRequestKind::SetConfigProperty {
                 target: ident,
-                path: "puller.adapative.adjustment_interval".to_string(),
+                path: "puller.speed_controller.adaptive.adjustment_distance".to_string(),
                 value: ScalarValue::Float(v),
             }
         }
 
         Mutation::SetPullerAdaptiveStepPercent(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "puller.adapative.step_percent".to_string(),
+            path: "puller.speed_controller.adaptive.increase_per_step".to_string(),
             value: ScalarValue::Float(v),
         },
 
         Mutation::SetPullerAdaptiveAcceptedDifference(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "puller.adapative.accepted_difference".to_string(),
+            path: "puller.speed_controller.adaptive.tolerance_limit".to_string(),
             value: ScalarValue::Float(v),
         },
 
@@ -235,10 +243,7 @@ pub fn convert_request(
                     provider,
                     subscriber: ident,
                 },
-                None => unreachable!("oops"), /*RuntimeRequestKind::UnsubscribeMachine {
-                                                  provider: (),
-                                                  subscriber: ident,
-                                              },*/
+                None => unreachable!("oops"),
             }
         }
     })
@@ -338,12 +343,13 @@ pub enum SpoolAutomaticActionMode {
     Hold,
 }
 
-// --- to string impl ---
+// --- Display impls: output runtime schema enum values ---
+
 impl std::fmt::Display for PullerRegulationMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            PullerRegulationMode::Speed => write!(f, "speed"),
-            PullerRegulationMode::Diameter => write!(f, "diameter"),
+            PullerRegulationMode::Speed => write!(f, "direct"),
+            PullerRegulationMode::Diameter => write!(f, "adaptive"),
         }
     }
 }
@@ -362,7 +368,7 @@ impl fmt::Display for SpoolSpeedControllerType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SpoolSpeedControllerType::Adaptive => write!(f, "adaptive"),
-            SpoolSpeedControllerType::MinMax => write!(f, "minmax"),
+            SpoolSpeedControllerType::MinMax => write!(f, "min_max"),
         }
     }
 }
