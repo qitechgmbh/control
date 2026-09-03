@@ -15,7 +15,7 @@ pub const ADAPTER: MachineLegacyDataAdapter = MachineLegacyDataAdapter {
 fn convert_request(
     ident: MachineInstanceIdentification,
     data: serde_json::Value,
-) -> Result<RuntimeRequestKind, serde_json::Error> {
+) -> Result<Vec<RuntimeRequestKind>, serde_json::Error> {
     #[derive(Deserialize)]
     #[allow(clippy::enum_variant_names)]
     enum Mutation {
@@ -155,7 +155,7 @@ fn convert_request(
         path: "ambient_temperature_calibration".to_string(),
         value: ScalarValue::Float(v),
     }};
-    Ok(res)
+    Ok(vec![res])
 }
 
 fn init_state_event(

@@ -43,7 +43,7 @@ pub struct MachineLegacyDataAdapter {
     pub convert_request: fn(
         MachineInstanceIdentification,
         serde_json::Value,
-    ) -> Result<RuntimeRequestKind, serde_json::Error>,
+    ) -> Result<Vec<RuntimeRequestKind>, serde_json::Error>,
 
     pub init_state_event: fn(&MachineInstance, is_default_state: bool) -> Option<serde_json::Value>,
     pub init_measurements_event: fn(&MachineInstance) -> Option<serde_json::Value>,

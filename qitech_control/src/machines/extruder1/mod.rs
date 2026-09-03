@@ -140,7 +140,8 @@ pub struct PidGainPaths {
 }
 
 /// One heating zone. Each zone owns the same set of resources under a different schema path.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Zone {
     Nozzle,
     Front,

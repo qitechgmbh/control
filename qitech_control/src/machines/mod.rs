@@ -15,3 +15,4 @@ pub use winder_v2::WinderV1_Regular;
 mod extruder1;
 pub use extruder1::ExtruderV1;
 pub use extruder1::ExtruderV2;
+pub use extruder1::Zone;

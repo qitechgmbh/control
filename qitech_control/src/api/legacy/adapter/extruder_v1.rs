@@ -1,7 +1,3 @@
-// TODO: SetPressurePidSettings, SetTemperaturePidSettings and StartPressurePidAutoTune each expand
-// into several RuntimeRequestKind values (3 config writes; 2 config writes + 1 command). They stay
-// unimplemented until MachineLegacyDataAdapter::convert_request can return more than one request.
-
 use qitech_framework::MachineInstanceIdentification;
 use qitech_framework::RuntimeRequestKind;
 use qitech_framework::ScalarValue;
@@ -9,6 +5,7 @@ use serde::Deserialize;
 
 use crate::api::legacy::MachineLegacyDataAdapter;
 use crate::api::types::MachineInstance;
+use crate::machines::Zone;
 
 /// Serves both extruder generations: `ExtruderV1` (machine id 4, the frontend's "extruder2") and
 /// `ExtruderV2` (machine id 22, the frontend's "extruder3"). Their schemas are identical apart from
@@ -27,7 +24,24 @@ const ZONES: [&str; 4] = ["nozzle", "front", "back", "middle"];
 fn convert_request(
     ident: MachineInstanceIdentification,
     data: serde_json::Value,
-) -> Result<RuntimeRequestKind, serde_json::Error> {
+) -> Result<Vec<RuntimeRequestKind>, serde_json::Error> {
+    /// The three mutations that expand into more than one `RuntimeRequestKind`. Tried first;
+    /// anything else falls through to the single-request `Mutation` match below, unchanged.
+    #[derive(Deserialize)]
+    enum CompoundMutation {
+        SetPressurePidSettings { kp: f64, ki: f64, kd: f64 },
+        SetTemperaturePidSettings {
+            kp: f64,
+            ki: f64,
+            kd: f64,
+            zone: Zone,
+        },
+        StartPressurePidAutoTune {
+            tune_delta: f64,
+            frequency_step_hz: f64,
+        },
+    }
+
     /// Mirrors the payloads emitted by `useExtruder.ts`.
     #[derive(Deserialize)]
     enum Mutation {
@@ -66,7 +80,40 @@ fn convert_request(
         path: path.to_string(),
     };
 
-    Ok(match serde_json::from_value(data)? {
+    if let Ok(mutation) = serde_json::from_value::<CompoundMutation>(data.clone()) {
+        return Ok(match mutation {
+            CompoundMutation::SetPressurePidSettings { kp, ki, kd } => vec![
+                config("pid.pressure.kp", ScalarValue::Float(kp)),
+                config("pid.pressure.ki", ScalarValue::Float(ki)),
+                config("pid.pressure.kd", ScalarValue::Float(kd)),
+            ],
+
+            CompoundMutation::SetTemperaturePidSettings { kp, ki, kd, zone } => {
+                let gains = zone.paths().gains;
+                vec![
+                    config(gains.kp, ScalarValue::Float(kp)),
+                    config(gains.ki, ScalarValue::Float(ki)),
+                    config(gains.kd, ScalarValue::Float(kd)),
+                ]
+            }
+
+            // The two config writes must precede the start command: the runtime reads them
+            // synchronously when the command fires.
+            CompoundMutation::StartPressurePidAutoTune {
+                tune_delta,
+                frequency_step_hz,
+            } => vec![
+                config("pressure.autotune.tune_delta", ScalarValue::Float(tune_delta)),
+                config(
+                    "pressure.autotune.frequency_step",
+                    ScalarValue::Float(frequency_step_hz),
+                ),
+                command("pressure.autotune.start"),
+            ],
+        });
+    }
+
+    Ok(vec![match serde_json::from_value(data)? {
         // `EnumProperty::from_scalar` only accepts the snake_case spelling of a variant, even
         // though it reads back as the variant ident itself. See `init_state_event`.
         Mutation::SetInverterRotationDirection(forward) => config(
@@ -120,7 +167,7 @@ fn convert_request(
         Mutation::ResetInverter(_) => command("inverter.reset"),
 
         Mutation::StopPressurePidAutoTune {} => command("pressure.autotune.stop"),
-    })
+    }])
 }
 
 // --- state event ---
@@ -586,11 +633,13 @@ mod tests {
             serde_json::json!({ "ResetInverter": true }),
             serde_json::json!({ "StopPressurePidAutoTune": {} }),
         ] {
-            let RuntimeRequestKind::ExecuteCommand { path, .. } =
-                convert_request(ident(), payload.clone()).expect("should convert")
-            else {
+            let requests = convert_request(ident(), payload.clone()).expect("should convert");
+            assert_eq!(requests.len(), 1, "{payload} should map to a single request");
+
+            let RuntimeRequestKind::ExecuteCommand { path, .. } = &requests[0] else {
                 panic!("{payload} should map to a command");
             };
+            let path = path.clone();
 
             assert!(
                 schema.commands.contains_key(&path),
@@ -778,50 +827,101 @@ mod tests {
                 "pressure",
             ),
         ] {
+            let requests = convert_request(ident(), payload).expect("should convert");
+            assert_eq!(requests.len(), 1);
+
             let RuntimeRequestKind::SetConfigProperty {
                 path: actual_path,
                 value,
                 ..
-            } = convert_request(ident(), payload).expect("should convert")
+            } = &requests[0]
             else {
                 panic!("should map to a config write");
             };
 
             assert_eq!(actual_path, path);
-            assert_eq!(value, ScalarValue::Enum(expected.to_string()));
+            assert_eq!(*value, ScalarValue::Enum(expected.to_string()));
         }
     }
 
     #[test]
     fn scalar_mutations_map_to_config_writes() {
-        let RuntimeRequestKind::SetConfigProperty { path, value, .. } =
-            convert_request(ident(), serde_json::json!({ "SetInverterTargetRpm": 42.0 }))
-                .expect("should convert")
-        else {
+        let requests = convert_request(ident(), serde_json::json!({ "SetInverterTargetRpm": 42.0 }))
+            .expect("should convert");
+        assert_eq!(requests.len(), 1);
+
+        let RuntimeRequestKind::SetConfigProperty { path, value, .. } = &requests[0] else {
             panic!("should map to a config write");
         };
 
         assert_eq!(path, "screw.target_rpm");
-        assert_eq!(value, ScalarValue::Float(42.0));
+        assert_eq!(*value, ScalarValue::Float(42.0));
     }
 
-    /// Until `convert_request` can return several requests these have to fail cleanly rather than
-    /// panic or silently drop the user's input. See the TODO at the top of this file.
+    /// Asserts that `request` is a `SetConfigProperty` at `path` with the given float value.
+    fn assert_config_write(request: &RuntimeRequestKind, path: &str, value: f64) {
+        let RuntimeRequestKind::SetConfigProperty {
+            path: actual_path,
+            value: actual_value,
+            ..
+        } = request
+        else {
+            panic!("expected a config write, got {request:?}");
+        };
+
+        assert_eq!(actual_path, path);
+        assert_eq!(*actual_value, ScalarValue::Float(value));
+    }
+
     #[test]
-    fn compound_mutations_are_rejected() {
-        for payload in [
-            serde_json::json!({ "SetPressurePidSettings": { "kp": 1.0, "ki": 0.0, "kd": 0.0 } }),
+    fn set_pressure_pid_settings_produces_three_config_writes() {
+        let requests = convert_request(
+            ident(),
+            serde_json::json!({ "SetPressurePidSettings": { "kp": 1.0, "ki": 2.0, "kd": 3.0 } }),
+        )
+        .expect("should convert");
+
+        assert_eq!(requests.len(), 3);
+        assert_config_write(&requests[0], "pid.pressure.kp", 1.0);
+        assert_config_write(&requests[1], "pid.pressure.ki", 2.0);
+        assert_config_write(&requests[2], "pid.pressure.kd", 3.0);
+    }
+
+    #[test]
+    fn set_temperature_pid_settings_targets_the_requested_zone() {
+        let requests = convert_request(
+            ident(),
             serde_json::json!({
-                "SetTemperaturePidSettings": { "kp": 1.0, "ki": 0.0, "kd": 0.0, "zone": "front" }
+                "SetTemperaturePidSettings": { "kp": 1.0, "ki": 2.0, "kd": 3.0, "zone": "front" }
             }),
+        )
+        .expect("should convert");
+
+        assert_eq!(requests.len(), 3);
+        assert_config_write(&requests[0], "pid.temperature.front.kp", 1.0);
+        assert_config_write(&requests[1], "pid.temperature.front.ki", 2.0);
+        assert_config_write(&requests[2], "pid.temperature.front.kd", 3.0);
+    }
+
+    /// The two config writes must land before the start command fires, since the runtime reads
+    /// them synchronously when the command executes.
+    #[test]
+    fn start_pressure_pid_auto_tune_writes_config_before_issuing_the_command() {
+        let requests = convert_request(
+            ident(),
             serde_json::json!({
                 "StartPressurePidAutoTune": { "tune_delta": 0.5, "frequency_step_hz": 5.0 }
             }),
-        ] {
-            assert!(
-                convert_request(ident(), payload.clone()).is_err(),
-                "{payload} should be rejected",
-            );
-        }
+        )
+        .expect("should convert");
+
+        assert_eq!(requests.len(), 3);
+        assert_config_write(&requests[0], "pressure.autotune.tune_delta", 0.5);
+        assert_config_write(&requests[1], "pressure.autotune.frequency_step", 5.0);
+
+        let RuntimeRequestKind::ExecuteCommand { path, .. } = &requests[2] else {
+            panic!("expected the third request to be the start command");
+        };
+        assert_eq!(path, "pressure.autotune.start");
     }
 }

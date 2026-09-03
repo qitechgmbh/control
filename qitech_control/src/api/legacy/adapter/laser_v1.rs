@@ -14,7 +14,7 @@ pub const ADAPTER: MachineLegacyDataAdapter = MachineLegacyDataAdapter {
 fn convert_request(
     ident: MachineInstanceIdentification,
     data: serde_json::Value,
-) -> Result<RuntimeRequestKind, serde_json::Error> {
+) -> Result<Vec<RuntimeRequestKind>, serde_json::Error> {
     #[derive(Deserialize)]
     #[allow(clippy::enum_variant_names)]
     enum Mutation {
@@ -24,7 +24,7 @@ fn convert_request(
         SetGlobalWarning(bool),
     }
 
-    Ok(match serde_json::from_value(data)? {
+    Ok(vec![match serde_json::from_value(data)? {
         Mutation::SetTargetDiameter(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
             path: "diameter.target".to_string(),
@@ -45,7 +45,7 @@ fn convert_request(
             path: "out_of_tolerance.active".to_string(),
             value: ScalarValue::Boolean(v),
         },
-    })
+    }])
 }
 
 fn init_state_event(
