@@ -232,19 +232,14 @@ impl LaserMachine {
         let res = laser.handle_response();
         match res {
             Ok(_) => (),
-            Err(e) => {
-                if let Some(laser_error) = e.downcast_ref::<LaserError>() {
-                    match laser_error {
-                        LaserError::IoErr() => {
-                            self.error = Some(MachineError::IrrecoverableFailure(
-                                "Physical hardware I/O broke. Dropping machine permanently."
-                                    .to_owned(),
-                            ));
-                        }
-                        _ => (),
-                    }
+            Err(e) => match e.downcast_ref::<LaserError>() {
+                Some(LaserError::IoErr()) => {
+                    self.error = Some(MachineError::IrrecoverableFailure(
+                        "Physical hardware I/O broke. Dropping machine permanently.".to_owned(),
+                    ));
                 }
-            }
+                _ => tracing::warn!("laser handle_response failed: {:?}", e),
+            },
         }
 
         if now.duration_since(self.last_request) > Duration::from_millis(6) {
@@ -257,8 +252,13 @@ impl LaserMachine {
 
         match &laser.measurement {
             Some(m) => {
-                self.x_diameter = Some(Length::new::<millimeter>(m.x_axis as f64 / 1000.0));
-                self.y_diameter = Some(Length::new::<millimeter>(m.y_axis as f64 / 1000.0));
+                // A 1 axis laser reports no X/Y, they stay `None` so the UI hides them
+                self.x_diameter = m
+                    .x_axis
+                    .map(|x| Length::new::<millimeter>(x as f64 / 1000.0));
+                self.y_diameter = m
+                    .y_axis
+                    .map(|y| Length::new::<millimeter>(y as f64 / 1000.0));
                 self.diameter = Length::new::<millimeter>(m.diameter as f64 / 1000.0);
             }
             None => (),

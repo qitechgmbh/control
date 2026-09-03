@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use ethercat_hal::devices::{
     EthercatDevice, downcast_device,
-    wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
+    wago_modules::wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
     wago_modules::wago_750_460::{Wago750_460, Wago750_460Port},
 };
 use ethercat_hal::io::temperature_input::TemperatureInput;

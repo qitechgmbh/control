@@ -4,7 +4,7 @@ use anyhow::Error;
 use ethercat_hal::{
     devices::{
         EthercatDevice, downcast_device,
-        wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
+        wago_modules::wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
         wago_modules::wago_750_455::{Wago750_455, Wago750_455Port},
     },
     io::analog_input::AnalogInput,

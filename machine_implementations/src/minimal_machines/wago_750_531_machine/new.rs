@@ -9,7 +9,7 @@ use crate::{
 };
 
 use anyhow::Error;
-use ethercat_hal::devices::wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
+use ethercat_hal::devices::wago_modules::wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
 use ethercat_hal::devices::wago_modules::wago_750_531::{Wago750_531, Wago750_531OutputPort};
 use ethercat_hal::devices::{EthercatDevice, downcast_device};
 use ethercat_hal::io::digital_output::DigitalOutput;

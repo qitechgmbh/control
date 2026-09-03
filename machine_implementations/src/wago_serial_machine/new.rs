@@ -8,7 +8,7 @@ use crate::{
     validate_no_role_duplicates, validate_same_machine_identification_unique,
 };
 use anyhow::Error;
-use ethercat_hal::devices::wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
+use ethercat_hal::devices::wago_modules::wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
 use ethercat_hal::devices::{EthercatDevice, downcast_device};
 use smol::lock::RwLock;
 use std::sync::Arc;
