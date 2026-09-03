@@ -10,15 +10,28 @@ config:
   spool:
     direction: !enum [forward, reverse]
 
+    speed_controller:
+      algorithm: !enum [adaptive, min_max]
+
+      speed_min: !revolution_per_minute
+      speed_max: !revolution_per_minute
+
+      adaptive:
+        tension_target: !float
+        radius_learning_rate: !float
+        max_speed_multiplier: !float
+        acceleration_factor: !float
+        deacceleration_urgency_multiplier: !float
+
   puller:
     direction: !enum [
-      forward, 
+      forward,
       reverse,
     ]
 
     gear_ratio: !enum [
-      one_to_one, 
-      one_to_five, 
+      one_to_one,
+      one_to_five,
       one_to_ten,
     ]
 
@@ -29,8 +42,8 @@ config:
       adaptive:
         speed_delta_max: !float
         increase_per_step: !float
-        tolerance_limit: !float
-        adjustment_distance: !float
+        tolerance_limit: !millimeter
+        adjustment_distance: !meter
 
   traverse:
     limit_inner: !millimeter
@@ -45,27 +58,30 @@ state:
   spool:
     mode: !enum [standby, hold, wind]
 
+    speed_controller:
+      enabled: !boolean
+
   puller:
     mode: !enum [standby, hold, pull]
 
   traverse:
     mode: !enum [
-      standby, 
-      hold, 
+      standby,
+      hold,
       traverse
     ]
 
     state: !enum [
-      idle, 
-      going_in, 
-      going_out, 
-      initialize, 
-      escape_endstop, 
-      find_endstop_fine_distancing, 
-      find_endstop_coarse, 
-      find_endstop_fine, 
-      validate, 
-      traversing_in, 
+      idle,
+      going_in,
+      going_out,
+      initialize,
+      escape_endstop,
+      find_endstop_fine_distancing,
+      find_endstop_coarse,
+      find_endstop_fine,
+      validate,
+      traversing_in,
       traversing_out
     ]
 
@@ -73,7 +89,7 @@ state:
     endstop_triggered: !boolean
 
   tension_arm:
-    zero: !boolean
+    zero: !?revolution
 
   laser_pointer:
     enabled: !boolean
@@ -83,13 +99,20 @@ measurements:
     rpm: !revolution_per_minute
     progress: !meter
 
+    speed_controller:
+      speed: !revolution_per_minute
+      filament_tension: !?float
+
+      adaptive:
+        speed_factor: !meter
+
   puller:
     speed: !meter_per_minute
 
     speed_controller:
       speed_target: !meter_per_minute
 
-      adaptive: 
+      adaptive:
         modulation: !float
         distance_since_adjustment: !meter
 

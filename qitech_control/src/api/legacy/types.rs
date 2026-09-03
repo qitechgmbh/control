@@ -67,6 +67,16 @@ pub struct MachineIdentificationUnique {
     pub serial: u16,
 }
 
+impl From<MachineIdentificationUnique> for qitech_framework::MachineInstanceIdentification {
+    fn from(id: MachineIdentificationUnique) -> Self {
+        qitech_framework::MachineIdentification::new(
+            id.machine_identification.vendor,
+            id.machine_identification.machine,
+        )
+        .unique(id.serial)
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct MachineIdentification {
     pub vendor: u16,

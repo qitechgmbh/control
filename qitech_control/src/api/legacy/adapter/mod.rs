@@ -6,6 +6,7 @@ use crate::api::types::MachineInstance;
 
 pub mod aquapath_v1;
 pub mod laser_v1;
+pub mod winder_v1;
 
 pub fn get(ident: MachineIdentification) -> Option<MachineLegacyDataAdapter> {
     const IDENT_LASER: MachineIdentification = MachineIdentification {
@@ -18,9 +19,15 @@ pub fn get(ident: MachineIdentification) -> Option<MachineLegacyDataAdapter> {
         machine_id: 9,
     };
 
+    const IDENT_WINDER: MachineIdentification = MachineIdentification {
+        vendor_id: 1,
+        machine_id: 98,
+    };
+
     match ident {
         IDENT_LASER => Some(laser_v1::ADAPTER),
         IDENT_AQUAPATH => Some(aquapath_v1::ADAPTER),
+        IDENT_WINDER => Some(winder_v1::ADAPTER),
         _ => None,
     }
 }

@@ -25,7 +25,13 @@ export function useMachines(): UseMachine[] {
   if (machines?.data)
     return (
       machines.data.machines
-        .filter((machine) => machine.error === null)
+        //.filter((machine) => machine.error === null)
+        .filter((machine) => {
+          if (machine.error !== null) {
+            console.log("Machine filtered out due to error:", machine);
+          }
+          return true; // show all machines
+        })
         .map((machine) => {
           const machinePreset = getMachineProperties(
             machine.machine_identification_unique.machine_identification,
