@@ -173,11 +173,6 @@ impl MachineNamespaceManager {
             if let Some(data) =
                 (adapter.init_state_event)(&entry.instance, entry.emitted_default_state)
             {
-                // tracing::info!(
-                //     "Broadcasting StateEvent for {:?}, sockets: {}",
-                //     ident,
-                //     entry.sockets.len()
-                // );
                 let event = SocketIOEvent::new("StateEvent", data);
                 Self::broadcast(&mut entry.sockets, event);
                 entry.emitted_default_state = true;
