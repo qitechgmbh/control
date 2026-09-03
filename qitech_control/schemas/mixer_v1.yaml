@@ -7,12 +7,19 @@ identification:
   machine_id: 18
 
 config:
+  # Manual placeholder for the extruder's live output rate (kg/h) until the
+  # extruder is ported to the framework and this can be a real subscription.
+  extruder_output_rate: !float
   hopper_a:
-    target_speed: !float
+    target_rpm: !float
     forward: !boolean
+    dosing_percent: !float
+    calibration_steps_per_kgh: !float
   hopper_b:
-    target_speed: !float
+    target_rpm: !float
     forward: !boolean
+    dosing_percent: !float
+    calibration_steps_per_kgh: !float
 
 state:
   mixing_motor_on: !boolean

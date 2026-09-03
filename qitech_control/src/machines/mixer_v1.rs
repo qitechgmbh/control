@@ -26,6 +26,7 @@ use qitech_lib::ethercat_hal::shared_config::el70x1::StmMotorConfiguration;
 
 const MIXING_MOTOR_PORT: usize = 0;
 const HOPPER_PORT: usize = 0;
+const MOTOR_FULL_STEPS_PER_REV: f64 = 200.0;
 
 #[derive(Machine)]
 pub struct MixerV1 {
@@ -36,11 +37,11 @@ pub struct MixerV1 {
 
     // --- config ---
     extruder_output_rate: ConfigProperty<f64>,
-    hopper_a_target_speed: ConfigProperty<f64>,
+    hopper_a_target_rpm: ConfigProperty<f64>,
     hopper_a_forward: ConfigProperty<bool>,
     hopper_a_dosing_percent: ConfigProperty<f64>,
     hopper_a_calibration_steps_per_kgh: ConfigProperty<f64>,
-    hopper_b_target_speed: ConfigProperty<f64>,
+    hopper_b_target_rpm: ConfigProperty<f64>,
     hopper_b_forward: ConfigProperty<bool>,
     hopper_b_dosing_percent: ConfigProperty<f64>,
     hopper_b_calibration_steps_per_kgh: ConfigProperty<f64>,
@@ -64,8 +65,8 @@ impl MachineBuild for MixerV1 {
         let hopper_a = init_stepper(ctx, interface.clone(), 2)?;
         let hopper_b = init_stepper(ctx, interface.clone(), 3)?;
 
-        let hopper_a_target_speed = ctx
-            .config::<f64>("hopper_a.target_speed")
+        let hopper_a_target_rpm = ctx
+            .config::<f64>("hopper_a.target_rpm")
             .default(0.0)
             .minimum(0.0)
             .on_external_changed(Self::push_hopper_a_speed)
@@ -88,8 +89,8 @@ impl MachineBuild for MixerV1 {
             .on_external_changed(Self::push_hopper_a_ratio_speed)
             .build()?;
 
-        let hopper_b_target_speed = ctx
-            .config::<f64>("hopper_b.target_speed")
+        let hopper_b_target_rpm = ctx
+            .config::<f64>("hopper_b.target_rpm")
             .default(0.0)
             .minimum(0.0)
             .on_external_changed(Self::push_hopper_b_speed)
@@ -145,11 +146,11 @@ impl MachineBuild for MixerV1 {
             hopper_a,
             hopper_b,
             extruder_output_rate,
-            hopper_a_target_speed,
+            hopper_a_target_rpm,
             hopper_a_forward,
             hopper_a_dosing_percent,
             hopper_a_calibration_steps_per_kgh,
-            hopper_b_target_speed,
+            hopper_b_target_rpm,
             hopper_b_forward,
             hopper_b_dosing_percent,
             hopper_b_calibration_steps_per_kgh,
@@ -198,7 +199,7 @@ impl MixerV1 {
     }
 
     fn push_hopper_a_speed(m: &mut Self) -> ActResult {
-        let magnitude = m.hopper_a_target_speed.get();
+        let magnitude = m.hopper_a_target_rpm.get() * MOTOR_FULL_STEPS_PER_REV / 60.0;
         let signed = if m.hopper_a_forward.get() {
             magnitude
         } else {
@@ -209,7 +210,7 @@ impl MixerV1 {
     }
 
     fn push_hopper_b_speed(m: &mut Self) -> ActResult {
-        let magnitude = m.hopper_b_target_speed.get();
+        let magnitude = m.hopper_b_target_rpm.get() * MOTOR_FULL_STEPS_PER_REV / 60.0;
         let signed = if m.hopper_b_forward.get() {
             magnitude
         } else {
