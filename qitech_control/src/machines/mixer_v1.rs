@@ -35,10 +35,15 @@ pub struct MixerV1 {
     hopper_b: Rc<RefCell<EL7041_0052>>,
 
     // --- config ---
+    extruder_output_rate: ConfigProperty<f64>,
     hopper_a_target_speed: ConfigProperty<f64>,
     hopper_a_forward: ConfigProperty<bool>,
+    hopper_a_dosing_percent: ConfigProperty<f64>,
+    hopper_a_calibration_steps_per_kgh: ConfigProperty<f64>,
     hopper_b_target_speed: ConfigProperty<f64>,
     hopper_b_forward: ConfigProperty<bool>,
+    hopper_b_dosing_percent: ConfigProperty<f64>,
+    hopper_b_calibration_steps_per_kgh: ConfigProperty<f64>,
 
     // --- state ---
     mixing_motor_on: StateProperty<bool>,
@@ -70,6 +75,18 @@ impl MachineBuild for MixerV1 {
             .default(true)
             .on_external_changed(Self::push_hopper_a_speed)
             .build()?;
+        let hopper_a_dosing_percent = ctx
+            .config::<f64>("hopper_a.dosing_percent")
+            .default(0.0)
+            .minimum(0.0)
+            .on_external_changed(Self::push_hopper_a_ratio_speed)
+            .build()?;
+        let hopper_a_calibration_steps_per_kgh = ctx
+            .config::<f64>("hopper_a.calibration_steps_per_kgh")
+            .default(34.47)
+            .minimum(0.0)
+            .on_external_changed(Self::push_hopper_a_ratio_speed)
+            .build()?;
 
         let hopper_b_target_speed = ctx
             .config::<f64>("hopper_b.target_speed")
@@ -81,6 +98,25 @@ impl MachineBuild for MixerV1 {
             .config::<bool>("hopper_b.forward")
             .default(true)
             .on_external_changed(Self::push_hopper_b_speed)
+            .build()?;
+        let hopper_b_dosing_percent = ctx
+            .config::<f64>("hopper_b.dosing_percent")
+            .default(0.0)
+            .minimum(0.0)
+            .on_external_changed(Self::push_hopper_b_ratio_speed)
+            .build()?;
+        let hopper_b_calibration_steps_per_kgh = ctx
+            .config::<f64>("hopper_b.calibration_steps_per_kgh")
+            .default(6.37)
+            .minimum(0.0)
+            .on_external_changed(Self::push_hopper_b_ratio_speed)
+            .build()?;
+
+        let extruder_output_rate = ctx
+            .config::<f64>("extruder_output_rate")
+            .default(0.0)
+            .minimum(0.0)
+            .on_external_changed(Self::push_ratio_speeds)
             .build()?;
 
         ctx.command("mixing_motor.start")
@@ -108,10 +144,15 @@ impl MachineBuild for MixerV1 {
             mixing_motor,
             hopper_a,
             hopper_b,
+            extruder_output_rate,
             hopper_a_target_speed,
             hopper_a_forward,
+            hopper_a_dosing_percent,
+            hopper_a_calibration_steps_per_kgh,
             hopper_b_target_speed,
             hopper_b_forward,
+            hopper_b_dosing_percent,
+            hopper_b_calibration_steps_per_kgh,
             mixing_motor_on: ctx.state::<bool>("mixing_motor_on").build()?,
             hopper_a_ready: ctx.state::<bool>("hopper_a_ready").build()?,
             hopper_a_error: ctx.state::<bool>("hopper_a_error").build()?,
@@ -169,6 +210,37 @@ impl MixerV1 {
 
     fn push_hopper_b_speed(m: &mut Self) -> ActResult {
         let magnitude = m.hopper_b_target_speed.get();
+        let signed = if m.hopper_b_forward.get() {
+            magnitude
+        } else {
+            -magnitude
+        };
+        let _ = m.hopper_b.borrow_mut().set_speed(HOPPER_PORT, signed);
+        Ok(())
+    }
+
+    fn push_ratio_speeds(m: &mut Self) -> ActResult {
+        Self::push_hopper_a_ratio_speed(m)?;
+        Self::push_hopper_b_ratio_speed(m)
+    }
+
+    fn push_hopper_a_ratio_speed(m: &mut Self) -> ActResult {
+        let masterbatch_kg_h =
+            m.extruder_output_rate.get() * m.hopper_a_dosing_percent.get() / 100.0;
+        let magnitude = masterbatch_kg_h * m.hopper_a_calibration_steps_per_kgh.get();
+        let signed = if m.hopper_a_forward.get() {
+            magnitude
+        } else {
+            -magnitude
+        };
+        let _ = m.hopper_a.borrow_mut().set_speed(HOPPER_PORT, signed);
+        Ok(())
+    }
+
+    fn push_hopper_b_ratio_speed(m: &mut Self) -> ActResult {
+        let masterbatch_kg_h =
+            m.extruder_output_rate.get() * m.hopper_b_dosing_percent.get() / 100.0;
+        let magnitude = masterbatch_kg_h * m.hopper_b_calibration_steps_per_kgh.get();
         let signed = if m.hopper_b_forward.get() {
             magnitude
         } else {
