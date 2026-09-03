@@ -3,6 +3,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use qitech_framework::Machine;
+use qitech_framework::MachineInstanceIdentification;
 use qitech_framework::machine::ActResult;
 use qitech_framework::machine::BuildContext;
 use qitech_framework::machine::BuildError;
@@ -10,7 +11,10 @@ use qitech_framework::machine::BuildResult;
 use qitech_framework::machine::ConfigProperty;
 use qitech_framework::machine::Machine;
 use qitech_framework::machine::MachineBuild;
+use qitech_framework::machine::RemoteProperty;
 use qitech_framework::machine::StateProperty;
+use qitech_framework::machine::SubscribeContext;
+use qitech_framework::machine::SubscribeResult;
 use qitech_framework::machine_build;
 use qitech_lib::ethercat_hal::EtherCATThreadChannel;
 use qitech_lib::ethercat_hal::coe::ConfigurableDevice;
@@ -23,10 +27,17 @@ use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1
 use qitech_lib::ethercat_hal::shared_config;
 use qitech_lib::ethercat_hal::shared_config::el70x1::EL70x1OperationMode;
 use qitech_lib::ethercat_hal::shared_config::el70x1::StmMotorConfiguration;
+use qitech_lib::units::AngularVelocity;
+use qitech_lib::units::angular_velocity::revolution_per_minute;
 
 const MIXING_MOTOR_PORT: usize = 0;
 const HOPPER_PORT: usize = 0;
 const MOTOR_FULL_STEPS_PER_REV: f64 = 200.0;
+
+pub struct ExtruderSubscription {
+    ident: MachineInstanceIdentification,
+    rpm: RemoteProperty<AngularVelocity>,
+}
 
 #[derive(Machine)]
 pub struct MixerV1 {
@@ -37,6 +48,7 @@ pub struct MixerV1 {
 
     // --- config ---
     extruder_output_rate: ConfigProperty<f64>,
+    extruder_kg_per_rpm: ConfigProperty<f64>,
     hopper_a_target_rpm: ConfigProperty<f64>,
     hopper_a_forward: ConfigProperty<bool>,
     hopper_a_dosing_percent: ConfigProperty<f64>,
@@ -52,6 +64,9 @@ pub struct MixerV1 {
     hopper_a_error: StateProperty<bool>,
     hopper_b_ready: StateProperty<bool>,
     hopper_b_error: StateProperty<bool>,
+
+    // --- subscriptions ---
+    extruder_subscription: Option<ExtruderSubscription>,
 }
 
 impl MachineBuild for MixerV1 {
@@ -119,6 +134,12 @@ impl MachineBuild for MixerV1 {
             .minimum(0.0)
             .on_external_changed(Self::push_ratio_speeds)
             .build()?;
+        let extruder_kg_per_rpm = ctx
+            .config::<f64>("extruder_kg_per_rpm")
+            .default(0.1)
+            .minimum(0.0)
+            .on_external_changed(Self::push_ratio_speeds)
+            .build()?;
 
         ctx.command("mixing_motor.start")
             .execute(|m: &mut Self| m.set_mixing_motor(true))
@@ -146,6 +167,7 @@ impl MachineBuild for MixerV1 {
             hopper_a,
             hopper_b,
             extruder_output_rate,
+            extruder_kg_per_rpm,
             hopper_a_target_rpm,
             hopper_a_forward,
             hopper_a_dosing_percent,
@@ -159,6 +181,7 @@ impl MachineBuild for MixerV1 {
             hopper_a_error: ctx.state::<bool>("hopper_a_error").build()?,
             hopper_b_ready: ctx.state::<bool>("hopper_b_ready").build()?,
             hopper_b_error: ctx.state::<bool>("hopper_b_error").build()?,
+            extruder_subscription: None,
         })
     }
 }
@@ -175,7 +198,28 @@ impl Machine for MixerV1 {
             self.hopper_b_error.set(input.error);
         }
 
+        if self.extruder_subscription.is_some() {
+            Self::push_ratio_speeds(self)?;
+        }
+
         Ok(())
+    }
+
+    fn subscribe(&mut self, ctx: &mut SubscribeContext) -> SubscribeResult {
+        self.extruder_subscription = Some(ExtruderSubscription {
+            ident: ctx.provider(),
+            rpm: ctx.measurement("motor.rpm")?,
+        });
+
+        Ok(())
+    }
+
+    fn unsubscribe(&mut self, ident: MachineInstanceIdentification) {
+        if let Some(sub) = &mut self.extruder_subscription
+            && sub.ident == ident
+        {
+            self.extruder_subscription = None;
+        }
     }
 }
 
@@ -225,9 +269,18 @@ impl MixerV1 {
         Self::push_hopper_b_ratio_speed(m)
     }
 
+    /// Prefers the live extruder subscription over the manual placeholder
+    /// config when a connection is active.
+    fn current_extruder_output_rate(&self) -> f64 {
+        match &self.extruder_subscription {
+            Some(sub) => sub.rpm.get_as::<revolution_per_minute>() * self.extruder_kg_per_rpm.get(),
+            None => self.extruder_output_rate.get(),
+        }
+    }
+
     fn push_hopper_a_ratio_speed(m: &mut Self) -> ActResult {
         let masterbatch_kg_h =
-            m.extruder_output_rate.get() * m.hopper_a_dosing_percent.get() / 100.0;
+            m.current_extruder_output_rate() * m.hopper_a_dosing_percent.get() / 100.0;
         let magnitude = masterbatch_kg_h * m.hopper_a_calibration_steps_per_kgh.get();
         let signed = if m.hopper_a_forward.get() {
             magnitude
@@ -240,7 +293,7 @@ impl MixerV1 {
 
     fn push_hopper_b_ratio_speed(m: &mut Self) -> ActResult {
         let masterbatch_kg_h =
-            m.extruder_output_rate.get() * m.hopper_b_dosing_percent.get() / 100.0;
+            m.current_extruder_output_rate() * m.hopper_b_dosing_percent.get() / 100.0;
         let magnitude = masterbatch_kg_h * m.hopper_b_calibration_steps_per_kgh.get();
         let signed = if m.hopper_b_forward.get() {
             magnitude

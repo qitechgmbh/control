@@ -7,9 +7,9 @@ identification:
   machine_id: 18
 
 config:
-  # Manual placeholder for the extruder's live output rate (kg/h) until the
-  # extruder is ported to the framework and this can be a real subscription.
+  # Fallback used only when no extruder is connected via subscription.
   extruder_output_rate: !float
+  extruder_kg_per_rpm: !float
   hopper_a:
     target_rpm: !float
     forward: !boolean
