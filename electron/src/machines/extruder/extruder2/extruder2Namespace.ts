@@ -302,7 +302,6 @@ export function extruder2MessageHandler(
 
     try {
       if (eventName === "StateEvent") {
-        console.log(event);
         const stateEvent = stateEventSchema.parse(event);
         const timestamp = event.ts;
         const nextTargetPressure = stateEvent.data.pressure_state.target_bar;

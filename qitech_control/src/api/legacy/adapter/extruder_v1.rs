@@ -29,7 +29,11 @@ fn convert_request(
     /// anything else falls through to the single-request `Mutation` match below, unchanged.
     #[derive(Deserialize)]
     enum CompoundMutation {
-        SetPressurePidSettings { kp: f64, ki: f64, kd: f64 },
+        SetPressurePidSettings {
+            kp: f64,
+            ki: f64,
+            kd: f64,
+        },
         SetTemperaturePidSettings {
             kp: f64,
             ki: f64,
@@ -103,7 +107,10 @@ fn convert_request(
                 tune_delta,
                 frequency_step_hz,
             } => vec![
-                config("pressure.autotune.tune_delta", ScalarValue::Float(tune_delta)),
+                config(
+                    "pressure.autotune.tune_delta",
+                    ScalarValue::Float(tune_delta),
+                ),
                 config(
                     "pressure.autotune.frequency_step",
                     ScalarValue::Float(frequency_step_hz),
@@ -195,18 +202,18 @@ fn init_state_event(
     Some(serde_json::json!({
         "is_default_state": is_default_state,
 
-        // `EnumProperty::into_scalar` writes the variant ident verbatim, so these compare against
-        // the PascalCase spelling — unlike the snake_case one writes take.
         "rotation_state": {
-            "forward": config_enum(instance, "screw.direction")? == "Forward",
+            "forward": config_enum_is(instance, "screw.direction", "forward")?,
         },
 
+        // The only enum handed to the frontend verbatim: its zod schema spells the modes
+        // PascalCase. `mode` is a state property, so it is always the variant ident.
         "mode_state": {
             "mode": state_enum(instance, "mode")?,
         },
 
         "regulation_state": {
-            "uses_rpm": config_enum(instance, "screw.regulation")? == "Rpm",
+            "uses_rpm": config_enum_is(instance, "screw.regulation", "rpm")?,
         },
 
         "pressure_state": {
@@ -250,12 +257,7 @@ fn init_state_event(
         "pid_autotune_state": {
             // The frontend compares this against "running" / "not_started", so the variant ident
             // has to be folded back to the legacy snake_case spelling.
-            "state": match state_enum(instance, "pressure.autotune.state")?.as_str() {
-                "Running" => "running",
-                "Completed" => "completed",
-                "Failed" => "failed",
-                _ => "not_started",
-            },
+            "state": snake_case(&state_enum(instance, "pressure.autotune.state")?),
             "progress": autotune_progress(instance),
             "result": autotune_result(instance)?,
         },
@@ -371,6 +373,38 @@ fn config_bool(instance: &MachineInstance, path: &str) -> Option<bool> {
 
 fn config_enum(instance: &MachineInstance, path: &str) -> Option<String> {
     config_value(instance, path)?.r#enum()
+}
+
+/// Whether the enum config property at `path` currently holds `variant`, named in the schema's
+/// snake_case spelling.
+///
+/// Enum config properties round-trip asymmetrically through the framework: the registered default
+/// arrives as the variant ident (`EnumProperty::into_scalar` writes `Forward`) while an external
+/// write is echoed back in the snake_case spelling the write itself had to use
+/// (`EnumProperty::from_scalar` only accepts `forward`). Comparing against either spelling alone
+/// silently stops matching as soon as the property is written once — which is how the direction
+/// toggle got stuck on reverse — so fold to snake_case first and accept both.
+fn config_enum_is(instance: &MachineInstance, path: &str, variant: &str) -> Option<bool> {
+    Some(snake_case(&config_enum(instance, path)?) == variant)
+}
+
+/// Folds a variant ident to its snake_case spelling, leaving an already snake_case value unchanged.
+fn snake_case(value: &str) -> String {
+    let mut out = String::with_capacity(value.len() + 4);
+
+    for (i, ch) in value.char_indices() {
+        if ch.is_ascii_uppercase() {
+            if i != 0 {
+                out.push('_');
+            }
+
+            out.push(ch.to_ascii_lowercase());
+        } else {
+            out.push(ch);
+        }
+    }
+
+    out
 }
 
 fn state_bool(instance: &MachineInstance, path: &str) -> Option<bool> {
@@ -634,7 +668,11 @@ mod tests {
             serde_json::json!({ "StopPressurePidAutoTune": {} }),
         ] {
             let requests = convert_request(ident(), payload.clone()).expect("should convert");
-            assert_eq!(requests.len(), 1, "{payload} should map to a single request");
+            assert_eq!(
+                requests.len(),
+                1,
+                "{payload} should map to a single request"
+            );
 
             let RuntimeRequestKind::ExecuteCommand { path, .. } = &requests[0] else {
                 panic!("{payload} should map to a command");
@@ -844,10 +882,76 @@ mod tests {
         }
     }
 
+    /// A registered enum arrives as the variant ident, a written one in the snake_case spelling the
+    /// write had to use — both have to read back as the same state. Comparing against the ident
+    /// alone left the direction toggle stuck on reverse: once written, a later `forward` write
+    /// never matched `"Forward"` again.
+    #[test]
+    fn enum_reads_accept_both_spellings() {
+        // Per property: the payload field it feeds, and every spelling the cache can hold for it —
+        // the two variant idents, then the two snake_case spellings a write echoes back.
+        let properties = [
+            (
+                "screw.direction",
+                "rotation_state",
+                "forward",
+                [
+                    ("Forward", true),
+                    ("Reverse", false),
+                    ("forward", true),
+                    ("reverse", false),
+                ],
+            ),
+            (
+                "screw.regulation",
+                "regulation_state",
+                "uses_rpm",
+                [
+                    ("Rpm", true),
+                    ("Pressure", false),
+                    ("rpm", true),
+                    ("pressure", false),
+                ],
+            ),
+        ];
+
+        for (path, field, key, spellings) in properties {
+            for (value, expected) in spellings {
+                let mut instance = instance();
+                instance.config_properties.insert(
+                    path.to_string(),
+                    Some(ConfigPropertyInfo {
+                        value: ScalarValue::Enum(value.to_string()),
+                        default: ScalarValue::Enum(value.to_string()),
+                        capability: Default::default(),
+                        constraints: Default::default(),
+                        records: Vec::new(),
+                    }),
+                );
+
+                let event = init_state_event(&instance, false).expect("should emit");
+
+                assert_eq!(
+                    event[field][key], expected,
+                    "`{path}` holding `{value}` should read back as {expected}",
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn snake_case_folds_idents_and_passes_snake_case_through() {
+        assert_eq!(snake_case("Forward"), "forward");
+        assert_eq!(snake_case("forward"), "forward");
+        assert_eq!(snake_case("NotStarted"), "not_started");
+        assert_eq!(snake_case("not_started"), "not_started");
+    }
+
     #[test]
     fn scalar_mutations_map_to_config_writes() {
-        let requests = convert_request(ident(), serde_json::json!({ "SetInverterTargetRpm": 42.0 }))
-            .expect("should convert");
+        let requests =
+            convert_request(ident(), serde_json::json!({ "SetInverterTargetRpm": 42.0 }))
+                .expect("should convert");
         assert_eq!(requests.len(), 1);
 
         let RuntimeRequestKind::SetConfigProperty { path, value, .. } = &requests[0] else {
