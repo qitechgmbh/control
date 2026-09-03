@@ -1,0 +1,138 @@
+qms_version: 1.0
+revision: 1
+
+identification:
+  name: extruder_v2
+  vendor_id: 1
+  machine_id: 22
+
+config:
+  screw:
+    direction: !enum [forward, reverse]
+    regulation: !enum [rpm, pressure]
+    target_rpm: !revolution_per_minute
+    target_pressure: !bar
+
+  pressure:
+    limit: !bar
+    limit_enabled: !boolean
+
+    autotune:
+      tune_delta: !bar
+      frequency_step: !hertz
+
+  heating:
+    nozzle:
+      target_temperature: !degree_celsius
+      target_enabled: !boolean
+    front:
+      target_temperature: !degree_celsius
+    middle:
+      target_temperature: !degree_celsius
+    back:
+      target_temperature: !degree_celsius
+
+  pid:
+    pressure:
+      kp: !float
+      ki: !float
+      kd: !float
+
+    temperature:
+      nozzle:
+        kp: !float
+        ki: !float
+        kd: !float
+      front:
+        kp: !float
+        ki: !float
+        kd: !float
+      middle:
+        kp: !float
+        ki: !float
+        kd: !float
+      back:
+        kp: !float
+        ki: !float
+        kd: !float
+
+state:
+  mode: !enum [standby, heat, extrude]
+
+  pressure:
+    wiring_error: !boolean
+
+    autotune:
+      state: !enum [not_started, running, completed, failed]
+
+      result:
+        kp: !?float
+        ki: !?float
+        kd: !?float
+
+  heating:
+    nozzle:
+      wiring_error: !boolean
+    front:
+      wiring_error: !boolean
+    middle:
+      wiring_error: !boolean
+    back:
+      wiring_error: !boolean
+
+  inverter:
+    running: !boolean
+    forward_running: !boolean
+    reverse_running: !boolean
+    up_to_frequency: !boolean
+    overload_warning: !boolean
+    no_function: !boolean
+    output_frequency_detection: !boolean
+    abc_fault: !boolean
+    fault_occurence: !boolean
+
+measurements:
+  motor:
+    rpm: !revolution_per_minute
+    frequency: !hertz
+    voltage: !volt
+    current: !ampere
+    power: !watt
+
+  pressure:
+    value: !bar
+    autotune_progress: !percentage
+
+  heating:
+    nozzle:
+      temperature: !degree_celsius
+      power: !watt
+    front:
+      temperature: !degree_celsius
+      power: !watt
+    middle:
+      temperature: !degree_celsius
+      power: !watt
+    back:
+      temperature: !degree_celsius
+      power: !watt
+
+  power:
+    combined: !watt
+
+  energy:
+    total: !kilowatt_hour
+
+commands:
+  mode:
+    standby: !command
+    heat: !command
+    extrude: !command
+
+  inverter:
+    reset: !command
+
+  pressure:
+    autotune:
+      start: !command
+      stop: !command

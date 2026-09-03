@@ -21,9 +21,9 @@ heapless = { version = "0.9.3", features = ["serde"] }
 serialport = "4.9.0"
 arc-swap = "1.9.2"
 axum = "0.8.9"
-udev = "0.9.3"
 euclid = "0.22.13"
 bitvec = "1.1.1"
+crc = "3.3.0"
 anyhow = "1.0.104"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.150"

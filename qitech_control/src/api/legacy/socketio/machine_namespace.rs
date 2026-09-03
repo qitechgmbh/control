@@ -51,7 +51,7 @@ impl MachineNamespaceManager {
                     state_properties,
                     measurements,
                 },
-                emitted_default_state: false,
+                last_state: None,
             },
         );
     }
@@ -170,12 +170,12 @@ impl MachineNamespaceManager {
             };
 
             // --- emit state event ---
-            if let Some(data) =
-                (adapter.init_state_event)(&entry.instance, entry.emitted_default_state)
+            if let Some(data) = (adapter.init_state_event)(&entry.instance, false)
+                && entry.last_state.as_ref() != Some(&data)
             {
-                let event = SocketIOEvent::new("StateEvent", data);
+                let event = SocketIOEvent::new("StateEvent", data.clone());
                 Self::broadcast(&mut entry.sockets, event);
-                entry.emitted_default_state = true;
+                entry.last_state = Some(data);
             }
 
             // --- emit live values ---
@@ -212,6 +212,18 @@ impl MachineNamespaceManager {
 
         tracing::info!("Adding new main namespace socket!");
 
+        // --- send the current state ---
+        if let Some(adapter) = adapter::get(ident.machine)
+            && let Some(data) = (adapter.init_state_event)(&entry.instance, true)
+        {
+            let event = SocketIOEvent::new("StateEvent", data);
+
+            if let Err(e) = socket.emit("event", &event) {
+                tracing::error!("Failed to send state to new socket: {e}");
+                return;
+            }
+        }
+
         // --- store the socket ---
         entry.sockets.push(socket);
     }
@@ -237,7 +249,7 @@ impl MachineNamespaceManager {
 pub struct Entry {
     sockets: Vec<SocketRef>,
     instance: MachineInstance,
-    emitted_default_state: bool,
+    last_state: Option<serde_json::Value>,
 }
 
 pub fn machine_namespace_path_to_ident(s: &str) -> Result<MachineInstanceIdentification, String> {

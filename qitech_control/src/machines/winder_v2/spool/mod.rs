@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Duration;
 
-use qitech_control_core::converters::AngularStepConverter;
+use qitech_control_core::converters::angular_step_converter::AngularStepConverter;
 use qitech_framework::machine::BuildContext;
 use qitech_framework::machine::BuildResult;
 use qitech_framework::machine::ConfigProperty;

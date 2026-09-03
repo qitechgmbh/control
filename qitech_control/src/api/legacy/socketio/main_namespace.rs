@@ -50,6 +50,21 @@ impl MainNamespaceManager {
             }
         }
 
+        // --- send the machines list if any are already recorded ---
+        if !self.machines.is_empty() {
+            let event = SocketIOEvent::new(
+                "MachinesEvent",
+                MachinesEvent {
+                    machines: self.machines.values().cloned().collect(),
+                },
+            );
+
+            if let Err(e) = socket.emit("event", &event) {
+                tracing::error!("Failed to send message to new socket: {e}");
+                return;
+            }
+        }
+
         // --- store the socket ---
         self.sockets.push(socket);
     }

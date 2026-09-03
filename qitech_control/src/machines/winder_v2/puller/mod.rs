@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use qitech_control_core::controllers::second_degree_motion::LinearJerkSpeedControllerDT;
-use qitech_control_core::converters::LinearStepConverter;
+use qitech_control_core::converters::linear_step_converter::LinearStepConverter;
 use qitech_framework::machine::ActErrorKind;
 use qitech_framework::machine::BuildContext;
 use qitech_framework::machine::BuildResult;

@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use std::rc::Rc;
 use std::time::Duration;
 
-use qitech_control_core::converters::LinearStepConverter;
+use qitech_control_core::converters::linear_step_converter::LinearStepConverter;
 use qitech_framework::machine::ActErrorKind;
 use qitech_framework::machine::ActResult;
 use qitech_framework::machine::BuildContext;
