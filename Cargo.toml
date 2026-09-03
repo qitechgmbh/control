@@ -18,7 +18,7 @@ qitech_control = { path = "qitech_control" }
 qitech_control_core = { path = "qitech_control_core" }
 
 # --- lib ---
-qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="ab7019c" }
+qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="1cb01be2b3d59cf4d4a3d26111ffbd758bf99cae" }
 
 # --- framework ---
 qitech_framework = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="8a7ae85ffea74aa68cc533c831a0f0295fb890d8" }
