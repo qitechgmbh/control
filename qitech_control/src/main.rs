@@ -41,13 +41,7 @@ pub async fn main() -> anyhow::Result<()> {
         .machine::<WinderV1_7031_Spool>()
         .machine::<ExtruderV1>()
         .machine::<ExtruderV2>()
-        // TODO: do not hardocde the id
-        .modbus_rtu_device::<LaserDevice>(
-            "pci-0000:00:14.0-usb-0:2:1.0-port0".to_string(),
-            LaserV1::IDENTIFICATION.unique(1),
-            1,
-            None,
-        )
+        .modbus_rtu_driver::<LaserDevice>(LaserV1::IDENTIFICATION, 1, None)
         .machine::<LaserV1>();
 
     // --- determine if ethercat is enabled ---

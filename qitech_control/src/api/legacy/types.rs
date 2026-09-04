@@ -98,3 +98,48 @@ pub struct DeviceHardwareIdentificationEthercat {
 pub struct DeviceHardwareIdentificationSerial {
     pub path: String,
 }
+
+// --- modbus rtu ---
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ModbusDeviceMetadata {
+    pub port: String,
+    pub present: bool,
+    pub device_node: Option<String>,
+    pub by_id: Option<String>,
+    pub description: Option<String>,
+    pub usb_vid: Option<u16>,
+    pub usb_pid: Option<u16>,
+    pub usb_serial: Option<String>,
+    pub assignment: Option<ModbusDeviceAssignment>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ModbusDeviceAssignment {
+    pub machine_identification_unique: MachineIdentificationUnique,
+    pub slave_id: u8,
+}
+
+impl From<qitech_framework::ModbusRTUDeviceMetadata> for ModbusDeviceMetadata {
+    fn from(value: qitech_framework::ModbusRTUDeviceMetadata) -> Self {
+        ModbusDeviceMetadata {
+            port: value.port,
+            present: value.present,
+            device_node: value.device_node,
+            by_id: value.by_id,
+            description: value.description,
+            usb_vid: value.usb_vid,
+            usb_pid: value.usb_pid,
+            usb_serial: value.usb_serial,
+            assignment: value.assignment.map(|a| ModbusDeviceAssignment {
+                machine_identification_unique: MachineIdentificationUnique {
+                    machine_identification: MachineIdentification {
+                        vendor: a.machine.machine.vendor_id,
+                        machine: a.machine.machine.machine_id,
+                    },
+                    serial: a.machine.serial,
+                },
+                slave_id: a.slave_id,
+            }),
+        }
+    }
+}

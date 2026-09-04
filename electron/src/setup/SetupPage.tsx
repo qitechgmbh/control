@@ -19,6 +19,12 @@ export function SetupPage() {
           icon: "lu:EthernetPort",
         },
         {
+          link: "modbus",
+          activeLink: "modbus",
+          title: "Modbus",
+          icon: "lu:Usb",
+        },
+        {
           link: "update/choose-version",
           activeLink: "update",
           title: "Update",

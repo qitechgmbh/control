@@ -32,6 +32,7 @@ impl Actor for Server {
                 self.state.clone(),
                 self.state_legacy.clone(),
             ))
+            .layer(axum::Extension(self.state_legacy.clone()))
             .layer(CorsLayer::permissive())
             .with_state(ctx);
 
