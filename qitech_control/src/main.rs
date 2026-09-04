@@ -1,11 +1,9 @@
 mod api;
 mod machines;
+mod modbus;
 mod types;
+mod transmission;
 
-use crate::machines::WinderV1_Regular;
-use crate::machines::aquapath::AquaPathV1;
-use crate::machines::laser_v1::LaserV1;
-use crate::machines::winder_v2::WinderV1_7031_Spool;
 use api::LegacySharedState;
 use api::Server;
 use api::SharedState;
@@ -20,12 +18,13 @@ use qitech_framework::runtime::RuntimeConfiguration;
 use qitech_lib::ethercat_hal::DcConfiguration;
 use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
-use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
 use std::env;
 use std::time::Duration;
 
 use crate::machines::ExtruderV1;
 use crate::machines::ExtruderV2;
+use crate::machines::LaserV1;
+use crate::machines::WinderV1_7031_Spool;
 use crate::machines::WinderV1_Regular;
 use crate::machines::aquapath::AquaPathV1;
 

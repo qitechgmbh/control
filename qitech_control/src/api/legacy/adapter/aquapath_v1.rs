@@ -18,7 +18,7 @@ const SIDES: [&str; 2] = ["left", "right"];
 fn convert_request(
     ident: MachineInstanceIdentification,
     data: serde_json::Value,
-) -> Result<RuntimeRequestKind, serde_json::Error> {
+) -> Result<Vec<RuntimeRequestKind>, serde_json::Error> {
     #[derive(Deserialize)]
     #[allow(clippy::enum_variant_names)]
     enum Mutation {
@@ -57,7 +57,7 @@ fn convert_request(
         path: path.to_string(),
     };
 
-    Ok(match serde_json::from_value(data)? {
+    Ok(vec![match serde_json::from_value(data)? {
         // Mode is driven by commands, not a config property: see `init_commands` in `new.rs`.
         Mutation::SetAquaPathMode(v) => command(match v {
             AquaPathV1Mode::Standby => "state.set_standby",
@@ -125,7 +125,7 @@ fn convert_request(
         Mutation::SetAmbientTemperatureCalibration(v) => {
             config("ambient_temperature_calibration", ScalarValue::Float(v))
         }
-    })
+    }])
 }
 
 // --- state event ---

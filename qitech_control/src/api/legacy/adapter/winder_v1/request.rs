@@ -10,8 +10,8 @@ use crate::api::legacy::types::MachineIdentificationUnique;
 pub fn convert_request(
     ident: MachineInstanceIdentification,
     data: serde_json::Value,
-) -> Result<RuntimeRequestKind, serde_json::Error> {
-    Ok(match serde_json::from_value(data)? {
+) -> Result<Vec<RuntimeRequestKind>, serde_json::Error> {
+    Ok(vec![match serde_json::from_value(data)? {
         // ------------------------------------------------------------
         // Traverse config
         // ------------------------------------------------------------
@@ -238,7 +238,7 @@ pub fn convert_request(
                 None => unreachable!("oops"),
             }
         }
-    })
+    }])
 }
 
 #[derive(Deserialize)]

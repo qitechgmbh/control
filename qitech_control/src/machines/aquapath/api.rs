@@ -1,9 +1,6 @@
-use std::time::Instant;
-
 use crate::machines::aquapath::AquaPathV1;
 
 use super::{AquaPathV1Mode, controller::CoolingMode};
-use crate::machines::aquapath::AquaPathV1;
 use qitech_framework::machine::{ActResult, ConfigProperty, Measurement, StateProperty};
 use qitech_lib::units::{
     angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius,

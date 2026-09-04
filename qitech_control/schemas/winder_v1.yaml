@@ -120,38 +120,10 @@ measurements:
     position: !millimeter
 
   tension_arm:
-    angle: !revolution
+    angle: !degree
 
   laser_pointer:
     enabled: !boolean
-
-measurements:
-  spool:
-    rpm: !revolution_per_minute
-    progress: !meter
-
-    speed_controller:
-      speed: !revolution_per_minute
-      filament_tension: !?float
-
-      adaptive:
-        speed_factor: !meter
-
-  puller:
-    speed: !meter_per_minute
-
-    speed_controller:
-      speed_target: !meter_per_minute
-
-      adaptive:
-        modulation: !float
-        distance_since_adjustment: !meter
-
-  traverse:
-    position: !millimeter
-
-  tension_arm:
-    angle: !revolution
 
 commands:
   mode:
