@@ -4,6 +4,7 @@ import {
   deviceMachineIdentification,
   machineIdentificationUnique,
 } from "@/machines/types";
+import { modbusDeviceAssignmentSchema } from "@/client/mainNamespace";
 import { useState } from "react";
 import { z } from "zod";
 
@@ -40,10 +41,23 @@ export type WriteMachineIdentificationRequest = z.infer<
   typeof writeMachineIdentification
 >;
 
+const writeModbusDeviceAssignment = z.object({
+  port: z.string(),
+  device_machine_identification: modbusDeviceAssignmentSchema.nullable(),
+});
+
+export type WriteModbusDeviceAssignmentRequest = z.infer<
+  typeof writeModbusDeviceAssignment
+>;
+
 type Client = {
   writeMachineDeviceIdentification: (
     req: WriteMachineIdentificationRequest,
   ) => Promise<MutationResponseSchema>;
+  writeModbusDeviceAssignment: (
+    req: WriteModbusDeviceAssignmentRequest,
+  ) => Promise<MutationResponseSchema>;
+  scanModbusDevices: () => Promise<MutationResponseSchema>;
   machineMutate: <T extends z.ZodTypeAny>(
     req: MachineMutateRequestSchema<T>,
     dataSchema: T,
@@ -68,6 +82,20 @@ export const getClient = () => {
         path: "/api/v1/write_machine_device_identification",
         body: req,
         bodySchema: writeMachineIdentification,
+      });
+    },
+    writeModbusDeviceAssignment: async (
+      req: WriteModbusDeviceAssignmentRequest,
+    ) => {
+      return client._request({
+        path: "/api/v1/write_modbus_device_assignment",
+        body: req,
+        bodySchema: writeModbusDeviceAssignment,
+      });
+    },
+    scanModbusDevices: async () => {
+      return client._request({
+        path: "/api/v1/modbus/scan",
       });
     },
     machineMutate: async <T extends z.ZodTypeAny>(

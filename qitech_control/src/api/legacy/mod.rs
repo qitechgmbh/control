@@ -1,6 +1,7 @@
 mod types;
 use types::EtherCATDeviceMetadata;
 use types::MachineIdentificationUnique;
+use types::ModbusDeviceMetadata;
 
 mod socketio;
 use socketio::MachineNamespaceManager;
