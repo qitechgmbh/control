@@ -225,7 +225,7 @@ impl LaserMachine {
 
         self.in_tolerance
     }
-    
+
     const IO_FAILURE_GRACE_PERIOD: Duration = Duration::from_secs(5);
 
     pub fn update(&mut self) {
@@ -265,8 +265,12 @@ impl LaserMachine {
 
         match &laser.measurement {
             Some(m) => {
-                self.x_diameter = m.x_axis.map(|x| Length::new::<millimeter>(x as f64 / 1000.0));
-                self.y_diameter = m.y_axis.map(|y| Length::new::<millimeter>(y as f64 / 1000.0));
+                self.x_diameter = m
+                    .x_axis
+                    .map(|x| Length::new::<millimeter>(x as f64 / 1000.0));
+                self.y_diameter = m
+                    .y_axis
+                    .map(|y| Length::new::<millimeter>(y as f64 / 1000.0));
                 self.diameter = Length::new::<millimeter>(m.diameter as f64 / 1000.0);
                 self.last_successful_response = now;
             }

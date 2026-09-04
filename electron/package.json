@@ -13,6 +13,8 @@
   "overrides": {
     "glob": "^13.0.0",
     "@electron/asar": "^4.2.1",
+    "@babel/plugin-proposal-private-methods": "npm:@babel/plugin-transform-private-methods@^7.24.7",
+    "prebuild-install": "npm:@scrypted/prebuild-install@^7.1.10",
     "eslint-plugin-react": {
       "eslint": "$eslint"
     }
