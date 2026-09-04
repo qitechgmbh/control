@@ -219,55 +219,29 @@ where
 // --- live values ---
 
 fn init_measurements_event(instance: &MachineInstance) -> Option<serde_json::Value> {
-    let get_state = |name: &'static str| -> Option<ScalarValue> {
-        Some(instance.state_properties.get(name)?.as_ref()?.value.clone())
-    };
-
     Some(serde_json::json!({
-        "left_flow": measurement(instance, "left_flow").expect("Non nullable measurement is null"),
-        "right_flow": measurement(instance, "right_flow").expect("Non nullable measurement is null"),
-        "left_temperature": measurement(instance, "left_temperature").expect("Non nullable measurement is null"),
-        "right_temperature": measurement(instance, "right_temperature").expect("Non nullable measurement is null"),
-        "left_revolutions": measurement(instance, "left_revolutions").expect("Non nullable measurement is null"),
-        "right_revolutions": measurement(instance, "right_revolutions").expect("Non nullable measurement is null"),
-        "left_power": measurement(instance, "left_power").expect("Non nullable measurement is null"),
-        "right_power": measurement(instance, "right_power").expect("Non nullable measurement is null"),
-        "left_total_energy": measurement(instance, "left_total_energy").expect("Non nullable measurement is null"),
-        "right_total_energy": measurement(instance, "right_total_energy").expect("Non nullable measurement is null"),
-        "left_heating_startup_wait_active": get_state("left_heating_startup_wait_active")?
-            .boolean()
-            .expect("Cannot be null"),
-        "right_heating_startup_wait_active": get_state("right_heating_startup_wait_active")?
-            .boolean()
-            .expect("Cannot be null"),
-        "left_pump_cooldown_active": get_state("left_pump_cooldown_active")?
-            .boolean()
-            .expect("Cannot be null"),
-        "right_pump_cooldown_active": get_state("right_pump_cooldown_active")?
-            .boolean()
-            .expect("Cannot be null"),
-        "left_heating": get_state("left_heating")?
-            .boolean()
-            .expect("Cannot be null"),
-        "right_heating": get_state("right_heating")?
-            .boolean()
-            .expect("Cannot be null"),
-        "left_pump_cooldown_remaining": get_state("left_pump_cooldown_remaining")?
-            .float()
-            .expect("Cannot be null"),
-        "right_pump_cooldown_remaining": get_state("right_pump_cooldown_remaining")?
-            .float()
-            .expect("Cannot be null"),
-        "left_heating_startup_wait_remaining": get_state("left_heating_startup_wait_remaining")?
-            .float()
-            .expect("Cannot be null"),
-        "right_heating_startup_wait_remaining": get_state("right_heating_startup_wait_remaining")?
-            .float()
-            .expect("Cannot be null"),
-        "left_cooling_mode": get_state("left_cooling_mode")
-            .and_then(|v| v.r#enum()),
-        "right_cooling_mode": get_state("right_cooling_mode")
-            .and_then(|v| v.r#enum()),
+        "left_flow": measurement(instance, "left_flow")?,
+        "right_flow": measurement(instance, "right_flow")?,
+        "left_temperature": measurement(instance, "left_temperature")?,
+        "right_temperature": measurement(instance, "right_temperature")?,
+        "left_revolutions": measurement(instance, "left_revolutions")?,
+        "right_revolutions": measurement(instance, "right_revolutions")?,
+        "left_power": measurement(instance, "left_power")?,
+        "right_power": measurement(instance, "right_power")?,
+        "left_total_energy": measurement(instance, "left_total_energy")?,
+        "right_total_energy": measurement(instance, "right_total_energy")?,
+        "left_heating_startup_wait_active": state_bool(instance, "left_heating_startup_wait_active")?,
+        "right_heating_startup_wait_active": state_bool(instance, "right_heating_startup_wait_active")?,
+        "left_pump_cooldown_active": state_bool(instance, "left_pump_cooldown_active")?,
+        "right_pump_cooldown_active": state_bool(instance, "right_pump_cooldown_active")?,
+        "left_heating": state_bool(instance, "left_heating")?,
+        "right_heating": state_bool(instance, "right_heating")?,
+        "left_pump_cooldown_remaining": state_float(instance, "left_pump_cooldown_remaining")?,
+        "right_pump_cooldown_remaining": state_float(instance, "right_pump_cooldown_remaining")?,
+        "left_heating_startup_wait_remaining": state_float(instance, "left_heating_startup_wait_remaining")?,
+        "right_heating_startup_wait_remaining": state_float(instance, "right_heating_startup_wait_remaining")?,
+        "left_cooling_mode": state_value(instance, "left_cooling_mode").and_then(|v| v.r#enum()),
+        "right_cooling_mode": state_value(instance, "right_cooling_mode").and_then(|v| v.r#enum()),
     }))
 }
 
