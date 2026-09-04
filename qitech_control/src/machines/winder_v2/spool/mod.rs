@@ -127,6 +127,8 @@ impl Spool {
             .device
             .borrow_mut()
             .set_speed(Self::PORT, steps_per_second);
+
+        self.velocity.set(angular_velocity.abs());
     }
 
     pub fn reset_progress(&mut self) {

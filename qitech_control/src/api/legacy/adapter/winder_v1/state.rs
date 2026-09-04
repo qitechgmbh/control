@@ -26,6 +26,22 @@ fn config_enum(instance: &MachineInstance, path: &str) -> Option<String> {
     config_value(instance, path)?.r#enum()
 }
 
+fn is_homing_state(state: &str) -> bool {
+    matches!(
+        state,
+        "initialize"
+            | "escape_endstop"
+            | "find_endstop_fine_distancing"
+            | "find_endstop_coarse"
+            | "find_endstop_fine"
+            | "validate"
+    )
+}
+
+fn is_traversing_state(state: &str) -> bool {
+    matches!(state, "traversing_in" | "traversing_out")
+}
+
 pub fn init_state_event(
     instance: &MachineInstance,
     is_default_state: bool,
@@ -38,8 +54,8 @@ pub fn init_state_event(
     let can_traverse = traverse_mode == "Standby" || traverse_mode == "Traverse";
 
     let tension_arm_zeroed = state_value(instance, "tension_arm.zero")
-    .map_or(false, |v| !matches!(v, ScalarValue::Null));
-    let is_homing = traverse_state.starts_with("Homing");
+        .map_or(false, |v| !matches!(v, ScalarValue::Null));
+    let is_homing = is_homing_state(&traverse_state);
     let can_wind = tension_arm_zeroed && is_homed && !is_homing;
 
     Some(serde_json::json!({
@@ -50,11 +66,11 @@ pub fn init_state_event(
             "limit_outer": config_float(instance, "traverse.limit_outer")?,
             "position_in": 0.0,
             "position_out": 0.0,
-            "is_going_in": traverse_state == "GoingIn",
-            "is_going_out": traverse_state == "GoingOut",
+            "is_going_in": traverse_state == "going_in",
+            "is_going_out": traverse_state == "going_out",
             "is_homed": is_homed,
-            "is_going_home": traverse_state.starts_with("Homing"),
-            "is_traversing": traverse_state.starts_with("Traversing"),
+            "is_going_home": is_homing,
+            "is_traversing": is_traversing_state(&traverse_state),
             "laserpointer": state_bool(instance, "laser_pointer.enabled")?,
             "step_size": config_float(instance, "traverse.step_size")?,
             "padding": config_float(instance, "traverse.padding")?,
@@ -93,8 +109,7 @@ pub fn init_state_event(
         },
 
         "tension_arm_state": {
-            "zeroed": state_value(instance, "tension_arm.zero")
-                .map_or(false, |v| !matches!(v, ScalarValue::Null)),
+            "zeroed": tension_arm_zeroed,
         },
 
         "spool_speed_controller_state": {
