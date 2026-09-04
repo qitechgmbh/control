@@ -183,7 +183,6 @@ export type Aquapath1NamespaceStore = {
   left_total_energy: TimeSeries;
   right_total_energy: TimeSeries;
   totalEnergyKWh: TimeSeries;
-
   left_heating: boolean;
   right_heating: boolean;
   left_cooling_mode: "Low" | "Ramp" | "Max" | null;
@@ -294,7 +293,6 @@ export function aquapath1MessageHandler(
     try {
       // State events (latest only)
       if (eventName === "StateEvent") {
-        console.log(event);
         const stateEvent = stateEventSchema.parse(event);
         const timestamp = event.ts;
         const nextTargetLeftTemperature =

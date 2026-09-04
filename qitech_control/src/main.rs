@@ -12,7 +12,6 @@ use api::SharedState;
 use api::SocketIODispatcher;
 use qitech_control_core::interface;
 use qitech_framework::HubConfiguration;
-use qitech_framework::machine::MachineDescriptor;
 use qitech_framework::run_debug;
 use qitech_framework::run_with_hub;
 use qitech_framework::run_with_tui;
@@ -25,22 +24,24 @@ use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
 use std::env;
 use std::time::Duration;
 
+use crate::machines::ExtruderV1;
+use crate::machines::ExtruderV2;
+use crate::machines::WinderV1_Regular;
+use crate::machines::aquapath::AquaPathV1;
+
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     interface::bring_up_all_ethernet();
     let config_rt = RuntimeConfiguration::new()
         .requests_per_cycle_max(10)
         .export_interval(Duration::from_secs_f64(1.0 / 32.0))
-        .modbus_rtu_device::<LaserDevice>(
-            "pci-0000:c6:00.0-usbv2-0:2.3:1.0-port0".to_string(),
-            LaserV1::IDENTIFICATION.unique(1),
-            1,
-            None,
-        )
         .machine::<LaserV1>()
+        .machine::<AquaPathV1>()
         .machine::<WinderV1_Regular>()
         .machine::<WinderV1_7031_Spool>()
-        .machine::<AquaPathV1>();
+        .machine::<ExtruderV1>()
+        .machine::<ExtruderV2>();
+
     // --- determine if ethercat is enabled ---
     let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {
         Ok("false") => config_rt,
@@ -81,7 +82,7 @@ const ETHERCAT_CONFIG: EtherCATConfig = {
         ethercat_io_thread_core: 3,
         ethercat_io_thread_priority: 50,
         pin_irq_core: Some(3),
-        lock_memory: true,
+        lock_memory: cfg!(target_os = "linux"),
     };
     let master_config = MasterConfiguration {
         target_cycle_time_us: target_cycle_time_us as usize,

@@ -220,7 +220,6 @@ impl AquaPathV1 {
     }
 
     fn cmd_start_right_pump(&mut self) -> ActResult {
-        println!("cmd_start_right_pump");
         self.set_should_pump(true, AquaPathSideType::Right);
         return Ok(());
     }

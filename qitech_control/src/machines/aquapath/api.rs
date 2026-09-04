@@ -1,3 +1,7 @@
+use std::time::Instant;
+
+use crate::machines::aquapath::AquaPathV1;
+
 use super::{AquaPathV1Mode, controller::CoolingMode};
 use crate::machines::aquapath::AquaPathV1;
 use qitech_framework::machine::{ActResult, ConfigProperty, Measurement, StateProperty};
@@ -11,12 +15,16 @@ use std::time::Instant;
 pub struct Measurements {
     pub left_flow: Measurement<f64>,
     pub right_flow: Measurement<f64>,
+
     pub left_temperature: Measurement<f64>,
     pub right_temperature: Measurement<f64>,
+
     pub left_revolutions: Measurement<f64>,
     pub right_revolutions: Measurement<f64>,
+
     pub left_power: Measurement<f64>,
     pub right_power: Measurement<f64>,
+
     pub left_total_energy: Measurement<f64>,
     pub right_total_energy: Measurement<f64>,
 }
