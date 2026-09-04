@@ -116,6 +116,12 @@ export function SidebarLayout() {
       icon: machine.icon,
     })),
     {
+      link: "/_sidebar/simulation",
+      activeLink: "/_sidebar/simulation",
+      title: "Simulation",
+      icon: "lu:Thermometer",
+    },
+    {
       link: "/_sidebar/setup/ethercat",
       activeLink: "/_sidebar/setup",
       title: "Setup",

@@ -10,6 +10,28 @@ pub enum Zone {
     Nozzle,
 }
 
+/// Serialises as the lowercase wire-protocol name from [`Zone::name`], the
+/// same form `extruder1::api` already uses on the wire.
+impl serde::Serialize for Zone {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.name())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Zone {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let name = <std::borrow::Cow<'de, str>>::deserialize(deserializer)?;
+        Self::from_name(&name)
+            .ok_or_else(|| serde::de::Error::custom(format!("unknown zone {name:?}")))
+    }
+}
+
 impl Zone {
     /// All zones in port order.
     pub const ALL: [Self; 4] = [Self::Front, Self::Middle, Self::Back, Self::Nozzle];

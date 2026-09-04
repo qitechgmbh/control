@@ -33,6 +33,8 @@ import { RewinderPage } from "@/machines/winder/rewinder/RewinderPage";
 import { RewinderPresetsPage } from "@/machines/winder/rewinder/RewinderPresetsPage";
 import { RewinderSettingsPage } from "@/machines/winder/rewinder/RewinderSettings";
 
+import { ExtruderSimulationPage } from "@/simulation/ExtruderSimulationPage";
+
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
 import { Extruder2SettingsPage } from "@/machines/extruder/extruder2/Extruder2Settings";
@@ -623,6 +625,12 @@ export const setupRoute = createRoute({
   component: () => <SetupPage />,
 });
 
+export const simulationRoute = createRoute({
+  getParentRoute: () => sidebarRoute,
+  path: "simulation",
+  component: () => <ExtruderSimulationPage />,
+});
+
 export const troubleshootRoute = createRoute({
   getParentRoute: () => setupRoute,
   path: "troubleshoot",
@@ -691,6 +699,7 @@ export const updateExecuteRoute = createRoute({
 
 export const rootTree = RootRoute.addChildren([
   sidebarRoute.addChildren([
+    simulationRoute,
     setupRoute.addChildren([
       ethercatRoute,
       setupMachinesRoute,

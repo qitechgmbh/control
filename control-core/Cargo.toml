@@ -16,7 +16,7 @@ axum = "0.8.9"
 qitech_lib = { workspace = true }
 ethercrab = { git = "https://github.com/v-morlock/ethercrab", branch = "main" }
 interfaces = "0.0.9"
-serde = "1.0.219"
+serde = { version = "1.0.219", features = ["derive"] }
 serialport = "4.7.3"
 smol = "2.0.2"
 socketioxide = "0.15.2"

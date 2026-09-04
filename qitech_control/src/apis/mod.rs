@@ -183,6 +183,37 @@ async fn post_machine_mutate(
     }
 }
 
+#[cfg(feature = "simulation")]
+async fn post_simulation_mutate(
+    State(app_state): State<Arc<SharedAppState>>,
+    Json(body): Json<Value>,
+) -> Response<Body> {
+    tracing::info!("Mutating simulation data={:?}", body);
+
+    let res = match app_state.simulation_sender.read().await.as_ref() {
+        Some(sender) => {
+            let res = sender.clone().send(body).await;
+            match res {
+                Ok(_) => Ok(()),
+                Err(e) => Err(anyhow::anyhow!(
+                    "[{}::post_simulation_mutate] Sending mutation to the simulation task failed {}",
+                    module_path!(),
+                    e
+                )),
+            }
+        }
+        None => Err(anyhow::anyhow!(
+            "[{}::post_simulation_mutate] Simulation task is not running",
+            module_path!()
+        )),
+    };
+
+    match res {
+        Ok(_) => ResponseUtil::ok(MutationResponse::success()),
+        Err(e) => ResponseUtilError::Error(e).into(),
+    }
+}
+
 pub async fn init_api(app_state: Arc<SharedAppState>) -> Result<()> {
     let cors = CorsLayer::permissive();
     let socketio_layer = init_socketio(app_state.clone()).await;
@@ -197,7 +228,12 @@ pub async fn init_api(app_state: Arc<SharedAppState>) -> Result<()> {
             "/api/v1/write_machine_device_identification",
             post(post_write_machine_device_identification),
         )
-        .route("/api/v1/machine/mutate", post(post_machine_mutate))
+        .route("/api/v1/machine/mutate", post(post_machine_mutate));
+
+    #[cfg(feature = "simulation")]
+    let app = app.route("/api/v1/simulation/mutate", post(post_simulation_mutate));
+
+    let app = app
         .nest("/api/v2", rest_api_router())
         .layer(socketio_layer)
         .layer(cors)

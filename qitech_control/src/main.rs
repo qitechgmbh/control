@@ -40,6 +40,8 @@ mod machine_loop;
 #[cfg(feature = "mock")]
 mod mock;
 pub mod persist;
+#[cfg(feature = "simulation")]
+mod simulation_task;
 
 fn setup_ethercat(
     state: Arc<SharedAppState>,
@@ -247,7 +249,9 @@ fn send_ecat_state(state: Arc<SharedAppState>, ecat_state: EcatState) {
 fn setup_api_and_websock(state: Arc<SharedAppState>) {
     let rt = get_async_runtime();
     rt.spawn(apis::init_api(state.clone()));
-    rt.spawn(start_socketio_queue(state));
+    rt.spawn(start_socketio_queue(state.clone()));
+    #[cfg(feature = "simulation")]
+    simulation_task::spawn_simulation_task(state);
 }
 
 fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainState) {
@@ -504,7 +508,25 @@ fn main_logic() {
     }
 }
 
+/// Simulation-only entry point: just the API server, Socket.io, and the live
+/// extruder simulation task — no EtherCAT interface discovery, no serial
+/// (laser) hotplug detection, no machine registry. `simulation` overrides
+/// `mock`/real-hardware startup entirely rather than running alongside it.
+#[cfg(feature = "simulation")]
+fn simulation_logic() {
+    let state = std::sync::Arc::new(SharedAppState::new());
+    setup_api_and_websock(state);
+
+    // Keep the process alive; the API, socketio queue and simulation task all
+    // run as tasks on the shared Tokio runtime's own threads.
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(3600));
+    }
+}
+
 fn main() {
-    #[cfg(not(feature = "mock"))]
+    #[cfg(feature = "simulation")]
+    simulation_logic();
+    #[cfg(all(not(feature = "simulation"), not(feature = "mock")))]
     main_logic();
 }

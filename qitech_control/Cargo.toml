@@ -25,3 +25,7 @@ libc = "0.2.186"
 [features]
 default = []
 mock = ["qitech_lib/mock"]
+# Live extruder heating-simulation UI: a background task driving
+# machine_implementations' offline thermal simulation interactively over
+# Socket.io, independent of any EtherCAT hardware.
+simulation = ["machine_implementations/simulation"]

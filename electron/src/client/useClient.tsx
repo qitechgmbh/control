@@ -48,6 +48,10 @@ type Client = {
     req: MachineMutateRequestSchema<T>,
     dataSchema: T,
   ) => Promise<MutationResponseSchema>;
+  simulationMutate: <T extends z.ZodTypeAny>(
+    mutation: z.infer<T>,
+    mutationSchema: T,
+  ) => Promise<MutationResponseSchema>;
   _request: (options: {
     path: string;
     method?: string;
@@ -78,6 +82,16 @@ export const getClient = () => {
         path: "/api/v1/machine/mutate",
         body: req,
         bodySchema: machineMutateRequestSchema(dataSchema),
+      });
+    },
+    simulationMutate: async <T extends z.ZodTypeAny>(
+      mutation: z.infer<T>,
+      mutationSchema: T,
+    ) => {
+      return client._request({
+        path: "/api/v1/simulation/mutate",
+        body: mutation,
+        bodySchema: mutationSchema,
       });
     },
     _request: async ({
@@ -166,6 +180,29 @@ export const useMachineMutate = <T extends z.ZodTypeAny>(
     request: async (req: MachineMutateRequestSchema<T>) => {
       setLoading(true);
       const res = await client.machineMutate(req, dataSchema);
+      setRes(res);
+      setLoading(false);
+      return res;
+    },
+    isLoading: loading,
+    response: res,
+  };
+};
+
+export const useSimulationMutate = <T extends z.ZodTypeAny>(
+  mutationSchema: T,
+): {
+  request: (mutation: z.infer<T>) => Promise<MutationResponseSchema>;
+  isLoading: boolean;
+  response: MutationResponseSchema | undefined;
+} => {
+  const client = useClient();
+  const [res, setRes] = useState<MutationResponseSchema | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
+  return {
+    request: async (mutation: z.infer<T>) => {
+      setLoading(true);
+      const res = await client.simulationMutate(mutation, mutationSchema);
       setRes(res);
       setLoading(false);
       return res;

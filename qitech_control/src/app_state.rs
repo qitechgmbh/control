@@ -74,6 +74,11 @@ pub struct SharedAppState {
     pub ethercat_meta_datas: RwLock<Vec<EtherCatDeviceMetaData>>,
     pub socketio_setup: SocketioSetup,
     pub ethercat_thread_channel: Option<EtherCATThreadChannel>,
+    /// Channel into the live extruder-simulation background task. A singleton
+    /// (unlike `machines_with_channel`, there is exactly one simulation), set
+    /// once by `spawn_simulation_task` and read by `post_simulation_mutate`.
+    #[cfg(feature = "simulation")]
+    pub simulation_sender: RwLock<Option<Sender<serde_json::Value>>>,
 }
 
 impl SharedAppState {
@@ -245,6 +250,8 @@ impl SharedAppState {
             },
             ethercat_meta_datas: RwLock::new(vec![]),
             ethercat_thread_channel: None,
+            #[cfg(feature = "simulation")]
+            simulation_sender: RwLock::new(None),
         }
     }
 }

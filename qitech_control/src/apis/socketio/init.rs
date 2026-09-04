@@ -24,6 +24,15 @@ pub async fn init_socketio(app_state: Arc<SharedAppState>) -> SocketIoLayer {
         handle_socket_connection(socket, app_state_main.clone());
     });
 
+    // Live extruder heating-simulation namespace, a fixed singleton like /main.
+    #[cfg(feature = "simulation")]
+    {
+        let app_state_simulation = app_state.clone();
+        io.ns("/simulation", move |socket: SocketRef| async move {
+            handle_socket_connection(socket, app_state_simulation.clone());
+        });
+    }
+
     // Clone app_state for the second handler
     let app_state_machine = app_state.clone();
 

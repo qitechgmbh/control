@@ -1,3 +1,5 @@
+#[cfg(feature = "simulation")]
+use super::simulation_namespace::SimulationRoom;
 use super::{main_namespace::MainRoom, namespace_id::NamespaceId};
 use control_core::socketio::event::GenericEvent;
 use socketioxide::extract::SocketRef;
@@ -7,6 +9,8 @@ use tokio::sync::mpsc::Sender;
 pub struct Namespaces {
     pub main_namespace: MainRoom,
     pub machine_namespaces: HashMap<NamespaceId, control_core::socketio::namespace::Namespace>,
+    #[cfg(feature = "simulation")]
+    pub simulation_namespace: SimulationRoom,
 }
 
 impl Namespaces {
@@ -24,13 +28,17 @@ impl Namespaces {
                 };
                 Ok(namespace)
             }
+            #[cfg(feature = "simulation")]
+            NamespaceId::Simulation => Ok(&mut self.simulation_namespace.namespace),
         }
     }
 
     pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
         Self {
-            main_namespace: MainRoom::new(socket_queue_tx),
+            main_namespace: MainRoom::new(socket_queue_tx.clone()),
             machine_namespaces: HashMap::new(),
+            #[cfg(feature = "simulation")]
+            simulation_namespace: SimulationRoom::new(socket_queue_tx),
         }
     }
 }

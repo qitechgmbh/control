@@ -42,6 +42,12 @@
 pub mod fit;
 pub mod geometry;
 pub mod harness;
+/// A live-drivable simulation for an interactive UI, as opposed to the
+/// batch/offline `Scenario` runs the rest of this module is built for.
+/// Feature-only: unlike `harness`/`model`, it isn't needed under plain
+/// `cfg(test)`.
+#[cfg(feature = "simulation")]
+pub mod live;
 pub mod model;
 pub mod optimize;
 pub mod params;
@@ -49,7 +55,9 @@ pub mod scenario;
 mod shipping;
 
 pub use crate::extruder1::zone::Zone;
-pub use harness::{SimConfig, StrategyConfig, ThermalSim, Trace, ZoneTuning};
+pub use harness::{Sample, SimConfig, StrategyConfig, ThermalSim, Trace, ZoneTuning};
+#[cfg(feature = "simulation")]
+pub use live::LiveExtruderSim;
 pub use model::ExtruderThermalModel;
 pub use params::ExtruderThermalParams;
 pub use scenario::Scenario;

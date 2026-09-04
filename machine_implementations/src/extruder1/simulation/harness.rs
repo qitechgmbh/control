@@ -48,7 +48,7 @@ pub const DT_CTRL_S: f64 = 0.001;
 pub const SENSOR_PERIOD_S: f64 = 0.25;
 
 /// PID gains for one zone.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ZoneTuning {
     pub kp: f64,
     pub ki: f64,
@@ -88,7 +88,7 @@ impl ZoneTuning {
 /// Every variant carries one entry per zone, indexed by [`Zone::port`], because
 /// the four zones are genuinely different plants — the nozzle's kilograms per
 /// watt are several times a barrel zone's.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum StrategyConfig {
     /// A PID on the raw reading: what has always shipped.
     Pid([ZoneTuning; 4]),
@@ -360,6 +360,52 @@ impl Trace {
     }
 }
 
+/// Loop state that persists across successive [`ThermalSim::step_once`] calls:
+/// the controller-tick/sensor-refresh schedule and relay bookkeeping.
+///
+/// Not scenario-specific — [`Self::new`] is always a cold start at simulated
+/// t = 0, with the virtual clock anchored to the real clock at construction.
+pub struct RunState {
+    /// Anchor for the virtual clock the controllers see. Captured at
+    /// construction, not before: a controller's `window_start` comes from the
+    /// real clock, and anchoring behind it would make every `duration_since`
+    /// saturate to zero.
+    t0: Instant,
+    now_ns: u64,
+    next_ctrl_ns: u64,
+    next_sensor_ns: u64,
+    heating_enabled: bool,
+    relay_was_on: [bool; 4],
+    duty: [f64; 4],
+    relay_switches: [usize; 4],
+}
+
+impl RunState {
+    pub fn new() -> Self {
+        Self {
+            t0: Instant::now(),
+            now_ns: 0,
+            next_ctrl_ns: 0,
+            next_sensor_ns: 0,
+            heating_enabled: false,
+            relay_was_on: [false; 4],
+            duty: [0.0; 4],
+            relay_switches: [0; 4],
+        }
+    }
+
+    /// Simulated time elapsed since this state was created, in seconds.
+    pub fn now_s(&self) -> f64 {
+        self.now_ns as f64 * 1e-9
+    }
+}
+
+impl Default for RunState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// The production controllers wired to the simulated barrel.
 pub struct ThermalSim {
     model: ExtruderThermalModel,
@@ -369,6 +415,11 @@ pub struct ThermalSim {
     el2004: EL2004,
     /// Sensor sample-and-hold, in °C, indexed by [`Zone::port`].
     held_c: [f64; 4],
+    /// Setpoint currently applied to each zone's controller, indexed by
+    /// [`Zone::port`]. Tracked here (rather than only as a caller-local) so
+    /// [`Self::step_once`] can report it without the caller threading it
+    /// through on every call.
+    setpoints_c: [f64; 4],
 }
 
 impl ThermalSim {
@@ -400,6 +451,7 @@ impl ThermalSim {
             el3204: EL3204::new(),
             el2004: EL2004::new(),
             held_c: [ambient; 4],
+            setpoints_c: [0.0; 4],
         };
         sim.publish_sensors();
         sim
@@ -411,6 +463,22 @@ impl ThermalSim {
 
     pub const fn model_mut(&mut self) -> &mut ExtruderThermalModel {
         &mut self.model
+    }
+
+    /// The plant integration step, in seconds — how much simulated time one
+    /// [`Self::step_once`] call covers.
+    pub const fn dt_plant_s(&self) -> f64 {
+        self.config.dt_plant_s
+    }
+
+    /// Put every node at `temperature_c` and forget any prior sensor history —
+    /// a cold (or warm) restart short of building a whole new [`ThermalSim`].
+    /// The first three lines of [`Self::run`], pulled out so a live driver can
+    /// reuse it without going through a [`super::scenario::Scenario`].
+    pub fn reset_to_uniform(&mut self, temperature_c: f64) {
+        self.model.set_uniform_temperature(temperature_c);
+        self.held_c = [temperature_c; 4];
+        self.publish_sensors();
     }
 
     /// Encode `held_c` into an EL3204 process image and feed it to the driver.
@@ -478,13 +546,116 @@ impl ThermalSim {
         }
     }
 
-    fn apply_setpoints(&mut self, setpoints_c: [f64; 4]) {
+    pub fn apply_setpoints(&mut self, setpoints_c: [f64; 4]) {
         for zone in Zone::ALL {
             let p = zone.port();
             self.controllers[p].set_target_temperature(ThermodynamicTemperature::new::<
                 degree_celsius,
             >(setpoints_c[p]));
         }
+        self.setpoints_c = setpoints_c;
+    }
+
+    /// Advance the plant and controllers by exactly one `config.dt_plant_s` of
+    /// simulated time, running whatever controller ticks and sensor refreshes
+    /// fall inside it, and return the resulting sample.
+    ///
+    /// Setpoints and screw speed are whatever the caller last set through
+    /// [`Self::apply_setpoints`]/[`ExtruderThermalModel::set_screw_rpm`] — this
+    /// does not consult a scenario's schedule, so both the batch [`Self::run`]
+    /// and a live loop driving the sim tick by tick can share it.
+    ///
+    /// `enable_ns` is the simulated instant, relative to `state`'s `t0`, that
+    /// heating switches on; pass `0` to have it on from the first tick.
+    pub fn step_once(&mut self, state: &mut RunState, enable_ns: u64) -> Sample {
+        let dt_plant = self.config.dt_plant_s;
+        let plant_ns = (dt_plant * 1e9) as u64;
+        let ctrl_ns = (self.config.dt_ctrl_s * 1e9) as u64;
+        let sensor_ns = (self.config.sensor_period_s * 1e9) as u64;
+
+        // Walk the controller ticks that fall inside this plant step,
+        // accumulating how long each relay was actually closed. Driving the
+        // loop off the plant step rather than a fixed number of controller
+        // ticks keeps it correct when `dt_ctrl` is *longer* than `dt_plant`
+        // — which is exactly the case you want when investigating a fixed
+        // controller sample time.
+        let step_end_ns = state.now_ns + plant_ns;
+        let mut on_ns = [0u64; 4];
+        let mut cursor_ns = state.now_ns;
+
+        while state.next_ctrl_ns < step_end_ns {
+            // The relay held its state from `cursor_ns` to this tick.
+            let held = state.next_ctrl_ns - cursor_ns;
+            for p in 0..4 {
+                if state.relay_was_on[p] {
+                    on_ns[p] += held;
+                }
+            }
+            cursor_ns = state.next_ctrl_ns;
+            state.next_ctrl_ns += ctrl_ns;
+
+            let now_tick_ns = cursor_ns;
+            let now = state.t0 + Duration::from_nanos(now_tick_ns);
+
+            if !state.heating_enabled && now_tick_ns >= enable_ns {
+                for c in &mut self.controllers {
+                    c.allow_heating();
+                }
+                state.heating_enabled = true;
+            }
+
+            // The EL3204 only refreshes on its own conversion cycle; in
+            // between, the controller re-reads a held value.
+            if now_tick_ns >= state.next_sensor_ns {
+                for zone in Zone::ALL {
+                    self.held_c[zone.port()] = self.model.sensor_c(zone);
+                }
+                self.publish_sensors();
+                state.next_sensor_ns += sensor_ns;
+            }
+
+            for zone in Zone::ALL {
+                let p = zone.port();
+                self.controllers[p].update(now, &mut self.el2004, &self.el3204);
+                let on = self.relay_on(zone);
+                if on != state.relay_was_on[p] {
+                    state.relay_switches[p] += 1;
+                    state.relay_was_on[p] = on;
+                }
+                state.duty[p] = self.controllers[p].duty();
+            }
+        }
+
+        // Whatever is left of the plant step after the last controller tick.
+        let held = step_end_ns - cursor_ns;
+        for p in 0..4 {
+            if state.relay_was_on[p] {
+                on_ns[p] += held;
+            }
+        }
+        state.now_ns = step_end_ns;
+
+        // Time-weighted mean relay state over the step. The relay is
+        // piecewise constant between controller ticks, so this is exact.
+        let mut power_w = [0.0f64; 4];
+        for zone in Zone::ALL {
+            let p = zone.port();
+            power_w[p] = (on_ns[p] as f64 / plant_ns as f64) * zone.rated_w();
+            self.model.set_band_power(zone, power_w[p]);
+        }
+
+        self.model.step(dt_plant);
+
+        // The controller sees the held reading, not the model's current one;
+        // the sample records what it saw.
+        let sensor_c = self.held_c;
+        self.sample(
+            state.now_ns as f64 * 1e-9,
+            self.setpoints_c,
+            sensor_c,
+            state.duty,
+            power_w,
+        )
     }
 
     /// Run a scenario and return the recorded trace.
@@ -511,41 +682,24 @@ impl ThermalSim {
         pending_rpm.sort_by(|a, b| a.0.total_cmp(&b.0));
         pending_rpm.reverse();
 
-        // Capture the epoch *after* constructing the controllers: their
-        // `window_start` comes from the real clock, and starting the virtual
-        // clock behind it would make every `duration_since` saturate to zero.
-        let t0 = Instant::now();
+        let mut state = RunState::new();
+        let enable_ns = (scenario.heating_enabled_at_s * 1e9) as u64;
 
         let mut trace = Trace {
             setpoints_c: setpoints,
             ..Default::default()
         };
-        let mut relay_was_on = [false; 4];
-        // Held across plant steps: with `dt_ctrl` longer than `dt_plant` the
-        // controller does not run every step, and the last demand stands.
-        let mut duty = [0.0f64; 4];
 
         let dt_plant = self.config.dt_plant_s;
-        let dt_ctrl = self.config.dt_ctrl_s;
-        let plant_ns = (dt_plant * 1e9) as u64;
-
-        let mut now_ns: u64 = 0;
-        let mut next_ctrl_ns: u64 = 0;
-        let mut next_sensor_ns: u64 = 0;
-        let mut next_record_ns: u64 = 0;
         let end_ns = (scenario.duration_s * 1e9) as u64;
-        let ctrl_ns = (dt_ctrl * 1e9) as u64;
-        let sensor_ns = (self.config.sensor_period_s * 1e9) as u64;
         let record_ns = (self.config.record_period_s * 1e9) as u64;
-        let enable_ns = (scenario.heating_enabled_at_s * 1e9) as u64;
+        let mut next_record_ns: u64 = 0;
 
-        let mut heating_enabled = false;
-
-        while now_ns < end_ns {
+        while state.now_ns < end_ns {
             // Apply any setpoint change that has come due.
             while pending
                 .last()
-                .is_some_and(|(at, _)| now_ns as f64 * 1e-9 >= *at)
+                .is_some_and(|(at, _)| state.now_ns as f64 * 1e-9 >= *at)
             {
                 let (_, sp) = pending.pop().expect("checked by the guard above");
                 setpoints = sp;
@@ -557,104 +711,33 @@ impl ThermalSim {
             // load step on every zone at once.
             while pending_rpm
                 .last()
-                .is_some_and(|(at, _)| now_ns as f64 * 1e-9 >= *at)
+                .is_some_and(|(at, _)| state.now_ns as f64 * 1e-9 >= *at)
             {
                 let (_, rpm) = pending_rpm.pop().expect("checked by the guard above");
                 self.model.set_screw_rpm(rpm);
             }
 
-            // Walk the controller ticks that fall inside this plant step,
-            // accumulating how long each relay was actually closed. Driving the
-            // loop off the plant step rather than a fixed number of controller
-            // ticks keeps it correct when `dt_ctrl` is *longer* than `dt_plant`
-            // — which is exactly the case you want when investigating a fixed
-            // controller sample time.
-            let step_end_ns = now_ns + plant_ns;
-            let mut on_ns = [0u64; 4];
-            let mut cursor_ns = now_ns;
+            let sample = self.step_once(&mut state, enable_ns);
 
-            while next_ctrl_ns < step_end_ns {
-                // The relay held its state from `cursor_ns` to this tick.
-                let held = next_ctrl_ns - cursor_ns;
-                for p in 0..4 {
-                    if relay_was_on[p] {
-                        on_ns[p] += held;
-                    }
-                }
-                cursor_ns = next_ctrl_ns;
-                next_ctrl_ns += ctrl_ns;
-
-                let now_tick_ns = cursor_ns;
-                let now = t0 + Duration::from_nanos(now_tick_ns);
-
-                if !heating_enabled && now_tick_ns >= enable_ns {
-                    for c in &mut self.controllers {
-                        c.allow_heating();
-                    }
-                    heating_enabled = true;
-                }
-
-                // The EL3204 only refreshes on its own conversion cycle; in
-                // between, the controller re-reads a held value.
-                if now_tick_ns >= next_sensor_ns {
-                    for zone in Zone::ALL {
-                        self.held_c[zone.port()] = self.model.sensor_c(zone);
-                    }
-                    self.publish_sensors();
-                    next_sensor_ns += sensor_ns;
-                }
-
-                for zone in Zone::ALL {
-                    let p = zone.port();
-                    self.controllers[p].update(now, &mut self.el2004, &self.el3204);
-                    let on = self.relay_on(zone);
-                    if on != relay_was_on[p] {
-                        trace.relay_switches[p] += 1;
-                        relay_was_on[p] = on;
-                    }
-                    duty[p] = self.controllers[p].duty();
-                }
-            }
-
-            // Whatever is left of the plant step after the last controller tick.
-            let held = step_end_ns - cursor_ns;
-            for p in 0..4 {
-                if relay_was_on[p] {
-                    on_ns[p] += held;
-                }
-            }
-            now_ns = step_end_ns;
-
-            // Time-weighted mean relay state over the step. The relay is
-            // piecewise constant between controller ticks, so this is exact.
-            let mut power_w = [0.0f64; 4];
+            // Accumulated every plant step, for the same aliasing reason noted
+            // on `Trace::energy_j`. Uses the sample just produced (i.e. the
+            // post-step reading) rather than a separate pre-step read — the two
+            // differ by at most one `dt_plant`, which is well inside the loose
+            // bounds anything downstream checks these totals against.
             for zone in Zone::ALL {
                 let p = zone.port();
-                power_w[p] = (on_ns[p] as f64 / plant_ns as f64) * zone.rated_w();
-                trace.energy_j[p] += power_w[p] * dt_plant;
-                self.model.set_band_power(zone, power_w[p]);
+                trace.energy_j[p] += sample.power_w[p] * dt_plant;
             }
+            trace.melt_energy_j += sample.melt_out_w * dt_plant;
+            trace.shear_energy_j += sample.shear_w * dt_plant;
 
-            trace.melt_energy_j += self.model.melt_extraction_w() * dt_plant;
-            trace.shear_energy_j += self.model.shear_power_w() * dt_plant;
-
-            self.model.step(dt_plant);
-
-            if now_ns >= next_record_ns {
-                // The controller sees the held reading, not the model's current
-                // one; the trace records what it saw.
-                let sensor_c = self.held_c;
-                trace.samples.push(self.sample(
-                    now_ns as f64 * 1e-9,
-                    setpoints,
-                    sensor_c,
-                    duty,
-                    power_w,
-                ));
+            if state.now_ns >= next_record_ns {
+                trace.samples.push(sample);
                 next_record_ns += record_ns;
             }
         }
 
+        trace.relay_switches = state.relay_switches;
         trace
     }
 

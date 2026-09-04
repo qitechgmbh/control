@@ -152,6 +152,7 @@ export type Event<T extends z.ZodTypeAny> = z.infer<
  */
 export type NamespaceId =
   | { type: "main" }
+  | { type: "simulation" }
   | {
       type: "machine";
       machine_identification_unique: MachineIdentificationUnique;
@@ -206,6 +207,8 @@ type Namespace<S> = {
 export function serializeNamespaceId(namespaceId: NamespaceId): string {
   if (namespaceId.type === "main") {
     return "/main";
+  } else if (namespaceId.type === "simulation") {
+    return "/simulation";
   } else if (namespaceId.type === "machine") {
     return `/machine/${namespaceId.machine_identification_unique.machine_identification.vendor}/${namespaceId.machine_identification_unique.machine_identification.machine}/${namespaceId.machine_identification_unique.serial}`;
   } else {
@@ -218,9 +221,16 @@ export function serializeNamespaceId(namespaceId: NamespaceId): string {
  */
 export function deserializeNamespaceId(namespaceId: string): NamespaceId {
   const parts = namespaceId.split("/");
-  if (parts.length === 2 && parts[0] === "") {
+  if (parts.length === 2 && parts[0] === "" && parts[1] === "main") {
     // /main
     return { type: "main" };
+  } else if (
+    parts.length === 2 &&
+    parts[0] === "" &&
+    parts[1] === "simulation"
+  ) {
+    // /simulation
+    return { type: "simulation" };
   } else if (parts.length === 5 && parts[0] === "machine") {
     // /machine/0/0/0
     const vendor = parseInt(parts[1]);
@@ -377,7 +387,7 @@ export const useSocketioStore = create<SocketioStore>()((set, get) => ({
       }),
     );
 
-    if (namespace_path !== "/main") {
+    if (namespace_path !== "/main" && namespace_path !== "/simulation") {
       const intervalId = setInterval(() => {
         const mainState = mainNamespaceStore.getState();
         const machineExists =

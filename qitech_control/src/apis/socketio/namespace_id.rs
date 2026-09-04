@@ -10,6 +10,8 @@ use std::str::FromStr;
 pub enum NamespaceId {
     Main,
     Machine(QiTechMachineIdentificationUnique),
+    #[cfg(feature = "simulation")]
+    Simulation,
 }
 
 impl Serialize for NamespaceId {
@@ -26,6 +28,8 @@ impl Serialize for NamespaceId {
                 );
                 serializer.serialize_str(&path)
             }
+            #[cfg(feature = "simulation")]
+            Self::Simulation => serializer.serialize_str("/simulation"),
         }
     }
 }
@@ -50,6 +54,11 @@ impl<'de> Deserialize<'de> for NamespaceId {
             {
                 if value == "/main" {
                     return Ok(NamespaceId::Main);
+                }
+
+                #[cfg(feature = "simulation")]
+                if value == "/simulation" {
+                    return Ok(NamespaceId::Simulation);
                 }
 
                 if let Some(machine_path) = value.strip_prefix("/machine/") {
@@ -89,6 +98,11 @@ impl FromStr for NamespaceId {
             return Ok(Self::Main);
         }
 
+        #[cfg(feature = "simulation")]
+        if s == "/simulation" {
+            return Ok(Self::Simulation);
+        }
+
         if let Some(machine_path) = s.strip_prefix("/machine/") {
             let parts: Vec<&str> = machine_path.split('/').collect();
             if parts.len() == 3 {
@@ -125,6 +139,8 @@ impl fmt::Display for NamespaceId {
                     id.machine_identification.vendor, id.machine_identification.machine, id.serial
                 )
             }
+            #[cfg(feature = "simulation")]
+            Self::Simulation => write!(f, "/simulation"),
         }
     }
 }

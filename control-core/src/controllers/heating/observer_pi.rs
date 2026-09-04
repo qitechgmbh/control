@@ -22,7 +22,7 @@ use super::{HeatingStrategy, SensorLagObserver};
 use crate::controllers::pid::PidController;
 
 /// Configuration for [`ObserverPi`].
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ObserverPiParams {
     pub kp: f64,
     pub ki: f64,
