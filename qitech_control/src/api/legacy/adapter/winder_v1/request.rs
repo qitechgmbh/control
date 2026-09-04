@@ -235,7 +235,10 @@ pub fn convert_request(
                     provider,
                     subscriber: ident,
                 },
-                None => unreachable!("oops"),
+                None => {
+                    tracing::warn!("Unsubscribe not yet implemented");
+                    return Ok(vec![]);
+                }
             }
         }
     }])

@@ -22,6 +22,23 @@ fn map_spool_action(value: &str) -> &'static str {
     }
 }
 
+fn map_spool_regulation(value: &str) -> &'static str {
+    match value {
+        "adaptive" | "Adaptive" => "Adaptive",
+        "min_max" | "minmax" | "MinMax" => "MinMax",
+        _ => "MinMax",
+    }
+}
+
+fn map_gear_ratio(value: &str) -> &'static str {
+    match value {
+        "one_to_one" | "OneToOne" => "OneToOne",
+        "one_to_five" | "OneToFive" => "OneToFive",
+        "one_to_ten" | "OneToTen" => "OneToTen",
+        _ => "OneToOne",
+    }
+}
+
 fn config_enum(instance: &MachineInstance, path: &str) -> Option<String> {
     config_value(instance, path)?.r#enum()
 }
@@ -87,7 +104,10 @@ pub fn init_state_event(
             "target_speed": config_float(instance, "puller.speed_controller.speed_desired")?,
             "forward": config_enum(instance, "puller.direction")
                 .map_or(false, |s| s == "Forward" || s == "forward"),
-            "gear_ratio": config_enum(instance, "puller.gear_ratio")?,
+            "gear_ratio": config_enum(instance, "puller.gear_ratio")
+                .as_deref()
+                .map(map_gear_ratio)
+                .unwrap_or("OneToOne"),
             "adaptive_speed_delta_max": config_float(instance, "puller.speed_controller.adaptive.speed_delta_max")?,
             "adaptive_adjustment_distance": config_float(instance, "puller.speed_controller.adaptive.adjustment_distance")?,
             "adaptive_change_per_step": config_float(instance, "puller.speed_controller.adaptive.increase_per_step")?,
@@ -113,7 +133,10 @@ pub fn init_state_event(
         },
 
         "spool_speed_controller_state": {
-            "regulation_mode": config_enum(instance, "spool.speed_controller.algorithm")?,
+            "regulation_mode": config_enum(instance, "spool.speed_controller.algorithm")
+                .as_deref()
+                .map(map_spool_regulation)
+                .unwrap_or("MinMax"),
             "minmax_min_speed": config_float(instance, "spool.speed_controller.speed_min")?,
             "minmax_max_speed": config_float(instance, "spool.speed_controller.speed_max")?,
             "adaptive_tension_target": config_float(instance, "spool.speed_controller.adaptive.tension_target")?,
