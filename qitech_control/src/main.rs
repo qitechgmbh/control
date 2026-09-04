@@ -1,8 +1,8 @@
 mod api;
 mod machines;
 mod modbus;
-mod types;
 mod transmission;
+mod types;
 
 use api::LegacySharedState;
 use api::Server;
@@ -10,6 +10,7 @@ use api::SharedState;
 use api::SocketIODispatcher;
 use qitech_control_core::interface;
 use qitech_framework::HubConfiguration;
+use qitech_framework::machine::MachineDescriptor;
 use qitech_framework::run_debug;
 use qitech_framework::run_with_hub;
 use qitech_framework::run_with_tui;
@@ -18,6 +19,7 @@ use qitech_framework::runtime::RuntimeConfiguration;
 use qitech_lib::ethercat_hal::DcConfiguration;
 use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
+use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
 use std::env;
 use std::time::Duration;
 
@@ -34,12 +36,19 @@ pub async fn main() -> anyhow::Result<()> {
     let config_rt = RuntimeConfiguration::new()
         .requests_per_cycle_max(10)
         .export_interval(Duration::from_secs_f64(1.0 / 32.0))
-        .machine::<LaserV1>()
         .machine::<AquaPathV1>()
         .machine::<WinderV1_Regular>()
         .machine::<WinderV1_7031_Spool>()
         .machine::<ExtruderV1>()
-        .machine::<ExtruderV2>();
+        .machine::<ExtruderV2>()
+        // TODO: do not hardocde the id
+        .modbus_rtu_device::<LaserDevice>(
+            "pci-0000:00:14.0-usb-0:2:1.0-port0".to_string(),
+            LaserV1::IDENTIFICATION.unique(1),
+            1,
+            None,
+        )
+        .machine::<LaserV1>();
 
     // --- determine if ethercat is enabled ---
     let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {
