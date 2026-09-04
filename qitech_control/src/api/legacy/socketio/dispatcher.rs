@@ -48,6 +48,17 @@ impl Listener for SocketIODispatcher {
                     .update(|ns| ns.set_ecat_devices(devices_transformed));
             }
 
+            RuntimeInitEvent::ModbusRTUDiscoveryCompleted { devices } => {
+                let devices_transformed = devices
+                    .into_iter()
+                    .map(legacy::ModbusDeviceMetadata::from)
+                    .collect();
+
+                self.state_legacy
+                    .ns_main
+                    .update(|ns| ns.set_modbus_devices(devices_transformed));
+            }
+
             RuntimeInitEvent::MachineBuildCompleted { ident, result } => {
                 let schemas = self.state.schemas.read();
 
