@@ -28,6 +28,12 @@ state:
   hopper_b_ready: !boolean
   hopper_b_error: !boolean
 
+measurements:
+  hopper_a:
+    rpm: !float
+  hopper_b:
+    rpm: !float
+
 commands:
   mixing_motor.start: !command
   mixing_motor.stop: !command

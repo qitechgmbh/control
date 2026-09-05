@@ -8,11 +8,14 @@ import { StatusBadge } from "@/control/StatusBadge";
 import { roundToDecimals } from "@/lib/decimal";
 import React from "react";
 import { useMixerV1 } from "./useMixerV1";
+import { MixerFigure } from "./MixerFigure";
 
 export function MixerV1ControlPage() {
   const {
     state,
     defaultState,
+    hopperARpm,
+    hopperBRpm,
     setMixingMotorOn,
     setHopperAEnabled,
     setHopperATargetRpm,
@@ -27,6 +30,20 @@ export function MixerV1ControlPage() {
 
   return (
     <Page>
+      <MixerFigure
+        mixingMotorOn={state?.mixing_motor_state.on ?? false}
+        hopperA={{
+          enabled: state?.hopper_a_state.enabled ?? false,
+          error: state?.hopper_a_state.error ?? false,
+          rpm: hopperARpm.current?.value ?? 0,
+        }}
+        hopperB={{
+          enabled: state?.hopper_b_state.enabled ?? false,
+          error: state?.hopper_b_state.error ?? false,
+          rpm: hopperBRpm.current?.value ?? 0,
+        }}
+      />
+
       <ControlGrid>
         <ControlCard title="Mixing Motor">
           <Label label="Motor">

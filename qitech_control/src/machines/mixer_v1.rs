@@ -11,6 +11,7 @@ use qitech_framework::machine::BuildResult;
 use qitech_framework::machine::ConfigProperty;
 use qitech_framework::machine::Machine;
 use qitech_framework::machine::MachineBuild;
+use qitech_framework::machine::Measurement;
 use qitech_framework::machine::RemoteProperty;
 use qitech_framework::machine::StateProperty;
 use qitech_framework::machine::SubscribeContext;
@@ -68,6 +69,10 @@ pub struct MixerV1 {
 
     // --- subscriptions ---
     extruder_subscription: Option<ExtruderSubscription>,
+
+    // --- measurements ---
+    hopper_a_rpm: Measurement<f64>,
+    hopper_b_rpm: Measurement<f64>,
 }
 
 impl MachineBuild for MixerV1 {
@@ -178,6 +183,8 @@ impl MachineBuild for MixerV1 {
             hopper_b_ready: ctx.state::<bool>("hopper_b_ready").build()?,
             hopper_b_error: ctx.state::<bool>("hopper_b_error").build()?,
             extruder_subscription: None,
+            hopper_a_rpm: ctx.measurement::<f64>("hopper_a.rpm").build()?,
+            hopper_b_rpm: ctx.measurement::<f64>("hopper_b.rpm").build()?,
         })
     }
 }
@@ -240,26 +247,36 @@ impl MixerV1 {
         Ok(())
     }
 
-    fn push_hopper_a_speed(m: &mut Self) -> ActResult {
-        let magnitude = m.hopper_a_target_rpm.get() * MOTOR_FULL_STEPS_PER_REV / 60.0;
+    fn apply_hopper_a_speed(m: &mut Self, magnitude_steps_per_sec: f64) -> ActResult {
         let signed = if m.hopper_a_forward.get() {
-            magnitude
+            magnitude_steps_per_sec
         } else {
-            -magnitude
+            -magnitude_steps_per_sec
         };
+        m.hopper_a_rpm.set(signed * 60.0 / MOTOR_FULL_STEPS_PER_REV);
         let _ = m.hopper_a.borrow_mut().set_speed(HOPPER_PORT, signed);
         Ok(())
     }
 
-    fn push_hopper_b_speed(m: &mut Self) -> ActResult {
-        let magnitude = m.hopper_b_target_rpm.get() * MOTOR_FULL_STEPS_PER_REV / 60.0;
+    fn apply_hopper_b_speed(m: &mut Self, magnitude_steps_per_sec: f64) -> ActResult {
         let signed = if m.hopper_b_forward.get() {
-            magnitude
+            magnitude_steps_per_sec
         } else {
-            -magnitude
+            -magnitude_steps_per_sec
         };
+        m.hopper_b_rpm.set(signed * 60.0 / MOTOR_FULL_STEPS_PER_REV);
         let _ = m.hopper_b.borrow_mut().set_speed(HOPPER_PORT, signed);
         Ok(())
+    }
+
+    fn push_hopper_a_speed(m: &mut Self) -> ActResult {
+        let magnitude = m.hopper_a_target_rpm.get() * MOTOR_FULL_STEPS_PER_REV / 60.0;
+        Self::apply_hopper_a_speed(m, magnitude)
+    }
+
+    fn push_hopper_b_speed(m: &mut Self) -> ActResult {
+        let magnitude = m.hopper_b_target_rpm.get() * MOTOR_FULL_STEPS_PER_REV / 60.0;
+        Self::apply_hopper_b_speed(m, magnitude)
     }
 
     fn push_ratio_speeds(m: &mut Self) -> ActResult {
@@ -278,26 +295,14 @@ impl MixerV1 {
         let masterbatch_kg_h =
             m.current_extruder_output_rate() * m.hopper_a_dosing_percent.get() / 100.0;
         let magnitude = masterbatch_kg_h * m.hopper_a_calibration_steps_per_kgh.get();
-        let signed = if m.hopper_a_forward.get() {
-            magnitude
-        } else {
-            -magnitude
-        };
-        let _ = m.hopper_a.borrow_mut().set_speed(HOPPER_PORT, signed);
-        Ok(())
+        Self::apply_hopper_a_speed(m, magnitude)
     }
 
     fn push_hopper_b_ratio_speed(m: &mut Self) -> ActResult {
         let masterbatch_kg_h =
             m.current_extruder_output_rate() * m.hopper_b_dosing_percent.get() / 100.0;
         let magnitude = masterbatch_kg_h * m.hopper_b_calibration_steps_per_kgh.get();
-        let signed = if m.hopper_b_forward.get() {
-            magnitude
-        } else {
-            -magnitude
-        };
-        let _ = m.hopper_b.borrow_mut().set_speed(HOPPER_PORT, signed);
-        Ok(())
+        Self::apply_hopper_b_speed(m, magnitude)
     }
 }
 

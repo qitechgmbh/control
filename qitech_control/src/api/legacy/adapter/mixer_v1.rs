@@ -105,11 +105,14 @@ fn init_state_event(
 }
 
 // --- live values ---
-//
-// mixer_v1 does not declare any measurements yet.
 
-fn init_measurements_event(_instance: &MachineInstance) -> Option<serde_json::Value> {
-    None
+fn init_measurements_event(instance: &MachineInstance) -> Option<serde_json::Value> {
+    let get = |path: &str| -> Option<f64> { instance.measurements.get(path)?.as_ref()?.value };
+
+    Some(serde_json::json!({
+        "hopper_a_rpm": get("hopper_a.rpm")?,
+        "hopper_b_rpm": get("hopper_b.rpm")?,
+    }))
 }
 
 // --- property lookups ---

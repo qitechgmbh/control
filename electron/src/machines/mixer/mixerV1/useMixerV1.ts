@@ -33,7 +33,8 @@ export function useMixerV1() {
     };
   }, [serialString]);
 
-  const { state, defaultState } = useMixerV1Namespace(machineIdentification);
+  const { state, defaultState, hopperARpm, hopperBRpm } =
+    useMixerV1Namespace(machineIdentification);
 
   const stateOptimistic = useStateOptimistic<StateEvent>();
 
@@ -216,6 +217,8 @@ export function useMixerV1() {
   return {
     state: stateOptimistic.value,
     defaultState,
+    hopperARpm,
+    hopperBRpm,
 
     setMixingMotorOn,
     setHopperAEnabled,

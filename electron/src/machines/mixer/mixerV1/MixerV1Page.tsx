@@ -14,6 +14,12 @@ export function MixerV1Page() {
           title: "Control",
           icon: "lu:CirclePlay",
         },
+        {
+          link: "graphs",
+          activeLink: "graphs",
+          title: "Graphs",
+          icon: "lu:ChartLine",
+        },
       ]}
     />
   );

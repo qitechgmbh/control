@@ -11,6 +11,7 @@ import {
   ThrottledStoreUpdater,
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 import { useMemo } from "react";
 
 const hopperStateSchema = z.object({
@@ -36,9 +37,23 @@ export const stateEventDataSchema = z.object({
 export const stateEventSchema = eventSchema(stateEventDataSchema);
 export type StateEvent = z.infer<typeof stateEventDataSchema>;
 
+export const liveValuesEventDataSchema = z.object({
+  hopper_a_rpm: z.number(),
+  hopper_b_rpm: z.number(),
+});
+
+export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
+
+const { initialTimeSeries: hopperARpm, insert: addHopperARpm } =
+  createTimeSeries();
+const { initialTimeSeries: hopperBRpm, insert: addHopperBRpm } =
+  createTimeSeries();
+
 export type MixerV1NamespaceStore = {
   state: StateEvent | null;
   defaultState: StateEvent | null;
+  hopperARpm: TimeSeries;
+  hopperBRpm: TimeSeries;
 };
 
 export const createMixerV1NamespaceStore =
@@ -46,6 +61,8 @@ export const createMixerV1NamespaceStore =
     create<MixerV1NamespaceStore>(() => ({
       state: null,
       defaultState: null,
+      hopperARpm,
+      hopperBRpm,
     }));
 
 export function mixerV1MessageHandler(
@@ -62,10 +79,26 @@ export function mixerV1MessageHandler(
         const parsed = stateEventSchema.parse(event);
 
         updateStore((state) => ({
+          ...state,
           state: parsed.data,
           defaultState: parsed.data.is_default_state
             ? parsed.data
             : state.defaultState,
+        }));
+      } else if (event.name === "LiveValuesEvent") {
+        const parsed = liveValuesEventSchema.parse(event);
+        const timestamp = event.ts;
+
+        updateStore((state) => ({
+          ...state,
+          hopperARpm: addHopperARpm(state.hopperARpm, {
+            value: parsed.data.hopper_a_rpm,
+            timestamp,
+          }),
+          hopperBRpm: addHopperBRpm(state.hopperBRpm, {
+            value: parsed.data.hopper_b_rpm,
+            timestamp,
+          }),
         }));
       } else {
         handleUnhandledEventError(event.name);
