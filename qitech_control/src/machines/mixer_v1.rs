@@ -59,8 +59,10 @@ pub struct MixerV1 {
 
     // --- state ---
     mixing_motor_on: StateProperty<bool>,
+    hopper_a_enabled: StateProperty<bool>,
     hopper_a_ready: StateProperty<bool>,
     hopper_a_error: StateProperty<bool>,
+    hopper_b_enabled: StateProperty<bool>,
     hopper_b_ready: StateProperty<bool>,
     hopper_b_error: StateProperty<bool>,
 
@@ -169,8 +171,10 @@ impl MachineBuild for MixerV1 {
             hopper_b_dosing_percent,
             hopper_b_calibration_steps_per_kgh,
             mixing_motor_on: ctx.state::<bool>("mixing_motor_on").build()?,
+            hopper_a_enabled: ctx.state::<bool>("hopper_a_enabled").build()?,
             hopper_a_ready: ctx.state::<bool>("hopper_a_ready").build()?,
             hopper_a_error: ctx.state::<bool>("hopper_a_error").build()?,
+            hopper_b_enabled: ctx.state::<bool>("hopper_b_enabled").build()?,
             hopper_b_ready: ctx.state::<bool>("hopper_b_ready").build()?,
             hopper_b_error: ctx.state::<bool>("hopper_b_error").build()?,
             extruder_subscription: None,
@@ -225,11 +229,13 @@ impl MixerV1 {
     }
 
     fn set_hopper_a_enabled(&mut self, enabled: bool) -> ActResult {
+        self.hopper_a_enabled.set(enabled);
         self.hopper_a.borrow_mut().set_enabled(HOPPER_PORT, enabled);
         Ok(())
     }
 
     fn set_hopper_b_enabled(&mut self, enabled: bool) -> ActResult {
+        self.hopper_b_enabled.set(enabled);
         self.hopper_b.borrow_mut().set_enabled(HOPPER_PORT, enabled);
         Ok(())
     }

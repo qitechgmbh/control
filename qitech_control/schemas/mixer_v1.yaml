@@ -21,8 +21,10 @@ config:
 
 state:
   mixing_motor_on: !boolean
+  hopper_a_enabled: !boolean
   hopper_a_ready: !boolean
   hopper_a_error: !boolean
+  hopper_b_enabled: !boolean
   hopper_b_ready: !boolean
   hopper_b_error: !boolean
 

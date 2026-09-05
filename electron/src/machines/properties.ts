@@ -469,6 +469,63 @@ export const laser1: MachineProperties = {
   device_roles: [],
 };
 
+export const mixerV1: MachineProperties = {
+  name: "Mixer",
+  version: "V1",
+  slug: "mixerV1",
+  icon: "lu:Blend",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0012,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x44c2c52,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "Digital Output (Mixing Motor)",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x7d23052,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 2,
+      role_label: "Stepper A (Dosierer 1)",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b813052,
+          revision: 0x100034,
+        },
+      ],
+    },
+    {
+      role: 3,
+      role_label: "Stepper B (Dosierer 2)",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b813052,
+          revision: 0x100034,
+        },
+      ],
+    },
+  ],
+};
+
 export const mock1: MachineProperties = {
   name: "Mock",
   version: "V1",
@@ -1032,6 +1089,7 @@ export const machineProperties: MachineProperties[] = [
   extruder3,
   extruder2,
   laser1,
+  mixerV1,
   mock1,
   buffer1,
   wagoPower1,
