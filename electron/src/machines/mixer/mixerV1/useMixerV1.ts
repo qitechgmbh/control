@@ -118,6 +118,19 @@ export function useMixerV1() {
     );
   };
 
+  const setHopperACalibrationStepsPerKgh = (value: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.hopper_a_state.calibration_steps_per_kgh = value;
+      },
+      () =>
+        requestHopperACalibrationStepsPerKgh({
+          machine_identification_unique: machineIdentification,
+          data: { SetHopperACalibrationStepsPerKgh: value },
+        }),
+    );
+  };
+
   const setHopperBEnabled = (enabled: boolean) => {
     updateStateOptimistically(
       (current) => {
@@ -170,6 +183,19 @@ export function useMixerV1() {
     );
   };
 
+  const setHopperBCalibrationStepsPerKgh = (value: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.hopper_b_state.calibration_steps_per_kgh = value;
+      },
+      () =>
+        requestHopperBCalibrationStepsPerKgh({
+          machine_identification_unique: machineIdentification,
+          data: { SetHopperBCalibrationStepsPerKgh: value },
+        }),
+    );
+  };
+
   const setExtruderKgPerRpm = (value: number) => {
     updateStateOptimistically(
       (current) => {
@@ -198,6 +224,9 @@ export function useMixerV1() {
   const { request: requestHopperADosingPercent } = useMachineMutation(
     z.object({ SetHopperADosingPercent: z.number() }),
   );
+  const { request: requestHopperACalibrationStepsPerKgh } = useMachineMutation(
+    z.object({ SetHopperACalibrationStepsPerKgh: z.number() }),
+  );
   const { request: requestHopperBEnabled } = useMachineMutation(
     z.object({ SetHopperBEnabled: z.boolean() }),
   );
@@ -209,6 +238,9 @@ export function useMixerV1() {
   );
   const { request: requestHopperBDosingPercent } = useMachineMutation(
     z.object({ SetHopperBDosingPercent: z.number() }),
+  );
+  const { request: requestHopperBCalibrationStepsPerKgh } = useMachineMutation(
+    z.object({ SetHopperBCalibrationStepsPerKgh: z.number() }),
   );
   const { request: requestExtruderKgPerRpm } = useMachineMutation(
     z.object({ SetExtruderKgPerRpm: z.number() }),
@@ -225,10 +257,12 @@ export function useMixerV1() {
     setHopperATargetRpm,
     setHopperAForward,
     setHopperADosingPercent,
+    setHopperACalibrationStepsPerKgh,
     setHopperBEnabled,
     setHopperBTargetRpm,
     setHopperBForward,
     setHopperBDosingPercent,
+    setHopperBCalibrationStepsPerKgh,
     setExtruderKgPerRpm,
   };
 }

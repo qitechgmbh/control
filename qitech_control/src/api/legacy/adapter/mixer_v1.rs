@@ -25,10 +25,12 @@ fn convert_request(
         SetHopperATargetRpm(f64),
         SetHopperAForward(bool),
         SetHopperADosingPercent(f64),
+        SetHopperACalibrationStepsPerKgh(f64),
         SetHopperBEnabled(bool),
         SetHopperBTargetRpm(f64),
         SetHopperBForward(bool),
         SetHopperBDosingPercent(f64),
+        SetHopperBCalibrationStepsPerKgh(f64),
         SetExtruderKgPerRpm(f64),
     }
 
@@ -54,6 +56,10 @@ fn convert_request(
         Mutation::SetHopperADosingPercent(v) => {
             config("hopper_a.dosing_percent", ScalarValue::Float(v))
         }
+        Mutation::SetHopperACalibrationStepsPerKgh(v) => config(
+            "hopper_a.calibration_steps_per_kgh",
+            ScalarValue::Float(v),
+        ),
 
         Mutation::SetHopperBEnabled(true) => command("hopper_b.enable"),
         Mutation::SetHopperBEnabled(false) => command("hopper_b.disable"),
@@ -62,6 +68,10 @@ fn convert_request(
         Mutation::SetHopperBDosingPercent(v) => {
             config("hopper_b.dosing_percent", ScalarValue::Float(v))
         }
+        Mutation::SetHopperBCalibrationStepsPerKgh(v) => config(
+            "hopper_b.calibration_steps_per_kgh",
+            ScalarValue::Float(v),
+        ),
 
         Mutation::SetExtruderKgPerRpm(v) => config("extruder_kg_per_rpm", ScalarValue::Float(v)),
     }])

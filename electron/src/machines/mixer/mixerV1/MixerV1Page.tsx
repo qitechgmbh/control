@@ -20,6 +20,12 @@ export function MixerV1Page() {
           title: "Graphs",
           icon: "lu:ChartLine",
         },
+        {
+          link: "settings",
+          activeLink: "settings",
+          title: "Settings",
+          icon: "lu:Settings",
+        },
       ]}
     />
   );

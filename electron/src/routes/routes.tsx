@@ -60,6 +60,7 @@ import { Laser1SettingsPage } from "@/machines/laser/laser1/Laser1SettingsPage";
 import { MixerV1Page } from "@/machines/mixer/mixerV1/MixerV1Page";
 import { MixerV1ControlPage } from "@/machines/mixer/mixerV1/MixerV1ControlPage";
 import { MixerV1GraphsPage } from "@/machines/mixer/mixerV1/MixerV1Graph";
+import { MixerV1SettingsPage } from "@/machines/mixer/mixerV1/MixerV1SettingsPage";
 
 import { WagoSerialPage } from "@/machines/wago_serial/WagoSerialPage";
 import { WagoSerialControlPage } from "@/machines/wago_serial/WagoSerialControlPage";
@@ -495,6 +496,12 @@ export const mixerV1GraphsRoute = createRoute({
   component: () => <MixerV1GraphsPage />,
 });
 
+export const mixerV1SettingsRoute = createRoute({
+  getParentRoute: () => mixerV1SerialRoute,
+  path: "settings",
+  component: () => <MixerV1SettingsPage />,
+});
+
 export const mock1SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "mock1/$serial",
@@ -735,6 +742,7 @@ export const rootTree = RootRoute.addChildren([
       mixerV1SerialRoute.addChildren([
         mixerV1ControlRoute,
         mixerV1GraphsRoute,
+        mixerV1SettingsRoute,
       ]),
 
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
