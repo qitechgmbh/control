@@ -75,7 +75,6 @@ in
         "qitech.cachix.org-1:l7UTb2FOVAEpRTGTUQTBBPis0JhXZGiANPDKBRbO8Vo="
       ];
       experimental-features = "nix-command flakes";
-      cores = 0; # was 2
       http-connections = 10;
       download-attempts = 15;
     };
@@ -185,35 +184,6 @@ in
     };
   };
 
-  systemd.services.cpu-isolate = {
-    description = "Apply cpuset isolation and CPU governor for realtime cores";
-    wantedBy = [ "multi-user.target" ];
-    before = [ "qitech.service" ];
-    after = [ "systemd-udevd.service" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = pkgs.writeShellScript "cpu-isolate" ''
-        set -euo pipefail
-
-        # Force performance governor on ALL cores
-        for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-          echo performance > "$cpu"
-        done
-
-        # Apply cpuset isolation
-        systemctl set-property --runtime init.scope   AllowedCPUs=0-1
-        systemctl set-property --runtime system.slice AllowedCPUs=0-1
-        systemctl set-property --runtime user.slice   AllowedCPUs=0-1
-        systemctl set-property --runtime qitech.slice AllowedCPUs=2-3
-
-        CG=/sys/fs/cgroup/qitech.slice
-        echo "2-3" > "$CG/cpuset.cpus.exclusive"
-        echo isolated > "$CG/cpuset.cpus.partition"
-      '';
-    };
-  };
-
   # Enable sound with pipewire.
   security.rtkit.enable = true;
   services.pipewire = {
@@ -238,7 +208,7 @@ in
   };
 
   # Force the service into the RT slice
-  systemd.services.qitech.serviceConfig.Slice = lib.mkForce "qitech.slice";
+  systemd.services.qitech.serviceConfig.Slice = "qitech.slice";
 
   users.users.qitech = {
     isNormalUser = true;
