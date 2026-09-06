@@ -1046,18 +1046,7 @@ function terminalGray(text: string): string {
 
 // CPU isolation helpers
 
-const RT_CPUS = "2-3";
-const HK_CPUS = "0-1";
-const ALL_CPUS = "0-3";
 const QITECH_SLICE_CG = "/sys/fs/cgroup/qitech.slice";
-
-function runSimple(cmd: string, args: string[]): Promise<boolean> {
-  return new Promise((resolve) => {
-    const child = spawn(cmd, args, { stdio: "ignore" });
-    child.on("error", () => resolve(false));
-    child.on("close", (code) => resolve(code === 0));
-  });
-}
 
 async function releaseCores(event: Electron.IpcMainInvokeEvent): Promise<void> {
   event.sender.send(
@@ -1065,31 +1054,38 @@ async function releaseCores(event: Electron.IpcMainInvokeEvent): Promise<void> {
     terminalInfo("Releasing isolated cores for build..."),
   );
 
-  const script = [
-    `set -euo pipefail`,
-    `CG="${QITECH_SLICE_CG}"`,
-    `echo member > "$CG/cpuset.cpus.partition" 2>/dev/null || true`,
-    `echo "" > "$CG/cpuset.cpus.exclusive" 2>/dev/null || true`,
-    `systemctl set-property --runtime init.scope   AllowedCPUs=${ALL_CPUS}`,
-    `systemctl set-property --runtime system.slice AllowedCPUs=${ALL_CPUS}`,
-    `systemctl set-property --runtime user.slice   AllowedCPUs=${ALL_CPUS}`,
-    `systemctl set-property --runtime qitech.slice AllowedCPUs=${ALL_CPUS}`,
-    `sleep 1`,
-    `for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do`,
-    `  echo performance > "$cpu"`,
-    `done`,
-    `for cpu in 2 3; do`,
-    `  max=$(cat /sys/devices/system/cpu/cpu$cpu/cpufreq/cpuinfo_max_freq)`,
-    `  echo $max > /sys/devices/system/cpu/cpu$cpu/cpufreq/scaling_min_freq`,
-    `  echo performance > /sys/devices/system/cpu/cpu$cpu/cpufreq/energy_performance_preference`,
-    `done`,
-    `echo "=== CPU Status ==="`,
-    `for cpu in 0 1 2 3; do`,
-    `  gov=$(cat /sys/devices/system/cpu/cpu$cpu/cpufreq/scaling_governor)`,
-    `  freq=$(cat /sys/devices/system/cpu/cpu$cpu/cpufreq/scaling_cur_freq)`,
-    `  echo "CPU$cpu: governor=$gov freq=$freq"`,
-    `done`,
-  ].join("\n");
+  const script = `\
+#!/usr/bin/env bash
+set -euo pipefail
+
+TOTAL=$(nproc)
+LAST=$((TOTAL - 1))
+RT_START=$((TOTAL - 2))
+RT_CPUS="$RT_START-$LAST"
+ALL_CPUS="0-$LAST"
+CG="${QITECH_SLICE_CG}"
+
+echo member > "$CG/cpuset.cpus.partition" 2>/dev/null || true
+echo "" > "$CG/cpuset.cpus.exclusive" 2>/dev/null || true
+systemctl set-property --runtime init.scope   AllowedCPUs=$ALL_CPUS
+systemctl set-property --runtime system.slice AllowedCPUs=$ALL_CPUS
+systemctl set-property --runtime user.slice   AllowedCPUs=$ALL_CPUS
+systemctl set-property --runtime qitech.slice AllowedCPUs=$ALL_CPUS
+sleep 1
+for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+  echo performance > "$cpu"
+done
+for cpu in $(seq "$RT_START" "$LAST"); do
+  max=$(cat "/sys/devices/system/cpu/cpu$cpu/cpufreq/cpuinfo_max_freq")
+  echo "$max" > "/sys/devices/system/cpu/cpu$cpu/cpufreq/scaling_min_freq"
+  echo performance > "/sys/devices/system/cpu/cpu$cpu/cpufreq/energy_performance_preference"
+done
+echo "=== CPU Status ==="
+for cpu in $(seq 0 "$LAST"); do
+  gov=$(cat "/sys/devices/system/cpu/cpu$cpu/cpufreq/scaling_governor")
+  freq=$(cat "/sys/devices/system/cpu/cpu$cpu/cpufreq/scaling_cur_freq")
+  echo "CPU$cpu: governor=$gov freq=$freq"
+done`;
 
   writeFileSync("/tmp/qitech-release-cores.sh", script, { mode: 0o755 });
   try {
@@ -1111,51 +1107,44 @@ async function releaseCores(event: Electron.IpcMainInvokeEvent): Promise<void> {
 
 async function isolateCores(event: Electron.IpcMainInvokeEvent): Promise<void> {
   event.sender.send(UPDATE_LOG, terminalInfo("Re-isolating realtime cores..."));
-  // Restrict housekeeping slices first, then set partition
-  await runSimple("sudo", [
-    "systemctl",
-    "set-property",
-    "--runtime",
-    "init.scope",
-    `AllowedCPUs=${HK_CPUS}`,
-  ]);
-  await runSimple("sudo", [
-    "systemctl",
-    "set-property",
-    "--runtime",
-    "system.slice",
-    `AllowedCPUs=${HK_CPUS}`,
-  ]);
-  await runSimple("sudo", [
-    "systemctl",
-    "set-property",
-    "--runtime",
-    "user.slice",
-    `AllowedCPUs=${HK_CPUS}`,
-  ]);
-  await runSimple("sudo", [
-    "systemctl",
-    "set-property",
-    "--runtime",
-    "qitech.slice",
-    `AllowedCPUs=${RT_CPUS}`,
-  ]);
-  await runSimple("sudo", [
-    "bash",
-    "-c",
-    `echo "${RT_CPUS}" > ${QITECH_SLICE_CG}/cpuset.cpus.exclusive && ` +
-      `echo isolated > ${QITECH_SLICE_CG}/cpuset.cpus.partition`,
-  ]);
 
-  // Restore default frequency scaling on RT cores
-  await runSimple("sudo", [
-    "bash",
-    "-c",
-    `for cpu in 2 3; do ` +
-      `echo 800000 > /sys/devices/system/cpu/cpu$cpu/cpufreq/scaling_min_freq; ` +
-      `echo performance > /sys/devices/system/cpu/cpu$cpu/cpufreq/energy_performance_preference; ` +
-      `done`,
-  ]);
+  const script = `\
+#!/usr/bin/env bash
+set -euo pipefail
+
+TOTAL=$(nproc)
+LAST=$((TOTAL - 1))
+RT_START=$((TOTAL - 2))
+RT_CPUS="$RT_START-$LAST"
+HK_CPUS="0-$((RT_START - 1))"
+CG="${QITECH_SLICE_CG}"
+
+# Restrict housekeeping slices first, then set partition
+systemctl set-property --runtime init.scope   AllowedCPUs=$HK_CPUS
+systemctl set-property --runtime system.slice AllowedCPUs=$HK_CPUS
+systemctl set-property --runtime user.slice   AllowedCPUs=$HK_CPUS
+systemctl set-property --runtime qitech.slice AllowedCPUs=$RT_CPUS
+
+echo "$RT_CPUS" > "$CG/cpuset.cpus.exclusive"
+echo isolated > "$CG/cpuset.cpus.partition"
+
+# Restore default frequency scaling on RT cores
+for cpu in $(seq "$RT_START" "$LAST"); do
+  echo 800000 > "/sys/devices/system/cpu/cpu$cpu/cpufreq/scaling_min_freq"
+  echo performance > "/sys/devices/system/cpu/cpu$cpu/cpufreq/energy_performance_preference"
+done`;
+
+  writeFileSync("/tmp/qitech-isolate-cores.sh", script, { mode: 0o755 });
+  try {
+    await runCommand(
+      "sudo",
+      ["bash", "/tmp/qitech-isolate-cores.sh"],
+      "/tmp",
+      event,
+    );
+  } finally {
+    rmSync("/tmp/qitech-isolate-cores.sh", { force: true });
+  }
 
   event.sender.send(UPDATE_LOG, terminalSuccess("Realtime cores re-isolated"));
 }
