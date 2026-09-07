@@ -1,10 +1,11 @@
-use crate::api::legacy::MachineLegacyDataAdapter;
-use crate::api::types::MachineInstance;
-use crate::machines::aquapath::AquaPathV1Mode;
 use qitech_framework::MachineInstanceIdentification;
 use qitech_framework::RuntimeRequestKind;
 use qitech_framework::ScalarValue;
 use serde::Deserialize;
+
+use crate::api::legacy::MachineLegacyDataAdapter;
+use crate::api::types::MachineInstance;
+use crate::machines::aquapath::AquaPathV1Mode;
 
 pub const ADAPTER: MachineLegacyDataAdapter = MachineLegacyDataAdapter {
     convert_request,

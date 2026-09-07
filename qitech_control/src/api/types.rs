@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
@@ -22,6 +23,9 @@ pub struct MachineInstance {
     pub config_properties: HashMap<String, Option<ConfigPropertyInfo>>,
     pub state_properties: HashMap<String, Option<StatePropertyInfo>>,
     pub measurements: HashMap<String, Option<MeasurementInfo>>,
+
+    // --- misc ---
+    pub subscriptions: HashSet<MachineInstanceIdentification>,
 }
 
 #[derive(Clone)]

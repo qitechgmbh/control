@@ -8,9 +8,11 @@
 
 pub mod modbus_serial_interface;
 
-use anyhow::Error;
-use crc::{CRC_16_MODBUS, Crc};
 use std::time::Duration;
+
+use anyhow::Error;
+use crc::CRC_16_MODBUS;
+use crc::Crc;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ModbusFunctionCode {

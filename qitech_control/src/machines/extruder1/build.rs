@@ -12,22 +12,26 @@ use qitech_lib::ethercat_hal::devices::beckhoff_modules::ek1100::EK1100;
 use qitech_lib::ethercat_hal::devices::beckhoff_modules::el2004::EL2004;
 use qitech_lib::ethercat_hal::devices::beckhoff_modules::el3021::EL3021;
 use qitech_lib::ethercat_hal::devices::beckhoff_modules::el3204::EL3204;
-use qitech_lib::ethercat_hal::devices::beckhoff_modules::el6021::{EL6021, EL6021Configuration};
+use qitech_lib::ethercat_hal::devices::beckhoff_modules::el6021::EL6021;
+use qitech_lib::ethercat_hal::devices::beckhoff_modules::el6021::EL6021Configuration;
 use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
 use qitech_lib::ethercat_hal::io::temperature_input::TemperatureInputDevice;
-use qitech_lib::units::{
-    ThermodynamicTemperature, energy::kilowatt_hour, power::watt,
-    thermodynamic_temperature::degree_celsius,
-};
+use qitech_lib::units::ThermodynamicTemperature;
+use qitech_lib::units::energy::kilowatt_hour;
+use qitech_lib::units::power::watt;
+use qitech_lib::units::thermodynamic_temperature::degree_celsius;
 
+use crate::machines::extruder1::Extruder;
+use crate::machines::extruder1::Mode;
+use crate::machines::extruder1::VARIANT_V1;
+use crate::machines::extruder1::VARIANT_V2;
+use crate::machines::extruder1::Zone;
 use crate::machines::extruder1::mitsubishi_cs80::MitsubishiCS80;
 use crate::machines::extruder1::screw_speed_controller::ScrewSpeedController;
-use crate::machines::extruder1::temperature_controller::{
-    TemperatureController, TemperatureControllerConfig,
-};
-use crate::machines::extruder1::{Extruder, Mode, VARIANT_V1, VARIANT_V2, Zone};
+use crate::machines::extruder1::temperature_controller::TemperatureController;
+use crate::machines::extruder1::temperature_controller::TemperatureControllerConfig;
 use crate::transmission::fixed::FixedTransmission;
 
 /// EtherCAT roles, motor poles and gearing of one extruder generation.

@@ -21,7 +21,9 @@ pub fn get(ident: MachineIdentification) -> Option<MachineLegacyDataAdapter> {
         LaserV1::IDENTIFICATION => Some(laser_v1::ADAPTER),
         AquaPathV1::IDENTIFICATION => Some(aquapath_v1::ADAPTER),
         ExtruderV1::IDENTIFICATION | ExtruderV2::IDENTIFICATION => Some(extruder_v1::ADAPTER),
-        WinderV1_Regular::IDENTIFICATION | WinderV1_7031_Spool::IDENTIFICATION => Some(winder_v1::ADAPTER),
+        WinderV1_Regular::IDENTIFICATION | WinderV1_7031_Spool::IDENTIFICATION => {
+            Some(winder_v1::ADAPTER)
+        }
         _ => None,
     }
 }

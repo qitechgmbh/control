@@ -1,6 +1,10 @@
 use qitech_framework::ScalarValue;
+use qitech_framework::machine::MachineDescriptor;
 
+use crate::api::legacy::types::MachineIdentificationUnique;
+use crate::api::legacy::{self};
 use crate::api::types::MachineInstance;
+use crate::machines::LaserV1;
 
 // --- small helper functions ---
 /// Maps runtime puller algorithm enum to frontend regulation name.
@@ -70,10 +74,22 @@ pub fn init_state_event(
 
     let can_traverse = traverse_mode == "Standby" || traverse_mode == "Traverse";
 
-    let tension_arm_zeroed = state_value(instance, "tension_arm.zero")
-        .is_some_and(|v| !matches!(v, ScalarValue::Null));
+    let tension_arm_zeroed =
+        state_value(instance, "tension_arm.zero").is_some_and(|v| !matches!(v, ScalarValue::Null));
     let is_homing = is_homing_state(&traverse_state);
     let can_wind = tension_arm_zeroed && is_homed && !is_homing;
+
+    let puller_reference_machine = instance
+        .subscriptions
+        .iter()
+        .find(|ident| ident.machine == LaserV1::IDENTIFICATION)
+        .map(|ident| MachineIdentificationUnique {
+            machine_identification: legacy::types::MachineIdentification {
+                vendor: ident.machine.vendor_id,
+                machine: ident.machine.machine_id,
+            },
+            serial: ident.serial,
+        });
 
     Some(serde_json::json!({
         "is_default_state": is_default_state,
@@ -112,7 +128,7 @@ pub fn init_state_event(
             "adaptive_adjustment_distance": config_float(instance, "puller.speed_controller.adaptive.adjustment_distance")?,
             "adaptive_change_per_step": config_float(instance, "puller.speed_controller.adaptive.increase_per_step")?,
             "allowed_diameter_deviation": config_float(instance, "puller.speed_controller.adaptive.tolerance_limit")?,
-            "adaptive_reference_machine": serde_json::Value::Null,
+            "adaptive_reference_machine": puller_reference_machine,
         },
 
         "spool_automatic_action_state": {
@@ -148,7 +164,7 @@ pub fn init_state_event(
                 .is_some_and(|s| s == "Forward" || s == "forward"),
         },
 
-        "puller_reference_machine": serde_json::Value::Null,
+        "puller_reference_machine": puller_reference_machine,
     }))
 }
 

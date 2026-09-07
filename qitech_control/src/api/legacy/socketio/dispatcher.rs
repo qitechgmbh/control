@@ -71,6 +71,6 @@ impl Listener for SocketIODispatcher {
     fn on_report_received(&mut self, report: &RuntimeReport) {
         self.state_legacy
             .ns_machines
-            .update(|ns| ns.update(&report.machines));
+            .update(|ns| ns.update(&report));
     }
 }

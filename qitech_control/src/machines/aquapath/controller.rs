@@ -1,21 +1,25 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::time::Duration;
+use std::time::Instant;
+
+use qitech_control_core::controllers::pid::PidController;
 use qitech_framework::EnumProperty;
 use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
 use qitech_lib::ethercat_hal::io::analog_output::AnalogOutputDevice;
-use qitech_lib::ethercat_hal::io::as006::{
-    calculate_as006_flow_lpm, calculate_as006_temperature_celsius,
-};
+use qitech_lib::ethercat_hal::io::as006::calculate_as006_flow_lpm;
+use qitech_lib::ethercat_hal::io::as006::calculate_as006_temperature_celsius;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
-use qitech_lib::units::{self, AngularVelocity};
-use std::cell::RefCell;
-use std::rc::Rc;
-use std::time::{Duration, Instant};
+use qitech_lib::units::AngularVelocity;
+use qitech_lib::units::{self};
 use units::angular_velocity::revolution_per_minute;
-use units::f64::{ThermodynamicTemperature, VolumeRate};
+use units::f64::ThermodynamicTemperature;
+use units::f64::VolumeRate;
 use units::thermodynamic_temperature::degree_celsius;
 use units::volume_rate::liter_per_minute;
 
-use crate::machines::aquapath::{Flow, Temperature};
-use qitech_control_core::controllers::pid::PidController;
+use crate::machines::aquapath::Flow;
+use crate::machines::aquapath::Temperature;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ControlResetReason {

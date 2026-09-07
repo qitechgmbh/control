@@ -1,34 +1,38 @@
-use crate::machines::aquapath::{
-    AquaPathV1Mode, Flow, Temperature,
-    api::{
-        ConfigProperties, Measurements, ModeState, PidState, StateProperties, ThermalSafetyState,
-        ToleranceState,
-    },
-    controller::{Controller, ControllerConfig, CoolingMode},
-};
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use qitech_framework::machine::BuildContext;
+use qitech_framework::machine::BuildError;
+use qitech_framework::machine::BuildResult;
+use qitech_framework::machine::MachineBuild;
+use qitech_framework::machine_build;
+use qitech_lib::ethercat_hal::EtherCATThreadChannel;
+use qitech_lib::ethercat_hal::devices::beckhoff_modules::ek1100::EK1100;
+use qitech_lib::ethercat_hal::devices::beckhoff_modules::el2008::EL2008;
+use qitech_lib::ethercat_hal::devices::beckhoff_modules::el3024::EL3024;
+use qitech_lib::ethercat_hal::devices::beckhoff_modules::el4002::EL4002;
+use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
+use qitech_lib::ethercat_hal::io::analog_output::AnalogOutputDevice;
+use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
+use qitech_lib::units::AngularVelocity;
+use qitech_lib::units::ThermodynamicTemperature;
+use qitech_lib::units::angular_velocity::revolution_per_minute;
+use qitech_lib::units::thermodynamic_temperature::degree_celsius;
 
 use super::AquaPathV1;
-use qitech_framework::{
-    machine::{BuildContext, BuildError, BuildResult, MachineBuild},
-    machine_build,
-};
-use qitech_lib::{
-    ethercat_hal::{
-        EtherCATThreadChannel,
-        devices::beckhoff_modules::{
-            ek1100::EK1100, el2008::EL2008, el3024::EL3024, el4002::EL4002,
-        },
-        io::{
-            analog_input::AnalogInputDevice, analog_output::AnalogOutputDevice,
-            digital_output::DigitalOutputDevice,
-        },
-    },
-    units::{
-        AngularVelocity, ThermodynamicTemperature, angular_velocity::revolution_per_minute,
-        thermodynamic_temperature::degree_celsius,
-    },
-};
-use std::{cell::RefCell, rc::Rc};
+use crate::machines::aquapath::AquaPathV1Mode;
+use crate::machines::aquapath::Flow;
+use crate::machines::aquapath::Temperature;
+use crate::machines::aquapath::api::ConfigProperties;
+use crate::machines::aquapath::api::Measurements;
+use crate::machines::aquapath::api::ModeState;
+use crate::machines::aquapath::api::PidState;
+use crate::machines::aquapath::api::StateProperties;
+use crate::machines::aquapath::api::ThermalSafetyState;
+use crate::machines::aquapath::api::ToleranceState;
+use crate::machines::aquapath::controller::Controller;
+use crate::machines::aquapath::controller::ControllerConfig;
+use crate::machines::aquapath::controller::CoolingMode;
 
 // --- Analog Input Ports (EL3024) ---
 const LEFT_FLOW_SENSOR_PORT: usize = 0; // AI1

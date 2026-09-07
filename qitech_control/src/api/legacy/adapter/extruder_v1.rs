@@ -571,6 +571,7 @@ mod tests {
             config_properties,
             state_properties,
             measurements,
+            ..Default::default()
         }
     }
 

@@ -6,6 +6,8 @@ use qitech_framework::MachineIdentification;
 use qitech_framework::MachineInstanceIdentification;
 use qitech_framework::MachineSchema;
 use qitech_framework::MachinesReport;
+use qitech_framework::RuntimeEvent;
+use qitech_framework::RuntimeReport;
 use qitech_framework::StatePropertyEvent;
 use socketioxide::extract::SocketRef;
 
@@ -50,14 +52,15 @@ impl MachineNamespaceManager {
                     config_properties,
                     state_properties,
                     measurements,
+                    ..Default::default()
                 },
                 emitted_default_state: false,
             },
         );
     }
 
-    pub fn update(&mut self, report: &MachinesReport) {
-        for record in &report.config_property_records {
+    pub fn update(&mut self, report: &RuntimeReport) {
+        for record in &report.machines.config_property_records {
             let Some(entry) = self.registry.get_mut(&record.machine) else {
                 // no machine registered under that uid
                 continue;
@@ -117,7 +120,7 @@ impl MachineNamespaceManager {
             }
         }
 
-        for record in &report.state_property_records {
+        for record in &report.machines.state_property_records {
             let Some(entry) = self.registry.get_mut(&record.machine) else {
                 // no machine registered under that uid
                 continue;
@@ -148,7 +151,7 @@ impl MachineNamespaceManager {
             }
         }
 
-        for snapshot in &report.measurement_snapshots {
+        for snapshot in &report.machines.measurement_snapshots {
             let Some(entry) = self.registry.get_mut(&snapshot.machine) else {
                 // no machine registered under that uid
                 continue;
@@ -162,6 +165,43 @@ impl MachineNamespaceManager {
             *info = Some(MeasurementInfo {
                 value: snapshot.value,
             });
+        }
+
+        for event in &report.events {
+            match event {
+                RuntimeEvent::AddedMachine { ident } => {
+                    _ = ident; // TOOD: dynamically add/remove machines
+                }
+
+                RuntimeEvent::RemovedMachine { ident } => {
+                    _ = ident; // TOOD: dynamically add/remove machines
+                }
+
+                RuntimeEvent::SubscriptionAdded {
+                    provider,
+                    subscriber,
+                    ..
+                } => {
+                    let Some(entry) = self.registry.get_mut(subscriber) else {
+                        // no machine registered under that id
+                        continue;
+                    };
+
+                    entry.instance.subscriptions.insert(*provider);
+                }
+
+                RuntimeEvent::SubscriptionRemoved {
+                    provider,
+                    subscriber,
+                } => {
+                    let Some(entry) = self.registry.get_mut(subscriber) else {
+                        // no machine registered under that id
+                        continue;
+                    };
+
+                    entry.instance.subscriptions.remove(provider);
+                }
+            }
         }
 
         for (ident, entry) in &mut self.registry {

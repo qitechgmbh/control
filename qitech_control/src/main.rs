@@ -4,6 +4,9 @@ mod modbus;
 mod transmission;
 mod types;
 
+use std::env;
+use std::time::Duration;
+
 use api::LegacySharedState;
 use api::Server;
 use api::SharedState;
@@ -20,8 +23,6 @@ use qitech_lib::ethercat_hal::DcConfiguration;
 use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
 use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
-use std::env;
-use std::time::Duration;
 
 use crate::machines::ExtruderV1;
 use crate::machines::ExtruderV2;

@@ -50,7 +50,6 @@ pub async fn post(State(ctx): State<ActorContext>, Json(body): Json<Request>) ->
     };
 
     let Some(adapter) = adapter::get(ident.machine) else {
-        tracing::error!("no machine boi");
         return ResponseUtil::error("no such machine");
     };
 
@@ -65,17 +64,13 @@ pub async fn post(State(ctx): State<ActorContext>, Json(body): Json<Request>) ->
     // applied in order before a later request in the batch depends on them.
     for request in requests {
         match ctx.send_request(request).await {
-            Ok(Ok(())) => {
-                tracing::error!("Request okay");
-            }
+            Ok(Ok(())) => {}
 
             Ok(Err(error)) => {
-                tracing::error!(%error, "Request failed");
                 return ResponseUtil::error(&error.to_string());
             }
 
             Err(error) => {
-                tracing::error!(%error, "failed to send runtime request");
                 return ResponseUtil::error(&error.to_string());
             }
         }

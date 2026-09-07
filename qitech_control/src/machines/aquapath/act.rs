@@ -1,6 +1,10 @@
+use std::time::Duration;
+use std::time::Instant;
+
+use qitech_framework::machine::ActResult;
+use qitech_framework::machine::Machine;
+
 use super::AquaPathV1;
-use qitech_framework::machine::{ActResult, Machine};
-use std::time::{Duration, Instant};
 
 impl Machine for AquaPathV1 {
     fn act(&mut self, _: Duration) -> ActResult {

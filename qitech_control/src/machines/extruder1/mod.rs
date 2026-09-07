@@ -4,6 +4,10 @@ pub mod mitsubishi_cs80;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::time::Instant;
+
 use qitech_framework::EnumProperty;
 use qitech_framework::MachineIdentification;
 use qitech_framework::machine::ActResult;
@@ -19,11 +23,10 @@ use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
 use qitech_lib::ethercat_hal::io::temperature_input::TemperatureInputDevice;
-use qitech_lib::units::{Energy, Power, Time, time::second};
-use std::cell::RefCell;
-use std::rc::Rc;
-use std::time::Instant;
-
+use qitech_lib::units::Energy;
+use qitech_lib::units::Power;
+use qitech_lib::units::Time;
+use qitech_lib::units::time::second;
 use screw_speed_controller::ScrewSpeedController;
 use temperature_controller::TemperatureController;
 

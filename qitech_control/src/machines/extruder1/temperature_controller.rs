@@ -1,18 +1,21 @@
+use std::time::Duration;
+use std::time::Instant;
+
+use qitech_control_core::controllers::pid::PidController;
 use qitech_framework::machine::BuildContext;
 use qitech_framework::machine::BuildResult;
 use qitech_framework::machine::ConfigProperty;
 use qitech_framework::machine::Measurement;
 use qitech_framework::machine::StateProperty;
-use qitech_lib::ethercat_hal::io::{
-    digital_output::DigitalOutputDevice, temperature_input::TemperatureInputDevice,
-};
-use qitech_lib::units::{
-    Power, ThermodynamicTemperature, power::watt, thermodynamic_temperature::degree_celsius,
-};
-use std::time::{Duration, Instant};
+use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
+use qitech_lib::ethercat_hal::io::temperature_input::TemperatureInputDevice;
+use qitech_lib::units::Power;
+use qitech_lib::units::ThermodynamicTemperature;
+use qitech_lib::units::power::watt;
+use qitech_lib::units::thermodynamic_temperature::degree_celsius;
 
-use crate::machines::extruder1::{PidGains, Zone};
-use qitech_control_core::controllers::pid::PidController;
+use crate::machines::extruder1::PidGains;
+use crate::machines::extruder1::Zone;
 
 /// Fixed hardware limits and tuning of one heating zone, supplied at build time.
 pub struct TemperatureControllerConfig {
