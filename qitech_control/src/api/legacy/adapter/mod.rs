@@ -1,8 +1,15 @@
 use qitech_framework::MachineIdentification;
 use qitech_framework::MachineInstanceIdentification;
 use qitech_framework::RuntimeRequestKind;
+use qitech_framework::machine::MachineDescriptor;
 
 use crate::api::types::MachineInstance;
+use crate::machines::ExtruderV1;
+use crate::machines::ExtruderV2;
+use crate::machines::LaserV1;
+use crate::machines::WinderV1_7031_Spool;
+use crate::machines::WinderV1_Regular;
+use crate::machines::aquapath::AquaPathV1;
 
 pub mod aquapath_v1;
 mod extruder_v1;
@@ -10,37 +17,11 @@ pub mod laser_v1;
 pub mod winder_v1;
 
 pub fn get(ident: MachineIdentification) -> Option<MachineLegacyDataAdapter> {
-    const IDENT_LASER: MachineIdentification = MachineIdentification {
-        vendor_id: 1,
-        machine_id: 6,
-    };
-
-    const IDENT_AQUAPATH: MachineIdentification = MachineIdentification {
-        vendor_id: 1,
-        machine_id: 9,
-    };
-
-    const IDENT_WINDER: MachineIdentification = MachineIdentification {
-        vendor_id: 1,
-        machine_id: 98,
-    };
-
-    // The frontend calls these "extruder2" and "extruder3"; they share one schema and one adapter.
-    const IDENT_EXTRUDER_V1: MachineIdentification = MachineIdentification {
-        vendor_id: 1,
-        machine_id: 4,
-    };
-
-    const IDENT_EXTRUDER_V2: MachineIdentification = MachineIdentification {
-        vendor_id: 1,
-        machine_id: 22,
-    };
-
     match ident {
-        IDENT_LASER => Some(laser_v1::ADAPTER),
-        IDENT_AQUAPATH => Some(aquapath_v1::ADAPTER),
-        IDENT_WINDER => Some(winder_v1::ADAPTER),
-        IDENT_EXTRUDER_V1 | IDENT_EXTRUDER_V2 => Some(extruder_v1::ADAPTER),
+        LaserV1::IDENTIFICATION => Some(laser_v1::ADAPTER),
+        AquaPathV1::IDENTIFICATION => Some(aquapath_v1::ADAPTER),
+        ExtruderV1::IDENTIFICATION | ExtruderV2::IDENTIFICATION => Some(extruder_v1::ADAPTER),
+        WinderV1_Regular::IDENTIFICATION | WinderV1_7031_Spool::IDENTIFICATION => Some(winder_v1::ADAPTER),
         _ => None,
     }
 }

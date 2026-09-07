@@ -43,7 +43,7 @@ pub async fn main() -> anyhow::Result<()> {
         .machine::<ExtruderV2>()
         // TODO: do not hardocde the id
         .modbus_rtu_device::<LaserDevice>(
-            "pci-0000:00:14.0-usb-0:2:1.0-port0".to_string(),
+            "pci-0000:c6:00.0-usbv2-0:2.2:1.0-port0".to_string(),
             LaserV1::IDENTIFICATION.unique(1),
             1,
             None,

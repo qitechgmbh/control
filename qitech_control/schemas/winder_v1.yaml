@@ -39,17 +39,24 @@ config:
       algorithm: !enum [direct, adaptive]
       speed_desired: !meter_per_minute
 
+
       adaptive:
         speed_delta_max: !float
         increase_per_step: !float
         tolerance_limit: !millimeter
         adjustment_distance: !meter
 
+
   traverse:
     limit_inner: !millimeter
     limit_outer: !millimeter
     step_size: !millimeter
     padding: !millimeter
+
+
+  spool_automatic:
+    required_meters: !meter
+    action: !enum [no_action, pull, hold]
 
 
 state:
@@ -60,6 +67,7 @@ state:
 
     speed_controller:
       enabled: !boolean
+
 
   puller:
     mode: !enum [standby, hold, pull]
@@ -88,16 +96,19 @@ state:
     homed: !boolean
     endstop_triggered: !boolean
 
+
   tension_arm:
     zero: !?revolution
 
   laser_pointer:
     enabled: !boolean
 
+
 measurements:
   spool:
     rpm: !revolution_per_minute
     progress: !meter
+
 
     speed_controller:
       speed: !revolution_per_minute
@@ -106,24 +117,27 @@ measurements:
       adaptive:
         speed_factor: !meter
 
+
   puller:
     speed: !meter_per_minute
 
+
     speed_controller:
       speed_target: !meter_per_minute
+
 
       adaptive:
         modulation: !float
         distance_since_adjustment: !meter
 
+
   traverse:
     position: !millimeter
+
 
   tension_arm:
     angle: !degree
 
-  laser_pointer:
-    enabled: !boolean
 
 commands:
   mode:
@@ -132,16 +146,20 @@ commands:
     pull: !command
     wind: !command
 
+
   spool:
     reset_progress: !command
+
 
   traverse:
     goto_home: !command
     goto_limit_inner: !command
     goto_limit_outer: !command
 
+
   tension_arm:
     set_zero: !command
+
 
   laser_pointer:
     enable: !command

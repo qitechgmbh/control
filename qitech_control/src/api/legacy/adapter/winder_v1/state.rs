@@ -71,7 +71,7 @@ pub fn init_state_event(
     let can_traverse = traverse_mode == "Standby" || traverse_mode == "Traverse";
 
     let tension_arm_zeroed = state_value(instance, "tension_arm.zero")
-        .map_or(false, |v| !matches!(v, ScalarValue::Null));
+        .is_some_and(|v| !matches!(v, ScalarValue::Null));
     let is_homing = is_homing_state(&traverse_state);
     let can_wind = tension_arm_zeroed && is_homed && !is_homing;
 
@@ -103,7 +103,7 @@ pub fn init_state_event(
                 .unwrap_or("Speed"),
             "target_speed": config_float(instance, "puller.speed_controller.speed_desired")?,
             "forward": config_enum(instance, "puller.direction")
-                .map_or(false, |s| s == "Forward" || s == "forward"),
+                .is_some_and(|s| s == "Forward" || s == "forward"),
             "gear_ratio": config_enum(instance, "puller.gear_ratio")
                 .as_deref()
                 .map(map_gear_ratio)
@@ -145,7 +145,7 @@ pub fn init_state_event(
             "adaptive_acceleration_factor": config_float(instance, "spool.speed_controller.adaptive.acceleration_factor")?,
             "adaptive_deacceleration_urgency_multiplier": config_float(instance, "spool.speed_controller.adaptive.deacceleration_urgency_multiplier")?,
             "forward": config_enum(instance, "spool.direction")
-                .map_or(false, |s| s == "Forward" || s == "forward"),
+                .is_some_and(|s| s == "Forward" || s == "forward"),
         },
 
         "puller_reference_machine": serde_json::Value::Null,

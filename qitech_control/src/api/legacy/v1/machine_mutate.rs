@@ -2,7 +2,6 @@ use std::fmt::Debug;
 
 use axum::Json;
 use axum::extract::State;
-use axum::response::IntoResponse;
 use axum::response::Response as AxumResponse;
 use qitech_framework::MachineIdentification;
 use qitech_framework::MachineInstanceIdentification;
@@ -12,6 +11,7 @@ use serde::Serialize;
 
 use crate::api::legacy::adapter;
 use crate::api::legacy::types::MachineIdentificationUnique;
+use crate::api::legacy::v1::response_util::ResponseUtil;
 
 #[derive(Debug, Deserialize)]
 pub struct Request {
@@ -19,24 +19,17 @@ pub struct Request {
     pub data: serde_json::Value,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct MutationResponse {
     pub success: bool,
     pub error: Option<String>,
 }
 
 impl MutationResponse {
-    pub fn success() -> Self {
+    pub const fn success() -> Self {
         Self {
             success: true,
             error: None,
-        }
-    }
-
-    pub fn error(error: impl Into<String>) -> Self {
-        Self {
-            success: false,
-            error: Some(error.into()),
         }
     }
 }
@@ -57,13 +50,14 @@ pub async fn post(State(ctx): State<ActorContext>, Json(body): Json<Request>) ->
     };
 
     let Some(adapter) = adapter::get(ident.machine) else {
-        return Json(MutationResponse::error("no_such_machine")).into_response();
+        tracing::error!("no machine boi");
+        return ResponseUtil::error("no such machine");
     };
 
     let requests = match (adapter.convert_request)(ident, body.data) {
         Ok(requests) => requests,
         Err(error) => {
-            return Json(MutationResponse::error(error.to_string())).into_response();
+            return ResponseUtil::error(&error.to_string());
         }
     };
 
@@ -71,21 +65,23 @@ pub async fn post(State(ctx): State<ActorContext>, Json(body): Json<Request>) ->
     // applied in order before a later request in the batch depends on them.
     for request in requests {
         match ctx.send_request(request).await {
-            Ok(Ok(())) => {}
+            Ok(Ok(())) => {
+                tracing::error!("Request okay");
+            }
 
             Ok(Err(error)) => {
-                return Json(MutationResponse::error(error.to_string())).into_response();
+                tracing::error!(%error, "Request failed");
+                return ResponseUtil::error(&error.to_string());
             }
 
             Err(error) => {
                 tracing::error!(%error, "failed to send runtime request");
-                return Json(MutationResponse::error("No runtime is currently connected"))
-                    .into_response();
+                return ResponseUtil::error(&error.to_string());
             }
         }
     }
 
-    Json(MutationResponse::success()).into_response()
+    ResponseUtil::ok(MutationResponse::success())
 }
 
 /*
