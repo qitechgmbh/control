@@ -7,6 +7,7 @@ use qitech_framework::machine::Measurement;
 use qitech_framework::machine::StateProperty;
 use qitech_lib::units::Angle;
 use qitech_lib::units::AngularVelocity;
+use qitech_lib::units::ConstZero;
 use qitech_lib::units::Velocity;
 use qitech_lib::units::angle::degree;
 use qitech_lib::units::angular_velocity::revolution_per_minute;
@@ -118,9 +119,13 @@ impl SpeedController {
             filament_tension: self.filament_tension.get(),
         };
 
-        let speed = match self.algorithm.get() {
-            SpeedControlAlgorithm::Adaptive => self.sa_adaptive.compute(input),
-            SpeedControlAlgorithm::MinMax => self.sa_min_max.compute(input),
+        let speed = if self.enabled.get() {
+            match self.algorithm.get() {
+                SpeedControlAlgorithm::Adaptive => self.sa_adaptive.compute(input),
+                SpeedControlAlgorithm::MinMax => self.sa_min_max.compute(input),
+            }
+        } else {
+            AngularVelocity::ZERO
         };
 
         let speed_clamped = speed.max(self.speed_min.get()).min(self.speed_max.get());
