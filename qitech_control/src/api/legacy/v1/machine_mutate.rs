@@ -33,6 +33,13 @@ impl MutationResponse {
             error: None,
         }
     }
+
+    pub fn error(message: impl Into<String>) -> Self {
+        Self {
+            success: false,
+            error: Some(message.into()),
+        }
+    }
 }
 
 pub async fn post(
