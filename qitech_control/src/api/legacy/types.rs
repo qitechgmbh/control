@@ -77,6 +77,18 @@ impl From<MachineIdentificationUnique> for qitech_framework::MachineInstanceIden
     }
 }
 
+impl From<qitech_framework::MachineInstanceIdentification> for MachineIdentificationUnique {
+    fn from(id: qitech_framework::MachineInstanceIdentification) -> Self {
+        Self {
+            machine_identification: MachineIdentification {
+                vendor: id.machine.vendor_id,
+                machine: id.machine.machine_id,
+            },
+            serial: id.serial,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct MachineIdentification {
     pub vendor: u16,
@@ -117,29 +129,4 @@ pub struct ModbusDeviceMetadata {
 pub struct ModbusDeviceAssignment {
     pub machine_identification_unique: MachineIdentificationUnique,
     pub slave_id: u8,
-}
-
-impl From<qitech_framework::ModbusRTUDeviceMetadata> for ModbusDeviceMetadata {
-    fn from(value: qitech_framework::ModbusRTUDeviceMetadata) -> Self {
-        ModbusDeviceMetadata {
-            port: value.port,
-            present: value.present,
-            device_node: value.device_node,
-            by_id: value.by_id,
-            description: value.description,
-            usb_vid: value.usb_vid,
-            usb_pid: value.usb_pid,
-            usb_serial: value.usb_serial,
-            assignment: value.assignment.map(|a| ModbusDeviceAssignment {
-                machine_identification_unique: MachineIdentificationUnique {
-                    machine_identification: MachineIdentification {
-                        vendor: a.machine.machine.vendor_id,
-                        machine: a.machine.machine.machine_id,
-                    },
-                    serial: a.machine.serial,
-                },
-                slave_id: a.slave_id,
-            }),
-        }
-    }
 }

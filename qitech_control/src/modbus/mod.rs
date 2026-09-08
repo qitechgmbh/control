@@ -6,6 +6,7 @@
 //!
 //! [`SerialInterfaceDevice`]: qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice
 
+pub mod assignments;
 pub mod modbus_serial_interface;
 
 use std::time::Duration;
