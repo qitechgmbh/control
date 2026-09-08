@@ -55,7 +55,6 @@ in
     "isolcpus=managed_irq,2,3" # managed irq only, no domain flag
     "nohz_full=2,3" # In this mode, the periodic scheduler tick is stopped when only one task is running, reducing kernel interruptions on those CPUs.
     "irqaffinity=0,1" # keep hardware IRQs off RT cores
-    #"rcu_nocbs=2,3" # Moves RCU (Read-Copy Update) callback processing away from CPUs 2 and 3.
 
   ];
 
