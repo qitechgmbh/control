@@ -134,7 +134,7 @@ export function Winder2_7031ControlPage() {
                 variant="outline"
                 icon="lu:ArrowLeftToLine"
                 onClick={gotoTraverseLimitOuter}
-                disabled={isDisabled}
+                disabled={isDisabled || !state?.traverse_state?.can_go_out}
                 isLoading={isLoading}
               >
                 Go to Outer Limit
@@ -164,7 +164,7 @@ export function Winder2_7031ControlPage() {
                 variant="outline"
                 icon="lu:ArrowRightToLine"
                 onClick={gotoTraverseLimitInner}
-                disabled={isDisabled}
+                disabled={isDisabled || !state?.traverse_state?.can_go_in}
                 isLoading={isLoading}
               >
                 Go to Inner Limit
@@ -186,7 +186,7 @@ export function Winder2_7031ControlPage() {
               variant="outline"
               icon="lu:House"
               onClick={() => gotoTraverseHome()}
-              disabled={isDisabled}
+              disabled={isDisabled || !state?.traverse_state?.can_go_home}
               isLoading={isLoading}
             >
               Go to Home
