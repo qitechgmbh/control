@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use axum::Extension;
 use axum::Json;
 use axum::response::IntoResponse;
-use qitech_framework::runtime::modbus_rtu;
 use serde::Deserialize;
 
 use crate::api::legacy;
@@ -12,6 +11,7 @@ use crate::api::legacy::types::ModbusDeviceAssignment;
 use crate::api::legacy::v1::machine_mutate::MutationResponse;
 use crate::modbus::assignments;
 use crate::modbus::assignments::ModbusRtuAssignment;
+use crate::modbus::discovery;
 
 #[derive(Debug, Deserialize)]
 pub struct WriteAssignmentRequest {
@@ -63,7 +63,7 @@ fn list_devices() -> Vec<legacy::ModbusDeviceMetadata> {
         .map(|a| (a.port.clone(), a))
         .collect();
 
-    let mut devices: Vec<legacy::ModbusDeviceMetadata> = modbus_rtu::list_serial_ports()
+    let mut devices: Vec<legacy::ModbusDeviceMetadata> = discovery::list_serial_ports()
         .into_iter()
         .map(|p| {
             // --- an assignment may be stored under any of this port's udev aliases; report it
