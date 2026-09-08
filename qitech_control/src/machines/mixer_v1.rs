@@ -164,12 +164,18 @@ impl MixerV1 {
     fn set_hopper_a_enabled(&mut self, enabled: bool) -> ActResult {
         self.hopper_a_enabled.set(enabled);
         self.hopper_a.borrow_mut().set_enabled(HOPPER_PORT, enabled);
+        if !enabled {
+            self.hopper_a_rpm.set(0.0);
+        }
         Ok(())
     }
 
     fn set_hopper_b_enabled(&mut self, enabled: bool) -> ActResult {
         self.hopper_b_enabled.set(enabled);
         self.hopper_b.borrow_mut().set_enabled(HOPPER_PORT, enabled);
+        if !enabled {
+            self.hopper_b_rpm.set(0.0);
+        }
         Ok(())
     }
 
