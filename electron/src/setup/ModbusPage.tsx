@@ -25,7 +25,9 @@ export function createColumns(): ColumnDef<ModbusDevice>[] {
     {
       accessorKey: "port",
       header: "Port",
-      cell: (row) => <div className="font-mono text-xs">{row.row.original.port}</div>,
+      cell: (row) => (
+        <div className="font-mono text-xs">{row.row.original.port}</div>
+      ),
     },
     {
       accessorKey: "description",
@@ -43,22 +45,24 @@ export function createColumns(): ColumnDef<ModbusDevice>[] {
       },
     },
     {
-      accessorKey: "device_node",
-      header: "Node",
-      cell: (row) => <div>{row.row.original.device_node ?? "—"}</div>,
-    },
-    {
       accessorKey: "present",
-      header: "Present",
-      cell: (row) => (
-        <div
-          className={
-            row.row.original.present ? "text-green-600" : "text-neutral-400"
-          }
-        >
-          {row.row.original.present ? "Yes" : "No"}
-        </div>
-      ),
+      header: () => <div className="text-center">Present</div>,
+      cell: (row) => {
+        const present = row.row.original.present;
+        const label = present ? "Plugged in" : "Not plugged in";
+        return (
+          <div className="flex justify-center">
+            <div
+              className={`h-4 w-4 rounded-full ${
+                present ? "bg-green-400" : "bg-red-400"
+              }`}
+              title={label}
+              aria-label={label}
+              role="img"
+            />
+          </div>
+        );
+      },
     },
     {
       accessorKey: "assigned_machine",
@@ -67,7 +71,8 @@ export function createColumns(): ColumnDef<ModbusDevice>[] {
         const device = row.row.original;
         if (!isModbusDeviceAssigned(device)) return "—";
         const machine_identification =
-          device.assignment!.machine_identification_unique.machine_identification;
+          device.assignment!.machine_identification_unique
+            .machine_identification;
         const machinePreset = getMachineProperties(machine_identification);
         if (!machinePreset) return "UNKNOWN " + machine_identification.machine;
         return machinePreset.name + " " + machinePreset.version;
@@ -80,7 +85,9 @@ export function createColumns(): ColumnDef<ModbusDevice>[] {
         const device = row.row.original;
         if (!isModbusDeviceAssigned(device)) return "—";
         return (
-          <Value value={device.assignment!.machine_identification_unique.serial} />
+          <Value
+            value={device.assignment!.machine_identification_unique.serial}
+          />
         );
       },
     },
@@ -150,9 +157,9 @@ export function ModbusPage() {
         <RefreshIndicator ts={modbusDevices?.ts} />
       </SectionTitle>
       <p style={{ lineHeight: "1.6", margin: "1em 0" }}>
-        Machine and Serial Number are QiTech specific values that identify
-        which machine a Modbus RTU serial port belongs to. Assignments are
-        saved to disk and take effect after a backend restart.
+        Machine and Serial Number are QiTech specific values that identify which
+        machine a Modbus RTU serial port belongs to. Assignments are saved to
+        disk and take effect after a backend restart.
       </p>
       <MyTable table={table} key={data.toString()} />
     </Page>
