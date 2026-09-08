@@ -161,7 +161,8 @@ fn device_node_fallback(nodes: Vec<String>) -> HashMap<String, Vec<String>> {
 
 #[cfg(test)]
 mod tests {
-    use super::{device_node_fallback, group_by_node};
+    use super::device_node_fallback;
+    use super::group_by_node;
 
     fn link(name: &str, node: &str) -> (String, String) {
         (name.to_string(), node.to_string())
