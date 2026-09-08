@@ -54,11 +54,9 @@ const formSchema = z.object({
   serial: z
     .string()
     .refine((v) => parseInt(v) < 0xffff, { error: "Value too big" }),
-  slaveId: z
-    .string()
-    .refine((v) => parseInt(v) > 0 && parseInt(v) < 0xff, {
-      error: "Must be between 1 and 254",
-    }),
+  slaveId: z.string().refine((v) => parseInt(v) > 0 && parseInt(v) < 0xff, {
+    error: "Must be between 1 and 254",
+  }),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -111,7 +109,9 @@ export function ModbusAssignDialogContent({ device, setOpen }: ContentProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       machine: initialMachine ?? "",
-      serial: device.assignment?.machine_identification_unique.serial.toString() ?? "",
+      serial:
+        device.assignment?.machine_identification_unique.serial.toString() ??
+        "",
       slaveId: device.assignment?.slave_id.toString() ?? "1",
     },
     mode: "all",
@@ -287,7 +287,8 @@ export function ModbusAssignDialogContent({ device, setOpen }: ContentProps) {
           newValue = currentValue.slice(0, start) + currentValue.slice(end);
           newPosition = start;
         } else if (start > 0) {
-          newValue = currentValue.slice(0, start - 1) + currentValue.slice(start);
+          newValue =
+            currentValue.slice(0, start - 1) + currentValue.slice(start);
           newPosition = start - 1;
         } else {
           return;
@@ -301,7 +302,10 @@ export function ModbusAssignDialogContent({ device, setOpen }: ContentProps) {
         ensureFocus();
         const currentPos = serialInputRef.current.selectionStart || 0;
         if (currentPos > 0) {
-          serialInputRef.current.setSelectionRange(currentPos - 1, currentPos - 1);
+          serialInputRef.current.setSelectionRange(
+            currentPos - 1,
+            currentPos - 1,
+          );
         }
       },
       moveCursorRight: () => {
@@ -310,7 +314,10 @@ export function ModbusAssignDialogContent({ device, setOpen }: ContentProps) {
         const currentPos = serialInputRef.current.selectionStart || 0;
         const currentValue = getCurrentValue();
         if (currentPos < currentValue.length) {
-          serialInputRef.current.setSelectionRange(currentPos + 1, currentPos + 1);
+          serialInputRef.current.setSelectionRange(
+            currentPos + 1,
+            currentPos + 1,
+          );
         }
       },
     };
@@ -387,7 +394,9 @@ export function ModbusAssignDialogContent({ device, setOpen }: ContentProps) {
                         className="h-12 px-4 text-base"
                         onClick={() => setNumpadOpen((o) => !o)}
                       >
-                        <Icon name={numpadOpen ? "lu:TouchpadOff" : "lu:Touchpad"} />
+                        <Icon
+                          name={numpadOpen ? "lu:TouchpadOff" : "lu:Touchpad"}
+                        />
                         {numpadOpen ? "Hide" : "Numpad"}
                       </Button>
                     </div>
@@ -494,14 +503,17 @@ export function ModbusAssignDialogContent({ device, setOpen }: ContentProps) {
               )}
             </Button>
             {writeSuccess && (
-              <Button type="button" variant="secondary" onClick={() => setOpen()}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setOpen()}
+              >
                 Close
               </Button>
             )}
           </div>
           <Alert title="Restart required" variant="info">
-            The backend must be restarted for assignment changes to take
-            effect.
+            The backend must be restarted for assignment changes to take effect.
           </Alert>
         </form>
       </Form>
