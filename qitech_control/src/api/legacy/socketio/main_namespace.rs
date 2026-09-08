@@ -20,6 +20,8 @@ pub struct MainNamespaceManager {
     ecat_state: Option<&'static str>,
     ecat_devices: Option<Vec<legacy::EtherCATDeviceMetadata>>,
     modbus_devices: Option<Vec<legacy::ModbusDeviceMetadata>>,
+    /// Set once the bus is gone; replayed to late joiners in place of the subdevice table.
+    ecat_error: Option<String>,
 }
 
 impl MainNamespaceManager {
@@ -124,6 +126,31 @@ impl MainNamespaceManager {
         self.modbus_devices = Some(devices);
     }
 
+    /// The EtherCAT main device can no longer exchange process data.
+    ///
+    /// The last reported state ("op") and the subdevice table both describe a bus that is gone,
+    /// so drop the table and report the loss. Machines are removed separately, driven by the
+    /// `RemovedMachine` events that accompany this one.
+    pub fn set_ecat_lost(&mut self, reason: &str) {
+        self.ecat_devices = None;
+        self.ecat_error = Some(reason.to_string());
+        self.ecat_state = Some("lost");
+
+        let devices_event = SocketIOEvent::new(
+            "EthercatDevicesEvent",
+            EthercatDevicesEvent::Error(reason.to_string()),
+        );
+
+        let state_event = SocketIOEvent::new(
+            "EthercatStateEvent",
+            EthercatDevicesEvent::State("lost".to_string()),
+        );
+
+        tracing::error!("EtherCAT lost: {reason}");
+        self.broadcast(devices_event);
+        self.broadcast(state_event);
+    }
+
     pub fn add_machine(
         &mut self,
         ident: MachineInstanceIdentification,
@@ -151,6 +178,24 @@ impl MainNamespaceManager {
         );
 
         tracing::info!("Added Machine: {ident}");
+        self.broadcast(event);
+    }
+
+    pub fn remove_machine(&mut self, ident: MachineInstanceIdentification) {
+        if self.machines.remove(&ident).is_none() {
+            return;
+        }
+
+        // --- always broadcast, even if no machines are left ---
+        // the frontend derives removals by diffing this snapshot
+        let event = SocketIOEvent::new(
+            "MachinesEvent",
+            MachinesEvent {
+                machines: self.machines.values().cloned().collect(),
+            },
+        );
+
+        tracing::info!("Removed Machine: {ident}");
         self.broadcast(event);
     }
 
