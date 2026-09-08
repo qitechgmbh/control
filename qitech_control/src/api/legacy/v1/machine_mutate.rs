@@ -32,6 +32,13 @@ impl MutationResponse {
             error: None,
         }
     }
+
+    pub fn error(message: impl Into<String>) -> Self {
+        Self {
+            success: false,
+            error: Some(message.into()),
+        }
+    }
 }
 
 pub async fn post(State(ctx): State<ActorContext>, Json(body): Json<Request>) -> AxumResponse {
