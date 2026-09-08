@@ -24,14 +24,9 @@ fn convert_request(
         SetHopperAEnabled(bool),
         SetHopperATargetRpm(f64),
         SetHopperAForward(bool),
-        SetHopperADosingPercent(f64),
-        SetHopperACalibrationStepsPerKgh(f64),
         SetHopperBEnabled(bool),
         SetHopperBTargetRpm(f64),
         SetHopperBForward(bool),
-        SetHopperBDosingPercent(f64),
-        SetHopperBCalibrationStepsPerKgh(f64),
-        SetExtruderKgPerRpm(f64),
     }
 
     let config = |path: &str, value: ScalarValue| RuntimeRequestKind::SetConfigProperty {
@@ -53,27 +48,11 @@ fn convert_request(
         Mutation::SetHopperAEnabled(false) => command("hopper_a.disable"),
         Mutation::SetHopperATargetRpm(v) => config("hopper_a.target_rpm", ScalarValue::Float(v)),
         Mutation::SetHopperAForward(v) => config("hopper_a.forward", ScalarValue::Boolean(v)),
-        Mutation::SetHopperADosingPercent(v) => {
-            config("hopper_a.dosing_percent", ScalarValue::Float(v))
-        }
-        Mutation::SetHopperACalibrationStepsPerKgh(v) => config(
-            "hopper_a.calibration_steps_per_kgh",
-            ScalarValue::Float(v),
-        ),
 
         Mutation::SetHopperBEnabled(true) => command("hopper_b.enable"),
         Mutation::SetHopperBEnabled(false) => command("hopper_b.disable"),
         Mutation::SetHopperBTargetRpm(v) => config("hopper_b.target_rpm", ScalarValue::Float(v)),
         Mutation::SetHopperBForward(v) => config("hopper_b.forward", ScalarValue::Boolean(v)),
-        Mutation::SetHopperBDosingPercent(v) => {
-            config("hopper_b.dosing_percent", ScalarValue::Float(v))
-        }
-        Mutation::SetHopperBCalibrationStepsPerKgh(v) => config(
-            "hopper_b.calibration_steps_per_kgh",
-            ScalarValue::Float(v),
-        ),
-
-        Mutation::SetExtruderKgPerRpm(v) => config("extruder_kg_per_rpm", ScalarValue::Float(v)),
     }])
 }
 
@@ -96,8 +75,6 @@ fn init_state_event(
             "error": state_bool(instance, "hopper_a_error")?,
             "target_rpm": config_float(instance, "hopper_a.target_rpm")?,
             "forward": config_bool(instance, "hopper_a.forward")?,
-            "dosing_percent": config_float(instance, "hopper_a.dosing_percent")?,
-            "calibration_steps_per_kgh": config_float(instance, "hopper_a.calibration_steps_per_kgh")?,
         },
 
         "hopper_b_state": {
@@ -106,11 +83,7 @@ fn init_state_event(
             "error": state_bool(instance, "hopper_b_error")?,
             "target_rpm": config_float(instance, "hopper_b.target_rpm")?,
             "forward": config_bool(instance, "hopper_b.forward")?,
-            "dosing_percent": config_float(instance, "hopper_b.dosing_percent")?,
-            "calibration_steps_per_kgh": config_float(instance, "hopper_b.calibration_steps_per_kgh")?,
         },
-
-        "extruder_kg_per_rpm": config_float(instance, "extruder_kg_per_rpm")?,
     }))
 }
 

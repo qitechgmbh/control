@@ -3,7 +3,6 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use qitech_framework::Machine;
-use qitech_framework::MachineInstanceIdentification;
 use qitech_framework::machine::ActResult;
 use qitech_framework::machine::BuildContext;
 use qitech_framework::machine::BuildError;
@@ -12,10 +11,7 @@ use qitech_framework::machine::ConfigProperty;
 use qitech_framework::machine::Machine;
 use qitech_framework::machine::MachineBuild;
 use qitech_framework::machine::Measurement;
-use qitech_framework::machine::RemoteProperty;
 use qitech_framework::machine::StateProperty;
-use qitech_framework::machine::SubscribeContext;
-use qitech_framework::machine::SubscribeResult;
 use qitech_framework::machine_build;
 use qitech_lib::ethercat_hal::EtherCATThreadChannel;
 use qitech_lib::ethercat_hal::coe::ConfigurableDevice;
@@ -28,17 +24,11 @@ use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1
 use qitech_lib::ethercat_hal::shared_config;
 use qitech_lib::ethercat_hal::shared_config::el70x1::EL70x1OperationMode;
 use qitech_lib::ethercat_hal::shared_config::el70x1::StmMotorConfiguration;
-use qitech_lib::units::AngularVelocity;
-use qitech_lib::units::angular_velocity::revolution_per_minute;
 
 const MIXING_MOTOR_PORT: usize = 0;
 const HOPPER_PORT: usize = 0;
 const MOTOR_FULL_STEPS_PER_REV: f64 = 200.0;
-
-pub struct ExtruderSubscription {
-    ident: MachineInstanceIdentification,
-    rpm: RemoteProperty<AngularVelocity>,
-}
+const HOPPER_MAX_RPM: f64 = 100.0;
 
 #[derive(Machine)]
 pub struct MixerV1 {
@@ -48,15 +38,10 @@ pub struct MixerV1 {
     hopper_b: Rc<RefCell<EL7041_0052>>,
 
     // --- config ---
-    extruder_kg_per_rpm: ConfigProperty<f64>,
     hopper_a_target_rpm: ConfigProperty<f64>,
     hopper_a_forward: ConfigProperty<bool>,
-    hopper_a_dosing_percent: ConfigProperty<f64>,
-    hopper_a_calibration_steps_per_kgh: ConfigProperty<f64>,
     hopper_b_target_rpm: ConfigProperty<f64>,
     hopper_b_forward: ConfigProperty<bool>,
-    hopper_b_dosing_percent: ConfigProperty<f64>,
-    hopper_b_calibration_steps_per_kgh: ConfigProperty<f64>,
 
     // --- state ---
     mixing_motor_on: StateProperty<bool>,
@@ -66,9 +51,6 @@ pub struct MixerV1 {
     hopper_b_enabled: StateProperty<bool>,
     hopper_b_ready: StateProperty<bool>,
     hopper_b_error: StateProperty<bool>,
-
-    // --- subscriptions ---
-    extruder_subscription: Option<ExtruderSubscription>,
 
     // --- measurements ---
     hopper_a_rpm: Measurement<f64>,
@@ -90,6 +72,7 @@ impl MachineBuild for MixerV1 {
             .config::<f64>("hopper_a.target_rpm")
             .default(0.0)
             .minimum(0.0)
+            .maximum(HOPPER_MAX_RPM)
             .on_external_changed(Self::push_hopper_a_speed)
             .build()?;
         let hopper_a_forward = ctx
@@ -97,48 +80,18 @@ impl MachineBuild for MixerV1 {
             .default(true)
             .on_external_changed(Self::push_hopper_a_speed)
             .build()?;
-        let hopper_a_dosing_percent = ctx
-            .config::<f64>("hopper_a.dosing_percent")
-            .default(0.0)
-            .minimum(0.0)
-            .on_external_changed(Self::push_hopper_a_ratio_speed)
-            .build()?;
-        let hopper_a_calibration_steps_per_kgh = ctx
-            .config::<f64>("hopper_a.calibration_steps_per_kgh")
-            .default(34.47)
-            .minimum(0.0)
-            .on_external_changed(Self::push_hopper_a_ratio_speed)
-            .build()?;
 
         let hopper_b_target_rpm = ctx
             .config::<f64>("hopper_b.target_rpm")
             .default(0.0)
             .minimum(0.0)
+            .maximum(HOPPER_MAX_RPM)
             .on_external_changed(Self::push_hopper_b_speed)
             .build()?;
         let hopper_b_forward = ctx
             .config::<bool>("hopper_b.forward")
             .default(true)
             .on_external_changed(Self::push_hopper_b_speed)
-            .build()?;
-        let hopper_b_dosing_percent = ctx
-            .config::<f64>("hopper_b.dosing_percent")
-            .default(0.0)
-            .minimum(0.0)
-            .on_external_changed(Self::push_hopper_b_ratio_speed)
-            .build()?;
-        let hopper_b_calibration_steps_per_kgh = ctx
-            .config::<f64>("hopper_b.calibration_steps_per_kgh")
-            .default(6.37)
-            .minimum(0.0)
-            .on_external_changed(Self::push_hopper_b_ratio_speed)
-            .build()?;
-
-        let extruder_kg_per_rpm = ctx
-            .config::<f64>("extruder_kg_per_rpm")
-            .default(0.1)
-            .minimum(0.0)
-            .on_external_changed(Self::push_ratio_speeds)
             .build()?;
 
         ctx.command("mixing_motor.start")
@@ -166,15 +119,10 @@ impl MachineBuild for MixerV1 {
             mixing_motor,
             hopper_a,
             hopper_b,
-            extruder_kg_per_rpm,
             hopper_a_target_rpm,
             hopper_a_forward,
-            hopper_a_dosing_percent,
-            hopper_a_calibration_steps_per_kgh,
             hopper_b_target_rpm,
             hopper_b_forward,
-            hopper_b_dosing_percent,
-            hopper_b_calibration_steps_per_kgh,
             mixing_motor_on: ctx.state::<bool>("mixing_motor_on").build()?,
             hopper_a_enabled: ctx.state::<bool>("hopper_a_enabled").build()?,
             hopper_a_ready: ctx.state::<bool>("hopper_a_ready").build()?,
@@ -182,7 +130,6 @@ impl MachineBuild for MixerV1 {
             hopper_b_enabled: ctx.state::<bool>("hopper_b_enabled").build()?,
             hopper_b_ready: ctx.state::<bool>("hopper_b_ready").build()?,
             hopper_b_error: ctx.state::<bool>("hopper_b_error").build()?,
-            extruder_subscription: None,
             hopper_a_rpm: ctx.measurement::<f64>("hopper_a.rpm").build()?,
             hopper_b_rpm: ctx.measurement::<f64>("hopper_b.rpm").build()?,
         })
@@ -201,28 +148,7 @@ impl Machine for MixerV1 {
             self.hopper_b_error.set(input.error);
         }
 
-        if self.extruder_subscription.is_some() {
-            Self::push_ratio_speeds(self)?;
-        }
-
         Ok(())
-    }
-
-    fn subscribe(&mut self, ctx: &mut SubscribeContext) -> SubscribeResult {
-        self.extruder_subscription = Some(ExtruderSubscription {
-            ident: ctx.provider(),
-            rpm: ctx.measurement("motor.rpm")?,
-        });
-
-        Ok(())
-    }
-
-    fn unsubscribe(&mut self, ident: MachineInstanceIdentification) {
-        if let Some(sub) = &mut self.extruder_subscription
-            && sub.ident == ident
-        {
-            self.extruder_subscription = None;
-        }
     }
 }
 
@@ -276,32 +202,6 @@ impl MixerV1 {
 
     fn push_hopper_b_speed(m: &mut Self) -> ActResult {
         let magnitude = m.hopper_b_target_rpm.get() * MOTOR_FULL_STEPS_PER_REV / 60.0;
-        Self::apply_hopper_b_speed(m, magnitude)
-    }
-
-    fn push_ratio_speeds(m: &mut Self) -> ActResult {
-        Self::push_hopper_a_ratio_speed(m)?;
-        Self::push_hopper_b_ratio_speed(m)
-    }
-
-    fn current_extruder_output_rate(&self) -> f64 {
-        match &self.extruder_subscription {
-            Some(sub) => sub.rpm.get_as::<revolution_per_minute>() * self.extruder_kg_per_rpm.get(),
-            None => 0.0,
-        }
-    }
-
-    fn push_hopper_a_ratio_speed(m: &mut Self) -> ActResult {
-        let masterbatch_kg_h =
-            m.current_extruder_output_rate() * m.hopper_a_dosing_percent.get() / 100.0;
-        let magnitude = masterbatch_kg_h * m.hopper_a_calibration_steps_per_kgh.get();
-        Self::apply_hopper_a_speed(m, magnitude)
-    }
-
-    fn push_hopper_b_ratio_speed(m: &mut Self) -> ActResult {
-        let masterbatch_kg_h =
-            m.current_extruder_output_rate() * m.hopper_b_dosing_percent.get() / 100.0;
-        let magnitude = masterbatch_kg_h * m.hopper_b_calibration_steps_per_kgh.get();
         Self::apply_hopper_b_speed(m, magnitude)
     }
 }

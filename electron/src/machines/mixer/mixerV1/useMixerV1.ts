@@ -105,32 +105,6 @@ export function useMixerV1() {
     );
   };
 
-  const setHopperADosingPercent = (percent: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.hopper_a_state.dosing_percent = percent;
-      },
-      () =>
-        requestHopperADosingPercent({
-          machine_identification_unique: machineIdentification,
-          data: { SetHopperADosingPercent: percent },
-        }),
-    );
-  };
-
-  const setHopperACalibrationStepsPerKgh = (value: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.hopper_a_state.calibration_steps_per_kgh = value;
-      },
-      () =>
-        requestHopperACalibrationStepsPerKgh({
-          machine_identification_unique: machineIdentification,
-          data: { SetHopperACalibrationStepsPerKgh: value },
-        }),
-    );
-  };
-
   const setHopperBEnabled = (enabled: boolean) => {
     updateStateOptimistically(
       (current) => {
@@ -170,45 +144,6 @@ export function useMixerV1() {
     );
   };
 
-  const setHopperBDosingPercent = (percent: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.hopper_b_state.dosing_percent = percent;
-      },
-      () =>
-        requestHopperBDosingPercent({
-          machine_identification_unique: machineIdentification,
-          data: { SetHopperBDosingPercent: percent },
-        }),
-    );
-  };
-
-  const setHopperBCalibrationStepsPerKgh = (value: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.hopper_b_state.calibration_steps_per_kgh = value;
-      },
-      () =>
-        requestHopperBCalibrationStepsPerKgh({
-          machine_identification_unique: machineIdentification,
-          data: { SetHopperBCalibrationStepsPerKgh: value },
-        }),
-    );
-  };
-
-  const setExtruderKgPerRpm = (value: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.extruder_kg_per_rpm = value;
-      },
-      () =>
-        requestExtruderKgPerRpm({
-          machine_identification_unique: machineIdentification,
-          data: { SetExtruderKgPerRpm: value },
-        }),
-    );
-  };
-
   const { request: requestMixingMotorOn } = useMachineMutation(
     z.object({ SetMixingMotorOn: z.boolean() }),
   );
@@ -221,12 +156,6 @@ export function useMixerV1() {
   const { request: requestHopperAForward } = useMachineMutation(
     z.object({ SetHopperAForward: z.boolean() }),
   );
-  const { request: requestHopperADosingPercent } = useMachineMutation(
-    z.object({ SetHopperADosingPercent: z.number() }),
-  );
-  const { request: requestHopperACalibrationStepsPerKgh } = useMachineMutation(
-    z.object({ SetHopperACalibrationStepsPerKgh: z.number() }),
-  );
   const { request: requestHopperBEnabled } = useMachineMutation(
     z.object({ SetHopperBEnabled: z.boolean() }),
   );
@@ -235,15 +164,6 @@ export function useMixerV1() {
   );
   const { request: requestHopperBForward } = useMachineMutation(
     z.object({ SetHopperBForward: z.boolean() }),
-  );
-  const { request: requestHopperBDosingPercent } = useMachineMutation(
-    z.object({ SetHopperBDosingPercent: z.number() }),
-  );
-  const { request: requestHopperBCalibrationStepsPerKgh } = useMachineMutation(
-    z.object({ SetHopperBCalibrationStepsPerKgh: z.number() }),
-  );
-  const { request: requestExtruderKgPerRpm } = useMachineMutation(
-    z.object({ SetExtruderKgPerRpm: z.number() }),
   );
 
   return {
@@ -256,13 +176,8 @@ export function useMixerV1() {
     setHopperAEnabled,
     setHopperATargetRpm,
     setHopperAForward,
-    setHopperADosingPercent,
-    setHopperACalibrationStepsPerKgh,
     setHopperBEnabled,
     setHopperBTargetRpm,
     setHopperBForward,
-    setHopperBDosingPercent,
-    setHopperBCalibrationStepsPerKgh,
-    setExtruderKgPerRpm,
   };
 }

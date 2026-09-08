@@ -3,12 +3,12 @@ import { TouchButton } from "@/components/touch/TouchButton";
 import { TouchSlider } from "@/components/touch/TouchSlider";
 import { ControlCard } from "@/control/ControlCard";
 import { Label } from "@/control/Label";
-import { EditValue } from "@/control/EditValue";
 import { StatusBadge } from "@/control/StatusBadge";
-import { roundToDecimals } from "@/lib/decimal";
 import React from "react";
 import "./mixing-machine-preview.css";
 import { useMixerV1 } from "./useMixerV1";
+
+const HOPPER_MAX_RPM = 100;
 
 const MATERIAL_A = {
   name: "Material A",
@@ -77,8 +77,8 @@ function DosingChannel({
 
 function Hopper({
   side,
+  label,
   material,
-  ratio,
   rpm,
   fill,
   contentColor,
@@ -87,8 +87,8 @@ function Hopper({
   forward,
 }: {
   side: "A" | "B";
+  label: string;
   material: typeof MATERIAL_A;
-  ratio: number;
   rpm: number | null;
   fill: number;
   contentColor: string;
@@ -108,7 +108,7 @@ function Hopper({
   return (
     <g>
       <text x={centerX} y="28" textAnchor="middle" className="mm-svg-label">
-        HOPPER {side}
+        {label}
       </text>
       <circle
         cx={centerX - 52}
@@ -195,14 +195,6 @@ function Hopper({
       >
         {running ? (rpm === null ? "—" : rpm.toFixed(1)) : "0"} rpm
       </text>
-      <text
-        x={left ? 195 : 805}
-        y="392"
-        textAnchor="middle"
-        className="mm-svg-ratio"
-      >
-        {ratio.toFixed(1)}%
-      </text>
     </g>
   );
 }
@@ -266,21 +258,17 @@ function MachineOverview({
   mixingMotorOn,
   hopperAEnabled,
   hopperAForward,
-  hopperADosingPercent,
   hopperARpm,
   hopperBEnabled,
   hopperBForward,
-  hopperBDosingPercent,
   hopperBRpm,
 }: {
   mixingMotorOn: boolean;
   hopperAEnabled: boolean;
   hopperAForward: boolean;
-  hopperADosingPercent: number;
   hopperARpm: number | null;
   hopperBEnabled: boolean;
   hopperBForward: boolean;
-  hopperBDosingPercent: number;
   hopperBRpm: number | null;
 }) {
   return (
@@ -288,15 +276,15 @@ function MachineOverview({
       <svg
         viewBox="0 0 1000 600"
         role="img"
-        aria-label="Two dosing hoppers and a central material hopper feeding a common mixer and extruder"
+        aria-label="Two dosing dispensers and a central material hopper feeding a common mixer"
       >
         <CentralMaterialHopper />
         <Hopper
           side="A"
+          label="DISPENSER 2"
           material={MATERIAL_A}
           contentColor={MATERIAL_A.color}
           contentOpacity={0.18}
-          ratio={hopperADosingPercent}
           rpm={hopperARpm}
           fill={76}
           running={hopperAEnabled}
@@ -304,10 +292,10 @@ function MachineOverview({
         />
         <Hopper
           side="B"
+          label="DISPENSER 1"
           material={MATERIAL_B}
           contentColor={MATERIAL_B.color}
           contentOpacity={0.18}
-          ratio={hopperBDosingPercent}
           rpm={hopperBRpm}
           fill={76}
           running={hopperBEnabled}
@@ -367,7 +355,7 @@ function MachineOverview({
         <path d="M500 530 V550" className="mm-output-arrow" />
         <path d="M490 540 L500 551 L510 540" className="mm-output-arrow" />
         <text x="500" y="580" textAnchor="middle" className="mm-svg-label">
-          TO EXTRUDER
+          OUTPUT
         </text>
       </svg>
     </div>
@@ -377,37 +365,28 @@ function MachineOverview({
 export function MixerV1ControlPage() {
   const {
     state,
-    defaultState,
     hopperARpm,
     hopperBRpm,
     setMixingMotorOn,
     setHopperAEnabled,
     setHopperAForward,
-    setHopperADosingPercent,
+    setHopperATargetRpm,
     setHopperBEnabled,
     setHopperBForward,
-    setHopperBDosingPercent,
-    setExtruderKgPerRpm,
+    setHopperBTargetRpm,
   } = useMixerV1();
 
   const mixingMotorOn = state?.mixing_motor_state.on ?? false;
   const hopperAEnabled = state?.hopper_a_state.enabled ?? false;
   const hopperAError = state?.hopper_a_state.error ?? false;
   const hopperAForward = state?.hopper_a_state.forward ?? true;
-  const hopperADosingPercent = state?.hopper_a_state.dosing_percent ?? 0;
-  const hopperACalibrated =
-    (state?.hopper_a_state.calibration_steps_per_kgh ?? 0) > 0;
+  const hopperATargetRpm = state?.hopper_a_state.target_rpm ?? 0;
   const hopperBEnabled = state?.hopper_b_state.enabled ?? false;
   const hopperBError = state?.hopper_b_state.error ?? false;
   const hopperBForward = state?.hopper_b_state.forward ?? true;
-  const hopperBDosingPercent = state?.hopper_b_state.dosing_percent ?? 0;
-  const hopperBCalibrated =
-    (state?.hopper_b_state.calibration_steps_per_kgh ?? 0) > 0;
+  const hopperBTargetRpm = state?.hopper_b_state.target_rpm ?? 0;
 
   const hasError = hopperAError || hopperBError;
-  const automaticReady =
-    (hopperADosingPercent === 0 || hopperACalibrated) &&
-    (hopperBDosingPercent === 0 || hopperBCalibrated);
 
   return (
     <Page className="mm-page">
@@ -420,11 +399,8 @@ export function MixerV1ControlPage() {
           {!hasError && mixingMotorOn && (
             <StatusBadge variant="success">Mixing</StatusBadge>
           )}
-          {!hasError && !mixingMotorOn && automaticReady && (
+          {!hasError && !mixingMotorOn && (
             <StatusBadge variant="success">Ready</StatusBadge>
-          )}
-          {!hasError && !mixingMotorOn && !automaticReady && (
-            <StatusBadge variant="error">Not Ready</StatusBadge>
           )}
         </div>
       </div>
@@ -434,45 +410,38 @@ export function MixerV1ControlPage() {
           mixingMotorOn={mixingMotorOn}
           hopperAEnabled={hopperAEnabled}
           hopperAForward={hopperAForward}
-          hopperADosingPercent={hopperADosingPercent}
           hopperARpm={hopperARpm.current?.value ?? null}
           hopperBEnabled={hopperBEnabled}
           hopperBForward={hopperBForward}
-          hopperBDosingPercent={hopperBDosingPercent}
           hopperBRpm={hopperBRpm.current?.value ?? null}
         />
       </ControlCard>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-4">
-        <ControlCard title="Left Doser">
-          <Label label="Addition relative to main material">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <ControlCard title="Dispenser 2">
+          <Label label="Target Speed">
             <div className="mb-3 flex items-center justify-between">
               <span className="flex items-center gap-2 text-sm text-gray-500">
                 <span
                   className="size-3 rounded-sm"
                   style={{ backgroundColor: MATERIAL_A.color }}
                 />
-                Left material
+                {MATERIAL_A.name}
               </span>
               <strong className="font-mono text-2xl">
-                {hopperADosingPercent.toFixed(1)}%
+                {hopperATargetRpm.toFixed(1)} rpm
               </strong>
             </div>
             <TouchSlider
               min={0}
-              max={100}
+              max={HOPPER_MAX_RPM}
               step={0.1}
-              value={[hopperADosingPercent]}
-              minLabel="0%"
-              maxLabel="100% of main"
-              onValueChange={([value]) => setHopperADosingPercent(value)}
+              value={[hopperATargetRpm]}
+              minLabel="0 rpm"
+              maxLabel={`${HOPPER_MAX_RPM} rpm`}
+              onValueChange={([value]) => setHopperATargetRpm(value)}
             />
           </Label>
-          <p className="text-xs text-amber-700">
-            {hopperACalibrated
-              ? `Calibration: ${state?.hopper_a_state.calibration_steps_per_kgh.toFixed(2)} steps/kgh`
-              : "Calibration required for automatic dosing."}
-          </p>
           <TouchButton
             icon={hopperAEnabled ? "lu:Pause" : "lu:Play"}
             onClick={() => setHopperAEnabled(!hopperAEnabled)}
@@ -481,64 +450,30 @@ export function MixerV1ControlPage() {
           </TouchButton>
         </ControlCard>
 
-        <ControlCard title="Extruder Link">
-          <StatusBadge variant="success">Follows extruder</StatusBadge>
-          <Label label="Extruder kg per RPM">
-            <EditValue
-              value={state?.extruder_kg_per_rpm}
-              defaultValue={defaultState?.extruder_kg_per_rpm}
-              title="Extruder kg per RPM"
-              min={0}
-              step={0.01}
-              renderValue={(value) => roundToDecimals(value, 2)}
-              onChange={setExtruderKgPerRpm}
-            />
-          </Label>
-          <div className="grid grid-cols-2 gap-2 text-center text-sm">
-            <div>
-              <span className="text-gray-500">Left / main</span>
-              <strong className="block">
-                {hopperADosingPercent.toFixed(1)}%
-              </strong>
-            </div>
-            <div>
-              <span className="text-gray-500">Right / main</span>
-              <strong className="block">
-                {hopperBDosingPercent.toFixed(1)}%
-              </strong>
-            </div>
-          </div>
-        </ControlCard>
-
-        <ControlCard title="Right Doser">
-          <Label label="Addition relative to main material">
+        <ControlCard title="Dispenser 1">
+          <Label label="Target Speed">
             <div className="mb-3 flex items-center justify-between">
               <span className="flex items-center gap-2 text-sm text-gray-500">
                 <span
                   className="size-3 rounded-sm"
                   style={{ backgroundColor: MATERIAL_B.color }}
                 />
-                Right material
+                {MATERIAL_B.name}
               </span>
               <strong className="font-mono text-2xl">
-                {hopperBDosingPercent.toFixed(1)}%
+                {hopperBTargetRpm.toFixed(1)} rpm
               </strong>
             </div>
             <TouchSlider
               min={0}
-              max={100}
+              max={HOPPER_MAX_RPM}
               step={0.1}
-              value={[hopperBDosingPercent]}
-              minLabel="0%"
-              maxLabel="100% of main"
-              onValueChange={([value]) => setHopperBDosingPercent(value)}
+              value={[hopperBTargetRpm]}
+              minLabel="0 rpm"
+              maxLabel={`${HOPPER_MAX_RPM} rpm`}
+              onValueChange={([value]) => setHopperBTargetRpm(value)}
             />
           </Label>
-          <p className="text-xs text-amber-700">
-            {hopperBCalibrated
-              ? `Calibration: ${state?.hopper_b_state.calibration_steps_per_kgh.toFixed(2)} steps/kgh`
-              : "Calibration required for automatic dosing."}
-          </p>
           <TouchButton
             icon={hopperBEnabled ? "lu:Pause" : "lu:Play"}
             onClick={() => setHopperBEnabled(!hopperBEnabled)}
@@ -548,12 +483,12 @@ export function MixerV1ControlPage() {
         </ControlCard>
 
         <ControlCard title="Operation">
-          <StatusBadge variant={automaticReady ? "success" : "error"}>
-            {automaticReady ? "Ready" : "Calibration needed"}
+          <StatusBadge variant={hasError ? "error" : "success"}>
+            {hasError ? "Error" : "Ready"}
           </StatusBadge>
           <p className="text-sm text-gray-600">
-            The mixer starts and stops with this button. Motor direction and
-            calibration are configured in Settings.
+            The mixer starts and stops with this button. Motor direction is
+            configured in Settings.
           </p>
           {mixingMotorOn ? (
             <TouchButton

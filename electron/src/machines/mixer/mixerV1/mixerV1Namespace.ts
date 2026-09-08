@@ -20,8 +20,6 @@ const hopperStateSchema = z.object({
   error: z.boolean(),
   target_rpm: z.number(),
   forward: z.boolean(),
-  dosing_percent: z.number(),
-  calibration_steps_per_kgh: z.number(),
 });
 
 export const stateEventDataSchema = z.object({
@@ -31,7 +29,6 @@ export const stateEventDataSchema = z.object({
   }),
   hopper_a_state: hopperStateSchema,
   hopper_b_state: hopperStateSchema,
-  extruder_kg_per_rpm: z.number(),
 });
 
 export const stateEventSchema = eventSchema(stateEventDataSchema);
