@@ -59,6 +59,20 @@ impl MachineNamespaceManager {
         );
     }
 
+    pub fn unregister(&mut self, ident: MachineInstanceIdentification) {
+        let Some(entry) = self.registry.remove(&ident) else {
+            // no machine registered under that uid
+            return;
+        };
+
+        // --- drop the sockets, so reconnects get rejected by `add_socket` ---
+        for socket in entry.sockets {
+            if let Err(e) = socket.disconnect() {
+                tracing::error!("Failed to disconnect socket for {ident}: {e}");
+            }
+        }
+    }
+
     pub fn update(&mut self, report: &RuntimeReport) {
         for record in &report.machines.config_property_records {
             let Some(entry) = self.registry.get_mut(&record.machine) else {
@@ -174,8 +188,14 @@ impl MachineNamespaceManager {
                 }
 
                 RuntimeEvent::RemovedMachine { ident } => {
-                    _ = ident; // TOOD: dynamically add/remove machines
+                    // the machine list itself lives on the main namespace,
+                    // the dispatcher drives that side
+                    self.unregister(*ident);
                 }
+
+                // handled on the main namespace; the accompanying
+                // `RemovedMachine` events tear these namespaces down
+                RuntimeEvent::EtherCATLost => {}
 
                 RuntimeEvent::SubscriptionAdded {
                     provider,

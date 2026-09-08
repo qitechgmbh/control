@@ -31,6 +31,7 @@ impl SocketIOEvent {
 pub enum EthercatDevicesEvent {
     State(String),
     Done(EthercatSetupDone),
+    Error(String),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

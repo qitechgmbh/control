@@ -1,4 +1,5 @@
 use qitech_framework::MachineSchema;
+use qitech_framework::RuntimeEvent;
 use qitech_framework::RuntimeInitEvent;
 use qitech_framework::RuntimeReport;
 use qitech_framework_hub::Listener;
@@ -69,8 +70,28 @@ impl Listener for SocketIODispatcher {
     }
 
     fn on_report_received(&mut self, report: &RuntimeReport) {
+        // --- tear down the per-machine namespaces first ---
         self.state_legacy
             .ns_machines
             .update(|ns| ns.update(&report));
+
+        // --- then update the machine list and bus state the frontend renders ---
+        for event in &report.events {
+            match event {
+                RuntimeEvent::RemovedMachine { ident } => {
+                    self.state_legacy
+                        .ns_main
+                        .update(|ns| ns.remove_machine(*ident));
+                }
+
+                RuntimeEvent::EtherCATLost => {
+                    self.state_legacy.ns_main.update(|ns| {
+                        ns.set_ecat_lost("EtherCAT main device stopped exchanging process data")
+                    });
+                }
+
+                _ => {}
+            }
+        }
     }
 }
