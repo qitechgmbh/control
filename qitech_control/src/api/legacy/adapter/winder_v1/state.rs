@@ -74,6 +74,7 @@ pub fn init_state_event(
         .map_or(false, |v| !matches!(v, ScalarValue::Null));
     let is_homing = is_homing_state(&traverse_state);
     let can_wind = tension_arm_zeroed && is_homed && !is_homing;
+    let can_home = can_traverse && !is_homed;
 
     Some(serde_json::json!({
         "is_default_state": is_default_state,
@@ -93,7 +94,7 @@ pub fn init_state_event(
             "padding": config_float(instance, "traverse.padding")?,
             "can_go_in": can_traverse,
             "can_go_out": can_traverse,
-            "can_go_home": !is_homed,
+            "can_go_home": can_home,
         },
 
         "puller_state": {
