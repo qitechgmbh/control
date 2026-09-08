@@ -1054,6 +1054,9 @@ async function releaseCores(event: Electron.IpcMainInvokeEvent): Promise<void> {
     terminalInfo("Releasing isolated cores for build..."),
   );
 
+  // This logic may fall apart and cause issues when dealing with heterogeneous CPU
+  // core topologies like Intel Alder Lake and newer as well as basically any recent non-x86 SoC.
+
   const script = `\
 #!/usr/bin/env bash
 set -euo pipefail
