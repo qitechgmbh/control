@@ -191,12 +191,7 @@ export async function fetchTargets(
           const [hash, name, date] = line.split("|");
           return { hash, name, date };
         })
-        .sort((a, b) =>
-          b.name.localeCompare(a.name, undefined, {
-            numeric: true,
-            sensitivity: "base",
-          }),
-        );
+        .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
 
       return {
         commits,
