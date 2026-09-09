@@ -1,11 +1,13 @@
-use qitech_framework::MachineInstanceIdentification;
-use qitech_framework::RuntimeRequestKind;
-use qitech_framework::ScalarValue;
-use serde::Deserialize;
-
 use crate::api::legacy::MachineLegacyDataAdapter;
-use crate::api::types::MachineInstance;
-use crate::machines::Zone;
+
+mod request;
+use request::convert_request;
+
+mod measurements;
+use measurements::init_measurements_event;
+
+mod state;
+use state::init_state_event;
 
 /// Serves both extruder generations: `ExtruderV1` (machine id 4, the frontend's "extruder2") and
 /// `ExtruderV2` (machine id 22, the frontend's "extruder3"). Their schemas are identical apart from
@@ -16,423 +18,22 @@ pub const ADAPTER: MachineLegacyDataAdapter = MachineLegacyDataAdapter {
     init_measurements_event,
 };
 
-/// The four heating zones, in the order the legacy payload lists them.
-const ZONES: [&str; 4] = ["nozzle", "front", "back", "middle"];
-
-// --- requests ---
-
-fn convert_request(
-    ident: MachineInstanceIdentification,
-    data: serde_json::Value,
-) -> Result<Vec<RuntimeRequestKind>, serde_json::Error> {
-    /// The three mutations that expand into more than one `RuntimeRequestKind`. Tried first;
-    /// anything else falls through to the single-request `Mutation` match below, unchanged.
-    #[derive(Deserialize)]
-    enum CompoundMutation {
-        SetPressurePidSettings {
-            kp: f64,
-            ki: f64,
-            kd: f64,
-        },
-        SetTemperaturePidSettings {
-            kp: f64,
-            ki: f64,
-            kd: f64,
-            zone: Zone,
-        },
-        StartPressurePidAutoTune {
-            tune_delta: f64,
-            frequency_step_hz: f64,
-        },
-    }
-
-    /// Mirrors the payloads emitted by `useExtruder.ts`.
-    #[derive(Deserialize)]
-    enum Mutation {
-        SetInverterRotationDirection(bool),
-        SetExtruderMode(Mode),
-        SetInverterRegulation(bool),
-        SetInverterTargetRpm(f64),
-        SetInverterTargetPressure(f64),
-        SetNozzleHeatingTemperature(f64),
-        SetFrontHeatingTargetTemperature(f64),
-        SetMiddleHeatingTemperature(f64),
-        SetBackHeatingTargetTemperature(f64),
-        SetExtruderPressureLimit(f64),
-        SetExtruderPressureLimitIsEnabled(bool),
-        SetNozzleTemperatureTargetEnabled(bool),
-        /// The frontend always sends `true` here; the flag carries no meaning, only the request does.
-        ResetInverter(#[allow(dead_code)] bool),
-        StopPressurePidAutoTune {},
-    }
-
-    #[derive(Deserialize)]
-    enum Mode {
-        Standby,
-        Heat,
-        Extrude,
-    }
-
-    let config = |path: &str, value: ScalarValue| RuntimeRequestKind::SetConfigProperty {
-        target: ident,
-        path: path.to_string(),
-        value,
-    };
-
-    let command = |path: &str| RuntimeRequestKind::ExecuteCommand {
-        target: ident,
-        path: path.to_string(),
-    };
-
-    if let Ok(mutation) = serde_json::from_value::<CompoundMutation>(data.clone()) {
-        return Ok(match mutation {
-            CompoundMutation::SetPressurePidSettings { kp, ki, kd } => vec![
-                config("pid.pressure.kp", ScalarValue::Float(kp)),
-                config("pid.pressure.ki", ScalarValue::Float(ki)),
-                config("pid.pressure.kd", ScalarValue::Float(kd)),
-            ],
-
-            CompoundMutation::SetTemperaturePidSettings { kp, ki, kd, zone } => {
-                let gains = zone.paths().gains;
-                vec![
-                    config(gains.kp, ScalarValue::Float(kp)),
-                    config(gains.ki, ScalarValue::Float(ki)),
-                    config(gains.kd, ScalarValue::Float(kd)),
-                ]
-            }
-
-            // The two config writes must precede the start command: the runtime reads them
-            // synchronously when the command fires.
-            CompoundMutation::StartPressurePidAutoTune {
-                tune_delta,
-                frequency_step_hz,
-            } => vec![
-                config(
-                    "pressure.autotune.tune_delta",
-                    ScalarValue::Float(tune_delta),
-                ),
-                config(
-                    "pressure.autotune.frequency_step",
-                    ScalarValue::Float(frequency_step_hz),
-                ),
-                command("pressure.autotune.start"),
-            ],
-        });
-    }
-
-    Ok(vec![match serde_json::from_value(data)? {
-        // `EnumProperty::from_scalar` only accepts the snake_case spelling of a variant, even
-        // though it reads back as the variant ident itself. See `init_state_event`.
-        Mutation::SetInverterRotationDirection(forward) => config(
-            "screw.direction",
-            ScalarValue::Enum(if forward { "forward" } else { "reverse" }.to_string()),
-        ),
-
-        Mutation::SetInverterRegulation(uses_rpm) => config(
-            "screw.regulation",
-            ScalarValue::Enum(if uses_rpm { "rpm" } else { "pressure" }.to_string()),
-        ),
-
-        Mutation::SetExtruderMode(mode) => command(match mode {
-            Mode::Standby => "mode.standby",
-            Mode::Heat => "mode.heat",
-            Mode::Extrude => "mode.extrude",
-        }),
-
-        Mutation::SetInverterTargetRpm(v) => config("screw.target_rpm", ScalarValue::Float(v)),
-
-        Mutation::SetInverterTargetPressure(v) => {
-            config("screw.target_pressure", ScalarValue::Float(v))
-        }
-
-        Mutation::SetNozzleHeatingTemperature(v) => {
-            config("heating.nozzle.target_temperature", ScalarValue::Float(v))
-        }
-
-        Mutation::SetFrontHeatingTargetTemperature(v) => {
-            config("heating.front.target_temperature", ScalarValue::Float(v))
-        }
-
-        Mutation::SetMiddleHeatingTemperature(v) => {
-            config("heating.middle.target_temperature", ScalarValue::Float(v))
-        }
-
-        Mutation::SetBackHeatingTargetTemperature(v) => {
-            config("heating.back.target_temperature", ScalarValue::Float(v))
-        }
-
-        Mutation::SetExtruderPressureLimit(v) => config("pressure.limit", ScalarValue::Float(v)),
-
-        Mutation::SetExtruderPressureLimitIsEnabled(v) => {
-            config("pressure.limit_enabled", ScalarValue::Boolean(v))
-        }
-
-        Mutation::SetNozzleTemperatureTargetEnabled(v) => {
-            config("heating.nozzle.target_enabled", ScalarValue::Boolean(v))
-        }
-
-        Mutation::ResetInverter(_) => command("inverter.reset"),
-
-        Mutation::StopPressurePidAutoTune {} => command("pressure.autotune.stop"),
-    }])
-}
-
-// --- state event ---
-
-fn init_state_event(
-    instance: &MachineInstance,
-    is_default_state: bool,
-) -> Option<serde_json::Value> {
-    let heating_states = zone_map(|zone| {
-        Some(serde_json::json!({
-            "target_temperature": config_float(instance, &format!("heating.{zone}.target_temperature"))?,
-            "wiring_error": state_bool(instance, &format!("heating.{zone}.wiring_error"))?,
-        }))
-    })?;
-
-    let temperature_pids = zone_map(|zone| {
-        Some(serde_json::json!({
-            "kp": config_float(instance, &format!("pid.temperature.{zone}.kp"))?,
-            "ki": config_float(instance, &format!("pid.temperature.{zone}.ki"))?,
-            "kd": config_float(instance, &format!("pid.temperature.{zone}.kd"))?,
-            "zone": zone,
-        }))
-    })?;
-
-    Some(serde_json::json!({
-        "is_default_state": is_default_state,
-
-        "rotation_state": {
-            "forward": config_enum_is(instance, "screw.direction", "forward")?,
-        },
-
-        // The only enum handed to the frontend verbatim: its zod schema spells the modes
-        // PascalCase. `mode` is a state property, so it is always the variant ident.
-        "mode_state": {
-            "mode": state_enum(instance, "mode")?,
-        },
-
-        "regulation_state": {
-            "uses_rpm": config_enum_is(instance, "screw.regulation", "rpm")?,
-        },
-
-        "pressure_state": {
-            "target_bar": config_float(instance, "screw.target_pressure")?,
-            "wiring_error": state_bool(instance, "pressure.wiring_error")?,
-        },
-
-        "screw_state": {
-            "target_rpm": config_float(instance, "screw.target_rpm")?,
-        },
-
-        "heating_states": heating_states,
-
-        "extruder_settings_state": {
-            "pressure_limit": config_float(instance, "pressure.limit")?,
-            "pressure_limit_enabled": config_bool(instance, "pressure.limit_enabled")?,
-            "nozzle_temperature_target_enabled": config_bool(instance, "heating.nozzle.target_enabled")?,
-        },
-
-        "inverter_status_state": {
-            "running": state_bool(instance, "inverter.running")?,
-            "forward_running": state_bool(instance, "inverter.forward_running")?,
-            "reverse_running": state_bool(instance, "inverter.reverse_running")?,
-            "up_to_frequency": state_bool(instance, "inverter.up_to_frequency")?,
-            "overload_warning": state_bool(instance, "inverter.overload_warning")?,
-            "no_function": state_bool(instance, "inverter.no_function")?,
-            "output_frequency_detection": state_bool(instance, "inverter.output_frequency_detection")?,
-            "abc_fault": state_bool(instance, "inverter.abc_fault")?,
-            "fault_occurence": state_bool(instance, "inverter.fault_occurence")?,
-        },
-
-        "pid_settings": {
-            "temperature": temperature_pids,
-            "pressure": {
-                "kp": config_float(instance, "pid.pressure.kp")?,
-                "ki": config_float(instance, "pid.pressure.ki")?,
-                "kd": config_float(instance, "pid.pressure.kd")?,
-            },
-        },
-
-        "pid_autotune_state": {
-            // The frontend compares this against "running" / "not_started", so the variant ident
-            // has to be folded back to the legacy snake_case spelling.
-            "state": snake_case(&state_enum(instance, "pressure.autotune.state")?),
-            "progress": autotune_progress(instance),
-            "result": autotune_result(instance)?,
-        },
-    }))
-}
-
-/// Builds `{ nozzle: .., front: .., back: .., middle: .. }`, yielding `None` as soon as one zone
-/// cannot be rendered yet.
-fn zone_map<F>(mut render: F) -> Option<serde_json::Value>
-where
-    F: FnMut(&str) -> Option<serde_json::Value>,
-{
-    let mut map = serde_json::Map::with_capacity(ZONES.len());
-
-    for zone in ZONES {
-        map.insert(zone.to_string(), render(zone)?);
-    }
-
-    Some(serde_json::Value::Object(map))
-}
-
-/// Never blocks the state event: the measurement is absent until the first snapshot arrives, and
-/// the legacy payload reported 0 % in that case.
-fn autotune_progress(instance: &MachineInstance) -> f64 {
-    instance
-        .measurements
-        .get("pressure.autotune_progress")
-        .and_then(|info| info.as_ref())
-        .and_then(|info| info.value)
-        .unwrap_or(0.0)
-}
-
-/// The three result gains are nullable and only populated after a completed run — all or nothing.
-fn autotune_result(instance: &MachineInstance) -> Option<serde_json::Value> {
-    let gains = (
-        state_nullable_float(instance, "pressure.autotune.result.kp")?,
-        state_nullable_float(instance, "pressure.autotune.result.ki")?,
-        state_nullable_float(instance, "pressure.autotune.result.kd")?,
-    );
-
-    Some(match gains {
-        (Some(kp), Some(ki), Some(kd)) => serde_json::json!({
-            "kp": kp,
-            "ki": ki,
-            "kd": kd,
-        }),
-        _ => serde_json::Value::Null,
-    })
-}
-
-// --- live values ---
-
-fn init_measurements_event(instance: &MachineInstance) -> Option<serde_json::Value> {
-    let get = |path: &str| -> Option<f64> { instance.measurements.get(path)?.as_ref()?.value };
-
-    let temperature = |zone: &str| get(&format!("heating.{zone}.temperature"));
-    let power = |zone: &str| get(&format!("heating.{zone}.power"));
-
-    Some(serde_json::json!({
-        "motor_status": {
-            "screw_rpm": get("motor.rpm")?,
-            "frequency": get("motor.frequency")?,
-            // Unused by the frontend's zod schema, kept for parity with the pre-migration event.
-            "voltage":   get("motor.voltage")?,
-            "current":   get("motor.current")?,
-            "power":     get("motor.power")?,
-        },
-
-        "pressure": get("pressure.value")?,
-
-        "nozzle_temperature": temperature("nozzle")?,
-        "front_temperature":  temperature("front")?,
-        "back_temperature":   temperature("back")?,
-        "middle_temperature": temperature("middle")?,
-
-        "nozzle_power": power("nozzle")?,
-        "front_power":  power("front")?,
-        "back_power":   power("back")?,
-        "middle_power": power("middle")?,
-
-        "combined_power":   get("power.combined")?,
-        "total_energy_kwh": get("energy.total")?,
-    }))
-}
-
-// --- property lookups ---
-//
-// Each returns `None` while the runtime has not registered the property yet, which propagates out
-// of the event builders so a partial payload is never emitted.
-
-fn config_value(instance: &MachineInstance, path: &str) -> Option<ScalarValue> {
-    Some(
-        instance
-            .config_properties
-            .get(path)?
-            .as_ref()?
-            .value
-            .clone(),
-    )
-}
-
-fn state_value(instance: &MachineInstance, path: &str) -> Option<ScalarValue> {
-    Some(instance.state_properties.get(path)?.as_ref()?.value.clone())
-}
-
-fn config_float(instance: &MachineInstance, path: &str) -> Option<f64> {
-    config_value(instance, path)?.float()
-}
-
-fn config_bool(instance: &MachineInstance, path: &str) -> Option<bool> {
-    config_value(instance, path)?.boolean()
-}
-
-fn config_enum(instance: &MachineInstance, path: &str) -> Option<String> {
-    config_value(instance, path)?.r#enum()
-}
-
-/// Whether the enum config property at `path` currently holds `variant`, named in the schema's
-/// snake_case spelling.
-///
-/// Enum config properties round-trip asymmetrically through the framework: the registered default
-/// arrives as the variant ident (`EnumProperty::into_scalar` writes `Forward`) while an external
-/// write is echoed back in the snake_case spelling the write itself had to use
-/// (`EnumProperty::from_scalar` only accepts `forward`). Comparing against either spelling alone
-/// silently stops matching as soon as the property is written once — which is how the direction
-/// toggle got stuck on reverse — so fold to snake_case first and accept both.
-fn config_enum_is(instance: &MachineInstance, path: &str, variant: &str) -> Option<bool> {
-    Some(snake_case(&config_enum(instance, path)?) == variant)
-}
-
-/// Folds a variant ident to its snake_case spelling, leaving an already snake_case value unchanged.
-fn snake_case(value: &str) -> String {
-    let mut out = String::with_capacity(value.len() + 4);
-
-    for (i, ch) in value.char_indices() {
-        if ch.is_ascii_uppercase() {
-            if i != 0 {
-                out.push('_');
-            }
-
-            out.push(ch.to_ascii_lowercase());
-        } else {
-            out.push(ch);
-        }
-    }
-
-    out
-}
-
-fn state_bool(instance: &MachineInstance, path: &str) -> Option<bool> {
-    state_value(instance, path)?.boolean()
-}
-
-fn state_enum(instance: &MachineInstance, path: &str) -> Option<String> {
-    state_value(instance, path)?.r#enum()
-}
-
-/// `Some(None)` when the property is registered but currently null, unlike the other lookups where
-/// `None` only ever means "not registered yet".
-fn state_nullable_float(instance: &MachineInstance, path: &str) -> Option<Option<f64>> {
-    Some(state_value(instance, path)?.float())
-}
-
 #[cfg(test)]
 mod tests {
     use qitech_framework::MachineIdentification;
+    use qitech_framework::MachineInstanceIdentification;
     use qitech_framework::MachineSchema;
+    use qitech_framework::RuntimeRequestKind;
+    use qitech_framework::ScalarValue;
 
     use super::*;
     use crate::api::types::ConfigPropertyInfo;
+    use crate::api::types::MachineInstance;
     use crate::api::types::MeasurementInfo;
     use crate::api::types::StatePropertyInfo;
 
-    const SCHEMA: &str = include_str!("../../../../schemas/extruder_v1.yaml");
-    const SCHEMA_V2: &str = include_str!("../../../../schemas/extruder_v2.yaml");
+    const SCHEMA: &str = include_str!("../../../../../schemas/extruder_v1.yaml");
+    const SCHEMA_V2: &str = include_str!("../../../../../schemas/extruder_v2.yaml");
 
     /// Distinct values throughout, so a field wired to the wrong property fails the comparison.
     fn config_fixture() -> Vec<(&'static str, ScalarValue)> {
@@ -443,6 +44,7 @@ mod tests {
             ("screw.target_pressure", ScalarValue::Float(34.0)),
             ("pressure.limit", ScalarValue::Float(90.0)),
             ("pressure.limit_enabled", ScalarValue::Boolean(true)),
+            ("extrusion.min_temperature", ScalarValue::Float(150.0)),
             ("pressure.autotune.tune_delta", ScalarValue::Float(0.5)),
             ("pressure.autotune.frequency_step", ScalarValue::Float(5.0)),
             (
@@ -711,6 +313,7 @@ mod tests {
                     "pressure_limit": 90.0,
                     "pressure_limit_enabled": true,
                     "nozzle_temperature_target_enabled": true,
+                    "min_extrusion_temperature": 150.0,
                 },
                 "inverter_status_state": {
                     "running": true,
@@ -938,14 +541,6 @@ mod tests {
                 );
             }
         }
-    }
-
-    #[test]
-    fn snake_case_folds_idents_and_passes_snake_case_through() {
-        assert_eq!(snake_case("Forward"), "forward");
-        assert_eq!(snake_case("forward"), "forward");
-        assert_eq!(snake_case("NotStarted"), "not_started");
-        assert_eq!(snake_case("not_started"), "not_started");
     }
 
     #[test]

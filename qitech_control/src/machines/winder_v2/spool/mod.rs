@@ -93,13 +93,16 @@ impl Spool {
 impl Spool {
     pub fn set_mode(&mut self, mode: Mode) {
         if self.mode.set(mode) {
-            let enabled = match self.mode.get() {
-                Mode::Standby => false,
-                Mode::Hold | Mode::Wind => true,
+            let (sc_enabled, dev_enabled) = match self.mode.get() {
+                Mode::Standby => (false, false),
+                Mode::Hold => (false, true),
+                Mode::Wind => (true, true),
             };
 
-            self.device.borrow_mut().set_enabled(Self::PORT, enabled);
-            self.speed_controller.set_enalbed(enabled);
+            self.device
+                .borrow_mut()
+                .set_enabled(Self::PORT, dev_enabled);
+            self.speed_controller.set_enalbed(sc_enabled);
         }
     }
 

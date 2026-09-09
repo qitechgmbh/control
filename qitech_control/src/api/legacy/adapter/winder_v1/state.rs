@@ -78,6 +78,7 @@ pub fn init_state_event(
         state_value(instance, "tension_arm.zero").is_some_and(|v| !matches!(v, ScalarValue::Null));
     let is_homing = is_homing_state(&traverse_state);
     let can_wind = tension_arm_zeroed && is_homed && !is_homing;
+    let can_home = can_traverse && !is_homed;
 
     let puller_reference_machine = instance
         .subscriptions
@@ -109,7 +110,7 @@ pub fn init_state_event(
             "padding": config_float(instance, "traverse.padding")?,
             "can_go_in": can_traverse,
             "can_go_out": can_traverse,
-            "can_go_home": !is_homed,
+            "can_go_home": can_home,
         },
 
         "puller_state": {

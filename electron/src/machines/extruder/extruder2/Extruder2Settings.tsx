@@ -17,6 +17,7 @@ export function Extruder2SettingsPage() {
     resetInverter,
     setExtruderPressureLimit,
     setExtruderPressureLimitEnabled,
+    setMinExtrusionTemperature,
     setInverterTargetPressure,
     setPressurePidKp,
     setPressurePidKi,
@@ -73,6 +74,20 @@ export function Extruder2SettingsPage() {
             optionTrue={{ children: "Enabled" }}
             optionFalse={{ children: "Disabled" }}
             onChange={setExtruderPressureLimitEnabled}
+          />
+        </Label>
+        <Label label="Minimum Extrusion Temperature">
+          <EditValue
+            value={state?.extruder_settings_state.min_extrusion_temperature}
+            defaultValue={
+              defaultState?.extruder_settings_state.min_extrusion_temperature
+            }
+            unit="C"
+            title="Minimum Extrusion Temperature"
+            min={0}
+            max={300}
+            renderValue={(value) => roundToDecimals(value, 0)}
+            onChange={setMinExtrusionTemperature}
           />
         </Label>
         <Label label="Nozzle Temperature Target Enabled">
