@@ -18,8 +18,6 @@ pub struct MainNamespaceManager {
     machines: HashMap<MachineInstanceIdentification, MachineObj>,
     ecat_state: Option<&'static str>,
     ecat_devices: Option<Vec<legacy::EtherCATDeviceMetadata>>,
-    /// Set once the bus is gone; replayed to late joiners in place of the subdevice table.
-    ecat_error: Option<String>,
 }
 
 impl MainNamespaceManager {
@@ -40,17 +38,11 @@ impl MainNamespaceManager {
         }
 
         // --- send the ecat devices if already recorded ---
-        // once the bus is lost the recorded table is stale, so report the loss instead
-        let devices_event = match (&self.ecat_error, self.ecat_devices.clone()) {
-            (Some(reason), _) => Some(EthercatDevicesEvent::Error(reason.clone())),
-            (None, Some(devices)) => {
-                Some(EthercatDevicesEvent::Done(EthercatSetupDone { devices }))
-            }
-            (None, None) => None,
-        };
-
-        if let Some(data) = devices_event {
-            let event = SocketIOEvent::new("EthercatDevicesEvent", data);
+        if let Some(devices) = self.ecat_devices.clone() {
+            let event = SocketIOEvent::new(
+                "EthercatDevicesEvent",
+                EthercatDevicesEvent::Done(EthercatSetupDone { devices }),
+            );
 
             if let Err(e) = socket.emit("event", &event) {
                 tracing::error!("Failed to send message to new socket: {e}");
@@ -108,14 +100,8 @@ impl MainNamespaceManager {
         self.ecat_devices = Some(devices);
     }
 
-    /// The EtherCAT main device can no longer exchange process data.
-    ///
-    /// The last reported state ("op") and the subdevice table both describe a bus that is gone,
-    /// so drop the table and report the loss. Machines are removed separately, driven by the
-    /// `RemovedMachine` events that accompany this one.
     pub fn set_ecat_lost(&mut self, reason: &str) {
         self.ecat_devices = None;
-        self.ecat_error = Some(reason.to_string());
         self.ecat_state = Some("lost");
 
         let devices_event = SocketIOEvent::new(

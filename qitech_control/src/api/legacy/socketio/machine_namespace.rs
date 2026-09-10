@@ -188,8 +188,6 @@ impl MachineNamespaceManager {
                 }
 
                 RuntimeEvent::RemovedMachine { ident } => {
-                    // the machine list itself lives on the main namespace,
-                    // the dispatcher drives that side
                     self.unregister(*ident);
                 }
 

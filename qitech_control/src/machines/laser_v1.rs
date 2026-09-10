@@ -46,13 +46,6 @@ pub struct LaserV1 {
 
     // -- misc ---
     request_timer: Duration,
-
-    /// Consecutive failed request/response round trips.
-    ///
-    /// An unplugged USB serial adapter does not surface as [`LaserError::IoErr`]: the write
-    /// succeeds into the kernel buffer and the read never completes, so the device actor's
-    /// 2s timeout yields [`LaserError::RequestTimeOut`] instead. Escalating a streak of those
-    /// is what makes an unplugged laser disappear from the UI.
     consecutive_errors: u32,
 }
 

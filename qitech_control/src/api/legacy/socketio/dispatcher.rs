@@ -70,23 +70,9 @@ impl Listener for SocketIODispatcher {
     }
 
     fn on_report_received(&mut self, report: &RuntimeReport) {
-        // --- tear down the per-machine namespaces first ---
         self.state_legacy
             .ns_machines
             .update(|ns| ns.update(&report));
-
-        // --- then update the machine list and bus state the frontend renders ---
-        for event in &report.events {
-            match event {
-                RuntimeEvent::RemovedMachine { ident } => {
-                    self.state_legacy
-                        .ns_main
-                        .update(|ns| ns.remove_machine(*ident));
-                }
-
-                _ => {}
-            }
-        }
     }
 
     fn on_runtime_disconnected(&mut self) {
