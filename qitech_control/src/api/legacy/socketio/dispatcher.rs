@@ -84,14 +84,14 @@ impl Listener for SocketIODispatcher {
                         .update(|ns| ns.remove_machine(*ident));
                 }
 
-                RuntimeEvent::EtherCATLost => {
-                    self.state_legacy.ns_main.update(|ns| {
-                        ns.set_ecat_lost("EtherCAT main device stopped exchanging process data")
-                    });
-                }
-
                 _ => {}
             }
         }
+    }
+
+    fn on_runtime_disconnected(&mut self) {
+        self.state_legacy.ns_main.update(|ns| {
+            ns.set_ecat_lost("Runtime disconnected, please refresh the page to reconnect")
+        });
     }
 }

@@ -193,10 +193,6 @@ impl MachineNamespaceManager {
                     self.unregister(*ident);
                 }
 
-                // handled on the main namespace; the accompanying
-                // `RemovedMachine` events tear these namespaces down
-                RuntimeEvent::EtherCATLost => {}
-
                 RuntimeEvent::SubscriptionAdded {
                     provider,
                     subscriber,

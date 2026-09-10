@@ -131,6 +131,10 @@ impl MainNamespaceManager {
         tracing::error!("EtherCAT lost: {reason}");
         self.broadcast(devices_event);
         self.broadcast(state_event);
+
+        for ident in self.machines.keys().cloned().collect::<Vec<_>>() {
+            self.remove_machine(ident);
+        }
     }
 
     pub fn add_machine(
