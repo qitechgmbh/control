@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use control_core::socketio::namespace::Namespace;
 use qitech_lib::{
     ethercat_hal::{
@@ -14,16 +14,19 @@ use std::{cell::RefCell, rc::Rc};
 use tokio::sync::mpsc::Sender;
 
 pub mod aquapath1;
+pub mod dryer;
 pub mod extruder1;
 pub mod laser;
 pub mod machine_identification;
 //pub mod minimal_machines;
 pub mod registry;
+pub mod rewinder;
 pub mod winder2;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
 pub const MACHINE_WINDER_V1_7031_0030_SPOOL: u16 = 0x0062;
+pub const MACHINE_REWINDER_V1: u16 = 0x0003;
 pub const MACHINE_EXTRUDER_V1: u16 = 0x0004;
 pub const MACHINE_LASER_V1: u16 = 0x0006;
 pub const MACHINE_MOCK: u16 = 0x0007;
@@ -31,6 +34,7 @@ pub const MACHINE_BUFFER_V1: u16 = 0x0008;
 pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
 pub const MACHINE_WAGO_POWER_V1: u16 = 0x000A;
 pub const MACHINE_EXTRUDER_V2: u16 = 0x0016;
+pub const MACHINE_DRYER_V1: u16 = 0x0010;
 pub const TEST_MACHINE: u16 = 0x0033;
 pub const IP20_TEST_MACHINE: u16 = 0x0034;
 pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
@@ -91,6 +95,13 @@ pub struct MachineHardware {
     pub ethercat_interface: Option<EtherCATThreadChannel>,
 }
 
+/// Returns just the final path segment of a type name, e.g. `EL7031_0030`
+/// instead of `qitech_lib::ethercat_hal::devices::el7031_0030::EL7031_0030`.
+fn short_type_name<T: ?Sized>() -> &'static str {
+    let name = std::any::type_name::<T>();
+    name.rsplit("::").next().unwrap_or(name)
+}
+
 impl MachineHardware {
     pub fn try_get_ethercat_device_by_index<T>(
         &self,
@@ -114,7 +125,13 @@ impl MachineHardware {
                 ));
             }
         };
-        Ok(downcast_rc_refcell::<T>(identified_ethercat.hw.clone())?)
+        downcast_rc_refcell::<T>(identified_ethercat.hw.clone()).with_context(|| {
+            format!(
+                "device at index {} is not a {}",
+                index,
+                short_type_name::<T>()
+            )
+        })
     }
 
     pub fn try_get_ethercat_meta_by_role(&self, role: u16) -> Result<u16, anyhow::Error> {
@@ -131,7 +148,7 @@ impl MachineHardware {
             }
         }
         Err(anyhow::anyhow!(
-            "index {} not an ethercat device in hardware",
+            "missing EtherCAT device: no device with role {} is assigned to this machine",
             role
         ))
     }
@@ -179,7 +196,14 @@ impl MachineHardware {
             match hardware {
                 Hardware::Ethercat(identified_ethercat) => {
                     if identified_ethercat.ident.role == role {
-                        let res = downcast_rc_refcell::<T>(identified_ethercat.hw.clone())?;
+                        let res = downcast_rc_refcell::<T>(identified_ethercat.hw.clone())
+                            .with_context(|| {
+                                format!(
+                                    "device with role {} is not a {}",
+                                    role,
+                                    short_type_name::<T>()
+                                )
+                            })?;
                         return Ok((res, identified_ethercat.ident.device_address));
                     }
                     continue;
@@ -188,8 +212,9 @@ impl MachineHardware {
             }
         }
         Err(anyhow::anyhow!(
-            "index {} not an ethercat device in hardware",
-            role
+            "missing EtherCAT device: no device with role {} ({}) is assigned to this machine",
+            role,
+            short_type_name::<T>()
         ))
     }
 
@@ -205,7 +230,14 @@ impl MachineHardware {
             match hardware {
                 Hardware::Ethercat(identified_ethercat) => {
                     if identified_ethercat.ident.role == role {
-                        return Ok(downcast_rc_refcell::<T>(identified_ethercat.hw.clone())?);
+                        return downcast_rc_refcell::<T>(identified_ethercat.hw.clone())
+                            .with_context(|| {
+                                format!(
+                                    "device with role {} is not a {}",
+                                    role,
+                                    short_type_name::<T>()
+                                )
+                            });
                     }
                     continue;
                 }
@@ -213,8 +245,9 @@ impl MachineHardware {
             }
         }
         Err(anyhow::anyhow!(
-            "index {} not an ethercat device in hardware",
-            role
+            "missing EtherCAT device: no device with role {} ({}) is assigned to this machine",
+            role,
+            short_type_name::<T>()
         ))
     }
 }

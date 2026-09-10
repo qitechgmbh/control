@@ -105,7 +105,7 @@ export function Aquapath1ControlPage() {
                   value={leftReservoirTargetTemperature}
                   max={80}
                   unit="C"
-                  step={0.1}
+                  step={1}
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
                     setLeftTemperature(Math.max(val, minSettableTemperature));
@@ -232,7 +232,7 @@ export function Aquapath1ControlPage() {
                   value={rightReservoirTargetTemperature}
                   max={80}
                   unit="C"
-                  step={0.1}
+                  step={1}
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
                     setRightTemperature(Math.max(val, minSettableTemperature));

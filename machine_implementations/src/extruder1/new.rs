@@ -8,7 +8,7 @@ use crate::{
 use control_core::transmission::fixed::FixedTransmission;
 use qitech_lib::ethercat_hal::{
     coe::ConfigurableDevice,
-    devices::{
+    devices::beckhoff_modules::{
         ek1100::EK1100,
         el2004::EL2004,
         el3021::EL3021,

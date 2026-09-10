@@ -9,7 +9,7 @@ use anyhow::Error;
 
 use qitech_lib::ethercat_hal::{
     EtherCATThreadChannel,
-    devices::{ek1100::EK1100, el2008::EL2008, el3024::EL3024, el4002::EL4002},
+    devices::beckhoff_modules::{ek1100::EK1100, el2008::EL2008, el3024::EL3024, el4002::EL4002},
     io::{
         analog_input::AnalogInputDevice, analog_output::AnalogOutputDevice,
         digital_output::DigitalOutputDevice,
