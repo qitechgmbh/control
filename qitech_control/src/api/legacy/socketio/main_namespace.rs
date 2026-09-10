@@ -126,14 +126,8 @@ impl MainNamespaceManager {
         self.modbus_devices = Some(devices);
     }
 
-    /// The EtherCAT main device can no longer exchange process data.
-    ///
-    /// The last reported state ("op") and the subdevice table both describe a bus that is gone,
-    /// so drop the table and report the loss. Machines are removed separately, driven by the
-    /// `RemovedMachine` events that accompany this one.
     pub fn set_ecat_lost(&mut self, reason: &str) {
         self.ecat_devices = None;
-        self.ecat_error = Some(reason.to_string());
         self.ecat_state = Some("lost");
 
         let devices_event = SocketIOEvent::new(
