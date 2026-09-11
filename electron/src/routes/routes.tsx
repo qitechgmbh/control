@@ -8,6 +8,7 @@ import { githubSourceSchema } from "@/setup/GithubSourceDialog";
 import { SidebarLayout } from "@/components/SidebarLayout";
 import { SetupPage } from "@/setup/SetupPage";
 import { EthercatPage } from "@/setup/EthercatPage";
+import { ModbusPage } from "@/setup/ModbusPage";
 import { MachinesPage } from "@/setup/MachinesPage";
 import { ChangelogPage } from "@/setup/ChangelogPage";
 import { TroubleshootPage } from "@/setup/Troubleshoot";
@@ -635,6 +636,12 @@ export const ethercatRoute = createRoute({
   component: () => <EthercatPage />,
 });
 
+export const modbusRoute = createRoute({
+  getParentRoute: () => setupRoute,
+  path: "modbus",
+  component: () => <ModbusPage />,
+});
+
 export const setupMachinesRoute = createRoute({
   getParentRoute: () => setupRoute,
   path: "machines",
@@ -693,6 +700,7 @@ export const rootTree = RootRoute.addChildren([
   sidebarRoute.addChildren([
     setupRoute.addChildren([
       ethercatRoute,
+      modbusRoute,
       setupMachinesRoute,
       updateRoute.addChildren([
         updateChooseVersionRoute,

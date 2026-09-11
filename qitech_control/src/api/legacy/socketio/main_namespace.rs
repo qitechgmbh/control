@@ -9,6 +9,7 @@ use crate::api::legacy::socketio::events::EthercatDevicesEvent;
 use crate::api::legacy::socketio::events::EthercatSetupDone;
 use crate::api::legacy::socketio::events::MachineObj;
 use crate::api::legacy::socketio::events::MachinesEvent;
+use crate::api::legacy::socketio::events::ModbusDevicesEvent;
 use crate::api::legacy::socketio::events::SocketIOEvent;
 
 // --- main namespace ---
@@ -18,6 +19,7 @@ pub struct MainNamespaceManager {
     machines: HashMap<MachineInstanceIdentification, MachineObj>,
     ecat_state: Option<&'static str>,
     ecat_devices: Option<Vec<legacy::EtherCATDeviceMetadata>>,
+    modbus_devices: Option<Vec<legacy::ModbusDeviceMetadata>>,
 }
 
 impl MainNamespaceManager {
@@ -43,6 +45,16 @@ impl MainNamespaceManager {
                 "EthercatDevicesEvent",
                 EthercatDevicesEvent::Done(EthercatSetupDone { devices }),
             );
+
+            if let Err(e) = socket.emit("event", &event) {
+                tracing::error!("Failed to send message to new socket: {e}");
+                return;
+            }
+        }
+
+        // --- send the modbus devices if already recorded ---
+        if let Some(devices) = self.modbus_devices.clone() {
+            let event = SocketIOEvent::new("ModbusDevicesEvent", ModbusDevicesEvent { devices });
 
             if let Err(e) = socket.emit("event", &event) {
                 tracing::error!("Failed to send message to new socket: {e}");
@@ -98,6 +110,18 @@ impl MainNamespaceManager {
 
         self.broadcast(event);
         self.ecat_devices = Some(devices);
+    }
+
+    pub fn set_modbus_devices(&mut self, devices: Vec<legacy::ModbusDeviceMetadata>) {
+        let event = SocketIOEvent::new(
+            "ModbusDevicesEvent",
+            ModbusDevicesEvent {
+                devices: devices.clone(),
+            },
+        );
+
+        self.broadcast(event);
+        self.modbus_devices = Some(devices);
     }
 
     pub fn add_machine(
