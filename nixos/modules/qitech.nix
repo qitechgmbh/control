@@ -38,6 +38,12 @@ in
       default = pkgs.qitech-control-server or null;
       description = "The QiTech server package to use";
     };
+
+    ethercat.enable = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether this unit has an EtherCAT bus. Set to false for standalone units with only serial machines attached, e.g. via /etc/nixos/qitech-local.nix.";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -122,6 +128,7 @@ in
       environment = {
         RUST_BACKTRACE = "full";
         RUST_LOG = "info";
+        ETHERCAT_ENABLED = if cfg.ethercat.enable then "true" else "false";
       };
     };
 
