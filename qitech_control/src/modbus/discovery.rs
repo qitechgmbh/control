@@ -23,10 +23,6 @@ struct UsbMeta {
 pub struct SerialPortInfo {
     /// The canonical name for this port, and the key a new assignment is stored under.
     pub port: String,
-    /// Every name this port is reachable under, canonical first and never empty. udev hands out
-    /// more than one `/dev/serial/by-path` link per physical port - systemd emits both the legacy
-    /// `...-usb-...` spelling and the newer `...-usbv2-...` one - so an assignment may be stored
-    /// under any of them depending on which systemd wrote it.
     pub aliases: Vec<String>,
     pub device_node: String,
     pub by_id: Option<String>,
