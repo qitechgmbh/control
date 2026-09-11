@@ -346,6 +346,31 @@ pub fn remove_machines(
     }
 }
 
+const ETHERCAT_DISCOVERY_RETRY_DELAY: Duration = Duration::from_secs(2);
+
+fn ethercat_enabled() -> bool {
+    let enabled = persist::resolve_ethercat_enabled();
+    println!("EtherCAT enabled: {}", enabled);
+    enabled
+}
+
+fn emit_discovery_event(state: &SharedAppState, event: EthercatInterfaceDiscoveryEvent) {
+    for _ in 0..50 {
+        if state
+            .emit_ethercat_interface_discovery(event.clone())
+            .is_ok()
+        {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    println!(
+        "Could not emit ethercat interface discovery event {:?}",
+        event
+    );
+}
+
+/// Probe every link-up interface for an EtherCAT subdevice until one answers.
 fn find_ethercat_interface(state: &SharedAppState) -> String {
     loop {
         let _ = state
@@ -367,7 +392,8 @@ fn find_ethercat_interface(state: &SharedAppState) -> String {
                     match res {
                         Ok(_) => {
                             println!("{} is ethercat", &interface.name);
-                            let _ = state.emit_ethercat_interface_discovery(
+                            emit_discovery_event(
+                                state,
                                 EthercatInterfaceDiscoveryEvent::Done(interface.name.clone()),
                             );
                             return interface.name;
@@ -375,24 +401,77 @@ fn find_ethercat_interface(state: &SharedAppState) -> String {
                         Err(_) => println!("{} is not ethercat", &interface.name),
                     }
                 }
-                println!("No EtherCAT interface found, retrying in 2s...");
+                println!(
+                    "No EtherCAT interface found, retrying in {:?}...",
+                    ETHERCAT_DISCOVERY_RETRY_DELAY
+                );
             }
             Err(e) => {
                 println!(
-                    "Could not list ethernet interfaces ({:?}), retrying in 2s...",
-                    e
+                    "Could not list ethernet interfaces ({:?}), retrying in {:?}...",
+                    e, ETHERCAT_DISCOVERY_RETRY_DELAY
                 );
             }
         }
-        std::thread::sleep(Duration::from_secs(2));
+
+        std::thread::sleep(ETHERCAT_DISCOVERY_RETRY_DELAY);
     }
+}
+
+/// Bring EtherCAT up, from interface discovery through to OP.
+fn try_bring_up_ethercat(
+    state: &Arc<SharedAppState>,
+    main_state: &mut MainState,
+    stay_in_preop: bool,
+) -> Option<EtherCATControl<TripleBufConsumer, Arc<Mailbox>>> {
+    if !ethercat_enabled() {
+        println!("EtherCAT disabled via ETHERCAT_ENABLED, running serial machines only");
+        // Say so up front, otherwise the frontend sits on "Discovering..." forever waiting for a
+        // scan that never starts.
+        emit_discovery_event(state, EthercatInterfaceDiscoveryEvent::Discovering(false));
+        send_ecat_state(
+            state.clone(),
+            qitech_lib::ethercat_hal::EtherCATState::NoInterface.into(),
+        );
+        return None;
+    }
+
+    let interface = find_ethercat_interface(state);
+
+    let eth_control = optimized_ethercat_init(&interface);
+    if let Err(e) = state.set_ethercat_thread_channel(Some(eth_control.channel.clone())) {
+        println!("Could not publish the ethercat thread channel: {:?}", e);
+    }
+    send_ecat_state(state.clone(), eth_control.app_handle.get_state().into());
+
+    setup_ethercat(state.clone(), main_state, &eth_control).expect("setup_ethercat failed");
+
+    send_ecat_state(state.clone(), eth_control.app_handle.get_state().into());
+
+    // Subdevices are known show them in the frontend
+    send_ethercat_devices_event(state.clone());
+
+    if stay_in_preop {
+        send_setup_done_events(state.clone());
+        println!("Staying in PreOp as requested, exiting after setup.");
+        loop {
+            std::thread::sleep(core::time::Duration::from_secs(1));
+        }
+    }
+
+    detect_and_build_machines(state.clone(), main_state);
+
+    // transition to OP and wait until all subdevices confirm OP.
+    finalize_ethercat(main_state, &eth_control).expect("finalize_ethercat failed");
+
+    send_ecat_state(state.clone(), eth_control.app_handle.get_state().into());
+    Some(eth_control)
 }
 
 #[cfg(not(feature = "mock"))]
 fn main_logic() {
     let stay_in_preop = std::env::var("QITECH_MODE").unwrap_or_default() == "preop"
         || std::env::args().any(|a| a == "preop");
-    let mut shared_state = SharedAppState::new();
     let mut main_state = MainState::new();
 
     // By default all ethernet is unmanaged, so NM does not set them to UP and are permanently DOWN
@@ -402,19 +481,7 @@ fn main_logic() {
         false => println!("Failed to set all Eth interfaces up"),
     }
 
-    let interface = find_ethercat_interface(&shared_state);
-    let eth_control = optimized_ethercat_init(&interface);
-    shared_state.ethercat_thread_channel = Some(eth_control.channel.clone());
-    let mut eth_control: Option<EtherCATControl<TripleBufConsumer, Arc<Mailbox>>> =
-        Some(eth_control);
-
-    let state = Arc::new(shared_state);
-    match &eth_control {
-        Some(ecat) => {
-            send_ecat_state(state.clone(), ecat.app_handle.get_state().into());
-        }
-        None => (),
-    }
+    let state = Arc::new(SharedAppState::new());
 
     setup_api_and_websock(state.clone());
 
@@ -422,42 +489,13 @@ fn main_logic() {
     let (tx_ports, mut rx_ports) = tokio::sync::mpsc::channel(2);
     detect_serial(rx, tx_ports);
 
-    match &eth_control {
-        Some(control) => {
-            setup_ethercat(state.clone(), &mut main_state, control).expect("setup_ethercat failed");
-        }
-        None => (),
-    };
+    // `None` here means no usable EtherCAT bus; the loop below then runs serial machines only.
+    let mut eth_control: Option<EtherCATControl<TripleBufConsumer, Arc<Mailbox>>> =
+        try_bring_up_ethercat(&state, &mut main_state, stay_in_preop);
 
-    match &eth_control {
-        Some(ecat) => {
-            send_ecat_state(state.clone(), ecat.app_handle.get_state().into());
-        }
-        None => (),
+    if eth_control.is_none() {
+        detect_and_build_machines(state.clone(), &mut main_state);
     }
-
-    // Subdevices are known after PreOp — show them in the frontend now
-    send_ethercat_devices_event(state.clone());
-
-    if stay_in_preop && eth_control.is_some() {
-        send_setup_done_events(state.clone());
-        println!("Staying in PreOp as requested, exiting after setup.");
-        loop {
-            std::thread::sleep(core::time::Duration::from_secs(1));
-        }
-    }
-
-    // detect_and_build_machines must run in PreOp (machines initialize assuming PreOp)
-    detect_and_build_machines(state.clone(), &mut main_state);
-
-    // finalize_ethercat transitions to OP and waits until all subdevices confirm OP
-    match &eth_control {
-        Some(ecat) => {
-            finalize_ethercat(&mut main_state, ecat).expect("finalize_ethercat failed");
-            send_ecat_state(state.clone(), ecat.app_handle.get_state().into());
-        }
-        None => (),
-    };
 
     // Only emit machines to frontend after OP state is confirmed
     send_machines_event(state.clone());

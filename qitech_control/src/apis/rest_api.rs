@@ -13,8 +13,10 @@ use machine_implementations::machine_identification::{
     MachineIdentification, QiTechMachineIdentificationUnique,
 };
 use machine_implementations::winder2::Winder2;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
+use crate::persist;
 
 #[derive(Serialize, Debug, PartialEq)]
 struct MachineResponce {
@@ -142,6 +144,32 @@ async fn get_material_presets_handler() -> Result<&'static [MaterialPreset]> {
     json(MATERIAL_PRESETS)
 }
 
+#[derive(Serialize, Debug, PartialEq)]
+struct EthercatSettingResponse {
+    enabled: bool,
+}
+
+#[derive(Deserialize, Debug)]
+struct PostEthercatSettingRequest {
+    enabled: bool,
+}
+
+#[debug_handler]
+async fn get_ethercat_setting_handler() -> Result<EthercatSettingResponse> {
+    let enabled = persist::resolve_ethercat_enabled();
+    json(EthercatSettingResponse { enabled })
+}
+
+#[debug_handler]
+async fn post_ethercat_setting_handler(
+    Json(request): Json<PostEthercatSettingRequest>,
+) -> Result<EthercatSettingResponse> {
+    persist::set_ethercat_enabled(request.enabled).map_err(internal_error)?;
+
+    let enabled = persist::resolve_ethercat_enabled();
+    json(EthercatSettingResponse { enabled })
+}
+
 fn make_machine_router(id: MachineIdentification) -> Router<Arc<SharedAppState>> {
     let slug = id.slug();
     let path = format!("/machine/{slug}/{{serial}}");
@@ -155,6 +183,8 @@ pub fn rest_api_router() -> Router<Arc<SharedAppState>> {
     Router::new()
         .route("/machine", get(get_machines_handler))
         .route("/material-presets", get(get_material_presets_handler))
+        .route("/settings/ethercat", get(get_ethercat_setting_handler))
+        .route("/settings/ethercat", post(post_ethercat_setting_handler))
         .merge(make_machine_router(
             LaserMachine::MACHINE_IDENTIFICATION.into(),
         ))
