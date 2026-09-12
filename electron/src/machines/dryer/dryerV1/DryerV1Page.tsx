@@ -15,6 +15,12 @@ export function DryerV1Page() {
           icon: "lu:CirclePlay",
         },
         {
+          link: "overview",
+          activeLink: "overview",
+          title: "Overview",
+          icon: "lu:LayoutDashboard",
+        },
+        {
           link: "schedule",
           activeLink: "schedule",
           title: "Schedule",

@@ -42,9 +42,21 @@ export function useDryerV1() {
     };
   }, [serialString]);
 
-  const { state, defaultState, liveValues } = useDryerV1Namespace(
-    machineIdentification,
-  );
+  const {
+    state,
+    defaultState,
+    liveValues,
+    ts_temp_process,
+    ts_temp_safety,
+    ts_temp_regen_in,
+    ts_temp_regen_out,
+    ts_temp_fan_inlet,
+    ts_temp_return_air,
+    ts_pwm_fan1,
+    ts_pwm_fan2,
+    ts_power_process,
+    ts_power_regen,
+  } = useDryerV1Namespace(machineIdentification);
 
   const stateOptimistic = useStateOptimistic<StateEvent>();
 
@@ -150,6 +162,16 @@ export function useDryerV1() {
     state: stateOptimistic.value,
     defaultState,
     liveValues,
+    ts_temp_process,
+    ts_temp_safety,
+    ts_temp_regen_in,
+    ts_temp_regen_out,
+    ts_temp_fan_inlet,
+    ts_temp_return_air,
+    ts_pwm_fan1,
+    ts_pwm_fan2,
+    ts_power_process,
+    ts_power_regen,
 
     setRunning,
     setTargetTemperature,
