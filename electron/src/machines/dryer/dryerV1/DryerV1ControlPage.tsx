@@ -3,10 +3,11 @@ import { Page } from "@/components/Page";
 import { ControlGrid } from "@/control/ControlGrid";
 import { Label } from "@/control/Label";
 import { EditValue } from "@/control/EditValue";
+import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
+import { SelectionGroup } from "@/control/SelectionGroup";
 import { StatusBadge } from "@/control/StatusBadge";
-import { TouchButton } from "@/components/touch/TouchButton";
 import { Icon } from "@/components/Icon";
-import React from "react";
+import React, { useMemo } from "react";
 import { useDryerV1 } from "./useDryerV1";
 
 function isRunningStatus(status: number): boolean {
@@ -109,31 +110,25 @@ function formatRemaining(sec: number): string {
   return `${m}min ${s}s`;
 }
 
-function Measurement({
-  label,
-  value,
-  unit,
-  decimals = 1,
-}: {
-  label: string;
-  value: number | undefined;
-  unit: string;
-  decimals?: number;
-}) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-gray-500">{label}</span>
-      <strong className="font-mono">
-        {value !== undefined ? `${value.toFixed(decimals)} ${unit}` : "—"}
-      </strong>
-    </div>
-  );
+function formatMinutes(totalMins: number): string {
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 export function DryerV1ControlPage() {
   const {
     state,
     liveValues,
+    ts_temp_process,
+    ts_temp_regen_in,
+    ts_temp_regen_out,
+    ts_temp_fan_inlet,
+    ts_temp_return_air,
+    ts_pwm_fan1,
+    ts_pwm_fan2,
+    ts_power_process,
+    ts_power_regen,
     setRunning,
     setTargetTemperature,
     setAirVolume,
@@ -146,33 +141,22 @@ export function DryerV1ControlPage() {
   const warningMessage = state ? getWarningMessage(state.warning) : null;
   const remainingSec = liveValues?.remaining_seconds ?? null;
 
+  // Today's scheduled stop, if any - the backend already enforces this server-side
+  // (see check_auto_stop/compute_remaining_seconds), this is purely a display hint
+  // for which of Schedule vs. Drying Timer is currently in control.
+  const scheduledStopMins = useMemo(() => {
+    if (!state?.schedule) return null;
+    const idx = (new Date().getDay() + 6) % 7; // JS 0=Sun -> schedule's 0=Mon
+    const today = state.schedule[idx];
+    if (!today?.stop_minutes) return null;
+    const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+    return today.stop_minutes > nowMins ? today.stop_minutes : null;
+  }, [state?.schedule]);
+  const scheduleControlled = scheduledStopMins !== null;
+
   return (
     <Page>
       <ControlGrid columns={3}>
-        <ControlCard title="Mode" className="min-h-[280px]">
-          <TouchButton
-            icon={isRunning ? "lu:Pause" : "lu:Play"}
-            disabled={state === null}
-            className={isRunning ? "" : "bg-green-600 text-white"}
-            variant={isRunning ? "destructive" : undefined}
-            onClick={() => setRunning(!isRunning)}
-          >
-            {isRunning ? "Stop" : "Start"}
-          </TouchButton>
-          {statusInfo && (
-            <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-700">
-              <Icon name={statusInfo.icon as any} className="size-4" />
-              <span>{statusInfo.label}</span>
-            </div>
-          )}
-          {alarmMessage && (
-            <StatusBadge variant="error">{alarmMessage}</StatusBadge>
-          )}
-          {warningMessage && (
-            <StatusBadge variant="error">{warningMessage}</StatusBadge>
-          )}
-        </ControlCard>
-
         <ControlCard title="Timer">
           <div className="flex items-center gap-1.5 text-sm text-gray-400">
             <Icon name="lu:Clock" className="size-4" />
@@ -181,33 +165,33 @@ export function DryerV1ControlPage() {
           <div className="text-3xl font-bold">
             {remainingSec !== null ? formatRemaining(remainingSec) : "—"}
           </div>
-          <Label label="Drying Timer">
-            <EditValue
-              title="Drying Timer"
-              value={state?.drying_timer_minutes}
-              min={1}
-              max={1440}
-              step={5}
-              disabled={state === null}
-              renderValue={(val) => `${val.toFixed(0)} min`}
-              onChange={setDryingTimerMinutes}
-            />
-          </Label>
-          <p className="text-xs text-gray-400">
-            Only used on days with no scheduled stop time.
-          </p>
+          {scheduleControlled ? (
+            <div className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700">
+              <Icon name="lu:CalendarClock" className="size-4" />
+              <span>Schedule: stops at {formatMinutes(scheduledStopMins!)}</span>
+            </div>
+          ) : (
+            <Label label="Drying Timer">
+              <EditValue
+                title="Drying Timer"
+                value={state?.drying_timer_minutes}
+                min={1}
+                max={1440}
+                step={5}
+                disabled={state === null}
+                renderValue={(val) => `${val.toFixed(0)} min`}
+                onChange={setDryingTimerMinutes}
+              />
+            </Label>
+          )}
         </ControlCard>
 
         <ControlCard title="Temperature">
-          <Measurement
-            label="Process Temperature"
-            value={liveValues?.temp_process}
+          <TimeSeriesValueNumeric
+            label="Current Temperature"
             unit="C"
-          />
-          <Measurement
-            label="Safety Temperature"
-            value={liveValues?.temp_safety}
-            unit="C"
+            timeseries={ts_temp_process}
+            renderValue={(val) => val.toFixed(1)}
           />
           <Label label="Target Temperature">
             <EditValue
@@ -216,9 +200,9 @@ export function DryerV1ControlPage() {
               min={50}
               max={180}
               step={1}
-              unit="C"
               disabled={state === null}
               renderValue={(val) => val.toFixed(0)}
+              unit="C"
               onChange={setTargetTemperature}
             />
           </Label>
@@ -241,64 +225,104 @@ export function DryerV1ControlPage() {
           </Label>
         </ControlCard>
 
-        <ControlCard title="Regeneration">
-          <Measurement
-            label="Regen Inlet Temperature"
-            value={liveValues?.temp_regen_in}
-            unit="C"
+        <ControlCard title="Mode" className="min-h-[280px]">
+          <SelectionGroup<"Standby" | "ON">
+            value={isRunning ? "ON" : "Standby"}
+            disabled={state === null}
+            className="grid flex-1 grid-cols-2 gap-2"
+            options={{
+              Standby: {
+                children: "Standby",
+                icon: "lu:CirclePause",
+                isActiveClassName: "bg-green-600",
+                className: "h-full",
+              },
+              ON: {
+                children: "ON",
+                icon: "lu:CirclePlay",
+                isActiveClassName: "bg-green-600",
+                className: "h-full",
+              },
+            }}
+            onChange={(val) => setRunning(val === "ON")}
           />
-          <Measurement
-            label="Regen Outlet Temperature"
-            value={liveValues?.temp_regen_out}
+          {statusInfo && (
+            <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-700">
+              <Icon name={statusInfo.icon as any} className="size-4" />
+              <span>{statusInfo.label}</span>
+            </div>
+          )}
+          {alarmMessage && (
+            <StatusBadge variant="error">{alarmMessage}</StatusBadge>
+          )}
+          {warningMessage && (
+            <StatusBadge variant="error">{warningMessage}</StatusBadge>
+          )}
+        </ControlCard>
+
+        <ControlCard title="Regeneration">
+          <TimeSeriesValueNumeric
+            label="Regen Inlet Temperature"
             unit="C"
+            timeseries={ts_temp_regen_in}
+            renderValue={(val) => val.toFixed(1)}
+          />
+          <TimeSeriesValueNumeric
+            label="Regen Outlet Temperature"
+            unit="C"
+            timeseries={ts_temp_regen_out}
+            renderValue={(val) => val.toFixed(1)}
           />
         </ControlCard>
 
         <ControlCard title="Air Flow">
-          <Measurement
+          <TimeSeriesValueNumeric
             label="Fan Inlet Temperature"
-            value={liveValues?.temp_fan_inlet}
             unit="C"
+            timeseries={ts_temp_fan_inlet}
+            renderValue={(val) => val.toFixed(1)}
           />
-          <Measurement
+          <TimeSeriesValueNumeric
             label="Return Air Temperature"
-            value={liveValues?.temp_return_air}
             unit="C"
+            timeseries={ts_temp_return_air}
+            renderValue={(val) => val.toFixed(1)}
           />
-          <Measurement
-            label="Dew Point"
-            value={liveValues?.temp_dew_point}
-            unit="C"
-          />
+          <div className="text-sm text-gray-400">
+            Dew Point:{" "}
+            <span className="font-mono font-semibold text-gray-700">
+              {liveValues ? `${liveValues.temp_dew_point.toFixed(1)} C` : "—"}
+            </span>
+          </div>
         </ControlCard>
 
         <ControlCard title="Fans">
-          <Measurement
+          <TimeSeriesValueNumeric
             label="Fan 1 PWM"
-            value={liveValues?.pwm_fan1}
             unit="%"
-            decimals={0}
+            timeseries={ts_pwm_fan1}
+            renderValue={(val) => val.toFixed(0)}
           />
-          <Measurement
+          <TimeSeriesValueNumeric
             label="Fan 2 PWM"
-            value={liveValues?.pwm_fan2}
             unit="%"
-            decimals={0}
+            timeseries={ts_pwm_fan2}
+            renderValue={(val) => val.toFixed(0)}
           />
         </ControlCard>
 
         <ControlCard title="Power">
-          <Measurement
+          <TimeSeriesValueNumeric
             label="Process Power"
-            value={liveValues?.power_process}
             unit="W"
-            decimals={0}
+            timeseries={ts_power_process}
+            renderValue={(val) => val.toFixed(0)}
           />
-          <Measurement
+          <TimeSeriesValueNumeric
             label="Regen Power"
-            value={liveValues?.power_regen}
             unit="W"
-            decimals={0}
+            timeseries={ts_power_regen}
+            renderValue={(val) => val.toFixed(0)}
           />
         </ControlCard>
 
