@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use qitech_framework::Machine;
 use qitech_framework::machine::ActError;
@@ -46,6 +46,7 @@ pub struct LaserV1 {
 
     // -- misc ---
     request_timer: Duration,
+    last_successful_response: Instant,
 }
 
 impl MachineBuild for LaserV1 {
@@ -89,6 +90,7 @@ impl MachineBuild for LaserV1 {
             roundness: ctx.measurement::<Option<f64>>("roundness").build()?,
             out_of_tolerance: ctx.event("out_of_tolerance").build()?,
             request_timer: Duration::ZERO,
+            last_successful_response: Instant::now(),
         })
     }
 }
@@ -106,6 +108,7 @@ impl Machine for LaserV1 {
             self.diameter.set(convert(m.diameter));
             self.diameter_x.set(m.x_axis.map(convert));
             self.diameter_y.set(m.y_axis.map(convert));
+            self.last_successful_response = Instant::now();
         }
 
         // --- update roundness ---
@@ -124,12 +127,15 @@ impl Machine for LaserV1 {
 }
 
 impl LaserV1 {
+    const IO_FAILURE_GRACE_PERIOD: Duration = Duration::from_secs(5);
+
     fn update_device(&mut self, dt: Duration) -> ActResult {
         let mut laser = self.device.borrow_mut();
 
         if let Err(e) = laser.handle_response()
             && let Some(laser_error) = e.downcast_ref::<LaserError>()
             && let LaserError::IoErr() = laser_error
+            && self.last_successful_response.elapsed() > Self::IO_FAILURE_GRACE_PERIOD
         {
             return Err(ActError {
                 kind: ActErrorKind::HardwareFault("Physical hardware I/O broke.".into()),
