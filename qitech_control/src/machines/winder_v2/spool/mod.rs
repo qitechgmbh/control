@@ -105,11 +105,8 @@ impl Spool {
     }
 
     pub fn update(&mut self, dt: Duration, puller: &Puller, tension_arm: &TensionArm) {
-        if self.mode.get() != Mode::Wind {
-            self.speed_controller.update(dt, puller, tension_arm);
-            self.update_progress(dt, puller);
-        }
-
+        self.speed_controller.update(dt, puller, tension_arm);
+        self.update_progress(dt, puller);
         self.sync();
     }
 
