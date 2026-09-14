@@ -9,18 +9,17 @@ use super::AquaPathV1;
 impl Machine for AquaPathV1 {
     fn act(&mut self, _: Duration) -> ActResult {
         let now = Instant::now();
-        self.left_controller.update(now);
-        self.right_controller.update(now);
-        let left_notices = self.left_controller.drain_notices();
-        let right_notices = self.right_controller.drain_notices();
-        for notice in left_notices.iter().copied() {
-            self.emit_controller_notice("Left Reservoir", notice);
+
+        for reservoir in self.reservoirs_mut() {
+            reservoir.update(now);
         }
-        for notice in right_notices.iter().copied() {
-            self.emit_controller_notice("Right Reservoir", notice);
+        self.emit_pending_notices();
+
+        for reservoir in self.reservoirs_mut() {
+            reservoir.publish(now);
         }
-        self.update_measurements();
-        self.update_states(now);
+        self.mode_state.set(self.mode.clone());
+
         Ok(())
     }
 }
