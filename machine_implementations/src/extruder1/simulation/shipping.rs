@@ -10,10 +10,13 @@
 
 use control_core::controllers::heating::ObserverPiParams;
 
-use super::harness::{SimConfig, StrategyConfig, ThermalSim, Trace, ZoneTuning, plant_family};
+use super::harness::{
+    REALISTIC_SENSOR_NOISE_C, SimConfig, StrategyConfig, ThermalSim, Trace, ZoneTuning,
+    plant_family,
+};
 use super::params::ExtruderThermalParams;
 use super::scenario::Scenario;
-use crate::extruder1::heating_params::{AMBIENT_C, observer_pi_params};
+use crate::extruder1::heating_params::{AMBIENT_C, DEFAULT_MAX_CLAMP, PLANT, observer_pi_params};
 use crate::extruder1::zone::Zone;
 
 /// `[front, middle, back, nozzle]`, matching the simulator's port order.
@@ -280,4 +283,119 @@ fn the_simulated_strategy_is_the_shipping_one() {
         panic!("the shipping strategy must be ObserverPi");
     };
     assert_eq!(shipped, simulated);
+}
+
+// ---------------------------------------------------------------- quantisation limit cycle
+//
+// The gains that shipped before the `bench_heating` cost function accounted
+// for tail oscillation. A settle-time/overshoot check cannot see this: front,
+// back and nozzle each sustain a real, bounded temperature oscillation once
+// the sensor's own measurement noise is modelled, with a period landing
+// within a few seconds of that zone's own `tau_filter_s` — see
+// `harness::REALISTIC_SENSOR_NOISE_C` and `README.md`.
+
+/// `(kp, ki, tau_filter_s, tau_sensor_s)` per zone, `[front, middle, back,
+/// nozzle]` — `heating_params::OBSERVER_PI_GAINS` before the oscillation fix.
+/// A literal snapshot, not a reference to `observer_pi_params()` (which now
+/// carries the retuned gains), so this stays meaningful regardless of future
+/// retunes.
+const PRE_FIX_OBSERVER_PI_GAINS: [(f64, f64, f64, f64); 4] = [
+    (0.110, 0.00053, 16.0, 90.0),
+    (0.074, 0.0, 18.2, 128.0),
+    (0.109, 0.00035, 19.4, 110.0),
+    (0.322, 0.00118, 20.3, 90.0),
+];
+
+fn observer_pi_params_from(gains: [(f64, f64, f64, f64); 4]) -> [ObserverPiParams; 4] {
+    Zone::ALL.map(|zone| {
+        let p = PLANT[zone.port()];
+        let (kp, ki, tau_filter_s, tau_sensor_s) = gains[zone.port()];
+        ObserverPiParams {
+            kp,
+            ki,
+            tau_sensor_s,
+            tau_filter_s,
+            lead_max_k: 45.0,
+            ff_duty_per_k: p.ff_duty_per_k,
+            ambient_c: AMBIENT_C,
+            max_clamp: DEFAULT_MAX_CLAMP[zone.port()],
+        }
+    })
+}
+
+/// Long, steady hold with realistic sensor noise — the direct instrument for
+/// the tail oscillation a settle-time/overshoot check cannot see.
+fn run_with_noise(strategy: StrategyConfig, sp: [f64; 4]) -> Trace {
+    let config = SimConfig {
+        strategy,
+        sensor_noise_c: REALISTIC_SENSOR_NOISE_C,
+        ..SimConfig::default()
+    };
+    ThermalSim::new(ExtruderThermalParams::calibrated(), config).run(&scenario(sp))
+}
+
+/// Threshold above the bare noise floor a zone's *steel* (not sensor) tail
+/// std-dev has to clear to count as "really oscillating" rather than just
+/// carrying the irreducible sensor noise through — see
+/// `Trace::tail_steel_std_dev_k`. Set from what the pre-fix gains actually
+/// measure on `PROFILE_B` (front 0.017, back 0.017, nozzle 0.041 K), with
+/// margin below the smallest of the three.
+const REAL_OSCILLATION_K: f64 = 0.012;
+
+/// Proves the simulation now reproduces the real-machine symptom that
+/// motivated this fix: held at a normal setpoint, with the gains that shipped
+/// before the retune, front/back/nozzle sustain a real steel-temperature
+/// oscillation — not just sensor noise passing through — while middle (heater
+/// usually at 0 W, nothing for a spurious kick to swing) does not.
+#[test]
+fn pre_fix_gains_oscillate_under_realistic_sensor_noise() {
+    let strategy = StrategyConfig::ObserverPi(observer_pi_params_from(PRE_FIX_OBSERVER_PI_GAINS));
+    let trace = run_with_noise(strategy, PROFILE_B);
+    for zone in [Zone::Front, Zone::Back, Zone::Nozzle] {
+        let osc = trace.tail_steel_std_dev_k(zone, 0.2);
+        assert!(
+            osc > REAL_OSCILLATION_K,
+            "{}: expected a real oscillation with the pre-fix gains, steel tail std-dev only \
+             {osc:.4} K",
+            zone.name()
+        );
+    }
+}
+
+/// The fix, as far as the 2026-09-15 retune actually got: a budget-limited
+/// `bench_heating --search observer-pi` run measurably reduced Back and
+/// Nozzle's oscillation (~41 % and ~27 %) without regressing Front or Middle
+/// — it did not eliminate it. Pin that honestly rather than a threshold this
+/// gain set cannot clear; a longer search or duty-side smoothing is the next
+/// step if the reduction is not enough on the real machine.
+#[test]
+fn retuned_gains_reduce_the_oscillation() {
+    let pre_fix = StrategyConfig::ObserverPi(observer_pi_params_from(PRE_FIX_OBSERVER_PI_GAINS));
+    let before = run_with_noise(pre_fix, PROFILE_B);
+    let after = run_with_noise(shipping(), PROFILE_B);
+
+    for zone in [Zone::Back, Zone::Nozzle] {
+        let (b, a) = (
+            before.tail_steel_std_dev_k(zone, 0.2),
+            after.tail_steel_std_dev_k(zone, 0.2),
+        );
+        assert!(
+            a < 0.8 * b,
+            "{}: expected at least a 20% reduction, {b:.4} K -> {a:.4} K",
+            zone.name()
+        );
+    }
+    // Front and Middle were not the target of this retune; guard against a
+    // regression on them, not a specific improvement.
+    for zone in [Zone::Front, Zone::Middle] {
+        let (b, a) = (
+            before.tail_steel_std_dev_k(zone, 0.2),
+            after.tail_steel_std_dev_k(zone, 0.2),
+        );
+        assert!(
+            a < b + 0.01,
+            "{}: the retune should not make this zone meaningfully worse, {b:.4} K -> {a:.4} K",
+            zone.name()
+        );
+    }
 }

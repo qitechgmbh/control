@@ -47,6 +47,29 @@ pub const DT_CTRL_S: f64 = 0.001;
 /// derivative term is very sensitive to this number.
 pub const SENSOR_PERIOD_S: f64 = 0.25;
 
+/// A physically plausible RTD/EL3204 measurement-noise floor, in °C —
+/// well under one 0.1 °C quantisation step.
+///
+/// Not cosmetic: with `sensor_noise_c = 0.0` (today's default) the closed loop
+/// converges to an exact fixed point and the raw reading locks onto a single
+/// quantised value forever, so nothing can ever excite
+/// [`control_core::controllers::heating::SensorLagObserver`]'s lead term after
+/// that — the simulation becomes structurally incapable of showing a
+/// sustained oscillation, no matter how marginal the gains are. Add even this
+/// small a noise floor and the picture changes completely: repeated
+/// quantisation dither near the noise floor kicks the lead term on every
+/// sensor refresh, and for front/back/nozzle (kept on the shipping
+/// `OBSERVER_PI_GAINS`) that repeatedly excites a sustained duty/temperature
+/// oscillation whose period lands within a few seconds of each zone's own
+/// `tau_filter_s` — matching the ~15–25 s cycle measured on the real machine
+/// (see `simulation/README.md`) almost exactly, and matching why middle
+/// (heater usually at 0 W, nothing for a spurious kick to swing) does not
+/// oscillate either in simulation or in the real recordings. This is the
+/// single value found, by sweeping `--sensor-noise` against a long closed-loop
+/// hold, to reliably reproduce that signature without being swamped by pure
+/// noise pass-through at higher amplitudes.
+pub const REALISTIC_SENSOR_NOISE_C: f64 = 0.025;
+
 /// PID gains for one zone.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ZoneTuning {
@@ -164,6 +187,13 @@ pub struct SimConfig {
     pub pwm_period: Duration,
     /// Over-temperature cutout in °C.
     pub max_temperature_c: f64,
+    /// Half-width of uniform noise added to the sensor reading before EL3204
+    /// quantisation, in °C. Defaults to `0.0`, reproducing the historical
+    /// noiseless behaviour exactly (every scenario/test that doesn't ask for
+    /// noise is unaffected). See [`REALISTIC_SENSOR_NOISE_C`] for why this
+    /// matters — a noiseless plant can never sustain the quantisation-driven
+    /// oscillation the real machine shows.
+    pub sensor_noise_c: f64,
 }
 
 impl Default for SimConfig {
@@ -176,6 +206,7 @@ impl Default for SimConfig {
             strategy: StrategyConfig::Pid(ZoneTuning::PRODUCTION),
             pwm_period: Duration::from_millis(500),
             max_temperature_c: 300.0,
+            sensor_noise_c: 0.0,
         }
     }
 }
@@ -246,6 +277,47 @@ impl Trace {
         self.peak_c(zone) - self.setpoints_c[zone.port()]
     }
 
+    /// Standard deviation of a zone's sensor reading over the last `frac` of
+    /// the run's samples, in K.
+    ///
+    /// A settle-time/overshoot check is structurally blind to a small,
+    /// sustained oscillation that never leaves the tolerance band — exactly
+    /// the shipping `ObserverPi` gains' real-machine symptom (see
+    /// `README.md`). This is the direct instrument for that: it only means
+    /// anything with `SimConfig::sensor_noise_c` nonzero, since a noiseless
+    /// closed loop converges to an exact fixed point and always reads ~0
+    /// here regardless of how marginal the gains are. Comparable to the real
+    /// machine's exported temperature column, which is likewise a noisy
+    /// reading, not the bare steel.
+    pub fn tail_std_dev_k(&self, zone: Zone, frac: f64) -> f64 {
+        Self::tail_std_dev(&self.samples, frac, |s| s.sensor_c[zone.port()])
+    }
+
+    /// Standard deviation of a zone's true (unmeasured) steel temperature over
+    /// the last `frac` of the run's samples, in K.
+    ///
+    /// Unlike [`Self::tail_std_dev_k`], this is not directly polluted by
+    /// [`SimConfig::sensor_noise_c`] itself — the noise only reaches `steel_c`
+    /// by way of the controller reacting to it and actually swinging duty. So
+    /// where `tail_std_dev_k` mixes "irreducible sensor noise" with "the loop
+    /// amplifying that noise into a real oscillation", this isolates the
+    /// second, tuning-fixable part — the one a gain search should be scored
+    /// against, so it doesn't chase the sensor noise floor.
+    pub fn tail_steel_std_dev_k(&self, zone: Zone, frac: f64) -> f64 {
+        Self::tail_std_dev(&self.samples, frac, |s| s.steel_c[zone.port()])
+    }
+
+    fn tail_std_dev(samples: &[Sample], frac: f64, value: impl Fn(&Sample) -> f64) -> f64 {
+        let n = samples.len();
+        if n < 4 {
+            return 0.0;
+        }
+        let start = n - ((n as f64 * frac).round() as usize).clamp(4, n);
+        let vals: Vec<f64> = samples[start..].iter().map(value).collect();
+        let mean = vals.iter().sum::<f64>() / vals.len() as f64;
+        (vals.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / vals.len() as f64).sqrt()
+    }
+
     /// Time in seconds to first reach `fraction` of the way from the starting
     /// temperature to the setpoint. `None` if it never did.
     pub fn rise_time_s(&self, zone: Zone, fraction: f64) -> Option<f64> {
@@ -314,6 +386,10 @@ pub struct ThermalSim {
     el2004: EL2004,
     /// Sensor sample-and-hold, in °C, indexed by [`Zone::port`].
     held_c: [f64; 4],
+    /// Fixed-seed source for `config.sensor_noise_c` — deterministic so a
+    /// `bench_heating` cost evaluation is reproducible run to run, the same
+    /// way `optimize::Rng`'s other use (multi-start search) is.
+    noise_rng: super::optimize::Rng,
 }
 
 impl ThermalSim {
@@ -345,6 +421,7 @@ impl ThermalSim {
             el3204: EL3204::new(),
             el2004: EL2004::new(),
             held_c: [ambient; 4],
+            noise_rng: super::optimize::Rng::new(0xC0FF_EE00),
         };
         sim.publish_sensors();
         sim
@@ -510,8 +587,17 @@ impl ThermalSim {
                 // The EL3204 only refreshes on its own conversion cycle; in
                 // between, the controller re-reads a held value.
                 if now_tick_ns >= next_sensor_ns {
+                    let noise = self.config.sensor_noise_c;
                     for zone in Zone::ALL {
-                        self.held_c[zone.port()] = self.model.sensor_c(zone);
+                        // Uniform, not Gaussian: simple, bounded, and the
+                        // point is only to seed quantisation dither, not to
+                        // model the RTD/ADC noise spectrum precisely.
+                        let n = if noise > 0.0 {
+                            self.noise_rng.range(-noise, noise)
+                        } else {
+                            0.0
+                        };
+                        self.held_c[zone.port()] = self.model.sensor_c(zone) + n;
                     }
                     self.publish_sensors();
                     next_sensor_ns += sensor_ns;
