@@ -83,11 +83,55 @@ pub const PLANT: [PlantCoefficients; 4] = [
 /// also runs with no integral at all** — its feedforward holds setpoint on its
 /// own, and an integral is precisely the mechanism that carries a loop past the
 /// target on arrival. `middle_reaches_setpoint_without_an_integral` pins that.
+///
+/// Retuned 2026-09-15 for a quantisation-driven limit cycle found on the real
+/// machine: front/back/nozzle each sustain a real, bounded oscillation with a
+/// period matching their own `tau_filter_s`, driven by the `SensorLagObserver`
+/// lead term amplifying 0.1 °C sensor quantisation into spurious duty swings
+/// (see `simulation/README.md`). `bench_heating`'s search previously had no
+/// way to see this — a settle-time/overshoot check is blind to a sustained
+/// oscillation that never leaves tolerance. The fix wired in
+/// `SimConfig::sensor_noise_c` and `Trace::tail_steel_std_dev_k` so the search
+/// could score it, at full timing resolution — the coarser `fast` step used
+/// for the settle-time sweep badly distorts this specific mechanism and is
+/// not trustworthy for it (see `oscillation_cost`'s doc comment). A first,
+/// budget-limited pass mainly raised nozzle's `ki` (0.00118 → 0.00164): back's
+/// steel oscillation dropped ~41 %, nozzle's ~27 %, front and middle
+/// essentially unchanged. **This measurably reduces the oscillation, it does
+/// not eliminate it** — a longer search, or complementary duty-side
+/// smoothing, is worth revisiting if it is still visible on the machine.
+///
+/// Kept at the optimiser's full precision rather than rounded to a few
+/// figures: this system sits close enough to the limit cycle's stability
+/// boundary that ~1% rounding (e.g. back's `109.7` vs `109.72138714790346`)
+/// was enough by itself to put it back into a mild oscillation in testing —
+/// `retuned_gains_reduce_the_oscillation` caught it. Regenerate with
+/// `--search observer-pi` rather than hand-editing these.
 const OBSERVER_PI_GAINS: [(f64, f64, f64, f64); 4] = [
-    (0.110, 0.00053, 16.0, 90.0),
-    (0.074, 0.0, 18.2, 128.0),
-    (0.109, 0.00035, 19.4, 110.0),
-    (0.322, 0.00118, 20.3, 90.0),
+    (
+        0.11108586013317108,
+        0.0005372999000549317,
+        17.06717050075531,
+        90.38324475288391,
+    ),
+    (
+        0.07350360679626465,
+        0.0,
+        18.300373625755313,
+        128.3832447528839,
+    ),
+    (
+        0.11008586013317108,
+        0.0003572999000549316,
+        19.36341073513031,
+        109.72138714790346,
+    ),
+    (
+        0.3230858601331711,
+        0.0016372999000549317,
+        20.40037362575531,
+        90.38324475288391,
+    ),
 ];
 
 /// `ObserverPi` parameters per zone, indexed by [`Zone::port`].

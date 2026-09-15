@@ -174,6 +174,9 @@ fn main() {
         }
     }
 
+    if let Some(v) = value("--dt-plant").and_then(|v| v.parse::<f64>().ok()) {
+        config.dt_plant_s = v;
+    }
     if let Some(v) = value("--dt-ctrl").and_then(|v| v.parse::<f64>().ok()) {
         config.dt_ctrl_s = v;
     }
@@ -182,6 +185,9 @@ fn main() {
     }
     if let Some(v) = value("--max-temp").and_then(|v| v.parse::<f64>().ok()) {
         config.max_temperature_c = v;
+    }
+    if let Some(v) = value("--sensor-noise").and_then(|v| v.parse::<f64>().ok()) {
+        config.sensor_noise_c = v;
     }
 
     if flag("--fit") {
