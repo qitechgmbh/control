@@ -100,6 +100,29 @@ impl MainNamespaceManager {
         self.ecat_devices = Some(devices);
     }
 
+    pub fn set_ecat_lost(&mut self, reason: &str) {
+        self.ecat_devices = None;
+        self.ecat_state = Some("lost");
+
+        let devices_event = SocketIOEvent::new(
+            "EthercatDevicesEvent",
+            EthercatDevicesEvent::Error(reason.to_string()),
+        );
+
+        let state_event = SocketIOEvent::new(
+            "EthercatStateEvent",
+            EthercatDevicesEvent::State("lost".to_string()),
+        );
+
+        tracing::error!("EtherCAT lost: {reason}");
+        self.broadcast(devices_event);
+        self.broadcast(state_event);
+
+        for ident in self.machines.keys().cloned().collect::<Vec<_>>() {
+            self.remove_machine(ident);
+        }
+    }
+
     pub fn add_machine(
         &mut self,
         ident: MachineInstanceIdentification,
@@ -127,6 +150,24 @@ impl MainNamespaceManager {
         );
 
         tracing::info!("Added Machine: {ident}");
+        self.broadcast(event);
+    }
+
+    pub fn remove_machine(&mut self, ident: MachineInstanceIdentification) {
+        if self.machines.remove(&ident).is_none() {
+            return;
+        }
+
+        // --- always broadcast, even if no machines are left ---
+        // the frontend derives removals by diffing this snapshot
+        let event = SocketIOEvent::new(
+            "MachinesEvent",
+            MachinesEvent {
+                machines: self.machines.values().cloned().collect(),
+            },
+        );
+
+        tracing::info!("Removed Machine: {ident}");
         self.broadcast(event);
     }
 
