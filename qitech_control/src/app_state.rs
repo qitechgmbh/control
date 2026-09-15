@@ -74,7 +74,7 @@ pub struct SharedAppState {
         RwLock<HashMap<QiTechMachineIdentificationUnique, Sender<MachineMessage>>>,
     pub ethercat_meta_datas: RwLock<Vec<EtherCatDeviceMetaData>>,
     pub socketio_setup: SocketioSetup,
-    pub ethercat_thread_channel: Option<EtherCATThreadChannel>,
+    pub ethercat_thread_channel: RwLock<Option<EtherCATThreadChannel>>,
 }
 
 impl SharedAppState {
@@ -188,6 +188,23 @@ impl SharedAppState {
         bail!("Unknown machine!")
     }
 
+    pub fn set_ethercat_thread_channel(
+        &self,
+        channel: Option<EtherCATThreadChannel>,
+    ) -> Result<(), anyhow::Error> {
+        let mut guard = self.ethercat_thread_channel.try_write()?;
+        *guard = channel;
+        drop(guard);
+        Ok(())
+    }
+
+    pub fn clear_machines_sync(&self) -> Result<(), anyhow::Error> {
+        self.machines.try_write()?.clear();
+        self.machines_with_channel.try_write()?.clear();
+        self.ethercat_meta_datas.try_write()?.clear();
+        Ok(())
+    }
+
     pub fn add_machine_sync(
         &self,
         ident: QiTechMachineIdentificationUnique,
@@ -245,7 +262,7 @@ impl SharedAppState {
                 socket_queue_rx: RwLock::new(socket_queue_rx),
             },
             ethercat_meta_datas: RwLock::new(vec![]),
-            ethercat_thread_channel: None,
+            ethercat_thread_channel: RwLock::new(None),
         }
     }
 }
