@@ -99,7 +99,9 @@ impl Spool {
                 Mode::Wind => (true, true),
             };
 
-            self.device.borrow_mut().set_enabled(Self::PORT, dev_enabled);
+            self.device
+                .borrow_mut()
+                .set_enabled(Self::PORT, dev_enabled);
             self.speed_controller.set_enalbed(sc_enabled);
         }
     }
