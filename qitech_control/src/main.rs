@@ -34,7 +34,7 @@ use crate::machines::aquapath::AquaPathV1;
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     interface::bring_up_all_ethernet();
-    let config_rt = RuntimeConfiguration::new()
+    let mut config_rt = RuntimeConfiguration::new()
         .requests_per_cycle_max(10)
         .export_interval(Duration::from_secs_f64(1.0 / 32.0))
         .machine::<AquaPathV1>()
@@ -42,14 +42,27 @@ pub async fn main() -> anyhow::Result<()> {
         .machine::<WinderV1_7031_Spool>()
         .machine::<ExtruderV1>()
         .machine::<ExtruderV2>()
-        // TODO: do not hardocde the id
-        .modbus_rtu_device::<LaserDevice>(
-            "pci-0000:c6:00.0-usbv2-0:2.2:1.0-port0".to_string(),
-            LaserV1::IDENTIFICATION.unique(1),
-            1,
-            None,
-        )
         .machine::<LaserV1>();
+
+    // --- bind the modbus rtu drivers to whichever ports the user assigned them to ---
+    for assignment in modbus::assignments::read() {
+        config_rt = if assignment.machine.machine == LaserV1::IDENTIFICATION {
+            config_rt.modbus_rtu_device::<LaserDevice>(
+                assignment.port,
+                assignment.machine,
+                assignment.slave_id,
+                None,
+            )
+        } else {
+            tracing::warn!(
+                "no modbus rtu driver for machine {} assigned to port {}",
+                assignment.machine,
+                assignment.port
+            );
+
+            config_rt
+        };
+    }
 
     // --- determine if ethercat is enabled ---
     let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {
@@ -68,7 +81,11 @@ pub async fn main() -> anyhow::Result<()> {
                 .with_ansi(false)
                 .init();
             let state = SharedState::default();
-            let state_legacy = LegacySharedState::new();
+            let mut state_legacy = LegacySharedState::new();
+
+            // --- seed the setup page's port list; the runtime does not announce it ---
+            api::broadcast_modbus_devices(&mut state_legacy);
+
             let config_hub = HubConfiguration::new()
                 .listener(SocketIODispatcher::new(state.clone(), state_legacy.clone()))
                 .actor(Server::new(state, state_legacy));
