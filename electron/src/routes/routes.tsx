@@ -27,6 +27,12 @@ import { Winder2_7031SettingPage } from "@/machines/winder/winder2_7031/Winder2_
 import { Winder2_7031GraphsPage } from "@/machines/winder/winder2_7031/Winder2_7031_Graphs";
 import { Winder2_7031PresetsPage } from "@/machines/winder/winder2_7031/Winder2_7031_PresetsPage";
 
+import { RewinderControlPage } from "@/machines/winder/rewinder/RewinderControlPage";
+import { RewinderGraphsPage } from "@/machines/winder/rewinder/RewinderGraphs";
+import { RewinderPage } from "@/machines/winder/rewinder/RewinderPage";
+import { RewinderPresetsPage } from "@/machines/winder/rewinder/RewinderPresetsPage";
+import { RewinderSettingsPage } from "@/machines/winder/rewinder/RewinderSettings";
+
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
 import { Extruder2SettingsPage } from "@/machines/extruder/extruder2/Extruder2Settings";
@@ -50,6 +56,12 @@ import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
 import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 import { Laser1SettingsPage } from "@/machines/laser/laser1/Laser1SettingsPage";
+
+import { DryerPage } from "@/machines/dryer/DryerPage";
+import { DryerControlPage } from "@/machines/dryer/DryerControlPage";
+import { DryerOverviewPage } from "@/machines/dryer/DryerOverviewPage";
+import { DryerSchedulePage } from "@/machines/dryer/DryerSchedulePage";
+import { DryerMaterialPage } from "@/machines/dryer/DryerMaterialPage";
 
 import { WagoSerialPage } from "@/machines/wago_serial/WagoSerialPage";
 import { WagoSerialControlPage } from "@/machines/wago_serial/WagoSerialControlPage";
@@ -103,6 +115,7 @@ import { Wago750460MachineControlPage } from "@/machines/minimal_machines/wago75
 
 import { BottlecapsTestMachinePage } from "@/machines/minimal_machines/bottlecaps_test_machine/BottlecapsTestMachinePage";
 import { BottlecapsTestMachineControlPage } from "@/machines/minimal_machines/bottlecaps_test_machine/BottlecapsTestMachineControlPage";
+import { Laser1ManualPage } from "@/machines/laser/laser1/Laser1Manual";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -370,6 +383,36 @@ export const winder2_7031PresetsRoute = createRoute({
   component: () => <Winder2_7031PresetsPage />,
 });
 
+export const rewinderSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "rewinder/$serial",
+  component: () => <RewinderPage />,
+});
+
+export const rewinderControlRoute = createRoute({
+  getParentRoute: () => rewinderSerialRoute,
+  path: "control",
+  component: () => <RewinderControlPage />,
+});
+
+export const rewinderSettingsRoute = createRoute({
+  getParentRoute: () => rewinderSerialRoute,
+  path: "settings",
+  component: () => <RewinderSettingsPage />,
+});
+
+export const rewinderGraphsRoute = createRoute({
+  getParentRoute: () => rewinderSerialRoute,
+  path: "graphs",
+  component: () => <RewinderGraphsPage />,
+});
+
+export const rewinderPresetsRoute = createRoute({
+  getParentRoute: () => rewinderSerialRoute,
+  path: "presets",
+  component: () => <RewinderPresetsPage />,
+});
+
 export const winder2ControlRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "control",
@@ -412,6 +455,12 @@ export const laser1ControlRoute = createRoute({
   component: () => <Laser1ControlPage />,
 });
 
+export const laser1ManualRoute = createRoute({
+  getParentRoute: () => laser1SerialRoute,
+  path: "manual",
+  component: () => <Laser1ManualPage />,
+});
+
 export const laser1GraphsRoute = createRoute({
   getParentRoute: () => laser1SerialRoute,
   path: "graphs",
@@ -428,6 +477,36 @@ export const laser1SettingsRoute = createRoute({
   getParentRoute: () => laser1SerialRoute,
   path: "settings",
   component: () => <Laser1SettingsPage />,
+});
+
+export const dryerSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "dryer_v1/$serial",
+  component: () => <DryerPage />,
+});
+
+export const dryerControlRoute = createRoute({
+  getParentRoute: () => dryerSerialRoute,
+  path: "control",
+  component: () => <DryerControlPage />,
+});
+
+export const dryerOverviewRoute = createRoute({
+  getParentRoute: () => dryerSerialRoute,
+  path: "overview",
+  component: () => <DryerOverviewPage />,
+});
+
+export const dryerScheduleRoute = createRoute({
+  getParentRoute: () => dryerSerialRoute,
+  path: "schedule",
+  component: () => <DryerSchedulePage />,
+});
+
+export const dryerMaterialRoute = createRoute({
+  getParentRoute: () => dryerSerialRoute,
+  path: "material",
+  component: () => <DryerMaterialPage />,
 });
 
 export const mock1SerialRoute = createRoute({
@@ -661,9 +740,17 @@ export const rootTree = RootRoute.addChildren([
     machinesRoute.addChildren([
       laser1SerialRoute.addChildren([
         laser1ControlRoute,
+        laser1ManualRoute,
         laser1GraphsRoute,
         laser1PresetsRoute,
         laser1SettingsRoute,
+      ]),
+
+      dryerSerialRoute.addChildren([
+        dryerControlRoute,
+        dryerOverviewRoute,
+        dryerScheduleRoute,
+        dryerMaterialRoute,
       ]),
 
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
@@ -712,6 +799,13 @@ export const rootTree = RootRoute.addChildren([
         winder2SettingsRoute,
         winder2GraphsRoute,
         winder2PresetsRoute,
+      ]),
+
+      rewinderSerialRoute.addChildren([
+        rewinderControlRoute,
+        rewinderSettingsRoute,
+        rewinderGraphsRoute,
+        rewinderPresetsRoute,
       ]),
 
       extruder2Route.addChildren([

@@ -16,6 +16,7 @@ use control_core::socketio::{
 };
 use machine_implementations::{
     Hardware, IdentifiedEthercat, IdentifiedModbus, MachineHardware, MachineMessage, QiTechMachine,
+    dryer::{DryerMachine, device::DryerDevice},
     laser::LaserMachine,
     machine_identification::{
         DeviceHardwareIdentificationEthercat, DeviceIdentification, DeviceMachineIdentification,
@@ -291,6 +292,27 @@ impl MainState {
         hw.hw.push(Hardware::Modbus(id_modbus));
         self.hardware.insert(ident, hw);
         Ok(())
+    }
+
+    pub fn generate_machine_hardware_from_dryer_serial(
+        &mut self,
+        path: &str,
+    ) -> Result<MachineIdentificationUnique, anyhow::Error> {
+        let dryer_device = DryerDevice::new(path.to_owned(), 1, None)?;
+        let dryer_device: Rc<RefCell<DryerDevice>> = Rc::new(RefCell::new(dryer_device));
+        let id_modbus: IdentifiedModbus = IdentifiedModbus { hw: dryer_device };
+        let ident = MachineIdentificationUnique {
+            machine_ident: DryerMachine::MACHINE_IDENTIFICATION,
+            serial: 1,
+        };
+        let mut hw = MachineHardware {
+            hw: vec![],
+            identification: ident,
+            ethercat_interface: None,
+        };
+        hw.hw.push(Hardware::Modbus(id_modbus));
+        self.hardware.insert(ident, hw);
+        Ok(ident)
     }
 
     pub fn generate_machine_hardware_from_ethercat(

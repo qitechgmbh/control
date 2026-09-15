@@ -69,6 +69,14 @@ const formSchema = z.object({
 
 type FormSchema = z.infer<typeof formSchema>;
 
+export function isDeviceAssigned(device: Device): boolean {
+  const dmi = device.device_identification.device_machine_identification;
+  if (!dmi) return false;
+  const { machine_identification: mi, serial } =
+    dmi.machine_identification_unique;
+  return mi.vendor !== 0 || mi.machine !== 0 || serial !== 0 || dmi.role !== 0;
+}
+
 export function DeviceEepromDialog({ device, disabled }: Props) {
   const [open, setOpen] = React.useState(false);
   const key = useMemo(() => Math.random(), [open]);
@@ -96,6 +104,7 @@ type ContentProps = {
 export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   const client = useClient();
   const [isApplying, setIsApplying] = useState(false);
+  const [isUnassigning, setUnassigning] = useState(false);
   const [writeSuccess, setWriteSuccess] = useState(false);
 
   const [numpadOpen, setNumpadOpen] = useState(false);
@@ -120,7 +129,11 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   const values = useFormValues(form);
 
   const isChangingMachine =
-    initialMachine != null && values.machine !== initialMachine;
+    initialMachine != null &&
+    !!values.machine &&
+    values.machine !== initialMachine;
+
+  const isAssigned = isDeviceAssigned(device);
 
   const performWrite = (values: FormSchema) =>
     client.writeMachineDeviceIdentification({
@@ -140,6 +153,48 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
         role: parseInt(values.role!),
       },
     });
+
+  const performUnassign = () =>
+    client.writeMachineDeviceIdentification({
+      hardware_identification_ethercat: {
+        subdevice_index:
+          device.device_identification.device_hardware_identification.Ethercat!
+            .subdevice_index,
+      },
+      device_machine_identification: {
+        machine_identification_unique: {
+          machine_identification: {
+            vendor: 0,
+            machine: 0,
+          },
+          serial: 0,
+        },
+        role: 0,
+      },
+    });
+
+  const handleUnassign = () => {
+    if (
+      !window.confirm(
+        "Unassigning removes this terminal from its machine. A backend restart is required and the machine will not work until another terminal takes this role. Continue?",
+      )
+    )
+      return;
+    setUnassigning(true);
+    performUnassign()
+      .then((res) => {
+        if (res.success) {
+          setWriteSuccess(true);
+          form.reset({ machine: "", serial: "", role: "" });
+          toast(
+            <Toast title="Unassigned" icon="lu:CircleCheck">
+              Assignment cleared. Restart required to apply changes.
+            </Toast>,
+          );
+        }
+      })
+      .finally(() => setUnassigning(false));
+  };
 
   const confirmIfChangingMachine = (): boolean => {
     if (!isChangingMachine) return true;
@@ -511,7 +566,9 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="submit"
-                disabled={!form.formState.isValid || isApplying}
+                disabled={
+                  !form.formState.isValid || isApplying || isUnassigning
+                }
                 onClick={() => setWriteSuccess(false)}
               >
                 <Icon name="lu:Save" /> Save
@@ -519,7 +576,9 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
               <Button
                 type="button"
                 variant="outline"
-                disabled={!form.formState.isValid || isApplying}
+                disabled={
+                  !form.formState.isValid || isApplying || isUnassigning
+                }
                 onClick={handleApplyAndRestart}
                 aria-busy={isApplying}
                 title="Saves assignment then restarts the backend. Restart is required for changes to take effect."
@@ -533,6 +592,30 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                   <>
                     <Icon name="lu:RotateCcw" />
                     Apply & restart
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={!isAssigned || isApplying || isUnassigning}
+                onClick={handleUnassign}
+                aria-busy={isUnassigning}
+                title={
+                  isAssigned
+                    ? "Clears the machine assignment from this terminal's EEPROM. Restart is required for changes to take effect."
+                    : "This terminal is not assigned to a machine."
+                }
+              >
+                {isUnassigning ? (
+                  <>
+                    <LoadingSpinner />
+                    Unassigning…
+                  </>
+                ) : (
+                  <>
+                    <Icon name="lu:Unlink" />
+                    Unassign
                   </>
                 )}
               </Button>
