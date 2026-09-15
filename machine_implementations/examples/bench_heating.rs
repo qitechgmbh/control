@@ -21,7 +21,7 @@ use machine_implementations::extruder1::heating_params::{PLANT, observer_pi_para
 use machine_implementations::extruder1::simulation::{
     ExtruderThermalParams, Scenario, SimConfig, StrategyConfig, ThermalSim, Trace, Zone,
     ZoneTuning,
-    harness::plant_family,
+    harness::{DT_CTRL_S, DT_PLANT_S, REALISTIC_SENSOR_NOISE_C, plant_family},
     optimize::{self, Rng},
 };
 
@@ -58,6 +58,32 @@ const FREE_OVERSHOOT_K: [f64; 4] = [2.0, 0.0, 2.0, 2.0];
 const OVERSHOOT_WEIGHT: f64 = 40.0; // seconds of cost per K of excess overshoot
 const FINAL_ERR_WEIGHT: f64 = 250.0; // per K of final error when never settled
 const NEVER_SETTLED_BASE: f64 = 2.5; // x DURATION_S when a zone never settles
+
+/// Seconds of cost per K of tail standard deviation — the sustained
+/// quantisation-driven oscillation a settle-time/overshoot check cannot see
+/// (see `Trace::tail_steel_std_dev_k` and `simulation/README.md`). `DURATION_S`
+/// at 6000 s leaves a ~1200 s tail window, dozens of cycles at the ~15-25 s
+/// period the real machine shows, so this has plenty of signal to work with.
+///
+/// This scores the *steel* signal, not the sensor — typical magnitudes with
+/// the shipping gains are ~0.03-0.08 K, an order of magnitude smaller than
+/// the noisy sensor reading a person would actually see (~0.15-0.5 K).
+///
+/// Two miscalibrations already found and corrected here, in case a future
+/// pass has to redo this:
+/// 1. A first pass at `400` (sized against the sensor-scale figure by
+///    mistake) left the term worth only ~10-30 s, too small next to hundreds
+///    of seconds of settle-time to move the search at all.
+/// 2. [`oscillation_cost`] is checked once per [`total_cost`] evaluation,
+///    while [`zone_cost`]'s settle-time/overshoot terms are summed over 12
+///    plant x profile combinations — so even a per-K weight sized to look
+///    comparable to one `zone_cost` term is still diluted about 12x against
+///    the total. At `2000`, a realistic ~0.15 K summed over the 4 zones came
+///    to under 2% of a ~58,000 baseline and a 40-evaluation check left both
+///    Nozzle and Middle essentially unmoved. Sized here so that same ~0.15 K
+///    is a genuinely competitive ~10-15% of the baseline.
+const OSCILLATION_WEIGHT: f64 = 50_000.0;
+const TAIL_FRACTION: f64 = 0.2;
 
 fn profile(sp: [f64; 4]) -> Scenario {
     Scenario {
@@ -135,14 +161,57 @@ fn config_for(strategy: &StrategyConfig, dt_plant_s: f64, dt_ctrl_s: f64) -> Sim
         strategy: strategy.clone(),
         dt_plant_s,
         dt_ctrl_s,
+        // Without this, a closed loop settles to an exact fixed point and
+        // nothing can ever excite a quantisation-driven oscillation — the
+        // benchmark would stay blind to it regardless of how marginal the
+        // candidate gains are. See `REALISTIC_SENSOR_NOISE_C`.
+        sensor_noise_c: REALISTIC_SENSOR_NOISE_C,
         ..SimConfig::default()
     }
 }
 
-/// Total cost across every profile and every plant in the family.
+/// Cost of sustained tail oscillation, scored separately from
+/// [`zone_cost`] and always at full timing resolution
+/// (`DT_PLANT_S`/`DT_CTRL_S`), never the coarser `fast` step used for the
+/// settle-time/overshoot sweep below.
+///
+/// This is not an optimisation shortcut skipped for `fast = true` — it is
+/// load-bearing correctness. The quantisation-driven limit cycle this whole
+/// benchmark exists to catch depends on the real ~1 ms controller tick
+/// against a 250 ms sensor refresh and a 500 ms PWM window; coarsening
+/// `dt_ctrl_s` to `0.01` (the `fast` sweep's value) changes how often the
+/// controller itself runs, not just how finely the plant is integrated. Measured
+/// directly: the same shipping gains that show ~0.01-0.04 K steel tail std-dev
+/// at full resolution (matching the ~15-25 s real-machine period) show
+/// ~0.08-0.12 K at `fast` resolution, with the *ranking* inverted — Middle
+/// reads as the worst-oscillating zone there, the opposite of reality. A
+/// search scored against the `fast` numbers chases that artefact, not the
+/// real defect — confirmed the hard way: an earlier run of this search left
+/// Nozzle's real oscillation untouched while making Middle's genuinely worse.
+///
+/// Only one representative plant and profile, not the whole family: a full
+/// `plant_family() x PROFILES` sweep at full resolution is roughly 10x the
+/// `fast` sweep's cost per run, and this only needs to be faithful, not
+/// exhaustive — [`zone_cost`]'s `fast` sweep already covers robustness across
+/// the family for settle-time and overshoot, which the resolution change
+/// doesn't corrupt.
+fn oscillation_cost(strategy: &StrategyConfig) -> f64 {
+    let mut sim = ThermalSim::new(
+        ExtruderThermalParams::calibrated(),
+        config_for(strategy, DT_PLANT_S, DT_CTRL_S),
+    );
+    let trace = sim.run(&profile(PROFILES[1].1));
+    Zone::ALL
+        .iter()
+        .map(|&zone| OSCILLATION_WEIGHT * trace.tail_steel_std_dev_k(zone, TAIL_FRACTION))
+        .sum()
+}
+
+/// Total cost across every profile and every plant in the family, plus the
+/// full-resolution oscillation check.
 fn total_cost(strategy: &StrategyConfig, fast: bool) -> f64 {
     let (dt_plant, dt_ctrl) = if fast { (0.05, 0.01) } else { (0.01, 0.001) };
-    let mut total = 0.0;
+    let mut total = oscillation_cost(strategy);
     for params in plant_family() {
         for (_, sp) in PROFILES {
             let mut sim = ThermalSim::new(params.clone(), config_for(strategy, dt_plant, dt_ctrl));
@@ -168,8 +237,17 @@ fn report(strategy: &StrategyConfig) {
         let trace = sim.run(&profile(*sp));
         println!("\n{name}");
         println!(
-            "  {:<8} {:>7} {:>8} {:>10} {:>8} {:>8} {:>8} {:>8}",
-            "zone", "setpt", "peak", "overshoot", "t90", "settle", "final", "relays"
+            "  {:<8} {:>7} {:>8} {:>10} {:>8} {:>8} {:>8} {:>8} {:>8} {:>8}",
+            "zone",
+            "setpt",
+            "peak",
+            "overshoot",
+            "t90",
+            "settle",
+            "final",
+            "relays",
+            "osc",
+            "steel-osc"
         );
         for zone in Zone::ALL {
             let p = zone.port();
@@ -179,7 +257,7 @@ fn report(strategy: &StrategyConfig) {
             let settle = settle_time(&trace, zone, SETTLE_TOL_K)
                 .map_or("never".to_owned(), |v| format!("{v:.0}"));
             println!(
-                "  {:<8} {:>7.0} {:>8.1} {:>+10.1} {:>8} {:>8} {:>8.1} {:>8}",
+                "  {:<8} {:>7.0} {:>8.1} {:>+10.1} {:>8} {:>8} {:>8.1} {:>8} {:>8.3} {:>9.3}",
                 zone.name(),
                 sp[p],
                 trace.peak_c(zone),
@@ -188,6 +266,8 @@ fn report(strategy: &StrategyConfig) {
                 settle,
                 trace.final_c(zone),
                 trace.relay_switches(zone),
+                trace.tail_std_dev_k(zone, TAIL_FRACTION),
+                trace.tail_steel_std_dev_k(zone, TAIL_FRACTION),
             );
         }
     }
