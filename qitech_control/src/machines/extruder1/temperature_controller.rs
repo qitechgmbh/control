@@ -119,6 +119,10 @@ impl TemperatureController {
         Power::new::<watt>(self.temperature_pid_output * self.heating_element_wattage)
     }
 
+    pub fn temperature(&self) -> ThermodynamicTemperature {
+        self.temperature.get()
+    }
+
     pub fn update(
         &mut self,
         now: Instant,
