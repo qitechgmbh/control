@@ -52,9 +52,9 @@ in
     "oops=panic" # Treat kernel oops as panic for auto-recovery
     "usbcore.autosuspend=-1" # Possibly fixes dre disconnect issue?
 
-    "isolcpus=2,3" # Isolate cpus 2 and 3 from scheduler for better latency, 2 runs ethercatthread and 3 runs server control-loop
+    "isolcpus=managed_irq,2,3" # managed irq only, no domain flag
     "nohz_full=2,3" # In this mode, the periodic scheduler tick is stopped when only one task is running, reducing kernel interruptions on those CPUs.
-    "rcu_nocbs=2,3" # Moves RCU (Read-Copy Update) callback processing away from CPUs 2 and 3.
+    "irqaffinity=0,1" # keep hardware IRQs off RT cores
 
   ];
 
@@ -73,7 +73,6 @@ in
         "qitech.cachix.org-1:l7UTb2FOVAEpRTGTUQTBBPis0JhXZGiANPDKBRbO8Vo="
       ];
       experimental-features = "nix-command flakes";
-      cores = 2;
       http-connections = 10;
       download-attempts = 15;
     };
@@ -174,6 +173,9 @@ in
     };
   };
 
+  # systemd slice for core cgroup-based isolation
+  systemd.slices.qitech = { };
+
   # Enable sound with pipewire.
   security.rtkit.enable = true;
   services.pipewire = {
@@ -196,6 +198,9 @@ in
     group = "qitech-service";
     package = pkgs.qitechPackages.server;
   };
+
+  # Force the service into the RT slice
+  systemd.services.qitech.serviceConfig.Slice = "qitech.slice";
 
   users.users.qitech = {
     isNormalUser = true;
