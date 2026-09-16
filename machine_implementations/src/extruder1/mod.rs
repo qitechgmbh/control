@@ -5,12 +5,6 @@ pub mod heating_params;
 pub mod mitsubishi_cs80;
 pub mod new;
 pub mod screw_speed_controller;
-/// Offline thermal simulation of the heating zones.
-///
-/// Built under `cfg(test)` as well as under the feature, so it keeps compiling
-/// alongside the controller it drives without shipping in the release binary.
-#[cfg(any(test, feature = "simulation"))]
-pub mod simulation;
 pub mod temperature_controller;
 pub mod zone;
 
