@@ -47,14 +47,12 @@ pub fn write_settings(settings: &Settings) -> Result<()> {
 }
 
 pub fn resolve_ethercat_enabled() -> bool {
-    if let Some(enabled) = read_settings().ethercat_enabled {
-        return enabled;
-    }
     match std::env::var("ETHERCAT_ENABLED").as_deref() {
-        Ok("false" | "0" | "no") => false,
-        Ok("true" | "1" | "yes") => true,
-        _ => true,
+        Ok("false" | "0" | "no") => return false,
+        Ok("true" | "1" | "yes") => return true,
+        _ => {}
     }
+    read_settings().ethercat_enabled.unwrap_or(true)
 }
 
 pub fn set_ethercat_enabled(enabled: bool) -> Result<()> {
