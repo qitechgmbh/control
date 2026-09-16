@@ -94,26 +94,43 @@ pub const PLANT: [PlantCoefficients; 4] = [
 /// `SimConfig::sensor_noise_c` and `Trace::tail_steel_std_dev_k` so the search
 /// could score it, at full timing resolution — the coarser `fast` step used
 /// for the settle-time sweep badly distorts this specific mechanism and is
-/// not trustworthy for it (see `oscillation_cost`'s doc comment). A first,
-/// budget-limited pass mainly raised nozzle's `ki` (0.00118 → 0.00164): back's
-/// steel oscillation dropped ~41 %, nozzle's ~27 %, front and middle
-/// essentially unchanged. **This measurably reduces the oscillation, it does
-/// not eliminate it** — a longer search, or complementary duty-side
-/// smoothing, is worth revisiting if it is still visible on the machine.
+/// not trustworthy for it (see `oscillation_cost`'s doc comment). That pass
+/// mainly raised nozzle's `ki` (0.00118 → 0.00164).
 ///
-/// Kept at the optimiser's full precision rather than rounded to a few
-/// figures: this system sits close enough to the limit cycle's stability
-/// boundary that ~1% rounding (e.g. back's `109.7` vs `109.72138714790346`)
-/// was enough by itself to put it back into a mild oscillation in testing —
-/// `retuned_gains_reduce_the_oscillation` caught it. Regenerate with
-/// `--search observer-pi` rather than hand-editing these.
+/// Retuned again 2026-09-16, with [`DUTY_SMOOTHING_S`] in the loop: smoothing
+/// alone on the previous gains made back and nozzle oscillate *more* (the
+/// filter's lag), so `--search observer-pi` was re-run around it (one restart,
+/// 560 evaluations). Front, back and nozzle are its output unmodified.
+/// **Middle keeps its 2026-09-15 gains**: middle's steel is bimodal under
+/// sensor noise (either ~0.01 K or a ~0.08 K cycle, depending on the noise
+/// draw), and the searched middle gains fell into the large cycle on far more
+/// draws — the search scores a single draw, so it could not see that.
+///
+/// Steel oscillation against the pre-2026-09-15 gains, averaged over twenty
+/// sensor-noise seeds (`retuned_gains_reduce_the_oscillation` in the
+/// extruder-simulation repo):
+///
+/// | | front | middle | back | nozzle |
+/// |---|---|---|---|---|
+/// | 2026-09-15 gains, no smoothing | −3 % | −37 % | −4 % | −16 % |
+/// | **these gains + smoothing** | **−49 %** | **−27 %** | **−29 %** | **−25 %** |
+///
+/// Middle's difference between the two is within its seed-to-seed noise. The
+/// seed average matters: a single seed moves these by tens of percent, and the
+/// "~41 % on back" first reported for the 2026-09-15 retune was one lucky draw.
+/// **This reduces the oscillation, it does not eliminate it.**
+///
+/// Kept at the optimiser's full precision rather than rounded. Regenerate with
+/// `--search observer-pi` rather than hand-editing these, and compare
+/// candidates across many noise seeds, never one.
 const OBSERVER_PI_GAINS: [(f64, f64, f64, f64); 4] = [
     (
-        0.11108586013317108,
-        0.0005372999000549317,
-        17.06717050075531,
-        90.38324475288391,
+        0.11230378004259622,
+        0.0005476467634249886,
+        16.69230314271417,
+        90.36188376123808,
     ),
+    // middle: 2026-09-15 gains, see above.
     (
         0.07350360679626465,
         0.0,
@@ -121,18 +138,42 @@ const OBSERVER_PI_GAINS: [(f64, f64, f64, f64); 4] = [
         128.3832447528839,
     ),
     (
-        0.11008586013317108,
-        0.0003572999000549316,
-        19.36341073513031,
-        109.72138714790346,
+        0.109752766614537,
+        0.0003700771021772699,
+        19.541063339537914,
+        109.6211364365559,
     ),
     (
-        0.3230858601331711,
-        0.0016372999000549317,
-        20.40037362575531,
-        90.38324475288391,
+        0.3254276690291233,
+        0.0021767834934591423,
+        20.599532757015353,
+        91.07072602061137,
     ),
 ];
+
+/// Duty-output smoothing time constant per zone, in seconds, indexed by
+/// [`Zone::port`].
+///
+/// The duty-side complement to [`OBSERVER_PI_GAINS`] — the two were tuned
+/// together, so change one and re-check the other.
+///
+/// The observer's lead term turns each 0.1 °C quantisation step into a duty
+/// kick of roughly `kp * 0.1 * tau_sensor_s / tau_filter_s`, visible as a
+/// stuttering output. A few seconds of low-pass removes it, but it is not free:
+/// the filter's lag sits inside a loop that is already close to its
+/// quantisation limit cycle, so too long a time constant makes the *steel*
+/// oscillate more even as the duty trace looks calmer.
+///
+/// - **Middle is 0 (off).** Its duty idles near zero, so there is little
+///   stutter to remove, and any smoothing tipped it into its large ~0.08 K
+///   oscillation mode on most noise draws (16 of 20 at 5 s).
+/// - **Nozzle is 5 s**, not the 10 s first tried live in the extruder-simulation
+///   hot-reload rig: with these gains, 10 s left nozzle's steel oscillation
+///   worse than no smoothing at all (−12 % against pre-fix vs −25 % at 5 s).
+///
+/// The search behind [`OBSERVER_PI_GAINS`] ran with `[5, 5, 5, 10]`; these
+/// values were then chosen against the twenty-seed oscillation check.
+pub const DUTY_SMOOTHING_S: [f64; 4] = [5.0, 0.0, 5.0, 5.0];
 
 /// `ObserverPi` parameters per zone, indexed by [`Zone::port`].
 ///
@@ -153,6 +194,7 @@ pub fn observer_pi_params() -> [ObserverPiParams; 4] {
             ff_duty_per_k: p.ff_duty_per_k,
             ambient_c: AMBIENT_C,
             max_clamp: DEFAULT_MAX_CLAMP[zone.port()],
+            tau_duty_s: DUTY_SMOOTHING_S[zone.port()],
         }
     })
 }
@@ -196,6 +238,13 @@ mod tests {
             assert!(
                 (0.0..=1.0).contains(&p.max_clamp),
                 "{name}: max_clamp is a duty"
+            );
+            assert!(
+                p.tau_duty_s >= 0.0 && p.tau_duty_s * 5.0 < p.tau_sensor_s,
+                "{name}: duty smoothing must sit well below the probe's own lag; \
+                 got tau_duty={:.1} against tau_sensor={:.1}",
+                p.tau_duty_s,
+                p.tau_sensor_s
             );
         }
     }
