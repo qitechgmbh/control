@@ -6,6 +6,16 @@
 }:
 let
   gitInfo = import ../gitInfo.nix { inherit pkgs; };
+
+  cpuCount = lib.length (
+    builtins.filter (l: lib.hasPrefix "processor" l) (
+      lib.splitString "\n" (builtins.readFile "/proc/cpuinfo")
+    )
+  );
+  rtCoreFirst = cpuCount - 2;
+  rtCoreLast = cpuCount - 1;
+  rtCores = "${toString rtCoreFirst}-${toString rtCoreLast}";
+  housekeepingCores = "0-${toString (rtCoreFirst - 1)}";
 in
 {
   boot.kernelPackages = pkgs.linuxPackages_6_18;
@@ -52,9 +62,9 @@ in
     "oops=panic" # Treat kernel oops as panic for auto-recovery
     "usbcore.autosuspend=-1" # Possibly fixes dre disconnect issue?
 
-    "isolcpus=managed_irq,2,3" # managed irq only, no domain flag
-    "nohz_full=2,3" # In this mode, the periodic scheduler tick is stopped when only one task is running, reducing kernel interruptions on those CPUs.
-    "irqaffinity=0,1" # keep hardware IRQs off RT cores
+    "isolcpus=managed_irq,${rtCores}" # keep managed IRQs off the RT cores
+    "nohz_full=${rtCores}" # stop the periodic scheduler tick on the RT cores when only one task is running
+    "irqaffinity=${housekeepingCores}" # keep hardware IRQs off the RT cores
 
   ];
 
