@@ -117,7 +117,8 @@ impl MachineNew for ExtruderV2 {
         drop(el6021);
         interface.enable_dc_sync0(serial_device.1)?;
 
-        let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
+        // 303°C because with 300°C the heater would oscilate a lot. It cant heat the moment it goes over 300°C causing over and undershooting.
+        let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(303.0);
         let initial_target = ThermodynamicTemperature::new::<degree_celsius>(150.0);
         let pwm = Duration::from_millis(500);
 

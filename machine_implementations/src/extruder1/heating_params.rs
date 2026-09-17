@@ -108,24 +108,28 @@ pub const PLANT: [PlantCoefficients; 4] = [
 /// `retuned_gains_reduce_the_oscillation` caught it. Regenerate with
 /// `--search observer-pi` rather than hand-editing these.
 const OBSERVER_PI_GAINS: [(f64, f64, f64, f64); 4] = [
+    // ----- front -----
     (
         0.11108586013317108,
         0.0005372999000549317,
         17.06717050075531,
         90.38324475288391,
     ),
+    // ----- middle -----
     (
         0.07350360679626465,
         0.0,
         18.300373625755313,
         128.3832447528839,
     ),
+    // ----- back -----
     (
         0.11008586013317108,
         0.0003572999000549316,
         19.36341073513031,
         109.72138714790346,
     ),
+    // ----- nozzle -----
     (
         0.3230858601331711,
         0.0016372999000549317,
