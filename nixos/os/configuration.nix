@@ -19,26 +19,6 @@ in
     # Graphical
     "logo.nologo" # Remove kernel logo during boot
 
-    # Performance
-
-    # Specific Vulnerabilities Addressed by Mitigations:
-    # - Spectre variants (V1, V2, V4, SWAPGS, SpectreRSB, etc.)
-    # - Meltdown (Rogue Data Cache Load)
-    # - Foreshadow/L1TF (L1 Terminal Fault)
-    # - Microarchitectural Data Sampling (MDS, RIDL, Fallout, ZombieLoad)
-    # - SRBDS (Special Register Buffer Data Sampling)
-    # - TSX Asynchronous Abort (TAA)
-    # - iTLB Multihit
-    # - And others as they're discovered and mitigated
-    #
-    # With mitigations=off
-    # - PROS: Maximum performance, equivalent to pre-2018 behavior
-    # - CONS: Vulnerable to Spectre, Meltdown, Foreshadow, ZombieLoad, etc.
-    #         Should ONLY be used in completely trusted environments
-    # - Improves performance by 7-43%
-    "mitigation=off"
-    "intel_pstate=performance" # Intel CPU-specific performance mode (if applicable)
-
     # Memory Management
     "transparent_hugepage=always" # Use larger memory pages for memory intense applications
     "nmi_watchdog=0" # Disable NMI watchdog for reduced CPU overhead and realtime execution
