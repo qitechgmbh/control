@@ -21,6 +21,7 @@ import { useBackendConnected } from "@/client/socketioStore";
 import { restartBackendIntoPreop } from "@/helpers/troubleshoot_helpers";
 import { toast } from "sonner";
 import { TouchButton } from "@/components/touch/TouchButton";
+import { EthercatEnabledToggle } from "./EthercatEnabledToggle";
 
 export function createColumns(
   isPreop: boolean,
@@ -167,7 +168,7 @@ export function EthercatPage() {
 
   return (
     <Page>
-      <SectionTitle title="Interface" />
+      <SectionTitle title="Interface" right={<EthercatEnabledToggle />} />
       <p>
         Ethernet Interface{" "}
         {ethercatInterfaceDiscovery?.data.Discovering ? (
