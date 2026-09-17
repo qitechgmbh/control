@@ -16,7 +16,5 @@
       else
         ./ci-hardware-configuration.nix
     )
-    # Optional per-unit overrides, outside the repo so they survive a git pull or rebuild.
-    (if builtins.pathExists "/etc/nixos/qitech-local.nix" then /etc/nixos/qitech-local.nix else { })
   ];
 }
