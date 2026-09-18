@@ -93,6 +93,11 @@ impl PullerSpeedController {
         self.target_speed = target;
     }
 
+    pub fn reset_speed(&mut self, speed: Velocity) {
+        self.last_speed = speed;
+        let _ = self.acceleration_controller.reset(speed);
+    }
+
     pub fn set_regulation_mode(&mut self, regulation: PullerRegulationMode) {
         // Reset adaptive modulation when switching to Diameter mode
         // so it starts from the current target_speed without jumps

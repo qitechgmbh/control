@@ -129,6 +129,7 @@ pub struct Controller {
     pub heating_allowed: bool,
     pub flow: Flow,
     pub should_pump: bool,
+    pub pump_requested: bool,
     pump_started_at: Option<Instant>,
     low_flow_started_at: Option<Instant>,
     flow_became_valid_at: Option<Instant>,
@@ -224,6 +225,7 @@ impl Controller {
             total_energy: 0.0,
             flow,
             should_pump: false,
+            pump_requested: false,
             pump_started_at: None,
             low_flow_started_at: None,
             flow_became_valid_at: None,
@@ -379,6 +381,10 @@ impl Controller {
 
     pub fn get_should_pump(&mut self) -> bool {
         self.should_pump
+    }
+
+    pub fn set_pump_requested(&mut self, requested: bool) {
+        self.pump_requested = requested;
     }
 
     pub fn get_flow(&self) -> VolumeRate {

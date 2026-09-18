@@ -94,6 +94,7 @@ impl MachineIdentification {
         match self.machine {
             x if x == MACHINE_WINDER_V1 => "winder_v1".to_string(),
             x if x == MACHINE_WINDER_V1_7031_0030_SPOOL => "winder_v1_7031".to_string(),
+            x if x == MACHINE_REWINDER_V1 => "rewinder_v1".to_string(),
             x if x == MACHINE_EXTRUDER_V1 => "extruder_v1".to_string(),
             x if x == MACHINE_LASER_V1 => "laser_v1".to_string(),
             x if x == MACHINE_MOCK => "mock".to_string(),
@@ -115,6 +116,7 @@ impl MachineIdentification {
             x if x == DIGITAL_INPUT_TEST_MACHINE => "digital_input_test_machine".to_string(),
             x if x == WAGO_8CH_IO_TEST_MACHINE => "wago_8ch_io_test_machine".to_string(),
             x if x == TEST_MACHINE_BOTTLECAPS => "bottlecaps_test_machine".to_string(),
+            x if x == MACHINE_DRYER_V1 => "dryer_v1".to_string(),
             _ => unreachable!("Unknown machine id {}", self.machine),
         }
     }
@@ -211,10 +213,12 @@ use crate::DIGITAL_INPUT_TEST_MACHINE;
 use crate::IP20_TEST_MACHINE;
 use crate::MACHINE_AQUAPATH_V1;
 use crate::MACHINE_BUFFER_V1;
+use crate::MACHINE_DRYER_V1;
 use crate::MACHINE_EXTRUDER_V1;
 use crate::MACHINE_EXTRUDER_V2;
 use crate::MACHINE_LASER_V1;
 use crate::MACHINE_MOCK;
+use crate::MACHINE_REWINDER_V1;
 use crate::MACHINE_WAGO_POWER_V1;
 use crate::MACHINE_WINDER_V1;
 use crate::MACHINE_WINDER_V1_7031_0030_SPOOL;

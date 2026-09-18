@@ -2,9 +2,10 @@ import React, { useEffect } from "react";
 
 type Props = {
   rpm?: number;
+  clockwise?: boolean;
 };
 
-export function Spool({ rpm }: Props) {
+export function Spool({ rpm, clockwise }: Props) {
   const [rotationState, setRotationState] = React.useState({
     rotations: 0,
     lastRpm: undefined as number | undefined,
@@ -32,7 +33,7 @@ export function Spool({ rpm }: Props) {
       <div
         className="aspect-square h-32"
         style={{
-          transform: `rotate(-${rotations * 360}deg)`,
+          transform: `rotate(${clockwise ? "" : "-"}${rotations * 360}deg)`,
         }}
       >
         <svg

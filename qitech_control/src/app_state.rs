@@ -16,6 +16,7 @@ use control_core::socketio::{
 };
 use machine_implementations::{
     Hardware, IdentifiedEthercat, IdentifiedModbus, MachineHardware, MachineMessage, QiTechMachine,
+    dryer::{DryerMachine, device::DryerDevice},
     laser::LaserMachine,
     machine_identification::{
         DeviceHardwareIdentificationEthercat, DeviceIdentification, DeviceMachineIdentification,
@@ -73,7 +74,7 @@ pub struct SharedAppState {
         RwLock<HashMap<QiTechMachineIdentificationUnique, Sender<MachineMessage>>>,
     pub ethercat_meta_datas: RwLock<Vec<EtherCatDeviceMetaData>>,
     pub socketio_setup: SocketioSetup,
-    pub ethercat_thread_channel: Option<EtherCATThreadChannel>,
+    pub ethercat_thread_channel: RwLock<Option<EtherCATThreadChannel>>,
 }
 
 impl SharedAppState {
@@ -187,6 +188,23 @@ impl SharedAppState {
         bail!("Unknown machine!")
     }
 
+    pub fn set_ethercat_thread_channel(
+        &self,
+        channel: Option<EtherCATThreadChannel>,
+    ) -> Result<(), anyhow::Error> {
+        let mut guard = self.ethercat_thread_channel.try_write()?;
+        *guard = channel;
+        drop(guard);
+        Ok(())
+    }
+
+    pub fn clear_machines_sync(&self) -> Result<(), anyhow::Error> {
+        self.machines.try_write()?.clear();
+        self.machines_with_channel.try_write()?.clear();
+        self.ethercat_meta_datas.try_write()?.clear();
+        Ok(())
+    }
+
     pub fn add_machine_sync(
         &self,
         ident: QiTechMachineIdentificationUnique,
@@ -244,7 +262,7 @@ impl SharedAppState {
                 socket_queue_rx: RwLock::new(socket_queue_rx),
             },
             ethercat_meta_datas: RwLock::new(vec![]),
-            ethercat_thread_channel: None,
+            ethercat_thread_channel: RwLock::new(None),
         }
     }
 }
@@ -291,6 +309,27 @@ impl MainState {
         hw.hw.push(Hardware::Modbus(id_modbus));
         self.hardware.insert(ident, hw);
         Ok(())
+    }
+
+    pub fn generate_machine_hardware_from_dryer_serial(
+        &mut self,
+        path: &str,
+    ) -> Result<MachineIdentificationUnique, anyhow::Error> {
+        let dryer_device = DryerDevice::new(path.to_owned(), 1, None)?;
+        let dryer_device: Rc<RefCell<DryerDevice>> = Rc::new(RefCell::new(dryer_device));
+        let id_modbus: IdentifiedModbus = IdentifiedModbus { hw: dryer_device };
+        let ident = MachineIdentificationUnique {
+            machine_ident: DryerMachine::MACHINE_IDENTIFICATION,
+            serial: 1,
+        };
+        let mut hw = MachineHardware {
+            hw: vec![],
+            identification: ident,
+            ethercat_interface: None,
+        };
+        hw.hw.push(Hardware::Modbus(id_modbus));
+        self.hardware.insert(ident, hw);
+        Ok(ident)
     }
 
     pub fn generate_machine_hardware_from_ethercat(

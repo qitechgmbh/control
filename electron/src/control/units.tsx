@@ -187,6 +187,7 @@ export const units = [
   "cm",
   "rpm",
   "deg",
+  "deg/s",
   "m",
   "C",
   "bar",

@@ -57,7 +57,7 @@ type Client = {
   }) => Promise<MutationResponseSchema>;
 };
 
-const baseUrl = "http://localhost:3001";
+export const baseUrl = "http://localhost:3001";
 
 export const getClient = () => {
   const client: Client = {
