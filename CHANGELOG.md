@@ -3,7 +3,6 @@ _18.09.2026_
 
 ## New Machines
 - [#1538](https://github.com/qitechgmbh/control/pull/1538) Added Rewinder machine
-- [#1540](https://github.com/qitechgmbh/control/pull/1540) Added Dryer machine
 
 ## Extruder V2
 - [#1672](https://github.com/qitechgmbh/control/pull/1672) Fixed wattage display
