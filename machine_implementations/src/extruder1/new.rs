@@ -60,17 +60,23 @@ impl MachineNew for ExtruderV2 {
     fn new(hw: MachineHardware) -> Result<Self, anyhow::Error> {
         let motor_poles;
         let transmission;
+        let barrel_heater_w;
+        let nozzle_heater_w;
 
         let roles = match hw.identification.machine_ident.machine {
             MACHINE_EXTRUDER_V1 => {
                 motor_poles = 4;
                 transmission = FixedTransmission::new(1.0 / 34.0);
+                barrel_heater_w = 700.0;
+                nozzle_heater_w = 200.0;
                 ExtruderRoles::get_v2_roles()
             }
             MACHINE_EXTRUDER_V2 => {
                 println!("Setting up like its V3");
                 motor_poles = 2;
                 transmission = FixedTransmission::new(1.0 / 30.0);
+                barrel_heater_w = 900.0;
+                nozzle_heater_w = 150.0;
                 ExtruderRoles::get_v3_roles()
             }
             _ => {
@@ -123,7 +129,7 @@ impl MachineNew for ExtruderV2 {
             extruder_max_temperature,
             Heating::default(),
             Duration::from_millis(500),
-            700.0,
+            barrel_heater_w,
             1.0,
             0,
             0,
@@ -137,7 +143,7 @@ impl MachineNew for ExtruderV2 {
             extruder_max_temperature,
             Heating::default(),
             Duration::from_millis(500),
-            700.0,
+            barrel_heater_w,
             1.0,
             1,
             1,
@@ -151,7 +157,7 @@ impl MachineNew for ExtruderV2 {
             extruder_max_temperature,
             Heating::default(),
             Duration::from_millis(500),
-            700.0,
+            barrel_heater_w,
             1.0,
             2,
             2,
@@ -166,7 +172,7 @@ impl MachineNew for ExtruderV2 {
             extruder_max_temperature,
             Heating::default(),
             Duration::from_millis(500),
-            200.0,
+            nozzle_heater_w,
             0.95,
             3,
             3,
