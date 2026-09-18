@@ -43,9 +43,6 @@ pub trait HeatingStrategy: Send {
 }
 
 /// A PID on the raw reading, clamped to the duty range, with anti-windup.
-///
-/// The control law that has always shipped. Kept as the fallback for hardware
-/// whose thermal behaviour has not been modelled.
 #[derive(Debug)]
 pub struct PidBaseline {
     pid: PidController,

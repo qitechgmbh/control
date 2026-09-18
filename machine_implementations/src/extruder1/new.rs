@@ -123,16 +123,14 @@ impl MachineNew for ExtruderV2 {
         drop(el6021);
         interface.enable_dc_sync0(serial_device.1)?;
 
-        // 303°C because with 300°C the heater would oscilate a lot. It cant heat the moment it goes over 300°C causing over and undershooting.
+        // 303°C because with 300°C the heater would oscilate a lot at 300°C. It cant heat the moment it goes over 300°C causing over and undershooting.
         let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(303.0);
         let initial_target = ThermodynamicTemperature::new::<degree_celsius>(150.0);
         let pwm = Duration::from_millis(500);
 
         // The control law differs by hardware generation. `MACHINE_EXTRUDER_V2`
-        // is the machine the thermal model was calibrated against, so it runs
-        // `ObserverPi`. `MACHINE_EXTRUDER_V1` keeps its long-standing PID: it is
-        // a different machine, nothing has modelled it, and the parameters below
-        // are measured off V2's geometry. See `simulation/README.md`.
+        // has a calibrated thermal model on which the observer is calibrated to.
+        // `MACHINE_EXTRUDER_V1` keeps its long-standing PID.
         let is_v2 = hw.identification.machine_ident.machine == MACHINE_EXTRUDER_V2;
         let observer_pi = observer_pi_params();
 
