@@ -102,9 +102,6 @@ impl PidController {
     /// instead of winding up. That makes a non-zero `ki` safe for plants that
     /// start far from the setpoint and saturate for a long time (e.g. the
     /// extruder heaters).
-    ///
-    /// `out_min`/`out_max` are the caller's own clamp bounds; the return value
-    /// is [`Self::update`]'s signal clamped to them.
     pub fn update_with_antiwindup(
         &mut self,
         error: f64,

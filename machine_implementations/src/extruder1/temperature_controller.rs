@@ -9,12 +9,6 @@ use qitech_lib::{
 };
 use std::time::{Duration, Instant};
 
-/// One heating zone: sensor in, relay out.
-///
-/// Owns everything around the control law — reading the RTD, the
-/// over-temperature cutout, the slow-PWM window, driving the relay — and
-/// delegates the duty decision to a [`HeatingStrategy`], so swapping the control
-/// law is a change of one constructor argument.
 pub struct TemperatureController {
     strategy: Box<dyn HeatingStrategy>,
     pub heating: Heating,
@@ -156,11 +150,9 @@ impl TemperatureController {
         };
         self.heating.temperature = temperature_celsius;
 
-        // A failed read decodes to 0 °C, which is maximum error, which would be
-        // maximum heat demand — the heater running flat out precisely when
-        // nothing can see how hot it is getting. The strategy is deliberately
-        // neither stepped nor reset: a transient fault should not discard a good
-        // estimate, and every estimator here tolerates a long `dt`.
+        // Safety cutoff: if the sensor reports a wiring error or the measured
+        // temperature exceeds the configured maximum, open the relay and skip
+        // the control update for this tick.
         if self.heating.wiring_error || self.heating.temperature > self.max_temperature {
             self.open_relay(relais);
             return;

@@ -1,26 +1,3 @@
-//! Undoing a temperature sensor's own time constant.
-//!
-//! A probe in a pocket is a first-order lag: `tau * y' = x - y`, where `x` is
-//! the metal and `y` is what the terminal reports. Rearranged, `x = y + tau * y'`,
-//! so an estimate of the reading's slope buys back the lag.
-//!
-//! The slope is *not* `(y - y_prev) / dt`. With a kHz control loop reading a
-//! terminal that converts every few hundred ms in 0.1 °C steps, that quotient is
-//! zero on almost every tick and `0.1 / 0.001 = 100 K/s` on the tick the reading
-//! moves — which is why a plain `kd` term on these loops is pure quantisation
-//! noise. The washout form below never divides by `dt`:
-//!
-//! ```text
-//! y_f += (1 - exp(-dt / tau_f)) * (y - y_f)     // low-pass of the reading
-//! y'   = (y - y_f) / tau_f                      // its exact derivative
-//! ```
-//!
-//! On a ramp of `r` K/s, `y - y_f` settles at `r * tau_f` and the slope estimate
-//! at exactly `r`, while one quantisation step moves it by only `0.1 / tau_f`.
-//! The lag is traded down rather than removed — the estimate still trails by
-//! about `tau_f` — so `tau_f` several times below `tau_sensor` is the useful
-//! regime.
-
 use std::time::Instant;
 
 /// Estimates the temperature of the metal from a lagging probe's reading.
@@ -59,9 +36,6 @@ impl SensorLagObserver {
     }
 
     /// Estimated metal temperature in °C, given this tick's reading.
-    ///
-    /// The first call has no history to differentiate and returns the reading
-    /// unchanged.
     pub fn update(&mut self, measured_c: f64, now: Instant) -> f64 {
         let (Some(filtered), Some(last)) = (self.filtered_c, self.last) else {
             self.filtered_c = Some(measured_c);

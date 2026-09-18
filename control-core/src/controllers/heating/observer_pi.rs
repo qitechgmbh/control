@@ -1,21 +1,3 @@
-//! PI on an estimate of the metal, plus a feedforward that already knows what
-//! holding that temperature costs.
-//!
-//! Two changes to a textbook loop, each aimed at one reason it overshoots on a
-//! slow thermal plant:
-//!
-//! - **Regulate the metal, not the probe.** A PID on the raw reading chases a
-//!   signal that trails the metal by `tau_probe * rate` — a *constant* error for
-//!   as long as the ramp lasts, which no choice of gains removes. On the extruder
-//!   that is around 34 K and most of the observed overshoot, so a
-//!   [`SensorLagObserver`] hands the loop the metal temperature instead.
-//! - **Let feedforward carry the steady state.** Holding a zone costs a
-//!   predictable duty, roughly proportional to its lift above ambient. Supplying
-//!   it directly leaves the integrator only the residual, so it converges in
-//!   minutes rather than tens, cannot wind up much across a saturated ramp, and
-//!   answers a setpoint change immediately instead of waiting for an integral to
-//!   rebuild.
-
 use std::time::Instant;
 
 use super::{HeatingStrategy, SensorLagObserver};
