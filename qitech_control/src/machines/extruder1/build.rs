@@ -34,7 +34,8 @@ use crate::machines::extruder1::temperature_controller::TemperatureController;
 use crate::machines::extruder1::temperature_controller::TemperatureControllerConfig;
 use crate::transmission::fixed::FixedTransmission;
 
-/// EtherCAT roles, motor poles and gearing of one extruder generation.
+/// EtherCAT roles, motor poles, gearing and heater bands of one extruder
+/// generation.
 struct Layout {
     ek1100_role: u16,
     serial_role: u16,
@@ -43,6 +44,8 @@ struct Layout {
     temperature_role: u16,
     motor_poles: usize,
     transmission: FixedTransmission,
+    barrel_heater_w: f64,
+    nozzle_heater_w: f64,
 }
 
 const LAYOUT_V1: Layout = Layout {
@@ -53,8 +56,12 @@ const LAYOUT_V1: Layout = Layout {
     temperature_role: 5,
     motor_poles: 4,
     transmission: FixedTransmission::new(1.0 / 34.0),
+    barrel_heater_w: 700.0,
+    nozzle_heater_w: 200.0,
 };
 
+// The generations are wired with different bands. These were once flattened to
+// the V1 values when the two extruder modules were merged; keep them apart.
 const LAYOUT_V2: Layout = Layout {
     ek1100_role: 0,
     serial_role: 1,
@@ -63,6 +70,8 @@ const LAYOUT_V2: Layout = Layout {
     temperature_role: 4,
     motor_poles: 2,
     transmission: FixedTransmission::new(1.0 / 30.0),
+    barrel_heater_w: 900.0,
+    nozzle_heater_w: 150.0,
 };
 
 impl MachineBuild for Extruder<VARIANT_V1> {
@@ -126,25 +135,39 @@ impl<const VARIANT: usize> Extruder<VARIANT> {
         // undershoot ~0.7 (Problems when starting far away because of integral)
         let zone_gains = (0.16, 0.0, 0.008);
 
-        let temperature_controller_front =
-            init_heating_zone(ctx, Zone::Front, max_temperature, zone_gains, 700.0, 1.0, 0)?;
+        let temperature_controller_front = init_heating_zone(
+            ctx,
+            Zone::Front,
+            max_temperature,
+            zone_gains,
+            layout.barrel_heater_w,
+            1.0,
+            0,
+        )?;
         let temperature_controller_middle = init_heating_zone(
             ctx,
             Zone::Middle,
             max_temperature,
             zone_gains,
-            700.0,
+            layout.barrel_heater_w,
             1.0,
             1,
         )?;
-        let temperature_controller_back =
-            init_heating_zone(ctx, Zone::Back, max_temperature, zone_gains, 700.0, 1.0, 2)?;
+        let temperature_controller_back = init_heating_zone(
+            ctx,
+            Zone::Back,
+            max_temperature,
+            zone_gains,
+            layout.barrel_heater_w,
+            1.0,
+            2,
+        )?;
         let temperature_controller_nozzle = init_heating_zone(
             ctx,
             Zone::Nozzle,
             max_temperature,
             zone_gains,
-            200.0,
+            layout.nozzle_heater_w,
             0.95,
             3,
         )?;
@@ -246,4 +269,20 @@ fn init_el6021(
         .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
 
     Ok(device)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The generations really are wired differently, and a refactor that
+    /// flattens them back into one set of numbers is a regression — it already
+    /// happened once, when the two extruder modules were merged.
+    #[test]
+    fn each_generation_keeps_its_own_heater_ratings() {
+        assert_eq!(LAYOUT_V1.barrel_heater_w, 700.0);
+        assert_eq!(LAYOUT_V1.nozzle_heater_w, 200.0);
+        assert_eq!(LAYOUT_V2.barrel_heater_w, 900.0);
+        assert_eq!(LAYOUT_V2.nozzle_heater_w, 150.0);
+    }
 }
