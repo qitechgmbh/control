@@ -1,3 +1,5 @@
+use super::heating_params::{DEFAULT_MAX_CLAMP, observer_pi_params};
+use super::zone::Zone;
 use super::{
     ExtruderV2, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
     screw_speed_controller::ScrewSpeedController, temperature_controller::TemperatureController,
@@ -5,6 +7,7 @@ use super::{
 use crate::{
     MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, MachineHardware, MachineMessage, MachineNew,
 };
+use control_core::controllers::heating::{HeatingStrategy, ObserverPi, PidBaseline};
 use control_core::transmission::fixed::FixedTransmission;
 use qitech_lib::ethercat_hal::{
     coe::ConfigurableDevice,
@@ -114,63 +117,43 @@ impl MachineNew for ExtruderV2 {
         drop(el6021);
         interface.enable_dc_sync0(serial_device.1)?;
 
-        let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
-        let temperature_controller_front = TemperatureController::new(
-            0.16,
-            0.0,
-            0.008,
-            ThermodynamicTemperature::new::<degree_celsius>(150.0),
-            extruder_max_temperature,
-            Heating::default(),
-            Duration::from_millis(500),
-            700.0,
-            1.0,
-            0,
-            0,
-        );
+        // 303°C because with 300°C the heater would oscilate a lot at 300°C. It cant heat the moment it goes over 300°C causing over and undershooting.
+        let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(303.0);
+        let initial_target = ThermodynamicTemperature::new::<degree_celsius>(150.0);
+        let pwm = Duration::from_millis(500);
 
-        let temperature_controller_middle = TemperatureController::new(
-            0.16,
-            0.0,
-            0.008,
-            ThermodynamicTemperature::new::<degree_celsius>(150.0),
-            extruder_max_temperature,
-            Heating::default(),
-            Duration::from_millis(500),
-            700.0,
-            1.0,
-            1,
-            1,
-        );
+        // The control law differs by hardware generation. `MACHINE_EXTRUDER_V2`
+        // has a calibrated thermal model on which the observer is calibrated to.
+        // `MACHINE_EXTRUDER_V1` keeps its long-standing PID.
+        let is_v2 = hw.identification.machine_ident.machine == MACHINE_EXTRUDER_V2;
+        let observer_pi = observer_pi_params();
 
-        let temperature_controller_back = TemperatureController::new(
-            0.16,
-            0.0,
-            0.008,
-            ThermodynamicTemperature::new::<degree_celsius>(150.0),
-            extruder_max_temperature,
-            Heating::default(),
-            Duration::from_millis(500),
-            700.0,
-            1.0,
-            2,
-            2,
-        );
-
-        // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
-        let temperature_controller_nozzle = TemperatureController::new(
-            0.16,
-            0.0,
-            0.008,
-            ThermodynamicTemperature::new::<degree_celsius>(150.0),
-            extruder_max_temperature,
-            Heating::default(),
-            Duration::from_millis(500),
-            200.0,
-            0.95,
-            3,
-            3,
-        );
+        let controller = |zone: Zone| {
+            let strategy: Box<dyn HeatingStrategy> = if is_v2 {
+                Box::new(ObserverPi::new(observer_pi[zone.port()]))
+            } else {
+                Box::new(PidBaseline::new(
+                    0.16,
+                    0.0,
+                    0.008,
+                    DEFAULT_MAX_CLAMP[zone.port()],
+                ))
+            };
+            TemperatureController::with_strategy(
+                strategy,
+                initial_target,
+                extruder_max_temperature,
+                Heating::default(),
+                pwm,
+                zone.rated_w(),
+                zone.port(),
+                zone.port(),
+            )
+        };
+        let temperature_controller_front = controller(Zone::Front);
+        let temperature_controller_middle = controller(Zone::Middle);
+        let temperature_controller_back = controller(Zone::Back);
+        let temperature_controller_nozzle = controller(Zone::Nozzle);
 
         let inverter = MitsubishiCS80::new();
         let target_pressure = Pressure::new::<bar>(0.0);

@@ -1,10 +1,12 @@
 pub mod act;
 pub mod api;
 pub mod emit;
+pub mod heating_params;
 pub mod mitsubishi_cs80;
 pub mod new;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
+pub mod zone;
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::{MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, VENDOR_QITECH};
