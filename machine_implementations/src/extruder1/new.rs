@@ -1,5 +1,5 @@
 use super::heating_params::{DEFAULT_MAX_CLAMP, observer_pi_params};
-use super::zone::Zone;
+use super::zone::{Generation, Zone};
 use super::{
     ExtruderV2, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
     screw_speed_controller::ScrewSpeedController, temperature_controller::TemperatureController,
@@ -63,23 +63,20 @@ impl MachineNew for ExtruderV2 {
     fn new(hw: MachineHardware) -> Result<Self, anyhow::Error> {
         let motor_poles;
         let transmission;
-        let barrel_heater_w;
-        let nozzle_heater_w;
+        let generation;
 
         let roles = match hw.identification.machine_ident.machine {
             MACHINE_EXTRUDER_V1 => {
                 motor_poles = 4;
                 transmission = FixedTransmission::new(1.0 / 34.0);
-                barrel_heater_w = 700.0;
-                nozzle_heater_w = 200.0;
+                generation = Generation::V1;
                 ExtruderRoles::get_v2_roles()
             }
             MACHINE_EXTRUDER_V2 => {
                 println!("Setting up like its V3");
                 motor_poles = 2;
                 transmission = FixedTransmission::new(1.0 / 30.0);
-                barrel_heater_w = 900.0;
-                nozzle_heater_w = 150.0;
+                generation = Generation::V2;
                 ExtruderRoles::get_v3_roles()
             }
             _ => {
@@ -131,7 +128,7 @@ impl MachineNew for ExtruderV2 {
         // The control law differs by hardware generation. `MACHINE_EXTRUDER_V2`
         // has a calibrated thermal model on which the observer is calibrated to.
         // `MACHINE_EXTRUDER_V1` keeps its long-standing PID.
-        let is_v2 = hw.identification.machine_ident.machine == MACHINE_EXTRUDER_V2;
+        let is_v2 = generation == Generation::V2;
         let observer_pi = observer_pi_params();
 
         let controller = |zone: Zone| {
@@ -151,7 +148,7 @@ impl MachineNew for ExtruderV2 {
                 extruder_max_temperature,
                 Heating::default(),
                 pwm,
-                zone.rated_w(),
+                zone.rated_w(generation),
                 zone.port(),
                 zone.port(),
             )

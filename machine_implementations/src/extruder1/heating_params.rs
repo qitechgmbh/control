@@ -10,6 +10,15 @@ pub const AMBIENT_C: f64 = 22.0;
 pub const DEFAULT_MAX_CLAMP: [f64; 4] = [1.0, 1.0, 1.0, 0.95];
 
 /// Effective thermal coefficients of one zone, as the controller sees it.
+///
+/// The watt-valued fields below were fitted against a V2 heat-up with `P` taken
+/// as 700 W on the barrel and 200 W on the nozzle, which we later established
+/// are V1's bands — a V2 runs 900 W and 150 W. Only [`Self::ff_duty_per_k`]
+/// reaches the observer, and it is a duty, fitted against the real duty trace,
+/// so the gains are unaffected. The two below are a record of the fit and are
+/// off by the ratio of the assumed rating to the real one: the barrel
+/// capacities read ~1.29x low, the nozzle ~1.33x high. Re-derive them before
+/// quoting either as a physical property of the machine.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PlantCoefficients {
     /// Heat capacity of the steel the zone drives, in J/K. From the initial
