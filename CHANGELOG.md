@@ -1,3 +1,43 @@
+# `3.1.0`
+_18.09.2026_
+
+## New Machines
+- [#1538](https://github.com/qitechgmbh/control/pull/1538) Added Rewinder machine
+
+## Extruder V2
+- [#1672](https://github.com/qitechgmbh/control/pull/1672) Fixed wattage display
+
+## Aquapath
+- [#1507](https://github.com/qitechgmbh/control/pull/1507) Revised pump turn off logic when going to standby
+- [#1534](https://github.com/qitechgmbh/control/pull/1534) Temperature target step changed to 1
+
+## Laser
+- [#1338](https://github.com/qitechgmbh/control/pull/1338) Added documentation as a manual tab
+- [#1647](https://github.com/qitechgmbh/control/pull/1647) Fixed laser not working as a standalone machine
+
+## General
+- [#1503](https://github.com/qitechgmbh/control/pull/1503) Add eject option after exporting to USB
+- [#1510](https://github.com/qitechgmbh/control/pull/1510) EEPROM assignment is now disabled when the device is not in PreOp
+- [#1512](https://github.com/qitechgmbh/control/pull/1512), [#1519](https://github.com/qitechgmbh/control/pull/1519) Updated to Node.js 24 and Electron 43
+- [#1550](https://github.com/qitechgmbh/control/pull/1550) Clearer error message when EtherCAT hardware for a machine is missing
+- [#1551](https://github.com/qitechgmbh/control/pull/1551) Status badge can no longer overflow its tile
+- [#1585](https://github.com/qitechgmbh/control/pull/1585) Added unassign button for EtherCAT terminals
+- [#1649](https://github.com/qitechgmbh/control/pull/1649) Release candidates are now sorted after major releases in the update list
+- [#1652](https://github.com/qitechgmbh/control/pull/1652) Fixed target line position in graphs
+
+## CI & Nix
+- [#1575](https://github.com/qitechgmbh/control/pull/1575) Add `cargo-clippy` to the Nix devShell
+- [#1580](https://github.com/qitechgmbh/control/pull/1580) Introduce Cachix for faster updates
+- [#1600](https://github.com/qitechgmbh/control/pull/1600) Add `aarch64-darwin` flake outputs
+
+## Dependencies
+- [#1501](https://github.com/qitechgmbh/control/pull/1501), [#1505](https://github.com/qitechgmbh/control/pull/1505), [#1514](https://github.com/qitechgmbh/control/pull/1514), [#1521](https://github.com/qitechgmbh/control/pull/1521), [#1532](https://github.com/qitechgmbh/control/pull/1532), [#1541](https://github.com/qitechgmbh/control/pull/1541), [#1544](https://github.com/qitechgmbh/control/pull/1544), [#1545](https://github.com/qitechgmbh/control/pull/1545), [#1565](https://github.com/qitechgmbh/control/pull/1565), [#1586](https://github.com/qitechgmbh/control/pull/1586), [#1593](https://github.com/qitechgmbh/control/pull/1593), [#1595](https://github.com/qitechgmbh/control/pull/1595), [#1613](https://github.com/qitechgmbh/control/pull/1613), [#1622](https://github.com/qitechgmbh/control/pull/1622), [#1624](https://github.com/qitechgmbh/control/pull/1624), [#1632](https://github.com/qitechgmbh/control/pull/1632), [#1636](https://github.com/qitechgmbh/control/pull/1636), [#1640](https://github.com/qitechgmbh/control/pull/1640), [#1644](https://github.com/qitechgmbh/control/pull/1644), [#1653](https://github.com/qitechgmbh/control/pull/1653), [#1658](https://github.com/qitechgmbh/control/pull/1658), [#1663](https://github.com/qitechgmbh/control/pull/1663), [#1670](https://github.com/qitechgmbh/control/pull/1670) Update nixpkgs
+- [#1517](https://github.com/qitechgmbh/control/pull/1517), [#1518](https://github.com/qitechgmbh/control/pull/1518), [#1520](https://github.com/qitechgmbh/control/pull/1520), [#1523](https://github.com/qitechgmbh/control/pull/1523), [#1524](https://github.com/qitechgmbh/control/pull/1524), [#1557](https://github.com/qitechgmbh/control/pull/1557), [#1559](https://github.com/qitechgmbh/control/pull/1559), [#1561](https://github.com/qitechgmbh/control/pull/1561), [#1564](https://github.com/qitechgmbh/control/pull/1564), [#1566](https://github.com/qitechgmbh/control/pull/1566), [#1626](https://github.com/qitechgmbh/control/pull/1626), [#1627](https://github.com/qitechgmbh/control/pull/1627), [#1628](https://github.com/qitechgmbh/control/pull/1628), [#1629](https://github.com/qitechgmbh/control/pull/1629), [#1630](https://github.com/qitechgmbh/control/pull/1630), [#1631](https://github.com/qitechgmbh/control/pull/1631) Update Rust & Electron dependencies
+- [#1522](https://github.com/qitechgmbh/control/pull/1522), [#1542](https://github.com/qitechgmbh/control/pull/1542), [#1607](https://github.com/qitechgmbh/control/pull/1607), [#1620](https://github.com/qitechgmbh/control/pull/1620), [#1643](https://github.com/qitechgmbh/control/pull/1643), [#1662](https://github.com/qitechgmbh/control/pull/1662), [#1666](https://github.com/qitechgmbh/control/pull/1666) Update home-manager
+- [#1548](https://github.com/qitechgmbh/control/pull/1548), [#1578](https://github.com/qitechgmbh/control/pull/1578), [#1616](https://github.com/qitechgmbh/control/pull/1616), [#1634](https://github.com/qitechgmbh/control/pull/1634), [#1650](https://github.com/qitechgmbh/control/pull/1650) Fix vulnerable and deprecated dependencies
+
+**Full Changelog**: https://github.com/qitechgmbh/control/compare/3.0.0...3.1.0
+
 # `3.0.0`
 _13.07.2026_
 
