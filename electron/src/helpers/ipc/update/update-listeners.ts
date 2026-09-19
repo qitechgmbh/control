@@ -16,7 +16,7 @@ import {
 } from "./update-channels";
 import { spawn, ChildProcess } from "child_process";
 import tkill from "@jub3i/tree-kill";
-import { existsSync, readFileSync, rmSync } from "fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { GithubSource } from "@/setup/GithubSourceDialog";
 import { fetchChangelog, fetchTargets } from "./git-fetch-utils";
 import {
@@ -187,6 +187,10 @@ export function addUpdateEventListeners() {
         });
 
         currentUpdateProcess = null;
+
+        // Re-isolate cores since the build released them
+        await isolateCores(event);
+
         event.sender.send(UPDATE_END, terminalInfo("Update process cancelled"));
         return { success: true };
       } catch (error: any) {
@@ -331,12 +335,21 @@ async function update(
           status: "in-progress",
         });
 
-        const installResult = await runCommandWithStepTracking(
-          "./nixos-install.sh",
-          [],
-          repoDir,
-          event,
-        );
+        // Release isolated cores so the build can use all CPUs
+        await releaseCores(event);
+
+        let installResult: { success: boolean; error?: string };
+        try {
+          installResult = await runCommandWithStepTracking(
+            "./nixos-install.sh",
+            [],
+            repoDir,
+            event,
+          );
+        } finally {
+          // Always re-isolate, even on failure or cancellation
+          await isolateCores(event);
+        }
 
         if (!installResult.success) {
           // Mark current and remaining steps as error
@@ -1029,4 +1042,112 @@ function terminalInfo(text: string): string {
 
 function terminalGray(text: string): string {
   return terminalColor("gray", text);
+}
+
+// CPU isolation helpers
+
+const QITECH_SLICE_CG = "/sys/fs/cgroup/qitech.slice";
+
+async function releaseCores(event: Electron.IpcMainInvokeEvent): Promise<void> {
+  event.sender.send(
+    UPDATE_LOG,
+    terminalInfo("Releasing isolated cores for build..."),
+  );
+
+  // This logic may fall apart and cause issues when dealing with heterogeneous CPU
+  // core topologies like Intel Alder Lake and newer as well as basically any recent non-x86 SoC.
+
+  const script = `\
+#!/usr/bin/env bash
+set -euo pipefail
+
+TOTAL=$(nproc)
+LAST=$((TOTAL - 1))
+RT_START=$((TOTAL - 2))
+RT_CPUS="$RT_START-$LAST"
+ALL_CPUS="0-$LAST"
+CG="${QITECH_SLICE_CG}"
+
+echo member > "$CG/cpuset.cpus.partition" 2>/dev/null || true
+echo "" > "$CG/cpuset.cpus.exclusive" 2>/dev/null || true
+systemctl set-property --runtime init.scope   AllowedCPUs=$ALL_CPUS
+systemctl set-property --runtime system.slice AllowedCPUs=$ALL_CPUS
+systemctl set-property --runtime user.slice   AllowedCPUs=$ALL_CPUS
+systemctl set-property --runtime qitech.slice AllowedCPUs=$ALL_CPUS
+sleep 1
+for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+  echo performance > "$cpu"
+done
+for cpu in $(seq "$RT_START" "$LAST"); do
+  max=$(cat "/sys/devices/system/cpu/cpu$cpu/cpufreq/cpuinfo_max_freq")
+  echo "$max" > "/sys/devices/system/cpu/cpu$cpu/cpufreq/scaling_min_freq"
+  echo performance > "/sys/devices/system/cpu/cpu$cpu/cpufreq/energy_performance_preference"
+done
+echo "=== CPU Status ==="
+for cpu in $(seq 0 "$LAST"); do
+  gov=$(cat "/sys/devices/system/cpu/cpu$cpu/cpufreq/scaling_governor")
+  freq=$(cat "/sys/devices/system/cpu/cpu$cpu/cpufreq/scaling_cur_freq")
+  echo "CPU$cpu: governor=$gov freq=$freq"
+done`;
+
+  writeFileSync("/tmp/qitech-release-cores.sh", script, { mode: 0o755 });
+  try {
+    await runCommand(
+      "sudo",
+      ["bash", "/tmp/qitech-release-cores.sh"],
+      "/tmp",
+      event,
+    );
+  } finally {
+    rmSync("/tmp/qitech-release-cores.sh", { force: true });
+  }
+
+  event.sender.send(
+    UPDATE_LOG,
+    terminalSuccess("All cores available for build"),
+  );
+}
+
+async function isolateCores(event: Electron.IpcMainInvokeEvent): Promise<void> {
+  event.sender.send(UPDATE_LOG, terminalInfo("Re-isolating realtime cores..."));
+
+  const script = `\
+#!/usr/bin/env bash
+set -euo pipefail
+
+TOTAL=$(nproc)
+LAST=$((TOTAL - 1))
+RT_START=$((TOTAL - 2))
+RT_CPUS="$RT_START-$LAST"
+HK_CPUS="0-$((RT_START - 1))"
+CG="${QITECH_SLICE_CG}"
+
+# Restrict housekeeping slices first, then set partition
+systemctl set-property --runtime init.scope   AllowedCPUs=$HK_CPUS
+systemctl set-property --runtime system.slice AllowedCPUs=$HK_CPUS
+systemctl set-property --runtime user.slice   AllowedCPUs=$HK_CPUS
+systemctl set-property --runtime qitech.slice AllowedCPUs=$RT_CPUS
+
+echo "$RT_CPUS" > "$CG/cpuset.cpus.exclusive"
+echo isolated > "$CG/cpuset.cpus.partition"
+
+# Restore default frequency scaling on RT cores
+for cpu in $(seq "$RT_START" "$LAST"); do
+  echo 800000 > "/sys/devices/system/cpu/cpu$cpu/cpufreq/scaling_min_freq"
+  echo performance > "/sys/devices/system/cpu/cpu$cpu/cpufreq/energy_performance_preference"
+done`;
+
+  writeFileSync("/tmp/qitech-isolate-cores.sh", script, { mode: 0o755 });
+  try {
+    await runCommand(
+      "sudo",
+      ["bash", "/tmp/qitech-isolate-cores.sh"],
+      "/tmp",
+      event,
+    );
+  } finally {
+    rmSync("/tmp/qitech-isolate-cores.sh", { force: true });
+  }
+
+  event.sender.send(UPDATE_LOG, terminalSuccess("Realtime cores re-isolated"));
 }
