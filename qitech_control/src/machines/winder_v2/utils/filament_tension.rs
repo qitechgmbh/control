@@ -98,8 +98,9 @@ impl FilamentTensionCalculator {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use qitech_lib::units::angle::degree;
+
+    use super::*;
 
     fn calculator() -> FilamentTensionCalculator {
         FilamentTensionCalculator::new(Angle::new::<degree>(20.0), Angle::new::<degree>(90.0))
@@ -109,8 +110,12 @@ mod tests {
     fn tension_is_high_at_max_angle_and_low_at_min_angle() {
         let calc = calculator();
 
-        let at_max = calc.calc_filament_tension(Angle::new::<degree>(90.0)).unwrap();
-        let at_min = calc.calc_filament_tension(Angle::new::<degree>(20.0)).unwrap();
+        let at_max = calc
+            .calc_filament_tension(Angle::new::<degree>(90.0))
+            .unwrap();
+        let at_min = calc
+            .calc_filament_tension(Angle::new::<degree>(20.0))
+            .unwrap();
 
         assert!((at_max - 1.0).abs() < 1e-9);
         assert!(at_min.abs() < 1e-9);
@@ -120,7 +125,13 @@ mod tests {
     fn tension_is_none_out_of_bounds() {
         let calc = calculator();
 
-        assert!(calc.calc_filament_tension(Angle::new::<degree>(10.0)).is_none());
-        assert!(calc.calc_filament_tension(Angle::new::<degree>(100.0)).is_none());
+        assert!(
+            calc.calc_filament_tension(Angle::new::<degree>(10.0))
+                .is_none()
+        );
+        assert!(
+            calc.calc_filament_tension(Angle::new::<degree>(100.0))
+                .is_none()
+        );
     }
 }

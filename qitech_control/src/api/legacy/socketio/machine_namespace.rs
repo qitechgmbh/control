@@ -5,7 +5,6 @@ use qitech_framework::ConfigPropertyWriteOutcome;
 use qitech_framework::MachineIdentification;
 use qitech_framework::MachineInstanceIdentification;
 use qitech_framework::MachineSchema;
-use qitech_framework::MachinesReport;
 use qitech_framework::RuntimeEvent;
 use qitech_framework::RuntimeReport;
 use qitech_framework::StatePropertyEvent;
@@ -55,11 +54,25 @@ impl MachineNamespaceManager {
                     ..Default::default()
                 },
                 emitted_default_state: false,
+                emit_state: false,
             },
         );
     }
 
-    pub fn update(&mut self, report: &RuntimeReport) {
+    pub fn update(
+        &mut self,
+        report: &RuntimeReport,
+        dirty_machines: Vec<MachineInstanceIdentification>,
+    ) {
+        for ident in dirty_machines {
+            let Some(entry) = self.registry.get_mut(&ident) else {
+                // no machine registered under that uid
+                continue;
+            };
+
+            entry.emit_state = true;
+        }
+
         for record in &report.machines.config_property_records {
             let Some(entry) = self.registry.get_mut(&record.machine) else {
                 // no machine registered under that uid
@@ -70,6 +83,8 @@ impl MachineNamespaceManager {
                 // not defined in schema
                 continue;
             };
+
+            entry.emit_state = true;
 
             if let ConfigPropertyEvent::Registered {
                 default,
@@ -130,6 +145,8 @@ impl MachineNamespaceManager {
                 // not defined in schema
                 continue;
             };
+
+            entry.emit_state = true;
 
             if let StatePropertyEvent::Registered { value } = record.event.clone() {
                 *info = Some(StatePropertyInfo {
@@ -210,12 +227,14 @@ impl MachineNamespaceManager {
             };
 
             // --- emit state event ---
-            if let Some(data) =
-                (adapter.init_state_event)(&entry.instance, entry.emitted_default_state)
+            if entry.emit_state
+                && let Some(data) =
+                    (adapter.init_state_event)(&entry.instance, entry.emitted_default_state)
             {
                 let event = SocketIOEvent::new("StateEvent", data);
                 Self::broadcast(&mut entry.sockets, event);
                 entry.emitted_default_state = true;
+                entry.emit_state = false;
             }
 
             // --- emit live values ---
@@ -278,6 +297,7 @@ pub struct Entry {
     sockets: Vec<SocketRef>,
     instance: MachineInstance,
     emitted_default_state: bool,
+    emit_state: bool,
 }
 
 pub fn machine_namespace_path_to_ident(s: &str) -> Result<MachineInstanceIdentification, String> {

@@ -8,6 +8,7 @@ use qitech_framework::MachineInstanceIdentification;
 use qitech_framework_hub::ActorContext;
 use serde::Deserialize;
 use serde::Serialize;
+use tokio::sync::mpsc;
 
 use crate::api::legacy::adapter;
 use crate::api::legacy::types::MachineIdentificationUnique;
@@ -34,7 +35,10 @@ impl MutationResponse {
     }
 }
 
-pub async fn post(State(ctx): State<ActorContext>, Json(body): Json<Request>) -> AxumResponse {
+pub async fn post(
+    State(state): State<(ActorContext, mpsc::Sender<MachineInstanceIdentification>)>,
+    Json(body): Json<Request>,
+) -> AxumResponse {
     let ident = MachineInstanceIdentification {
         machine: MachineIdentification {
             vendor_id: body
@@ -63,7 +67,9 @@ pub async fn post(State(ctx): State<ActorContext>, Json(body): Json<Request>) ->
     // Sequential, fail-fast: a compound legacy mutation (e.g. autotune start) may need its writes
     // applied in order before a later request in the batch depends on them.
     for request in requests {
-        match ctx.send_request(request).await {
+        state.1.send(ident).await.expect("pray");
+
+        match state.0.send_request(request).await {
             Ok(Ok(())) => {}
 
             Ok(Err(error)) => {

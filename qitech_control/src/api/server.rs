@@ -1,6 +1,8 @@
+use qitech_framework::MachineInstanceIdentification;
 use qitech_framework_hub::Actor;
 use qitech_framework_hub::ActorContext;
 use tokio::net::TcpListener;
+use tokio::sync::mpsc;
 use tower_http::cors::CorsLayer;
 
 use crate::api::legacy::LegacySharedState;
@@ -11,13 +13,19 @@ use crate::api::types::SharedState;
 pub struct Server {
     state: SharedState,
     state_legacy: LegacySharedState,
+    machines_dirty_tx: mpsc::Sender<MachineInstanceIdentification>,
 }
 
 impl Server {
-    pub fn new(state: SharedState, state_legacy: LegacySharedState) -> Self {
+    pub fn new(
+        state: SharedState,
+        state_legacy: LegacySharedState,
+        machines_dirty_tx: mpsc::Sender<MachineInstanceIdentification>,
+    ) -> Self {
         Self {
             state,
             state_legacy,
+            machines_dirty_tx,
         }
     }
 }
@@ -33,7 +41,7 @@ impl Actor for Server {
                 self.state_legacy.clone(),
             ))
             .layer(CorsLayer::permissive())
-            .with_state(ctx);
+            .with_state((ctx, self.machines_dirty_tx.clone()));
 
         //.nest("/api/v2", rest_api_router())
         //.layer(socketio_layer)

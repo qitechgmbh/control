@@ -23,6 +23,7 @@ use qitech_lib::ethercat_hal::DcConfiguration;
 use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
 use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
+use tokio::sync::mpsc;
 
 use crate::machines::ExtruderV1;
 use crate::machines::ExtruderV2;
@@ -34,6 +35,7 @@ use crate::machines::aquapath::AquaPathV1;
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     interface::bring_up_all_ethernet();
+
     let config_rt = RuntimeConfiguration::new()
         .requests_per_cycle_max(10)
         .export_interval(Duration::from_secs_f64(1.0 / 32.0))
@@ -62,16 +64,27 @@ pub async fn main() -> anyhow::Result<()> {
             Ok(())
         }
         Ok("TUI") => run_with_tui(config_rt, Default::default()).await,
+
+        // HUB config
         _ => {
             tracing_subscriber::fmt()
                 .with_target(false)
                 .with_ansi(false)
                 .init();
+
+            // channel so rest api can notify the socketio handler when a request is send
+            // so we can send a state event for the frontend.
+            let (tx, rx) = mpsc::channel(32);
+
             let state = SharedState::default();
             let state_legacy = LegacySharedState::new();
             let config_hub = HubConfiguration::new()
-                .listener(SocketIODispatcher::new(state.clone(), state_legacy.clone()))
-                .actor(Server::new(state, state_legacy));
+                .listener(SocketIODispatcher::new(
+                    state.clone(),
+                    state_legacy.clone(),
+                    rx,
+                ))
+                .actor(Server::new(state, state_legacy, tx));
             run_with_hub(config_rt, config_hub).await
         }
     }
