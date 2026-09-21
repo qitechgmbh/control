@@ -108,6 +108,12 @@ impl TemperatureController {
         self.strategy.pid_mut()
     }
 
+    /// Replace the control law. The new strategy starts with no integral and no
+    /// estimate; the cutout, PWM window and relay stay with this controller.
+    pub fn set_strategy(&mut self, strategy: Box<dyn HeatingStrategy>) {
+        self.strategy = strategy;
+    }
+
     pub fn disallow_heating(&mut self) {
         self.heating_allowed = false;
         // Drop the integral and the estimator's state, so re-enabling does not

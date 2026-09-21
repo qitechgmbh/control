@@ -2,12 +2,38 @@ import React, { useState } from "react";
 import { Page } from "@/components/Page";
 import { ControlCard } from "@/control/ControlCard";
 import { Label } from "@/control/Label";
-import { SelectionGroupBoolean } from "@/control/SelectionGroup";
+import {
+  SelectionGroup,
+  SelectionGroupBoolean,
+} from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder3 } from "./useExtruder";
 import { ControlGrid } from "@/control/ControlGrid";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { HeatingAlgorithm } from "./extruder3Namespace";
+
+const TEMPERATURE_ZONES = [
+  ["front", "Front"],
+  ["middle", "Middle"],
+  ["back", "Back"],
+  ["nozzle", "Nozzle"],
+] as const;
+
+const PID_GAINS = [
+  ["kp", "Kp"],
+  ["ki", "Ki"],
+  ["kd", "Kd"],
+] as const;
+
+const HEATING_ALGORITHM_DESCRIPTIONS: Record<HeatingAlgorithm, string> = {
+  ObserverPi:
+    "PI on an estimated metal temperature plus a feed-forward; Kd is unused. Almost no overshoot, when tuned correctly.",
+  Pid: "Normal PID algorithm on raw sensor readings.",
+};
+
+const HEATING_ALGORITHM_CONFIRMATION =
+  "Switching the heating algorithm resets all temperature PID gains to that algorithm's defaults. Continue?";
 
 export function Extruder3SettingsPage() {
   const {
@@ -22,6 +48,7 @@ export function Extruder3SettingsPage() {
     setPressurePidKi,
     setPressurePidKd,
     setTemperaturePidValue,
+    setHeatingAlgorithm,
     setTemperatureTargetEnabled,
     startPressurePidAutoTune,
     stopPressurePidAutoTune,
@@ -30,6 +57,14 @@ export function Extruder3SettingsPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [tuneDelta, setTuneDelta] = useState(1.0);
   const [frequencyStepHz, setFrequencyStepHz] = useState(2.5);
+
+  const heatingAlgorithm = state?.extruder_settings_state.heating_algorithm;
+  // The default state holds the gains of the algorithm the machine started
+  // with, so they are only defaults while that algorithm is still running.
+  const temperaturePidDefaults =
+    defaultState?.extruder_settings_state.heating_algorithm === heatingAlgorithm
+      ? defaultState?.pid_settings.temperature
+      : undefined;
 
   return (
     <Page>
@@ -253,171 +288,54 @@ export function Extruder3SettingsPage() {
               )}
             </ControlCard>
           </ControlGrid>
+          <ControlCard title="Heating Algorithm">
+            <SelectionGroup<HeatingAlgorithm>
+              value={heatingAlgorithm}
+              onChange={setHeatingAlgorithm}
+              options={{
+                ObserverPi: {
+                  children: "Observer PI (V2 default)",
+                  confirmation: HEATING_ALGORITHM_CONFIRMATION,
+                },
+                Pid: {
+                  children: "Plain PID",
+                  confirmation: HEATING_ALGORITHM_CONFIRMATION,
+                },
+              }}
+            />
+            {heatingAlgorithm && (
+              <p className="text-sm text-gray-500">
+                {HEATING_ALGORITHM_DESCRIPTIONS[heatingAlgorithm]}
+              </p>
+            )}
+          </ControlCard>
           <ControlGrid>
-            <ControlCard title="Temperature PID Settings (Front) ">
-              <Label label="Kp">
-                <EditValue
-                  value={state?.pid_settings.temperature.front.kp}
-                  defaultValue={defaultState?.pid_settings.temperature.front.kp}
-                  min={0}
-                  max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
-                  onChange={(v) => setTemperaturePidValue("front", "kp", v)}
-                  title="Temperature PID KP"
-                />
-              </Label>
-              <Label label="Ki">
-                <EditValue
-                  value={state?.pid_settings.temperature.front.ki}
-                  defaultValue={defaultState?.pid_settings.temperature.front.ki}
-                  min={0}
-                  max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
-                  onChange={(v) => setTemperaturePidValue("front", "ki", v)}
-                  title="Temperature PID KI"
-                />
-              </Label>
-              <Label label="Kd">
-                <EditValue
-                  value={state?.pid_settings.temperature.front.kd}
-                  defaultValue={defaultState?.pid_settings.temperature.front.kd}
-                  min={0}
-                  max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
-                  onChange={(v) => setTemperaturePidValue("front", "kd", v)}
-                  title="Temperature PID KD"
-                />
-              </Label>
-            </ControlCard>
-            <ControlCard title="Temperature PID Settings (Middle) ">
-              <Label label="Kp">
-                <EditValue
-                  value={state?.pid_settings.temperature.middle.kp}
-                  defaultValue={
-                    defaultState?.pid_settings.temperature.middle.kp
-                  }
-                  min={0}
-                  max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
-                  onChange={(v) => setTemperaturePidValue("middle", "kp", v)}
-                  title="Temperature PID KP"
-                />
-              </Label>
-              <Label label="Ki">
-                <EditValue
-                  value={state?.pid_settings.temperature.middle.ki}
-                  defaultValue={
-                    defaultState?.pid_settings.temperature.middle.ki
-                  }
-                  min={0}
-                  max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
-                  onChange={(v) => setTemperaturePidValue("middle", "ki", v)}
-                  title="Temperature PID KI"
-                />
-              </Label>
-              <Label label="Kd">
-                <EditValue
-                  value={state?.pid_settings.temperature.middle.kd}
-                  defaultValue={
-                    defaultState?.pid_settings.temperature.middle.kd
-                  }
-                  min={0}
-                  max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
-                  onChange={(v) => setTemperaturePidValue("middle", "kd", v)}
-                  title="Temperature PID KD"
-                />
-              </Label>
-            </ControlCard>
-            <ControlCard title="Temperature PID Settings (Back) ">
-              <Label label="Kp">
-                <EditValue
-                  value={state?.pid_settings.temperature.back.kp}
-                  defaultValue={defaultState?.pid_settings.temperature.back.kp}
-                  min={0}
-                  max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
-                  onChange={(v) => setTemperaturePidValue("back", "kp", v)}
-                  title="Temperature PID KP"
-                />
-              </Label>
-              <Label label="Ki">
-                <EditValue
-                  value={state?.pid_settings.temperature.back.ki}
-                  defaultValue={defaultState?.pid_settings.temperature.back.ki}
-                  min={0}
-                  max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
-                  onChange={(v) => setTemperaturePidValue("back", "ki", v)}
-                  title="Temperature PID KI"
-                />
-              </Label>
-              <Label label="Kd">
-                <EditValue
-                  value={state?.pid_settings.temperature.back.kd}
-                  defaultValue={defaultState?.pid_settings.temperature.back.kd}
-                  min={0}
-                  max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
-                  onChange={(v) => setTemperaturePidValue("back", "kd", v)}
-                  title="Temperature PID KD"
-                />
-              </Label>
-            </ControlCard>
-            <ControlCard title="Temperature PID Settings (Nozzle) ">
-              <Label label="Kp">
-                <EditValue
-                  value={state?.pid_settings.temperature.nozzle.kp}
-                  defaultValue={
-                    defaultState?.pid_settings.temperature.nozzle.kp
-                  }
-                  min={0}
-                  max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
-                  onChange={(v) => setTemperaturePidValue("nozzle", "kp", v)}
-                  title="Temperature PID KP"
-                />
-              </Label>
-              <Label label="Ki">
-                <EditValue
-                  value={state?.pid_settings.temperature.nozzle.ki}
-                  defaultValue={
-                    defaultState?.pid_settings.temperature.nozzle.ki
-                  }
-                  min={0}
-                  max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
-                  onChange={(v) => setTemperaturePidValue("nozzle", "ki", v)}
-                  title="Temperature PID KI"
-                />
-              </Label>
-              <Label label="Kd">
-                <EditValue
-                  value={state?.pid_settings.temperature.nozzle.kd}
-                  defaultValue={
-                    defaultState?.pid_settings.temperature.nozzle.kd
-                  }
-                  min={0}
-                  max={100}
-                  step={0.001}
-                  renderValue={(v) => roundToDecimals(v, 3)}
-                  onChange={(v) => setTemperaturePidValue("nozzle", "kd", v)}
-                  title="Temperature PID KD"
-                />
-              </Label>
-            </ControlCard>
+            {TEMPERATURE_ZONES.map(([zone, zoneLabel]) => (
+              <ControlCard
+                key={zone}
+                title={`Temperature PID Settings (${zoneLabel})`}
+              >
+                {PID_GAINS.map(([gain, gainLabel]) => (
+                  <Label key={gain} label={gainLabel}>
+                    <EditValue
+                      value={state?.pid_settings.temperature[zone][gain]}
+                      defaultValue={temperaturePidDefaults?.[zone][gain]}
+                      min={0}
+                      max={100}
+                      step={0.0001}
+                      exactEditValue
+                      renderValue={(v) => roundToDecimals(v, 4)}
+                      onChange={(v) => setTemperaturePidValue(zone, gain, v)}
+                      title={`Temperature PID ${gainLabel.toUpperCase()}`}
+                      // The observer's loop is a PI; its Kd is never used
+                      disabled={
+                        gain === "kd" && heatingAlgorithm === "ObserverPi"
+                      }
+                    />
+                  </Label>
+                ))}
+              </ControlCard>
+            ))}
           </ControlGrid>
         </>
       )}

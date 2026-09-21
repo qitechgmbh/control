@@ -87,6 +87,7 @@ pub struct ExtruderV2 {
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
     temperature_controller_nozzle: TemperatureController,
+    heating_algorithm: api::HeatingAlgorithm,
 
     /// Energy tracking for total consumption calculation
     total_energy_kwh: f64,

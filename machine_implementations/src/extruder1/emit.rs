@@ -4,11 +4,12 @@ use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use crate::extruder1::{
     ExtruderV2, ExtruderV2Mode, HeatingType,
     api::{
-        ExtruderSettingsState, ExtruderV2Events, HeatingState, HeatingStates, InverterStatusState,
-        LiveValuesEvent, ModeState, PidAutoTuneState, PidSettings, PidSettingsStates,
-        PressureAutoTuneConfig, PressureState, RegulationState, RotationState, ScrewState,
-        StateEvent, TemperaturePid,
+        ExtruderSettingsState, ExtruderV2Events, HeatingAlgorithm, HeatingState, HeatingStates,
+        InverterStatusState, LiveValuesEvent, ModeState, PidAutoTuneState, PidSettings,
+        PidSettingsStates, PressureAutoTuneConfig, PressureState, RegulationState, RotationState,
+        ScrewState, StateEvent, TemperaturePid,
     },
+    heating_params::build_strategy,
     temperature_controller::TemperatureController,
     zone::Zone,
 };
@@ -120,6 +121,7 @@ impl ExtruderV2 {
                 nozzle_temperature_target_enabled: self
                     .temperature_controller_nozzle
                     .get_temperature_target_enabled(),
+                heating_algorithm: self.heating_algorithm,
             },
             inverter_status_state: InverterStatusState {
                 running: self.screw_speed_controller.inverter.status.running,
@@ -377,6 +379,20 @@ impl ExtruderV2 {
         self.controller_mut(zone)
             .pid_mut()
             .configure(settings.ki, settings.kp, settings.kd);
+        self.emit_state();
+    }
+
+    /// Swap the control law on every zone. Gains reset to the new algorithm's
+    /// defaults: the observer's PI acts on an estimated metal temperature and the
+    /// plain PID on the raw reading, so neither's gains carry over.
+    pub fn set_heating_algorithm(&mut self, algorithm: HeatingAlgorithm) {
+        if algorithm != self.heating_algorithm {
+            for zone in Zone::ALL {
+                self.controller_mut(zone)
+                    .set_strategy(build_strategy(algorithm, zone));
+            }
+            self.heating_algorithm = algorithm;
+        }
         self.emit_state();
     }
 }

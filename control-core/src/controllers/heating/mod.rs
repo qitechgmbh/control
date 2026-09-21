@@ -4,13 +4,6 @@
 //! where the operator wants the zone, what fraction of full power should the
 //! heater get this tick? Reading the sensor, the over-temperature cutout, the
 //! slow-PWM window and driving the relay all stay with the caller.
-//!
-//! A band-heated barrel is hard for a textbook PID for a reason that is a
-//! property of the hardware, not of the gains: an RTD in a pocket trails the
-//! steel by its own time constant, so on a ramp the loop sees a *constant*
-//! error of `tau * rate` and shuts off that far past setpoint no matter how it
-//! is tuned. [`SensorLagObserver`] estimates the steel instead; [`ObserverPi`]
-//! regulates that estimate.
 
 pub mod observer_pi;
 pub mod sensor_lag_observer;

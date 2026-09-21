@@ -1,9 +1,15 @@
-use control_core::controllers::heating::ObserverPiParams;
+use control_core::controllers::heating::{
+    HeatingStrategy, ObserverPi, ObserverPiParams, PidBaseline,
+};
 
-use super::zone::Zone;
+use super::api::HeatingAlgorithm;
+use super::zone::{Generation, Zone};
 
 /// Ambient the feedforward is referenced to, in °C.
 pub const AMBIENT_C: f64 = 22.0;
+
+/// `(kp, ki, kd)` of the plain PID, the same for every zone.
+pub const PID_GAINS: (f64, f64, f64) = (0.16, 0.0, 0.008);
 
 /// Production duty clamp per zone: 1.0 for the barrel zones, 0.95 for the
 /// nozzle.
@@ -113,9 +119,62 @@ pub fn observer_pi_params() -> [ObserverPiParams; 4] {
     })
 }
 
+impl HeatingAlgorithm {
+    /// `MACHINE_EXTRUDER_V2` has a calibrated thermal model the observer is
+    /// tuned against. `MACHINE_EXTRUDER_V1` keeps its long-standing PID.
+    pub const fn default_for(generation: Generation) -> Self {
+        match generation {
+            Generation::V1 => Self::Pid,
+            Generation::V2 => Self::ObserverPi,
+        }
+    }
+}
+
+/// A fresh control law for `zone`, carrying that algorithm's default gains.
+pub fn build_strategy(algorithm: HeatingAlgorithm, zone: Zone) -> Box<dyn HeatingStrategy> {
+    match algorithm {
+        HeatingAlgorithm::ObserverPi => {
+            Box::new(ObserverPi::new(observer_pi_params()[zone.port()]))
+        }
+        HeatingAlgorithm::Pid => {
+            let (kp, ki, kd) = PID_GAINS;
+            Box::new(PidBaseline::new(kp, ki, kd, DEFAULT_MAX_CLAMP[zone.port()]))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn each_generation_keeps_its_default_algorithm() {
+        assert_eq!(
+            HeatingAlgorithm::default_for(Generation::V1),
+            HeatingAlgorithm::Pid
+        );
+        assert_eq!(
+            HeatingAlgorithm::default_for(Generation::V2),
+            HeatingAlgorithm::ObserverPi
+        );
+    }
+
+    #[test]
+    fn each_algorithm_builds_with_its_own_default_gains() {
+        for zone in Zone::ALL {
+            let observer = build_strategy(HeatingAlgorithm::ObserverPi, zone);
+            let p = observer_pi_params()[zone.port()];
+            assert_eq!(observer.pid().get_kp(), p.kp);
+            assert_eq!(observer.pid().get_ki(), p.ki);
+            assert_eq!(observer.pid().get_kd(), 0.0);
+
+            let pid = build_strategy(HeatingAlgorithm::Pid, zone);
+            assert_eq!(
+                (pid.pid().get_kp(), pid.pid().get_ki(), pid.pid().get_kd()),
+                PID_GAINS
+            );
+        }
+    }
 
     #[test]
     fn params_are_indexed_by_port() {

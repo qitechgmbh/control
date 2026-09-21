@@ -1,13 +1,15 @@
-use super::heating_params::{DEFAULT_MAX_CLAMP, observer_pi_params};
+use super::heating_params::build_strategy;
 use super::zone::{Generation, Zone};
 use super::{
-    ExtruderV2, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
-    screw_speed_controller::ScrewSpeedController, temperature_controller::TemperatureController,
+    ExtruderV2, Heating,
+    api::{ExtruderV2Namespace, HeatingAlgorithm},
+    mitsubishi_cs80::MitsubishiCS80,
+    screw_speed_controller::ScrewSpeedController,
+    temperature_controller::TemperatureController,
 };
 use crate::{
     MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, MachineHardware, MachineMessage, MachineNew,
 };
-use control_core::controllers::heating::{HeatingStrategy, ObserverPi, PidBaseline};
 use control_core::transmission::fixed::FixedTransmission;
 use qitech_lib::ethercat_hal::{
     coe::ConfigurableDevice,
@@ -67,6 +69,7 @@ impl MachineNew for ExtruderV2 {
 
         let roles = match hw.identification.machine_ident.machine {
             MACHINE_EXTRUDER_V1 => {
+                print!("Setting up like its V2");
                 motor_poles = 4;
                 transmission = FixedTransmission::new(1.0 / 34.0);
                 generation = Generation::V1;
@@ -125,25 +128,13 @@ impl MachineNew for ExtruderV2 {
         let initial_target = ThermodynamicTemperature::new::<degree_celsius>(150.0);
         let pwm = Duration::from_millis(500);
 
-        // The control law differs by hardware generation. `MACHINE_EXTRUDER_V2`
-        // has a calibrated thermal model on which the observer is calibrated to.
-        // `MACHINE_EXTRUDER_V1` keeps its long-standing PID.
-        let is_v2 = generation == Generation::V2;
-        let observer_pi = observer_pi_params();
+        // The control law differs by hardware generation; the operator can
+        // switch it at runtime with `Mutation::SetHeatingAlgorithm`.
+        let heating_algorithm = HeatingAlgorithm::default_for(generation);
 
         let controller = |zone: Zone| {
-            let strategy: Box<dyn HeatingStrategy> = if is_v2 {
-                Box::new(ObserverPi::new(observer_pi[zone.port()]))
-            } else {
-                Box::new(PidBaseline::new(
-                    0.16,
-                    0.0,
-                    0.008,
-                    DEFAULT_MAX_CLAMP[zone.port()],
-                ))
-            };
             TemperatureController::with_strategy(
-                strategy,
+                build_strategy(heating_algorithm, zone),
                 initial_target,
                 extruder_max_temperature,
                 Heating::default(),
@@ -184,6 +175,7 @@ impl MachineNew for ExtruderV2 {
             temperature_controller_middle,
             temperature_controller_back,
             temperature_controller_nozzle,
+            heating_algorithm,
             screw_speed_controller,
             emitted_default_state: false,
             last_status_hash: None,
