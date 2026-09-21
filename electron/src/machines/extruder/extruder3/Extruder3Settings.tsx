@@ -321,7 +321,7 @@ export function Extruder3SettingsPage() {
                       value={state?.pid_settings.temperature[zone][gain]}
                       defaultValue={temperaturePidDefaults?.[zone][gain]}
                       min={0}
-                      max={100}
+                      max={1}
                       step={0.0001}
                       exactEditValue
                       renderValue={(v) => roundToDecimals(v, 4)}
