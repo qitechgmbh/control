@@ -31,6 +31,7 @@ pub struct LaserV1 {
     diameter_target: ConfigProperty<Length>,
     diameter_tolerance_upper: ConfigProperty<Length>,
     diameter_tolerance_lower: ConfigProperty<Length>,
+    _global_warning: ConfigProperty<bool>,
 
     // --- state ---
     in_tolerance: StateProperty<bool>,
@@ -77,11 +78,17 @@ impl MachineBuild for LaserV1 {
             .maximum(1.0)
             .build()?;
 
+        let _global_warning = ctx
+            .config::<bool>("global_warning")
+            .default(true)
+            .build()?;
+
         Ok(Self {
             device,
             diameter_target,
             diameter_tolerance_upper,
             diameter_tolerance_lower,
+            _global_warning,
             in_tolerance: ctx.state::<bool>("in_tolerance").build()?,
             diameter: ctx.measurement::<millimeter>("diameter").build()?,
             diameter_x: ctx

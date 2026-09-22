@@ -43,7 +43,7 @@ fn convert_request(
         },
         Mutation::SetGlobalWarning(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
-            path: "out_of_tolerance.active".to_string(),
+            path: "global_warning".to_string(),
             value: ScalarValue::Boolean(v),
         },
     }])
@@ -80,6 +80,15 @@ fn init_state_event(
         .float()
         .expect("Cannot be null");
 
+    let global_warning = instance
+        .config_properties
+        .get("global_warning")?
+        .as_ref()?
+        .value
+        .clone()
+        .boolean()
+        .expect("Cannot be null");
+
     let in_tolerance = instance
         .state_properties
         .get("in_tolerance")?
@@ -96,7 +105,7 @@ fn init_state_event(
             "higher_tolerance": higher_tolerance,
             "lower_tolerance":  lower_tolerance,
             "in_tolerance":     in_tolerance,
-            "global_warning":   false,
+            "global_warning":   global_warning,
         })
     }))
 }
