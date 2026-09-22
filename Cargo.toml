@@ -19,11 +19,10 @@ qitech_control_core = { path = "qitech_control_core" }
 
 # --- lib ---
 qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="0deadeade7be222ff1a0235c317e8b9f5feacb32" }
-
 # --- framework ---
-qitech_framework = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="c667225471e6c5483067839d6f02e914ff96fb39" }
-qitech_framework_tui = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="c667225471e6c5483067839d6f02e914ff96fb39" }
-qitech_framework_hub = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="c667225471e6c5483067839d6f02e914ff96fb39" }
+qitech_framework = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="c6b725f16c14ab57b594f48d4b370b8e8e729402" }
+qitech_framework_tui = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="c6b725f16c14ab57b594f48d4b370b8e8e729402" }
+qitech_framework_hub = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="c6b725f16c14ab57b594f48d4b370b8e8e729402" }
 
 # --- external ---
 tokio = "1"
