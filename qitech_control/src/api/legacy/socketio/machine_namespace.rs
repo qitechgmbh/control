@@ -287,6 +287,7 @@ impl MachineNamespaceManager {
 
         // --- store the socket ---
         entry.sockets.push(socket);
+        entry.emit_state = true;
     }
 
     fn broadcast(sockets: &mut Vec<SocketRef>, event: SocketIOEvent) {

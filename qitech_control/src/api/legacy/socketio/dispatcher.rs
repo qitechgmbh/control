@@ -94,14 +94,10 @@ impl Listener for SocketIODispatcher {
 
         // --- then update the machine list and bus state the frontend renders ---
         for event in &report.events {
-            match event {
-                RuntimeEvent::RemovedMachine { ident } => {
-                    self.state_legacy
-                        .ns_main
-                        .update(|ns| ns.remove_machine(*ident));
-                }
-
-                _ => {}
+            if let RuntimeEvent::RemovedMachine { ident } = event {
+                self.state_legacy
+                    .ns_main
+                    .update(|ns| ns.remove_machine(*ident));
             }
         }
     }
