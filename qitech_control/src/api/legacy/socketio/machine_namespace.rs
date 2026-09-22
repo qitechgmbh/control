@@ -243,7 +243,7 @@ impl MachineNamespaceManager {
             // --- emit state event ---
             if entry.emit_state
                 && let Some(data) =
-                    (adapter.init_state_event)(&entry.instance, entry.emitted_default_state)
+                    (adapter.init_state_event)(&entry.instance, !entry.emitted_default_state)
             {
                 let event = SocketIOEvent::new("StateEvent", data);
                 Self::broadcast(&mut entry.sockets, event);
