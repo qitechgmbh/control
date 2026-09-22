@@ -1,5 +1,6 @@
 use qitech_framework::MachineInstanceIdentification;
 use qitech_framework::MachineSchema;
+use qitech_framework::RuntimeEvent;
 use qitech_framework::RuntimeInitEvent;
 use qitech_framework::RuntimeReport;
 use qitech_framework_hub::Listener;
@@ -90,5 +91,24 @@ impl Listener for SocketIODispatcher {
         self.state_legacy
             .ns_machines
             .update(|ns| ns.update(report, dirty_machines));
+
+        // --- then update the machine list and bus state the frontend renders ---
+        for event in &report.events {
+            match event {
+                RuntimeEvent::RemovedMachine { ident } => {
+                    self.state_legacy
+                        .ns_main
+                        .update(|ns| ns.remove_machine(*ident));
+                }
+
+                _ => {}
+            }
+        }
+    }
+
+    fn on_runtime_disconnected(&mut self) {
+        self.state_legacy.ns_main.update(|ns| {
+            ns.set_ecat_lost("Runtime disconnected, please refresh the page to reconnect")
+        });
     }
 }
