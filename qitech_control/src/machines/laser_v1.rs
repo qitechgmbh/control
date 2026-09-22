@@ -140,7 +140,7 @@ impl LaserV1 {
 
             Err(e) => {
                 // an outright I/O break is unambiguous, no need to wait out a streak
-                if let Some(LaserError::IoErr()) = e.downcast_ref::<LaserError>() {
+                if let Some(LaserError::IoErr(_)) = e.downcast_ref::<LaserError>() {
                     return Err(ActError {
                         kind: ActErrorKind::HardwareFault("Physical hardware I/O broke.".into()),
                         impact: ActErrorImpact::Irrecoverable,
