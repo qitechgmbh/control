@@ -77,6 +77,18 @@ impl From<MachineIdentificationUnique> for qitech_framework::MachineInstanceIden
     }
 }
 
+impl From<qitech_framework::MachineInstanceIdentification> for MachineIdentificationUnique {
+    fn from(id: qitech_framework::MachineInstanceIdentification) -> Self {
+        Self {
+            machine_identification: MachineIdentification {
+                vendor: id.machine.vendor_id,
+                machine: id.machine.machine_id,
+            },
+            serial: id.serial,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct MachineIdentification {
     pub vendor: u16,
@@ -97,4 +109,24 @@ pub struct DeviceHardwareIdentificationEthercat {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DeviceHardwareIdentificationSerial {
     pub path: String,
+}
+
+// --- modbus rtu ---
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ModbusDeviceMetadata {
+    pub port: String,
+    pub present: bool,
+    pub device_node: Option<String>,
+    pub by_id: Option<String>,
+    pub description: Option<String>,
+    pub usb_vid: Option<u16>,
+    pub usb_pid: Option<u16>,
+    pub usb_serial: Option<String>,
+    pub assignment: Option<ModbusDeviceAssignment>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ModbusDeviceAssignment {
+    pub machine_identification_unique: MachineIdentificationUnique,
+    pub slave_id: u8,
 }

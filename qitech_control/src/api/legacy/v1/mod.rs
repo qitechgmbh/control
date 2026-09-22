@@ -5,6 +5,7 @@ use qitech_framework_hub::ActorContext;
 use tokio::sync::mpsc;
 
 pub mod machine_mutate;
+pub mod modbus;
 mod response_util;
 pub mod write_machine_device_identification;
 
@@ -15,4 +16,9 @@ pub fn router() -> Router<(ActorContext, mpsc::Sender<MachineInstanceIdentificat
             post(write_machine_device_identification::post),
         )
         .route("/machine/mutate", post(machine_mutate::post))
+        .route("/modbus/scan", post(modbus::scan))
+        .route(
+            "/write_modbus_device_assignment",
+            post(modbus::write_assignment),
+        )
 }
