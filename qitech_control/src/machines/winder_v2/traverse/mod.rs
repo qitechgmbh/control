@@ -77,6 +77,12 @@ impl Traverse {
     fn limit_gap_min() -> Length {
         Length::new::<millimeter>(0.9)
     }
+
+    /// Maximum traverse travel (XL variant). The frontend narrows this to the
+    /// standard 180mm when XL mode is disabled.
+    fn limit_max() -> Length {
+        Length::new::<millimeter>(385.0)
+    }
 }
 
 // --- init ---
@@ -121,7 +127,7 @@ impl Traverse {
                 })
                 .default(92.0)
                 .minimum(22.0 + Self::limit_gap_min().get::<millimeter>())
-                .maximum(92.0)
+                .maximum(Self::limit_max().get::<millimeter>())
                 .build()?,
             step_size: ctx
                 .config::<millimeter>("traverse.step_size")
