@@ -5,7 +5,13 @@ import { MachineIdentificationUnique } from "@/machines/types";
 import { extruder3 } from "@/machines/properties";
 import { extruder3Route } from "@/routes/routes";
 import { z } from "zod";
-import { StateEvent, Mode, useExtruder3Namespace } from "./extruder3Namespace";
+import {
+  StateEvent,
+  Mode,
+  HeatingAlgorithm,
+  heatingAlgorithmSchema,
+  useExtruder3Namespace,
+} from "./extruder3Namespace";
 import { useEffect, useMemo } from "react";
 import { produce } from "immer";
 
@@ -350,6 +356,21 @@ export function useExtruder3() {
     );
   };
 
+  // The server resets the temperature PID gains to the new algorithm's
+  // defaults and emits them with its next state.
+  const setHeatingAlgorithm = (algorithm: HeatingAlgorithm) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.extruder_settings_state.heating_algorithm = algorithm;
+      },
+      () =>
+        requestHeatingAlgorithm({
+          machine_identification_unique: machineIdentification,
+          data: { SetHeatingAlgorithm: algorithm },
+        }),
+    );
+  };
+
   const resetInverter = () => {
     // No optimistic update needed for reset
     requestResetInverter({
@@ -450,6 +471,10 @@ export function useExtruder3() {
     }),
   );
 
+  const { request: requestHeatingAlgorithm } = useMachineMutation(
+    z.object({ SetHeatingAlgorithm: heatingAlgorithmSchema }),
+  );
+
   const { request: requestResetInverter } = useMachineMutation(
     z.object({ ResetInverter: z.boolean() }),
   );
@@ -521,6 +546,7 @@ export function useExtruder3() {
     setPressurePidKi,
     setPressurePidKd,
     setTemperaturePidValue,
+    setHeatingAlgorithm,
     resetInverter,
     startPressurePidAutoTune,
     stopPressurePidAutoTune,

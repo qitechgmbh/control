@@ -153,11 +153,22 @@ pub struct HeatingState {
     pub wiring_error: bool,
 }
 
+/// Control law driving all four heating zones.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HeatingAlgorithm {
+    /// PI on an observed metal temperature over a feedforward, calibrated for
+    /// `MACHINE_EXTRUDER_V2`.
+    ObserverPi,
+    /// Plain PID on the raw sensor reading.
+    Pid,
+}
+
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct ExtruderSettingsState {
     pub pressure_limit: f64,
     pub pressure_limit_enabled: bool,
     pub nozzle_temperature_target_enabled: bool,
+    pub heating_algorithm: HeatingAlgorithm,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
@@ -275,6 +286,8 @@ pub enum Mutation {
     // Pid Configure
     SetPressurePidSettings(PidSettings),
     SetTemperaturePidSettings(TemperaturePid),
+    /// Swaps the control law on all zones and resets their gains to its defaults.
+    SetHeatingAlgorithm(HeatingAlgorithm),
 
     // Pressure PID Auto-Tune
     /// Start pressure PID auto-tuning with bounded frequency excitation.
@@ -390,6 +403,9 @@ impl MachineApi for ExtruderV2 {
 
             Mutation::SetTemperaturePidSettings(settings) => {
                 self.configure_temperature_pid(settings);
+            }
+            Mutation::SetHeatingAlgorithm(algorithm) => {
+                self.set_heating_algorithm(algorithm);
             }
             Mutation::SetNozzleTemperatureTargetEnabled(enabled) => {
                 self.set_nozzle_temperature_target_is_enabled(enabled);

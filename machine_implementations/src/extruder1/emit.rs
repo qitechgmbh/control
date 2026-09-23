@@ -4,15 +4,46 @@ use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use crate::extruder1::{
     ExtruderV2, ExtruderV2Mode, HeatingType,
     api::{
-        ExtruderSettingsState, ExtruderV2Events, HeatingState, HeatingStates, InverterStatusState,
-        LiveValuesEvent, ModeState, PidAutoTuneState, PidSettings, PidSettingsStates,
-        PressureAutoTuneConfig, PressureState, RegulationState, RotationState, ScrewState,
-        StateEvent, TemperaturePid,
+        ExtruderSettingsState, ExtruderV2Events, HeatingAlgorithm, HeatingState, HeatingStates,
+        InverterStatusState, LiveValuesEvent, ModeState, PidAutoTuneState, PidSettings,
+        PidSettingsStates, PressureAutoTuneConfig, PressureState, RegulationState, RotationState,
+        ScrewState, StateEvent, TemperaturePid,
     },
+    heating_params::build_strategy,
+    temperature_controller::TemperatureController,
+    zone::Zone,
 };
 
 #[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {
+    const fn controller(&self, zone: Zone) -> &TemperatureController {
+        match zone {
+            Zone::Front => &self.temperature_controller_front,
+            Zone::Middle => &self.temperature_controller_middle,
+            Zone::Back => &self.temperature_controller_back,
+            Zone::Nozzle => &self.temperature_controller_nozzle,
+        }
+    }
+
+    const fn controller_mut(&mut self, zone: Zone) -> &mut TemperatureController {
+        match zone {
+            Zone::Front => &mut self.temperature_controller_front,
+            Zone::Middle => &mut self.temperature_controller_middle,
+            Zone::Back => &mut self.temperature_controller_back,
+            Zone::Nozzle => &mut self.temperature_controller_nozzle,
+        }
+    }
+
+    fn temperature_pid(&self, zone: Zone) -> TemperaturePid {
+        let pid = self.controller(zone).pid();
+        TemperaturePid {
+            ki: pid.get_ki(),
+            kp: pid.get_kp(),
+            kd: pid.get_kd(),
+            zone: zone.name().to_owned(),
+        }
+    }
+
     pub fn get_state(&self) -> StateEvent {
         use qitech_lib::units::{
             angular_velocity::revolution_per_minute, pressure::bar,
@@ -90,6 +121,7 @@ impl ExtruderV2 {
                 nozzle_temperature_target_enabled: self
                     .temperature_controller_nozzle
                     .get_temperature_target_enabled(),
+                heating_algorithm: self.heating_algorithm,
             },
             inverter_status_state: InverterStatusState {
                 running: self.screw_speed_controller.inverter.status.running,
@@ -104,30 +136,10 @@ impl ExtruderV2 {
             },
             pid_settings: PidSettingsStates {
                 temperature: TemperaturePidStates {
-                    front: TemperaturePid {
-                        ki: self.temperature_controller_front.pid.get_ki(),
-                        kp: self.temperature_controller_front.pid.get_kp(),
-                        kd: self.temperature_controller_front.pid.get_kd(),
-                        zone: String::from("front"),
-                    },
-                    middle: TemperaturePid {
-                        ki: self.temperature_controller_middle.pid.get_ki(),
-                        kp: self.temperature_controller_middle.pid.get_kp(),
-                        kd: self.temperature_controller_middle.pid.get_kd(),
-                        zone: String::from("middle"),
-                    },
-                    back: TemperaturePid {
-                        ki: self.temperature_controller_back.pid.get_ki(),
-                        kp: self.temperature_controller_back.pid.get_kp(),
-                        kd: self.temperature_controller_back.pid.get_kd(),
-                        zone: String::from("back"),
-                    },
-                    nozzle: TemperaturePid {
-                        ki: self.temperature_controller_nozzle.pid.get_ki(),
-                        kp: self.temperature_controller_nozzle.pid.get_kp(),
-                        kd: self.temperature_controller_nozzle.pid.get_kd(),
-                        zone: String::from("nozzle"),
-                    },
+                    front: self.temperature_pid(Zone::Front),
+                    middle: self.temperature_pid(Zone::Middle),
+                    back: self.temperature_pid(Zone::Back),
+                    nozzle: self.temperature_pid(Zone::Nozzle),
                 },
                 pressure: PidSettings {
                     ki: self.screw_speed_controller.pid.get_ki(),
@@ -359,36 +371,27 @@ impl ExtruderV2 {
     }
 
     pub fn configure_temperature_pid(&mut self, settings: TemperaturePid) {
-        match settings.zone.as_str() {
-            "front" => {
-                self.temperature_controller_front.pid.configure(
-                    settings.ki,
-                    settings.kp,
-                    settings.kd,
-                );
+        let Some(zone) = Zone::from_name(&settings.zone) else {
+            tracing::warn!("Unknown zone: {}", settings.zone);
+            self.emit_state();
+            return;
+        };
+        self.controller_mut(zone)
+            .pid_mut()
+            .configure(settings.ki, settings.kp, settings.kd);
+        self.emit_state();
+    }
+
+    /// Swap the control law on every zone. Gains reset to the new algorithm's
+    /// defaults: the observer's PI acts on an estimated metal temperature and the
+    /// plain PID on the raw reading, so neither's gains carry over.
+    pub fn set_heating_algorithm(&mut self, algorithm: HeatingAlgorithm) {
+        if algorithm != self.heating_algorithm {
+            for zone in Zone::ALL {
+                self.controller_mut(zone)
+                    .set_strategy(build_strategy(algorithm, zone));
             }
-            "middle" => {
-                self.temperature_controller_middle.pid.configure(
-                    settings.ki,
-                    settings.kp,
-                    settings.kd,
-                );
-            }
-            "back" => {
-                self.temperature_controller_back.pid.configure(
-                    settings.ki,
-                    settings.kp,
-                    settings.kd,
-                );
-            }
-            "nozzle" => {
-                self.temperature_controller_nozzle.pid.configure(
-                    settings.ki,
-                    settings.kp,
-                    settings.kd,
-                );
-            }
-            _ => tracing::warn!("Unknown zone: {}", settings.zone),
+            self.heating_algorithm = algorithm;
         }
         self.emit_state();
     }

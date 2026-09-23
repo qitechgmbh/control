@@ -1,4 +1,5 @@
 use super::Heating;
+use control_core::controllers::heating::{HeatingStrategy, PidBaseline};
 use control_core::controllers::pid::PidController;
 use qitech_lib::{
     ethercat_hal::io::{
@@ -9,7 +10,7 @@ use qitech_lib::{
 use std::time::{Duration, Instant};
 
 pub struct TemperatureController {
-    pub pid: PidController,
+    strategy: Box<dyn HeatingStrategy>,
     pub heating: Heating,
     pub target_temp: ThermodynamicTemperature,
     pub digital_port: usize,
@@ -20,17 +21,17 @@ pub struct TemperatureController {
     max_temperature: ThermodynamicTemperature,
     temperature_pid_output: f64,
     heating_element_wattage: f64,
-    max_clamp: f64,
     target_temp_enabled: bool, // Sets whether the frontend should display a target temperature setter for this temp controller
 }
 
 impl TemperatureController {
     pub fn disable(&mut self, relais: &mut dyn DigitalOutputDevice) {
-        relais.set_output(self.digital_port, false);
-        self.heating.heating = false;
+        self.open_relay(relais);
         self.disallow_heating();
     }
 
+    /// A zone driven by a plain PID on the raw reading.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         kp: f64,
         ki: f64,
@@ -44,8 +45,33 @@ impl TemperatureController {
         digital_port: usize,
         temperature_port: usize,
     ) -> Self {
+        Self::with_strategy(
+            Box::new(PidBaseline::new(kp, ki, kd, max_clamp)),
+            target_temp,
+            max_temperature,
+            heating,
+            pwm_duration,
+            heating_element_wattage,
+            digital_port,
+            temperature_port,
+        )
+    }
+
+    /// A zone driven by an arbitrary control law. The strategy owns its own
+    /// output clamp, so there is no `max_clamp` here.
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_strategy(
+        strategy: Box<dyn HeatingStrategy>,
+        target_temp: ThermodynamicTemperature,
+        max_temperature: ThermodynamicTemperature,
+        heating: Heating,
+        pwm_duration: Duration,
+        heating_element_wattage: f64,
+        digital_port: usize,
+        temperature_port: usize,
+    ) -> Self {
         Self {
-            pid: PidController::new(kp, ki, kd),
+            strategy,
             target_temp,
             window_start: Instant::now(),
             heating,
@@ -54,7 +80,6 @@ impl TemperatureController {
             max_temperature,
             temperature_pid_output: 0.0,
             heating_element_wattage,
-            max_clamp,
             target_temp_enabled: true,
             digital_port,
             temperature_port,
@@ -73,16 +98,46 @@ impl TemperatureController {
         self.target_temp_enabled
     }
 
-    pub const fn disallow_heating(&mut self) {
+    /// The outer-loop PID, whichever strategy is in use, so gains stay readable
+    /// and settable through the existing API.
+    pub fn pid(&self) -> &PidController {
+        self.strategy.pid()
+    }
+
+    pub fn pid_mut(&mut self) -> &mut PidController {
+        self.strategy.pid_mut()
+    }
+
+    /// Replace the control law. The new strategy starts with no integral and no
+    /// estimate; the cutout, PWM window and relay stay with this controller.
+    pub fn set_strategy(&mut self, strategy: Box<dyn HeatingStrategy>) {
+        self.strategy = strategy;
+    }
+
+    pub fn disallow_heating(&mut self) {
         self.heating_allowed = false;
+        // Drop the integral and the estimator's state, so re-enabling does not
+        // resume from a stale picture of a plant that has been cooling.
+        self.strategy.reset();
     }
 
     pub const fn allow_heating(&mut self) {
         self.heating_allowed = true;
     }
 
+    /// The duty the control law last asked for, in `0..=1`.
+    pub const fn duty(&self) -> f64 {
+        self.temperature_pid_output
+    }
+
     pub fn get_heating_element_wattage(&self) -> f64 {
         self.temperature_pid_output * self.heating_element_wattage
+    }
+
+    /// Open the relay and record that the zone is not heating.
+    fn open_relay(&mut self, relais: &mut dyn DigitalOutputDevice) {
+        relais.set_output(self.digital_port, false);
+        self.heating.heating = false;
     }
 
     pub fn update(
@@ -101,36 +156,38 @@ impl TemperatureController {
         };
         self.heating.temperature = temperature_celsius;
 
-        if self.heating.temperature > self.max_temperature {
-            // disable the relais and return
-            relais.set_output(self.digital_port, false);
-            self.heating.heating = false;
+        // Safety cutoff: if the sensor reports a wiring error or the measured
+        // temperature exceeds the configured maximum, open the relay and skip
+        // the control update for this tick.
+        if self.heating.wiring_error || self.heating.temperature > self.max_temperature {
+            self.open_relay(relais);
             return;
         }
 
-        if self.heating_allowed {
-            let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
-                - self.heating.temperature.get::<degree_celsius>();
-
-            let control = self.pid.update(error, now); // PID output
-            // Clamp PID output to 0.0 – 1.0 (as duty cycle)
-            let duty = control.clamp(0.0, self.max_clamp);
-
-            self.temperature_pid_output = duty;
-
-            let elapsed = now.duration_since(self.window_start);
-
-            // Restart window if needed
-            if elapsed >= self.pwm_period {
-                self.window_start = now;
-            }
-            // Compare duty cycle to elapsed time
-            let on_time = self.pwm_period.mul_f64(duty);
-
-            // Relay is ON if within duty cycle window
-            let on = elapsed < on_time;
-            relais.set_output(self.digital_port, on);
-            self.heating.heating = on;
+        if !self.heating_allowed {
+            self.open_relay(relais);
+            return;
         }
+
+        let duty = self.strategy.update(
+            self.heating.temperature.get::<degree_celsius>(),
+            self.heating.target_temperature.get::<degree_celsius>(),
+            now,
+        );
+        self.temperature_pid_output = duty;
+
+        let mut elapsed = now.duration_since(self.window_start);
+        // `elapsed` has to be reset along with the window: leaving the old,
+        // already-past-the-period value in place made the comparison below false
+        // for the first tick of every window, holding the relay open for one tick
+        // per window whatever duty was asked for.
+        if elapsed >= self.pwm_period {
+            self.window_start = now;
+            elapsed = Duration::ZERO;
+        }
+
+        let on = elapsed < self.pwm_period.mul_f64(duty);
+        relais.set_output(self.digital_port, on);
+        self.heating.heating = on;
     }
 }
