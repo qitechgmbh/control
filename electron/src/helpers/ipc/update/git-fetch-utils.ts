@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { gitAuthArgs } from "./token-store";
+import { SEMVER_RE, compareSemver } from "./semver";
 
 export type GitRefInfo = {
   hash: string;
@@ -64,35 +65,6 @@ export function runGitCommand(
       }
     });
   });
-}
-
-const SEMVER_RE =
-  /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-.]+)?$/;
-
-// Numeric identifiers compare numerically and always sort below
-// alphanumeric ones; https://semver.org/#spec-item-11.
-function compareIdentifier(a: string, b: string): number {
-  const [numA, numB] = [/^\d+$/.test(a), /^\d+$/.test(b)];
-  if (numA && numB) return Number(a) - Number(b);
-  if (numA !== numB) return numA ? -1 : 1;
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-// Semver precedence for two SEMVER_RE matches. A pre-release
-// sorts below its normal version, so "3.0.0" outranks "3.0.0-rc1".
-function compareSemver(a: RegExpExecArray, b: RegExpExecArray): number {
-  for (let i = 1; i <= 3; i++) {
-    if (a[i] !== b[i]) return Number(a[i]) - Number(b[i]);
-  }
-  if (!a[4] || !b[4]) return a[4] ? -1 : b[4] ? 1 : 0;
-  const [idsA, idsB] = [a[4].split("."), b[4].split(".")];
-  for (let i = 0; i < Math.max(idsA.length, idsB.length); i++) {
-    if (idsA[i] === undefined) return -1;
-    if (idsB[i] === undefined) return 1;
-    const cmp = compareIdentifier(idsA[i], idsB[i]);
-    if (cmp) return cmp;
-  }
-  return 0;
 }
 
 // Date fallback
