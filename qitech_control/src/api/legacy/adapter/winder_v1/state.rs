@@ -60,7 +60,10 @@ fn is_homing_state(state: &str) -> bool {
 }
 
 fn is_traversing_state(state: &str) -> bool {
-    matches!(state, "traversing_in" | "traversing_out")
+    matches!(
+        state,
+        "dwelling_outer" | "traversing_in" | "dwelling_inner" | "traversing_out"
+    )
 }
 
 pub fn init_state_event(
