@@ -89,7 +89,9 @@ state:
       find_endstop_coarse,
       find_endstop_fine,
       validate,
+      dwelling_outer,
       traversing_in,
+      dwelling_inner,
       traversing_out
     ]
 
