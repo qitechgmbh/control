@@ -2,6 +2,7 @@ pub mod clamping_timeagnostic_pid;
 pub use clamping_timeagnostic_pid::ClampingTimeagnosticPidController;
 
 pub mod first_degree_motion;
+pub mod heating;
 pub mod second_degree_motion;
 
 pub mod pid;

@@ -61,6 +61,7 @@ fn convert_request(
         SetExtruderPressureLimit(f64),
         SetExtruderPressureLimitIsEnabled(bool),
         SetNozzleTemperatureTargetEnabled(bool),
+        SetHeatingAlgorithm(HeatingAlgorithm),
         /// The frontend always sends `true` here; the flag carries no meaning, only the request does.
         ResetInverter(#[allow(dead_code)] bool),
         StopPressurePidAutoTune {},
@@ -71,6 +72,12 @@ fn convert_request(
         Standby,
         Heat,
         Extrude,
+    }
+
+    #[derive(Deserialize)]
+    enum HeatingAlgorithm {
+        ObserverPi,
+        Pid,
     }
 
     let config = |path: &str, value: ScalarValue| RuntimeRequestKind::SetConfigProperty {
@@ -171,6 +178,17 @@ fn convert_request(
             config("heating.nozzle.target_enabled", ScalarValue::Boolean(v))
         }
 
+        Mutation::SetHeatingAlgorithm(algorithm) => config(
+            "heating.algorithm",
+            ScalarValue::Enum(
+                match algorithm {
+                    HeatingAlgorithm::ObserverPi => "observer_pi",
+                    HeatingAlgorithm::Pid => "pid",
+                }
+                .to_string(),
+            ),
+        ),
+
         Mutation::ResetInverter(_) => command("inverter.reset"),
 
         Mutation::StopPressurePidAutoTune {} => command("pressure.autotune.stop"),
@@ -231,6 +249,8 @@ fn init_state_event(
             "pressure_limit": config_float(instance, "pressure.limit")?,
             "pressure_limit_enabled": config_bool(instance, "pressure.limit_enabled")?,
             "nozzle_temperature_target_enabled": config_bool(instance, "heating.nozzle.target_enabled")?,
+            // The frontend's zod enum spells the variants PascalCase.
+            "heating_algorithm": pascal_case(&config_enum(instance, "heating.algorithm")?),
         },
 
         "inverter_status_state": {
@@ -407,6 +427,25 @@ fn snake_case(value: &str) -> String {
     out
 }
 
+/// Folds either spelling of a variant back to its ident, the inverse of [`snake_case`].
+fn pascal_case(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    let mut capitalize = true;
+
+    for ch in value.chars() {
+        if ch == '_' {
+            capitalize = true;
+        } else if capitalize {
+            out.push(ch.to_ascii_uppercase());
+            capitalize = false;
+        } else {
+            out.push(ch);
+        }
+    }
+
+    out
+}
+
 fn state_bool(instance: &MachineInstance, path: &str) -> Option<bool> {
     state_value(instance, path)?.boolean()
 }
@@ -445,6 +484,7 @@ mod tests {
             ("pressure.limit_enabled", ScalarValue::Boolean(true)),
             ("pressure.autotune.tune_delta", ScalarValue::Float(0.5)),
             ("pressure.autotune.frequency_step", ScalarValue::Float(5.0)),
+            ("heating.algorithm", ScalarValue::Enum("ObserverPi".into())),
             (
                 "heating.nozzle.target_temperature",
                 ScalarValue::Float(210.0),
@@ -711,6 +751,7 @@ mod tests {
                     "pressure_limit": 90.0,
                     "pressure_limit_enabled": true,
                     "nozzle_temperature_target_enabled": true,
+                    "heating_algorithm": "ObserverPi",
                 },
                 "inverter_status_state": {
                     "running": true,
@@ -865,6 +906,16 @@ mod tests {
                 "screw.regulation",
                 "pressure",
             ),
+            (
+                serde_json::json!({ "SetHeatingAlgorithm": "ObserverPi" }),
+                "heating.algorithm",
+                "observer_pi",
+            ),
+            (
+                serde_json::json!({ "SetHeatingAlgorithm": "Pid" }),
+                "heating.algorithm",
+                "pid",
+            ),
         ] {
             let requests = convert_request(ident(), payload).expect("should convert");
             assert_eq!(requests.len(), 1);
@@ -937,6 +988,36 @@ mod tests {
                     "`{path}` holding `{value}` should read back as {expected}",
                 );
             }
+        }
+    }
+
+    /// Same asymmetry as above, for an enum the frontend reads as a string rather than a flag.
+    #[test]
+    fn heating_algorithm_reads_back_as_the_variant_ident() {
+        for (value, expected) in [
+            ("ObserverPi", "ObserverPi"),
+            ("Pid", "Pid"),
+            ("observer_pi", "ObserverPi"),
+            ("pid", "Pid"),
+        ] {
+            let mut instance = instance();
+            instance.config_properties.insert(
+                "heating.algorithm".to_string(),
+                Some(ConfigPropertyInfo {
+                    value: ScalarValue::Enum(value.to_string()),
+                    default: ScalarValue::Enum(value.to_string()),
+                    capability: Default::default(),
+                    constraints: Default::default(),
+                    records: Vec::new(),
+                }),
+            );
+
+            let event = init_state_event(&instance, false).expect("should emit");
+
+            assert_eq!(
+                event["extruder_settings_state"]["heating_algorithm"], expected,
+                "`heating.algorithm` holding `{value}` should read back as {expected}",
+            );
         }
     }
 

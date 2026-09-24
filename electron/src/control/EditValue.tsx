@@ -39,6 +39,8 @@ type Props = {
   inverted?: boolean;
   confirmation?: string;
   disabled?: boolean;
+  /** Show the stored value with every digit while editing, instead of rounded to `step`. */
+  exactEditValue?: boolean;
   renderValue: (value: number) => string;
   onChange?: (value: number) => void;
 };
@@ -98,6 +100,7 @@ export function EditValue({
   maxSlider,
   confirmation,
   disabled,
+  exactEditValue,
   onChange,
 }: Props) {
   const defaultOrZero = defaultValue ?? 0;
@@ -125,13 +128,23 @@ export function EditValue({
     return decimalIndex === -1 ? 0 : stepString.length - decimalIndex - 1;
   }, [step]);
 
-  // Helper function to round values according to step precision
+  // Helper function to round values according to step precision.
+  // With exactEditValue, +/- must not snap a finer value onto the step grid,
+  // so only the floating-point noise of the addition is stripped.
   const roundToStepDecimals = React.useCallback(
     (value: number) => {
+      if (exactEditValue) return Number(value.toPrecision(15));
       const multiplier = Math.pow(10, stepDecimals);
       return Math.round(value * multiplier) / multiplier;
     },
-    [stepDecimals],
+    [stepDecimals, exactEditValue],
+  );
+
+  // Text shown in the input field for a form value
+  const formatInputValue = React.useCallback(
+    (value: number) =>
+      exactEditValue ? value.toString() : roundToStepDecimals(value).toString(),
+    [exactEditValue, roundToStepDecimals],
   );
 
   // Input state management
@@ -161,13 +174,17 @@ export function EditValue({
       !preventFormSyncRef.current &&
       !hasTrailingDecimal
     ) {
+      // Keep what was typed while it still denotes the form value, so "0.0"
+      // survives on the way to "0.05" instead of collapsing to "0"
+      if (parseFloat(valueString.replace(/,/g, ".")) === formValue) return;
+
       const displayValue =
         formValue !== undefined && formValue !== null
-          ? roundToStepDecimals(formValue).toString()
+          ? formatInputValue(formValue)
           : "";
       setValueString(displayValue);
     }
-  }, [formValue, valueStringDirty, valueString, roundToStepDecimals]);
+  }, [formValue, valueStringDirty, valueString, formatInputValue]);
 
   // Sync input changes to form (when user types)
   useEffect(() => {
@@ -231,10 +248,10 @@ export function EditValue({
 
     const cleanValue =
       formValue !== undefined && formValue !== null
-        ? roundToStepDecimals(formValue).toString()
+        ? formatInputValue(formValue)
         : "";
     setValueString(cleanValue);
-  }, [formValue, roundToStepDecimals]);
+  }, [formValue, formatInputValue]);
 
   const handleAbort = () => {
     form.reset({ value: value ?? defaultValue });
@@ -523,7 +540,7 @@ export function EditValue({
                 <div>
                   <TouchInput
                     ref={inputRef}
-                    className={`py-9 font-mono text-2xl transition-colors duration-200 ease-in-out ${valueStringError ? "text-red-500" : "text-black"}`}
+                    className={`py-9 font-mono text-2xl transition-colors duration-200 ease-in-out ${exactEditValue ? "w-96" : ""} ${valueStringError ? "text-red-500" : "text-black"}`}
                     value={valueString}
                     onChange={(e) => {
                       const value = e.target.value;
