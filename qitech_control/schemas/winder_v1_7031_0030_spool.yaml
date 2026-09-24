@@ -50,6 +50,8 @@ config:
     limit_outer: !millimeter
     step_size: !millimeter
     padding: !millimeter
+    edge_dwell_revolutions: !float
+    start_dwell_revolutions: !float
 
   spool_automatic:
     required_meters: !meter

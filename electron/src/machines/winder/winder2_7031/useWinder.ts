@@ -108,6 +108,14 @@ export function useWinder2() {
   const { request: requestTraverseSetPadding } = useMachineMutation(
     z.object({ SetTraversePadding: z.number() }),
   );
+  const { request: requestTraverseSetEdgeDwellRevolutions } =
+    useMachineMutation(
+      z.object({ SetTraverseEdgeDwellRevolutions: z.number() }),
+    );
+  const { request: requestTraverseSetStartDwellRevolutions } =
+    useMachineMutation(
+      z.object({ SetTraverseStartDwellRevolutions: z.number() }),
+    );
   const { request: requestPullerSetTargetSpeed } = useMachineMutation(
     z.object({ SetPullerTargetSpeed: z.number() }),
   );
@@ -303,6 +311,32 @@ export function useWinder2() {
         requestTraverseSetPadding({
           machine_identification_unique: machineIdentification,
           data: { SetTraversePadding: padding },
+        }),
+    );
+  };
+
+  const setTraverseEdgeDwellRevolutions = (revolutions: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.edge_dwell_revolutions = revolutions;
+      },
+      () =>
+        requestTraverseSetEdgeDwellRevolutions({
+          machine_identification_unique: machineIdentification,
+          data: { SetTraverseEdgeDwellRevolutions: revolutions },
+        }),
+    );
+  };
+
+  const setTraverseStartDwellRevolutions = (revolutions: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.start_dwell_revolutions = revolutions;
+      },
+      () =>
+        requestTraverseSetStartDwellRevolutions({
+          machine_identification_unique: machineIdentification,
+          data: { SetTraverseStartDwellRevolutions: revolutions },
         }),
     );
   };
@@ -695,6 +729,8 @@ export function useWinder2() {
     resetSpoolProgress,
     setTraverseStepSize,
     setTraversePadding,
+    setTraverseEdgeDwellRevolutions,
+    setTraverseStartDwellRevolutions,
     setPullerTargetSpeed,
     setPullerRegulationMode,
     setPullerForward,

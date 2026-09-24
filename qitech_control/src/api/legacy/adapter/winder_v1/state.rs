@@ -110,6 +110,8 @@ pub fn init_state_event(
             "laserpointer": state_bool(instance, "laser_pointer.enabled")?,
             "step_size": config_float(instance, "traverse.step_size")?,
             "padding": config_float(instance, "traverse.padding")?,
+            "edge_dwell_revolutions": config_float(instance, "traverse.edge_dwell_revolutions")?,
+            "start_dwell_revolutions": config_float(instance, "traverse.start_dwell_revolutions")?,
             "can_go_in": can_traverse,
             "can_go_out": can_traverse,
             "can_go_home": !is_homed,
