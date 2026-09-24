@@ -13,7 +13,7 @@ use qitech_lib::units::angular_velocity::revolution_per_minute;
 use qitech_lib::units::thermodynamic_temperature::degree_celsius;
 use qitech_lib::units::volume_rate::liter_per_minute;
 
-use super::AquaPathV1;
+use super::AquapathV1;
 use super::controller::Controller;
 use super::controller::ControllerNotice;
 use super::controller::CoolingMode;
@@ -28,11 +28,11 @@ const PUMP_COOLDOWN_MIN_TEMPERATURE_BOUNDS: (f64, f64) = (10.0, 80.0);
 
 /// Picks one reservoir out of the machine.
 ///
-/// Framework callbacks must be plain `fn(&mut AquaPathV1)` pointers that cannot capture
+/// Framework callbacks must be plain `fn(&mut AquapathV1)` pointers that cannot capture
 /// anything, so the side is carried in the type instead:
-/// `AquaPathV1::on_pid_changed::<Left>` coerces to such a pointer.
+/// `AquapathV1::on_pid_changed::<Left>` coerces to such a pointer.
 pub trait Side {
-    fn reservoir(machine: &mut AquaPathV1) -> &mut Reservoir;
+    fn reservoir(machine: &mut AquapathV1) -> &mut Reservoir;
 }
 
 pub enum Left {}
@@ -40,13 +40,13 @@ pub enum Left {}
 pub enum Right {}
 
 impl Side for Left {
-    fn reservoir(machine: &mut AquaPathV1) -> &mut Reservoir {
+    fn reservoir(machine: &mut AquapathV1) -> &mut Reservoir {
         &mut machine.left
     }
 }
 
 impl Side for Right {
-    fn reservoir(machine: &mut AquaPathV1) -> &mut Reservoir {
+    fn reservoir(machine: &mut AquapathV1) -> &mut Reservoir {
         &mut machine.right
     }
 }
@@ -57,6 +57,8 @@ struct ReservoirMeasurements {
     revolutions: Measurement<f64>,
     power: Measurement<f64>,
     total_energy: Measurement<f64>,
+    pump_cooldown_remaining: Measurement<f64>,
+    heating_startup_wait_remaining: Measurement<f64>,
 }
 
 struct ReservoirState {
@@ -64,8 +66,6 @@ struct ReservoirState {
     pump_cooldown_active: StateProperty<bool>,
     should_flow: StateProperty<bool>,
     heating: StateProperty<bool>,
-    pump_cooldown_remaining: StateProperty<f64>,
-    heating_startup_wait_remaining: StateProperty<f64>,
     cooling_mode: StateProperty<Option<CoolingMode>>,
     thermal_delay: StateProperty<f64>,
     cooldown_min_temperature: StateProperty<f64>,
@@ -245,6 +245,12 @@ impl Reservoir {
             .set(controller.revolutions().get::<revolution_per_minute>());
         measurements.power.set(controller.power());
         measurements.total_energy.set(controller.total_energy());
+        measurements
+            .pump_cooldown_remaining
+            .set(controller.pump_cooldown_remaining(now).as_secs_f64());
+        measurements
+            .heating_startup_wait_remaining
+            .set(controller.heating_startup_wait_remaining(now).as_secs_f64());
 
         let state = &mut self.state;
         state
@@ -255,12 +261,6 @@ impl Reservoir {
             .set(controller.is_pump_cooldown_active(now));
         state.should_flow.set(controller.should_pump());
         state.heating.set(controller.is_heating());
-        state
-            .pump_cooldown_remaining
-            .set(controller.pump_cooldown_remaining(now).as_secs_f64());
-        state
-            .heating_startup_wait_remaining
-            .set(controller.heating_startup_wait_remaining(now).as_secs_f64());
         state.cooling_mode.set(controller.cooling_mode());
         state
             .thermal_delay
@@ -278,7 +278,7 @@ impl Reservoir {
 // a string literal written directly in the call — so the paths cannot be assembled
 // from a side prefix without giving up that check.
 impl Reservoir {
-    #[machine_build(AquaPathV1)]
+    #[machine_build(AquapathV1)]
     pub fn build_left(ctx: &mut BuildContext, controller: Controller) -> BuildResult<Self> {
         Ok(Self {
             label: "Left Reservoir",
@@ -289,6 +289,12 @@ impl Reservoir {
                 revolutions: ctx.measurement::<f64>("left_revolutions").build()?,
                 power: ctx.measurement::<f64>("left_power").build()?,
                 total_energy: ctx.measurement::<f64>("left_total_energy").build()?,
+                pump_cooldown_remaining: ctx
+                    .measurement::<f64>("left_pump_cooldown_remaining")
+                    .build()?,
+                heating_startup_wait_remaining: ctx
+                    .measurement::<f64>("left_heating_startup_wait_remaining")
+                    .build()?,
             },
             state: ReservoirState {
                 heating_startup_wait_active: ctx
@@ -297,12 +303,6 @@ impl Reservoir {
                 pump_cooldown_active: ctx.state::<bool>("left_pump_cooldown_active").build()?,
                 should_flow: ctx.state::<bool>("left_should_flow").build()?,
                 heating: ctx.state::<bool>("left_heating").build()?,
-                pump_cooldown_remaining: ctx
-                    .state::<f64>("left_pump_cooldown_remaining")
-                    .build()?,
-                heating_startup_wait_remaining: ctx
-                    .state::<f64>("left_heating_startup_wait_remaining")
-                    .build()?,
                 cooling_mode: ctx
                     .state::<Option<CoolingMode>>("left_cooling_mode")
                     .build()?,
@@ -316,44 +316,44 @@ impl Reservoir {
             config: ReservoirConfig {
                 target_temperature: ctx
                     .config::<f64>("left_target_temperature")
-                    .on_external_changed(AquaPathV1::on_target_temperature_changed::<Left>)
+                    .on_external_changed(AquapathV1::on_target_temperature_changed::<Left>)
                     .build()?,
                 fan_max_revolutions: ctx
                     .config::<f64>("left_fan_max_revolutions")
-                    .on_external_changed(AquaPathV1::on_fan_max_revolutions_changed::<Left>)
+                    .on_external_changed(AquapathV1::on_fan_max_revolutions_changed::<Left>)
                     .default(100.0)
                     .minimum(0.0)
                     .maximum(100.0)
                     .build()?,
                 heating_tolerance: ctx
                     .config::<f64>("left_tolerance_config.heating")
-                    .on_external_changed(AquaPathV1::on_heating_tolerance_changed::<Left>)
+                    .on_external_changed(AquapathV1::on_heating_tolerance_changed::<Left>)
                     .default(0.4)
                     .build()?,
                 cooling_tolerance: ctx
                     .config::<f64>("left_tolerance_config.cooling")
-                    .on_external_changed(AquaPathV1::on_cooling_tolerance_changed::<Left>)
+                    .on_external_changed(AquapathV1::on_cooling_tolerance_changed::<Left>)
                     .default(0.8)
                     .build()?,
                 pid_kp: ctx
                     .config::<f64>("left_pid_config.kp")
-                    .on_external_changed(AquaPathV1::on_pid_changed::<Left>)
-                    .default(AquaPathV1::DEFAULT_PID_KP)
+                    .on_external_changed(AquapathV1::on_pid_changed::<Left>)
+                    .default(AquapathV1::DEFAULT_PID_KP)
                     .build()?,
                 pid_ki: ctx
                     .config::<f64>("left_pid_config.ki")
-                    .on_external_changed(AquaPathV1::on_pid_changed::<Left>)
-                    .default(AquaPathV1::DEFAULT_PID_KI)
+                    .on_external_changed(AquapathV1::on_pid_changed::<Left>)
+                    .default(AquapathV1::DEFAULT_PID_KI)
                     .build()?,
                 pid_kd: ctx
                     .config::<f64>("left_pid_config.kd")
-                    .on_external_changed(AquaPathV1::on_pid_changed::<Left>)
-                    .default(AquaPathV1::DEFAULT_PID_KD)
+                    .on_external_changed(AquapathV1::on_pid_changed::<Left>)
+                    .default(AquapathV1::DEFAULT_PID_KD)
                     .build()?,
                 thermal_flow_settle_duration: ctx
                     .config::<f64>("left_thermal_flow_settle_duration")
                     .on_external_changed(
-                        AquaPathV1::on_thermal_flow_settle_duration_changed::<Left>,
+                        AquapathV1::on_thermal_flow_settle_duration_changed::<Left>,
                     )
                     .default(0.0)
                     .minimum(0.0)
@@ -362,7 +362,7 @@ impl Reservoir {
                 pump_cooldown_min_temperature: ctx
                     .config::<f64>("left_pump_cooldown_min_temperature")
                     .on_external_changed(
-                        AquaPathV1::on_pump_cooldown_min_temperature_changed::<Left>,
+                        AquapathV1::on_pump_cooldown_min_temperature_changed::<Left>,
                     )
                     .default(32.0)
                     .minimum(10.0)
@@ -372,7 +372,7 @@ impl Reservoir {
         })
     }
 
-    #[machine_build(AquaPathV1)]
+    #[machine_build(AquapathV1)]
     pub fn build_right(ctx: &mut BuildContext, controller: Controller) -> BuildResult<Self> {
         Ok(Self {
             label: "Right Reservoir",
@@ -383,6 +383,12 @@ impl Reservoir {
                 revolutions: ctx.measurement::<f64>("right_revolutions").build()?,
                 power: ctx.measurement::<f64>("right_power").build()?,
                 total_energy: ctx.measurement::<f64>("right_total_energy").build()?,
+                pump_cooldown_remaining: ctx
+                    .measurement::<f64>("right_pump_cooldown_remaining")
+                    .build()?,
+                heating_startup_wait_remaining: ctx
+                    .measurement::<f64>("right_heating_startup_wait_remaining")
+                    .build()?,
             },
             state: ReservoirState {
                 heating_startup_wait_active: ctx
@@ -391,12 +397,6 @@ impl Reservoir {
                 pump_cooldown_active: ctx.state::<bool>("right_pump_cooldown_active").build()?,
                 should_flow: ctx.state::<bool>("right_should_flow").build()?,
                 heating: ctx.state::<bool>("right_heating").build()?,
-                pump_cooldown_remaining: ctx
-                    .state::<f64>("right_pump_cooldown_remaining")
-                    .build()?,
-                heating_startup_wait_remaining: ctx
-                    .state::<f64>("right_heating_startup_wait_remaining")
-                    .build()?,
                 cooling_mode: ctx
                     .state::<Option<CoolingMode>>("right_cooling_mode")
                     .build()?,
@@ -410,44 +410,44 @@ impl Reservoir {
             config: ReservoirConfig {
                 target_temperature: ctx
                     .config::<f64>("right_target_temperature")
-                    .on_external_changed(AquaPathV1::on_target_temperature_changed::<Right>)
+                    .on_external_changed(AquapathV1::on_target_temperature_changed::<Right>)
                     .build()?,
                 fan_max_revolutions: ctx
                     .config::<f64>("right_fan_max_revolutions")
-                    .on_external_changed(AquaPathV1::on_fan_max_revolutions_changed::<Right>)
+                    .on_external_changed(AquapathV1::on_fan_max_revolutions_changed::<Right>)
                     .default(100.0)
                     .minimum(0.0)
                     .maximum(100.0)
                     .build()?,
                 heating_tolerance: ctx
                     .config::<f64>("right_tolerance_config.heating")
-                    .on_external_changed(AquaPathV1::on_heating_tolerance_changed::<Right>)
+                    .on_external_changed(AquapathV1::on_heating_tolerance_changed::<Right>)
                     .default(0.4)
                     .build()?,
                 cooling_tolerance: ctx
                     .config::<f64>("right_tolerance_config.cooling")
-                    .on_external_changed(AquaPathV1::on_cooling_tolerance_changed::<Right>)
+                    .on_external_changed(AquapathV1::on_cooling_tolerance_changed::<Right>)
                     .default(0.8)
                     .build()?,
                 pid_kp: ctx
                     .config::<f64>("right_pid_config.kp")
-                    .on_external_changed(AquaPathV1::on_pid_changed::<Right>)
-                    .default(AquaPathV1::DEFAULT_PID_KP)
+                    .on_external_changed(AquapathV1::on_pid_changed::<Right>)
+                    .default(AquapathV1::DEFAULT_PID_KP)
                     .build()?,
                 pid_ki: ctx
                     .config::<f64>("right_pid_config.ki")
-                    .on_external_changed(AquaPathV1::on_pid_changed::<Right>)
-                    .default(AquaPathV1::DEFAULT_PID_KI)
+                    .on_external_changed(AquapathV1::on_pid_changed::<Right>)
+                    .default(AquapathV1::DEFAULT_PID_KI)
                     .build()?,
                 pid_kd: ctx
                     .config::<f64>("right_pid_config.kd")
-                    .on_external_changed(AquaPathV1::on_pid_changed::<Right>)
-                    .default(AquaPathV1::DEFAULT_PID_KD)
+                    .on_external_changed(AquapathV1::on_pid_changed::<Right>)
+                    .default(AquapathV1::DEFAULT_PID_KD)
                     .build()?,
                 thermal_flow_settle_duration: ctx
                     .config::<f64>("right_thermal_flow_settle_duration")
                     .on_external_changed(
-                        AquaPathV1::on_thermal_flow_settle_duration_changed::<Right>,
+                        AquapathV1::on_thermal_flow_settle_duration_changed::<Right>,
                     )
                     .default(0.0)
                     .minimum(0.0)
@@ -456,7 +456,7 @@ impl Reservoir {
                 pump_cooldown_min_temperature: ctx
                     .config::<f64>("right_pump_cooldown_min_temperature")
                     .on_external_changed(
-                        AquaPathV1::on_pump_cooldown_min_temperature_changed::<Right>,
+                        AquapathV1::on_pump_cooldown_min_temperature_changed::<Right>,
                     )
                     .default(32.0)
                     .minimum(10.0)

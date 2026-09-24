@@ -73,12 +73,13 @@ export function useAquapath1() {
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
 
-  // Update optimistic state when real state changes
+  // Update optimistic state when real state changes.
+  const { setReal } = stateOptimistic;
   useEffect(() => {
     if (state) {
-      stateOptimistic.setReal(state);
+      setReal(state);
     }
-  }, [state, stateOptimistic]);
+  }, [state, setReal]);
 
   const setAquapathMode = (mode: Mode) => {
     updateStateOptimistically(

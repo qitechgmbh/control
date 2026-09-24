@@ -4,9 +4,9 @@ use std::time::Instant;
 use qitech_framework::machine::ActResult;
 use qitech_framework::machine::Machine;
 
-use super::AquaPathV1;
+use super::AquapathV1;
 
-impl Machine for AquaPathV1 {
+impl Machine for AquapathV1 {
     fn act(&mut self, _: Duration) -> ActResult {
         let now = Instant::now();
 

@@ -2,7 +2,7 @@ use qitech_framework::machine::ActResult;
 use qitech_lib::units::thermodynamic_temperature::degree_celsius;
 use serde::Serialize;
 
-use super::AquaPathV1;
+use super::AquapathV1;
 use super::reservoir::Side;
 
 #[derive(Serialize, Debug, Clone)]
@@ -13,7 +13,7 @@ pub struct NoticeEvent {
 
 /// Handlers the framework invokes when a config property is written or a command runs.
 /// Per-reservoir handlers are generic over the [`Side`] they act on.
-impl AquaPathV1 {
+impl AquapathV1 {
     pub fn on_target_temperature_changed<S: Side>(&mut self) -> ActResult {
         let min_settable = self.min_settable_temperature().get::<degree_celsius>();
         S::reservoir(self).apply_target_temperature(min_settable);
