@@ -39,6 +39,18 @@ pub fn convert_request(
             value: ScalarValue::Float(v),
         },
 
+        Mutation::SetTraverseEdgeDwellRevolutions(v) => RuntimeRequestKind::SetConfigProperty {
+            target: ident,
+            path: "traverse.edge_dwell_revolutions".to_string(),
+            value: ScalarValue::Float(v),
+        },
+
+        Mutation::SetTraverseStartDwellRevolutions(v) => RuntimeRequestKind::SetConfigProperty {
+            target: ident,
+            path: "traverse.start_dwell_revolutions".to_string(),
+            value: ScalarValue::Float(v),
+        },
+
         // ------------------------------------------------------------
         // Traverse commands
         // ------------------------------------------------------------
@@ -252,6 +264,8 @@ enum Mutation {
     SetTraverseLimitInner(f64),
     SetTraverseStepSize(f64),
     SetTraversePadding(f64),
+    SetTraverseEdgeDwellRevolutions(f64),
+    SetTraverseStartDwellRevolutions(f64),
 
     // Traverse commands
     GotoTraverseLimitOuter,

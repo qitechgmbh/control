@@ -39,6 +39,14 @@ pub struct Traverse {
     step_size: ConfigProperty<Length>,
     padding: ConfigProperty<Length>,
 
+    /// Spool revolutions to stay at an edge when reversing: one to finish the
+    /// current layer against the flange, one to start the next layer against it.
+    edge_dwell_revolutions: ConfigProperty<f64>,
+
+    /// Spool revolutions to stay at the outer edge when winding starts, where
+    /// there is no previous layer to finish.
+    start_dwell_revolutions: ConfigProperty<f64>,
+
     // --- state ---
     mode: StateProperty<Mode>,
     state: StateProperty<State>,
@@ -61,13 +69,8 @@ impl Traverse {
     const PORT: usize = 0;
     const PORT_END_STOP: usize = 0;
 
-    /// Spool revolutions to stay at an edge when reversing: one to finish the
-    /// current layer against the flange, one to start the next layer against it.
-    const EDGE_DWELL_REVOLUTIONS: f64 = 2.0;
-
-    /// Spool revolutions to stay at the outer edge when winding starts, where
-    /// there is no previous layer to finish.
-    const START_DWELL_REVOLUTIONS: f64 = 1.0;
+    /// Upper bound for the configurable dwell revolutions
+    const DWELL_REVOLUTIONS_MAX: f64 = 10.0;
 
     fn position_tolerance() -> Length {
         Length::new::<millimeter>(0.01)
@@ -147,6 +150,18 @@ impl Traverse {
             padding: ctx
                 .config::<millimeter>("traverse.padding")
                 .default(0.88)
+                .build()?,
+            edge_dwell_revolutions: ctx
+                .config::<f64>("traverse.edge_dwell_revolutions")
+                .default(2.0)
+                .minimum(0.0)
+                .maximum(Self::DWELL_REVOLUTIONS_MAX)
+                .build()?,
+            start_dwell_revolutions: ctx
+                .config::<f64>("traverse.start_dwell_revolutions")
+                .default(1.0)
+                .minimum(0.0)
+                .maximum(Self::DWELL_REVOLUTIONS_MAX)
                 .build()?,
             mode: ctx.state::<Mode>("traverse.mode").build()?,
             state: ctx.state::<State>("traverse.state").build()?,
@@ -389,15 +404,15 @@ impl Traverse {
         let traversing_state = match state {
             // --- reach an edge, then dwell there ---
             GoingOut if position >= outer_edge => {
-                self.dwell_remaining = Self::START_DWELL_REVOLUTIONS;
+                self.dwell_remaining = self.start_dwell_revolutions.get();
                 DwellingOuter
             }
             TraversingOut if position >= outer_edge => {
-                self.dwell_remaining = Self::EDGE_DWELL_REVOLUTIONS;
+                self.dwell_remaining = self.edge_dwell_revolutions.get();
                 DwellingOuter
             }
             TraversingIn if position <= inner_edge => {
-                self.dwell_remaining = Self::EDGE_DWELL_REVOLUTIONS;
+                self.dwell_remaining = self.edge_dwell_revolutions.get();
                 DwellingInner
             }
 
