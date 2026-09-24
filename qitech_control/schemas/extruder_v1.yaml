@@ -22,6 +22,7 @@ config:
       frequency_step: !hertz
 
   heating:
+    algorithm: !enum [observer_pi, pid]
     nozzle:
       target_temperature: !degree_celsius
       target_enabled: !boolean
