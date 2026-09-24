@@ -23,22 +23,22 @@ pub mod new;
 pub mod reservoir;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Default, EnumProperty)]
-pub enum AquaPathV1Mode {
+pub enum AquapathV1Mode {
     #[default]
     Standby,
     Auto,
 }
 
-impl fmt::Display for AquaPathV1Mode {
+impl fmt::Display for AquapathV1Mode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{self:?}")
     }
 }
 
 #[derive(Machine)]
-pub struct AquaPathV1 {
-    mode: AquaPathV1Mode,
-    mode_state: StateProperty<AquaPathV1Mode>,
+pub struct AquapathV1 {
+    mode: AquapathV1Mode,
+    mode_state: StateProperty<AquapathV1Mode>,
     ambient_temperature_calibration: ThermodynamicTemperature,
     ambient_temperature_calibration_config: ConfigProperty<f64>,
     left: Reservoir,
@@ -46,13 +46,13 @@ pub struct AquaPathV1 {
     notice_event_emitter: EventEmitter<NoticeEvent>,
 }
 
-impl fmt::Display for AquaPathV1 {
+impl fmt::Display for AquapathV1 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "AquapathV1")
     }
 }
 
-impl AquaPathV1 {
+impl AquapathV1 {
     pub const DEFAULT_PID_KP: f64 = 0.16;
     pub const DEFAULT_PID_KI: f64 = 0.02;
     pub const DEFAULT_PID_KD: f64 = 0.0;
@@ -62,28 +62,28 @@ impl AquaPathV1 {
     }
 
     fn switch_to_standby(&mut self) -> ActResult {
-        if self.mode == AquaPathV1Mode::Auto {
+        if self.mode == AquapathV1Mode::Auto {
             for reservoir in self.reservoirs_mut() {
                 reservoir.enter_standby();
             }
         }
-        self.mode = AquaPathV1Mode::Standby;
+        self.mode = AquapathV1Mode::Standby;
         Ok(())
     }
 
     fn switch_to_auto(&mut self) -> ActResult {
-        if self.mode == AquaPathV1Mode::Standby {
+        if self.mode == AquapathV1Mode::Standby {
             for reservoir in self.reservoirs_mut() {
                 reservoir.enter_auto();
             }
         }
-        self.mode = AquaPathV1Mode::Auto;
+        self.mode = AquapathV1Mode::Auto;
         Ok(())
     }
 
     /// Thermal safety timing may only be retuned while nothing is running.
     fn allows_safety_config_changes(&self) -> bool {
-        self.mode == AquaPathV1Mode::Standby
+        self.mode == AquapathV1Mode::Standby
     }
 
     /// Targets may not be set below ambient: the loop has no way to cool beneath it.

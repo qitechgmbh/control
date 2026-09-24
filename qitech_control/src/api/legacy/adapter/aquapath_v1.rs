@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::api::legacy::MachineLegacyDataAdapter;
 use crate::api::types::MachineInstance;
-use crate::machines::aquapath::AquaPathV1Mode;
+use crate::machines::aquapath::AquapathV1Mode;
 
 pub const ADAPTER: MachineLegacyDataAdapter = MachineLegacyDataAdapter {
     convert_request,
@@ -23,7 +23,7 @@ fn convert_request(
     #[derive(Deserialize)]
     #[allow(clippy::enum_variant_names)]
     enum Mutation {
-        SetAquaPathMode(AquaPathV1Mode),
+        SetAquaPathMode(AquapathV1Mode),
         SetLeftTemperature(f64),
         SetRightTemperature(f64),
         SetLeftFlow(bool),
@@ -61,8 +61,8 @@ fn convert_request(
     Ok(vec![match serde_json::from_value(data)? {
         // Mode is driven by commands, not a config property: see `init_commands` in `new.rs`.
         Mutation::SetAquaPathMode(v) => command(match v {
-            AquaPathV1Mode::Standby => "state.set_standby",
-            AquaPathV1Mode::Auto => "state.set_auto",
+            AquapathV1Mode::Standby => "state.set_standby",
+            AquapathV1Mode::Auto => "state.set_auto",
         }),
 
         Mutation::SetLeftTemperature(v) => config("left_target_temperature", ScalarValue::Float(v)),
@@ -237,10 +237,10 @@ fn init_measurements_event(instance: &MachineInstance) -> Option<serde_json::Val
         "right_pump_cooldown_active": state_bool(instance, "right_pump_cooldown_active")?,
         "left_heating": state_bool(instance, "left_heating")?,
         "right_heating": state_bool(instance, "right_heating")?,
-        "left_pump_cooldown_remaining": state_float(instance, "left_pump_cooldown_remaining")?,
-        "right_pump_cooldown_remaining": state_float(instance, "right_pump_cooldown_remaining")?,
-        "left_heating_startup_wait_remaining": state_float(instance, "left_heating_startup_wait_remaining")?,
-        "right_heating_startup_wait_remaining": state_float(instance, "right_heating_startup_wait_remaining")?,
+        "left_pump_cooldown_remaining": measurement(instance, "left_pump_cooldown_remaining")?,
+        "right_pump_cooldown_remaining": measurement(instance, "right_pump_cooldown_remaining")?,
+        "left_heating_startup_wait_remaining": measurement(instance, "left_heating_startup_wait_remaining")?,
+        "right_heating_startup_wait_remaining": measurement(instance, "right_heating_startup_wait_remaining")?,
         "left_cooling_mode": state_value(instance, "left_cooling_mode").and_then(|v| v.r#enum()),
         "right_cooling_mode": state_value(instance, "right_cooling_mode").and_then(|v| v.r#enum()),
     }))

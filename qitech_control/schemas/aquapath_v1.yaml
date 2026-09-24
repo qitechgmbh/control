@@ -17,6 +17,10 @@ measurements:
   right_power: !float
   left_total_energy: !float
   right_total_energy: !float
+  left_pump_cooldown_remaining: !float
+  right_pump_cooldown_remaining: !float
+  left_heating_startup_wait_remaining: !float
+  right_heating_startup_wait_remaining: !float
 
 state:
   mode_state:
@@ -32,10 +36,6 @@ state:
   right_heating: !boolean
   left_has_flow: !boolean
   right_has_flow: !boolean
-  left_pump_cooldown_remaining: !float
-  right_pump_cooldown_remaining: !float
-  left_heating_startup_wait_remaining: !float
-  right_heating_startup_wait_remaining: !float
   left_cooling_mode: !?enum [low, ramp, max]
   right_cooling_mode: !?enum [low, ramp, max]
   left_thermal_safety_state:

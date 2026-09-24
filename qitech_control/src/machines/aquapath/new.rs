@@ -19,8 +19,8 @@ use qitech_lib::units::ThermodynamicTemperature;
 use qitech_lib::units::angular_velocity::revolution_per_minute;
 use qitech_lib::units::thermodynamic_temperature::degree_celsius;
 
-use super::AquaPathV1;
-use crate::machines::aquapath::AquaPathV1Mode;
+use super::AquapathV1;
+use crate::machines::aquapath::AquapathV1Mode;
 use crate::machines::aquapath::controller::Controller;
 use crate::machines::aquapath::controller::ControllerConfig;
 use crate::machines::aquapath::controller::ControllerHardware;
@@ -91,7 +91,7 @@ fn init_el3024(
     Ok(el3024.0)
 }
 
-impl MachineBuild for AquaPathV1 {
+impl MachineBuild for AquapathV1 {
     fn build(ctx: &mut BuildContext) -> BuildResult<Self> {
         let interface = ctx.get_ethercat_interface()?;
         let _ = init_ek1100(ctx)?;
@@ -106,7 +106,7 @@ impl MachineBuild for AquaPathV1 {
     }
 }
 
-impl AquaPathV1 {
+impl AquapathV1 {
     fn init_commands(ctx: &mut BuildContext) -> BuildResult<()> {
         ctx.command("state.set_standby")
             .execute(Self::switch_to_standby)
@@ -129,7 +129,7 @@ impl AquaPathV1 {
         Ok(())
     }
 
-    #[machine_build(AquaPathV1)]
+    #[machine_build(AquapathV1)]
     fn new(
         ctx: &mut BuildContext,
         relais_controller: Rc<RefCell<dyn DigitalOutputDevice>>,
@@ -177,8 +177,8 @@ impl AquaPathV1 {
         Self::init_commands(ctx)?;
 
         Ok(Self {
-            mode: AquaPathV1Mode::Standby,
-            mode_state: ctx.state::<AquaPathV1Mode>("mode_state.mode").build()?,
+            mode: AquapathV1Mode::Standby,
+            mode_state: ctx.state::<AquapathV1Mode>("mode_state.mode").build()?,
             ambient_temperature_calibration: ThermodynamicTemperature::new::<degree_celsius>(22.0),
             ambient_temperature_calibration_config: ctx
                 .config::<f64>("ambient_temperature_calibration")

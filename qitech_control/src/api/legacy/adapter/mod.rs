@@ -9,7 +9,7 @@ use crate::machines::ExtruderV2;
 use crate::machines::LaserV1;
 use crate::machines::WinderV1_7031_Spool;
 use crate::machines::WinderV1_Regular;
-use crate::machines::aquapath::AquaPathV1;
+use crate::machines::aquapath::AquapathV1;
 
 pub mod aquapath_v1;
 mod extruder_v1;
@@ -19,7 +19,7 @@ pub mod winder_v1;
 pub fn get(ident: MachineIdentification) -> Option<MachineLegacyDataAdapter> {
     match ident {
         LaserV1::IDENTIFICATION => Some(laser_v1::ADAPTER),
-        AquaPathV1::IDENTIFICATION => Some(aquapath_v1::ADAPTER),
+        AquapathV1::IDENTIFICATION => Some(aquapath_v1::ADAPTER),
         ExtruderV1::IDENTIFICATION | ExtruderV2::IDENTIFICATION => Some(extruder_v1::ADAPTER),
         WinderV1_Regular::IDENTIFICATION | WinderV1_7031_Spool::IDENTIFICATION => {
             Some(winder_v1::ADAPTER)

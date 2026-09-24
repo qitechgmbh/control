@@ -30,7 +30,7 @@ use crate::machines::ExtruderV2;
 use crate::machines::LaserV1;
 use crate::machines::WinderV1_7031_Spool;
 use crate::machines::WinderV1_Regular;
-use crate::machines::aquapath::AquaPathV1;
+use crate::machines::aquapath::AquapathV1;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
@@ -38,7 +38,7 @@ pub async fn main() -> anyhow::Result<()> {
     let mut config_rt = RuntimeConfiguration::new()
         .requests_per_cycle_max(10)
         .export_interval(Duration::from_secs_f64(1.0 / 32.0))
-        .machine::<AquaPathV1>()
+        .machine::<AquapathV1>()
         .machine::<WinderV1_Regular>()
         .machine::<WinderV1_7031_Spool>()
         .machine::<ExtruderV1>()
