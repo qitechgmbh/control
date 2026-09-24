@@ -44,6 +44,9 @@ pub fn convert_request(
         },
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 7e7b9ac (add configurable traverse dwell revolutions to winder v2)
         Mutation::SetTraverseEdgeDwellRevolutions(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
             path: "traverse.edge_dwell_revolutions".to_string(),
@@ -56,8 +59,11 @@ pub fn convert_request(
             value: ScalarValue::Float(v),
         },
 
+<<<<<<< HEAD
 =======
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+>>>>>>> 7e7b9ac (add configurable traverse dwell revolutions to winder v2)
         // ------------------------------------------------------------
         // Traverse commands
         // ------------------------------------------------------------
@@ -272,9 +278,14 @@ enum Mutation {
     SetTraverseStepSize(f64),
     SetTraversePadding(f64),
 <<<<<<< HEAD
+<<<<<<< HEAD
     SetTraverseEdgeDwellRevolutions(f64),
     SetTraverseStartDwellRevolutions(f64),
 =======
+=======
+    SetTraverseEdgeDwellRevolutions(f64),
+    SetTraverseStartDwellRevolutions(f64),
+>>>>>>> 7e7b9ac (add configurable traverse dwell revolutions to winder v2)
 
 >>>>>>> 8e49141 (Jse control v2 (#1680))
     // Traverse commands
