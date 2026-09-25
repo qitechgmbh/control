@@ -133,6 +133,10 @@ impl TemperatureController {
         Power::new::<watt>(self.temperature_pid_output * self.heating_element_wattage)
     }
 
+    pub fn temperature(&self) -> ThermodynamicTemperature {
+        self.temperature.get()
+    }
+
     /// Open the relay and record that the zone is not heating.
     fn open_relay(&mut self, relais: &mut dyn DigitalOutputDevice) {
         relais.set_output(self.digital_port, false);
