@@ -1,3 +1,16 @@
+# `3.2.0`
+_25.09.2026_
+
+This release brings much better heating to the Extruder V2. The new Observer-PI algorithm accounts for the delay between the heater warming the metal and the temperature probe registering it, which makes heat-ups clean and stable with almost zero overshoot.
+
+## Extruder V2
+- [#1669](https://github.com/qitechgmbh/control/pull/1669) Improved heating with the new Observer-PI algorithm, now the default on Extruder V2. It compensates for temperature probe lag and includes anti-windup. The heating algorithm can be switched between Observer-PI and PID in the settings.
+
+## Dependencies
+- [#1676](https://github.com/qitechgmbh/control/pull/1676), [#1678](https://github.com/qitechgmbh/control/pull/1678), [#1686](https://github.com/qitechgmbh/control/pull/1686), [#1689](https://github.com/qitechgmbh/control/pull/1689) Update nixpkgs
+
+**Full Changelog**: https://github.com/qitechgmbh/control/compare/3.1.0...3.2.0
+
 # `3.1.0`
 _18.09.2026_
 
