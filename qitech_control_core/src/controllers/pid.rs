@@ -136,8 +136,9 @@ impl PidController {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::time::Duration;
+
+    use super::*;
 
     /// Pure integrator, so the output is exactly `ki * ei` and the integral is
     /// easy to reason about.

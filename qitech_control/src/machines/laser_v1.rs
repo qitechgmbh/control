@@ -78,10 +78,7 @@ impl MachineBuild for LaserV1 {
             .maximum(1.0)
             .build()?;
 
-        let _global_warning = ctx
-            .config::<bool>("global_warning")
-            .default(true)
-            .build()?;
+        let _global_warning = ctx.config::<bool>("global_warning").default(true).build()?;
 
         Ok(Self {
             device,

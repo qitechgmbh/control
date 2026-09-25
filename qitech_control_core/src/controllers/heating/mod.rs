@@ -10,10 +10,11 @@ pub mod sensor_lag_observer;
 
 use std::time::Instant;
 
-use super::pid::PidController;
-
-pub use observer_pi::{ObserverPi, ObserverPiParams};
+pub use observer_pi::ObserverPi;
+pub use observer_pi::ObserverPiParams;
 pub use sensor_lag_observer::SensorLagObserver;
+
+use super::pid::PidController;
 
 /// A control law that turns a temperature reading into a duty demand.
 pub trait HeatingStrategy: Send {

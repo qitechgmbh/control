@@ -1,6 +1,7 @@
 use std::time::Instant;
 
-use super::{HeatingStrategy, SensorLagObserver};
+use super::HeatingStrategy;
+use super::SensorLagObserver;
 use crate::controllers::pid::PidController;
 
 /// Configuration for [`ObserverPi`].
@@ -96,8 +97,9 @@ impl HeatingStrategy for ObserverPi {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::time::Duration;
+
+    use super::*;
 
     fn params() -> ObserverPiParams {
         ObserverPiParams {
