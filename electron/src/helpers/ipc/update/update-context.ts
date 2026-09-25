@@ -13,6 +13,7 @@ import {
   UPDATE_LOAD_TOKEN_FILE,
   UPDATE_HAS_TOKEN,
   UPDATE_CLEAR_TOKEN,
+  UPDATE_CHECK_LATEST_RELEASE,
 } from "./update-channels";
 import { RepoImportResult } from "./git-fetch-utils";
 
@@ -57,6 +58,8 @@ export function exposeUpdateContext() {
     execute: (params: UpdateExecuteInvokeParams) =>
       ipcRenderer.invoke(UPDATE_EXECUTE, params),
     cancel: () => ipcRenderer.invoke(UPDATE_CANCEL),
+    checkLatestRelease: (source: GithubSource) =>
+      ipcRenderer.invoke(UPDATE_CHECK_LATEST_RELEASE, source),
 
     // Token management
     hasToken: () => ipcRenderer.invoke(UPDATE_HAS_TOKEN),
