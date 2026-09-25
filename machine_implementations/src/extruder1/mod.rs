@@ -1,10 +1,12 @@
 pub mod act;
 pub mod api;
 pub mod emit;
+pub mod heating_params;
 pub mod mitsubishi_cs80;
 pub mod new;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
+pub mod zone;
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::{MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, VENDOR_QITECH};
@@ -85,6 +87,7 @@ pub struct ExtruderV2 {
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
     temperature_controller_nozzle: TemperatureController,
+    heating_algorithm: api::HeatingAlgorithm,
 
     /// Energy tracking for total consumption calculation
     total_energy_kwh: f64,

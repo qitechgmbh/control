@@ -1,6 +1,11 @@
+use super::heating_params::build_strategy;
+use super::zone::{Generation, Zone};
 use super::{
-    ExtruderV2, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
-    screw_speed_controller::ScrewSpeedController, temperature_controller::TemperatureController,
+    ExtruderV2, Heating,
+    api::{ExtruderV2Namespace, HeatingAlgorithm},
+    mitsubishi_cs80::MitsubishiCS80,
+    screw_speed_controller::ScrewSpeedController,
+    temperature_controller::TemperatureController,
 };
 use crate::{
     MACHINE_EXTRUDER_V1, MACHINE_EXTRUDER_V2, MachineHardware, MachineMessage, MachineNew,
@@ -60,23 +65,21 @@ impl MachineNew for ExtruderV2 {
     fn new(hw: MachineHardware) -> Result<Self, anyhow::Error> {
         let motor_poles;
         let transmission;
-        let barrel_heater_w;
-        let nozzle_heater_w;
+        let generation;
 
         let roles = match hw.identification.machine_ident.machine {
             MACHINE_EXTRUDER_V1 => {
+                print!("Setting up like its V2");
                 motor_poles = 4;
                 transmission = FixedTransmission::new(1.0 / 34.0);
-                barrel_heater_w = 700.0;
-                nozzle_heater_w = 200.0;
+                generation = Generation::V1;
                 ExtruderRoles::get_v2_roles()
             }
             MACHINE_EXTRUDER_V2 => {
                 println!("Setting up like its V3");
                 motor_poles = 2;
                 transmission = FixedTransmission::new(1.0 / 30.0);
-                barrel_heater_w = 900.0;
-                nozzle_heater_w = 150.0;
+                generation = Generation::V2;
                 ExtruderRoles::get_v3_roles()
             }
             _ => {
@@ -120,63 +123,31 @@ impl MachineNew for ExtruderV2 {
         drop(el6021);
         interface.enable_dc_sync0(serial_device.1)?;
 
-        let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
-        let temperature_controller_front = TemperatureController::new(
-            0.16,
-            0.0,
-            0.008,
-            ThermodynamicTemperature::new::<degree_celsius>(150.0),
-            extruder_max_temperature,
-            Heating::default(),
-            Duration::from_millis(500),
-            barrel_heater_w,
-            1.0,
-            0,
-            0,
-        );
+        // 303°C because with 300°C the heater would oscilate a lot at 300°C. It cant heat the moment it goes over 300°C causing over and undershooting.
+        let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(303.0);
+        let initial_target = ThermodynamicTemperature::new::<degree_celsius>(150.0);
+        let pwm = Duration::from_millis(500);
 
-        let temperature_controller_middle = TemperatureController::new(
-            0.16,
-            0.0,
-            0.008,
-            ThermodynamicTemperature::new::<degree_celsius>(150.0),
-            extruder_max_temperature,
-            Heating::default(),
-            Duration::from_millis(500),
-            barrel_heater_w,
-            1.0,
-            1,
-            1,
-        );
+        // The control law differs by hardware generation; the operator can
+        // switch it at runtime with `Mutation::SetHeatingAlgorithm`.
+        let heating_algorithm = HeatingAlgorithm::default_for(generation);
 
-        let temperature_controller_back = TemperatureController::new(
-            0.16,
-            0.0,
-            0.008,
-            ThermodynamicTemperature::new::<degree_celsius>(150.0),
-            extruder_max_temperature,
-            Heating::default(),
-            Duration::from_millis(500),
-            barrel_heater_w,
-            1.0,
-            2,
-            2,
-        );
-
-        // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
-        let temperature_controller_nozzle = TemperatureController::new(
-            0.16,
-            0.0,
-            0.008,
-            ThermodynamicTemperature::new::<degree_celsius>(150.0),
-            extruder_max_temperature,
-            Heating::default(),
-            Duration::from_millis(500),
-            nozzle_heater_w,
-            0.95,
-            3,
-            3,
-        );
+        let controller = |zone: Zone| {
+            TemperatureController::with_strategy(
+                build_strategy(heating_algorithm, zone),
+                initial_target,
+                extruder_max_temperature,
+                Heating::default(),
+                pwm,
+                zone.rated_w(generation),
+                zone.port(),
+                zone.port(),
+            )
+        };
+        let temperature_controller_front = controller(Zone::Front);
+        let temperature_controller_middle = controller(Zone::Middle);
+        let temperature_controller_back = controller(Zone::Back);
+        let temperature_controller_nozzle = controller(Zone::Nozzle);
 
         let inverter = MitsubishiCS80::new();
         let target_pressure = Pressure::new::<bar>(0.0);
@@ -204,6 +175,7 @@ impl MachineNew for ExtruderV2 {
             temperature_controller_middle,
             temperature_controller_back,
             temperature_controller_nozzle,
+            heating_algorithm,
             screw_speed_controller,
             emitted_default_state: false,
             last_status_hash: None,
