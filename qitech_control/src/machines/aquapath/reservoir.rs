@@ -317,6 +317,7 @@ impl Reservoir {
                 target_temperature: ctx
                     .config::<f64>("left_target_temperature")
                     .on_external_changed(AquapathV1::on_target_temperature_changed::<Left>)
+                    .default(25.0)
                     .build()?,
                 fan_max_revolutions: ctx
                     .config::<f64>("left_fan_max_revolutions")
@@ -411,6 +412,7 @@ impl Reservoir {
                 target_temperature: ctx
                     .config::<f64>("right_target_temperature")
                     .on_external_changed(AquapathV1::on_target_temperature_changed::<Right>)
+                    .default(25.0)
                     .build()?,
                 fan_max_revolutions: ctx
                     .config::<f64>("right_fan_max_revolutions")
