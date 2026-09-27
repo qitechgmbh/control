@@ -26,6 +26,8 @@ mod device;
 pub use device::DryerDevice;
 use device::{ScheduleDay, WeeklySchedule, is_running_status, local_weekday_and_seconds};
 
+pub mod material_presets;
+
 #[derive(Machine)]
 pub struct DryerV1 {
     // --- hardware ---
@@ -69,6 +71,12 @@ pub struct DryerV1 {
     /// Drives the drying-timer auto-stop - plain internal bookkeeping, not part of the
     /// schema (nothing external needs to read it directly, only `remaining_seconds`).
     running_since: Option<Instant>,
+    /// Set once `check_auto_stop` has queued its stop pulse for the current run, so it
+    /// doesn't re-queue another one every tick while waiting for the device's status to
+    /// actually catch up (the write is a momentary coil pulse, not an idempotent set -
+    /// re-sending it repeatedly toggles the machine back on and off). Reset back to
+    /// `false` the next time the device starts running.
+    auto_stop_sent: bool,
 }
 
 impl MachineBuild for DryerV1 {
@@ -225,6 +233,7 @@ impl MachineBuild for DryerV1 {
                 .build()?,
             alarm_raised: ctx.event("alarm_raised").build()?,
             running_since: None,
+            auto_stop_sent: false,
         })
     }
 }
@@ -242,6 +251,7 @@ impl MachineTrait for DryerV1 {
         let now_running = is_running_status(d.status);
         if !was_running && now_running {
             self.running_since = Some(Instant::now());
+            self.auto_stop_sent = false;
         } else if was_running && !now_running {
             self.running_since = None;
         }
@@ -326,7 +336,7 @@ impl DryerV1 {
     /// connected. A scheduled stop time today always takes priority over the drying
     /// timer, matching `compute_remaining_seconds`'s precedence exactly.
     fn check_auto_stop(&mut self) {
-        if !is_running_status(self.status.get() as u16) {
+        if !is_running_status(self.status.get() as u16) || self.auto_stop_sent {
             return;
         }
 
@@ -336,6 +346,7 @@ impl DryerV1 {
         if scheduled_stop != 0 {
             if now_minutes >= scheduled_stop {
                 self.dryer.borrow_mut().queue_set_start_stop();
+                self.auto_stop_sent = true;
             }
             return;
         }
@@ -344,6 +355,7 @@ impl DryerV1 {
             let target_secs = (self.drying_timer_minutes.get() as u64) * 60;
             if started.elapsed().as_secs() >= target_secs {
                 self.dryer.borrow_mut().queue_set_start_stop();
+                self.auto_stop_sent = true;
             }
         }
     }

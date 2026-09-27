@@ -26,6 +26,12 @@ export function DryerV1Page() {
           title: "Schedule",
           icon: "lu:CalendarClock",
         },
+        {
+          link: "material",
+          activeLink: "material",
+          title: "Material",
+          icon: "lu:FlaskConical",
+        },
       ]}
     />
   );

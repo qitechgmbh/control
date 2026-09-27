@@ -12,11 +12,16 @@ import {
   StateEvent,
   useDryerV1Namespace,
 } from "./dryerV1Namespace";
+import { MATERIAL_PRESETS, recommendedTemp } from "./materialPresets";
 
 const scheduleDaySchema = z.object({
   start_minutes: z.number(),
   stop_minutes: z.number(),
 });
+
+export function isRunningStatus(status: number): boolean {
+  return status !== 1 && status !== 5 && status !== 6;
+}
 
 export function useDryerV1() {
   const { serial: serialString } = dryerV1SerialRoute.useParams();
@@ -140,6 +145,34 @@ export function useDryerV1() {
     );
   };
 
+  const applyMaterialPreset = (abbrev: string, throughputKgPerH: number) => {
+    const preset = MATERIAL_PRESETS.find((p) => p.abbrev === abbrev);
+    if (!preset) return;
+
+    const temperature = Math.min(180, Math.max(50, recommendedTemp(preset)));
+    const airVolume = Math.max(
+      1,
+      Math.round(preset.specific_air_volume * throughputKgPerH),
+    );
+
+    updateStateOptimistically(
+      (current) => {
+        current.target_temperature = temperature;
+        current.air_volume = airVolume;
+      },
+      () =>
+        requestApplyMaterialPreset({
+          machine_identification_unique: machineIdentification,
+          data: {
+            ApplyMaterialPreset: {
+              abbrev,
+              throughput_kg_per_h: throughputKgPerH,
+            },
+          },
+        }),
+    );
+  };
+
   const { request: requestRunning } = useMachineMutation(
     z.object({ SetRunning: z.boolean() }),
   );
@@ -157,9 +190,23 @@ export function useDryerV1() {
       SetSchedule: z.object({ schedule: z.array(scheduleDaySchema).length(7) }),
     }),
   );
+  const { request: requestApplyMaterialPreset } = useMachineMutation(
+    z.object({
+      ApplyMaterialPreset: z.object({
+        abbrev: z.string(),
+        throughput_kg_per_h: z.number(),
+      }),
+    }),
+  );
+
+  const isRunning =
+    !!stateOptimistic.value && isRunningStatus(stateOptimistic.value.status);
 
   return {
     state: stateOptimistic.value,
+    isRunning,
+    isLoading: stateOptimistic.isOptimistic,
+    isDisabled: !stateOptimistic.isInitialized,
     defaultState,
     liveValues,
     ts_temp_process,
@@ -178,5 +225,6 @@ export function useDryerV1() {
     setAirVolume,
     setDryingTimerMinutes,
     setSchedule,
+    applyMaterialPreset,
   };
 }
