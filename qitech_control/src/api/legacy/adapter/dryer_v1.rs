@@ -5,6 +5,7 @@ use serde::Deserialize;
 
 use crate::api::legacy::MachineLegacyDataAdapter;
 use crate::api::types::MachineInstance;
+use crate::machines::material_presets::MATERIAL_PRESETS;
 
 pub const ADAPTER: MachineLegacyDataAdapter = MachineLegacyDataAdapter {
     convert_request,
@@ -50,6 +51,10 @@ fn convert_request(
     #[derive(Deserialize)]
     enum CompoundMutation {
         SetSchedule { schedule: [ScheduleDayInput; 7] },
+        ApplyMaterialPreset {
+            abbrev: String,
+            throughput_kg_per_h: f64,
+        },
     }
 
     if let Ok(mutation) = serde_json::from_value::<CompoundMutation>(data.clone()) {
@@ -70,6 +75,27 @@ fn convert_request(
                     ]
                 })
                 .collect(),
+            CompoundMutation::ApplyMaterialPreset {
+                abbrev,
+                throughput_kg_per_h,
+            } => match MATERIAL_PRESETS.iter().find(|p| p.abbrev == abbrev) {
+                Some(preset) => {
+                    let temp = preset.recommended_temp().clamp(50, 180);
+                    let air_volume =
+                        (preset.specific_air_volume * throughput_kg_per_h).round().max(1.0) as i64;
+                    vec![
+                        config(
+                            "target_temperature".to_string(),
+                            ScalarValue::Float(temp as f64),
+                        ),
+                        config("air_volume".to_string(), ScalarValue::Integer(air_volume)),
+                    ]
+                }
+                None => {
+                    tracing::warn!("Unknown dryer material preset abbrev: {abbrev}");
+                    vec![]
+                }
+            },
         });
     }
 
