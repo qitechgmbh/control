@@ -15,8 +15,6 @@ QiTech Control combines the modularity and reliability of standard EtherCAT term
 
 - [Getting Started](https://github.com/qitechgmbh/control/wiki/Getting-Started)
 - [Architecture Overview](https://github.com/qitechgmbh/control/wiki/Architecture-Overview)
-- [EtherCAT Basics](https://github.com/qitechgmbh/control/wiki/Ethercat-Basics)
-- [Device Examples](https://github.com/qitechgmbh/control/wiki/Hardware-Examples)
 - [REST API Reference](https://github.com/qitechgmbh/control/wiki/Rest-Api)
 
 ## Videos
