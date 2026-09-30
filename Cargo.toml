@@ -1,29 +1,32 @@
 [workspace]
-members = [
-    "qitech_control",
-    "control-core",
-    "machine_implementations",
-]
+members = ["qitech_control", "qitech_control_core"]
 exclude = []
 resolver = "2"
 
 [workspace.package]
 license = "LGPL-3.0-only"
 repository = "https://github.com/qitechgmbh/control"
+keywords = ["ethercat", "modbus", "machine"]
+categories = [""]
+exclude = [".github", ".vscode"]
+edition = "2024"
+rust-version = "1.90"
 
 [workspace.dependencies]
-qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="54eafc96a298b8959436ce02cb19d31a93a27dfb" }
+# --- internal ---
+qitech_control = { path = "qitech_control" }
+qitech_control_core = { path = "qitech_control_core" }
 
-[workspace.lints.clippy]
-# don't lint poissbilities for let chains because they were introduces after Rust 1.86
-collapsible_if = "allow"
+# --- lib ---
+qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="7a92e930c05430e3cb4a955bb5260ad1f6a1a14b" }
 
-# Lint groups (priority -1)
-correctness = { level = "warn", priority = -1 }
-suspicious = { level = "warn", priority = -1 }
-complexity = { level = "warn", priority = -1 }
-perf = { level = "warn", priority = -1 }
-style = { level = "warn", priority = -1 }
-pendantic = { level = "warn", priority = -1 }
-cargo = { level = "warn", priority = -1 }
-nursery = { level = "warn", priority = -1 }
+# --- framework ---
+qitech_framework = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="c667225471e6c5483067839d6f02e914ff96fb39" }
+qitech_framework_tui = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="c667225471e6c5483067839d6f02e914ff96fb39" }
+qitech_framework_hub = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="c667225471e6c5483067839d6f02e914ff96fb39" }
+
+# --- external ---
+tokio = "1"
+tower-http = "0.6.8"
+tracing = "0.1.44"
+tracing-subscriber = "0.3"

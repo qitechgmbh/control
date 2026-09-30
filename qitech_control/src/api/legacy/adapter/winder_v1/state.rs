@@ -1,0 +1,201 @@
+use qitech_framework::ScalarValue;
+use qitech_framework::machine::MachineDescriptor;
+
+use crate::api::legacy::types::MachineIdentificationUnique;
+use crate::api::legacy::{self};
+use crate::api::types::MachineInstance;
+use crate::machines::LaserV1;
+
+// --- small helper functions ---
+/// Maps runtime puller algorithm enum to frontend regulation name.
+/// Runtime uses "Direct"/"Adaptive", frontend expects "Speed"/"Diameter".
+fn map_puller_regulation(value: &str) -> &'static str {
+    match value {
+        "speed" | "direct" | "Speed" | "Direct" => "Speed",
+        "diameter" | "adaptive" | "Diameter" | "Adaptive" => "Diameter",
+        _ => "Speed",
+    }
+}
+
+fn map_spool_action(value: &str) -> &'static str {
+    match value {
+        "no_action" | "NoAction" => "NoAction",
+        "pull" | "Pull" => "Pull",
+        "hold" | "Hold" => "Hold",
+        _ => "NoAction",
+    }
+}
+
+fn map_spool_regulation(value: &str) -> &'static str {
+    match value {
+        "adaptive" | "Adaptive" => "Adaptive",
+        "min_max" | "minmax" | "MinMax" => "MinMax",
+        _ => "MinMax",
+    }
+}
+
+fn map_gear_ratio(value: &str) -> &'static str {
+    match value {
+        "one_to_one" | "OneToOne" => "OneToOne",
+        "one_to_five" | "OneToFive" => "OneToFive",
+        "one_to_ten" | "OneToTen" => "OneToTen",
+        _ => "OneToOne",
+    }
+}
+
+fn config_enum(instance: &MachineInstance, path: &str) -> Option<String> {
+    config_value(instance, path)?.r#enum()
+}
+
+fn is_homing_state(state: &str) -> bool {
+    matches!(
+        state,
+        "initialize"
+            | "escape_endstop"
+            | "find_endstop_fine_distancing"
+            | "find_endstop_coarse"
+            | "find_endstop_fine"
+            | "validate"
+    )
+}
+
+fn is_traversing_state(state: &str) -> bool {
+    matches!(state, "traversing_in" | "traversing_out")
+}
+
+pub fn init_state_event(
+    instance: &MachineInstance,
+    is_default_state: bool,
+) -> Option<serde_json::Value> {
+    let traverse_mode = state_enum(instance, "traverse.mode")?;
+    let traverse_state = state_enum(instance, "traverse.state")?;
+    let mode = state_enum(instance, "mode")?;
+    let is_homed = state_bool(instance, "traverse.homed")?;
+
+    let can_traverse = traverse_mode == "Standby" || traverse_mode == "Traverse";
+
+    let tension_arm_zeroed =
+        state_value(instance, "tension_arm.zero").is_some_and(|v| !matches!(v, ScalarValue::Null));
+    let is_homing = is_homing_state(&traverse_state);
+    let can_wind = tension_arm_zeroed && is_homed && !is_homing;
+
+    let puller_reference_machine = instance
+        .subscriptions
+        .iter()
+        .find(|ident| ident.machine == LaserV1::IDENTIFICATION)
+        .map(|ident| MachineIdentificationUnique {
+            machine_identification: legacy::types::MachineIdentification {
+                vendor: ident.machine.vendor_id,
+                machine: ident.machine.machine_id,
+            },
+            serial: ident.serial,
+        });
+
+    Some(serde_json::json!({
+        "is_default_state": is_default_state,
+
+        "traverse_state": {
+            "limit_inner": config_float(instance, "traverse.limit_inner")?,
+            "limit_outer": config_float(instance, "traverse.limit_outer")?,
+            "position_in": 0.0,
+            "position_out": 0.0,
+            "is_going_in": traverse_state == "going_in",
+            "is_going_out": traverse_state == "going_out",
+            "is_homed": is_homed,
+            "is_going_home": is_homing,
+            "is_traversing": is_traversing_state(&traverse_state),
+            "laserpointer": state_bool(instance, "laser_pointer.enabled")?,
+            "step_size": config_float(instance, "traverse.step_size")?,
+            "padding": config_float(instance, "traverse.padding")?,
+            "can_go_in": can_traverse,
+            "can_go_out": can_traverse,
+            "can_go_home": !is_homed,
+        },
+
+        "puller_state": {
+            "regulation": config_enum(instance, "puller.speed_controller.algorithm")
+                .as_deref()
+                .map(map_puller_regulation)
+                .unwrap_or("Speed"),
+            "target_speed": config_float(instance, "puller.speed_controller.speed_desired")?,
+            "forward": config_enum(instance, "puller.direction")
+                .is_some_and(|s| s == "Forward" || s == "forward"),
+            "gear_ratio": config_enum(instance, "puller.gear_ratio")
+                .as_deref()
+                .map(map_gear_ratio)
+                .unwrap_or("OneToOne"),
+            "adaptive_speed_delta_max": config_float(instance, "puller.speed_controller.adaptive.speed_delta_max")?,
+            "adaptive_adjustment_distance": config_float(instance, "puller.speed_controller.adaptive.adjustment_distance")?,
+            "adaptive_change_per_step": config_float(instance, "puller.speed_controller.adaptive.increase_per_step")?,
+            "allowed_diameter_deviation": config_float(instance, "puller.speed_controller.adaptive.tolerance_limit")?,
+            "adaptive_reference_machine": puller_reference_machine,
+        },
+
+        "spool_automatic_action_state": {
+            "spool_required_meters": config_float(instance, "spool_automatic.required_meters")?,
+            "spool_automatic_action_mode": config_enum(instance, "spool_automatic.action")
+                .as_deref()
+                .map(map_spool_action)
+                .unwrap_or("NoAction"),
+        },
+
+        "mode_state": {
+            "mode": mode,
+            "can_wind": can_wind,
+        },
+
+        "tension_arm_state": {
+            "zeroed": tension_arm_zeroed,
+        },
+
+        "spool_speed_controller_state": {
+            "regulation_mode": config_enum(instance, "spool.speed_controller.algorithm")
+                .as_deref()
+                .map(map_spool_regulation)
+                .unwrap_or("MinMax"),
+            "minmax_min_speed": config_float(instance, "spool.speed_controller.speed_min")?,
+            "minmax_max_speed": config_float(instance, "spool.speed_controller.speed_max")?,
+            "adaptive_tension_target": config_float(instance, "spool.speed_controller.adaptive.tension_target")?,
+            "adaptive_radius_learning_rate": config_float(instance, "spool.speed_controller.adaptive.radius_learning_rate")?,
+            "adaptive_max_speed_multiplier": config_float(instance, "spool.speed_controller.adaptive.max_speed_multiplier")?,
+            "adaptive_acceleration_factor": config_float(instance, "spool.speed_controller.adaptive.acceleration_factor")?,
+            "adaptive_deacceleration_urgency_multiplier": config_float(instance, "spool.speed_controller.adaptive.deacceleration_urgency_multiplier")?,
+            "forward": config_enum(instance, "spool.direction")
+                .is_some_and(|s| s == "Forward" || s == "forward"),
+        },
+
+        "puller_reference_machine": puller_reference_machine,
+    }))
+}
+
+// --- property lookups ---
+//
+// Each returns `None` while the runtime has not registered the property yet, which propagates out
+// of the event builders so a partial payload is never emitted.
+
+fn config_value(instance: &MachineInstance, path: &str) -> Option<ScalarValue> {
+    Some(
+        instance
+            .config_properties
+            .get(path)?
+            .as_ref()?
+            .value
+            .clone(),
+    )
+}
+
+fn state_value(instance: &MachineInstance, path: &str) -> Option<ScalarValue> {
+    Some(instance.state_properties.get(path)?.as_ref()?.value.clone())
+}
+
+fn config_float(instance: &MachineInstance, path: &str) -> Option<f64> {
+    config_value(instance, path)?.float()
+}
+
+fn state_bool(instance: &MachineInstance, path: &str) -> Option<bool> {
+    state_value(instance, path)?.boolean()
+}
+
+fn state_enum(instance: &MachineInstance, path: &str) -> Option<String> {
+    state_value(instance, path)?.r#enum()
+}

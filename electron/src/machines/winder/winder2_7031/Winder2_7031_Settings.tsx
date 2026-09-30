@@ -63,9 +63,7 @@ export function Winder2_7031SettingPage() {
     setWinder2XLMode(enabled);
     setXlMode(enabled);
 
-    // When switching from XL to normal mode, reset traverse limits to default values
     if (!enabled && defaultState) {
-      // Only reset if current values exceed the standard max
       const currentOuter = state?.traverse_state?.limit_outer ?? 0;
       const currentInner = state?.traverse_state?.limit_inner ?? 0;
       const defaultOuter = defaultState.traverse_state?.limit_outer;
@@ -86,8 +84,10 @@ export function Winder2_7031SettingPage() {
         setTraverseLimitInner(defaultInner);
       }
 
-      // Home the traverse when switching from XL to normal mode
-      gotoTraverseHome();
+      // Only home if in Hold mode (traverse commands require Hold)
+      if (state?.mode_state?.mode === "Hold") {
+        gotoTraverseHome();
+      }
     }
   };
 

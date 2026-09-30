@@ -1,299 +1,120 @@
-use anyhow::bail;
-use apis::socketio::queue::start_socketio_queue;
-use app_state::SharedAppState;
-use machine_implementations::MACHINE_LASER_V1;
-use machine_implementations::registry::MACHINE_REGISTRY;
-#[cfg(not(feature = "mock"))]
-use machine_loop::{run_machines, write_ecat_inputs, write_ecat_outputs};
-use qitech_lib::ethercat_hal::devices::device_from_subdevice_identity_rc;
-#[cfg(not(feature = "mock"))]
-use qitech_lib::ethercat_hal::{
-    DcConfiguration, MasterConfiguration, RtOptimizationConfig, init_ethercat,
-};
-use qitech_lib::{
-    ethercat_hal::interface_discovery::{LinkType, list_ethernet_interfaces, test_interface},
-    ethercat_hal::{BECKHOFF_VENDOR_ID, EtherCATControl, Mailbox, TripleBufConsumer},
-    machines::MachineIdentificationUnique,
-};
-#[cfg(not(feature = "mock"))]
-use std::{sync::Arc, time::Duration};
-use tokio::sync::mpsc::Receiver;
-use tokio_serial::SerialPortInfo;
+mod api;
+mod machines;
+mod modbus;
+mod transmission;
+mod types;
 
-use crate::{
-    apis::socketio::main_namespace::{
-        ethercat_devices_event::EcatState,
-        ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent,
-    },
-    app_state::get_async_runtime,
-};
-#[cfg(not(feature = "mock"))]
-use crate::{
-    app_state::MainState,
-    interfaces::{detect_serial, set_all_ethernet_up},
-};
+use std::env;
+use std::time::Duration;
 
-pub mod apis;
-mod app_state;
-mod interfaces;
-mod machine_loop;
-#[cfg(feature = "mock")]
-mod mock;
-pub mod persist;
+use api::LegacySharedState;
+use api::Server;
+use api::SharedState;
+use api::SocketIODispatcher;
+use qitech_control_core::interface;
+use qitech_framework::HubConfiguration;
+use qitech_framework::machine::MachineDescriptor;
+use qitech_framework::run_debug;
+use qitech_framework::run_with_hub;
+use qitech_framework::run_with_tui;
+use qitech_framework::runtime::EtherCATConfig;
+use qitech_framework::runtime::RuntimeConfiguration;
+use qitech_lib::ethercat_hal::DcConfiguration;
+use qitech_lib::ethercat_hal::MasterConfiguration;
+use qitech_lib::ethercat_hal::RtOptimizationConfig;
+use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
+use tokio::sync::mpsc;
 
-fn setup_ethercat(
-    state: Arc<SharedAppState>,
-    main_state: &mut MainState,
-    eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
-) -> Result<(), anyhow::Error> {
-    let _res = eth_control
-        .channel
-        .request_state_change(qitech_lib::ethercat_hal::EtherCATState::PreOp);
+use crate::machines::ExtruderV1;
+use crate::machines::ExtruderV2;
+use crate::machines::LaserV1;
+use crate::machines::WinderV1_7031_Spool;
+use crate::machines::WinderV1_Regular;
+use crate::machines::aquapath::AquapathV1;
 
-    // Require 2 consecutive stable polls (~100 ms) in PreOp before proceeding.
-    // One poll is not enough: the state machine may still be mid-iteration on first observation,
-    // causing EEPROM reads to contend with its ongoing preop_group tick.
-    let deadline = std::time::Instant::now() + Duration::from_secs(10);
-    let mut stable_ticks: u32 = 0;
-    while stable_ticks < 2 {
-        // State-machine thread died, or timeout — bail for a clean restart.
-        if eth_control
-            .join_handle
-            .as_ref()
-            .map_or(false, |h| h.is_finished())
-            || std::time::Instant::now() >= deadline
-        {
-            bail!("No response from state machine Timeout");
-        }
-        std::thread::sleep(Duration::from_millis(50));
+#[tokio::main]
+pub async fn main() -> anyhow::Result<()> {
+    interface::bring_up_all_ethernet();
+    let mut config_rt = RuntimeConfiguration::new()
+        .requests_per_cycle_max(10)
+        .export_interval(Duration::from_secs_f64(1.0 / 32.0))
+        .machine::<AquapathV1>()
+        .machine::<WinderV1_Regular>()
+        .machine::<WinderV1_7031_Spool>()
+        .machine::<ExtruderV1>()
+        .machine::<ExtruderV2>()
+        .machine::<LaserV1>();
 
-        let preop_ready = eth_control.app_handle.get_state()
-            == qitech_lib::ethercat_hal::EtherCATState::PreOp
-            && eth_control.app_handle.get_subdevice_count() > 0;
-
-        if preop_ready {
-            stable_ticks += 1
+    // --- bind the modbus rtu drivers to whichever ports the user assigned them to ---
+    for assignment in modbus::assignments::read() {
+        config_rt = if assignment.machine.machine == LaserV1::IDENTIFICATION {
+            config_rt.modbus_rtu_device::<LaserDevice>(
+                assignment.port,
+                assignment.machine,
+                assignment.slave_id,
+                None,
+            )
         } else {
-            stable_ticks = 0
-        }
-    }
-
-    let mut idents = vec![];
-    println!(
-        "Initialized {} subdevices",
-        eth_control.app_handle.get_subdevice_count()
-    );
-
-    for meta in eth_control.app_handle.try_get_subdevices_vec_sync()? {
-        let dev = device_from_subdevice_identity_rc(&meta);
-
-        let dev = match dev {
-            Ok(d) => d,
-            Err(_) => {
-                println!("Ecat {:?} is not implemented", meta.get_name());
-                continue;
-            }
-        };
-
-        main_state.subdevices.push((meta.clone(), dev.clone()));
-        if meta.vendor == BECKHOFF_VENDOR_ID {
-            let _res = eth_control
-                .channel
-                .set_mut_beckhoff_eeprom_lock_active(meta.device_address);
-        }
-    }
-
-    match eth_control.channel.read_device_identifications() {
-        Ok(mut eeprom_idents) => {
-            main_state.generate_machine_hardware_from_ethercat(
-                &eeprom_idents,
-                main_state.subdevices.clone(),
-                eth_control.channel.clone(),
+            tracing::warn!(
+                "no modbus rtu driver for machine {} assigned to port {}",
+                assignment.machine,
+                assignment.port
             );
-            idents.append(&mut eeprom_idents);
-        }
-        Err(e) => {
-            println!("Could not read device identifications from eeprom: {:?}", e);
-        }
+
+            config_rt
+        };
+    }
+
+    // --- determine if ethercat is enabled ---
+    let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {
+        Ok("false") => config_rt,
+        _ => config_rt.ethercat(ETHERCAT_CONFIG),
     };
-    let _res = state.fill_ethercat_metadata(eth_control, idents);
-    Ok(())
-}
-
-fn add_laser(
-    main_state: &mut MainState,
-    shared_state: Arc<SharedAppState>,
-    rx_ports: &mut Receiver<Vec<SerialPortInfo>>,
-) -> Result<(), anyhow::Error> {
-    let ports = rx_ports.try_recv()?;
-    let machine_index_to_remove = main_state
-        .machines
-        .iter()
-        .position(|m| m.get_identification().machine_ident.machine == MACHINE_LASER_V1);
-    let machine_obj_index = shared_state.machines.try_read()?.iter().position(|m| {
-        m.machine_identification_unique
-            .machine_identification
-            .machine
-            == MACHINE_LASER_V1
-    });
-
-    match machine_index_to_remove {
-        Some(index) => {
-            main_state.machines.remove(index);
-        }
-        None => (),
-    }
-
-    match machine_obj_index {
-        Some(index) => {
-            shared_state.machines.try_write()?.remove(index);
-        }
-        None => (),
-    }
-
-    // Port is not used right now, so check if port exists
-    for port in ports {
-        if port.port_name == "/dev/ttyUSB0" || port.port_name == "/dev/ttyUSB1" {
-            main_state.generate_machine_hardware_from_serial(&port.port_name)?;
-            detect_and_build_machines(shared_state.clone(), main_state);
-            send_machines_event(shared_state);
-            break;
-        }
-    }
-    Ok(())
-}
-
-fn laser_hotplug(
-    main_state: &mut MainState,
-    shared_state: Arc<SharedAppState>,
-    rx_ports: &mut Receiver<Vec<SerialPortInfo>>,
-) -> Result<(), anyhow::Error> {
-    match main_state
-        .machines
-        .iter()
-        .any(|x| x.get_identification().machine_ident.machine == MACHINE_LASER_V1)
-    {
-        true => Ok(()),
-        false => {
-            add_laser(main_state, shared_state.clone(), rx_ports)?;
+    match env::var("CONTROL_MODE").as_deref() {
+        Ok("DEBUG") => {
+            run_debug(config_rt);
             Ok(())
         }
-    }
-}
+        Ok("TUI") => run_with_tui(config_rt, Default::default()).await,
 
-fn send_machines_event(state: Arc<SharedAppState>) {
-    get_async_runtime().spawn(async move {
-        let _res = state.send_machines_event().await;
-    });
-}
+        // HUB config
+        _ => {
+            tracing_subscriber::fmt()
+                .with_target(false)
+                .with_ansi(false)
+                .init();
 
-fn finalize_ethercat(
-    main_state: &mut MainState,
-    eth_control: &EtherCATControl<TripleBufConsumer, Arc<Mailbox>>,
-) -> Result<(), anyhow::Error> {
-    let _res = eth_control
-        .channel
-        .request_state_change(qitech_lib::ethercat_hal::EtherCATState::Op);
-    while !eth_control.app_handle.check_all_op() {
-        if eth_control
-            .join_handle
-            .as_ref()
-            .map_or(false, |h| h.is_finished())
-        {
-            // State machine died before reaching OP — bail so main_logic can exit cleanly.
-            bail!("Failed to reach OP State!");
+            // channel so rest api can notify the socketio handler when a request is send
+            // so we can send a state event for the frontend.
+            let (tx, rx) = mpsc::channel(32);
+
+            let state = SharedState::default();
+            let mut state_legacy = LegacySharedState::new();
+
+            // --- seed the setup page's port list; the runtime does not announce it ---
+            api::broadcast_modbus_devices(&mut state_legacy);
+
+            let config_hub = HubConfiguration::new()
+                .listener(SocketIODispatcher::new(
+                    state.clone(),
+                    state_legacy.clone(),
+                    rx,
+                ))
+                .actor(Server::new(state, state_legacy, tx));
+            run_with_hub(config_rt, config_hub).await
         }
-        std::thread::sleep(Duration::from_millis(50));
-    }
-
-    let subdevices = eth_control.app_handle.try_get_subdevices_vec_sync()?;
-
-    for meta in &mut main_state.subdevices {
-        let m = subdevices
-            .iter()
-            .find(|m| m.device_address == meta.0.device_address)
-            .expect("Ethercat Device Suddenly Missing in finalize_ethercat");
-
-        meta.0.start_tx = m.start_tx;
-        meta.0.end_tx = m.end_tx;
-        meta.0.start_rx = m.start_rx;
-        meta.0.end_rx = m.end_rx;
-    }
-    Ok(())
-}
-
-fn send_ethercat_devices_event(state: Arc<SharedAppState>) {
-    let rt = get_async_runtime();
-    rt.spawn(async move {
-        let _res = state.send_ethercat_setup_done().await;
-    });
-}
-
-fn send_setup_done_events(state: Arc<SharedAppState>) {
-    let rt = get_async_runtime();
-    rt.spawn(async move {
-        let _res = state.send_ethercat_setup_done().await;
-        let _res = state.send_machines_event().await;
-    });
-}
-
-fn send_ecat_state(state: Arc<SharedAppState>, ecat_state: EcatState) {
-    let rt = get_async_runtime();
-    rt.spawn(async move {
-        let _res = state.send_ethercat_state(ecat_state).await;
-    });
-}
-
-fn setup_api_and_websock(state: Arc<SharedAppState>) {
-    let rt = get_async_runtime();
-    rt.spawn(apis::init_api(state.clone()));
-    rt.spawn(start_socketio_queue(state));
-}
-
-fn detect_and_build_machines(state: Arc<SharedAppState>, main_state: &mut MainState) {
-    let idents: Vec<MachineIdentificationUnique> = main_state
-        .machines
-        .iter()
-        .map(|machine| machine.get_identification())
-        .collect();
-
-    for key in main_state.hardware.keys() {
-        if idents.contains(key) {
-            continue;
-        }
-        let result = MACHINE_REGISTRY
-            .new_machine(key.clone(), main_state.hardware.get(key).unwrap().clone());
-        match result {
-            Ok(machine) => {
-                let _res = state.add_machine_sync(
-                    key.clone().into(),
-                    None,
-                    Some(machine.get_api_sender()),
-                );
-                main_state.machines.push(machine);
-            }
-            Err(e) => {
-                let message = format!("{:#}", e);
-                if !main_state.machine_errors.contains_key(key) {
-                    let _res =
-                        state.add_machine_sync(key.clone().into(), Some(message.clone()), None);
-                }
-                main_state.machine_errors.insert(*key, message);
-            }
-        };
     }
 }
 
-fn optimized_ethercat_init(interface: &str) -> EtherCATControl<TripleBufConsumer, Arc<Mailbox>> {
+const ETHERCAT_CONFIG: EtherCATConfig = {
     let target_cycle_time_us: u64 = 1000;
-    let dc_config: DcConfiguration = DcConfiguration {
+    let dc_config = DcConfiguration {
         start_delay: Duration::from_millis(100),
         sync0_period: Duration::from_micros(target_cycle_time_us),
         sync0_shift: Duration::from_micros(target_cycle_time_us / 2),
         target_dc_tick: 500,
     };
-
-    let opt_config: RtOptimizationConfig = RtOptimizationConfig {
+    let opt_config = RtOptimizationConfig {
         ethercat_loop_thread_core: 3,
         ethercat_loop_thread_priority: 99,
         ethercat_io_thread_core: 3,
@@ -301,8 +122,7 @@ fn optimized_ethercat_init(interface: &str) -> EtherCATControl<TripleBufConsumer
         pin_irq_core: Some(3),
         lock_memory: cfg!(target_os = "linux"),
     };
-
-    let config: MasterConfiguration = MasterConfiguration {
+    let master_config = MasterConfiguration {
         target_cycle_time_us: target_cycle_time_us as usize,
         tx_rx_config: qitech_lib::ethercat_hal::MasterTxRxConfig::TxRxIoUring,
         realtime_optimizations: Some(opt_config),
@@ -310,239 +130,8 @@ fn optimized_ethercat_init(interface: &str) -> EtherCATControl<TripleBufConsumer
         wkc_mismatch_threshold: 5,
         op_ramp_grace_cycles: 10000,
     };
-    init_ethercat(interface, Some(config))
-}
-
-pub fn remove_machines(
-    main_state: &mut MainState,
-    shared_state: Arc<SharedAppState>,
-    machines_to_remove: Option<usize>,
-) {
-    match machines_to_remove {
-        Some(i) => {
-            let machine = main_state
-                .machines
-                .get(i)
-                .expect("Should not be none as we got an index into the machines vec");
-            let ident = machine.get_identification();
-            main_state.machine_data_reg.zero_entry(ident);
-            main_state.machines.remove(i);
-            let mut guard = shared_state
-                .machines
-                .try_write()
-                .expect("sharedstate.machines Should never be locked here!!!"); // Is expected to never be locked at this point
-            let pos = guard
-                .iter()
-                .position(|x| x.machine_identification_unique == ident.into())
-                .expect("Machine has to still exist as metadata at this point");
-            main_state.hardware.remove(&ident);
-            guard.remove(pos);
-            drop(guard);
-            // If a machine has errored and is dropped remove the entry from the hashmap aswell
-            main_state.machine_data_reg.storage.remove(&ident);
-            send_machines_event(shared_state.clone());
-        }
-        None => (),
+    EtherCATConfig {
+        interface_scan_interval: Duration::from_secs(2),
+        master_config,
     }
-}
-
-const ETHERCAT_DISCOVERY_RETRY_DELAY: Duration = Duration::from_secs(2);
-
-fn ethercat_enabled() -> bool {
-    let enabled = persist::resolve_ethercat_enabled();
-    println!("EtherCAT enabled: {}", enabled);
-    enabled
-}
-
-fn emit_discovery_event(state: &SharedAppState, event: EthercatInterfaceDiscoveryEvent) {
-    for _ in 0..50 {
-        if state
-            .emit_ethercat_interface_discovery(event.clone())
-            .is_ok()
-        {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(10));
-    }
-    println!(
-        "Could not emit ethercat interface discovery event {:?}",
-        event
-    );
-}
-
-/// Probe every link-up interface for an EtherCAT subdevice until one answers.
-fn find_ethercat_interface(state: &SharedAppState) -> String {
-    loop {
-        let _ = state
-            .emit_ethercat_interface_discovery(EthercatInterfaceDiscoveryEvent::Discovering(true));
-        let interfaces = list_ethernet_interfaces();
-        match interfaces {
-            Ok(interfaces) => {
-                for interface in interfaces {
-                    match interface.link_type {
-                        LinkType::Link => (),
-                        LinkType::Unknown => {
-                            continue;
-                        }
-                        LinkType::Ipv4 => continue,
-                        LinkType::Ipv6 => continue,
-                    };
-
-                    let res = test_interface(&interface.name);
-                    match res {
-                        Ok(_) => {
-                            println!("{} is ethercat", &interface.name);
-                            emit_discovery_event(
-                                state,
-                                EthercatInterfaceDiscoveryEvent::Done(interface.name.clone()),
-                            );
-                            return interface.name;
-                        }
-                        Err(_) => println!("{} is not ethercat", &interface.name),
-                    }
-                }
-                println!(
-                    "No EtherCAT interface found, retrying in {:?}...",
-                    ETHERCAT_DISCOVERY_RETRY_DELAY
-                );
-            }
-            Err(e) => {
-                println!(
-                    "Could not list ethernet interfaces ({:?}), retrying in {:?}...",
-                    e, ETHERCAT_DISCOVERY_RETRY_DELAY
-                );
-            }
-        }
-
-        std::thread::sleep(ETHERCAT_DISCOVERY_RETRY_DELAY);
-    }
-}
-
-/// Bring EtherCAT up, from interface discovery through to OP.
-fn try_bring_up_ethercat(
-    state: &Arc<SharedAppState>,
-    main_state: &mut MainState,
-    stay_in_preop: bool,
-) -> Option<EtherCATControl<TripleBufConsumer, Arc<Mailbox>>> {
-    if !ethercat_enabled() {
-        println!("EtherCAT disabled via ETHERCAT_ENABLED, running serial machines only");
-        // Say so up front, otherwise the frontend sits on "Discovering..." forever waiting for a
-        // scan that never starts.
-        emit_discovery_event(state, EthercatInterfaceDiscoveryEvent::Discovering(false));
-        send_ecat_state(
-            state.clone(),
-            qitech_lib::ethercat_hal::EtherCATState::NoInterface.into(),
-        );
-        return None;
-    }
-
-    let interface = find_ethercat_interface(state);
-
-    let eth_control = optimized_ethercat_init(&interface);
-    if let Err(e) = state.set_ethercat_thread_channel(Some(eth_control.channel.clone())) {
-        println!("Could not publish the ethercat thread channel: {:?}", e);
-    }
-    send_ecat_state(state.clone(), eth_control.app_handle.get_state().into());
-
-    setup_ethercat(state.clone(), main_state, &eth_control).expect("setup_ethercat failed");
-
-    send_ecat_state(state.clone(), eth_control.app_handle.get_state().into());
-
-    // Subdevices are known show them in the frontend
-    send_ethercat_devices_event(state.clone());
-
-    if stay_in_preop {
-        send_setup_done_events(state.clone());
-        println!("Staying in PreOp as requested, exiting after setup.");
-        loop {
-            std::thread::sleep(core::time::Duration::from_secs(1));
-        }
-    }
-
-    detect_and_build_machines(state.clone(), main_state);
-
-    // transition to OP and wait until all subdevices confirm OP.
-    finalize_ethercat(main_state, &eth_control).expect("finalize_ethercat failed");
-
-    send_ecat_state(state.clone(), eth_control.app_handle.get_state().into());
-    Some(eth_control)
-}
-
-#[cfg(not(feature = "mock"))]
-fn main_logic() {
-    let stay_in_preop = std::env::var("QITECH_MODE").unwrap_or_default() == "preop"
-        || std::env::args().any(|a| a == "preop");
-    let mut main_state = MainState::new();
-
-    // By default all ethernet is unmanaged, so NM does not set them to UP and are permanently DOWN
-    // So we do it for all Ethernet interfaces instead
-    match set_all_ethernet_up() {
-        true => println!("Set All Eth interfaces up"),
-        false => println!("Failed to set all Eth interfaces up"),
-    }
-
-    let state = Arc::new(SharedAppState::new());
-
-    setup_api_and_websock(state.clone());
-
-    let (tx, rx) = tokio::sync::mpsc::channel(2);
-    let (tx_ports, mut rx_ports) = tokio::sync::mpsc::channel(2);
-    detect_serial(rx, tx_ports);
-
-    // `None` here means no usable EtherCAT bus; the loop below then runs serial machines only.
-    let mut eth_control: Option<EtherCATControl<TripleBufConsumer, Arc<Mailbox>>> =
-        try_bring_up_ethercat(&state, &mut main_state, stay_in_preop);
-
-    if eth_control.is_none() {
-        detect_and_build_machines(state.clone(), &mut main_state);
-    }
-
-    // Only emit machines to frontend after OP state is confirmed
-    send_machines_event(state.clone());
-
-    let mut last_check = std::time::Instant::now();
-    let hotplug_duration = Duration::from_secs(1);
-
-    loop {
-        let now = std::time::Instant::now();
-        match &mut eth_control {
-            Some(control) => {
-                if control
-                    .join_handle
-                    .as_ref()
-                    .expect("Join handle should be some")
-                    .is_finished()
-                {
-                    return;
-                }
-                write_ecat_inputs(&mut control.app_handle, main_state.subdevices.clone());
-            }
-            None => (),
-        };
-
-        let machines_to_remove =
-            run_machines(&mut main_state.machines, &mut main_state.machine_data_reg);
-        if machines_to_remove.is_some() {
-            remove_machines(&mut main_state, state.clone(), machines_to_remove);
-        }
-
-        if now.duration_since(last_check) >= hotplug_duration {
-            let _ = tx.try_send(());
-            let _ = laser_hotplug(&mut main_state, state.clone(), &mut rx_ports);
-            last_check = now;
-        }
-
-        match &mut eth_control {
-            Some(control) => {
-                write_ecat_outputs(&mut control.app_handle, main_state.subdevices.clone());
-            }
-            None => (),
-        };
-        std::thread::sleep(Duration::from_micros(100));
-    }
-}
-
-fn main() {
-    #[cfg(not(feature = "mock"))]
-    main_logic();
-}
+};
