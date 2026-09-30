@@ -1,4 +1,6 @@
 {
+  lib,
+  stdenv,
   pkg-config,
   libudev-zero,
   libpcap,
@@ -19,6 +21,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   buildInputs = [
     libpcap
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isLinux [
     libudev-zero
   ];
 
@@ -31,4 +35,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
       "2";
 
   cargoExtraArgs = "--features io-uring --no-default-features";
+
+  meta = with lib; {
+    description = "QiTech Control Electron";
+    homepage = "https://qitech.de";
+    platforms = platforms.unix;
+  };
 })

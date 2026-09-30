@@ -22,6 +22,7 @@
       forSystems = nixpkgs.lib.genAttrs [
         "x86_64-linux"
         "aarch64-linux"
+        "aarch64-darwin"
       ];
     in
     {
@@ -87,6 +88,7 @@
               nixd
               rustfmt
               rust-analyzer
+              clippy
             ];
 
             ELECTRON_SKIP_BINARY_DOWNLOAD = 1;

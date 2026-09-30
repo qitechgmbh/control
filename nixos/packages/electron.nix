@@ -78,6 +78,6 @@ buildNpmPackage (finalAttrs: {
   meta = with lib; {
     description = "QiTech Control Electron";
     homepage = "https://qitech.de";
-    platforms = platforms.linux;
+    platforms = platforms.unix;
   };
 })
