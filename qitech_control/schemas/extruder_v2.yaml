@@ -13,6 +13,9 @@ config:
     target_rpm: !revolution_per_minute
     target_pressure: !bar
 
+  extrusion:
+    min_temperature: !degree_celsius
+
   pressure:
     limit: !bar
     limit_enabled: !boolean
