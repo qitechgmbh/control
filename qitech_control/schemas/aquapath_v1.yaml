@@ -25,10 +25,14 @@ measurements:
 state:
   mode_state:
 <<<<<<< HEAD
+<<<<<<< HEAD
     mode: !enum [standby, auto]
 =======
     mode: !enum [standby, pull, hold, wind]
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+    mode: !enum [standby, auto]
+>>>>>>> 1efabc7 (Fix: Update mode enum in aquapath schema from [standby, pull, hold, wind] to [standby, auto] (#1705))
   is_default_state: !boolean
   left_heating_startup_wait_active: !boolean
   right_heating_startup_wait_active: !boolean
