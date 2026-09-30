@@ -53,6 +53,10 @@ pub struct ModbusDevicesEvent {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MachineObj {
+<<<<<<< HEAD
     pub machine_identification_unique: legacy::LegacyMachineIdentificationUnique,
+=======
+    pub machine_identification_unique: legacy::MachineIdentificationUnique,
+>>>>>>> 8e49141 (Jse control v2 (#1680))
     pub error: Option<String>,
 }

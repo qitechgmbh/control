@@ -36,6 +36,7 @@ pub enum State {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum TraversingState {
     GoingOut,
+<<<<<<< HEAD
 
     /// Standing still at the outer edge until the spool completed the dwell revolutions
     /// Then transition into [`TraversingState::TraversingIn`]
@@ -47,6 +48,9 @@ pub enum TraversingState {
     /// Then transition into [`TraversingState::TraversingOut`]
     DwellingInner,
 
+=======
+    TraversingIn,
+>>>>>>> 8e49141 (Jse control v2 (#1680))
     TraversingOut,
 }
 
@@ -103,9 +107,13 @@ impl qitech_framework::__private::PropertyAdapter for State {
             },
             State::Traversing(state) => match state {
                 TraversingState::GoingOut => "going_out (traverse)",
+<<<<<<< HEAD
                 TraversingState::DwellingOuter => "dwelling_outer",
                 TraversingState::TraversingIn => "traversing_in",
                 TraversingState::DwellingInner => "dwelling_inner",
+=======
+                TraversingState::TraversingIn => "traversing_in",
+>>>>>>> 8e49141 (Jse control v2 (#1680))
                 TraversingState::TraversingOut => "traversing_out",
             },
         }
@@ -133,9 +141,13 @@ impl qitech_framework::__private::PropertyAdapter for State {
             "find_endstop_fine" => State::Homing(HomingState::FindEndstopFine),
 
             "going_out (traverse)" => State::Traversing(TraversingState::GoingOut),
+<<<<<<< HEAD
             "dwelling_outer" => State::Traversing(TraversingState::DwellingOuter),
             "traversing_in" => State::Traversing(TraversingState::TraversingIn),
             "dwelling_inner" => State::Traversing(TraversingState::DwellingInner),
+=======
+            "traversing_in" => State::Traversing(TraversingState::TraversingIn),
+>>>>>>> 8e49141 (Jse control v2 (#1680))
             "traversing_out" => State::Traversing(TraversingState::TraversingOut),
 
             _ => return Err(qitech_framework::__private::ScalarValueTypeMismatchError),

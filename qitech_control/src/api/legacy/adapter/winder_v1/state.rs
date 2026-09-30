@@ -1,7 +1,11 @@
 use qitech_framework::ScalarValue;
 use qitech_framework::machine::MachineDescriptor;
 
+<<<<<<< HEAD
 use crate::api::legacy::types::LegacyMachineIdentificationUnique;
+=======
+use crate::api::legacy::types::MachineIdentificationUnique;
+>>>>>>> 8e49141 (Jse control v2 (#1680))
 use crate::api::legacy::{self};
 use crate::api::types::MachineInstance;
 use crate::machines::LaserV1;
@@ -60,10 +64,14 @@ fn is_homing_state(state: &str) -> bool {
 }
 
 fn is_traversing_state(state: &str) -> bool {
+<<<<<<< HEAD
     matches!(
         state,
         "dwelling_outer" | "traversing_in" | "dwelling_inner" | "traversing_out"
     )
+=======
+    matches!(state, "traversing_in" | "traversing_out")
+>>>>>>> 8e49141 (Jse control v2 (#1680))
 }
 
 pub fn init_state_event(
@@ -86,8 +94,13 @@ pub fn init_state_event(
         .subscriptions
         .iter()
         .find(|ident| ident.machine == LaserV1::IDENTIFICATION)
+<<<<<<< HEAD
         .map(|ident| LegacyMachineIdentificationUnique {
             machine_identification: legacy::types::LegacyMachineIdentification {
+=======
+        .map(|ident| MachineIdentificationUnique {
+            machine_identification: legacy::types::MachineIdentification {
+>>>>>>> 8e49141 (Jse control v2 (#1680))
                 vendor: ident.machine.vendor_id,
                 machine: ident.machine.machine_id,
             },
@@ -110,8 +123,11 @@ pub fn init_state_event(
             "laserpointer": state_bool(instance, "laser_pointer.enabled")?,
             "step_size": config_float(instance, "traverse.step_size")?,
             "padding": config_float(instance, "traverse.padding")?,
+<<<<<<< HEAD
             "edge_dwell_revolutions": config_float(instance, "traverse.edge_dwell_revolutions")?,
             "start_dwell_revolutions": config_float(instance, "traverse.start_dwell_revolutions")?,
+=======
+>>>>>>> 8e49141 (Jse control v2 (#1680))
             "can_go_in": can_traverse,
             "can_go_out": can_traverse,
             "can_go_home": !is_homed,

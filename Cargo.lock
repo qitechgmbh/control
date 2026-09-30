@@ -2281,7 +2281,11 @@ dependencies = [
 [[package]]
 name = "qitech_framework"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+=======
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
+>>>>>>> 8e49141 (Jse control v2 (#1680))
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2309,7 +2313,11 @@ dependencies = [
 [[package]]
 name = "qitech_framework_core"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+=======
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
+>>>>>>> 8e49141 (Jse control v2 (#1680))
 dependencies = [
  "bytes",
  "chrono",
@@ -2329,7 +2337,11 @@ dependencies = [
 [[package]]
 name = "qitech_framework_hub"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+=======
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
+>>>>>>> 8e49141 (Jse control v2 (#1680))
 dependencies = [
  "arc-swap",
  "chrono",
@@ -2344,7 +2356,11 @@ dependencies = [
 [[package]]
 name = "qitech_framework_macros"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+=======
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
+>>>>>>> 8e49141 (Jse control v2 (#1680))
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -2357,7 +2373,11 @@ dependencies = [
 [[package]]
 name = "qitech_framework_tui"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+=======
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
+>>>>>>> 8e49141 (Jse control v2 (#1680))
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2781,9 +2801,15 @@ dependencies = [
 
 [[package]]
 name = "serialport"
+<<<<<<< HEAD
 version = "4.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ba5f8f29aa20853c4e3e85a33ec580eb66be1f057142e77a333834a318bacf2"
+=======
+version = "4.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a2f4ac56b5d3af3c40fbbee17be96d532cba02fa5853926aacdb77d926272ab"
+>>>>>>> 8e49141 (Jse control v2 (#1680))
 dependencies = [
  "bitflags 2.13.1",
  "cfg-if",

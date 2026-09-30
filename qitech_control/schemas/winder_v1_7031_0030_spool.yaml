@@ -50,8 +50,11 @@ config:
     limit_outer: !millimeter
     step_size: !millimeter
     padding: !millimeter
+<<<<<<< HEAD
     edge_dwell_revolutions: !float
     start_dwell_revolutions: !float
+=======
+>>>>>>> 8e49141 (Jse control v2 (#1680))
 
   spool_automatic:
     required_meters: !meter
@@ -87,9 +90,13 @@ state:
       find_endstop_coarse,
       find_endstop_fine,
       validate,
+<<<<<<< HEAD
       dwelling_outer,
       traversing_in,
       dwelling_inner,
+=======
+      traversing_in,
+>>>>>>> 8e49141 (Jse control v2 (#1680))
       traversing_out
     ]
 

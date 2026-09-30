@@ -5,7 +5,11 @@ use qitech_framework::RuntimeRequestKind;
 use qitech_framework::ScalarValue;
 use serde::Deserialize;
 
+<<<<<<< HEAD
 use crate::api::legacy::types::LegacyMachineIdentificationUnique;
+=======
+use crate::api::legacy::types::MachineIdentificationUnique;
+>>>>>>> 8e49141 (Jse control v2 (#1680))
 
 pub fn convert_request(
     ident: MachineInstanceIdentification,
@@ -39,6 +43,7 @@ pub fn convert_request(
             value: ScalarValue::Float(v),
         },
 
+<<<<<<< HEAD
         Mutation::SetTraverseEdgeDwellRevolutions(v) => RuntimeRequestKind::SetConfigProperty {
             target: ident,
             path: "traverse.edge_dwell_revolutions".to_string(),
@@ -51,6 +56,8 @@ pub fn convert_request(
             value: ScalarValue::Float(v),
         },
 
+=======
+>>>>>>> 8e49141 (Jse control v2 (#1680))
         // ------------------------------------------------------------
         // Traverse commands
         // ------------------------------------------------------------
@@ -264,8 +271,12 @@ enum Mutation {
     SetTraverseLimitInner(f64),
     SetTraverseStepSize(f64),
     SetTraversePadding(f64),
+<<<<<<< HEAD
     SetTraverseEdgeDwellRevolutions(f64),
     SetTraverseStartDwellRevolutions(f64),
+=======
+
+>>>>>>> 8e49141 (Jse control v2 (#1680))
     // Traverse commands
     GotoTraverseLimitOuter,
     GotoTraverseLimitInner,
@@ -309,7 +320,11 @@ enum Mutation {
     SetPullerAdaptiveAdjustmentIntervalMeters(f64),
     SetPullerAdaptiveStepPercent(f64),
     SetPullerAdaptiveAcceptedDifference(f64),
+<<<<<<< HEAD
     SetPullerAdaptiveReferenceMachine(Option<LegacyMachineIdentificationUnique>),
+=======
+    SetPullerAdaptiveReferenceMachine(Option<MachineIdentificationUnique>),
+>>>>>>> 8e49141 (Jse control v2 (#1680))
 }
 
 #[derive(Deserialize, Debug, Clone, Default)]

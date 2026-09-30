@@ -39,6 +39,7 @@ pub struct Traverse {
     step_size: ConfigProperty<Length>,
     padding: ConfigProperty<Length>,
 
+<<<<<<< HEAD
     /// Spool revolutions to stay at an edge when reversing: one to finish the
     /// current layer against the flange, one to start the next layer against it.
     edge_dwell_revolutions: ConfigProperty<f64>,
@@ -47,15 +48,20 @@ pub struct Traverse {
     /// there is no previous layer to finish.
     start_dwell_revolutions: ConfigProperty<f64>,
 
+=======
+>>>>>>> 8e49141 (Jse control v2 (#1680))
     // --- state ---
     mode: StateProperty<Mode>,
     state: StateProperty<State>,
     is_homed: StateProperty<bool>,
     endstop_triggered: StateProperty<bool>,
 
+<<<<<<< HEAD
     /// Spool revolutions left before leaving the current edge
     dwell_remaining: f64,
 
+=======
+>>>>>>> 8e49141 (Jse control v2 (#1680))
     // --- measurements ---
     position: Measurement<Length>,
 
@@ -69,9 +75,12 @@ impl Traverse {
     const PORT: usize = 0;
     const PORT_END_STOP: usize = 0;
 
+<<<<<<< HEAD
     /// Upper bound for the configurable dwell revolutions
     const DWELL_REVOLUTIONS_MAX: f64 = 10.0;
 
+=======
+>>>>>>> 8e49141 (Jse control v2 (#1680))
     fn position_tolerance() -> Length {
         Length::new::<millimeter>(0.01)
     }
@@ -151,6 +160,7 @@ impl Traverse {
                 .config::<millimeter>("traverse.padding")
                 .default(0.88)
                 .build()?,
+<<<<<<< HEAD
             edge_dwell_revolutions: ctx
                 .config::<f64>("traverse.edge_dwell_revolutions")
                 .default(2.0)
@@ -163,11 +173,16 @@ impl Traverse {
                 .minimum(0.0)
                 .maximum(Self::DWELL_REVOLUTIONS_MAX)
                 .build()?,
+=======
+>>>>>>> 8e49141 (Jse control v2 (#1680))
             mode: ctx.state::<Mode>("traverse.mode").build()?,
             state: ctx.state::<State>("traverse.state").build()?,
             is_homed: ctx.state::<bool>("traverse.homed").build()?,
             endstop_triggered: ctx.state::<bool>("traverse.endstop_triggered").build()?,
+<<<<<<< HEAD
             dwell_remaining: 0.0,
+=======
+>>>>>>> 8e49141 (Jse control v2 (#1680))
             position: ctx.measurement::<millimeter>("traverse.position").build()?,
 
             // --- converters ---
@@ -217,7 +232,11 @@ impl Traverse {
     pub fn update(&mut self, dt: Duration, spool_speed: AngularVelocity) {
         self.sync();
 
+<<<<<<< HEAD
         if self.update_state(dt, spool_speed)
+=======
+        if self.update_state(dt)
+>>>>>>> 8e49141 (Jse control v2 (#1680))
             && matches!(self.state.get(), State::Homing(HomingState::Validate(_)))
         {
             // set position to zero if we enter validate state
@@ -336,12 +355,20 @@ impl Traverse {
 
 // --- state update ---
 impl Traverse {
+<<<<<<< HEAD
     fn update_state(&mut self, dt: Duration, spool_speed: AngularVelocity) -> bool {
+=======
+    fn update_state(&mut self, dt: Duration) -> bool {
+>>>>>>> 8e49141 (Jse control v2 (#1680))
         let next_state = match self.state.get() {
             State::GoingIn if self.is_near(self.limit_inner.get()) => State::Idle,
             State::GoingOut if self.is_near(self.limit_outer.get()) => State::Idle,
             State::Homing(state) => self.update_state_homing(dt, state),
+<<<<<<< HEAD
             State::Traversing(state) => self.update_state_traversing(dt, state, spool_speed),
+=======
+            State::Traversing(state) => self.update_state_traversing(state),
+>>>>>>> 8e49141 (Jse control v2 (#1680))
             current => current,
         };
 
@@ -389,6 +416,7 @@ impl Traverse {
         State::Homing(homing_state)
     }
 
+<<<<<<< HEAD
     fn update_state_traversing(
         &mut self,
         dt: Duration,
@@ -420,11 +448,25 @@ impl Traverse {
             DwellingOuter if self.dwell(dt, spool_speed) => TraversingIn,
             DwellingInner if self.dwell(dt, spool_speed) => TraversingOut,
 
+=======
+    fn update_state_traversing(&self, state: TraversingState) -> State {
+        let position = self.position.get();
+        let padding = self.padding.get();
+        let limit_outer = self.limit_outer.get();
+        let limit_inner = self.limit_inner.get();
+
+        use TraversingState::*;
+        let traversing_state = match state {
+            GoingOut if position >= limit_outer - padding => TraversingIn,
+            TraversingIn if position <= limit_inner + padding => TraversingOut,
+            TraversingOut if position >= limit_outer - padding => TraversingIn,
+>>>>>>> 8e49141 (Jse control v2 (#1680))
             other => other,
         };
 
         State::Traversing(traversing_state)
     }
+<<<<<<< HEAD
 
     /// Counts down the spool revolutions spent at the current edge.
     ///
@@ -434,6 +476,8 @@ impl Traverse {
         self.dwell_remaining -= revolutions;
         self.dwell_remaining <= 0.0
     }
+=======
+>>>>>>> 8e49141 (Jse control v2 (#1680))
 }
 
 // --- speed computation ---
@@ -499,7 +543,10 @@ impl Traverse {
 
         match state {
             GoingOut => self.speed_towards(outer_target, Self::speed_far()),
+<<<<<<< HEAD
             DwellingOuter | DwellingInner => Velocity::ZERO,
+=======
+>>>>>>> 8e49141 (Jse control v2 (#1680))
             TraversingIn => self.speed_towards(inner_target, traverse_speed),
             TraversingOut => self.speed_towards(outer_target, traverse_speed),
         }

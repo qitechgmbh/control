@@ -88,6 +88,7 @@ impl Listener for SocketIODispatcher {
             dirty_machines.push(ident);
         }
 
+<<<<<<< HEAD
         // --- apply machine additions/removals first, so records of a machine added
         // in this report (e.g. its `Registered` events) are not dropped ---
         for event in &report.events {
@@ -124,6 +125,20 @@ impl Listener for SocketIODispatcher {
         self.state_legacy
             .ns_machines
             .update(|ns| ns.update(report, dirty_machines));
+=======
+        self.state_legacy
+            .ns_machines
+            .update(|ns| ns.update(report, dirty_machines));
+
+        // --- then update the machine list and bus state the frontend renders ---
+        for event in &report.events {
+            if let RuntimeEvent::RemovedMachine { ident } = event {
+                self.state_legacy
+                    .ns_main
+                    .update(|ns| ns.remove_machine(*ident));
+            }
+        }
+>>>>>>> 8e49141 (Jse control v2 (#1680))
     }
 
     fn on_runtime_disconnected(&mut self) {

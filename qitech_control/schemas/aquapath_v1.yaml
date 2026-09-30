@@ -24,7 +24,11 @@ measurements:
 
 state:
   mode_state:
+<<<<<<< HEAD
     mode: !enum [standby, auto]
+=======
+    mode: !enum [standby, pull, hold, wind]
+>>>>>>> 8e49141 (Jse control v2 (#1680))
   is_default_state: !boolean
   left_heating_startup_wait_active: !boolean
   right_heating_startup_wait_active: !boolean
