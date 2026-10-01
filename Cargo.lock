@@ -2802,6 +2802,7 @@ dependencies = [
 [[package]]
 name = "serialport"
 <<<<<<< HEAD
+<<<<<<< HEAD
 version = "4.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ba5f8f29aa20853c4e3e85a33ec580eb66be1f057142e77a333834a318bacf2"
@@ -2810,6 +2811,11 @@ version = "4.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a2f4ac56b5d3af3c40fbbee17be96d532cba02fa5853926aacdb77d926272ab"
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+version = "4.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ba5f8f29aa20853c4e3e85a33ec580eb66be1f057142e77a333834a318bacf2"
+>>>>>>> e296c58 (Build(deps): Bump serialport from 4.10.0 to 4.10.1 (#1707))
 dependencies = [
  "bitflags 2.13.1",
  "cfg-if",
