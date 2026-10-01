@@ -14,8 +14,9 @@ QiTech Control combines the modularity and reliability of standard EtherCAT term
 **[View Full Documentation Wiki](https://github.com/qitechgmbh/control/wiki)**
 
 - [Getting Started](https://github.com/qitechgmbh/control/wiki/Getting-Started)
-- [Architecture Overview](https://github.com/qitechgmbh/control/wiki/Architecture-Overview)
-- [REST API Reference](https://github.com/qitechgmbh/control/wiki/Rest-Api)
+- [Architecture](https://github.com/qitechgmbh/control/wiki/Architecture)
+- [API Reference](https://github.com/qitechgmbh/control/wiki/API)
+- [Adding a Machine](https://github.com/qitechgmbh/control/wiki/Adding-A-Machine)
 
 ## Videos
 
@@ -38,18 +39,13 @@ QiTech Control combines the modularity and reliability of standard EtherCAT term
 **Frontend:** [Electron](https://www.electronjs.org/) + [React](https://react.dev/) with [Shadcn](https://ui.shadcn.com/) components and [Tailwind](https://tailwindcss.com/) styling
 
 
-## Hardware Examples
+## Hardware
 
-QiTech Control supports a wide range of EtherCAT hardware from WAGO and Beckhoff. We provide complete step-by-step tutorials with wiring diagrams and software configuration for many common modules.
+QiTech Control uses standard EtherCAT terminals from WAGO, Beckhoff and others, plus Modbus RTU devices.
 
-**[View all hardware examples and tutorials on the wiki](https://github.com/qitechgmbh/control/wiki/Hardware-Examples)**
-
-Quick links to popular examples:
-- [EL2004 - LED Control](https://github.com/qitechgmbh/control/wiki/Minimal-Example-El2004) (simplest setup for beginners)
-- [EL3021 - Analog Input](https://github.com/qitechgmbh/control/wiki/Minimal-Example-El3021)
-- [EL7031 - Stepper Motor Control](https://github.com/qitechgmbh/control/wiki/Minimal-Example-El7031-Motor)
-- [WAGO 750-402 - Digital Input](https://github.com/qitechgmbh/control/wiki/Minimal-Example-Wago750-402)
-- [WAGO 750-455 - Analog Input](https://github.com/qitechgmbh/control/wiki/Minimal-Example-Wago-750-455)
+Terminal drivers and minimal hardware examples live in the libraries:
+- [Supported terminals](https://github.com/qitechgmbh/qitech_lib/tree/main/ethercat_hal/src/devices) (driver sources by vendor), the [EtherCAT HAL](https://github.com/qitechgmbh/qitech_lib/wiki/EtherCAT-HAL) overview and [Writing a device driver](https://github.com/qitechgmbh/qitech_lib/wiki/Device-Drivers) (qitech_lib)
+- [Minimal example: EL2004 digital output](https://github.com/qitechgmbh/qitech_framework/wiki/Minimal-Example-Digital-Output-Video-Script) and [WAGO 750 digital I/O](https://github.com/qitechgmbh/qitech_framework/wiki/Minimal-Example-Wago-Digital-IO) (qitech_framework)
 
 ## QiTech Machines
 
@@ -60,7 +56,7 @@ QiTech Control powers 10+ production machines for filament extrusion, winding, m
 
 ## Contributing
 
-This is an open-source project. Contributions are welcome! Please see the [wiki](https://github.com/qitechgmbh/control/wiki) for development guidelines.
+This is an open-source project. Contributions are welcome! Please see [Contributing](https://github.com/qitechgmbh/control/wiki/Contributing) for development guidelines.
 
 
 
