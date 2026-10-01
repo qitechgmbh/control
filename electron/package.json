@@ -92,10 +92,14 @@
     "@tanstack/react-table": "^8.21.2",
     "@tanstack/router-devtools": "^1.167.2",
 <<<<<<< HEAD
+<<<<<<< HEAD
     "@vitejs/plugin-react": "^6.0.5",
 =======
     "@vitejs/plugin-react": "^6.0.4",
 >>>>>>> ba96508 (Build(deps): Bump @tanstack/router-devtools in /electron (#1710))
+=======
+    "@vitejs/plugin-react": "^6.0.5",
+>>>>>>> 9d14e0c (Build(deps): Bump @vitejs/plugin-react from 6.0.4 to 6.0.5 in /electron (#1709))
     "babel-plugin-react-compiler": "^1.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
