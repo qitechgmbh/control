@@ -2281,7 +2281,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2309,7 +2309,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_core"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
 dependencies = [
  "bytes",
  "chrono",
@@ -2329,7 +2329,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_hub"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
 dependencies = [
  "arc-swap",
  "chrono",
@@ -2344,7 +2344,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_macros"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -2357,7 +2357,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_tui"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
 dependencies = [
  "anyhow",
  "bitvec",

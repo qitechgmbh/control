@@ -53,6 +53,6 @@ pub struct ModbusDevicesEvent {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MachineObj {
-    pub machine_identification_unique: legacy::MachineIdentificationUnique,
+    pub machine_identification_unique: legacy::LegacyMachineIdentificationUnique,
     pub error: Option<String>,
 }

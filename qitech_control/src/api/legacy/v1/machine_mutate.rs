@@ -5,18 +5,17 @@ use axum::extract::State;
 use axum::response::Response as AxumResponse;
 use qitech_framework::MachineIdentification;
 use qitech_framework::MachineInstanceIdentification;
-use qitech_framework_hub::ActorContext;
 use serde::Deserialize;
 use serde::Serialize;
-use tokio::sync::mpsc;
 
+use crate::api::legacy::LegacyApiState;
 use crate::api::legacy::adapter;
-use crate::api::legacy::types::MachineIdentificationUnique;
-use crate::api::legacy::v1::response_util::ResponseUtil;
+use crate::api::legacy::response_util::ResponseUtil;
+use crate::api::legacy::types::LegacyMachineIdentificationUnique;
 
 #[derive(Debug, Deserialize)]
 pub struct Request {
-    pub machine_identification_unique: MachineIdentificationUnique,
+    pub machine_identification_unique: LegacyMachineIdentificationUnique,
     pub data: serde_json::Value,
 }
 
@@ -43,7 +42,7 @@ impl MutationResponse {
 }
 
 pub async fn post(
-    State(state): State<(ActorContext, mpsc::Sender<MachineInstanceIdentification>)>,
+    State(state): State<LegacyApiState>,
     Json(body): Json<Request>,
 ) -> AxumResponse {
     let ident = MachineInstanceIdentification {
@@ -74,9 +73,9 @@ pub async fn post(
     // Sequential, fail-fast: a compound legacy mutation (e.g. autotune start) may need its writes
     // applied in order before a later request in the batch depends on them.
     for request in requests {
-        state.1.send(ident).await.expect("pray");
+        state.machines_dirty_tx.send(ident).await.expect("pray");
 
-        match state.0.send_request(request).await {
+        match state.ctx.send_request(request).await {
             Ok(Ok(())) => {}
 
             Ok(Err(error)) => {

@@ -157,8 +157,8 @@ impl MainNamespaceManager {
         self.machines.insert(
             ident,
             MachineObj {
-                machine_identification_unique: legacy::MachineIdentificationUnique {
-                    machine_identification: legacy::types::MachineIdentification {
+                machine_identification_unique: legacy::LegacyMachineIdentificationUnique {
+                    machine_identification: legacy::types::LegacyMachineIdentification {
                         vendor: ident.machine.vendor_id,
                         machine: ident.machine.machine_id,
                     },
