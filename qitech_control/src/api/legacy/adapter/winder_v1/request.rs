@@ -6,10 +6,14 @@ use qitech_framework::ScalarValue;
 use serde::Deserialize;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 use crate::api::legacy::types::LegacyMachineIdentificationUnique;
 =======
 use crate::api::legacy::types::MachineIdentificationUnique;
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+use crate::api::legacy::types::LegacyMachineIdentificationUnique;
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
 
 pub fn convert_request(
     ident: MachineInstanceIdentification,
@@ -281,6 +285,7 @@ enum Mutation {
 <<<<<<< HEAD
     SetTraverseEdgeDwellRevolutions(f64),
     SetTraverseStartDwellRevolutions(f64),
+<<<<<<< HEAD
 =======
 =======
     SetTraverseEdgeDwellRevolutions(f64),
@@ -288,6 +293,8 @@ enum Mutation {
 >>>>>>> 7e7b9ac (add configurable traverse dwell revolutions to winder v2)
 
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
     // Traverse commands
     GotoTraverseLimitOuter,
     GotoTraverseLimitInner,
@@ -332,10 +339,14 @@ enum Mutation {
     SetPullerAdaptiveStepPercent(f64),
     SetPullerAdaptiveAcceptedDifference(f64),
 <<<<<<< HEAD
+<<<<<<< HEAD
     SetPullerAdaptiveReferenceMachine(Option<LegacyMachineIdentificationUnique>),
 =======
     SetPullerAdaptiveReferenceMachine(Option<MachineIdentificationUnique>),
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+    SetPullerAdaptiveReferenceMachine(Option<LegacyMachineIdentificationUnique>),
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
 }
 
 #[derive(Deserialize, Debug, Clone, Default)]

@@ -16,10 +16,14 @@ use qitech_framework::machine::OperationCapability;
 pub struct SharedState {
     pub schemas: Swappable<HashMap<MachineIdentification, MachineSchema>>,
 <<<<<<< HEAD
+<<<<<<< HEAD
     // pub machines: Swappable<HashMap<MachineInstanceIdentification, MachineInstance>>,
 =======
     pub machines: Swappable<HashMap<MachineInstanceIdentification, MachineInstance>>,
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+    // pub machines: Swappable<HashMap<MachineInstanceIdentification, MachineInstance>>,
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
 }
 
 #[derive(Default, Clone)]
@@ -39,10 +43,15 @@ pub struct ConfigPropertyInfo {
     pub capability: OperationCapability,
     pub constraints: Constraints,
 <<<<<<< HEAD
+<<<<<<< HEAD
 
     #[allow(unused)]
 =======
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+
+    #[allow(unused)]
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
     pub records: Vec<ConfigPropertyEventRecord>,
 }
 
@@ -50,10 +59,15 @@ pub struct ConfigPropertyInfo {
 pub struct StatePropertyInfo {
     pub value: ScalarValue,
 <<<<<<< HEAD
+<<<<<<< HEAD
 
     #[allow(unused)]
 =======
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+
+    #[allow(unused)]
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
     pub records: Vec<StatePropertyEventRecord>,
 }
 

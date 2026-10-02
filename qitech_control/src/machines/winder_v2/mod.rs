@@ -1,8 +1,11 @@
 use std::time::Duration;
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 use std::time::Instant;
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
 
 use qitech_framework::MachineIdentification;
 use qitech_framework::MachineInstanceIdentification;
@@ -184,10 +187,13 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
 pub struct SpoolAutomaticAction {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     pub progress: Length,
     progress_last_check: Instant,
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
     pub target_length: ConfigProperty<Length>,
     pub mode: ConfigProperty<AutomaticActionSpoolAction>,
 }
