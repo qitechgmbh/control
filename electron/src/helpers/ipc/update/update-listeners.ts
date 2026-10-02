@@ -13,7 +13,10 @@ import {
   UPDATE_LOAD_TOKEN_FILE,
   UPDATE_HAS_TOKEN,
   UPDATE_CLEAR_TOKEN,
+  UPDATE_CHECK_LATEST_RELEASE,
 } from "./update-channels";
+import { environmentInfo } from "../environment/environment-listeners";
+import { findNewerStableRelease, isStableRelease } from "./semver";
 import { spawn, ChildProcess } from "child_process";
 import tkill from "@jub3i/tree-kill";
 import { existsSync, readFileSync, rmSync } from "fs";
@@ -73,6 +76,30 @@ export function addUpdateEventListeners() {
           UPDATE_FETCH_CHANGELOG_RECV,
           `get update changelog failed: ${error}`,
         );
+      }
+    },
+  );
+
+  ipcMain.handle(
+    UPDATE_CHECK_LATEST_RELEASE,
+    async (_event, source: GithubSource) => {
+      const current = environmentInfo.qitechOsGitAbbreviation;
+      // Only machines installed from a stable release get prompted
+      if (!isStableRelease(current)) {
+        return { current, latest: null };
+      }
+      try {
+        const { tags } = await fetchTargets(
+          source.githubRepoOwner,
+          source.githubRepoName,
+        );
+        const latest = findNewerStableRelease(
+          current,
+          tags.map((tag) => tag.name),
+        );
+        return { current, latest };
+      } catch (error: any) {
+        return { error: `check latest release failed: ${error}` };
       }
     },
   );
