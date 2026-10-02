@@ -5,7 +5,7 @@ use qitech_framework::RuntimeRequestKind;
 use qitech_framework::ScalarValue;
 use serde::Deserialize;
 
-use crate::api::legacy::types::MachineIdentificationUnique;
+use crate::api::legacy::types::LegacyMachineIdentificationUnique;
 
 pub fn convert_request(
     ident: MachineInstanceIdentification,
@@ -266,7 +266,6 @@ enum Mutation {
     SetTraversePadding(f64),
     SetTraverseEdgeDwellRevolutions(f64),
     SetTraverseStartDwellRevolutions(f64),
-
     // Traverse commands
     GotoTraverseLimitOuter,
     GotoTraverseLimitInner,
@@ -310,7 +309,7 @@ enum Mutation {
     SetPullerAdaptiveAdjustmentIntervalMeters(f64),
     SetPullerAdaptiveStepPercent(f64),
     SetPullerAdaptiveAcceptedDifference(f64),
-    SetPullerAdaptiveReferenceMachine(Option<MachineIdentificationUnique>),
+    SetPullerAdaptiveReferenceMachine(Option<LegacyMachineIdentificationUnique>),
 }
 
 #[derive(Deserialize, Debug, Clone, Default)]

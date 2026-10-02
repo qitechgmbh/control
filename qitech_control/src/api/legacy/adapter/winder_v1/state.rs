@@ -1,7 +1,7 @@
 use qitech_framework::ScalarValue;
 use qitech_framework::machine::MachineDescriptor;
 
-use crate::api::legacy::types::MachineIdentificationUnique;
+use crate::api::legacy::types::LegacyMachineIdentificationUnique;
 use crate::api::legacy::{self};
 use crate::api::types::MachineInstance;
 use crate::machines::LaserV1;
@@ -86,8 +86,8 @@ pub fn init_state_event(
         .subscriptions
         .iter()
         .find(|ident| ident.machine == LaserV1::IDENTIFICATION)
-        .map(|ident| MachineIdentificationUnique {
-            machine_identification: legacy::types::MachineIdentification {
+        .map(|ident| LegacyMachineIdentificationUnique {
+            machine_identification: legacy::types::LegacyMachineIdentification {
                 vendor: ident.machine.vendor_id,
                 machine: ident.machine.machine_id,
             },

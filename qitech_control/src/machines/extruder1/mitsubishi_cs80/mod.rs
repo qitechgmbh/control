@@ -280,7 +280,6 @@ pub struct MitsubishiCS80Status {
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct MotorStatus {
-    pub rpm: AngularVelocity,
     pub frequency: Frequency,
     pub current: ElectricCurrent,
     pub voltage: ElectricPotential,
@@ -291,7 +290,6 @@ pub struct MitsubishiCS80 {
     // Communication
     pub status: MitsubishiCS80Status,
     pub motor_status: MotorStatus,
-    pub last_ts: Instant,
     modbus_serial_interface: ModbusSerialInterface,
 }
 
@@ -302,6 +300,7 @@ pub enum RequestType {
     OperationCommand,
     /// Parameter Read/Write and Frequency (EEPROM), Less than 30 milliseconds timeout for Response
     ReadWrite,
+    #[allow(unused)]
     /// Less than 5 seconds timeout for Response
     ParamClear,
     /// Supposedly no waiting time, however inverter takes a while to start ~300ms should be more than enough
@@ -348,7 +347,6 @@ impl MitsubishiCS80Request {
 impl MitsubishiCS80 {
     pub fn new() -> Self {
         Self {
-            last_ts: Instant::now(),
             motor_status: MotorStatus::default(),
             status: MitsubishiCS80Status::default(),
             modbus_serial_interface: ModbusSerialInterface::new(),
