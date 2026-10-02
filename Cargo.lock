@@ -2282,10 +2282,14 @@ dependencies = [
 name = "qitech_framework"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
 =======
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+>>>>>>> 7c73662 (implement preop and hot plugging)
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2314,10 +2318,14 @@ dependencies = [
 name = "qitech_framework_core"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
 =======
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+>>>>>>> 7c73662 (implement preop and hot plugging)
 dependencies = [
  "bytes",
  "chrono",
@@ -2338,10 +2346,14 @@ dependencies = [
 name = "qitech_framework_hub"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
 =======
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+>>>>>>> 7c73662 (implement preop and hot plugging)
 dependencies = [
  "arc-swap",
  "chrono",
@@ -2357,10 +2369,14 @@ dependencies = [
 name = "qitech_framework_macros"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
 =======
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+>>>>>>> 7c73662 (implement preop and hot plugging)
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -2374,10 +2390,14 @@ dependencies = [
 name = "qitech_framework_tui"
 version = "0.1.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
 =======
 source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=c667225471e6c5483067839d6f02e914ff96fb39#c667225471e6c5483067839d6f02e914ff96fb39"
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+>>>>>>> 7c73662 (implement preop and hot plugging)
 dependencies = [
  "anyhow",
  "bitvec",

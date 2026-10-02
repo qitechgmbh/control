@@ -22,6 +22,7 @@ qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="7a92e9
 
 # --- framework ---
 <<<<<<< HEAD
+<<<<<<< HEAD
 qitech_framework = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="e04aef71d840013e7705ef64cebe1a71a8e5be4e" }
 qitech_framework_tui = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="e04aef71d840013e7705ef64cebe1a71a8e5be4e" }
 qitech_framework_hub = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="e04aef71d840013e7705ef64cebe1a71a8e5be4e" }
@@ -30,6 +31,11 @@ qitech_framework = { git = "https://github.com/qitechgmbh/qitech_framework.git",
 qitech_framework_tui = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="c667225471e6c5483067839d6f02e914ff96fb39" }
 qitech_framework_hub = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="c667225471e6c5483067839d6f02e914ff96fb39" }
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+qitech_framework = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="e04aef71d840013e7705ef64cebe1a71a8e5be4e" }
+qitech_framework_tui = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="e04aef71d840013e7705ef64cebe1a71a8e5be4e" }
+qitech_framework_hub = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="e04aef71d840013e7705ef64cebe1a71a8e5be4e" }
+>>>>>>> 7c73662 (implement preop and hot plugging)
 
 # --- external ---
 tokio = "1"
