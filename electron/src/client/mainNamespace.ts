@@ -82,6 +82,43 @@ export const machinesEventSchema = eventSchema(machinesEventDataSchema);
 
 export type MachinesEvent = z.infer<typeof machinesEventSchema>;
 
+export const modbusDeviceAssignmentSchema = z.object({
+  machine_identification_unique: machineIdentificationUnique,
+  slave_id: z.number().int(),
+});
+
+export type ModbusDeviceAssignment = z.infer<
+  typeof modbusDeviceAssignmentSchema
+>;
+
+export const modbusDeviceSchema = z.object({
+  port: z.string(),
+  present: z.boolean(),
+  device_node: z.string().nullable(),
+  by_id: z.string().nullable(),
+  description: z.string().nullable(),
+  usb_vid: z.number().int().nullable(),
+  usb_pid: z.number().int().nullable(),
+  usb_serial: z.string().nullable(),
+  assignment: modbusDeviceAssignmentSchema.nullable(),
+});
+
+export type ModbusDevice = z.infer<typeof modbusDeviceSchema>;
+
+export const modbusDevicesEventDataSchema = z.object({
+  devices: z.array(modbusDeviceSchema),
+});
+
+export type ModbusDevicesEventData = z.infer<
+  typeof modbusDevicesEventDataSchema
+>;
+
+export const modbusDevicesEventSchema = eventSchema(
+  modbusDevicesEventDataSchema,
+);
+
+export type ModbusDevicesEvent = z.infer<typeof modbusDevicesEventSchema>;
+
 export const ethercatInterfaceDiscoveryEventDataSchema = z
   .object({
     Discovering: z.boolean(),
@@ -106,6 +143,7 @@ export const mainNamespaceStoreSchema = z.object({
   ethercatState: ethercatStateEventSchema.nullable(),
   machines: machinesEventSchema.nullable(),
   ethercatInterfaceDiscovery: ethercatInterfaceDiscoveryEventSchema.nullable(),
+  modbusDevices: modbusDevicesEventSchema.nullable(),
   isIntentionalPreop: z.boolean(),
 });
 
@@ -117,6 +155,7 @@ export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
     ethercatState: null,
     machines: null,
     ethercatInterfaceDiscovery: null,
+    modbusDevices: null,
     isIntentionalPreop: false,
   }));
 };
@@ -125,6 +164,7 @@ export const eventSchemaMap = {
   EthercatDevicesEvent: ethercatDevicesEventSchema,
   EthercatStateEvent: ethercatStateEventSchema,
   MachinesEvent: machinesEventSchema,
+  ModbusDevicesEvent: modbusDevicesEventSchema,
 };
 
 export function mainMessageHandler(
@@ -202,6 +242,11 @@ export function mainMessageHandler(
         store.setState((state) => ({
           ...state,
           ethercatInterfaceDiscovery: event,
+        }));
+      } else if (eventName === "ModbusDevicesEvent") {
+        store.setState((state) => ({
+          ...state,
+          modbusDevices: event,
         }));
       } else {
         handleUnhandledEventError(eventName);

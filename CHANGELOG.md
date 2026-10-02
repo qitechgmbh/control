@@ -1,3 +1,24 @@
+# `4.0.0-rc1`
+_25.09.2026_
+
+This is the first release candidate of QiTech Control 4.0. The backend has been rewritten from the ground up on top of the new QiTech Framework, which now owns the EtherCAT and Modbus runtime, machine lifecycle, and configuration. Machines are described by schemas and run as isolated controllers, so a failing machine or device no longer takes the rest of the system down with it. The existing frontend keeps working through a compatibility layer. As this is a release candidate, please report any issues you run into.
+
+## Breaking Changes
+- **General**: Only the following machines are supported in this release candidate: Winder, Extruder V1, Extruder V2, Aquapath and Laser. Dryer & Rewinder are not available yet.
+- **Laser**: The laser is no longer detected automatically. Its serial port now has to be assigned once in the new Modbus page in the setup.
+- **ModBus**: You can now use multiple ModBus devices, via Modbus RTU.
+
+## General
+- Backend rebuilt on QiTech Framework and QiTech Lib. `qitech_control` has been rewritten, and `control-core`, `machine_implementations` and `utils` are replaced by `qitech_control` and `qitech_control_core`
+- Machine configuration is now defined by per-machine schemas
+- Legacy compatibility layer so the existing frontend works unchanged with the new backend
+- [#1639](https://github.com/qitechgmbh/control/pull/1639) Added Modbus RTU device discovery and a Modbus page in the setup to assign devices to serial ports
+- [#1657](https://github.com/qitechgmbh/control/pull/1657) A machine whose controller fails is now removed from the machine list, and the frontend shows a message if the connection to the runtime is lost
+- Fixed flickering values in the frontend
+- Newly connected clients now immediately receive the current machine state
+
+**Full Changelog**: https://github.com/qitechgmbh/control/compare/3.2.0...4.0.0-rc1
+
 # `3.2.0`
 _25.09.2026_
 

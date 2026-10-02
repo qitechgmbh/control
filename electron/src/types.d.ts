@@ -43,6 +43,9 @@ interface UpdateContext {
   fetchTargets: (source: GithubSource) => Promise<void>;
   fetchChangelog: (source: GithubSource, ref: string) => Promise<void>;
   cancel: () => Promise<{ success: boolean; error?: string }>;
+  checkLatestRelease: (
+    source: GithubSource,
+  ) => Promise<{ current?: string; latest: string | null } | { error: string }>;
   onLog: (callback: (log: string) => void) => void;
   onEnd: (
     callback: (params: { success: boolean; error?: string }) => void,

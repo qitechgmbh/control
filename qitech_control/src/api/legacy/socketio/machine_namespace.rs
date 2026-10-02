@@ -1,0 +1,345 @@
+use std::collections::HashMap;
+
+use qitech_framework::ConfigPropertyEvent;
+use qitech_framework::ConfigPropertyWriteOutcome;
+use qitech_framework::MachineIdentification;
+use qitech_framework::MachineInstanceIdentification;
+use qitech_framework::MachineSchema;
+use qitech_framework::RuntimeEvent;
+use qitech_framework::RuntimeReport;
+use qitech_framework::StatePropertyEvent;
+use socketioxide::extract::SocketRef;
+
+use crate::api::legacy::adapter;
+use crate::api::legacy::socketio::events::SocketIOEvent;
+use crate::api::types::ConfigPropertyInfo;
+use crate::api::types::MachineInstance;
+use crate::api::types::MeasurementInfo;
+use crate::api::types::StatePropertyInfo;
+
+#[derive(Default, Clone)]
+pub struct MachineNamespaceManager {
+    pub(crate) registry: HashMap<MachineInstanceIdentification, Entry>,
+}
+
+impl MachineNamespaceManager {
+    pub fn register(&mut self, ident: MachineInstanceIdentification, schema: &MachineSchema) {
+        if self.registry.contains_key(&ident) {
+            return;
+        }
+
+        let mut config_properties = HashMap::new();
+        for name in schema.config_properties.keys() {
+            config_properties.insert(name.clone(), None);
+        }
+
+        let mut state_properties = HashMap::new();
+        for name in schema.state_properties.keys() {
+            state_properties.insert(name.clone(), None);
+        }
+
+        let mut measurements = HashMap::new();
+        for name in schema.measurements.keys() {
+            measurements.insert(name.clone(), None);
+        }
+
+        self.registry.insert(
+            ident,
+            Entry {
+                sockets: Default::default(),
+                instance: MachineInstance {
+                    config_properties,
+                    state_properties,
+                    measurements,
+                    ..Default::default()
+                },
+                emitted_default_state: false,
+                emit_state: false,
+            },
+        );
+    }
+
+    pub fn unregister(&mut self, ident: MachineInstanceIdentification) {
+        let Some(entry) = self.registry.remove(&ident) else {
+            // no machine registered under that uid
+            return;
+        };
+
+        // --- drop the sockets, so reconnects get rejected by `add_socket` ---
+        for socket in entry.sockets {
+            if let Err(e) = socket.disconnect() {
+                tracing::error!("Failed to disconnect socket for {ident}: {e}");
+            }
+        }
+    }
+
+    pub fn update(
+        &mut self,
+        report: &RuntimeReport,
+        dirty_machines: Vec<MachineInstanceIdentification>,
+    ) {
+        for ident in dirty_machines {
+            let Some(entry) = self.registry.get_mut(&ident) else {
+                // no machine registered under that uid
+                continue;
+            };
+
+            entry.emit_state = true;
+        }
+
+        for record in &report.machines.config_property_records {
+            let Some(entry) = self.registry.get_mut(&record.machine) else {
+                // no machine registered under that uid
+                continue;
+            };
+
+            let Some(info) = entry.instance.config_properties.get_mut(&record.path) else {
+                // not defined in schema
+                continue;
+            };
+
+            entry.emit_state = true;
+
+            if let ConfigPropertyEvent::Registered {
+                default,
+                capability,
+                constraints,
+            } = record.event.clone()
+            {
+                *info = Some(ConfigPropertyInfo {
+                    value: default.clone(),
+                    default,
+                    capability,
+                    constraints,
+                    records: Vec::default(),
+                });
+
+                continue;
+            }
+
+            let Some(info) = info.as_mut() else {
+                tracing::warn!(
+                    machine = %record.machine,
+                    path = ?record.path,
+                    "config property event received before registration"
+                );
+                continue;
+            };
+
+            match record.event.clone() {
+                ConfigPropertyEvent::Registered { .. } => {
+                    unreachable!()
+                }
+
+                ConfigPropertyEvent::DefaultChanged(value) => {
+                    info.default = value;
+                }
+
+                ConfigPropertyEvent::CapabilityChanged(value) => {
+                    info.capability = value;
+                }
+
+                ConfigPropertyEvent::ConstraintsChanged(value) => {
+                    info.constraints = value;
+                }
+
+                ConfigPropertyEvent::Written { value, outcome, .. } => {
+                    if !matches!(
+                        outcome,
+                        ConfigPropertyWriteOutcome::Accepted { changed: true }
+                    ) {
+                        continue;
+                    }
+
+                    info.value = value;
+                }
+            }
+        }
+
+        for record in &report.machines.state_property_records {
+            let Some(entry) = self.registry.get_mut(&record.machine) else {
+                // no machine registered under that uid
+                continue;
+            };
+
+            let Some(info) = entry.instance.state_properties.get_mut(&record.path) else {
+                // not defined in schema
+                continue;
+            };
+
+            entry.emit_state = true;
+
+            if let StatePropertyEvent::Registered { value } = record.event.clone() {
+                *info = Some(StatePropertyInfo {
+                    value,
+                    records: Default::default(),
+                });
+
+                continue;
+            }
+
+            match record.event.clone() {
+                StatePropertyEvent::Registered { value }
+                | StatePropertyEvent::ValueChanged { value } => {
+                    *info = Some(StatePropertyInfo {
+                        value,
+                        records: Default::default(),
+                    })
+                }
+            }
+        }
+
+        for snapshot in &report.machines.measurement_snapshots {
+            let Some(entry) = self.registry.get_mut(&snapshot.machine) else {
+                // no machine registered under that uid
+                continue;
+            };
+
+            let Some(info) = entry.instance.measurements.get_mut(&snapshot.path) else {
+                // not defined in schema
+                continue;
+            };
+
+            *info = Some(MeasurementInfo {
+                value: snapshot.value,
+            });
+        }
+
+        for event in &report.events {
+            match event {
+                // registration is handled by the dispatcher before `update` is called
+                RuntimeEvent::AddedMachine { .. } | RuntimeEvent::RemovedMachine { .. } => {}
+
+                RuntimeEvent::SubscriptionAdded {
+                    provider,
+                    subscriber,
+                    ..
+                } => {
+                    let Some(entry) = self.registry.get_mut(subscriber) else {
+                        // no machine registered under that id
+                        continue;
+                    };
+
+                    entry.instance.subscriptions.insert(*provider);
+                }
+
+                RuntimeEvent::SubscriptionRemoved {
+                    provider,
+                    subscriber,
+                } => {
+                    let Some(entry) = self.registry.get_mut(subscriber) else {
+                        // no machine registered under that id
+                        continue;
+                    };
+
+                    entry.instance.subscriptions.remove(provider);
+                }
+            }
+        }
+
+        for (ident, entry) in &mut self.registry {
+            let Some(adapter) = adapter::get(ident.machine) else {
+                continue;
+            };
+
+            // --- emit state event ---
+            if entry.emit_state
+                && let Some(data) =
+                    (adapter.init_state_event)(&entry.instance, !entry.emitted_default_state)
+            {
+                let event = SocketIOEvent::new("StateEvent", data);
+                Self::broadcast(&mut entry.sockets, event);
+                entry.emitted_default_state = true;
+                entry.emit_state = false;
+            }
+
+            // --- emit live values ---
+            if let Some(data) = (adapter.init_measurements_event)(&entry.instance) {
+                let event = SocketIOEvent::new("LiveValuesEvent", data);
+                Self::broadcast(&mut entry.sockets, event);
+            }
+        }
+    }
+
+    pub fn add_socket(&mut self, socket: SocketRef) {
+        let ident = match machine_namespace_path_to_ident(socket.ns()) {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::error!("Failed to parse NamespaceId: {}", e);
+
+                if let Err(e) = socket.disconnect() {
+                    tracing::error!("Failed to disconnect Socket: {}", e);
+                }
+
+                return;
+            }
+        };
+
+        let Some(entry) = self.registry.get_mut(&ident) else {
+            tracing::error!("Failed to add socket {ident}: No such machine");
+
+            if let Err(e) = socket.disconnect() {
+                tracing::error!("Failed to disconnect Socket: {}", e);
+            }
+
+            return;
+        };
+
+        tracing::info!("Adding new main namespace socket!");
+
+        // --- store the socket ---
+        entry.sockets.push(socket);
+        entry.emit_state = true;
+    }
+
+    fn broadcast(sockets: &mut Vec<SocketRef>, event: SocketIOEvent) {
+        sockets.retain(|socket| {
+            match socket.emit("event", &event) {
+                Ok(()) => true,
+
+                // should not happen
+                Err(socketioxide::SendError::Serialize(err)) => {
+                    panic!("Who fucked up the payload?: {err}");
+                }
+
+                // channel full or disconnected
+                Err(socketioxide::SendError::Socket(_)) => false,
+            }
+        });
+    }
+}
+
+#[derive(Default, Clone)]
+pub struct Entry {
+    pub(crate) sockets: Vec<SocketRef>,
+    pub(crate) instance: MachineInstance,
+    pub(crate) emitted_default_state: bool,
+    pub(crate) emit_state: bool,
+}
+
+pub fn machine_namespace_path_to_ident(s: &str) -> Result<MachineInstanceIdentification, String> {
+    if let Some(machine_path) = s.strip_prefix("/machine/") {
+        let parts: Vec<&str> = machine_path.split('/').collect();
+        if parts.len() == 3 {
+            let vendor_id = parts[0]
+                .parse::<u16>()
+                .map_err(|_| "Invalid vendor id".to_string())?;
+            let machine_id = parts[1]
+                .parse::<u16>()
+                .map_err(|_| "Invalid machine id".to_string())?;
+            let serial = parts[2]
+                .parse::<u16>()
+                .map_err(|_| "Invalid serial id".to_string())?;
+
+            return Ok(MachineInstanceIdentification {
+                machine: MachineIdentification {
+                    vendor_id,
+                    machine_id,
+                },
+                serial,
+            });
+        }
+    }
+
+    Err(format!("Invalid namespace path: {}", s))
+}

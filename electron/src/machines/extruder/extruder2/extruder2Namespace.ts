@@ -111,6 +111,8 @@ export const extruderSettingsStateSchema = z.object({
   pressure_limit: z.number(),
   pressure_limit_enabled: z.boolean(),
   nozzle_temperature_target_enabled: z.boolean(),
+  /** Temperature every heated zone must reach before Extrude mode is permitted. */
+  min_extrusion_temperature: z.number(),
 });
 
 /**
@@ -302,7 +304,6 @@ export function extruder2MessageHandler(
 
     try {
       if (eventName === "StateEvent") {
-        console.log(event);
         const stateEvent = stateEventSchema.parse(event);
         const timestamp = event.ts;
         const nextTargetPressure = stateEvent.data.pressure_state.target_bar;

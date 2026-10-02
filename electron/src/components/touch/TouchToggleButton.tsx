@@ -50,7 +50,7 @@ export function ToggleButton({
         )}
         {label}
         <span className="rounded-full bg-black/10 px-2 py-0.5 text-sm font-semibold">
-          {enabled ? "Enabled" : "Disabled"}
+          {enabled ? "ON" : "OFF"}
         </span>
       </div>
     </Button>

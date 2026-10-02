@@ -347,7 +347,6 @@ export function aquapath1MessageHandler(
       // Live values events (time-series data)
       else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
-
         updateStore((state) => ({
           ...state,
           left_temperature: addTemperature1(state.left_temperature, {
