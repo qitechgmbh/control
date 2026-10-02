@@ -41,10 +41,7 @@ impl MutationResponse {
     }
 }
 
-pub async fn post(
-    State(state): State<LegacyApiState>,
-    Json(body): Json<Request>,
-) -> AxumResponse {
+pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>) -> AxumResponse {
     let ident = MachineInstanceIdentification {
         machine: MachineIdentification {
             vendor_id: body

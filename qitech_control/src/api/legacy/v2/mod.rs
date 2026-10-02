@@ -31,9 +31,7 @@ pub fn router() -> Router<LegacyApiState> {
         .merge(make_machine_router(LaserV1::IDENTIFICATION))
 }
 
-fn make_machine_router(
-    id: MachineIdentification,
-) -> Router<LegacyApiState> {
+fn make_machine_router(id: MachineIdentification) -> Router<LegacyApiState> {
     let slug = slug(id);
     let path = format!("/machine/{slug}/{{serial}}");
 

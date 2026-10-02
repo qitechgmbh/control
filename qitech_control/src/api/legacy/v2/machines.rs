@@ -17,9 +17,7 @@ pub struct Response {
     machines: Vec<MachineEntry>,
 }
 
-pub async fn get(
-    State(LegacyApiState { ctx, .. }): State<LegacyApiState>,
-) -> Result<Response> {
+pub async fn get(State(LegacyApiState { ctx, .. }): State<LegacyApiState>) -> Result<Response> {
     let machines: Vec<_> = ctx
         .machines
         .load()

@@ -7,10 +7,10 @@ use serde::Serialize;
 
 use crate::api::legacy::LegacyApiState;
 use crate::api::legacy::adapter;
-use crate::api::legacy::v2::internal_error;
 use crate::api::legacy::v2::MachineEntry;
 use crate::api::legacy::v2::Result;
 use crate::api::legacy::v2::bad_request;
+use crate::api::legacy::v2::internal_error;
 use crate::api::legacy::v2::json;
 use crate::api::legacy::v2::not_found;
 
@@ -38,16 +38,11 @@ pub async fn get(
         return Err(not_found("no such machine"));
     };
 
-    let Some(state) = (adapter.init_state_event)(
-        &entry.instance, 
-        false
-    ) else {
+    let Some(state) = (adapter.init_state_event)(&entry.instance, false) else {
         return Err(internal_error("Could not create state event"));
     };
 
-    let Some(live_values) = (adapter.init_measurements_event)(
-        &entry.instance
-    ) else {
+    let Some(live_values) = (adapter.init_measurements_event)(&entry.instance) else {
         return Err(internal_error("Could not create live values event"));
     };
 
