@@ -22,8 +22,18 @@ impl From<qitech_framework::EtherCATDeviceMetadata> for EtherCATDeviceMetadata {
             device_identification: DeviceIdentification {
                 device_machine_identification: value.device_identification.assignment.map(|x| {
                     DeviceMachineIdentification {
+<<<<<<< HEAD
+<<<<<<< HEAD
                         machine_identification_unique: LegacyMachineIdentificationUnique {
                             machine_identification: LegacyMachineIdentification {
+=======
+                        machine_identification_unique: MachineIdentificationUnique {
+                            machine_identification: MachineIdentification {
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+                        machine_identification_unique: LegacyMachineIdentificationUnique {
+                            machine_identification: LegacyMachineIdentification {
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
                                 vendor: x.machine.machine.vendor_id,
                                 machine: x.machine.machine.machine_id,
                             },
@@ -57,11 +67,21 @@ pub struct DeviceIdentification {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DeviceMachineIdentification {
+<<<<<<< HEAD
+<<<<<<< HEAD
     pub machine_identification_unique: LegacyMachineIdentificationUnique,
+=======
+    pub machine_identification_unique: MachineIdentificationUnique,
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+    pub machine_identification_unique: LegacyMachineIdentificationUnique,
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
     pub role: u16,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+<<<<<<< HEAD
+<<<<<<< HEAD
 pub struct LegacyMachineIdentificationUnique {
     pub machine_identification: LegacyMachineIdentification,
     pub serial: u16,
@@ -69,6 +89,24 @@ pub struct LegacyMachineIdentificationUnique {
 
 impl From<LegacyMachineIdentificationUnique> for qitech_framework::MachineInstanceIdentification {
     fn from(id: LegacyMachineIdentificationUnique) -> Self {
+=======
+pub struct MachineIdentificationUnique {
+    pub machine_identification: MachineIdentification,
+    pub serial: u16,
+}
+
+impl From<MachineIdentificationUnique> for qitech_framework::MachineInstanceIdentification {
+    fn from(id: MachineIdentificationUnique) -> Self {
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+pub struct LegacyMachineIdentificationUnique {
+    pub machine_identification: LegacyMachineIdentification,
+    pub serial: u16,
+}
+
+impl From<LegacyMachineIdentificationUnique> for qitech_framework::MachineInstanceIdentification {
+    fn from(id: LegacyMachineIdentificationUnique) -> Self {
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
         qitech_framework::MachineIdentification::new(
             id.machine_identification.vendor,
             id.machine_identification.machine,
@@ -77,10 +115,24 @@ impl From<LegacyMachineIdentificationUnique> for qitech_framework::MachineInstan
     }
 }
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 impl From<qitech_framework::MachineInstanceIdentification> for LegacyMachineIdentificationUnique {
     fn from(id: qitech_framework::MachineInstanceIdentification) -> Self {
         Self {
             machine_identification: LegacyMachineIdentification {
+=======
+impl From<qitech_framework::MachineInstanceIdentification> for MachineIdentificationUnique {
+    fn from(id: qitech_framework::MachineInstanceIdentification) -> Self {
+        Self {
+            machine_identification: MachineIdentification {
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+impl From<qitech_framework::MachineInstanceIdentification> for LegacyMachineIdentificationUnique {
+    fn from(id: qitech_framework::MachineInstanceIdentification) -> Self {
+        Self {
+            machine_identification: LegacyMachineIdentification {
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
                 vendor: id.machine.vendor_id,
                 machine: id.machine.machine_id,
             },
@@ -90,7 +142,15 @@ impl From<qitech_framework::MachineInstanceIdentification> for LegacyMachineIden
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+<<<<<<< HEAD
+<<<<<<< HEAD
 pub struct LegacyMachineIdentification {
+=======
+pub struct MachineIdentification {
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+pub struct LegacyMachineIdentification {
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
     pub vendor: u16,
     pub machine: u16,
 }
@@ -127,6 +187,14 @@ pub struct ModbusDeviceMetadata {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ModbusDeviceAssignment {
+<<<<<<< HEAD
+<<<<<<< HEAD
     pub machine_identification_unique: LegacyMachineIdentificationUnique,
+=======
+    pub machine_identification_unique: MachineIdentificationUnique,
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+    pub machine_identification_unique: LegacyMachineIdentificationUnique,
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
     pub slave_id: u8,
 }

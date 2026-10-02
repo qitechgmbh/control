@@ -19,7 +19,15 @@ use crate::api::types::StatePropertyInfo;
 
 #[derive(Default, Clone)]
 pub struct MachineNamespaceManager {
+<<<<<<< HEAD
+<<<<<<< HEAD
     pub(crate) registry: HashMap<MachineInstanceIdentification, Entry>,
+=======
+    registry: HashMap<MachineInstanceIdentification, Entry>,
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+    pub(crate) registry: HashMap<MachineInstanceIdentification, Entry>,
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
 }
 
 impl MachineNamespaceManager {
@@ -117,6 +125,10 @@ impl MachineNamespaceManager {
                 continue;
             }
 
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> f76e313 (fix hot plugging order)
             let Some(info) = info.as_mut() else {
                 tracing::warn!(
                     machine = %record.machine,
@@ -125,6 +137,12 @@ impl MachineNamespaceManager {
                 );
                 continue;
             };
+<<<<<<< HEAD
+=======
+            let info = info.as_mut().expect("Property should be registered now...");
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+>>>>>>> f76e313 (fix hot plugging order)
 
             match record.event.clone() {
                 ConfigPropertyEvent::Registered { .. } => {
@@ -207,8 +225,23 @@ impl MachineNamespaceManager {
 
         for event in &report.events {
             match event {
+<<<<<<< HEAD
+<<<<<<< HEAD
                 // registration is handled by the dispatcher before `update` is called
                 RuntimeEvent::AddedMachine { .. } | RuntimeEvent::RemovedMachine { .. } => {}
+=======
+                RuntimeEvent::AddedMachine { ident } => {
+                    _ = ident; // TOOD: dynamically add/remove machines
+                }
+
+                RuntimeEvent::RemovedMachine { ident } => {
+                    self.unregister(*ident);
+                }
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+                // registration is handled by the dispatcher before `update` is called
+                RuntimeEvent::AddedMachine { .. } | RuntimeEvent::RemovedMachine { .. } => {}
+>>>>>>> f76e313 (fix hot plugging order)
 
                 RuntimeEvent::SubscriptionAdded {
                     provider,
@@ -279,7 +312,15 @@ impl MachineNamespaceManager {
             tracing::error!("Failed to add socket {ident}: No such machine");
 
             if let Err(e) = socket.disconnect() {
+<<<<<<< HEAD
+<<<<<<< HEAD
                 tracing::error!("Failed to disconnect Socket: {}", e);
+=======
+                tracing::error!("Failed to dsiconnect Socket: {}", e);
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+                tracing::error!("Failed to disconnect Socket: {}", e);
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
             }
 
             return;
@@ -311,10 +352,23 @@ impl MachineNamespaceManager {
 
 #[derive(Default, Clone)]
 pub struct Entry {
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
     pub(crate) sockets: Vec<SocketRef>,
     pub(crate) instance: MachineInstance,
     pub(crate) emitted_default_state: bool,
     pub(crate) emit_state: bool,
+<<<<<<< HEAD
+=======
+    sockets: Vec<SocketRef>,
+    instance: MachineInstance,
+    emitted_default_state: bool,
+    emit_state: bool,
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
 }
 
 pub fn machine_namespace_path_to_ident(s: &str) -> Result<MachineInstanceIdentification, String> {

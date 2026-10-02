@@ -1,5 +1,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+use std::time::Instant;
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
 
 use qitech_framework::machine::BuildContext;
 use qitech_framework::machine::BuildError;
@@ -23,6 +30,14 @@ use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1
 pub use qitech_lib::ethercat_hal::shared_config;
 pub use qitech_lib::ethercat_hal::shared_config::el70x1::EL70x1OperationMode;
 pub use qitech_lib::ethercat_hal::shared_config::el70x1::StmMotorConfiguration;
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+use qitech_lib::units::ConstZero;
+use qitech_lib::units::Length;
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
 use qitech_lib::units::length::meter;
 
 use crate::machines::winder_v2::LaserPointer;
@@ -121,6 +136,14 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             laser_pointer,
             mode: ctx.state::<Mode>("mode").build()?,
             spool_automatic_action: SpoolAutomaticAction {
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+                progress: Length::ZERO,
+                progress_last_check: Instant::now(),
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
                 target_length: ctx
                     .config::<meter>("spool_automatic.required_meters")
                     .default(250.0)

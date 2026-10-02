@@ -20,6 +20,14 @@ pub struct MainNamespaceManager {
     ecat_state: Option<&'static str>,
     ecat_devices: Option<Vec<legacy::EtherCATDeviceMetadata>>,
     modbus_devices: Option<Vec<legacy::ModbusDeviceMetadata>>,
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    /// Set once the bus is gone; replayed to late joiners in place of the subdevice table.
+    ecat_error: Option<String>,
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
 }
 
 impl MainNamespaceManager {
@@ -155,8 +163,18 @@ impl MainNamespaceManager {
         self.machines.insert(
             ident,
             MachineObj {
+<<<<<<< HEAD
+<<<<<<< HEAD
                 machine_identification_unique: legacy::LegacyMachineIdentificationUnique {
                     machine_identification: legacy::types::LegacyMachineIdentification {
+=======
+                machine_identification_unique: legacy::MachineIdentificationUnique {
+                    machine_identification: legacy::types::MachineIdentification {
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+                machine_identification_unique: legacy::LegacyMachineIdentificationUnique {
+                    machine_identification: legacy::types::LegacyMachineIdentification {
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
                         vendor: ident.machine.vendor_id,
                         machine: ident.machine.machine_id,
                     },
