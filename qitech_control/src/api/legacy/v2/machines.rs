@@ -41,7 +41,7 @@ pub async fn get(State(LegacyApiState { ctx, .. }): State<LegacyApiState>) -> Re
             .to_string();
 
             MachineEntry {
-                legacy_id: ident.clone().into(),
+                legacy_id: (*ident).into(),
                 serial: ident.serial,
                 vendor,
                 slug,
