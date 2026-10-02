@@ -126,6 +126,9 @@ impl MachineNamespaceManager {
             }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> f76e313 (fix hot plugging order)
             let Some(info) = info.as_mut() else {
                 tracing::warn!(
                     machine = %record.machine,
@@ -134,9 +137,12 @@ impl MachineNamespaceManager {
                 );
                 continue;
             };
+<<<<<<< HEAD
 =======
             let info = info.as_mut().expect("Property should be registered now...");
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+>>>>>>> f76e313 (fix hot plugging order)
 
             match record.event.clone() {
                 ConfigPropertyEvent::Registered { .. } => {
@@ -220,6 +226,7 @@ impl MachineNamespaceManager {
         for event in &report.events {
             match event {
 <<<<<<< HEAD
+<<<<<<< HEAD
                 // registration is handled by the dispatcher before `update` is called
                 RuntimeEvent::AddedMachine { .. } | RuntimeEvent::RemovedMachine { .. } => {}
 =======
@@ -231,6 +238,10 @@ impl MachineNamespaceManager {
                     self.unregister(*ident);
                 }
 >>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+                // registration is handled by the dispatcher before `update` is called
+                RuntimeEvent::AddedMachine { .. } | RuntimeEvent::RemovedMachine { .. } => {}
+>>>>>>> f76e313 (fix hot plugging order)
 
                 RuntimeEvent::SubscriptionAdded {
                     provider,
