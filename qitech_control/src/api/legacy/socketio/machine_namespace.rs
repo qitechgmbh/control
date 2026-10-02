@@ -117,7 +117,14 @@ impl MachineNamespaceManager {
                 continue;
             }
 
-            let info = info.as_mut().expect("Property should be registered now...");
+            let Some(info) = info.as_mut() else {
+                tracing::warn!(
+                    machine = %record.machine,
+                    path = ?record.path,
+                    "config property event received before registration"
+                );
+                continue;
+            };
 
             match record.event.clone() {
                 ConfigPropertyEvent::Registered { .. } => {
@@ -200,13 +207,8 @@ impl MachineNamespaceManager {
 
         for event in &report.events {
             match event {
-                RuntimeEvent::AddedMachine { ident } => {
-                    _ = ident; // TOOD: dynamically add/remove machines
-                }
-
-                RuntimeEvent::RemovedMachine { ident } => {
-                    self.unregister(*ident);
-                }
+                // registration is handled by the dispatcher before `update` is called
+                RuntimeEvent::AddedMachine { .. } | RuntimeEvent::RemovedMachine { .. } => {}
 
                 RuntimeEvent::SubscriptionAdded {
                     provider,

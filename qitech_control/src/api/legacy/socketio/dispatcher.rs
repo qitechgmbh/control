@@ -88,18 +88,16 @@ impl Listener for SocketIODispatcher {
             dirty_machines.push(ident);
         }
 
-        self.state_legacy
-            .ns_machines
-            .update(|ns| ns.update(report, dirty_machines));
-
-        // --- then update the machine list and bus state the frontend renders ---
+        // --- apply machine additions/removals first, so records of a machine added
+        // in this report (e.g. its `Registered` events) are not dropped ---
         for event in &report.events {
             match event {
                 RuntimeEvent::AddedMachine { ident } => {
                     let schemas = self.state.schemas.read();
 
                     let Some(schema) = schemas.get(&ident.machine) else {
-                        return;
+                        tracing::warn!(%ident, "added machine has no schema");
+                        continue;
                     };
 
                     self.state_legacy
@@ -122,6 +120,10 @@ impl Listener for SocketIODispatcher {
                 _ => {}
             }
         }
+
+        self.state_legacy
+            .ns_machines
+            .update(|ns| ns.update(report, dirty_machines));
     }
 
     fn on_runtime_disconnected(&mut self) {
