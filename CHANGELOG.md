@@ -4,7 +4,6 @@ _02.10.2026_
 QiTech Control 4.0 is here. The backend has been rewritten from the ground up on top of the new QiTech Framework, which now owns the EtherCAT and Modbus runtime, machine lifecycle, and configuration.
 
 ## Breaking Changes
-- **General**: Only the following machines are supported in this release: Winder, Extruder V1, Extruder V2, Aquapath and Laser. Dryer & Rewinder are not available yet.
 - **Laser**: The laser is no longer detected automatically. You will have to manually assign the Laser in the Setup -> ModBus RTU Tab where you define the specific port in which the laser has been plugged in.
 
 ## General
