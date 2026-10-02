@@ -10,14 +10,10 @@ QiTech Control 4.0 is here. The backend has been rewritten from the ground up on
 - Backend rebuilt on QiTech Framework and QiTech Lib. `qitech_control` has been rewritten, and `control-core`, `machine_implementations` and `utils` are replaced by `qitech_control` and `qitech_control_core`
 - [#1639](https://github.com/qitechgmbh/control/pull/1639) Added Modbus RTU device discovery and a Modbus page in the setup to assign devices to serial ports
 - [#1683](https://github.com/qitechgmbh/control/pull/1683) A popup now shows when an update is available
-- EtherCAT hot plugging: devices can be connected and disconnected while the backend is running
 - Fixed flickering values in the frontend
 
 ## Winder
 - The traverse can now dwell at each end for a configurable number of revolutions, set in the settings and saved in presets, which results in an overall cleaner winding.
-
-## Aquapath
-- [#1705](https://github.com/qitechgmbh/control/pull/1705) Fixed the mode options in the Aquapath schema (Standby and Auto)
 
 ## Dependencies
 - [#1694](https://github.com/qitechgmbh/control/pull/1694), [#1699](https://github.com/qitechgmbh/control/pull/1699), [#1703](https://github.com/qitechgmbh/control/pull/1703), [#1713](https://github.com/qitechgmbh/control/pull/1713) Update nixpkgs
