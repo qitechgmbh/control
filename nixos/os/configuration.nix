@@ -6,6 +6,16 @@
 }:
 let
   gitInfo = import ../gitInfo.nix { inherit pkgs; };
+
+  cpuCount = lib.length (
+    builtins.filter (l: lib.hasPrefix "processor" l) (
+      lib.splitString "\n" (builtins.readFile "/proc/cpuinfo")
+    )
+  );
+  rtCoreFirst = cpuCount - 2;
+  rtCoreLast = cpuCount - 1;
+  rtCores = "${toString rtCoreFirst}-${toString rtCoreLast}";
+  housekeepingCores = "0-${toString (rtCoreFirst - 1)}";
 in
 {
   boot.kernelPackages = pkgs.linuxPackages_6_18;
@@ -32,9 +42,9 @@ in
     "oops=panic" # Treat kernel oops as panic for auto-recovery
     "usbcore.autosuspend=-1" # Possibly fixes dre disconnect issue?
 
-    "isolcpus=2,3" # Isolate cpus 2 and 3 from scheduler for better latency, 2 runs ethercatthread and 3 runs server control-loop
-    "nohz_full=2,3" # In this mode, the periodic scheduler tick is stopped when only one task is running, reducing kernel interruptions on those CPUs.
-    "rcu_nocbs=2,3" # Moves RCU (Read-Copy Update) callback processing away from CPUs 2 and 3.
+    "isolcpus=managed_irq,${rtCores}" # keep managed IRQs off the RT cores
+    "nohz_full=${rtCores}" # stop the periodic scheduler tick on the RT cores when only one task is running
+    "irqaffinity=${housekeepingCores}" # keep hardware IRQs off the RT cores
 
   ];
 
@@ -53,7 +63,6 @@ in
         "qitech.cachix.org-1:l7UTb2FOVAEpRTGTUQTBBPis0JhXZGiANPDKBRbO8Vo="
       ];
       experimental-features = "nix-command flakes";
-      cores = 2;
       http-connections = 10;
       download-attempts = 15;
     };
@@ -154,6 +163,9 @@ in
     };
   };
 
+  # systemd slice for core cgroup-based isolation
+  systemd.slices.qitech = { };
+
   # Enable sound with pipewire.
   security.rtkit.enable = true;
   services.pipewire = {
@@ -176,6 +188,9 @@ in
     group = "qitech-service";
     package = pkgs.qitechPackages.server;
   };
+
+  # Force the service into the RT slice
+  systemd.services.qitech.serviceConfig.Slice = "qitech.slice";
 
   users.users.qitech = {
     isNormalUser = true;
