@@ -1,5 +1,4 @@
 use std::time::Duration;
-use std::time::Instant;
 
 use qitech_framework::MachineIdentification;
 use qitech_framework::MachineInstanceIdentification;
@@ -180,7 +179,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 }
 
 pub struct SpoolAutomaticAction {
-    progress_last_check: Instant,
     pub target_length: ConfigProperty<Length>,
     pub mode: ConfigProperty<AutomaticActionSpoolAction>,
 }
