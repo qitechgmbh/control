@@ -1,23 +1,35 @@
-# `4.0.0-rc1`
-_25.09.2026_
+# `4.0.0`
+_02.10.2026_
 
-This is the first release candidate of QiTech Control 4.0. The backend has been rewritten from the ground up on top of the new QiTech Framework, which now owns the EtherCAT and Modbus runtime, machine lifecycle, and configuration. Machines are described by schemas and run as isolated controllers, so a failing machine or device no longer takes the rest of the system down with it. The existing frontend keeps working through a compatibility layer. As this is a release candidate, please report any issues you run into.
+QiTech Control 4.0 is here. The backend has been rewritten from the ground up on top of the new QiTech Framework, which now owns the EtherCAT and Modbus runtime, machine lifecycle, and configuration.
 
 ## Breaking Changes
-- **General**: Only the following machines are supported in this release candidate: Winder, Extruder V1, Extruder V2, Aquapath and Laser. Dryer & Rewinder are not available yet.
-- **Laser**: The laser is no longer detected automatically. Its serial port now has to be assigned once in the new Modbus page in the setup.
-- **ModBus**: You can now use multiple ModBus devices, via Modbus RTU.
+- **General**: Only the following machines are supported in this release: Winder, Extruder V1, Extruder V2, Aquapath and Laser. Dryer & Rewinder are not available yet.
+- **Laser**: The laser is no longer detected automatically. You will have to manually assign the Laser in the Setup -> ModBus RTU Tab where you define the specific port in which the laser has been plugged in.
 
 ## General
 - Backend rebuilt on QiTech Framework and QiTech Lib. `qitech_control` has been rewritten, and `control-core`, `machine_implementations` and `utils` are replaced by `qitech_control` and `qitech_control_core`
-- Machine configuration is now defined by per-machine schemas
-- Legacy compatibility layer so the existing frontend works unchanged with the new backend
 - [#1639](https://github.com/qitechgmbh/control/pull/1639) Added Modbus RTU device discovery and a Modbus page in the setup to assign devices to serial ports
-- [#1657](https://github.com/qitechgmbh/control/pull/1657) A machine whose controller fails is now removed from the machine list, and the frontend shows a message if the connection to the runtime is lost
+- [#1683](https://github.com/qitechgmbh/control/pull/1683) A popup now shows when an update is available
+- EtherCAT hot plugging: devices can be connected and disconnected while the backend is running
 - Fixed flickering values in the frontend
-- Newly connected clients now immediately receive the current machine state
 
-**Full Changelog**: https://github.com/qitechgmbh/control/compare/3.2.0...4.0.0-rc1
+## Winder
+- The traverse can now dwell at each end for a configurable number of revolutions, set in the settings and saved in presets, which results in an overall cleaner winding.
+
+## Aquapath
+- [#1705](https://github.com/qitechgmbh/control/pull/1705) Fixed the mode options in the Aquapath schema (Standby and Auto)
+
+## Dependencies
+- [#1694](https://github.com/qitechgmbh/control/pull/1694), [#1699](https://github.com/qitechgmbh/control/pull/1699), [#1703](https://github.com/qitechgmbh/control/pull/1703), [#1713](https://github.com/qitechgmbh/control/pull/1713) Update nixpkgs
+- [#1693](https://github.com/qitechgmbh/control/pull/1693) Update home-manager
+- [#1701](https://github.com/qitechgmbh/control/pull/1701), [#1707](https://github.com/qitechgmbh/control/pull/1707), [#1708](https://github.com/qitechgmbh/control/pull/1708), [#1709](https://github.com/qitechgmbh/control/pull/1709), [#1710](https://github.com/qitechgmbh/control/pull/1710), [#1711](https://github.com/qitechgmbh/control/pull/1711), [#1712](https://github.com/qitechgmbh/control/pull/1712) Update Rust & Electron dependencies
+- Fix vulnerable npm dependencies
+
+## New Contributors
+- [@lenisakalli](https://github.com/lenisakalli) made their first contribution in [#1697](https://github.com/qitechgmbh/control/pull/1697)
+
+**Full Changelog**: https://github.com/qitechgmbh/control/compare/3.2.0...4.0.0
 
 # `3.2.0`
 _25.09.2026_
