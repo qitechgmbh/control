@@ -20,8 +20,6 @@ pub struct MainNamespaceManager {
     ecat_state: Option<&'static str>,
     ecat_devices: Option<Vec<legacy::EtherCATDeviceMetadata>>,
     modbus_devices: Option<Vec<legacy::ModbusDeviceMetadata>>,
-    /// Set once the bus is gone; replayed to late joiners in place of the subdevice table.
-    ecat_error: Option<String>,
 }
 
 impl MainNamespaceManager {
@@ -157,8 +155,8 @@ impl MainNamespaceManager {
         self.machines.insert(
             ident,
             MachineObj {
-                machine_identification_unique: legacy::MachineIdentificationUnique {
-                    machine_identification: legacy::types::MachineIdentification {
+                machine_identification_unique: legacy::LegacyMachineIdentificationUnique {
+                    machine_identification: legacy::types::LegacyMachineIdentification {
                         vendor: ident.machine.vendor_id,
                         machine: ident.machine.machine_id,
                     },

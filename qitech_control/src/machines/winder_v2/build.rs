@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::time::Instant;
 
 use qitech_framework::machine::BuildContext;
 use qitech_framework::machine::BuildError;
@@ -24,8 +23,6 @@ use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1
 pub use qitech_lib::ethercat_hal::shared_config;
 pub use qitech_lib::ethercat_hal::shared_config::el70x1::EL70x1OperationMode;
 pub use qitech_lib::ethercat_hal::shared_config::el70x1::StmMotorConfiguration;
-use qitech_lib::units::ConstZero;
-use qitech_lib::units::Length;
 use qitech_lib::units::length::meter;
 
 use crate::machines::winder_v2::LaserPointer;
@@ -124,8 +121,6 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
             laser_pointer,
             mode: ctx.state::<Mode>("mode").build()?,
             spool_automatic_action: SpoolAutomaticAction {
-                progress: Length::ZERO,
-                progress_last_check: Instant::now(),
                 target_length: ctx
                     .config::<meter>("spool_automatic.required_meters")
                     .default(250.0)

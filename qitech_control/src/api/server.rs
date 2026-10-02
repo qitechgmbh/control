@@ -5,9 +5,11 @@ use tokio::net::TcpListener;
 use tokio::sync::mpsc;
 use tower_http::cors::CorsLayer;
 
+use crate::api::legacy::LegacyApiState;
 use crate::api::legacy::LegacySharedState;
 use crate::api::legacy::init_socket_io;
 use crate::api::legacy::v1;
+use crate::api::legacy::v2;
 use crate::api::types::SharedState;
 
 pub struct Server {
@@ -34,7 +36,7 @@ impl Actor for Server {
     async fn run(self, ctx: ActorContext) {
         let router = axum::Router::new()
             .nest("/api/v1", v1::router())
-            // .nest("/api/v2", v2::router())
+            .nest("/api/v2", v2::router())
             // .nest("/api/v3", v3::router())
             .layer(init_socket_io(
                 self.state.clone(),
@@ -42,7 +44,11 @@ impl Actor for Server {
             ))
             .layer(axum::Extension(self.state_legacy.clone()))
             .layer(CorsLayer::permissive())
-            .with_state((ctx, self.machines_dirty_tx.clone()));
+            .with_state(LegacyApiState {
+                ctx,
+                machines_dirty_tx: self.machines_dirty_tx.clone(),
+                legacy: self.state_legacy.clone(),
+            });
 
         //.nest("/api/v2", rest_api_router())
         //.layer(socketio_layer)

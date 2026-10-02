@@ -19,7 +19,7 @@ use crate::api::types::StatePropertyInfo;
 
 #[derive(Default, Clone)]
 pub struct MachineNamespaceManager {
-    registry: HashMap<MachineInstanceIdentification, Entry>,
+    pub(crate) registry: HashMap<MachineInstanceIdentification, Entry>,
 }
 
 impl MachineNamespaceManager {
@@ -277,7 +277,7 @@ impl MachineNamespaceManager {
             tracing::error!("Failed to add socket {ident}: No such machine");
 
             if let Err(e) = socket.disconnect() {
-                tracing::error!("Failed to dsiconnect Socket: {}", e);
+                tracing::error!("Failed to disconnect Socket: {}", e);
             }
 
             return;
@@ -309,10 +309,10 @@ impl MachineNamespaceManager {
 
 #[derive(Default, Clone)]
 pub struct Entry {
-    sockets: Vec<SocketRef>,
-    instance: MachineInstance,
-    emitted_default_state: bool,
-    emit_state: bool,
+    pub(crate) sockets: Vec<SocketRef>,
+    pub(crate) instance: MachineInstance,
+    pub(crate) emitted_default_state: bool,
+    pub(crate) emit_state: bool,
 }
 
 pub fn machine_namespace_path_to_ident(s: &str) -> Result<MachineInstanceIdentification, String> {
