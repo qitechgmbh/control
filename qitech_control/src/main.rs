@@ -66,9 +66,12 @@ pub async fn main() -> anyhow::Result<()> {
     }
 
     // --- determine if ethercat is enabled ---
+    let stay_in_preop = std::env::var("QITECH_MODE").unwrap_or_default() == "preop"
+        || std::env::args().any(|a| a == "preop");
+
     let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {
         Ok("false") => config_rt,
-        _ => config_rt.ethercat(ETHERCAT_CONFIG),
+        _ => config_rt.ethercat(ecat_config(stay_in_preop)),
     };
     match env::var("CONTROL_MODE").as_deref() {
         Ok("DEBUG") => {
@@ -106,14 +109,16 @@ pub async fn main() -> anyhow::Result<()> {
     }
 }
 
-const ETHERCAT_CONFIG: EtherCATConfig = {
+fn ecat_config(stay_preop: bool) -> EtherCATConfig {
     let target_cycle_time_us: u64 = 1000;
+
     let dc_config = DcConfiguration {
         start_delay: Duration::from_millis(100),
         sync0_period: Duration::from_micros(target_cycle_time_us),
         sync0_shift: Duration::from_micros(target_cycle_time_us / 2),
         target_dc_tick: 500,
     };
+
     let opt_config = RtOptimizationConfig {
         ethercat_loop_thread_core: 3,
         ethercat_loop_thread_priority: 99,
@@ -122,6 +127,7 @@ const ETHERCAT_CONFIG: EtherCATConfig = {
         pin_irq_core: Some(3),
         lock_memory: cfg!(target_os = "linux"),
     };
+
     let master_config = MasterConfiguration {
         target_cycle_time_us: target_cycle_time_us as usize,
         tx_rx_config: qitech_lib::ethercat_hal::MasterTxRxConfig::TxRxIoUring,
@@ -130,8 +136,10 @@ const ETHERCAT_CONFIG: EtherCATConfig = {
         wkc_mismatch_threshold: 5,
         op_ramp_grace_cycles: 10000,
     };
+
     EtherCATConfig {
         interface_scan_interval: Duration::from_secs(2),
         master_config,
+        stay_preop,
     }
-};
+}
