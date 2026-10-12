@@ -83,6 +83,14 @@ interface TroubleshootContext {
   restartBackend: () => Promise<{ success: boolean; error?: string }>;
   restartBackendIntoPreop: () => Promise<{ success: boolean; error?: string }>;
   exportLogs: () => Promise<SaveFileResult>;
+  getEthercatEnabled: () => Promise<{
+    success: boolean;
+    enabled?: boolean;
+    error?: string;
+  }>;
+  setEthercatEnabled: (
+    enabled: boolean,
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 interface FileExportContext {

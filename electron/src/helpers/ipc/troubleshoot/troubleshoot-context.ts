@@ -3,6 +3,8 @@ import {
   TROUBLESHOOT_RESTART_BACKEND,
   TROUBLESHOOT_RESTART_BACKEND_INTO_PREOP,
   TROUBLESHOOT_EXPORT_LOGS,
+  TROUBLESHOOT_GET_ETHERCAT_ENABLED,
+  TROUBLESHOOT_SET_ETHERCAT_ENABLED,
 } from "./troubleshoot-channels";
 
 export function exposeTroubleshootContext() {
@@ -13,5 +15,9 @@ export function exposeTroubleshootContext() {
     restartBackendIntoPreop: () =>
       ipcRenderer.invoke(TROUBLESHOOT_RESTART_BACKEND_INTO_PREOP),
     exportLogs: () => ipcRenderer.invoke(TROUBLESHOOT_EXPORT_LOGS),
+    getEthercatEnabled: () =>
+      ipcRenderer.invoke(TROUBLESHOOT_GET_ETHERCAT_ENABLED),
+    setEthercatEnabled: (enabled: boolean) =>
+      ipcRenderer.invoke(TROUBLESHOOT_SET_ETHERCAT_ENABLED, enabled),
   });
 }
