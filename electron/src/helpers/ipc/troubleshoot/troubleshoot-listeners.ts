@@ -5,6 +5,8 @@ import {
   TROUBLESHOOT_RESTART_BACKEND,
   TROUBLESHOOT_RESTART_BACKEND_INTO_PREOP,
   TROUBLESHOOT_EXPORT_LOGS,
+  TROUBLESHOOT_GET_ETHERCAT_ENABLED,
+  TROUBLESHOOT_SET_ETHERCAT_ENABLED,
 } from "./troubleshoot-channels";
 import { getRemovableVolumeRoot } from "../export/removable-media";
 import { SaveFileResult } from "../export/export-channels";
@@ -91,6 +93,61 @@ export function addTroubleshootEventListeners() {
       };
     }
   });
+
+  // The backend treats anything but ETHERCAT_ENABLED=false as enabled
+  ipcMain.handle(TROUBLESHOOT_GET_ETHERCAT_ENABLED, async () => {
+    return new Promise<{ success: boolean; enabled?: boolean; error?: string }>(
+      (resolve) => {
+        exec("systemctl show-environment", (error, stdout) => {
+          if (error) {
+            resolve({ success: false, error: error.message });
+            return;
+          }
+          const disabled = stdout
+            .split("\n")
+            .some((line) => line.trim() === "ETHERCAT_ENABLED=false");
+          resolve({ success: true, enabled: !disabled });
+        });
+      },
+    );
+  });
+
+  ipcMain.handle(
+    TROUBLESHOOT_SET_ETHERCAT_ENABLED,
+    async (_event, enabled: boolean) => {
+      try {
+        const value = enabled ? "true" : "false";
+        const process = spawn(
+          "sudo",
+          [
+            "bash",
+            "-c",
+            `systemctl set-environment ETHERCAT_ENABLED=${value} && systemctl restart qitech-control-server`,
+          ],
+          { shell: false },
+        );
+
+        return new Promise<{ success: boolean; error?: string }>((resolve) => {
+          process.on("close", (code) => {
+            if (code === 0) resolve({ success: true });
+            else
+              resolve({
+                success: false,
+                error: `Process exited with code ${code}`,
+              });
+          });
+          process.on("error", (error) =>
+            resolve({ success: false, error: error.message }),
+          );
+        });
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+  );
 
   ipcMain.handle(TROUBLESHOOT_EXPORT_LOGS, async () => {
     try {
