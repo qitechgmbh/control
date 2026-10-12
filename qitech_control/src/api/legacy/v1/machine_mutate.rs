@@ -5,6 +5,8 @@ use axum::extract::State;
 use axum::response::Response as AxumResponse;
 use qitech_framework::MachineIdentification;
 use qitech_framework::MachineInstanceIdentification;
+<<<<<<< HEAD
+<<<<<<< HEAD
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -16,6 +18,26 @@ use crate::api::legacy::types::LegacyMachineIdentificationUnique;
 #[derive(Debug, Deserialize)]
 pub struct Request {
     pub machine_identification_unique: LegacyMachineIdentificationUnique,
+=======
+use qitech_framework_hub::ActorContext;
+=======
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
+use serde::Deserialize;
+use serde::Serialize;
+
+use crate::api::legacy::LegacyApiState;
+use crate::api::legacy::adapter;
+use crate::api::legacy::response_util::ResponseUtil;
+use crate::api::legacy::types::LegacyMachineIdentificationUnique;
+
+#[derive(Debug, Deserialize)]
+pub struct Request {
+<<<<<<< HEAD
+    pub machine_identification_unique: MachineIdentificationUnique,
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+    pub machine_identification_unique: LegacyMachineIdentificationUnique,
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
     pub data: serde_json::Value,
 }
 
@@ -41,7 +63,18 @@ impl MutationResponse {
     }
 }
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>) -> AxumResponse {
+=======
+pub async fn post(
+    State(state): State<(ActorContext, mpsc::Sender<MachineInstanceIdentification>)>,
+    Json(body): Json<Request>,
+) -> AxumResponse {
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>) -> AxumResponse {
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
     let ident = MachineInstanceIdentification {
         machine: MachineIdentification {
             vendor_id: body
@@ -70,9 +103,21 @@ pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>
     // Sequential, fail-fast: a compound legacy mutation (e.g. autotune start) may need its writes
     // applied in order before a later request in the batch depends on them.
     for request in requests {
+<<<<<<< HEAD
+<<<<<<< HEAD
         state.machines_dirty_tx.send(ident).await.expect("pray");
 
         match state.ctx.send_request(request).await {
+=======
+        state.1.send(ident).await.expect("pray");
+
+        match state.0.send_request(request).await {
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+        state.machines_dirty_tx.send(ident).await.expect("pray");
+
+        match state.ctx.send_request(request).await {
+>>>>>>> e8ebd9a (remove dead code and add api v2 and improve api in general)
             Ok(Ok(())) => {}
 
             Ok(Err(error)) => {

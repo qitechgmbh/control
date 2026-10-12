@@ -66,12 +66,27 @@ pub async fn main() -> anyhow::Result<()> {
     }
 
     // --- determine if ethercat is enabled ---
+<<<<<<< HEAD
+<<<<<<< HEAD
     let stay_in_preop = std::env::var("QITECH_MODE").unwrap_or_default() == "preop"
         || std::env::args().any(|a| a == "preop");
 
     let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {
         Ok("false") => config_rt,
         _ => config_rt.ethercat(ecat_config(stay_in_preop)),
+=======
+    let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {
+        Ok("false") => config_rt,
+        _ => config_rt.ethercat(ETHERCAT_CONFIG),
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+    let stay_in_preop = std::env::var("QITECH_MODE").unwrap_or_default() == "preop"
+        || std::env::args().any(|a| a == "preop");
+
+    let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {
+        Ok("false") => config_rt,
+        _ => config_rt.ethercat(ecat_config(stay_in_preop)),
+>>>>>>> 7c73662 (implement preop and hot plugging)
     };
     match env::var("CONTROL_MODE").as_deref() {
         Ok("DEBUG") => {
@@ -109,16 +124,34 @@ pub async fn main() -> anyhow::Result<()> {
     }
 }
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 fn ecat_config(stay_preop: bool) -> EtherCATConfig {
     let target_cycle_time_us: u64 = 1000;
 
+=======
+const ETHERCAT_CONFIG: EtherCATConfig = {
+    let target_cycle_time_us: u64 = 1000;
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+fn ecat_config(stay_preop: bool) -> EtherCATConfig {
+    let target_cycle_time_us: u64 = 1000;
+
+>>>>>>> 7c73662 (implement preop and hot plugging)
     let dc_config = DcConfiguration {
         start_delay: Duration::from_millis(100),
         sync0_period: Duration::from_micros(target_cycle_time_us),
         sync0_shift: Duration::from_micros(target_cycle_time_us / 2),
         target_dc_tick: 500,
     };
+<<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+
+>>>>>>> 7c73662 (implement preop and hot plugging)
     let opt_config = RtOptimizationConfig {
         ethercat_loop_thread_core: 3,
         ethercat_loop_thread_priority: 99,
@@ -127,7 +160,14 @@ fn ecat_config(stay_preop: bool) -> EtherCATConfig {
         pin_irq_core: Some(3),
         lock_memory: cfg!(target_os = "linux"),
     };
+<<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+
+>>>>>>> 7c73662 (implement preop and hot plugging)
     let master_config = MasterConfiguration {
         target_cycle_time_us: target_cycle_time_us as usize,
         tx_rx_config: qitech_lib::ethercat_hal::MasterTxRxConfig::TxRxIoUring,
@@ -136,6 +176,8 @@ fn ecat_config(stay_preop: bool) -> EtherCATConfig {
         wkc_mismatch_threshold: 5,
         op_ramp_grace_cycles: 10000,
     };
+<<<<<<< HEAD
+<<<<<<< HEAD
 
     EtherCATConfig {
         interface_scan_interval: Duration::from_secs(2),
@@ -143,3 +185,18 @@ fn ecat_config(stay_preop: bool) -> EtherCATConfig {
         stay_preop,
     }
 }
+=======
+=======
+
+>>>>>>> 7c73662 (implement preop and hot plugging)
+    EtherCATConfig {
+        interface_scan_interval: Duration::from_secs(2),
+        master_config,
+        stay_preop,
+    }
+<<<<<<< HEAD
+};
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+}
+>>>>>>> 7c73662 (implement preop and hot plugging)

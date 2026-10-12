@@ -88,6 +88,8 @@ impl Listener for SocketIODispatcher {
             dirty_machines.push(ident);
         }
 
+<<<<<<< HEAD
+<<<<<<< HEAD
         // --- apply machine additions/removals first, so records of a machine added
         // in this report (e.g. its `Registered` events) are not dropped ---
         for event in &report.events {
@@ -124,6 +126,54 @@ impl Listener for SocketIODispatcher {
         self.state_legacy
             .ns_machines
             .update(|ns| ns.update(report, dirty_machines));
+=======
+        self.state_legacy
+            .ns_machines
+            .update(|ns| ns.update(report, dirty_machines));
+
+        // --- then update the machine list and bus state the frontend renders ---
+=======
+        // --- apply machine additions/removals first, so records of a machine added
+        // in this report (e.g. its `Registered` events) are not dropped ---
+>>>>>>> f76e313 (fix hot plugging order)
+        for event in &report.events {
+            match event {
+                RuntimeEvent::AddedMachine { ident } => {
+                    let schemas = self.state.schemas.read();
+
+                    let Some(schema) = schemas.get(&ident.machine) else {
+                        tracing::warn!(%ident, "added machine has no schema");
+                        continue;
+                    };
+
+                    self.state_legacy
+                        .ns_main
+                        .update(|ns| ns.add_machine(*ident, Ok(())));
+
+                    self.state_legacy
+                        .ns_machines
+                        .update(|ns| ns.register(*ident, schema));
+                }
+                RuntimeEvent::RemovedMachine { ident } => {
+                    self.state_legacy
+                        .ns_main
+                        .update(|ns| ns.remove_machine(*ident));
+
+                    self.state_legacy
+                        .ns_machines
+                        .update(|ns| ns.unregister(*ident));
+                }
+                _ => {}
+            }
+        }
+<<<<<<< HEAD
+>>>>>>> 8e49141 (Jse control v2 (#1680))
+=======
+
+        self.state_legacy
+            .ns_machines
+            .update(|ns| ns.update(report, dirty_machines));
+>>>>>>> f76e313 (fix hot plugging order)
     }
 
     fn on_runtime_disconnected(&mut self) {
