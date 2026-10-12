@@ -55,6 +55,38 @@ export async function restartBackendIntoPreop(): Promise<{
   }
 }
 
+export async function getEthercatEnabled(): Promise<{
+  success: boolean;
+  enabled?: boolean;
+  error?: string;
+}> {
+  try {
+    return await window.troubleshoot.getEthercatEnabled();
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+/**
+ * Sets ETHERCAT_ENABLED in the systemd manager environment and restarts the backend
+ */
+export async function setEthercatEnabled(enabled: boolean): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    return await window.troubleshoot.setEthercatEnabled(enabled);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 export async function exportLogs(): Promise<SaveFileResult> {
   try {
     return await window.troubleshoot.exportLogs();
