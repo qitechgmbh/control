@@ -116,7 +116,7 @@ jobs:
             "$f" > "$f.tmp" && mv "$f.tmp" "$f"
 
       - name: Upload SBOM artifacts
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: rust-sbom.json
           path: qitech_control/sbom.json
