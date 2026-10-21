@@ -83,7 +83,7 @@ impl SpeedAlgorithmAdaptive {
 
         let speed_factor = ctx
             .measurement::<meter>("spool.speed_controller.adaptive.speed_factor")
-            .initial(4.25)
+            .initial(0.0425)
             .build()?;
 
         let acceleration_controller = AngularAccelerationSpeedController::new(
@@ -118,7 +118,7 @@ impl SpeedAlgorithmAdaptive {
             AngularVelocity::new::<radian_per_second>(scale(
                 1.0 - filament_tension,
                 input.speed_min.get::<radian_per_second>(),
-                input.speed_max.get::<radian_per_second>(),
+                speed_max.abs().get::<radian_per_second>(),
             ))
         } else {
             AngularVelocity::ZERO

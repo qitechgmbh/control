@@ -1,7 +1,10 @@
+use qitech_framework::MachineInstanceIdentification;
 use qitech_framework::MachineSchema;
+use qitech_framework::RuntimeEvent;
 use qitech_framework::RuntimeInitEvent;
 use qitech_framework::RuntimeReport;
 use qitech_framework_hub::Listener;
+use tokio::sync::mpsc;
 
 use crate::api::LegacySharedState;
 use crate::api::legacy;
@@ -10,13 +13,19 @@ use crate::api::types::SharedState;
 pub struct SocketIODispatcher {
     pub state: SharedState,
     pub state_legacy: LegacySharedState,
+    pub machines_dirty_rx: mpsc::Receiver<MachineInstanceIdentification>,
 }
 
 impl SocketIODispatcher {
-    pub fn new(state: SharedState, state_legacy: LegacySharedState) -> Self {
+    pub fn new(
+        state: SharedState,
+        state_legacy: LegacySharedState,
+        machines_dirty_rx: mpsc::Receiver<MachineInstanceIdentification>,
+    ) -> Self {
         Self {
             state,
             state_legacy,
+            machines_dirty_rx,
         }
     }
 }
@@ -69,8 +78,57 @@ impl Listener for SocketIODispatcher {
     }
 
     fn on_report_received(&mut self, report: &RuntimeReport) {
+        let mut dirty_machines = Vec::new();
+
+        loop {
+            let Ok(ident) = self.machines_dirty_rx.try_recv() else {
+                break;
+            };
+
+            dirty_machines.push(ident);
+        }
+
+        // --- apply machine additions/removals first, so records of a machine added
+        // in this report (e.g. its `Registered` events) are not dropped ---
+        for event in &report.events {
+            match event {
+                RuntimeEvent::AddedMachine { ident } => {
+                    let schemas = self.state.schemas.read();
+
+                    let Some(schema) = schemas.get(&ident.machine) else {
+                        tracing::warn!(%ident, "added machine has no schema");
+                        continue;
+                    };
+
+                    self.state_legacy
+                        .ns_main
+                        .update(|ns| ns.add_machine(*ident, Ok(())));
+
+                    self.state_legacy
+                        .ns_machines
+                        .update(|ns| ns.register(*ident, schema));
+                }
+                RuntimeEvent::RemovedMachine { ident } => {
+                    self.state_legacy
+                        .ns_main
+                        .update(|ns| ns.remove_machine(*ident));
+
+                    self.state_legacy
+                        .ns_machines
+                        .update(|ns| ns.unregister(*ident));
+                }
+                _ => {}
+            }
+        }
+
         self.state_legacy
             .ns_machines
-            .update(|ns| ns.update(&report.machines));
+            .update(|ns| ns.update(report, dirty_machines));
+    }
+
+    fn on_runtime_disconnected(&mut self) {
+        self.state_legacy.ns_main.update(|ns| {
+            ns.set_ecat_lost("Runtime disconnected, please refresh the page to reconnect")
+        });
     }
 }

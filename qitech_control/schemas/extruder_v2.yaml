@@ -13,6 +13,9 @@ config:
     target_rpm: !revolution_per_minute
     target_pressure: !bar
 
+  extrusion:
+    min_temperature: !degree_celsius
+
   pressure:
     limit: !bar
     limit_enabled: !boolean
@@ -22,6 +25,7 @@ config:
       frequency_step: !hertz
 
   heating:
+    algorithm: !enum [observer_pi, pid]
     nozzle:
       target_temperature: !degree_celsius
       target_enabled: !boolean

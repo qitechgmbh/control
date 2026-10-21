@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
@@ -14,7 +15,7 @@ use qitech_framework::machine::OperationCapability;
 #[derive(Default, Clone)]
 pub struct SharedState {
     pub schemas: Swappable<HashMap<MachineIdentification, MachineSchema>>,
-    pub machines: Swappable<HashMap<MachineInstanceIdentification, MachineInstance>>,
+    // pub machines: Swappable<HashMap<MachineInstanceIdentification, MachineInstance>>,
 }
 
 #[derive(Default, Clone)]
@@ -22,6 +23,9 @@ pub struct MachineInstance {
     pub config_properties: HashMap<String, Option<ConfigPropertyInfo>>,
     pub state_properties: HashMap<String, Option<StatePropertyInfo>>,
     pub measurements: HashMap<String, Option<MeasurementInfo>>,
+
+    // --- misc ---
+    pub subscriptions: HashSet<MachineInstanceIdentification>,
 }
 
 #[derive(Clone)]
@@ -30,12 +34,16 @@ pub struct ConfigPropertyInfo {
     pub default: ScalarValue,
     pub capability: OperationCapability,
     pub constraints: Constraints,
+
+    #[allow(unused)]
     pub records: Vec<ConfigPropertyEventRecord>,
 }
 
 #[derive(Clone)]
 pub struct StatePropertyInfo {
     pub value: ScalarValue,
+
+    #[allow(unused)]
     pub records: Vec<StatePropertyEventRecord>,
 }
 

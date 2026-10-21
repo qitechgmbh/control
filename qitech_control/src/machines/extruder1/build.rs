@@ -12,25 +12,33 @@ use qitech_lib::ethercat_hal::devices::beckhoff_modules::ek1100::EK1100;
 use qitech_lib::ethercat_hal::devices::beckhoff_modules::el2004::EL2004;
 use qitech_lib::ethercat_hal::devices::beckhoff_modules::el3021::EL3021;
 use qitech_lib::ethercat_hal::devices::beckhoff_modules::el3204::EL3204;
-use qitech_lib::ethercat_hal::devices::beckhoff_modules::el6021::{EL6021, EL6021Configuration};
+use qitech_lib::ethercat_hal::devices::beckhoff_modules::el6021::EL6021;
+use qitech_lib::ethercat_hal::devices::beckhoff_modules::el6021::EL6021Configuration;
 use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
 use qitech_lib::ethercat_hal::io::temperature_input::TemperatureInputDevice;
-use qitech_lib::units::{
-    ThermodynamicTemperature, energy::kilowatt_hour, power::watt,
-    thermodynamic_temperature::degree_celsius,
-};
+use qitech_lib::units::ThermodynamicTemperature;
+use qitech_lib::units::energy::kilowatt_hour;
+use qitech_lib::units::power::watt;
+use qitech_lib::units::thermodynamic_temperature::degree_celsius;
 
+use crate::machines::extruder1::DEFAULT_MIN_EXTRUSION_TEMPERATURE;
+use crate::machines::extruder1::Extruder;
+use crate::machines::extruder1::HeatingAlgorithm;
+use crate::machines::extruder1::Mode;
+use crate::machines::extruder1::VARIANT_V1;
+use crate::machines::extruder1::VARIANT_V2;
+use crate::machines::extruder1::Zone;
+use crate::machines::extruder1::heating_params::build_strategy;
 use crate::machines::extruder1::mitsubishi_cs80::MitsubishiCS80;
 use crate::machines::extruder1::screw_speed_controller::ScrewSpeedController;
-use crate::machines::extruder1::temperature_controller::{
-    TemperatureController, TemperatureControllerConfig,
-};
-use crate::machines::extruder1::{Extruder, Mode, VARIANT_V1, VARIANT_V2, Zone};
+use crate::machines::extruder1::temperature_controller::TemperatureController;
+use crate::machines::extruder1::temperature_controller::TemperatureControllerConfig;
 use crate::transmission::fixed::FixedTransmission;
 
-/// EtherCAT roles, motor poles and gearing of one extruder generation.
+/// EtherCAT roles, motor poles, gearing, heater bands and default heating
+/// algorithm of one extruder generation.
 struct Layout {
     ek1100_role: u16,
     serial_role: u16,
@@ -39,6 +47,9 @@ struct Layout {
     temperature_role: u16,
     motor_poles: usize,
     transmission: FixedTransmission,
+    barrel_heater_w: f64,
+    nozzle_heater_w: f64,
+    heating_algorithm: HeatingAlgorithm,
 }
 
 const LAYOUT_V1: Layout = Layout {
@@ -49,8 +60,14 @@ const LAYOUT_V1: Layout = Layout {
     temperature_role: 5,
     motor_poles: 4,
     transmission: FixedTransmission::new(1.0 / 34.0),
+    barrel_heater_w: 700.0,
+    nozzle_heater_w: 200.0,
+    // V1 keeps its long-standing PID.
+    heating_algorithm: HeatingAlgorithm::Pid,
 };
 
+// The generations are wired with different bands. These were once flattened to
+// the V1 values when the two extruder modules were merged; keep them apart.
 const LAYOUT_V2: Layout = Layout {
     ek1100_role: 0,
     serial_role: 1,
@@ -59,6 +76,10 @@ const LAYOUT_V2: Layout = Layout {
     temperature_role: 4,
     motor_poles: 2,
     transmission: FixedTransmission::new(1.0 / 30.0),
+    barrel_heater_w: 900.0,
+    nozzle_heater_w: 150.0,
+    // V2 has a calibrated thermal model the observer is tuned against.
+    heating_algorithm: HeatingAlgorithm::ObserverPi,
 };
 
 impl MachineBuild for Extruder<VARIANT_V1> {
@@ -99,6 +120,7 @@ impl<const VARIANT: usize> Extruder<VARIANT> {
             .build()?;
 
         ctx.command("mode.extrude")
+            .can_execute(Self::can_extrude)
             .execute(|m: &mut Self| m.set_mode(Mode::Extrude))
             .build()?;
 
@@ -116,34 +138,33 @@ impl<const VARIANT: usize> Extruder<VARIANT> {
             .build()?;
 
         // --- components ---
-        let max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
+        // Cutout at 303 °C while targets stop at 300 °C: with the cutout at 300 °C a zone held at
+        // 300 °C cannot heat the moment it crosses it, causing over- and undershooting.
+        let max_temperature = ThermodynamicTemperature::new::<degree_celsius>(303.0);
+        let max_target_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
 
-        // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5
-        // undershoot ~0.7 (Problems when starting far away because of integral)
-        let zone_gains = (0.16, 0.0, 0.008);
+        // The control law differs by hardware generation; the operator can switch it at runtime
+        // through `heating.algorithm`.
+        let mut init_zone = |zone: Zone, heating_element_wattage: f64| {
+            TemperatureController::init(
+                ctx,
+                zone,
+                TemperatureControllerConfig {
+                    max_temperature,
+                    max_target_temperature,
+                    pwm_period: Duration::from_millis(500),
+                    heating_element_wattage,
+                    digital_port: zone.port(),
+                    temperature_port: zone.port(),
+                    strategy: build_strategy(layout.heating_algorithm, zone),
+                },
+            )
+        };
 
-        let temperature_controller_front =
-            init_heating_zone(ctx, Zone::Front, max_temperature, zone_gains, 700.0, 1.0, 0)?;
-        let temperature_controller_middle = init_heating_zone(
-            ctx,
-            Zone::Middle,
-            max_temperature,
-            zone_gains,
-            700.0,
-            1.0,
-            1,
-        )?;
-        let temperature_controller_back =
-            init_heating_zone(ctx, Zone::Back, max_temperature, zone_gains, 700.0, 1.0, 2)?;
-        let temperature_controller_nozzle = init_heating_zone(
-            ctx,
-            Zone::Nozzle,
-            max_temperature,
-            zone_gains,
-            200.0,
-            0.95,
-            3,
-        )?;
+        let temperature_controller_front = init_zone(Zone::Front, layout.barrel_heater_w)?;
+        let temperature_controller_middle = init_zone(Zone::Middle, layout.barrel_heater_w)?;
+        let temperature_controller_back = init_zone(Zone::Back, layout.barrel_heater_w)?;
+        let temperature_controller_nozzle = init_zone(Zone::Nozzle, layout.nozzle_heater_w)?;
 
         let screw_speed_controller = ScrewSpeedController::init::<VARIANT>(
             ctx,
@@ -169,41 +190,30 @@ impl<const VARIANT: usize> Extruder<VARIANT> {
                 .default(true)
                 .build()?,
 
+            heating_algorithm: ctx
+                .config::<HeatingAlgorithm>("heating.algorithm")
+                .default(layout.heating_algorithm)
+                .on_external_changed(Self::on_heating_algorithm_changed)
+                .build()?,
+
+            // Shares the zones' target bound: a floor above what a zone may be heated to would
+            // forbid extrusion permanently.
+            min_extrusion_temperature: ctx
+                .config::<degree_celsius>("extrusion.min_temperature")
+                .default(DEFAULT_MIN_EXTRUSION_TEMPERATURE)
+                .minimum(0.0)
+                .maximum(max_target_temperature.get::<degree_celsius>())
+                .build()?,
+
             mode: ctx.state::<Mode>("mode").build()?,
 
             combined_power: ctx.measurement::<watt>("power.combined").build()?,
             total_energy: ctx.measurement::<kilowatt_hour>("energy.total").build()?,
 
             last_energy_calculation_time: None,
+            active_heating_algorithm: layout.heating_algorithm,
         })
     }
-}
-
-// --- components ---
-
-#[allow(clippy::too_many_arguments)]
-fn init_heating_zone(
-    ctx: &mut BuildContext,
-    zone: Zone,
-    max_temperature: ThermodynamicTemperature,
-    gains: (f64, f64, f64),
-    heating_element_wattage: f64,
-    max_clamp: f64,
-    port: usize,
-) -> BuildResult<TemperatureController> {
-    TemperatureController::init(
-        ctx,
-        zone,
-        TemperatureControllerConfig {
-            max_temperature,
-            pwm_period: Duration::from_millis(500),
-            heating_element_wattage,
-            max_clamp,
-            digital_port: port,
-            temperature_port: port,
-            gains,
-        },
-    )
 }
 
 // --- hardware ---
@@ -242,4 +252,26 @@ fn init_el6021(
         .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
 
     Ok(device)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The generations really are wired differently, and a refactor that
+    /// flattens them back into one set of numbers is a regression — it already
+    /// happened once, when the two extruder modules were merged.
+    #[test]
+    fn each_generation_keeps_its_own_heater_ratings() {
+        assert_eq!(LAYOUT_V1.barrel_heater_w, 700.0);
+        assert_eq!(LAYOUT_V1.nozzle_heater_w, 200.0);
+        assert_eq!(LAYOUT_V2.barrel_heater_w, 900.0);
+        assert_eq!(LAYOUT_V2.nozzle_heater_w, 150.0);
+    }
+
+    #[test]
+    fn each_generation_keeps_its_default_algorithm() {
+        assert_eq!(LAYOUT_V1.heating_algorithm, HeatingAlgorithm::Pid);
+        assert_eq!(LAYOUT_V2.heating_algorithm, HeatingAlgorithm::ObserverPi);
+    }
 }

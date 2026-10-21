@@ -7,6 +7,7 @@ export const UPDATE_LOG = "update:log";
 export const UPDATE_END = "update:end";
 export const UPDATE_CANCEL = "update:cancel";
 export const UPDATE_STEP = "update:step";
+export const UPDATE_CHECK_LATEST_RELEASE = "update:check_latest_release";
 
 // Token management
 export const UPDATE_SAVE_TOKEN = "update:save_token";

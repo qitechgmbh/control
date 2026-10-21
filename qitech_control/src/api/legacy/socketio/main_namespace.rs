@@ -9,6 +9,7 @@ use crate::api::legacy::socketio::events::EthercatDevicesEvent;
 use crate::api::legacy::socketio::events::EthercatSetupDone;
 use crate::api::legacy::socketio::events::MachineObj;
 use crate::api::legacy::socketio::events::MachinesEvent;
+use crate::api::legacy::socketio::events::ModbusDevicesEvent;
 use crate::api::legacy::socketio::events::SocketIOEvent;
 
 // --- main namespace ---
@@ -18,6 +19,7 @@ pub struct MainNamespaceManager {
     machines: HashMap<MachineInstanceIdentification, MachineObj>,
     ecat_state: Option<&'static str>,
     ecat_devices: Option<Vec<legacy::EtherCATDeviceMetadata>>,
+    modbus_devices: Option<Vec<legacy::ModbusDeviceMetadata>>,
 }
 
 impl MainNamespaceManager {
@@ -43,6 +45,16 @@ impl MainNamespaceManager {
                 "EthercatDevicesEvent",
                 EthercatDevicesEvent::Done(EthercatSetupDone { devices }),
             );
+
+            if let Err(e) = socket.emit("event", &event) {
+                tracing::error!("Failed to send message to new socket: {e}");
+                return;
+            }
+        }
+
+        // --- send the modbus devices if already recorded ---
+        if let Some(devices) = self.modbus_devices.clone() {
+            let event = SocketIOEvent::new("ModbusDevicesEvent", ModbusDevicesEvent { devices });
 
             if let Err(e) = socket.emit("event", &event) {
                 tracing::error!("Failed to send message to new socket: {e}");
@@ -100,6 +112,41 @@ impl MainNamespaceManager {
         self.ecat_devices = Some(devices);
     }
 
+    pub fn set_modbus_devices(&mut self, devices: Vec<legacy::ModbusDeviceMetadata>) {
+        let event = SocketIOEvent::new(
+            "ModbusDevicesEvent",
+            ModbusDevicesEvent {
+                devices: devices.clone(),
+            },
+        );
+
+        self.broadcast(event);
+        self.modbus_devices = Some(devices);
+    }
+
+    pub fn set_ecat_lost(&mut self, reason: &str) {
+        self.ecat_devices = None;
+        self.ecat_state = Some("lost");
+
+        let devices_event = SocketIOEvent::new(
+            "EthercatDevicesEvent",
+            EthercatDevicesEvent::Error(reason.to_string()),
+        );
+
+        let state_event = SocketIOEvent::new(
+            "EthercatStateEvent",
+            EthercatDevicesEvent::State("lost".to_string()),
+        );
+
+        tracing::error!("EtherCAT lost: {reason}");
+        self.broadcast(devices_event);
+        self.broadcast(state_event);
+
+        for ident in self.machines.keys().cloned().collect::<Vec<_>>() {
+            self.remove_machine(ident);
+        }
+    }
+
     pub fn add_machine(
         &mut self,
         ident: MachineInstanceIdentification,
@@ -108,8 +155,8 @@ impl MainNamespaceManager {
         self.machines.insert(
             ident,
             MachineObj {
-                machine_identification_unique: legacy::MachineIdentificationUnique {
-                    machine_identification: legacy::types::MachineIdentification {
+                machine_identification_unique: legacy::LegacyMachineIdentificationUnique {
+                    machine_identification: legacy::types::LegacyMachineIdentification {
                         vendor: ident.machine.vendor_id,
                         machine: ident.machine.machine_id,
                     },
@@ -127,6 +174,24 @@ impl MainNamespaceManager {
         );
 
         tracing::info!("Added Machine: {ident}");
+        self.broadcast(event);
+    }
+
+    pub fn remove_machine(&mut self, ident: MachineInstanceIdentification) {
+        if self.machines.remove(&ident).is_none() {
+            return;
+        }
+
+        // --- always broadcast, even if no machines are left ---
+        // the frontend derives removals by diffing this snapshot
+        let event = SocketIOEvent::new(
+            "MachinesEvent",
+            MachinesEvent {
+                machines: self.machines.values().cloned().collect(),
+            },
+        );
+
+        tracing::info!("Removed Machine: {ident}");
         self.broadcast(event);
     }
 

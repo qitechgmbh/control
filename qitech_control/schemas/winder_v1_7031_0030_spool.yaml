@@ -25,13 +25,13 @@ config:
 
   puller:
     direction: !enum [
-      forward, 
+      forward,
       reverse,
     ]
 
     gear_ratio: !enum [
-      one_to_one, 
-      one_to_five, 
+      one_to_one,
+      one_to_five,
       one_to_ten,
     ]
 
@@ -50,6 +50,12 @@ config:
     limit_outer: !millimeter
     step_size: !millimeter
     padding: !millimeter
+    edge_dwell_revolutions: !float
+    start_dwell_revolutions: !float
+
+  spool_automatic:
+    required_meters: !meter
+    action: !enum [no_action, pull, hold]
 
 
 state:
@@ -66,22 +72,24 @@ state:
 
   traverse:
     mode: !enum [
-      standby, 
-      hold, 
+      standby,
+      hold,
       traverse
     ]
 
     state: !enum [
-      idle, 
-      going_in, 
-      going_out, 
-      initialize, 
-      escape_endstop, 
-      find_endstop_fine_distancing, 
-      find_endstop_coarse, 
-      find_endstop_fine, 
-      validate, 
-      traversing_in, 
+      idle,
+      going_in,
+      going_out,
+      initialize,
+      escape_endstop,
+      find_endstop_fine_distancing,
+      find_endstop_coarse,
+      find_endstop_fine,
+      validate,
+      dwelling_outer,
+      traversing_in,
+      dwelling_inner,
       traversing_out
     ]
 
@@ -112,7 +120,7 @@ measurements:
     speed_controller:
       speed_target: !meter_per_minute
 
-      adaptive: 
+      adaptive:
         modulation: !float
         distance_since_adjustment: !meter
 
@@ -120,7 +128,7 @@ measurements:
     position: !millimeter
 
   tension_arm:
-    angle: !revolution
+    angle: !degree
 
 commands:
   mode:

@@ -5,7 +5,8 @@ use qitech_framework::ConfigPropertyWriteOutcome;
 use qitech_framework::MachineIdentification;
 use qitech_framework::MachineInstanceIdentification;
 use qitech_framework::MachineSchema;
-use qitech_framework::MachinesReport;
+use qitech_framework::RuntimeEvent;
+use qitech_framework::RuntimeReport;
 use qitech_framework::StatePropertyEvent;
 use socketioxide::extract::SocketRef;
 
@@ -18,7 +19,7 @@ use crate::api::types::StatePropertyInfo;
 
 #[derive(Default, Clone)]
 pub struct MachineNamespaceManager {
-    registry: HashMap<MachineInstanceIdentification, Entry>,
+    pub(crate) registry: HashMap<MachineInstanceIdentification, Entry>,
 }
 
 impl MachineNamespaceManager {
@@ -50,14 +51,43 @@ impl MachineNamespaceManager {
                     config_properties,
                     state_properties,
                     measurements,
+                    ..Default::default()
                 },
-                last_state: None,
+                emitted_default_state: false,
+                emit_state: false,
             },
         );
     }
 
-    pub fn update(&mut self, report: &MachinesReport) {
-        for record in &report.config_property_records {
+    pub fn unregister(&mut self, ident: MachineInstanceIdentification) {
+        let Some(entry) = self.registry.remove(&ident) else {
+            // no machine registered under that uid
+            return;
+        };
+
+        // --- drop the sockets, so reconnects get rejected by `add_socket` ---
+        for socket in entry.sockets {
+            if let Err(e) = socket.disconnect() {
+                tracing::error!("Failed to disconnect socket for {ident}: {e}");
+            }
+        }
+    }
+
+    pub fn update(
+        &mut self,
+        report: &RuntimeReport,
+        dirty_machines: Vec<MachineInstanceIdentification>,
+    ) {
+        for ident in dirty_machines {
+            let Some(entry) = self.registry.get_mut(&ident) else {
+                // no machine registered under that uid
+                continue;
+            };
+
+            entry.emit_state = true;
+        }
+
+        for record in &report.machines.config_property_records {
             let Some(entry) = self.registry.get_mut(&record.machine) else {
                 // no machine registered under that uid
                 continue;
@@ -67,6 +97,8 @@ impl MachineNamespaceManager {
                 // not defined in schema
                 continue;
             };
+
+            entry.emit_state = true;
 
             if let ConfigPropertyEvent::Registered {
                 default,
@@ -85,7 +117,14 @@ impl MachineNamespaceManager {
                 continue;
             }
 
-            let info = info.as_mut().expect("Property should be registered now...");
+            let Some(info) = info.as_mut() else {
+                tracing::warn!(
+                    machine = %record.machine,
+                    path = ?record.path,
+                    "config property event received before registration"
+                );
+                continue;
+            };
 
             match record.event.clone() {
                 ConfigPropertyEvent::Registered { .. } => {
@@ -117,7 +156,7 @@ impl MachineNamespaceManager {
             }
         }
 
-        for record in &report.state_property_records {
+        for record in &report.machines.state_property_records {
             let Some(entry) = self.registry.get_mut(&record.machine) else {
                 // no machine registered under that uid
                 continue;
@@ -127,6 +166,8 @@ impl MachineNamespaceManager {
                 // not defined in schema
                 continue;
             };
+
+            entry.emit_state = true;
 
             if let StatePropertyEvent::Registered { value } = record.event.clone() {
                 *info = Some(StatePropertyInfo {
@@ -148,7 +189,7 @@ impl MachineNamespaceManager {
             }
         }
 
-        for snapshot in &report.measurement_snapshots {
+        for snapshot in &report.machines.measurement_snapshots {
             let Some(entry) = self.registry.get_mut(&snapshot.machine) else {
                 // no machine registered under that uid
                 continue;
@@ -164,18 +205,52 @@ impl MachineNamespaceManager {
             });
         }
 
+        for event in &report.events {
+            match event {
+                // registration is handled by the dispatcher before `update` is called
+                RuntimeEvent::AddedMachine { .. } | RuntimeEvent::RemovedMachine { .. } => {}
+
+                RuntimeEvent::SubscriptionAdded {
+                    provider,
+                    subscriber,
+                    ..
+                } => {
+                    let Some(entry) = self.registry.get_mut(subscriber) else {
+                        // no machine registered under that id
+                        continue;
+                    };
+
+                    entry.instance.subscriptions.insert(*provider);
+                }
+
+                RuntimeEvent::SubscriptionRemoved {
+                    provider,
+                    subscriber,
+                } => {
+                    let Some(entry) = self.registry.get_mut(subscriber) else {
+                        // no machine registered under that id
+                        continue;
+                    };
+
+                    entry.instance.subscriptions.remove(provider);
+                }
+            }
+        }
+
         for (ident, entry) in &mut self.registry {
             let Some(adapter) = adapter::get(ident.machine) else {
                 continue;
             };
 
             // --- emit state event ---
-            if let Some(data) = (adapter.init_state_event)(&entry.instance, false)
-                && entry.last_state.as_ref() != Some(&data)
+            if entry.emit_state
+                && let Some(data) =
+                    (adapter.init_state_event)(&entry.instance, !entry.emitted_default_state)
             {
-                let event = SocketIOEvent::new("StateEvent", data.clone());
+                let event = SocketIOEvent::new("StateEvent", data);
                 Self::broadcast(&mut entry.sockets, event);
-                entry.last_state = Some(data);
+                entry.emitted_default_state = true;
+                entry.emit_state = false;
             }
 
             // --- emit live values ---
@@ -204,7 +279,7 @@ impl MachineNamespaceManager {
             tracing::error!("Failed to add socket {ident}: No such machine");
 
             if let Err(e) = socket.disconnect() {
-                tracing::error!("Failed to dsiconnect Socket: {}", e);
+                tracing::error!("Failed to disconnect Socket: {}", e);
             }
 
             return;
@@ -212,20 +287,9 @@ impl MachineNamespaceManager {
 
         tracing::info!("Adding new main namespace socket!");
 
-        // --- send the current state ---
-        if let Some(adapter) = adapter::get(ident.machine)
-            && let Some(data) = (adapter.init_state_event)(&entry.instance, true)
-        {
-            let event = SocketIOEvent::new("StateEvent", data);
-
-            if let Err(e) = socket.emit("event", &event) {
-                tracing::error!("Failed to send state to new socket: {e}");
-                return;
-            }
-        }
-
         // --- store the socket ---
         entry.sockets.push(socket);
+        entry.emit_state = true;
     }
 
     fn broadcast(sockets: &mut Vec<SocketRef>, event: SocketIOEvent) {
@@ -247,9 +311,10 @@ impl MachineNamespaceManager {
 
 #[derive(Default, Clone)]
 pub struct Entry {
-    sockets: Vec<SocketRef>,
-    instance: MachineInstance,
-    last_state: Option<serde_json::Value>,
+    pub(crate) sockets: Vec<SocketRef>,
+    pub(crate) instance: MachineInstance,
+    pub(crate) emitted_default_state: bool,
+    pub(crate) emit_state: bool,
 }
 
 pub fn machine_namespace_path_to_ident(s: &str) -> Result<MachineInstanceIdentification, String> {

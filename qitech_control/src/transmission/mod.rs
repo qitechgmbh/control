@@ -4,13 +4,14 @@
 //! today, but the trait is kept whole so other machines can adopt it.
 #![allow(dead_code)]
 
-use qitech_lib::units::{
-    angle::radian,
-    angular_velocity::radian_per_second,
-    f64::{Angle, AngularVelocity, Length, Velocity},
-    length::meter,
-    velocity::meter_per_second,
-};
+use qitech_lib::units::angle::radian;
+use qitech_lib::units::angular_velocity::radian_per_second;
+use qitech_lib::units::f64::Angle;
+use qitech_lib::units::f64::AngularVelocity;
+use qitech_lib::units::f64::Length;
+use qitech_lib::units::f64::Velocity;
+use qitech_lib::units::length::meter;
+use qitech_lib::units::velocity::meter_per_second;
 
 pub mod fixed;
 

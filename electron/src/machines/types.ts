@@ -84,6 +84,8 @@ export type MachineProperties = {
   machine_identification: MachineIdentification;
   // roles and thair allowed devices
   device_roles: DeviceRole[];
+  // whether this machine is driven by a Modbus RTU device (selectable on Setup -> Modbus)
+  modbus_rtu?: boolean;
 };
 
 export const deviceIdentification = z.object({

@@ -1,8 +1,13 @@
 pub mod act;
 pub mod build;
+pub mod heating_params;
 pub mod mitsubishi_cs80;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
+
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::time::Instant;
 
 use qitech_framework::EnumProperty;
 use qitech_framework::MachineIdentification;
@@ -19,16 +24,19 @@ use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
 use qitech_lib::ethercat_hal::io::temperature_input::TemperatureInputDevice;
-use qitech_lib::units::{Energy, Power, Time, time::second};
-use std::cell::RefCell;
-use std::rc::Rc;
-use std::time::Instant;
-
+use qitech_lib::units::Energy;
+use qitech_lib::units::Power;
+use qitech_lib::units::ThermodynamicTemperature;
+use qitech_lib::units::Time;
+use qitech_lib::units::thermodynamic_temperature::degree_celsius;
+use qitech_lib::units::time::second;
 use screw_speed_controller::ScrewSpeedController;
 use temperature_controller::TemperatureController;
 
 pub const VARIANT_V1: usize = 0;
 pub const VARIANT_V2: usize = 1;
+
+pub const DEFAULT_MIN_EXTRUSION_TEMPERATURE: f64 = 150.0;
 
 pub type ExtruderV1 = Extruder<VARIANT_V1>;
 pub type ExtruderV2 = Extruder<VARIANT_V2>;
@@ -57,6 +65,17 @@ impl Regulation {
     pub const fn uses_rpm(self) -> bool {
         matches!(self, Self::Rpm)
     }
+}
+
+/// Control law driving all four heating zones.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, EnumProperty)]
+pub enum HeatingAlgorithm {
+    /// PI on an observed metal temperature over a feedforward, calibrated for
+    /// `ExtruderV2`.
+    ObserverPi,
+    /// Plain PID on the raw sensor reading.
+    #[default]
+    Pid,
 }
 
 /// Mirrors the private `AutoTuneState` of [`crate::controllers::pid_autotuner`] so it can be
@@ -130,6 +149,15 @@ impl PidGains {
         let _ = self.kd.set(kd);
         self.applied = (kp, ki, kd);
     }
+
+    /// Like [`Self::adopt`], but also makes the gains the new defaults — used when the control law
+    /// is swapped for one that brings its own gains.
+    pub fn reset_to(&mut self, kp: f64, ki: f64, kd: f64) {
+        let _ = self.kp.set_default(kp);
+        let _ = self.ki.set_default(ki);
+        let _ = self.kd.set_default(kd);
+        self.adopt(kp, ki, kd);
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -150,6 +178,29 @@ pub enum Zone {
 }
 
 impl Zone {
+    /// All zones in port order.
+    pub const ALL: [Self; 4] = [Self::Front, Self::Middle, Self::Back, Self::Nozzle];
+
+    /// EL3204 / EL2004 port index.
+    pub const fn port(self) -> usize {
+        match self {
+            Self::Front => 0,
+            Self::Middle => 1,
+            Self::Back => 2,
+            Self::Nozzle => 3,
+        }
+    }
+
+    /// The zone's schema spelling, as it appears in its resource paths.
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Nozzle => "nozzle",
+            Self::Front => "front",
+            Self::Middle => "middle",
+            Self::Back => "back",
+        }
+    }
+
     pub const fn paths(self) -> ZonePaths {
         match self {
             Self::Nozzle => ZonePaths {
@@ -226,10 +277,15 @@ pub struct Extruder<const VARIANT: usize> {
     pub(super) temperature_controller_nozzle: TemperatureController,
 
     // --- config ---
-    /// UI-only flag: whether the frontend shows a target temperature setter for the nozzle.
-    /// The control loop never reads it; it is held so the resource stays owned by the machine.
-    #[allow(dead_code)]
+    /// Whether the nozzle is heated at all: it gates the frontend's target temperature setter, and
+    /// with it whether [`Self::can_extrude`] holds the nozzle to the extrusion temperature floor.
+    /// The control loop itself never reads it.
     nozzle_temperature_target_enabled: ConfigProperty<bool>,
+    heating_algorithm: ConfigProperty<HeatingAlgorithm>,
+
+    /// Temperature floor every heated zone must clear before [`Self::can_extrude`] allows the
+    /// screw to turn. Tunable per material — see [`DEFAULT_MIN_EXTRUSION_TEMPERATURE`].
+    min_extrusion_temperature: ConfigProperty<ThermodynamicTemperature>,
 
     // --- state ---
     mode: StateProperty<Mode>,
@@ -239,6 +295,9 @@ pub struct Extruder<const VARIANT: usize> {
     total_energy: Measurement<Energy>,
 
     last_energy_calculation_time: Option<Instant>,
+    /// The algorithm the zones currently run, so a write that does not change
+    /// `heating_algorithm` leaves the gains alone.
+    active_heating_algorithm: HeatingAlgorithm,
 }
 
 impl MachineDescriptor for Extruder<VARIANT_V1> {
@@ -285,6 +344,36 @@ impl<const VARIANT: usize> Extruder<VARIANT> {
         }
 
         self.last_energy_calculation_time = Some(now);
+    }
+
+    // --- heating ---
+
+    const fn temperature_controller_mut(&mut self, zone: Zone) -> &mut TemperatureController {
+        match zone {
+            Zone::Front => &mut self.temperature_controller_front,
+            Zone::Middle => &mut self.temperature_controller_middle,
+            Zone::Back => &mut self.temperature_controller_back,
+            Zone::Nozzle => &mut self.temperature_controller_nozzle,
+        }
+    }
+
+    /// Swap the control law on every zone. Gains reset to the new algorithm's defaults: the
+    /// observer's PI acts on an estimated metal temperature and the plain PID on the raw reading,
+    /// so neither's gains carry over.
+    pub(super) fn on_heating_algorithm_changed(&mut self) -> ActResult {
+        let algorithm = self.heating_algorithm.get();
+
+        if algorithm == self.active_heating_algorithm {
+            return Ok(());
+        }
+
+        for zone in Zone::ALL {
+            self.temperature_controller_mut(zone)
+                .set_strategy(heating_params::build_strategy(algorithm, zone));
+        }
+
+        self.active_heating_algorithm = algorithm;
+        Ok(())
     }
 
     // --- mode ---
@@ -344,6 +433,45 @@ impl<const VARIANT: usize> Extruder<VARIANT> {
         }
 
         self.mode.set(Mode::Extrude);
+    }
+
+    /// The four zone controllers paired with the zone each one heats.
+    fn heating_zones(&self) -> [(Zone, &TemperatureController); 4] {
+        [
+            (Zone::Nozzle, &self.temperature_controller_nozzle),
+            (Zone::Front, &self.temperature_controller_front),
+            (Zone::Middle, &self.temperature_controller_middle),
+            (Zone::Back, &self.temperature_controller_back),
+        ]
+    }
+
+    /// Extrusion is blocked until every heated zone has reached `extrusion.min_temperature`.
+    pub fn can_extrude(&self) -> OperationCapability {
+        if self.mode.get() == Mode::Extrude {
+            return OperationCapability::Allowed;
+        }
+
+        let heats_nozzle = self.nozzle_temperature_target_enabled.get();
+        let minimum = self.min_extrusion_temperature.get_as::<degree_celsius>();
+
+        // A zone whose thermocouple is unplugged reads 0 °C, so broken wiring blocks extrusion
+        // through this same check.
+        let cold: Vec<&str> = self
+            .heating_zones()
+            .into_iter()
+            .filter(|(zone, _)| heats_nozzle || *zone != Zone::Nozzle)
+            .filter(|(_, controller)| controller.temperature().get::<degree_celsius>() < minimum)
+            .map(|(zone, _)| zone.name())
+            .collect();
+
+        if !cold.is_empty() {
+            return OperationCapability::forbidden(format!(
+                "requires every zone at {minimum} °C, still cold: {}",
+                cold.join(", ")
+            ));
+        }
+
+        OperationCapability::Allowed
     }
 
     /// Command entry point for a mode transition.

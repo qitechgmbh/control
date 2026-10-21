@@ -34,6 +34,8 @@ export function Winder2_7031SettingPage() {
     defaultState,
     setTraverseStepSize,
     setTraversePadding,
+    setTraverseEdgeDwellRevolutions,
+    setTraverseStartDwellRevolutions,
     setTraverseLimitInner,
     setTraverseLimitOuter,
     gotoTraverseHome,
@@ -63,9 +65,7 @@ export function Winder2_7031SettingPage() {
     setWinder2XLMode(enabled);
     setXlMode(enabled);
 
-    // When switching from XL to normal mode, reset traverse limits to default values
     if (!enabled && defaultState) {
-      // Only reset if current values exceed the standard max
       const currentOuter = state?.traverse_state?.limit_outer ?? 0;
       const currentInner = state?.traverse_state?.limit_inner ?? 0;
       const defaultOuter = defaultState.traverse_state?.limit_outer;
@@ -86,8 +86,10 @@ export function Winder2_7031SettingPage() {
         setTraverseLimitInner(defaultInner);
       }
 
-      // Home the traverse when switching from XL to normal mode
-      gotoTraverseHome();
+      // Only home if in Hold mode (traverse commands require Hold)
+      if (state?.mode_state?.mode === "Hold") {
+        gotoTraverseHome();
+      }
     }
   };
 
@@ -135,6 +137,42 @@ export function Winder2_7031SettingPage() {
               defaultValue={defaultState?.traverse_state?.padding}
               renderValue={(value) => roundToDecimals(value, 2)}
               onChange={(value) => setTraversePadding(value)}
+            />
+          </Label>
+          <Label label="Edge Dwell">
+            <EditValue
+              value={state?.traverse_state?.edge_dwell_revolutions}
+              title={"Edge Dwell"}
+              description={
+                "Spool revolutions the traverse waits at an edge before reversing."
+              }
+              unit="rev"
+              step={0.1}
+              min={0}
+              max={10}
+              defaultValue={
+                defaultState?.traverse_state?.edge_dwell_revolutions
+              }
+              renderValue={(value) => roundToDecimals(value, 1)}
+              onChange={(value) => setTraverseEdgeDwellRevolutions(value)}
+            />
+          </Label>
+          <Label label="Start Dwell">
+            <EditValue
+              value={state?.traverse_state?.start_dwell_revolutions}
+              title={"Start Dwell"}
+              description={
+                "Spool revolutions the traverse waits at the outer edge when winding starts."
+              }
+              unit="rev"
+              step={0.1}
+              min={0}
+              max={10}
+              defaultValue={
+                defaultState?.traverse_state?.start_dwell_revolutions
+              }
+              renderValue={(value) => roundToDecimals(value, 1)}
+              onChange={(value) => setTraverseStartDwellRevolutions(value)}
             />
           </Label>
         </ControlCard>

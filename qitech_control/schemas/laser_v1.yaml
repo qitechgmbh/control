@@ -13,6 +13,9 @@ config:
     tolerance:
       upper: !millimeter
       lower: !millimeter
+
+  # legacy
+  global_warning: !boolean
   
 state:
   in_tolerance: !boolean

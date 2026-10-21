@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useId } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import uPlot from "uplot";
 import { BigGraphProps, GraphConfig } from "./types";
 import { getAllTimeSeries } from "./createChart";
@@ -12,7 +12,10 @@ type OverlayLine = {
   d: string;
 };
 
-type ClipRect = {
+// Position and size of uPlot's plot area, in CSS pixels relative to the overlay's
+// containing block. The SVG is placed exactly on this rect, which makes the SVG's
+// coordinate space identical to the one valToPos(..., false) reports in.
+type PlotRect = {
   x: number;
   y: number;
   width: number;
@@ -23,6 +26,7 @@ function buildDashedLine(
   plot: uPlot,
   xData: number[],
   yData: Array<number | null>,
+  plotWidth: number,
 ): string {
   if (xData.length < 2) {
     return "";
@@ -33,9 +37,11 @@ function buildDashedLine(
   let prevX = 0;
   let prevY = 0;
 
-  // Use CSS pixels (canvasPixels=false) because the SVG overlay is in CSS pixel space.
-  // u.valToPos(..., true) returns device pixels (DPR-scaled) which would misplace
-  // everything by a factor of devicePixelRatio on high-DPI displays.
+  // valToPos(..., false) returns CSS pixels relative to the PLOT AREA, not to the
+  // chart root: uPlot passes an offset of 0 instead of plotLftCss/plotTopCss on this
+  // branch. The SVG is positioned on the plot area for exactly that reason, so these
+  // values can be used as-is. Using canvasPixels=true instead would return device
+  // pixels and misplace everything by a factor of devicePixelRatio.
   for (let i = 0; i < xData.length; i++) {
     const value = yData[i];
     if (value === null || value === undefined) continue;
@@ -64,12 +70,8 @@ function buildDashedLine(
 
   // Extend the last step to the right edge of the plot area so the target line
   // reaches the same boundary as the data series drawn by uPlot.
-  if (started) {
-    const dpr = window.devicePixelRatio || 1;
-    const rightEdge = (plot.bbox.left + plot.bbox.width) / dpr;
-    if (rightEdge > prevX) {
-      parts.push(`L ${rightEdge} ${prevY}`);
-    }
+  if (started && plotWidth > prevX) {
+    parts.push(`L ${plotWidth} ${prevY}`);
   }
 
   return parts.join(" ");
@@ -141,13 +143,16 @@ function areOverlayLinesEqual(a: OverlayLine[], b: OverlayLine[]): boolean {
   return true;
 }
 
-function isSameClipRect(a: ClipRect | null, b: ClipRect): boolean {
+// getBoundingClientRect returns fractional values, so compare with sub-pixel
+// tolerance to avoid re-rendering on layout noise.
+function isSamePlotRect(a: PlotRect | null, b: PlotRect): boolean {
+  const EPSILON = 0.01;
   return (
     !!a &&
-    a.x === b.x &&
-    a.y === b.y &&
-    a.width === b.width &&
-    a.height === b.height
+    Math.abs(a.x - b.x) < EPSILON &&
+    Math.abs(a.y - b.y) < EPSILON &&
+    Math.abs(a.width - b.width) < EPSILON &&
+    Math.abs(a.height - b.height) < EPSILON
   );
 }
 
@@ -164,15 +169,15 @@ export function TargetDashOverlay({
     () => getHistoricalDashTargets(newData, config),
     [newData, config],
   );
-  const clipPathId = useId().replace(/:/g, "");
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
   const [lines, setLines] = useState<OverlayLine[]>([]);
-  const [clipRect, setClipRect] = useState<ClipRect | null>(null);
+  const [plotRect, setPlotRect] = useState<PlotRect | null>(null);
 
   useEffect(() => {
     if (targetMeta.length === 0) {
       setLines([]);
-      setClipRect(null);
+      setPlotRect(null);
     }
   }, [targetMeta]);
 
@@ -196,6 +201,22 @@ export function TargetDashOverlay({
         return;
       }
 
+      // Measure uPlot's plot area (the .u-over box) in the coordinate space the
+      // absolutely positioned SVG is laid out in: offsets are relative to the
+      // containing block's padding box, hence the clientLeft/clientTop correction.
+      const host = svgRef.current?.parentElement;
+      if (!host) {
+        return;
+      }
+      const overRect = plot.over.getBoundingClientRect();
+      const hostRect = host.getBoundingClientRect();
+      const nextPlotRect: PlotRect = {
+        x: overRect.left - hostRect.left - host.clientLeft,
+        y: overRect.top - hostRect.top - host.clientTop,
+        width: overRect.width,
+        height: overRect.height,
+      };
+
       const nextLines = targetMeta
         .map((meta, index) => {
           const yData = plot.data[meta.dataIndex] as
@@ -203,7 +224,7 @@ export function TargetDashOverlay({
             | undefined;
           if (!yData || yData.length < 2) return null;
 
-          const d = buildDashedLine(plot, xData, yData);
+          const d = buildDashedLine(plot, xData, yData, nextPlotRect.width);
           if (!d) return null;
 
           return {
@@ -217,22 +238,12 @@ export function TargetDashOverlay({
         })
         .filter((line): line is OverlayLine => !!line);
 
-      if (nextLines.length > 0) {
-        setLines((prev) =>
-          areOverlayLinesEqual(prev, nextLines) ? prev : nextLines,
-        );
-        // u.bbox is in device pixels; divide by DPR to get CSS pixels for the SVG clip rect.
-        const dpr = window.devicePixelRatio || 1;
-        const nextClipRect: ClipRect = {
-          x: plot.bbox.left / dpr,
-          y: plot.bbox.top / dpr,
-          width: plot.bbox.width / dpr,
-          height: plot.bbox.height / dpr,
-        };
-        setClipRect((prev) =>
-          isSameClipRect(prev, nextClipRect) ? prev : nextClipRect,
-        );
-      }
+      setLines((prev) =>
+        areOverlayLinesEqual(prev, nextLines) ? prev : nextLines,
+      );
+      setPlotRect((prev) =>
+        isSamePlotRect(prev, nextPlotRect) ? prev : nextPlotRect,
+      );
     };
 
     const scheduleRecalc = () => {
@@ -300,44 +311,36 @@ export function TargetDashOverlay({
     };
   }, [uplotRef, targetMeta]);
 
-  if (lines.length === 0) {
-    return null;
-  }
-
+  // The SVG stays mounted even with nothing to draw: recalc measures the plot area
+  // relative to this element's parent, so the ref has to be live on the first pass.
+  // Sizing it to the plot area makes valToPos(..., false) directly usable as path
+  // coordinates, and makes the SVG itself clip overflowing target lines.
   return (
     <svg
-      className="pointer-events-none absolute inset-0 h-full w-full"
+      ref={svgRef}
+      className="pointer-events-none absolute"
+      style={{
+        left: plotRect?.x ?? 0,
+        top: plotRect?.y ?? 0,
+        width: plotRect?.width ?? 0,
+        height: plotRect?.height ?? 0,
+      }}
       aria-hidden
     >
-      {clipRect && (
-        <defs>
-          <clipPath id={clipPathId}>
-            <rect
-              x={clipRect.x}
-              y={clipRect.y}
-              width={clipRect.width}
-              height={clipRect.height}
-            />
-          </clipPath>
-        </defs>
-      )}
-
-      <g clipPath={clipRect ? `url(#${clipPathId})` : undefined}>
-        {lines.map((line) => {
-          return (
-            <path
-              key={line.key}
-              d={line.d}
-              fill="none"
-              stroke={line.color}
-              strokeWidth={line.width}
-              strokeLinecap="butt"
-              strokeDasharray={line.dash.join(" ")}
-              strokeDashoffset={line.dashOffset}
-            />
-          );
-        })}
-      </g>
+      {lines.map((line) => {
+        return (
+          <path
+            key={line.key}
+            d={line.d}
+            fill="none"
+            stroke={line.color}
+            strokeWidth={line.width}
+            strokeLinecap="butt"
+            strokeDasharray={line.dash.join(" ")}
+            strokeDashoffset={line.dashOffset}
+          />
+        );
+      })}
     </svg>
   );
 }

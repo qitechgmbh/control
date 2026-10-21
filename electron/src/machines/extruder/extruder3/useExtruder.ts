@@ -5,7 +5,13 @@ import { MachineIdentificationUnique } from "@/machines/types";
 import { extruder3 } from "@/machines/properties";
 import { extruder3Route } from "@/routes/routes";
 import { z } from "zod";
-import { StateEvent, Mode, useExtruder3Namespace } from "./extruder3Namespace";
+import {
+  StateEvent,
+  Mode,
+  HeatingAlgorithm,
+  heatingAlgorithmSchema,
+  useExtruder3Namespace,
+} from "./extruder3Namespace";
 import { useEffect, useMemo } from "react";
 import { produce } from "immer";
 
@@ -232,6 +238,20 @@ export function useExtruder3() {
     );
   };
 
+  const setMinExtrusionTemperature = (temperature: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.extruder_settings_state.min_extrusion_temperature =
+          temperature;
+      },
+      () =>
+        requestMinExtrusionTemperature({
+          machine_identification_unique: machineIdentification,
+          data: { SetMinExtrusionTemperature: temperature },
+        }),
+    );
+  };
+
   const setTemperatureTargetEnabled = (enabled: boolean) => {
     const res = enabled
       ? true
@@ -350,6 +370,21 @@ export function useExtruder3() {
     );
   };
 
+  // The server resets the temperature PID gains to the new algorithm's
+  // defaults and emits them with its next state.
+  const setHeatingAlgorithm = (algorithm: HeatingAlgorithm) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.extruder_settings_state.heating_algorithm = algorithm;
+      },
+      () =>
+        requestHeatingAlgorithm({
+          machine_identification_unique: machineIdentification,
+          data: { SetHeatingAlgorithm: algorithm },
+        }),
+    );
+  };
+
   const resetInverter = () => {
     // No optimistic update needed for reset
     requestResetInverter({
@@ -429,6 +464,10 @@ export function useExtruder3() {
     z.object({ SetNozzleTemperatureTargetEnabled: z.boolean() }),
   );
 
+  const { request: requestMinExtrusionTemperature } = useMachineMutation(
+    z.object({ SetMinExtrusionTemperature: z.number() }),
+  );
+
   const { request: requestPressurePidSettings } = useMachineMutation(
     z.object({
       SetPressurePidSettings: z.object({
@@ -448,6 +487,10 @@ export function useExtruder3() {
         zone: z.string(),
       }),
     }),
+  );
+
+  const { request: requestHeatingAlgorithm } = useMachineMutation(
+    z.object({ SetHeatingAlgorithm: heatingAlgorithmSchema }),
   );
 
   const { request: requestResetInverter } = useMachineMutation(
@@ -516,11 +559,13 @@ export function useExtruder3() {
     setMiddleHeatingTemperature,
     setExtruderPressureLimit,
     setExtruderPressureLimitEnabled,
+    setMinExtrusionTemperature,
     setTemperatureTargetEnabled,
     setPressurePidKp,
     setPressurePidKi,
     setPressurePidKd,
     setTemperaturePidValue,
+    setHeatingAlgorithm,
     resetInverter,
     startPressurePidAutoTune,
     stopPressurePidAutoTune,

@@ -1,8 +1,19 @@
+mod api;
+mod machines;
+mod modbus;
+mod transmission;
+mod types;
+
 use std::env;
 use std::time::Duration;
 
+use api::LegacySharedState;
+use api::Server;
+use api::SharedState;
+use api::SocketIODispatcher;
 use qitech_control_core::interface;
 use qitech_framework::HubConfiguration;
+use qitech_framework::machine::MachineDescriptor;
 use qitech_framework::run_debug;
 use qitech_framework::run_with_hub;
 use qitech_framework::run_with_tui;
@@ -11,24 +22,16 @@ use qitech_framework::runtime::RuntimeConfiguration;
 use qitech_lib::ethercat_hal::DcConfiguration;
 use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
-mod types;
-
-mod modbus;
-mod transmission;
-
-mod machines;
-
-mod api;
-use api::LegacySharedState;
-use api::Server;
-use api::SharedState;
-use api::SocketIODispatcher;
+use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
+use tokio::sync::mpsc;
 
 use crate::machines::ExtruderV1;
 use crate::machines::ExtruderV2;
+use crate::machines::LaserV1;
 use crate::machines::MixerV1;
+use crate::machines::WinderV1_7031_Spool;
 use crate::machines::WinderV1_Regular;
-use crate::machines::aquapath::AquaPathV1;
+use crate::machines::aquapath::AquapathV1;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
@@ -41,59 +44,78 @@ pub async fn main() -> anyhow::Result<()> {
         .with_ansi(true)
         .init();
 
-    // --- bring up all ethernet interfaces for ethercat ---
     interface::bring_up_all_ethernet();
-
-    // --- configure runtime ---
-    let config_rt = RuntimeConfiguration::new()
+    let mut config_rt = RuntimeConfiguration::new()
         .requests_per_cycle_max(10)
         .export_interval(Duration::from_secs_f64(1.0 / 32.0))
-        /*.modbus_rtu_device::<LaserDevice>(
-            "pci-0000:c6:00.0-usbv2-0:2.3:1.0-port0".to_string(),
-            LaserV1::IDENTIFICATION.unique(1),
-            1,
-            None,
-        )
-        .machine::<LaserV1>()
-        .machine::<WinderV1_7031_Spool>();*/
-        .machine::<AquaPathV1>()
+        .machine::<AquapathV1>()
         .machine::<WinderV1_Regular>()
+        .machine::<WinderV1_7031_Spool>()
         .machine::<ExtruderV1>()
         .machine::<ExtruderV2>()
+        .machine::<LaserV1>()
         .machine::<MixerV1>();
 
+    // --- bind the modbus rtu drivers to whichever ports the user assigned them to ---
+    for assignment in modbus::assignments::read() {
+        config_rt = if assignment.machine.machine == LaserV1::IDENTIFICATION {
+            config_rt.modbus_rtu_device::<LaserDevice>(
+                assignment.port,
+                assignment.machine,
+                assignment.slave_id,
+                None,
+            )
+        } else {
+            tracing::warn!(
+                "no modbus rtu driver for machine {} assigned to port {}",
+                assignment.machine,
+                assignment.port
+            );
+
+            config_rt
+        };
+    }
+
     // --- determine if ethercat is enabled ---
+    let stay_in_preop = std::env::var("QITECH_MODE").unwrap_or_default() == "preop"
+        || std::env::args().any(|a| a == "preop");
+
     let config_rt = match env::var("ETHERCAT_ENABLED").as_deref() {
         Ok("false") => config_rt,
-        _ => config_rt.ethercat(ETHERCAT_CONFIG),
+        _ => config_rt.ethercat(ecat_config(stay_in_preop)),
     };
-
-    // --- determine mode ---
     match env::var("CONTROL_MODE").as_deref() {
         Ok("DEBUG") => {
             run_debug(config_rt);
             Ok(())
         }
-
         Ok("TUI") => run_with_tui(config_rt, Default::default()).await,
 
-        // default is hub
+        // HUB config
         _ => {
-            // --- configure hub ---
+            // channel so rest api can notify the socketio handler when a request is send
+            // so we can send a state event for the frontend.
+            let (tx, rx) = mpsc::channel(32);
+
             let state = SharedState::default();
-            let state_legacy = LegacySharedState::new();
+            let mut state_legacy = LegacySharedState::new();
+
+            // --- seed the setup page's port list; the runtime does not announce it ---
+            api::broadcast_modbus_devices(&mut state_legacy);
 
             let config_hub = HubConfiguration::new()
-                .listener(SocketIODispatcher::new(state.clone(), state_legacy.clone()))
-                .actor(Server::new(state, state_legacy));
-
-            // --- run ---
+                .listener(SocketIODispatcher::new(
+                    state.clone(),
+                    state_legacy.clone(),
+                    rx,
+                ))
+                .actor(Server::new(state, state_legacy, tx));
             run_with_hub(config_rt, config_hub).await
         }
     }
 }
 
-const ETHERCAT_CONFIG: EtherCATConfig = {
+fn ecat_config(stay_preop: bool) -> EtherCATConfig {
     let target_cycle_time_us: u64 = 1000;
 
     let dc_config = DcConfiguration {
@@ -124,5 +146,6 @@ const ETHERCAT_CONFIG: EtherCATConfig = {
     EtherCATConfig {
         interface_scan_interval: Duration::from_secs(2),
         master_config,
+        stay_preop,
     }
-};
+}

@@ -105,12 +105,22 @@ export const heatingStatesSchema = z.object({
 });
 
 /**
+ * Control law driving all four heating zones
+ */
+export const heatingAlgorithmSchema = z.enum(["ObserverPi", "Pid"]);
+
+export type HeatingAlgorithm = z.infer<typeof heatingAlgorithmSchema>;
+
+/**
  * Extruder settings state schema
  */
 export const extruderSettingsStateSchema = z.object({
   pressure_limit: z.number(),
   pressure_limit_enabled: z.boolean(),
   nozzle_temperature_target_enabled: z.boolean(),
+  heating_algorithm: heatingAlgorithmSchema,
+  /** Temperature every heated zone must reach before Extrude mode is permitted. */
+  min_extrusion_temperature: z.number(),
 });
 
 /**

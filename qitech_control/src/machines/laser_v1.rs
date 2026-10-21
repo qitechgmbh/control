@@ -31,6 +31,7 @@ pub struct LaserV1 {
     diameter_target: ConfigProperty<Length>,
     diameter_tolerance_upper: ConfigProperty<Length>,
     diameter_tolerance_lower: ConfigProperty<Length>,
+    _global_warning: ConfigProperty<bool>,
 
     // --- state ---
     in_tolerance: StateProperty<bool>,
@@ -46,7 +47,11 @@ pub struct LaserV1 {
 
     // -- misc ---
     request_timer: Duration,
+    consecutive_errors: u32,
 }
+
+/// ~3 round trips at the device actor's 2s request timeout, so roughly 6s of silence.
+const MAX_CONSECUTIVE_ERRORS: u32 = 3;
 
 impl MachineBuild for LaserV1 {
     #[machine_build(LaserV1)]
@@ -73,11 +78,14 @@ impl MachineBuild for LaserV1 {
             .maximum(1.0)
             .build()?;
 
+        let _global_warning = ctx.config::<bool>("global_warning").default(true).build()?;
+
         Ok(Self {
             device,
             diameter_target,
             diameter_tolerance_upper,
             diameter_tolerance_lower,
+            _global_warning,
             in_tolerance: ctx.state::<bool>("in_tolerance").build()?,
             diameter: ctx.measurement::<millimeter>("diameter").build()?,
             diameter_x: ctx
@@ -89,6 +97,7 @@ impl MachineBuild for LaserV1 {
             roundness: ctx.measurement::<Option<f64>>("roundness").build()?,
             out_of_tolerance: ctx.event("out_of_tolerance").build()?,
             request_timer: Duration::ZERO,
+            consecutive_errors: 0,
         })
     }
 }
@@ -127,14 +136,38 @@ impl LaserV1 {
     fn update_device(&mut self, dt: Duration) -> ActResult {
         let mut laser = self.device.borrow_mut();
 
-        if let Err(e) = laser.handle_response()
-            && let Some(laser_error) = e.downcast_ref::<LaserError>()
-            && let LaserError::IoErr() = laser_error
-        {
-            return Err(ActError {
-                kind: ActErrorKind::HardwareFault("Physical hardware I/O broke.".into()),
-                impact: ActErrorImpact::Irrecoverable,
-            });
+        match laser.handle_response() {
+            Ok(()) => {
+                // either a response landed or one is still in flight; neither is a fault
+                self.consecutive_errors = 0;
+            }
+
+            Err(e) => {
+                // an outright I/O break is unambiguous, no need to wait out a streak
+                if let Some(LaserError::IoErr(_)) = e.downcast_ref::<LaserError>() {
+                    return Err(ActError {
+                        kind: ActErrorKind::HardwareFault("Physical hardware I/O broke.".into()),
+                        impact: ActErrorImpact::Irrecoverable,
+                    });
+                }
+
+                self.consecutive_errors += 1;
+                tracing::warn!(
+                    attempt = self.consecutive_errors,
+                    "laser request failed: {e:?}"
+                );
+
+                if self.consecutive_errors >= MAX_CONSECUTIVE_ERRORS {
+                    let attempts = self.consecutive_errors;
+
+                    return Err(ActError {
+                        kind: ActErrorKind::HardwareFault(format!(
+                            "Laser stopped responding after {attempts} consecutive failed requests."
+                        )),
+                        impact: ActErrorImpact::Irrecoverable,
+                    });
+                }
+            }
         }
 
         self.request_timer = self.request_timer.saturating_sub(dt);
@@ -143,7 +176,7 @@ impl LaserV1 {
             self.request_timer = Duration::from_millis(6);
 
             if let Err(err) = laser.send_next_request() {
-                println!("send_next_request {:?}", err);
+                tracing::warn!("laser send_next_request failed: {err:?}");
             }
         }
 

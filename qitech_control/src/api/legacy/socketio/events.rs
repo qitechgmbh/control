@@ -31,6 +31,7 @@ impl SocketIOEvent {
 pub enum EthercatDevicesEvent {
     State(String),
     Done(EthercatSetupDone),
+    Error(String),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -44,8 +45,14 @@ pub struct MachinesEvent {
     pub machines: Vec<MachineObj>,
 }
 
+// --- modbus rtu devices event ---
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ModbusDevicesEvent {
+    pub devices: Vec<legacy::ModbusDeviceMetadata>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MachineObj {
-    pub machine_identification_unique: legacy::MachineIdentificationUnique,
+    pub machine_identification_unique: legacy::LegacyMachineIdentificationUnique,
     pub error: Option<String>,
 }

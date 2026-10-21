@@ -1,6 +1,8 @@
-use crate::modbus::modbus_serial_interface::ModbusSerialInterface;
-use crate::modbus::{ModbusFunctionCode, ModbusRequest, ModbusResponse};
-use bitvec::{order::Lsb0, slice::BitSlice};
+use std::time::Duration;
+use std::time::Instant;
+
+use bitvec::order::Lsb0;
+use bitvec::slice::BitSlice;
 use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
 use qitech_lib::units::Frequency;
 use qitech_lib::units::electric_current::centiampere;
@@ -8,7 +10,11 @@ use qitech_lib::units::electric_potential::centivolt;
 use qitech_lib::units::f64::*;
 use qitech_lib::units::frequency::centihertz;
 use serde::Serialize;
-use std::time::{Duration, Instant};
+
+use crate::modbus::ModbusFunctionCode;
+use crate::modbus::ModbusRequest;
+use crate::modbus::ModbusResponse;
+use crate::modbus::modbus_serial_interface::ModbusSerialInterface;
 
 /// Specifies all System environment Variables
 /// Register addresses are calculated as follows: Register-value 40002 -> address: 40002-40001 -> actual address in request:0x1
@@ -274,7 +280,6 @@ pub struct MitsubishiCS80Status {
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct MotorStatus {
-    pub rpm: AngularVelocity,
     pub frequency: Frequency,
     pub current: ElectricCurrent,
     pub voltage: ElectricPotential,
@@ -285,7 +290,6 @@ pub struct MitsubishiCS80 {
     // Communication
     pub status: MitsubishiCS80Status,
     pub motor_status: MotorStatus,
-    pub last_ts: Instant,
     modbus_serial_interface: ModbusSerialInterface,
 }
 
@@ -296,6 +300,7 @@ pub enum RequestType {
     OperationCommand,
     /// Parameter Read/Write and Frequency (EEPROM), Less than 30 milliseconds timeout for Response
     ReadWrite,
+    #[allow(unused)]
     /// Less than 5 seconds timeout for Response
     ParamClear,
     /// Supposedly no waiting time, however inverter takes a while to start ~300ms should be more than enough
@@ -342,7 +347,6 @@ impl MitsubishiCS80Request {
 impl MitsubishiCS80 {
     pub fn new() -> Self {
         Self {
-            last_ts: Instant::now(),
             motor_status: MotorStatus::default(),
             status: MitsubishiCS80Status::default(),
             modbus_serial_interface: ModbusSerialInterface::new(),

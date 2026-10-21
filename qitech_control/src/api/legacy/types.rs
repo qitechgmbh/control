@@ -22,8 +22,8 @@ impl From<qitech_framework::EtherCATDeviceMetadata> for EtherCATDeviceMetadata {
             device_identification: DeviceIdentification {
                 device_machine_identification: value.device_identification.assignment.map(|x| {
                     DeviceMachineIdentification {
-                        machine_identification_unique: MachineIdentificationUnique {
-                            machine_identification: MachineIdentification {
+                        machine_identification_unique: LegacyMachineIdentificationUnique {
+                            machine_identification: LegacyMachineIdentification {
                                 vendor: x.machine.machine.vendor_id,
                                 machine: x.machine.machine.machine_id,
                             },
@@ -57,18 +57,40 @@ pub struct DeviceIdentification {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DeviceMachineIdentification {
-    pub machine_identification_unique: MachineIdentificationUnique,
+    pub machine_identification_unique: LegacyMachineIdentificationUnique,
     pub role: u16,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct MachineIdentificationUnique {
-    pub machine_identification: MachineIdentification,
+pub struct LegacyMachineIdentificationUnique {
+    pub machine_identification: LegacyMachineIdentification,
     pub serial: u16,
 }
 
+impl From<LegacyMachineIdentificationUnique> for qitech_framework::MachineInstanceIdentification {
+    fn from(id: LegacyMachineIdentificationUnique) -> Self {
+        qitech_framework::MachineIdentification::new(
+            id.machine_identification.vendor,
+            id.machine_identification.machine,
+        )
+        .unique(id.serial)
+    }
+}
+
+impl From<qitech_framework::MachineInstanceIdentification> for LegacyMachineIdentificationUnique {
+    fn from(id: qitech_framework::MachineInstanceIdentification) -> Self {
+        Self {
+            machine_identification: LegacyMachineIdentification {
+                vendor: id.machine.vendor_id,
+                machine: id.machine.machine_id,
+            },
+            serial: id.serial,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct MachineIdentification {
+pub struct LegacyMachineIdentification {
     pub vendor: u16,
     pub machine: u16,
 }
@@ -87,4 +109,24 @@ pub struct DeviceHardwareIdentificationEthercat {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DeviceHardwareIdentificationSerial {
     pub path: String,
+}
+
+// --- modbus rtu ---
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ModbusDeviceMetadata {
+    pub port: String,
+    pub present: bool,
+    pub device_node: Option<String>,
+    pub by_id: Option<String>,
+    pub description: Option<String>,
+    pub usb_vid: Option<u16>,
+    pub usb_pid: Option<u16>,
+    pub usb_serial: Option<String>,
+    pub assignment: Option<ModbusDeviceAssignment>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ModbusDeviceAssignment {
+    pub machine_identification_unique: LegacyMachineIdentificationUnique,
+    pub slave_id: u8,
 }

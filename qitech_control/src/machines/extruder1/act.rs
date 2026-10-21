@@ -1,9 +1,11 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use std::time::Instant;
 
 use qitech_framework::machine::ActResult;
 use qitech_framework::machine::Machine;
 
-use crate::machines::extruder1::{Extruder, Mode};
+use crate::machines::extruder1::Extruder;
+use crate::machines::extruder1::Mode;
 
 impl<const VARIANT: usize> Machine for Extruder<VARIANT> {
     fn act(&mut self, _dt: Duration) -> ActResult {

@@ -1,5 +1,6 @@
 use euclid::Point2D;
-use qitech_control_core::converters::angle_converter::{AngleConverter, AngleConverterUom};
+use qitech_control_core::converters::angle_converter::AngleConverter;
+use qitech_control_core::converters::angle_converter::AngleConverterUom;
 use qitech_lib::units::ConstZero;
 use qitech_lib::units::angle::radian;
 use qitech_lib::units::f64::*;
@@ -46,8 +47,8 @@ impl FilamentTensionCalculator {
     }
 
     // Calculate filament tension as a value between 0.0 (low) and 1.0 (high).
-    // `1.0` means the minimum amount of filament is in the tensioning system (high tension).
-    // `0.0` means the maximum amount of filament is in the tensioning system (low tension).
+    // `1.0` means the tension arm is at `max_angle` (high tension, spool should slow down).
+    // `0.0` means the tension arm is at `min_angle` (low tension, spool should speed up).
     // `tension_arm_angle` uses the Y-flipped CW rotation system.
     pub fn calc_filament_tension(&self, tension_arm_angle: Angle) -> Option<f64> {
         if tension_arm_angle < self.min_angle || tension_arm_angle > self.max_angle {
@@ -62,7 +63,7 @@ impl FilamentTensionCalculator {
             .get::<ratio>()
             .clamp(0.0, 1.0);
 
-        Some(1.0 - normalized)
+        Some(normalized)
     }
 
     /// Calculate the filament length for a given tension arm angle
@@ -92,5 +93,45 @@ impl FilamentTensionCalculator {
             + tension_arm_tip.distance_to(self.traverse_point);
 
         Length::new::<centimeter>(length_cm)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use qitech_lib::units::angle::degree;
+
+    use super::*;
+
+    fn calculator() -> FilamentTensionCalculator {
+        FilamentTensionCalculator::new(Angle::new::<degree>(20.0), Angle::new::<degree>(90.0))
+    }
+
+    #[test]
+    fn tension_is_high_at_max_angle_and_low_at_min_angle() {
+        let calc = calculator();
+
+        let at_max = calc
+            .calc_filament_tension(Angle::new::<degree>(90.0))
+            .unwrap();
+        let at_min = calc
+            .calc_filament_tension(Angle::new::<degree>(20.0))
+            .unwrap();
+
+        assert!((at_max - 1.0).abs() < 1e-9);
+        assert!(at_min.abs() < 1e-9);
+    }
+
+    #[test]
+    fn tension_is_none_out_of_bounds() {
+        let calc = calculator();
+
+        assert!(
+            calc.calc_filament_tension(Angle::new::<degree>(10.0))
+                .is_none()
+        );
+        assert!(
+            calc.calc_filament_tension(Angle::new::<degree>(100.0))
+                .is_none()
+        );
     }
 }

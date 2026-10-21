@@ -15,6 +15,8 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:Ruler";
     case "rpm":
       return "lu:Gauge";
+    case "rev":
+      return "lu:RotateCw";
     case "C":
       return "lu:Thermometer";
     case "bar":
@@ -65,6 +67,8 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "m";
     case "rpm":
       return "rpm";
+    case "rev":
+      return "rev";
     case "C":
       return "°C";
     case "bar":
@@ -140,6 +144,8 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "meters";
     case "rpm":
       return "revolutions/minute";
+    case "rev":
+      return "revolutions";
     case "C":
       return "degrees Celsius";
     case "bar":
@@ -186,6 +192,7 @@ export const units = [
   "mm",
   "cm",
   "rpm",
+  "rev",
   "deg",
   "deg/s",
   "m",

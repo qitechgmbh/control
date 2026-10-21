@@ -23,6 +23,8 @@ const winder2PresetDataSchema = z
         limit_outer: z.number(),
         step_size: z.number(),
         padding: z.number(),
+        edge_dwell_revolutions: z.number(),
+        start_dwell_revolutions: z.number(),
         laserpointer: z.boolean(),
       })
       .partial(),
@@ -58,6 +60,18 @@ const previewEntries: PresetPreviewEntries<Winder2> = [
     name: "Traverse Padding",
     unit: "mm",
     renderValue: (data: Winder2) => data?.traverse_state?.padding?.toFixed(1),
+  },
+  {
+    name: "Traverse Edge Dwell",
+    unit: "rev",
+    renderValue: (data: Winder2) =>
+      data?.traverse_state?.edge_dwell_revolutions?.toFixed(1) ?? "N/A",
+  },
+  {
+    name: "Traverse Start Dwell",
+    unit: "rev",
+    renderValue: (data: Winder2) =>
+      data?.traverse_state?.start_dwell_revolutions?.toFixed(1) ?? "N/A",
   },
   previewSeparator,
   {
@@ -168,6 +182,8 @@ export function Winder2_7031PresetsPage() {
 
     setTraverseStepSize,
     setTraversePadding,
+    setTraverseEdgeDwellRevolutions,
+    setTraverseStartDwellRevolutions,
     setTraverseLimitInner,
     setTraverseLimitOuter,
 
@@ -196,6 +212,12 @@ export function Winder2_7031PresetsPage() {
     setTraverseLimitOuter(preset.data?.traverse_state?.limit_outer ?? 92);
     setTraverseStepSize(preset.data?.traverse_state?.step_size ?? 1.75);
     setTraversePadding(preset.data?.traverse_state?.padding ?? 0.88);
+    setTraverseEdgeDwellRevolutions(
+      preset.data?.traverse_state?.edge_dwell_revolutions ?? 2,
+    );
+    setTraverseStartDwellRevolutions(
+      preset.data?.traverse_state?.start_dwell_revolutions ?? 1,
+    );
 
     const presetRegulation = preset.data?.puller_state?.regulation ?? "Speed";
     const adaptivePullerEnabled = getWinder2AdaptivePullerSpeed();
@@ -252,6 +274,8 @@ export function Winder2_7031PresetsPage() {
       limit_outer: s?.traverse_state?.limit_outer,
       step_size: s?.traverse_state?.step_size,
       padding: s?.traverse_state?.padding,
+      edge_dwell_revolutions: s?.traverse_state?.edge_dwell_revolutions,
+      start_dwell_revolutions: s?.traverse_state?.start_dwell_revolutions,
       laserpointer: s?.traverse_state?.laserpointer,
     },
     puller_state: s?.puller_state ?? {},

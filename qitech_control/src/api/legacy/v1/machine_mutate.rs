@@ -2,46 +2,46 @@ use std::fmt::Debug;
 
 use axum::Json;
 use axum::extract::State;
-use axum::response::IntoResponse;
 use axum::response::Response as AxumResponse;
 use qitech_framework::MachineIdentification;
 use qitech_framework::MachineInstanceIdentification;
-use qitech_framework_hub::ActorContext;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::api::legacy::LegacyApiState;
 use crate::api::legacy::adapter;
-use crate::api::legacy::types::MachineIdentificationUnique;
+use crate::api::legacy::response_util::ResponseUtil;
+use crate::api::legacy::types::LegacyMachineIdentificationUnique;
 
 #[derive(Debug, Deserialize)]
 pub struct Request {
-    pub machine_identification_unique: MachineIdentificationUnique,
+    pub machine_identification_unique: LegacyMachineIdentificationUnique,
     pub data: serde_json::Value,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct MutationResponse {
     pub success: bool,
     pub error: Option<String>,
 }
 
 impl MutationResponse {
-    pub fn success() -> Self {
+    pub const fn success() -> Self {
         Self {
             success: true,
             error: None,
         }
     }
 
-    pub fn error(error: impl Into<String>) -> Self {
+    pub fn error(message: impl Into<String>) -> Self {
         Self {
             success: false,
-            error: Some(error.into()),
+            error: Some(message.into()),
         }
     }
 }
 
-pub async fn post(State(ctx): State<ActorContext>, Json(body): Json<Request>) -> AxumResponse {
+pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>) -> AxumResponse {
     let ident = MachineInstanceIdentification {
         machine: MachineIdentification {
             vendor_id: body
@@ -57,35 +57,35 @@ pub async fn post(State(ctx): State<ActorContext>, Json(body): Json<Request>) ->
     };
 
     let Some(adapter) = adapter::get(ident.machine) else {
-        return Json(MutationResponse::error("no_such_machine")).into_response();
+        return ResponseUtil::error("no such machine");
     };
 
     let requests = match (adapter.convert_request)(ident, body.data) {
         Ok(requests) => requests,
         Err(error) => {
-            return Json(MutationResponse::error(error.to_string())).into_response();
+            return ResponseUtil::error(&error.to_string());
         }
     };
 
     // Sequential, fail-fast: a compound legacy mutation (e.g. autotune start) may need its writes
     // applied in order before a later request in the batch depends on them.
     for request in requests {
-        match ctx.send_request(request).await {
+        state.machines_dirty_tx.send(ident).await.expect("pray");
+
+        match state.ctx.send_request(request).await {
             Ok(Ok(())) => {}
 
             Ok(Err(error)) => {
-                return Json(MutationResponse::error(error.to_string())).into_response();
+                return ResponseUtil::error(&error.to_string());
             }
 
             Err(error) => {
-                tracing::error!(%error, "failed to send runtime request");
-                return Json(MutationResponse::error("No runtime is currently connected"))
-                    .into_response();
+                return ResponseUtil::error(&error.to_string());
             }
         }
     }
 
-    Json(MutationResponse::success()).into_response()
+    ResponseUtil::ok(MutationResponse::success())
 }
 
 /*

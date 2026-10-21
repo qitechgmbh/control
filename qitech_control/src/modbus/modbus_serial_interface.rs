@@ -1,9 +1,12 @@
-use crate::modbus::{ModbusRequest, ModbusResponse};
-use qitech_lib::ethercat_hal::io::serial_interface::{SerialEncoding, SerialInterfaceDevice};
-use std::{
-    collections::HashMap,
-    time::{Duration, Instant},
-};
+use std::collections::HashMap;
+use std::time::Duration;
+use std::time::Instant;
+
+use qitech_lib::ethercat_hal::io::serial_interface::SerialEncoding;
+use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
+
+use crate::modbus::ModbusRequest;
+use crate::modbus::ModbusResponse;
 
 #[derive(Debug, Clone)]
 struct RequestMetaData {

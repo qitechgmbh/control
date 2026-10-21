@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { gitAuthArgs } from "./token-store";
+import { SEMVER_RE, compareSemver } from "./semver";
 
 export type GitRefInfo = {
   hash: string;
@@ -64,6 +65,14 @@ export function runGitCommand(
       }
     });
   });
+}
+
+// Date fallback
+function compareTagsByVersionThenDate(a: GitRefInfo, b: GitRefInfo): number {
+  const [matchA, matchB] = [SEMVER_RE.exec(a.name), SEMVER_RE.exec(b.name)];
+  if (matchA && matchB) return compareSemver(matchB, matchA);
+  if (matchA || matchB) return matchA ? -1 : 1;
+  return Date.parse(b.date) - Date.parse(a.date);
 }
 
 function getDir(owner: string, name: string) {
@@ -191,12 +200,7 @@ export async function fetchTargets(
           const [hash, name, date] = line.split("|");
           return { hash, name, date };
         })
-        .sort((a, b) =>
-          b.name.localeCompare(a.name, undefined, {
-            numeric: true,
-            sensitivity: "base",
-          }),
-        );
+        .sort(compareTagsByVersionThenDate);
 
       return {
         commits,

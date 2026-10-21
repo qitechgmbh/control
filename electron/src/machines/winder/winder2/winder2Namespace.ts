@@ -124,6 +124,8 @@ export const traverseStateSchema = z.object({
   laserpointer: z.boolean(),
   step_size: z.number(),
   padding: z.number(),
+  edge_dwell_revolutions: z.number(),
+  start_dwell_revolutions: z.number(),
   can_go_in: z.boolean(),
   can_go_out: z.boolean(),
   can_go_home: z.boolean(),

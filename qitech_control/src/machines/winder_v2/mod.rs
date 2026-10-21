@@ -1,5 +1,4 @@
 use std::time::Duration;
-use std::time::Instant;
 
 use qitech_framework::MachineIdentification;
 use qitech_framework::MachineInstanceIdentification;
@@ -58,7 +57,7 @@ pub struct WinderV1<const VARIANT: usize> {
 
     // --- state ---
     pub(super) mode: StateProperty<Mode>,
-    // pub(super) spool_automatic_action: SpoolAutomaticAction,
+    pub(super) spool_automatic_action: SpoolAutomaticAction,
 
     // --- subscriptions ---
     pub(super) laser_subscription: Option<LaserSubscription>,
@@ -101,6 +100,8 @@ impl<const VARIANT: usize> Machine for WinderV1<VARIANT> {
         };
 
         self.traverse.update(dt, self.spool.velocity.get());
+
+        self.check_spool_automatic_action();
 
         Ok(())
     }
@@ -155,11 +156,29 @@ impl<const VARIANT: usize> WinderV1<VARIANT> {
 
         Ok(())
     }
+
+    fn check_spool_automatic_action(&mut self) {
+        let action = self.spool_automatic_action.mode.get();
+        if matches!(action, AutomaticActionSpoolAction::NoAction) {
+            return;
+        }
+
+        let target = self.spool_automatic_action.target_length.get();
+        let progress = self.spool.progress.get();
+
+        if progress >= target {
+            let new_mode = match action {
+                AutomaticActionSpoolAction::Hold => Mode::Hold,
+                AutomaticActionSpoolAction::Pull => Mode::Pull,
+                AutomaticActionSpoolAction::NoAction => return,
+            };
+
+            _ = self.set_mode(new_mode);
+        }
+    }
 }
 
 pub struct SpoolAutomaticAction {
-    pub progress: Length,
-    progress_last_check: Instant,
     pub target_length: ConfigProperty<Length>,
     pub mode: ConfigProperty<AutomaticActionSpoolAction>,
 }
