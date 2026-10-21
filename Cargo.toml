@@ -13,19 +13,13 @@ edition = "2024"
 rust-version = "1.90"
 
 [workspace.dependencies]
-# --- internal ---
 qitech_control = { path = "qitech_control" }
 qitech_control_core = { path = "qitech_control_core" }
+qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="3f91c69253a0d5338007eb3e8438b41df7b39124" }
+qitech_framework = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="f6ccf856e39595342ebb266afcbd11d353038227" }
+qitech_framework_tui = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="f6ccf856e39595342ebb266afcbd11d353038227" }
+qitech_framework_hub = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="f6ccf856e39595342ebb266afcbd11d353038227" }
 
-# --- lib ---
-qitech_lib = { git = "https://github.com/qitechgmbh/qitech_lib.git", rev="7a92e930c05430e3cb4a955bb5260ad1f6a1a14b" }
-
-# --- framework ---
-qitech_framework = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="e04aef71d840013e7705ef64cebe1a71a8e5be4e" }
-qitech_framework_tui = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="e04aef71d840013e7705ef64cebe1a71a8e5be4e" }
-qitech_framework_hub = { git = "https://github.com/qitechgmbh/qitech_framework.git", rev="e04aef71d840013e7705ef64cebe1a71a8e5be4e" }
-
-# --- external ---
 tokio = "1"
 tower-http = "0.6.8"
 tracing = "0.1.44"
