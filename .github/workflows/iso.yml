@@ -34,7 +34,7 @@ jobs:
       - name: Build QiTech NixOS ISO 9660 image
         run: ./nixos/nixos-build-iso.sh
 
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@v7.0.2
         with:
           path: result/iso/*.iso
           archive: false
