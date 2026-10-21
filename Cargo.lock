@@ -66,43 +66,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
 
 [[package]]
-name = "async-channel"
-version = "2.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "924ed96dd52d1b75e9c1a3e6275715fd320f5f9439fb5a4a11fa51f4221158d2"
-dependencies = [
- "concurrent-queue",
- "event-listener-strategy",
- "futures-core",
- "pin-project-lite",
-]
-
-[[package]]
-name = "async-executor"
-version = "1.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c96bf972d85afc50bf5ab8fe2d54d1586b4e0b46c97c50a0c9e71e2f7bcd812a"
-dependencies = [
- "async-task",
- "concurrent-queue",
- "fastrand",
- "futures-lite",
- "pin-project-lite",
- "slab",
-]
-
-[[package]]
-name = "async-fs"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8034a681df4aed8b8edbd7fbe472401ecf009251c8b40556b304567052e294c5"
-dependencies = [
- "async-lock",
- "blocking",
- "futures-lite",
-]
-
-[[package]]
 name = "async-io"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -119,70 +82,6 @@ dependencies = [
  "slab",
  "windows-sys 0.61.2",
 ]
-
-[[package]]
-name = "async-lock"
-version = "3.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "290f7f2596bd5b78a9fec8088ccd89180d7f9f55b94b0576823bbbdc72ee8311"
-dependencies = [
- "event-listener",
- "event-listener-strategy",
- "pin-project-lite",
-]
-
-[[package]]
-name = "async-net"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b948000fad4873c1c9339d60f2623323a0cfd3816e5181033c6a5cb68b2accf7"
-dependencies = [
- "async-io",
- "blocking",
- "futures-lite",
-]
-
-[[package]]
-name = "async-process"
-version = "2.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc50921ec0055cdd8a16de48773bfeec5c972598674347252c0399676be7da75"
-dependencies = [
- "async-channel",
- "async-io",
- "async-lock",
- "async-signal",
- "async-task",
- "blocking",
- "cfg-if",
- "event-listener",
- "futures-lite",
- "rustix 1.1.4",
-]
-
-[[package]]
-name = "async-signal"
-version = "0.2.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52b5aaafa020cf5053a01f2a60e8ff5dccf550f0f77ec54a4e47285ac2bab485"
-dependencies = [
- "async-io",
- "async-lock",
- "atomic-waker",
- "cfg-if",
- "futures-core",
- "futures-io",
- "rustix 1.1.4",
- "signal-hook-registry",
- "slab",
- "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "async-task"
-version = "4.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b75356056920673b02621b35afd0f7dda9306d03c79a30f5c56c44cf256e3de"
 
 [[package]]
 name = "async-trait"
@@ -343,19 +242,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "blocking"
-version = "1.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a70e4329df6cb94385eed412ec92375c3cdd8a6e502493d1229b6414e4036dfa"
-dependencies = [
- "async-channel",
- "async-task",
- "futures-io",
- "futures-lite",
- "piper",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -440,16 +326,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fa961b519f0b462e3a3b4a34b64d119eeaca1d59af726fe450bbba07a9fc0a1"
 dependencies = [
  "thiserror 2.0.20",
-]
-
-[[package]]
-name = "common"
-version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=7a92e930c05430e3cb4a955bb5260ad1f6a1a14b#7a92e930c05430e3cb4a955bb5260ad1f6a1a14b"
-dependencies = [
- "anyhow",
- "libc",
- "tokio",
 ]
 
 [[package]]
@@ -965,40 +841,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ethercat_hal"
-version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=7a92e930c05430e3cb4a955bb5260ad1f6a1a14b#7a92e930c05430e3cb4a955bb5260ad1f6a1a14b"
-dependencies = [
- "anyhow",
- "bitvec",
- "common",
- "core_affinity",
- "ethercat_hal_derive",
- "ethercrab",
- "futures",
- "libc",
- "rand 0.9.5",
- "smol",
- "spin_sleep",
- "ta",
- "tokio",
- "tracing",
- "triple_buffer",
- "units",
-]
-
-[[package]]
-name = "ethercat_hal_derive"
-version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=7a92e930c05430e3cb4a955bb5260ad1f6a1a14b#7a92e930c05430e3cb4a955bb5260ad1f6a1a14b"
-dependencies = [
- "deluxe",
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
-
-[[package]]
 name = "ethercrab"
 version = "0.7.1"
 source = "git+https://github.com/qitechgmbh/ethercrab-dc?rev=e84f794db7f7ebe321a6608c7cd1808ca54a6eb0#e84f794db7f7ebe321a6608c7cd1808ca54a6eb0"
@@ -1054,26 +896,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1a05365e3b1c6d1650318537c7460c6923f1abdd272ad6842baa2b509957a06"
 dependencies = [
  "num-traits",
-]
-
-[[package]]
-name = "event-listener"
-version = "5.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a23add41df1562121a9393cb065eab5146a1242410f23a644851e90cfd669d2"
-dependencies = [
- "parking",
- "pin-project-lite",
-]
-
-[[package]]
-name = "event-listener-strategy"
-version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8be9f3dfaaffdae2972880079a491a1a8bb7cbed0b8dd7a347f668b4150a3b93"
-dependencies = [
- "event-listener",
- "pin-project-lite",
 ]
 
 [[package]]
@@ -1793,19 +1615,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "modbus"
-version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=7a92e930c05430e3cb4a955bb5260ad1f6a1a14b#7a92e930c05430e3cb4a955bb5260ad1f6a1a14b"
-dependencies = [
- "anyhow",
- "common",
- "tokio",
- "tokio-modbus",
- "tokio-serial",
- "tracing",
-]
-
-[[package]]
 name = "nb"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2126,17 +1935,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
-name = "piper"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c835479a4443ded371d6c535cbfd8d31ad92c5d23ae9770a61bc155e4992a3c1"
-dependencies = [
- "atomic-waker",
- "fastrand",
- "futures-io",
-]
-
-[[package]]
 name = "pkg-config"
 version = "0.3.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2281,7 +2079,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=f6ccf856e39595342ebb266afcbd11d353038227#f6ccf856e39595342ebb266afcbd11d353038227"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2300,6 +2098,7 @@ dependencies = [
  "serialport",
  "thiserror 2.0.20",
  "tokio",
+ "tokio-modbus",
  "tokio-serial",
  "toml 1.1.5+spec-1.1.0",
  "tracing",
@@ -2309,7 +2108,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_core"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=f6ccf856e39595342ebb266afcbd11d353038227#f6ccf856e39595342ebb266afcbd11d353038227"
 dependencies = [
  "bytes",
  "chrono",
@@ -2329,7 +2128,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_hub"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=f6ccf856e39595342ebb266afcbd11d353038227#f6ccf856e39595342ebb266afcbd11d353038227"
 dependencies = [
  "arc-swap",
  "chrono",
@@ -2344,7 +2143,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_macros"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=f6ccf856e39595342ebb266afcbd11d353038227#f6ccf856e39595342ebb266afcbd11d353038227"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -2357,7 +2156,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_tui"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=e04aef71d840013e7705ef64cebe1a71a8e5be4e#e04aef71d840013e7705ef64cebe1a71a8e5be4e"
+source = "git+https://github.com/qitechgmbh/qitech_framework.git?rev=f6ccf856e39595342ebb266afcbd11d353038227#f6ccf856e39595342ebb266afcbd11d353038227"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2384,16 +2183,90 @@ dependencies = [
 [[package]]
 name = "qitech_lib"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=7a92e930c05430e3cb4a955bb5260ad1f6a1a14b#7a92e930c05430e3cb4a955bb5260ad1f6a1a14b"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=3f91c69253a0d5338007eb3e8438b41df7b39124#3f91c69253a0d5338007eb3e8438b41df7b39124"
 dependencies = [
  "bitvec",
- "common",
- "ethercat_hal",
- "ethercat_hal_derive",
- "modbus",
+ "qitech_lib_common",
+ "qitech_lib_ethercat_hal",
+ "qitech_lib_ethercat_hal_devices",
+ "qitech_lib_units",
+ "qitech_lib_xtrem",
+]
+
+[[package]]
+name = "qitech_lib_common"
+version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=3f91c69253a0d5338007eb3e8438b41df7b39124#3f91c69253a0d5338007eb3e8438b41df7b39124"
+dependencies = [
+ "libc",
+ "thiserror 2.0.20",
  "tokio",
- "units",
- "xtrem",
+]
+
+[[package]]
+name = "qitech_lib_ethercat_hal"
+version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=3f91c69253a0d5338007eb3e8438b41df7b39124#3f91c69253a0d5338007eb3e8438b41df7b39124"
+dependencies = [
+ "bitvec",
+ "core_affinity",
+ "ethercrab",
+ "futures",
+ "libc",
+ "qitech_lib_common",
+ "qitech_lib_ethercat_hal_derive",
+ "qitech_lib_units",
+ "rand 0.9.5",
+ "spin_sleep",
+ "ta",
+ "thiserror 2.0.20",
+ "tokio",
+ "tracing",
+ "triple_buffer",
+]
+
+[[package]]
+name = "qitech_lib_ethercat_hal_derive"
+version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=3f91c69253a0d5338007eb3e8438b41df7b39124#3f91c69253a0d5338007eb3e8438b41df7b39124"
+dependencies = [
+ "deluxe",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "qitech_lib_ethercat_hal_devices"
+version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=3f91c69253a0d5338007eb3e8438b41df7b39124#3f91c69253a0d5338007eb3e8438b41df7b39124"
+dependencies = [
+ "bitvec",
+ "qitech_lib_common",
+ "qitech_lib_ethercat_hal",
+ "qitech_lib_ethercat_hal_derive",
+ "qitech_lib_units",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "qitech_lib_units"
+version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=3f91c69253a0d5338007eb3e8438b41df7b39124#3f91c69253a0d5338007eb3e8438b41df7b39124"
+dependencies = [
+ "uom",
+]
+
+[[package]]
+name = "qitech_lib_xtrem"
+version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=3f91c69253a0d5338007eb3e8438b41df7b39124#3f91c69253a0d5338007eb3e8438b41df7b39124"
+dependencies = [
+ "qitech_lib_common",
+ "qitech_lib_units",
+ "thiserror 2.0.20",
+ "tokio",
 ]
 
 [[package]]
@@ -2906,23 +2779,6 @@ dependencies = [
  "quote",
  "string_morph",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "smol"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a33bd3e260892199c3ccfc487c88b2da2265080acb316cd920da72fdfd7c599f"
-dependencies = [
- "async-channel",
- "async-executor",
- "async-fs",
- "async-io",
- "async-lock",
- "async-net",
- "async-process",
- "blocking",
- "futures-lite",
 ]
 
 [[package]]
@@ -3680,14 +3536,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4ac048d71ede7ee76d585517add45da530660ef4390e49b098733c6e897f254"
 
 [[package]]
-name = "units"
-version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=7a92e930c05430e3cb4a955bb5260ad1f6a1a14b#7a92e930c05430e3cb4a955bb5260ad1f6a1a14b"
-dependencies = [
- "uom",
-]
-
-[[package]]
 name = "uom"
 version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4132,17 +3980,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f360fc0b24296329c78fda852a1e9ae82de9cf7b27dae4b7f62f118f77b9ed"
 dependencies = [
  "tap",
-]
-
-[[package]]
-name = "xtrem"
-version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib.git?rev=7a92e930c05430e3cb4a955bb5260ad1f6a1a14b#7a92e930c05430e3cb4a955bb5260ad1f6a1a14b"
-dependencies = [
- "anyhow",
- "common",
- "tokio",
- "units",
 ]
 
 [[package]]
