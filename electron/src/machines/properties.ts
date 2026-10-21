@@ -480,6 +480,7 @@ export const dryerV1: MachineProperties = {
     machine: 0x0010,
   },
   device_roles: [],
+  modbus_rtu: true,
 };
 
 export const mock1: MachineProperties = {

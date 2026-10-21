@@ -50,7 +50,9 @@ fn convert_request(
     /// day back, even when only one was edited, since the config properties are per-day.
     #[derive(Deserialize)]
     enum CompoundMutation {
-        SetSchedule { schedule: [ScheduleDayInput; 7] },
+        SetSchedule {
+            schedule: [ScheduleDayInput; 7],
+        },
         ApplyMaterialPreset {
             abbrev: String,
             throughput_kg_per_h: f64,
@@ -81,8 +83,9 @@ fn convert_request(
             } => match MATERIAL_PRESETS.iter().find(|p| p.abbrev == abbrev) {
                 Some(preset) => {
                     let temp = preset.recommended_temp().clamp(50, 180);
-                    let air_volume =
-                        (preset.specific_air_volume * throughput_kg_per_h).round().max(1.0) as i64;
+                    let air_volume = (preset.specific_air_volume * throughput_kg_per_h)
+                        .round()
+                        .max(1.0) as i64;
                     vec![
                         config(
                             "target_temperature".to_string(),
@@ -114,10 +117,9 @@ fn convert_request(
             config("target_temperature".to_string(), ScalarValue::Float(v))
         }
         Mutation::SetAirVolume(v) => config("air_volume".to_string(), ScalarValue::Integer(v)),
-        Mutation::SetDryingTimerMinutes(v) => config(
-            "drying_timer_minutes".to_string(),
-            ScalarValue::Integer(v),
-        ),
+        Mutation::SetDryingTimerMinutes(v) => {
+            config("drying_timer_minutes".to_string(), ScalarValue::Integer(v))
+        }
     }])
 }
 
