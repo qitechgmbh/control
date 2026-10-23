@@ -1,0 +1,43 @@
+qms_version: 1.0
+revision: 1
+
+identification:
+  name: mixer_v1
+  vendor_id: 1
+  machine_id: 18
+
+config:
+  extruder_kg_per_rpm: !float
+  hopper_a:
+    target_rpm: !float
+    forward: !boolean
+    dosing_percent: !float
+    calibration_steps_per_kgh: !float
+  hopper_b:
+    target_rpm: !float
+    forward: !boolean
+    dosing_percent: !float
+    calibration_steps_per_kgh: !float
+
+state:
+  mixing_motor_on: !boolean
+  hopper_a_enabled: !boolean
+  hopper_a_ready: !boolean
+  hopper_a_error: !boolean
+  hopper_b_enabled: !boolean
+  hopper_b_ready: !boolean
+  hopper_b_error: !boolean
+
+measurements:
+  hopper_a:
+    rpm: !float
+  hopper_b:
+    rpm: !float
+
+commands:
+  mixing_motor.start: !command
+  mixing_motor.stop: !command
+  hopper_a.enable: !command
+  hopper_a.disable: !command
+  hopper_b.enable: !command
+  hopper_b.disable: !command

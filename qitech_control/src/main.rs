@@ -28,12 +28,22 @@ use tokio::sync::mpsc;
 use crate::machines::ExtruderV1;
 use crate::machines::ExtruderV2;
 use crate::machines::LaserV1;
+use crate::machines::MixerV1;
 use crate::machines::WinderV1_7031_Spool;
 use crate::machines::WinderV1_Regular;
 use crate::machines::aquapath::AquapathV1;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
+    // --- init tracing subscriber ---
+    // Moved here (was only initialized in the default/Hub branch below) so that
+    // TUI and DEBUG modes also get to see build/runtime errors instead of them
+    // being silently dropped by the absence of any subscriber.
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .with_ansi(true)
+        .init();
+
     interface::bring_up_all_ethernet();
     let mut config_rt = RuntimeConfiguration::new()
         .requests_per_cycle_max(10)
@@ -43,7 +53,8 @@ pub async fn main() -> anyhow::Result<()> {
         .machine::<WinderV1_7031_Spool>()
         .machine::<ExtruderV1>()
         .machine::<ExtruderV2>()
-        .machine::<LaserV1>();
+        .machine::<LaserV1>()
+        .machine::<MixerV1>();
 
     // --- bind the modbus rtu drivers to whichever ports the user assigned them to ---
     for assignment in modbus::assignments::read() {
@@ -82,11 +93,6 @@ pub async fn main() -> anyhow::Result<()> {
 
         // HUB config
         _ => {
-            tracing_subscriber::fmt()
-                .with_target(false)
-                .with_ansi(false)
-                .init();
-
             // channel so rest api can notify the socketio handler when a request is send
             // so we can send a state event for the frontend.
             let (tx, rx) = mpsc::channel(32);

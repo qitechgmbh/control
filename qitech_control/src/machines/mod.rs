@@ -6,6 +6,9 @@ mod winder_v2;
 pub use winder_v2::WinderV1_7031_Spool;
 pub use winder_v2::WinderV1_Regular;
 
+mod mixer_v1;
+pub use mixer_v1::MixerV1;
+
 mod extruder1;
 pub use extruder1::ExtruderV1;
 pub use extruder1::ExtruderV2;

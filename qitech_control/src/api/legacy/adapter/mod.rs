@@ -7,6 +7,7 @@ use crate::api::types::MachineInstance;
 use crate::machines::ExtruderV1;
 use crate::machines::ExtruderV2;
 use crate::machines::LaserV1;
+use crate::machines::MixerV1;
 use crate::machines::WinderV1_7031_Spool;
 use crate::machines::WinderV1_Regular;
 use crate::machines::aquapath::AquapathV1;
@@ -14,6 +15,7 @@ use crate::machines::aquapath::AquapathV1;
 pub mod aquapath_v1;
 mod extruder_v1;
 pub mod laser_v1;
+mod mixer_v1;
 pub mod winder_v1;
 
 pub fn get(ident: MachineIdentification) -> Option<MachineLegacyDataAdapter> {
@@ -24,6 +26,7 @@ pub fn get(ident: MachineIdentification) -> Option<MachineLegacyDataAdapter> {
         WinderV1_Regular::IDENTIFICATION | WinderV1_7031_Spool::IDENTIFICATION => {
             Some(winder_v1::ADAPTER)
         }
+        MixerV1::IDENTIFICATION => Some(mixer_v1::ADAPTER),
         _ => None,
     }
 }
