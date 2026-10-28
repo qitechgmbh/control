@@ -235,8 +235,10 @@ in
     mpv
     nautilus
     gnomeExtensions.no-overview
-    # Enabled by the Electron app only while kiosk mode is locked
-    gnomeExtensions.disable-gestures-2021
+    # Enabled by the Electron app only while kiosk mode is locked.
+    # Only packaged up to GNOME 47; loads on newer shells because
+    # disable-extension-version-validation is set in home.nix.
+    gnome47Extensions."disable-gestures-2021@verycrazydog.gmail.com"
     # Utilities
     git
     btop
