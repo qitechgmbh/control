@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useKioskStore } from "@/stores/kioskStore";
 import { Icon } from "./Icon";
 
-const HOLD_DURATION_MS = 10_000;
+const HOLD_DURATION_MS = 5_000;
 
 // Above everything, including dialogs and sonner toasts
 const OVERLAY_Z_INDEX = 2147483647;
