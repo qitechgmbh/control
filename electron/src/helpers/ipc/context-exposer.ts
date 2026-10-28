@@ -5,6 +5,7 @@ import { exposeUpdateContext } from "./update/update-context";
 import { exposeTroubleshootContext } from "./troubleshoot/troubleshoot-context";
 import { exposeNixOSContext } from "./nixos/nixos-context";
 import { exposeFileExportContext } from "./export/export-context";
+import { exposeKioskContext } from "./kiosk/kiosk-context";
 
 export default function exposeContexts() {
   exposeWindowContext();
@@ -14,4 +15,5 @@ export default function exposeContexts() {
   exposeTroubleshootContext();
   exposeNixOSContext();
   exposeFileExportContext();
+  exposeKioskContext();
 }
