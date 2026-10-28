@@ -3,7 +3,7 @@ import pluginJs from "@eslint/js";
 import tseslint from "typescript-eslint";
 import pluginReact from "eslint-plugin-react";
 import eslintPluginPrettierRecommended from "eslint-config-prettier";
-import reactCompiler from "eslint-plugin-react-compiler";
+import reactHooks from "eslint-plugin-react-hooks";
 import path from "node:path";
 import { includeIgnoreFile } from "@eslint/compat";
 import { fileURLToPath } from "node:url";
@@ -21,10 +21,24 @@ export default [
   {
     files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
     plugins: {
-      "react-compiler": reactCompiler,
+      "react-hooks": reactHooks,
     },
+    // React Compiler rules only (successor of eslint-plugin-react-compiler)
     rules: {
-      "react-compiler/react-compiler": "error",
+      ...Object.fromEntries(
+        Object.entries(reactHooks.configs.flat.recommended.rules).filter(
+          ([rule]) =>
+            rule !== "react-hooks/rules-of-hooks" &&
+            rule !== "react-hooks/exhaustive-deps",
+        ),
+      ),
+      // Not caught by the old plugin; existing violations still to be fixed
+      "react-hooks/refs": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/purity": "warn",
+      "react-hooks/immutability": "warn",
+      "react-hooks/static-components": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
     },
   },
   { languageOptions: { globals: globals.browser } },

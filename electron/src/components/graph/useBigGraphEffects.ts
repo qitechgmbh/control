@@ -1,4 +1,4 @@
-/* eslint-disable react-compiler/react-compiler */
+/* eslint-disable react-hooks/refs, react-hooks/set-state-in-effect */
 import {
   useEffect,
   MutableRefObject,

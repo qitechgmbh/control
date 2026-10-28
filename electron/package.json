@@ -56,7 +56,7 @@
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-compiler": "^19.1.0-rc.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.4.0",
     "jsdom": "^30.0.1",
     "postcss": "^8.5.25",
@@ -69,7 +69,7 @@
     "vite": "^8.1.5",
     "vite-plugin-electron": "^1.1.0",
     "vite-plugin-electron-renderer": "^1.0.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.12"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
