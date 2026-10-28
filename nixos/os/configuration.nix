@@ -235,6 +235,8 @@ in
     mpv
     nautilus
     gnomeExtensions.no-overview
+    # Enabled by the Electron app only while kiosk mode is locked
+    gnomeExtensions.disable-gestures-2021
     # Utilities
     git
     btop
