@@ -11,6 +11,7 @@ import { Fragment, useEffect } from "react";
 import React from "react";
 import { Icon, IconName } from "./Icon";
 import { useMainNamespace } from "@/client/mainNamespace";
+import { KioskHoldArea } from "./KioskLock";
 
 type SidebarItemContent = {
   link: string;
@@ -149,9 +150,10 @@ export function SidebarLayout() {
   return (
     <SidebarlessWidthContext.Provider value={contentWidth}>
       <div className="fixed flex h-full w-48 flex-col bg-neutral-200">
-        <div className="flex h-18 flex-col items-center justify-center gap-0 pt-2">
+        {/* Hold the logo to lock/unlock kiosk mode */}
+        <KioskHoldArea className="flex h-18 flex-col items-center justify-center gap-0 pt-2">
           <div className="font-qitech line-clamp-none text-3xl">QITECH</div>
-        </div>
+        </KioskHoldArea>
         <div className="flex flex-col gap-2">
           {items.map((item, index) => (
             <Fragment key={item.link}>
