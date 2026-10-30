@@ -25,6 +25,8 @@ use qitech_lib::ethercat_hal::RtOptimizationConfig;
 use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
 use tokio::sync::mpsc;
 
+use crate::machines::DryerDevice;
+use crate::machines::DryerV1;
 use crate::machines::ExtruderV1;
 use crate::machines::ExtruderV2;
 use crate::machines::LaserV1;
@@ -43,12 +45,20 @@ pub async fn main() -> anyhow::Result<()> {
         .machine::<WinderV1_7031_Spool>()
         .machine::<ExtruderV1>()
         .machine::<ExtruderV2>()
-        .machine::<LaserV1>();
+        .machine::<LaserV1>()
+        .machine::<DryerV1>();
 
     // --- bind the modbus rtu drivers to whichever ports the user assigned them to ---
     for assignment in modbus::assignments::read() {
         config_rt = if assignment.machine.machine == LaserV1::IDENTIFICATION {
             config_rt.modbus_rtu_device::<LaserDevice>(
+                assignment.port,
+                assignment.machine,
+                assignment.slave_id,
+                None,
+            )
+        } else if assignment.machine.machine == DryerV1::IDENTIFICATION {
+            config_rt.modbus_rtu_device::<DryerDevice>(
                 assignment.port,
                 assignment.machine,
                 assignment.slave_id,

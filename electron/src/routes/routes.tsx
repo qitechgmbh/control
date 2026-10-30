@@ -58,6 +58,12 @@ import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 import { Laser1SettingsPage } from "@/machines/laser/laser1/Laser1SettingsPage";
 
+import { DryerV1ControlPage } from "@/machines/dryer/dryerV1/DryerV1ControlPage";
+import { DryerV1MaterialPage } from "@/machines/dryer/dryerV1/DryerV1MaterialPage";
+import { DryerV1OverviewPage } from "@/machines/dryer/dryerV1/DryerV1OverviewPage";
+import { DryerV1Page } from "@/machines/dryer/dryerV1/DryerV1Page";
+import { DryerV1SchedulePage } from "@/machines/dryer/dryerV1/DryerV1SchedulePage";
+
 import { WagoSerialPage } from "@/machines/wago_serial/WagoSerialPage";
 import { WagoSerialControlPage } from "@/machines/wago_serial/WagoSerialControlPage";
 
@@ -474,6 +480,36 @@ export const laser1SettingsRoute = createRoute({
   component: () => <Laser1SettingsPage />,
 });
 
+export const dryerV1SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "dryerV1/$serial",
+  component: () => <DryerV1Page />,
+});
+
+export const dryerV1ControlRoute = createRoute({
+  getParentRoute: () => dryerV1SerialRoute,
+  path: "control",
+  component: () => <DryerV1ControlPage />,
+});
+
+export const dryerV1ScheduleRoute = createRoute({
+  getParentRoute: () => dryerV1SerialRoute,
+  path: "schedule",
+  component: () => <DryerV1SchedulePage />,
+});
+
+export const dryerV1OverviewRoute = createRoute({
+  getParentRoute: () => dryerV1SerialRoute,
+  path: "overview",
+  component: () => <DryerV1OverviewPage />,
+});
+
+export const dryerV1MaterialRoute = createRoute({
+  getParentRoute: () => dryerV1SerialRoute,
+  path: "material",
+  component: () => <DryerV1MaterialPage />,
+});
+
 export const mock1SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "mock1/$serial",
@@ -716,6 +752,13 @@ export const rootTree = RootRoute.addChildren([
         laser1GraphsRoute,
         laser1PresetsRoute,
         laser1SettingsRoute,
+      ]),
+
+      dryerV1SerialRoute.addChildren([
+        dryerV1ControlRoute,
+        dryerV1OverviewRoute,
+        dryerV1ScheduleRoute,
+        dryerV1MaterialRoute,
       ]),
 
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
