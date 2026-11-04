@@ -22,7 +22,7 @@ use qitech_framework::runtime::RuntimeConfiguration;
 use qitech_lib::ethercat_hal::DcConfiguration;
 use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
-use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
+use qitech_framework::modbus::devices::qitech_laser::LaserDevice;
 use tokio::sync::mpsc;
 
 use crate::machines::ExtruderV1;
@@ -135,6 +135,7 @@ fn ecat_config(stay_preop: bool) -> EtherCATConfig {
         dc_config,
         wkc_mismatch_threshold: 5,
         op_ramp_grace_cycles: 10000,
+        max_consecutive_tx_rx_failures: 5,
     };
 
     EtherCATConfig {
