@@ -14,6 +14,7 @@ use api::SocketIODispatcher;
 use qitech_control_core::interface;
 use qitech_framework::HubConfiguration;
 use qitech_framework::machine::MachineDescriptor;
+use qitech_framework::modbus::devices::qitech_laser::LaserDevice;
 use qitech_framework::run_debug;
 use qitech_framework::run_with_hub;
 use qitech_framework::run_with_tui;
@@ -22,7 +23,6 @@ use qitech_framework::runtime::RuntimeConfiguration;
 use qitech_lib::ethercat_hal::DcConfiguration;
 use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
-use qitech_framework::modbus::devices::qitech_laser::LaserDevice;
 use tokio::sync::mpsc;
 
 use crate::machines::ExtruderV1;
