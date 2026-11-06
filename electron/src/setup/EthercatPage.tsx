@@ -22,6 +22,13 @@ import { restartBackendIntoPreop } from "@/helpers/troubleshoot_helpers";
 import { toast } from "sonner";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { EthercatEnabledToggle } from "./EthercatEnabledToggle";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+} from "@/components/ui/table";
 
 export function createColumns(
   isPreop: boolean,
@@ -169,76 +176,81 @@ export function EthercatPage() {
 
   return (
     <Page>
-      <SectionTitle title="Interface" right={<EthercatEnabledToggle />} />
-      <p>
-        Ethernet Interface{" "}
-        {ethercatInterfaceDiscovery?.data.Discovering ? (
-          <span>Discovering...</span>
-        ) : ethercatInterfaceDiscovery?.data.Done ? (
-          <Value value={ethercatInterfaceDiscovery?.data.Done} />
-        ) : (
-          <span>Not Discovering</span>
-        )}
-      </p>
-      <SectionTitle title="Bus Health">
+      <SectionTitle title="Interface" right={<EthercatEnabledToggle />}>
         <RefreshIndicator ts={ethercatFramesLost?.ts} />
       </SectionTitle>
-      <p>
-        Total Frames Lost{" "}
-        <span
-          className={
-            ethercatFramesLost && ethercatFramesLost.data.total > 0
-              ? "font-bold text-red-600"
-              : undefined
-          }
-        >
-          <Value value={ethercatFramesLost?.data.total} />
-        </span>
-      </p>
-      <p>
-        Last Consecutive Frames Lost{" "}
-        <Value value={ethercatFramesLost?.data.last_consecutive} />
-      </p>
-      <p>
-        Last Fail{" "}
-        {ethercatFramesLost?.data.last_failed_at != null ? (
-          <span>
-            {new Date(ethercatFramesLost.data.last_failed_at).toLocaleString()}
-          </span>
-        ) : (
-          <span>Never</span>
-        )}
-      </p>
-      <p>Counted since the backend started.</p>
+      <Table className="w-fit">
+        <TableBody>
+          <TableRow>
+            <TableHead>Ethernet Interface</TableHead>
+            <TableCell>
+              {ethercatInterfaceDiscovery?.data.Discovering ? (
+                <span>Discovering...</span>
+              ) : ethercatInterfaceDiscovery?.data.Done ? (
+                <Value value={ethercatInterfaceDiscovery?.data.Done} />
+              ) : (
+                <span>Not Discovering</span>
+              )}
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableHead>State</TableHead>
+            <TableCell>
+              <div className="flex w-fit items-center gap-1.5 rounded-full bg-neutral-100 p-0.5 px-3">
+                <div
+                  className={`h-2.5 w-2.5 rounded-full ${
+                    !backendConnected
+                      ? "bg-red-400"
+                      : etherCatState === "preop"
+                        ? "bg-yellow-400"
+                        : etherCatState === "op"
+                          ? "bg-green-400"
+                          : "bg-neutral-400"
+                  }`}
+                />
+                <span className="text-xs text-neutral-500">
+                  {!backendConnected ? "disconnected" : etherCatState}
+                </span>
+              </div>
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableHead>Total Frames Lost</TableHead>
+            <TableCell
+              className={
+                ethercatFramesLost && ethercatFramesLost.data.total > 0
+                  ? "font-bold text-red-600"
+                  : undefined
+              }
+            >
+              <Value value={ethercatFramesLost?.data.total} />
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableHead>Last Consecutive Frames Lost</TableHead>
+            <TableCell>
+              <Value value={ethercatFramesLost?.data.last_consecutive} />
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableHead>Last Fail</TableHead>
+            <TableCell>
+              {ethercatFramesLost?.data.last_failed_at != null
+                ? new Date(
+                    ethercatFramesLost.data.last_failed_at,
+                  ).toLocaleString()
+                : "Never"}
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+
       <SectionTitle title="SubDevices">
         <RefreshIndicator ts={ethercatDevices?.ts} />
       </SectionTitle>
       <p>
         Machine, Machine Serial Number, Role are QiTech specific values that are
         written to the EEPROM to identify machines as a unit.
-      </p>
-
-      <SectionTitle title="Prepare SubDevices">
-        <div className="flex w-fit items-center gap-1.5 rounded-full bg-neutral-100 p-0.5 px-3">
-          <div
-            className={`h-2.5 w-2.5 rounded-full ${
-              !backendConnected
-                ? "bg-red-400"
-                : etherCatState === "preop"
-                  ? "bg-yellow-400"
-                  : etherCatState === "op"
-                    ? "bg-green-400"
-                    : "bg-neutral-400"
-            }`}
-          />
-          <span className="text-xs text-neutral-500">
-            {!backendConnected ? "disconnected" : etherCatState}
-          </span>
-        </div>
-      </SectionTitle>
-
-      <p style={{ lineHeight: "1.6", margin: "1em 0" }}>
-        SubDevices have to be in preop before writing to the EEPROM is allowed
       </p>
       {isIntentionalPreop && etherCatState === "preop" && (
         <span
