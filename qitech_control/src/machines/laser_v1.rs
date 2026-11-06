@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Duration;
+use std::time::Instant;
 
 use qitech_framework::Machine;
 use qitech_framework::machine::ActError;
@@ -16,9 +17,9 @@ use qitech_framework::machine::MachineBuild;
 use qitech_framework::machine::Measurement;
 use qitech_framework::machine::StateProperty;
 use qitech_framework::machine_build;
-use qitech_lib::modbus::ModbusDevice;
-use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
-use qitech_lib::modbus::devices::qitech_laser::LaserError;
+use qitech_framework::modbus::ModbusDevice;
+use qitech_framework::modbus::devices::qitech_laser::LaserDevice;
+use qitech_framework::modbus::devices::qitech_laser::LaserError;
 use qitech_lib::units::Length;
 use qitech_lib::units::length::millimeter;
 
@@ -47,11 +48,12 @@ pub struct LaserV1 {
 
     // -- misc ---
     request_timer: Duration,
-    consecutive_errors: u32,
+    built_at: Instant,
 }
 
-/// ~3 round trips at the device actor's 2s request timeout, so roughly 6s of silence.
-const MAX_CONSECUTIVE_ERRORS: u32 = 3;
+/// How long a broken line may go without a valid measurement before the laser is given up.
+/// Transient errors (bad frames, exceptions, timeouts) never remove the laser.
+const IO_FAILURE_GRACE_PERIOD: Duration = Duration::from_secs(5);
 
 impl MachineBuild for LaserV1 {
     #[machine_build(LaserV1)]
@@ -97,7 +99,7 @@ impl MachineBuild for LaserV1 {
             roundness: ctx.measurement::<Option<f64>>("roundness").build()?,
             out_of_tolerance: ctx.event("out_of_tolerance").build()?,
             request_timer: Duration::ZERO,
-            consecutive_errors: 0,
+            built_at: Instant::now(),
         })
     }
 }
@@ -136,36 +138,26 @@ impl LaserV1 {
     fn update_device(&mut self, dt: Duration) -> ActResult {
         let mut laser = self.device.borrow_mut();
 
-        match laser.handle_response() {
-            Ok(()) => {
-                // either a response landed or one is still in flight; neither is a fault
-                self.consecutive_errors = 0;
-            }
-
-            Err(e) => {
-                // an outright I/O break is unambiguous, no need to wait out a streak
-                if let Some(LaserError::IoErr(_)) = e.downcast_ref::<LaserError>() {
-                    return Err(ActError {
-                        kind: ActErrorKind::HardwareFault("Physical hardware I/O broke.".into()),
-                        impact: ActErrorImpact::Irrecoverable,
-                    });
+        if let Err(e) = laser.handle_response() {
+            match e.downcast_ref::<LaserError>() {
+                // a bad frame, exception or timeout only affects this request
+                Some(err) if err.is_transient() => {
+                    tracing::debug!("laser request failed: {err}");
                 }
+                _ => {
+                    tracing::warn!("laser request failed: {e}");
 
-                self.consecutive_errors += 1;
-                tracing::warn!(
-                    attempt = self.consecutive_errors,
-                    "laser request failed: {e:?}"
-                );
+                    // only give up if the line is broken and nothing valid arrived for a while
+                    let last_valid = laser.last_measurement_at.unwrap_or(self.built_at);
 
-                if self.consecutive_errors >= MAX_CONSECUTIVE_ERRORS {
-                    let attempts = self.consecutive_errors;
-
-                    return Err(ActError {
-                        kind: ActErrorKind::HardwareFault(format!(
-                            "Laser stopped responding after {attempts} consecutive failed requests."
-                        )),
-                        impact: ActErrorImpact::Irrecoverable,
-                    });
+                    if last_valid.elapsed() > IO_FAILURE_GRACE_PERIOD {
+                        return Err(ActError {
+                            kind: ActErrorKind::HardwareFault(format!(
+                                "Physical hardware I/O broke: {e}"
+                            )),
+                            impact: ActErrorImpact::Irrecoverable,
+                        });
+                    }
                 }
             }
         }
