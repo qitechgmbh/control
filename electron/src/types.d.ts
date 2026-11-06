@@ -123,6 +123,10 @@ interface NixOSContext {
   deleteGeneration: (generationId: string) => Promise<void>;
   deleteAllOldGenerations: () => Promise<void>;
 }
+interface KioskContext {
+  setLocked: (locked: boolean) => Promise<void>;
+}
+
 declare interface Window {
   themeMode: ThemeModeContext;
   electronWindow: ElectronWindow;
@@ -131,6 +135,7 @@ declare interface Window {
   troubleshoot: TroubleshootContext;
   nixos: NixOSContext;
   fileExport: FileExportContext;
+  kiosk: KioskContext;
 }
 
 // Module declarations for Vite imports

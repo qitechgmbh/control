@@ -6,6 +6,7 @@ import { addUpdateEventListeners } from "./update/update-listeners";
 import { addTroubleshootEventListeners } from "./troubleshoot/troubleshoot-listeners";
 import { addNixOSEventListeners } from "./nixos/nixos-listeners";
 import { addExportEventListeners } from "./export/export-listeners";
+import { addKioskEventListeners } from "./kiosk/kiosk-listeners";
 
 export default function registerListeners(mainWindow: BrowserWindow) {
   addWindowEventListeners(mainWindow);
@@ -15,4 +16,5 @@ export default function registerListeners(mainWindow: BrowserWindow) {
   addTroubleshootEventListeners();
   addNixOSEventListeners();
   addExportEventListeners();
+  addKioskEventListeners(mainWindow);
 }
