@@ -128,6 +128,7 @@ export function EthercatPage() {
   const {
     ethercatDevices,
     ethercatState,
+    ethercatFramesLost,
     ethercatInterfaceDiscovery,
     isIntentionalPreop,
   } = useMainNamespace();
@@ -179,6 +180,36 @@ export function EthercatPage() {
           <span>Not Discovering</span>
         )}
       </p>
+      <SectionTitle title="Bus Health">
+        <RefreshIndicator ts={ethercatFramesLost?.ts} />
+      </SectionTitle>
+      <p>
+        Total Frames Lost{" "}
+        <span
+          className={
+            ethercatFramesLost && ethercatFramesLost.data.total > 0
+              ? "font-bold text-red-600"
+              : undefined
+          }
+        >
+          <Value value={ethercatFramesLost?.data.total} />
+        </span>
+      </p>
+      <p>
+        Last Consecutive Frames Lost{" "}
+        <Value value={ethercatFramesLost?.data.last_consecutive} />
+      </p>
+      <p>
+        Last Fail{" "}
+        {ethercatFramesLost?.data.last_failed_at != null ? (
+          <span>
+            {new Date(ethercatFramesLost.data.last_failed_at).toLocaleString()}
+          </span>
+        ) : (
+          <span>Never</span>
+        )}
+      </p>
+      <p>Counted since the backend started.</p>
       <SectionTitle title="SubDevices">
         <RefreshIndicator ts={ethercatDevices?.ts} />
       </SectionTitle>
