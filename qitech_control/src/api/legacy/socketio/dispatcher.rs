@@ -121,6 +121,19 @@ impl Listener for SocketIODispatcher {
             }
         }
 
+        // --- reports arrive every few ms, only touch the main namespace on changes ---
+        let frames_lost = self
+            .state_legacy
+            .ns_main
+            .read()
+            .diff_ecat_frames_lost(report);
+
+        if let Some(frames_lost) = frames_lost {
+            self.state_legacy
+                .ns_main
+                .update(|ns| ns.set_ecat_frames_lost(frames_lost));
+        }
+
         self.state_legacy
             .ns_machines
             .update(|ns| ns.update(report, dirty_machines));

@@ -67,6 +67,24 @@ export const ethercatStateEventSchema = eventSchema(
 
 export type EthercatStateEvent = z.infer<typeof ethercatStateEventSchema>;
 
+export const ethercatFramesLostEventDataSchema = z.object({
+  total: z.number().int(),
+  last_consecutive: z.number().int(),
+  last_failed_at: z.number().int().nullable(),
+});
+
+export type EthercatFramesLostEventData = z.infer<
+  typeof ethercatFramesLostEventDataSchema
+>;
+
+export const ethercatFramesLostEventSchema = eventSchema(
+  ethercatFramesLostEventDataSchema,
+);
+
+export type EthercatFramesLostEvent = z.infer<
+  typeof ethercatFramesLostEventSchema
+>;
+
 export const machinesEventDataSchema = z.object({
   machines: z.array(
     z.object({
@@ -141,6 +159,7 @@ export type EthercatInterfaceDiscoveryEvent = z.infer<
 export const mainNamespaceStoreSchema = z.object({
   ethercatDevices: ethercatDevicesEventSchema.nullable(),
   ethercatState: ethercatStateEventSchema.nullable(),
+  ethercatFramesLost: ethercatFramesLostEventSchema.nullable(),
   machines: machinesEventSchema.nullable(),
   ethercatInterfaceDiscovery: ethercatInterfaceDiscoveryEventSchema.nullable(),
   modbusDevices: modbusDevicesEventSchema.nullable(),
@@ -153,6 +172,7 @@ export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
   return create<MainNamespaceStore>()(() => ({
     ethercatDevices: null,
     ethercatState: null,
+    ethercatFramesLost: null,
     machines: null,
     ethercatInterfaceDiscovery: null,
     modbusDevices: null,
@@ -163,6 +183,7 @@ export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
 export const eventSchemaMap = {
   EthercatDevicesEvent: ethercatDevicesEventSchema,
   EthercatStateEvent: ethercatStateEventSchema,
+  EthercatFramesLostEvent: ethercatFramesLostEventSchema,
   MachinesEvent: machinesEventSchema,
   ModbusDevicesEvent: modbusDevicesEventSchema,
 };
@@ -184,6 +205,11 @@ export function mainMessageHandler(
         store.setState((state) => ({
           ...state,
           ethercatState: event,
+        }));
+      } else if (eventName === "EthercatFramesLostEvent") {
+        store.setState((state) => ({
+          ...state,
+          ethercatFramesLost: ethercatFramesLostEventSchema.parse(event),
         }));
       } else if (eventName === "MachinesEvent") {
         const validatedEvent = machinesEventSchema.parse(event);
