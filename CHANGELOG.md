@@ -1,3 +1,17 @@
+# `4.0.1`
+_28.10.2026_
+
+## General
+- [#1736](https://github.com/qitechgmbh/control/pull/1736) Re-added the EtherCAT enabled toggle to the troubleshoot page. Switching it restarts the backend with EtherCAT turned on or off
+
+## Dependencies
+- [#1723](https://github.com/qitechgmbh/control/pull/1723), [#1727](https://github.com/qitechgmbh/control/pull/1727), [#1730](https://github.com/qitechgmbh/control/pull/1730), [#1732](https://github.com/qitechgmbh/control/pull/1732), [#1737](https://github.com/qitechgmbh/control/pull/1737), [#1739](https://github.com/qitechgmbh/control/pull/1739), [#1741](https://github.com/qitechgmbh/control/pull/1741), [#1744](https://github.com/qitechgmbh/control/pull/1744), [#1754](https://github.com/qitechgmbh/control/pull/1754), [#1756](https://github.com/qitechgmbh/control/pull/1756), [#1761](https://github.com/qitechgmbh/control/pull/1761) Update nixpkgs
+- [#1722](https://github.com/qitechgmbh/control/pull/1722), [#1726](https://github.com/qitechgmbh/control/pull/1726), [#1743](https://github.com/qitechgmbh/control/pull/1743), [#1747](https://github.com/qitechgmbh/control/pull/1747), [#1757](https://github.com/qitechgmbh/control/pull/1757), [#1763](https://github.com/qitechgmbh/control/pull/1763) Update home-manager
+- [#1734](https://github.com/qitechgmbh/control/pull/1734) Update actions/upload-artifact to 7.0.2
+- [#1750](https://github.com/qitechgmbh/control/pull/1750) Update Electron dependencies and fix vulnerable npm dependencies
+
+**Full Changelog**: https://github.com/qitechgmbh/control/compare/4.0.0...4.0.1
+
 # `4.0.0`
 _02.10.2026_
 
