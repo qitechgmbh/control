@@ -245,9 +245,7 @@ export function EthercatPage() {
         </TableBody>
       </Table>
 
-      <SectionTitle title="SubDevices">
-        <RefreshIndicator ts={ethercatDevices?.ts} />
-      </SectionTitle>
+      <SectionTitle title="SubDevices" />
       <p>
         Machine, Machine Serial Number, Role are QiTech specific values that are
         written to the EEPROM to identify machines as a unit.
