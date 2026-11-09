@@ -25,6 +25,7 @@ use qitech_lib::ethercat_hal::RtOptimizationConfig;
 use qitech_lib::modbus::devices::qitech_laser::LaserDevice;
 use tokio::sync::mpsc;
 
+use crate::api::ClickhouseWriter;
 use crate::machines::ExtruderV1;
 use crate::machines::ExtruderV2;
 use crate::machines::LaserV1;
@@ -97,12 +98,16 @@ pub async fn main() -> anyhow::Result<()> {
             // --- seed the setup page's port list; the runtime does not announce it ---
             api::broadcast_modbus_devices(&mut state_legacy);
 
+            // --- select database ---
+            let client = init_db().await;
+
             let config_hub = HubConfiguration::new()
                 .listener(SocketIODispatcher::new(
                     state.clone(),
                     state_legacy.clone(),
                     rx,
                 ))
+                .listener(ClickhouseWriter::new(client).await)
                 .actor(Server::new(state, state_legacy, tx));
             run_with_hub(config_rt, config_hub).await
         }
@@ -142,4 +147,35 @@ fn ecat_config(stay_preop: bool) -> EtherCATConfig {
         master_config,
         stay_preop,
     }
+}
+
+async fn init_db() -> clickhouse::Client {
+    let client = clickhouse::Client::default()
+        .with_url("http://127.0.0.1:8123")
+        .with_user("default")
+        .with_setting("allow_experimental_json_type", "1")
+        .with_setting("input_format_binary_read_json_as_string", "1");
+
+    // --- create database ---
+    client
+        .query("CREATE DATABASE IF NOT EXISTS control_hub")
+        .execute()
+        .await
+        .unwrap();
+
+    // --- create migration ---
+    let migration = include_str!("../migrations/init_machine_config_property_records.sql");
+    client.query(migration).execute().await.unwrap();
+
+    let migration = include_str!("../migrations/init_machine_state_property_records.sql");
+    client.query(migration).execute().await.unwrap();
+
+    let migration = include_str!("../migrations/init_machine_measurements.sql");
+    client.query(migration).execute().await.unwrap();
+
+    let migration = include_str!("../migrations/init_machine_events.sql");
+    client.query(migration).execute().await.unwrap();
+
+    // --- select database ---
+    client.with_database("control_hub")
 }

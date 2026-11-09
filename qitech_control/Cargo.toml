@@ -30,6 +30,9 @@ serde_json = "1.0.150"
 erased-serde = "0.4.10"
 socketioxide = { version = "0.16", features = ["msgpack"] }
 
+chrono = { version = "0.4.45", features = ["serde"] }
+clickhouse = { version = "0.15.1", features = ["inserter", "chrono"] }
+
 [dev-dependencies]
 approx = "0.5.1"
 
