@@ -63,7 +63,6 @@ import { WagoSerialControlPage } from "@/machines/wago_serial/WagoSerialControlP
 
 import { Mock1ControlPage } from "@/machines/minimal_machines/mock/mock1/Mock1ControlPage";
 import { Mock1GraphPage } from "@/machines/minimal_machines/mock/mock1/Mock1Graph";
-import { Mock1ManualPage } from "@/machines/minimal_machines/mock/mock1/Mock1Manual";
 import { Mock1Page } from "@/machines/minimal_machines/mock/mock1/Mock1Page";
 import { Mock1PresetsPage } from "@/machines/minimal_machines/mock/mock1/Mock1PresetsPage";
 
@@ -493,12 +492,6 @@ export const mock1GraphRoute = createRoute({
   component: () => <Mock1GraphPage />,
 });
 
-export const mock1ManualRoute = createRoute({
-  getParentRoute: () => mock1SerialRoute,
-  path: "manual",
-  component: () => <Mock1ManualPage />,
-});
-
 export const buffer1SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "buffer1/$serial",
@@ -800,7 +793,6 @@ export const rootTree = RootRoute.addChildren([
       mock1SerialRoute.addChildren([
         mock1ControlRoute,
         mock1GraphRoute,
-        mock1ManualRoute,
         mock1PresetsRoute,
       ]),
 

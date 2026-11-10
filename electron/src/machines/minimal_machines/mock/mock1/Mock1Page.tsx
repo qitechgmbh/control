@@ -21,12 +21,6 @@ export function Mock1Page() {
           icon: "lu:CirclePlay",
         },
         {
-          link: "manual",
-          activeLink: "manual",
-          title: "Manual",
-          icon: "lu:BookOpen",
-        },
-        {
           link: "presets",
           activeLink: "presets",
           title: "Presets",
