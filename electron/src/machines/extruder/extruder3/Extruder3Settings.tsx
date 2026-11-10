@@ -192,9 +192,9 @@ export function Extruder3SettingsPage() {
                   Read the Manual First
                 </AlertTitle>
                 <AlertDescription>
-                  Please read section 2.3.1 Adaptive Pressure PID Auto-Tuning in
-                  the manual for important prerequisites and step-by-step
-                  instructions before using this feature.
+                  Please read section 1.3.2 Machine-specific controls and
+                  interface in the manual for important prerequisites and
+                  step-by-step instructions before using this feature.
                 </AlertDescription>
               </Alert>
               <Label label="Target Pressure">
