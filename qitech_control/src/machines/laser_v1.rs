@@ -11,14 +11,14 @@ use qitech_framework::machine::BuildContext;
 use qitech_framework::machine::BuildError;
 use qitech_framework::machine::ConfigProperty;
 use qitech_framework::machine::EventEmitter;
+use qitech_framework::modbus::devices::qitech_laser::LaserDevice;
+use qitech_framework::modbus::devices::qitech_laser::LaserError;
 use qitech_framework::machine::Machine;
 use qitech_framework::machine::MachineBuild;
 use qitech_framework::machine::Measurement;
+use qitech_framework::modbus::ModbusDevice;
 use qitech_framework::machine::StateProperty;
 use qitech_framework::machine_build;
-use qitech_framework::modbus::ModbusDevice;
-use qitech_framework::modbus::devices::qitech_laser::LaserDevice;
-use qitech_framework::modbus::devices::qitech_laser::LaserError;
 use qitech_lib::units::Length;
 use qitech_lib::units::length::millimeter;
 

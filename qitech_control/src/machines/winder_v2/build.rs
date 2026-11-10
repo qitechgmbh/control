@@ -1,28 +1,29 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::Duration;
+
+pub use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
+pub use qitech_lib::ethercat_hal::shared_config;
+pub use qitech_lib::ethercat_hal::shared_config::el70x1::EL70x1OperationMode;
+pub use qitech_lib::ethercat_hal::shared_config::el70x1::StmMotorConfiguration;
 
 use qitech_framework::machine::BuildContext;
 use qitech_framework::machine::BuildError;
 use qitech_framework::machine::BuildResult;
 use qitech_framework::machine::MachineBuild;
 use qitech_lib::ethercat_hal::EtherCATThreadChannel;
-pub use qitech_lib::ethercat_hal::coe::ConfigurableDevice;
-pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::ek1100::EK1100;
-pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el2002::EL2002;
-pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031::EL7031;
-pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031::coe::EL7031Configuration;
-pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031::pdo::EL7031PredefinedPdoAssignment;
-pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031_0030;
-pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031_0030::EL7031_0030;
-pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031_0030::coe::EL7031_0030Configuration;
-pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
-pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7041_0052::EL7041_0052;
-pub use qitech_lib::ethercat_hal::devices::beckhoff_modules::el7041_0052::coe::EL7041_0052Configuration;
-pub use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use qitech_lib::ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1Device;
-pub use qitech_lib::ethercat_hal::shared_config;
-pub use qitech_lib::ethercat_hal::shared_config::el70x1::EL70x1OperationMode;
-pub use qitech_lib::ethercat_hal::shared_config::el70x1::StmMotorConfiguration;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::ek1100::EK1100;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el2002::EL2002;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el7031::EL7031;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el7031::coe::EL7031Configuration;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el7031::pdo::EL7031PredefinedPdoAssignment;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el7031_0030;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el7031_0030::EL7031_0030;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el7031_0030::coe::EL7031_0030Configuration;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el7041_0052::EL7041_0052;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el7041_0052::coe::EL7041_0052Configuration;
 use qitech_lib::units::length::meter;
 
 use crate::machines::winder_v2::LaserPointer;
@@ -164,15 +165,14 @@ fn init_el7031_0030(
         pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
         ..Default::default()
     };
-
-    dev.borrow_mut()
-        .write_config(interface.clone(), addr, &config)
-        .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
-
+    interface.write_configuration(
+                    addr,
+                    &config,
+                    Duration::from_secs(4),
+    ).map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
     interface
         .enable_dc_sync0(addr)
         .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
-
     Ok(dev)
 }
 
@@ -194,10 +194,12 @@ fn init_el7041(
         },
         ..Default::default()
     };
+    interface.write_configuration(
+                    addr,
+                    &config,
+                    Duration::from_secs(4),
+    ).map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
 
-    dev.borrow_mut()
-        .write_config(interface.clone(), addr, &config)
-        .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
     interface
         .enable_dc_sync0(addr)
         .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
@@ -225,10 +227,12 @@ fn init_el7031(
         ..Default::default()
     };
 
-    dev.borrow_mut()
-        .write_config(interface.clone(), addr, &config)
-        .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
-
+    interface.write_configuration(
+                    addr,
+                    &config,
+                    Duration::from_secs(4),
+    ).map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+    
     interface
         .enable_dc_sync0(addr)
         .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
@@ -256,10 +260,12 @@ fn init_el7031_0030_spool(
         pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
         ..Default::default()
     };
-
-    dev.borrow_mut()
-        .write_config(interface.clone(), addr, &config)
-        .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+    interface.write_configuration(
+        addr,
+        &config,
+        Duration::from_secs(4),
+    ).map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+    
 
     interface
         .enable_dc_sync0(addr)

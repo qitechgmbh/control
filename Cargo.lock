@@ -443,16 +443,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "common"
-version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib?rev=664720b199158a85bde90d9f6a3754fa2f72a1be#664720b199158a85bde90d9f6a3754fa2f72a1be"
-dependencies = [
- "anyhow",
- "libc",
- "tokio",
-]
-
-[[package]]
 name = "compact_str"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -962,40 +952,6 @@ checksum = "aa68f1b12764fab894d2755d2518754e71b4fd80ecfb822714a1206c2aab39bf"
 dependencies = [
  "cc",
  "libc",
-]
-
-[[package]]
-name = "ethercat_hal"
-version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib?rev=664720b199158a85bde90d9f6a3754fa2f72a1be#664720b199158a85bde90d9f6a3754fa2f72a1be"
-dependencies = [
- "anyhow",
- "bitvec",
- "common",
- "core_affinity",
- "ethercat_hal_derive",
- "ethercrab",
- "futures",
- "libc",
- "rand 0.9.5",
- "smol",
- "spin_sleep",
- "ta",
- "tokio",
- "tracing",
- "triple_buffer",
- "units",
-]
-
-[[package]]
-name = "ethercat_hal_derive"
-version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib?rev=664720b199158a85bde90d9f6a3754fa2f72a1be#664720b199158a85bde90d9f6a3754fa2f72a1be"
-dependencies = [
- "deluxe",
- "proc-macro2",
- "quote",
- "syn 2.0.119",
 ]
 
 [[package]]
@@ -2268,7 +2224,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework?rev=17b202ac3a932ba393b80168dfc93125f9487aec#17b202ac3a932ba393b80168dfc93125f9487aec"
+source = "git+https://github.com/qitechgmbh/qitech_framework?rev=3e6aa75dc63d7b91557f643e86d666a9bc2626c1#3e6aa75dc63d7b91557f643e86d666a9bc2626c1"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2297,7 +2253,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_core"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework?rev=17b202ac3a932ba393b80168dfc93125f9487aec#17b202ac3a932ba393b80168dfc93125f9487aec"
+source = "git+https://github.com/qitechgmbh/qitech_framework?rev=3e6aa75dc63d7b91557f643e86d666a9bc2626c1#3e6aa75dc63d7b91557f643e86d666a9bc2626c1"
 dependencies = [
  "bytes",
  "chrono",
@@ -2317,7 +2273,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_hub"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework?rev=17b202ac3a932ba393b80168dfc93125f9487aec#17b202ac3a932ba393b80168dfc93125f9487aec"
+source = "git+https://github.com/qitechgmbh/qitech_framework?rev=3e6aa75dc63d7b91557f643e86d666a9bc2626c1#3e6aa75dc63d7b91557f643e86d666a9bc2626c1"
 dependencies = [
  "arc-swap",
  "chrono",
@@ -2332,7 +2288,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_macros"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework?rev=17b202ac3a932ba393b80168dfc93125f9487aec#17b202ac3a932ba393b80168dfc93125f9487aec"
+source = "git+https://github.com/qitechgmbh/qitech_framework?rev=3e6aa75dc63d7b91557f643e86d666a9bc2626c1#3e6aa75dc63d7b91557f643e86d666a9bc2626c1"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -2345,7 +2301,7 @@ dependencies = [
 [[package]]
 name = "qitech_framework_tui"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework?rev=17b202ac3a932ba393b80168dfc93125f9487aec#17b202ac3a932ba393b80168dfc93125f9487aec"
+source = "git+https://github.com/qitechgmbh/qitech_framework?rev=3e6aa75dc63d7b91557f643e86d666a9bc2626c1#3e6aa75dc63d7b91557f643e86d666a9bc2626c1"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2372,15 +2328,91 @@ dependencies = [
 [[package]]
 name = "qitech_lib"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib?rev=664720b199158a85bde90d9f6a3754fa2f72a1be#664720b199158a85bde90d9f6a3754fa2f72a1be"
+source = "git+https://github.com/qitechgmbh/qitech_lib?rev=bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091#bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091"
 dependencies = [
  "bitvec",
- "common",
- "ethercat_hal",
- "ethercat_hal_derive",
+ "qitech_lib_common",
+ "qitech_lib_ethercat_hal",
+ "qitech_lib_ethercat_hal_devices",
+ "qitech_lib_units",
+ "qitech_lib_xtrem",
+]
+
+[[package]]
+name = "qitech_lib_common"
+version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_lib?rev=bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091#bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091"
+dependencies = [
+ "libc",
+ "thiserror 2.0.20",
  "tokio",
- "units",
- "xtrem",
+]
+
+[[package]]
+name = "qitech_lib_ethercat_hal"
+version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_lib?rev=bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091#bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091"
+dependencies = [
+ "bitvec",
+ "core_affinity",
+ "ethercrab",
+ "futures",
+ "libc",
+ "qitech_lib_common",
+ "qitech_lib_ethercat_hal_derive",
+ "qitech_lib_units",
+ "rand 0.9.5",
+ "smol",
+ "spin_sleep",
+ "ta",
+ "thiserror 2.0.20",
+ "tokio",
+ "tracing",
+ "triple_buffer",
+]
+
+[[package]]
+name = "qitech_lib_ethercat_hal_derive"
+version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_lib?rev=bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091#bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091"
+dependencies = [
+ "deluxe",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "qitech_lib_ethercat_hal_devices"
+version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_lib?rev=bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091#bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091"
+dependencies = [
+ "bitvec",
+ "qitech_lib_common",
+ "qitech_lib_ethercat_hal",
+ "qitech_lib_ethercat_hal_derive",
+ "qitech_lib_units",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "qitech_lib_units"
+version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_lib?rev=bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091#bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091"
+dependencies = [
+ "uom",
+]
+
+[[package]]
+name = "qitech_lib_xtrem"
+version = "0.1.0"
+source = "git+https://github.com/qitechgmbh/qitech_lib?rev=bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091#bdd1dc2d0a986fc06b7dfc14f6fced0c9957c091"
+dependencies = [
+ "qitech_lib_common",
+ "qitech_lib_units",
+ "thiserror 2.0.20",
+ "tokio",
 ]
 
 [[package]]
@@ -3667,14 +3699,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4ac048d71ede7ee76d585517add45da530660ef4390e49b098733c6e897f254"
 
 [[package]]
-name = "units"
-version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib?rev=664720b199158a85bde90d9f6a3754fa2f72a1be#664720b199158a85bde90d9f6a3754fa2f72a1be"
-dependencies = [
- "uom",
-]
-
-[[package]]
 name = "uom"
 version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4119,17 +4143,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f360fc0b24296329c78fda852a1e9ae82de9cf7b27dae4b7f62f118f77b9ed"
 dependencies = [
  "tap",
-]
-
-[[package]]
-name = "xtrem"
-version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_lib?rev=664720b199158a85bde90d9f6a3754fa2f72a1be#664720b199158a85bde90d9f6a3754fa2f72a1be"
-dependencies = [
- "anyhow",
- "common",
- "tokio",
- "units",
 ]
 
 [[package]]
