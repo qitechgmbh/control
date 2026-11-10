@@ -165,11 +165,16 @@ fn init_el7031_0030(
         pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
         ..Default::default()
     };
-    interface.write_configuration(
+    let res = interface.write_configuration(
                     addr,
                     &config,
                     Duration::from_secs(4),
     ).map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+
+    for (idx,err) in res {
+        tracing::info!("init_el7031_0030: {:?} {:?}",idx,err);
+    }
+
     interface
         .enable_dc_sync0(addr)
         .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
@@ -194,12 +199,14 @@ fn init_el7041(
         },
         ..Default::default()
     };
-    interface.write_configuration(
+    let res = interface.write_configuration(
                     addr,
                     &config,
                     Duration::from_secs(4),
     ).map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
-
+    for (idx,err) in res {
+        tracing::info!("init_el7041: {:?} {:?}",idx,err);
+    }
     interface
         .enable_dc_sync0(addr)
         .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
@@ -227,11 +234,15 @@ fn init_el7031(
         ..Default::default()
     };
 
-    interface.write_configuration(
+    let res = interface.write_configuration(
                     addr,
                     &config,
                     Duration::from_secs(4),
     ).map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+    
+    for (idx,err) in res {
+        tracing::info!("init_el7031_0030: {:?} {:?}",idx,err);
+    }
     
     interface
         .enable_dc_sync0(addr)
