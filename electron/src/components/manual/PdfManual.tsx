@@ -23,7 +23,7 @@ type ManualLanguage = "en" | "de";
 
 const LANGUAGES: { key: ManualLanguage; label: string }[] = [
   { key: "en", label: "English" },
-  { key: "de", label: "Deutsch" },
+  { key: "de", label: "German" },
 ];
 const LANGUAGE_STORAGE_KEY = "manualLanguage";
 const ZOOM_STORAGE_KEY = "manualZoom";
