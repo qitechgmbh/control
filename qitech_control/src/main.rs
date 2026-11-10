@@ -119,7 +119,7 @@ fn ecat_config(stay_preop: bool) -> EtherCATConfig {
         target_dc_tick: 500,
     };
 
-    let opt_config = RtOptimizationConfig {
+    let _opt_config = RtOptimizationConfig {
         ethercat_loop_thread_core: 3,
         ethercat_loop_thread_priority: 99,
         ethercat_io_thread_core: 3,
