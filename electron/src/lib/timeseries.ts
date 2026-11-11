@@ -347,3 +347,29 @@ export function alignTargetSeriesToTimestamps(
 
   return result;
 }
+
+/**
+ * Builds a read-only TimeSeries holding the given chronological points in its `long`
+ * buffer (e.g. ClickHouse history), so consumers of `long` such as the Excel export
+ * can use it like a live series.
+ */
+export function timeSeriesFromPoints(
+  timestamps: number[],
+  values: number[],
+): TimeSeries {
+  const points: TimeSeriesValue[] = timestamps.map((timestamp, i) => ({
+    timestamp,
+    value: values[i],
+  }));
+  const last = points.length ? points[points.length - 1] : null;
+  const series: Series = {
+    values: points,
+    index: 0,
+    size: Math.max(1, points.length),
+    lastTimestamp: last?.timestamp ?? 0,
+    timeWindow: last ? last.timestamp - points[0].timestamp : 0,
+    sampleInterval: 0,
+    validCount: points.length,
+  };
+  return { current: last, long: series, short: { ...series } };
+}

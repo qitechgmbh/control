@@ -107,8 +107,8 @@ pub async fn main() -> anyhow::Result<()> {
                     state_legacy.clone(),
                     rx,
                 ))
-                .listener(ClickhouseWriter::new(client).await)
-                .actor(Server::new(state, state_legacy, tx));
+                .listener(ClickhouseWriter::new(client.clone()).await)
+                .actor(Server::new(state, state_legacy, tx, client));
             run_with_hub(config_rt, config_hub).await
         }
     }

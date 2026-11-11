@@ -6,6 +6,7 @@ import {
   type GraphConfig,
   type GraphLine,
 } from "@/components/graph";
+import { GraphHistoryProvider } from "@/components/graph/history/GraphHistoryContext";
 import React from "react";
 import { useWinder2 } from "./useWinder";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
@@ -15,6 +16,7 @@ import { GraphWithMarkerControls } from "@/components/graph/marker/GraphWithMark
 
 export function Winder2GraphsPage() {
   const {
+    machineIdentification,
     state,
     spoolRpm,
     traversePosition,
@@ -28,55 +30,57 @@ export function Winder2GraphsPage() {
 
   return (
     <Page className="pb-27">
-      <MarkerProvider>
-        <div className="flex flex-col gap-4">
-          <div className="grid gap-4">
-            <PullerSpeedGraph
-              syncHook={syncHook}
-              newData={pullerSpeed}
-              targetSeries={targetPullerSpeed}
-              targetSpeed={state?.puller_state?.target_speed}
-              unit="m/min"
-              renderValue={(value) => roundToDecimals(value, 1)}
-            />
+      <GraphHistoryProvider machine={machineIdentification}>
+        <MarkerProvider>
+          <div className="flex flex-col gap-4">
+            <div className="grid gap-4">
+              <PullerSpeedGraph
+                syncHook={syncHook}
+                newData={pullerSpeed}
+                targetSeries={targetPullerSpeed}
+                targetSpeed={state?.puller_state?.target_speed}
+                unit="m/min"
+                renderValue={(value) => roundToDecimals(value, 1)}
+              />
 
-            <TensionArmAngleGraph
-              syncHook={syncHook}
-              newData={tensionArmAngle}
-              unit="deg"
-              renderValue={(value) => roundDegreesToDecimals(value, 0)}
-            />
+              <TensionArmAngleGraph
+                syncHook={syncHook}
+                newData={tensionArmAngle}
+                unit="deg"
+                renderValue={(value) => roundDegreesToDecimals(value, 0)}
+              />
 
-            <SpoolRpmGraph
-              syncHook={syncHook}
-              newData={spoolRpm}
-              unit="rpm"
-              renderValue={(value) => roundToDecimals(value, 0)}
-            />
+              <SpoolRpmGraph
+                syncHook={syncHook}
+                newData={spoolRpm}
+                unit="rpm"
+                renderValue={(value) => roundToDecimals(value, 0)}
+              />
 
-            <TraversePositionGraph
-              syncHook={syncHook}
-              newData={traversePosition}
-              limitInner={state?.traverse_state?.limit_inner}
-              limitOuter={state?.traverse_state?.limit_outer}
-              unit="mm"
-              renderValue={(value) => roundToDecimals(value, 1)}
-            />
+              <TraversePositionGraph
+                syncHook={syncHook}
+                newData={traversePosition}
+                limitInner={state?.traverse_state?.limit_inner}
+                limitOuter={state?.traverse_state?.limit_outer}
+                unit="mm"
+                renderValue={(value) => roundToDecimals(value, 1)}
+              />
 
-            <SpoolProgressGraph
-              syncHook={syncHook}
-              newData={spoolProgress}
-              unit="m"
-              renderValue={(value) => roundToDecimals(value, 2)}
-            />
+              <SpoolProgressGraph
+                syncHook={syncHook}
+                newData={spoolProgress}
+                unit="m"
+                renderValue={(value) => roundToDecimals(value, 2)}
+              />
+            </div>
           </div>
-        </div>
 
-        <SyncedFloatingControlPanel
-          controlProps={syncHook.controlProps}
-          machineId="winder2"
-        />
-      </MarkerProvider>
+          <SyncedFloatingControlPanel
+            controlProps={syncHook.controlProps}
+            machineId="winder2"
+          />
+        </MarkerProvider>
+      </GraphHistoryProvider>
     </Page>
   );
 }
@@ -108,6 +112,7 @@ export function SpoolRpmGraph({
       syncHook={syncHook}
       newData={{
         newData,
+        history: "spool.rpm",
         color: "#10b981",
       }}
       unit={unit}
@@ -169,6 +174,7 @@ export function TraversePositionGraph({
       syncHook={syncHook}
       newData={{
         newData,
+        history: "traverse.position",
         color: "#8b5cf6",
         lines,
       }}
@@ -207,6 +213,7 @@ export function TensionArmAngleGraph({
       syncHook={syncHook}
       newData={{
         newData,
+        history: "tension_arm.angle",
         color: "#f59e0b",
       }}
       unit={unit}
@@ -245,6 +252,7 @@ export function SpoolProgressGraph({
       syncHook={syncHook}
       newData={{
         newData,
+        history: "spool.progress",
         color: "#f59e0b",
       }}
       unit={unit}
@@ -279,6 +287,7 @@ export function PullerSpeedGraph({
       type: "target",
       value: targetSpeed,
       targetSeries,
+      history: "puller.speed_controller.speed_desired",
       label: "Target Speed",
       color: "#06b6d4", // Match series color
     });
@@ -298,6 +307,7 @@ export function PullerSpeedGraph({
       syncHook={syncHook}
       newData={{
         newData,
+        history: "puller.speed",
         color: "#06b6d4",
         lines,
       }}

@@ -7,11 +7,13 @@ import {
 } from "@/components/graph";
 
 import React from "react";
+import { GraphHistoryProvider } from "@/components/graph/history/GraphHistoryContext";
 import { useAquapath1 } from "./useAquapath";
 import { TimeSeries } from "@/lib/timeseries";
 
 export function Aquapath1GraphPage() {
   const {
+    machineIdentification,
     state,
     left_flow,
     right_flow,
@@ -34,49 +36,57 @@ export function Aquapath1GraphPage() {
 
   return (
     <Page className="pb-27">
-      <div className="flex flex-col gap-4">
-        <FlowGraph
-          syncHook={syncHook}
-          flow={right_flow}
-          name={"Right Reservoir Flow"}
-          id={"right_reservoir_flow"}
-        />
-        <FlowGraph
-          syncHook={syncHook}
-          flow={left_flow}
-          name={"Left Reservoir Flow"}
-          id={"left_reservoir_flow"}
-        />
-        <TemperatureGraph
-          syncHook={syncHook}
-          temperature={right_temperature}
-          targetTemp={rightReservoirTempTarget}
-          targetSeries={targetRightTemperature}
-          name={"Right Reservoir Temperature"}
-          id={"right_reservoir_temp"}
-        />
-        <TemperatureGraph
-          syncHook={syncHook}
-          temperature={left_temperature}
-          targetTemp={leftReservoirTempTarget}
-          targetSeries={targetLeftTemperature}
-          name={"Left Reservoir Temperature"}
-          id={"left_reservoir_temp"}
-        />
-        <PowerGraph
-          syncHook={syncHook}
-          rightReservoirPower={right_power}
-          leftReservoirPower={left_power}
-          id={"aquapath_power"}
-        />
-        <EnergyGraph
-          syncHook={syncHook}
-          rightReservoirEnergy={scaleTimeSeries(right_total_energy, 1 / 1000)}
-          leftReservoirEnergy={scaleTimeSeries(left_total_energy, 1 / 1000)}
-          id={"aquapath_energy"}
-        />
-      </div>
-      <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
+      <GraphHistoryProvider machine={machineIdentification}>
+        <div className="flex flex-col gap-4">
+          <FlowGraph
+            syncHook={syncHook}
+            flow={right_flow}
+            history="right_flow"
+            name={"Right Reservoir Flow"}
+            id={"right_reservoir_flow"}
+          />
+          <FlowGraph
+            syncHook={syncHook}
+            flow={left_flow}
+            history="left_flow"
+            name={"Left Reservoir Flow"}
+            id={"left_reservoir_flow"}
+          />
+          <TemperatureGraph
+            syncHook={syncHook}
+            temperature={right_temperature}
+            history="right_temperature"
+            targetHistory="right_target_temperature"
+            targetTemp={rightReservoirTempTarget}
+            targetSeries={targetRightTemperature}
+            name={"Right Reservoir Temperature"}
+            id={"right_reservoir_temp"}
+          />
+          <TemperatureGraph
+            syncHook={syncHook}
+            temperature={left_temperature}
+            history="left_temperature"
+            targetHistory="left_target_temperature"
+            targetTemp={leftReservoirTempTarget}
+            targetSeries={targetLeftTemperature}
+            name={"Left Reservoir Temperature"}
+            id={"left_reservoir_temp"}
+          />
+          <PowerGraph
+            syncHook={syncHook}
+            rightReservoirPower={right_power}
+            leftReservoirPower={left_power}
+            id={"aquapath_power"}
+          />
+          <EnergyGraph
+            syncHook={syncHook}
+            rightReservoirEnergy={scaleTimeSeries(right_total_energy, 1 / 1000)}
+            leftReservoirEnergy={scaleTimeSeries(left_total_energy, 1 / 1000)}
+            id={"aquapath_energy"}
+          />
+        </div>
+        <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
+      </GraphHistoryProvider>
     </Page>
   );
 }
@@ -124,11 +134,14 @@ function scaleTimeSeries(
 export function FlowGraph({
   syncHook,
   flow,
+  history,
   name,
   id,
 }: {
   syncHook: ReturnType<typeof useGraphSync>;
   flow: TimeSeries | null;
+  /** Measurement path for database history */
+  history?: string;
   name: string;
   id: string;
 }) {
@@ -148,6 +161,7 @@ export function FlowGraph({
       syncHook={syncHook}
       newData={{
         newData: flow,
+        history,
         color: "#3b82f6",
       }}
       unit="l/min"
@@ -162,6 +176,8 @@ export function TemperatureGraph({
   temperature,
   targetTemp,
   targetSeries,
+  history,
+  targetHistory,
   name,
   id,
 }: {
@@ -169,6 +185,9 @@ export function TemperatureGraph({
   temperature: TimeSeries | null;
   targetTemp: number;
   targetSeries: TimeSeries | null;
+  /** Measurement / config paths for database history */
+  history?: string;
+  targetHistory?: string;
   name: string;
   id: string;
 }) {
@@ -189,6 +208,7 @@ export function TemperatureGraph({
     ? [
         {
           newData: temperature,
+          history,
           title: "Temperature",
           color: "#3b82f6",
           lines: [
@@ -197,6 +217,7 @@ export function TemperatureGraph({
               value: targetTemp,
               label: "Target Temperature",
               targetSeries: targetSeries ?? undefined,
+              history: targetHistory,
               color: "#3b82f6",
               show: true,
               width: 2,
@@ -246,6 +267,7 @@ export function PowerGraph({
       ? [
           {
             newData: rightReservoirPower,
+            history: "right_power",
             title: "Right Reservoir",
             color: "#f97316",
           },
@@ -255,6 +277,7 @@ export function PowerGraph({
       ? [
           {
             newData: leftReservoirPower,
+            history: "left_power",
             title: "Left Reservoir",
             color: "#ef4444",
           },
@@ -301,6 +324,8 @@ export function EnergyGraph({
       ? [
           {
             newData: rightReservoirEnergy,
+            history: "right_total_energy",
+            historyScale: 1 / 1000,
             title: "Right Reservoir",
             color: "#0f766e",
           },
@@ -310,6 +335,8 @@ export function EnergyGraph({
       ? [
           {
             newData: leftReservoirEnergy,
+            history: "left_total_energy",
+            historyScale: 1 / 1000,
             title: "Left Reservoir",
             color: "#14b8a6",
           },

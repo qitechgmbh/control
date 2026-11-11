@@ -186,5 +186,6 @@ export function useLaser1() {
 
   return {
     ...laser,
+    machineIdentification,
   };
 }
