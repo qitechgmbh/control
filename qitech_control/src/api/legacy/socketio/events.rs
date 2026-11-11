@@ -39,6 +39,24 @@ pub struct EthercatSetupDone {
     pub devices: Vec<legacy::EtherCATDeviceMetadata>,
 }
 
+// --- ethercat interface discovery event ---
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum EthercatInterfaceDiscoveryEvent {
+    Discovering(bool),
+    Done(String),
+}
+
+// --- ethercat frames lost event ---
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Default, PartialEq, Eq)]
+pub struct EthercatFramesLostEvent {
+    /// frames lost since the runtime started
+    pub total: u64,
+    /// length of the most recent run of consecutive lost frames
+    pub last_consecutive: u32,
+    /// unix timestamp in ms of the report that contained the most recent lost frame
+    pub last_failed_at: Option<i64>,
+}
+
 // --- machines event ---
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MachinesEvent {

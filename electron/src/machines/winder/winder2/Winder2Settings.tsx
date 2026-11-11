@@ -434,7 +434,7 @@ export function Winder2SettingPage() {
                 <AlertDescription>
                   This feature is still in development and may cause unexpected
                   behavior. It will be improved in future updates. Please read
-                  section 2.3.1 in the manual on how to use this feature and
+                  section 1.3.2 in the manual on how to use this feature and
                   provide feedback to help us improve it.
                 </AlertDescription>
               </Alert>

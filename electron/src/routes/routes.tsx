@@ -63,7 +63,6 @@ import { WagoSerialControlPage } from "@/machines/wago_serial/WagoSerialControlP
 
 import { Mock1ControlPage } from "@/machines/minimal_machines/mock/mock1/Mock1ControlPage";
 import { Mock1GraphPage } from "@/machines/minimal_machines/mock/mock1/Mock1Graph";
-import { Mock1ManualPage } from "@/machines/minimal_machines/mock/mock1/Mock1Manual";
 import { Mock1Page } from "@/machines/minimal_machines/mock/mock1/Mock1Page";
 import { Mock1PresetsPage } from "@/machines/minimal_machines/mock/mock1/Mock1PresetsPage";
 
@@ -71,6 +70,7 @@ import { Aquapath1ControlPage } from "@/machines/aquapath/aquapath1/Aquapath1Con
 import { Aquapath1Page } from "@/machines/aquapath/aquapath1/Aquapath1Page";
 import { Aquapath1GraphPage } from "@/machines/aquapath/aquapath1/Aquapath1Graph";
 import { Aquapath1SettingsPage } from "@/machines/aquapath/aquapath1/Aquapath1Settings";
+import { Aquapath1ManualPage } from "@/machines/aquapath/aquapath1/Aquapath1Manual";
 
 import { TestMachinePage } from "@/machines/minimal_machines/testmachine/TestMachinePage";
 import { TestMachineControlPage } from "@/machines/minimal_machines/testmachine/TestMachineControlPage";
@@ -492,12 +492,6 @@ export const mock1GraphRoute = createRoute({
   component: () => <Mock1GraphPage />,
 });
 
-export const mock1ManualRoute = createRoute({
-  getParentRoute: () => mock1SerialRoute,
-  path: "manual",
-  component: () => <Mock1ManualPage />,
-});
-
 export const buffer1SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "buffer1/$serial",
@@ -538,6 +532,12 @@ export const aquapath1SettingsRoute = createRoute({
   getParentRoute: () => aquapath1SerialRoute,
   path: "settings",
   component: () => <Aquapath1SettingsPage />,
+});
+
+export const aquapath1ManualRoute = createRoute({
+  getParentRoute: () => aquapath1SerialRoute,
+  path: "manual",
+  component: () => <Aquapath1ManualPage />,
 });
 
 export const buffer1SettingsRoute = createRoute({
@@ -748,6 +748,7 @@ export const rootTree = RootRoute.addChildren([
         aquapath1ControlRoute,
         aquapath1GraphRoute,
         aquapath1SettingsRoute,
+        aquapath1ManualRoute,
       ]),
 
       winder2_7031SerialRoute.addChildren([
@@ -792,7 +793,6 @@ export const rootTree = RootRoute.addChildren([
       mock1SerialRoute.addChildren([
         mock1ControlRoute,
         mock1GraphRoute,
-        mock1ManualRoute,
         mock1PresetsRoute,
       ]),
 
