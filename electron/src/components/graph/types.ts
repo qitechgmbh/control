@@ -1,8 +1,8 @@
-import type uPlot from "uplot";
+import type { Chart } from "chart.js";
+import type { Marker } from "@/stores/markerStore";
 import { IconName } from "@/components/Icon";
 import { Unit } from "@/control/units";
 import { TimeSeries } from "@/lib/timeseries";
-import { RefObject } from "react";
 import { ExportResultDialogProps } from "@/components/ExportResultDialog";
 
 export type SwitchOrigin = "button" | "gesture";
@@ -16,6 +16,8 @@ export type PropGraphSync = {
   historicalFreezeTimestamp?: number | null;
   showFromTimestamp?: number | null;
   historicalSwitchOrigin: SwitchOrigin;
+  /** Charts with the same group share their hover crosshair. */
+  cursorGroup?: string;
   onTimeWindowChange?: (graphId: string, timeWindow: number | "all") => void;
   onViewModeChange?: (
     graphId: string,
@@ -47,6 +49,8 @@ type TargetLine = BaseGraphLine & {
   value: number;
   label?: string;
   targetSeries?: TimeSeries;
+  /** Config property path whose history is loaded from the database, e.g. `screw.target_rpm`. */
+  history?: string;
 };
 
 type UserMarkerLine = BaseGraphLine & {
@@ -77,6 +81,10 @@ export type GraphConfig = {
 // Support for multiple series
 export type SeriesData = {
   newData: TimeSeries | null;
+  /** Measurement path whose history is loaded from the database, e.g. `motor.rpm`. */
+  history?: string;
+  /** Factor applied to database values when the UI shows a converted unit (e.g. 100 for %). */
+  historyScale?: number;
   title?: string;
   color?: string;
   lines?: GraphLine[];
@@ -95,8 +103,10 @@ export type BigGraphProps = {
   config: GraphConfig;
   graphId: string;
   syncGraph?: PropGraphSync;
-  /** Optional ref to receive the uPlot instance when chart is created (e.g. for marker positioning) */
-  uplotRefOut?: React.MutableRefObject<uPlot | null>;
+  /** Receives the Chart.js instance when it is created, and null when destroyed */
+  onChart?: (chart: Chart | null) => void;
+  /** User markers drawn as vertical lines */
+  markers?: Marker[];
 };
 
 export type TimeWindowOption = {
@@ -118,90 +128,3 @@ export type ControlProps = {
   showFromTimestamp?: number | null;
   onShowFromChange?: (timestamp: number | null) => void;
 };
-
-export interface LiveModeHandlers {
-  getCurrentLiveEndTimestamp: () => number;
-  updateLiveData: () => void;
-  handleLiveTimeWindow: (timeWindow: number | "all") => void;
-  processNewHistoricalData: () => void;
-}
-export interface HistoricalModeHandlers {
-  captureHistoricalFreezeTimestamp: () => number;
-  getHistoricalEndTimestamp: () => number;
-  handleHistoricalTimeWindow: (timeWindow: number | "all") => void;
-  switchToHistoricalMode: (origin?: SwitchOrigin) => void;
-  switchToLiveMode: () => void;
-}
-
-export interface CreateChartParams {
-  containerRef: React.RefObject<HTMLDivElement | null>;
-  uplotRef: React.RefObject<uPlot | null>;
-  /** Optional ref to expose uPlot instance (e.g. for marker overlay positioning) */
-  uplotRefOut?: React.MutableRefObject<uPlot | null>;
-  newData: BigGraphProps["newData"];
-  config: BigGraphProps["config"];
-  colors: {
-    primary: string;
-    grid: string;
-    axis: string;
-    background: string;
-  };
-  renderValue?: (value: number) => string;
-  viewMode: "default" | "all" | "manual";
-  selectedTimeWindow: number | "all";
-  isLiveMode: boolean;
-  startTimeRef: React.RefObject<number | null>;
-  manualScaleRef: React.RefObject<{
-    x: { min: number; max: number };
-    y: { min: number; max: number };
-  } | null>;
-  animationRefs: AnimationRefs;
-  handlerRefs: HandlerRefs;
-  graphId: string;
-  syncGraph?: BigGraphProps["syncGraph"];
-  getHistoricalEndTimestamp: () => number;
-  updateYAxisScale: (xMin?: number, xMax?: number) => void;
-  setViewMode: React.Dispatch<
-    React.SetStateAction<"default" | "all" | "manual">
-  >;
-  setIsLiveMode: React.Dispatch<React.SetStateAction<boolean>>;
-  setCursorValue: React.Dispatch<React.SetStateAction<number | null>>;
-  setCursorValues: React.Dispatch<React.SetStateAction<(number | null)[]>>;
-  visibleSeries: boolean[];
-  showFromTimestamp?: number | null;
-}
-
-export interface AnimationState {
-  isAnimating: boolean;
-  startTime: number;
-  fromValue: number;
-  toValue: number;
-  fromTimestamp: number;
-  toTimestamp: number;
-  targetIndex: number;
-}
-
-export interface AnimationRefs {
-  animationFrame: React.RefObject<number | null>;
-  animationState: React.RefObject<AnimationState>;
-  lastRenderedData: React.RefObject<{
-    timestamps: number[];
-    values: number[];
-  }>;
-  realPointsCount: React.RefObject<number>;
-}
-
-export interface HandlerRefs {
-  isUserZoomingRef: RefObject<boolean>;
-  isDraggingRef: RefObject<boolean>;
-  lastDragXRef: RefObject<number | null>;
-  isPinchingRef: RefObject<boolean>;
-  lastPinchDistanceRef: RefObject<number | null>;
-  pinchCenterRef: RefObject<{ x: number; y: number } | null>;
-  touchStartRef: RefObject<{
-    x: number;
-    y: number;
-    time: number;
-  } | null>;
-  touchDirectionRef: RefObject<"horizontal" | "vertical" | "unknown">;
-}
