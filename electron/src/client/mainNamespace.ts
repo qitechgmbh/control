@@ -37,9 +37,9 @@ export const ethercatDevicesSchema = z.object({
 
 export const ethercatDevicesEventDataSchema = z
   .object({
-    Initializing: z.boolean(),
-    Done: ethercatDevicesSchema,
-    Error: z.string(),
+    Initializing: z.boolean().optional(),
+    Done: ethercatDevicesSchema.optional(),
+    Error: z.string().optional(),
   })
   .check(rustEnum);
 
@@ -139,8 +139,8 @@ export type ModbusDevicesEvent = z.infer<typeof modbusDevicesEventSchema>;
 
 export const ethercatInterfaceDiscoveryEventDataSchema = z
   .object({
-    Discovering: z.boolean(),
-    Done: z.string(),
+    Discovering: z.boolean().optional(),
+    Done: z.string().optional(),
   })
   .check(rustEnum);
 
@@ -186,6 +186,7 @@ export const eventSchemaMap = {
   EthercatFramesLostEvent: ethercatFramesLostEventSchema,
   MachinesEvent: machinesEventSchema,
   ModbusDevicesEvent: modbusDevicesEventSchema,
+  EthercatInterfaceDiscoveryEvent: ethercatInterfaceDiscoveryEventSchema,
 };
 
 export function mainMessageHandler(
@@ -267,7 +268,8 @@ export function mainMessageHandler(
       } else if (eventName === "EthercatInterfaceDiscoveryEvent") {
         store.setState((state) => ({
           ...state,
-          ethercatInterfaceDiscovery: event,
+          ethercatInterfaceDiscovery:
+            ethercatInterfaceDiscoveryEventSchema.parse(event),
         }));
       } else if (eventName === "ModbusDevicesEvent") {
         store.setState((state) => ({
