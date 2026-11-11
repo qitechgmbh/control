@@ -131,11 +131,11 @@ fn ecat_config(stay_preop: bool) -> EtherCATConfig {
     let master_config = MasterConfiguration {
         target_cycle_time_us: target_cycle_time_us as usize,
         tx_rx_config: qitech_lib::ethercat_hal::MasterTxRxConfig::TxRxBlocking,
-        realtime_optimizations: None,
+        realtime_optimizations: Some(_opt_config),
         dc_config,
         wkc_mismatch_threshold: 5,
         op_ramp_grace_cycles: 10000,
-        max_consecutive_tx_rx_failures: 5,
+        max_consecutive_tx_rx_failures: 0,
     };
 
     EtherCATConfig {
