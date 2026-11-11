@@ -467,6 +467,9 @@ export function useAquapath1() {
   };
 
   return {
+    // Machine identity (graphs load database history with it)
+    machineIdentification,
+
     // Consolidated state
     state: stateOptimistic.value?.data,
 

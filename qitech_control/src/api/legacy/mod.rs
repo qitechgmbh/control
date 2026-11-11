@@ -28,6 +28,8 @@ pub struct LegacyApiState {
     pub ctx: ActorContext,
     pub machines_dirty_tx: mpsc::Sender<MachineInstanceIdentification>,
     pub legacy: LegacySharedState,
+    /// ClickHouse client (database `control_hub`) for history queries.
+    pub db: clickhouse::Client,
 }
 
 #[derive(Clone)]
