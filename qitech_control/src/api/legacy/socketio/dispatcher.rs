@@ -8,6 +8,7 @@ use tokio::sync::mpsc;
 
 use crate::api::LegacySharedState;
 use crate::api::legacy;
+use crate::api::legacy::socketio::events::EthercatInterfaceDiscoveryEvent;
 use crate::api::types::SharedState;
 
 pub struct SocketIODispatcher {
@@ -39,6 +40,18 @@ impl Listener for SocketIODispatcher {
 
     fn on_init_event_received(&mut self, event: &RuntimeInitEvent) {
         match event.clone() {
+            RuntimeInitEvent::EtherCATDiscoveryStarted => {
+                self.state_legacy.ns_main.update(|ns| {
+                    ns.set_ecat_interface(EthercatInterfaceDiscoveryEvent::Discovering(true))
+                });
+            }
+
+            RuntimeInitEvent::EtherCATDiscoveryCompleted { interface } => {
+                self.state_legacy.ns_main.update(|ns| {
+                    ns.set_ecat_interface(EthercatInterfaceDiscoveryEvent::Done(interface))
+                });
+            }
+
             RuntimeInitEvent::EtherCATStateUpdate(state) => {
                 self.state_legacy
                     .ns_main

@@ -186,6 +186,7 @@ export const eventSchemaMap = {
   EthercatFramesLostEvent: ethercatFramesLostEventSchema,
   MachinesEvent: machinesEventSchema,
   ModbusDevicesEvent: modbusDevicesEventSchema,
+  EthercatInterfaceDiscoveryEvent: ethercatInterfaceDiscoveryEventSchema,
 };
 
 export function mainMessageHandler(
@@ -267,7 +268,8 @@ export function mainMessageHandler(
       } else if (eventName === "EthercatInterfaceDiscoveryEvent") {
         store.setState((state) => ({
           ...state,
-          ethercatInterfaceDiscovery: event,
+          ethercatInterfaceDiscovery:
+            ethercatInterfaceDiscoveryEventSchema.parse(event),
         }));
       } else if (eventName === "ModbusDevicesEvent") {
         store.setState((state) => ({

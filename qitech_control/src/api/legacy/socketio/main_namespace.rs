@@ -8,6 +8,7 @@ use socketioxide::extract::SocketRef;
 use crate::api::legacy;
 use crate::api::legacy::socketio::events::EthercatDevicesEvent;
 use crate::api::legacy::socketio::events::EthercatFramesLostEvent;
+use crate::api::legacy::socketio::events::EthercatInterfaceDiscoveryEvent;
 use crate::api::legacy::socketio::events::EthercatSetupDone;
 use crate::api::legacy::socketio::events::MachineObj;
 use crate::api::legacy::socketio::events::MachinesEvent;
@@ -20,6 +21,7 @@ pub struct MainNamespaceManager {
     sockets: Vec<SocketRef>,
     machines: HashMap<MachineInstanceIdentification, MachineObj>,
     ecat_state: Option<&'static str>,
+    ecat_interface: Option<EthercatInterfaceDiscoveryEvent>,
     ecat_devices: Option<Vec<legacy::EtherCATDeviceMetadata>>,
     modbus_devices: Option<Vec<legacy::ModbusDeviceMetadata>>,
     ecat_frames_lost: EthercatFramesLostEvent,
@@ -35,6 +37,16 @@ impl MainNamespaceManager {
                 "EthercatStateEvent",
                 EthercatDevicesEvent::State(state.to_string()),
             );
+
+            if let Err(e) = socket.emit("event", &event) {
+                tracing::error!("Failed to send message to new socket: {e}");
+                return;
+            }
+        }
+
+        // --- send the ethercat interface discovery state ---
+        if let Some(interface) = self.ecat_interface.clone() {
+            let event = SocketIOEvent::new("EthercatInterfaceDiscoveryEvent", interface);
 
             if let Err(e) = socket.emit("event", &event) {
                 tracing::error!("Failed to send message to new socket: {e}");
@@ -109,6 +121,14 @@ impl MainNamespaceManager {
 
         self.broadcast(event);
         self.ecat_state = Some(state);
+    }
+
+    pub fn set_ecat_interface(&mut self, interface: EthercatInterfaceDiscoveryEvent) {
+        self.broadcast(SocketIOEvent::new(
+            "EthercatInterfaceDiscoveryEvent",
+            interface.clone(),
+        ));
+        self.ecat_interface = Some(interface);
     }
 
     pub fn set_ecat_devices(&mut self, devices: Vec<legacy::EtherCATDeviceMetadata>) {

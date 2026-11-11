@@ -39,6 +39,13 @@ pub struct EthercatSetupDone {
     pub devices: Vec<legacy::EtherCATDeviceMetadata>,
 }
 
+// --- ethercat interface discovery event ---
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum EthercatInterfaceDiscoveryEvent {
+    Discovering(bool),
+    Done(String),
+}
+
 // --- ethercat frames lost event ---
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Default, PartialEq, Eq)]
 pub struct EthercatFramesLostEvent {
