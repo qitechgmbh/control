@@ -23,17 +23,18 @@ echo
 
 # Fail if dependencies are missing
 ERR=0
-for app in git lsblk mkdir mkfs.vfat mkfs.ext4 nixos-install parted
+for app in blkid git lsblk mkdir mkfs.vfat mkfs.ext4 nixos-install parted partprobe udevadm wipefs
 do
 	if ! which $app &> /dev/null; then
-		ERR=$ERR+1
+		ERR=$((ERR + 1))
 		echo "Error: $app is missing"
 	fi
 done
-if [[ ERR -gt 0 ]]; then exit 1; fi
+if [[ $ERR -gt 0 ]]; then exit 1; fi
 
 if ! ping -c1 github.com &> /dev/null; then
 	echo "Error: No connection to the internet"
+	exit 1
 fi
 
 echo
@@ -58,11 +59,43 @@ do
 	fi
 done
 
+# Make the kernel pick up the partition table we just wrote and wait until udev
+# has (re)created the partition nodes. Without this the nodes may still carry the
+# offsets of the *previous* table, so mkfs writes the superblock to a location
+# the later mount no longer reads from ("bad superblock" / mount exit 32).
+function settle_partitions {
+	sync
+	partprobe "$TARGET_DISK" &> /dev/null || true
+	udevadm settle --timeout=30 &> /dev/null || true
+}
+
+# Wait for a device node to show up after a partition table change
+function wait_for_device {
+	local dev="$1"
+	for _ in $(seq 1 30); do
+		[[ -b "$dev" ]] && return 0
+		sleep 1
+		udevadm settle --timeout=1 &> /dev/null || true
+	done
+	return 1
+}
+
 echo ">>> Partitioning $TARGET_DISK ..."
 
 # Unmount conflicting remnant mounts
-umount "${TARGET_DISK}"* &> /dev/null || true
+swapoff -a &> /dev/null || true
 umount -R /mnt &> /dev/null || true
+umount "${TARGET_DISK}"* &> /dev/null || true
+
+# Remove stale filesystem/partition signatures so nothing from a previous
+# install can be probed later on. Only touch real partitions of the target,
+# never sibling devices like /dev/mmcblk0boot0.
+while read -r part; do
+	[[ -n "$part" && "$part" != "$TARGET_DISK" ]] || continue
+	wipefs -a "$part" &> /dev/null || true
+done < <(lsblk -nrpo name "$TARGET_DISK")
+wipefs -a "$TARGET_DISK" &> /dev/null || true
+settle_partitions
 
 parted -s "$TARGET_DISK" -- \
 	mklabel gpt \
@@ -70,17 +103,38 @@ parted -s "$TARGET_DISK" -- \
 	set 1 esp on \
 	mkpart root ext4 512MiB 100%
 
-if [[ -e ${TARGET_DISK}p1 ]]; then
-	EFI_PART="${TARGET_DISK}p1"
-	ROOT_PART="${TARGET_DISK}p2"
+settle_partitions
+
+# Devices whose name ends in a digit (/dev/mmcblk0, /dev/nvme0n1) name their
+# partitions "p1"/"p2", plain disks (/dev/sda, /dev/vda) name them "1"/"2".
+if [[ "$TARGET_DISK" =~ [0-9]$ ]]; then
+	PART_PREFIX="${TARGET_DISK}p"
 else
-	EFI_PART="${TARGET_DISK}1"
-	ROOT_PART="${TARGET_DISK}2"
+	PART_PREFIX="$TARGET_DISK"
 fi
+EFI_PART="${PART_PREFIX}1"
+ROOT_PART="${PART_PREFIX}2"
+
+for part in "$EFI_PART" "$ROOT_PART"; do
+	if ! wait_for_device "$part"; then
+		echo "Error: partition $part did not appear after partitioning"
+		lsblk -o name,size,type "$TARGET_DISK"
+		exit 1
+	fi
+done
 
 echo ">>> Formatting partitions ..."
 mkfs.fat -F 32 "$EFI_PART"
 mkfs.ext4 -F "$ROOT_PART"
+settle_partitions
+
+# Fail here with a clear message instead of a cryptic mount error
+for part in "$EFI_PART" "$ROOT_PART"; do
+	if ! blkid "$part" &> /dev/null; then
+		echo "Error: no filesystem detected on $part after formatting"
+		exit 1
+	fi
+done
 
 echo ">>> Mounting ..."
 mount "$ROOT_PART" /mnt
