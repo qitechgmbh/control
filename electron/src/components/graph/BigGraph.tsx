@@ -411,7 +411,7 @@ export function BigGraph({
 
         <div className="flex-1 overflow-hidden rounded-b-3xl pt-4 pr-2 pb-2 pl-2">
           <div
-            className="relative h-full w-full touch-none overflow-hidden select-none"
+            className="relative h-full w-full touch-pan-y overflow-hidden select-none"
             style={{ backgroundColor: colors.background }}
           >
             <canvas ref={canvasRef} />
