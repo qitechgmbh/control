@@ -9,6 +9,7 @@ import {
   type ViewRange,
 } from "../history/HistoryLoader";
 import { registerChartJs } from "./register";
+import { TouchGestures } from "./touchGestures";
 import { buildTimeTicks, formatTimeTick } from "./timeAxis";
 import {
   hLinesRangePlugin,
@@ -96,6 +97,8 @@ export class GraphEngine {
   private userRange: ViewRange | null = null;
   private lastSyncAt = 0;
 
+  private touch: TouchGestures;
+  private gestureStart: ViewRange | null = null;
   private crosshairX: number | null = null;
   private unsubscribeCursor: (() => void) | null = null;
 
@@ -122,6 +125,34 @@ export class GraphEngine {
       plugins: [hLinesRangePlugin, overlayPlugin, this.cursorPlugin()],
     });
 
+    // Touch pan/pinch is ours (direction-locked, page scroll stays native);
+    // the zoom plugin only handles mouse drag and Ctrl+wheel / trackpad pinch.
+    this.touch = new TouchGestures(canvas, {
+      getPlot: () => {
+        const area = this.chart.chartArea;
+        if (!area) return null;
+        return {
+          left: area.left,
+          width: area.width,
+          range: this.userRange ?? {
+            min: this.chart.scales.x.min,
+            max: this.chart.scales.x.max,
+          },
+        };
+      },
+      onStart: () => {
+        this.interacting = true;
+      },
+      onMove: (range) => this.applyGestureRange(range, false),
+      onEnd: (changed) => {
+        if (changed && this.userRange) {
+          this.applyGestureRange(this.userRange, true);
+        } else {
+          this.interacting = false;
+        }
+      },
+    });
+
     this.unsubscribeCursor = subscribeCursor(cursorGroup, (x) => {
       this.crosshairX = x;
       this.emitCursorValues();
@@ -146,6 +177,7 @@ export class GraphEngine {
     if (this.rafId !== null) cancelAnimationFrame(this.rafId);
     if (this.retryTimer !== null) clearTimeout(this.retryTimer);
     this.observer?.disconnect();
+    this.touch.dispose();
     this.unsubscribeCursor?.();
     this.loader?.dispose();
     this.chart.destroy();
@@ -259,6 +291,7 @@ export class GraphEngine {
 
     this.updateOverlay();
     this.chart.update("none");
+    this.touch.enforceTouchAction();
 
     if (live) this.requestFrame();
   }
@@ -472,7 +505,13 @@ export class GraphEngine {
       id: "qitechCursor",
       afterEvent: (chart, args) => {
         const e = args.event;
-        if (e.type === "mouseout") {
+        const nativeType = (e.native as Event | null)?.type;
+        // Touch shows the crosshair while the finger is down only.
+        if (
+          e.type === "mouseout" ||
+          nativeType === "touchend" ||
+          nativeType === "touchcancel"
+        ) {
           publishCursor(this.cursorGroup, null, this.graphId);
           return;
         }
@@ -503,9 +542,29 @@ export class GraphEngine {
 
   private onGesture(chart: Chart, done: boolean) {
     const range = { min: chart.scales.x.min, max: chart.scales.x.max };
+    const start = this.gestureStart;
+    // A drag that did not move the time axis (e.g. vertical) must not leave live mode.
+    if (
+      !this.userRange &&
+      start &&
+      Math.abs(range.min - start.min) < 1 &&
+      Math.abs(range.max - start.max) < 1
+    ) {
+      if (done) this.interacting = false;
+      return;
+    }
+    this.applyGestureRange(range, done);
+  }
+
+  /** Applies a pan/zoom range from a gesture and syncs it to the other graphs. */
+  private applyGestureRange(requested: ViewRange, done: boolean) {
+    const now = Date.now();
+    const range = clampRange(requested, now - HISTORY_RETENTION_MS, now);
+    const xOptions = this.chart.options.scales!.x!;
+    xOptions.min = range.min;
+    xOptions.max = range.max;
     this.userRange = range;
     if (done) this.interacting = false;
-    const now = Date.now();
     if (done || now - this.lastSyncAt >= SYNC_INTERVAL_MS) {
       this.lastSyncAt = now;
       this.callbacks.onUserRange(range);
@@ -517,6 +576,10 @@ export class GraphEngine {
   private buildOptions() {
     const start = () => {
       this.interacting = true;
+      this.gestureStart = {
+        min: this.chart.scales.x.min,
+        max: this.chart.scales.x.max,
+      };
       return true;
     };
     return {
@@ -531,6 +594,7 @@ export class GraphEngine {
         "touchstart",
         "touchmove",
         "touchend",
+        "touchcancel",
       ] as (keyof HTMLElementEventMap)[],
       interaction: { mode: "x" as const, intersect: false },
       layout: { padding: { right: 12, left: 4 } },
@@ -592,15 +656,19 @@ export class GraphEngine {
             enabled: true,
             mode: "x" as const,
             threshold: 5,
-            onPanStart: start,
+            // Mouse/pen drag only; touch is handled by TouchGestures.
+            onPanStart: ({ event }: { event: { pointerType?: string } }) =>
+              event.pointerType === "touch" ? false : start(),
             onPan: ({ chart }: { chart: Chart }) =>
               this.onGesture(chart, false),
             onPanComplete: ({ chart }: { chart: Chart }) =>
               this.onGesture(chart, true),
           },
           zoom: {
-            wheel: { enabled: true, speed: 0.1 },
-            pinch: { enabled: true },
+            // Plain wheel scrolls the page; Ctrl+wheel (and trackpad pinch, which
+            // Chromium reports as Ctrl+wheel) zooms.
+            wheel: { enabled: true, speed: 0.1, modifierKey: "ctrl" as const },
+            pinch: { enabled: false },
             mode: "x" as const,
             onZoomStart: start,
             onZoom: ({ chart }: { chart: Chart }) =>
@@ -615,6 +683,18 @@ export class GraphEngine {
 }
 
 // ---------------------------------------------------------------- helpers
+
+/** Keeps the span (min 1 s, max retention) and shifts the range inside [lo, hi]. */
+function clampRange(range: ViewRange, lo: number, hi: number): ViewRange {
+  const span = Math.min(hi - lo, Math.max(1000, range.max - range.min));
+  let min = range.min;
+  if (range.max - range.min !== span) {
+    const mid = (range.min + range.max) / 2;
+    min = mid - span / 2;
+  }
+  min = Math.max(lo, Math.min(min, hi - span));
+  return { min, max: min + span };
+}
 
 function isString(v: string | undefined): v is string {
   return typeof v === "string" && v.length > 0;
