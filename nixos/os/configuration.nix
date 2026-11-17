@@ -168,6 +168,7 @@ in
     user = "qitech-service";
     group = "qitech-service";
     package = pkgs.qitechPackages.server;
+    igh.enable = true;
   };
 
   users.users.qitech = {

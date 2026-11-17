@@ -38,123 +38,159 @@ in
       default = pkgs.qitech-control-server or null;
       description = "The QiTech server package to use";
     };
+
+    igh = {
+      enable = mkEnableOption "the IgH EtherCAT master (kernel modules, ethercat CLI and /dev/EtherCAT* access)";
+
+      mainDevices = mkOption {
+        type = types.listOf types.str;
+        default = [ "ff:ff:ff:ff:ff:ff" ];
+        example = [ "00:11:22:33:44:55" ];
+        description = ''
+          MAC addresses of the NICs to use, one EtherCAT master per entry.
+          `ff:ff:ff:ff:ff:ff` matches the first Ethernet device offered to the master.
+        '';
+      };
+    };
   };
 
-  config = mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = cfg.package != null;
-        message = "No QiTech server package available. Please add it to your pkgs or explicitly set services.qitech.package.";
-      }
-    ];
-
-    networking.firewall = mkIf cfg.openFirewall { allowedTCPPorts = [ 443 ]; };
-
-    users.users.${cfg.user} = {
-      isSystemUser = true;
-      group = cfg.group;
-      description = "QiTech service user";
-      extraGroups = [
-        "realtime"
-        "plugdev"
-        "dialout"
-        "uucp"
+  config = mkIf cfg.enable (mkMerge [
+    (mkIf cfg.igh.enable {
+      # IgH EtherCAT master: ec_master + generic NIC driver (the native NIC
+      # drivers are only built by nixpkgs for older kernel versions).
+      boot.extraModulePackages = [
+        (config.boot.kernelPackages.callPackage pkgs.ethercat.kernelModule { })
       ];
-    };
+      boot.kernelModules = [
+        "ec_master"
+        "ec_generic"
+      ];
+      boot.extraModprobeConfig = ''
+        options ec_master main_devices=${concatStringsSep "," cfg.igh.mainDevices}
+      '';
 
-    users.groups.${cfg.group} = { };
+      environment.systemPackages = [ pkgs.ethercat ];
 
-    # Install the Electron app system-wide
-    environment.systemPackages = [ pkgs.qitechPackages.electron ];
-
-    # Configure udev rules for EtherCAT device access
-    services.udev.extraRules = ''
-      # Allow access to network devices for ethercrab
-      SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="*", TAG+="uaccess", TAG+="udev-acl", GROUP="${cfg.group}"
-
-      # USB device access if needed
-      SUBSYSTEM=="usb", ATTRS{idVendor}=="*", ATTRS{idProduct}=="*", MODE="0660", GROUP="${cfg.group}"
-    '';
-
-    # Configure the systemd service
-    systemd.services.qitech-control-server = {
-      description = "QiTech Control Server";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "network.target" ];
-
-      serviceConfig = {
-        Type = "simple";
-        User = cfg.user;
-        Group = cfg.group;
-        ExecStart = "${cfg.package}/bin/qitech_control";
-        Restart = "always";
-        RestartSec = "10s";
-
-        # Capabilities
-        CapabilityBoundingSet = "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
-        AmbientCapabilities = "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
-
-        # Hardening options
-        NoNewPrivileges = true;
-        ProtectSystem = "strict";
-        StateDirectory = "qitech";
-
-        # Open only /proc/irq explicitly
-        ReadWritePaths = [ "/proc/irq" ];
-        ProtectHome = true;
-        PrivateTmp = true;
-        PrivateDevices = false;
-
-        # Must disable this to allow /proc/irq writes
-        ProtectKernelTunables = false;
-        ProtectControlGroups = true;
-        RestrictAddressFamilies = "AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET";
-        RestrictNamespaces = true;
-        LockPersonality = true;
-        MemoryDenyWriteExecute = false;
-
-        # Logging
-        StandardOutput = "journal";
-        StandardError = "journal";
-        SyslogIdentifier = "qitech-control-server";
-      };
-
-      environment = {
-        RUST_BACKTRACE = "full";
-        RUST_LOG = "info";
-      };
-    };
-
-    # Add real-time privileges
-    security.pam.loginLimits = [
-      {
-        domain = cfg.user;
-        type = "-";
-        item = "rtprio";
-        value = "99";
-      }
-      {
-        domain = cfg.user;
-        type = "-";
-        item = "memlock";
-        value = "unlimited";
-      }
-      {
-        domain = cfg.user;
-        type = "-";
-        item = "nice";
-        value = "-20";
-      }
-    ];
-    # needed so dnsmasq can get managed by server
-    security.polkit.extraConfig = ''
-      polkit.addRule(function(action, subject) {
-        if (action.id == "org.freedesktop.systemd1.manage-units" &&
-            action.lookup("unit") == "dnsmasq.service" &&
-            subject.user == "${cfg.user}") {
-          return polkit.Result.YES;
+      services.udev.extraRules = ''
+        KERNEL=="EtherCAT[0-9]*", MODE="0660", GROUP="${cfg.group}"
+      '';
+    })
+    {
+      assertions = [
+        {
+          assertion = cfg.package != null;
+          message = "No QiTech server package available. Please add it to your pkgs or explicitly set services.qitech.package.";
         }
-      });
-    '';
-  };
+      ];
+
+      networking.firewall = mkIf cfg.openFirewall { allowedTCPPorts = [ 443 ]; };
+
+      users.users.${cfg.user} = {
+        isSystemUser = true;
+        group = cfg.group;
+        description = "QiTech service user";
+        extraGroups = [
+          "realtime"
+          "plugdev"
+          "dialout"
+          "uucp"
+        ];
+      };
+
+      users.groups.${cfg.group} = { };
+
+      # Install the Electron app system-wide
+      environment.systemPackages = [ pkgs.qitechPackages.electron ];
+
+      # Configure udev rules for EtherCAT device access
+      services.udev.extraRules = ''
+        # Allow access to network devices for ethercrab
+        SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="*", TAG+="uaccess", TAG+="udev-acl", GROUP="${cfg.group}"
+
+        # USB device access if needed
+        SUBSYSTEM=="usb", ATTRS{idVendor}=="*", ATTRS{idProduct}=="*", MODE="0660", GROUP="${cfg.group}"
+      '';
+
+      # Configure the systemd service
+      systemd.services.qitech-control-server = {
+        description = "QiTech Control Server";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "network.target" ];
+
+        serviceConfig = {
+          Type = "simple";
+          User = cfg.user;
+          Group = cfg.group;
+          ExecStart = "${cfg.package}/bin/qitech_control";
+          Restart = "always";
+          RestartSec = "10s";
+
+          # Capabilities
+          CapabilityBoundingSet = "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
+          AmbientCapabilities = "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
+
+          # Hardening options
+          NoNewPrivileges = true;
+          ProtectSystem = "strict";
+          StateDirectory = "qitech";
+
+          # Open only /proc/irq explicitly
+          ReadWritePaths = [ "/proc/irq" ];
+          ProtectHome = true;
+          PrivateTmp = true;
+          PrivateDevices = false;
+
+          # Must disable this to allow /proc/irq writes
+          ProtectKernelTunables = false;
+          ProtectControlGroups = true;
+          RestrictAddressFamilies = "AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET";
+          RestrictNamespaces = true;
+          LockPersonality = true;
+          MemoryDenyWriteExecute = false;
+
+          # Logging
+          StandardOutput = "journal";
+          StandardError = "journal";
+          SyslogIdentifier = "qitech-control-server";
+        };
+
+        environment = {
+          RUST_BACKTRACE = "full";
+          RUST_LOG = "info";
+        };
+      };
+
+      # Add real-time privileges
+      security.pam.loginLimits = [
+        {
+          domain = cfg.user;
+          type = "-";
+          item = "rtprio";
+          value = "99";
+        }
+        {
+          domain = cfg.user;
+          type = "-";
+          item = "memlock";
+          value = "unlimited";
+        }
+        {
+          domain = cfg.user;
+          type = "-";
+          item = "nice";
+          value = "-20";
+        }
+      ];
+      # needed so dnsmasq can get managed by server
+      security.polkit.extraConfig = ''
+        polkit.addRule(function(action, subject) {
+          if (action.id == "org.freedesktop.systemd1.manage-units" &&
+              action.lookup("unit") == "dnsmasq.service" &&
+              subject.user == "${cfg.user}") {
+            return polkit.Result.YES;
+          }
+        });
+      '';
+    }
+  ]);
 }
