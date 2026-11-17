@@ -9,6 +9,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { Toaster } from "./components/ui/sonner";
 import { enableMapSet } from "immer";
 import { GlobalLaserToastManager } from "./setup/GlobalLaserToastManager";
+import { KioskOverlay } from "./components/KioskLock";
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -22,6 +23,7 @@ export default function App() {
     <>
       <GlobalLaserToastManager />
       <RouterProvider router={router} />
+      <KioskOverlay />
     </>
   );
 }
