@@ -42,13 +42,16 @@ in
     igh = {
       enable = mkEnableOption "the IgH EtherCAT master (kernel modules, ethercat CLI and /dev/EtherCAT* access)";
 
-      mainDevices = mkOption {
-        type = types.listOf types.str;
-        default = [ "ff:ff:ff:ff:ff:ff" ];
-        example = [ "00:11:22:33:44:55" ];
+      device = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        example = "enp2s0";
         description = ''
-          MAC addresses of the NICs to use, one EtherCAT master per entry.
-          `ff:ff:ff:ff:ff:ff` matches the first Ethernet device offered to the master.
+          Default network interface (name or MAC address) for EtherCAT master 0.
+          Overridden at runtime by the contents of /var/lib/ethercat/device, so the
+          interface can be changed on a panel without a rebuild:
+            echo enp3s0 | sudo tee /var/lib/ethercat/device
+            sudo systemctl restart ethercat
         '';
       };
     };
@@ -61,15 +64,74 @@ in
       boot.extraModulePackages = [
         (config.boot.kernelPackages.callPackage pkgs.ethercat.kernelModule { })
       ];
-      boot.kernelModules = [
-        "ec_master"
-        "ec_generic"
-      ];
-      boot.extraModprobeConfig = ''
-        options ec_master main_devices=${concatStringsSep "," cfg.igh.mainDevices}
-      '';
 
       environment.systemPackages = [ pkgs.ethercat ];
+
+      # Not loaded via boot.kernelModules: ec_generic only scans the interfaces that
+      # exist at load time and ec_master binds by MAC, so load both once the chosen
+      # interface is present and up.
+      systemd.services.ethercat = {
+        description = "IgH EtherCAT master";
+        wantedBy = [ "multi-user.target" ];
+        before = [ "qitech-control-server.service" ];
+        path = [
+          pkgs.kmod
+          pkgs.iproute2
+          pkgs.coreutils
+          pkgs.gnugrep
+        ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          StateDirectory = "ethercat";
+          TimeoutStartSec = "60s";
+        };
+        script = ''
+          DEVICE=""
+          if [ -s /var/lib/ethercat/device ]; then
+            DEVICE=$(tr -d '[:space:]' < /var/lib/ethercat/device)
+          fi
+          if [ -z "$DEVICE" ]; then
+            DEVICE=${escapeShellArg (if cfg.igh.device == null then "" else cfg.igh.device)}
+          fi
+          if [ -z "$DEVICE" ]; then
+            echo "No EtherCAT interface configured. Set one with:"
+            echo "  echo <interface-or-mac> | sudo tee /var/lib/ethercat/device && sudo systemctl restart ethercat"
+            exit 1
+          fi
+
+          # Resolve interface name <-> MAC, waiting for the NIC driver to create it.
+          IFACE=""
+          for _ in $(seq 1 30); do
+            if echo "$DEVICE" | grep -qiE '^([0-9a-f]{2}:){5}[0-9a-f]{2}$'; then
+              for d in /sys/class/net/*; do
+                if [ "$(cat "$d/address")" = "$(echo "$DEVICE" | tr 'A-F' 'a-f')" ]; then
+                  IFACE=$(basename "$d")
+                fi
+              done
+            elif [ -e "/sys/class/net/$DEVICE" ]; then
+              IFACE="$DEVICE"
+            fi
+            [ -n "$IFACE" ] && break
+            sleep 1
+          done
+          if [ -z "$IFACE" ]; then
+            echo "EtherCAT interface '$DEVICE' not found. Available interfaces:"
+            ls /sys/class/net
+            exit 1
+          fi
+          MAC=$(cat "/sys/class/net/$IFACE/address")
+
+          echo "Using $IFACE ($MAC) as EtherCAT main device"
+          ip link set dev "$IFACE" up
+          modprobe ec_master main_devices="$MAC"
+          modprobe ec_generic
+        '';
+        preStop = ''
+          modprobe -r ec_generic || true
+          modprobe -r ec_master
+        '';
+      };
 
       services.udev.extraRules = ''
         KERNEL=="EtherCAT[0-9]*", MODE="0660", GROUP="${cfg.group}"
