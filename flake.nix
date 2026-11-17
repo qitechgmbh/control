@@ -37,6 +37,19 @@
               electron = prev.callPackage ./nixos/packages/electron.nix { };
               gitInfo = prev.callPackage ./nixos/gitInfo.nix { pkgs = prev; };
             };
+
+            # IgH EtherCAT master pinned to stable-1.6 with the kernel_bind fix for
+            # Linux >= 6.18.56 (sockaddr_unsized). Also used by ethercat.kernelModule.
+            # Drop once a release containing this commit lands in nixpkgs.
+            ethercat = prev.ethercat.overrideAttrs (old: {
+              version = "1.6.13-unstable-2026-11-12";
+              src = prev.fetchFromGitLab {
+                owner = "etherlab.org";
+                repo = "ethercat";
+                rev = "6cbfb0f1bfb70b28e9c10c8cdf7e96eb82745a67";
+                hash = "sha256-UCw2LsaCXQ6F/aseXeTPvBSmuFqyZbctYCtk/7QFOhg=";
+              };
+            });
           }
         );
 

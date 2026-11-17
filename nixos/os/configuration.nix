@@ -8,21 +8,7 @@ let
   gitInfo = import ../gitInfo.nix { inherit pkgs; };
 in
 {
-  # Pinned to 6.18.55: 6.18.56 changed kernel_bind() to take `struct sockaddr_unsized *`,
-  # which breaks the IgH EtherCAT kernel module (ethercat <= 1.6.13). Upstream fix is
-  # etherlab.org/ethercat@6cbfb0f1bf on stable-1.6 — drop this pin once nixpkgs ships it.
-  boot.kernelPackages = pkgs.linuxPackagesFor (
-    pkgs.linux_6_18.override {
-      argsOverride = rec {
-        version = "6.18.55";
-        modDirVersion = version;
-        src = pkgs.fetchurl {
-          url = "mirror://kernel/linux/kernel/v6.x/linux-${version}.tar.xz";
-          hash = "sha256-9BBjgGGhZcEvQquHHS8/zVJVFTWbX67ugJac/4RSTfk=";
-        };
-      };
-    }
-  );
+  boot.kernelPackages = pkgs.linuxPackages_6_18;
   # Disable filesystems with Out-of-tree kernel modules
   boot.supportedFilesystems.zfs = lib.mkForce false;
   boot.supportedFilesystems.bcachefs = lib.mkForce false;
