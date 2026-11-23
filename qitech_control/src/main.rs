@@ -173,6 +173,7 @@ async fn init_db() -> clickhouse::Client {
 
     let migration = include_str!("../migrations/init_machine_measurements.sql");
     client.query(migration).execute().await.unwrap();
+    upgrade_machine_measurements(&client).await;
 
     let migration = include_str!("../migrations/init_machine_events.sql");
     client.query(migration).execute().await.unwrap();
@@ -182,4 +183,59 @@ async fn init_db() -> clickhouse::Client {
 
     // --- select database ---
     client.with_database("control_hub")
+}
+
+/// Upgrades a `machine_measurements` table from before the codecs (with the `by_time`
+/// projection) in place. Skipped once the table has the new definition, so it does not
+/// queue a mutation on every start.
+async fn upgrade_machine_measurements(client: &clickhouse::Client) {
+    let create: String = client
+        .query(
+            "SELECT create_table_query FROM system.tables
+             WHERE database = 'control_hub' AND name = 'machine_measurements'",
+        )
+        .fetch_one()
+        .await
+        .unwrap();
+    if !create.contains("by_time") && create.contains("DoubleDelta") {
+        return;
+    }
+
+    tracing::info!("upgrading machine_measurements storage (drop projection, add codecs)");
+    let upgrade = include_str!("../migrations/upgrade_machine_measurements_storage.sql");
+    for statement in sql_statements(upgrade) {
+        client.query(&statement).execute().await.unwrap();
+    }
+}
+
+/// The statements of a migration file: `--` comment lines removed (they may contain
+/// `;`), then split at `;`.
+fn sql_statements(sql: &str) -> Vec<String> {
+    let code = sql
+        .lines()
+        .filter(|line| !line.trim_start().starts_with("--"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    code.split(';')
+        .map(str::trim)
+        .filter(|statement| !statement.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::sql_statements;
+
+    #[test]
+    fn upgrade_migration_splits_into_its_alter_statements() {
+        let sql = include_str!("../migrations/upgrade_machine_measurements_storage.sql");
+        let statements = sql_statements(sql);
+        assert_eq!(statements.len(), 3);
+        assert!(
+            statements
+                .iter()
+                .all(|s| s.trim_start().starts_with("ALTER TABLE"))
+        );
+    }
 }

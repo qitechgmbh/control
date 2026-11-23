@@ -8,9 +8,15 @@ const HISTORY_URL = "http://localhost:3001/api/v1/machine/history";
 /** Columnar series: `t[i]` (Unix ms) belongs to `v[i]`. */
 export type HistorySeries = { t: number[]; v: number[] };
 
+/**
+ * Downsampled measurement: one point per bucket. `t[i]` is the mean sample time, `v[i]`
+ * the mean (the line), `min[i]`/`max[i]` the extremes of the bucket (the band).
+ */
+export type BucketSeries = HistorySeries & { min: number[]; max: number[] };
+
 export type HistoryResponse = {
   bucket_ms: number;
-  measurements: Record<string, HistorySeries>;
+  measurements: Record<string, BucketSeries>;
   targets: Record<string, HistorySeries>;
 };
 

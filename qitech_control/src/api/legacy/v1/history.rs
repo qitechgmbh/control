@@ -1,9 +1,10 @@
 //! `POST /api/v1/machine/history`: downsampled measurement history and step-wise
 //! config (target) history from ClickHouse for the graph pages.
 //!
-//! Measurements are reduced inside ClickHouse to the min and max of each time bucket
-//! (with their timestamps), so a spike is never lost and the response stays at about
-//! two points per bucket no matter how many raw rows the range holds. Buckets are
+//! Measurements are reduced inside ClickHouse to one point per time bucket: the mean
+//! (drawn as the line) plus the min and max (drawn as a faint band, so a spike is never
+//! lost). The response stays at one point per bucket no matter how many raw rows the
+//! range holds. Buckets are
 //! aligned to the Unix epoch, so the UI can fetch only the newest buckets of a live
 //! view and splice them onto what it already has.
 
@@ -51,11 +52,21 @@ pub struct Series {
     pub v: Vec<f64>,
 }
 
+/// One point per bucket: `t[i]` is the mean sample time (Unix ms), `v[i]` the mean,
+/// `min[i]`/`max[i]` the extremes of the bucket.
+#[derive(Debug, Default, Serialize)]
+pub struct BucketSeries {
+    pub t: Vec<i64>,
+    pub v: Vec<f64>,
+    pub min: Vec<f64>,
+    pub max: Vec<f64>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct Response {
     /// Bucket width actually used.
     pub bucket_ms: i64,
-    pub measurements: HashMap<String, Series>,
+    pub measurements: HashMap<String, BucketSeries>,
     pub targets: HashMap<String, Series>,
 }
 
@@ -63,9 +74,9 @@ pub struct Response {
 struct BucketRow {
     /// 1-based index into the requested measurement names.
     idx: u64,
-    t_min: i64,
+    t: i64,
+    v_avg: f64,
     v_min: f64,
-    t_max: i64,
     v_max: f64,
 }
 
@@ -114,7 +125,7 @@ async fn fetch_measurements(
     identity: u64,
     body: &Request,
     bucket_ms: i64,
-) -> Result<HashMap<String, Series>, clickhouse::error::Error> {
+) -> Result<HashMap<String, BucketSeries>, clickhouse::error::Error> {
     if body.measurements.is_empty() {
         return Ok(HashMap::new());
     }
@@ -123,11 +134,11 @@ async fn fetch_measurements(
     let rows = db
         .query(
             "SELECT
-                indexOf(?, name)                                AS idx,
-                argMin(toUnixTimestamp64Milli(timestamp), v)    AS t_min,
-                min(v)                                          AS v_min,
-                argMax(toUnixTimestamp64Milli(timestamp), v)    AS t_max,
-                max(v)                                          AS v_max
+                indexOf(?, name)                                    AS idx,
+                toInt64(avg(toUnixTimestamp64Milli(timestamp)))     AS t,
+                avg(v)                                              AS v_avg,
+                min(v)                                              AS v_min,
+                max(v)                                              AS v_max
             FROM
             (
                 SELECT timestamp, name, assumeNotNull(value) AS v
@@ -151,10 +162,10 @@ async fn fetch_measurements(
         .fetch_all::<BucketRow>()
         .await?;
 
-    let mut out: HashMap<String, Series> = body
+    let mut out: HashMap<String, BucketSeries> = body
         .measurements
         .iter()
-        .map(|name| (name.clone(), Series::default()))
+        .map(|name| (name.clone(), BucketSeries::default()))
         .collect();
 
     for row in rows {
@@ -162,18 +173,10 @@ async fn fetch_measurements(
             continue;
         };
         let series = out.get_mut(name).expect("initialised above");
-
-        // Emit min and max in time order; collapse when they are the same sample.
-        if row.t_min == row.t_max {
-            series.t.push(row.t_min);
-            series.v.push(row.v_min);
-        } else if row.t_min < row.t_max {
-            series.t.extend([row.t_min, row.t_max]);
-            series.v.extend([row.v_min, row.v_max]);
-        } else {
-            series.t.extend([row.t_max, row.t_min]);
-            series.v.extend([row.v_max, row.v_min]);
-        }
+        series.t.push(row.t);
+        series.v.push(row.v_avg);
+        series.min.push(row.v_min);
+        series.max.push(row.v_max);
     }
 
     Ok(out)

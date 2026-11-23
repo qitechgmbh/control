@@ -3,6 +3,58 @@ import type { Series, TimeSeries } from "@/lib/timeseries";
 /** A chart point in Unix ms. `y: null` breaks the line (a gap in the data). */
 export type Point = { x: number; y: number | null };
 
+/** Min/max of a bucket at `x`, drawn as a band. `lo: null` breaks the band (a gap). */
+export type BandPoint = { x: number; lo: number | null; hi: number | null };
+
+/**
+ * Reduces raw points to one per epoch-aligned bucket of `bucketMs`, like the history
+ * endpoint: the mean at the mean time, plus the bucket's min/max. `null` points pass
+ * through as gaps.
+ */
+export function bucketPoints(
+  points: Point[],
+  bucketMs: number,
+): { points: Point[]; band: BandPoint[] } {
+  const out: Point[] = [];
+  const band: BandPoint[] = [];
+  let bucket = NaN;
+  let n = 0;
+  let sumX = 0;
+  let sumY = 0;
+  let lo = Infinity;
+  let hi = -Infinity;
+  const flush = () => {
+    if (n === 0) return;
+    const x = Math.round(sumX / n);
+    out.push({ x, y: sumY / n });
+    band.push({ x, lo, hi });
+    n = sumX = sumY = 0;
+    lo = Infinity;
+    hi = -Infinity;
+  };
+  for (const p of points) {
+    if (p.y === null) {
+      flush();
+      bucket = NaN;
+      out.push(p);
+      band.push({ x: p.x, lo: null, hi: null });
+      continue;
+    }
+    const b = Math.floor(p.x / bucketMs);
+    if (b !== bucket) {
+      flush();
+      bucket = b;
+    }
+    n++;
+    sumX += p.x;
+    sumY += p.y;
+    if (p.y < lo) lo = p.y;
+    if (p.y > hi) hi = p.y;
+  }
+  flush();
+  return { points: out, band };
+}
+
 /** Index of the first point with `x >= value` (binary search; `data` sorted by x). */
 export function lowerBoundX(data: Point[], x: number): number {
   let lo = 0;

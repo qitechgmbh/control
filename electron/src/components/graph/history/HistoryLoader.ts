@@ -1,4 +1,5 @@
 import {
+  BucketSeries,
   fetchHistory,
   HistorySeries,
   niceBucketMs,
@@ -7,7 +8,7 @@ import {
 import { MachineIdentificationUnique } from "@/machines/types";
 import type { ViewRange } from "../types";
 
-/** Points requested per pixel of plot width (one bucket ≈ one pixel, min+max per bucket). */
+/** Buckets requested per pixel of plot width (one bucket ≈ one pixel: mean + min/max). */
 const BUCKETS_PER_PX = 1;
 /** Extra range fetched on each side of the view, as a fraction of the view span. */
 const PAD_FRACTION = 0.5;
@@ -29,7 +30,7 @@ type Loaded = {
   from: number;
   to: number;
   bucketMs: number;
-  measurements: Map<string, HistorySeries>;
+  measurements: Map<string, BucketSeries>;
   targets: Map<string, HistorySeries>;
 };
 
@@ -62,7 +63,7 @@ export class HistoryLoader {
     this.inflight = null;
   }
 
-  measurement(name: string): HistorySeries | undefined {
+  measurement(name: string): BucketSeries | undefined {
     return this.loaded?.measurements.get(name);
   }
 
@@ -171,7 +172,7 @@ export class HistoryLoader {
       );
       if (controller.signal.aborted) return;
 
-      const toMap = (rec: Record<string, HistorySeries>) =>
+      const toMap = <S extends HistorySeries>(rec: Record<string, S>) =>
         new Map(Object.entries(rec ?? {}));
 
       if (mode === "full" || !this.loaded) {
@@ -219,18 +220,20 @@ export class HistoryLoader {
   }
 }
 
-/** Replace everything at or after `from` in `old` with `fresh`. */
-function spliceFrom(
-  old: HistorySeries | undefined,
-  fresh: HistorySeries,
+/** Replace everything at or after `from` in `old` with `fresh` (all columns). */
+function spliceFrom<S extends HistorySeries>(
+  old: S | undefined,
+  fresh: S,
   from: number,
-): HistorySeries {
+): S {
   if (!old || old.t.length === 0) return fresh;
   const cut = lowerBound(old.t, from);
-  return {
-    t: old.t.slice(0, cut).concat(fresh.t),
-    v: old.v.slice(0, cut).concat(fresh.v),
-  };
+  const columns = old as unknown as Record<string, number[]>;
+  const out: Record<string, number[]> = {};
+  for (const [key, column] of Object.entries(fresh)) {
+    out[key] = (columns[key] ?? []).slice(0, cut).concat(column);
+  }
+  return out as unknown as S;
 }
 
 /** Steps: the fresh response starts with the value in effect at `from`, so splice the same way. */
@@ -251,10 +254,14 @@ function mergeSteps(
   return { t, v };
 }
 
-function trimFront(series: HistorySeries, before: number): HistorySeries {
+function trimFront<S extends HistorySeries>(series: S, before: number): S {
   const cut = lowerBound(series.t, before);
   if (cut === 0) return series;
-  return { t: series.t.slice(cut), v: series.v.slice(cut) };
+  const out: Record<string, number[]> = {};
+  for (const [key, column] of Object.entries(series)) {
+    out[key] = (column as number[]).slice(cut);
+  }
+  return out as unknown as S;
 }
 
 /** First index with `arr[i] >= value` (arr sorted ascending). */
