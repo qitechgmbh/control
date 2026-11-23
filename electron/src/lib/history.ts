@@ -13,9 +13,14 @@ export type HistorySeries = { t: number[]; v: number[] };
 
 /**
  * Downsampled measurement: one point per bucket. `t[i]` is the mean sample time, `v[i]`
- * the mean (the line), `min[i]`/`max[i]` the extremes of the bucket (the band).
+ * the mean (the line), `min[i]`/`max[i]` the extremes of the bucket (the band) and
+ * `n[i]` the number of samples averaged.
  */
-export type BucketSeries = HistorySeries & { min: number[]; max: number[] };
+export type BucketSeries = HistorySeries & {
+  min: number[];
+  max: number[];
+  n: number[];
+};
 
 export type HistoryResponse = {
   bucket_ms: number;

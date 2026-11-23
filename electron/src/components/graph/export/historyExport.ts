@@ -222,9 +222,26 @@ async function excelReport(
     for (const s of source.series) {
       const scale = s.historyScale ?? 1;
       const measured = s.history ? history?.measurements[s.history] : undefined;
+      // A bucket with more than one sample is a mean: export it as an interval, at
+      // the interval start, with its min, max and sample count.
+      const averaged = measured?.n.some((count) => count > 1) ?? false;
+      const intervalMs = history?.bucket_ms ?? bucketMs;
       const points = measured
-        ? { t: measured.t, v: scaled(measured.v, scale) }
+        ? {
+            t: averaged
+              ? measured.t.map((t) => Math.floor(t / intervalMs) * intervalMs)
+              : measured.t,
+            v: scaled(measured.v, scale),
+          }
         : livePoints(s, range);
+      const intervals =
+        measured && averaged
+          ? {
+              min: scaled(measured.min, scale),
+              max: scaled(measured.max, scale),
+              n: measured.n,
+            }
+          : undefined;
 
       const line = (s.lines ?? []).find(isTarget);
       const steps = line?.history ? history?.targets[line.history] : undefined;
@@ -240,13 +257,15 @@ async function excelReport(
           source.series.length > 1 && s.title ? s.title : source.config.title,
         unit,
         points,
+        intervals,
         target,
       });
     }
   }
 
-  // The real resolution: buckets narrower than the sampling are raw samples.
-  return { title, range, bucketMs, series, markers };
+  // The backend may widen the buckets (at most 20 000 per series).
+  const usedBucketMs = histories.values().next().value?.bucket_ms ?? bucketMs;
+  return { title, range, bucketMs: usedBucketMs, series, markers };
 }
 
 // --------------------------------------------------------------- run

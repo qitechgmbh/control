@@ -11,7 +11,10 @@ export type ExcelSeries = {
   title: string;
   /** Unit symbol, `""` if none. */
   unit: string;
+  /** Raw samples, or one point per interval (`t` = interval start, `v` = mean). */
   points: Points;
+  /** Set when `points` are interval means: extremes and sample count per interval. */
+  intervals?: { min: number[]; max: number[]; n: number[] };
   /** Setpoint steps: `v[i]` is in effect from `t[i]` on. */
   target?: Points;
 };
@@ -19,7 +22,7 @@ export type ExcelSeries = {
 export type ExcelReport = {
   title: string;
   range: ViewRange;
-  /** Width of the averaged buckets in ms, 0 for raw samples. */
+  /** Interval width of averaged series in ms. */
   bucketMs: number;
   series: ExcelSeries[];
   markers: { timestamp: number; name: string }[];
@@ -64,7 +67,7 @@ export function buildExcelWorkbook(report: ExcelReport): Uint8Array {
   series.forEach((s, i) =>
     XLSX.utils.book_append_sheet(
       workbook,
-      seriesSheet(s, columnTitle(s, series)),
+      seriesSheet(s, columnTitle(s, series), report.bucketMs),
       perSeriesNames[i],
     ),
   );
@@ -84,12 +87,7 @@ function overviewSheet(
     ["From", date(report.range.min)],
     ["To", date(report.range.max)],
     ["Duration (h)", num((report.range.max - report.range.min) / 3_600_000)],
-    [
-      "Resolution",
-      report.bucketMs > 0
-        ? `Mean of ${formatMs(report.bucketMs)} intervals`
-        : "Every recorded sample",
-    ],
+    ["Resolution", resolution(report, series)],
     ["Exported", date(Date.now())],
     ["Software", SOFTWARE],
     [],
@@ -98,6 +96,7 @@ function overviewSheet(
       "Value",
       "Unit",
       "Samples",
+      "Rows",
       "Min",
       "Max",
       "Mean",
@@ -111,20 +110,30 @@ function overviewSheet(
 
   for (const s of series) {
     const stats = statistics(s.points.v);
+    const extremes = s.intervals
+      ? { min: minOf(s.intervals.min), max: maxOf(s.intervals.max) }
+      : stats;
+    const samples = s.intervals ? sum(s.intervals.n) : s.points.v.length;
     const lastTarget = s.target?.v.at(-1);
     rows.push([
       text(s.graphTitle),
       text(s.title),
       text(s.unit),
+      samples,
       s.points.v.length,
-      num(stats.min),
-      num(stats.max),
-      num(stats.mean),
+      num(extremes.min),
+      num(extremes.max),
+      num(s.intervals ? weightedMean(s.points.v, s.intervals.n) : stats.mean),
       num(stats.stdDev),
       num(stats.p25),
       num(stats.p50),
       num(stats.p75),
       lastTarget === undefined ? null : num(lastTarget),
+    ]);
+  }
+  if (series.some((s) => s.intervals)) {
+    rows.push([
+      "Min, max, mean and samples are exact; std. dev. and percentiles are taken from the interval means.",
     ]);
   }
 
@@ -138,7 +147,7 @@ function overviewSheet(
     for (const m of markers) rows.push([date(m.timestamp), text(m.name)]);
   }
 
-  return sheet(rows, [22, 22, 8, 10, 12, 12, 12, 12, 12, 12, 12, 12]);
+  return sheet(rows, [22, 22, 8, 10, 8, 12, 12, 12, 12, 12, 12, 12, 12]);
 }
 
 /** Every series on one shared time axis, plus elapsed seconds and markers. */
@@ -170,9 +179,11 @@ function allValuesSheet(
 
   const rows: Cell[][] = [
     [
-      "Time",
+      series.some((s) => s.intervals) ? "Time (interval start)" : "Time",
       "Seconds",
-      ...series.map((s) => text(withUnit(columnTitle(s, series), s.unit))),
+      ...series.map((s) =>
+        text(valueHeader(columnTitle(s, series), s, report.bucketMs)),
+      ),
       "Marker",
     ],
   ];
@@ -188,20 +199,33 @@ function allValuesSheet(
   return sheet(rows, [24, 10, ...series.map(() => 16), 30]);
 }
 
-function seriesSheet(s: ExcelSeries, title: string): XLSX.WorkSheet {
+function seriesSheet(
+  s: ExcelSeries,
+  title: string,
+  bucketMs: number,
+): XLSX.WorkSheet {
   const targetAt = s.target ? stepLookup(s.target) : undefined;
+  const intervals = s.intervals;
   const rows: Cell[][] = [
-    ["Time", text(withUnit(title, s.unit)), ...(targetAt ? ["Target"] : [])],
+    [
+      intervals ? "Time (interval start)" : "Time",
+      text(valueHeader(title, s, bucketMs)),
+      ...(intervals ? ["Min", "Max", "Samples"] : []),
+      ...(targetAt ? ["Target"] : []),
+    ],
   ];
   s.points.t.forEach((t, i) => {
     const target = targetAt?.(t);
     rows.push([
       date(t),
       num(s.points.v[i]),
+      ...(intervals
+        ? [num(intervals.min[i]), num(intervals.max[i]), intervals.n[i]]
+        : []),
       ...(targetAt ? [target === undefined ? null : num(target)] : []),
     ]);
   });
-  return sheet(rows, [24, 18, 12]);
+  return sheet(rows, intervals ? [24, 26, 12, 12, 10, 12] : [24, 18, 12]);
 }
 
 // ------------------------------------------------------------------ cells
@@ -236,6 +260,52 @@ function text(value: string): string {
 
 function withUnit(title: string, unit: string): string {
   return unit ? `${title} [${unit}]` : title;
+}
+
+/** `Nozzle [°C]`, or `Nozzle [°C] (mean over 2 s)` when the values are interval means. */
+function valueHeader(title: string, s: ExcelSeries, bucketMs: number): string {
+  const header = withUnit(title, s.unit);
+  return s.intervals ? `${header} (mean over ${formatMs(bucketMs)})` : header;
+}
+
+function resolution(report: ExcelReport, series: ExcelSeries[]): string {
+  const averaged = series.filter((s) => s.intervals);
+  if (averaged.length === 0) return "Every recorded sample";
+  const most = Math.max(...averaged.map((s) => maxOf(s.intervals!.n)));
+  return (
+    `Mean over ${formatMs(report.bucketMs)} intervals (up to ${most} samples each). ` +
+    "Each value's sheet also shows the min, max and number of samples per interval."
+  );
+}
+
+function sum(values: number[]): number {
+  let total = 0;
+  for (const v of values) total += v;
+  return total;
+}
+
+function minOf(values: number[]): number {
+  let min = Infinity;
+  for (const v of values) if (v < min) min = v;
+  return min;
+}
+
+function maxOf(values: number[]): number {
+  let max = -Infinity;
+  for (const v of values) if (v > max) max = v;
+  return max;
+}
+
+/** Mean of all samples, from interval means weighted by their sample counts. */
+function weightedMean(means: number[], counts: number[]): number {
+  let total = 0;
+  let n = 0;
+  means.forEach((m, i) => {
+    if (!Number.isFinite(m)) return;
+    total += m * counts[i];
+    n += counts[i];
+  });
+  return n > 0 ? total / n : NaN;
 }
 
 /** Series title, prefixed with its graph when another series has the same title. */

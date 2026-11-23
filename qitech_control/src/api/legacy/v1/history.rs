@@ -53,13 +53,14 @@ pub struct Series {
 }
 
 /// One point per bucket: `t[i]` is the mean sample time (Unix ms), `v[i]` the mean,
-/// `min[i]`/`max[i]` the extremes of the bucket.
+/// `min[i]`/`max[i]` the extremes and `n[i]` the number of samples of the bucket.
 #[derive(Debug, Default, Serialize)]
 pub struct BucketSeries {
     pub t: Vec<i64>,
     pub v: Vec<f64>,
     pub min: Vec<f64>,
     pub max: Vec<f64>,
+    pub n: Vec<u64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -78,6 +79,7 @@ struct BucketRow {
     v_avg: f64,
     v_min: f64,
     v_max: f64,
+    n: u64,
 }
 
 #[derive(Debug, Deserialize, clickhouse::Row)]
@@ -138,7 +140,8 @@ async fn fetch_measurements(
                 toInt64(avg(toUnixTimestamp64Milli(timestamp)))     AS t,
                 avg(v)                                              AS v_avg,
                 min(v)                                              AS v_min,
-                max(v)                                              AS v_max
+                max(v)                                              AS v_max,
+                count()                                             AS n
             FROM
             (
                 SELECT timestamp, name, assumeNotNull(value) AS v
@@ -177,6 +180,7 @@ async fn fetch_measurements(
         series.v.push(row.v_avg);
         series.min.push(row.v_min);
         series.max.push(row.v_max);
+        series.n.push(row.n);
     }
 
     Ok(out)

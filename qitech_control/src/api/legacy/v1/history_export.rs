@@ -122,7 +122,7 @@ pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>
         .bucket_ms
         .filter(|b| *b > 0)
         .map(|b| b.max(MIN_BUCKET_MS));
-    let labels = column_labels(&body, bucket_ms.is_some());
+    let labels = column_labels(&body, bucket_ms);
     let measurement_names: Vec<String> = body.measurements.iter().map(|c| c.name.clone()).collect();
 
     // The SQL is assembled from fixed fragments; every value and column name is bound.
@@ -133,7 +133,8 @@ pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>
             sql.push_str(
                 ", avgOrNullIf(v, name = ?) * ? AS ?\
                  , minOrNullIf(v, name = ?) * ? AS ?\
-                 , maxOrNullIf(v, name = ?) * ? AS ?",
+                 , maxOrNullIf(v, name = ?) * ? AS ?\
+                 , countIf(name = ?) AS ?",
             );
         } else {
             sql.push_str(", avgOrNullIf(v, name = ?) * ? AS ?");
@@ -183,6 +184,11 @@ pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>
             query = query
                 .bind(&column.name)
                 .bind(column.scale)
+                .bind(Identifier(label.next().expect("one label per column")));
+        }
+        if bucket_ms.is_some() {
+            query = query
+                .bind(&column.name)
                 .bind(Identifier(label.next().expect("one label per column")));
         }
     }
@@ -256,8 +262,9 @@ struct Labels {
     columns: Vec<String>,
 }
 
-/// Column headers, unique (ClickHouse rejects one alias for two expressions).
-fn column_labels(body: &Request, bucketed: bool) -> Labels {
+/// Column headers, unique (ClickHouse rejects one alias for two expressions). With
+/// buckets, the headers name the interval, so nobody mistakes a mean for a sample.
+fn column_labels(body: &Request, bucket_ms: Option<i64>) -> Labels {
     let mut taken = HashSet::new();
     let mut unique = |wanted: String| -> String {
         let mut label = wanted.clone();
@@ -269,17 +276,23 @@ fn column_labels(body: &Request, bucketed: bool) -> Labels {
         label
     };
 
-    let time = unique("Time".to_string());
+    let interval = bucket_ms.map(format_interval);
+    let time = unique(match &interval {
+        Some(_) => "Time (interval start)".to_string(),
+        None => "Time".to_string(),
+    });
     let unix_ms = unique("Unix ms".to_string());
     let mut columns = Vec::new();
     for column in &body.measurements {
         let base = column.label.clone().unwrap_or_else(|| column.name.clone());
-        if bucketed {
-            columns.push(unique(format!("{base} (mean)")));
-            columns.push(unique(format!("{base} (min)")));
-            columns.push(unique(format!("{base} (max)")));
-        } else {
-            columns.push(unique(base));
+        match &interval {
+            Some(interval) => {
+                columns.push(unique(format!("{base} (mean over {interval})")));
+                columns.push(unique(format!("{base} (min over {interval})")));
+                columns.push(unique(format!("{base} (max over {interval})")));
+                columns.push(unique(format!("{base} (samples)")));
+            }
+            None => columns.push(unique(base)),
         }
     }
     for target in &body.targets {
@@ -290,6 +303,19 @@ fn column_labels(body: &Request, bucketed: bool) -> Labels {
         time,
         unix_ms,
         columns,
+    }
+}
+
+/// `1 s`, `10 s`, `1 min`, `250 ms`.
+fn format_interval(ms: i64) -> String {
+    if ms % 3_600_000 == 0 {
+        format!("{} h", ms / 3_600_000)
+    } else if ms % 60_000 == 0 {
+        format!("{} min", ms / 60_000)
+    } else if ms % 1_000 == 0 {
+        format!("{} s", ms / 1_000)
+    } else {
+        format!("{ms} ms")
     }
 }
 
@@ -331,7 +357,7 @@ mod tests {
             ],
             vec![column("t", None)],
         );
-        let labels = column_labels(&body, false);
+        let labels = column_labels(&body, None);
         assert_eq!(labels.time, "Time");
         assert_eq!(labels.columns, vec!["Temp", "Temp (2)", "Time (2)", "t"]);
     }
@@ -339,10 +365,16 @@ mod tests {
     #[test]
     fn bucketed_labels_have_stats() {
         let body = request(vec![column("a", Some("Temp"))], vec![]);
-        let labels = column_labels(&body, true);
+        let labels = column_labels(&body, Some(60_000));
+        assert_eq!(labels.time, "Time (interval start)");
         assert_eq!(
             labels.columns,
-            vec!["Temp (mean)", "Temp (min)", "Temp (max)"]
+            vec![
+                "Temp (mean over 1 min)",
+                "Temp (min over 1 min)",
+                "Temp (max over 1 min)",
+                "Temp (samples)"
+            ]
         );
     }
 }
