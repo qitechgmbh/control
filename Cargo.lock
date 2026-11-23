@@ -2465,6 +2465,7 @@ dependencies = [
  "crc",
  "erased-serde",
  "euclid",
+ "futures-util",
  "heapless 0.9.3",
  "postcard",
  "qitech_control_core",

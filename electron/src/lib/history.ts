@@ -4,6 +4,9 @@ import { MachineIdentificationUnique } from "@/machines/types";
 export const HISTORY_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 const HISTORY_URL = "http://localhost:3001/api/v1/machine/history";
+/** Streams a range as CSV or Parquet (see `history_export.rs`). */
+export const HISTORY_EXPORT_URL =
+  "http://localhost:3001/api/v1/machine/history/export";
 
 /** Columnar series: `t[i]` (Unix ms) belongs to `v[i]`. */
 export type HistorySeries = { t: number[]; v: number[] };

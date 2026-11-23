@@ -24,7 +24,7 @@ use crate::api::legacy::types::LegacyMachineIdentificationUnique;
 /// Upper bound on buckets per series, whatever the client asks for.
 const MAX_BUCKETS: i64 = 20_000;
 /// Upper bound on names per request.
-const MAX_NAMES: usize = 64;
+pub(super) const MAX_NAMES: usize = 64;
 /// Older config records fetched to find the value in effect at `from`.
 const TARGET_LOOKBACK_ROWS: u64 = 64;
 
@@ -104,7 +104,7 @@ pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>
 
     let (measurements, targets) = tokio::join!(
         fetch_measurements(&state.db, identity, &body, bucket_ms),
-        fetch_targets(&state.db, identity, &body),
+        fetch_targets(&state.db, identity, &body.targets, body.from, body.to),
     );
 
     match (measurements, targets) {
@@ -184,12 +184,14 @@ async fn fetch_measurements(
 
 /// Step series of accepted values per config property. The first point is the value in
 /// effect at `from` (if any record precedes the range), placed at `from`.
-async fn fetch_targets(
+pub(super) async fn fetch_targets(
     db: &clickhouse::Client,
     identity: u64,
-    body: &Request,
+    targets: &[String],
+    from: i64,
+    to: i64,
 ) -> Result<HashMap<String, Series>, clickhouse::error::Error> {
-    if body.targets.is_empty() {
+    if targets.is_empty() {
         return Ok(HashMap::new());
     }
 
@@ -209,9 +211,9 @@ async fn fetch_targets(
              ORDER BY timestamp",
         )
         .bind(identity)
-        .bind(&body.targets)
-        .bind(body.from)
-        .bind(body.to)
+        .bind(targets)
+        .bind(from)
+        .bind(to)
         .fetch_all::<ConfigRow>(),
         db.query(
             "SELECT CAST(name, 'String') AS name,
@@ -226,15 +228,14 @@ async fn fetch_targets(
              LIMIT ? BY name",
         )
         .bind(identity)
-        .bind(&body.targets)
-        .bind(body.from)
+        .bind(targets)
+        .bind(from)
         .bind(TARGET_LOOKBACK_ROWS)
         .fetch_all::<ConfigRow>(),
     );
     let (in_range, before) = (in_range?, before?);
 
-    let mut out: HashMap<String, Series> = body
-        .targets
+    let mut out: HashMap<String, Series> = targets
         .iter()
         .map(|name| (name.clone(), Series::default()))
         .collect();
@@ -248,7 +249,7 @@ async fn fetch_targets(
             continue;
         }
         if let Some(value) = accepted_value(&row.data) {
-            series.t.push(body.from);
+            series.t.push(from);
             series.v.push(value);
         }
     }

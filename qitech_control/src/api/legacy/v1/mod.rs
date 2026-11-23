@@ -4,6 +4,7 @@ use axum::routing::post;
 use crate::api::legacy::LegacyApiState;
 
 pub mod history;
+pub mod history_export;
 pub mod machine_mutate;
 pub mod markers;
 pub mod modbus;
@@ -17,6 +18,7 @@ pub fn router() -> Router<LegacyApiState> {
         )
         .route("/machine/mutate", post(machine_mutate::post))
         .route("/machine/history", post(history::post))
+        .route("/machine/history/export", post(history_export::post))
         .route("/machine/markers", post(markers::list))
         .route("/machine/markers/add", post(markers::add))
         .route("/machine/markers/remove", post(markers::remove))

@@ -74,6 +74,7 @@ interface SaveFileResult {
   success: boolean;
   error?: string;
   filePath?: string;
+  filePaths?: string[];
   isRemovable?: boolean;
   mountPath?: string;
 }
@@ -99,6 +100,20 @@ interface FileExportContext {
     filters?: { name: string; extensions: string[] }[];
     content: string;
     encoding: "utf8" | "base64";
+  }) => Promise<SaveFileResult>;
+  choosePath: (params: {
+    suggestedName: string;
+    filters?: { name: string; extensions: string[] }[];
+  }) => Promise<{ canceled: true } | { canceled: false; filePath: string }>;
+  writeFile: (params: {
+    filePath: string;
+    content: string;
+    encoding: "utf8" | "base64";
+  }) => Promise<SaveFileResult>;
+  download: (params: {
+    filePath: string;
+    url: string;
+    body: unknown;
   }) => Promise<SaveFileResult>;
   ejectUsb: (
     mountPath: string,

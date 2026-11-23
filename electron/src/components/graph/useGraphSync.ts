@@ -1,7 +1,11 @@
 import { useState, useCallback, useRef, useId } from "react";
 import type { GraphView, TimeWindow, ViewRange } from "./types";
-import { type GraphExportData, exportGraphsToExcel } from "./export";
-import { useLogsStore } from "@/stores/logsStore";
+import {
+  type ExportOptions,
+  type GraphExportSource,
+  currentExportRange,
+  runExport as runExportFiles,
+} from "./export";
 import { useGraphSettingsStore } from "@/stores/graphSettingsStore";
 import { useExportDialog } from "@/hooks/useExportDialog";
 
@@ -67,11 +71,13 @@ export function useGraphSync(exportGroupId?: string) {
 
   // --- export ---
 
-  const exportSources = useRef(new Map<string, () => GraphExportData | null>());
+  const exportSources = useRef(
+    new Map<string, () => GraphExportSource | null>(),
+  );
 
   const registerExport = useCallback(
-    (id: string, getData: () => GraphExportData | null) => {
-      exportSources.current.set(id, getData);
+    (id: string, getSource: () => GraphExportSource | null) => {
+      exportSources.current.set(id, getSource);
     },
     [],
   );
@@ -80,25 +86,33 @@ export function useGraphSync(exportGroupId?: string) {
     exportSources.current.delete(id);
   }, []);
 
+  const collectSources = useCallback(
+    () =>
+      [...exportSources.current.values()]
+        .map((getSource) => getSource())
+        .filter((s): s is GraphExportSource => s !== null),
+    [],
+  );
+
+  /** The range the graphs show right now: the export dialog's default. */
+  const exportRange = useCallback(
+    () => currentExportRange(collectSources()),
+    [collectSources],
+  );
+
   const { notifyResult, dialogProps: exportDialogProps } = useExportDialog();
 
-  const exportToExcel = useCallback(async () => {
-    if (exportSources.current.size === 0) {
-      console.warn("No graphs registered for export");
-      return;
-    }
-    try {
-      const logs = useLogsStore.getState().entries;
-      const result = await exportGraphsToExcel(
-        exportSources.current,
-        exportGroupId || "synced-graphs",
-        logs,
-      );
-      if (result) notifyResult(result);
-    } catch (error) {
-      console.error("Failed to export graphs:", error);
-    }
-  }, [exportGroupId, notifyResult]);
+  const runExport = useCallback(
+    async (options: Omit<ExportOptions, "groupId">) => {
+      const result = await runExportFiles(collectSources(), {
+        ...options,
+        groupId: exportGroupId || "graphs",
+      });
+      notifyResult(result);
+      return result;
+    },
+    [collectSources, exportGroupId, notifyResult],
+  );
 
   const view: GraphView = {
     timeWindow,
@@ -118,7 +132,8 @@ export function useGraphSync(exportGroupId?: string) {
     setShowFrom,
     registerExport,
     unregisterExport,
-    exportToExcel,
+    exportRange,
+    runExport,
     exportDialogProps,
   };
 }
