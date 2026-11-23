@@ -46,7 +46,10 @@ export function buildExcelWorkbook(report: ExcelReport): Uint8Array {
 
   const workbook = XLSX.utils.book_new();
   const sheetNames = new SheetNames([OVERVIEW_SHEET, ALL_VALUES_SHEET]);
-  const perSeriesNames = series.map((s) => sheetNames.take(s.title));
+  // "Nozzle" exists in both the temperature and the power graph: name it after both.
+  const perSeriesNames = series.map((s) =>
+    sheetNames.take(columnTitle(s, series)),
+  );
 
   XLSX.utils.book_append_sheet(
     workbook,
@@ -59,7 +62,11 @@ export function buildExcelWorkbook(report: ExcelReport): Uint8Array {
     ALL_VALUES_SHEET,
   );
   series.forEach((s, i) =>
-    XLSX.utils.book_append_sheet(workbook, seriesSheet(s), perSeriesNames[i]),
+    XLSX.utils.book_append_sheet(
+      workbook,
+      seriesSheet(s, columnTitle(s, series)),
+      perSeriesNames[i],
+    ),
   );
 
   return XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
@@ -181,10 +188,10 @@ function allValuesSheet(
   return sheet(rows, [24, 10, ...series.map(() => 16), 30]);
 }
 
-function seriesSheet(s: ExcelSeries): XLSX.WorkSheet {
+function seriesSheet(s: ExcelSeries, title: string): XLSX.WorkSheet {
   const targetAt = s.target ? stepLookup(s.target) : undefined;
   const rows: Cell[][] = [
-    ["Time", text(withUnit(s.title, s.unit)), ...(targetAt ? ["Target"] : [])],
+    ["Time", text(withUnit(title, s.unit)), ...(targetAt ? ["Target"] : [])],
   ];
   s.points.t.forEach((t, i) => {
     const target = targetAt?.(t);

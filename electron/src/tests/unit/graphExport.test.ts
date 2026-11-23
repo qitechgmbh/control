@@ -194,6 +194,31 @@ describe("buildExcelWorkbook", () => {
     expect(stats?.slice(2, 7)).toEqual(["°C", 3, 190, 200, 195]);
   });
 
+  it("names sheets after the graph when series titles repeat", () => {
+    const repeated = (graphTitle: string, unit: string) => ({
+      graphTitle,
+      title: "Nozzle",
+      unit,
+      points: { t: [t0], v: [1] },
+    });
+    const book = XLSX.read(
+      buildExcelWorkbook({
+        ...report,
+        series: [
+          repeated("Temperatures", "°C"),
+          repeated("Power Outputs", "W"),
+        ],
+      }),
+      { type: "buffer" },
+    );
+    expect(book.SheetNames).toEqual([
+      "Overview",
+      "All values",
+      "Temperatures – Nozzle",
+      "Power Outputs – Nozzle",
+    ]);
+  });
+
   it("refuses a range without data", () => {
     expect(() =>
       buildExcelWorkbook({
