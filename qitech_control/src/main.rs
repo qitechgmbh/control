@@ -177,6 +177,9 @@ async fn init_db() -> clickhouse::Client {
     let migration = include_str!("../migrations/init_machine_events.sql");
     client.query(migration).execute().await.unwrap();
 
+    let migration = include_str!("../migrations/init_machine_markers.sql");
+    client.query(migration).execute().await.unwrap();
+
     // --- select database ---
     client.with_database("control_hub")
 }
