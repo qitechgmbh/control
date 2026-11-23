@@ -1,4 +1,4 @@
-import { Topbar } from "@/components/Topbar";
+import { Topbar } from "@/components/layout/Topbar";
 import { winder2SerialRoute } from "@/routes/routes";
 import React from "react";
 

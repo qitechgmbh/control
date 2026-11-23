@@ -5,7 +5,7 @@ import { io, Socket } from "socket.io-client";
 import MsgPackParser from "socket.io-msgpack-parser";
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
-import { toastError, toastZodError } from "@/components/Toast";
+import { toastError, toastZodError } from "@/components/feedback/Toast";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { FPS_30 } from "@/lib/constants";
 import { mainNamespaceStore } from "./mainNamespace";

@@ -1,8 +1,8 @@
-import { Alert } from "@/components/Alert";
-import { Page } from "@/components/Page";
-import { SectionTitle } from "@/components/SectionTitle";
+import { Alert } from "@/components/feedback/Alert";
+import { Page } from "@/components/layout/Page";
+import { SectionTitle } from "@/components/layout/SectionTitle";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { ExportResultDialog } from "@/components/ExportResultDialog";
+import { ExportResultDialog } from "@/components/feedback/ExportResultDialog";
 import { mainNamespaceStore } from "@/client/mainNamespace";
 import {
   rebootHmi,

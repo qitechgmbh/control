@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
 import { githubSourceSchema } from "@/setup/GithubSourceDialog";
-import { SidebarLayout } from "@/components/SidebarLayout";
+import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { SetupPage } from "@/setup/SetupPage";
 import { EthercatPage } from "@/setup/EthercatPage";
 import { ModbusPage } from "@/setup/ModbusPage";

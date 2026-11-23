@@ -18,7 +18,7 @@ import {
 import { MachineIdentificationUnique } from "@/machines/types";
 import { useMemo } from "react";
 import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
-import { Toast } from "@/components/Toast";
+import { Toast } from "@/components/feedback/Toast";
 import { toast } from "sonner";
 import React from "react";
 

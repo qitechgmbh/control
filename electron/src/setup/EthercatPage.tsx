@@ -1,8 +1,8 @@
-import { Page } from "@/components/Page";
-import { RefreshIndicator } from "@/components/RefreshIndicator";
-import { SectionTitle } from "@/components/SectionTitle";
-import { MyTable } from "@/components/Table";
-import { EthercatVendorId, Hex, Value } from "@/components/Value";
+import { Page } from "@/components/layout/Page";
+import { RefreshIndicator } from "@/components/feedback/RefreshIndicator";
+import { SectionTitle } from "@/components/layout/SectionTitle";
+import { MyTable } from "@/components/display/Table";
+import { EthercatVendorId, Hex, Value } from "@/components/display/Value";
 import {
   ColumnDef,
   getCoreRowModel,
@@ -11,7 +11,7 @@ import {
 import React, { useMemo, useState } from "react";
 import { DeviceEepromDialog, isDeviceAssigned } from "./DeviceEepromDialog";
 import { getMachineProperties } from "@/machines/properties";
-import { DeviceRoleComponent } from "@/components/DeviceRole";
+import { DeviceRoleComponent } from "@/components/display/DeviceRole";
 import {
   EthercatDevicesEventData,
   mainNamespaceStore,

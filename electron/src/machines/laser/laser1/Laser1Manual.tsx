@@ -1,4 +1,4 @@
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import { PdfManual } from "@/components/manual/PdfManual";
 import React from "react";
 

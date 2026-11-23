@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
-import { IconName } from "@/components/Icon";
+import { IconName } from "@/components/icons/Icon";
 import React from "react";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { LoadingSpinner } from "@/components/feedback/LoadingSpinner";
 
 export function getUnitIcon(unit: Unit): IconName {
   switch (unit) {

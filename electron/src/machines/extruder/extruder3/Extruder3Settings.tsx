@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import { ControlCard } from "@/control/ControlCard";
 import { Label } from "@/control/Label";
 import {

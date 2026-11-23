@@ -1,10 +1,10 @@
-import { Alert } from "@/components/Alert";
-import { Page } from "@/components/Page";
-import { SectionTitle } from "@/components/SectionTitle";
-import { Terminal } from "@/components/Terminal";
+import { Alert } from "@/components/feedback/Alert";
+import { Page } from "@/components/layout/Page";
+import { SectionTitle } from "@/components/layout/SectionTitle";
+import { Terminal } from "@/components/display/Terminal";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { UpdateProgressBar } from "@/components/UpdateProgressBar";
-import { Icon } from "@/components/Icon";
+import { UpdateProgressBar } from "@/components/feedback/UpdateProgressBar";
+import { Icon } from "@/components/icons/Icon";
 import { updateExecute, updateCancelWithStore } from "@/helpers/update_helpers";
 import { useUpdateStore } from "@/stores/updateStore";
 import { useSearch } from "@tanstack/react-router";

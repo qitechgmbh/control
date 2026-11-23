@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { HistoryLoader } from "@/components/graph/history/HistoryLoader";
-import { collectTail } from "@/components/graph/chartjs/GraphEngine";
-import { buildTimeTicks } from "@/components/graph/chartjs/timeAxis";
+import { collectTail } from "@/components/graph/engine/points";
+import { buildTimeTicks } from "@/components/graph/engine/timeAxis";
 import { niceBucketMs } from "@/lib/history";
 import { createTimeSeries } from "@/lib/timeseries";
 

@@ -1,10 +1,10 @@
-import { Page } from "@/components/Page";
-import { SectionTitle } from "@/components/SectionTitle";
+import { Page } from "@/components/layout/Page";
+import { SectionTitle } from "@/components/layout/SectionTitle";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { Alert } from "@/components/Alert";
-import { Markdown } from "@/components/Markdown";
+import { LoadingSpinner } from "@/components/feedback/LoadingSpinner";
+import { Alert } from "@/components/feedback/Alert";
+import { Markdown } from "@/components/markdown/Markdown";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { useUpdateStore } from "@/stores/updateStore";
 import { GithubSource } from "./GithubSourceDialog";

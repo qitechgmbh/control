@@ -1,8 +1,8 @@
-import { Page } from "@/components/Page";
-import { RefreshIndicator } from "@/components/RefreshIndicator";
-import { SectionTitle } from "@/components/SectionTitle";
-import { MyTable } from "@/components/Table";
-import { Value } from "@/components/Value";
+import { Page } from "@/components/layout/Page";
+import { RefreshIndicator } from "@/components/feedback/RefreshIndicator";
+import { SectionTitle } from "@/components/layout/SectionTitle";
+import { MyTable } from "@/components/display/Table";
+import { Value } from "@/components/display/Value";
 import {
   ColumnDef,
   getCoreRowModel,
@@ -13,7 +13,7 @@ import {
   getVendorProperties,
   getMachineProperties,
 } from "@/machines/properties";
-import { IconText } from "@/components/IconText";
+import { IconText } from "@/components/icons/IconText";
 import { MachinesEventData, useMainNamespace } from "@/client/mainNamespace";
 
 export const columns: ColumnDef<

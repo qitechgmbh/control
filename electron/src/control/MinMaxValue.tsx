@@ -1,4 +1,4 @@
-import { Icon, IconName } from "@/components/Icon";
+import { Icon, IconName } from "@/components/icons/Icon";
 import React, { useState, useMemo } from "react";
 import {
   getUnitIcon,

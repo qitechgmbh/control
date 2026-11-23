@@ -1,4 +1,4 @@
-import { toastError } from "@/components/Toast";
+import { toastError } from "@/components/feedback/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { buffer1, VENDOR_QITECH } from "@/machines/properties";
 import {

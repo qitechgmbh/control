@@ -1,0 +1,133 @@
+import type { Chart, Scale } from "chart.js";
+import { HISTORY_RETENTION_MS } from "@/lib/history";
+import { buildTimeTicks, formatTimeTick } from "./timeAxis";
+
+export type ChartOptionHooks = {
+  colors: () => { grid: string; axis: string } | undefined;
+  renderValue: () => ((value: number) => string) | undefined;
+  /** A mouse pan or wheel zoom starts on `chart`. */
+  onGestureStart: (chart: Chart) => void;
+  /** The mouse pan/zoom moved the x axis of `chart`; `done` at the end of the gesture. */
+  onGesture: (chart: Chart, done: boolean) => void;
+};
+
+const DEFAULT_GRID = "#e2e8f0";
+const DEFAULT_AXIS = "#64748b";
+/** Pixels per x tick label. */
+const TICK_SPACING_PX = 110;
+
+type TimeScale = Scale & { qtStep?: number };
+
+/**
+ * Options of a graph chart: linear time x axis with our own ticks, no animation or
+ * tooltip, and mouse pan / Ctrl+wheel zoom through chartjs-plugin-zoom. Touch gestures
+ * are handled by `TouchGestures`, not by the zoom plugin.
+ */
+export function createChartOptions(hooks: ChartOptionHooks) {
+  const grid = () => hooks.colors()?.grid ?? DEFAULT_GRID;
+  const axis = () => hooks.colors()?.axis ?? DEFAULT_AXIS;
+  const start = ({ chart }: { chart: Chart }) => {
+    hooks.onGestureStart(chart);
+    return true;
+  };
+  const move = ({ chart }: { chart: Chart }) => hooks.onGesture(chart, false);
+  const complete = ({ chart }: { chart: Chart }) =>
+    hooks.onGesture(chart, true);
+
+  return {
+    animation: false as const,
+    responsive: true,
+    maintainAspectRatio: false,
+    parsing: false as const,
+    normalized: true,
+    events: [
+      "mousemove",
+      "mouseout",
+      "touchstart",
+      "touchmove",
+      "touchend",
+      "touchcancel",
+    ] as (keyof HTMLElementEventMap)[],
+    interaction: { mode: "x" as const, intersect: false },
+    layout: { padding: { right: 12, left: 4 } },
+    scales: {
+      x: {
+        type: "linear" as const,
+        afterBuildTicks: (scale: Scale) => {
+          const maxTicks = Math.max(
+            2,
+            Math.floor(scale.width / TICK_SPACING_PX),
+          );
+          const { ticks, step } = buildTimeTicks(
+            scale.min,
+            scale.max,
+            maxTicks,
+          );
+          scale.ticks = ticks;
+          (scale as TimeScale).qtStep = step;
+        },
+        ticks: {
+          autoSkip: false,
+          maxRotation: 0,
+          color: axis,
+          callback: function (this: TimeScale, value: string | number) {
+            return formatTimeTick(
+              Number(value),
+              this.qtStep ?? 1000,
+              this.max - this.min,
+            );
+          },
+        },
+        grid: { color: grid },
+      },
+      y: {
+        type: "linear" as const,
+        grace: "5%",
+        ticks: {
+          color: axis,
+          callback: (value: string | number) => {
+            const render = hooks.renderValue();
+            return render ? render(Number(value)) : String(value);
+          },
+        },
+        grid: { color: grid },
+      },
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: false },
+      zoom: {
+        limits: {
+          // Moved along with the clock by the engine on every frame.
+          x: {
+            min: Date.now() - HISTORY_RETENTION_MS,
+            max: Date.now(),
+            minRange: 1000,
+          },
+        },
+        pan: {
+          enabled: true,
+          mode: "x" as const,
+          threshold: 5,
+          // Mouse/pen drag only; touch is handled by TouchGestures.
+          onPanStart: (ctx: {
+            chart: Chart;
+            event: { pointerType?: string };
+          }) => (ctx.event.pointerType === "touch" ? false : start(ctx)),
+          onPan: move,
+          onPanComplete: complete,
+        },
+        zoom: {
+          // Plain wheel scrolls the page; Ctrl+wheel (and trackpad pinch, which
+          // Chromium reports as Ctrl+wheel) zooms.
+          wheel: { enabled: true, speed: 0.1, modifierKey: "ctrl" as const },
+          pinch: { enabled: false },
+          mode: "x" as const,
+          onZoomStart: start,
+          onZoom: move,
+          onZoomComplete: complete,
+        },
+      },
+    },
+  };
+}

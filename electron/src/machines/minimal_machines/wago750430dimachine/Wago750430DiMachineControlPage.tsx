@@ -1,5 +1,5 @@
 import { ControlCard } from "@/control/ControlCard";
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import { Label } from "@/control/Label";
 import { Badge } from "@/components/ui/badge";
 import React from "react";

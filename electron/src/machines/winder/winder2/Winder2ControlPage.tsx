@@ -1,5 +1,5 @@
 import { ControlCard } from "@/control/ControlCard";
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import React, { useState } from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";

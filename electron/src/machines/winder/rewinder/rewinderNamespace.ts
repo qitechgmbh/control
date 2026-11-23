@@ -17,7 +17,7 @@ import {
   createTimeSeries,
 } from "@/lib/timeseries";
 import { useMemo } from "react";
-import { toastError } from "@/components/Toast";
+import { toastError } from "@/components/feedback/Toast";
 
 export const modeSchema = z.enum([
   "Standby",
