@@ -1,4 +1,4 @@
-import { toastHttpNotOk, toastZodError } from "@/components/Toast";
+import { toastHttpNotOk, toastZodError } from "@/components/feedback/Toast";
 import {
   deviceHardwareIdentificationEthercatSchema,
   deviceMachineIdentification,

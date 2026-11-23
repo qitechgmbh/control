@@ -1,11 +1,11 @@
-import { Icon } from "@/components/Icon";
-import { Page } from "@/components/Page";
-import { SectionTitle } from "@/components/SectionTitle";
+import { Icon } from "@/components/icons/Icon";
+import { Page } from "@/components/layout/Page";
+import { SectionTitle } from "@/components/layout/SectionTitle";
 import { TouchButton } from "@/components/touch/TouchButton";
 import React, { useEffect, useState } from "react";
 import { GithubSourceDialog } from "./GithubSourceDialog";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { Alert } from "@/components/Alert";
+import { LoadingSpinner } from "@/components/feedback/LoadingSpinner";
+import { Alert } from "@/components/feedback/Alert";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffectAsync } from "@/lib/useEffectAsync";
 import { Collapsible, CollapsibleTrigger } from "@radix-ui/react-collapsible";

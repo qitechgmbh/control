@@ -10,7 +10,7 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
-import { Icon } from "@/components/Icon";
+import { Icon } from "@/components/icons/Icon";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";

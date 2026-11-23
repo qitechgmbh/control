@@ -1,12 +1,11 @@
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import {
-  MarkerProvider,
-  SyncedFloatingControlPanel,
+  BigGraph,
+  GraphHistoryProvider,
+  GraphControlPanel,
   useGraphSync,
   type GraphConfig,
 } from "@/components/graph";
-import { GraphWithMarkerControls } from "@/components/graph/marker/GraphWithMarkerControls";
-import { GraphHistoryProvider } from "@/components/graph/history/GraphHistoryContext";
 import React from "react";
 import { useExtruder3 } from "./useExtruder";
 
@@ -270,107 +269,92 @@ export function Extruder3GraphsPage() {
   return (
     <Page className="pb-25">
       <GraphHistoryProvider machine={machineIdentification}>
-        <MarkerProvider>
-          <div className="flex flex-col gap-4">
-            <GraphWithMarkerControls
-              syncHook={syncHook}
-              newData={{
-                newData: pressure,
-                history: "pressure.value",
-                color: "#3b82f6",
-                lines:
-                  state?.pressure_state.target_bar !== undefined
-                    ? [
-                        {
-                          type: "target" as const,
-                          value: state.pressure_state.target_bar,
-                          targetSeries: targetPressure,
-                          history: "screw.target_pressure",
-                          color: "#3b82f6",
-                          show: true,
-                        },
-                      ]
-                    : [],
-              }}
-              config={pressureConfig}
-              unit="bar"
-              renderValue={(value) => value.toFixed(2)}
-              graphId="pressure-graph"
-              currentTimeSeries={pressure}
-              machineId="extruder-graphs"
-            />
-
-            <GraphWithMarkerControls
-              syncHook={syncHook}
-              newData={temperatureData}
-              config={temperatureConfig}
-              unit="C"
-              renderValue={(value) => value.toFixed(1)}
-              graphId="combined-temperatures"
-              currentTimeSeries={nozzleTemperature ?? null}
-              machineId="extruder-graphs"
-            />
-
-            <GraphWithMarkerControls
-              syncHook={syncHook}
-              newData={powerData}
-              config={powerConfig}
-              unit="W"
-              renderValue={(value) => value.toFixed(1)}
-              graphId="combined-power"
-              currentTimeSeries={combinedPower ?? null}
-              machineId="extruder-graphs"
-            />
-
-            <GraphWithMarkerControls
-              syncHook={syncHook}
-              newData={{
-                newData: motorCurrent,
-                history: "motor.current",
-                color: "#3b82f6",
-              }}
-              config={currentConfig}
-              unit="A"
-              renderValue={(value) => value.toFixed(2)}
-              graphId="motor-current"
-              currentTimeSeries={motorCurrent}
-              machineId="extruder-graphs"
-            />
-
-            <GraphWithMarkerControls
-              syncHook={syncHook}
-              newData={{
-                newData: motorScrewRpm,
-                history: "motor.rpm",
-                color: "#8b5cf6",
-                lines:
-                  state?.screw_state.target_rpm !== undefined
-                    ? [
-                        {
-                          type: "target" as const,
-                          value: state.screw_state.target_rpm,
-                          targetSeries: targetScrewRpm,
-                          history: "screw.target_rpm",
-                          color: "#8b5cf6",
-                          show: true,
-                        },
-                      ]
-                    : [],
-              }}
-              config={rpmConfig}
-              unit="rpm"
-              renderValue={(value) => value.toFixed(0)}
-              graphId="rpm-graph"
-              currentTimeSeries={motorScrewRpm}
-              machineId="extruder-graphs"
-            />
-          </div>
-
-          <SyncedFloatingControlPanel
-            controlProps={syncHook.controlProps}
-            machineId="extruder-graphs"
+        <div className="flex flex-col gap-4">
+          <BigGraph
+            syncHook={syncHook}
+            newData={{
+              newData: pressure,
+              history: "pressure.value",
+              color: "#3b82f6",
+              lines:
+                state?.pressure_state.target_bar !== undefined
+                  ? [
+                      {
+                        type: "target" as const,
+                        value: state.pressure_state.target_bar,
+                        targetSeries: targetPressure,
+                        history: "screw.target_pressure",
+                        color: "#3b82f6",
+                        show: true,
+                      },
+                    ]
+                  : [],
+            }}
+            config={pressureConfig}
+            unit="bar"
+            renderValue={(value) => value.toFixed(2)}
+            graphId="pressure-graph"
           />
-        </MarkerProvider>
+
+          <BigGraph
+            syncHook={syncHook}
+            newData={temperatureData}
+            config={temperatureConfig}
+            unit="C"
+            renderValue={(value) => value.toFixed(1)}
+            graphId="combined-temperatures"
+          />
+
+          <BigGraph
+            syncHook={syncHook}
+            newData={powerData}
+            config={powerConfig}
+            unit="W"
+            renderValue={(value) => value.toFixed(1)}
+            graphId="combined-power"
+          />
+
+          <BigGraph
+            syncHook={syncHook}
+            newData={{
+              newData: motorCurrent,
+              history: "motor.current",
+              color: "#3b82f6",
+            }}
+            config={currentConfig}
+            unit="A"
+            renderValue={(value) => value.toFixed(2)}
+            graphId="motor-current"
+          />
+
+          <BigGraph
+            syncHook={syncHook}
+            newData={{
+              newData: motorScrewRpm,
+              history: "motor.rpm",
+              color: "#8b5cf6",
+              lines:
+                state?.screw_state.target_rpm !== undefined
+                  ? [
+                      {
+                        type: "target" as const,
+                        value: state.screw_state.target_rpm,
+                        targetSeries: targetScrewRpm,
+                        history: "screw.target_rpm",
+                        color: "#8b5cf6",
+                        show: true,
+                      },
+                    ]
+                  : [],
+            }}
+            config={rpmConfig}
+            unit="rpm"
+            renderValue={(value) => value.toFixed(0)}
+            graphId="rpm-graph"
+          />
+        </div>
+
+        <GraphControlPanel syncHook={syncHook} />
       </GraphHistoryProvider>
     </Page>
   );

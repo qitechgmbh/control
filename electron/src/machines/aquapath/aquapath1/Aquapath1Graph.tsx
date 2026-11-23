@@ -1,13 +1,13 @@
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import {
-  AutoSyncedBigGraph,
-  SyncedFloatingControlPanel,
+  BigGraph,
+  GraphHistoryProvider,
+  GraphControlPanel,
   useGraphSync,
   type GraphConfig,
 } from "@/components/graph";
 
 import React from "react";
-import { GraphHistoryProvider } from "@/components/graph/history/GraphHistoryContext";
 import { useAquapath1 } from "./useAquapath";
 import { TimeSeries } from "@/lib/timeseries";
 
@@ -85,7 +85,7 @@ export function Aquapath1GraphPage() {
             id={"aquapath_energy"}
           />
         </div>
-        <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
+        <GraphControlPanel syncHook={syncHook} />
       </GraphHistoryProvider>
     </Page>
   );
@@ -157,7 +157,7 @@ export function FlowGraph({
   };
 
   return (
-    <AutoSyncedBigGraph
+    <BigGraph
       syncHook={syncHook}
       newData={{
         newData: flow,
@@ -229,7 +229,7 @@ export function TemperatureGraph({
     : [];
 
   return (
-    <AutoSyncedBigGraph
+    <BigGraph
       syncHook={syncHook}
       newData={combinedData}
       unit="C"
@@ -286,7 +286,7 @@ export function PowerGraph({
   ];
 
   return (
-    <AutoSyncedBigGraph
+    <BigGraph
       syncHook={syncHook}
       newData={powerData}
       unit="W"
@@ -345,7 +345,7 @@ export function EnergyGraph({
   ];
 
   return (
-    <AutoSyncedBigGraph
+    <BigGraph
       syncHook={syncHook}
       newData={energyData}
       unit="kWh"

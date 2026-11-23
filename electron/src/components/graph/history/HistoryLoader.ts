@@ -5,6 +5,7 @@ import {
   HISTORY_RETENTION_MS,
 } from "@/lib/history";
 import { MachineIdentificationUnique } from "@/machines/types";
+import type { ViewRange } from "../types";
 
 /** Points requested per pixel of plot width (one bucket ≈ one pixel, min+max per bucket). */
 const BUCKETS_PER_PX = 1;
@@ -18,8 +19,6 @@ const LIVE_REFRESH_MIN_MS = 1_000;
 const FULL_LOAD_MIN_INTERVAL_MS = 120;
 /** Back-off after a failed request. */
 const ERROR_BACKOFF_MS = 5_000;
-
-export type ViewRange = { min: number; max: number };
 
 export type HistoryNames = {
   measurements: string[];
@@ -259,7 +258,7 @@ function trimFront(series: HistorySeries, before: number): HistorySeries {
 }
 
 /** First index with `arr[i] >= value` (arr sorted ascending). */
-export function lowerBound(arr: ArrayLike<number>, value: number): number {
+function lowerBound(arr: ArrayLike<number>, value: number): number {
   let lo = 0;
   let hi = arr.length;
   while (lo < hi) {

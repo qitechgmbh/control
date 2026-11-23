@@ -1,4 +1,4 @@
-import { Icon, IconName } from "@/components/Icon";
+import { Icon, IconName } from "@/components/icons/Icon";
 import React, { useEffect, useMemo } from "react";
 import {
   getUnitIcon,
@@ -17,7 +17,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFormValues } from "@/lib/useFormValues";
 import { TouchInput } from "@/components/touch/TouchInput";
-import { IconText } from "@/components/IconText";
+import { IconText } from "@/components/icons/IconText";
 import { cva } from "class-variance-authority";
 import { z } from "zod";
 import { TouchNumpad } from "@/components/touch/TouchNumpad";

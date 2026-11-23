@@ -1,175 +1,133 @@
 import { useState, useCallback, useRef, useId } from "react";
-import { PropGraphSync, SwitchOrigin } from "./types";
-import { GraphExportData, exportGraphsToExcel } from "./excelExport";
+import type { GraphView, TimeWindow, ViewRange } from "./types";
+import { type GraphExportData, exportGraphsToExcel } from "./export";
 import { useLogsStore } from "@/stores/logsStore";
 import { useGraphSettingsStore } from "@/stores/graphSettingsStore";
 import { useExportDialog } from "@/hooks/useExportDialog";
 
-type Range = { min: number; max: number };
+export type GraphSync = ReturnType<typeof useGraphSync>;
 
 /**
- * Shared view state for all graphs on a page: time window, live/historical mode, the
- * manual (pan/zoom) range and the "show from" timestamp. Every graph renders from this
- * state, so changing it in one graph moves all of them.
+ * Shared state of all graphs on a page: the view (time window, live/historical, the
+ * pan/zoom range, "show from") and the export registry. Every graph renders from
+ * `view`, so changing it from one graph or the control panel moves all of them.
  */
 export function useGraphSync(exportGroupId?: string) {
   const timeWindow = useGraphSettingsStore((s) => s.timeframe);
   const setTimeframe = useGraphSettingsStore((s) => s.setTimeframe);
   const cursorGroup = useId();
 
-  const [viewMode, setViewMode] = useState<"default" | "all" | "manual">(
-    timeWindow === "all" ? "all" : "default",
-  );
   const [isLiveMode, setIsLiveMode] = useState(true);
-  const [xRange, setXRange] = useState<Range | undefined>();
+  const [xRange, setXRange] = useState<ViewRange | undefined>();
   const [showFromTimestamp, setShowFromTimestamp] = useState<number | null>(
     null,
   );
   const [historicalFreezeTimestamp, setHistoricalFreezeTimestamp] = useState<
     number | null
   >(null);
-  const [historicalSwitchOrigin, setHistoricalSwitchOrigin] =
-    useState<SwitchOrigin>("gesture");
 
-  const graphDataRef = useRef<Map<string, () => GraphExportData | null>>(
-    new Map(),
-  );
+  // --- view ---
 
-  const registerGraphForExport = useCallback(
-    (graphId: string, getDataFn: () => GraphExportData | null) => {
-      graphDataRef.current.set(graphId, getDataFn);
-    },
-    [],
-  );
-
-  const unregisterGraphFromExport = useCallback((graphId: string) => {
-    graphDataRef.current.delete(graphId);
-  }, []);
-
-  const { notifyResult, dialogProps: exportDialogProps } = useExportDialog();
-
-  const handleExport = useCallback(() => {
-    if (graphDataRef.current.size === 0) {
-      console.warn("No graphs registered for export");
-      return Promise.resolve();
-    }
-    const logs = useLogsStore.getState().entries;
-    return exportGraphsToExcel(
-      graphDataRef.current,
-      exportGroupId || "synced-graphs",
-      logs,
-    )
-      .then((result) => {
-        if (result) notifyResult(result);
-      })
-      .catch((error) => {
-        console.error("Failed to export graphs:", error);
-      });
-  }, [exportGroupId, notifyResult]);
-
-  const changeTimeWindow = useCallback(
-    (newTimeWindow: number | "all") => {
-      setTimeframe(newTimeWindow);
+  const setTimeWindow = useCallback(
+    (next: TimeWindow) => {
+      setTimeframe(next);
       setXRange(undefined);
       setShowFromTimestamp(null);
-      if (newTimeWindow === "all") {
-        setViewMode("all");
+      if (next === "all") {
         setIsLiveMode(true);
         setHistoricalFreezeTimestamp(null);
-      } else {
-        setViewMode(isLiveMode ? "default" : "manual");
       }
     },
-    [setTimeframe, isLiveMode],
+    [setTimeframe],
   );
 
-  const handleTimeWindowChange = useCallback(
-    (_graphId: string, newTimeWindow: number | "all") =>
-      changeTimeWindow(newTimeWindow),
-    [changeTimeWindow],
-  );
-
-  const handleViewModeChange = useCallback(
-    (
-      _graphId: string,
-      newViewMode: "default" | "all" | "manual",
-      newIsLiveMode: boolean,
-    ) => {
-      setViewMode(newViewMode);
-      setIsLiveMode(newIsLiveMode);
-      if (newIsLiveMode) {
-        setHistoricalFreezeTimestamp(null);
-        setXRange(undefined);
-      }
-    },
-    [],
-  );
-
-  const handleZoomChange = useCallback((_graphId: string, newXRange: Range) => {
-    setXRange(newXRange);
-    setViewMode("manual");
+  /** A graph was panned/zoomed: show that range on all graphs (historical mode). */
+  const setRange = useCallback((range: ViewRange) => {
+    setXRange(range);
     setIsLiveMode(false);
     setHistoricalFreezeTimestamp((ts) => ts ?? Date.now());
-    setHistoricalSwitchOrigin("gesture");
   }, []);
 
-  const handleSwitchToLive = useCallback(() => {
+  const switchToLive = useCallback(() => {
     setIsLiveMode(true);
-    setViewMode(timeWindow === "all" ? "all" : "default");
     setXRange(undefined);
     setHistoricalFreezeTimestamp(null);
     setShowFromTimestamp(null);
-  }, [timeWindow]);
-
-  const handleSwitchToHistorical = useCallback(() => {
-    setIsLiveMode(false);
-    setViewMode("manual");
-    setHistoricalFreezeTimestamp(Date.now());
-    setHistoricalSwitchOrigin("button");
   }, []);
 
-  const handleShowFromChange = useCallback((timestamp: number | null) => {
+  const switchToHistorical = useCallback(() => {
+    setIsLiveMode(false);
+    setHistoricalFreezeTimestamp(Date.now());
+  }, []);
+
+  const setShowFrom = useCallback((timestamp: number | null) => {
     setShowFromTimestamp(timestamp);
     setXRange(undefined);
   }, []);
 
-  const syncGraph: PropGraphSync = {
+  // --- export ---
+
+  const exportSources = useRef(new Map<string, () => GraphExportData | null>());
+
+  const registerExport = useCallback(
+    (id: string, getData: () => GraphExportData | null) => {
+      exportSources.current.set(id, getData);
+    },
+    [],
+  );
+
+  const unregisterExport = useCallback((id: string) => {
+    exportSources.current.delete(id);
+  }, []);
+
+  const { notifyResult, dialogProps: exportDialogProps } = useExportDialog();
+
+  const exportToExcel = useCallback(async () => {
+    if (exportSources.current.size === 0) {
+      console.warn("No graphs registered for export");
+      return;
+    }
+    try {
+      const logs = useLogsStore.getState().entries;
+      const result = await exportGraphsToExcel(
+        exportSources.current,
+        exportGroupId || "synced-graphs",
+        logs,
+      );
+      if (result) notifyResult(result);
+    } catch (error) {
+      console.error("Failed to export graphs:", error);
+    }
+  }, [exportGroupId, notifyResult]);
+
+  const view: GraphView = {
     timeWindow,
-    viewMode,
     isLiveMode,
     xRange,
     historicalFreezeTimestamp,
     showFromTimestamp,
-    historicalSwitchOrigin,
     cursorGroup,
-    onTimeWindowChange: handleTimeWindowChange,
-    onViewModeChange: handleViewModeChange,
-    onZoomChange: handleZoomChange,
-  };
-
-  const controlProps = {
-    timeWindow,
-    isLiveMode,
-    onTimeWindowChange: changeTimeWindow,
-    onSwitchToLive: handleSwitchToLive,
-    onSwitchToHistorical: handleSwitchToHistorical,
-    onExport: handleExport,
-    exportDialogProps,
-    showFromTimestamp,
-    onShowFromChange: handleShowFromChange,
   };
 
   return {
-    syncGraph,
-    controlProps,
-    registerGraphForExport,
-    unregisterGraphFromExport,
-    handleExport,
-    timeWindow,
-    viewMode,
-    isLiveMode,
-    xRange,
-    historicalFreezeTimestamp,
-    showFromTimestamp,
+    view,
+    setTimeWindow,
+    setRange,
+    switchToLive,
+    switchToHistorical,
+    setShowFrom,
+    registerExport,
+    unregisterExport,
+    exportToExcel,
+    exportDialogProps,
   };
+}
+
+/**
+ * Right edge of the current view, or null in live mode (where "now" moves on).
+ * Used as the default time of a new marker.
+ */
+export function viewEndTimestamp(view: GraphView): number | null {
+  if (view.isLiveMode) return null;
+  return view.xRange?.max ?? view.historicalFreezeTimestamp;
 }

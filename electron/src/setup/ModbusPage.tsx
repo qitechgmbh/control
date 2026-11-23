@@ -1,8 +1,8 @@
-import { Page } from "@/components/Page";
-import { RefreshIndicator } from "@/components/RefreshIndicator";
-import { SectionTitle } from "@/components/SectionTitle";
-import { MyTable } from "@/components/Table";
-import { Hex, Value } from "@/components/Value";
+import { Page } from "@/components/layout/Page";
+import { RefreshIndicator } from "@/components/feedback/RefreshIndicator";
+import { SectionTitle } from "@/components/layout/SectionTitle";
+import { MyTable } from "@/components/display/Table";
+import { Hex, Value } from "@/components/display/Value";
 import {
   ColumnDef,
   getCoreRowModel,
@@ -17,8 +17,8 @@ import { getMachineProperties } from "@/machines/properties";
 import { ModbusDevice, useMainNamespace } from "@/client/mainNamespace";
 import { useClient } from "@/client/useClient";
 import { Button } from "@/components/ui/button";
-import { Icon } from "@/components/Icon";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Icon } from "@/components/icons/Icon";
+import { LoadingSpinner } from "@/components/feedback/LoadingSpinner";
 
 export function createColumns(): ColumnDef<ModbusDevice>[] {
   return [

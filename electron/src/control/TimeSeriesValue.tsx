@@ -1,4 +1,4 @@
-import { Icon, IconName } from "@/components/Icon";
+import { Icon, IconName } from "@/components/icons/Icon";
 import React from "react";
 import {
   getUnitIcon,
@@ -8,7 +8,7 @@ import {
 } from "./units";
 import { Label } from "./Label";
 import { TimeSeries } from "@/lib/timeseries";
-import { MiniGraph } from "@/components/graph/MiniGraph";
+import { MiniGraph } from "@/components/graph";
 import {
   useContainerDimensions,
   useMaxContainerMaxDimension,

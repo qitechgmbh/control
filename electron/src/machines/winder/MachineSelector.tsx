@@ -9,7 +9,7 @@ import {
 
 import React from "react";
 
-import { Icon } from "@/components/Icon";
+import { Icon } from "@/components/icons/Icon";
 
 interface MachineIdentificationUnique {
   machine_identification: {

@@ -1,12 +1,12 @@
 import { ControlCard } from "@/control/ControlCard";
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import React from "react";
 import { Label } from "@/control/Label";
 import { useDigitalInputTestMachine } from "./useDigitalInputTestMachine";
 import { Badge } from "@/components/ui/badge";
 import { ControlGrid } from "@/control/ControlGrid";
 import { SelectionGroup } from "@/control/SelectionGroup";
-import { toastError } from "@/components/Toast";
+import { toastError } from "@/components/feedback/Toast";
 
 export function DigitalInputTestMachineControlPage() {
   const { state } = useDigitalInputTestMachine();

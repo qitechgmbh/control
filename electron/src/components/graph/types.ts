@@ -1,36 +1,33 @@
-import type { Chart } from "chart.js";
-import type { Marker } from "@/stores/markerStore";
-import { IconName } from "@/components/Icon";
-import { Unit } from "@/control/units";
+import { IconName } from "@/components/icons/Icon";
 import { TimeSeries } from "@/lib/timeseries";
-import { ExportResultDialogProps } from "@/components/ExportResultDialog";
 
-export type SwitchOrigin = "button" | "gesture";
+/** A time range in Unix ms. */
+export type ViewRange = { min: number; max: number };
 
-// Prop-based sync types
-export type PropGraphSync = {
-  timeWindow: number | "all";
-  viewMode: "default" | "all" | "manual";
-  isLiveMode: boolean;
-  xRange?: { min: number; max: number };
-  historicalFreezeTimestamp?: number | null;
-  showFromTimestamp?: number | null;
-  historicalSwitchOrigin: SwitchOrigin;
-  /** Charts with the same group share their hover crosshair. */
-  cursorGroup?: string;
-  onTimeWindowChange?: (graphId: string, timeWindow: number | "all") => void;
-  onViewModeChange?: (
-    graphId: string,
-    viewMode: "default" | "all" | "manual",
-    isLiveMode: boolean,
-  ) => void;
-  onZoomChange?: (
-    graphId: string,
-    xRange: { min: number; max: number },
-  ) => void;
+/** Length of the visible window in ms, or everything the database holds. */
+export type TimeWindow = number | "all";
+
+export type TimeWindowOption = {
+  value: TimeWindow;
+  label: string;
 };
 
-// Configuration types for additional lines
+/** What every graph of a page shows. Owned by `useGraphSync`, so all graphs move together. */
+export type GraphView = {
+  timeWindow: TimeWindow;
+  isLiveMode: boolean;
+  /** Range picked by pan/zoom (historical mode). */
+  xRange?: ViewRange;
+  /** When historical mode was entered: the right edge of the view if no range is picked. */
+  historicalFreezeTimestamp: number | null;
+  /** Show everything from this timestamp on, instead of a fixed window. */
+  showFromTimestamp: number | null;
+  /** Graphs of one group share their hover crosshair. */
+  cursorGroup: string;
+};
+
+// --- lines drawn in addition to the series ---
+
 type BaseGraphLine = {
   color: string;
   width?: number;
@@ -38,12 +35,14 @@ type BaseGraphLine = {
   show?: boolean;
 };
 
+/** A fixed horizontal line, e.g. a tolerance. Always kept inside the y range. */
 type ThresholdLine = BaseGraphLine & {
   type: "threshold";
   value: number;
   label?: string;
 };
 
+/** A setpoint drawn as a step line: its history from the database, then the live value. */
 type TargetLine = BaseGraphLine & {
   type: "target";
   value: number;
@@ -53,21 +52,16 @@ type TargetLine = BaseGraphLine & {
   history?: string;
 };
 
-type UserMarkerLine = BaseGraphLine & {
-  type: "user_marker";
-  value: number;
-  label: string;
-  markerTimestamp: number;
-};
+export type GraphLine = ThresholdLine | TargetLine;
 
-export type GraphLine = ThresholdLine | TargetLine | UserMarkerLine;
+// --- graph configuration ---
 
 export type GraphConfig = {
   title: string;
   icon?: IconName;
   lines?: GraphLine[];
-  timeWindows?: Array<{ value: number | "all"; label: string }>;
-  defaultTimeWindow?: number | "all";
+  timeWindows?: Array<{ value: TimeWindow; label: string }>;
+  defaultTimeWindow?: TimeWindow;
   exportFilename?: string;
   showLegend?: boolean;
   colors?: {
@@ -78,7 +72,7 @@ export type GraphConfig = {
   };
 };
 
-// Support for multiple series
+/** One line of a graph: live data from a buffer, and optionally its database history. */
 export type SeriesData = {
   newData: TimeSeries | null;
   /** Measurement path whose history is loaded from the database, e.g. `motor.rpm`. */
@@ -91,40 +85,3 @@ export type SeriesData = {
 };
 
 export type DataSeries = SeriesData | SeriesData[];
-
-export type BigGraphProps = {
-  newData: DataSeries;
-  unit?: Unit;
-  renderValue?: (
-    value: number,
-    seriesIndex?: number,
-    seriesTitle?: string,
-  ) => string;
-  config: GraphConfig;
-  graphId: string;
-  syncGraph?: PropGraphSync;
-  /** Receives the Chart.js instance when it is created, and null when destroyed */
-  onChart?: (chart: Chart | null) => void;
-  /** User markers drawn as vertical lines */
-  markers?: Marker[];
-};
-
-export type TimeWindowOption = {
-  value: number | "all";
-  label: string;
-};
-
-export type ControlProps = {
-  timeWindow: number | "all";
-  isLiveMode: boolean;
-  onTimeWindowChange: (timeWindow: number | "all") => void;
-  onSwitchToLive: () => void;
-  onSwitchToHistorical: (origin: SwitchOrigin) => void;
-  onExport?: () => void | Promise<void>;
-  exportDialogProps?: ExportResultDialogProps;
-  onAddMarker?: () => void;
-  onManageMarkers?: () => void;
-  timeWindowOptions?: TimeWindowOption[];
-  showFromTimestamp?: number | null;
-  onShowFromChange?: (timestamp: number | null) => void;
-};

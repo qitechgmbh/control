@@ -1,8 +1,8 @@
 import { Button } from "../ui/button";
 import React, { ComponentProps } from "react";
-import { Icon, IconName } from "../Icon";
+import { Icon, IconName } from "../icons/Icon";
 import { cva } from "class-variance-authority";
-import { LoadingSpinner } from "../LoadingSpinner";
+import { LoadingSpinner } from "../feedback/LoadingSpinner";
 
 type Props = {
   icon?: IconName;

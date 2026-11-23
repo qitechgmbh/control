@@ -1,5 +1,5 @@
 import { ControlCard } from "@/control/ControlCard";
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
@@ -7,7 +7,7 @@ import { useAquapath1 } from "./useAquapath";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { Badge } from "@/components/ui/badge";
-import { Icon } from "@/components/Icon";
+import { Icon } from "@/components/icons/Icon";
 import { Label } from "@/control/Label";
 import { roundToDecimals } from "@/lib/decimal";
 

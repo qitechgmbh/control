@@ -1,4 +1,4 @@
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { ControlCard } from "@/control/ControlCard";
 import { EditValue } from "@/control/EditValue";
