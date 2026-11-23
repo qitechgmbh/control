@@ -13,7 +13,7 @@
  * - `history/`:  loading measurement/setpoint history from the database
  * - `markers/`:  marker buttons, dialogs and data hook (drawn by `engine/plugins/markers`)
  * - `controls/`: the floating control panel
- * - `export/`:   Excel export
+ * - `export/`:   export dialog backend: Excel report, CSV/Parquet streamed from the database
  */
 export { BigGraph, type BigGraphProps } from "./BigGraph";
 export { MiniGraph } from "./MiniGraph";

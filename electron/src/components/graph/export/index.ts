@@ -1,2 +1,9 @@
-export { exportGraphsToExcel } from "./ExcelExporter";
-export type { GraphExportData } from "./ExcelExporter";
+export {
+  EXPORT_FORMATS,
+  EXCEL_MAX_ROWS,
+  currentExportRange,
+  runExport,
+  type ExportFormat,
+  type ExportOptions,
+  type GraphExportSource,
+} from "./historyExport";

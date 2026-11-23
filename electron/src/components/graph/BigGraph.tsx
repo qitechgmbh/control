@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import type { Unit } from "@/control/units";
 import { Icon } from "@/components/icons/Icon";
-import { timeSeriesFromPoints } from "@/lib/timeseries";
 import { HISTORY_RETENTION_MS } from "@/lib/history";
 import type { DataSeries, GraphConfig, GraphLine, SeriesData } from "./types";
 import type { GraphSync } from "./useGraphSync";
@@ -202,51 +201,21 @@ export function BigGraph({
     engine.setInputs(inputs);
   });
 
-  // --- export: one entry per series, with the history + live data in view ---
+  // --- export: what this graph contributes (data is loaded from the database on export) ---
   useEffect(() => {
-    const count = series.length;
-    for (let index = 0; index < count; index++) {
-      registerExport(`${graphId}-series-${index}`, () => {
-        const current = latestRef.current;
-        const s = current.series[index];
-        const engine = engineRef.current;
-        if (!s?.newData && !s?.history) return null;
-        if (!engine) return null;
-
-        const points = engine.exportSeries(index);
-        const allTargets = collectTargets(current.series);
-        const lines = (s.lines ?? []).map((line) => {
-          if (line.type !== "target") return line;
-          const targetIndex = allTargets.findIndex((t) => t.line === line);
-          const steps =
-            targetIndex >= 0 ? engine.exportTarget(targetIndex) : null;
-          return steps && steps.t.length
-            ? { ...line, targetSeries: timeSeriesFromPoints(steps.t, steps.v) }
-            : line;
-        });
-
-        return {
-          config: {
-            ...current.config,
-            lines: [...(current.config.lines ?? []), ...lines],
-          },
-          data: {
-            newData: timeSeriesFromPoints(points.t, points.v),
-            title: s.title || `Series ${index + 1}`,
-            color: s.color,
-            lines,
-          },
-          unit: current.unit,
-          renderValue: current.renderValue,
-        };
-      });
-    }
-    return () => {
-      for (let index = 0; index < count; index++) {
-        unregisterExport(`${graphId}-series-${index}`);
-      }
-    };
-  }, [registerExport, unregisterExport, graphId, series.length]);
+    registerExport(graphId, () => {
+      const current = latestRef.current;
+      return {
+        machine,
+        config: current.config,
+        series: current.series,
+        unit: current.unit,
+        renderValue: current.renderValue,
+        visibleRange: () => engineRef.current?.visibleRange() ?? null,
+      };
+    });
+    return () => unregisterExport(graphId);
+  }, [registerExport, unregisterExport, graphId, machine]);
 
   const toggleSeries = useCallback((index: number) => {
     setVisibleSeries((prev) => {

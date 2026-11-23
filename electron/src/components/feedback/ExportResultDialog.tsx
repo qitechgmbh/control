@@ -45,10 +45,26 @@ export function ExportResultDialog({
             />
             {result.success ? "Export Complete" : "Export Failed"}
           </DialogTitle>
-          <DialogDescription>
-            {result.success ? `Saved to ${result.filePath}` : result.error}
+          <DialogDescription className="whitespace-pre-line">
+            {result.filePaths && result.filePaths.length > 1
+              ? "Saved:"
+              : result.success
+                ? `Saved to ${result.filePath}`
+                : result.error}
           </DialogDescription>
         </DialogHeader>
+        {result.filePaths && result.filePaths.length > 1 && (
+          <ul className="list-disc pl-5 text-sm break-all text-gray-700">
+            {result.filePaths.map((path) => (
+              <li key={path}>{path}</li>
+            ))}
+          </ul>
+        )}
+        {result.filePaths && result.filePaths.length > 1 && !result.success && (
+          <p className="text-sm whitespace-pre-line text-red-600">
+            {result.error}
+          </p>
+        )}
         <DialogFooter>
           {result.success && result.isRemovable && (
             <TouchButton

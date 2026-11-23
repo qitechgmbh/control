@@ -1,6 +1,6 @@
 import { Chart } from "chart.js";
 import type { MachineIdentificationUnique } from "@/machines/types";
-import { HISTORY_RETENTION_MS, type HistorySeries } from "@/lib/history";
+import { HISTORY_RETENTION_MS } from "@/lib/history";
 import { HistoryLoader } from "../history/HistoryLoader";
 import type { ViewRange } from "../types";
 import { registerChartJs } from "./registerChartJs";
@@ -136,30 +136,13 @@ export class GraphEngine {
 
   // ---------------------------------------------------------------- export
 
-  /** Visible points of a series (history + live), for the Excel export. */
-  exportSeries(seriesIndex: number): HistorySeries {
-    return this.datasetPoints(seriesIndex);
-  }
-
-  /** Visible steps of a target line, for the Excel export. */
-  exportTarget(targetIndex: number): HistorySeries {
-    return this.datasetPoints(this.seriesCount + targetIndex);
-  }
-
-  private datasetPoints(datasetIndex: number): HistorySeries {
-    const data = this.chart.data.datasets[datasetIndex]?.data ?? [];
-    const { min, max } = this.chart.scales.x ?? {
-      min: -Infinity,
-      max: Infinity,
-    };
-    const t: number[] = [];
-    const v: number[] = [];
-    for (const p of data) {
-      if (p.y === null || p.x < min || p.x > max) continue;
-      t.push(p.x);
-      v.push(p.y);
+  /** The time range on screen, the default range of an export. */
+  visibleRange(): ViewRange | null {
+    const scale = this.chart.scales.x;
+    if (!scale || !Number.isFinite(scale.min) || !Number.isFinite(scale.max)) {
+      return null;
     }
-    return { t, v };
+    return { min: scale.min, max: scale.max };
   }
 
   // ---------------------------------------------------------------- history

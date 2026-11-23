@@ -16,6 +16,7 @@ import type { TimeWindow, TimeWindowOption } from "../types";
 import { DEFAULT_TIME_WINDOW_OPTIONS } from "../constants";
 import { type GraphSync, viewEndTimestamp } from "../useGraphSync";
 import { MarkerControls } from "../markers/MarkerControls";
+import { ExportButton } from "./ExportDialog";
 
 type GraphControlPanelProps = {
   syncHook: GraphSync;
@@ -24,7 +25,7 @@ type GraphControlPanelProps = {
 
 /**
  * Floating panel at the bottom right of a graph page: time window, live/historical,
- * "show from", markers and Excel export. Collapses to a single button.
+ * "show from", markers and export. Collapses to a single button.
  */
 export function GraphControlPanel({
   syncHook,
@@ -79,7 +80,7 @@ export function GraphControlPanel({
               <>
                 <div className="h-8 w-px bg-gray-200" />
                 <MarkerControls defaultTimestamp={viewEndTimestamp(view)} />
-                <ExportButton onExport={syncHook.exportToExcel} />
+                <ExportButton syncHook={syncHook} />
               </>
             )}
           </div>
@@ -169,41 +170,6 @@ function ModeButton({
       }`}
     >
       {children}
-    </TouchButton>
-  );
-}
-
-function ExportButton({ onExport }: { onExport: () => Promise<void> }) {
-  const [isExporting, setIsExporting] = useState(false);
-
-  const handleClick = async () => {
-    if (isExporting) return;
-    setIsExporting(true);
-    // Yield to the event loop so React can re-render and paint the spinner
-    // before the heavy synchronous XLSX work blocks the thread.
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
-    try {
-      await onExport();
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  return (
-    <TouchButton
-      onClick={handleClick}
-      disabled={isExporting}
-      variant="outline"
-      className="h-auto bg-green-600 px-3 py-3 text-base font-medium text-white hover:bg-green-700 disabled:opacity-70"
-    >
-      {isExporting ? (
-        <>
-          <Icon name="lu:Loader" className="mr-2 size-4 animate-spin" />
-          Exporting...
-        </>
-      ) : (
-        "Export"
-      )}
     </TouchButton>
   );
 }
