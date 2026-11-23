@@ -1,4 +1,5 @@
-import type { Chart, Scale } from "chart.js";
+import type { Chart, FontSpec, Scale } from "chart.js";
+import { toFont } from "chart.js/helpers";
 import { HISTORY_RETENTION_MS } from "@/lib/history";
 import { buildTimeTicks, formatTimeTick } from "./timeAxis";
 
@@ -16,7 +17,12 @@ const DEFAULT_AXIS = "#64748b";
 /** Pixels per x tick label. */
 const TICK_SPACING_PX = 110;
 
-type TimeScale = Scale & { qtStep?: number };
+type TimeScale = Scale & {
+  qtStep?: number;
+  // Chart.js internals set by `fit()`, read by the layout through `getPadding()`.
+  paddingLeft: number;
+  paddingRight: number;
+};
 
 /**
  * Options of a graph chart: linear time x axis with our own ticks, no animation or
@@ -65,6 +71,34 @@ export function createChartOptions(hooks: ChartOptionHooks) {
           );
           scale.ticks = ticks;
           (scale as TimeScale).qtStep = step;
+        },
+        // Chart.js reserves room for half of the outermost labels, minus their distance
+        // to the edge. In live mode the ticks scroll, so every tick entering or leaving
+        // squeezes the plot by up to half a label. Reserve half the widest label on both
+        // sides instead, whatever the tick positions. All labels of one zoom level have
+        // the same format, so this only changes on zoom.
+        afterFit: (scale: Scale) => {
+          const s = scale as TimeScale;
+          const ticks = (
+            s.options as {
+              ticks?: { padding?: number; font?: Partial<FontSpec> };
+            }
+          ).ticks;
+          const ctx = s.ctx;
+          ctx.save();
+          ctx.font = toFont(ticks?.font ?? {}).string;
+          let widest = 0;
+          for (const tick of s.ticks) {
+            const label = Array.isArray(tick.label)
+              ? tick.label.join(" ")
+              : tick.label;
+            if (label)
+              widest = Math.max(widest, ctx.measureText(String(label)).width);
+          }
+          ctx.restore();
+          const pad = Math.ceil(widest / 2 + (ticks?.padding ?? 0));
+          s.paddingLeft = pad;
+          s.paddingRight = pad;
         },
         ticks: {
           autoSkip: false,
