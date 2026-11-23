@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { HistoryLoader } from "@/components/graph/history/HistoryLoader";
-import { collectTail } from "@/components/graph/engine/points";
+import { bucketPoints, collectTail } from "@/components/graph/engine/points";
 import { buildTimeTicks } from "@/components/graph/engine/timeAxis";
 import { niceBucketMs } from "@/lib/history";
 import { createTimeSeries } from "@/lib/timeseries";
@@ -40,13 +40,25 @@ describe("HistoryLoader", () => {
       {
         bucket_ms: 50,
         measurements: {
-          a: { t: [now - 60_000, now - 6_000, now - 5_000], v: [1, 2, 3] },
+          a: {
+            t: [now - 60_000, now - 6_000, now - 5_000],
+            v: [1, 2, 3],
+            min: [0, 1, 2],
+            max: [2, 3, 4],
+          },
         },
         targets: { tgt: { t: [now - 70_000], v: [10] } },
       },
       {
         bucket_ms: 50,
-        measurements: { a: { t: [now - 4_000, now + 900], v: [4, 5] } },
+        measurements: {
+          a: {
+            t: [now - 4_000, now + 900],
+            v: [4, 5],
+            min: [3, 4],
+            max: [5, 6],
+          },
+        },
         targets: { tgt: { t: [now - 4_000, now + 500], v: [10, 20] } },
       },
     ]);
@@ -77,6 +89,8 @@ describe("HistoryLoader", () => {
     expect(loader.measurement("a")).toEqual({
       t: [now - 60_000, now - 6_000, now - 4_000, now + 900],
       v: [1, 2, 4, 5],
+      min: [0, 1, 3, 4],
+      max: [2, 3, 5, 6],
     });
     // Steps keep the earlier value and drop the repeated one.
     expect(loader.target("tgt")).toEqual({
@@ -147,6 +161,34 @@ describe("collectTail", () => {
     expect(new Set(xs).size).toBe(xs.length);
     // The last 5 s come from the short buffer at full rate.
     expect(xs.filter((x) => x > 15_000)).toHaveLength(50);
+  });
+});
+
+describe("bucketPoints", () => {
+  it("reduces points to the mean per epoch-aligned bucket, with min/max and gaps", () => {
+    const { points, band } = bucketPoints(
+      [
+        { x: 1_000, y: 1 },
+        { x: 1_500, y: 5 },
+        { x: 1_900, y: 3 },
+        { x: 2_100, y: 7 },
+        { x: 2_200, y: null },
+        { x: 2_400, y: 2 },
+      ],
+      1_000,
+    );
+    expect(points).toEqual([
+      { x: 1_467, y: 3 },
+      { x: 2_100, y: 7 },
+      { x: 2_200, y: null },
+      { x: 2_400, y: 2 },
+    ]);
+    expect(band).toEqual([
+      { x: 1_467, lo: 1, hi: 5 },
+      { x: 2_100, lo: 7, hi: 7 },
+      { x: 2_200, lo: null, hi: null },
+      { x: 2_400, lo: 2, hi: 2 },
+    ]);
   });
 });
 

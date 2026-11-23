@@ -9,6 +9,7 @@ import { DatasetBuilder } from "./DatasetBuilder";
 import { TouchGestures } from "./TouchGestures";
 import { Viewport } from "./Viewport";
 import { lowerBoundX, oldestBufferedTimestamp, type Point } from "./points";
+import { bandPlugin } from "./plugins/band";
 import { thresholdsPlugin } from "./plugins/thresholds";
 import { markersPlugin } from "./plugins/markers";
 import { crosshairPlugin, subscribeCursor } from "./plugins/crosshair";
@@ -64,6 +65,7 @@ export class GraphEngine {
         onGesture: (chart, done) => this.onMouseGesture(chart, done),
       }),
       plugins: [
+        bandPlugin(),
         thresholdsPlugin(() => this.inputs?.hLines ?? []),
         markersPlugin(() => ({
           markers: this.inputs?.markers ?? [],
