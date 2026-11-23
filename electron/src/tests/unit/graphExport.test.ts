@@ -191,7 +191,7 @@ describe("buildExcelWorkbook", () => {
 
   it("summarises each series in the overview", () => {
     const stats = rows("Overview").find((r) => r[1] === "Nozzle");
-    expect(stats?.slice(2, 7)).toEqual(["°C", 3, 190, 200, 195]);
+    expect(stats?.slice(2, 8)).toEqual(["°C", 3, 3, 190, 200, 195]);
   });
 
   it("names sheets after the graph when series titles repeat", () => {
@@ -217,6 +217,57 @@ describe("buildExcelWorkbook", () => {
       "Temperatures – Nozzle",
       "Power Outputs – Nozzle",
     ]);
+  });
+
+  it("marks averaged values and adds min, max and samples per interval", () => {
+    const book = XLSX.read(
+      buildExcelWorkbook({
+        ...report,
+        bucketMs: 2_000,
+        series: [
+          {
+            graphTitle: "Temperatures",
+            title: "Nozzle",
+            unit: "°C",
+            points: { t: [t0, t0 + 2_000], v: [18, 19] },
+            // a restart row (-273.15) inside the first interval
+            intervals: { min: [-273.15, 18.5], max: [18.4, 19.5], n: [62, 60] },
+          },
+        ],
+      }),
+      { type: "buffer" },
+    );
+    const sheetRows = (name: string) =>
+      XLSX.utils.sheet_to_json<unknown[]>(book.Sheets[name], {
+        header: 1,
+        raw: true,
+        defval: null,
+      });
+
+    expect(sheetRows("Nozzle").slice(0, 2)).toEqual([
+      [
+        "Time (interval start)",
+        "Nozzle [°C] (mean over 2 s)",
+        "Min",
+        "Max",
+        "Samples",
+      ],
+      [expect.any(Number), 18, -273.15, 18.4, 62],
+    ]);
+    expect(sheetRows("All values")[0].slice(0, 3)).toEqual([
+      "Time (interval start)",
+      "Seconds",
+      "Nozzle [°C] (mean over 2 s)",
+    ]);
+
+    const overview = sheetRows("Overview");
+    expect(overview.find((r) => r[0] === "Resolution")?.[1]).toContain(
+      "Mean over 2 s intervals (up to 62 samples each)",
+    );
+    const stats = overview.find((r) => r[1] === "Nozzle");
+    // samples, rows, exact min/max, mean weighted by sample count
+    expect(stats?.slice(3, 7)).toEqual([122, 2, -273.15, 19.5]);
+    expect(stats?.[7]).toBeCloseTo((18 * 62 + 19 * 60) / 122);
   });
 
   it("refuses a range without data", () => {
