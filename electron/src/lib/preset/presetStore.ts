@@ -22,8 +22,6 @@ const presetFileSchema = z.object({
 
 type PresetFile = z.infer<typeof presetFileSchema>;
 
-const FALLBACK_LOCAL_STORAGE_KEY = "presets";
-
 type PresetStoreData = {
   presets: PersistedPreset[];
   latestPresetIds: Map<string, number>;
@@ -121,39 +119,6 @@ export const usePresetStore = create<PresetStore>()((set, get) => ({
 // Persistence
 // ---------------------------------------------------------------------------
 
-type StorageBackend = {
-  read: () => Promise<
-    | { status: "ok"; content: string }
-    | { status: "missing" }
-    | { status: "error"; error: string }
-  >;
-  write: (
-    content: string,
-  ) => Promise<{ status: "ok" } | { status: "error"; error: string }>;
-};
-
-/** Used when running outside Electron (e.g. plain browser dev server). */
-const localStorageBackend: StorageBackend = {
-  read: async () => {
-    const content = localStorage.getItem(FALLBACK_LOCAL_STORAGE_KEY);
-    return content === null ? { status: "missing" } : { status: "ok", content };
-  },
-  write: async (content) => {
-    try {
-      localStorage.setItem(FALLBACK_LOCAL_STORAGE_KEY, content);
-      return { status: "ok" };
-    } catch (e) {
-      return { status: "error", error: String(e) };
-    }
-  },
-};
-
-function getBackend(): StorageBackend {
-  return typeof window !== "undefined" && window.presetStorage
-    ? window.presetStorage
-    : localStorageBackend;
-}
-
 /** Validates every entry on its own; invalid ones are quarantined, not dropped. */
 function parseEntries(
   rawPresets: unknown[],
@@ -217,7 +182,7 @@ async function flushWrites() {
       if (content === lastWrittenContent) {
         continue;
       }
-      const result = await getBackend().write(content);
+      const result = await window.presetStorage.write(content);
       if (result.status === "ok") {
         lastWrittenContent = content;
       } else {
@@ -235,11 +200,10 @@ function scheduleWrite(state: PresetStoreData) {
 }
 
 async function hydrate() {
-  const backend = getBackend();
   let data: Omit<PresetStoreData, "hydrated"> | null = null;
 
   try {
-    const result = await backend.read();
+    const result = await window.presetStorage.read();
     if (result.status === "ok") {
       const file = presetFileSchema.parse(JSON.parse(result.content));
       data = parseEntries(file.presets, file.latestPresetIds, file.quarantined);

@@ -142,7 +142,7 @@ declare interface Window {
   troubleshoot: TroubleshootContext;
   nixos: NixOSContext;
   fileExport: FileExportContext;
-  presetStorage?: PresetStorageContext;
+  presetStorage: PresetStorageContext;
 }
 
 // Module declarations for Vite imports
