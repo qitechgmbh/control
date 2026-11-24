@@ -128,8 +128,6 @@ fn ecat_config(stay_preop: bool) -> EtherCATConfig {
         lock_memory: cfg!(target_os = "linux"),
     };
 
-    let x = 0;
-
     let master_config = MasterConfiguration {
         target_cycle_time_us: target_cycle_time_us as usize,
         tx_rx_config: qitech_lib::ethercat_hal::MasterTxRxConfig::TxRxBlocking,
