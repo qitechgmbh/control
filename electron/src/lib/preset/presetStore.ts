@@ -136,9 +136,7 @@ type StorageBackend = {
 const localStorageBackend: StorageBackend = {
   read: async () => {
     const content = localStorage.getItem(FALLBACK_LOCAL_STORAGE_KEY);
-    return content === null
-      ? { status: "missing" }
-      : { status: "ok", content };
+    return content === null ? { status: "missing" } : { status: "ok", content };
   },
   write: async (content) => {
     try {
