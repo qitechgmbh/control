@@ -22,15 +22,6 @@ const presetFileSchema = z.object({
 
 type PresetFile = z.infer<typeof presetFileSchema>;
 
-/** Format written by the old zustand `persist` middleware into localStorage. */
-const legacyLocalStorageSchema = z.object({
-  state: z.object({
-    presets: z.array(z.unknown()).default([]),
-    latestPresetIds: z.array(z.unknown()).default([]),
-  }),
-});
-
-const LEGACY_LOCAL_STORAGE_KEY = "preset-storage";
 const FALLBACK_LOCAL_STORAGE_KEY = "presets";
 
 type PresetStoreData = {
@@ -199,20 +190,6 @@ function parseEntries(
   return { presets, latestPresetIds, quarantined };
 }
 
-function readLegacyLocalStorage(): Omit<PresetStoreData, "hydrated"> | null {
-  try {
-    const str = localStorage.getItem(LEGACY_LOCAL_STORAGE_KEY);
-    if (!str) {
-      return null;
-    }
-    const { state } = legacyLocalStorageSchema.parse(JSON.parse(str));
-    return parseEntries(state.presets, state.latestPresetIds, []);
-  } catch (e) {
-    console.error("Could not read legacy presets from localStorage", e);
-    return null;
-  }
-}
-
 function serialize(state: PresetStoreData): string {
   const file: PresetFile = {
     version: 1,
@@ -262,7 +239,6 @@ function scheduleWrite(state: PresetStoreData) {
 async function hydrate() {
   const backend = getBackend();
   let data: Omit<PresetStoreData, "hydrated"> | null = null;
-  let migrated = false;
 
   try {
     const result = await backend.read();
@@ -270,12 +246,10 @@ async function hydrate() {
       const file = presetFileSchema.parse(JSON.parse(result.content));
       data = parseEntries(file.presets, file.latestPresetIds, file.quarantined);
       lastWrittenContent = result.content;
-    } else if (result.status === "missing") {
-      data = readLegacyLocalStorage();
-      migrated = data !== null;
-    } else {
+    } else if (result.status === "error") {
       throw new Error(result.error);
     }
+    // "missing": first start, nothing stored yet.
   } catch (e) {
     console.error("Loading presets failed", e);
     // Do not overwrite whatever is on disk with an empty store.
@@ -294,12 +268,6 @@ async function hydrate() {
   }
 
   usePresetStore.setState({ ...(data ?? {}), hydrated: true });
-
-  if (migrated) {
-    // Persist the migrated presets right away. The localStorage copy is left
-    // untouched as a fallback.
-    scheduleWrite(usePresetStore.getState());
-  }
 }
 
 usePresetStore.subscribe((state, prev) => {
