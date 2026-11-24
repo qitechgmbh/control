@@ -76,6 +76,14 @@ in
       SUBSYSTEM=="usb", ATTRS{idVendor}=="*", ATTRS{idProduct}=="*", MODE="0660", GROUP="${cfg.group}"
     '';
 
+    # Realtime slice: the only cgroup allowed on the isolated CPU 3 (system.slice and user.slice are
+    # limited to 0-2 in configuration.nix). The server starts with the manager's default affinity
+    # (0-2) and only its RT threads pin themselves to CPU 3.
+    systemd.slices.rt = {
+      description = "Realtime Slice";
+      sliceConfig.AllowedCPUs = "0-3";
+    };
+
     # Configure the systemd service
     systemd.services.qitech-control-server = {
       description = "QiTech Control Server";
@@ -84,6 +92,7 @@ in
 
       serviceConfig = {
         Type = "simple";
+        Slice = "rt.slice";
         User = cfg.user;
         Group = cfg.group;
         ExecStart = "${cfg.package}/bin/qitech_control";

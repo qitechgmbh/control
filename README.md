@@ -9,6 +9,8 @@ It frees developers from proprietary, license-heavy PLC ecosystems and rigid "po
 
 QiTech Control combines the modularity and reliability of standard EtherCAT terminals (e.g., WAGO, Beckhoff) with the power of a modern Rust & React stack.
 
+Control is the top of a three-layer stack: the QiTech machines, API and UI live here, the machine runtime in [qitech_framework](https://github.com/qitechgmbh/qitech_framework), and the hardware layer (EtherCAT, terminal drivers, Modbus) in [qitech_lib](https://github.com/qitechgmbh/qitech_lib).
+
 ## Documentation
 
 **[View Full Documentation Wiki](https://github.com/qitechgmbh/control/wiki)**
@@ -26,26 +28,20 @@ QiTech Control combines the modularity and reliability of standard EtherCAT term
 
 ## Repository Structure
 
+- **`/qitech_control`** - Rust backend: machines, schemas and the REST/Socket.IO API
+- **`/qitech_control_core`** - Controllers used by the machines (PID, heating, motion)
 - **`/electron`** - React + Electron frontend
-- **`/server`** - Rust backend implementing machine logic
-- **`/ethercat-hal`** - Hardware abstraction layer for EtherCAT devices
-- **`/control-core`** - Core control logic
 - **`/nixos`** - Custom Linux OS with realtime kernel
 
 ## Technology Stack
 
-**Backend:** Rust with [Ethercrab](https://github.com/ethercrab-rs/ethercrab) for EtherCAT, [SocketIO](https://socket.io/) for real-time communication, [axum](https://docs.rs/axum/latest/axum/) for REST API
+**Backend:** Rust on [qitech_framework](https://github.com/qitechgmbh/qitech_framework) and [qitech_lib](https://github.com/qitechgmbh/qitech_lib), [axum](https://docs.rs/axum/latest/axum/) for REST API, [SocketIO](https://socket.io/) for real-time communication
 
 **Frontend:** [Electron](https://www.electronjs.org/) + [React](https://react.dev/) with [Shadcn](https://ui.shadcn.com/) components and [Tailwind](https://tailwindcss.com/) styling
 
-
 ## Hardware
 
-QiTech Control uses standard EtherCAT terminals from WAGO, Beckhoff and others, plus Modbus RTU devices.
-
-Terminal drivers and minimal hardware examples live in the libraries:
-- [Supported terminals](https://github.com/qitechgmbh/qitech_lib/tree/main/ethercat_hal/src/devices) (driver sources by vendor), the [EtherCAT HAL](https://github.com/qitechgmbh/qitech_lib/wiki/EtherCAT-HAL) overview and [Writing a device driver](https://github.com/qitechgmbh/qitech_lib/wiki/Device-Drivers) (qitech_lib)
-- [Minimal example: EL2004 digital output](https://github.com/qitechgmbh/qitech_framework/wiki/Minimal-Example-Digital-Output-Video-Script) and [WAGO 750 digital I/O](https://github.com/qitechgmbh/qitech_framework/wiki/Minimal-Example-Wago-Digital-IO) (qitech_framework)
+QiTech Control uses standard EtherCAT terminals from WAGO, Beckhoff and others, plus Modbus RTU devices. Terminal drivers live in qitech_lib ([EtherCAT HAL](https://github.com/qitechgmbh/qitech_lib/wiki/EtherCAT-HAL)), minimal hardware examples in qitech_framework ([digital output](https://github.com/qitechgmbh/qitech_framework/wiki/Minimal-Example-Digital-Output-Video-Script), [WAGO digital I/O](https://github.com/qitechgmbh/qitech_framework/wiki/Minimal-Example-Wago-Digital-IO)).
 
 ## QiTech Machines
 
