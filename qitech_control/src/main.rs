@@ -119,7 +119,7 @@ fn ecat_config(stay_preop: bool) -> EtherCATConfig {
         target_dc_tick: 500,
     };
 
-    let _opt_config = RtOptimizationConfig {
+    let opt_config = RtOptimizationConfig {
         ethercat_loop_thread_core: 3,
         ethercat_loop_thread_priority: 99,
         ethercat_io_thread_core: 3,
@@ -130,8 +130,8 @@ fn ecat_config(stay_preop: bool) -> EtherCATConfig {
 
     let master_config = MasterConfiguration {
         target_cycle_time_us: target_cycle_time_us as usize,
-        tx_rx_config: qitech_lib::ethercat_hal::MasterTxRxConfig::TxRxBlocking,
-        realtime_optimizations: None,
+        tx_rx_config: qitech_lib::ethercat_hal::MasterTxRxConfig::TxRxIoUring,
+        realtime_optimizations: Some(opt_config),
         dc_config,
         wkc_mismatch_threshold: 5,
         op_ramp_grace_cycles: 10000,
