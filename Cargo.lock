@@ -2224,7 +2224,6 @@ dependencies = [
 [[package]]
 name = "qitech_framework"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework?rev=fb249d3edb21a2ce87f6d28d5f8cb2f562b50875#fb249d3edb21a2ce87f6d28d5f8cb2f562b50875"
 dependencies = [
  "anyhow",
  "bitvec",
@@ -2253,7 +2252,6 @@ dependencies = [
 [[package]]
 name = "qitech_framework_core"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework?rev=fb249d3edb21a2ce87f6d28d5f8cb2f562b50875#fb249d3edb21a2ce87f6d28d5f8cb2f562b50875"
 dependencies = [
  "bytes",
  "chrono",
@@ -2273,7 +2271,6 @@ dependencies = [
 [[package]]
 name = "qitech_framework_hub"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework?rev=fb249d3edb21a2ce87f6d28d5f8cb2f562b50875#fb249d3edb21a2ce87f6d28d5f8cb2f562b50875"
 dependencies = [
  "arc-swap",
  "chrono",
@@ -2288,7 +2285,6 @@ dependencies = [
 [[package]]
 name = "qitech_framework_macros"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework?rev=fb249d3edb21a2ce87f6d28d5f8cb2f562b50875#fb249d3edb21a2ce87f6d28d5f8cb2f562b50875"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -2301,7 +2297,6 @@ dependencies = [
 [[package]]
 name = "qitech_framework_tui"
 version = "0.1.0"
-source = "git+https://github.com/qitechgmbh/qitech_framework?rev=fb249d3edb21a2ce87f6d28d5f8cb2f562b50875#fb249d3edb21a2ce87f6d28d5f8cb2f562b50875"
 dependencies = [
  "anyhow",
  "bitvec",

@@ -13,8 +13,8 @@ use api::SharedState;
 use api::SocketIODispatcher;
 use qitech_control_core::interface;
 use qitech_framework::HubConfiguration;
+use qitech_framework::machine::LaserDevice;
 use qitech_framework::machine::MachineDescriptor;
-use qitech_framework::modbus::devices::qitech_laser::LaserDevice;
 use qitech_framework::run_debug;
 use qitech_framework::run_with_hub;
 use qitech_framework::run_with_tui;
@@ -131,7 +131,7 @@ fn ecat_config(stay_preop: bool) -> EtherCATConfig {
     let master_config = MasterConfiguration {
         target_cycle_time_us: target_cycle_time_us as usize,
         tx_rx_config: qitech_lib::ethercat_hal::MasterTxRxConfig::TxRxIoUring,
-        realtime_optimizations: Some(opt_config),
+        realtime_optimizations: None,
         dc_config,
         wkc_mismatch_threshold: 5,
         op_ramp_grace_cycles: 10000,
