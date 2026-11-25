@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import path from "node:path";
 
-function getHomeDir(): string {
+export function getHomeDir(): string {
   const qitechControlEnv = process.env.QITECH_CONTROL_ENV;
   return qitechControlEnv === "control-os"
     ? "/home/qitech"

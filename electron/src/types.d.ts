@@ -123,6 +123,17 @@ interface NixOSContext {
   deleteGeneration: (generationId: string) => Promise<void>;
   deleteAllOldGenerations: () => Promise<void>;
 }
+interface PresetStorageContext {
+  read: () => Promise<
+    | { status: "ok"; content: string }
+    | { status: "missing" }
+    | { status: "error"; error: string }
+  >;
+  write: (
+    content: string,
+  ) => Promise<{ status: "ok" } | { status: "error"; error: string }>;
+}
+
 declare interface Window {
   themeMode: ThemeModeContext;
   electronWindow: ElectronWindow;
@@ -131,6 +142,7 @@ declare interface Window {
   troubleshoot: TroubleshootContext;
   nixos: NixOSContext;
   fileExport: FileExportContext;
+  presetStorage: PresetStorageContext;
 }
 
 // Module declarations for Vite imports

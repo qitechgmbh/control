@@ -115,7 +115,7 @@ export function usePresets<T>({
   };
 
   const getPresetsForMachine = (): Preset<T>[] =>
-    store.presets
+    [...store.presets]
       .sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime())
       .filter((preset) =>
         machineIdentificationEquals(
@@ -126,10 +126,22 @@ export function usePresets<T>({
       .map(parsePreset)
       .filter((p) => p !== undefined);
 
-  const getLatestPreset = (): Preset<T> | undefined => {
-    const latestPresetId = store.getLatestPresetId(machine_identification);
+  // Keeps the "Latest Machine Settings" preset in sync with the machine.
+  // Only writes when the data actually changed: `currentState` is a new object
+  // on every render, and writing on every render made it very likely that a
+  // write was in progress when the machine was switched off or rebooted.
+  const syncLatestPreset = () => {
+    // Nothing must be written before the stored presets are loaded, and an
+    // unknown machine state must never overwrite the last known one.
+    if (!store.hydrated || currentState === undefined) {
+      return;
+    }
 
-    if (latestPresetId === undefined) {
+    const latestPresetId = store.getLatestPresetId(machine_identification);
+    const latest =
+      latestPresetId === undefined ? undefined : store.getById(latestPresetId);
+
+    if (latest === undefined) {
       const preset = store.insert({
         id: undefined,
         name: "Latest Machine Settings",
@@ -138,22 +150,28 @@ export function usePresets<T>({
         schemaVersion,
         data: currentState,
       });
-
       store.setLatestPresetId(machine_identification, preset.id);
-      return parsePreset(preset);
+      return;
     }
 
-    const latestPersist = store.getById(latestPresetId!)!;
-    latestPersist.data = currentState;
-    latestPersist.lastModified = new Date();
-    store.update(latestPersist);
+    if (
+      latest.schemaVersion === schemaVersion &&
+      deepEquals(latest.data ?? {}, currentState as object)
+    ) {
+      return;
+    }
 
-    return parsePreset(latestPersist);
+    store.update({
+      ...latest,
+      schemaVersion,
+      data: currentState,
+      lastModified: new Date(),
+    });
   };
 
   useEffect(() => {
-    getLatestPreset();
-  }, [currentState]);
+    syncLatestPreset();
+  }, [currentState, store.hydrated]);
 
   const isLatest = (preset: Preset<T>) => {
     return preset.id === store.getLatestPresetId(machine_identification);
