@@ -7,13 +7,12 @@ use qitech_framework::machine::BuildError;
 use qitech_framework::machine::BuildResult;
 use qitech_framework::machine::MachineBuild;
 use qitech_lib::ethercat_hal::EtherCATThreadChannel;
-use qitech_lib::ethercat_hal::coe::ConfigurableDevice;
-use qitech_lib::ethercat_hal::devices::beckhoff_modules::ek1100::EK1100;
-use qitech_lib::ethercat_hal::devices::beckhoff_modules::el2004::EL2004;
-use qitech_lib::ethercat_hal::devices::beckhoff_modules::el3021::EL3021;
-use qitech_lib::ethercat_hal::devices::beckhoff_modules::el3204::EL3204;
-use qitech_lib::ethercat_hal::devices::beckhoff_modules::el6021::EL6021;
-use qitech_lib::ethercat_hal::devices::beckhoff_modules::el6021::EL6021Configuration;
+use qitech_lib::ethercat_hal_devices::ConfigurableDevice;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::ek1100::EK1100;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el2004::EL2004;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el3021::EL3021;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el3204::EL3204;
+use qitech_lib::ethercat_hal_devices::beckhoff_modules::el6021::EL6021;
 use qitech_lib::ethercat_hal::io::analog_input::AnalogInputDevice;
 use qitech_lib::ethercat_hal::io::digital_output::DigitalOutputDevice;
 use qitech_lib::ethercat_hal::io::serial_interface::SerialInterfaceDevice;
@@ -224,7 +223,7 @@ fn init_dc_sync<T>(
     role: u16,
 ) -> BuildResult<Rc<RefCell<T>>>
 where
-    T: qitech_lib::ethercat_hal::devices::EthercatDevice,
+    T: qitech_lib::ethercat_hal_devices::EthercatDevice,
 {
     let (device, address) = ctx.find_ethercat_device_and_addr::<T>(role)?;
 
@@ -242,11 +241,14 @@ fn init_el6021(
 ) -> BuildResult<Rc<RefCell<EL6021>>> {
     let (device, address) = ctx.find_ethercat_device_and_addr::<EL6021>(role)?;
 
-    device
-        .borrow_mut()
-        .write_config(interface.clone(), address, &EL6021Configuration::default())
-        .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
-
+    let d = device.borrow();
+    interface.write_configuration(
+                    address,
+                    d.get_config(),
+                    Duration::from_secs(4),
+    ).map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+    drop(d);
+    
     interface
         .enable_dc_sync0(address)
         .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
