@@ -7,6 +7,7 @@ use qitech_framework::machine::BuildError;
 use qitech_framework::machine::BuildResult;
 use qitech_framework::machine::MachineBuild;
 use qitech_lib::ethercat_hal::EtherCATThreadChannel;
+use qitech_lib::ethercat_hal_devices::ConfigurableDevice;
 use qitech_lib::ethercat_hal_devices::Configuration;
 pub use qitech_lib::ethercat_hal_devices::beckhoff_modules::ek1100::EK1100;
 pub use qitech_lib::ethercat_hal_devices::beckhoff_modules::el2002::EL2002;
@@ -175,7 +176,7 @@ fn init_el7031_0030(
     interface
         .enable_dc_sync0(addr)
         .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
-
+    dev.borrow_mut().set_config(config);
     Ok(dev)
 }
 
@@ -197,16 +198,13 @@ fn init_el7041(
         },
         ..Default::default()
     };
-
-    let writes = config.get_coe_writes(addr);
-    tracing::info!("init_el7041 {:?}", writes);
     
-    let res = interface.write_configuration(
+    interface.write_configuration(
                     addr,
                     &config,
                     Duration::from_secs(4),
     ).map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
-
+    dev.borrow_mut().set_config(config);
 
     interface
         .enable_dc_sync0(addr)
@@ -240,6 +238,7 @@ fn init_el7031(
                     &config,
                     Duration::from_secs(4),
     ).map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
+    dev.borrow_mut().set_config(config);
 
     interface
         .enable_dc_sync0(addr)
@@ -274,7 +273,7 @@ fn init_el7031_0030_spool(
                     &config,
                     Duration::from_secs(4),
     ).map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;
-
+    dev.borrow_mut().set_config(config);
     interface
         .enable_dc_sync0(addr)
         .map_err(|e| BuildError::EtherCATConfigureError(e.to_string()))?;

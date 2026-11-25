@@ -241,6 +241,7 @@ fn init_el6021(
 ) -> BuildResult<Rc<RefCell<EL6021>>> {
     let (device, address) = ctx.find_ethercat_device_and_addr::<EL6021>(role)?;
 
+    // Assumes Default Config doesnt change :) 
     let d = device.borrow();
     interface.write_configuration(
                     address,
