@@ -13,9 +13,7 @@ in
   boot.supportedFilesystems.zfs = lib.mkForce false;
   boot.supportedFilesystems.bcachefs = lib.mkForce false;
   boot.kernelParams = [
-    # Realtime Preemption
     "preempt=full"
-
     # Graphical
     "logo.nologo" # Remove kernel logo during boot
 
@@ -32,11 +30,23 @@ in
     "oops=panic" # Treat kernel oops as panic for auto-recovery
     "usbcore.autosuspend=-1" # Possibly fixes dre disconnect issue?
 
-    "isolcpus=2,3" # Isolate cpus 2 and 3 from scheduler for better latency, 2 runs ethercatthread and 3 runs server control-loop
-    "nohz_full=2,3" # In this mode, the periodic scheduler tick is stopped when only one task is running, reducing kernel interruptions on those CPUs.
-    "rcu_nocbs=2,3" # Moves RCU (Read-Copy Update) callback processing away from CPUs 2 and 3.
-
+    # Realtime core isolation (CPU 3 = EtherCAT loop + IO thread + NIC IRQ, CPUs 0-2 = housekeeping)
+    # Userspace is kept off CPU 3 via cgroup cpusets (see systemd.slices below) instead of isolcpus,
+    # so the isolation can be lifted at runtime (e.g. during updates, see nixos-install.sh).
+    "nohz_full=3" # Stop the periodic scheduler tick on CPU 3 while only one task runs there; also keeps unbound kthreads, workqueues and timers on CPUs 0-2.
+    "rcu_nocbs=3" # Move RCU (Read-Copy Update) callback processing away from CPU 3.
+    "irqaffinity=0-2" # Default affinity for device IRQs; the server moves the EtherCAT NIC IRQ to CPU 3 itself.
+    "isolcpus=managed_irq,3" # Only steers kernel-managed (per-queue) IRQs off CPU 3; does NOT remove CPU 3 from the scheduler.
   ];
+
+  # Housekeeping cpusets: all userspace except the realtime server (rt.slice, see modules/qitech.nix)
+  # may only run on CPUs 0-2. These are hard limits, unlike affinity a process cannot escape them.
+  # During updates nixos-install.sh temporarily widens system.slice and user.slice to all CPUs.
+  systemd.slices.system.sliceConfig.AllowedCPUs = "0-2";
+  systemd.slices.user.sliceConfig.AllowedCPUs = "0-2";
+  # PID 1 (init.scope) has no unit file, so set the manager's affinity. It is also inherited as the
+  # default affinity of every spawned process (the realtime server widens it for its RT threads).
+  systemd.settings.Manager.CPUAffinity = "0-2";
 
   boot.kernel.sysctl = {
     "kernel.panic_on_oops" = 1; # Reboot on kernel oops
@@ -53,7 +63,7 @@ in
         "qitech.cachix.org-1:l7UTb2FOVAEpRTGTUQTBBPis0JhXZGiANPDKBRbO8Vo="
       ];
       experimental-features = "nix-command flakes";
-      cores = 2;
+      cores = 0; # Use all CPUs available to the build; the system.slice cpuset decides how many that is
       http-connections = 10;
       download-attempts = 15;
     };

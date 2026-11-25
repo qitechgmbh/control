@@ -37,9 +37,9 @@ export const ethercatDevicesSchema = z.object({
 
 export const ethercatDevicesEventDataSchema = z
   .object({
-    Initializing: z.boolean(),
-    Done: ethercatDevicesSchema,
-    Error: z.string(),
+    Initializing: z.boolean().optional(),
+    Done: ethercatDevicesSchema.optional(),
+    Error: z.string().optional(),
   })
   .check(rustEnum);
 
@@ -66,6 +66,24 @@ export const ethercatStateEventSchema = eventSchema(
 );
 
 export type EthercatStateEvent = z.infer<typeof ethercatStateEventSchema>;
+
+export const ethercatFramesLostEventDataSchema = z.object({
+  total: z.number().int(),
+  last_consecutive: z.number().int(),
+  last_failed_at: z.number().int().nullable(),
+});
+
+export type EthercatFramesLostEventData = z.infer<
+  typeof ethercatFramesLostEventDataSchema
+>;
+
+export const ethercatFramesLostEventSchema = eventSchema(
+  ethercatFramesLostEventDataSchema,
+);
+
+export type EthercatFramesLostEvent = z.infer<
+  typeof ethercatFramesLostEventSchema
+>;
 
 export const machinesEventDataSchema = z.object({
   machines: z.array(
@@ -121,8 +139,8 @@ export type ModbusDevicesEvent = z.infer<typeof modbusDevicesEventSchema>;
 
 export const ethercatInterfaceDiscoveryEventDataSchema = z
   .object({
-    Discovering: z.boolean(),
-    Done: z.string(),
+    Discovering: z.boolean().optional(),
+    Done: z.string().optional(),
   })
   .check(rustEnum);
 
@@ -141,6 +159,7 @@ export type EthercatInterfaceDiscoveryEvent = z.infer<
 export const mainNamespaceStoreSchema = z.object({
   ethercatDevices: ethercatDevicesEventSchema.nullable(),
   ethercatState: ethercatStateEventSchema.nullable(),
+  ethercatFramesLost: ethercatFramesLostEventSchema.nullable(),
   machines: machinesEventSchema.nullable(),
   ethercatInterfaceDiscovery: ethercatInterfaceDiscoveryEventSchema.nullable(),
   modbusDevices: modbusDevicesEventSchema.nullable(),
@@ -153,6 +172,7 @@ export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
   return create<MainNamespaceStore>()(() => ({
     ethercatDevices: null,
     ethercatState: null,
+    ethercatFramesLost: null,
     machines: null,
     ethercatInterfaceDiscovery: null,
     modbusDevices: null,
@@ -163,8 +183,10 @@ export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
 export const eventSchemaMap = {
   EthercatDevicesEvent: ethercatDevicesEventSchema,
   EthercatStateEvent: ethercatStateEventSchema,
+  EthercatFramesLostEvent: ethercatFramesLostEventSchema,
   MachinesEvent: machinesEventSchema,
   ModbusDevicesEvent: modbusDevicesEventSchema,
+  EthercatInterfaceDiscoveryEvent: ethercatInterfaceDiscoveryEventSchema,
 };
 
 export function mainMessageHandler(
@@ -184,6 +206,11 @@ export function mainMessageHandler(
         store.setState((state) => ({
           ...state,
           ethercatState: event,
+        }));
+      } else if (eventName === "EthercatFramesLostEvent") {
+        store.setState((state) => ({
+          ...state,
+          ethercatFramesLost: ethercatFramesLostEventSchema.parse(event),
         }));
       } else if (eventName === "MachinesEvent") {
         const validatedEvent = machinesEventSchema.parse(event);
@@ -241,7 +268,8 @@ export function mainMessageHandler(
       } else if (eventName === "EthercatInterfaceDiscoveryEvent") {
         store.setState((state) => ({
           ...state,
-          ethercatInterfaceDiscovery: event,
+          ethercatInterfaceDiscovery:
+            ethercatInterfaceDiscoveryEventSchema.parse(event),
         }));
       } else if (eventName === "ModbusDevicesEvent") {
         store.setState((state) => ({

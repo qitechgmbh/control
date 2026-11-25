@@ -2,10 +2,13 @@ use std::collections::HashMap;
 
 use qitech_framework::EtherCATStatus;
 use qitech_framework::MachineInstanceIdentification;
+use qitech_framework::RuntimeReport;
 use socketioxide::extract::SocketRef;
 
 use crate::api::legacy;
 use crate::api::legacy::socketio::events::EthercatDevicesEvent;
+use crate::api::legacy::socketio::events::EthercatFramesLostEvent;
+use crate::api::legacy::socketio::events::EthercatInterfaceDiscoveryEvent;
 use crate::api::legacy::socketio::events::EthercatSetupDone;
 use crate::api::legacy::socketio::events::MachineObj;
 use crate::api::legacy::socketio::events::MachinesEvent;
@@ -18,8 +21,10 @@ pub struct MainNamespaceManager {
     sockets: Vec<SocketRef>,
     machines: HashMap<MachineInstanceIdentification, MachineObj>,
     ecat_state: Option<&'static str>,
+    ecat_interface: Option<EthercatInterfaceDiscoveryEvent>,
     ecat_devices: Option<Vec<legacy::EtherCATDeviceMetadata>>,
     modbus_devices: Option<Vec<legacy::ModbusDeviceMetadata>>,
+    ecat_frames_lost: EthercatFramesLostEvent,
 }
 
 impl MainNamespaceManager {
@@ -39,6 +44,16 @@ impl MainNamespaceManager {
             }
         }
 
+        // --- send the ethercat interface discovery state ---
+        if let Some(interface) = self.ecat_interface.clone() {
+            let event = SocketIOEvent::new("EthercatInterfaceDiscoveryEvent", interface);
+
+            if let Err(e) = socket.emit("event", &event) {
+                tracing::error!("Failed to send message to new socket: {e}");
+                return;
+            }
+        }
+
         // --- send the ecat devices if already recorded ---
         if let Some(devices) = self.ecat_devices.clone() {
             let event = SocketIOEvent::new(
@@ -50,6 +65,14 @@ impl MainNamespaceManager {
                 tracing::error!("Failed to send message to new socket: {e}");
                 return;
             }
+        }
+
+        // --- send the lost ethercat frames counter ---
+        let event = SocketIOEvent::new("EthercatFramesLostEvent", self.ecat_frames_lost);
+
+        if let Err(e) = socket.emit("event", &event) {
+            tracing::error!("Failed to send message to new socket: {e}");
+            return;
         }
 
         // --- send the modbus devices if already recorded ---
@@ -100,6 +123,14 @@ impl MainNamespaceManager {
         self.ecat_state = Some(state);
     }
 
+    pub fn set_ecat_interface(&mut self, interface: EthercatInterfaceDiscoveryEvent) {
+        self.broadcast(SocketIOEvent::new(
+            "EthercatInterfaceDiscoveryEvent",
+            interface.clone(),
+        ));
+        self.ecat_interface = Some(interface);
+    }
+
     pub fn set_ecat_devices(&mut self, devices: Vec<legacy::EtherCATDeviceMetadata>) {
         let event = SocketIOEvent::new(
             "EthercatDevicesEvent",
@@ -122,6 +153,36 @@ impl MainNamespaceManager {
 
         self.broadcast(event);
         self.modbus_devices = Some(devices);
+    }
+
+    /// Returns the new lost frames counter if `report` changed it.
+    pub fn diff_ecat_frames_lost(&self, report: &RuntimeReport) -> Option<EthercatFramesLostEvent> {
+        let ecat = &report.ethercat;
+
+        if ecat.failed_cycles > 0 {
+            // --- the runtime counts consecutive failures across report windows,
+            // so the window peak is the length of the run that is ongoing or just ended ---
+            return Some(EthercatFramesLostEvent {
+                total: ecat.failed_cycles_total,
+                last_consecutive: ecat.max_consecutive_failures,
+                last_failed_at: Some(report.timestamp.timestamp_millis()),
+            });
+        }
+
+        // --- the total is not reset between reports, so a lower value means the runtime restarted ---
+        if ecat.failed_cycles_total < self.ecat_frames_lost.total {
+            return Some(EthercatFramesLostEvent {
+                total: ecat.failed_cycles_total,
+                ..Default::default()
+            });
+        }
+
+        None
+    }
+
+    pub fn set_ecat_frames_lost(&mut self, frames_lost: EthercatFramesLostEvent) {
+        self.ecat_frames_lost = frames_lost;
+        self.broadcast(SocketIOEvent::new("EthercatFramesLostEvent", frames_lost));
     }
 
     pub fn set_ecat_lost(&mut self, reason: &str) {

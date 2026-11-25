@@ -26,6 +26,12 @@ export function Aquapath1Page() {
           icon: "lu:Settings",
           activeLink: "settings",
         },
+        {
+          link: "manual",
+          title: "Manual",
+          icon: "lu:BookOpen",
+          activeLink: "manual",
+        },
       ]}
     />
   );
