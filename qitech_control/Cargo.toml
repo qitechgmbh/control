@@ -9,6 +9,7 @@ qitech_control_core = { workspace = true }
 qitech_framework = { workspace = true }
 qitech_framework_tui = { workspace = true }
 qitech_framework_hub = { workspace = true }
+qitech_framework_core = { workspace = true }
 
 tokio = { workspace = true, features = ["full"] }
 tower-http = { workspace = true, features = ["cors","trace"] } 

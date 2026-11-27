@@ -67,6 +67,12 @@ pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>
         }
     };
 
+    // Demo machines have no runtime instance; they apply the requests themselves.
+    if let Some(demo) = state.demo.as_ref().filter(|demo| demo.is_demo(ident)) {
+        demo.submit(requests);
+        return ResponseUtil::ok(MutationResponse::success());
+    }
+
     // Sequential, fail-fast: a compound legacy mutation (e.g. autotune start) may need its writes
     // applied in order before a later request in the batch depends on them.
     for request in requests {

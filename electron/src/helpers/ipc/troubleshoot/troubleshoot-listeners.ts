@@ -7,6 +7,8 @@ import {
   TROUBLESHOOT_EXPORT_LOGS,
   TROUBLESHOOT_GET_ETHERCAT_ENABLED,
   TROUBLESHOOT_SET_ETHERCAT_ENABLED,
+  TROUBLESHOOT_GET_DEMO_MACHINES_ENABLED,
+  TROUBLESHOOT_SET_DEMO_MACHINES_ENABLED,
 } from "./troubleshoot-channels";
 import { getRemovableVolumeRoot } from "../export/removable-media";
 import { SaveFileResult } from "../export/export-channels";
@@ -146,6 +148,50 @@ export function addTroubleshootEventListeners() {
           error: error instanceof Error ? error.message : String(error),
         };
       }
+    },
+  );
+
+  // The backend adds the demo line only with DEMO_MACHINES=true
+  ipcMain.handle(TROUBLESHOOT_GET_DEMO_MACHINES_ENABLED, async () => {
+    return new Promise<{ success: boolean; enabled?: boolean; error?: string }>(
+      (resolve) => {
+        exec("systemctl show-environment", (error, stdout) => {
+          if (error) {
+            resolve({ success: false, error: error.message });
+            return;
+          }
+          const enabled = stdout
+            .split("\n")
+            .some((line) => line.trim() === "DEMO_MACHINES=true");
+          resolve({ success: true, enabled });
+        });
+      },
+    );
+  });
+
+  ipcMain.handle(
+    TROUBLESHOOT_SET_DEMO_MACHINES_ENABLED,
+    async (_event, enabled: boolean) => {
+      // Turning the demo off keeps its data; the Database page can delete it.
+      const command = enabled
+        ? "systemctl set-environment DEMO_MACHINES=true && systemctl restart qitech-control-server"
+        : "systemctl unset-environment DEMO_MACHINES && systemctl restart qitech-control-server";
+      return new Promise<{ success: boolean; error?: string }>((resolve) => {
+        const process = spawn("sudo", ["bash", "-c", command], {
+          shell: false,
+        });
+        process.on("close", (code) => {
+          if (code === 0) resolve({ success: true });
+          else
+            resolve({
+              success: false,
+              error: `Process exited with code ${code}`,
+            });
+        });
+        process.on("error", (error) =>
+          resolve({ success: false, error: error.message }),
+        );
+      });
     },
   );
 

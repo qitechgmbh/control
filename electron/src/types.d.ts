@@ -92,6 +92,14 @@ interface TroubleshootContext {
   setEthercatEnabled: (
     enabled: boolean,
   ) => Promise<{ success: boolean; error?: string }>;
+  getDemoMachinesEnabled: () => Promise<{
+    success: boolean;
+    enabled?: boolean;
+    error?: string;
+  }>;
+  setDemoMachinesEnabled: (
+    enabled: boolean,
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 interface FileExportContext {

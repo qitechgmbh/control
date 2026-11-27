@@ -1,4 +1,5 @@
 mod api;
+mod demo;
 mod machines;
 mod modbus;
 mod transmission;
@@ -26,6 +27,8 @@ use qitech_lib::ethercat_hal::RtOptimizationConfig;
 use tokio::sync::mpsc;
 
 use crate::api::ClickhouseWriter;
+use crate::demo::DemoHandle;
+use crate::demo::DemoInjector;
 use crate::machines::ExtruderV1;
 use crate::machines::ExtruderV2;
 use crate::machines::LaserV1;
@@ -101,14 +104,34 @@ pub async fn main() -> anyhow::Result<()> {
             // --- select database ---
             let client = init_db().await;
 
-            let config_hub = HubConfiguration::new()
-                .listener(SocketIODispatcher::new(
-                    state.clone(),
-                    state_legacy.clone(),
-                    rx,
-                ))
-                .listener(ClickhouseWriter::new(client.clone()).await)
-                .actor(Server::new(state, state_legacy, tx, client));
+            let dispatcher = SocketIODispatcher::new(state.clone(), state_legacy.clone(), rx);
+            let writer = ClickhouseWriter::new(client.clone()).await;
+
+            // --- demo machines: injected into every report before the listeners see it ---
+            let demo = demo::enabled_by_env().then(DemoHandle::new);
+            let config_hub = match &demo {
+                Some(handle) => {
+                    tracing::info!("DEMO_MACHINES=true, adding a demo production line");
+                    let backfill_handle = handle.clone();
+                    let backfill_db = client.clone();
+                    let start_ms = chrono::Utc::now().timestamp_millis();
+                    tokio::spawn(async move {
+                        demo::backfill::run(backfill_db, backfill_handle.backfill(), start_ms)
+                            .await;
+                    });
+
+                    HubConfiguration::new().listener(
+                        DemoInjector::new(handle.clone())
+                            .listener(dispatcher)
+                            .listener(writer),
+                    )
+                }
+                None => HubConfiguration::new()
+                    .listener(dispatcher)
+                    .listener(writer),
+            };
+
+            let config_hub = config_hub.actor(Server::new(state, state_legacy, tx, client, demo));
             run_with_hub(config_rt, config_hub).await
         }
     }

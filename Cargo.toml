@@ -24,6 +24,7 @@ qitech_lib = { git="https://github.com/qitechgmbh/qitech_lib", rev="664720b19915
 qitech_framework = { git="https://github.com/qitechgmbh/qitech_framework", rev="17b202ac3a932ba393b80168dfc93125f9487aec" }
 qitech_framework_tui = { git="https://github.com/qitechgmbh/qitech_framework", rev="17b202ac3a932ba393b80168dfc93125f9487aec" }
 qitech_framework_hub = { git="https://github.com/qitechgmbh/qitech_framework", rev="17b202ac3a932ba393b80168dfc93125f9487aec" }
+qitech_framework_core = { git="https://github.com/qitechgmbh/qitech_framework", rev="17b202ac3a932ba393b80168dfc93125f9487aec" }
 
 # --- external ---
 tokio = "1"

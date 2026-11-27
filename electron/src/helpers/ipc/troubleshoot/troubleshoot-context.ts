@@ -5,6 +5,8 @@ import {
   TROUBLESHOOT_EXPORT_LOGS,
   TROUBLESHOOT_GET_ETHERCAT_ENABLED,
   TROUBLESHOOT_SET_ETHERCAT_ENABLED,
+  TROUBLESHOOT_GET_DEMO_MACHINES_ENABLED,
+  TROUBLESHOOT_SET_DEMO_MACHINES_ENABLED,
 } from "./troubleshoot-channels";
 
 export function exposeTroubleshootContext() {
@@ -19,5 +21,9 @@ export function exposeTroubleshootContext() {
       ipcRenderer.invoke(TROUBLESHOOT_GET_ETHERCAT_ENABLED),
     setEthercatEnabled: (enabled: boolean) =>
       ipcRenderer.invoke(TROUBLESHOOT_SET_ETHERCAT_ENABLED, enabled),
+    getDemoMachinesEnabled: () =>
+      ipcRenderer.invoke(TROUBLESHOOT_GET_DEMO_MACHINES_ENABLED),
+    setDemoMachinesEnabled: (enabled: boolean) =>
+      ipcRenderer.invoke(TROUBLESHOOT_SET_DEMO_MACHINES_ENABLED, enabled),
   });
 }

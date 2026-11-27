@@ -2470,6 +2470,7 @@ dependencies = [
  "postcard",
  "qitech_control_core",
  "qitech_framework",
+ "qitech_framework_core",
  "qitech_framework_hub",
  "qitech_framework_tui",
  "qitech_lib",

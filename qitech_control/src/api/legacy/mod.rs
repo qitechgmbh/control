@@ -9,6 +9,8 @@ use socketio::MachineNamespaceManager;
 use socketio::MainNamespaceManager;
 pub use socketio::SocketIODispatcher;
 pub use socketio::init as init_socket_io;
+#[cfg(test)]
+pub use socketio::legacy_adapter_events;
 
 pub mod v1;
 pub mod v2;
@@ -18,6 +20,7 @@ use qitech_framework_hub::ActorContext;
 use tokio::sync::mpsc;
 
 use crate::api::types::Swappable;
+use crate::demo::DemoHandle;
 
 mod adapter;
 use adapter::MachineLegacyDataAdapter;
@@ -30,6 +33,8 @@ pub struct LegacyApiState {
     pub legacy: LegacySharedState,
     /// ClickHouse client (database `control_hub`) for history queries.
     pub db: clickhouse::Client,
+    /// Set while the demo machines run (`DEMO_MACHINES=true`).
+    pub demo: Option<DemoHandle>,
 }
 
 #[derive(Clone)]

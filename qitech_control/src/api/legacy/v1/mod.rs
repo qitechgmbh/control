@@ -1,8 +1,10 @@
 use axum::Router;
+use axum::routing::get;
 use axum::routing::post;
 
 use crate::api::legacy::LegacyApiState;
 
+pub mod database;
 pub mod history;
 pub mod history_export;
 pub mod machine_mutate;
@@ -17,6 +19,8 @@ pub fn router() -> Router<LegacyApiState> {
             post(write_machine_device_identification::post),
         )
         .route("/machine/mutate", post(machine_mutate::post))
+        .route("/database/storage", get(database::storage))
+        .route("/database/demo/clear", post(database::clear_demo))
         .route("/machine/history", post(history::post))
         .route("/machine/history/export", post(history_export::post))
         .route("/machine/markers", post(markers::list))

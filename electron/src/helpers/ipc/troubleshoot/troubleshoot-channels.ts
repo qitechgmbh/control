@@ -7,3 +7,7 @@ export const TROUBLESHOOT_GET_ETHERCAT_ENABLED =
   "troubleshoot:get-ethercat-enabled";
 export const TROUBLESHOOT_SET_ETHERCAT_ENABLED =
   "troubleshoot:set-ethercat-enabled";
+export const TROUBLESHOOT_GET_DEMO_MACHINES_ENABLED =
+  "troubleshoot:get-demo-machines-enabled";
+export const TROUBLESHOOT_SET_DEMO_MACHINES_ENABLED =
+  "troubleshoot:set-demo-machines-enabled";

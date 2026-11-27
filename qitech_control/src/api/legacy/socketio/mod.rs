@@ -16,6 +16,8 @@ pub use main_namespace::MainNamespaceManager;
 
 mod machine_namespace;
 pub use machine_namespace::MachineNamespaceManager;
+#[cfg(test)]
+pub use machine_namespace::legacy_adapter_events;
 
 pub fn init(state: SharedState, state_legacy: LegacySharedState) -> SocketIoLayer {
     _ = state;

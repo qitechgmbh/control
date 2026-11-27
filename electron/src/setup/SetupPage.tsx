@@ -25,6 +25,12 @@ export function SetupPage() {
           icon: "lu:Usb",
         },
         {
+          link: "database",
+          activeLink: "database",
+          title: "Database",
+          icon: "lu:Database",
+        },
+        {
           link: "update/choose-version",
           activeLink: "update",
           title: "Update",

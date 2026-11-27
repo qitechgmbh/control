@@ -309,6 +309,24 @@ impl MachineNamespaceManager {
     }
 }
 
+/// The state and live values events a machine's legacy adapter emits after `report`.
+#[cfg(test)]
+pub fn legacy_adapter_events(
+    ident: MachineInstanceIdentification,
+    schema: &MachineSchema,
+    report: &RuntimeReport,
+) -> (Option<serde_json::Value>, Option<serde_json::Value>) {
+    let mut manager = MachineNamespaceManager::default();
+    manager.register(ident, schema);
+    manager.update(report, Vec::new());
+    let entry = &manager.registry[&ident];
+    let adapter = adapter::get(ident.machine).expect("machine has a legacy adapter");
+    (
+        (adapter.init_state_event)(&entry.instance, true),
+        (adapter.init_measurements_event)(&entry.instance),
+    )
+}
+
 #[derive(Default, Clone)]
 pub struct Entry {
     pub(crate) sockets: Vec<SocketRef>,

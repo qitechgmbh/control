@@ -11,12 +11,14 @@ use crate::api::legacy::init_socket_io;
 use crate::api::legacy::v1;
 use crate::api::legacy::v2;
 use crate::api::types::SharedState;
+use crate::demo::DemoHandle;
 
 pub struct Server {
     state: SharedState,
     state_legacy: LegacySharedState,
     machines_dirty_tx: mpsc::Sender<MachineInstanceIdentification>,
     db: clickhouse::Client,
+    demo: Option<DemoHandle>,
 }
 
 impl Server {
@@ -25,12 +27,14 @@ impl Server {
         state_legacy: LegacySharedState,
         machines_dirty_tx: mpsc::Sender<MachineInstanceIdentification>,
         db: clickhouse::Client,
+        demo: Option<DemoHandle>,
     ) -> Self {
         Self {
             state,
             state_legacy,
             machines_dirty_tx,
             db,
+            demo,
         }
     }
 }
@@ -52,6 +56,7 @@ impl Actor for Server {
                 machines_dirty_tx: self.machines_dirty_tx.clone(),
                 legacy: self.state_legacy.clone(),
                 db: self.db.clone(),
+                demo: self.demo.clone(),
             });
 
         //.nest("/api/v2", rest_api_router())

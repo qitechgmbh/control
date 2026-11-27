@@ -11,3 +11,6 @@ pub use server::Server;
 
 mod db;
 pub use db::ClickhouseWriter;
+pub(crate) use db::tables as db_tables;
+#[cfg(test)]
+pub(crate) use legacy::legacy_adapter_events;

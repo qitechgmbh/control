@@ -134,3 +134,38 @@ export function isTroubleshootAvailable(): boolean {
     typeof window !== "undefined" && typeof window.troubleshoot !== "undefined"
   );
 }
+
+/**
+ * Whether the backend runs the demo production line (DEMO_MACHINES=true)
+ */
+export async function getDemoMachinesEnabled(): Promise<{
+  success: boolean;
+  enabled?: boolean;
+  error?: string;
+}> {
+  try {
+    return await window.troubleshoot.getDemoMachinesEnabled();
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+/**
+ * Sets DEMO_MACHINES in the systemd manager environment and restarts the backend
+ */
+export async function setDemoMachinesEnabled(enabled: boolean): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    return await window.troubleshoot.setDemoMachinesEnabled(enabled);
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
