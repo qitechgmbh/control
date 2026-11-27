@@ -139,14 +139,28 @@ impl Task {
 
             // --- config property ---
             for record in &report.machines.config_property_records {
-                let row = tables::machine_config_property_records::Row::from(record.clone());
+                let row =
+                    match tables::machine_config_property_records::Row::try_from(record.clone()) {
+                        Ok(row) => row,
+                        Err(e) => {
+                            tracing::error!(path = %record.path, "skipping config record: {e}");
+                            continue;
+                        }
+                    };
                 self.ins_machine_config_property_records.write(&row).await;
             }
             self.ins_machine_config_property_records.commit().await;
 
             // --- state property ---
             for record in &report.machines.state_property_records {
-                let row = tables::machine_state_property_records::Row::from(record.clone());
+                let row =
+                    match tables::machine_state_property_records::Row::try_from(record.clone()) {
+                        Ok(row) => row,
+                        Err(e) => {
+                            tracing::error!(path = %record.path, "skipping state record: {e}");
+                            continue;
+                        }
+                    };
                 self.ins_machine_state_property_records.write(&row).await;
             }
             self.ins_machine_state_property_records.commit().await;

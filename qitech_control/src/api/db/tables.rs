@@ -35,9 +35,11 @@ pub mod machine_config_property_records {
         pub event_data: String,
     }
 
-    impl From<ConfigPropertyEventRecord> for Row {
-        fn from(record: ConfigPropertyEventRecord) -> Self {
-            Self {
+    impl TryFrom<ConfigPropertyEventRecord> for Row {
+        type Error = serde_json::Error;
+
+        fn try_from(record: ConfigPropertyEventRecord) -> Result<Self, Self::Error> {
+            Ok(Self {
                 timestamp: record.timestamp,
                 identity: record.machine.to_u64(),
                 name: record.path,
@@ -48,8 +50,8 @@ pub mod machine_config_property_records {
                     ConfigPropertyEvent::ConstraintsChanged(_) => 4,
                     ConfigPropertyEvent::Written { .. } => 5,
                 },
-                event_data: serde_json::to_string(&record.event).unwrap(),
-            }
+                event_data: serde_json::to_string(&record.event)?,
+            })
         }
     }
 }
@@ -86,14 +88,18 @@ pub mod machine_state_property_records {
         pub event_data: String,
     }
 
-    impl From<StatePropertyEventRecord> for Row {
-        fn from(record: StatePropertyEventRecord) -> Self {
+    impl TryFrom<StatePropertyEventRecord> for Row {
+        type Error = serde_json::Error;
+
+        fn try_from(record: StatePropertyEventRecord) -> Result<Self, Self::Error> {
             let value = match &record.event {
                 StatePropertyEvent::Registered { value } => value,
                 StatePropertyEvent::ValueChanged { value } => value,
             };
 
-            Self {
+            // `json!` unwraps the conversion of `value`, so convert it first.
+            let value = serde_json::to_value(value)?;
+            Ok(Self {
                 timestamp: record.timestamp,
                 identity: record.machine.to_u64(),
                 name: record.path,
@@ -102,7 +108,7 @@ pub mod machine_state_property_records {
                     StatePropertyEvent::ValueChanged { .. } => 2,
                 },
                 event_data: serde_json::json!({ "value": value }).to_string(),
-            }
+            })
         }
     }
 

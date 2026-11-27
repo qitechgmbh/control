@@ -286,23 +286,12 @@ in
     enable = true;
 
     serverConfig = {
-      listen_host = "0.0.0.0";
+      listen_host = "127.0.0.1";
       http_port = 8123;
       tcp_port = 9000;
 
       max_connections = 128;
       max_concurrent_queries = 128;
-
-      # TODO: how to store pwd???
-      users = {
-        default = {
-          password = "pwd";
-          networks = {
-            ip = [ "127.0.0.1" ];
-          };
-          access_management = 1;
-        };
-      };
 
       profiles = {
         default = {
@@ -316,7 +305,7 @@ in
       users = {
         default = {
           networks = {
-            ip = [ "::/0" ];
+            ip = [ "127.0.0.1" "::1" ];
           };
         };
       };

@@ -108,18 +108,20 @@ export class HistoryLoader {
       Math.max(100, widthPx * BUCKETS_PER_PX),
     );
     const loaded = this.loaded;
+    const oldest = now - HISTORY_RETENTION_MS;
 
+    // Loads never start before `oldest`, and `oldest` moves forward with `now`. Compare against
+    // the clamped start, or a view parked at the retention edge would reload on every frame.
     const needsFull =
       !loaded ||
       loaded.bucketMs !== bucketMs ||
-      view.min < loaded.from ||
+      Math.max(view.min, oldest) < loaded.from ||
       (!live && view.max > loaded.to && loaded.to < now - DB_LAG_MS);
 
     if (needsFull) {
       if (now < this.errorUntil) return this.errorUntil - now;
       const wait = this.lastFullLoadAt + FULL_LOAD_MIN_INTERVAL_MS - now;
       if (wait > 0) return wait;
-      const oldest = now - HISTORY_RETENTION_MS;
       const from = Math.max(oldest, view.min - span * PAD_FRACTION);
       const to = live ? now : Math.min(now, view.max + span * PAD_FRACTION);
       this.lastFullLoadAt = now;
