@@ -197,6 +197,7 @@ async fn init_db() -> clickhouse::Client {
     let migration = include_str!("../migrations/init_machine_measurements.sql");
     client.query(migration).execute().await.unwrap();
     upgrade_machine_measurements(&client).await;
+    upgrade_machine_measurements_projections(&client).await;
 
     let migration = include_str!("../migrations/init_machine_events.sql");
     client.query(migration).execute().await.unwrap();
@@ -231,6 +232,61 @@ async fn upgrade_machine_measurements(client: &clickhouse::Client) {
     }
 }
 
+/// Adds the history projections (see `init_machine_measurements.sql`) to a table created
+/// before them, and fills them for parts written before they existed. The fill is a
+/// background mutation; it is started again on the next start if it was interrupted.
+async fn upgrade_machine_measurements_projections(client: &clickhouse::Client) {
+    let create: String = client
+        .query(
+            "SELECT create_table_query FROM system.tables
+             WHERE database = 'control_hub' AND name = 'machine_measurements'",
+        )
+        .fetch_one()
+        .await
+        .unwrap();
+    if !create.contains("p_5s") || !create.contains("p_1m") {
+        tracing::info!("adding the history projections to machine_measurements");
+        let upgrade = include_str!("../migrations/upgrade_machine_measurements_projections.sql");
+        for statement in sql_statements(upgrade) {
+            client.query(&statement).execute().await.unwrap();
+        }
+    }
+
+    let parts_missing: u64 = client
+        .query(
+            "SELECT count() FROM system.parts
+             WHERE active AND database = 'control_hub' AND table = 'machine_measurements'
+               AND NOT (has(projections, 'p_5s') AND has(projections, 'p_1m'))",
+        )
+        .fetch_one()
+        .await
+        .unwrap();
+    let fill_running: u64 = client
+        .query(
+            "SELECT count() FROM system.mutations
+             WHERE database = 'control_hub' AND table = 'machine_measurements'
+               AND NOT is_done AND command ILIKE '%MATERIALIZE PROJECTION%'",
+        )
+        .fetch_one()
+        .await
+        .unwrap();
+    if parts_missing > 0 && fill_running == 0 {
+        tracing::info!(
+            parts_missing,
+            "filling the history projections in the background"
+        );
+        for projection in ["p_1m", "p_5s"] {
+            client
+                .query(&format!(
+                    "ALTER TABLE control_hub.machine_measurements MATERIALIZE PROJECTION {projection}"
+                ))
+                .execute()
+                .await
+                .unwrap();
+        }
+    }
+}
+
 /// The statements of a migration file: `--` comment lines removed (they may contain
 /// `;`), then split at `;`.
 fn sql_statements(sql: &str) -> Vec<String> {
@@ -249,6 +305,18 @@ fn sql_statements(sql: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::sql_statements;
+
+    #[test]
+    fn projection_migration_splits_into_its_alter_statements() {
+        let sql = include_str!("../migrations/upgrade_machine_measurements_projections.sql");
+        let statements = sql_statements(sql);
+        assert_eq!(statements.len(), 2);
+        assert!(
+            statements
+                .iter()
+                .all(|s| s.contains("ADD PROJECTION IF NOT EXISTS"))
+        );
+    }
 
     #[test]
     fn upgrade_migration_splits_into_its_alter_statements() {

@@ -56,6 +56,10 @@ const storageSchema = z.object({
     }),
   ),
   pending_mutations: z.number(),
+  projections: z.object({
+    parts_total: z.number(),
+    parts_ready: z.number(),
+  }),
   demo: z.object({
     enabled: z.boolean(),
     backfill: z
@@ -128,7 +132,9 @@ function useStorage() {
 
   const busy =
     storage?.demo.backfill?.state === "running" ||
-    (storage?.pending_mutations ?? 0) > 0;
+    (storage?.pending_mutations ?? 0) > 0 ||
+    (storage !== null &&
+      storage.projections.parts_ready < storage.projections.parts_total);
 
   useEffect(() => {
     let cancelled = false;
@@ -307,6 +313,31 @@ export function DatabasePage() {
           {storage.pending_mutations === 1 ? "" : "s"} still being rewritten,
           the space is freed when they finish.
         </p>
+      )}
+
+      {storage.projections.parts_ready < storage.projections.parts_total && (
+        <div className="flex max-w-3xl flex-col gap-2">
+          <div className="flex justify-between text-sm">
+            <span>
+              Preparing fast graphs: long ranges (7 / 30 days) load slower until
+              this is done
+            </span>
+            <span className="tabular-nums">
+              {Math.floor(
+                (storage.projections.parts_ready /
+                  Math.max(1, storage.projections.parts_total)) *
+                  100,
+              )}{" "}
+              %
+            </span>
+          </div>
+          <Bar
+            share={
+              storage.projections.parts_ready /
+              Math.max(1, storage.projections.parts_total)
+            }
+          />
+        </div>
       )}
 
       <SectionTitle title="Tables" />

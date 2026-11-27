@@ -64,12 +64,22 @@ pub struct Response {
     pub disks: Vec<DiskStorage>,
     /// Deletes still rewriting parts; their space is not free yet.
     pub pending_mutations: u64,
+    /// How many measurement parts already carry the pre-aggregated graph data
+    /// (projections). Parts written before an update are filled in the background; until
+    /// then long graph ranges read the raw rows and are slower.
+    pub projections: ProjectionStatus,
     pub demo: DemoStatus,
 }
 
 #[derive(Debug, Deserialize, clickhouse::Row)]
 struct Count {
     n: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, clickhouse::Row)]
+pub struct ProjectionStatus {
+    pub parts_total: u64,
+    pub parts_ready: u64,
 }
 
 pub async fn storage(State(state): State<LegacyApiState>) -> AxumResponse {
@@ -119,27 +129,51 @@ pub async fn storage(State(state): State<LegacyApiState>) -> AxumResponse {
         .fetch_all::<DiskStorage>();
 
     let mutations = db
-        .query("SELECT count() AS n FROM system.mutations WHERE database = ? AND NOT is_done")
+        .query(
+            "SELECT count() AS n FROM system.mutations
+             WHERE database = ? AND NOT is_done AND command ILIKE '%DELETE%'",
+        )
         .bind(DATABASE)
         .fetch_one::<Count>();
 
-    let (tables, days, databases, disks, mutations) =
-        tokio::join!(tables, days, databases, disks, mutations);
+    let projections = db
+        .query(
+            "SELECT count() AS parts_total,
+                    countIf(has(projections, 'p_5s') AND has(projections, 'p_1m')) AS parts_ready
+             FROM system.parts
+             WHERE active AND database = ? AND table = 'machine_measurements'",
+        )
+        .bind(DATABASE)
+        .fetch_one::<ProjectionStatus>();
 
-    let result =
-        (|| Ok::<_, clickhouse::error::Error>((tables?, days?, databases?, disks?, mutations?)))();
+    let (tables, days, databases, disks, mutations, projections) =
+        tokio::join!(tables, days, databases, disks, mutations, projections);
+
+    let result = (|| {
+        Ok::<_, clickhouse::error::Error>((
+            tables?,
+            days?,
+            databases?,
+            disks?,
+            mutations?,
+            projections?,
+        ))
+    })();
     match result {
-        Ok((tables, days, databases, disks, mutations)) => ResponseUtil::ok(Response {
-            tables,
-            days,
-            databases,
-            disks,
-            pending_mutations: mutations.n,
-            demo: DemoStatus {
-                enabled: state.demo.is_some(),
-                backfill: state.demo.as_ref().map(|d| d.backfill().status()),
-            },
-        }),
+        Ok((tables, days, databases, disks, mutations, projections)) => {
+            ResponseUtil::ok(Response {
+                tables,
+                days,
+                databases,
+                disks,
+                pending_mutations: mutations.n,
+                projections,
+                demo: DemoStatus {
+                    enabled: state.demo.is_some(),
+                    backfill: state.demo.as_ref().map(|d| d.backfill().status()),
+                },
+            })
+        }
         Err(e) => {
             tracing::error!(error = %e, "storage query failed");
             ResponseUtil::error(&format!("storage query failed: {e}"))
