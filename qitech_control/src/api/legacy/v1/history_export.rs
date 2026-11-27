@@ -15,15 +15,16 @@ use axum::extract::State;
 use axum::http::Response;
 use axum::http::StatusCode;
 use axum::http::header;
-use axum::response::Response as AxumResponse;
 use clickhouse::sql::Identifier;
-use qitech_framework::MachineInstanceIdentification;
 use serde::Deserialize;
 
-use super::history::MAX_NAMES;
 use super::history::fetch_targets;
+use super::query::ApiError;
+use super::query::ApiResult;
+use super::query::RAW_SAMPLES;
+use super::query::TimeRange;
+use super::query::check_name_count;
 use crate::api::legacy::LegacyApiState;
-use crate::api::legacy::response_util::ResponseUtil;
 use crate::api::legacy::types::LegacyMachineIdentificationUnique;
 
 /// Smallest bucket width accepted (finer than the runtime tick makes no sense).
@@ -75,10 +76,8 @@ pub struct Request {
     pub measurements: Vec<Column>,
     #[serde(default)]
     pub targets: Vec<Column>,
-    /// Range start, Unix ms (inclusive).
-    pub from: i64,
-    /// Range end, Unix ms (exclusive).
-    pub to: i64,
+    #[serde(flatten)]
+    pub range: TimeRange,
     pub format: Format,
     /// Bucket width in ms; absent or 0 exports every raw sample.
     #[serde(default)]
@@ -88,35 +87,27 @@ pub struct Request {
     pub timezone: Option<String>,
 }
 
-pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>) -> AxumResponse {
-    if body.to <= body.from {
-        return ResponseUtil::error("`to` must be greater than `from`");
-    }
+pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>) -> ApiResult {
+    body.range.validate()?;
     if body.measurements.is_empty() {
-        return ResponseUtil::error("no measurements requested");
+        return Err(ApiError::BadRequest("no measurements requested"));
     }
-    if body.measurements.len() + body.targets.len() > MAX_NAMES {
-        return ResponseUtil::error("too many names requested");
-    }
+    check_name_count(body.measurements.len() + body.targets.len())?;
     if body
         .measurements
         .iter()
         .chain(&body.targets)
         .any(|c| !c.scale.is_finite())
     {
-        return ResponseUtil::error("`scale` must be finite");
+        return Err(ApiError::BadRequest("`scale` must be finite"));
     }
 
-    let identity = MachineInstanceIdentification::from(body.machine_identification_unique).to_u64();
+    let identity = body.machine_identification_unique.identity();
 
     let target_names: Vec<String> = body.targets.iter().map(|c| c.name.clone()).collect();
-    let steps = match fetch_targets(&state.db, identity, &target_names, body.from, body.to).await {
-        Ok(steps) => steps,
-        Err(e) => {
-            tracing::error!(error = %e, "history export: target query failed");
-            return ResponseUtil::error(&format!("history export failed: {e}"));
-        }
-    };
+    let steps = fetch_targets(&state.db, identity, &target_names, body.range)
+        .await
+        .map_err(ApiError::db("history export target query"))?;
 
     let bucket_ms = body
         .bucket_ms
@@ -140,29 +131,26 @@ pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>
             sql.push_str(", avgOrNullIf(v, name = ?) * ? AS ?");
         }
     }
-    for target in &body.targets {
-        let has_steps = steps.get(&target.name).is_some_and(|s| !s.t.is_empty());
-        if has_steps {
-            sql.push_str(
-                ", if(arrayCount(s -> s <= toUnixTimestamp64Milli(t_key), ?) = 0, NULL, \
-                 toFloat64(arrayElement(?, arrayCount(s -> s <= toUnixTimestamp64Milli(t_key), ?))) * ?) AS ?",
-            );
+    // Per target its step series, or `None` without any accepted value (an empty column).
+    let target_steps: Vec<_> = body
+        .targets
+        .iter()
+        .map(|target| steps.get(&target.name).filter(|s| !s.t.is_empty()))
+        .collect();
+    // A step column holds the value in effect at the row time: the number of steps at
+    // or before it indexes the values. The row time is the row's (bucket start) time but
+    // not before `from`, where the first step (the value in effect at `from`) sits.
+    for (i, series) in target_steps.iter().enumerate() {
+        if series.is_some() {
+            sql.push_str(&format!(
+                ", if((arrayCount(s -> s <= greatest(toUnixTimestamp64Milli(t_key), ?), ?) AS step_{i}) = 0, \
+                 NULL, toFloat64(arrayElement(?, step_{i})) * ?) AS ?"
+            ));
         } else {
             sql.push_str(", CAST(NULL, 'Nullable(Float64)') AS ?");
         }
     }
-    sql.push_str(
-        " FROM (
-            SELECT timestamp, name, assumeNotNull(value) AS v
-            FROM machine_measurements
-            WHERE identity = ?
-              AND name IN ?
-              AND timestamp >= fromUnixTimestamp64Milli(?)
-              AND timestamp <  fromUnixTimestamp64Milli(?)
-              AND value IS NOT NULL
-              AND isFinite(assumeNotNull(value))
-        )",
-    );
+    sql.push_str(&format!(" FROM ({RAW_SAMPLES})"));
     sql.push_str(if bucket_ms.is_some() {
         " GROUP BY toStartOfInterval(timestamp, toIntervalMillisecond(?)) AS t_key ORDER BY t_key"
     } else {
@@ -192,13 +180,13 @@ pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>
                 .bind(Identifier(label.next().expect("one label per column")));
         }
     }
-    for target in &body.targets {
-        match steps.get(&target.name).filter(|s| !s.t.is_empty()) {
+    for (target, series) in body.targets.iter().zip(&target_steps) {
+        match series {
             Some(series) => {
                 query = query
+                    .bind(body.range.from)
                     .bind(&series.t)
                     .bind(&series.v)
-                    .bind(&series.t)
                     .bind(target.scale)
                     .bind(Identifier(label.next().expect("one label per column")));
             }
@@ -210,22 +198,21 @@ pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>
     query = query
         .bind(identity)
         .bind(&measurement_names)
-        .bind(body.from)
-        .bind(body.to);
+        .bind(body.range.from)
+        .bind(body.range.to);
     if let Some(bucket_ms) = bucket_ms {
         query = query.bind(bucket_ms);
     }
 
-    let mut cursor = match query.fetch_bytes(body.format.clickhouse_format()) {
-        Ok(cursor) => cursor,
-        Err(e) => return export_error(e),
-    };
+    let mut cursor = query
+        .fetch_bytes(body.format.clickhouse_format())
+        .map_err(ApiError::db("history export"))?;
     // Read the first chunk before answering, so a bad query (unknown time zone, …) is
     // still reported as an error instead of a truncated file.
-    let first = match cursor.next().await {
-        Ok(first) => first,
-        Err(e) => return export_error(e),
-    };
+    let first = cursor
+        .next()
+        .await
+        .map_err(ApiError::db("history export"))?;
 
     let stream =
         futures_util::stream::unfold((Some(cursor), first), |(cursor, pending)| async move {
@@ -243,16 +230,11 @@ pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>
             }
         });
 
-    Response::builder()
+    Ok(Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, body.format.content_type())
         .body(Body::from_stream(stream))
-        .unwrap()
-}
-
-fn export_error(e: clickhouse::error::Error) -> AxumResponse {
-    tracing::error!(error = %e, "history export query failed");
-    ResponseUtil::error(&format!("history export failed: {e}"))
+        .unwrap())
 }
 
 struct Labels {
@@ -339,8 +321,7 @@ mod tests {
             .unwrap(),
             measurements,
             targets,
-            from: 0,
-            to: 1,
+            range: TimeRange { from: 0, to: 1 },
             format: Format::Csv,
             bucket_ms: None,
             timezone: None,

@@ -78,9 +78,11 @@ type Storage = z.infer<typeof storageSchema>;
 
 async function fetchStorage(): Promise<Storage> {
   const response = await fetch(`${API}/storage`);
-  const json = await response.json();
-  if (!response.ok) throw new Error(json?.error ?? `HTTP ${response.status}`);
-  return storageSchema.parse(json);
+  if (!response.ok) {
+    const json = await response.json().catch(() => null);
+    throw new Error(json?.error ?? `HTTP ${response.status}`);
+  }
+  return storageSchema.parse(await response.json());
 }
 
 async function clearDemoData(): Promise<void> {
@@ -309,9 +311,9 @@ export function DatabasePage() {
 
       {storage.pending_mutations > 0 && (
         <p className="text-muted-foreground">
-          Deleting data: {storage.pending_mutations} table
-          {storage.pending_mutations === 1 ? "" : "s"} still being rewritten,
-          the space is freed when they finish.
+          Deleting data: {storage.pending_mutations} delete
+          {storage.pending_mutations === 1 ? "" : "s"} still running, the space
+          is freed when they finish.
         </p>
       )}
 

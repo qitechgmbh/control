@@ -40,8 +40,6 @@ export function Extruder2GraphsPage() {
   // Base config
   const baseConfig: GraphConfig = {
     defaultTimeWindow: 30 * 60 * 1000, // 30 minutes
-    exportFilename: "extruder_data",
-    showLegend: true,
     title: "extruder data",
   };
 
@@ -143,7 +141,6 @@ export function Extruder2GraphsPage() {
   const temperatureConfig: GraphConfig = {
     ...baseConfig,
     title: "Temperatures",
-    exportFilename: "temperatures_data",
     colors: {
       primary: "#ef4444",
       grid: "#e2e8f0",
@@ -219,7 +216,6 @@ export function Extruder2GraphsPage() {
   const powerConfig: GraphConfig = {
     ...baseConfig,
     title: "Power Outputs",
-    exportFilename: "power_data",
     colors: {
       primary: "#10b981",
       grid: "#e2e8f0",
@@ -231,7 +227,6 @@ export function Extruder2GraphsPage() {
   const currentConfig: GraphConfig = {
     ...baseConfig,
     title: "Motor Current",
-    exportFilename: "motor_current_data",
     colors: {
       primary: "#3b82f6",
       grid: "#e2e8f0",
@@ -244,7 +239,6 @@ export function Extruder2GraphsPage() {
   const pressureConfig: GraphConfig = {
     ...baseConfig,
     title: "Pressure",
-    exportFilename: "pressure_data",
     colors: {
       primary: "#3b82f6",
       grid: "#e2e8f0",
@@ -257,7 +251,6 @@ export function Extruder2GraphsPage() {
   const rpmConfig: GraphConfig = {
     ...baseConfig,
     title: "RPM",
-    exportFilename: "rpm_data",
     colors: {
       primary: "#8b5cf6",
       grid: "#e2e8f0",

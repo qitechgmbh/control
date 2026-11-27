@@ -6,7 +6,6 @@ export type HLine = {
   color: string;
   dash?: number[];
   width?: number;
-  label?: string;
 };
 
 /**

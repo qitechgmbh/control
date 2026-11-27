@@ -247,8 +247,9 @@ function num(value: number): XLSX.CellObject | null {
 }
 
 /* eslint-disable no-control-regex */
+// Control characters, U+FFFE/U+FFFF and lone surrogates; valid surrogate pairs (emoji) stay.
 const INVALID_XML_CHARS =
-  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\uD800-\uDFFF￾￿]/g;
+  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
 /* eslint-enable no-control-regex */
 
 /** Text without characters that make the .xlsx XML invalid. */

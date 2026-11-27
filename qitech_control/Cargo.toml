@@ -34,6 +34,7 @@ socketioxide = { version = "0.16", features = ["msgpack"] }
 
 chrono = { version = "0.4.45", features = ["serde"] }
 clickhouse = { version = "0.15.1", features = ["inserter", "chrono"] }
+uuid = { version = "1.26.0", features = ["v4"] }
 
 [dev-dependencies]
 approx = "0.5.1"

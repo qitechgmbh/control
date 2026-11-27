@@ -148,7 +148,6 @@ export function Laser1GraphsPage() {
             config={{
               ...baseGraphConfig,
               title: "Diameter (mm)",
-              exportFilename: "diameter_data",
               colors: {
                 ...baseGraphConfig.colors,
                 primary: diameterColor,
@@ -167,7 +166,6 @@ export function Laser1GraphsPage() {
               config={{
                 ...baseGraphConfig,
                 title: "Roundness (%)",
-                exportFilename: "roundness_data",
                 colors: {
                   ...baseGraphConfig.colors,
                   primary: roundnessColor,

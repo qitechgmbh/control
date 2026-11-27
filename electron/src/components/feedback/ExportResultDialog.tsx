@@ -34,6 +34,16 @@ export function ExportResultDialog({
 }: ExportResultDialogProps) {
   if (!result) return null;
 
+  // Files that did land, also when another format of the same export failed.
+  const saved =
+    result.filePaths ??
+    (result.success && result.filePath ? [result.filePath] : []);
+  const title = result.success
+    ? "Export Complete"
+    : saved.length > 0
+      ? "Export Partly Failed"
+      : "Export Failed";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -43,30 +53,30 @@ export function ExportResultDialog({
               name={result.success ? "lu:CircleCheck" : "lu:CircleX"}
               className={result.success ? "text-green-600" : "text-red-600"}
             />
-            {result.success ? "Export Complete" : "Export Failed"}
+            {title}
           </DialogTitle>
           <DialogDescription className="whitespace-pre-line">
-            {result.filePaths && result.filePaths.length > 1
-              ? "Saved:"
-              : result.success
-                ? `Saved to ${result.filePath}`
-                : result.error}
+            {saved.length === 0
+              ? result.error
+              : saved.length === 1
+                ? `Saved to ${saved[0]}`
+                : "Saved:"}
           </DialogDescription>
         </DialogHeader>
-        {result.filePaths && result.filePaths.length > 1 && (
+        {saved.length > 1 && (
           <ul className="list-disc pl-5 text-sm break-all text-gray-700">
-            {result.filePaths.map((path) => (
+            {saved.map((path) => (
               <li key={path}>{path}</li>
             ))}
           </ul>
         )}
-        {result.filePaths && result.filePaths.length > 1 && !result.success && (
+        {saved.length > 0 && !result.success && (
           <p className="text-sm whitespace-pre-line text-red-600">
             {result.error}
           </p>
         )}
         <DialogFooter>
-          {result.success && result.isRemovable && (
+          {saved.length > 0 && result.isRemovable && (
             <TouchButton
               variant="outline"
               icon="lu:Usb"

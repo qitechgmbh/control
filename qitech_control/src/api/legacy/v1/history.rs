@@ -12,19 +12,20 @@ use std::collections::HashMap;
 
 use axum::Json;
 use axum::extract::State;
-use axum::response::Response as AxumResponse;
-use qitech_framework::MachineInstanceIdentification;
 use serde::Deserialize;
 use serde::Serialize;
 
+use super::query::ApiError;
+use super::query::ApiResult;
+use super::query::RAW_SAMPLES;
+use super::query::TimeRange;
+use super::query::check_name_count;
 use crate::api::legacy::LegacyApiState;
 use crate::api::legacy::response_util::ResponseUtil;
 use crate::api::legacy::types::LegacyMachineIdentificationUnique;
 
 /// Upper bound on buckets per series, whatever the client asks for.
 const MAX_BUCKETS: i64 = 20_000;
-/// Upper bound on names per request.
-pub(super) const MAX_NAMES: usize = 64;
 /// Older config records fetched to find the value in effect at `from`.
 const TARGET_LOOKBACK_ROWS: u64 = 64;
 
@@ -37,10 +38,8 @@ pub struct Request {
     /// Config property paths whose accepted values form a step series, e.g. `screw.target_rpm`.
     #[serde(default)]
     pub targets: Vec<String>,
-    /// Range start, Unix ms (inclusive).
-    pub from: i64,
-    /// Range end, Unix ms (exclusive).
-    pub to: i64,
+    #[serde(flatten)]
+    pub range: TimeRange,
     /// Requested bucket width in ms. Raised server-side if the range would exceed `MAX_BUCKETS`.
     pub bucket_ms: i64,
 }
@@ -89,34 +88,24 @@ struct ConfigRow {
     data: String,
 }
 
-pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>) -> AxumResponse {
-    if body.to <= body.from {
-        return ResponseUtil::error("`to` must be greater than `from`");
-    }
-    if body.measurements.len() + body.targets.len() > MAX_NAMES {
-        return ResponseUtil::error("too many names requested");
-    }
+pub async fn post(State(state): State<LegacyApiState>, Json(body): Json<Request>) -> ApiResult {
+    body.range.validate()?;
+    check_name_count(body.measurements.len() + body.targets.len())?;
 
-    let identity = MachineInstanceIdentification::from(body.machine_identification_unique).to_u64();
-    let span = body.to - body.from;
-    let bucket_ms = cap_bucket(body.bucket_ms, span);
+    let identity = body.machine_identification_unique.identity();
+    let bucket_ms = cap_bucket(body.bucket_ms, body.range.span());
 
-    let (measurements, targets) = tokio::join!(
+    let (measurements, targets) = tokio::try_join!(
         fetch_measurements(&state.db, identity, &body, bucket_ms),
-        fetch_targets(&state.db, identity, &body.targets, body.from, body.to),
-    );
+        fetch_targets(&state.db, identity, &body.targets, body.range),
+    )
+    .map_err(ApiError::db("history query"))?;
 
-    match (measurements, targets) {
-        (Ok(measurements), Ok(targets)) => ResponseUtil::ok(Response {
-            bucket_ms,
-            measurements,
-            targets,
-        }),
-        (Err(e), _) | (_, Err(e)) => {
-            tracing::error!(error = %e, "history query failed");
-            ResponseUtil::error(&format!("history query failed: {e}"))
-        }
-    }
+    Ok(ResponseUtil::ok(Response {
+        bucket_ms,
+        measurements,
+        targets,
+    }))
 }
 
 /// Slot widths (ms) of the aggregate projections of `machine_measurements`, coarsest first
@@ -190,8 +179,8 @@ async fn fetch_measurements(
                 .bind(&body.measurements)
                 .bind(identity)
                 .bind(&body.measurements)
-                .bind(body.from.div_euclid(slot_ms))
-                .bind((body.to + slot_ms - 1).div_euclid(slot_ms))
+                .bind(body.range.from.div_euclid(slot_ms))
+                .bind((body.range.to + slot_ms - 1).div_euclid(slot_ms))
                 .bind(bucket_ms / slot_ms)
                 .fetch_all::<BucketRow>()
                 .await?
@@ -199,7 +188,7 @@ async fn fetch_measurements(
 
         // Reads only the (identity, name, timestamp) primary-key range, one pass, parallel GROUP BY.
         None => {
-            db.query(
+            db.query(&format!(
                 "SELECT
                     indexOf(?, name)                                    AS idx,
                     toInt64(avg(toUnixTimestamp64Milli(timestamp)))     AS t,
@@ -207,25 +196,15 @@ async fn fetch_measurements(
                     min(v)                                              AS v_min,
                     max(v)                                              AS v_max,
                     count()                                             AS n
-                FROM
-                (
-                    SELECT timestamp, name, assumeNotNull(value) AS v
-                    FROM machine_measurements
-                    WHERE identity = ?
-                      AND name IN ?
-                      AND timestamp >= fromUnixTimestamp64Milli(?)
-                      AND timestamp <  fromUnixTimestamp64Milli(?)
-                      AND value IS NOT NULL
-                      AND isFinite(assumeNotNull(value))
-                )
+                FROM ({RAW_SAMPLES})
                 GROUP BY idx, intDiv(toUnixTimestamp64Milli(timestamp), ?) AS bucket
-                ORDER BY idx, bucket",
-            )
+                ORDER BY idx, bucket"
+            ))
             .bind(&body.measurements)
             .bind(identity)
             .bind(&body.measurements)
-            .bind(body.from)
-            .bind(body.to)
+            .bind(body.range.from)
+            .bind(body.range.to)
             .bind(bucket_ms)
             .fetch_all::<BucketRow>()
             .await?
@@ -259,9 +238,9 @@ pub(super) async fn fetch_targets(
     db: &clickhouse::Client,
     identity: u64,
     targets: &[String],
-    from: i64,
-    to: i64,
+    range: TimeRange,
 ) -> Result<HashMap<String, Series>, clickhouse::error::Error> {
+    let TimeRange { from, to } = range;
     if targets.is_empty() {
         return Ok(HashMap::new());
     }

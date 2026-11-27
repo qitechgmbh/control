@@ -7,11 +7,11 @@
 
 use axum::Json;
 use axum::extract::State;
-use axum::response::Response as AxumResponse;
-use qitech_framework::MachineInstanceIdentification;
 use serde::Deserialize;
 use serde::Serialize;
 
+use super::query::ApiError;
+use super::query::ApiResult;
 use crate::api::legacy::LegacyApiState;
 use crate::api::legacy::response_util::ResponseUtil;
 use crate::api::legacy::types::LegacyMachineIdentificationUnique;
@@ -31,8 +31,9 @@ pub struct Marker {
     pub color: String,
 }
 
+/// Body of `list` and `clear`.
 #[derive(Debug, Deserialize)]
-pub struct ListRequest {
+pub struct MachineRequest {
     pub machine_identification_unique: LegacyMachineIdentificationUnique,
 }
 
@@ -52,26 +53,11 @@ pub struct RemoveRequest {
     pub id: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct ClearRequest {
-    pub machine_identification_unique: LegacyMachineIdentificationUnique,
-}
-
-fn identity(machine: LegacyMachineIdentificationUnique) -> u64 {
-    MachineInstanceIdentification::from(machine).to_u64()
-}
-
-fn db_error(action: &str, e: clickhouse::error::Error) -> AxumResponse {
-    tracing::error!(error = %e, "marker {action} failed");
-    ResponseUtil::error(&format!("marker {action} failed: {e}"))
-}
-
 pub async fn list(
     State(state): State<LegacyApiState>,
-    Json(body): Json<ListRequest>,
-) -> AxumResponse {
-    let identity = identity(body.machine_identification_unique);
-    let result = state
+    Json(body): Json<MachineRequest>,
+) -> ApiResult {
+    let mut markers = state
         .db
         .query(
             "SELECT toString(id) AS id,
@@ -83,112 +69,86 @@ pub async fn list(
              ORDER BY timestamp DESC
              LIMIT ?",
         )
-        .bind(identity)
+        .bind(body.machine_identification_unique.identity())
         .bind(MAX_MARKERS)
         .fetch_all::<Marker>()
-        .await;
+        .await
+        .map_err(ApiError::db("marker list"))?;
 
-    match result {
-        Ok(mut markers) => {
-            markers.reverse();
-            ResponseUtil::ok(markers)
-        }
-        Err(e) => db_error("list", e),
-    }
+    // newest `MAX_MARKERS`, returned oldest first
+    markers.reverse();
+    Ok(ResponseUtil::ok(markers))
 }
 
-pub async fn add(
-    State(state): State<LegacyApiState>,
-    Json(body): Json<AddRequest>,
-) -> AxumResponse {
+pub async fn add(State(state): State<LegacyApiState>, Json(body): Json<AddRequest>) -> ApiResult {
     let name = body.name.trim().to_string();
     if name.is_empty() {
-        return ResponseUtil::error("marker name must not be empty");
+        return Err(ApiError::BadRequest("marker name must not be empty"));
     }
     if name.chars().count() > MAX_NAME_LEN {
-        return ResponseUtil::error("marker name is too long");
+        return Err(ApiError::BadRequest("marker name is too long"));
     }
     if body.timestamp < 0 {
-        return ResponseUtil::error("marker timestamp must not be negative");
+        return Err(ApiError::BadRequest(
+            "marker timestamp must not be negative",
+        ));
     }
     let color = match body.color.as_deref().map(str::trim) {
         None | Some("") => DEFAULT_COLOR.to_string(),
         Some(c) if c.len() <= MAX_COLOR_LEN => c.to_string(),
-        Some(_) => return ResponseUtil::error("marker color is too long"),
+        Some(_) => return Err(ApiError::BadRequest("marker color is too long")),
     };
 
-    let identity = identity(body.machine_identification_unique);
-
-    // Generate the id first so the response can carry it.
-    let id = match state
-        .db
-        .query("SELECT toString(generateUUIDv4())")
-        .fetch_one::<String>()
-        .await
-    {
-        Ok(id) => id,
-        Err(e) => return db_error("add", e),
+    let marker = Marker {
+        id: uuid::Uuid::new_v4().to_string(),
+        timestamp: body.timestamp,
+        name,
+        color,
     };
-
-    let result = state
+    state
         .db
         .query(
             "INSERT INTO machine_markers (id, identity, timestamp, name, color)
              SELECT toUUID(?), ?, fromUnixTimestamp64Milli(?), ?, ?",
         )
-        .bind(&id)
-        .bind(identity)
-        .bind(body.timestamp)
-        .bind(&name)
-        .bind(&color)
+        .bind(&marker.id)
+        .bind(body.machine_identification_unique.identity())
+        .bind(marker.timestamp)
+        .bind(&marker.name)
+        .bind(&marker.color)
         .execute()
-        .await;
+        .await
+        .map_err(ApiError::db("marker add"))?;
 
-    match result {
-        Ok(()) => ResponseUtil::ok(Marker {
-            id,
-            timestamp: body.timestamp,
-            name,
-            color,
-        }),
-        Err(e) => db_error("add", e),
-    }
+    Ok(ResponseUtil::ok(marker))
 }
 
 pub async fn remove(
     State(state): State<LegacyApiState>,
     Json(body): Json<RemoveRequest>,
-) -> AxumResponse {
-    let identity = identity(body.machine_identification_unique);
-    let result = state
+) -> ApiResult {
+    state
         .db
         // An unparsable id becomes the zero UUID, which matches nothing.
         .query("DELETE FROM machine_markers WHERE identity = ? AND id = toUUIDOrZero(?)")
-        .bind(identity)
+        .bind(body.machine_identification_unique.identity())
         .bind(&body.id)
         .execute()
-        .await;
-
-    match result {
-        Ok(()) => ResponseUtil::ok(()),
-        Err(e) => db_error("remove", e),
-    }
+        .await
+        .map_err(ApiError::db("marker remove"))?;
+    Ok(ResponseUtil::ok(()))
 }
 
 pub async fn clear(
     State(state): State<LegacyApiState>,
-    Json(body): Json<ClearRequest>,
-) -> AxumResponse {
-    let identity = identity(body.machine_identification_unique);
-    let result = state
+    Json(body): Json<MachineRequest>,
+) -> ApiResult {
+    state
         .db
         .query("DELETE FROM machine_markers WHERE identity = ?")
-        .bind(identity)
+        .bind(body.machine_identification_unique.identity())
         .execute()
-        .await;
-
-    match result {
-        Ok(()) => ResponseUtil::ok(()),
-        Err(e) => db_error("clear", e),
-    }
+        .await
+        .map_err(ApiError::db("marker clear"))?;
+    Ok(ResponseUtil::ok(()))
 }

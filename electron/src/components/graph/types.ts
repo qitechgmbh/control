@@ -24,6 +24,8 @@ export type GraphView = {
   showFromTimestamp: number | null;
   /** Graphs of one group share their hover crosshair. */
   cursorGroup: string;
+  /** Bumped by every view change, so a chart can drop its own pan/zoom range. */
+  revision: number;
 };
 
 // --- lines drawn in addition to the series ---
@@ -60,10 +62,7 @@ export type GraphConfig = {
   title: string;
   icon?: IconName;
   lines?: GraphLine[];
-  timeWindows?: Array<{ value: TimeWindow; label: string }>;
   defaultTimeWindow?: TimeWindow;
-  exportFilename?: string;
-  showLegend?: boolean;
   colors?: {
     primary?: string;
     grid?: string;

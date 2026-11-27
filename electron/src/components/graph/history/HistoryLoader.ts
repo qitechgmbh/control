@@ -29,6 +29,9 @@ export type HistoryNames = {
 type Loaded = {
   from: number;
   to: number;
+  /** Width this load asked for; the server may answer with a wider one. */
+  requestedBucketMs: number;
+  /** Width the server used. */
   bucketMs: number;
   measurements: Map<string, BucketSeries>;
   targets: Map<string, HistorySeries>;
@@ -47,16 +50,30 @@ export class HistoryLoader {
   private lastLiveLoadAt = 0;
   private errorUntil = 0;
 
-  /** Incremented whenever the loaded data changes. */
-  version = 0;
-  loading = false;
-  error: string | null = null;
+  private _version = 0;
+  private _loading = false;
+  private _error: string | null = null;
 
   constructor(
     private readonly machine: MachineIdentificationUnique,
     private readonly names: HistoryNames,
     private readonly onChange: () => void,
   ) {}
+
+  /** Incremented whenever the loaded data changes. */
+  get version(): number {
+    return this._version;
+  }
+
+  /** A full load is in flight. */
+  get loading(): boolean {
+    return this._loading;
+  }
+
+  /** Message of the last failed load, until the next one succeeds. */
+  get error(): string | null {
+    return this._error;
+  }
 
   dispose() {
     this.inflight?.abort();
@@ -111,7 +128,7 @@ export class HistoryLoader {
 
     const needsFull =
       !loaded ||
-      loaded.bucketMs !== bucketMs ||
+      loaded.requestedBucketMs !== bucketMs ||
       view.min < loaded.from ||
       (!live && view.max > loaded.to && loaded.to < now - DB_LAG_MS);
 
@@ -155,7 +172,7 @@ export class HistoryLoader {
   ) {
     const controller = new AbortController();
     this.inflight = controller;
-    this.loading = mode === "full";
+    this._loading = mode === "full";
     if (mode === "full") this.onChange();
 
     try {
@@ -179,6 +196,7 @@ export class HistoryLoader {
         this.loaded = {
           from,
           to,
+          requestedBucketMs: bucketMs,
           bucketMs: response.bucket_ms,
           measurements: toMap(response.measurements),
           targets: toMap(response.targets),
@@ -204,16 +222,16 @@ export class HistoryLoader {
         }
       }
 
-      this.error = null;
-      this.version++;
+      this._error = null;
+      this._version++;
     } catch (e) {
       if (controller.signal.aborted) return;
-      this.error = e instanceof Error ? e.message : String(e);
+      this._error = e instanceof Error ? e.message : String(e);
       this.errorUntil = Date.now() + ERROR_BACKOFF_MS;
     } finally {
       if (this.inflight === controller) {
         this.inflight = null;
-        this.loading = false;
+        this._loading = false;
         this.onChange();
       }
     }

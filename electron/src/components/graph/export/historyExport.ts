@@ -3,7 +3,6 @@ import { renderUnitSymbol } from "@/control/units";
 import type { MachineIdentificationUnique } from "@/machines/types";
 import {
   fetchHistory,
-  HISTORY_EXPORT_URL,
   niceBucketMs,
   type HistoryResponse,
 } from "@/lib/history";
@@ -15,6 +14,7 @@ import {
   writeFile,
   type SaveFileResult,
 } from "@/helpers/file_export_helpers";
+import { EXPORT_EXTENSION } from "@/helpers/ipc/export/export-channels";
 import type { GraphConfig, GraphLine, SeriesData, ViewRange } from "../types";
 import {
   buildExcelWorkbook,
@@ -243,13 +243,15 @@ async function excelReport(
             }
           : undefined;
 
-      const line = (s.lines ?? []).find(isTarget);
-      const steps = line?.history ? history?.targets[line.history] : undefined;
+      // The recorded setpoint steps; without a recorded value the column stays empty
+      // rather than showing today's setpoint as if it had applied all along.
+      const path = (s.lines ?? [])
+        .filter(isTarget)
+        .find((l) => l.history)?.history;
+      const steps = path ? history?.targets[path] : undefined;
       const target = steps?.t.length
         ? { t: steps.t, v: scaled(steps.v, scale) }
-        : line
-          ? { t: [range.min], v: [line.value] }
-          : undefined;
+        : undefined;
 
       series.push({
         graphTitle: source.config.title,
@@ -269,8 +271,6 @@ async function excelReport(
 }
 
 // --------------------------------------------------------------- run
-
-const EXTENSION = /\.(xlsx|csv|parquet)$/i;
 
 function slug(text: string): string {
   return text
@@ -297,15 +297,6 @@ function timezone(): string {
   }
 }
 
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  const chunkSize = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-  }
-  return btoa(binary);
-}
-
 async function writeExcel(
   sources: GraphExportSource[],
   options: ExportOptions,
@@ -314,11 +305,7 @@ async function writeExcel(
   try {
     const report = await excelReport(sources, options.range, options.groupId);
     const bytes = buildExcelWorkbook(report);
-    return await writeFile({
-      filePath,
-      content: bytesToBase64(new Uint8Array(bytes)),
-      encoding: "base64",
-    });
+    return await writeFile({ filePath, data: bytes });
   } catch (error) {
     return {
       success: false,
@@ -348,7 +335,6 @@ async function writeTable(
     const suffix = machines.length > 1 ? `_${machineKey(columns.machine)}` : "";
     const result = await downloadToFile({
       filePath: `${basePath}${suffix}.${format}`,
-      url: HISTORY_EXPORT_URL,
       body: {
         machine_identification_unique: columns.machine,
         measurements: columns.measurements,
@@ -387,9 +373,12 @@ export async function runExport(
     filters: options.formats.map((f) => FILE_FILTERS[f]),
   });
   if (chosen.canceled) {
-    return { success: false, error: "Export cancelled by user" };
+    return {
+      success: false,
+      error: chosen.error ?? "Export cancelled by user",
+    };
   }
-  const basePath = chosen.filePath.replace(EXTENSION, "");
+  const basePath = chosen.filePath.replace(EXPORT_EXTENSION, "");
 
   const results: SaveFileResult[] = [];
   for (const format of options.formats) {

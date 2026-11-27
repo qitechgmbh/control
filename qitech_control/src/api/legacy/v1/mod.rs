@@ -10,6 +10,7 @@ pub mod history_export;
 pub mod machine_mutate;
 pub mod markers;
 pub mod modbus;
+mod query;
 pub mod write_machine_device_identification;
 
 pub fn router() -> Router<LegacyApiState> {

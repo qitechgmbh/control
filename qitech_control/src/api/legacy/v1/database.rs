@@ -4,15 +4,15 @@
 //! never from scanning the tables, so it answers instantly even with billions of rows.
 
 use axum::extract::State;
-use axum::response::Response as AxumResponse;
 use serde::Deserialize;
 use serde::Serialize;
 
+use super::query::ApiError;
+use super::query::ApiResult;
+use crate::api::db::DATABASE;
 use crate::api::legacy::LegacyApiState;
 use crate::api::legacy::response_util::ResponseUtil;
 use crate::demo::backfill;
-
-const DATABASE: &str = "control_hub";
 
 #[derive(Debug, Serialize, Deserialize, clickhouse::Row)]
 pub struct TableStorage {
@@ -82,7 +82,7 @@ pub struct ProjectionStatus {
     pub parts_ready: u64,
 }
 
-pub async fn storage(State(state): State<LegacyApiState>) -> AxumResponse {
+pub async fn storage(State(state): State<LegacyApiState>) -> ApiResult {
     let db = &state.db;
 
     let tables = db
@@ -147,38 +147,21 @@ pub async fn storage(State(state): State<LegacyApiState>) -> AxumResponse {
         .fetch_one::<ProjectionStatus>();
 
     let (tables, days, databases, disks, mutations, projections) =
-        tokio::join!(tables, days, databases, disks, mutations, projections);
+        tokio::try_join!(tables, days, databases, disks, mutations, projections)
+            .map_err(ApiError::db("storage query"))?;
 
-    let result = (|| {
-        Ok::<_, clickhouse::error::Error>((
-            tables?,
-            days?,
-            databases?,
-            disks?,
-            mutations?,
-            projections?,
-        ))
-    })();
-    match result {
-        Ok((tables, days, databases, disks, mutations, projections)) => {
-            ResponseUtil::ok(Response {
-                tables,
-                days,
-                databases,
-                disks,
-                pending_mutations: mutations.n,
-                projections,
-                demo: DemoStatus {
-                    enabled: state.demo.is_some(),
-                    backfill: state.demo.as_ref().map(|d| d.backfill().status()),
-                },
-            })
-        }
-        Err(e) => {
-            tracing::error!(error = %e, "storage query failed");
-            ResponseUtil::error(&format!("storage query failed: {e}"))
-        }
-    }
+    Ok(ResponseUtil::ok(Response {
+        tables,
+        days,
+        databases,
+        disks,
+        pending_mutations: mutations.n,
+        projections,
+        demo: DemoStatus {
+            enabled: state.demo.is_some(),
+            backfill: state.demo.as_ref().map(|d| d.backfill().status()),
+        },
+    }))
 }
 
 /// Tables holding rows per machine `identity`.
@@ -198,23 +181,22 @@ pub struct ClearResponse {
 /// `POST /api/v1/database/demo/clear`: deletes all demo machine data. Refused while the
 /// demo runs, since it would write new rows right away. ClickHouse frees the space in
 /// the background (the deletes are mutations that rewrite the affected parts).
-pub async fn clear_demo(State(state): State<LegacyApiState>) -> AxumResponse {
+pub async fn clear_demo(State(state): State<LegacyApiState>) -> ApiResult {
     if state.demo.is_some() {
-        return ResponseUtil::error("turn the demo machines off before deleting their data");
+        return Err(ApiError::BadRequest(
+            "turn the demo machines off before deleting their data",
+        ));
     }
     let identities = crate::demo::identities();
     for table in MACHINE_TABLES {
-        let result = state
+        state
             .db
             .query(&format!("ALTER TABLE {table} DELETE WHERE identity IN ?"))
             .bind(&identities)
             .execute()
-            .await;
-        if let Err(e) = result {
-            tracing::error!(error = %e, table, "deleting demo data failed");
-            return ResponseUtil::error(&format!("deleting demo data from {table} failed: {e}"));
-        }
+            .await
+            .map_err(ApiError::db("deleting demo data"))?;
     }
     tracing::info!("demo data deletion queued");
-    ResponseUtil::ok(ClearResponse { success: true })
+    Ok(ResponseUtil::ok(ClearResponse { success: true }))
 }

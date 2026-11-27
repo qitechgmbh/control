@@ -103,26 +103,18 @@ interface TroubleshootContext {
 }
 
 interface FileExportContext {
-  saveFile: (params: {
-    suggestedName: string;
-    filters?: { name: string; extensions: string[] }[];
-    content: string;
-    encoding: "utf8" | "base64";
-  }) => Promise<SaveFileResult>;
-  choosePath: (params: {
-    suggestedName: string;
-    filters?: { name: string; extensions: string[] }[];
-  }) => Promise<{ canceled: true } | { canceled: false; filePath: string }>;
-  writeFile: (params: {
-    filePath: string;
-    content: string;
-    encoding: "utf8" | "base64";
-  }) => Promise<SaveFileResult>;
-  download: (params: {
-    filePath: string;
-    url: string;
-    body: unknown;
-  }) => Promise<SaveFileResult>;
+  saveFile: (
+    params: import("@/helpers/ipc/export/export-channels").SaveFileParams,
+  ) => Promise<SaveFileResult>;
+  choosePath: (
+    params: import("@/helpers/ipc/export/export-channels").ChoosePathParams,
+  ) => Promise<import("@/helpers/ipc/export/export-channels").ChoosePathResult>;
+  writeFile: (
+    params: import("@/helpers/ipc/export/export-channels").WriteFileParams,
+  ) => Promise<SaveFileResult>;
+  download: (
+    params: import("@/helpers/ipc/export/export-channels").DownloadParams,
+  ) => Promise<SaveFileResult>;
   ejectUsb: (
     mountPath: string,
   ) => Promise<{ success: boolean; error?: string }>;

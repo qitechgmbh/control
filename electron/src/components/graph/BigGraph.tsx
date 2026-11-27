@@ -80,7 +80,10 @@ export function BigGraph({
   const { markers } = useMarkers();
   const { view, setRange, registerExport, unregisterExport } = syncHook;
 
-  const series = Array.isArray(newData) ? newData : [newData];
+  const series = useMemo(
+    () => (Array.isArray(newData) ? newData : [newData]),
+    [newData],
+  );
   const [visibleSeries, setVisibleSeries] = useState<boolean[]>(() =>
     new Array(series.length).fill(true),
   );
@@ -96,16 +99,23 @@ export function BigGraph({
     setVisibleSeries(new Array(series.length).fill(true));
   }
 
-  const colors = {
-    grid: config.colors?.grid ?? DEFAULT_COLORS.grid,
-    axis: config.colors?.axis ?? DEFAULT_COLORS.axis,
-    background: config.colors?.background ?? DEFAULT_COLORS.background,
-  };
-  const seriesColors = series.map(
-    (s, index) =>
-      s.color ||
-      (series.length === 1 ? config.colors?.primary : undefined) ||
-      DEFAULT_SERIES_COLORS[index % DEFAULT_SERIES_COLORS.length],
+  const colors = useMemo(
+    () => ({
+      grid: config.colors?.grid ?? DEFAULT_COLORS.grid,
+      axis: config.colors?.axis ?? DEFAULT_COLORS.axis,
+      background: config.colors?.background ?? DEFAULT_COLORS.background,
+    }),
+    [config.colors],
+  );
+  const seriesColors = useMemo(
+    () =>
+      series.map(
+        (s, index) =>
+          s.color ||
+          (series.length === 1 ? config.colors?.primary : undefined) ||
+          DEFAULT_SERIES_COLORS[index % DEFAULT_SERIES_COLORS.length],
+      ),
+    [series, config.colors],
   );
 
   // Latest props for callbacks that outlive a render (export, engine callbacks).
@@ -119,7 +129,7 @@ export function BigGraph({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const engine = new GraphEngine(canvas, graphId, machine, cursorGroup, {
+    const engine = new GraphEngine(canvas, machine, cursorGroup, {
       onCursor: (values) =>
         setCursorValues((prev) => (sameValues(prev, values) ? prev : values)),
       onUserRange: (range) => latestRef.current.setRange(range),
@@ -135,9 +145,11 @@ export function BigGraph({
       engine.dispose();
       engineRef.current = null;
     };
-  }, [graphId, machine, cursorGroup]);
+  }, [machine, cursorGroup]);
 
-  // --- push inputs to the engine on every render ---
+  // --- push inputs to the engine when they change ---
+  // Not on every render: a cursor move re-renders this component (header values), and
+  // new inputs make the engine rebuild every dataset.
   const targets = useMemo(() => collectTargets(series), [series]);
 
   useEffect(() => {
@@ -165,7 +177,6 @@ export function BigGraph({
 
     const engineTargets: EngineTarget[] = targets.map(
       ({ line, seriesIndex }) => ({
-        seriesIndex,
         color: line.color || seriesColors[seriesIndex],
         value: line.value,
         history: line.history,
@@ -194,12 +205,23 @@ export function BigGraph({
         range: view.isLiveMode ? undefined : view.xRange,
         showFrom: view.showFromTimestamp,
         freeze: view.historicalFreezeTimestamp,
+        revision: view.revision,
       },
       renderValue,
       colors,
     };
     engine.setInputs(inputs);
-  });
+  }, [
+    series,
+    seriesColors,
+    colors,
+    targets,
+    config,
+    markers,
+    view,
+    visibleSeries,
+    renderValue,
+  ]);
 
   // --- export: what this graph contributes (data is loaded from the database on export) ---
   useEffect(() => {
@@ -227,8 +249,11 @@ export function BigGraph({
     });
   }, []);
 
-  const displayValues = series.map(
-    (s, index) => cursorValues?.[index] ?? s.newData?.current?.value ?? null,
+  // Under the cursor its value (null over a gap), otherwise the live value.
+  const displayValues = series.map((s, index) =>
+    cursorValues
+      ? (cursorValues[index] ?? null)
+      : (s.newData?.current?.value ?? null),
   );
 
   return (

@@ -153,7 +153,6 @@ export function FlowGraph({
       grid: "#e2e8f0",
       background: "#ffffff",
     },
-    exportFilename: "flow_data",
   };
 
   return (
@@ -199,8 +198,6 @@ export function TemperatureGraph({
       grid: "#e2e8f0",
       background: "#ffffff",
     },
-    exportFilename: "temperature_data",
-    showLegend: true,
     lines: [],
   };
 
@@ -258,8 +255,6 @@ export function PowerGraph({
       grid: "#e2e8f0",
       background: "#ffffff",
     },
-    exportFilename: "heating_power_data",
-    showLegend: true,
   };
 
   const powerData = [
@@ -315,8 +310,6 @@ export function EnergyGraph({
       grid: "#e2e8f0",
       background: "#ffffff",
     },
-    exportFilename: "heating_energy_data",
-    showLegend: true,
   };
 
   const energyData = [

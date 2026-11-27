@@ -9,6 +9,8 @@ import {
   EXPORT_CHOOSE_PATH,
   EXPORT_WRITE_FILE,
   EXPORT_DOWNLOAD,
+  EXPORT_EXTENSION,
+  EXPORT_FILE_SUFFIX,
   ChoosePathParams,
   ChoosePathResult,
   DownloadParams,
@@ -28,16 +30,52 @@ function savedResult(filePath: string): SaveFileResult {
   };
 }
 
-function failedResult(error: unknown): SaveFileResult {
-  return {
-    success: false,
-    error: error instanceof Error ? error.message : String(error),
-  };
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
-/** Streams an HTTP response body into `filePath` (via a temp file, so a failed download leaves nothing behind). */
-async function download({ filePath, url, body }: DownloadParams) {
-  const response = await fetch(url, {
+function failedResult(error: unknown): SaveFileResult {
+  return { success: false, error: errorMessage(error) };
+}
+
+/** The only endpoint `EXPORT_DOWNLOAD` fetches (see `history_export.rs`). */
+const HISTORY_EXPORT_URL =
+  "http://localhost:3001/api/v1/machine/history/export";
+
+/**
+ * Base paths (chosen path without extension) the user picked in an export save dialog.
+ * `EXPORT_WRITE_FILE` and `EXPORT_DOWNLOAD` write only next to one of them, so the
+ * renderer cannot write anywhere the user did not choose.
+ */
+class ExportGrants {
+  private static readonly MAX = 16;
+  private readonly bases: string[] = [];
+
+  grant(chosenPath: string) {
+    const base = chosenPath.replace(EXPORT_EXTENSION, "");
+    this.bases.push(base);
+    if (this.bases.length > ExportGrants.MAX) this.bases.shift();
+  }
+
+  check(filePath: string) {
+    const allowed = this.bases.some(
+      (base) =>
+        filePath.startsWith(base) &&
+        EXPORT_FILE_SUFFIX.test(filePath.slice(base.length)),
+    );
+    if (!allowed) {
+      throw new Error(
+        `Not an export file chosen in the save dialog: ${filePath}`,
+      );
+    }
+  }
+}
+
+const grants = new ExportGrants();
+
+/** Streams the history export into `filePath` (via a temp file, so a failed download leaves nothing behind). */
+async function download({ filePath, body }: DownloadParams) {
+  const response = await fetch(HISTORY_EXPORT_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -96,14 +134,19 @@ export function addExportEventListeners() {
   ipcMain.handle(
     EXPORT_CHOOSE_PATH,
     async (_event, params: ChoosePathParams): Promise<ChoosePathResult> => {
-      const { canceled, filePath } = await dialog.showSaveDialog({
-        title: "Export",
-        defaultPath: params.suggestedName,
-        filters: params.filters,
-      });
-      return canceled || !filePath
-        ? { canceled: true }
-        : { canceled: false, filePath };
+      try {
+        const { canceled, filePath } = await dialog.showSaveDialog({
+          title: "Export",
+          defaultPath: params.suggestedName,
+          filters: params.filters,
+        });
+        if (canceled || !filePath) return { canceled: true };
+        grants.grant(filePath);
+        return { canceled: false, filePath };
+      } catch (error) {
+        console.error("Export save dialog failed:", error);
+        return { canceled: true, error: errorMessage(error) };
+      }
     },
   );
 
@@ -111,10 +154,8 @@ export function addExportEventListeners() {
     EXPORT_WRITE_FILE,
     async (_event, params: WriteFileParams): Promise<SaveFileResult> => {
       try {
-        await fs.promises.writeFile(
-          params.filePath,
-          Buffer.from(params.content, params.encoding),
-        );
+        grants.check(params.filePath);
+        await fs.promises.writeFile(params.filePath, params.data);
         return savedResult(params.filePath);
       } catch (error) {
         console.error("Failed to write file:", error);
@@ -127,6 +168,7 @@ export function addExportEventListeners() {
     EXPORT_DOWNLOAD,
     async (_event, params: DownloadParams): Promise<SaveFileResult> => {
       try {
+        grants.check(params.filePath);
         await download(params);
         return savedResult(params.filePath);
       } catch (error) {

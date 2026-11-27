@@ -213,8 +213,8 @@ async fn run_inner(
 
         // --- targets in effect from the start of the history, for the graphs' target lines ---
         if coverage.n == 0 || head_ms < coverage.lo {
-            registrations.extend(def.config.iter().map(|(path, initial)| {
-                machine_config_property_records::Row::from(ConfigPropertyEventRecord {
+            registrations.extend(def.config.iter().filter_map(|(path, initial)| {
+                let record = ConfigPropertyEventRecord {
                     timestamp: DateTime::<Utc>::from_timestamp_millis(head_ms).unwrap_or_default(),
                     machine: def.ident(),
                     path: (*path).to_owned(),
@@ -227,7 +227,10 @@ async fn run_inner(
                         capability: OperationCapability::Allowed,
                         constraints: Constraints::None,
                     },
-                })
+                };
+                machine_config_property_records::Row::try_from(&record)
+                    .inspect_err(|e| tracing::error!("demo backfill: skipping {e}"))
+                    .ok()
             }));
         }
 

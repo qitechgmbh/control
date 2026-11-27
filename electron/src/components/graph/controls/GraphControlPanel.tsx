@@ -111,8 +111,9 @@ function TimeWindowMenu({
   disabled: boolean;
   onChange: (value: TimeWindow) => void;
 }) {
+  // Disabled while "show from" replaces the window.
   const label = disabled
-    ? "Show All"
+    ? "Show From"
     : (options.find((opt) => opt.value === value)?.label ?? "1m");
 
   return (

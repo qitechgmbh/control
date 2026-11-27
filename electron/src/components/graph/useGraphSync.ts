@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useId } from "react";
+import { useState, useCallback, useRef, useId, useReducer } from "react";
 import type { GraphView, TimeWindow, ViewRange } from "./types";
 import {
   type ExportOptions,
@@ -29,6 +29,7 @@ export function useGraphSync(exportGroupId?: string) {
   const [historicalFreezeTimestamp, setHistoricalFreezeTimestamp] = useState<
     number | null
   >(null);
+  const [revision, bumpRevision] = useReducer((n: number) => n + 1, 0);
 
   // --- view ---
 
@@ -41,6 +42,7 @@ export function useGraphSync(exportGroupId?: string) {
         setIsLiveMode(true);
         setHistoricalFreezeTimestamp(null);
       }
+      bumpRevision();
     },
     [setTimeframe],
   );
@@ -50,6 +52,7 @@ export function useGraphSync(exportGroupId?: string) {
     setXRange(range);
     setIsLiveMode(false);
     setHistoricalFreezeTimestamp((ts) => ts ?? Date.now());
+    bumpRevision();
   }, []);
 
   const switchToLive = useCallback(() => {
@@ -57,16 +60,19 @@ export function useGraphSync(exportGroupId?: string) {
     setXRange(undefined);
     setHistoricalFreezeTimestamp(null);
     setShowFromTimestamp(null);
+    bumpRevision();
   }, []);
 
   const switchToHistorical = useCallback(() => {
     setIsLiveMode(false);
     setHistoricalFreezeTimestamp(Date.now());
+    bumpRevision();
   }, []);
 
   const setShowFrom = useCallback((timestamp: number | null) => {
     setShowFromTimestamp(timestamp);
     setXRange(undefined);
+    bumpRevision();
   }, []);
 
   // --- export ---
@@ -121,6 +127,7 @@ export function useGraphSync(exportGroupId?: string) {
     historicalFreezeTimestamp,
     showFromTimestamp,
     cursorGroup,
+    revision,
   };
 
   return {

@@ -2,7 +2,7 @@ import type { Plugin } from "chart.js";
 
 // --- cursor sync between the charts of one group ---
 
-type CursorListener = (x: number | null, source: string) => void;
+type CursorListener = (x: number | null) => void;
 const cursorGroups = new Map<string, Set<CursorListener>>();
 
 /** Listens for the cursor of any chart in `group`. Returns the unsubscribe function. */
@@ -19,8 +19,8 @@ export function subscribeCursor(group: string, listener: CursorListener) {
   };
 }
 
-function publishCursor(group: string, x: number | null, source: string) {
-  cursorGroups.get(group)?.forEach((listener) => listener(x, source));
+function publishCursor(group: string, x: number | null) {
+  cursorGroups.get(group)?.forEach((listener) => listener(x));
 }
 
 // --- plugin ---
@@ -28,8 +28,6 @@ function publishCursor(group: string, x: number | null, source: string) {
 export type CrosshairOptions = {
   /** Charts of one group share the crosshair. */
   group: string;
-  /** This chart, as the source of published cursor positions. */
-  sourceId: string;
   /** Crosshair position (ms) to draw, from this chart or a synced one. */
   getX: () => number | null;
 };
@@ -40,7 +38,6 @@ export type CrosshairOptions = {
  */
 export function crosshairPlugin({
   group,
-  sourceId,
   getX,
 }: CrosshairOptions): Plugin<"line"> {
   return {
@@ -54,7 +51,7 @@ export function crosshairPlugin({
         nativeType === "touchend" ||
         nativeType === "touchcancel"
       ) {
-        publishCursor(group, null, sourceId);
+        publishCursor(group, null);
         return;
       }
       // Chart.js maps touchstart/touchmove to mousedown/mousemove.
@@ -68,14 +65,10 @@ export function crosshairPlugin({
         e.y < area.top ||
         e.y > area.bottom
       ) {
-        publishCursor(group, null, sourceId);
+        publishCursor(group, null);
         return;
       }
-      publishCursor(
-        group,
-        chart.scales.x.getValueForPixel(e.x) ?? null,
-        sourceId,
-      );
+      publishCursor(group, chart.scales.x.getValueForPixel(e.x) ?? null);
     },
 
     afterDatasetsDraw(chart) {

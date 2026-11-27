@@ -18,6 +18,8 @@ export class Viewport {
   private ownRange: ViewRange | null = null;
   private gestureStart: ViewRange | null = null;
   private lastSyncAt = 0;
+  /** `EngineView.revision` last seen by `follow`. */
+  private seenRevision: number | null = null;
 
   /** True during a gesture: the chart's axis must not be overwritten. */
   get isInteracting(): boolean {
@@ -34,11 +36,15 @@ export class Viewport {
     return this.ownRange ?? current;
   }
 
-  /** The shared view changed from outside (panel, other graph, live): drop our own range. */
+  /**
+   * The shared view changed (panel, other graph, live, or this chart's own committed
+   * gesture): drop our own range and show the view. Changes during a gesture are
+   * ignored; the gesture commits its own range when it ends.
+   */
   follow(view: EngineView) {
-    if (!this.interacting && (view.live || view.range || view.showFrom)) {
-      this.ownRange = null;
-    }
+    if (view.revision === this.seenRevision) return;
+    this.seenRevision = view.revision;
+    if (!this.interacting) this.ownRange = null;
   }
 
   /** The range to show at `now`. `current` is the chart's axis, `earliest` the oldest data. */

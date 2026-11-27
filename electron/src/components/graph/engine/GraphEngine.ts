@@ -49,7 +49,6 @@ export class GraphEngine {
 
   constructor(
     canvas: HTMLCanvasElement,
-    graphId: string,
     private readonly machine: MachineIdentificationUnique | null,
     cursorGroup: string,
     private readonly callbacks: EngineCallbacks,
@@ -73,7 +72,6 @@ export class GraphEngine {
         })),
         crosshairPlugin({
           group: cursorGroup,
-          sourceId: graphId,
           getX: () => this.crosshairX,
         }),
       ],
@@ -168,6 +166,8 @@ export class GraphEngine {
             this.requestFrame();
           })
         : null;
+    // A disposed loader never reports again; clear its "loading" badge.
+    if (!this.loader) this.callbacks.onStatus({ loading: false, error: null });
   }
 
   // ---------------------------------------------------------------- frame loop

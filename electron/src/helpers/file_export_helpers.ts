@@ -17,11 +17,12 @@ import type {
 } from "@/helpers/ipc/export/export-channels";
 export type { SaveFileParams, SaveFileResult };
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function failed(error: unknown): SaveFileResult {
-  return {
-    success: false,
-    error: error instanceof Error ? error.message : String(error),
-  };
+  return { success: false, error: errorMessage(error) };
 }
 
 export async function saveFile(
@@ -30,21 +31,25 @@ export async function saveFile(
   try {
     return await window.fileExport.saveFile(params);
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-    };
+    return failed(error);
   }
 }
 
-/** Asks the user for a file path (save dialog) without writing anything yet. */
+/**
+ * Asks the user for a file path (save dialog) without writing anything yet. Only this
+ * path and its sibling export files may be written afterwards.
+ */
 export async function choosePath(
   params: ChoosePathParams,
 ): Promise<ChoosePathResult> {
-  return await window.fileExport.choosePath(params);
+  try {
+    return await window.fileExport.choosePath(params);
+  } catch (error) {
+    return { canceled: true, error: errorMessage(error) };
+  }
 }
 
-/** Writes renderer-side content to a path chosen with `choosePath`. */
+/** Writes renderer-side bytes to a path chosen with `choosePath`. */
 export async function writeFile(
   params: WriteFileParams,
 ): Promise<SaveFileResult> {
@@ -55,7 +60,7 @@ export async function writeFile(
   }
 }
 
-/** Streams a backend response into a file; the data never enters the renderer. */
+/** Streams a history export into a file; the data never enters the renderer. */
 export async function downloadToFile(
   params: DownloadParams,
 ): Promise<SaveFileResult> {
@@ -73,9 +78,6 @@ export async function ejectUsb(mountPath: string): Promise<{
   try {
     return await window.fileExport.ejectUsb(mountPath);
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-    };
+    return { success: false, error: errorMessage(error) };
   }
 }

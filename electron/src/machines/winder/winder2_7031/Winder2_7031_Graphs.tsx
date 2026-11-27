@@ -98,7 +98,6 @@ export function SpoolRpmGraph({
       grid: "#e2e8f0",
       background: "#ffffff",
     },
-    exportFilename: "spool_rpm_data",
   };
 
   return (
@@ -158,7 +157,6 @@ export function TraversePositionGraph({
     colors: {
       primary: "#8b5cf6",
     },
-    exportFilename: "traverse_position_data",
   };
 
   return (
@@ -195,7 +193,6 @@ export function TensionArmAngleGraph({
     colors: {
       primary: "#f59e0b",
     },
-    exportFilename: "tension_arm_angle_data",
   };
 
   return (
@@ -231,7 +228,6 @@ export function SpoolProgressGraph({
     colors: {
       primary: "#f59e0b",
     },
-    exportFilename: "spool_progress",
   };
 
   // NOTE: Assuming this graph starts at 0, and the max is the total capacity.
@@ -285,7 +281,6 @@ export function PullerSpeedGraph({
     colors: {
       primary: "#06b6d4",
     },
-    exportFilename: "puller_speed_data",
   };
 
   return (

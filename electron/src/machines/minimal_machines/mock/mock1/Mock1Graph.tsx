@@ -17,8 +17,6 @@ export function Mock1GraphPage() {
   const config: GraphConfig = {
     title: "Sine Wave",
     defaultTimeWindow: 30 * 60 * 1000,
-    exportFilename: "sine_wave_data",
-    showLegend: true,
     lines: [],
   };
 

@@ -286,13 +286,6 @@ in
           access_management = 1;
         };
       };
-
-      profiles = {
-        default = {
-          max_memory_usage = 4294967296;
-          max_execution_time = 300;
-        };
-      };
     };
 
     usersConfig = {
@@ -304,9 +297,10 @@ in
         };
       };
 
+      # Query limits are user settings, so they live here (users.xml), not in serverConfig.
       profiles = {
         default = {
-          max_memory_usage = 4294967296;
+          max_memory_usage = 4294967296; # 4 GiB
           max_execution_time = 300;
         };
       };

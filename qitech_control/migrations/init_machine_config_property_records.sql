@@ -4,13 +4,13 @@ CREATE TABLE IF NOT EXISTS control_hub.machine_config_property_records
     identity        UInt64,
     name            LowCardinality(String),
 
-    -- value --
+    -- values match `EventType` in src/api/db/tables.rs --
     event_type Enum8(
-        'Registered', 
-        'DefaultChanged', 
-        'CapabilityChanged', 
-        'ConstraintsChanged', 
-        'Written'
+        'Registered' = 1,
+        'DefaultChanged' = 2,
+        'CapabilityChanged' = 3,
+        'ConstraintsChanged' = 4,
+        'Written' = 5
     ),
     
     event_data JSON,

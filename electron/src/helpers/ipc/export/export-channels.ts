@@ -28,23 +28,31 @@ export type ChoosePathParams = {
   filters?: FileFilter[];
 };
 
+/** `error` is set when the dialog itself failed, not when the user cancelled. */
 export type ChoosePathResult =
-  | { canceled: true }
+  | { canceled: true; error?: string }
   | { canceled: false; filePath: string };
 
-/** Write content the renderer already has to a path from `choosePath`. */
+/** Extension of a path from `choosePath`; the rest is the export's base path. */
+export const EXPORT_EXTENSION = /\.(xlsx|csv|parquet)$/i;
+
+/**
+ * What may follow the base path in an export file: an optional per-machine `_suffix`
+ * and one of the export extensions. Never a path separator.
+ */
+export const EXPORT_FILE_SUFFIX = /^(_[A-Za-z0-9-]+)?\.(xlsx|csv|parquet)$/;
+
+/** Write bytes the renderer built (the Excel workbook) to an export file. */
 export type WriteFileParams = {
   filePath: string;
-  content: string;
-  encoding: "utf8" | "base64";
+  data: Uint8Array;
 };
 
 /**
- * POST `body` as JSON to `url` and stream the response into `filePath`, without
- * passing the data through the renderer.
+ * Stream a history export (`POST /api/v1/machine/history/export`, request `body`)
+ * into an export file, without passing the data through the renderer.
  */
 export type DownloadParams = {
   filePath: string;
-  url: string;
   body: unknown;
 };

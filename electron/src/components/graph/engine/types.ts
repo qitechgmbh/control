@@ -22,9 +22,8 @@ export type EngineSeries = {
   visible: boolean;
 };
 
-/** A setpoint step line belonging to the series at `seriesIndex`. */
+/** A setpoint step line of one series. */
 export type EngineTarget = {
-  seriesIndex: number;
   color: string;
   value: number;
   history?: string;
@@ -44,6 +43,8 @@ export type EngineView = {
   range?: ViewRange;
   showFrom?: number | null;
   freeze?: number | null;
+  /** Changes whenever the shared view changed (`GraphView.revision`). */
+  revision: number;
 };
 
 export type EngineCallbacks = {

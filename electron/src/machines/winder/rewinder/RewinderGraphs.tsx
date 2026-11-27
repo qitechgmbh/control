@@ -145,7 +145,6 @@ function SeriesGraph({
     title,
     icon,
     colors: { primary: color },
-    exportFilename: `${graphId}_data`,
   };
 
   return (

@@ -67,6 +67,13 @@ pub struct LegacyMachineIdentificationUnique {
     pub serial: u16,
 }
 
+impl LegacyMachineIdentificationUnique {
+    /// The machine's `identity` column in ClickHouse.
+    pub fn identity(self) -> u64 {
+        qitech_framework::MachineInstanceIdentification::from(self).to_u64()
+    }
+}
+
 impl From<LegacyMachineIdentificationUnique> for qitech_framework::MachineInstanceIdentification {
     fn from(id: LegacyMachineIdentificationUnique) -> Self {
         qitech_framework::MachineIdentification::new(

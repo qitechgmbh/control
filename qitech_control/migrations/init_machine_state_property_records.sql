@@ -4,8 +4,8 @@ CREATE TABLE IF NOT EXISTS control_hub.machine_state_property_records
     identity        UInt64,
     name            LowCardinality(String),
 
-    -- value --
-    event_type Enum8('Registered', 'ValueChanged'),
+    -- values match `EventType` in src/api/db/tables.rs --
+    event_type Enum8('Registered' = 1, 'ValueChanged' = 2),
     event_data JSON,
 
     -- store duplicate ordered by timestamp only for history queries of all machines
