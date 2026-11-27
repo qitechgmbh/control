@@ -156,7 +156,6 @@ fn projection_query(slot_ms: i64) -> String {
     format!(
         "SELECT
             indexOf(?, name)                                                AS idx,
-            intDiv({slot}, ?)                                               AS bucket,
             countIf({ok})                                                   AS n,
             toInt64(sumIf(toUnixTimestamp64Milli(timestamp), {ok}) / n)     AS t,
             sumIf(assumeNotNull(value), {ok}) / n                           AS v_avg,
@@ -167,7 +166,7 @@ fn projection_query(slot_ms: i64) -> String {
           AND name IN ?
           AND {slot} >= ?
           AND {slot} < ?
-        GROUP BY idx, bucket
+        GROUP BY idx, intDiv({slot}, ?) AS bucket
         HAVING n > 0
         ORDER BY idx, bucket"
     )
@@ -189,11 +188,11 @@ async fn fetch_measurements(
         Some(slot_ms) => {
             db.query(&projection_query(slot_ms))
                 .bind(&body.measurements)
-                .bind(bucket_ms / slot_ms)
                 .bind(identity)
                 .bind(&body.measurements)
                 .bind(body.from.div_euclid(slot_ms))
                 .bind((body.to + slot_ms - 1).div_euclid(slot_ms))
+                .bind(bucket_ms / slot_ms)
                 .fetch_all::<BucketRow>()
                 .await?
         }
@@ -386,6 +385,29 @@ mod tests {
         assert_eq!(projection_slot(5_000), Some(5_000));
         assert_eq!(projection_slot(2_000), None);
         assert_eq!(projection_slot(64_801), None);
+    }
+
+    /// Output columns (the `AS` aliases before `FROM`) of a bucket query.
+    fn output_columns(query: &str) -> Vec<String> {
+        let select = &query[..query.find("FROM").expect("has FROM")];
+        let mut columns: Vec<String> = select
+            .split(" AS ")
+            .skip(1)
+            .map(|rest| rest.split(',').next().unwrap().trim().to_owned())
+            .collect();
+        columns.sort();
+        columns
+    }
+
+    /// The `clickhouse` crate rejects a result whose columns differ from `BucketRow`'s
+    /// fields, failing every request of that path (this broke the long graph ranges once).
+    #[test]
+    fn projection_query_columns_match_bucket_row() {
+        let mut fields = vec!["idx", "n", "t", "v_avg", "v_max", "v_min"];
+        fields.sort();
+        for slot_ms in PROJECTION_SLOTS_MS {
+            assert_eq!(output_columns(&projection_query(slot_ms)), fields);
+        }
     }
 
     #[test]
