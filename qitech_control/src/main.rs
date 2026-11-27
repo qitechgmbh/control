@@ -135,7 +135,7 @@ fn ecat_config(stay_preop: bool) -> EtherCATConfig {
         dc_config,
         wkc_mismatch_threshold: 5,
         op_ramp_grace_cycles: 10000,
-        max_consecutive_tx_rx_failures: 5,
+        max_consecutive_tx_rx_failures: 500,
     };
 
     EtherCATConfig {
