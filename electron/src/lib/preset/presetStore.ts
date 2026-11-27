@@ -3,7 +3,7 @@ import { persist, PersistStorage, StorageValue } from "zustand/middleware";
 import { Preset, presetSchema } from "./preset";
 import { MachineIdentification } from "@/machines/types";
 import { z } from "zod";
-import { toastError } from "@/components/Toast";
+import { toastError } from "@/components/feedback/Toast";
 
 const persistedPresetSchema = presetSchema(z.any()).extend({
   id: z.number().int().nonnegative(),

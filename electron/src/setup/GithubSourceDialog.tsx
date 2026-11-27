@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Icon } from "@/components/Icon";
+import { Icon } from "@/components/icons/Icon";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { Badge } from "@/components/ui/badge";
 

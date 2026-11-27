@@ -5,10 +5,11 @@ import { z } from "zod";
 
 import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
 import { githubSourceSchema } from "@/setup/GithubSourceDialog";
-import { SidebarLayout } from "@/components/SidebarLayout";
+import { SidebarLayout } from "@/components/layout/SidebarLayout";
 import { SetupPage } from "@/setup/SetupPage";
 import { EthercatPage } from "@/setup/EthercatPage";
 import { ModbusPage } from "@/setup/ModbusPage";
+import { DatabasePage } from "@/setup/DatabasePage";
 import { MachinesPage } from "@/setup/MachinesPage";
 import { ChangelogPage } from "@/setup/ChangelogPage";
 import { TroubleshootPage } from "@/setup/Troubleshoot";
@@ -642,6 +643,12 @@ export const modbusRoute = createRoute({
   component: () => <ModbusPage />,
 });
 
+export const databaseRoute = createRoute({
+  getParentRoute: () => setupRoute,
+  path: "database",
+  component: () => <DatabasePage />,
+});
+
 export const setupMachinesRoute = createRoute({
   getParentRoute: () => setupRoute,
   path: "machines",
@@ -701,6 +708,7 @@ export const rootTree = RootRoute.addChildren([
     setupRoute.addChildren([
       ethercatRoute,
       modbusRoute,
+      databaseRoute,
       setupMachinesRoute,
       updateRoute.addChildren([
         updateChooseVersionRoute,

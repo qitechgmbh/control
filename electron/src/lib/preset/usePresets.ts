@@ -6,7 +6,7 @@ import { usePresetStore } from "./presetStore";
 import { Preset, presetSchema, PresetSchema } from "./preset";
 import { deepEquals } from "@/lib/objects";
 import { useEffect } from "react";
-import { toastError } from "@/components/Toast";
+import { toastError } from "@/components/feedback/Toast";
 import { z } from "zod";
 
 export type Presets<T> = {

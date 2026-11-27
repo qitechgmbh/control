@@ -17,7 +17,7 @@
 //   myMachine (properties)→ the export from properties.ts     (see step 7 in README)
 // ============================================================================
 
-import { toastError } from "@/components/Toast";
+import { toastError } from "@/components/feedback/Toast";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 // TODO: Import the actual serial route.
 //import { myMachineSerialRoute } from "@/routes/routes";

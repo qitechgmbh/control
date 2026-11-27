@@ -1,4 +1,4 @@
-import { Icon, IconName } from "@/components/Icon";
+import { Icon, IconName } from "@/components/icons/Icon";
 import { Badge } from "@/components/ui/badge";
 import { cva } from "class-variance-authority";
 import React from "react";

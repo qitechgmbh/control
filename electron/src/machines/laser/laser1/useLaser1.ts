@@ -1,4 +1,4 @@
-import { toastError } from "@/components/Toast";
+import { toastError } from "@/components/feedback/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { laser1 } from "@/machines/properties";
@@ -186,5 +186,6 @@ export function useLaser1() {
 
   return {
     ...laser,
+    machineIdentification,
   };
 }

@@ -1,4 +1,4 @@
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import React from "react";
 import { useWagoSerial } from "./useWagoSerial";
 import { ControlGrid } from "@/control/ControlGrid";

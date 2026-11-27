@@ -1,4 +1,4 @@
-import { Topbar } from "@/components/Topbar";
+import { Topbar } from "@/components/layout/Topbar";
 import React from "react";
 
 export function SetupPage() {
@@ -23,6 +23,12 @@ export function SetupPage() {
           activeLink: "modbus",
           title: "Modbus",
           icon: "lu:Usb",
+        },
+        {
+          link: "database",
+          activeLink: "database",
+          title: "Database",
+          icon: "lu:Database",
         },
         {
           link: "update/choose-version",

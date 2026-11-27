@@ -1,4 +1,4 @@
-import { toastError } from "@/components/Toast";
+import { toastError } from "@/components/feedback/Toast";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { aquapath1 } from "@/machines/properties";
@@ -467,6 +467,9 @@ export function useAquapath1() {
   };
 
   return {
+    // Machine identity (graphs load database history with it)
+    machineIdentification,
+
     // Consolidated state
     state: stateOptimistic.value?.data,
 

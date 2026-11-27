@@ -1,16 +1,17 @@
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import {
-  MarkerProvider,
-  SyncedFloatingControlPanel,
+  BigGraph,
+  GraphHistoryProvider,
+  GraphControlPanel,
   useGraphSync,
   type GraphConfig,
 } from "@/components/graph";
 import React from "react";
 import { useExtruder2 } from "./useExtruder";
-import { GraphWithMarkerControls } from "@/components/graph/marker/GraphWithMarkerControls";
 
 export function Extruder2GraphsPage() {
   const {
+    machineIdentification,
     state,
     nozzleTemperature,
     nozzlePower,
@@ -49,6 +50,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: nozzleTemperature,
+            history: "heating.nozzle.temperature",
             title: "Nozzle",
             color: "#ef4444",
             lines:
@@ -58,6 +60,7 @@ export function Extruder2GraphsPage() {
                       type: "target" as const,
                       value: state.heating_states.nozzle.target_temperature,
                       targetSeries: targetNozzleTemperature,
+                      history: "heating.nozzle.target_temperature",
                       color: "#ef4444",
                       show: true,
                     },
@@ -70,6 +73,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: frontTemperature,
+            history: "heating.front.temperature",
             title: "Front",
             color: "#f59e0b",
             lines:
@@ -79,6 +83,7 @@ export function Extruder2GraphsPage() {
                       type: "target" as const,
                       value: state.heating_states.front.target_temperature,
                       targetSeries: targetFrontTemperature,
+                      history: "heating.front.target_temperature",
                       color: "#f59e0b",
                       show: true,
                     },
@@ -91,6 +96,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: middleTemperature,
+            history: "heating.middle.temperature",
             title: "Middle",
             color: "#8b5cf6",
             lines:
@@ -100,6 +106,7 @@ export function Extruder2GraphsPage() {
                       type: "target" as const,
                       value: state.heating_states.middle.target_temperature,
                       targetSeries: targetMiddleTemperature,
+                      history: "heating.middle.target_temperature",
                       color: "#8b5cf6",
                       show: true,
                     },
@@ -112,6 +119,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: backTemperature,
+            history: "heating.back.temperature",
             title: "Back",
             color: "#3b82f6",
             lines:
@@ -121,6 +129,7 @@ export function Extruder2GraphsPage() {
                       type: "target" as const,
                       value: state.heating_states.back.target_temperature,
                       targetSeries: targetBackTemperature,
+                      history: "heating.back.target_temperature",
                       color: "#3b82f6",
                       show: true,
                     },
@@ -149,6 +158,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: nozzlePower,
+            history: "heating.nozzle.power",
             title: "Nozzle",
             color: "#ef4444",
           },
@@ -158,6 +168,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: frontPower,
+            history: "heating.front.power",
             title: "Front",
             color: "#f59e0b",
           },
@@ -167,6 +178,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: middlePower,
+            history: "heating.middle.power",
             title: "Middle",
             color: "#8b5cf6",
           },
@@ -176,6 +188,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: backPower,
+            history: "heating.back.power",
             title: "Back",
             color: "#3b82f6",
           },
@@ -185,6 +198,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: motorPower,
+            history: "motor.power",
             title: "Motor",
             color: "#10b981",
           },
@@ -194,6 +208,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: combinedPower,
+            history: "power.combined",
             title: "Total",
             color: "#000000",
           },
@@ -253,12 +268,13 @@ export function Extruder2GraphsPage() {
 
   return (
     <Page className="pb-25">
-      <MarkerProvider>
+      <GraphHistoryProvider machine={machineIdentification}>
         <div className="flex flex-col gap-4">
-          <GraphWithMarkerControls
+          <BigGraph
             syncHook={syncHook}
             newData={{
               newData: pressure,
+              history: "pressure.value",
               color: "#3b82f6",
               lines:
                 state?.pressure_state.target_bar !== undefined
@@ -267,6 +283,7 @@ export function Extruder2GraphsPage() {
                         type: "target" as const,
                         value: state.pressure_state.target_bar,
                         targetSeries: targetPressure,
+                        history: "screw.target_pressure",
                         color: "#3b82f6",
                         show: true,
                       },
@@ -277,50 +294,44 @@ export function Extruder2GraphsPage() {
             unit="bar"
             renderValue={(value) => value.toFixed(2)}
             graphId="pressure-graph"
-            currentTimeSeries={pressure}
-            machineId="extruder-graphs"
           />
 
-          <GraphWithMarkerControls
+          <BigGraph
             syncHook={syncHook}
             newData={temperatureData}
             config={temperatureConfig}
             unit="C"
             renderValue={(value) => value.toFixed(1)}
             graphId="combined-temperatures"
-            currentTimeSeries={nozzleTemperature}
-            machineId="extruder-graphs"
           />
 
-          <GraphWithMarkerControls
+          <BigGraph
             syncHook={syncHook}
             newData={powerData}
             config={powerConfig}
             unit="W"
             renderValue={(value) => value.toFixed(1)}
             graphId="combined-power"
-            currentTimeSeries={combinedPower}
-            machineId="extruder-graphs"
           />
 
-          <GraphWithMarkerControls
+          <BigGraph
             syncHook={syncHook}
             newData={{
               newData: motorCurrent,
+              history: "motor.current",
               color: "#3b82f6",
             }}
             config={currentConfig}
             unit="A"
             renderValue={(value) => value.toFixed(2)}
             graphId="motor-current"
-            currentTimeSeries={motorCurrent}
-            machineId="extruder-graphs"
           />
 
-          <GraphWithMarkerControls
+          <BigGraph
             syncHook={syncHook}
             newData={{
               newData: motorScrewRpm,
+              history: "motor.rpm",
               color: "#8b5cf6",
               lines:
                 state?.screw_state.target_rpm !== undefined
@@ -329,6 +340,7 @@ export function Extruder2GraphsPage() {
                         type: "target" as const,
                         value: state.screw_state.target_rpm,
                         targetSeries: targetScrewRpm,
+                        history: "screw.target_rpm",
                         color: "#8b5cf6",
                         show: true,
                       },
@@ -339,16 +351,11 @@ export function Extruder2GraphsPage() {
             unit="rpm"
             renderValue={(value) => value.toFixed(0)}
             graphId="rpm-graph"
-            currentTimeSeries={motorScrewRpm}
-            machineId="extruder-graphs"
           />
         </div>
 
-        <SyncedFloatingControlPanel
-          controlProps={syncHook.controlProps}
-          machineId="extruder-graphs"
-        />
-      </MarkerProvider>
+        <GraphControlPanel syncHook={syncHook} />
+      </GraphHistoryProvider>
     </Page>
   );
 }

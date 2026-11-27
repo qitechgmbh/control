@@ -1,5 +1,5 @@
-import { MiniGraph } from "@/components/graph/MiniGraph";
-import { Page } from "@/components/Page";
+import { MiniGraph } from "@/components/graph";
+import { Page } from "@/components/layout/Page";
 import { ControlCard } from "@/control/ControlCard";
 import { ControlGrid } from "@/control/ControlGrid";
 

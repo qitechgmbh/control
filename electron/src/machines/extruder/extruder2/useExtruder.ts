@@ -1,4 +1,4 @@
-import { toastError } from "@/components/Toast";
+import { toastError } from "@/components/feedback/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique } from "@/machines/types";
@@ -478,6 +478,9 @@ export function useExtruder2() {
   );
 
   return {
+    // Machine identity (graphs load database history with it)
+    machineIdentification,
+
     // Consolidated state
     state: stateOptimistic.value?.data,
 

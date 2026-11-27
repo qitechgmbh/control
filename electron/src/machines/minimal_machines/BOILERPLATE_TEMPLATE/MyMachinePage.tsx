@@ -11,7 +11,7 @@
 //   mymachine             → the URL segment used in routes.tsx (e.g. "wagodotestmachine")
 // ============================================================================
 
-import { Topbar } from "@/components/Topbar";
+import { Topbar } from "@/components/layout/Topbar";
 // TODO: Import the actual serial route.
 // import { myMachineSerialRoute } from "@/routes/routes";
 import React from "react";

@@ -8,7 +8,7 @@ import {
 import React, { useRef, useState } from "react";
 import { TouchButton } from "../touch/TouchButton";
 import { DialogHeader } from "../ui/dialog";
-import { Icon } from "../Icon";
+import { Icon } from "../icons/Icon";
 import { Separator } from "../ui/separator";
 import { PresetPreviewEntries, PresetPreviewTable } from "./PresetPreviewTable";
 import { Input } from "../ui/input";

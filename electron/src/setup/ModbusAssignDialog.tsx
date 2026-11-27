@@ -31,12 +31,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useFormValues } from "@/lib/useFormValues";
-import { Alert } from "@/components/Alert";
+import { Alert } from "@/components/feedback/Alert";
 import { Separator } from "@/components/ui/separator";
-import { Icon } from "@/components/Icon";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Icon } from "@/components/icons/Icon";
+import { LoadingSpinner } from "@/components/feedback/LoadingSpinner";
 import { toast } from "sonner";
-import { Toast } from "@/components/Toast";
+import { Toast } from "@/components/feedback/Toast";
 import { ModbusDevice } from "@/client/mainNamespace";
 import { restartBackend } from "@/helpers/troubleshoot_helpers";
 import { TouchNumpad } from "@/components/touch/TouchNumpad";

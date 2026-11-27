@@ -1,5 +1,5 @@
 import { useMachineMutate } from "@/client/useClient";
-import { toastError } from "@/components/Toast";
+import { toastError } from "@/components/feedback/Toast";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import {
   createTimeSeries,

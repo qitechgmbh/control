@@ -25,6 +25,7 @@ use qitech_lib::ethercat_hal::MasterConfiguration;
 use qitech_lib::ethercat_hal::RtOptimizationConfig;
 use tokio::sync::mpsc;
 
+use crate::api::ClickhouseWriter;
 use crate::machines::ExtruderV1;
 use crate::machines::ExtruderV2;
 use crate::machines::LaserV1;
@@ -97,13 +98,17 @@ pub async fn main() -> anyhow::Result<()> {
             // --- seed the setup page's port list; the runtime does not announce it ---
             api::broadcast_modbus_devices(&mut state_legacy);
 
+            // --- select database ---
+            let client = init_db().await;
+
             let config_hub = HubConfiguration::new()
                 .listener(SocketIODispatcher::new(
                     state.clone(),
                     state_legacy.clone(),
                     rx,
                 ))
-                .actor(Server::new(state, state_legacy, tx));
+                .listener(ClickhouseWriter::new(client.clone()).await)
+                .actor(Server::new(state, state_legacy, tx, client));
             run_with_hub(config_rt, config_hub).await
         }
     }
@@ -142,5 +147,163 @@ fn ecat_config(stay_preop: bool) -> EtherCATConfig {
         interface_scan_interval: Duration::from_secs(2),
         master_config,
         stay_preop,
+    }
+}
+
+async fn init_db() -> clickhouse::Client {
+    let client = clickhouse::Client::default()
+        .with_url("http://127.0.0.1:8123")
+        .with_user("default")
+        .with_setting("allow_experimental_json_type", "1")
+        .with_setting("input_format_binary_read_json_as_string", "1");
+
+    // --- create database ---
+    client
+        .query("CREATE DATABASE IF NOT EXISTS control_hub")
+        .execute()
+        .await
+        .unwrap();
+
+    // --- create migration ---
+    let migration = include_str!("../migrations/init_machine_config_property_records.sql");
+    client.query(migration).execute().await.unwrap();
+
+    let migration = include_str!("../migrations/init_machine_state_property_records.sql");
+    client.query(migration).execute().await.unwrap();
+
+    let migration = include_str!("../migrations/init_machine_measurements.sql");
+    client.query(migration).execute().await.unwrap();
+    upgrade_machine_measurements(&client).await;
+    upgrade_machine_measurements_projections(&client).await;
+
+    let migration = include_str!("../migrations/init_machine_events.sql");
+    client.query(migration).execute().await.unwrap();
+
+    let migration = include_str!("../migrations/init_machine_markers.sql");
+    client.query(migration).execute().await.unwrap();
+
+    // --- select database ---
+    client.with_database("control_hub")
+}
+
+/// Upgrades a `machine_measurements` table from before the codecs (with the `by_time`
+/// projection) in place. Skipped once the table has the new definition, so it does not
+/// queue a mutation on every start.
+async fn upgrade_machine_measurements(client: &clickhouse::Client) {
+    let create: String = client
+        .query(
+            "SELECT create_table_query FROM system.tables
+             WHERE database = 'control_hub' AND name = 'machine_measurements'",
+        )
+        .fetch_one()
+        .await
+        .unwrap();
+    if !create.contains("by_time") && create.contains("DoubleDelta") {
+        return;
+    }
+
+    tracing::info!("upgrading machine_measurements storage (drop projection, add codecs)");
+    let upgrade = include_str!("../migrations/upgrade_machine_measurements_storage.sql");
+    for statement in sql_statements(upgrade) {
+        client.query(&statement).execute().await.unwrap();
+    }
+}
+
+/// Adds the history projections (see `init_machine_measurements.sql`) to a table created
+/// before them, and fills them for parts written before they existed. The fill is a
+/// background mutation; it is started again on the next start if it was interrupted.
+async fn upgrade_machine_measurements_projections(client: &clickhouse::Client) {
+    let create: String = client
+        .query(
+            "SELECT create_table_query FROM system.tables
+             WHERE database = 'control_hub' AND name = 'machine_measurements'",
+        )
+        .fetch_one()
+        .await
+        .unwrap();
+    if !create.contains("p_5s") || !create.contains("p_1m") {
+        tracing::info!("adding the history projections to machine_measurements");
+        let upgrade = include_str!("../migrations/upgrade_machine_measurements_projections.sql");
+        for statement in sql_statements(upgrade) {
+            client.query(&statement).execute().await.unwrap();
+        }
+    }
+
+    let parts_missing: u64 = client
+        .query(
+            "SELECT count() FROM system.parts
+             WHERE active AND database = 'control_hub' AND table = 'machine_measurements'
+               AND NOT (has(projections, 'p_5s') AND has(projections, 'p_1m'))",
+        )
+        .fetch_one()
+        .await
+        .unwrap();
+    let fill_running: u64 = client
+        .query(
+            "SELECT count() FROM system.mutations
+             WHERE database = 'control_hub' AND table = 'machine_measurements'
+               AND NOT is_done AND command ILIKE '%MATERIALIZE PROJECTION%'",
+        )
+        .fetch_one()
+        .await
+        .unwrap();
+    if parts_missing > 0 && fill_running == 0 {
+        tracing::info!(
+            parts_missing,
+            "filling the history projections in the background"
+        );
+        for projection in ["p_1m", "p_5s"] {
+            client
+                .query(&format!(
+                    "ALTER TABLE control_hub.machine_measurements MATERIALIZE PROJECTION {projection}"
+                ))
+                .execute()
+                .await
+                .unwrap();
+        }
+    }
+}
+
+/// The statements of a migration file: `--` comment lines removed (they may contain
+/// `;`), then split at `;`.
+fn sql_statements(sql: &str) -> Vec<String> {
+    let code = sql
+        .lines()
+        .filter(|line| !line.trim_start().starts_with("--"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    code.split(';')
+        .map(str::trim)
+        .filter(|statement| !statement.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::sql_statements;
+
+    #[test]
+    fn projection_migration_splits_into_its_alter_statements() {
+        let sql = include_str!("../migrations/upgrade_machine_measurements_projections.sql");
+        let statements = sql_statements(sql);
+        assert_eq!(statements.len(), 2);
+        assert!(
+            statements
+                .iter()
+                .all(|s| s.contains("ADD PROJECTION IF NOT EXISTS"))
+        );
+    }
+
+    #[test]
+    fn upgrade_migration_splits_into_its_alter_statements() {
+        let sql = include_str!("../migrations/upgrade_machine_measurements_storage.sql");
+        let statements = sql_statements(sql);
+        assert_eq!(statements.len(), 3);
+        assert!(
+            statements
+                .iter()
+                .all(|s| s.trim_start().starts_with("ALTER TABLE"))
+        );
     }
 }

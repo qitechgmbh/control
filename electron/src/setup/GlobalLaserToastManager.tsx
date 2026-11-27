@@ -5,7 +5,7 @@ import { useLaser1Namespace } from "@/machines/laser/laser1/laser1Namespace";
 import { laser1 } from "@/machines/properties";
 import type { MachinesEvent } from "@/client/mainNamespace";
 import type { MachineIdentificationUnique } from "@/machines/types";
-import { Icon } from "@/components/Icon";
+import { Icon } from "@/components/icons/Icon";
 import React from "react";
 
 // Constants

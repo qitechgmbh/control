@@ -1,4 +1,4 @@
-import { toastError } from "@/components/Toast";
+import { toastError } from "@/components/feedback/Toast";
 import { wagoSerial } from "@/machines/properties";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { wagoSerialSerialRoute } from "@/routes/routes";

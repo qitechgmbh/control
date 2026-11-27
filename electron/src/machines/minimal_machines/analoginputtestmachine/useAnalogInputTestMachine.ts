@@ -11,7 +11,7 @@ import {
   StateEvent,
   useAnalogInputTestMachineNamespace,
 } from "./useAnalogInputTestMachineNamespace";
-import { toastError } from "@/components/Toast";
+import { toastError } from "@/components/feedback/Toast";
 import { MachineIdentificationUnique } from "../../types";
 import { analogInputTestMachineSerialRoute } from "@/routes/routes";
 import { analogInputTestMachine } from "../../properties";

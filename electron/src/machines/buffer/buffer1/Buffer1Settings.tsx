@@ -1,7 +1,7 @@
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import { ControlGrid } from "@/control/ControlGrid";
 import React from "react";
-import { MachineSelector } from "@/components/MachineConnectionDropdown";
+import { MachineSelector } from "@/machines/buffer/MachineConnectionDropdown";
 import { useBuffer1 } from "./useBuffer1";
 
 export function Buffer1SettingsPage() {

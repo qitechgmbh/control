@@ -1,13 +1,13 @@
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import { usePresets, UsePresetsParams } from "@/lib/preset/usePresets";
 import { Preset } from "@/lib/preset/preset";
 import { PresetCard } from "./PresetCard";
 import { PresetPreviewEntries } from "./PresetPreviewTable";
 import { NewPresetDialog } from "./NewPresetDialog";
-import { JsonFileInput } from "../FileInput";
-import { ExportResultDialog } from "@/components/ExportResultDialog";
+import { JsonFileInput } from "../inputs/FileInput";
+import { ExportResultDialog } from "@/components/feedback/ExportResultDialog";
 import { saveFile } from "@/helpers/file_export_helpers";
 import { useExportDialog } from "@/hooks/useExportDialog";
 

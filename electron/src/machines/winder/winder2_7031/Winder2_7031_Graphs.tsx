@@ -1,7 +1,8 @@
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import {
-  MarkerProvider,
-  SyncedFloatingControlPanel,
+  BigGraph,
+  GraphHistoryProvider,
+  GraphControlPanel,
   useGraphSync,
   type GraphConfig,
   type GraphLine,
@@ -11,10 +12,10 @@ import { useWinder2 } from "./useWinder";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { TimeSeries } from "@/lib/timeseries";
 import { Unit } from "@/control/units";
-import { GraphWithMarkerControls } from "@/components/graph/marker/GraphWithMarkerControls";
 
 export function Winder2_7031GraphsPage() {
   const {
+    machineIdentification,
     state,
     spoolRpm,
     traversePosition,
@@ -28,7 +29,7 @@ export function Winder2_7031GraphsPage() {
 
   return (
     <Page className="pb-27">
-      <MarkerProvider>
+      <GraphHistoryProvider machine={machineIdentification}>
         <div className="flex flex-col gap-4">
           <div className="grid gap-4">
             <PullerSpeedGraph
@@ -72,11 +73,8 @@ export function Winder2_7031GraphsPage() {
           </div>
         </div>
 
-        <SyncedFloatingControlPanel
-          controlProps={syncHook.controlProps}
-          machineId="winder2"
-        />
-      </MarkerProvider>
+        <GraphControlPanel syncHook={syncHook} />
+      </GraphHistoryProvider>
     </Page>
   );
 }
@@ -104,18 +102,17 @@ export function SpoolRpmGraph({
   };
 
   return (
-    <GraphWithMarkerControls
+    <BigGraph
       syncHook={syncHook}
       newData={{
         newData,
+        history: "spool.rpm",
         color: "#10b981",
       }}
       unit={unit}
       renderValue={renderValue}
       config={config}
       graphId="spool-rpm"
-      currentTimeSeries={newData}
-      machineId="winder2"
     />
   );
 }
@@ -165,10 +162,11 @@ export function TraversePositionGraph({
   };
 
   return (
-    <GraphWithMarkerControls
+    <BigGraph
       syncHook={syncHook}
       newData={{
         newData,
+        history: "traverse.position",
         color: "#8b5cf6",
         lines,
       }}
@@ -176,8 +174,6 @@ export function TraversePositionGraph({
       renderValue={renderValue}
       config={config}
       graphId="traverse-position"
-      currentTimeSeries={newData}
-      machineId="winder2"
     />
   );
 }
@@ -203,18 +199,17 @@ export function TensionArmAngleGraph({
   };
 
   return (
-    <GraphWithMarkerControls
+    <BigGraph
       syncHook={syncHook}
       newData={{
         newData,
+        history: "tension_arm.angle",
         color: "#f59e0b",
       }}
       unit={unit}
       renderValue={renderValue}
       config={config}
       graphId="tension-arm-angle"
-      currentTimeSeries={newData}
-      machineId="winder2"
     />
   );
 }
@@ -241,18 +236,17 @@ export function SpoolProgressGraph({
 
   // NOTE: Assuming this graph starts at 0, and the max is the total capacity.
   return (
-    <GraphWithMarkerControls
+    <BigGraph
       syncHook={syncHook}
       newData={{
         newData,
+        history: "spool.progress",
         color: "#f59e0b",
       }}
       unit={unit}
       renderValue={renderValue}
       config={config}
       graphId="spool-progress"
-      currentTimeSeries={newData}
-      machineId="winder2"
     />
   );
 }
@@ -279,6 +273,7 @@ export function PullerSpeedGraph({
       type: "target",
       value: targetSpeed,
       targetSeries,
+      history: "puller.speed_controller.speed_desired",
       label: "Target Speed",
       color: "#06b6d4", // Match series color
     });
@@ -294,10 +289,11 @@ export function PullerSpeedGraph({
   };
 
   return (
-    <GraphWithMarkerControls
+    <BigGraph
       syncHook={syncHook}
       newData={{
         newData,
+        history: "puller.speed",
         color: "#06b6d4",
         lines,
       }}
@@ -305,8 +301,6 @@ export function PullerSpeedGraph({
       renderValue={renderValue}
       config={config}
       graphId="puller-speed"
-      currentTimeSeries={newData}
-      machineId="winder2"
     />
   );
 }

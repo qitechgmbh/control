@@ -88,7 +88,13 @@ in
     systemd.services.qitech-control-server = {
       description = "QiTech Control Server";
       wantedBy = [ "multi-user.target" ];
-      after = [ "network.target" ];
+      # Start only once ClickHouse is ready (its unit is Type=notify): `init_db` needs it at
+      # startup. `wants`, not `requires`, so a ClickHouse restart doesn't stop the machines.
+      after = [
+        "network.target"
+        "clickhouse.service"
+      ];
+      wants = [ "clickhouse.service" ];
 
       serviceConfig = {
         Type = "simple";

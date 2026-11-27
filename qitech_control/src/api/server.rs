@@ -16,6 +16,7 @@ pub struct Server {
     state: SharedState,
     state_legacy: LegacySharedState,
     machines_dirty_tx: mpsc::Sender<MachineInstanceIdentification>,
+    db: clickhouse::Client,
 }
 
 impl Server {
@@ -23,11 +24,13 @@ impl Server {
         state: SharedState,
         state_legacy: LegacySharedState,
         machines_dirty_tx: mpsc::Sender<MachineInstanceIdentification>,
+        db: clickhouse::Client,
     ) -> Self {
         Self {
             state,
             state_legacy,
             machines_dirty_tx,
+            db,
         }
     }
 }
@@ -48,6 +51,7 @@ impl Actor for Server {
                 ctx,
                 machines_dirty_tx: self.machines_dirty_tx.clone(),
                 legacy: self.state_legacy.clone(),
+                db: self.db.clone(),
             });
 
         //.nest("/api/v2", rest_api_router())

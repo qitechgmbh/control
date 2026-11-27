@@ -1,17 +1,18 @@
-import { Page } from "@/components/Page";
+import { Page } from "@/components/layout/Page";
 import {
-  MarkerProvider,
-  SyncedFloatingControlPanel,
+  BigGraph,
+  GraphHistoryProvider,
+  GraphControlPanel,
   useGraphSync,
   type GraphConfig,
 } from "@/components/graph";
-import { GraphWithMarkerControls } from "@/components/graph/marker/GraphWithMarkerControls";
 
 import React from "react";
 import { useLaser1 } from "./useLaser1";
 
 export function Laser1GraphsPage() {
   const {
+    machineIdentification,
     diameter,
     x_diameter,
     y_diameter,
@@ -21,7 +22,6 @@ export function Laser1GraphsPage() {
   } = useLaser1();
 
   const syncHook = useGraphSync("diameter-roundness-group");
-  const markerMachineId = "laser1-graphs";
   const targetDiameterValue = state?.laser_state?.target_diameter ?? 0;
   const lowerTolerance = state?.laser_state?.lower_tolerance ?? 0;
   const higherTolerance = state?.laser_state?.higher_tolerance ?? 0;
@@ -74,6 +74,7 @@ export function Laser1GraphsPage() {
   const diameterGraphData = [
     {
       newData: diameter,
+      history: "diameter",
       color: diameterColor,
       title: "Diameter",
       lines: [
@@ -96,6 +97,7 @@ export function Laser1GraphsPage() {
           type: "target" as const,
           value: targetDiameterValue,
           targetSeries: targetDiameterSeries,
+          history: "diameter.target",
           label: "Target",
           color: diameterColor,
         },
@@ -103,26 +105,42 @@ export function Laser1GraphsPage() {
     },
 
     ...(isTwoAxis && x_diameter
-      ? [{ newData: x_diameter, color: xDiameterColor, title: "X-Diameter" }]
+      ? [
+          {
+            newData: x_diameter,
+            history: "diameter_x",
+            color: xDiameterColor,
+            title: "X-Diameter",
+          },
+        ]
       : []),
     ...(isTwoAxis && y_diameter
-      ? [{ newData: y_diameter, color: yDiameterColor, title: "Y-Diameter" }]
+      ? [
+          {
+            newData: y_diameter,
+            history: "diameter_y",
+            color: yDiameterColor,
+            title: "Y-Diameter",
+          },
+        ]
       : []),
   ];
 
   // Roundness-Graph
   const roundnessGraphData = {
     newData: roundnessPercent,
+    history: "roundness",
+    historyScale: 100,
     color: roundnessColor,
     title: "Roundness (%)",
   };
 
   return (
     <Page className="pb-27">
-      <MarkerProvider>
+      <GraphHistoryProvider machine={machineIdentification}>
         <div className="flex flex-col gap-4">
           {/* Graph 1: Diameter */}
-          <GraphWithMarkerControls
+          <BigGraph
             syncHook={syncHook}
             newData={diameterGraphData}
             unit="mm"
@@ -137,13 +155,11 @@ export function Laser1GraphsPage() {
               },
             }}
             graphId="diameter-graph"
-            currentTimeSeries={diameter}
-            machineId={markerMachineId}
           />
 
           {/* Graph 2: Roundness */}
           {isTwoAxis && roundnessPercent && (
-            <GraphWithMarkerControls
+            <BigGraph
               syncHook={syncHook}
               newData={roundnessGraphData}
               unit="%"
@@ -158,16 +174,11 @@ export function Laser1GraphsPage() {
                 },
               }}
               graphId="roundness-graph"
-              currentTimeSeries={roundnessPercent}
-              machineId={markerMachineId}
             />
           )}
         </div>
-        <SyncedFloatingControlPanel
-          controlProps={syncHook.controlProps}
-          machineId={markerMachineId}
-        />
-      </MarkerProvider>
+        <GraphControlPanel syncHook={syncHook} />
+      </GraphHistoryProvider>
     </Page>
   );
 }
