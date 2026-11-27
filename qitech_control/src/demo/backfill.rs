@@ -5,6 +5,8 @@
 //! between the newest stored row and this start (the backend was off). Rows are made by
 //! `INSERT … SELECT … FROM numbers()` inside ClickHouse, one series and day per insert,
 //! newest day first, so each insert stays far below the server's `max_execution_time`.
+//!
+//! `DEMO_BACKFILL_DAYS` (1–30) fills fewer days, e.g. for a quick test.
 
 use std::sync::Mutex;
 use std::sync::atomic::AtomicU8;
@@ -28,8 +30,8 @@ use crate::demo::line;
 use crate::demo::line::Initial;
 use crate::demo::signal;
 
-/// History kept by the TTL of `machine_measurements`.
-const RETENTION_MS: i64 = 30 * DAY_MS;
+/// History kept by the TTL of `machine_measurements`, in days.
+const RETENTION_DAYS: i64 = 30;
 const DAY_MS: i64 = 24 * 3600 * 1000;
 /// Live data is exported at 32 Hz: one row every 31.25 ms, i.e. 4 rows per 125 ms.
 const ROWS_PER_125_MS: i64 = 4;
@@ -162,20 +164,22 @@ async fn run_inner(
     let series: usize = line::machines().iter().map(|m| m.measurements.len()).sum();
     let bytes_per_day =
         series as f64 * (DAY_MS * ROWS_PER_125_MS / 125) as f64 * BYTES_PER_ROW_ESTIMATE;
+    let days_wanted = days_from_env();
     let days_fitting = if free.free == 0 {
         tracing::warn!("free disk space unknown, not limiting the demo backfill");
-        30
+        days_wanted
     } else {
         (free.free as f64 * MAX_DISK_SHARE / bytes_per_day).floor() as i64
     };
-    let oldest_ms = start_ms - RETENTION_MS.min(days_fitting * DAY_MS);
-    if days_fitting < 30 {
+    if days_fitting < days_wanted {
         tracing::warn!(
             days_fitting,
+            days_wanted,
             free_bytes = free.free,
-            "not enough free disk space for 30 days of demo data, backfilling fewer days"
+            "not enough free disk space for the demo backfill, backfilling fewer days"
         );
     }
+    let oldest_ms = start_ms - days_wanted.min(days_fitting) * DAY_MS;
 
     let mut jobs = Vec::new();
     let mut registrations = Vec::new();
@@ -336,6 +340,14 @@ async fn insert_series(db: &clickhouse::Client, job: &Job) -> Result<(), clickho
 }
 
 /// Splits `[from, to)` at UTC midnights, so each insert writes into one daily partition.
+/// Days to backfill: `DEMO_BACKFILL_DAYS` clamped to 1–30, otherwise the full retention.
+fn days_from_env() -> i64 {
+    std::env::var("DEMO_BACKFILL_DAYS")
+        .ok()
+        .and_then(|v| v.trim().parse::<i64>().ok())
+        .map_or(RETENTION_DAYS, |days| days.clamp(1, RETENTION_DAYS))
+}
+
 fn split_at_days(from_ms: i64, to_ms: i64) -> Vec<(i64, i64)> {
     let mut out = Vec::new();
     let mut from = from_ms;
